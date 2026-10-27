@@ -14,7 +14,7 @@ Every run builds the core library, and the backend when it's asked for, from the
 |---|---|---|
 | `plan` | chooses the jobs, finds earlier core and backend builds | 10 s |
 | `core` | `scripts/desktop/build-lib-linux.sh` via `build-core.sh` | skipped when reused, about 24 min not |
-| `app` | the app (`:desktop:createDistributable`), desktopTest, `smoke-test.sh` | about 12 min: build 4.5, desktopTest 0.5, smoke test 3.5 |
+| `app` | the app (`:desktop:createDistributable`), desktopTest with the snapshots, `smoke-test.sh` | about 12 min: build 4.5, desktopTest 0.7, smoke test 3.5 |
 | `claude` (opt-in) | after `app` passed: its distributable at the first screen, then Claude Code drives it | about 4 min, Claude 3 |
 | `backend` (opt-in) | `build-backend.sh`: `simplex-chat`, `simplex-directory-service`, and `smp-server` from the simplexmq commit `cabal.project` pins | about 30 min, skipped when reused |
 | `release` (opt-in) | the latest release's .deb for this Ubuntu, onboarding only, to tell a branch's failure from the runner's | 1.5 min |
@@ -33,7 +33,7 @@ Queueing for a runner adds from under a minute to 20 minutes. Results are artifa
 
 `:common:desktopTest` runs `SnapshotTest` (`apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/SnapshotTest.kt`). It renders each preview listed in `previewScenes` with Compose's `ImageComposeScene`, 402 dp wide at density 1, one pixel per dp, as tall as the preview's content up to 874 dp, so a preview that fills any height is 874 pixels tall. It renders the light and dark themes without a wallpaper, over the theme's background, and keeps the fourth frame, 3 s of frame time after the first. As the app does for its screens, the test provides an `AppBarHandler` (`LocalAppBarHandler`) and the window state (`simplexWindowState`, sized as the scene). Every preview is rendered at the default font size; the chat item previews (package `views.chat.item`) also at 1.4 and 1.5, the two largest values of the desktop app's font size setting.
 
-`everyPreviewIsRendered` reads the Kotlin sources of `commonMain` and `desktopMain` without comments, and fails when a `@Preview` function is missing from `previewScenes` or a scene names a function absent from the sources; a scene is named `<file>.<function>`. The previews of `androidMain` and of the Android app module are left out, since they use Android APIs.
+`everyPreviewIsRendered` reads the Kotlin sources of `commonMain` and `desktopMain` without comments, and fails when a `@Preview` function is missing from both `previewScenes` and `previewsCallingCore`, or when either names a function absent from the sources; a scene is named `<file>.<function>`. `previewsCallingCore` lists the previews whose layouts validate names or descriptions with the core library (`chatValidName`, `chatJsonLength`), which the test JVM does not load, so they are not rendered. The previews of `androidMain` and of the Android app module are left out too, since they use Android APIs.
 
 The test runs in UTC and en_US (the JVM's default `TimeZone` and `Locale`), and replaces the theme overrides with ones without a wallpaper. It sets the app's theme and font size for each render, and restores these settings and defaults when it finishes. Previews show `previewDate` (`ChatItemView.kt`) in place of the current time.
 
