@@ -271,11 +271,17 @@ jobs:
       - name: Run desktop tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: apps/multiplatform
+        env:
+          SNAPSHOT_DIR: ${{ runner.temp }}/snapshots
         run: ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets :common:desktopTest
 
       - name: Report desktop tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: scripts/ci/desktop-linux/test-summary.py apps/multiplatform/common/build/test-results/desktopTest
+
+      - name: Compare snapshots
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: python3 scripts/ci/snapshots-compare.py apps/multiplatform/common/src/desktopTest/snapshots "$RUNNER_TEMP/snapshots" "$RUNNER_TEMP/snapshots-diff"
 
       - name: Run smoke test
         if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.backend.outcome != 'failure' }}
@@ -309,6 +315,17 @@ jobs:
           path: |
             apps/multiplatform/common/build/reports/tests/desktopTest
             apps/multiplatform/common/build/test-results/desktopTest
+          retention-days: 3
+          if-no-files-found: warn
+
+      - name: Upload snapshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-snapshots
+          path: |
+            ${{ runner.temp }}/snapshots
+            ${{ runner.temp }}/snapshots-diff
           retention-days: 3
           if-no-files-found: warn
 

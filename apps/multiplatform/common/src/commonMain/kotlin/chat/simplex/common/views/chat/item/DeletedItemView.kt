@@ -51,7 +51,7 @@ fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean,
 fun PreviewDeletedItemView() {
   SimpleXTheme {
     DeletedItemView(
-      ChatItem.getDeletedContentSampleData(),
+      ChatItem.getDeletedContentSampleData(ts = previewDate),
       null,
       showViaProxy = false,
       showTimestamp = true
