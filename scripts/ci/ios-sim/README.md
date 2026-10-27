@@ -6,14 +6,14 @@
 
 The workflow runs only when started by hand, on any branch, from the Actions tab or with `gh workflow run`: [CI on GitHub's runners](../README.md) says how and lists the inputs.
 
-Results: the job logs, the Claude job's summary (Claude's usage) and the artifacts `ios-sim-smoke-test` (a screenshot, a 1000-px view and an accessibility tree per step, the app log), `ios-sim-backend-logs` and `ios-sim-claude-test` (the Claude job's smoke test in `smoke-test/`, and per session: `prompt.md`, `report.md`, `shots/`, `transcript.jsonl`, `usage.json`). Read them with `gh run view <id> --log` and `gh run download <id> -n <artifact>`.
+Results: the job logs, the Claude job's summary (Claude's usage) and the artifacts `ios-sim-smoke-test` (a screenshot, a 1000-px view and an accessibility tree per step, the app log, the snapshots in `snapshots/`), `ios-sim-backend-logs` and `ios-sim-claude-test` (the Claude job's smoke test in `smoke-test/`, and per session: `prompt.md`, `report.md`, `shots/`, `transcript.jsonl`, `usage.json`). Read them with `gh run view <id> --log` and `gh run download <id> -n <artifact>`.
 
 ## How long it takes, what it costs
 
 - `plan` (ubuntu-24.04, 10 s) reads what the run asks for, names the core library and the backend after their sources, `hashFiles` over the Haskell sources, `cabal.project`, `simplex-chat.cabal` and the build script, and reuses an artifact of the same name that an earlier run of the same branch uploaded (30 days). So every run builds the core library, and the backend when asked, from the branch's own Haskell code, and rebuilds only when those sources change.
 - `core` (macOS, 30–45 min when not reused): `build-core.sh` builds `lib:simplex-chat` with cabal and the iOS flags, as the Nix iOS build does, into the package `scripts/ios/prepare.sh` expects, and `prepare-libs.sh` marks it for the simulator (`mac2ios`).
 - `backend` (macOS, 20–45 min when not reused, only when asked): `build-backend.sh` builds `simplex-chat`, `simplex-directory-service` and `smp-server`.
-- `app` (macOS): the Xcode build 8–22 min, the smoke test about 10 min, the backend start about 10 min when asked.
+- `app` (macOS): the Xcode build 8–22 min, the smoke test about 10 min with the snapshots a few minutes more, the backend start about 10 min when asked.
 - `claude` (macOS, only when asked, after `app` passed): a new simulator with the app job's build and the smoke test, about 7 min, then the sessions (the smoke plan's took 2.6 min).
 
 A run with reused builds and no extras takes about 25 minutes plus the wait for a macOS runner. Hosted minutes are free for this public repository; the limit is the repository's five concurrent macOS jobs, shared with PR builds (each `build.yml` run takes two), so queue waits can be long. The workflow saves no Actions caches, which this repository evicts within hours and shares with `build.yml`: builds are reused only as the artifacts above, and a core or backend rebuild compiles its dependencies too.
@@ -37,6 +37,20 @@ Haiku 5.5 drives the app well: the smoke plan takes a few dozen turns and cents;
 ## Driving the app: `ui`
 
 `ui` wraps AXe (`install-axe.sh`) for scripts and for Claude: tap by label, value or point, swipe, type, paste, keys, wait for text, find, screenshots with trees, switch the layout (one-hand UI or top bar), relaunch, text size, and the backend's directory (`ui` with no arguments lists them). It needs `SIM_UDID` and `UI_OUT`, which the smoke test exports to the job. Lessons kept in its comments and in the smoke test: text fields have no label (tap them by value), the keyboard capitalizes and autocorrects (compare typed text case-insensitively), the closed user picker is always in the tree, "Cancel" clears the search field and its "Close" image doesn't, the keyboard's keys are below the screen.
+
+## Snapshots: `snapshots.sh`
+
+At the end of the app job's smoke test, `smoke-test.sh` runs `snapshots.sh <derived data> <smoke test dir>/snapshots` when the app it tested lies in the derived data of a build (`…/Build/Products/Debug-iphonesimulator`); the Claude job, which installs the app from a tarball, skips it.
+
+`snapshots.sh` builds the unit-test target `SimpleX Snapshots` (`apps/ios/SimpleX Snapshots/SnapshotTests.swift`, hosted by the app) with `xcodebuild build-for-testing`, then runs it in the smoke test's simulator three times, after `xcrun simctl ui <udid> content_size` `large`, `extra-extra-extra-large` and `accessibility-medium`, and sets `large` back. The test hosts each preview listed in `previewScenes()` (the `previews` of a `PreviewProvider`) in a `UIHostingController` in a window of the screen's width, in the light and dark themes without a wallpaper, and draws it with `drawHierarchy` at scale 1, one pixel per point.
+
+The test runs in UTC (`NSTimeZone.default`) and en_US (`-testLanguage en -testRegion US`), so the renders do not depend on the runner's time zone or locale; a preview that shows the current date or time differs between runs.
+
+The images go to `snapshots/` of the artifact `ios-sim-smoke-test` as 8-bit sRGB PNG files without alpha (`preferredRange = .standard`, `opaque`), named `<preview>-<light|dark>-<size>.png`, with `index-<size>.json` listing each file's scene, theme, size, pixel width and height, scale and the content size category the app saw.
+
+When `apps/ios/SimpleX Snapshots/References` exists, `snapshots.sh` then runs `scripts/ci/snapshots-compare.py <references> <renders> <diff dir>`. It compares each render listed in `index-*.json` with the reference of the same name: a render passes when its file is identical to the reference, or when no channel of any pixel differs from it by more than 8 of 255. A missing or extra render, a changed size or a pixel beyond the tolerance fails: the script writes `compare.json` (each file's result and the failed files) next to the renders and, per failed file, `snapshots-diff/<file>` with the reference, the render and the changed pixels in red side by side, lists the failed files in the job summary and exits with 1, which fails the smoke test step.
+
+`snapshots-remote.py record|check [branch]` renders the snapshots of a pushed branch (the current one by default) on GitHub's runner: it starts `ios-sim.yml` on the branch, waits for the run and downloads `snapshots/` and `snapshots-diff/` of its `ios-sim-smoke-test` to a temporary folder. `record` replaces the PNG files in `apps/ios/SimpleX Snapshots/References` with the run's renders and prints the folder's `git status`, for review and commit; `check` prints the files that failed the run's comparison and the folder of their diff images, and exits with 1 when any failed. It takes the token from `GITHUB_TOKEN` or `GH_TOKEN`, otherwise from `gh auth token`; the token must be allowed to start workflows.
 
 ## The test backend
 
