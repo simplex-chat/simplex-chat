@@ -3315,6 +3315,8 @@
   <string name="badges_nothing_to_restore_desc">No Google Play purchase waiting to be added was found.</string>
   <string name="badges_restore_failed">Restore failed</string>
   <string name="badges_error_already_owned">This Google Play account already has this purchase, on another profile or device. To add it to this profile, use Restore purchases.</string>
+  <string name="badges_error_store_unreachable">The store could not be reached.</string>
+  <string name="badges_error_not_on_sale">This badge is not on sale.</string>
   <string name="badges_subscription">Subscription</string>
   <string name="badges_manage_subscription">Manage subscription</string>
   <string name="badges_payment_problem">Payment problem</string>

@@ -154,9 +154,14 @@ private val badgePurchasesUpdatedListener = PurchasesUpdatedListener { result, p
   }
 }
 
-private fun badgePurchaseError(result: BillingResult): BadgeStoreError =
-  if (result.responseCode == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) BadgeStoreError.AlreadyOwned
-  else BadgeStoreError.BillingError(result.responseCode, result.debugMessage)
+private fun badgePurchaseError(result: BillingResult): BadgeStoreError = when (result.responseCode) {
+  BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> BadgeStoreError.AlreadyOwned
+  BillingClient.BillingResponseCode.NETWORK_ERROR,
+  BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
+  BillingClient.BillingResponseCode.SERVICE_DISCONNECTED -> BadgeStoreError.StoreUnreachable
+  BillingClient.BillingResponseCode.ITEM_UNAVAILABLE -> BadgeStoreError.NotOnSale
+  else -> BadgeStoreError.BillingError(result.responseCode, result.debugMessage)
+}
 
 private fun badgePurchaseOutcome(purchase: Purchase): BadgePurchaseOutcome? = when (purchase.purchaseState) {
   Purchase.PurchaseState.PENDING -> BadgePurchaseOutcome.Pending(purchase.accountIdentifiers?.obfuscatedAccountId)
