@@ -5570,7 +5570,7 @@ badgeServiceErrorText = textEncode . boundedServiceErrorCode
 -- on controls, or a sentence the app shows the user as its own.
 boundedServiceErrorCode :: BadgeServiceErrorCode -> BadgeServiceErrorCode
 boundedServiceErrorCode = \case
-  BSEUnknown t -> BSEUnknown $ boundedServiceText errorCodeChar t
+  BSEUnknown t -> boundedServiceText BSEUnknown errorCodeChar t
   code -> code
   where
     errorCodeChar c = isAsciiLower c || isDigit c || c == '_'
@@ -5578,15 +5578,16 @@ boundedServiceErrorCode = \case
 -- | A state this version does not know is stored and shown as the service named it, so it is bounded likewise.
 boundedSubscriptionState :: SubscriptionState -> SubscriptionState
 boundedSubscriptionState = \case
-  SSUnknown t -> SSUnknown $ boundedServiceText stateChar t
+  SSUnknown t -> boundedServiceText SSUnknown stateChar t
   state -> state
   where
     stateChar c = isAsciiLower c || isAsciiUpper c || isDigit c
 
-boundedServiceText :: (Char -> Bool) -> Text -> Text
-boundedServiceText allowed t = case T.filter allowed (T.take 32 t) of
-  "" -> "unknown"
-  t' -> t'
+-- | Kept only if it reads back as unknown: a text that filters down to a known name would be stored, and read, as that value.
+boundedServiceText :: (Eq a, TextEncoding a) => (Text -> a) -> (Char -> Bool) -> Text -> a
+boundedServiceText unknown allowed t = case T.filter allowed (T.take 32 t) of
+  t' | not (T.null t') && textDecode t' == Just (unknown t') -> unknown t'
+  _ -> unknown "unknown"
 
 -- | The only clock badge code reads, so a test can move the client and the service together.
 badgeNow :: CM UTCTime
