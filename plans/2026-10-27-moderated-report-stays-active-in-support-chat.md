@@ -35,7 +35,7 @@ Two commits, one per defect, in the one function:
 
 ## Not fixed
 
-- iOS's handler sets `.deleted` for a sent item where Android and desktop now set moderated, and it only iterates over the primary `ItemsModel`, so an open support chat or the Reports view is not updated there at all (not tested).
+- iOS's handler sets `.deleted` for a sent item where Android and desktop now set moderated, and it only iterates over the primary `ItemsModel`, so an open support chat or the Reports view is not updated there at all (read from the code, not run). iOS shows "archived report" for both values, so nothing differs on screen.
 - The reports counter is decremented once per id, including ids of sent reports. It is clamped at 0, and a member who reported and was later promoted to moderator can see it drop too far. This handler did the same before this change.
 - When the item's author is the moderator, the UI sets `Deleted` where a reload shows `Moderated`.
 - For the Reports view context the handler passes a null scope, so `upsertChatItem` may add a chat entry to that context's own chat list. No visible effect found.
@@ -43,7 +43,7 @@ Two commits, one per defect, in the one function:
 
 ## Verification
 
-Desktop AppImage on Linux, master build (`prebuild-master`) against this branch, group with an owner, two members and the app as a member or a moderator; the owner moderates through `/_delete member item`.
+Desktop AppImage on Linux, master compared with this branch, group with an owner, two members and the app as a member or a moderator; the owner moderates through `/_delete member item`.
 
 | Case | master | this branch |
 |---|---|---|
@@ -51,7 +51,7 @@ Desktop AppImage on Linux, master build (`prebuild-master`) against this branch,
 | Two reports, both moderated 4 s apart | both stay active; two exceptions | both archived |
 | Moderator, member's support chat open, reported message moderated | report stays active | archived at once |
 | Chat with admins closed while moderating, then reopened | archived | archived |
-| Moderator, Reports view | archived | archived |
+| Moderator, Member reports view | archived | archived |
 | The app user, a moderator, moderates the reported message (result seen in the Reports view) | archived | archived |
 | Unreported message moderated | moderated, no exception | moderated, no exception |
 | Restart | archived | archived |
