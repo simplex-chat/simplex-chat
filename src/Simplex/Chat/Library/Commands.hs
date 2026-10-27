@@ -5430,8 +5430,10 @@ handOverStoreReceipt presentingUser echoedInvoiceId origin payment = do
         RSRefused {refusal = Just BIFServiceError {code}} -> throwRedeemError $ BREServiceError code
         RSRefused {} -> throwChatError $ CEInternalError "store purchase refused for no recorded reason"
 
--- | Renewing does not replace billing retry or ended: Play lists a subscription in its grace period as renewing,
--- and the service's answer clears billing retry once the store charges.
+-- | Renewing does not replace billing retry: Play lists a subscription in its grace period as renewing,
+-- and the service's answer clears billing retry once the store charges. It replaces ended only while the badge is shown:
+-- the service's ended answer retires the badge in the same pass, so an ended still shown is a device's report, which a
+-- resubscription corrects, while a retired purchase resumes only by its charge.
 recordStoreSubscriptionStatus :: SubscriptionState -> ServicePayment -> CM ()
 recordStoreSubscriptionStatus reported payment = do
   txRef <- maybe (throwRedeemError BREInvalidReceipt) pure $ storeTransactionRef payment
@@ -5439,8 +5441,8 @@ recordStoreSubscriptionStatus reported payment = do
     getReceiptRecord db txRef >>= \case
       Just BadgeReceiptRecord {ownerId, status = RSCredited {badgePurchaseId}} ->
         getBadgePurchase db badgePurchaseId >>= \case
-          Just UserBadgePurchase {purchaseKind = PKSubscription BadgeSubscription {status}}
-            | replaces status -> Just ownerId <$ setBadgeSubscriptionStatus db badgePurchaseId reported
+          Just UserBadgePurchase {shown, purchaseKind = PKSubscription BadgeSubscription {status}}
+            | replaces shown status -> Just ownerId <$ setBadgeSubscriptionStatus db badgePurchaseId reported
           _ -> pure Nothing
       _ -> pure Nothing
   forM_ changedOwner_ $ \ownerId -> do
@@ -5448,10 +5450,10 @@ recordStoreSubscriptionStatus reported payment = do
     toView . CEvtBadgeChanged owner =<< getUserBadgeState owner
     lift $ startBadgeWork owner
   where
-    replaces = \case
+    replaces shown = \case
       Just stored | stored == reported -> False
       Just SSBillingRetry -> reported /= SSRenewing
-      Just SSEnded -> reported /= SSRenewing
+      Just SSEnded -> shown || reported /= SSRenewing
       _ -> True
 
 -- | The receipt will never be credited to its key; any other refusal may pass on a retry.
