@@ -3630,7 +3630,7 @@ processChatCommand cxt nm = \case
   APICreateBadgeInvoice userId -> withUserId userId $ \user -> do
     void requireBadgeService
     refuseWhileBadgeHeld user
-    refuseWhileStoreReceiptPending user
+    refuseWhileStoreReceiptPending user Nothing
     g <- asks random
     now <- badgeNow
     invoiceId <- UUID.toText <$> liftIO V4.nextRandom
@@ -5376,8 +5376,12 @@ handOverStoreReceipt presentingUser echoedInvoiceId origin payment = do
   g <- asks random
   now <- badgeNow
   limited <- case origin of
-    -- a move would retire the shown badge's own payment elsewhere, or wait behind it
-    SRORestored -> refuseWhileBadgeHeld presentingUser >> withStore' (\db -> holdStoreTransfer db g presentingUser txRef payment now)
+    -- a move would retire the shown badge's own payment elsewhere, or wait behind it or behind another receipt held here,
+    -- so one Restore claims one transaction
+    SRORestored -> do
+      refuseWhileBadgeHeld presentingUser
+      refuseWhileStoreReceiptPending presentingUser (Just txRef)
+      withStore' (\db -> holdStoreTransfer db g presentingUser txRef payment now)
     _ -> pure False
   withStore' (\db -> holdStoreReceipt db g presentingUser origin echoedInvoiceId txRef payment now) >>= \case
     Nothing -> case origin of
@@ -5534,7 +5538,7 @@ storeTransactionRef = \case
 stashBadgeKeys :: User -> Maybe BadgeStash -> (DB.Connection -> IO BadgeStash) -> CM BadgeStash
 stashBadgeKeys user stash_ createStash = do
   replaying <- maybe (pure False) (\s -> withStore' $ \db -> isJust <$> getStashBadgePurchase db s) stash_
-  unless replaying $ refuseWhileBadgeHeld user >> refuseWhileStoreReceiptPending user
+  unless replaying $ refuseWhileBadgeHeld user >> refuseWhileStoreReceiptPending user Nothing
   maybe (withStore' createStash) pure stash_
 
 requireBadgeService :: CM (ConnectTarget 'CMContact)
@@ -5545,12 +5549,14 @@ refuseWhileBadgeHeld user = whenM (withStore' (`userHasBadge` user)) $ throwRede
 
 -- | A new badge would leave a held receipt waiting behind it. An Apple subscription blocks until its charge lapses, as Apple
 -- keeps charging it; any other only while its last failure, if any, can clear, since one that failed for good waits anyway.
-refuseWhileStoreReceiptPending :: User -> CM ()
-refuseWhileStoreReceiptPending user = do
+-- The record of the transaction presented, if any, is not another receipt.
+refuseWhileStoreReceiptPending :: User -> Maybe StoreTransactionRef -> CM ()
+refuseWhileStoreReceiptPending user presented_ = do
   now <- badgeNow
   pending <- withStore' $ \db -> getPendingStoreReceipts db user now
-  when (any blocks pending) $ throwRedeemError BREStorePurchaseOpen
+  when (any blocks $ filter (not . presented . fst) pending) $ throwRedeemError BREStorePurchaseOpen
   where
+    presented payment = isJust presented_ && (storeTransactionRef =<< decodeJSON payment) == presented_
     blocks (payment, failure_) = appleSubscription payment || maybe True badgeFailureTransient failure_
     appleSubscription payment = case decodeJSON payment of
       Just SPApple {jws} | Just AppleTransactionFacts {autoRenewable} <- appleTransactionFacts jws -> autoRenewable
