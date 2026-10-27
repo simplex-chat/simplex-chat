@@ -89,13 +89,12 @@ workerTests = describe "StoreService names: worker" $ do
     it "ends taken on any revert while the name is not available, releasing a code and keeping no balance" testRevertTaken
     it "keeps the phase on NameNotAvailable while the name still reads available, as for a pending competitor" testPendingCompetitor
     it "ends failed on a revert while the name is available, alerting on InsufficientAllowance and keeping a code" testRevertFailed
-    it "clears the reveal on InvalidNonce, staying committed" testInvalidNonce
+    it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed" testInvalidNonce
     it "relays no intent past its deadline, ending failed" testExpiredIntent
     it "keeps the phase when a read of the final check fails" testCheckUnread
     it "waits a second when the dry run reverts CommitmentTooNew" testCommitmentTooNew
     it "ends a register mined with status 0 taken while the name is not available, releasing a code" testMinedRevertTaken
     it "writes failed only once no register can still be mined, and registered when the owner holds the name" testFailedOnlySettled
-    it "clears the reveal on TermsNotAccepted, staying committed" testTermsNotAccepted
   describe "terms acceptance" $ do
     it "relays the reveal's acceptance to the name policy as soon as it is stored, and registers once the policy holds it" testAcceptanceRelayed
     it "relays the acceptance before the wait for revealAfter, then waits for it" testAcceptanceBeforeWait
@@ -631,21 +630,12 @@ testRevertFailed = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   sent w `shouldReturn` []
 
 testInvalidNonce :: IO ()
-testInvalidNonce = withWorker $ \w@W {wCtx = ctx} -> do
+testInvalidNonce = forM_ ["InvalidNonce()", "TermsNotAccepted(string)"] $ \revert -> withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
-  dryRunsRevert w "InvalidNonce()" ""
+  dryRunsRevert w revert ""
   published w r (steps w r >>= waitingUntil) `shouldReturn` at (orderSeconds - minAge + maxAge + 1)
   x <- stored ctx r
   (nrPhase x, nrReveal x, nrVersion x, nrRevealBefore x) `shouldBe` (PCommitted, Nothing, nrVersion r + 1, nrRevealBefore r)
-  sent w `shouldReturn` []
-
-testTermsNotAccepted :: IO ()
-testTermsNotAccepted = withWorker $ \w@W {wCtx = ctx} -> do
-  r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
-  dryRunsRevert w "TermsNotAccepted(string)" ""
-  published w r (steps w r >>= waitingUntil) `shouldReturn` at (orderSeconds - minAge + maxAge + 1)
-  x <- stored ctx r
-  (nrPhase x, nrReveal x) `shouldBe` (PCommitted, Nothing)
   sent w `shouldReturn` []
 
 -- | The page's reveal with its acceptance of the policy's terms.
