@@ -149,19 +149,26 @@ subscriptionVerdict :: SubscriptionPurchase -> Either StoreRefusal SubscriptionC
 subscriptionVerdict SubscriptionPurchase {subscriptionStateName, testSubscription, lineItems}
   | subscriptionStateName == "SUBSCRIPTION_STATE_PENDING" = Left SRPending
   | otherwise = do
-      LineItem {expiryTime, autoRenewEnabled, itemProductId, basePlanId, latestSuccessfulOrderId, inOffer} <- case lineItems of
-        [item] -> Right item
-        _ -> Left $ SRVerifierFailed "Play answered a subscription without exactly one line item"
       subscriptionState <- case subscriptionStateName of
-        "SUBSCRIPTION_STATE_ACTIVE" -> Right $ if autoRenewEnabled then SSRenewing else SSCancelled
-        "SUBSCRIPTION_STATE_PAUSED" -> Right $ if autoRenewEnabled then SSRenewing else SSCancelled
+        "SUBSCRIPTION_STATE_ACTIVE" -> renewalState <$> onlyLineItem
+        "SUBSCRIPTION_STATE_PAUSED" -> renewalState <$> onlyLineItem
         "SUBSCRIPTION_STATE_IN_GRACE_PERIOD" -> Right SSBillingRetry
         "SUBSCRIPTION_STATE_ON_HOLD" -> Right SSBillingRetry
         "SUBSCRIPTION_STATE_CANCELED" -> Right SSCancelled
         "SUBSCRIPTION_STATE_EXPIRED" -> Right SSEnded
         "SUBSCRIPTION_STATE_PENDING_PURCHASE_CANCELED" -> Right SSEnded
         _ -> Left $ SRVerifierFailed "a subscriptionState this service does not know"
-      latestCharge <- forM latestSuccessfulOrderId $ \orderId -> case (expiryTime, itemProductId, basePlanId) of
+      latestCharge <- case lineItems of
+        [] | subscriptionState == SSEnded -> Right Nothing
+        _ -> onlyLineItem >>= lineItemCharge
+      pure SubscriptionCheck {subscriptionState, testSubscription, latestCharge}
+  where
+    onlyLineItem = case lineItems of
+      [item] -> Right item
+      _ -> Left $ SRVerifierFailed "Play answered a subscription without exactly one line item"
+    renewalState LineItem {autoRenewEnabled} = if autoRenewEnabled then SSRenewing else SSCancelled
+    lineItemCharge LineItem {expiryTime, itemProductId, basePlanId, latestSuccessfulOrderId, inOffer} =
+      forM latestSuccessfulOrderId $ \orderId -> case (expiryTime, itemProductId, basePlanId) of
         (Just periodEnd, Just productId, Just planId) -> case playBasePlan planId of
           Just (planProductId, _) | planProductId /= productId -> Left $ SRVerifierFailed "Play answered a base plan of another product"
           plan_ ->
@@ -169,7 +176,6 @@ subscriptionVerdict SubscriptionPurchase {subscriptionStateName, testSubscriptio
              -- hashed so the row does not show the order id; unkeyed, so a holder of the buyer's receipt can still find it
              in Right StoreCharge {chargeRef = googlePurchaseRef orderId, planId, periodStart, periodEnd, chargePaid = Nothing, revoked = False, offer = inOffer}
         _ -> Left $ SRVerifierFailed "Play answered a charge without its expiryTime, product or base plan"
-      pure SubscriptionCheck {subscriptionState, testSubscription, latestCharge}
 
 data SubscriptionPurchase = SubscriptionPurchase
   { subscriptionStateName :: Text,
