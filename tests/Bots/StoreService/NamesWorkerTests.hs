@@ -101,6 +101,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "retries the relay while the policy's acceptance for the commitment cannot be read, sending nothing" testAcceptanceUnread
     it "clears the reveal of an acceptance signed for another policy, sending nothing, for the page to sign again" testAcceptanceOtherPolicy
     it "judges a relay past the acceptance's deadline as a register past it, failing the order" testAcceptanceExpired
+    it "relays no acceptance once the commitment lapsed, so the policy commits nothing again" testAcceptanceLapsed
   describe "lapse" $ do
     it "ends a committed order not revealed by revealBefore failed, keeping its code" testLapseFailed
     it "wakes a held poll with failed at the lapse, and answers an old version at once after it" testLapsePoll
@@ -715,6 +716,13 @@ testAcceptanceExpired = withWorker $ \w@W {wCtx = ctx} -> do
   x <- stored ctx r
   (nrPhase x, nrFailedAt x, nrError x) `shouldBe` (PFailed, Just now, Just "The name could not be registered")
   sent w `shouldReturn` []
+
+testAcceptanceLapsed :: IO ()
+testAcceptanceLapsed = withWorker $ \w@W {wCtx = ctx} -> do
+  r <- paidIn ctx aliceOrder (\o -> (openPhase o) {nrRevealBefore = Just (orderSeconds - minAge)}) >>= acceptedReveal ctx
+  void $ steps w r
+  txs <- sent w
+  (trTo <$>) . decodeSignedTx <$> txs `shouldNotContain` [Right fakeNamePolicy]
 
 testCheckUnread :: IO ()
 testCheckUnread = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do

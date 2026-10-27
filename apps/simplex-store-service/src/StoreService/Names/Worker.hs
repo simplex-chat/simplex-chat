@@ -259,7 +259,7 @@ commitSent w now r@NameRegistration {nrPhase, nrCommitTx} p
 
 -- | Waits for the page's reveal until the lapse, has its acceptance held by the name policy, waits for revealAfter, then registers.
 committed :: Worker -> UTCTime -> NameRegistration -> IO Next
-committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAfter} =
+committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAfter, nrRevealBefore} =
   inFlightTransaction wkSender (TxRegister nrId) >>= \case
     Just p -> registerSent w now r p
     Nothing -> case nrReveal of
@@ -267,11 +267,15 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAf
         Just lapse | now <= lapse -> pure $ waitUntil r $ addUTCTime chainSecond lapse
         _ -> save w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notSignedInTime}
       Just rv@NameReveal {rvAcceptance, rvDeadline} ->
-        (pure rvAcceptance $>>= relayAcceptance w now r rvDeadline) >>= \case
+        (pure (if unlapsed then rvAcceptance else Nothing) $>>= relayAcceptance w now r rvDeadline) >>= \case
           Just next -> pure next
           Nothing -> case secondsTime . toInteger <$> nrRevealAfter of
             Just revealAfter | now < revealAfter -> pure $ waitUntil r revealAfter
             _ -> sendRegister w now r rv
+  where
+    -- past the commitment's lapse no acceptance is relayed, as the policy would commit again; the register's dry run then
+    -- fails the order as it does a plain name's
+    unlapsed = all ((now <=) . secondsTime . toInteger) nrRevealBefore
 
 -- | The relay of the reveal's acceptance to the name policy, sent without waiting for revealAfter; Nothing once the policy
 -- stores that acceptance. One signed for another policy, before a setNamePolicy, clears the reveal for the page to sign
