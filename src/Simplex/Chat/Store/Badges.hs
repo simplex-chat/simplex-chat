@@ -254,9 +254,13 @@ holdStoreTransfer db g user@User {userId} txRef payment now =
             _ -> False
     _ -> pure False
   where
-    movesHere ownerId badgePurchaseId
-      | ownerId /= userId = pure True
-      | otherwise = (||) <$> purchaseMovedOut db badgePurchaseId <*> purchaseUnreached db user badgePurchaseId
+    movesHere ownerId badgePurchaseId =
+      getBadgePurchase db badgePurchaseId >>= \case
+        -- a one-time purchase is never moved, as its months were issued when it was bought
+        Just UserBadgePurchase {purchaseKind = PKSubscription _}
+          | ownerId /= userId -> pure True
+          | otherwise -> (||) <$> purchaseMovedOut db badgePurchaseId <*> purchaseUnreached db user badgePurchaseId
+        _ -> pure False
     holdTransfer receiptId =
       DB.execute
         db
@@ -269,7 +273,6 @@ purchaseUnreached db owner badgePurchaseId = do
   p_ <- getBadgePurchase db badgePurchaseId
   newestId <- fmap (\UserBadgePurchase {badgePurchaseId = i} -> i) <$> getUserBadgePurchase db owner
   pure $ case p_ of
-    -- a one-time purchase is never moved, as its months were issued when it was bought
     Just UserBadgePurchase {shown = False, purchaseKind = PKSubscription _} -> newestId /= Just badgePurchaseId
     _ -> False
 
