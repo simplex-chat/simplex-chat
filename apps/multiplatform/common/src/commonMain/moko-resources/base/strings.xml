@@ -3310,10 +3310,13 @@
   <string name="badges_subscription_disclosure_annual">Payment is charged to your Google Play account when you confirm the purchase. The subscription renews automatically at %1$s per year until you cancel it. You can manage and cancel it in Google Play subscriptions.</string>
   <string name="badges_privacy_policy">Privacy policy</string>
   <string name="badges_restore_purchases">Restore purchases</string>
-  <string name="badges_restore_purchases_footnote">If you were charged but have no badge, this adds it.</string>
+  <string name="badges_restore_purchases_footnote">If you were charged but have no badge, this adds it. A subscription bought with this Google Play account moves to this profile, and the device or profile that had it loses its badge at its next renewal.</string>
   <string name="badges_nothing_to_restore">Nothing to restore</string>
   <string name="badges_nothing_to_restore_desc">No Google Play purchase waiting to be added was found.</string>
   <string name="badges_restore_failed">Restore failed</string>
+  <string name="badges_error_already_owned">This Google Play account already has this purchase, on another profile or device. To add it to this profile, use Restore purchases.</string>
+  <string name="badges_error_store_unreachable">The store could not be reached.</string>
+  <string name="badges_error_not_on_sale">This badge is not on sale.</string>
   <string name="badges_subscription">Subscription</string>
   <string name="badges_manage_subscription">Manage subscription</string>
   <string name="badges_payment_problem">Payment problem</string>
@@ -3324,8 +3327,8 @@
   <string name="badges_subscription_ended">Ended</string>
   <string name="badges_subscription_ended_footer">Your subscription has ended. The badge will be removed from your profile.</string>
   <string name="badges_subscription_renewing">Renewing</string>
-  <string name="badges_subscription_renewing_footer">The next month is added once Google Play charges your subscription. Until then you cannot buy or redeem another badge.</string>
-  <string name="badges_subscription_renewing_footer_store">The next month is added once the store charges your subscription. Until then you cannot buy or redeem another badge.</string>
+  <string name="badges_subscription_renewing_footer">Your badge is renewed once Google Play charges your subscription. Until then you cannot buy or redeem another badge.</string>
+  <string name="badges_subscription_renewing_footer_store">Your badge is renewed once the store charges your subscription. Until then you cannot buy or redeem another badge.</string>
   <string name="badges_subscription_renews_price">Renews %1$s · %2$s</string>
   <string name="badges_subscription_renews">Renews %1$s</string>
   <string name="badges_subscription_renews_footer">Your subscription renews automatically. You can cancel it in Google Play.</string>

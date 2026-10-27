@@ -297,8 +297,10 @@ signedApiToken AppleApi {privateKey, ourBundleId, serverApi = AppleServerApi {aK
 statusVerdict :: AppleApi -> Text -> LB.ByteString -> Either StoreRefusal SubscriptionCheck
 statusVerdict AppleApi {roots, ourBundleId} originalId body = do
   StatusResponse items <- either (const $ failed "could not read Apple's subscription status") Right $ J.eitherDecode' body
+  -- an omission is no more a verdict than a 404, and refusing it would end a purchase the buyer paid for
+  item <- maybe (Left $ SRUnreachable "Apple's answer names no such subscription") Right $ find ((== Just originalId) . itemOriginalId) items
   LastTransaction {status, signedTransactionInfo, signedRenewalInfo} <-
-    maybe (refused "Apple's answer names no such subscription") Right $ find (\LastTransaction {lastOriginalId} -> lastOriginalId == originalId) items
+    either (const $ failed "could not read Apple's subscription status") Right $ JT.parseEither J.parseJSON item
   SubscriptionTransaction {transactionId, txOriginalId, productId, bundleId, environment, purchaseDate, expiresDate, revoked, offer, familyShared, price, currency} <-
     verifiedItem signedTransactionInfo subscriptionTransactionP
   RenewalInfo {renewalOriginalId, autoRenewStatus} <- verifiedItem signedRenewalInfo renewalInfoP
@@ -342,23 +344,25 @@ statusVerdict AppleApi {roots, ourBundleId} originalId body = do
       refusal -> refusal
     fromMillis ms = posixSecondsToUTCTime $ fromIntegral ms / 1000
 
-newtype StatusResponse = StatusResponse [LastTransaction]
+newtype StatusResponse = StatusResponse [J.Value]
 
 instance J.FromJSON StatusResponse where
   parseJSON = J.withObject "StatusResponse" $ \o -> do
     groups :: [J.Value] <- o J..: "data"
     StatusResponse . concat <$> mapM (J.withObject "SubscriptionGroupIdentifierItem" (J..: "lastTransactions")) groups
 
+itemOriginalId :: J.Value -> Maybe Text
+itemOriginalId = JT.parseMaybe $ J.withObject "LastTransactionsItem" (J..: "originalTransactionId")
+
 data LastTransaction = LastTransaction
-  { lastOriginalId :: Text,
-    status :: Int,
+  { status :: Int,
     signedTransactionInfo :: Text,
     signedRenewalInfo :: Text
   }
 
 instance J.FromJSON LastTransaction where
   parseJSON = J.withObject "LastTransactionsItem" $ \o ->
-    LastTransaction <$> o J..: "originalTransactionId" <*> o J..: "status" <*> o J..: "signedTransactionInfo" <*> o J..: "signedRenewalInfo"
+    LastTransaction <$> o J..: "status" <*> o J..: "signedTransactionInfo" <*> o J..: "signedRenewalInfo"
 
 data SubscriptionTransaction = SubscriptionTransaction
   { transactionId :: Text,

@@ -37,9 +37,8 @@ import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types (hAuthorization, hContentType, methodPost, renderSimpleQuery)
 import Simplex.Chat.Badges.Ledger (addMonths)
 import Simplex.Chat.Badges.Service (SubscriptionState (..))
-import Simplex.Chat.Badges.StorePlan (storePlan)
+import Simplex.Chat.Badges.StorePlan (playBasePlan)
 import Simplex.Chat.PaymentService (googlePurchaseRef)
-import Simplex.Chat.PaymentService.Types (PaymentProvider (..))
 import Simplex.Messaging.Util (tshow)
 
 data ServiceAccount = ServiceAccount {clientEmail :: Text, privateKey :: RSA.PrivateKey}
@@ -144,30 +143,39 @@ decodedSubscription = either (const $ Left $ SRVerifierFailed "could not read Pl
 
 -- | Play reports no current period start, so it is the period end less the plan's length; a plan this
 -- service does not sell has no length, and its charge, which is never granted, is given no period.
+-- The service grants a Play charge by its base plan alone, so a base plan it sells under another product is refused.
 -- Revoking an order shows only as the subscription ending, so a Play charge is never revoked.
 subscriptionVerdict :: SubscriptionPurchase -> Either StoreRefusal SubscriptionCheck
 subscriptionVerdict SubscriptionPurchase {subscriptionStateName, testSubscription, lineItems}
   | subscriptionStateName == "SUBSCRIPTION_STATE_PENDING" = Left SRPending
   | otherwise = do
-      LineItem {expiryTime, autoRenewEnabled, basePlanId, latestSuccessfulOrderId, inOffer} <- case lineItems of
-        [item] -> Right item
-        _ -> Left $ SRVerifierFailed "Play answered a subscription without exactly one line item"
       subscriptionState <- case subscriptionStateName of
-        "SUBSCRIPTION_STATE_ACTIVE" -> Right $ if autoRenewEnabled then SSRenewing else SSCancelled
-        "SUBSCRIPTION_STATE_PAUSED" -> Right $ if autoRenewEnabled then SSRenewing else SSCancelled
+        "SUBSCRIPTION_STATE_ACTIVE" -> renewalState <$> onlyLineItem
+        "SUBSCRIPTION_STATE_PAUSED" -> renewalState <$> onlyLineItem
         "SUBSCRIPTION_STATE_IN_GRACE_PERIOD" -> Right SSBillingRetry
         "SUBSCRIPTION_STATE_ON_HOLD" -> Right SSBillingRetry
         "SUBSCRIPTION_STATE_CANCELED" -> Right SSCancelled
         "SUBSCRIPTION_STATE_EXPIRED" -> Right SSEnded
         "SUBSCRIPTION_STATE_PENDING_PURCHASE_CANCELED" -> Right SSEnded
         _ -> Left $ SRVerifierFailed "a subscriptionState this service does not know"
-      latestCharge <- forM latestSuccessfulOrderId $ \orderId -> case (expiryTime, basePlanId) of
-        (Just periodEnd, Just planId) ->
-          let periodStart = maybe periodEnd (\(_, months) -> addMonths (negate $ toInteger months) periodEnd) (storePlan PPGoogle planId)
-           -- hashed so the row does not show the order id; unkeyed, so a holder of the buyer's receipt can still find it
-           in Right StoreCharge {chargeRef = googlePurchaseRef orderId, planId, periodStart, periodEnd, chargePaid = Nothing, revoked = False, offer = inOffer}
-        _ -> Left $ SRVerifierFailed "Play answered a charge without its expiryTime or base plan"
+      latestCharge <- case lineItems of
+        [] | subscriptionState == SSEnded -> Right Nothing
+        _ -> onlyLineItem >>= lineItemCharge
       pure SubscriptionCheck {subscriptionState, testSubscription, latestCharge}
+  where
+    onlyLineItem = case lineItems of
+      [item] -> Right item
+      _ -> Left $ SRVerifierFailed "Play answered a subscription without exactly one line item"
+    renewalState LineItem {autoRenewEnabled} = if autoRenewEnabled then SSRenewing else SSCancelled
+    lineItemCharge LineItem {expiryTime, itemProductId, basePlanId, latestSuccessfulOrderId, inOffer} =
+      forM latestSuccessfulOrderId $ \orderId -> case (expiryTime, itemProductId, basePlanId) of
+        (Just periodEnd, Just productId, Just planId) -> case playBasePlan planId of
+          Just (planProductId, _) | planProductId /= productId -> Left $ SRVerifierFailed "Play answered a base plan of another product"
+          plan_ ->
+            let periodStart = maybe periodEnd (\(_, (_, months)) -> addMonths (negate $ toInteger months) periodEnd) plan_
+             -- hashed so the row does not show the order id; unkeyed, so a holder of the buyer's receipt can still find it
+             in Right StoreCharge {chargeRef = googlePurchaseRef orderId, planId, periodStart, periodEnd, chargePaid = Nothing, revoked = False, offer = inOffer}
+        _ -> Left $ SRVerifierFailed "Play answered a charge without its expiryTime, product or base plan"
 
 data SubscriptionPurchase = SubscriptionPurchase
   { subscriptionStateName :: Text,
@@ -188,6 +196,7 @@ instance J.FromJSON SubscriptionPurchase where
 data LineItem = LineItem
   { expiryTime :: Maybe UTCTime,
     autoRenewEnabled :: Bool,
+    itemProductId :: Maybe Text,
     basePlanId :: Maybe Text,
     latestSuccessfulOrderId :: Maybe Text,
     -- from the current phase: offerDetails names the offer it was bought with for its whole life
@@ -198,11 +207,12 @@ instance J.FromJSON LineItem where
   parseJSON = J.withObject "SubscriptionPurchaseLineItem" $ \o -> do
     expiryTime <- o J..:? "expiryTime"
     autoRenewEnabled <- maybe (pure False) (\p -> p J..:? "autoRenewEnabled" J..!= False) =<< o J..:? "autoRenewingPlan"
+    itemProductId <- o J..:? "productId"
     basePlanId <- maybe (pure Nothing) (J..:? "basePlanId") =<< o J..:? "offerDetails"
     latestSuccessfulOrderId <- o J..:? "latestSuccessfulOrderId"
     phase :: Maybe J.Object <- o J..:? "offerPhase"
     let inOffer = maybe False (\p -> KM.member "freeTrial" p || KM.member "introductoryPrice" p) phase
-    pure LineItem {expiryTime, autoRenewEnabled, basePlanId, latestSuccessfulOrderId, inOffer}
+    pure LineItem {expiryTime, autoRenewEnabled, itemProductId, basePlanId, latestSuccessfulOrderId, inOffer}
 
 playCall :: PlayEnv -> (Request -> Request) -> Text -> IO (Either StoreRefusal LB.ByteString)
 playCall env prepare url = playResponse env prepare url >>= either (pure . Left) (playAnswer env)

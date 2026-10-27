@@ -135,8 +135,10 @@ private fun purchase(level: BadgeLevel, period: BadgePeriod, purchasing: Mutable
       purchasing.value = false
       AlertManager.shared.showAlertMsg(
         title = generalGetString(MR.strings.badges_purchase_error),
-        text = if (e is BadgeStoreError.ApiError) chatModel.controller.redeemErrorText(e.err, purchase = true)
-          else "${generalGetString(MR.strings.error_prefix)}: ${e.message ?: e}"
+        text = when (e) {
+          is BadgeStoreError.ApiError -> chatModel.controller.redeemErrorText(e.err, purchase = true)
+          else -> badgeStoreErrorText(e) ?: "${generalGetString(MR.strings.error_prefix)}: ${e.message ?: e}"
+        }
       )
     }
   }
@@ -172,7 +174,7 @@ fun restoreBadgePurchases(restoring: MutableState<Boolean>) {
       AlertManager.shared.showAlertMsg(
         title = generalGetString(MR.strings.badges_restore_failed),
         text = if (e is BadgeStoreError.ApiError) chatModel.controller.redeemErrorText(e.err, purchase = true)
-          else "${generalGetString(MR.strings.error_prefix)}: ${e.message ?: e}"
+          else badgeStoreErrorText(e) ?: "${generalGetString(MR.strings.error_prefix)}: ${e.message ?: e}"
       )
     }
     restoring.value = false

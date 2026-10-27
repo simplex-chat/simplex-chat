@@ -87,7 +87,7 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
     it "fails, rather than refuses, a status Apple did not sign or that was changed after signing" testAppleSubscriptionUnsigned
     it "fails on a verifier that cannot place what the store signed, and is unreachable on any other throw" testSubscriptionCheckThrows
     it "refuses a check the store marks as a test, and passes it through only with credit_test_purchases on" testSubscriptionCheckCreditsTest
-    it "fails on 401 and 403, is unreachable on 404, 429, 5xx and no answer, and refuses an answer naming no such subscription" testAppleSubscriptionHttp
+    it "fails on 401 and 403, and is unreachable on 404, 429, 5xx, no answer and an answer naming no such subscription" testAppleSubscriptionHttp
     it "fails on a key Apple refuses, and at boot on a key file it cannot read" testAppleSubscriptionKey
     it "checks subscriptions only where [apple] sets the API key, and one-time purchases either way" testAppleConfiguredSubscriptions
   describe "Google Play purchases" $ do
@@ -616,7 +616,7 @@ testAppleSubscriptionHttp = do
     answeredWith (AppStoreStatus 403) `shouldReturn` Failed
     forM_ [404, 429, 500, 503] $ \code -> answeredWith (AppStoreStatus code) `shouldReturn` Unreachable
     answeredWith AppStoreHang `shouldReturn` Unreachable
-    answeredWith (AppStoreBody $ J.object ["data" J..= ([] :: [J.Value])]) `shouldReturn` Invalid
+    answeredWith (AppStoreBody $ J.object ["data" J..= ([] :: [J.Value])]) `shouldReturn` Unreachable
     -- an id that is not one names no App Store transaction, and is not sent
     tokens <- length <$> readTVarIO (fasTokens fake)
     outcome <$> check "2000000900000001/../x" `shouldReturn` Failed
@@ -975,7 +975,7 @@ testPlaySubscriptionCharge = withFakePlay $ \fake -> do
       orderRef = googlePurchaseRef "GPA.3312-4521-8899-01234..1"
   chargeFor (lineItem [] [])
     `shouldReturn` Right (Just (orderRef, "subscr-badge-supporter-month-02", at 2026 10 14 36000.123456789, at 2026 11 14 36000.123456789, Nothing, False, False))
-  chargeFor (lineItem [basePlan "subscr-badge-legend-year-01", ("expiryTime", "2027-10-14T10:00:00Z")] [])
+  chargeFor (lineItem [("productId", "subscr_badge_legend_01"), basePlan "subscr-badge-legend-year-01", ("expiryTime", "2027-10-14T10:00:00Z")] [])
     `shouldReturn` Right (Just (orderRef, "subscr-badge-legend-year-01", at 2026 10 14 36000, at 2027 10 14 36000, Nothing, False, False))
   -- a plan this service does not sell has no length, so its charge is given no period, and is never granted
   chargeFor (lineItem [basePlan "subscr-badge-supporter-month-99"] [])

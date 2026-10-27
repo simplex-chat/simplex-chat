@@ -13,8 +13,8 @@ Base: `f/badge-subscriptions` at 26f846e1a (line numbers at that commit). `SVC/`
 
 **How.**
 
-- Tier change: on a charge of the other tier, the service ends the old tier's remaining months with an `upgrade` debit and starts a new run of months at the new tier. It finds out at the next renewal check, or at once when the app sees the new App Store transaction and asks (`upgradeBadgeSubscription`, already in the protocol, unimplemented).
-- Restore: a new request, `transferBadge`, signed by a fresh key and carrying the store receipt. The service moves the payment to the new key: `transferOut` on the old purchase; the store's current charge credited to the new one, with the current month issued. Limited to once per payment per month: a store receipt is not a secret, so this limit is the only safeguard.
+- Tier change: on a charge of the other tier, the service ends the old tier's remaining months with an `upgrade` debit and starts a new run of months at the new tier. It finds out at the next renewal check, or, for a raise, at once when the app sees the new App Store transaction and asks (`upgradeBadgeSubscription`, already in the protocol, unimplemented).
+- Restore: a new request, `transferBadge`, signed by a fresh key and carrying the store receipt. The service moves the payment to the new key: `transferOut` on the old purchase; the store's current charge credited to the new one, with the current month issued. A payment moves again only once the credential issued to the key it last moved from has expired: a store receipt is not a secret, so this limit is the only safeguard.
 - Stripe and crypto purchases are restored by a receipt code (once per receipt, unissued months only): designed here, built later; it does not block subscriptions.
 
 **Where.** Service (`SVC/Service.hs`, `SVC/Store.hs`, migrations); shared ledger (`src/Simplex/Chat/Badges/Ledger.hs`); core (`Library/Commands.hs`, `Store/Badges.hs`); the Restore button in both apps.
@@ -55,7 +55,7 @@ Base: `f/badge-subscriptions` at 26f846e1a (line numbers at that commit). `SVC/`
 - **At renewal (T1).** `NGOtherTier` is removed: a charge of the other tier is granted through `chargeEntries`, and both sides update `current_badge_type`. On its own this fixes downgrades, which take effect at renewal.
 - **At once (T2, T3).** An Apple upgrade is immediate, and the unused part of the old plan is refunded pro rata. Without T2 and T3 an annual subscriber would pay for Legend for up to 11 months while holding Supporter.
   - S0 moves `storePlan` (product → tier and months) into shared code, so core can read a transaction's tier.
-  - T3: when a handed-over Apple transaction is of another tier than the shown purchase, and is within a day of the client clock, core re-holds the record as a "tier change". The app keeps the transaction unfinished, and the receipt worker sends `upgradeBadgeSubscription`. A new-tier credential is presented at once (worker renewals keep their delayed presentation). Past the day, the record settles and T1 catches the change at renewal.
+  - T3: when a handed-over Apple transaction raises the tier of the shown purchase, was bought after the purchase's last charge credit and has not expired, core re-holds the record as a "tier change". The app keeps the transaction unfinished, and the receipt worker sends `upgradeBadgeSubscription`. A raised tier's credential is presented at once, on this path and on T1's renewal check alike: the subscriber raised the tier in their store, so the broadcast tells the store nothing new. A lower tier keeps the renewal's hold-back, presented when the shown credential expires. Any other transaction, a lower tier or an expired one, is answered from the record and finished, and T1 catches the change at renewal.
   - T2 (service): the request must be signed by the purchase key and name its own subscription. The store is asked at most once an hour per subscription, sharing the renewal check's stamp. The answer is the new tier's credential once granted; until then `payment_pending` (within the hour, or while Apple's status still shows the old product), never the old credential.
 - **Authority.** The tier granted is the one in the store's own verified answer. The JWS the app sends only names the subscription and what to wait for.
 - **Apps.** Nothing new is required: Your badge shows `badgeState.badgeType`, which now follows the ledger. An optional iOS notice "Changes to Supporter on {date}" (T4) shows a pending downgrade.
@@ -85,8 +85,8 @@ A payment credited nowhere is treated as a first purchase. `purchaseBadge` from 
 - no record → a held transfer record with fresh keys;
 - a held purchase record that funds no purchase yet → becomes a transfer;
 - a record refused `receipt_used` → re-held as a transfer;
-- a record credited to another profile → re-held for this profile with fresh keys;
-- resume and tier-change holds, and this profile's own retired purchase → left to the resume.
+- a subscription record credited to another profile → re-held for this profile with fresh keys; a one-time record is left alone;
+- resume and tier-change holds, and this profile's own retired subscription while it is the profile's newest purchase → left to the resume; an older one, or one whose payment moved away → re-held as a transfer with fresh keys.
 
 The worker sends `transferBadge` for transfer records. On success the record links to the new purchase; on a refusal it goes back to the old one.
 
@@ -105,7 +105,7 @@ The worker sends `transferBadge` for transfer records. On success the record lin
 | Tier change the user did not intend | Granted exactly as the store charged; undone through the store (switch back, refund). The apps never offer a change. |
 | Client claims a tier it did not pay for | The tier comes from the store's verified answer, not the JWS. |
 | Replayed upgrade or transfer request | Upgrade: answered from state within the hour, and each charge is granted once. Transfer: answered from the record (check 1). |
-| Leaked or replayed store receipt | One move per payment per month; an Apple receipt expires at the next renewal; every move is logged. A Play token has only the monthly limit. |
+| Leaked or replayed store receipt | A payment moves again only once the previous key's credential has expired; an Apple receipt expires at the next renewal; every move is logged. A Play token has only that limit. |
 | Two devices racing a transfer | The write re-reads K1's tip and P's binding, and writes nothing if either moved. |
 | Linking | A transfer links K2 to K1 at the service; the store account already links them. Design objective 4 in `badges-overview.md` gains this exception. Requests follow the user's own action, as purchases do. |
 
@@ -121,7 +121,7 @@ One PR, built in these slices in order; T3 and R2 need the same-install resume o
 | S0 | move `storePlan` to shared code (structural) | existing suites | ~60 |
 | T2 | `upgradeBadgeSubscription` handler, renewal lane | `testSubscriptionUpgradeNow`, `testUpgradeRequestRefused`, `testStoreRouting` | ~250 |
 | T3 | `productId`, `hold_kind` migration, tier-change hold and worker send | `testAppleTierChangeHandOver`, `testAppleTierChangeStoreLags` | ~300 |
-| R1a | `rebound_at`, charge index, move-binding store function | schema down/up (down refuses after a re-bind), store test | ~150 |
+| R1a | `rebound_at`, charge index, move-binding store function | schema down/up (these changes are in `20261012_badge_subscriptions`, whose down migration drops them and every other subscription column without refusing, and the service README warns against it on a database holding subscriptions; whether it should refuse there is the owner's open call), store test | ~150 |
 | R1b | `transferBadge` handler, `ended` after `transferOut`, docs | `testStoreRebind`, `testStoreRebindCapped`, `testStoreRebindOldKeyEnded`, `testStoreRebindStaleAppleTransaction`, `testTransferUncredited`, `testTransferReplayAnswered`, `testTransferKnownKeyRefused` | ~300 |
 | R2 | `SRORestored` and the restore cases in core | `testRestoreOnNewDevice`, `testRestoreOnOtherProfile`, `testRestoreAfterUnfinishedPass` | ~300 |
 | R3 | Restore in iOS and Kotlin, `gaps.md` | build both apps; restore on a second device and profile | ~150 |
@@ -134,7 +134,7 @@ Final checks: `-m "badge"` here; the full suite (query plans) and the Postgres b
 
 - **Riskiest assumption:** that restarting the run at the clamped `t` keeps every row verifiable on all paths. L2's pure tests check this before any service code depends on it.
 - **Apple behaviour from documentation:** an upgrade is immediate, the old plan is refunded pro rata, and the subscription keeps its original id; a downgrade waits for renewal; `currentEntitlements` returns the latest transaction. Confirm in Sandbox before sale. If upgrades are not refunded, the `upgrade` debit becomes a conversion instead.
-- A restore right after a renewal may be refused by the monthly limit or the latest-transaction rule; the app shows the retry date.
+- A restore soon after an earlier move may be refused by the move limit, which the app reports with no date, as `transfer_limited` carries none; one presenting an Apple transaction older than the subscription's latest is answered `payment_pending` and stays held until a hand-over brings the latest.
 
 ## Decided
 

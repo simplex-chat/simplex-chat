@@ -81,13 +81,27 @@ private_key = replace-me
 ; verifying it, so anyone who can reach this service can mint badges. The service refuses to start
 ; with this on beside an [apple] or [google] section. Its issuer key is always one released apps
 ; trust, so they accept every badge minted this way.
-; A subscription is answered renewing and charged for its plan: the App Store product's, the base
-; plan a Play test token test.<basePlanId>.<uuid> names, or the Play product's monthly one. The
-; plans are kept in memory, so a restart answers later renewals as ended, and refunds the unissued
+; A subscription is answered renewing and charged for its plan: the App Store product's, or the base
+; plan a Play test token test.<basePlanId>.<uuid> names when it is a plan of that product, and else
+; the product's monthly base plan, so a licence tester's purchase is credited too. An App Store tier
+; raise is charged for the raised plan, which its renewals then charge. The plans are kept in memory,
+; so a restart answers later renewals as ended, and refunds the unissued
 ; months of a plan still covered at its next month. Nothing is acknowledged, so Play refunds a
 ; licence tester's subscription once its acknowledgement window lapses.
 [dev]
 accept_unverified_store_receipts = off
-; only beside accept_unverified_store_receipts = on: every issue request for a subscription asks the
-; mock, while coverage runs too, and banks the months each check charges, to watch a renewal by hand.
+; only beside accept_unverified_store_receipts or credit_test_purchases = on: every issue request for a
+; subscription asks its store, while coverage runs too, and banks the months each check charges, to
+; watch a renewal by hand.
 check_store_during_coverage = off
+
+; local testing only, beside a real [apple] or [google]: credits a purchase the store itself calls a
+; test - an App Store sandbox purchase, or a Play licence tester's - which no real buyer pays for.
+; Without it such a purchase is refused as test_purchase, which is terminal, so it can never be credited.
+; Beside [apple] the service starts with this on only when its api_ keys are set with
+; api_host = https://api.storekit-sandbox.itunes.apple.com, since a sandbox receipt verifies like any
+; other and would otherwise be credited as a real purchase. Beside [google] it is allowed: never turn it
+; on beside the production app's [google], as the issuer key is one released apps trust and every
+; licence tester the Play Console lists would get a badge without paying. Each test purchase or test
+; subscription taken as paid is logged as a warning.
+credit_test_purchases = off

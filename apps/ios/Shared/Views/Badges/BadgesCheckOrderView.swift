@@ -60,6 +60,10 @@ struct BadgesCheckOrderView: View {
                         footnote("This Apple ID already has a badge subscription. Only the profile that bought it can continue it.")
                     }
 
+                    if !AppStore.canMakePayments {
+                        footnote("In-app purchases are not allowed on this device.")
+                    }
+
                     Spacer(minLength: 20)
 
                     VStack(spacing: 10) {
@@ -120,7 +124,7 @@ struct BadgesCheckOrderView: View {
 
     private func payButton() -> some View {
         let price = store.price(level, period, compact: false)
-        let disabled = !price.canPurchase || purchasing || !store.canBuy(chatModel.currentUser?.userId) || !store.forSale(level, period)
+        let disabled = !price.canPurchase || purchasing || !store.canBuy(chatModel.currentUser?.userId) || !store.forSale(level, period) || !AppStore.canMakePayments
         return Button {
             purchase()
         } label: {

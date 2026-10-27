@@ -225,7 +225,7 @@
         },
         "charge": {
           "properties": {"chargeId": {"type": "string"}},
-          "metadata": {"comment": "a store subscription's charge, dated (createdAt) to the store's billing period start"}
+          "metadata": {"comment": "a store subscription's charge, dated (createdAt) to the store's billing period start, or to the previous entry's createdAt when that is later"}
         },
         "support": {
           "optionalProperties": {}

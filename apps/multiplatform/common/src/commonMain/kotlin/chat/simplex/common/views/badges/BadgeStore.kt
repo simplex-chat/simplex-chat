@@ -130,6 +130,9 @@ enum class BadgePurchaseState {
 sealed class BadgeStoreError: Exception() {
   class ProductUnavailable(val productId: String): BadgeStoreError()
   class BillingError(val responseCode: Int, val debugMessage: String): BadgeStoreError()
+  object AlreadyOwned: BadgeStoreError()
+  object StoreUnreachable: BadgeStoreError()
+  object NotOnSale: BadgeStoreError()
   object StoreUnavailable: BadgeStoreError()
   object NoActiveProfile: BadgeStoreError()
   class ApiError(val err: ChatError): BadgeStoreError()
@@ -138,10 +141,21 @@ sealed class BadgeStoreError: Exception() {
     get() = when (this) {
       is ProductUnavailable -> "productUnavailable(productId: $productId)"
       is BillingError -> "billingError(responseCode: $responseCode, $debugMessage)"
+      is AlreadyOwned -> "alreadyOwned"
+      is StoreUnreachable -> "storeUnreachable"
+      is NotOnSale -> "notOnSale"
       is StoreUnavailable -> "storeUnavailable"
       is NoActiveProfile -> "noActiveProfile"
       is ApiError -> "apiError(${err.string})"
     }
+}
+
+// the sentences iOS shows for the same store failures, in redeemErrorText
+fun badgeStoreErrorText(e: Exception): String? = when (e) {
+  is BadgeStoreError.AlreadyOwned -> generalGetString(MR.strings.badges_error_already_owned)
+  is BadgeStoreError.StoreUnreachable -> generalGetString(MR.strings.badges_error_store_unreachable)
+  is BadgeStoreError.NotOnSale -> generalGetString(MR.strings.badges_error_not_on_sale)
+  else -> null
 }
 
 object BadgeStore {
@@ -305,8 +319,8 @@ object BadgeStore {
         if (badgeReceiptRefused(r.err)) {
           Log.e(TAG, "BadgeStore.handOver: ${r.err?.string}")
           finish(receipt)
-          // a limited move raises no event, so Restore learns of it only from this answer
-          if (origin == StoreReceiptOrigin.Restored && r.err != null && badgeServiceErrorCode(r.err) is BadgeServiceErrorCode.TransferLimited) throw BadgeStoreError.ApiError(r.err)
+          // Restore found this purchase, so it says why it was refused rather than that there was nothing to restore
+          if (origin == StoreReceiptOrigin.Restored && r.err != null) throw BadgeStoreError.ApiError(r.err)
         } else {
           throw r.err?.let(BadgeStoreError::ApiError) ?: Exception("apiPurchaseBadge: unexpected response")
         }
@@ -388,7 +402,7 @@ object BadgeStore {
           AlertManager.shared.showAlertMsg(
             title = generalGetString(MR.strings.badges_purchase_error),
             text = if (e is BadgeStoreError.ApiError) chatModel.controller.redeemErrorText(e.err, purchase = true)
-              else "${generalGetString(MR.strings.error_prefix)}: ${e.message ?: e}"
+              else badgeStoreErrorText(e) ?: "${generalGetString(MR.strings.error_prefix)}: ${e.message ?: e}"
           )
         }
       }
@@ -455,12 +469,13 @@ object BadgeStore {
     reportSubscriptionStates()
     val rhId = chatModel.remoteHostId()
     chatModel.controller.loadBadgeState(rhId)
-    if (handOverError != null) throw handOverError
-    return withContext(Dispatchers.Main) {
+    val restored = withContext(Dispatchers.Main) {
       val userId = chatModel.currentUser.value?.userId
       val badgeShown = BadgeModel.isCurrent(rhId, userId) && BadgeModel.badgeState.value?.shown == true
       badgeShown || purchaseState(userId) != null
     }
+    if (!restored && handOverError != null) throw handOverError
+    return restored
   }
 
   fun subscriptionPrice(badgeType: BadgeType, planMonths: Int): String? {

@@ -1,6 +1,6 @@
 # Badge subscriptions (PR #7716)
 
-Supporter badges (supporter and legend tiers) were prepaid: a code bought on the web, or a one-month store purchase not yet offered. This PR sells them as App Store and Google Play subscriptions, monthly or annual, across the badge service, core and apps.
+Supporter badges (supporter and legend tiers) were prepaid: a code bought on the web, or a one-month store purchase not yet offered. This PR sells them as App Store and Google Play subscriptions, monthly or annual, across the badge service, core and apps. On iOS this release keeps buying and Restore hidden: the app opens the badge page on the site and redeems the code bought there.
 
 ![Who holds what](components.svg)
 
@@ -35,7 +35,7 @@ The app never starts a change. On iOS the user changes plan in Apple's subscript
 
 ## Restore: moving to another device or profile
 
-Restore purchases (Support SimpleX screen) hands the store's current subscriptions to core, which asks the service to move each to fresh keys of the active profile, unless that profile already shows a badge. The service asks the store, ends the old purchase, which it answers "ended" from then on, and credits the new key with the current charge; the new badge shows at once. The device it left keeps the badge it holds until that credential is due for renewal, then retires it.
+Restore purchases (Support SimpleX screen; hidden on iOS in this release) hands the store's current subscriptions to core, which asks the service to move one to fresh keys of the active profile, unless that profile already shows a badge: while it is held, core refuses the others, and the app carries on past those refusals, reporting a failure only when nothing was restored. The service asks the store, ends the old purchase, which it answers "ended" from then on, and credits the new key with the current charge; the new badge shows at once. The device it left keeps the badge it holds until that credential is due for renewal, then retires it.
 
 A store receipt is no secret: whoever holds it can move the badge to their own keys. So a subscription moves again only once the badge already issued to the key it left has expired, up to 39 days, which keeps each paid month with at most two keys; an App Store receipt moves it only while it is the subscription's latest transaction, a Play token for the subscription's life. The service now links the two purchase keys, as the same store transaction funds both, but still not either to a profile. Badges bought by card, crypto or code don't move.
 
@@ -43,7 +43,7 @@ A store receipt is no secret: whoever holds it can move the badge to their own k
 
 ## How a subscription ends
 
-While the store retries a failed payment, the badge stays (on iOS, until the device reports it expired), though contacts see it as expired a week after its last credential expires, and the profile can't buy or redeem another. It is removed as soon as the service answers that the subscription ended; once the paid months have run out, when Apple's store on the device reports it expired; or after 67 days of answers that renewed nothing: 60 days, the longest either store retries, plus 7 days of contacts' grace. If the service never replies and the device reports nothing, the badge stays. A retired subscription the store charges again comes back when the device next hands that charge over, unless the profile has had another badge since; Restore then takes it once no badge shows.
+While the store retries a failed payment, the badge stays (on iOS, until the device reports it expired), though contacts see it as expired a week after its last credential expires, and the profile can't buy or redeem another. It is removed as soon as the service answers that the subscription ended; once the paid months have run out, when Apple's store on the device reports it expired; or after 67 days of answers that renewed nothing: 60 days, the longest either store retries, plus 7 days of contacts' grace. If the service never replies and the device reports nothing, the badge stays. A retired subscription the store charges again comes back when the device next hands that charge over, unless the profile has had another badge since: then a hand-over moves it to fresh keys, as Restore does, once no badge shows, and until then the device keeps the transaction unfinished.
 
 ![The retirement window](retirement-window.svg)
 
@@ -70,4 +70,4 @@ Purchases and Restores that ask a store, requests with a month due and tier chan
 
 Not built: iOS resubscription on another device or profile or to another badge, Restore for badges bought by card or crypto, seeing a Play refund that leaves the subscription active, and spreading the weekly moment.
 
-Store setup: App Store: one subscription group with legend at a higher level than supporter, as only supporter to legend is treated as a raise; Billing Grace Period and Family Sharing off (once on, Family Sharing can't be undone). Play: minimum grace period, account hold on, pausing off. Both: no offers of any kind, server API credentials, enough quota, translations, store review (Sandbox purchases are refused as test purchases, an open question), and products hidden until these apps ship.
+Store setup: the product ids and every store setting are the store setup checklist in the badge service's [README](../../apps/simplex-badge-service/README.md#store-setup). Besides them: server API credentials, enough quota, translations, store review (Sandbox purchases are refused as test purchases, an open question), and products hidden until these apps ship.

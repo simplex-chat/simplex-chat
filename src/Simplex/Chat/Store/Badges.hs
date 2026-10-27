@@ -28,6 +28,7 @@ module Simplex.Chat.Store.Badges
     StoreHoldKind (..),
     holdStoreReceipt,
     holdStoreTransfer,
+    purchaseUnreached,
     purchaseMovedOut,
     paymentMovedOut,
     getReceiptRecord,
@@ -39,6 +40,7 @@ module Simplex.Chat.Store.Badges
     storeReceiptHeldFor,
     recordStoreReceiptFailure,
     refuseStoreReceipt,
+    clearStoreReceiptRefusal,
     settleStoreReceipt,
     reholdStoreReceipt,
     showChargedPurchase,
@@ -186,6 +188,21 @@ holdStoreReceipt db g User {userId} origin invoiceId_ txRef@StoreTransactionRef 
                 "UPDATE badge_store_receipts SET payment = ?, next_attempt_at = ?, retry_delay = NULL, credit_error = NULL WHERE badge_store_receipt_id = ? AND payment = ?"
                 (paymentJSON, now, receiptId, held)
         _ -> pure ()
+      -- the Buy record the store echoed for this charge is never attached, as the charge continues this record's subscription;
+      -- this record takes its invoice id, so the credit names the charge the app keeps unfinished
+      forM_ invoiceId_ $ \invoiceId -> do
+        deleted <-
+          maybeFirstRow' False ((== (1 :: Int)) . fromOnly) $
+            DB.query
+              db
+              [sql|
+                DELETE FROM badge_store_receipts
+                WHERE invoice_id = ? AND transaction_ref IS NULL AND payment IS NULL
+                  AND NOT EXISTS (SELECT 1 FROM badge_purchases p WHERE p.badge_store_receipt_id = badge_store_receipts.badge_store_receipt_id)
+                RETURNING 1
+              |]
+              (Only invoiceId)
+        when deleted $ DB.execute db "UPDATE badge_store_receipts SET invoice_id = ? WHERE badge_store_receipt_id = ?" (invoiceId, receiptId)
       pure $ Just r
     Nothing -> do
       forM_ invoiceId_ $ \invoiceId ->
@@ -222,9 +239,10 @@ holdStoreReceipt db g User {userId} origin invoiceId_ txRef@StoreTransactionRef 
         |]
         ((userId, invoiceId', provider, transactionRef, paymentJSON, now) :. (purchaseKey, purchasePrivKey, Binary mk, holdKind, now))
 
--- | Restore's hand-over of a transaction already recorded: a record that funds no purchase of this profile, only one
--- its payment moved away from, or one neither shown nor this profile's newest, which no resume reaches, is taken by
--- this profile and held as a move of its payment to it. True when its last refusal was transfer_limited, which the hand-over answers.
+-- | A hand-over of a transaction already recorded, by Restore or by a resubscription no resume reaches: a subscription
+-- record that funds no purchase of this profile, only one its payment moved away from, or one neither shown nor its
+-- owner's newest, is taken by this profile and held as a move of its payment to it; a one-time record never moves.
+-- True when its last refusal was transfer_limited, which the hand-over answers.
 holdStoreTransfer :: DB.Connection -> TVar ChaChaDRG -> User -> StoreTransactionRef -> ServicePayment -> UTCTime -> IO Bool
 holdStoreTransfer db g user@User {userId} txRef payment now =
   getReceiptRecord db txRef >>= \case
@@ -253,22 +271,27 @@ holdStoreTransfer db g user@User {userId} txRef payment now =
             _ -> False
     _ -> pure False
   where
-    movesHere ownerId badgePurchaseId
-      | ownerId /= userId = pure True
-      | otherwise = do
-          movedOut <- purchaseMovedOut db badgePurchaseId
-          p_ <- getBadgePurchase db badgePurchaseId
-          newestId <- fmap (\UserBadgePurchase {badgePurchaseId = i} -> i) <$> getUserBadgePurchase db user
-          let unreached = case p_ of
-                -- a one-time purchase is never moved, as its months were issued when it was bought
-                Just UserBadgePurchase {shown = False, purchaseKind = PKSubscription _} -> newestId /= Just badgePurchaseId
-                _ -> False
-          pure $ movedOut || unreached
+    movesHere ownerId badgePurchaseId =
+      getBadgePurchase db badgePurchaseId >>= \case
+        -- a one-time purchase is never moved, as its months were issued when it was bought
+        Just UserBadgePurchase {purchaseKind = PKSubscription _}
+          | ownerId /= userId -> pure True
+          | otherwise -> (||) <$> purchaseMovedOut db badgePurchaseId <*> purchaseUnreached db user badgePurchaseId
+        _ -> pure False
     holdTransfer receiptId =
       DB.execute
         db
         "UPDATE badge_store_receipts SET user_id = ?, payment = ?, next_attempt_at = ?, retry_delay = NULL, retry_count = 0, credit_error = NULL, hold_kind = ? WHERE badge_store_receipt_id = ? AND payment IS NULL"
         (userId, safeDecodeUtf8 . LB.toStrict $ J.encode payment, now, SHKTransfer, receiptId)
+
+-- | A subscription neither shown nor its owner's newest, which no resume reaches.
+purchaseUnreached :: DB.Connection -> User -> Int64 -> IO Bool
+purchaseUnreached db owner badgePurchaseId = do
+  p_ <- getBadgePurchase db badgePurchaseId
+  newestId <- fmap (\UserBadgePurchase {badgePurchaseId = i} -> i) <$> getUserBadgePurchase db owner
+  pure $ case p_ of
+    Just UserBadgePurchase {shown = False, purchaseKind = PKSubscription _} -> newestId /= Just badgePurchaseId
+    _ -> False
 
 -- | The service answers a purchase whose payment moved away ended, so a resume of it never succeeds.
 purchaseMovedOut :: DB.Connection -> Int64 -> IO Bool
@@ -409,25 +432,39 @@ recordStoreReceiptFailure db receiptId payment retryDelay nextAttemptAt failure 
 
 -- | Kept rather than deleted, so that a later hand-over of the same transaction is answered from the record.
 -- A refused move returns the record to the profile whose purchase it still funds.
-refuseStoreReceipt :: DB.Connection -> Int64 -> BadgeIssueFailure -> IO ()
-refuseStoreReceipt db receiptId refusal =
-  DB.execute
-    db
-    [sql|
-      UPDATE badge_store_receipts
-      SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = ?, hold_kind = ?,
-        user_id = COALESCE((SELECT p.user_id FROM badge_purchases p WHERE p.badge_store_receipt_id = ?), user_id)
-      WHERE badge_store_receipt_id = ?
-    |]
-    (refusal, SHKPurchase, receiptId, receiptId)
+-- Only while the record still holds the payment refused, which is when it answers True: one adopted meanwhile is due at once.
+refuseStoreReceipt :: DB.Connection -> Int64 -> Text -> BadgeIssueFailure -> IO Bool
+refuseStoreReceipt db receiptId payment refusal =
+  maybeFirstRow' False ((== (1 :: Int)) . fromOnly) $
+    DB.query
+      db
+      [sql|
+        UPDATE badge_store_receipts
+        SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = ?, hold_kind = ?,
+          user_id = COALESCE((SELECT p.user_id FROM badge_purchases p WHERE p.badge_store_receipt_id = ?), user_id)
+        WHERE badge_store_receipt_id = ? AND payment = ?
+        RETURNING 1
+      |]
+      (refusal, SHKPurchase, receiptId, receiptId, payment)
+
+-- | Only while the record is resolved: one held meanwhile keeps its hold.
+clearStoreReceiptRefusal :: DB.Connection -> Int64 -> IO ()
+clearStoreReceiptRefusal db receiptId =
+  DB.execute db "UPDATE badge_store_receipts SET credit_error = NULL WHERE badge_store_receipt_id = ? AND payment IS NULL" (Only receiptId)
 
 -- | Every settle clears the failure, so one recorded on a credited record is a refused resume or tier change.
+-- It returns the record to the profile whose purchase it funds, which a Restore may have taken it from meanwhile.
 settleStoreReceipt :: DB.Connection -> Int64 -> IO ()
 settleStoreReceipt db receiptId =
   DB.execute
     db
-    "UPDATE badge_store_receipts SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = NULL, hold_kind = ? WHERE badge_store_receipt_id = ?"
-    (SHKPurchase, receiptId)
+    [sql|
+      UPDATE badge_store_receipts
+      SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = NULL, hold_kind = ?,
+        user_id = COALESCE((SELECT p.user_id FROM badge_purchases p WHERE p.badge_store_receipt_id = ?), user_id)
+      WHERE badge_store_receipt_id = ?
+    |]
+    (SHKPurchase, receiptId, receiptId)
 
 -- | Whether a later charge of a credited record's subscription is answered as held: its purchase must be its owner's newest
 -- and a subscription. A tier change, of a shown purchase, is held whatever else is held, as the worker serves it while the
@@ -499,9 +536,7 @@ createStashBadgePurchase db User {userId} stash credential now = do
       db
       "UPDATE badge_purchases SET badge_store_receipt_id = NULL WHERE badge_store_receipt_id = ? AND EXISTS (SELECT 1 FROM badge_store_receipts WHERE badge_store_receipt_id = ? AND hold_kind = ?)"
       (receiptId, receiptId, SHKTransfer)
-  -- the credit settles a held receipt in the transaction that stores its purchase, a replay included
-  forM_ storeReceiptId_ $ settleStoreReceipt db
-  getStashBadgePurchase db stash >>= \case
+  purchase <- getStashBadgePurchase db stash >>= \case
     Just purchaseId -> pure (purchaseId, False)
     Nothing -> do
       DB.execute
@@ -516,6 +551,10 @@ createStashBadgePurchase db User {userId} stash credential now = do
       purchaseId <- insertedRowId db
       DB.execute db "UPDATE users SET shown_badge_id = ? WHERE user_id = ?" (purchaseId, userId)
       pure (purchaseId, True)
+  -- the credit settles a held receipt in the transaction that stores its purchase, a replay included,
+  -- once the purchase links it, so the record goes to the profile that purchase is of
+  forM_ storeReceiptId_ $ settleStoreReceipt db
+  pure purchase
   where
     BadgeStash {stashRef, purchaseKey, purchasePrivKey, masterKey = BadgeMasterKey mk} = stash
     BadgeCredential {badgeInfo = BadgeInfo {badgeType}} = credential

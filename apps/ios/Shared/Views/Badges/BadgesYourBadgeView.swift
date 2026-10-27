@@ -54,7 +54,7 @@ struct BadgesYourBadgeView: View {
                         subscriptionSection(Text("Ended"), footer: "Your subscription has ended. The badge will be removed from your profile.")
                     case .renewing, .unknown, nil:
                         if ended {
-                            subscriptionSection(Text("Renewing"), footer: "The next month is added once the App Store charges your subscription. Until then you cannot buy or redeem another badge.")
+                            subscriptionSection(Text("Renewing"), footer: "Your badge is renewed once the App Store charges your subscription. Until then you cannot buy or redeem another badge.")
                         } else if let price = store.subscriptionPrice(badgeState.badgeType, planMonths: subscription.planMonths) {
                             subscriptionSection(Text("Renews \(date) · \(price)"), footer: "Your subscription renews automatically. You can cancel it in the App Store.")
                         } else {

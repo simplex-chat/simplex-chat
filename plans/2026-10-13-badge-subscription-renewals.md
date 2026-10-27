@@ -87,7 +87,7 @@ The core change:
 
 - A subscription purchase is an ordinary purchase whose ledger is refilled by store charges instead of being paid once.
 - Its store identity is the subscription, not one transaction: Apple's original transaction id (Play's token already is). Every renewal therefore resolves to the same purchase and the same receipt record on both sides, and the service has one thing to ask the store about.
-- Months enter a subscription ledger only as `charge` credits whose operation time is the store's billing period start. The grant row's `createdAt` is that period start, as `grantEntry` already stamps its `t`. Coverage follows the store's periods without drift, every row verifies by re-running its operation at its `createdAt`, and `StatementEntry` gains no field.
+- Months enter a subscription ledger only as `charge` credits whose operation time is the store's billing period start. The grant row's `createdAt` is that period start, or the previous row's `createdAt` when that is later, so dates never decrease. Coverage follows the store's periods without drift, every row verifies by re-running its operation at its `createdAt`, and `StatementEntry` gains no field.
 - The first charge and every renewal go through one pure planner: lapse what ran out before the period start, grant the charge's months at the period start, lapse what ran out since, then issue at now.
 - The service asks the store only when a subscription purchase's paid coverage has ended, and writes nothing unless a charge is granted.
 - The client keeps asking at the shared weekly moment and keeps the badge until the service answers that the subscription has ended.
@@ -116,7 +116,7 @@ The core change:
 - `Badges/Ledger.hs`:
   - `entryTypeFromColumns` takes the row's charge id and rebuilds `SCCharge` from it (slice 2).
   - A pure planner (suggested name `chargeEntries`) takes the tip or a seed, the charge's period start, its months, the charge id, `now` and fresh entry ids. It returns `lapse periodStart` (if any), `grant periodStart months (SCCharge chargeId)`, `lapse now` (if any). The caller issues at `now` with `issueEntry` as today.
-  - The rows' `createdAt` are non-decreasing whenever the period start is not before the tip's `createdAt`. That holds on every path: the tip was issued before its month ended, the next charge's period starts around that month's end, and the service writes no row while a subscription waits for its charge.
+  - The rows' `createdAt` are non-decreasing because the planner dates a charge at the later of its period start and the tip's `createdAt`, so a charge asked about late in its period is dated after the row it follows.
 
 ### Badge service (`apps/simplex-badge-service/src/BadgeService/`)
 
@@ -329,7 +329,7 @@ None. The timing and grace behaviour, the branch, who runs builds, tier changes,
 - The Apple verifier checks no certificate validity dates or revocation.
 - A Play subscription purchase is offered by the first offer on its base plan, not a named offer (`PlayStore.kt`).
 - Retirement does not signal the receipt worker.
-- After a renewal that lands once the shown credential has expired (billing-retry recovery), the request and the profile update happen in the same pass, because `presentIssuedBadge` presents as soon as the shown credential has expired. This already happens to late prepaid renewals; it weakens objective 3 for recovered subscriptions.
+- After a renewal that lands once the shown credential has expired (billing-retry recovery), the request and the profile update happen in the same pass, because `presentIssuedBadge` presents as soon as the shown credential has expired. This already happens to late prepaid renewals; it weakens objective 3 for recovered subscriptions. A raised tier is presented at once as well, whichever request granted it (the receipt worker's upgrade request in `creditStoreReceipt`, a renewal check in `presentIssuedBadge`): the subscriber raised the tier in their store, so the broadcast tells the store nothing new. A lower tier keeps the hold-back until the shown credential expires.
 
 ## 11. Follow-up runs
 

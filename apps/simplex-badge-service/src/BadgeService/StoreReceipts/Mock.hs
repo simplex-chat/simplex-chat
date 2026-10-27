@@ -19,14 +19,14 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime, addUTCTime)
 import Simplex.Chat.Badges.Ledger (addMonths)
 import Simplex.Chat.Badges.Service (SubscriptionState (..))
-import Simplex.Chat.Badges.StorePlan (storePlan)
+import Simplex.Chat.Badges.StorePlan (playBasePlan, storePlan)
 import Simplex.Chat.PaymentService (appleTransactionRef, googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (PaymentProvider (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 
 -- | Vouches for any well-formed receipt without verifying anything. Each transaction is named by
 -- the same function its claim is named by, so the two cannot differ. A subscription is charged for
--- the plan its first purchase names, and that plan is kept in memory to charge each renewal again.
+-- the plan its first purchase or a tier raise names, and that plan is kept in memory to charge each renewal again.
 newMockStoreVerifier :: IO UTCTime -> IO StoreVerifier
 newMockStoreVerifier clock = do
   plans <- newTVarIO M.empty
@@ -50,12 +50,13 @@ mockSubscription clock plans ref = \case
       SubscriptionGoogle token -> (PPGoogle, Right token)
     firstPlan productId = case ref of
       SubscriptionApple _ -> productId <$ storePlan PPApple productId
-      SubscriptionGoogle token -> testTokenPlan token <|> playMonthlyPlan productId
+      SubscriptionGoogle token -> testTokenPlan productId token <|> playMonthlyPlan productId
     -- a test token names its base plan, test.<basePlanId>.<uuid>, as the apps' test products sign it
-    testTokenPlan token = do
+    testTokenPlan productId token = do
       (basePlanId, rest) <- T.breakOn "." <$> T.stripPrefix "test." token
       guard $ T.length rest > 1
-      basePlanId <$ storePlan PPGoogle basePlanId
+      (planProductId, _) <- playBasePlan basePlanId
+      basePlanId <$ guard (planProductId == productId)
     renewing planId = do
       now <- clock
       let periodStart = addUTCTime (-60) now

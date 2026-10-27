@@ -264,13 +264,13 @@ service_account_file = /etc/simplex-badge-service/play-service-account.json
   error naming the acknowledgement, and the app presents it again once the permission is granted,
   which must be within three days, before Play refunds it. The key signs in
   for an access token, so keep the file readable by this service alone.
-  A request that may ask a store waits on a lane of its own: Play purchases and App Store
-  subscription purchases on one, and issue requests for a subscription due its hourly store check
-  on another. A slow or unreachable store therefore delays only those, not code redemptions,
-  App Store one-time purchases or other renewals; and no purchase, genuine or made up, delays a
-  renewal check. The purchase path asks Play about at most 300 subscriptions a minute (a purchase
-  it credits is read once more to acknowledge it), so made-up tokens can spend at most a tenth of
-  the quota renewal checks share.
+  A request that may ask a store waits on a lane of its own: Play purchases, App Store
+  subscription purchases and transfers of a subscription (Restore) on one, and issue requests and
+  tier raises for a subscription due its hourly store check on another. A slow or unreachable
+  store therefore delays only those, not code redemptions, App Store one-time purchases or other
+  renewals; and no purchase or transfer, genuine or made up, delays a renewal check. The purchase
+  path asks Play about at most 300 subscriptions a minute (a purchase it credits is read once more
+  to acknowledge it), so made-up tokens can spend at most a tenth of the quota renewal checks share.
 
 While a subscription's paid coverage runs, as an annual plan's does for a year, the service asks
 its store before it issues each new month, at most once an hour. When the store reports the
@@ -292,6 +292,29 @@ a prepaid purchase that is never renewed, every Play purchase token is lost, and
 charge, transfer or tier-change row can no longer be read, so its purchase answers `internal`.
 Upgrading again restores none of it. Take a backup first if a rollback is unavoidable.
 
+#### Store setup
+
+The subscriptions must be sold under the ids the apps buy and the service credits, and set up as
+follows:
+
+- [ ] App Store: one subscription group holding all four subscriptions, so a change of tier or plan
+  keeps the original transaction id, and with it the purchase.
+- [ ] App Store levels: `SUBSCR_BADGE_LEGEND_MONTH_01` and `SUBSCR_BADGE_LEGEND_YEAR_01` at level 1,
+  `SUBSCR_BADGE_SUPPORTER_MONTH_01` and `SUBSCR_BADGE_SUPPORTER_YEAR_01` at level 2. Apple charges a
+  move to a higher level at once, and the apps send only Supporter to Legend as a raise.
+- [ ] App Store: Billing Grace Period off, and Family Sharing off, which cannot be turned off once on:
+  a family-shared subscription is refused.
+- [ ] Play: the product `subscr_badge_supporter_01` with the base plans
+  `subscr-badge-supporter-month-02` and `subscr-badge-supporter-year-01`, and the product
+  `subscr_badge_legend_01` with `subscr-badge-legend-month-01` and `subscr-badge-legend-year-01`.
+  A charge for any other base plan is not credited, and a charge for one of these under the other
+  product is answered `internal`.
+- [ ] Play, on each of the four base plans: Resubscribe off, pausing off, the minimum grace period,
+  and account hold on.
+- [ ] Both: no offers of any kind: no free trial, introductory or promotional price, or offer code.
+  The service credits no App Store charge made with an offer and no Play charge in a free trial or
+  introductory price.
+
 ### Accepting store receipts unverified, for local testing
 
 ```ini
@@ -310,10 +333,11 @@ It answers subscriptions too, each as renewing, charged from a minute before the
 length of its plan:
 
 - an App Store subscription: the plan its product names;
-- a Play subscription: the base plan a test token `test.<basePlanId>.<uuid>` names (the apps'
-  test products sign their tokens so), or else the product's monthly base plan, so a licence
-  tester's purchase is credited too;
-- a renewal: a new charge for the plan it first charged. It keeps that plan in memory only, so after
+- a Play subscription: the base plan a test token `test.<basePlanId>.<uuid>` names, when it is a
+  plan of the product (the apps' test products sign their tokens so), or else the product's
+  monthly base plan, so a licence tester's purchase is credited too;
+- an App Store tier raise: a charge for the raised plan, which its renewals then charge;
+- a renewal: a new charge for the plan it last charged. It keeps that plan in memory only, so after
   a restart it answers a renewal of a subscription it credited before as ended, and the unissued
   months of a plan still covered are refunded at its next month.
 
