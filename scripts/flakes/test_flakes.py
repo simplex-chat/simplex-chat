@@ -76,6 +76,11 @@ class OutcomeTest(unittest.TestCase):
             self.assertEqual(failed["outcome"], "build failed")
             self.assertEqual((failed["build"]["step"], failed["build"]["raw"]), ("Build CLI", raw))
 
+    def test_failure_after_a_skipped_test_step_is_not_a_build_failure(self):
+        scoped = job(LINUX, "skipped", "failure", earlier=(("Build CLI", "skipped"),))
+        scoped["steps"].append({"name": "Test changed scopes", "number": 3, "conclusion": "failure"})
+        self.assertEqual(record(CHAT, scoped, run=PULL_RUN)["outcome"], "not tested")
+
     def test_test_step_failure_without_failed_tests_or_timeout_is_a_crash(self):
         empty = fixture("no-tests-selected.log").replace("No tests selected", "0 examples, 0 failures")
         for log in (fixture("build-fatal.log"), empty):
@@ -260,6 +265,29 @@ class HangTest(unittest.TestCase):
         older = self.hang("hspec-2.7-timeout.log")
         self.assertEqual((older["item"], older["silence"]), ("verify .lint fkey-indexes", 7137))
 
+    def test_last_reported_item_after_a_pending_item(self):
+        self.assertEqual(
+            self.hang("hspec-2.11-timeout-after-pending.log")["item"],
+            "/SimpleX Directory service bot/member admission/"
+            "should make joining members observers in all groups with --always-observer/",
+        )
+
+    def test_spec_has_pending_items_and_group_paths_without_test_output(self):
+        expected = [
+            "/Schema dump/verify and overwrite schema dump/",
+            "/Schema dump/verify .lint fkey-indexes/",
+            "/Schema dump/verify schema down migrations/",
+            "/Schema dump/verify strict tables/",
+            "/SimpleX badge service/badge service config/applies every documented default/",
+            "/SimpleX badge service/badge service web/serves the built web app, exactly as it is shipped/",
+            "/SimpleX chat client/group tests/async group connections/create and join group when clients go offline/",
+            "/SimpleX chat client/group tests/group links/create group link, join via group link/",
+            "/SimpleX Broadcast bot/should broadcast message/",
+            "/SimpleX Directory service bot/should register group/",
+            "/Save query plans/verify and overwrite query plans/",
+        ]
+        self.assertEqual([path for path, _ in flakes.spec_items(lines("hspec-2.11-pending.log"))], expected)
+
     def next_item(self, timeout, spec_log):
         with tempfile.TemporaryDirectory() as directory:
             collector = flakes.Collector(None, flakes.Cache(Path(directory)))
@@ -413,6 +441,15 @@ class ReportTest(unittest.TestCase):
             run.entries[0][1].update(outcome="build failed", build={"step": "Build CLI", "raw": raw, "signature": raw})
         report = flakes.run_report("CI failures", analysed, window, None).text
         self.assertIn("master, same job, other signature: build process killed (SIGKILL), 1 run, 2026-10-21", report)
+
+    def test_timeout_label_compares_the_last_reported_item_with_the_window(self):
+        window = flakes.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, [])])])
+        analysed = entry(20, "2026-10-22T00:00:00Z", [(LINUX, 1, [])])
+        hang = record(CHAT, job(LINUX, "failure", "failure"), "hspec-2.11-timeout.log")["hang"]
+        for run in (window.runs[0], analysed):
+            run.entries[0][1].update(outcome="timeout", hang=hang)
+        report = flakes.run_report("CI failures", analysed, window, None).text
+        self.assertIn("| silent 120 min, next item: unknown | 1 of 1 | 0 | on master |", report)
 
     def test_branch_summary_counts_outcomes_and_tests(self):
         window = flakes.Window(CHAT, "master", [
