@@ -280,9 +280,14 @@ sent_file() {
   done
 }
 
+core_returned_no_image() {
+  grep -c "core returned no image" "$UI_OUT/app.log" || true
+}
+
 send_image() {
-  local name=$1 ext=$2 sent
+  local name=$1 ext=$2 sent no_image
   sent=$(sent_files "$ext")
+  no_image=$(core_returned_no_image)
   "$ui" click-text Attach 10
   "$ui" click-text Image 10
   sleep 3
@@ -297,6 +302,7 @@ send_image() {
   "$ui" click-text "Send Message" 10
   check "$ext: the image is sent as a .$ext file" sent_file "$ext" "$sent"
   "$ui" shot "sent-$ext"
+  check "$ext: the core resized the image" [ "$(core_returned_no_image)" -eq "$no_image" ]
 }
 
 send_images() {

@@ -35,10 +35,16 @@ expect fun resizeImageFileUri(uri: URI, maxSize: Int): String
 expect fun resizeImageFileData(uri: URI, maxSize: Int): String
 
 fun resizeImageFileToStrSize(uri: URI, maxDataSize: Long): String? =
-  resizeImageFileUri(uri, maxDataSize.toInt()).ifEmpty { null }
+  resizeImageFileUri(uri, maxDataSize.toInt()).ifEmpty {
+    Log.d(TAG, "resizeImageFileToStrSize: core returned no image")
+    null
+  }
 
 fun resizeImageFileToDataSize(uri: URI, maxDataSize: Long): ByteArray? =
-  resizeImageFileData(uri, maxDataSize.toInt()).ifEmpty { null }?.let { Base64.getDecoder().decode(it) }
+  resizeImageFileData(uri, maxDataSize.toInt()).ifEmpty {
+    Log.d(TAG, "resizeImageFileToDataSize: core returned no image")
+    null
+  }?.let { Base64.getDecoder().decode(it) }
 
 fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String {
   val str = chatResizeImageUri(compressImageData(image, image.hasAlpha()).toByteArray().toDirectBuffer(), maxDataSize.toInt())

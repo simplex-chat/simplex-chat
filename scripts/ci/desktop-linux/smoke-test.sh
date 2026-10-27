@@ -343,9 +343,14 @@ compose_changed() {
   [ "${changed%%.*}" -gt 2000 ]
 }
 
+core_returned_no_image() {
+  grep -c "core returned no image" "$UI_OUT/app.log" || true
+}
+
 send_image() {
-  local file=$1 ext=$2 sent x y
+  local file=$1 ext=$2 sent no_image x y
   sent=$(sent_files "$ext")
+  no_image=$(core_returned_no_image)
   "$ui" shot "before-$ext"
   "$ui" click "$paperclip_x" "$compose_y"
   "$ui" click-text Image 10
@@ -362,6 +367,7 @@ send_image() {
   "$ui" key Return
   check "$ext: the image is sent as a .$ext file" sent_file "$ext" "$sent"
   "$ui" shot "sent-$ext"
+  check "$ext: the core resized the image" [ "$(core_returned_no_image)" -eq "$no_image" ]
 }
 
 send_images() {

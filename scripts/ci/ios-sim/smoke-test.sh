@@ -124,9 +124,14 @@ create_group() {
   "$ui" shot group-created
 }
 
+app_resized_images() {
+  grep -cE "resizeImageTo(Str|Data)Size final" "$UI_OUT/app.log" || true
+}
+
 send_image() {
-  local file=$1 ext=$2 sent
+  local file=$1 ext=$2 sent resized
   sent=$(sent_files "$ext")
+  resized=$(app_resized_images)
   xcrun simctl addmedia "$SIM_UDID" "$fixtures/$file"
   tap_element Button "paperclip" || fail "no attachment button"
   "$ui" tap "Choose from library"
@@ -141,6 +146,7 @@ send_image() {
   tap_element Button "[^\"]*arrow[^\"]*" || fail "no send button"
   sent_file "$ext" "$sent" || fail "$ext: no .$ext file sent"
   "$ui" shot "sent-$ext"
+  [ "$(app_resized_images)" -eq "$resized" ] || fail "$ext: the app resized the image in place of the core"
   echo "$ext: the picked image was previewed and sent as a .$ext file"
 }
 
