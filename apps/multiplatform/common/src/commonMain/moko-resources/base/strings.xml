@@ -3324,8 +3324,8 @@
   <string name="badges_subscription_ended">Ended</string>
   <string name="badges_subscription_ended_footer">Your subscription has ended. The badge will be removed from your profile.</string>
   <string name="badges_subscription_renewing">Renewing</string>
-  <string name="badges_subscription_renewing_footer">The next month is added once Google Play charges your subscription. Until then you cannot buy or redeem another badge.</string>
-  <string name="badges_subscription_renewing_footer_store">The next month is added once the store charges your subscription. Until then you cannot buy or redeem another badge.</string>
+  <string name="badges_subscription_renewing_footer">Your badge is renewed once Google Play charges your subscription. Until then you cannot buy or redeem another badge.</string>
+  <string name="badges_subscription_renewing_footer_store">Your badge is renewed once the store charges your subscription. Until then you cannot buy or redeem another badge.</string>
   <string name="badges_subscription_renews_price">Renews %1$s · %2$s</string>
   <string name="badges_subscription_renews">Renews %1$s</string>
   <string name="badges_subscription_renews_footer">Your subscription renews automatically. You can cancel it in Google Play.</string>
