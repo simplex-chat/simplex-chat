@@ -56,7 +56,7 @@ struct FramedCIVoiceView: View {
             }
         }
         .padding(.top, terminal ? TerminalLayout.gap(4) : 6)
-        .padding(.leading, terminal ? TerminalLayout.textPadding : 6)
+        .padding(.leading, terminal ? chatItemTextPadding : 6)
         .padding(.trailing, terminal ? 0 : 12)
         .padding(.bottom, terminal ? TerminalLayout.gap(6) : chatItem.content.text.isEmpty ? 10 : 0)
     }

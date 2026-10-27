@@ -53,7 +53,7 @@ struct CIFileView: View {
                     metaReserve.font(.caption)
                 }
             }
-            .padding(.top, terminal ? TerminalLayout.fileTopGap : 4)
+            .padding(.top, terminal ? terminalFileTopGap : 4)
             .padding(.bottom, terminal ? 0 : 6)
             .padding(.leading, 10)
             .padding(.trailing, 12)

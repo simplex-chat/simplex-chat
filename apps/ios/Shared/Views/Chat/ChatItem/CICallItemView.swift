@@ -46,7 +46,7 @@ struct CICallItemView: View {
                         .padding(.horizontal, 12)
                 }
             }
-            .padding(.leading, inlineMeta == nil ? TerminalLayout.textPadding : 0)
+            .padding(.leading, inlineMeta == nil ? chatItemTextPadding : 0)
             .padding(.bottom, inlineMeta == nil ? 8 : 0)
         }
     }

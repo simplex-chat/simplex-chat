@@ -810,9 +810,9 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(blocks.enumerated()), id: \.offset) { k, block in
                 if k > 0 && terminal && blocks[k - 1].isHeading && !block.isHeading {
-                    Color.clear.frame(height: TerminalLayout.headingBottomGap)
+                    Color.clear.frame(height: terminalHeadingBottomGap)
                 } else if k > 0 && (paragraphBreak(blocks[k - 1].endIndex, block.startIndex) || terminal && block.isHeading) {
-                    Color.clear.frame(height: terminal ? TerminalLayout.levelStep : l.font.lineHeight / 2)
+                    Color.clear.frame(height: terminal ? terminalLevelStep : l.font.lineHeight / 2)
                 }
                 blockView(block, l.starts[k], l, last: k == blocks.count - 1)
             }
@@ -868,8 +868,8 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
     private func cardMargins(_ block: some View, _ last: Bool) -> some View {
         block
             .if(last && marksLastBlock) { $0.modifier(MessageLastBlock()) }
-            .padding(.top, TerminalLayout.blockTopGap)
-            .padding(.bottom, last && marksLastBlock ? 0 : TerminalLayout.blockBottomGap)
+            .padding(.top, terminalBlockTopGap)
+            .padding(.bottom, last && marksLastBlock ? 0 : terminalBlockBottomGap)
     }
 
     @ViewBuilder private func terminalRule() -> some View {
@@ -882,7 +882,7 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
     }
 
     private func terminalHeadingFont(_ font: UIFont, _ level: Int) -> UIFont {
-        UIFont(descriptor: boldFont(font).fontDescriptor, size: font.pointSize * pow(TerminalLayout.headingRatio, CGFloat(max(0, 3 - level))))
+        UIFont(descriptor: boldFont(font).fontDescriptor, size: font.pointSize * pow(terminalHeadingRatio, CGFloat(max(0, 3 - level))))
     }
 
     @ViewBuilder private func tableView(_ columns: [TableAlign], _ tableRows: [[SegmentRange]], _ start: Int, _ l: BlocksLayout) -> some View {
@@ -967,9 +967,11 @@ private extension MarkdownBlock {
     }
 }
 
+let quoteBarWidth: CGFloat = 4
+
 struct QuoteBar: View {
     var body: some View {
-        RoundedRectangle(cornerRadius: 2).fill(Color(uiColor: .label).opacity(0.16)).frame(width: 4)
+        RoundedRectangle(cornerRadius: 2).fill(Color(uiColor: .label).opacity(0.16)).frame(width: quoteBarWidth)
     }
 }
 

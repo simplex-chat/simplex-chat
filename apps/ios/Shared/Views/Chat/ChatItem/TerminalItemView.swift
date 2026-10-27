@@ -8,48 +8,47 @@ extension EnvironmentValues {
     }
 }
 
+let chatItemTextPadding: CGFloat = 12
+var terminalBlockTopGap: CGFloat { TerminalLayout.gap(5.75) }
+var terminalBlockBottomGap: CGFloat { TerminalLayout.gap(5) }
+var terminalLevelStep: CGFloat { TerminalLayout.gap(4.75) }
+var terminalHeadingBottomGap: CGFloat { terminalLevelStep / 2 }
+var terminalSenderTopGap: CGFloat { TerminalLayout.gap(6.5) }
+private var terminalSenderBottomGap: CGFloat { TerminalLayout.gap(5.5) }
+var terminalHeaderTopGap: CGFloat { TerminalLayout.gap(2.5) }
+var terminalHeaderBottomGap: CGFloat { TerminalLayout.gap(1.5) }
+var terminalEventTopGap: CGFloat { TerminalLayout.gap(8.25) }
+var terminalEventBottomGap: CGFloat { TerminalLayout.gap(1.5) }
+var terminalFileTopGap: CGFloat { TerminalLayout.gap(2) }
+var terminalEmojiTopGap: CGFloat { TerminalLayout.gap(4.25) }
+var terminalEmojiBottomGap: CGFloat { TerminalLayout.gap(1.5) }
+var terminalMetaGap: CGFloat { TerminalLayout.gap(6) }
+var terminalNameSize: CGFloat { TerminalLayout.bodyScaled(13.5 * 17 / 16) }
+let terminalHeadingRatio: CGFloat = 1.25
+private let terminalLineHeightRatio: CGFloat = 22 / 16
+private let terminalLineHeightContrastSlope: CGFloat = 0.1515
+private let terminalGapBodySize: CGFloat = 16
+
 enum TerminalLayout: EnvironmentKey {
     static let defaultValue: Bool = false
-    static let textPadding: CGFloat = 12
-    static var blockTopGap: CGFloat { gap(5.75) }
-    static var blockBottomGap: CGFloat { gap(5) }
-    static var levelStep: CGFloat { gap(4.75) }
-    static var headingBottomGap: CGFloat { levelStep / 2 }
-    static var senderTopGap: CGFloat { gap(6.5) }
-    fileprivate static var senderBottomGap: CGFloat { gap(5.5) }
-    static var headerTopGap: CGFloat { gap(2.5) }
-    static var headerBottomGap: CGFloat { gap(1.5) }
-    static var eventTopGap: CGFloat { gap(8.25) }
-    static var eventBottomGap: CGFloat { gap(1.5) }
-    static var fileTopGap: CGFloat { gap(2) }
-    static var emojiTopGap: CGFloat { gap(4.25) }
-    static var emojiBottomGap: CGFloat { gap(1.5) }
-    static var metaGap: CGFloat { gap(6) }
-    static var nameSize: CGFloat { bodyScaled(13.5 * 17 / 16) }
-    static let headingRatio: CGFloat = 1.25
-    private static let gapBodySize: CGFloat = 16
-
-    static var eventPadding: EdgeInsets {
-        EdgeInsets(top: eventTopGap, leading: textPadding, bottom: eventBottomGap, trailing: textPadding)
-    }
 
     static func gap(_ size: CGFloat) -> CGFloat {
-        size * UIFont.preferredFont(forTextStyle: .body).pointSize / gapBodySize
+        size * UIFont.preferredFont(forTextStyle: .body).pointSize / terminalGapBodySize
     }
 
-    private static func bodyScaled(_ points: CGFloat) -> CGFloat {
+    static func bodyScaled(_ points: CGFloat) -> CGFloat {
         UIFontMetrics(forTextStyle: .body).scaledValue(for: points)
     }
 
     static func rowGap(_ item: ChatItem, _ older: ChatItem?, separated: Bool, largeGap: Bool, hasSenderRow: Bool) -> CGFloat {
         guard let older, !separated else { return 0 }
         return largeGap || hasSenderRow || !item.content.hasTerminalSender || !older.content.hasTerminalSender || (item.textAtItemTop && item.startsWithHeading)
-        ? levelStep
+        ? terminalLevelStep
         : 0
     }
 
     static func headingGap(_ item: ChatItem) -> CGFloat {
-        !item.textAtItemTop && item.startsWithHeading ? levelStep : 0
+        !item.textAtItemTop && item.startsWithHeading ? terminalLevelStep : 0
     }
 
     static func metaCopyJoiner(_ rightToLeft: Bool) -> Text {
@@ -61,12 +60,10 @@ struct TerminalLineBox: ViewModifier {
     var spacing: CGFloat
     var top: CGFloat
     var bottom: CGFloat
-    private static let lineHeightRatio: CGFloat = 22 / 16
-    private static let lineHeightContrastSlope: CGFloat = 0.1515
 
     init(_ font: UIFont, _ color: Color?, _ theme: AppTheme, capsOf bodyFont: UIFont? = nil) {
         if let bodyFont {
-            let bodyLineHeight = bodyFont.pointSize * Self.lineHeightRatio
+            let bodyLineHeight = bodyFont.pointSize * terminalLineHeightRatio
             let body = Self.proportionalExtra(bodyFont, bodyLineHeight)
             spacing = max(0, bodyLineHeight * font.pointSize / bodyFont.pointSize - font.lineHeight)
             top = body.top + bodyFont.ascender - bodyFont.capHeight - (font.ascender - font.capHeight)
@@ -88,7 +85,7 @@ struct TerminalLineBox: ViewModifier {
     }
 
     static func lineHeight(_ font: UIFont, _ color: Color?, _ theme: AppTheme) -> CGFloat {
-        font.pointSize * lineHeightRatio * contrastLineHeightFactor(color, theme)
+        font.pointSize * terminalLineHeightRatio * contrastLineHeightFactor(color, theme)
     }
 
     static func withLineSpacing(_ s: NSAttributedString, _ lineSpacing: CGFloat) -> NSAttributedString {
@@ -112,7 +109,7 @@ struct TerminalLineBox: ViewModifier {
         let background = UIColor(theme.colors.background)
         let textContrast = lightnessContrast(UIColor(theme.messageTextColor), background)
         let weight = textContrast > 0 ? min(max(lightnessContrast(UIColor(color), background) / textContrast, 0), 1) : 1
-        return 1 - lineHeightContrastSlope * (1 - weight)
+        return 1 - terminalLineHeightContrastSlope * (1 - weight)
     }
 
     private static func lightnessContrast(_ color: UIColor, _ background: UIColor) -> CGFloat {
@@ -197,7 +194,7 @@ struct ItemWithMeta<Meta: View, Content: View>: View {
                     metaBox(overlayMeta, nil)
                 }
                 if let endButton {
-                    endButton.padding(.trailing, TerminalLayout.textPadding)
+                    endButton.padding(.trailing, chatItemTextPadding)
                 }
             }
         } else {
@@ -214,7 +211,7 @@ struct ItemWithMeta<Meta: View, Content: View>: View {
     @ViewBuilder private func metaBox(_ meta: some View, _ lineHeightColor: Color?) -> some View {
         let v = meta
             .modifier(TerminalLineBox(UIFont.preferredFont(forTextStyle: .caption1), lineHeightColor, theme))
-            .padding(.trailing, TerminalLayout.textPadding)
+            .padding(.trailing, chatItemTextPadding)
         if overlayMeta != nil {
             v.frame(maxWidth: .infinity, maxHeight: .infinity).clipped()
         } else {
@@ -270,7 +267,7 @@ private struct TerminalMetaLayout: Layout {
         let contentProposal = ProposedViewSize(width: width.map { max(0, $0 - reservedWidth) }, height: nil)
         let content = subviews[0].dimensions(in: contentProposal)
         let rowWidth = width ?? max(content.width + reservedWidth, meta.width)
-        let gap = TerminalLayout.metaGap
+        let gap = terminalMetaGap
         let metaBelow = content[explicit: MessageLastLine.right].map { $0 + meta.width > rowWidth } ?? false
         let metaBaseline = subviews[1].dimensions(in: .unspecified)[explicit: .firstTextBaseline]
             ?? (meta.height + UIFont.preferredFont(forTextStyle: .caption1).capHeight) / 2
@@ -279,7 +276,7 @@ private struct TerminalMetaLayout: Layout {
             ? content.height + gap
             : textBaseline.map { $0 - metaBaseline } ?? content.height - gap - meta.height
         )
-        let blockGap = content[explicit: MessageLastBlock.bottom].map { abs($0 - content.height) < 0.5 } == true ? TerminalLayout.blockBottomGap : 0
+        let blockGap = content[explicit: MessageLastBlock.bottom].map { abs($0 - content.height) < 0.5 } == true ? terminalBlockBottomGap : 0
         let overlayFrame: CGRect? = if let overlay, content.width + meta.width > rowWidth {
             CGRect(x: content.width - overlay.width, y: max(0, content.height - gap - overlay.height), width: overlay.width, height: overlay.height)
         } else {
@@ -324,6 +321,10 @@ struct ChatEventWithMeta<Content: View>: View {
     }
 }
 
+var terminalEventPadding: EdgeInsets {
+    EdgeInsets(top: terminalEventTopGap, leading: chatItemTextPadding, bottom: terminalEventBottomGap, trailing: chatItemTextPadding)
+}
+
 struct ChatItemSender {
     var name: Text
     var badge: LocalBadge?
@@ -337,7 +338,7 @@ struct TerminalChatItemRow<Content: View>: View {
     var sender: ChatItemSender?
     var gutter: CGFloat
     var topGap: CGFloat
-    var senderTopGap: CGFloat = TerminalLayout.senderTopGap
+    var senderTopGap: CGFloat = terminalSenderTopGap
     @ViewBuilder var content: () -> Content
 
     var body: some View {
@@ -345,14 +346,14 @@ struct TerminalChatItemRow<Content: View>: View {
             if gutter > 0 {
                 ZStack(alignment: .topLeading) {
                     Color.clear.frame(width: gutter, height: 0)
-                    sender?.image?.padding(.leading, TerminalLayout.textPadding)
+                    sender?.image?.padding(.leading, chatItemTextPadding)
                 }
             }
             VStack(alignment: .leading, spacing: 0) {
                 if let sender {
                     senderNameAndRole(sender)
-                        .padding(.leading, TerminalLayout.textPadding)
-                        .padding(.bottom, TerminalLayout.senderBottomGap)
+                        .padding(.leading, chatItemTextPadding)
+                        .padding(.bottom, terminalSenderBottomGap)
                 }
                 content()
             }
@@ -361,7 +362,7 @@ struct TerminalChatItemRow<Content: View>: View {
     }
 
     private func senderNameAndRole(_ sender: ChatItemSender) -> some View {
-        let size = TerminalLayout.nameSize
+        let size = terminalNameSize
         return HStack(alignment: .firstTextBaseline, spacing: 0) {
             NameWithBadge(sender.name.font(.system(size: size)).foregroundColor(sender.own ? theme.colors.primary : theme.colors.secondary), sender.badge, .footnote)
                 .lineLimit(1)

@@ -29,7 +29,7 @@ struct CIChatFeatureView: View {
                 ForEach(fs, content: featureIconView)
             }
             .if(terminal) { $0.frame(height: TerminalLineBox.lineHeight(UIFont.preferredFont(forTextStyle: .caption1), theme.colors.secondary, theme)) }
-            .padding(terminal ? TerminalLayout.eventPadding : EdgeInsets(top: 6, leading: 6, bottom: 6, trailing: 6))
+            .padding(terminal ? terminalEventPadding : EdgeInsets(top: 6, leading: 6, bottom: 6, trailing: 6))
         } else {
             fullFeatureView
         }
@@ -103,7 +103,7 @@ struct CIChatFeatureView: View {
                 chatEventText(chatItem, theme.colors.secondary, ts: ts)
                     .if(terminal) { $0.modifier(TerminalLineBox(UIFont.preferredFont(forTextStyle: .caption1), theme.colors.secondary, theme)) }
             }
-            .padding(terminal ? TerminalLayout.eventPadding : EdgeInsets(top: 4, leading: 6, bottom: 4, trailing: 6))
+            .padding(terminal ? terminalEventPadding : EdgeInsets(top: 4, leading: 6, bottom: 4, trailing: 6))
             .textSelection(.disabled)
         }
     }

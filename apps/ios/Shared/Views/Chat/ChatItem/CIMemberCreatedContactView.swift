@@ -37,7 +37,7 @@ struct CIMemberCreatedContactView: View {
                 }
             }
             .if(terminal) { $0.modifier(TerminalLineBox(UIFont.preferredFont(forTextStyle: .caption1), theme.colors.secondary, theme)) }
-            .padding(terminal ? TerminalLayout.eventPadding : EdgeInsets(top: 0, leading: 6, bottom: 6, trailing: 0))
+            .padding(terminal ? terminalEventPadding : EdgeInsets(top: 0, leading: 6, bottom: 6, trailing: 0))
             .textSelection(.disabled)
         }
     }

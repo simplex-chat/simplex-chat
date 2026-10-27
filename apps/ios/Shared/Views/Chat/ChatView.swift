@@ -12,6 +12,8 @@ import SimpleXChat
 import SwiftyGif
 import Combine
 
+private let memberImageBaseSize: CGFloat = 34
+
 private func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
     let oldIsGroupRcv = switch older?.chatDir {
     case .groupRcv: true
@@ -92,8 +94,6 @@ struct ChatView: View {
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
     let userSupportScopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
-
-    private static let memberImageBaseSize: CGFloat = 34
 
     static func scaledMemberImageSize(_ font: DynamicTypeSize) -> CGFloat {
         memberImageBaseSize * dynamicSize(font).profileImageSize / dynamicSize(.large).profileImageSize
@@ -2161,14 +2161,14 @@ struct ChatView: View {
                 }
                 TerminalChatItemRow(
                     sender: showSender ? chatItemSender(ci, range) : nil,
-                    gutter: chat.chatInfo.chatType == .group ? memberImageSize + TerminalLayout.textPadding : 0,
+                    gutter: chat.chatInfo.chatType == .group ? memberImageSize + chatItemTextPadding : 0,
                     topGap: topGap
                 ) {
                     chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                 }
                 .padding(.leading, selecting ? 4 + 24 : 0)
             }
-            .padding(.bottom, index == 0 && itemSeparation.largeGap ? 8 : itemSeparation.date == nil ? 0 : TerminalLayout.levelStep)
+            .padding(.bottom, index == 0 && itemSeparation.largeGap ? 8 : itemSeparation.date == nil ? 0 : terminalLevelStep)
             .background(selectedChatItems?.contains(ci.id) == true ? theme.colors.primary.opacity(0.1) : Color.clear)
         }
 
@@ -2275,7 +2275,7 @@ struct ChatView: View {
                     }
                     if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
                         chatItemReactions(ci)
-                            .padding(.leading, terminal ? TerminalLayout.textPadding - 6 : 0)
+                            .padding(.leading, terminal ? chatItemTextPadding - 6 : 0)
                             .padding(.bottom, 4)
                     }
                 }

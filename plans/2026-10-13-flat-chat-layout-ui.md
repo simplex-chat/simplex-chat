@@ -197,28 +197,28 @@ Shared/Views/Chat/ChatView.swift         terminal = activeChatLayout == .termina
                                          wallpaper background colour without the image
                                          showAvatar = item.showsTerminalSender(older) when terminal
                                          terminalItemRow: SelectedChatItem, TerminalChatItemRow(chatItemSender or nil, gutter, TerminalLayout.rowGap)
-                                         gutter: memberImageSize + TerminalLayout.textPadding in groups, 0 in other chats
+                                         gutter: memberImageSize + chatItemTextPadding in groups, 0 in other chats
                                          memberImageSize: 34pt × chat list profileImageSize ÷ 63 at the text size, classic rows too
                                          classic group bubble width: less ChatView.scaledMemberImageSize + 8pt for the avatar column
                                          classic sender name on the bubble edge: memberImageSize + 10pt (user, I23)
                                          terminalRowsSeparated(olderRow); olderRow: the next merged item
-                                         bottom: 8pt below the newest row, TerminalLayout.levelStep above a date separator, otherwise 0
+                                         bottom: 8pt below the newest row, terminalLevelStep above a date separator, otherwise 0
                                          chatItemWithMenu: alignEnd = sent && !terminal; ChatItemClipped skipped; reactions at the text edge
                                          go-to button after the item in search results and for marked deleted items, otherwise endButton
 Shared/Views/Chat/ChatItemsMerger.swift  MergedItem.revealed
 Shared/Views/Chat/ChatItem/TerminalItemView.swift
-                                         \.terminalLayout; TerminalLayout: its key, gaps: Kotlin sp × body point size ÷ 16 (gap)
+                                         \.terminalLayout; TerminalLayout: its key; gaps: Kotlin sp × body point size ÷ 16 (TerminalLayout.gap)
                                          TerminalLayout.rowGap, headingGap, metaCopyJoiner
                                          TerminalLineBox: view modifier, line height, withLineSpacing
                                          MessageLastLine, MessageLastBlock: view modifiers with custom alignment guides
                                          ItemWithMeta: TerminalMetaLayout on iOS 16, HStack on the last text baseline on iOS 15
                                          ChatEventWithMeta: ts only; the separator of the classic text kept, the copy after WJ, a direction mark and two no-break spaces
-                                         ChatItemSender, TerminalChatItemRow: no padding at the sides, the avatar TerminalLayout.textPadding from the start
+                                         ChatItemSender, TerminalChatItemRow: no padding at the sides, the avatar chatItemTextPadding from the start
 Shared/Views/Chat/ChatItemView.swift     endButton to FramedItemView; event items with ChatEventWithMeta; chatEventText(ts:)
 Shared/Views/Chat/ChatItem/
   FramedItemView.swift                   backgrounds omitted; headers and quote at the text edge; terminalQuote with QuoteBar; terminalBlock for media and cards
                                          ciMsgContentView(terminalTop:) plus TerminalLayout.headingGap; metaPlacement; mediaLimit
-                                         quote: sender at TerminalLayout.nameSize; thumbnail 12pt after the quote text, or 12pt after the bar without text and sender
+                                         quote: sender at terminalNameSize; thumbnail 12pt after the quote text, or 12pt after the bar without text and sender
                                          overlayMeta for captionless media; terminal emoji paddings
   MsgContentView.swift                   messageText(textColor:); line boxes and lineSpacing, also for taps; meta line for live messages only
                                          reserveSpaceForMeta: TerminalLayout.metaCopyJoiner, three no-break spaces, ciMetaText(unbreakable: true) with file encryption and signature
