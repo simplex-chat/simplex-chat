@@ -62,7 +62,7 @@ struct BadgesSupportSimplexView: View {
                 //     RestorePurchasesButton()
                 //         .frame(height: 22)
                 //         .padding(.top, 10)
-                //     Text("If you were charged but have no badge, this adds it.")
+                //     Text("If you were charged but have no badge, this adds it. A subscription bought with this App Store account moves to this profile, and the device or profile that had it loses its badge at its next renewal.")
                 //         .font(.footnote)
                 //         .foregroundColor(theme.colors.secondary)
                 //         .multilineTextAlignment(.center)
