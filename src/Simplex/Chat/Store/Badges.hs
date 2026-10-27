@@ -431,12 +431,18 @@ refuseStoreReceipt db receiptId payment refusal =
       (refusal, SHKPurchase, receiptId, receiptId, payment)
 
 -- | Every settle clears the failure, so one recorded on a credited record is a refused resume or tier change.
+-- It returns the record to the profile whose purchase it funds, which a Restore may have taken it from meanwhile.
 settleStoreReceipt :: DB.Connection -> Int64 -> IO ()
 settleStoreReceipt db receiptId =
   DB.execute
     db
-    "UPDATE badge_store_receipts SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = NULL, hold_kind = ? WHERE badge_store_receipt_id = ?"
-    (SHKPurchase, receiptId)
+    [sql|
+      UPDATE badge_store_receipts
+      SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = NULL, hold_kind = ?,
+        user_id = COALESCE((SELECT p.user_id FROM badge_purchases p WHERE p.badge_store_receipt_id = ?), user_id)
+      WHERE badge_store_receipt_id = ?
+    |]
+    (SHKPurchase, receiptId, receiptId)
 
 -- | Whether a later charge of a credited record's subscription is answered as held: its purchase must be its owner's newest
 -- and a subscription. A tier change, of a shown purchase, is held whatever else is held, as the worker serves it while the
@@ -508,9 +514,7 @@ createStashBadgePurchase db User {userId} stash credential now = do
       db
       "UPDATE badge_purchases SET badge_store_receipt_id = NULL WHERE badge_store_receipt_id = ? AND EXISTS (SELECT 1 FROM badge_store_receipts WHERE badge_store_receipt_id = ? AND hold_kind = ?)"
       (receiptId, receiptId, SHKTransfer)
-  -- the credit settles a held receipt in the transaction that stores its purchase, a replay included
-  forM_ storeReceiptId_ $ settleStoreReceipt db
-  getStashBadgePurchase db stash >>= \case
+  purchase <- getStashBadgePurchase db stash >>= \case
     Just purchaseId -> pure (purchaseId, False)
     Nothing -> do
       DB.execute
@@ -525,6 +529,10 @@ createStashBadgePurchase db User {userId} stash credential now = do
       purchaseId <- insertedRowId db
       DB.execute db "UPDATE users SET shown_badge_id = ? WHERE user_id = ?" (purchaseId, userId)
       pure (purchaseId, True)
+  -- the credit settles a held receipt in the transaction that stores its purchase, a replay included,
+  -- once the purchase links it, so the record goes to the profile that purchase is of
+  forM_ storeReceiptId_ $ settleStoreReceipt db
+  pure purchase
   where
     BadgeStash {stashRef, purchaseKey, purchasePrivKey, masterKey = BadgeMasterKey mk} = stash
     BadgeCredential {badgeInfo = BadgeInfo {badgeType}} = credential
