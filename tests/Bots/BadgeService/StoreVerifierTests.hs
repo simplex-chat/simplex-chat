@@ -87,7 +87,7 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
     it "fails, rather than refuses, a status Apple did not sign or that was changed after signing" testAppleSubscriptionUnsigned
     it "fails on a verifier that cannot place what the store signed, and is unreachable on any other throw" testSubscriptionCheckThrows
     it "refuses a check the store marks as a test, and passes it through only with credit_test_purchases on" testSubscriptionCheckCreditsTest
-    it "fails on 401 and 403, is unreachable on 404, 429, 5xx and no answer, and refuses an answer naming no such subscription" testAppleSubscriptionHttp
+    it "fails on 401 and 403, and is unreachable on 404, 429, 5xx, no answer and an answer naming no such subscription" testAppleSubscriptionHttp
     it "fails on a key Apple refuses, and at boot on a key file it cannot read" testAppleSubscriptionKey
     it "checks subscriptions only where [apple] sets the API key, and one-time purchases either way" testAppleConfiguredSubscriptions
   describe "Google Play purchases" $ do
@@ -616,7 +616,7 @@ testAppleSubscriptionHttp = do
     answeredWith (AppStoreStatus 403) `shouldReturn` Failed
     forM_ [404, 429, 500, 503] $ \code -> answeredWith (AppStoreStatus code) `shouldReturn` Unreachable
     answeredWith AppStoreHang `shouldReturn` Unreachable
-    answeredWith (AppStoreBody $ J.object ["data" J..= ([] :: [J.Value])]) `shouldReturn` Invalid
+    answeredWith (AppStoreBody $ J.object ["data" J..= ([] :: [J.Value])]) `shouldReturn` Unreachable
     -- an id that is not one names no App Store transaction, and is not sent
     tokens <- length <$> readTVarIO (fasTokens fake)
     outcome <$> check "2000000900000001/../x" `shouldReturn` Failed

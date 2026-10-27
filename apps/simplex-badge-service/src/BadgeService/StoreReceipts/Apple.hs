@@ -297,8 +297,9 @@ signedApiToken AppleApi {privateKey, ourBundleId, serverApi = AppleServerApi {aK
 statusVerdict :: AppleApi -> Text -> LB.ByteString -> Either StoreRefusal SubscriptionCheck
 statusVerdict AppleApi {roots, ourBundleId} originalId body = do
   StatusResponse items <- either (const $ failed "could not read Apple's subscription status") Right $ J.eitherDecode' body
+  -- an omission is no more a verdict than a 404, and refusing it would end a purchase the buyer paid for
   LastTransaction {status, signedTransactionInfo, signedRenewalInfo} <-
-    maybe (refused "Apple's answer names no such subscription") Right $ find (\LastTransaction {lastOriginalId} -> lastOriginalId == originalId) items
+    maybe (Left $ SRUnreachable "Apple's answer names no such subscription") Right $ find (\LastTransaction {lastOriginalId} -> lastOriginalId == originalId) items
   SubscriptionTransaction {transactionId, txOriginalId, productId, bundleId, environment, purchaseDate, expiresDate, revoked, offer, familyShared, price, currency} <-
     verifiedItem signedTransactionInfo subscriptionTransactionP
   RenewalInfo {renewalOriginalId, autoRenewStatus} <- verifiedItem signedRenewalInfo renewalInfoP
