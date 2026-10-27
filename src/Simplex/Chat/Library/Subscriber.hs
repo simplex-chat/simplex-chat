@@ -3381,7 +3381,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             `catchError` \case
               SEGroupMemberNotFoundByMemberId _ -> createNewGroupMember db cxt user gInfo m memInfo (memberInfoPresHeader gInfo memInfo) GCPostMember GSMemAnnounced
               e -> throwError e
-        let fromAnnouncer = invitedByGroupMemberId toMember == Just (groupMemberId' m) || memberStatus toMember == GSMemUnknown
+        let fromAnnouncer = not (memberRemoved toMember) && (invitedByGroupMemberId toMember == Just (groupMemberId' m) || memberStatus toMember == GSMemUnknown)
         -- TODO [knocking] separate pending statuses from GroupMemberStatus?
         -- TODO            add GSMemIntroInvitedPending, GSMemConnectedPending, etc.?
         -- TODO            keep as is? (GSMemIntroInvited has no purpose)

@@ -1767,10 +1767,17 @@ testGroupMemFwdInvalidMember =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      aliceMemId <- memberIdByName bob "alice"
+      bobMemId <- memberIdByName alice "bob"
       cathMemId <- memberIdByName bob "cath"
-      sendMemFwd bob aliceMemId aliceProfile
-      alice <## "cannot add member - duplicate member ID"
+      sendMemFwd alice "bob" bobMemId bobProfile
+      bob <## "cannot add member - duplicate member ID"
+      memberConnCount bob "bob" `shouldReturn` 0
+      sendMemFwd bob "alice" cathMemId cathProfile
+      alice <## "contact bob has insufficient permissions for this group action"
+      cath #> "#team hello"
+      concurrently_
+        (alice <# "#team cath> hello")
+        (bob <# "#team cath> hello")
       alice ##> "/rm team cath"
       concurrentlyN_
         [ alice <## "#team: you removed cath from the group (signed)",
@@ -1779,24 +1786,24 @@ testGroupMemFwdInvalidMember =
             cath <## "#team: alice removed you from the group (signed)"
             cath <## "use /d #team to delete the group"
         ]
-      sendMemFwd bob cathMemId cathProfile
-      alice <## "contact bob has insufficient permissions for this group action"
-      memberConnCount alice "alice" `shouldReturn` 0
+      sendMemFwd alice "bob" cathMemId cathProfile
+      bob <## "contact alice has insufficient permissions for this group action"
       memberConnCount alice "cath" `shouldReturn` 0
+      memberConnCount bob "cath" `shouldReturn` 0
   where
-    sendMemFwd cc memId p = do
+    sendMemFwd cc toName memId p = do
       let ChatController {smpAgent} = chatController cc
       introInv <- withCCUser cc $ \user ->
         runExceptT (createConnection smpAgent NRMInteractive (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff False SMSubscribe)
           >>= either (fail . show) (\(_, CCLink groupConnReq _) -> pure IntroInvitation {groupConnReq})
-      connId <- relayConnIdToMember cc "alice"
+      connId <- relayConnIdToMember cc toName
       agentSendBody cc connId $ chatMsgToBody $ ChatMessage supportedChatVRange Nothing (XGrpMemFwd (MemberInfo memId GRMember Nothing p Nothing) introInv)
     memberConnCount :: TestCC -> T.Text -> IO Int
     memberConnCount cc name = do
       [Only n] <- withCCTransaction cc $ \db ->
         DB.query
           db
-          "SELECT COUNT(1) FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ?"
+          "SELECT COUNT(1) FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ? AND c.conn_status != 'deleted'"
           (Only name)
       pure n
 
