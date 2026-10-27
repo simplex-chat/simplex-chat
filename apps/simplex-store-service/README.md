@@ -441,22 +441,39 @@ each domain to its own port, as the all-in-one example in [Caddy](#caddy) does. 
   on its first start. Its state is kept in `./data/chain`, so restarts keep the contracts, balances
   and registered names. Its keys are anvil's public test keys, so never use it beside a real chain.
 - `postgres`: PostgreSQL 17 on `127.0.0.1:5433`, user `simplex`, database `store_service`, without a
-  password, kept in `./data/postgres`.
+  password, kept in `./data/postgres`. The service uses it in place of `BADGE_DB_CONN`.
 
-From `scripts/store-service/`:
+From a fresh clone:
 
 ```
-echo "COMPOSE_FILE=compose.yml:compose.dev.yml" >> .env
-echo "BADGE_DB_CONN=postgresql://simplex@127.0.0.1:5433/store_service" >> .env
+git clone https://github.com/simplex-chat/simplex-chat && cd simplex-chat
+git checkout sh/store-service && git submodule update --init apps/simplex-domains
+cd scripts/store-service
+echo "COMPOSE_FILE=compose.yml:compose.dev.yml" > .env
 docker compose up -d --build
-docker compose logs chain
 ```
 
-The service starts once the chain is up. The chain's log prints its `[chain]` section; put it in
-`config/store_service.ini` with a `[names]` section and, under `[listener]`,
-`names_export_dir = /srv/names-export` (the names build is the image's `/srv/names`, the default),
-then `docker compose restart store-service`. With `serve_webapp = on`, the names site is on
-`names_port`, by default 8081.
+The names site is then on `http://127.0.0.1:8081` and the badges site on `http://127.0.0.1:8080`.
+
+On its first start, the chain writes `config/store_service.ini` for its deployment, unless the file
+exists; it never rewrites it, so edits there are kept. The file serves both sites all in one, with
+`[names]` on the `.simplex` TLD, `[chain]` at the local chain with 1 confirmation, and `[issuer]`
+signing with a public test key at index 999, which no client trusts, through `dev_keys`. That key is
+in `dev-chain.sh`, as public as anvil's: never use it elsewhere. The service starts once the chain
+and the database are healthy. `USER_UID` and `USER_GID` in `.env` (by default 1000) own the file,
+mode 600, and its folder, mode 700.
+
+Names are paid for with prepaid codes, so no payment provider is needed. To issue one, stop the
+service and run its console against the dev database:
+
+```
+docker compose stop store-service
+docker compose run --rm store-service -d postgresql://simplex@127.0.0.1:5433/store_service --run-cli --service-config /etc/simplex-store-service/store_service.ini
+```
+
+There, `//issue name 6` prints a code for one name of 6 letters or more (see
+[From the command line](#from-the-command-line)). Leave with `/quit`, then
+`docker compose start store-service`.
 
 The service key's account starts with 10,000 ETH and a sponsor allowance. To top it up, or set any
 account's balance:
@@ -465,10 +482,21 @@ account's balance:
 docker compose exec chain dev-chain.sh topup [address] [eth]
 ```
 
-Registrations wait 10 seconds after their commit (`MIN_COMMITMENT_AGE` in `compose.dev.yml`), and
-prepaid codes need no payment provider. To start over, run `docker compose down` and delete
-`./data/chain` and `./data/postgres` together; deleting only the chain leaves orders that point at
-names that no longer exist.
+Registrations wait 10 seconds after their commit (`MIN_COMMITMENT_AGE` in `compose.dev.yml`).
+
+Card payments in Stripe's test mode: uncomment `[stripe]` in `config/store_service.ini` (as the
+`USER_UID` user, or with `sudo`), put in the test keys and the webhook secret, which
+`stripe listen --forward-to 127.0.0.1:8080/webhooks/stripe` prints, and run
+`docker compose restart store-service`. With `dev_keys`, the service refuses live keys, and a
+BTCPay that is not on loopback.
+
+To start over, delete the containers and every dev state together, since orders in the database
+point at names on the chain. `./data` belongs to root and to Postgres's user, so:
+
+```
+docker compose down
+sudo rm -rf data config
+```
 
 ### Caddy
 

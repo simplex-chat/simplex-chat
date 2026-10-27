@@ -1,7 +1,8 @@
 #!/bin/sh
 # The local chain of compose.dev.yml. Runs in the webapp's dev image, which has anvil, node, the deploy script and the
 # compiled contracts.
-#   dev-chain.sh                  anvil with its state kept in $CHAIN_DIR, and the names contracts deployed on the first start
+#   dev-chain.sh                  anvil with its state kept in $CHAIN_DIR, the names contracts deployed on the first start,
+#                                 and $CONFIG_DIR/store_service.ini written for them unless it exists
 #   dev-chain.sh topup [address] [eth]   sets an account's balance, by default the service key's account to 10000 ETH
 set -eu
 
@@ -11,6 +12,17 @@ ANVIL="${ANVIL:-anvil}"
 WEBAPP_DIR="${WEBAPP_DIR:-/repo/webapp}"
 RPC_URL="http://127.0.0.1:$RPC_PORT"
 DEPLOYMENT="$CHAIN_DIR/deployment.json"
+CONFIG_DIR="${CONFIG_DIR:-/config}"
+CONFIG="$CONFIG_DIR/store_service.ini"
+# the store service's user, which must own its config
+USER_UID="${USER_UID:-1000}"
+USER_GID="${USER_GID:-1000}"
+# A public test key, like anvil's: made once with `simplex-chat badge keygen`. The service trusts it only through
+# [issuer] dev_keys, which it accepts only on chain 31337, and refuses it at an index clients trust (1 to 8).
+DEV_ISSUER_INDEX=999
+DEV_ISSUER_SECRET=Grc_c1bKCSa3U8mMwRy6XNTJNwSveJi332wAqyyCy2o=
+TERMS_VERSION=2026-10-23
+TERMS_URL=https://simplex.chat/
 # compose's healthcheck waits for this file, written once the contracts are on the running chain
 READY="$CHAIN_DIR/ready"
 # the dumps are taken this often and on exit, so a restart keeps the contracts and every name registered on them
@@ -50,17 +62,72 @@ else
   (cd "$WEBAPP_DIR" && RPC_URL="$RPC_URL" LOCAL_CHAIN_OUT="$DEPLOYMENT" node dev/deploy.ts)
 fi
 
-node -e '
-const d = require(process.argv[1])
-console.log(`[chain] for config/store_service.ini:
-rpc_url = ${d.rpcUrl}
-chain_id = ${d.chainId}
-controller = ${d.controller}
-sponsor = ${d.sponsor}
-base_registrar = ${d.baseRegistrar}
-resolver = ${d.resolver}
-service_key = ${d.registrarKey}
-confirmations = 1`)' "$DEPLOYMENT"
+field() {
+  node -p "require('$DEPLOYMENT').$1"
+}
+
+write_config() {
+  tmp="$CONFIG.tmp"
+  rm -f "$tmp"
+  (umask 077 && cat > "$tmp" <<INI)
+; written by dev-chain.sh for the local chain on its first start, and never rewritten
+[listener]
+host = 127.0.0.1
+badges_port = 8080
+names_port = 8081
+serve_webapp = on
+trust_forwarded_for = on
+
+[poll]
+waiting_seconds = 3
+idle_seconds = 60
+
+[issuer]
+index = $DEV_ISSUER_INDEX
+private_key = $DEV_ISSUER_SECRET
+dev_keys = $DEV_ISSUER_INDEX:$DEV_ISSUER_SECRET
+
+[names]
+tld = $(field tld)
+terms_version = $TERMS_VERSION
+terms_url = $TERMS_URL
+
+[chain]
+rpc_url = $(field rpcUrl)
+chain_id = $(field chainId)
+controller = $(field controller)
+sponsor = $(field sponsor)
+base_registrar = $(field baseRegistrar)
+resolver = $(field resolver)
+service_key = $(field registrarKey)
+confirmations = 1
+
+[dev]
+accept_unverified_store_receipts = off
+
+; dev_keys accepts only Stripe test keys: sk_test_ or rk_test_, and pk_test_
+;[stripe]
+;secret_key = rk_test_replace-me
+;publishable_key = pk_test_replace-me
+;webhook_secret = whsec_replace-me
+
+; dev_keys accepts only a BTCPay on loopback: 127.0.0.1, ::1 or localhost
+;[btcpay]
+;host = https://127.0.0.1
+;api_key = replace-me
+;store_id = replace-me
+;webhook_secret = replace-me
+INI
+  chown "$USER_UID:$USER_GID" "$CONFIG_DIR" "$tmp"
+  chmod 700 "$CONFIG_DIR"
+  mv "$tmp" "$CONFIG"
+  echo "wrote $CONFIG"
+}
+if [ -e "$CONFIG" ]; then
+  echo "kept $CONFIG"
+else
+  write_config
+fi
 touch "$READY"
 
 wait "$anvil_pid"
