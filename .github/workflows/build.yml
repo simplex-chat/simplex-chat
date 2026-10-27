@@ -851,6 +851,9 @@ jobs:
     env:
       image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}
       source_hashes: dist-newstyle/sources.sha256
+      opt: O0
+      ghc_options: --ghc-options=-O0
+      cache_o0: false
     concurrency: *linux-concurrency
     strategy:
       fail-fast: false
