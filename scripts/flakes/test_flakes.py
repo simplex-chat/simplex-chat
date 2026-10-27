@@ -116,6 +116,10 @@ class OutcomeTest(unittest.TestCase):
             tested = flakes.job_record(SMP, MASTER, job(LINUX_SMP, "failure", "failure", step="Test"), lambda: text)[0]
             self.assertEqual((tested["outcome"], tested["retries"]), (outcome, []))
 
+    def test_retries_are_not_read_from_simplex_chat_jobs(self):
+        failed = record(CHAT, job(LINUX, "failure", "failure"), "simplexmq-retries.log")
+        self.assertEqual((failed["outcome"], failed["retries"]), ("failed", []))
+
     def test_job_without_selected_tests_is_not_tested_in_manual_and_pull_request_runs(self):
         for run in (DISPATCH, PULL_RUN):
             untested = record(CHAT, job(LINUX, "success", "success"), "no-tests-selected.log", run)
@@ -159,6 +163,7 @@ class OutcomeTest(unittest.TestCase):
 
     def test_missing_log(self):
         self.assertEqual(record(CHAT, job(LINUX, "failure", "failure"), "")["outcome"], "log missing")
+        self.assertEqual(record(SMP, job(LINUX_SMP, "success", "success", step="Test"), "")["outcome"], "passed")
 
     def test_cancelled_job_without_steps_is_counted_when_its_job_key_is_tested(self):
         cancelled = job(LINUX, "absent", "cancelled", earlier=())
@@ -449,6 +454,15 @@ class CollectorTest(unittest.TestCase):
         with unittest.mock.patch("urllib.request.build_opener", return_value=FakeOpener(404)):
             self.assertIsNone(github.log(CHAT, 2))
 
+    def test_test_path_is_matched_without_its_leading_and_trailing_slashes(self):
+        path = "SimpleX chat client/group tests/group history/quoted messages"
+        logs = {PUSH_RUN["id"]: "hspec-2.11-failures.log"}
+        with tempfile.TemporaryDirectory() as directory:
+            collector = flakes.Collector(FakeGitHub(logs), flakes.Cache(Path(directory)))
+            args = argparse.Namespace(url=f"https://github.com/{CHAT}", base="master", window=30, path=path)
+            failures = flakes.test_command(collector, args).data["failures"]
+        self.assertEqual([failure["test"] for failure in failures], [f"/{path}/"])
+
 
 def entry(run_id, created, jobs):
     run = {
@@ -552,6 +566,18 @@ class ReportTest(unittest.TestCase):
         self.assertIn("simplex-chat/simplex-chat master: 2 runs, 2026-10-20 to 2026-10-21", report)
         self.assertIn("| 1 | ubuntu-22.04-x86_64 GHC 8.10.7 | 2 | 1 | 1 |", report)
         self.assertIn("| 1 | /a/ | 2 | 1 | 1 | 2026-10-21 |", report)
+
+    def test_branch_summary_orders_job_keys_and_tests_by_failures(self):
+        window = flakes.Window(CHAT, "master", [
+            entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, ["/c/", "/b/"]), (LINUX_GHC8, 1, ["/c/"])]),
+            entry(11, "2026-10-20T00:00:00Z", [(LINUX, 1, ["/c/", "/b/", "/a/"]), (LINUX_GHC8, 1, [])]),
+        ])
+        report = flakes.branch_report(window).text
+        self.assertIn("| 1 | ubuntu-22.04-x86_64 GHC 9.6.3 | 2 | 0 | 2 |", report)
+        self.assertIn("| 2 | ubuntu-22.04-x86_64 GHC 8.10.7 | 2 | 1 | 1 |", report)
+        self.assertIn("| 1 | /c/ | 3 | 2 | 1 | 2026-10-21 |", report)
+        self.assertIn("| 2 | /b/ | 2 | 2 | 0 | 2026-10-21 |", report)
+        self.assertIn("| 3 | /a/ | 1 | 1 | 0 | 2026-10-20 |", report)
 
     def test_branch_summary_counts_retries_by_test(self):
         runs = [entry(run_id, "2026-10-21T00:00:00Z", [(LINUX, 1, [])]) for run_id in (10, 11)]
