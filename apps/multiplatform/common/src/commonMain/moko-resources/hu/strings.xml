@@ -2887,7 +2887,7 @@
     <string name="badges_type_investor">Befektető</string>
     <string name="badges_support_ended_on">Az Ön kitűzője ekkor járt le: %1$s.</string>
     <string name="badges_remind_me_later">Emlékeztetés később</string>
-    <string name="supporter_perks">Támogatói előnyök</string>
+    <string name="supporter_perks">A támogatással járó előnyök</string>
     <string name="v7_1_supporter_badge_title">Támogatói kitűző ❤️</string>
     <string name="v7_1_supporter_badge_body">Segítsen fenntartani a hálózat működését és küldjön akár 2 GB méretű fájlokat.</string>
     <string name="app_link_not_supported">Ezt a hivatkozást nem támogatja az alkalmazás ezen verziója. Ellenőrizze, hogy van-e elérhető alkalmazásfrissítés.</string>
