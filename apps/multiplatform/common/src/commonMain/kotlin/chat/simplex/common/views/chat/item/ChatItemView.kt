@@ -298,7 +298,11 @@ fun ChatItemView(
       }
     }
 
-    Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
+    ChatSendAnimatedItem(cItem.id) { animationModifier ->
+    Column(
+      modifier = animationModifier,
+      horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start
+    ) {
       val canReply = (cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) &&
           cInfo !is ChatInfo.Local && !cItem.isReport && !cItem.meta.isLive && cItem.meta.itemDeleted == null
       Box {
@@ -816,6 +820,7 @@ fun ChatItemView(
       if (cItem.content.msgContent != null && (cItem.meta.itemDeleted == null || revealed.value) && cItem.reactions.isNotEmpty()) {
         ChatItemReactions()
       }
+    }
     }
   }
 }

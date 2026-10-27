@@ -44,6 +44,7 @@ Rendered by `LazyColumnWithScrollBar` with pagination:
 | Pagination | `apiLoadMessages` called on scroll to load more; supports `.before`, `.after`, `.around`, `.initial` |
 | Merged items | Adjacent messages grouped with `ItemSeparation` (timestamp, large gap, date separators) |
 | Message appearance | Telegram reference system typography, compact text insets, circular bubble corners and small joined corners; five-minute sender runs stop at dates/events/deleted items. Each message shows a timestamp. |
+| Sending motion | Newly sent text/link bubbles rise from the input over 250 ms, with a short fade and subtle scale. Replies and notes use the same transition. System animation settings are respected. |
 | Floating buttons | Scroll-to-bottom button with unread count |
 | Date separators | Date headers between messages from different days |
 | Wallpaper | Per-chat themed background via `perChatTheme` from contact/group `uiThemes` |
@@ -55,6 +56,12 @@ previews use a compact tinted card with an accent line and bold sender. Metadata
 reserves its actual rendered width so text and status indicators do not overlap.
 System, deletion and decryption error information remains visible in the compact
 message typography. The input text also uses the system sans-serif font.
+
+The send transition starts after successful local insertion. History, incoming
+messages, edits, forwards, live updates, reports and attachments keep their normal
+appearance. Leaving the chat cancels its transitions; missing bounds, very tall
+bubbles or delayed API responses use ordinary rendering. This initial adaptation
+moves the existing bubble; Telegram's separate text-reflow morph is not included.
 
 ### Message Types
 

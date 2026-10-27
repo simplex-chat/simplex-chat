@@ -17,6 +17,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -957,9 +958,15 @@ fun ChatLayout(
   val chatInfo = remember { derivedStateOf { chat.value?.chatInfo } }
   val scope = rememberCoroutineScope()
   val attachmentDisabled = remember { derivedStateOf { composeState.value.attachmentDisabled } }
+  val sendAnimations = remember(remoteHostId.value, chat.value?.id, chatsCtx, chatsCtx.groupScopeInfo, chatModel.currentUser.value?.userId) { ChatSendAnimations(scope) }
+  DisposableEffect(sendAnimations) {
+    onDispose { sendAnimations.dispose() }
+  }
+  CompositionLocalProvider(LocalChatSendAnimations provides sendAnimations) {
   Box(
     Modifier
       .fillMaxWidth()
+      .onGloballyPositioned { sendAnimations.viewportBounds = it.chatAnimationBounds() }
       .desktopOnExternalDrag(
         enabled = remember(attachmentDisabled.value, chatInfo.value?.sendMsgEnabled) { mutableStateOf(!attachmentDisabled.value && chatInfo.value?.sendMsgEnabled == true) }.value,
         onFiles = { paths -> composeState.onFilesAttached(paths.map { it.toURI() }) },
@@ -1170,6 +1177,7 @@ fun ChatLayout(
         }
       }
     }
+  }
   }
 }
 

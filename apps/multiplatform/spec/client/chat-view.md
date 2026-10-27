@@ -16,6 +16,7 @@ Source: `common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt
 8. [GroupChatInfoView](#8-groupchatinfoview)
 9. [Source Files](#9-source-files)
 10. [Telegram Reference Layout](#10-telegram-reference-layout)
+11. [Outgoing Message Animation](#outgoing-message-animation)
 
 ---
 
@@ -57,7 +58,7 @@ ChatView
 
 ## 2. ChatView Composable
 
-**Location:** [`ChatView()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L98)
+**Location:** [`ChatView()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L99)
 
 ```kotlin
 fun ChatView(
@@ -108,7 +109,7 @@ The outer `when (chatInfo)` (line ~229) branches:
 
 ## 3. Message List
 
-**Location:** [`ChatItemsList()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1733)
+**Location:** [`ChatItemsList()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1741)
 
 The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, meaning index 0 is the newest message at the bottom of the screen.
 
@@ -284,6 +285,7 @@ Key sections: group profile, group link, member list with roles, group preferenc
 | File | Description |
 |---|---|
 | `ChatItemView.kt` | Message type routing, context menu, reactions |
+| `ChatSendAnimation.kt` | Scoped outgoing-send tokens, measured bubble motion and lifecycle cleanup |
 | `CIBrokenComposableView.kt` | Fallback for rendering errors |
 | `CICallItemView.kt` | Call event display (incoming/outgoing/missed) |
 | `CIChatFeatureView.kt` | Chat feature change event |
@@ -364,3 +366,53 @@ uses the natural message style. Selectable and clickable text both receive the
 inline content map; metadata/live-typing suffixes are excluded from selection.
 `ChatBubbleGroupingTest` runs on desktop/JVM because model sample fixtures load
 localized strings and require initialized Android resources on an Android JVM test.
+
+<a id="outgoing-message-animation"></a>
+
+## 11. Outgoing Message Animation
+
+[`ChatLayout()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L902)
+provides one `ChatSendAnimations` controller per mounted remote host, chat, group
+scope and user. `SendMsgView` measures its padded input bounds in window coordinates.
+The send gesture captures those bounds before API work; the successful response
+registers each returned item ID on Main immediately before `addChatItem`.
+See the [composition hooks](compose.md#outgoing-send-animation).
+
+[`ChatSendAnimations`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatSendAnimation.kt#L28)
+owns independent transitions keyed by item ID:
+
+- `capture()` returns a `PendingChatSend` with immutable source bounds and a
+  monotonic creation time; absent/empty bounds produce no token.
+- `PendingChatSend.register()` delegates to the captured controller's `register()`.
+  Disposed controllers and captures older than two seconds are ignored. Registered
+  entries expire after one second if the list never composes the corresponding row.
+- `finish()` removes only the matching transition, so an older completion cannot
+  remove a replacement. `dispose()` invalidates the session and clears entries.
+- `ChatSendTransition` contains geometry and a running flag; no message text is
+  retained. The pending timeout never interrupts a running, system-scaled animation.
+
+[`chatAnimationBounds()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatSendAnimation.kt#L73)
+uses window position and layout size, without clipping the measured rectangle.
+[`ChatSendAnimatedItem()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatSendAnimation.kt#L80)
+keeps an untransformed outer `Box` separate from the animated content's
+`graphicsLayer`. The content call site stays stable on completion, preserving
+selection and remembered bubble state. Layout changes update the destination;
+translation is recomputed against the captured source during scrolling/resizing.
+
+The reference is Telegram Android `3de37c8cf`, `ChatListItemAnimator` and
+`TextMessageEnterTransition`: duration 250 ms; vertical cubic
+`(0.19919473, 0.010644531, 0.27920938, 0.9102539)`; horizontal easing is
+`EASE_OUT(EASE_OUT_QUINT(t))`; opacity reaches one after 100 ms. The adaptation
+adds a subtle scale from 0.96 to 1 and moves the existing whole bubble. It does not
+implement Telegram's separate text reflow/background morph or neighboring-row
+insertion motion. The composer is painted above the list and obscures the initial
+part of the path inside the input area; this version does not use an overlay.
+
+Zero `MotionDurationScale` skips the transition before waiting for a frame and
+draws normally. Missing/offscreen destinations and bubbles taller than the viewport
+also draw normally. Completion, cancellation and row disposal remove the entry;
+chat/profile/scope navigation disposes the old controller. Existing content remains
+the single semantic and interaction tree.
+
+`ChatSendAnimationTest` covers stale responses after navigation, independent rapid
+sends with captured bounds, and missing input/unmarked history.

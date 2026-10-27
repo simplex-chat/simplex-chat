@@ -136,6 +136,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/chat/item/ChatItemView.kt` | PC2, PC3, PC5, PC6, PC7, PC8 | High | Root chat item renderer with context menus |
 | `views/chat/item/TextItemView.kt` | PC2, PC3, PC4 | Medium | Text message bubble rendering |
 | `views/chat/item/ChatBubbleStyle.kt` | PC2, PC3, PC5, PC24 | Medium | Scoped conversation typography, measured layout constants and sender/date grouping boundaries |
+| `views/chat/item/ChatSendAnimation.kt` | PC2, PC3, PC4, PC11 | Medium | Scoped local-send tokens and composer-to-bubble motion; no model/protocol state |
 | `views/chat/item/FramedItemView.kt` | PC4, PC6, PC10, PC11 | Medium | Framed (quoted/forwarded) message container |
 | `views/chat/item/CIImageView.kt` | PC10 | Medium | Image message rendering |
 | `views/chat/item/CIVideoView.kt` | PC10 | Medium | Video message rendering |

@@ -88,7 +88,7 @@ Common Module (commonMain)
 | API | [spec/api.md](api.md) | ChatController command dispatch, ~150 API functions in 11 categories, CC/CR/API types |
 | Database | [spec/database.md](database.md) | SQLite database files, migrations, encryption, backup/restore |
 | Impact | [spec/impact.md](impact.md) | Source file → product concept mapping for change impact analysis |
-| Chat View | [spec/client/chat-view.md](client/chat-view.md) | ChatView, ChatItemView, message rendering, item interactions |
+| Chat View | [spec/client/chat-view.md](client/chat-view.md) | ChatView, ChatItemView, ChatSendAnimation, message rendering, item interactions |
 | Chat List | [spec/client/chat-list.md](client/chat-list.md) | ChatListView, ChatPreviewView, filtering, search, tags |
 | Compose | [spec/client/compose.md](client/compose.md) | ComposeView, SendMsgView, ComposeState, attachments, mentions |
 | Navigation | [spec/client/navigation.md](client/navigation.md) | App screen routing, onboarding, settings, new chat flows |
@@ -126,6 +126,7 @@ Common Module (commonMain)
 | JNI Bridge | [`Core.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L18) | `external fun initHS()` | 18 |
 | Chat Controller | [`SimpleXAPI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L525) | `object ChatController` | 525 |
 | Chat Model | [`ChatModel.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L86) | `object ChatModel` | 86 |
+| Outgoing Bubble Motion | [`ChatSendAnimation.kt`](../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatSendAnimation.kt#L28) | `class ChatSendAnimations` | 28 |
 | App Preferences | [`SimpleXAPI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L102) | `class AppPreferences` | 102 |
 | Platform Interface | [`Platform.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Platform.kt#L15) | `interface PlatformInterface` | 15 |
 | Notification Manager | [`NtfManager.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/NtfManager.kt#L19) | `abstract class NtfManager` | 19 |

@@ -251,6 +251,7 @@ desktop/src/jvmMain/kotlin/chat/simplex/desktop/ -- Desktop app (1 file)
 | common/.../common/views/chat/ChatInfoView.kt | spec/client/chat-view.md | product/views/contact-info.md |
 | common/.../common/views/chat/group/ | spec/client/chat-view.md | product/views/group-info.md |
 | common/.../common/views/chat/item/ | spec/client/chat-view.md | product/views/chat.md |
+| common/.../common/views/chat/item/ChatSendAnimation.kt | spec/client/chat-view.md#outgoing-message-animation, spec/client/compose.md#outgoing-send-animation | product/views/chat.md |
 | common/.../common/views/call/CallView.kt | spec/services/calls.md | product/views/call.md |
 | common/.../common/views/call/IncomingCallAlertView.kt | spec/services/calls.md | product/views/call.md |
 | common/.../common/views/call/WebRTC.kt | spec/services/calls.md | product/flows/calling.md |

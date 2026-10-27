@@ -412,6 +412,7 @@ fun ComposeView(
   focusRequester: FocusRequester?,
 ) {
   val cancelledLinks = rememberSaveable { mutableSetOf<String>() }
+  val sendAnimations = LocalChatSendAnimations.current
   val chatScope = remember(chatsCtx) { chatsCtx.groupScopeInfo?.toChatScope() }
   val scopeChatId = remember { chat.id }
   fun isSimplexLink(link: String): Boolean =
@@ -560,7 +561,7 @@ fun ComposeView(
     }
   }
 
-  suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?, mentions: Map<String, Long>, sign: Boolean = false): ChatItem? {
+  suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?, mentions: Map<String, Long>, sign: Boolean = false, sendAnimation: PendingChatSend? = null): ChatItem? {
     val cInfo = chat.chatInfo
     val chatItems = if (chat.chatInfo.chatType == ChatType.Local)
       chatModel.controller.apiCreateChatItems(
@@ -583,6 +584,7 @@ fun ComposeView(
     if (!chatItems.isNullOrEmpty()) {
       chatItems.forEach { aChatItem ->
         withContext(Dispatchers.Main) {
+          sendAnimation?.register(aChatItem.chatItem.id)
           chatsCtx.addChatItem(chat.remoteHostId, aChatItem.chatInfo, aChatItem.chatItem)
         }
       }
@@ -702,7 +704,7 @@ fun ComposeView(
   // toChat is the chat the message was composed in - it differs from the one this view shows only for the live message
   // committed by a chat switch, which has no context item, so the forwarding, editing and reporting branches below
   // cannot run with a different chat. cs is that send's state, captured before the switch replaced it.
-  suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?, sign: Boolean = false, toChat: Chat = chat, cs: ComposeState = composeState.value): List<ChatItem>? {
+  suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?, sign: Boolean = false, toChat: Chat = chat, cs: ComposeState = composeState.value, sendAnimation: PendingChatSend? = null): List<ChatItem>? {
     // a send for another chat may not write to composeState, even after that chat is opened again - it was handed over
     fun composeIsForSend(): Boolean = toChat.id == chat.id
     var sent: List<ChatItem>?
@@ -948,7 +950,8 @@ fun ComposeView(
           live = if (content !is MsgContent.MCVoice && index == msgs.lastIndex) live else false,
           ttl = ttl,
           mentions = cs.memberMentions,
-          sign = sign
+          sign = sign,
+          sendAnimation = sendAnimation
         )
         sent = if (sendResult != null) listOf(sendResult) else null
         if (sent == null && index == msgs.lastIndex && cs.liveMessage == null) {
@@ -1000,8 +1003,15 @@ fun ComposeView(
   // toChat and composed are for the chat switch, which hands the compose state over to the chat it opened; passing
   // toChat without doing that leaves the sent message in the input
   fun sendMessage(ttl: Int?, sign: Boolean = false, toChat: Chat = chat, composed: ComposeState? = null) {
+    val cs = composed ?: composeState.value
+    val sendAnimation = if (
+      toChat.id == chat.id && cs.liveMessage == null &&
+      (cs.contextItem is ComposeContextItem.NoContextItem || cs.contextItem is ComposeContextItem.QuotedItem) &&
+      (cs.preview is ComposePreview.NoPreview || cs.preview is ComposePreview.CLinkPreview) &&
+      cs.message.text.isNotBlank()
+    ) sendAnimations?.capture() else null
     withLongRunningApi(slow = 120_000) {
-      sendMessageAsync(null, false, ttl, sign, toChat, composed ?: composeState.value)
+      sendMessageAsync(null, false, ttl, sign, toChat, cs, sendAnimation)
     }
   }
 
