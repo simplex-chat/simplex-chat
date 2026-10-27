@@ -290,8 +290,8 @@ final class BadgeStore: ObservableObject {
         } catch let error where badgeReceiptRefused(error) {
             logger.error("BadgeStore.handOver: \(responseError(error))")
             await receipt.transaction.finish()
-            // a limited move raises no event, so Restore learns of it only from this answer
-            if origin == .restored && badgeServiceErrorCode(error) == .transferLimited { throw error }
+            // Restore found this purchase, so it says why it was refused rather than that there was nothing to restore
+            if origin == .restored { throw error }
         }
     }
 

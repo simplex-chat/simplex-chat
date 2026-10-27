@@ -305,8 +305,8 @@ object BadgeStore {
         if (badgeReceiptRefused(r.err)) {
           Log.e(TAG, "BadgeStore.handOver: ${r.err?.string}")
           finish(receipt)
-          // a limited move raises no event, so Restore learns of it only from this answer
-          if (origin == StoreReceiptOrigin.Restored && r.err != null && badgeServiceErrorCode(r.err) is BadgeServiceErrorCode.TransferLimited) throw BadgeStoreError.ApiError(r.err)
+          // Restore found this purchase, so it says why it was refused rather than that there was nothing to restore
+          if (origin == StoreReceiptOrigin.Restored && r.err != null) throw BadgeStoreError.ApiError(r.err)
         } else {
           throw r.err?.let(BadgeStoreError::ApiError) ?: Exception("apiPurchaseBadge: unexpected response")
         }
