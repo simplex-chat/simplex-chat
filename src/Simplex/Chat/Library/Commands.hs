@@ -5400,9 +5400,9 @@ handOverStoreReceipt presentingUser echoedInvoiceId origin payment = do
                 withStore' (\db -> purchaseUnreached db owner badgePurchaseId) >>= \case
                   False -> rehold SHKPurchase
                   True -> do
-                    unlessM (withStore' (`userHasBadge` owner)) $ do
-                      limited <- withStore' $ \db -> holdStoreTransfer db g owner txRef payment now
-                      when limited $ lift (resumeStoreReceiptWork ownerId) >> throwRedeemError (BREServiceError BSETransferLimited)
+                    unlessM (withStore' (`userHasBadge` owner)) $
+                      whenM (withStore' $ \db -> holdStoreTransfer db g owner txRef payment now) $
+                        lift (resumeStoreReceiptWork ownerId) >> throwRedeemError (BREServiceError BSETransferLimited)
                     pure True
           movedOut <- withStore' (`purchaseMovedOut` badgePurchaseId)
           answeredHeld <- case resumeHold now payment of
