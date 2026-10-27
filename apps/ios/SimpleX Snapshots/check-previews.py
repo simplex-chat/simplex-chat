@@ -5,14 +5,22 @@ import sys
 from pathlib import Path
 
 EXCLUDED = {
+    "AddChannelView_Previews",
+    "AddGroupView_Previews",
     "AppearanceSettings_Previews",
     "BadgesCheckOrderView_Previews",
     "BadgesChooseBadgeView_Previews",
     "BadgesHowLongView_Previews",
     "ChatPreviewView_Previews",
+    "CIVoiceView_Previews",
+    "CreateProfile_Previews",
+    "FramedCIVoiceView_Previews",
+    "GroupProfileView_Previews",
+    "GroupWelcomeView_Previews",
     "MigrateFromDevice_Previews",
     "NewChatView_Previews",
     "ServersSummaryView_Previews",
+    "SmallLinkPreview_Previews",
     "TerminalView_Previews",
     "UserProfilesView_Previews",
 }
