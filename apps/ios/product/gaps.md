@@ -70,5 +70,11 @@ The Haskell Store modules (`Store/Direct.hs`, `Store/Groups.hs`, `Store/Messages
 
 **REC:** Restore by a receipt code for Stripe and crypto purchases, and announce a limited move on the first Restore.
 
+### GAP: A device whose subscription Restore moved away still offers to buy it again
+**Source:** [Shared/Views/Badges/BadgeStore.swift](../Shared/Views/Badges/BadgeStore.swift)
+Once Restore moves a subscription to another device or profile, the service answers the old purchase key ended, and this device retires its badge. Its ledger tip is then the `transferOut` debit, so core knows the payment moved out (`purchaseMovedOut` in `Store/Badges.hs`), but no field of `BadgeState` says so: the newest purchase still reads as a subscription not shown, of its own tier, with the same `subscription.transactionRef`. So `resumableSubscription` returns that original id, `forSale` opens monthly and annual at that tier when it is the only original id in `priorSubscriptions`, and with nothing open (`canBuy`) the order screen's `payButton` is enabled. A charge Apple makes then keeps the original transaction id, whose payment the service has bound to the key Restore moved it to, so it funds that key; here `handOverStoreReceipt` finds the purchase moved out, answers with its old credential, the app finishes the transaction, and this profile shows no badge and no message.
+
+**REC:** After the first release, carry the move in the badge state, so `forSale` closes subscriptions for a purchase whose payment moved away.
+
 ---
 
