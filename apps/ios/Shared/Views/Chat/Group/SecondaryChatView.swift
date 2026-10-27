@@ -34,7 +34,9 @@ struct SecondaryChatView: View {
 
 struct SecondaryChatView_Previews: PreviewProvider {
     static var previews: some View {
-        SecondaryChatView(
+        let chatModel = ChatModel()
+        chatModel.secondaryIM = ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: .memberSupport(groupMember_: GroupMember.sampleData)))
+        return SecondaryChatView(
             chat: Chat(
                 chatInfo: .group(groupInfo: GroupInfo.sampleData, groupChatScope: .memberSupport(groupMember_: GroupMember.sampleData)),
                 chatItems: [],
@@ -42,5 +44,6 @@ struct SecondaryChatView_Previews: PreviewProvider {
             ),
             scrollToItemId: Binding.constant(nil)
         )
+        .environmentObject(chatModel)
     }
 }
