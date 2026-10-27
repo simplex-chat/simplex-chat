@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowState
 import chat.simplex.common.AppPreview
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.ChatModel
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.PreviewTerminalLayout
@@ -151,6 +152,7 @@ class SnapshotTest {
         for (scene in previewScenes) {
           for (scale in scene.fontScales) {
             appPrefs.fontScale.set(scale)
+            ChatModel.terminalItems.value = listOf()
             val file = "${scene.name}-$themeName-font-${(scale * 100).roundToInt()}.png"
             try {
               val image = renderSnapshot(scene.content)
