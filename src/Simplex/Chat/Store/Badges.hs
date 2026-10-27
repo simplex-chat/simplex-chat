@@ -188,6 +188,21 @@ holdStoreReceipt db g User {userId} origin invoiceId_ txRef@StoreTransactionRef 
                 "UPDATE badge_store_receipts SET payment = ?, next_attempt_at = ?, retry_delay = NULL, credit_error = NULL WHERE badge_store_receipt_id = ? AND payment = ?"
                 (paymentJSON, now, receiptId, held)
         _ -> pure ()
+      -- the Buy record the store echoed for this charge is never attached, as the charge continues this record's subscription;
+      -- this record takes its invoice id, so the credit names the charge the app keeps unfinished
+      forM_ invoiceId_ $ \invoiceId -> do
+        deleted <-
+          maybeFirstRow' False ((== (1 :: Int)) . fromOnly) $
+            DB.query
+              db
+              [sql|
+                DELETE FROM badge_store_receipts
+                WHERE invoice_id = ? AND transaction_ref IS NULL AND payment IS NULL
+                  AND NOT EXISTS (SELECT 1 FROM badge_purchases p WHERE p.badge_store_receipt_id = badge_store_receipts.badge_store_receipt_id)
+                RETURNING 1
+              |]
+              (Only invoiceId)
+        when deleted $ DB.execute db "UPDATE badge_store_receipts SET invoice_id = ? WHERE badge_store_receipt_id = ?" (invoiceId, receiptId)
       pure $ Just r
     Nothing -> do
       forM_ invoiceId_ $ \invoiceId ->
