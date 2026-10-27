@@ -4,7 +4,7 @@
 
 ## Running it
 
-The workflow runs only when started by hand, on any branch, from the Actions tab or with `gh workflow run`: [App tests on GitHub's runners](../README.md) says how and lists the inputs.
+The workflow runs only when started by hand, on any branch, from the Actions tab or with `gh workflow run`: [CI on GitHub's runners](../README.md) says how and lists the inputs.
 
 Results: the job logs, the Claude job's summary (Claude's usage) and the artifacts `ios-sim-smoke-test` (a screenshot, a 1000-px view and an accessibility tree per step, the app log), `ios-sim-backend-logs` and `ios-sim-claude-test` (the Claude job's smoke test in `smoke-test/`, and per session: `prompt.md`, `report.md`, `shots/`, `transcript.jsonl`, `usage.json`). Read them with `gh run view <id> --log` and `gh run download <id> -n <artifact>`.
 
@@ -22,7 +22,7 @@ The macOS jobs run on `macos-26`, the image with Xcode 26 and the iPhone 17 simu
 
 ## The Claude session
 
-It runs in its own job, `claude`, once the app job has passed: the job installs that job's build (the artifact `ios-sim-app`, kept a day) in a new simulator, runs the smoke test to reach the sessions' starting state, then one session per layout listed in `claude-scope`, with Claude Code installed from npm at the version the desktop workflow pins too. Only this job references the environment `app-sim-claude`, which holds the secret `CLAUDE_CODE_OAUTH_TOKEN` (a Claude subscription token) and admits the branches its rule allows; one runs per branch at a time. Only the Claude step gets the token, and `claude-test.sh` passes it to the `claude` processes alone. The job checks out without persisting its GitHub token and installs a pinned AXe (`install-axe.sh`), since it holds the Claude token. It starts the test backend when `claude-scope` says `backend: yes`; a run that asks for Claude must then ask for the backend too, or the plan job fails. On master it says `no`, since the smoke plan doesn't use the backend.
+It runs in its own job, `claude`, once the app job has passed: the job installs that job's build (the artifact `ios-sim-app`, kept 14 days) in a new simulator, runs the smoke test to reach the sessions' starting state, then one session per layout listed in `claude-scope`, with Claude Code installed from npm at the version the desktop workflow pins too. Only this job references the environment `app-sim-claude`, which holds the secret `CLAUDE_CODE_OAUTH_TOKEN` (a Claude subscription token) and admits the branches its rule allows; one runs per branch at a time. Only the Claude step gets the token, and `claude-test.sh` passes it to the `claude` processes alone. The job checks out without persisting its GitHub token and installs a pinned AXe (`install-axe.sh`), since it holds the Claude token. It starts the test backend when `claude-scope` says `backend: yes`; a run that asks for Claude must then ask for the backend too, or the plan job fails. On master it says `no`, since the smoke plan doesn't use the backend.
 
 Each session's final message ends with `CLAUDE-TEST: PASS`, or `CLAUDE-TEST: FAIL` and the failed cases; the step fails unless every session passes.
 
