@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
@@ -362,36 +361,32 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
   val content = ArrayList<UploadContent>()
   val imagesPreview = ArrayList<String>()
   uris.forEach { uri ->
-    var bitmap: ImageBitmap? = null
-    var filePreview: String? = null
+    var preview: String? = null
     val uploadContent: UploadContent? = when {
       isImage(uri) -> {
         // Image
         val drawable = getDrawableFromUri(uri)
-        val animated = isAnimImage(uri, drawable)
-        if (!animated) filePreview = resizeImageFileToStrSize(uri, maxDataSize = 14000)
         // Do not show alert in case it's already shown from the function above
-        if (filePreview == null) bitmap = getBitmapFromUri(uri, withAlertOnException = !AlertManager.shared.hasAlertsShown())
-        if (animated) {
+        fun bitmapPreview() = getBitmapFromUri(uri, withAlertOnException = !AlertManager.shared.hasAlertsShown())?.let { resizeImageToStrSize(it, maxDataSize = 14000) }
+        if (isAnimImage(uri, drawable)) {
           // It's a gif or webp
           val fileSize = getFileSize(uri)
           if (fileSize != null && fileSize <= maxFileSize) {
+            preview = bitmapPreview()
             UploadContent.AnimatedImage(uri)
           } else {
-            bitmap = null
             showLargeFileAlert(fileSize ?: 0, value.sendIncognito, chatModel.currentUser.value?.profile)
             null
           }
-        } else if (filePreview != null || bitmap != null) {
-          UploadContent.SimpleImage(uri)
         } else {
-          null
+          preview = resizeImageFileToStrSize(uri, maxDataSize = 14000) ?: bitmapPreview()
+          UploadContent.SimpleImage(uri)
         }
       }
       else -> {
         // Video
         val res = getBitmapFromVideo(uri, withAlertOnException = true)
-        bitmap = res.preview
+        preview = res.preview?.let { resizeImageToStrSize(it, maxDataSize = 14000) }
         val durationMs = res.duration
         UploadContent.Video(uri, durationMs?.div(1000)?.toInt() ?: 0)
       }
@@ -399,9 +394,9 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
     // content and imagesPreview must stay index-aligned and equal-length: both consumers
     // (ComposeImageView and sendMessageAsync) cross-index one list by the other's index.
     // Only pair them when a preview bitmap exists; otherwise skip the media entirely.
-    if (uploadContent != null && (filePreview != null || bitmap != null)) {
+    if (preview != null && uploadContent != null) {
       content.add(uploadContent)
-      imagesPreview.add(filePreview ?: resizeImageToStrSize(bitmap!!, maxDataSize = 14000))
+      imagesPreview.add(preview)
     } else if (uploadContent is UploadContent.Video && !AlertManager.shared.hasAlertsShown()) {
       // A corrupted/undecodable video can yield a null preview frame without throwing, so
       // getBitmapFromVideo shows no alert. Skip it (other picked media still send) and tell
