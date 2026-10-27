@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.*
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
@@ -1921,6 +1922,27 @@ fun BoxScope.ChatItemsList(
     reveal: (Boolean) -> Unit
   ) {
     val itemScope = rememberCoroutineScope()
+    val showMenu = remember(cItem.id) { mutableStateOf(false) }
+    val rowActions = rememberUpdatedState(ChatItemActions(
+      onClick = {
+        if (selectedChatItems.value != null) {
+          if (cItem.canBeDeletedForSelf) {
+            selectUnselectChatItem(cItem.id !in selectedChatItems.value.orEmpty(), cItem, revealed, selectedChatItems, reversedChatItems)
+          }
+        } else {
+          showMenu.value = true
+          if (searchValueIsNotBlank.value || cItem.meta.itemForwarded?.chatTypeApiIdMsgId != null) {
+            hoveredItemId.value = if (hoveredItemId.value == cItem.id) null else cItem.id
+          }
+        }
+      },
+      onLongClick = {
+        showMenu.value = false
+        if (cItem.canBeDeletedForSelf) {
+          selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems)
+        }
+      },
+    ))
     val viewConfiguration = LocalViewConfiguration.current
     CompositionLocalProvider(
       // Makes horizontal and vertical scrolling to coexist nicely.
@@ -1956,7 +1978,7 @@ fun BoxScope.ChatItemsList(
                 highlightedItems.value = setOf()
               }
           }
-          ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp, swipeOffset = swipeOffset)
+          ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp, swipeOffset = swipeOffset, showMenu = showMenu)
         }
         }
       }
@@ -2011,7 +2033,14 @@ fun BoxScope.ChatItemsList(
           return originalPadding + (if (tailRendered) 0.dp else if (start) msgTailWidthDp * 2 else msgTailWidthDp)
         }
 
-        Box {
+        Box(Modifier.fillMaxWidth().then(if (appPlatform.isAndroid) Modifier.pointerInput(cItem.id) {
+          // Descendant controls consume their own gestures; only unused row space
+          // reaches this handler. Keep callbacks current without restarting a press.
+          detectTapGestures(
+            onTap = { rowActions.value.onClick() },
+            onLongPress = { rowActions.value.onLongClick() },
+          )
+        } else Modifier)) {
           val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
           val selectionVisible = selectedChatItems.value != null && cItem.canBeDeletedForSelf
           val selectionOffset by animateDpAsState(if (selectionVisible && !sent) 4.dp + 22.dp * fontSizeMultiplier else 0.dp)

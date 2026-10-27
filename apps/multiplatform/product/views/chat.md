@@ -87,8 +87,9 @@ Each type has a dedicated composable in `views/chat/item/`:
 
 ### Message Interactions
 
-On Android, tap an ordinary message bubble to open its context menu. Long-press
-selects the message and opens the bulk-action toolbar; subsequent taps toggle
+On Android, tap an ordinary message row, including empty space beside its bubble,
+to open its context menu. Long-pressing the message or adjacent empty space selects
+it and opens the bulk-action toolbar; subsequent taps toggle
 message selection. This selects whole messages, independently of desktop text
 selection. Desktop retains its existing long-press/right-click menu and drag text
 selection.

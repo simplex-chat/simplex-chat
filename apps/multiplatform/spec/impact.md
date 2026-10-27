@@ -108,7 +108,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
-| `views/chat/ChatView.kt` | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC11 | High | Core conversation UI — most messaging features |
+| `views/chat/ChatView.kt` | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC11 | High | Core conversation UI, full-row Android message gestures and shared menu visibility |
 | `views/chat/ComposeView.kt` | PC4, PC6, PC9, PC10, PC11 | High | Message composition — send path for all messages |
 | `views/chat/SendMsgView.kt` | PC4, PC9 | Medium | Send button and voice record toggle |
 | `views/chat/ComposeVoiceView.kt` | PC9 | Medium | Voice message recording UI |

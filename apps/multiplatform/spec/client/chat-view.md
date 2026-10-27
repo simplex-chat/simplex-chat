@@ -59,7 +59,7 @@ ChatView
 
 ## 2. ChatView Composable
 
-**Location:** [`ChatView()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L99)
+**Location:** [`ChatView()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L100)
 
 ```kotlin
 fun ChatView(
@@ -110,7 +110,7 @@ The outer `when (chatInfo)` (line ~229) branches:
 
 ## 3. Message List
 
-**Location:** [`ChatItemsList()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1741)
+**Location:** [`ChatItemsList()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1742)
 
 The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, meaning index 0 is the newest message at the bottom of the screen.
 
@@ -179,6 +179,15 @@ calls `selectChatItem()` for items with `canBeDeletedForSelf`; this enters the
 existing `selectedChatItems` bulk-message mode, where taps toggle selection. It
 does not start character selection. Desktop retains its status-information tap,
 long-press/right-click menu and existing drag text selection.
+
+[`ChatViewListItem()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1914)
+owns the remembered menu visibility and passes it to `ChatItemView(showMenu = ...)`.
+On Android, the outer full-width row handles unconsumed taps and long-presses,
+including gutters outside the bubble/avatar layout. Nested links, media, avatar
+buttons and reaction controls consume their own gestures first; scrolling and
+swipe-to-reply cancel pending taps. `rememberUpdatedState` keeps callbacks current
+without restarting `pointerInput(cItem.id)` during recomposition. Date separators
+remain outside this hit area, and the popup stays anchored to the bubble.
 
 [`MarkdownText()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TextItemView.kt#L126)
 gives links, SimpleX names, mentions, secrets, commands and modal
@@ -438,7 +447,7 @@ localized strings and require initialized Android resources on an Android JVM te
 
 ## 11. Outgoing Message Animation
 
-[`ChatLayout()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L902)
+[`ChatLayout()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L903)
 provides one `ChatSendAnimations` controller per mounted remote host, chat, group
 scope and user. `SendMsgView` measures its padded input bounds in window coordinates.
 The send gesture captures those bounds before API work; the successful response
@@ -567,7 +576,7 @@ the exact joined-bubble corner/tail or user-roundness shape; carry the source's
 actual contour if exact visual continuity is required.
 
 **[GAP] Synchronous gallery loading:** `providerForGallery().getMedia()` in
-[`ChatView.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3608)
+[`ChatView.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3642)
 already uses `runBlocking { getLoadedImage(...) }`, and the viewer calls it during
 composition. This can block the UI while reading/decoding a gallery page. Draw-only
 animation avoids multiplying that work per frame but does not remove the existing

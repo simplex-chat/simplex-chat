@@ -115,12 +115,12 @@ fun ChatItemView(
   itemSeparation: ItemSeparation,
   preview: Boolean = false,
   swipeOffset: Float = 0f,
+  showMenu: MutableState<Boolean> = remember(cItem.id) { mutableStateOf(false) },
 ) {
   val cInfo = chat.chatInfo
   val uriHandler = LocalUriHandler.current
   val sent = cItem.chatDir.sent
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
-  val showMenu = remember(cItem.id) { mutableStateOf(false) }
   val menuAnchor = remember(cItem.id) { ChatItemMenuAnchor() }
   @Composable
   fun MessageDropdownMenu(content: @Composable () -> Unit) {
