@@ -2,6 +2,8 @@ import argparse
 import datetime
 import tempfile
 import unittest
+import unittest.mock
+import urllib.error
 from pathlib import Path
 
 import flakes
@@ -103,6 +105,17 @@ class OutcomeTest(unittest.TestCase):
         expected = [{"label": "should expire one message", "signature": "inAnyOrder timeout"}]
         self.assertEqual((tested["outcome"], tested["retries"]), ("passed", expected))
 
+    def test_simplexmq_retries_are_not_read_from_timeouts_and_crashes(self):
+        log = fixture("simplexmq-retries.log")
+        timeout = "##[error]The action 'Test' has timed out after 120 minutes."
+        logs = {
+            "timeout": log.replace("Attempt 1 failed, retrying...", timeout),
+            "crashed": log.replace("1412 examples, 1 failure", "0 examples, 0 failures"),
+        }
+        for outcome, text in logs.items():
+            tested = flakes.job_record(SMP, MASTER, job(LINUX_SMP, "failure", "failure", step="Test"), lambda: text)[0]
+            self.assertEqual((tested["outcome"], tested["retries"]), (outcome, []))
+
     def test_job_without_selected_tests_is_not_tested_in_manual_and_pull_request_runs(self):
         for run in (DISPATCH, PULL_RUN):
             untested = record(CHAT, job(LINUX, "success", "success"), "no-tests-selected.log", run)
@@ -197,6 +210,11 @@ class FailureTest(unittest.TestCase):
         self.assertEqual(failure["reason"], ["line 1", "line 2", "line 3"])
         self.assertEqual(failure["signature"], "line N | line N | line N | line N")
 
+    def test_reason_lines_are_indented_by_7_spaces(self):
+        texts = ["Failures:", "  1) a", "       line 1", "unindented", "       line 2", '  To rerun use: --match "/a/"']
+        failure = flakes.test_output([flakes.Line(TIME, text) for text in texts]).failures[0]
+        self.assertEqual(failure["reason"], ["line 1", "line 2"])
+
     def test_both_hspec_versions_give_one_signature(self):
         current = flakes.test_output(lines("hspec-2.11-failures.log")).failures[2]
         older = flakes.test_output(lines("hspec-2.7-failures.log")).failures[0]
@@ -288,6 +306,13 @@ class HangTest(unittest.TestCase):
         ]
         self.assertEqual([path for path, _ in flakes.spec_items(lines("hspec-2.11-pending.log"))], expected)
 
+    def test_indented_lines_starting_with_a_bracket_are_not_groups(self):
+        texts = ["Chat client", "  group tests", "    a [✔]", "  [INFO] b", "    b [✔]", "2 examples, 0 failures"]
+        self.assertEqual(
+            flakes.spec_items([flakes.Line(TIME, text) for text in texts]),
+            [["/Chat client/group tests/a/", "a"], ["/Chat client/group tests/b/", "b"]],
+        )
+
     def next_item(self, timeout, spec_log):
         with tempfile.TemporaryDirectory() as directory:
             collector = flakes.Collector(None, flakes.Cache(Path(directory)))
@@ -364,13 +389,17 @@ PULL = {
 
 
 class FakeGitHub:
-    def __init__(self, logs):
+    def __init__(self, logs, runs=(PULL_RUN, PUSH_RUN)):
         self.logs = logs
+        self.runs = runs
 
     def get(self, path, **params):
         if path.endswith("/pulls/1"):
             return PULL
-        return {"workflow_runs": [run for run in (PULL_RUN, PUSH_RUN) if run["event"] == params["event"]]}
+        listed = [run for run in self.runs if run["event"] == params["event"]]
+        if "created" in params:
+            listed = [run for run in listed if run["created_at"] < params["created"].removeprefix("<")]
+        return {"workflow_runs": listed}
 
     def pages(self, path, key, **params):
         run_id = int(path.split("/")[-2])
@@ -378,6 +407,47 @@ class FakeGitHub:
 
     def log(self, repository, job_id):
         return fixture(self.logs[job_id // 10])
+
+
+class FakeOpener:
+    def __init__(self, code, location=None):
+        self.code = code
+        self.location = location
+
+    def open(self, request, timeout):
+        raise urllib.error.HTTPError(request.full_url, self.code, "fake", {"Location": self.location}, None)
+
+
+class CollectorTest(unittest.TestCase):
+    def test_pr_compares_the_10_newest_runs_of_its_head_repository_with_earlier_push_runs(self):
+        own = [workflow_run(n, "pull_request", "ep/x", f"2026-10-22T{n - 200:02}:00:00Z") for n in range(211, 200, -1)]
+        other = workflow_run(300, "pull_request", "ep/x", "2026-10-23T00:00:00Z")
+        other["head_repository"] = {"full_name": "other/simplex-chat"}
+        later = workflow_run(101, "push", "master", "2026-10-24T00:00:00Z")
+        runs = [later, other, *own, PUSH_RUN]
+        logs = {run["id"]: "hspec-2.11-failures.log" for run in runs}
+        with tempfile.TemporaryDirectory() as directory:
+            collector = flakes.Collector(FakeGitHub(logs, runs), flakes.Cache(Path(directory)))
+            report = flakes.pr_command(collector, argparse.Namespace(url=PULL["html_url"], window=30)).text
+        self.assertIn(f"Run: {own[0]['html_url']}, attempt 1", report)
+        self.assertIn("Window: simplex-chat/simplex-chat master: 1 runs, 2026-10-21 to 2026-10-21", report)
+        self.assertIn("| 10 of 10 | 1 of 1 | 0 | on master |", report)
+
+    def test_unfinished_runs_and_jobs_in_progress_are_not_cached(self):
+        unfinished = {**PULL_RUN, "status": "in_progress"}
+        with tempfile.TemporaryDirectory() as directory:
+            collector = flakes.Collector(FakeGitHub({}), flakes.Cache(Path(directory)))
+            collector.run_jobs(CHAT, unfinished)
+            collector.record(CHAT, unfinished, job(LINUX, None, None, status="in_progress"))
+            self.assertEqual(list(Path(directory).iterdir()), [])
+
+    def test_log_is_missing_after_410_from_the_api_or_404_from_the_blob(self):
+        github = flakes.GitHub("token")
+        github.opener = FakeOpener(410)
+        self.assertIsNone(github.log(CHAT, 2))
+        github.opener = FakeOpener(302, "https://blob.example/2")
+        with unittest.mock.patch("urllib.request.build_opener", return_value=FakeOpener(404)):
+            self.assertIsNone(github.log(CHAT, 2))
 
 
 def entry(run_id, created, jobs):
@@ -423,6 +493,28 @@ class ReportTest(unittest.TestCase):
         self.assertIn("| /c/ | s | 1 of 1 | 0 of 2 | 0 | new, passed on re-run |", report)
         self.assertIn("master, other jobs: ubuntu-22.04-x86_64 GHC 8.10.7 on 2026-10-20", report)
         self.assertIn("Parser check: 6 of 6 logs with summaries match their failure counts", report)
+
+    def test_window_and_passed_jobs_use_the_latest_attempt_in_any_listing_order(self):
+        window = flakes.Window(CHAT, "master", [
+            entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, ["/a/"]), (LINUX, 2, [])]),
+            entry(11, "2026-10-20T00:00:00Z", [(LINUX, 2, []), (LINUX, 1, ["/a/"])]),
+        ])
+        analysed = entry(20, "2026-10-22T00:00:00Z", [(LINUX, 2, []), (LINUX, 1, ["/a/"])])
+        report = flakes.run_report("CI failures", analysed, window, None).text
+        self.assertIn("| /a/ | s | 0 of 2 | 0 | new, passed on re-run |", report)
+        self.assertIn("Passed: ubuntu-22.04-x86_64 GHC 9.6.3", report)
+
+    def test_parser_check_lists_logs_whose_failures_differ_from_their_summaries(self):
+        run = entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, ["/a/", "/b/"]), (LINUX_GHC8, 1, ["/a/"])])
+        differing = run.entries[0][1]
+        differing["summaries"] = [3]
+        self.assertEqual(
+            flakes.parser_check([record for _, record in run.entries]).split("\n"),
+            [
+                "Parser check: 1 of 2 logs with summaries match their failure counts",
+                f"- {differing['url']}: 2 failures parsed, 3 in summaries",
+            ],
+        )
 
     def test_test_passed_on_re_run_inside_the_test_step(self):
         window = flakes.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, [])])])
