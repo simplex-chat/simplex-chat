@@ -103,9 +103,11 @@ expiresItself = \case
 settleWindow :: NominalDiffTime
 settleWindow = 72 * 3600
 
+-- | odReference names the order, the same on every retry of it, and is not secret.
 data OrderDraft = OrderDraft
   { odAmount :: CurrencyAmount,
-    odCurrency :: Text
+    odCurrency :: Text,
+    odReference :: Text
   }
   deriving (Eq, Show)
 

@@ -23,6 +23,7 @@ import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.Bifunctor (first)
+import Data.ByteString (ByteString)
 import Data.Maybe (isJust, maybeToList)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, addUTCTime)
@@ -38,6 +39,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Catalog (catalogCurrency)
 import StoreService.Config (NamesConfig (..), ServiceConfig)
 import StoreService.Log (logError, logInfo, logWarn)
+import StoreService.Names.Abi (hex)
 import StoreService.Names.Balances (Spend (..), checkSpendBalance, coveredOrderInsert, differenceOrderInsert, spendTerms)
 import StoreService.Names.Codes (CodeRefusal (..), readPrepaidCode)
 import StoreService.Names.Orders
@@ -97,7 +99,7 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} cfg providers waiters
   where
     what = "POST /api/invoice (name)"
     refuse = refused what
-    newOrder InvoiceOrder {ioRequest = req@OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp}, ioMethod, ioPrice} = do
+    newOrder InvoiceOrder {ioRequest = req@OrderRequest {orOwner, orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp}, ioMethod, ioPrice} = do
       now <- oeNow
       let years = nYears $ oeConfig env
           price = fromIntegral ioPrice
@@ -111,12 +113,13 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} cfg providers waiters
           insert new paid db at = first (const OROrderExists) <$> createPaidRegistration db new (OTInvoice ioMethod price) paid at
       firstRefusal checks >>= \case
         Just refusal -> refuse refusal
-        Nothing -> createAtProvider env cfg providers waiters what InvoicedOrder {ivRequest = req, ivHolders = [], ivMethod = ioMethod, ivPrice = price, ivAmount = ioPrice, ivInsert = insert}
+        Nothing -> createAtProvider env cfg providers waiters what InvoicedOrder {ivRequest = req, ivOrderHash = orderHash orOwner fields (OTInvoice ioMethod price), ivHolders = [], ivMethod = ioMethod, ivPrice = price, ivAmount = ioPrice, ivInsert = insert}
 
--- | An order paid by invoice: the holders its transaction closes, the order's price, what its invoice asks
+-- | An order paid by invoice: its order hash, the holders its transaction closes, the order's price, what its invoice asks
 -- (less than the price when a balance paid the rest), and its insert after the invoice row's.
 data InvoicedOrder = InvoicedOrder
   { ivRequest :: OrderRequest,
+    ivOrderHash :: ByteString,
     ivHolders :: [NameRegistration],
     ivMethod :: ServicePaymentMethod,
     ivPrice :: Int,
@@ -126,7 +129,7 @@ data InvoicedOrder = InvoicedOrder
 
 -- | The invoice is made at the provider first, then the order is written with its invoice row; an order not written has its invoice cancelled there.
 createAtProvider :: OrdersEnv -> ServiceConfig -> [Provider] -> Waiters -> Text -> InvoicedOrder -> IO Answer
-createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} cfg providers waiters what InvoicedOrder {ivRequest = req@OrderRequest {orOwner, orFields}, ivHolders, ivMethod, ivPrice, ivAmount, ivInsert} =
+createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} cfg providers waiters what InvoicedOrder {ivRequest = req@OrderRequest {orOwner, orFields}, ivOrderHash, ivHolders, ivMethod, ivPrice, ivAmount, ivInsert} =
   case providerFor providers ivMethod of
     Nothing -> do
       logInfo (what <> " refused: no provider configured for " <> tshow ivMethod)
@@ -135,7 +138,7 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} cfg providers waiters 
       invId <- newInvoiceId
       now <- truncateToSecond <$> oeNow
       let amount = CurrencyAmount ivAmount
-      pCreateInvoice provider ivMethod OrderDraft {odAmount = amount, odCurrency = catalogCurrency} >>= \case
+      pCreateInvoice provider ivMethod OrderDraft {odAmount = amount, odCurrency = catalogCurrency, odReference = "name:" <> hex ivOrderHash} >>= \case
         Left (ProviderError e) -> do
           logError (what <> " failed: provider refused to create an invoice: " <> e)
           pure $ answerNow providerUnavailable
@@ -275,7 +278,7 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} cfg 
         | spPrice - spBalance < minCardChargeCents -> refuse ORBadRequest
       Just method ->
         createAtProvider env cfg providers waiters what $
-          InvoicedOrder {ivRequest = order, ivHolders = maybeToList holder, ivMethod = method, ivPrice = spPrice, ivAmount = fromIntegral (spPrice - spBalance), ivInsert = differenceOrderInsert spend}
+          InvoicedOrder {ivRequest = order, ivOrderHash = orderHash orOwner orFields (spendTerms spend), ivHolders = maybeToList holder, ivMethod = method, ivPrice = spPrice, ivAmount = fromIntegral (spPrice - spBalance), ivInsert = differenceOrderInsert spend}
 
 -- | Stripe refuses a USD charge under 50 cents, so the page offers only crypto for a smaller difference.
 minCardChargeCents :: Int

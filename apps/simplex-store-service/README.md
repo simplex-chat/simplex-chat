@@ -212,6 +212,14 @@ absent `[btcpay]` does for Bitcoin and Monero. Its keys:
   it expired and logs an error. Check such orders in the Stripe Dashboard. After a restart, the
   hour starts again.
 
+The service creates each payment intent with `metadata[order]`, the order's reference:
+`name:0x<order hash>` for a name order (`order_hash` in `sx_badge_service_name_registrations`) or
+`badge:0x<code hash>` for a badge (`code_hash` in `sx_badge_service_badge_codes`). Neither is a secret,
+and support finds an intent's order from it in the Dashboard. The create also sends an
+`Idempotency-Key` of that reference with the amount and currency, so a buyer who sends the same order
+again after the first answer was lost gets the same intent, not a second one; Stripe keeps the key
+for 24 hours.
+
 The service fills `publishable_key` into the shell at boot: the built `index.html` ships
 with an empty `<meta id="stripe-publishable-key" name="stripe-publishable-key" content="">`
 (`web/public/index.html`), and the listener serves a copy with the configured key

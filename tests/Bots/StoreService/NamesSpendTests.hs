@@ -286,9 +286,9 @@ testDifferenceSpend = withSpend $ \ctx -> do
       r = registrationOf <$> v
   (field "status" =<< v, field "amount" =<< v, field "expiresAt" =<< v) `shouldBe` (Just "open", Just (J.Number 4000), Just (J.toJSON expiry))
   (field "phase" =<< r, field "price" =<< r, field "fromBalance" =<< r) `shouldBe` (Just "unpaid", Just (J.Number 10000), Just (J.Number 6000))
-  stubCalls (cStub ctx) `shouldReturn` [StubCreate btc OrderDraft {odAmount = CurrencyAmount 4000, odCurrency = "usd"}]
   let invId = invoiceIdOf v
   holder <- invoiceRegistration ctx invId
+  stubCalls (cStub ctx) `shouldReturn` [StubCreate btc OrderDraft {odAmount = CurrencyAmount 4000, odCurrency = "usd", odReference = "name:" <> hex (nrOrderHash holder)}]
   (nrPhase holder, nrLive holder, nrPrice holder, nrPayment holder, nrBalanceSource holder, nrBalanceUsed holder) `shouldBe` (PUnpaid, True, 10000, RPInvoice btc invId, Just src, 6000)
   nrOrderHash holder `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTBalance src 10000 6000 (Just btc))
   nrAgreedTerms holder `shouldBe` oTerms aliceOrder
