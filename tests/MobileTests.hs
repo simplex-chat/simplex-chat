@@ -40,6 +40,7 @@ import JSONFixtures
 import Simplex.Chat
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeRequest (..), BadgeType (..), generateMasterKey, verifyCredential)
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDatabase (..))
+import Simplex.Chat.Image (maxDecodeMemoryMB)
 import Simplex.Chat.Mobile hiding (error)
 import Simplex.Chat.Mobile.Badges hiding (error)
 import Simplex.Chat.Mobile.File
@@ -60,7 +61,7 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import System.Directory (copyFile)
 import System.FilePath ((</>))
-import System.IO (IOMode (..), utf8)
+import System.IO (IOMode (..), hSetFileSize, utf8, withBinaryFile)
 import System.IO.Error (tryIOError)
 import System.Posix.Internals (c_open, fdStat, o_RDONLY, withFilePath)
 import Test.Hspec hiding (it)
@@ -397,16 +398,18 @@ testResizeLargeJpegCApi _ = do
   B.take 2 bytes `shouldBe` "\xFF\xD8"
 
 testResizeImageFileCApi :: TestParams -> IO ()
-testResizeImageFileCApi _ = do
+testResizeImageFileCApi ps = do
   uri <- peekCAString =<< withCString "./tests/fixtures/test.jpg" (`cChatResizeImageFileUri` 14000)
   uri `shouldStartWith` "data:image/jpg;base64,"
   length uri `shouldSatisfy` (<= 14000)
   Right bytes <- B64.decode . BS.pack <$> (peekCAString =<< withCString "./tests/fixtures/logo-large-rgba.png" (\path -> cChatResizeImageFile path 100000 (-1)))
   B.take 8 bytes `shouldBe` "\x89PNG\r\n\x1a\n"
   (peekCAString =<< withCString "./tests/fixtures/missing.jpg" (`cChatResizeImageFileUri` 14000)) `shouldReturn` ""
+  oversized <- oversizedJpegFile ps
+  (peekCAString =<< withCString oversized (`cChatResizeImageFileUri` 14000)) `shouldReturn` ""
 
 testResizeImageFdCApi :: TestParams -> IO ()
-testResizeImageFdCApi _ = do
+testResizeImageFdCApi ps = do
   jpeg <- openFd "./tests/fixtures/test.jpg"
   jpegFile <- fdStat jpeg
   uri <- peekCAString =<< cChatResizeImageFdUri jpeg 14000
@@ -423,9 +426,20 @@ testResizeImageFdCApi _ = do
   isOpen dir dirFile `shouldReturn` False
   (peekCAString =<< cChatResizeImageFdUri 1000000 14000) `shouldReturn` ""
   (peekCAString =<< cChatResizeImageFdUri (-1) 14000) `shouldReturn` ""
+  oversized <- openFd =<< oversizedJpegFile ps
+  oversizedFile <- fdStat oversized
+  (peekCAString =<< cChatResizeImageFdUri oversized 14000) `shouldReturn` ""
+  isOpen oversized oversizedFile `shouldReturn` False
   where
     openFd path = FD.fdFD . fst <$> FD.openFile path ReadMode False
     isOpen fd file = either (const False) (== file) <$> tryIOError (fdStat fd)
+
+oversizedJpegFile :: TestParams -> IO FilePath
+oversizedJpegFile ps = do
+  let path = tmpPath ps </> "oversized.jpg"
+  copyFile "./tests/fixtures/test.jpg" path
+  withBinaryFile path ReadWriteMode (`hSetFileSize` (fromIntegral maxDecodeMemoryMB * 1048576 + 1))
+  pure path
 
 testResizeMalformedPngCApi :: TestParams -> IO ()
 testResizeMalformedPngCApi _ = do

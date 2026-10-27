@@ -44,7 +44,7 @@ import Foreign.StablePtr
 import Foreign.Storable (poke, pokeByteOff)
 import GHC.IO.Handle.FD (fdToHandle)
 import Simplex.Chat.Controller (ChatController (..))
-import Simplex.Chat.Image (ImageFormat (..), decodeResizable, imageFormat, resizeImage, resizeImageDataUri)
+import Simplex.Chat.Image (ImageFormat (..), decodeResizable, imageFormat, maxDecodeMemoryMB, resizeImage, resizeImageDataUri)
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Util (chunkSize, encryptFile)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..), CryptoFileHandle, FTCryptoError (..))
@@ -53,7 +53,7 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Util (catchAll)
 import System.Posix.Internals (c_close)
-import UnliftIO (Handle, IOMode (..), atomically, onException, withFile)
+import UnliftIO (Handle, IOMode (..), atomically, bracket, hClose, onException, withBinaryFile, withFile)
 
 data WriteFileResult
   = WFResult {cryptoArgs :: CryptoFileArgs}
@@ -169,10 +169,19 @@ cChatResizeImageFd :: CInt -> CInt -> CInt -> IO CString
 cChatResizeImageFd = cResizeImageData . readFd
 
 readFilePath :: CString -> IO ByteString
-readFilePath = B.readFile <=< peekCString
+readFilePath cPath = do
+  path <- peekCString cPath
+  withBinaryFile path ReadMode hGetImage
 
 readFd :: CInt -> IO ByteString
-readFd fd = B.hGetContents =<< fdToHandle fd `onException` c_close fd
+readFd fd = bracket (fdToHandle fd `onException` c_close fd) hClose hGetImage
+
+hGetImage :: Handle -> IO ByteString
+hGetImage h = do
+  s <- LB.hGet h $ maxSize + 1
+  if LB.length s > fromIntegral maxSize then fail "image file is too large" else pure $ LB.toStrict s
+  where
+    maxSize = maxDecodeMemoryMB * 1048576
 
 cResizeImageUri :: IO ByteString -> CInt -> IO CString
 cResizeImageUri input maxSize = cResizeImage id (resizeImageDataUri $ fromIntegral maxSize) input

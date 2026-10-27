@@ -10,6 +10,7 @@ module Simplex.Chat.Image
     decodeResizable,
     resizeImage,
     resizeImageDataUri,
+    maxDecodeMemoryMB,
     scaleRGB8,
     scaleRGBA8,
   )
