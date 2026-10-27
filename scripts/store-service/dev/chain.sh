@@ -1,9 +1,9 @@
 #!/bin/sh
 # The local chain of compose.dev.yml. Runs in the webapp's dev image, which has anvil, node, the deploy script and the
 # compiled contracts.
-#   dev-chain.sh                  anvil with its state kept in $CHAIN_DIR, the names contracts deployed on the first start,
+#   chain.sh                      anvil with its state kept in $CHAIN_DIR, the names contracts deployed on the first start,
 #                                 and $CONFIG_DIR/store_service.ini written for them unless it exists
-#   dev-chain.sh topup [address] [eth]   sets an account's balance, by default the service key's account to 10000 ETH
+#   chain.sh topup [address] [eth]   sets an account's balance, by default the service key's account to 10000 ETH
 set -eu
 
 CHAIN_DIR="${CHAIN_DIR:-/chain}"
@@ -70,7 +70,7 @@ write_config() {
   tmp="$CONFIG.tmp"
   rm -f "$tmp"
   (umask 077 && cat > "$tmp" <<INI)
-; written by dev-chain.sh for the local chain on its first start, and never rewritten
+; written by dev/chain.sh for the local chain on its first start, and never rewritten
 [listener]
 host = 127.0.0.1
 badges_port = 8080

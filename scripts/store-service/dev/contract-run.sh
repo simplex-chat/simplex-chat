@@ -6,13 +6,13 @@
 set -euo pipefail
 shopt -s inherit_errexit
 
-WEBAPP_DIR="${WEBAPP_DIR:-$(cd "$(dirname "$0")/../.." && pwd)/apps/simplex-domains/webapp}"
+WEBAPP_DIR="${WEBAPP_DIR:-$(cd "$(dirname "$0")/../../.." && pwd)/apps/simplex-domains/webapp}"
 : "${ENS_CONTRACTS_DIR:?set ENS_CONTRACTS_DIR to a compiled ens-contracts checkout, as for the webapp dev/start.sh}"
 ANVIL="${ANVIL:-anvil}"
 SERVICE_PORT="${SERVICE_PORT:-8180}"
 BADGES_PORT="${BADGES_PORT:-8181}"
 CODES_PORT="${CODES_PORT:-8199}"
-REPO="$(cd "$(dirname "$0")/../.." && pwd)"
+REPO="$(cd "$(dirname "$0")/../../.." && pwd)"
 STORE_SERVICE_BIN="${STORE_SERVICE_BIN:-$(cd "$REPO" && cabal list-bin exe:simplex-store-service)}"
 
 # The e2e helpers read the chain from the webapp's dev/local-chain-0.json, which slot 0 of dev/start.sh

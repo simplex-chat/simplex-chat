@@ -21,8 +21,8 @@ services:
     volumes:
       - ./data/chain:/chain
       - ./config:/config
-      - ./dev-chain.sh:/usr/local/bin/dev-chain.sh:ro
-    command: dev-chain.sh
+      - ./dev/chain.sh:/usr/local/bin/chain.sh:ro
+    command: chain.sh
     healthcheck:
       test: ["CMD", "test", "-f", "/chain/ready"]
       interval: 5s

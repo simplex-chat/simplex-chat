@@ -353,8 +353,9 @@ they refuse what it signs — never turn it on where the key is one those apps t
 
 `scripts/store-service/` holds the production deployment: the image (`Dockerfile`, built from
 the repository root), `compose.yml`, the ini template `store_service.ini.example` and the egress
-rule `egress.sh`. The service runs with `+client_postgres` and host networking; one Caddy serves
-both sites from the folders the service exports at boot and proxies the API to it.
+rule `ops/egress.sh`; `dev/` holds the scripts of the dev setup and the webapp's cases. The service
+runs with `+client_postgres` and host networking; one Caddy serves both sites from the folders the
+service exports at boot and proxies the API to it.
 
 `compose.yml` mounts the folder `scripts/store-service/config/` read-only at
 `/etc/simplex-store-service`. It holds `store_service.ini`, and the App Store root and the Play
@@ -459,7 +460,7 @@ On its first start, the chain writes `config/store_service.ini` for its deployme
 exists; it never rewrites it, so edits there are kept. The file serves both sites all in one, with
 `[names]` on the `.simplex` TLD, `[chain]` at the local chain with 1 confirmation, and `[issuer]`
 signing with a public test key at index 999, which no client trusts, through `dev_keys`. That key is
-in `dev-chain.sh`, as public as anvil's: never use it elsewhere. The service starts once the chain
+in `dev/chain.sh`, as public as anvil's: never use it elsewhere. The service starts once the chain
 and the database are healthy. `USER_UID` and `USER_GID` in `.env` (by default 1000) own the file,
 mode 600, and its folder, mode 700.
 
@@ -479,7 +480,7 @@ The service key's account starts with 10,000 ETH and a sponsor allowance. To top
 account's balance:
 
 ```
-docker compose exec chain dev-chain.sh topup [address] [eth]
+docker compose exec chain chain.sh topup [address] [eth]
 ```
 
 Registrations wait 10 seconds after their commit (`MIN_COMMITMENT_AGE` in `compose.dev.yml`).
@@ -608,7 +609,7 @@ BTCPay (`[btcpay] host`), the database and the DNS resolvers in `/etc/resolv.con
 connections already open, such as Caddy's requests, pass, and so does IPv6 neighbour discovery on
 the link.
 
-`egress.sh` writes this as the chain `STORE_SERVICE_EGRESS` in `iptables` and `ip6tables`, and
+`ops/egress.sh` writes this as the chain `STORE_SERVICE_EGRESS` in `iptables` and `ip6tables`, and
 rebuilds it on every run. With compose's host networking it matches the service's user in
 `OUTPUT` (`-m owner --uid-owner`). That rule covers every process of that user on the host, so
 the service must run as a dedicated user. `--uid` is required, and the script refuses a uid whose
@@ -646,9 +647,9 @@ the environment's `BADGE_DB_CONN`, else to compose's default
 when compose runs with another value:
 
 ```
-sudo ./egress.sh --dry-run --uid 998
-sudo ./egress.sh --uid 998
-sudo ./egress.sh --check --uid 998
+sudo ops/egress.sh --dry-run --uid 998
+sudo ops/egress.sh --uid 998
+sudo ops/egress.sh --check --uid 998
 ```
 
 - `--dry-run` prints the `iptables-restore` input an install would commit, read against the
@@ -704,7 +705,7 @@ docker compose exec store-service bash -c ': </dev/tcp/<gateway>/443'
 - `allowed` is printed for the database. With the RPC node on this host, the same command with its
   port (`8545` for a local reth) prints it too.
 
-`sudo ./egress.sh --remove --uid 998` (or `--bridge <interface>`) deletes the jumps an install
+`sudo ops/egress.sh --remove --uid 998` (or `--bridge <interface>`) deletes the jumps an install
 adds for that user or network, then the chain, in `iptables` and `ip6tables`. Running it again
 changes nothing, and `--check` then reports the chain absent.
 
@@ -1189,7 +1190,7 @@ Your names; a later late payment credits it again, and a second refund adds to `
 
 ## Running the webapp's cases against the service
 
-`scripts/store-service/names-contract-run.sh` runs the names webapp's end-to-end cases that need no
+`scripts/store-service/dev/contract-run.sh` runs the names webapp's end-to-end cases that need no
 payment against this service in Chromium, as they run against the webapp's mock. It:
 
 1. starts anvil on 8545 and deploys the contracts with the webapp's `dev/deploy.ts`, with a commitment
@@ -1224,7 +1225,7 @@ the service or the code server exits before it answers.
 
 ```
 cabal build exe:simplex-store-service
-ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/names-contract-run.sh
+ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/dev/contract-run.sh
 ```
 
 - `WEBAPP_DIR`: the names webapp (default: the `apps/simplex-domains` submodule's `webapp/`).

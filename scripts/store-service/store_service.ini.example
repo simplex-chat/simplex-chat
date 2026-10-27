@@ -103,7 +103,7 @@ private_key = replace-me
 ; the chain the names are registered on. rpc_url can carry a provider's API key and service_key
 ; pays for every commit and register: keep both secret. Neither is ever logged.
 ;[chain]
-; the reth node; egress.sh allows it
+; the reth node; ops/egress.sh allows it
 ;rpc_url = http://127.0.0.1:8545
 ; 1 for Ethereum mainnet
 ;chain_id = 1
