@@ -261,9 +261,9 @@ check_layout() {
 }
 
 add_images() {
-  adb push "$fixtures/logo-large-rgba.png" /sdcard/Pictures/simplex-logo.png
-  adb push "$fixtures/test.jpg" /sdcard/Pictures/test-card.jpg
-  for image in simplex-logo.png test-card.jpg; do
+  adb push "$fixtures/logo-large-rgba.png" /sdcard/Pictures/simplex-logo/simplex-logo.png
+  adb push "$fixtures/test.jpg" /sdcard/Pictures/test-card/test-card.jpg
+  for image in simplex-logo/simplex-logo.png test-card/test-card.jpg; do
     adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d "file:///sdcard/Pictures/$image" > /dev/null
   done
 }
@@ -285,17 +285,20 @@ core_returned_no_image() {
 }
 
 send_image() {
-  local name=$1 ext=$2 sent no_image
+  local folder=$1 ext=$2 sent no_image
   sent=$(sent_files "$ext")
   no_image=$(core_returned_no_image)
   "$ui" click-text Attach 10
   "$ui" click-text Image 10
   sleep 3
   "$ui" shot "picker-$ext"
-  "$ui" click-text "$name" 30 || fail "no $name in the image picker"
+  "$ui" click-text "$folder" 30 || fail "no $folder folder in the image picker"
+  sleep 2
+  "$ui" shot "picker-folder-$ext"
+  "$ui" click-text Photo 30 || fail "no photo in the $folder folder of the image picker"
   if ! "$ui" wait "Cancel image preview" 10; then
     "$ui" shot "picker-selected-$ext"
-    "$ui" click-text Add 5 || true
+    "$ui" click-text Done 5 || "$ui" click-text Add 5 || true
   fi
   check "$ext: the compose area shows the picked image" "$ui" wait "Cancel image preview" 30
   "$ui" shot "preview-$ext"
@@ -309,8 +312,8 @@ send_images() {
   add_images
   "$ui" click-text "$local_chat" 10
   "$ui" wait Attach 10
-  send_image test-card.jpg jpg
-  send_image simplex-logo.png png
+  send_image test-card jpg
+  send_image simplex-logo png
 }
 
 # private routing to unknown servers only: the preset servers that would proxy to the test SMP server can't reach the
