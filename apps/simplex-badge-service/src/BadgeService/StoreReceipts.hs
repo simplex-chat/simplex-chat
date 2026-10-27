@@ -127,7 +127,9 @@ data StoreCharge = StoreCharge
     periodEnd :: UTCTime,
     chargePaid :: Maybe (CurrencyAmount, Text), -- in minor units; Play reports no price
     revoked :: Bool, -- refunded or revoked
-    offer :: Bool -- in a free trial or an introductory price
+    -- Apple: any offerType, so an introductory offer (free trial, pay as you go, pay up front), a promotional offer,
+    -- an offer code or a win-back offer; Play: a free-trial or introductory-price phase
+    offer :: Bool
   }
   deriving (Show)
 
