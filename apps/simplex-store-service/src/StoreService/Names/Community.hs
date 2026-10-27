@@ -14,7 +14,8 @@ module StoreService.Names.Community
   )
 where
 
-import Control.Monad.Except (ExceptT (..), runExceptT)
+import Control.Monad (when)
+import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import Data.ByteString (ByteString)
@@ -26,13 +27,13 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import StoreService.Config (NamesConfig (..), TermsConfig (..))
 import StoreService.Names.Abi (bytes32FromHex, hex)
-import StoreService.Names.Chain (ChainError)
-import StoreService.Names.Contracts (Contracts, bonaFideName, communityTermsHash, namePolicy, policyNonce)
+import StoreService.Names.Chain (ChainError (..))
+import StoreService.Names.Contracts (Contracts, bonaFideName, communityTermsHash, namePolicy, noCommunityTerms, policyNonce)
 
 communityFor :: NamesConfig -> LabelHash -> Maybe Text
 communityFor NamesConfig {nCommunity} (LabelHash h) = M.lookup h nCommunity
 
--- | A community name's order signs the community terms' hash after the version, so the order records which text was agreed to.
+-- | The suffix records that the buyer agreed to the community terms whose hash it ends with, under the same version.
 termsFor :: NamesConfig -> Maybe ByteString -> Text
 termsFor NamesConfig {nTerms = TermsConfig {tVersion}} = maybe tVersion (\h -> tVersion <> communityTermsSuffix <> T.drop 2 (hex h))
 
@@ -66,6 +67,7 @@ currentAcceptance :: Contracts -> LabelHash -> Address -> IO (Either ChainError 
 currentAcceptance ct lh owner = runExceptT $ ExceptT (nameCommunityTerms ct lh) >>= traverse acceptance
   where
     acceptance acTermsHash = do
+      when (acTermsHash == noCommunityTerms) $ throwError $ ChainUnavailable "the name policy has no community terms yet"
       acPolicy <- ExceptT $ namePolicy ct
       acNonce <- ExceptT $ policyNonce ct owner
       pure AcceptanceAsked {acPolicy, acTermsHash, acNonce}

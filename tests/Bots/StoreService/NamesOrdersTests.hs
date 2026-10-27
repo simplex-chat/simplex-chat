@@ -779,7 +779,10 @@ olderTerms = "2026-10-01"
 
 -- | The terms a listed name's order signs, with the hash of the policy's community terms.
 communityTerms :: Text -> Text
-communityTerms version = version <> "/community/" <> T.drop 2 (hex fakeCommunityTerms)
+communityTerms = communityTermsOf fakeCommunityTerms
+
+communityTermsOf :: ByteString -> Text -> Text
+communityTermsOf h version = version <> "/community/" <> T.drop 2 (hex h)
 
 -- | terms_changed with the current version, the terms' URL and the name's community entry.
 termsChanged :: Text -> Maybe Text -> (Int, Maybe J.Object)
@@ -795,7 +798,7 @@ termsChanged version community =
 
 -- | The current version with community terms other than the policy's.
 otherCommunityTerms :: Text
-otherCommunityTerms = termsVersion <> "/community/" <> T.drop 2 (hex fakeNewCommunityTerms)
+otherCommunityTerms = communityTermsOf fakeNewCommunityTerms termsVersion
 
 -- | A listed name's community entry: the ini's text, and the policy's terms, linked where the service serves them.
 communityEntry :: J.ToJSON a => a -> J.Value
@@ -840,7 +843,7 @@ testNoCommunityTerms = withOrders $ \ctx0 -> withSettings (listName "dynamis") c
   listOnChain ctx "dynamis"
   setCommunityTerms (cNode ctx) ""
   let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000}
-  placeOrder ctx dynamis {oTerms = termsVersion <> "/community/" <> T.replicate 64 "0"}
+  placeOrder ctx dynamis {oTerms = communityTermsOf noCommunityTerms termsVersion}
     `shouldReturn` (fmap (KM.insert "community" (communityEntryOf noCommunityTerms bakers)) <$> termsChanged termsVersion Nothing)
   registrationsOf ctx ownerA `shouldReturn` []
 
@@ -1662,6 +1665,10 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   listCommunityName node $ labelHash "alicebakery"
   answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
   readViewChain ct committed `shouldReturn` ViewReads (Just 4) [] (Just AcceptanceAsked {acPolicy = fakeNamePolicy, acTermsHash = fakeCommunityTerms, acNonce = 2})
+  -- before the policy has community terms there are none to sign, so the page waits
+  setCommunityTerms node ""
+  readViewChain ct committed `shouldReturn` ViewReads (Just 4) ["acceptance"] Nothing
+  setCommunityTerms node fakeCommunityTermsText
   readViewChain ct committed {nrReveal = Just reveal} `shouldReturn` ViewReads (Just 4) [] Nothing
   taken <- inPhase PTaken
   readViewChain ct taken `shouldReturn` ViewReads Nothing [] Nothing

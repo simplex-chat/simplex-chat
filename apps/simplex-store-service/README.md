@@ -654,17 +654,17 @@ changes nothing, and `--check` then reports the chain absent.
 **Upgrading:** an ini written before these settings existed stops the service at startup until both
 are added under `[names]`.
 
-The controller's name policy (`SimplexNamePolicy`, read once from `namePolicy()` at startup and
-logged) decides which names are community names: its bona fide list, which the owner edits on chain
-and the guardian can add to. A listed name can be registered only after its owner accepts the
-policy's current community terms on chain, identified by `termsHash`, the keccak256 of their text.
-The controller owner's `setNamePolicy` takes effect for the service after a restart, so restart it
+The controller's name policy (`SimplexNamePolicy`, read from `namePolicy()` once at startup and
+logged, or on first use when that read fails or finds none) lists the community names: its bona fide
+list, which the owner edits on chain and the guardian can add to. A listed name can be registered
+only after its owner accepts the policy's current community terms on chain, identified by `termsHash`.
+A later `setNamePolicy` takes effect for the service after a restart, so restart it
 at once: until then the service reads the reservations, the list, the terms and the nonces from the
 old policy, so an order of a name the new policy reserves ends taken, and one of a name it lists
 does not register: the page signs again until the order lapses, and only the first relay spends gas.
 
 The name policy keeps the community terms' text on chain, and `termsHash` is its keccak256, so the
-two cannot disagree. The service reads the text with `termsText()` and serves it, as plain text, at
+two always match. The service reads the text with `termsText()` and serves it, as plain text, at
 `GET /api/community-terms/<hash>`, which the order's checkbox links to beside the name terms; it
 answers `404` for any other hash.
 To change the terms, the contracts' owner calls `setTerms(text)`: an order signed under the old
@@ -706,8 +706,7 @@ page and the service are deployed together.
 On chain the order is the same for every name: the service commits, the page signs the reveal, the
 service registers. For a listed name the page also signs `AcceptBonaFideTerms` for the commitment
 with the reveal, at the policy's nonce and the reveal's deadline, and the service relays it with
-`commitUnderBonaFideCommunityTermsWithSig` as soon as the reveal is stored, then registers. When the
-policy's terms changed after the order, the page asks the buyer to agree again before it signs. A
+`commitUnderBonaFideCommunityTermsWithSig` as soon as the reveal is stored, then registers. A
 relay or a register refused for the acceptance (new terms, a used nonce), or an acceptance signed for
 the name policy before a `setNamePolicy`, clears the reveal, and the page signs again.
 

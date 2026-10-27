@@ -2,8 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Each registration from queued to registered, taken or failed: its commit, the wait for the page's reveal, a community name's
--- acceptance relay, and its register;
+-- | Each registration from queued to registered, taken or failed: its commit, the wait for the page's reveal, a community name's acceptance relay, and its register;
 -- and Try again, which queues a failed one again. A step starts from the stored registration, the sender's transactions in flight
 -- and the chain, so a restart resumes any phase.
 module StoreService.Names.Worker

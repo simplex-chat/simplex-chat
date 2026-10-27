@@ -94,8 +94,8 @@ private_key = replace-me
 ; how many times one order may move to another name
 ;max_order_moves = 3
 ;
-; what each community name is for, with [names] only; the name policy on chain decides which names
-; are community names: one line per name, `<label> = <what it is for>`, the label in
+; what each community name is for, with [names] only; the name policy on chain lists the
+; community names: one line per name, `<label> = <what it is for>`, the label in
 ; lower case and listed once, the text 1 to 200 characters without a full stop at the end, which
 ; the page adds; read only at startup, see apps/simplex-store-service/README.md
 ;[community]
