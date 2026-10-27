@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -119,7 +120,12 @@ fun ChatItemView(
   val uriHandler = LocalUriHandler.current
   val sent = cItem.chatDir.sent
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
-  val showMenu = remember { mutableStateOf(false) }
+  val showMenu = remember(cItem.id) { mutableStateOf(false) }
+  val menuAnchor = remember(cItem.id) { ChatItemMenuAnchor() }
+  @Composable
+  fun MessageDropdownMenu(content: @Composable () -> Unit) {
+    ChatItemDropdownMenu(showMenu, sent, menuAnchor, content)
+  }
   val fullDeleteAllowed = remember(cInfo) { cInfo.featureEnabled(ChatFeature.FullDelete) }
   val onLongClick = {
     if (appPlatform.isAndroid) {
@@ -351,6 +357,7 @@ fun ChatItemView(
           }
           Column(
             Modifier
+              .onGloballyPositioned(menuAnchor::update)
               .clipChatItem(cItem, itemSeparation.largeGap, revealed.value)
               .hoverable(bubbleInteractionSource)
               .combinedClickable(
@@ -399,7 +406,7 @@ fun ChatItemView(
 
             @Composable
             fun DeleteItemMenu() {
-              DefaultDropdownMenu(showMenu) {
+              MessageDropdownMenu {
                 DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
                   Divider()
@@ -414,7 +421,7 @@ fun ChatItemView(
               when {
                 // cItem.id check is a special case for live message chat item which has negative ID while not sent yet
                 cItem.isReport && cItem.meta.itemDeleted == null && cInfo is ChatInfo.Group -> {
-                  DefaultDropdownMenu(showMenu) {
+                  MessageDropdownMenu {
                     if (cItem.chatDir !is CIDirection.GroupSnd && cInfo.groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
                       ArchiveReportItemAction(cItem.id, cInfo.groupInfo.membership.memberActive, showMenu, archiveReports)
                     }
@@ -424,7 +431,7 @@ fun ChatItemView(
                   }
                 }
                 cItem.content.msgContent != null && cItem.id >= 0 && !cItem.isReport -> {
-                  DefaultDropdownMenu(showMenu) {
+                  MessageDropdownMenu {
                     if (cInfo.featureEnabled(ChatFeature.Reactions) && cItem.allowAddReaction) {
                       MsgReactionsMenu()
                     }
@@ -525,7 +532,7 @@ fun ChatItemView(
                   }
                 }
                 cItem.meta.itemDeleted != null -> {
-                  DefaultDropdownMenu(showMenu) {
+                  MessageDropdownMenu {
                     if (revealed.value) {
                       HideItemAction(revealed, showMenu, reveal)
                     } else if (!cItem.isDeletedContent) {
@@ -542,7 +549,7 @@ fun ChatItemView(
                   }
                 }
                 cItem.isDeletedContent -> {
-                  DefaultDropdownMenu(showMenu) {
+                  MessageDropdownMenu {
                     ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                     DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                     if (cItem.canBeDeletedForSelf) {
@@ -552,7 +559,7 @@ fun ChatItemView(
                   }
                 }
                 cItem.mergeCategory != null && ((range.value?.count() ?: 0) > 1 || revealed.value) -> {
-                  DefaultDropdownMenu(showMenu) {
+                  MessageDropdownMenu {
                     if (revealed.value) {
                       ShrinkItemAction(revealed, showMenu, reveal)
                     } else {
@@ -566,7 +573,7 @@ fun ChatItemView(
                   }
                 }
                 else -> {
-                  DefaultDropdownMenu(showMenu) {
+                  MessageDropdownMenu {
                     DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                     if (selectedChatItems.value == null) {
                       Divider()
@@ -579,7 +586,7 @@ fun ChatItemView(
 
             @Composable
             fun MarkedDeletedItemDropdownMenu() {
-              DefaultDropdownMenu(showMenu) {
+              MessageDropdownMenu {
                 if (!cItem.isDeletedContent) {
                   RevealItemAction(revealed, showMenu, reveal)
                 }
@@ -611,7 +618,7 @@ fun ChatItemView(
 
             @Composable fun LegacyDeletedItem() {
               DeletedItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
-              DefaultDropdownMenu(showMenu) {
+              MessageDropdownMenu {
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                 DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
@@ -678,7 +685,7 @@ fun ChatItemView(
             @Composable
             fun DeletedItem() {
               MarkedDeletedItemView(chatsCtx, cItem, cInfo, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
-              DefaultDropdownMenu(showMenu) {
+              MessageDropdownMenu {
                 if (revealed.value) {
                   HideItemAction(revealed, showMenu, reveal)
                 } else if (!cItem.isDeletedContent) {

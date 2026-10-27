@@ -137,7 +137,7 @@ The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, mea
 
 ## 4. ChatItemView
 
-**Location:** [`ChatItemView()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L70)
+**Location:** [`ChatItemView()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L71)
 
 ```kotlin
 fun ChatItemView(
@@ -172,7 +172,7 @@ The composable routes based on `cItem.content` and `cItem.meta.itemDeleted`:
 
 ### Message Gestures and Context Menu
 
-[`ChatItemActions` and `LocalChatItemActions`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L64)
+[`ChatItemActions` and `LocalChatItemActions`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L65)
 route bubble and nested-content gestures through the same callbacks. On Android,
 ordinary taps open the existing dropdown (section 6). Long-press closes it and
 calls `selectChatItem()` for items with `canBeDeletedForSelf`; this enters the
@@ -197,6 +197,44 @@ The [Details view](../../common/src/commonMain/kotlin/chat/simplex/common/views/
 includes a status-information row when
 `itemStatus.statusInto` or missing-signature information exists. Its alert retains
 the explanation previously available by tapping the bubble.
+
+<a id="message-menu-placement"></a>
+
+### Message Menu Placement
+
+[`ChatItemDropdownMenu()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemMenu.kt#L105)
+uses a focusable `Popup` on Android and retains `DefaultDropdownMenu` on Desktop.
+Every message-action menu uses this wrapper; reaction-member lists keep their
+separate menu. [`ChatItemMenuAnchor`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemMenu.kt#L25)
+stores the bubble's `LayoutCoordinates`. Its `update()` publishes observable bounds
+only while `track(true)` is active during the popup's lifetime. `capture()` checks
+attachment before converting to window pixels; `track(false)` clears the bounds.
+This avoids per-row state changes during ordinary scrolling while allowing source
+movement to invalidate the open menu's measurement. The popup measures its
+scrollable surface against these bounds and the window's visible constraints.
+
+[`chatItemMenuPlacement()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemMenu.kt#L78)
+and [`ChatItemMenuPlacement.position()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemMenu.kt#L54)
+apply the same policy during measurement and native popup positioning:
+
+- Reserve an 8dp window gutter, the top status-bar inset, and a 4dp bubble gap.
+  Use the popup's visible window height, which already excludes the keyboard.
+- Cap the preferred 250dp width to the usable window width before measuring.
+- Cap height to the larger space above/below the bubble. Prefer below if the
+  measured menu fits; otherwise use above. The menu content scrolls independently.
+- When neither vertical region has 96dp, try a full-width menu on either side.
+  If neither side fits, use the viewport height and choose the clamped above/below
+  position with the least vertical overlap. This fallback keeps actions accessible
+  for a viewport-filling source.
+- Align received menus to the bubble's left edge and sent menus to its right edge,
+  then clamp to the window gutter. Alignment follows message direction.
+
+The popup preserves inherited screen protection and Back/outside dismissal. Its
+surface fades and scales from 0.96 over 120ms, including dismissal, using Compose's
+system motion scaling. Bubble constraints and message content are unchanged.
+`ChatItemMenuPlacementTest` covers edge alignment, above/below placement, long-menu
+scroll limits, keyboard-sized and narrow windows, side placement, full-viewport
+fallback, and non-overlap across portrait/landscape geometry.
 
 ---
 
@@ -311,6 +349,7 @@ Key sections: group profile, group link, member list with roles, group preferenc
 |---|---|
 | `ChatItemView.kt` | Message type routing, shared item actions, Android tap menu/long-press selection, reactions |
 | `ChatSendAnimation.kt` | Scoped outgoing-send tokens, measured bubble motion and lifecycle cleanup |
+| `ChatItemMenu.kt` | Android message popup, bounded scrolling and bubble-relative placement policy |
 | `CIBrokenComposableView.kt` | Fallback for rendering errors |
 | `CICallItemView.kt` | Call event display (incoming/outgoing/missed) |
 | `CIChatFeatureView.kt` | Chat feature change event |

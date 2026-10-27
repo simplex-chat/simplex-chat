@@ -97,6 +97,12 @@ Links, mentions, commands, secret reveals, quoted-message navigation, media open
 file controls and reactions keep their own tap actions. Long-presses on nested
 message content follow the same message-selection action on Android.
 
+Android message menus align with the message edge, with a small gap. They open
+below the bubble when possible, otherwise above it. Long menus scroll within the
+available space. A tall, narrow bubble can use a menu alongside it. If a message
+fills the viewport and leaves no usable adjacent space, the menu stays within the
+window and minimizes overlap. Placement adapts to the keyboard and window size.
+
 | Action | Description |
 |---|---|
 | Reply | Sets compose bar to reply mode with quoted message (`ComposeContextItem.QuotedItem`) |
@@ -179,3 +185,4 @@ When `timedMessageAllowed` is true, compose bar includes a timer icon for settin
 | Full-screen image gallery | `views/chat/item/ImageFullScreenView.kt` |
 | Image transition geometry and lifecycle | `views/chat/item/ImageGalleryAnimation.kt` |
 | Message details | `views/chat/ChatItemInfoView.kt` |
+| Android message menu placement | `views/chat/item/ChatItemMenu.kt` |

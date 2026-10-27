@@ -134,6 +134,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
 | `views/chat/item/ChatItemView.kt` | PC2, PC3, PC5, PC6, PC7, PC8 | High | Root renderer, shared item actions, Android tap menu and long-press bulk selection |
+| `views/chat/item/ChatItemMenu.kt` | PC2, PC3, PC5, PC6, PC7, PC8 | Medium | Android bubble-relative popup placement, bounded scrolling, edge/overflow handling; existing message actions |
 | `views/chat/item/TextItemView.kt` | PC2, PC3, PC4, PC11 | Medium | Markdown annotation taps and shared Android message gestures |
 | `views/chat/item/ChatBubbleStyle.kt` | PC2, PC3, PC5, PC24 | Medium | Scoped conversation typography, measured layout constants and sender/date grouping boundaries |
 | `views/chat/item/ChatSendAnimation.kt` | PC2, PC3, PC4, PC11 | Medium | Scoped local-send tokens and composer-to-bubble motion; no model/protocol state |

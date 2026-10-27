@@ -88,7 +88,7 @@ Common Module (commonMain)
 | API | [spec/api.md](api.md) | ChatController command dispatch, ~150 API functions in 11 categories, CC/CR/API types |
 | Database | [spec/database.md](database.md) | SQLite database files, migrations, encryption, backup/restore |
 | Impact | [spec/impact.md](impact.md) | Source file → product concept mapping for change impact analysis |
-| Chat View | [spec/client/chat-view.md](client/chat-view.md) | ChatView, ChatItemActions, Android tap menu/long-press selection, message details, ChatSendAnimation, ImageGalleryAnimation |
+| Chat View | [spec/client/chat-view.md](client/chat-view.md) | ChatView, ChatItemActions, ChatItemMenu placement, Android tap menu/long-press selection, message details, ChatSendAnimation, ImageGalleryAnimation |
 | Chat List | [spec/client/chat-list.md](client/chat-list.md) | ChatListView, ChatPreviewView, filtering, search, tags |
 | Compose | [spec/client/compose.md](client/compose.md) | ComposeView, SendMsgView, ComposeState, attachments, mentions |
 | Navigation | [spec/client/navigation.md](client/navigation.md) | App screen routing, onboarding, settings, new chat flows |
@@ -127,7 +127,8 @@ Common Module (commonMain)
 | Chat Controller | [`SimpleXAPI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L525) | `object ChatController` | 525 |
 | Chat Model | [`ChatModel.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L86) | `object ChatModel` | 86 |
 | Outgoing Bubble Motion | [`ChatSendAnimation.kt`](../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatSendAnimation.kt#L28) | `class ChatSendAnimations` | 28 |
-| Message Gestures | [`ChatItemView.kt`](../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L70) | `fun ChatItemView()` | 70 |
+| Message Gestures | [`ChatItemView.kt`](../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L71) | `fun ChatItemView()` | 71 |
+| Message Menu Placement | [`ChatItemMenu.kt`](../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemMenu.kt#L105) | `fun ChatItemDropdownMenu()` | 105 |
 | Image Viewer Motion | [`ImageGalleryAnimation.kt`](../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ImageGalleryAnimation.kt#L82) | `fun ImageGalleryAnimatedContainer()` | 82 |
 | App Preferences | [`SimpleXAPI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L102) | `class AppPreferences` | 102 |
 | Platform Interface | [`Platform.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Platform.kt#L15) | `interface PlatformInterface` | 15 |
