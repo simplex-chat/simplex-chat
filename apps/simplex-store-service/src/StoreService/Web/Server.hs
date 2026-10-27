@@ -17,7 +17,8 @@ module StoreService.Web.Server
 where
 
 import StoreService.Catalog (PricedOffer (..), priceOffer)
-import StoreService.Config (ListenerConfig (..), ServiceConfig (..), StripeConfig (..))
+import StoreService.Config (ListenerConfig (..), ServiceConfig (..), StripeConfig (..), isLoopbackHost)
+import StoreService.Names.Abi (hex)
 import StoreService.Names.Env (NamesEnv)
 import StoreService.Names.Orders (OrdersEnv (..), ordersEnv)
 import StoreService.Names.Phases (RegistrationId, awaitChange)
@@ -419,7 +420,7 @@ createAtProvider WebEnv {weStore, weConfig} provider CreateRequest {crPriceId, c
       -- truncate once, so the response, the row and the provider get the same value
       now <- truncateToSecond <$> getCurrentTime
       let expiresAt = addUTCTime (invoiceWindow weConfig crMethod) now
-          draft = OrderDraft {odAmount = poAmount priced, odCurrency = poCurrency priced}
+          draft = OrderDraft {odAmount = poAmount priced, odCurrency = poCurrency priced, odReference = "badge:" <> hex crCodeHash}
       pCreateInvoice provider crMethod draft >>= \case
         Left (ProviderError e) -> failed ("provider refused to create an invoice: " <> e) providerUnavailable
         Right ProviderInvoice {piProviderRef, piDestination} -> do
@@ -542,8 +543,13 @@ eventTypeOf body = case J.decode body of
 webSettings :: ListenerConfig -> Warp.Settings
 webSettings ListenerConfig {lHost} =
   Warp.setHost (fromString (T.unpack lHost))
+    . Warp.setOnException logRequestException
     . Warp.setOnExceptionResponse (const internalError)
     $ Warp.defaultSettings
+
+-- | Warp's default writes the text and its newline apart, splitting a record another thread logs between them.
+logRequestException :: Maybe Request -> E.SomeException -> IO ()
+logRequestException _ e = when (Warp.defaultShouldDisplayException e) $ logError ("store service: a web request failed: " <> tshow e)
 
 -- | Each port with its app: the badges site's, and the names site's when it is served.
 webListeners :: WebEnv -> [(Int, Application)]
@@ -573,6 +579,3 @@ warnIfHeaderTrustIsExposed :: ListenerConfig -> IO ()
 warnIfHeaderTrustIsExposed ListenerConfig {lHost, lTrustForwardedFor} =
   when (lTrustForwardedFor && not (isLoopbackHost lHost)) $
     logWarn ("store service: trust_forwarded_for is on and the listener binds " <> lHost <> "; every caller can then choose its own rate limit bucket unless a proxy sets the header")
-
-isLoopbackHost :: Text -> Bool
-isLoopbackHost h = h `elem` ["127.0.0.1", "::1", "localhost"]

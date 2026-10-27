@@ -450,7 +450,9 @@ chainText chain = T.intercalate "; " $ zipWith linkText chain (map (Just . lkReg
       RPInvoice method (InvoiceId invId) ->
         let by = " by " <> methodText method <> " on invoice " <> invId
             late = sum $ map lcCents lateCredits
-         in [dollars cents <> by | cents > 0] <> [dollars late <> " late" <> by | late > 0]
+            -- an order its invoice paid is credited only the extra of an overpayment
+            kind = if cents > 0 then " overpaid" else " late"
+         in [dollars cents <> by | cents > 0] <> [dollars late <> kind <> by | late > 0]
       RPCode _ -> ["a prepaid code"]
       RPBalance -> []
     fromBalance cents = \case

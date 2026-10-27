@@ -38,12 +38,14 @@ data WebhookError = WebhookError Text | WebhookStale Text deriving (Eq, Show)
 -- rcvAmount is the total received on the invoice so far, not the amount of one payment.
 -- rcvDue is the provider's figure for what is still owed.
 -- rcvUnits is the crypto received in integer atomic units, Nothing for card money or crypto that could not be counted in them.
+-- rcvInvoicedUnits is the crypto the invoice asks in the same units, with any network fee the provider added to it.
 -- rcvRate is the invoice's rate for crypto, as the provider wrote it.
 data Received = Received
   { rcvAmount :: CurrencyAmount,
     rcvCrypto :: Maybe Text,
     rcvDue :: Maybe Text,
     rcvUnits :: Maybe Int64,
+    rcvInvoicedUnits :: Maybe Int64,
     rcvRate :: Maybe Text,
     rcvConfirmed :: Confirmed,
     rcvUncreditable :: Maybe Uncreditable
@@ -78,10 +80,11 @@ unitName = \case
 data Funded = PaidInFull | PaidInPart
   deriving (Eq, Show)
 
+-- | A closed invoice's Funded says whether the whole amount reached it, late or not.
 data PaymentSignal
   = SigFunded Received Funded
   | SigSettled Received UTCTime
-  | SigClosed Received
+  | SigClosed Received Funded
   deriving (Eq, Show)
 
 data ProviderInvoice = ProviderInvoice
@@ -100,9 +103,11 @@ expiresItself = \case
 settleWindow :: NominalDiffTime
 settleWindow = 72 * 3600
 
+-- | odReference names the order, the same on every retry of it, and is not secret.
 data OrderDraft = OrderDraft
   { odAmount :: CurrencyAmount,
-    odCurrency :: Text
+    odCurrency :: Text,
+    odReference :: Text
   }
   deriving (Eq, Show)
 

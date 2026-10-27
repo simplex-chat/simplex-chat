@@ -318,6 +318,8 @@ data LateCreditState = LateCreditState
     lsReceivedUnits :: Maybe Int64,
     lsConfirmedUnits :: Maybe Int64,
     lsInvoiceRate :: Maybe Text,
+    lsInvoiceAmount :: Int,
+    lsInvoicedUnits :: Maybe Int64,
     lsCreditedUnits :: Int64,
     lsCreditedCents :: Int,
     lsCredits :: Int,
@@ -1059,6 +1061,15 @@ lateFrom =
 closedUnpaid :: Query
 closedUnpaid = " r.phase = ? AND r.live = 0"
 
+-- | Its order paid by it, with crypto received above what it asked; takes the unpaid phase. The last term matches the partial index of
+-- overpaid payments, so the poller's pass reads only those.
+overpaidOrder :: Query
+overpaidOrder = " r.phase <> ? AND" <> cryptoInvoice <> " AND p.received_units > p.invoiced_units"
+
+-- | Confirmed crypto above what the invoice asked, not all credited.
+uncreditedExtra :: Query
+uncreditedExtra = " p.confirmed_units - p.invoiced_units >" <> creditedTotal "units"
+
 cardInvoice :: Query
 cardInvoice = " i.payment_crypto_currency IS NULL"
 
@@ -1095,14 +1106,23 @@ uncreditedMoney =
 -- Confirmed money waiting comes first, so its alert never asks for a refund by hand.
 pendingCase :: Query
 pendingCase =
-  " CASE WHEN" <> uncreditedMoney <> " THEN " <> literal LPUncredited
-    <> " WHEN COALESCE(p.amount, 0) = 0 AND (p.crypto_paid IS NOT NULL OR p.paid_in_full = 1) THEN " <> literal LPConfirming
-    <> " WHEN" <> cardInvoice <> " AND COALESCE(p.amount, 0) > p.confirmed_amount THEN " <> literal LPUnconfirmed
-    <> " WHEN p.received_units > COALESCE(p.confirmed_units, 0) THEN " <> literal LPUnconfirmed
-    <> " WHEN" <> cryptoInvoice <> " AND p.received_units IS NULL AND COALESCE(p.amount, 0) > 0 THEN " <> literal LPUncounted
+  " CASE WHEN" <> uncreditedMoney <> " THEN " <> pendingLiteral LPUncredited
+    <> " WHEN COALESCE(p.amount, 0) = 0 AND (p.crypto_paid IS NOT NULL OR p.paid_in_full = 1) THEN " <> pendingLiteral LPConfirming
+    <> " WHEN" <> cardInvoice <> " AND COALESCE(p.amount, 0) > p.confirmed_amount THEN " <> pendingLiteral LPUnconfirmed
+    <> " WHEN p.received_units > COALESCE(p.confirmed_units, 0) THEN " <> pendingLiteral LPUnconfirmed
+    <> " WHEN" <> cryptoInvoice <> " AND p.received_units IS NULL AND COALESCE(p.amount, 0) > 0 THEN " <> pendingLiteral LPUncounted
     <> " END"
-  where
-    literal p = fromString $ "'" <> T.unpack (textEncode p) <> "'"
+
+-- | Why an overpaid invoice's extra is not all credited: confirmed extra not credited yet, or received units above the confirmed ones,
+-- which overpaidOrder already holds above the invoiced ones.
+overpaidPendingCase :: Query
+overpaidPendingCase =
+  " CASE WHEN" <> uncreditedExtra <> " THEN " <> pendingLiteral LPUncredited
+    <> " WHEN p.received_units > COALESCE(p.confirmed_units, 0) THEN " <> pendingLiteral LPUnconfirmed
+    <> " END"
+
+pendingLiteral :: LatePending -> Query
+pendingLiteral p = fromString $ "'" <> T.unpack (textEncode p) <> "'"
 
 -- | What an alert names as received: units for crypto, and cents for card or for crypto that could not be counted in units.
 receivedFigure :: Query
@@ -1115,17 +1135,17 @@ lateColumns =
     <> creditedTotal "units"
     <> ","
     <> creditedTotal "cents"
-    <> ", (SELECT COUNT(*) FROM sx_badge_service_name_late_credits c WHERE c.invoice_id = ni.invoice_id), p.created_at"
+    <> ", (SELECT COUNT(*) FROM sx_badge_service_name_late_credits c WHERE c.invoice_id = ni.invoice_id), p.created_at, i.amount, p.invoiced_units"
 
-type LateRow = (Text, Text, NamePhase, BoolInt, Maybe Text, Maybe LateSupport, Int, Int, Maybe Int64, Maybe Int64) :. (Maybe Text, Int64, Int, Int, UTCTime)
+type LateRow = (Text, Text, NamePhase, BoolInt, Maybe Text, Maybe LateSupport, Int, Int, Maybe Int64, Maybe Int64) :. (Maybe Text, Int64, Int, Int, UTCTime, Int, Maybe Int64)
 
 toLateState :: LateRow -> Either Text LateCreditState
 toLateState
   ( (inv, reg, lsPhase, BI lsLive, coin_, lsSupport, lsReceivedCents, lsConfirmedCents, lsReceivedUnits, lsConfirmedUnits)
-      :. (lsInvoiceRate, lsCreditedUnits, lsCreditedCents, lsCredits, lsPaymentCreatedAt)
+      :. (lsInvoiceRate, lsCreditedUnits, lsCreditedCents, lsCredits, lsPaymentCreatedAt, lsInvoiceAmount, lsInvoicedUnits)
     ) = do
     lsCoin <- traverse (\c -> note ("invoices.payment_crypto_currency: " <> c) (textToCryptoCurrency c)) coin_
-    pure LateCreditState {lsInvoice = InvoiceId inv, lsRegistration = RegistrationId reg, lsPhase, lsLive, lsCoin, lsSupport, lsReceivedCents, lsConfirmedCents, lsReceivedUnits, lsConfirmedUnits, lsInvoiceRate, lsCreditedUnits, lsCreditedCents, lsCredits, lsPaymentCreatedAt}
+    pure LateCreditState {lsInvoice = InvoiceId inv, lsRegistration = RegistrationId reg, lsPhase, lsLive, lsCoin, lsSupport, lsReceivedCents, lsConfirmedCents, lsReceivedUnits, lsConfirmedUnits, lsInvoiceRate, lsInvoiceAmount, lsInvoicedUnits, lsCreditedUnits, lsCreditedCents, lsCredits, lsPaymentCreatedAt}
 
 -- | Nothing without a payment row.
 lateCreditState :: DB.Connection -> InvoiceId -> IO (Maybe LateCreditState)
@@ -1169,38 +1189,43 @@ lateWait db (InvoiceId invId) =
       (Just LPConfirming, Nothing) -> Just LWConfirming
       (Just LPUnconfirmed, Nothing) -> Just LWConfirming
 
--- | Closed orders' invoices with confirmed money not all credited, for the poller's credit pass; none a rate below the floor sent to support.
+-- | Closed orders' invoices with confirmed money not all credited, then overpaid invoices with confirmed extra not all credited, for the
+-- poller's credit pass; none a rate below the floor sent to support.
 uncreditedLateInvoices :: DB.Connection -> IO [InvoiceId]
-uncreditedLateInvoices db =
-  map (InvoiceId . fromOnly)
-    <$> DB.query
-      db
-      ("SELECT ni.invoice_id" <> lateFrom <> " WHERE" <> closedUnpaid <> " AND" <> uncreditedMoney <> " AND (ni.late_support IS NULL OR ni.late_support <> ?) ORDER BY p.created_at, ni.invoice_id")
-      (PUnpaid, LSRateFloor)
-
--- | Pending money whose payment row was created before the cutoff, never alerted, or alerted for less money than now received.
-lateAlertDue :: DB.Connection -> UTCTime -> IO [LateAlert]
-lateAlertDue db cutoff =
-  DB.query
-    db
-    ( lateColumns
-        <> ","
-        <> pendingCase
-        <> ","
-        <> receivedFigure
-        <> ", ni.late_alerted_at, ni.late_alerted_units"
-        <> lateFrom
-        <> " WHERE"
-        <> closedUnpaid
-        <> " AND p.created_at < ? AND"
-        <> pendingCase
-        <> " IS NOT NULL AND (ni.late_alerted_at IS NULL OR"
-        <> receivedFigure
-        <> " > COALESCE(ni.late_alerted_units, -1)) ORDER BY p.created_at, ni.invoice_id"
-    )
-    (PUnpaid, truncateToSecond cutoff)
-    >>= decodeAll toAlert
+uncreditedLateInvoices db = (<>) <$> uncredited closedUnpaid uncreditedMoney <*> uncredited overpaidOrder uncreditedExtra
   where
+    uncredited order money =
+      map (InvoiceId . fromOnly)
+        <$> DB.query
+          db
+          ("SELECT ni.invoice_id" <> lateFrom <> " WHERE" <> order <> " AND" <> money <> " AND (ni.late_support IS NULL OR ni.late_support <> ?) ORDER BY p.created_at, ni.invoice_id")
+          (PUnpaid, LSRateFloor)
+
+-- | Pending money of closed orders, then of overpaid invoices, whose payment row was created before the cutoff, never alerted, or alerted
+-- for less money than now received.
+lateAlertDue :: DB.Connection -> UTCTime -> IO [LateAlert]
+lateAlertDue db cutoff = (<>) <$> alertsDue closedUnpaid pendingCase <*> alertsDue overpaidOrder overpaidPendingCase
+  where
+    alertsDue order pending =
+      DB.query
+        db
+        ( lateColumns
+            <> ","
+            <> pending
+            <> ","
+            <> receivedFigure
+            <> ", ni.late_alerted_at, ni.late_alerted_units"
+            <> lateFrom
+            <> " WHERE"
+            <> order
+            <> " AND p.created_at < ? AND"
+            <> pending
+            <> " IS NOT NULL AND (ni.late_alerted_at IS NULL OR"
+            <> receivedFigure
+            <> " > COALESCE(ni.late_alerted_units, -1)) ORDER BY p.created_at, ni.invoice_id"
+        )
+        (PUnpaid, truncateToSecond cutoff)
+        >>= decodeAll toAlert
     toAlert :: LateRow :. (Maybe LatePending, Maybe Int64, Maybe UTCTime, Maybe Int64) -> Either Text LateAlert
     toAlert (row :. (pending_, laReceived, laAlertedAt, laAlertedReceived)) = case pending_ of
       Just laPending -> (\laState -> LateAlert {laState, laPending, laReceived, laAlertedAt, laAlertedReceived}) <$> toLateState row

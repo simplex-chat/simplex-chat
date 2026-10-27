@@ -50,6 +50,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "turns a code_issued order taken at price 0 and not live at its next version, dropping issued_code_id with its index and foreign key, which the down migration restores" testDropTakenCodes
     it "makes taken orders not live and gives a taken paid order a balance of its price, none to a code order or a price of 0, and rolls back the balance tables and columns" testNameBalancesMigration
     it "gives the orders stored before it empty agreed terms, and rolls the column back keeping them" testNameTermsMigration
+    it "adds the payments' invoiced units with the index of overpaid payments, and rolls both back keeping the payments" testInvoicedUnitsMigration
     it "refuses a stored reveal whose acceptance columns are set only in part" testPartialAcceptance
     it "rolls the acceptance columns back with the acceptance relays, which the code before them cannot read" testNameTermsAcceptanceMigration
   describe "order hash" $ do
@@ -173,7 +174,7 @@ namesTables = map ("sx_badge_service_name_" <>) ["prepaid_codes", "registrations
 
 -- | Added to the badge tables' payments by the names migrations.
 balancePaymentColumns :: [Text]
-balancePaymentColumns = ["confirmed_amount", "received_units", "confirmed_units", "invoice_rate"]
+balancePaymentColumns = ["confirmed_amount", "received_units", "confirmed_units", "invoice_rate", "invoiced_units"]
 
 badgeTables :: [Text]
 badgeTables = map ("sx_badge_service_" <>) ["invoices", "payments", "badge_prices", "badge_offers", "badge_purchases", "badge_ledger", "badge_issuances", "badge_codes", "badge_code_invoices", "group"]
@@ -201,7 +202,7 @@ testNamesDownUp :: IO ()
 testNamesDownUp = withServiceStore $ \st -> do
   let names = dropWhile ((/= "20261010_names") . name) storeServiceSchemaMigrations
       badgeColumns = mapM (fmap sort . columnsOf st) badgeTables
-  map name names `shouldBe` ["20261010_names", "20261022_drop_taken_codes", "20261022_name_balances", "20261022_name_late_wait", "20261023_name_terms", "20261026_name_terms_acceptance"]
+  map name names `shouldBe` ["20261010_names", "20261022_drop_taken_codes", "20261022_name_balances", "20261022_name_late_wait", "20261023_name_terms", "20261027_name_invoiced_units", "20261028_name_terms_acceptance"]
   badgeBefore <- badgeColumns
   code <- issue st 1 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
@@ -244,6 +245,10 @@ testDropTakenCodes = withServiceStore $ \st -> do
 testNameBalancesMigration :: IO ()
 testNameBalancesMigration = withServiceStore $ \st -> do
   let balances = [m | m@Migration {name = "20261022_name_balances"} <- storeServiceSchemaMigrations]
+      -- its index reads received_units, which the balances' down migration drops
+      invoicedUnits = [m | m@Migration {name = "20261027_name_invoiced_units"} <- storeServiceSchemaMigrations]
+      down = MTRDown (mapMaybe toDownMigration (balances <> invoicedUnits))
+      up = MTRUp (balances <> invoicedUnits)
       applied :: IO (Bool, Bool, Bool)
       applied = (,,) <$> (not . null <$> columnsOf st "sx_badge_service_name_balances") <*> (elem "balance_source" <$> columnsOf st "sx_badge_service_name_registrations") <*> (elem "confirmed_units" <$> columnsOf st "sx_badge_service_payments")
       live :: Text -> IO Bool
@@ -253,7 +258,7 @@ testNameBalancesMigration = withServiceStore $ \st -> do
       balanceOf :: Text -> IO (Maybe (Int, Int, Int, Maybe BalanceHold))
       balanceOf rid = withTransaction st $ \db -> fmap (\Balance {blAmount, blCredited, blRefunded, blHold} -> (blAmount, blCredited, blRefunded, blHold)) <$> getBalance db (RegistrationId rid) t0
   length balances `shouldBe` 1
-  runMigrations st $ MTRDown (mapMaybe toDownMigration balances)
+  runMigrations st down
   applied `shouldReturn` (False, False, False)
   code <- issue st 1 usable
   withTransaction st $ \db -> do
@@ -264,14 +269,14 @@ testNameBalancesMigration = withServiceStore $ \st -> do
     insertOldRegistration db "converted" 3 "taken" 0 Nothing (Just "inv-converted")
     insertInvoiceRow db "inv-queued" (at 60) "paid"
     insertOldRegistration db "queued" 4 "queued" price Nothing (Just "inv-queued")
-  runMigrations st $ MTRUp balances
+  runMigrations st up
   applied `shouldReturn` (True, True, True)
   mapM live ["paid", "code", "converted", "queued"] `shouldReturn` [False, False, False, True]
   mapM balanceOf ["paid", "code", "converted", "queued"] `shouldReturn` [Just (price, price, 0, Nothing), Nothing, Nothing, Nothing]
-  runMigrations st $ MTRDown (mapMaybe toDownMigration balances)
+  runMigrations st down
   applied `shouldReturn` (False, False, False)
   mapM live ["paid", "queued"] `shouldReturn` [False, True]
-  runMigrations st $ MTRUp balances
+  runMigrations st up
   balanceOf "paid" `shouldReturn` Just (price, price, 0, Nothing)
 
 testNameTermsMigration :: IO ()
@@ -299,6 +304,27 @@ testNameTermsMigration = withServiceStore $ \st -> do
   runMigrations st $ MTRUp terms
   agreedTerms `shouldReturn` [("paid", "")]
 
+testInvoicedUnitsMigration :: IO ()
+testInvoicedUnitsMigration = withServiceStore $ \st -> do
+  let invoiced = [m | m@Migration {name = "20261027_name_invoiced_units"} <- storeServiceSchemaMigrations]
+      applied :: IO (Bool, Bool)
+      applied = (,) <$> (elem "invoiced_units" <$> columnsOf st "sx_badge_service_payments") <*> indexExists st "sx_badge_service_idx_payments_overpaid"
+      payments :: IO [(Text, Maybe Int64)]
+      payments = withTransaction st $ \db -> DB.query_ db "SELECT invoice_id, received_units FROM sx_badge_service_payments"
+  length invoiced `shouldBe` 1
+  applied `shouldReturn` (True, True)
+  runMigrations st $ MTRDown (mapMaybe toDownMigration invoiced)
+  applied `shouldReturn` (False, False)
+  withTransaction st $ \db -> do
+    insertInvoiceRow db "inv-paid" (at 60) "paid"
+    insertPayment db "inv-paid"
+  stored <- payments
+  runMigrations st $ MTRUp invoiced
+  applied `shouldReturn` (True, True)
+  runMigrations st $ MTRDown (mapMaybe toDownMigration invoiced)
+  applied `shouldReturn` (False, False)
+  payments `shouldReturn` stored
+
 testPartialAcceptance :: IO ()
 testPartialAcceptance = withServiceStore $ \st -> do
   placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
@@ -309,7 +335,7 @@ testPartialAcceptance = withServiceStore $ \st -> do
 
 testNameTermsAcceptanceMigration :: IO ()
 testNameTermsAcceptanceMigration = withServiceStore $ \st -> do
-  let acceptance = [m | m@Migration {name = "20261026_name_terms_acceptance"} <- storeServiceSchemaMigrations]
+  let acceptance = [m | m@Migration {name = "20261028_name_terms_acceptance"} <- storeServiceSchemaMigrations]
       applied :: IO Bool
       applied = elem "accept_terms" <$> columnsOf st "sx_badge_service_name_registrations"
       kinds :: IO [Text]

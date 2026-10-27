@@ -13,6 +13,7 @@ where
 import StoreService.Config (StripeConfig (..))
 import StoreService.Providers
   ( Confirmed (..),
+    Funded (..),
     ListPass (..),
     OrderDraft (..),
     PaymentSignal (..),
@@ -141,7 +142,7 @@ listOpen env@StripeEnv {seCfg} = do
           let q =
                 [("created[gte]", Just createdGte), ("limit", Just (B8.pack (show listPageSize)))]
                   <> maybe [] (\a -> [("starting_after", Just (TE.encodeUtf8 a))]) after
-          got <- stripeApi env listWhat methodGet ["v1", "payment_intents"] q Nothing
+          got <- stripeApi env listWhat methodGet ["v1", "payment_intents"] q [] Nothing
           case got >>= decodeStripe listWhat of
             Left e -> pure (Left e)
             Right IntentList {ilData, ilHasMore} ->
@@ -237,14 +238,20 @@ instance J.FromJSON CreatedIntent where
 
 createInvoice :: StripeEnv -> ServicePaymentMethod -> OrderDraft -> IO (Either ProviderError ProviderInvoice)
 createInvoice _ (SPMCrypto _) _ = pure (Left (ProviderError "stripe offers no crypto payment method"))
-createInvoice env (SPMCard CPStripe) OrderDraft {odAmount = CurrencyAmount minor, odCurrency} = do
-  let form =
-        [ ("amount", B8.pack (show minor)),
-          ("currency", TE.encodeUtf8 (T.toLower odCurrency)),
+createInvoice env (SPMCard CPStripe) OrderDraft {odAmount = CurrencyAmount minor, odCurrency, odReference} = do
+  let amount = B8.pack (show minor)
+      currency = TE.encodeUtf8 (T.toLower odCurrency)
+      reference = TE.encodeUtf8 odReference
+      form =
+        [ ("amount", amount),
+          ("currency", currency),
           -- Only card is offered, because a redirect-based method would navigate the top window out of the embedded frame.
-          ("allowed_payment_method_types[]", "card")
+          ("allowed_payment_method_types[]", "card"),
+          ("metadata[order]", reference)
         ]
-  created <- stripeApi env what methodPost ["v1", "payment_intents"] [] (Just form)
+      -- Stripe answers a create sent again with the same key, for 24 hours, with the intent the first one made.
+      idempotencyKey = B8.intercalate ":" [reference, amount, currency]
+  created <- stripeApi env what methodPost ["v1", "payment_intents"] [] [("Idempotency-Key", idempotencyKey)] (Just form)
   pure $ created >>= decodeStripe what <&> \CreatedIntent {ciId, ciClientSecret} ->
     ProviderInvoice {piProviderRef = ciId, piDestination = SPDCard CPStripe ciClientSecret}
   where
@@ -252,12 +259,12 @@ createInvoice env (SPMCard CPStripe) OrderDraft {odAmount = CurrencyAmount minor
 
 cancelInvoice :: StripeEnv -> Text -> IO (Either ProviderError ())
 cancelInvoice env pid =
-  fmap (fmap (const ())) $ stripeApi env "cancel intent" methodPost ["v1", "payment_intents", pid, "cancel"] [] (Just [])
+  fmap (fmap (const ())) $ stripeApi env "cancel intent" methodPost ["v1", "payment_intents", pid, "cancel"] [] [] (Just [])
 
 readInvoice :: StripeEnv -> Text -> IO (Either ProviderError (Maybe PaymentSignal))
 readInvoice env pid = do
   now <- getCurrentTime
-  got <- stripeApi env what methodGet ["v1", "payment_intents", pid] [("expand[]", Just "latest_charge")] Nothing
+  got <- stripeApi env what methodGet ["v1", "payment_intents", pid] [("expand[]", Just "latest_charge")] [] Nothing
   pure $ got >>= decodeStripe what >>= signalOf now
   where
     what = "read intent " <> pid
@@ -266,7 +273,7 @@ signalOf :: UTCTime -> IntentRead -> Either ProviderError (Maybe PaymentSignal)
 signalOf now IntentRead {irStatus, irAmountReceived, irChargeCreated} =
   case irStatus of
     "succeeded" -> Right (Just (SigSettled (received irAmountReceived irAmountReceived) settledAt))
-    "canceled" -> Right (Just (SigClosed (received 0 0)))
+    "canceled" -> Right (Just (SigClosed (received 0 0) PaidInPart))
     s | s `elem` openStatuses -> Right Nothing
       | otherwise -> Left (ProviderError ("stripe payment_intent: unknown status " <> s))
   where
@@ -278,6 +285,7 @@ signalOf now IntentRead {irStatus, irAmountReceived, irChargeCreated} =
           rcvCrypto = Nothing,
           rcvDue = Nothing,
           rcvUnits = Nothing,
+          rcvInvoicedUnits = Nothing,
           rcvRate = Nothing,
           rcvConfirmed = Confirmed {cfCents = amountFrom confirmed, cfUnits = Nothing},
           rcvUncreditable = Nothing
@@ -323,9 +331,10 @@ stripeApi ::
   Method ->
   [Text] ->
   Query ->
+  [Header] ->
   Maybe [(ByteString, ByteString)] ->
   IO (Either ProviderError LB.ByteString)
-stripeApi StripeEnv {seCfg, seManager} what verb segments query form = do
+stripeApi StripeEnv {seCfg, seManager} what verb segments query headers form = do
   r <- try $ do
     req0 <- parseRequest (T.unpack url)
     -- applyBasicAuth must wrap the record update, because updating requestHeaders after it would drop the header it adds.
@@ -336,7 +345,8 @@ stripeApi StripeEnv {seCfg, seManager} what verb segments query form = do
                 requestHeaders =
                   ("Accept", "application/json")
                     : ("Stripe-Version", stripeApiVersion)
-                    : [("Content-Type", "application/x-www-form-urlencoded") | isJust form],
+                    : [("Content-Type", "application/x-www-form-urlencoded") | isJust form]
+                    <> headers,
                 requestBody = RequestBodyBS (maybe "" (renderSimpleQuery False) form)
               }
     withResponse req seManager $ \resp -> do

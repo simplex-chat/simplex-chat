@@ -107,6 +107,8 @@ data InvoiceState = InvoiceState
     isAdditionalStatus :: Text,
     isPaid :: Maybe Text,
     isDue :: Maybe Text,
+    -- | The method's amount, when a test sets one other than the fixture's.
+    isAmount :: Maybe Text,
     isSpeedPolicy :: Maybe Text,
     isPayments :: Maybe J.Value
   }
@@ -239,14 +241,15 @@ patchInvoice invId InvoiceState {isStatus, isAdditionalStatus, isSpeedPolicy} v 
 
 -- | The fixtures' payments were written for a settled invoice, so the payments follow the state instead.
 patchMethods :: InvoiceState -> J.Value -> J.Value
-patchMethods InvoiceState {isStatus, isPaid, isDue, isPayments} = \case
+patchMethods InvoiceState {isStatus, isPaid, isDue, isAmount, isPayments} = \case
   J.Array vs -> J.Array (fmap one vs)
   other -> other
   where
     paidStatus = if isStatus == "Settled" then "Settled" else "Processing" :: Text
     one = \case
-      J.Object o ->
-        let paid = fromMaybe (fixturePaid o) isPaid
+      J.Object fixture ->
+        let o = maybe fixture (\a -> KM.insert "amount" (J.String a) fixture) isAmount
+            paid = fromMaybe (fixturePaid o) isPaid
             -- With nothing received the whole amount is owed. The fixtures were written for a
             -- settled invoice, so without this a freshly created one would serve their `due` of
             -- zero and the fake would report nothing left to send on an unpaid invoice.
@@ -314,6 +317,7 @@ fakeApp stv req respond = do
                       isAdditionalStatus = fromMaybe (isAdditionalStatus inv) (textField "additionalStatus" o),
                       isPaid = maybe (isPaid inv) Just (textField "paymentMethodPaid" o),
                       isDue = maybe (isDue inv) Just (textField "due" o),
+                      isAmount = maybe (isAmount inv) Just (textField "amount" o),
                       isPayments = maybe (isPayments inv) Just (KM.lookup "payments" o)
                     }
             writeTVar stv st {fsInvoices = M.insert invId inv' (fsInvoices st)}
@@ -465,6 +469,7 @@ fakeApp stv req respond = do
                     isAdditionalStatus = "None",
                     isPaid = Just "0.00000000",
                     isDue = Nothing,
+                    isAmount = Nothing,
                     isSpeedPolicy = J.decode body >>= objectField "checkout" >>= objectField "speedPolicy" >>= asText,
                     isPayments = Nothing
                   }
@@ -484,7 +489,7 @@ intQuery :: ByteString -> Query -> Maybe Int
 intQuery k q = join (lookup k q) >>= readMaybe . B8.unpack
 
 stateKeys :: [Key]
-stateKeys = ["status", "additionalStatus", "paymentMethodPaid", "due", "payments"]
+stateKeys = ["status", "additionalStatus", "paymentMethodPaid", "due", "amount", "payments"]
 
 unknownKeys :: [Key] -> J.Object -> Maybe Text
 unknownKeys known o = case filter (`notElem` known) (KM.keys o) of

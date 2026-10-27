@@ -502,7 +502,8 @@ testPaidOrder = withOrders $ \ctx -> do
   field "price" r `shouldBe` Just (J.Number 10000)
   field "duration" r `shouldBe` Just (J.toJSON $ durationAt orderTime)
   field "terms" r `shouldBe` Just (J.String termsVersion)
-  stubCalls (cStub ctx) `shouldReturn` [StubCreate (SPMCrypto CCBtc) OrderDraft {odAmount = CurrencyAmount 10000, odCurrency = "usd"}]
+  let reference = "name:" <> hex (orderHash ownerA (fieldsOf aliceOrder) (OTInvoice (SPMCrypto CCBtc) 10000))
+  stubCalls (cStub ctx) `shouldReturn` [StubCreate (SPMCrypto CCBtc) OrderDraft {odAmount = CurrencyAmount 10000, odCurrency = "usd", odReference = reference}]
   reg <- invoiceRegistration ctx invId
   (nrPhase reg, nrLive reg, nrVersion reg, nrYears reg, nrPrice reg, nrPayment reg) `shouldBe` (PUnpaid, True, 1, 2, 10000, RPInvoice (SPMCrypto CCBtc) invId)
   nrOrderHash reg `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTInvoice (SPMCrypto CCBtc) 10000)
@@ -1340,7 +1341,7 @@ testOneLateAlert = withOrders $ \ctx@Ctx {cStore = st, cWeb} -> do
   poller <- newPoller
   setSignals (cStub ctx) [(ref, SigFunded paid PaidInPart)]
   refunds <$> readWith poller `shouldReturn` 0
-  setSignals (cStub ctx) [(ref, SigClosed paid)]
+  setSignals (cStub ctx) [(ref, SigClosed paid PaidInPart)]
   logs <- readWith poller
   refunds logs `shouldBe` 1
   logs `shouldSatisfy` T.isInfixOf "it stays unpaid, and its money is credited to its balance once confirmed, else alerted"
@@ -1380,7 +1381,7 @@ testCancelAlertsFunded = withOrdersCancelling (SigFunded paid PaidInPart) $ \ctx
     (status, v) <- post ctx ("/api/invoice/" <> T.unpack (invoiceText invId) <> "/cancel") ""
     (status, field "status" =<< v, field "cryptoAmountPaid" =<< v) `shouldBe` (200, Just "expired", Just "0.00078")
   length (T.breakOnAll (alertOf invId) logs) `shouldBe` 1
-  capturingStderr (settleNow ctx invId (SigClosed paid) `shouldReturn` Right ISExpired) >>= (`shouldNotSatisfy` T.isInfixOf (alertOf invId))
+  capturingStderr (settleNow ctx invId (SigClosed paid PaidInPart) `shouldReturn` Right ISExpired) >>= (`shouldNotSatisfy` T.isInfixOf (alertOf invId))
   (nrPhase &&& nrLive) <$> invoiceRegistration ctx invId `shouldReturn` (PUnpaid, False)
   where
     paid = rcv 5000 (Just "0.00078")
@@ -1452,7 +1453,7 @@ testSettlementLocksInvoice = withOrders $ \ctx -> do
 testExpiryCloses :: IO ()
 testExpiryCloses = withOrders $ \ctx -> do
   (closedByProvider, _) <- placed ctx aliceOrder
-  settleNow ctx closedByProvider (SigClosed (rcv 0 Nothing)) `shouldReturn` Right ISExpired
+  settleNow ctx closedByProvider (SigClosed (rcv 0 Nothing) PaidInPart) `shouldReturn` Right ISExpired
   r <- invoiceRegistration ctx closedByProvider
   (nrPhase r, nrLive r, nrVersion r) `shouldBe` (PUnpaid, False, 2)
   (swept, _) <- placed ctx aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2}
@@ -1493,7 +1494,7 @@ testPassSweepsAroundFailures = do
     withConnection st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET phase = 'lost' WHERE registration_id = ? AND phase = ?" (poisonedId, "unpaid" :: Text)
     poisonedRef <- refOf poisoned
     refOf unread >>= writeIORef unreadable
-    setSignals (cStub ctx) [(poisonedRef, SigClosed (rcv 0 Nothing))]
+    setSignals (cStub ctx) [(poisonedRef, SigClosed (rcv 0 Nothing) PaidInPart)]
     poller <- newPollerEnv st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) (weHints cWeb) (weProviders cWeb) (poll $ weConfig cWeb)
     void $ capturingStderr $ runOnePass poller
     mapM (fmap (irStatus <$>) . getInvoice st) [poisoned, unread, good] `shouldReturn` map Just [ISOpen, ISOpen, ISExpired]
@@ -1509,7 +1510,7 @@ testCleanupIn ctx@Ctx {cStore = st} = do
   mapM_ (uncurry place) [("gone", 1), ("funded", 2), ("late", 3), ("unread", 4)]
   placePaid st "recent" ownerA (order "alicebakery5" 5) (addUTCTime 3600 due) `shouldReturn` Right ()
   settleOrder st (weWaiters $ cWeb ctx) Nothing (InvoiceId "inv-funded") (SigFunded (rcv 100 (Just "0.00001")) PaidInPart) t0 `shouldReturn` Right ISOpen
-  setSignals (cStub ctx) [(ref "late", SigClosed (rcv 5000 (Just "0.00078")))]
+  setSignals (cStub ctx) [(ref "late", SigClosed (rcv 5000 (Just "0.00078")) PaidInPart)]
   failing <- newIORef False
   let reading p = p {pReadInvoice = \r -> readIORef failing >>= \f -> if f && r == ref "unread" then pure (Left $ ProviderError "down") else pReadInvoice p r}
       providers = map reading (weProviders $ cWeb ctx)

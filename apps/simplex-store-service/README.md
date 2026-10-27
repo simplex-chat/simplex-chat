@@ -94,8 +94,14 @@ With `dev_keys`, the service refuses to start:
 
 - unless `[names]` is on and `[chain] chain_id` is 31337, anvil's local chain;
 - unless the node at `rpc_url` answers `eth_chainId` with 31337 as the service starts;
-- when `[btcpay]` or `[stripe]` is configured, since a run with dev keys takes no payments;
+- when `[stripe]` holds a live key: `secret_key` must be a test key (`sk_test_` or `rk_test_`), and
+  `publishable_key` too (`pk_test_`);
+- when `[btcpay]`'s `host` is not on loopback (`127.0.0.1`, `::1` or `localhost`);
 - when a dev key has the index of a key clients trust.
+
+So a run with dev keys takes test payments only: Stripe in test mode, and a BTCPay on the same machine,
+such as one on regtest. `host` must still be https, so put a TLS proxy in front of a local BTCPay and
+have the service trust the proxy's certificate authority with `SYSTEM_CERTIFICATE_PATH`.
 
 It logs a warning naming the dev keys' indexes at every start. Clients never trust a dev key, but the
 service's own chat core does, for the badges it receives, so a contact's badge signed by a dev key is
@@ -163,8 +169,24 @@ reaches a name invoice after the invoice closed: the money stays pending, the po
 once it is older than its read window (about 72 hours), and support settles it by hand. The service
 judges each invoice by the policy it was created with, so changing the setting later credits nothing
 that arrived under `HighSpeed`. With `MediumSpeed` (the template's value) or a slower policy, late
-bitcoin is credited to the order's balance once confirmed, at the lower of the invoice's rate and the
-rate when it is credited.
+bitcoin is credited to the order's balance once confirmed.
+
+A credit is the money's share of the invoice's price: the price times the crypto received, divided by
+the crypto the invoice asked, which includes the network fee BTCPay adds (to every Monero invoice, and
+to a Bitcoin invoice after a part payment), so the fee is never credited. It is also taken at the
+lower of the invoice's rate and the rate when it is credited, rounded down to the cent. So a whole
+late payment credits at most the price. A current rate below half the invoice's credits nothing: the
+money goes to support for good.
+
+**Overpayment.** Crypto above what an invoice asks is credited to the order's balance in the same
+way, once confirmed, also on an invoice paid in time: the extra's share of the price, at the lower
+rate. The service logs it at info as `names: invoice <id> was overpaid; credited <cents> cents of the
+extra to the balance of registration <id>`, and an extra it cannot credit is alerted as late money is.
+
+BTCPay keeps an invoice it has closed `Expired` (or `Invalid` after a cancel) when money arrives late.
+The invoice view reports `paidInFull` on such an invoice once BTCPay reads it `PaidLate` or
+`PaidOver`, or its due is 0 or less, and reports an overpaid invoice's `cryptoAmountDue` as `0`,
+never below.
 
 **Set the Monero plugin's settled-confirmation threshold (`InvoiceSettledConfirmationThreshold`) to
 at least 1.** BTCPay's API does not show how many confirmations a Monero payment has, only that
@@ -195,6 +217,14 @@ absent `[btcpay]` does for Bitcoin and Monero. Its keys:
   If the order is over 72 hours old and the cancel has kept failing for an hour, the service marks
   it expired and logs an error. Check such orders in the Stripe Dashboard. After a restart, the
   hour starts again.
+
+The service creates each payment intent with `metadata[order]`, the order's reference:
+`name:0x<order hash>` for a name order (`order_hash` in `sx_badge_service_name_registrations`) or
+`badge:0x<code hash>` for a badge (`code_hash` in `sx_badge_service_badge_codes`). Neither is a secret,
+and support finds an intent's order from it in the Dashboard. The create also sends an
+`Idempotency-Key` of that reference with the amount and currency, so a buyer who sends the same order
+again after the first answer was lost gets the same intent, not a second one; Stripe keeps the key
+for 24 hours.
 
 The service fills `publishable_key` into the shell at boot: the built `index.html` ships
 with an empty `<meta id="stripe-publishable-key" name="stripe-publishable-key" content="">`
@@ -405,13 +435,19 @@ each domain to its own port, as the all-in-one example in [Caddy](#caddy) does. 
 
 ### Development with a local chain
 
-`compose.dev.yml` adds a container `chain`: an anvil chain on `127.0.0.1:8545` (chain id 31337)
-with the names contracts, deployed on its first start. Its state is kept in `./data/chain`, so
-restarts keep the contracts, balances and registered names. Its keys are anvil's public test keys,
-so never use it beside a real chain. From `scripts/store-service/`:
+`compose.dev.yml` adds two containers, so a dev deployment needs nothing on the host but Docker:
+
+- `chain`: an anvil chain on `127.0.0.1:8545` (chain id 31337) with the names contracts, deployed
+  on its first start. Its state is kept in `./data/chain`, so restarts keep the contracts, balances
+  and registered names. Its keys are anvil's public test keys, so never use it beside a real chain.
+- `postgres`: PostgreSQL 17 on `127.0.0.1:5433`, user `simplex`, database `store_service`, without a
+  password, kept in `./data/postgres`.
+
+From `scripts/store-service/`:
 
 ```
 echo "COMPOSE_FILE=compose.yml:compose.dev.yml" >> .env
+echo "BADGE_DB_CONN=postgresql://simplex@127.0.0.1:5433/store_service" >> .env
 docker compose up -d --build
 docker compose logs chain
 ```
@@ -431,7 +467,8 @@ docker compose exec chain dev-chain.sh topup [address] [eth]
 
 Registrations wait 10 seconds after their commit (`MIN_COMMITMENT_AGE` in `compose.dev.yml`), and
 prepaid codes need no payment provider. To start over, run `docker compose down` and delete
-`./data/chain`; orders the service already holds then point at names that no longer exist.
+`./data/chain` and `./data/postgres` together; deleting only the chain leaves orders that point at
+names that no longer exist.
 
 ### Caddy
 
@@ -1098,12 +1135,13 @@ them later is logged as not applied and changes nothing.
 ## Refunding a name balance
 
 A paid name order keeps its money as a balance when it ends `taken` (another buyer registered the
-name first), when it moves to a cheaper name (the difference), and when a payment reaches its invoice
-after the invoice closed. The buyer spends a balance on another name from Your names, or asks for it
-back: the page tells them to write to chat@simplex.chat with the order's reference, which is its
-invoice id, or its registration id for an order without an invoice. Nothing is refunded
-automatically, and the service never learns where to send money. Support records each refund in
-`--run-cli` mode with the service stopped, like the other `//` commands:
+name first), when it moves to a cheaper name (the difference), when a payment reaches its invoice
+after the invoice closed, and when its invoice was paid more crypto than it asked (the extra). The
+buyer spends a balance on another name from Your names, or asks for it back: the page tells them to
+write to chat@simplex.chat with the order's reference, which is its invoice id, or its registration
+id for an order without an invoice. Nothing is refunded automatically, and the service never learns
+where to send money. Support records each refund in `--run-cli` mode with the service stopped, like
+the other `//` commands:
 
 ```
 //refund <reference>
@@ -1119,8 +1157,9 @@ automatically, and the service never learns where to send money. Support records
 
    `Paid by` starts at this order and follows every balance the money came through back to the
    first order: each order with what its invoice paid and by which method (`card`, `btc` or
-   `xmr`), the part paid from the balance of the next order listed, and, marked `late`, money
-   credited after its invoice closed.
+   `xmr`), the part paid from the balance of the next order listed, and money credited from its
+   invoice later: marked `late` when it arrived after the invoice closed, and `overpaid` when it is
+   the extra of an invoice that paid the order.
 2. Run the command the answer ends with. The cents must equal the whole balance: a refund zeroes it,
    and part of a balance is never refunded. Other cents record nothing, and the answer gives the
    balance.

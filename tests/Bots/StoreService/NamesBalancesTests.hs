@@ -36,7 +36,7 @@ import StoreService.Names.Store
 import StoreService.Names.Turns (balanceTurnCount, newTurns, turnsCount, withBalanceTurn, withLabelTurn)
 import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupUnpaid, newPollerEnv, unpaidRetention)
-import StoreService.Providers (PaymentSignal (..))
+import StoreService.Providers (Funded (..), PaymentSignal (..))
 import StoreService.Waiters (newWaiters)
 import StoreService.Web.Server (WebEnv (..))
 import System.Timeout (timeout)
@@ -477,7 +477,7 @@ testClosesRelease = withServiceStore $ \st -> do
     holder st ("h-" <> c) ("s-" <> c) 10000 (at 60) `shouldReturn` Right ()
   cancelOpenInvoice st waiters Nothing (InvoiceId "inv-h-cancel") (at 2) `shouldReturn` True
   expireOverdue st waiters Nothing (at 61) (at 61) [InvoiceId "inv-h-sweep"] `shouldReturn` [InvoiceId "inv-h-sweep"]
-  settleOrder st waiters Nothing (InvoiceId "inv-h-settled") (SigClosed (rcv 0 Nothing)) (at 2) `shouldReturn` Right ISExpired
+  settleOrder st waiters Nothing (InvoiceId "inv-h-settled") (SigClosed (rcv 0 Nothing) PaidInPart) (at 2) `shouldReturn` Right ISExpired
   next <- reg st "h-next"
   withTransaction st (\db -> closeOverdue db next (at 61)) `shouldReturn` Just (nrVersion next + 1)
   forM_ closes $ \c -> do
@@ -629,6 +629,8 @@ testLateScans = withServiceStore $ \st -> do
           lsReceivedUnits = Just 300000,
           lsConfirmedUnits = Just 100000,
           lsInvoiceRate = Just "62500",
+          lsInvoiceAmount = 20000,
+          lsInvoicedUnits = Nothing,
           lsCreditedUnits = 100000,
           lsCreditedCents = 1500,
           lsCredits = 1,

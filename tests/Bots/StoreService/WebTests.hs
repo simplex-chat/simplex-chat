@@ -37,6 +37,7 @@ where
 import StoreService.Catalog (catalogCurrency, defaultCatalog)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..))
 import StoreService.Log (logInfo)
+import StoreService.Names.Abi (hex)
 import StoreService.Orders (cancelOpenInvoice, codeLifetime, expireOverdue, settleOrder)
 import StoreService.Poller
 import StoreService.Providers
@@ -224,6 +225,7 @@ badgeWebTests = do
     it "omits the confirmations where no provider is configured" testViewOmitsConfirmationsWithoutBTCPay
     it "carries the provider's paid-in-full verdict, which the amounts cannot give" testViewCarriesTheProvidersPaidVerdict
     it "never withdraws a paid-in-full verdict on a later read" testPaidVerdictIsNotWithdrawnByALaterRead
+    it "carries a closed invoice's paid-in-full verdict, the status staying expired" testViewCarriesAClosedPaidVerdict
     it "answers an unknown id with 404 not_found and nothing else" testUnknownInvoiceIsOpaque
     it "releases a held wait when a payment lands without settling" testHeldWaitWakesOnAPaymentThatDoesNotSettle
     it "leaves a held wait alone when a pass writes nothing" testHeldWaitIsNotWokenByAPassThatWroteNothing
@@ -242,6 +244,7 @@ badgeWebTests = do
     it "answers a hold from the row it read, not from the status it woke on" testHoldReportsTheRowNotTheWake
     it "answers a hold that timed out with a change nothing published" testHoldTimeoutReportsAnUnpublishedChange
     it "answers a handler exception with 500 internal, and keeps serving" testHandlerExceptionIsContained
+    it "logs a handler exception as one service log record, never a bare line" testHandlerExceptionIsLogged
   describe "StoreService names: sites" $ do
     it "exports both sites, each with the publishable key" testExportsBothSites
     it "serves each site on its own port only, whatever the Host, and the API on both" testEachPortServesItsSite
@@ -909,7 +912,7 @@ stubProvider ref =
         lost <- ssCancelLost <$> readIORef ref
         if lost
           then do
-            atomicModifyIORef' ref $ \s -> (s {ssInvoices = Map.insert providerRef (SigClosed (rcv 0 Nothing)) (ssInvoices s)}, ())
+            atomicModifyIORef' ref $ \s -> (s {ssInvoices = Map.insert providerRef (SigClosed (rcv 0 Nothing) PaidInPart) (ssInvoices s)}, ())
             pure (Left (ProviderError "the response was lost"))
           else maybe (Right ()) Left . ssCancelError <$> readIORef ref,
       pListOpen = do
@@ -952,7 +955,7 @@ setVerifyThrows :: IORef StubState -> Bool -> IO ()
 setVerifyThrows ref throws = atomicModifyIORef' ref $ \s -> (s {ssVerifyThrows = throws}, ())
 
 sampleDraft :: OrderDraft
-sampleDraft = OrderDraft {odAmount = CurrencyAmount 500, odCurrency = "usd"}
+sampleDraft = OrderDraft {odAmount = CurrencyAmount 500, odCurrency = "usd", odReference = "badge:0x01"}
 
 sampleProviderInvoice :: ProviderInvoice
 sampleProviderInvoice = ProviderInvoice {piProviderRef = "pref-1", piDestination = SPDCrypto CCBtc "bc1qexampleaddress" "0.00050000"}
@@ -1707,6 +1710,17 @@ testHandlerExceptionIsContained = bounded "handler exception" $ withWebAppExpect
   statusOf shell `shouldBe` 200
   responseBody shell `shouldBe` shellHtml
 
+-- | Warp reports an exception after sending the 500, and serves the connection's next request only after that report.
+testHandlerExceptionIsLogged :: IO ()
+testHandlerExceptionIsLogged = bounded "handler exception logged" $ withWebAppExpectingThrow $ \env client -> do
+  iid <- seedOpenInvoice env
+  breakStore (weStore env)
+  logs <- capturingStderr $ do
+    statusOf <$> webGet client (invoicePath iid) >>= (`shouldBe` 500)
+    statusOf <$> webGet client "/" >>= (`shouldBe` 200)
+  logs `shouldSatisfy` loggedError "store service: a web request failed: "
+  filter (not . ("[ERROR " `T.isPrefixOf`)) (filter ("badge_code_invoices" `T.isInfixOf`) (T.lines logs)) `shouldBe` []
+
 createsPerMinute :: Int
 createsPerMinute = 5
 
@@ -1840,6 +1854,7 @@ testCreateInvoice = bounded "create invoice" $ withCheckout $ \ref env client ->
       method `shouldBe` SPMCrypto CCBtc
       odAmount draft `shouldBe` CurrencyAmount 500
       odCurrency draft `shouldBe` "usd"
+      odReference draft `shouldBe` "badge:" <> hex (codeDigest sampleCode)
     other -> expectationFailure ("provider calls: " <> show other)
 
 testXmrReachesTheProviderAsXmr :: IO ()
@@ -2169,6 +2184,7 @@ rcv amount crypto =
       rcvCrypto = crypto,
       rcvDue = Nothing,
       rcvUnits = Nothing,
+      rcvInvoicedUnits = Nothing,
       rcvRate = Nothing,
       rcvConfirmed = Confirmed {cfCents = CurrencyAmount 0, cfUnits = Nothing},
       rcvUncreditable = Nothing
@@ -2303,7 +2319,7 @@ testFundedRecordsWithoutMoving = bounded "funded records only" $ withServiceStor
 testClosedExpiresAnOpenInvoice :: IO ()
 testClosedExpiresAnOpenInvoice = bounded "closed expires" $ withServiceStore $ \st -> do
   iid <- seedOpen st
-  settle st iid (SigClosed (rcv 200 (Just "0.00020000"))) settleAt `shouldReturn` Right ISExpired
+  settle st iid (SigClosed (rcv 200 (Just "0.00020000")) PaidInPart) settleAt `shouldReturn` Right ISExpired
   invoiceStatus st iid `shouldReturn` ISExpired
   p <- paymentRow st iid
   ipAmount p `shouldBe` Just (CurrencyAmount 200)
@@ -2313,7 +2329,7 @@ testClosedExpiresAnOpenInvoice = bounded "closed expires" $ withServiceStore $ \
 testClosedWithNothingWritesNoPayment :: IO ()
 testClosedWithNothingWritesNoPayment = bounded "closed on nothing" $ withServiceStore $ \st -> do
   iid <- seedOpen st
-  settle st iid (SigClosed (rcv 0 Nothing)) settleAt `shouldReturn` Right ISExpired
+  settle st iid (SigClosed (rcv 0 Nothing) PaidInPart) settleAt `shouldReturn` Right ISExpired
   invoiceStatus st iid `shouldReturn` ISExpired
   Just row <- getInvoice st iid
   irPayment row `shouldBe` Nothing
@@ -2322,8 +2338,8 @@ testClosedWithNothingWritesNoPayment = bounded "closed on nothing" $ withService
 testClosedReplayIsIdempotent :: IO ()
 testClosedReplayIsIdempotent = bounded "closed replay" $ withServiceStore $ \st -> do
   iid <- seedOpen st
-  settle st iid (SigClosed (rcv 200 (Just "0.00020000"))) settleAt `shouldReturn` Right ISExpired
-  settle st iid (SigClosed (rcv 200 (Just "0.00020000"))) replayAt `shouldReturn` Right ISExpired
+  settle st iid (SigClosed (rcv 200 (Just "0.00020000")) PaidInPart) settleAt `shouldReturn` Right ISExpired
+  settle st iid (SigClosed (rcv 200 (Just "0.00020000")) PaidInPart) replayAt `shouldReturn` Right ISExpired
   invoiceStatus st iid `shouldReturn` ISExpired
   p <- paymentRow st iid
   ipAmount p `shouldBe` Just (CurrencyAmount 200)
@@ -2344,7 +2360,7 @@ testPaidRefusesEverySignal = bounded "paid refuses" $ withServiceStore $ \st -> 
     )
     [ SigSettled (rcv 900 (Just "0.00090000")) replayAt,
       SigFunded (rcv 900 (Just "0.00090000")) PaidInPart,
-      SigClosed (rcv 900 (Just "0.00090000"))
+      SigClosed (rcv 900 (Just "0.00090000")) PaidInPart
     ]
   invoiceStatus st iid `shouldReturn` ISPaid
   bcExpiresAt <$> settledCode st iid `shouldReturn` deadline
@@ -2706,7 +2722,7 @@ testEverySignalSettles = bounded "every signal settles" $ withStubPoller raceHol
     ref
     [ ("p-settled", settledSignal),
       ("p-funded", SigFunded (rcv 200 (Just "0.00020000")) PaidInPart),
-      ("p-closed", SigClosed (rcv 100 (Just "0.00010000")))
+      ("p-closed", SigClosed (rcv 100 (Just "0.00010000")) PaidInPart)
     ]
   runOnePass poller
   invoiceStatus (weStore env) paid `shouldReturn` ISPaid
@@ -2852,7 +2868,7 @@ testSweepWritesStatusAlone = bounded "sweep writes status alone" $ withStubPolle
   invoiceStatus (weStore env) iid `shouldReturn` ISExpired
   Just row <- getInvoice (weStore env) iid
   irPayment row `shouldBe` Nothing
-  setSignals ref [("p-1", SigClosed (rcv 200 (Just "0.00020000")))]
+  setSignals ref [("p-1", SigClosed (rcv 200 (Just "0.00020000")) PaidInPart)]
   runOnePass poller
   invoiceStatus (weStore env) iid `shouldReturn` ISExpired
   p <- paymentRow (weStore env) iid
@@ -3792,6 +3808,17 @@ testPaidVerdictIsNotWithdrawnByALaterRead = bounded "verdict sticks" $ withCheck
     `shouldReturn` Right ISOpen
   o <- jsonObject =<< webGet client (invoicePath iid)
   fieldOf o "paidInFull" `shouldBe` Just (J.Bool True)
+
+testViewCarriesAClosedPaidVerdict :: IO ()
+testViewCarriesAClosedPaidVerdict = bounded "closed in full" $ withCheckout $ \_ env client -> do
+  iid <- seedOpenInvoice env
+  let readVerdict = (\o -> (fieldOf o "status", fieldOf o "paidInFull", fieldOf o "amountPaid")) <$> (jsonObject =<< webGet client (invoicePath iid))
+  settleOrder (weStore env) (weWaiters env) Nothing iid (SigClosed (rcv 250 (Just "0.00025000")) PaidInPart) someCreated
+    `shouldReturn` Right ISExpired
+  readVerdict `shouldReturn` (Just (J.String "expired"), Just (J.Bool False), Just (J.Number 250))
+  settleOrder (weStore env) (weWaiters env) Nothing iid (SigClosed (rcv 500 (Just "0.00050000")) PaidInFull) someCreated
+    `shouldReturn` Right ISExpired
+  readVerdict `shouldReturn` (Just (J.String "expired"), Just (J.Bool True), Just (J.Number 500))
 
 testExpireOverdueSparesAZeroAmount :: IO ()
 testExpireOverdueSparesAZeroAmount = withServiceStore $ \st -> do

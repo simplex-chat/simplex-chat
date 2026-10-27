@@ -34,7 +34,7 @@ module StoreService.Poller
 where
 
 import StoreService.Config (PollConfig (..))
-import StoreService.Names.LateCredits (CreditOutcome (..), creditLateInvoice)
+import StoreService.Names.LateCredits (CreditOutcome (..), LateMoney (..), creditLateInvoice, lateMoneyOf)
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Store (CleanupKept (..), LateAlert (..), LateCredit (..), LateCreditState (..), LatePending (..), LateSupport (..), claimLateAlert, deleteUnpaidRegistration, lateAlertDue, latePending, uncreditedLateInvoices, unpaidCleanupCandidates)
 import StoreService.Orders (decide, expireOverdue, settleOrder)
@@ -252,7 +252,7 @@ settleMoved env@PollerEnv {peStore, peWaiters, pePhases, peProviders} provider n
     reportSettled sold before after
       -- checked before the no-change case, so a refund still alerts when money lands after expiry;
       -- a name order's late payment is credited to its balance instead
-      | IPBadge {} <- sold, after == ISExpired, SigClosed Received {rcvCrypto = Just paid} <- signal = do
+      | IPBadge {} <- sold, after == ISExpired, SigClosed Received {rcvCrypto = Just paid} _ <- signal = do
           let alert = "badge poller: order " <> ref <> " expired holding " <> paid <> ", which needs a refund"
           due <- dueToWarn env now alert
           when due $ logError alert
@@ -332,7 +332,8 @@ creditDue PollerEnv {peCreditedAt, pePoll = PollConfig {pIdleSeconds}} now = ato
   when due $ writeTVar peCreditedAt (Just now)
   pure due
 
--- | Credits every closed order's confirmed money not all credited, so a crash or a failed rate read after a settlement loses nothing.
+-- | Credits every closed order's confirmed money, and every overpaid invoice's confirmed extra, not all credited, so a crash or a failed
+-- rate read after a settlement loses nothing.
 creditPass :: PollerEnv -> UTCTime -> IO ()
 creditPass env@PollerEnv {peStore, peProviders} now = do
   due <- creditDue env now
@@ -366,13 +367,13 @@ creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) = do
   outcome <- creditLateInvoice peStore (cachedRate env p) invId now
   case outcome of
     CONothingDue -> pure ()
-    COCredited LateCredit {lcRegistration = RegistrationId rid, lcUnits, lcInvoiceRate, lcCurrentRate, lcRateUsed, lcCents} ->
+    COCredited money LateCredit {lcRegistration = RegistrationId rid, lcUnits, lcInvoiceRate, lcCurrentRate, lcRateUsed, lcCents} ->
       logInfo $
-        "names: invoice " <> invText <> " credited " <> tshow lcCents <> " cents to the balance of registration " <> rid
+        "names: invoice " <> invText <> credited money <> tshow lcCents <> " cents" <> extra money <> " to the balance of registration " <> rid
           <> maybe "" (\units -> " for " <> tshow units <> " units at " <> fromMaybe "?" lcRateUsed <> " (invoice " <> fromMaybe "?" lcInvoiceRate <> ", current " <> fromMaybe "?" lcCurrentRate <> ")") lcUnits
-    CONoInvoiceRate -> do
-      due <- dueToWarn env now ("no invoice rate: " <> invText)
-      when due $ logError ("names: invoice " <> invText <> " has confirmed late money, but no invoice rate was recorded to credit it at; check it at the provider")
+    CONoInvoiceFigures -> do
+      due <- dueToWarn env now ("no invoice figures: " <> invText)
+      when due $ logError ("names: invoice " <> invText <> " has confirmed late money, but no invoice rate or invoiced units were recorded to credit it at; check it at the provider")
     CORateFailed (ProviderError e) -> do
       due <- dueToWarn env now ("rate read failed: " <> tshow (pProvider p))
       when due $ logWarn ("names: late credits wait, as the current rate cannot be read; each pass tries again: " <> e)
@@ -381,6 +382,13 @@ creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) = do
       when due $ logError ("names: invoice " <> invText <> " is not credited: the current rate " <> rateText <> " is below half its rate " <> invoiceRate <> "; it is never credited by itself, and support refunds it by hand")
     CORefused -> logError ("names: the credit of invoice " <> invText <> " was refused, its credit number taken meanwhile; the next pass tries again")
   pure outcome
+  where
+    credited = \case
+      LMLate -> " credited "
+      LMOverpaid -> " was overpaid; credited "
+    extra = \case
+      LMLate -> ""
+      LMOverpaid -> " of the extra"
 
 -- | Money not yet confirmed waits for the settlement that confirms it.
 pendingLate :: PollerEnv -> InvoiceId -> IO ()
@@ -425,12 +433,15 @@ lateReason env@PollerEnv {peStore, peProviders} LateAlert {laPending, laState = 
     uncounted = "an amount BTCPay reported with more decimals than its unit; check it at the provider"
 
 lateAlertText :: LateAlert -> Text -> Text
-lateAlertText LateAlert {laState = LateCreditState {lsInvoice = InvoiceId invText, lsRegistration = RegistrationId rid, lsCoin, lsReceivedCents, lsConfirmedCents, lsCreditedCents, lsReceivedUnits, lsConfirmedUnits, lsCreditedUnits}} reason =
-  "names: invoice " <> invText <> " of order " <> rid <> ": " <> figures <> "; " <> reason
+lateAlertText LateAlert {laState = s@LateCreditState {lsInvoice = InvoiceId invText, lsRegistration = RegistrationId rid, lsCoin, lsReceivedCents, lsConfirmedCents, lsCreditedCents, lsReceivedUnits, lsConfirmedUnits, lsInvoicedUnits, lsCreditedUnits}} reason =
+  "names: invoice " <> invText <> " of order " <> rid <> overpaid <> ": " <> figures <> "; " <> reason
   where
+    (overpaid, invoiced) = case (lateMoneyOf s, lsCoin, lsInvoicedUnits) of
+      (LMOverpaid, Just coin, Just units) -> (", overpaid", tshow units <> " " <> unitName coin <> " invoiced, ")
+      _ -> ("", "")
     figures = case (lsCoin, lsReceivedUnits) of
       (Nothing, _) -> amounts "cents" (toInteger lsReceivedCents) (toInteger lsConfirmedCents) (toInteger lsCreditedCents)
-      (Just coin, Just received) -> amounts (unitName coin) (toInteger received) (maybe 0 toInteger lsConfirmedUnits) (toInteger lsCreditedUnits)
+      (Just coin, Just received) -> invoiced <> amounts (unitName coin) (toInteger received) (maybe 0 toInteger lsConfirmedUnits) (toInteger lsCreditedUnits)
       (Just _, Nothing) -> tshow lsReceivedCents <> " cents received at the invoice's rate, not counted in units"
     amounts unit received confirmed credited =
       tshow received <> " " <> unit <> " received, " <> tshow confirmed <> " " <> unit <> " confirmed, " <> tshow credited <> " " <> unit <> " credited"

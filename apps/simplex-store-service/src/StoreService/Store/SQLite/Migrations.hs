@@ -26,7 +26,8 @@ schemaMigrations =
     ("20261022_name_balances", m20261022_name_balances, Just down_m20261022_name_balances),
     ("20261022_name_late_wait", m20261022_name_late_wait, Just down_m20261022_name_late_wait),
     ("20261023_name_terms", m20261023_name_terms, Just down_m20261023_name_terms),
-    ("20261026_name_terms_acceptance", m20261026_name_terms_acceptance, Just down_m20261026_name_terms_acceptance)
+    ("20261027_name_invoiced_units", m20261027_name_invoiced_units, Just down_m20261027_name_invoiced_units),
+    ("20261028_name_terms_acceptance", m20261028_name_terms_acceptance, Just down_m20261028_name_terms_acceptance)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -519,9 +520,31 @@ down_m20261023_name_terms =
 ALTER TABLE @name_registrations DROP COLUMN agreed_terms;
 |]
 
+-- The crypto a payment's invoice asks in atomic units, network fee included, which late and overpaid crypto is a price share of.
+-- The partial index holds the overpaid payments, which the poller's credit pass reads on every pass.
+m20261027_name_invoiced_units :: Query
+m20261027_name_invoiced_units =
+  withPrefix
+    servicePrefix
+    [sql|
+ALTER TABLE @payments ADD COLUMN invoiced_units INTEGER;
+
+CREATE INDEX @idx_payments_overpaid ON @payments(invoice_id) WHERE received_units > invoiced_units;
+|]
+
+down_m20261027_name_invoiced_units :: Query
+down_m20261027_name_invoiced_units =
+  withPrefix
+    servicePrefix
+    [sql|
+DROP INDEX @idx_payments_overpaid;
+
+ALTER TABLE @payments DROP COLUMN invoiced_units;
+|]
+
 -- The owner's acceptance of the community terms, stored with a community name's reveal.
-m20261026_name_terms_acceptance :: Query
-m20261026_name_terms_acceptance =
+m20261028_name_terms_acceptance :: Query
+m20261028_name_terms_acceptance =
   withPrefix
     servicePrefix
     [sql|
@@ -530,8 +553,8 @@ ALTER TABLE @name_registrations ADD COLUMN accept_nonce INTEGER;
 ALTER TABLE @name_registrations ADD COLUMN accept_signature BLOB;
 |]
 
-down_m20261026_name_terms_acceptance :: Query
-down_m20261026_name_terms_acceptance =
+down_m20261028_name_terms_acceptance :: Query
+down_m20261028_name_terms_acceptance =
   withPrefix
     servicePrefix
     [sql|
