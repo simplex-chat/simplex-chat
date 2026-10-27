@@ -7,11 +7,14 @@ from pathlib import Path
 EXCLUDED = {
     "AppearanceSettings_Previews",
     "BadgesCheckOrderView_Previews",
+    "BadgesChooseBadgeView_Previews",
     "BadgesHowLongView_Previews",
     "ChatPreviewView_Previews",
     "MigrateFromDevice_Previews",
     "NewChatView_Previews",
     "ServersSummaryView_Previews",
+    "TerminalView_Previews",
+    "UserProfilesView_Previews",
 }
 
 tests = Path(__file__).with_name("SnapshotTests.swift")

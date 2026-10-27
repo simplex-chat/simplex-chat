@@ -14,7 +14,6 @@ final class SnapshotTests: XCTestCase {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let windowScene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
         ChatModel.shared.currentUser = User.sampleData
-        ChatModel.shared.users = [UserInfo.sampleData]
         var index: [[String: Any]] = []
         for dark in [false, true] {
             let theme = snapshotTheme(dark)
@@ -62,7 +61,6 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(AddGroupMembersView_Previews.self),
         SnapshotScene(AddGroupView_Previews.self),
         SnapshotScene(AdvancedNetworkSettings_Previews.self),
-        SnapshotScene(BadgesChooseBadgeView_Previews.self),
         SnapshotScene(BadgesHowItWorksView_Previews.self),
         SnapshotScene(BadgesRedeemCodeView_Previews.self),
         SnapshotScene(BadgesSupportSimplexView_Previews.self),
@@ -164,11 +162,9 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(SimpleXInfo_Previews.self),
         SnapshotScene(SmallLinkPreview_Previews.self),
         SnapshotScene(SupportSimpleXBanner_Previews.self),
-        SnapshotScene(TerminalView_Previews.self),
         SnapshotScene(UserAddressLearnMore_Previews.self),
         SnapshotScene(UserAddressView_Previews.self),
         SnapshotScene(UserPicker_Previews.self),
-        SnapshotScene(UserProfilesView_Previews.self),
         SnapshotScene(VerifyCodeView_Previews.self),
         SnapshotScene(VersionView_Previews.self),
         SnapshotScene(WhySimpleX_Previews.self),
