@@ -12,6 +12,7 @@ import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
+import Data.Bifunctor (bimap)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
@@ -27,7 +28,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Log (logWarn)
 import StoreService.Names.Abi (bytes32FromHex)
-import StoreService.Names.Community (communityJSON, nameCommunityTerms, termsJSON)
+import StoreService.Names.Community (checkedTerms, communityJSON, listedTerms, termsErrorText, termsJSON)
 import StoreService.Names.Contracts
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
@@ -52,12 +53,16 @@ searchHandler cfg@NamesConfig {nYears} st ct ps hashText req respond = case Labe
     Nothing -> respond invalidName
     Just len -> do
       registering <- withTransaction st (`isLabelRegistering` lh)
-      timeout (ctDeadline ct) (concurrently (runExceptT $ found lh len registering) (nameCommunityTerms cfg ct lh)) >>= \case
+      timeout (ctDeadline ct) (concurrently (runExceptT $ found lh len registering) (listedTerms ct lh) >>= checkAvailable) >>= \case
         Just (Right f, Right h) -> respond =<< searchAnswer cfg ps lh h f
         Just (Left e, _) -> unavailable $ "a chain read failed: " <> tshow e
         Just (_, Left e) -> unavailable $ "the community terms check failed: " <> e
         Nothing -> unavailable "the chain reads or the community terms check timed out"
   where
+    -- only an available name is ordered under its community terms, so only its answer waits for their text to be checked
+    checkAvailable = \case
+      (f@(Right FAvailable {}), Right (Just h)) -> (f,) . bimap termsErrorText Just <$> checkedTerms cfg ct h
+      r -> pure r
     found lh len registering =
       ExceptT (nameStatus ct lh) >>= \case
         NSAvailable

@@ -12,7 +12,9 @@ module StoreService.Names.Community
     TermsError (..),
     termsErrorText,
     currentCommunityTerms,
+    checkedTerms,
     nameCommunityTerms,
+    listedTerms,
     maxTermsBytes,
     AcceptanceAsked (..),
     currentAcceptance,
@@ -88,10 +90,14 @@ termsErrorText = \case
 
 -- | Nothing for a name the policy does not list; else the community terms it is sold under, whose text is checked.
 nameCommunityTerms :: NamesConfig -> Contracts -> LabelHash -> IO (Either Text (Maybe ByteString))
-nameCommunityTerms cfg ct lh = runExceptT $
+nameCommunityTerms cfg ct lh = runExceptT $ ExceptT (listedTerms ct lh) >>= traverse (withExceptT termsErrorText . ExceptT . checkedTerms cfg ct)
+
+-- | Nothing for a name the policy does not list; else the community terms on chain, whose text is not checked.
+listedTerms :: Contracts -> LabelHash -> IO (Either Text (Maybe ByteString))
+listedTerms ct lh = runExceptT $
   withExceptT tshow (ExceptT $ bonaFideName ct lh) >>= \case
     False -> pure Nothing
-    True -> Just <$> withExceptT termsErrorText (ExceptT $ currentCommunityTerms cfg ct)
+    True -> Just <$> withExceptT tshow (ExceptT $ communityTermsHash ct)
 
 -- | What the page signs to accept the community terms of a name the policy lists.
 data AcceptanceAsked = AcceptanceAsked {acPolicy :: Address, acTermsHash :: ByteString, acNonce :: Word64}
@@ -107,11 +113,14 @@ currentAcceptance cfg ct lh owner = runExceptT $ ExceptT (nameCommunityTerms cfg
       acNonce <- withExceptT tshow $ ExceptT $ policyNonce ct owner
       pure AcceptanceAsked {acPolicy, acTermsHash, acNonce}
 
--- | The policy's community terms hash, once the text at community_terms_url hashes to it. Each call reads the hash and
--- fetches the page until its text hashes to it, so terms set later are checked when a call first reads them.
+-- | The policy's community terms hash, once the text at community_terms_url hashes to it.
 currentCommunityTerms :: NamesConfig -> Contracts -> IO (Either TermsError ByteString)
-currentCommunityTerms NamesConfig {nCommunityTermsUrl} ct = runExceptT $ do
-  h <- withExceptT (TEUnread . tshow) $ ExceptT $ communityTermsHash ct
+currentCommunityTerms cfg ct = runExceptT $ withExceptT (TEUnread . tshow) (ExceptT $ communityTermsHash ct) >>= ExceptT . checkedTerms cfg ct
+
+-- | The community terms hash read from the policy, once the text at community_terms_url hashes to it. The page is fetched
+-- until its text hashes to the hash read, so terms set later are checked when a call first reads them.
+checkedTerms :: NamesConfig -> Contracts -> ByteString -> IO (Either TermsError ByteString)
+checkedTerms NamesConfig {nCommunityTermsUrl} ct h = runExceptT $ do
   when (h == B.replicate 32 0) $ throwError TENoTerms
   verified <- liftIO $ readIORef $ ctVerifiedTerms ct
   unless (verified == Just h) $ do

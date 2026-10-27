@@ -27,7 +27,7 @@ import Bots.StoreService.NamesContractsTests
     withContracts,
     year,
   )
-import Bots.StoreService.NamesOrdersTests (communityEntry)
+import Bots.StoreService.NamesOrdersTests (communityEntry, communityEntryOf)
 import Bots.StoreService.NamesProfilesTests (bakeryLink, jpeg, newsLink)
 import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, t0, usable)
 import Bots.StoreService.WebTests (withServiceStore)
@@ -75,7 +75,7 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "answers a reserved name" $ testReserved g
     it "answers a name the chain has available as registered while its register here is sent, without a price" $ testRegistering g
     it "answers a registered name with its entities, raw records, owner, resolver, nonce, expiry and grace period" $ testRegistered g
-    it "answers a listed name's community entry when available, reserved, being registered here and registered, a plain answer for an ini line the policy does not list, and 503 while its terms are unverified or its listing unread" $ testCommunity g
+    it "answers a listed name's community entry when available, reserved, being registered here and registered, a plain answer for an ini line the policy does not list, the unchecked terms on chain for a name not available while its page does not match, and 503 for an available one then or while its listing is unread" $ testCommunity g
     it "answers a name the policy lists without an ini line as a community name without its text" $ testCommunityWithoutText g
     it "makes one entity per short link of its record's kind, splitting on ';', and none from other values" $ testRecordLinks g
     it "makes entities of the first 5 short links of a record only, fetching no other" $ testRecordLinksCap g
@@ -136,11 +136,15 @@ listAlice cfg = cfg {nCommunity = M.singleton (fromJust $ bytes32FromHex aliceHe
 
 -- | The answer as it reads for a name the policy lists, with its text from the ini and the policy's terms.
 listed :: FakeEthNode -> Answer -> Answer
-listed node (status, answer) = (status, withEntry <$> answer)
+listed node = listedUnder node fakeCommunityTerms
+
+-- | As 'listed', under these community terms.
+listedUnder :: FakeEthNode -> ByteString -> Answer -> Answer
+listedUnder node h (status, answer) = (status, withEntry <$> answer)
   where
     withEntry :: J.Value -> J.Value
     withEntry = \case
-      J.Object o -> J.Object $ KM.insert "community" (communityEntry node aliceCommunity) o
+      J.Object o -> J.Object $ KM.insert "community" (communityEntryOf node h aliceCommunity) o
       v -> v
 
 fetchMicros :: Int
@@ -383,12 +387,18 @@ testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
   setPhase store PRegistering
   searchAlice s 12 `shouldReturn` listed node registeringAnswer
   registeredWith node fullLink ""
-  searchAlice s 12 `shouldReturn` listed node (registeredAnswer [] (recordsOf fullLink "") resolverText (J.toJSON (0 :: Int)))
-  -- terms on chain that the page's text does not hash to, or a listing that cannot be read: no answer, registered or not
+  let registered = registeredAnswer [] (recordsOf fullLink "") resolverText (J.toJSON (0 :: Int))
+  searchAlice s 12 `shouldReturn` listed node registered
+  -- terms on chain that the page's text does not hash to: a name not available is answered with them, as no order signs
+  -- them, an available one is not; nor is any name whose listing cannot be read
   let unavailable = refused 503 "provider_unavailable"
   setCommunityTerms node fakeNewCommunityTerms
-  searchAlice s 12 `shouldReturn` unavailable
+  searchAlice s 12 `shouldReturn` listedUnder node fakeNewCommunityTerms registered
+  reserved node
+  searchAlice s 12 `shouldReturn` listedUnder node fakeNewCommunityTerms reservedAnswer
   available node
+  searchAlice s 12 `shouldReturn` listedUnder node fakeNewCommunityTerms registeringAnswer
+  setPhase store PRegistered
   searchAlice s 12 `shouldReturn` unavailable
   setCommunityTerms node fakeCommunityTerms
   answerListing node alice $ Reverts ""

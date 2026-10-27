@@ -45,6 +45,7 @@ module Bots.StoreService.NamesOrdersTests
     communityTerms,
     termsChanged,
     communityEntry,
+    communityEntryOf,
     otherCommunityTerms,
     listOnChain,
   )
@@ -798,7 +799,10 @@ otherCommunityTerms = termsVersion <> "/community/" <> T.drop 2 (hex fakeNewComm
 
 -- | A listed name's community entry: the ini's text, and the policy's terms the fake node serves.
 communityEntry :: J.ToJSON a => FakeEthNode -> a -> J.Value
-communityEntry node for = J.object ["for" .= for, "terms" .= J.object ["url" .= fakeTermsUrl node, "hash" .= hex fakeCommunityTerms]]
+communityEntry node = communityEntryOf node fakeCommunityTerms
+
+communityEntryOf :: J.ToJSON a => FakeEthNode -> ByteString -> a -> J.Value
+communityEntryOf node h for = J.object ["for" .= for, "terms" .= J.object ["url" .= fakeTermsUrl node, "hash" .= hex h]]
 
 -- | The policy lists the name as a community name.
 listOnChain :: Ctx -> Text -> IO ()

@@ -406,7 +406,9 @@ each domain to its own port, as the all-in-one example in [Caddy](#caddy) does. 
 ### Development with a local chain
 
 `compose.dev.yml` adds a container `chain`: an anvil chain on `127.0.0.1:8545` (chain id 31337)
-with the names contracts, deployed on its first start. Its state is kept in `./data/chain`, so
+with the names contracts, deployed on its first start by the `apps/simplex-domains` submodule's
+webapp, which needs simplex.domains#7 for the name policy this service reads: until the submodule
+moves past it, every search answers 503. Its state is kept in `./data/chain`, so
 restarts keep the contracts, balances and registered names. Its keys are anvil's public test keys,
 so never use it beside a real chain. From `scripts/store-service/`:
 
@@ -668,11 +670,15 @@ One more setting gives the community terms' text:
   the name terms. It must be `https://`, or `http://` on 127.0.0.1 or localhost when `[chain] chain_id`
   is 31337. When the policy is read at startup, the service fetches it and refuses to start when the
   text does not hash to the policy's `termsHash`. When the policy sets new terms, the service fetches
-  it again on each search, order, reveal and view of a listed name until its text hashes to them.
-  Until the text matches, and without this setting or before the policy has terms, a search of any
-  listed name answers 503, registered names included, and community names cannot be ordered or
-  revealed. To change the terms, the owner sets the new hash on chain first and the page is replaced
-  after it, so no order signs a hash whose text the page no longer serves.
+  it again on each search of an available listed name and each order, reveal and view of a listed
+  name until its text hashes to them. Until the text matches, and without this setting or before the
+  policy has terms, a search of an available listed name answers 503, and community names cannot be
+  ordered or revealed; a search of a registered or reserved one is answered without the check. To
+  change the terms, the owner sets the new hash on chain first and the page is replaced after it, so
+  no order signs a hash whose text the page no longer serves. Do not restart the service
+  between the two: until the page is replaced it refuses to start, and compose restarts it only 5
+  times. Never edit the page without setting its hash on chain first: every restart after the edit
+  is refused.
 
 `[community]` gives what each community name is for, one line per name: the label, as it is searched,
 then `=` and the text:
