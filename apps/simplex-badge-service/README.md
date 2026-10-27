@@ -268,9 +268,9 @@ service_account_file = /etc/simplex-badge-service/play-service-account.json
   subscription purchases and transfers of a subscription (Restore) on one, and issue requests and
   tier raises for a subscription due its hourly store check on another. A slow or unreachable
   store therefore delays only those, not code redemptions, App Store one-time purchases or other
-  renewals; and no purchase or transfer, genuine or made up, delays a renewal check. The purchase path asks Play about at most 300 subscriptions a minute (a purchase
-  it credits is read once more to acknowledge it), so made-up tokens can spend at most a tenth of
-  the quota renewal checks share.
+  renewals; and no purchase or transfer, genuine or made up, delays a renewal check. The purchase
+  path asks Play about at most 300 subscriptions a minute (a purchase it credits is read once more
+  to acknowledge it), so made-up tokens can spend at most a tenth of the quota renewal checks share.
 
 While a subscription's paid coverage runs, as an annual plan's does for a year, the service asks
 its store before it issues each new month, at most once an hour. When the store reports the
