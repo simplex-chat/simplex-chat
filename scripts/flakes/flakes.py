@@ -545,12 +545,13 @@ class Collector:
 
     def update_spec(self, repository: str, record: dict, items: list[list[str]]) -> None:
         main = main_repository(repository)
-        current = self.cache.read(main, "spec", record["job_key"])
+        kind = f"spec/{record['branch']}"
+        current = self.cache.read(main, kind, record["job_key"])
         if current is None or current["job"] < record["job"]:
-            self.cache.write(main, "spec", record["job_key"], {"job": record["job"], "items": items})
+            self.cache.write(main, kind, record["job_key"], {"job": record["job"], "items": items})
 
-    def next_item(self, record: dict) -> str | None:
-        spec = self.cache.read(main_repository(record["repository"]), "spec", record["job_key"])
+    def next_item(self, record: dict, branch: str) -> str | None:
+        spec = self.cache.read(main_repository(record["repository"]), f"spec/{branch}", record["job_key"])
         item = record["hang"]["item"]
         if spec is None or item is None:
             return None
@@ -563,11 +564,11 @@ class Collector:
             return None
         return items[position + 1][1]
 
-    def resolve_hangs(self, runs: list[RunRecords]) -> None:
+    def resolve_hangs(self, runs: list[RunRecords], branch: str) -> None:
         for entry in runs:
             for _, record in entry.entries:
                 if record["hang"]:
-                    record["hang"]["next"] = self.next_item(record)
+                    record["hang"]["next"] = self.next_item(record, branch)
 
 
 @dataclass
@@ -596,7 +597,7 @@ def load_window(collector: Collector, repository: str, branch: str, before: str 
     path = f"repos/{repository}/actions/workflows/{WORKFLOW}/runs"
     runs = collector.github.get(path, **params)["workflow_runs"][:size]
     window = Window(repository, branch, collector.runs(repository, runs))
-    collector.resolve_hangs(window.runs)
+    collector.resolve_hangs(window.runs, branch)
     return window
 
 
@@ -935,7 +936,7 @@ def pr_command(collector: Collector, args: argparse.Namespace) -> Report:
     pr_runs = collector.runs(repository, runs)
     base = pull["base"]["ref"]
     window = load_window(collector, main_repository(repository), base, runs[0]["created_at"], args.window)
-    collector.resolve_hangs(pr_runs)
+    collector.resolve_hangs(pr_runs, base)
     return run_report(f"CI failures: {pull['html_url']}", pr_runs[0], window, pr_runs)
 
 
@@ -952,7 +953,7 @@ def run_command(collector: Collector, args: argparse.Namespace) -> Report:
     entry = collector.runs(repository, [run])[0]
     base = run_base(run, args.base)
     window = load_window(collector, main_repository(repository), base, run["created_at"], args.window)
-    collector.resolve_hangs([entry])
+    collector.resolve_hangs([entry], base)
     return run_report(f"CI failures: {run['html_url']}", entry, window, None)
 
 

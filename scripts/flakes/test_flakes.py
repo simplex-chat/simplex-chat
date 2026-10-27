@@ -321,8 +321,9 @@ class HangTest(unittest.TestCase):
     def next_item(self, timeout, spec_log):
         with tempfile.TemporaryDirectory() as directory:
             collector = flakes.Collector(None, flakes.Cache(Path(directory)))
-            collector.update_spec(CHAT, {"job": 3, "job_key": timeout["job_key"]}, flakes.spec_items(lines(spec_log)))
-            return collector.next_item(timeout)
+            spec = flakes.spec_items(lines(spec_log))
+            collector.update_spec(CHAT, {"job": 3, "job_key": timeout["job_key"], "branch": "master"}, spec)
+            return collector.next_item(timeout, "master")
 
     def test_next_item_is_read_from_the_spec_of_the_job_key(self):
         timeout = record(CHAT, job(LINUX, "failure", "failure"), "hspec-2.11-timeout.log")
@@ -351,8 +352,20 @@ class HangTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             collector = flakes.Collector(None, flakes.Cache(Path(directory)))
             for job_id in (3, 5, 4):
-                collector.update_spec(CHAT, {"job": job_id, "job_key": key}, [[f"/{job_id}/", str(job_id)]])
-            self.assertEqual(collector.cache.read(CHAT, "spec", key)["job"], 5)
+                spec_record = {"job": job_id, "job_key": key, "branch": "master"}
+                collector.update_spec(CHAT, spec_record, [[f"/{job_id}/", str(job_id)]])
+            self.assertEqual(collector.cache.read(CHAT, "spec/master", key)["job"], 5)
+
+    def test_next_item_is_read_from_the_spec_of_the_window_branch(self):
+        timeout = record(CHAT, job(LINUX, "failure", "failure"), "hspec-2.11-timeout.log")
+        master = flakes.spec_items(lines("hspec-2.11-failures.log"))
+        stable = [item for item in master if item[1] != "verify schema down migrations"]
+        with tempfile.TemporaryDirectory() as directory:
+            collector = flakes.Collector(None, flakes.Cache(Path(directory)))
+            collector.update_spec(CHAT, {"job": 3, "job_key": timeout["job_key"], "branch": "master"}, master)
+            collector.update_spec(CHAT, {"job": 4, "job_key": timeout["job_key"], "branch": "stable"}, stable)
+            collector.resolve_hangs([flakes.RunRecords(MASTER, [(None, timeout)])], "master")
+        self.assertEqual(timeout["hang"]["next"], "verify schema down migrations")
 
     def test_spec_is_saved_from_push_runs_only(self):
         logs = {PUSH_RUN["id"]: "hspec-2.11-failures.log", PULL_RUN["id"]: "hspec-2.11-failures.log"}
@@ -360,7 +373,7 @@ class HangTest(unittest.TestCase):
             collector = flakes.Collector(FakeGitHub(logs), flakes.Cache(Path(directory)))
             collector.runs(CHAT, [PUSH_RUN])
             collector.runs(CHAT, [PULL_RUN])
-            self.assertEqual(collector.cache.read(CHAT, "spec", flakes.job_key(LINUX))["job"], 1000)
+            self.assertEqual(collector.cache.read(CHAT, "spec/master", flakes.job_key(LINUX))["job"], 1000)
 
     def test_pr_reads_the_next_item_from_the_window_on_a_cold_cache(self):
         logs = {PUSH_RUN["id"]: "hspec-2.11-failures.log", PULL_RUN["id"]: "hspec-2.11-timeout.log"}
