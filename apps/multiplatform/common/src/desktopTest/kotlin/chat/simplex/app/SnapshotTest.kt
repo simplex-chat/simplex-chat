@@ -4,12 +4,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.WindowState
 import chat.simplex.common.AppPreview
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.simplexWindowState
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.PreviewTerminalLayout
 import chat.simplex.common.views.call.PreviewIncomingCallAlertLayout
@@ -45,6 +49,8 @@ private class SnapshotScene(val name: String, val fontScales: List<Float> = list
 
 @Serializable
 private class Snapshot(val scene: String, val theme: String, val fontScale: Float, val file: String, val width: Int, val height: Int)
+
+private val indexJson = Json { prettyPrint = true }
 
 private val previewScenes = listOf(
   SnapshotScene("TerminalView.PreviewTerminalLayout") { PreviewTerminalLayout() },
@@ -134,6 +140,7 @@ class SnapshotTest {
     try {
       Locale.setDefault(Locale.US)
       TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+      simplexWindowState.windowState = WindowState(size = DpSize(SCENE_WIDTH.dp, SCENE_MAX_HEIGHT.dp))
       appPrefs.themeOverrides.set(listOf(ThemeOverrides(base = DefaultTheme.LIGHT), ThemeOverrides(base = DefaultTheme.DARK)))
       for (base in listOf(DefaultTheme.LIGHT, DefaultTheme.DARK)) {
         ThemeManager.applyTheme(base.themeName)
@@ -152,7 +159,7 @@ class SnapshotTest {
           }
         }
       }
-      File(dir, "index-desktop.json").writeText(Json { prettyPrint = true }.encodeToString(index))
+      File(dir, "index-desktop.json").writeText(indexJson.encodeToString(index))
     } finally {
       Locale.setDefault(locale)
       TimeZone.setDefault(timeZone)
@@ -168,7 +175,7 @@ private fun renderSnapshot(content: @Composable () -> Unit): Image {
   var height = 0
   val frame = renderScene(width = SCENE_WIDTH, height = SCENE_MAX_HEIGHT, frames = 4) {
     Box(Modifier.width(SCENE_WIDTH.dp).background(CurrentColors.collectAsState().value.colors.background).onSizeChanged { height = it.height }) {
-      content()
+      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler(), content = content)
     }
   }
   return Surface.makeRasterN32Premul(SCENE_WIDTH, height).run {
