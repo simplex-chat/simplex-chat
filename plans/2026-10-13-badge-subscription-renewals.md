@@ -87,7 +87,7 @@ The core change:
 
 - A subscription purchase is an ordinary purchase whose ledger is refilled by store charges instead of being paid once.
 - Its store identity is the subscription, not one transaction: Apple's original transaction id (Play's token already is). Every renewal therefore resolves to the same purchase and the same receipt record on both sides, and the service has one thing to ask the store about.
-- Months enter a subscription ledger only as `charge` credits whose operation time is the store's billing period start. The grant row's `createdAt` is that period start, as `grantEntry` already stamps its `t`. Coverage follows the store's periods without drift, every row verifies by re-running its operation at its `createdAt`, and `StatementEntry` gains no field.
+- Months enter a subscription ledger only as `charge` credits whose operation time is the store's billing period start. The grant row's `createdAt` is that period start, or the previous row's `createdAt` when that is later, so dates never decrease. Coverage follows the store's periods without drift, every row verifies by re-running its operation at its `createdAt`, and `StatementEntry` gains no field.
 - The first charge and every renewal go through one pure planner: lapse what ran out before the period start, grant the charge's months at the period start, lapse what ran out since, then issue at now.
 - The service asks the store only when a subscription purchase's paid coverage has ended, and writes nothing unless a charge is granted.
 - The client keeps asking at the shared weekly moment and keeps the badge until the service answers that the subscription has ended.
@@ -116,7 +116,7 @@ The core change:
 - `Badges/Ledger.hs`:
   - `entryTypeFromColumns` takes the row's charge id and rebuilds `SCCharge` from it (slice 2).
   - A pure planner (suggested name `chargeEntries`) takes the tip or a seed, the charge's period start, its months, the charge id, `now` and fresh entry ids. It returns `lapse periodStart` (if any), `grant periodStart months (SCCharge chargeId)`, `lapse now` (if any). The caller issues at `now` with `issueEntry` as today.
-  - The rows' `createdAt` are non-decreasing whenever the period start is not before the tip's `createdAt`. That holds on every path: the tip was issued before its month ended, the next charge's period starts around that month's end, and the service writes no row while a subscription waits for its charge.
+  - The rows' `createdAt` are non-decreasing because the planner dates a charge at the later of its period start and the tip's `createdAt`, so a charge asked about late in its period is dated after the row it follows.
 
 ### Badge service (`apps/simplex-badge-service/src/BadgeService/`)
 
