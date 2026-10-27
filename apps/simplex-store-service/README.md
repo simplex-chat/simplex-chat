@@ -435,13 +435,19 @@ each domain to its own port, as the all-in-one example in [Caddy](#caddy) does. 
 
 ### Development with a local chain
 
-`compose.dev.yml` adds a container `chain`: an anvil chain on `127.0.0.1:8545` (chain id 31337)
-with the names contracts, deployed on its first start. Its state is kept in `./data/chain`, so
-restarts keep the contracts, balances and registered names. Its keys are anvil's public test keys,
-so never use it beside a real chain. From `scripts/store-service/`:
+`compose.dev.yml` adds two containers, so a dev deployment needs nothing on the host but Docker:
+
+- `chain`: an anvil chain on `127.0.0.1:8545` (chain id 31337) with the names contracts, deployed
+  on its first start. Its state is kept in `./data/chain`, so restarts keep the contracts, balances
+  and registered names. Its keys are anvil's public test keys, so never use it beside a real chain.
+- `postgres`: PostgreSQL 17 on `127.0.0.1:5433`, user `simplex`, database `store_service`, without a
+  password, kept in `./data/postgres`.
+
+From `scripts/store-service/`:
 
 ```
 echo "COMPOSE_FILE=compose.yml:compose.dev.yml" >> .env
+echo "BADGE_DB_CONN=postgresql://simplex@127.0.0.1:5433/store_service" >> .env
 docker compose up -d --build
 docker compose logs chain
 ```
@@ -461,7 +467,8 @@ docker compose exec chain dev-chain.sh topup [address] [eth]
 
 Registrations wait 10 seconds after their commit (`MIN_COMMITMENT_AGE` in `compose.dev.yml`), and
 prepaid codes need no payment provider. To start over, run `docker compose down` and delete
-`./data/chain`; orders the service already holds then point at names that no longer exist.
+`./data/chain` and `./data/postgres` together; deleting only the chain leaves orders that point at
+names that no longer exist.
 
 ### Caddy
 
