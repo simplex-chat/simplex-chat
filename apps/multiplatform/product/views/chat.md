@@ -43,10 +43,25 @@ Rendered by `LazyColumnWithScrollBar` with pagination:
 | Scroll direction | Bottom-to-top (newest messages at bottom) |
 | Pagination | `apiLoadMessages` called on scroll to load more; supports `.before`, `.after`, `.around`, `.initial` |
 | Merged items | Adjacent messages grouped with `ItemSeparation` (timestamp, large gap, date separators) |
+| Message appearance | Telegram reference system typography, compact text insets, circular bubble corners and small joined corners; five-minute sender runs stop at dates/events/deleted items. Each message shows a timestamp. |
+| Sending motion | Newly sent text/link bubbles rise from the input over 250 ms, with a short fade and subtle scale. Replies and notes use the same transition. System animation settings are respected. |
 | Floating buttons | Scroll-to-bottom button with unread count |
 | Date separators | Date headers between messages from different days |
 | Wallpaper | Per-chat themed background via `perChatTheme` from contact/group `uiThemes` |
 | Content filter | Filter messages by type via `ContentFilter` (images, files, links, etc.) |
+
+In received group messages, the first bubble of a run contains the sender name,
+badge and moderator role; the avatar sits at the bottom of the last bubble. Reply
+previews use a compact tinted card with an accent line and bold sender. Metadata
+reserves its actual rendered width so text and status indicators do not overlap.
+System, deletion and decryption error information remains visible in the compact
+message typography. The input text also uses the system sans-serif font.
+
+The send transition starts after successful local insertion. History, incoming
+messages, edits, forwards, live updates, reports and attachments keep their normal
+appearance. Leaving the chat cancels its transitions; missing bounds, very tall
+bubbles or delayed API responses use ordinary rendering. This initial adaptation
+moves the existing bubble; Telegram's separate text-reflow morph is not included.
 
 ### Message Types
 
@@ -72,7 +87,25 @@ Each type has a dedicated composable in `views/chat/item/`:
 
 ### Message Interactions
 
-Long-press context menu on any message:
+On Android, tap an ordinary message row, including empty space beside its bubble,
+to open its context menu. Long-pressing the message or adjacent empty space selects
+it and opens the bulk-action toolbar; subsequent taps toggle
+message selection. This selects whole messages, independently of desktop text
+selection. Desktop retains its existing long-press/right-click menu and drag text
+selection.
+
+A short haptic tick marks the swipe-to-reply threshold on Android. It occurs once
+per drag for messages that can be replied to and respects system haptic settings.
+
+Links, mentions, commands, secret reveals, quoted-message navigation, media opening,
+file controls and reactions keep their own tap actions. Long-presses on nested
+message content follow the same message-selection action on Android.
+
+Android message menus align with the message edge, with a small gap. They open
+below the bubble when possible, otherwise above it. Long menus scroll within the
+available space. A tall, narrow bubble can use a menu alongside it. If a message
+fills the viewport and leaves no usable adjacent space, the menu stays within the
+window and minimizes overlap. Placement adapts to the keyboard and window size.
 
 | Action | Description |
 |---|---|
@@ -86,6 +119,39 @@ Long-press context menu on any message:
 | Report | Report message to group moderators (`ComposeContextItem.ReportedItem` with `ReportReason`) |
 | Select multiple | Enters multi-select mode (`selectedChatItems`) with bulk delete/forward/archive toolbar |
 | Archive | Archive selected reports (moderators) |
+| Details | Opens message information; delivery/signature explanation remains available there when present |
+
+### Chat Image Previews
+
+On Android, single-photo previews use Telegram-style bounds: portrait width starts
+at 70% of the window's short side, while square and landscape photos use that side
+minus 64dp. Height is limited to the initial width plus 100dp; tall portraits shrink
+in both dimensions. Panoramas use a 120dp minimum height with centered cropping.
+Tablet bounds account for a navigation pane, and actual chat gutters can narrow
+the preview further. Measured message metadata sets a minimum width for thin images.
+
+Preview dimensions stay stable when the full image loads or the keyboard opens.
+Captions wrap within the existing media bubble layout. Small quote/list thumbnails
+and desktop image sizing retain their existing behavior.
+
+### Full-Screen Images
+
+Tapping a loaded, revealed image expands its thumbnail into the existing full-screen
+gallery over 200 ms while the black background fades in. The animation preserves
+the image's proportions and uncrops tall or square previews. The source thumbnail
+stays hidden while owned by the viewer and is restored on close or before a
+fade-out fallback.
+
+Closing returns to the visible source when the original page is settled and
+unzoomed. Closing a different page, a zoomed image or a missing source uses a fade.
+A close during opening reverses the opening path. Paging and zoom gestures resume
+after opening; system animation settings are respected. Hidden media first follows
+the existing reveal/download flow. Video and other viewer callers retain their
+existing presentation.
+
+The image transition is shared by Android and Desktop; Android's message gesture
+changes do not change desktop message interactions. Source-corner fidelity remains
+a [recommendation](../../spec/client/chat-view.md#image-viewer-transition).
 
 ### Compose Bar (`ComposeView` + `SendMsgView`)
 
@@ -133,3 +199,7 @@ When `timedMessageAllowed` is true, compose bar includes a timer icon for settin
 | `ComposeView.kt` | `views/chat/ComposeView.kt` |
 | `SendMsgView.kt` | `views/chat/SendMsgView.kt` |
 | Chat item views | `views/chat/item/*.kt` |
+| Full-screen image gallery | `views/chat/item/ImageFullScreenView.kt` |
+| Image transition geometry and lifecycle | `views/chat/item/ImageGalleryAnimation.kt` |
+| Message details | `views/chat/ChatItemInfoView.kt` |
+| Android message menu placement | `views/chat/item/ChatItemMenu.kt` |

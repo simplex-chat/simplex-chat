@@ -60,7 +60,7 @@ ComposeView
 
 ## 2. ComposeState Data Class
 
-**Location:** [`ComposeView.kt#L98`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L98)
+**Location:** [`ComposeState`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L107)
 
 ```kotlin
 @Serializable
@@ -142,7 +142,7 @@ Tracks a live (streaming) message: the associated `ChatItem`, the currently type
 
 ## 3. ComposePreview Sealed Class
 
-**Location:** [`ComposeView.kt#L52`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L52)
+**Location:** [`ComposePreview`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L60)
 
 ```kotlin
 sealed class ComposePreview {
@@ -174,7 +174,7 @@ Used within `MediaPreview` to track the source type:
 
 ## 4. ComposeContextItem Sealed Class
 
-**Location:** [`ComposeView.kt#L61`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L61)
+**Location:** [`ComposeContextItem`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L70)
 
 ```kotlin
 sealed class ComposeContextItem {
@@ -208,7 +208,7 @@ sealed class ComposeContextItem {
 
 ## 5. SendMsgView
 
-**Location:** [`SendMsgView.kt#L36`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/SendMsgView.kt#L36)
+**Location:** [`SendMsgView()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/SendMsgView.kt#L38)
 
 ```kotlin
 fun SendMsgView(
@@ -348,9 +348,14 @@ When `privacyLinkPreviews` is enabled and the message contains a URL:
 
 ## 7. Draft Persistence
 
-**Location:** [`ComposeView.kt#L1230`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L1230) (`KeyChangeEffect(chatModel.chatId.value)`)
+**Location:** [`KeyChangeEffect(chatModel.chatId.value)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L1376)
 
 Controlled by the `privacySaveLastDraft` preference.
+
+The compose input style is derived from the current body size and theme color,
+with the system default sans-serif font, natural line height and zero letter
+spacing, matching the conversation's Telegram reference typography. Draft and
+sending behavior are independent of this visual style.
 
 ### Save Behavior
 
@@ -397,3 +402,26 @@ When a draft exists for a chat, `ChatPreviewView` shows a pencil icon with the d
 | `ComposeContextPendingMemberActionsView.kt` | Pending member compose actions |
 | `ComposeContextProfilePickerView.kt` | Profile picker in compose context |
 | `SelectableChatItemToolbars.kt` | Multi-select mode toolbar (delete, forward, moderate) |
+
+<a id="outgoing-send-animation"></a>
+
+## 9. Outgoing Send Animation Hooks
+
+[`sendMessage()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L1005)
+captures the compose state and input geometry synchronously at the send gesture.
+Only new text or link-preview messages, optionally quoting another item, receive
+a `PendingChatSend`. Live, edited, forwarded, reported and attachment sends are
+excluded. Notes and signed/timed text sends remain eligible.
+
+[`sendMessageAsync()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L707)
+passes this optional token only through its ordinary new-message branch.
+[`send()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L564)
+registers returned item IDs on Main before inserting them; API failures create no
+animation entry. Calls from live updates and other send paths have no token.
+[`SendMsgView()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/SendMsgView.kt#L38)
+updates controller geometry from its untransformed input `Box`.
+
+The controller is owned by the chat layout rather than global model state. These
+hooks do not alter protocol operations, send ordering, draft restoration, failure
+handling or the timing of clearing the composer. See
+[outgoing message animation](chat-view.md#outgoing-message-animation).

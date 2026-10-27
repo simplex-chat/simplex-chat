@@ -250,6 +250,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun Details() {
+    val statusInfo = ci.meta.itemStatus.statusInto ?: ci.meta.msgVerified?.sigMissingInfo
     AppBarTitle(stringResource(if (ci.localNote) MR.strings.saved_message_title else if (sent) MR.strings.sent_message else MR.strings.received_message))
     SectionView {
       InfoRow(stringResource(if (!ci.localNote) MR.strings.info_row_sent_at else MR.strings.info_row_created_at), localTimestamp(ci.meta.itemTs))
@@ -276,8 +277,11 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       if (ci.meta.msgVerified?.verified == true) {
         val signedRes = if (sent) MR.strings.info_row_signed else MR.strings.info_row_signed_verified
         InfoRow(stringResource(signedRes), "", icon = painterResource(MR.images.ic_verified))
-      } else if (ci.meta.msgVerified is MsgVerified.SigMissing) {
-        InfoRow(stringResource(MR.strings.signature_missing_alert_title), "", icon = painterResource(MR.images.ic_verified_missing), iconTint = Color.Red)
+      }
+      if (statusInfo != null) {
+        Box(Modifier.clickable { AlertManager.shared.showAlertMsg(title = statusInfo.first, text = statusInfo.second) }) {
+          InfoRow(statusInfo.first, "", icon = painterResource(if (ci.meta.msgVerified is MsgVerified.SigMissing) MR.images.ic_verified_missing else MR.images.ic_info), iconTint = Color.Red)
+        }
       }
     }
     if (devTools) {

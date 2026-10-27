@@ -189,6 +189,7 @@ fun CIFileView(
     val encrypted = file.fileSource.cryptoArgs != null
     SaveOrOpenFileMenu(showOpenSaveMenu, encrypted, ext, File(loadedFilePath).toURI(), file.fileSource, saveFile = { fileAction() })
   }
+  val onLongClick = LocalChatItemActions.current?.onLongClick ?: { showMenu.value = true }
   Row(
     Modifier
       .combinedClickable(
@@ -199,7 +200,7 @@ fun CIFileView(
             fileAction()
           }
         },
-        onLongClick = { showMenu.value = true }
+        onLongClick = onLongClick
       )
       .padding(if (smallView) PaddingValues() else PaddingValues(top = 4.sp.toDp(), bottom = 6.sp.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp())),
     verticalAlignment = Alignment.Bottom,

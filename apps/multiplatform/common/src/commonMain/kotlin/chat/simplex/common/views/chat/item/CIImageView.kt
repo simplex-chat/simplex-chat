@@ -8,17 +8,21 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.constrainWidth
+import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
@@ -41,8 +45,22 @@ fun CIImageView(
   senderProfile: LocalProfile?,
   receiveFile: (Long) -> Unit
 ) {
+  val telegramSizing = appPlatform.isAndroid && !smallView
+  val density = LocalDensity.current
+  val window = if (telegramSizing) chatImageWindowSize() else androidx.compose.ui.unit.DpSize.Zero
   val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
+  val blurRadius = remember { appPrefs.privacyMediaBlurRadius.state }
+  val onLongClick = LocalChatItemActions.current?.onLongClick ?: { showMenu.value = true }
   val previewBitmap = remember(image) { base64ToBitmap(image) }
+  val minimumWidth = with(density) { (LocalChatMetadataSize.current?.width?.toDp() ?: 0.dp) + 15.dp }
+  val photoSize = if (telegramSizing) chatImageSize(
+    Size(previewBitmap.width.toFloat(), previewBitmap.height.toFloat()),
+    Size(window.width.value, window.height.value), density.density, minimumWidth.value,
+  ) else Size.Zero
+  val photoContentScale = if (smallView || telegramSizing) ContentScale.Crop else ContentScale.FillWidth
+  val cornerRadius = with(LocalDensity.current) { (if (smallView) 4.dp else 17.dp).toPx() }
+  val thumbnail = remember(image, file?.fileId, smallView, cornerRadius, telegramSizing) { ImageGalleryThumbnail(cornerRadius, smallView || telegramSizing) }
+  DisposableEffect(thumbnail) { onDispose { thumbnail.dispose() } }
   @Composable
   fun progressIndicator() {
     CircularProgressIndicator(
@@ -102,17 +120,15 @@ fun CIImageView(
     Image(
       imageBitmap,
       contentDescription = stringResource(MR.strings.image_descr),
-      // .width(DEFAULT_MAX_IMAGE_WIDTH) is a hack for image to increase IntrinsicSize of FramedItemView
-      // if text is short and take all available width if text is long
-      modifier = Modifier
-        .width(if (imageBitmap.width * 0.97 <= imageBitmap.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
+      modifier = (if (telegramSizing) Modifier.fillMaxSize() else Modifier
+        .width(if (imageBitmap.width * 0.97 <= imageBitmap.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH))
         .combinedClickable(
-          onLongClick = { showMenu.value = true },
+          onLongClick = onLongClick,
           onClick = onClick
         )
         .onRightClick { showMenu.value = true }
-        .privacyBlur(!smallView, imageBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
-      contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
+        .privacyBlur(!smallView, imageBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = onLongClick),
+      contentScale = photoContentScale,
     )
   }
 
@@ -126,27 +142,25 @@ fun CIImageView(
       Image(
         painter,
         contentDescription = stringResource(MR.strings.image_descr),
-        // .width(DEFAULT_MAX_IMAGE_WIDTH) is a hack for image to increase IntrinsicSize of FramedItemView
-        // if text is short and take all available width if text is long
-        modifier = Modifier
-          .width(if (painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
+        modifier = (if (telegramSizing) Modifier.fillMaxSize() else Modifier
+          .width(if (painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH))
           .combinedClickable(
-            onLongClick = { showMenu.value = true },
+            onLongClick = onLongClick,
             onClick = onClick
           )
           .onRightClick { showMenu.value = true }
-          .privacyBlur(!smallView, previewBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
-        contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
+          .privacyBlur(!smallView, previewBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = onLongClick),
+        contentScale = photoContentScale,
       )
     } else {
-      Box(Modifier
-        .width(if (painter.intrinsicSize != Size.Unspecified && painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
+      Box((if (telegramSizing) Modifier.fillMaxSize() else Modifier
+        .width(if (painter.intrinsicSize != Size.Unspecified && painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH))
         .combinedClickable(
-          onLongClick = { showMenu.value = true },
+          onLongClick = onLongClick,
           onClick = {}
         )
         .onRightClick { showMenu.value = true }
-        .privacyBlur(!smallView, previewBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+        .privacyBlur(!smallView, previewBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = onLongClick),
         contentAlignment = Alignment.Center
       ) {
         imageView(previewBitmap, onClick = onClick)
@@ -172,15 +186,25 @@ fun CIImageView(
 
   Box(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID)
+      .onGloballyPositioned { thumbnail.coordinates = it }
+      .drawWithContent { if (!thumbnail.hidden) drawContent() }
       .then(
         if (!smallView) {
-          val w = if (previewBitmap.width * 0.97 <= previewBitmap.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH
+          val w = if (telegramSizing) photoSize.width.dp else if (previewBitmap.width * 0.97 <= previewBitmap.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH
           // Height follows the measured (clamped) width, not nominal w, else wide images get an empty strip below.
           Modifier.width(w).layout { measurable, constraints ->
-            val width = constraints.maxWidth.coerceAtMost(w.roundToPx().coerceAtLeast(0))
-            val height = (width * (previewBitmap.height.toFloat() / previewBitmap.width.toFloat()).coerceAtMost(2.33f)).roundToInt().coerceAtMost(constraints.maxHeight)
-            val placeable = measurable.measure(Constraints.fixed(width, height))
-            layout(width, height) { placeable.place(0, 0) }
+            val width = if (telegramSizing) constraints.constrainWidth(w.roundToPx().coerceAtLeast(0))
+              else constraints.maxWidth.coerceAtMost(w.roundToPx().coerceAtLeast(0))
+            val height = if (telegramSizing) {
+              // Parent gutters can narrow the box. A wider intrinsic caption/header
+              // may crop the photo, but must never increase its height cap.
+              (photoSize.height.dp.toPx() * minOf(1f, width / w.toPx().coerceAtLeast(1f))).roundToInt()
+            } else {
+              (width * (previewBitmap.height.toFloat() / previewBitmap.width.toFloat()).coerceAtMost(2.33f)).roundToInt()
+            }
+            val constrainedHeight = if (telegramSizing) constraints.constrainHeight(height) else height.coerceAtMost(constraints.maxHeight)
+            val placeable = measurable.measure(Constraints.fixed(width, constrainedHeight))
+            layout(width, constrainedHeight) { placeable.place(0, 0) }
           }
         } else Modifier
       )
@@ -210,7 +234,12 @@ fun CIImageView(
     val loaded = if (revealed) res.value else null
     if (loaded != null && file != null) {
       val (imageBitmap, data, _) = loaded
-      SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView, @Composable { painter, onClick -> ImageView(painter, image, onClick) })
+      SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView,
+        createTransition = {
+          val currentSource = { if (!blurred.value || blurRadius.value <= 0) thumbnail.capture() else null }
+          ImageGalleryTransition(imageBitmap, currentSource(), currentSource, { thumbnail.hidden = it })
+        },
+        ImageView = @Composable { painter, onClick -> ImageView(painter, image, onClick) })
     } else {
       imageView(previewBitmap, onClick = {
         if (file != null) {
@@ -281,5 +310,6 @@ expect fun SimpleAndAnimatedImageView(
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,
   smallView: Boolean,
+  createTransition: () -> ImageGalleryTransition,
   ImageView: @Composable (painter: Painter, onClick: () -> Unit) -> Unit
 )
