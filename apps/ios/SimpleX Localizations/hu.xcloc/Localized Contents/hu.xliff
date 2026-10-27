@@ -9786,7 +9786,7 @@ alert title</note>
       </trans-unit>
       <trans-unit id="Supporter perks" xml:space="preserve" approved="no">
         <source>Supporter perks</source>
-        <target state="translated">Támogatói előnyök</target>
+        <target state="translated">A támogatással járó előnyök</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Supporter: 2 GB files available for 7 days." xml:space="preserve" approved="no">
