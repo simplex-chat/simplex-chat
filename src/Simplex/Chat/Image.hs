@@ -155,12 +155,11 @@ fitImage output format maxSize img
             scale size = if size == largest then largestRGB else scaleRGB8 rgb size
             jpeg q = fmap (out . LB.fromStrict) . encodeRGB q
         fitSize maxSize (Just $ \target -> 8 * jpegBytes target / bitsPerPixel) largest (jpeg quality . scale) >>= \case
-          Right (size, r) | size == largest && fromIntegral (LB.length r) < minFill * fromIntegral maxSize -> Right <$> bisect maxSize qualityStep (`jpeg` largestRGB) (quality, r) 96
+          Right (size, r) | size == largest && fromIntegral (LB.length r) < minFill * fromIntegral maxSize -> Right <$> bisect maxSize (`jpeg` largestRGB) (quality, r) 96
           r -> pure $ snd <$> r
       IFPng -> do
         let png = fmap (out . LB.fromStrict) . encodeSmallerPng
         fmap snd <$> fitSize maxSize Nothing largest (png . scaleRGBA8 (convertRGBA8 img))
-    qualityStep good bad = if bad - good <= 1 then Nothing else Just $ (good + bad) `div` 2
 
 fitSize :: Int64 -> Maybe (Double -> Double) -> (Int, Int) -> ((Int, Int) -> IO LB.ByteString) -> IO (Either String ((Int, Int), LB.ByteString))
 fitSize maxSize firstPixels (lw, lh) encode = search [] $ maybe lw (widthFor . ($ target)) firstPixels
@@ -208,17 +207,18 @@ minFill = 0.97
 imageDoesNotFit :: Either String a
 imageDoesNotFit = Left "image does not fit"
 
-bisect :: Int64 -> (p -> p -> Maybe p) -> (p -> IO LB.ByteString) -> (p, LB.ByteString) -> p -> IO LB.ByteString
-bisect maxSize step encode = go
+bisect :: Int64 -> (Int -> IO LB.ByteString) -> (Int, LB.ByteString) -> Int -> IO LB.ByteString
+bisect maxSize encode = go
   where
-    go (good, r) bad = case step good bad of
-      Nothing -> pure r
-      Just m -> do
-        r' <- encode m
-        case compare (LB.length r') maxSize of
-          LT -> go (m, r') bad
-          EQ -> pure r'
-          GT -> go (good, r) m
+    go (good, r) bad
+      | bad - good <= 1 = pure r
+      | otherwise = do
+          let m = (good + bad) `div` 2
+          r' <- encode m
+          case compare (LB.length r') maxSize of
+            LT -> go (m, r') bad
+            EQ -> pure r'
+            GT -> go (good, r) m
 
 encodeSmallerPng :: Image PixelRGBA8 -> IO ByteString
 encodeSmallerPng img = minimumBy (comparing B.length) <$> mapM encode [False, True]
