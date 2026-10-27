@@ -691,14 +691,15 @@ reported fake poller Ctx {cClient} event ref state = do
   statusOf <$> webRequestBody cClient "POST" "/webhooks/btcpay" (webhookSigHeader (bWebhookSecret $ fbConfig fake) body) body `shouldReturn` 200
   drainHints poller
 
--- | Paid in full and settled: $100.00 at the fixtures' rate of 108000.12 dollars a bitcoin.
+-- | Paid in full and settled: $100.00 at the fixtures' rate of 108000.12 dollars a bitcoin, as the invoice asked.
 settledState :: [JT.Pair]
-settledState = ["status" J..= ("Settled" :: Text), "paymentMethodPaid" J..= ("0.00092593" :: Text)]
+settledState = ["status" J..= ("Settled" :: Text), "amount" J..= ("0.00092593" :: Text), "paymentMethodPaid" J..= ("0.00092593" :: Text)]
 
--- | $54.00 confirmed after the invoice expired, credited as 5400 cents at that rate.
+-- | 0.0005 bitcoin confirmed after the $100.00 invoice of 0.00092593 expired, credited as its share of the price, 5399 cents.
 latePaid :: [JT.Pair]
 latePaid =
-  [ "additionalStatus" J..= ("PaidLate" :: Text),
+  [ "additionalStatus" J..= ("PaidPartial" :: Text),
+    "amount" J..= ("0.00092593" :: Text),
     "paymentMethodPaid" J..= lateBtc,
     "payments" J..= [J.object ["id" J..= ("late-tx" :: Text), "receivedDate" J..= (1700003600 :: Int), "value" J..= lateBtc, "fee" J..= ("0.00000000" :: Text), "status" J..= ("Settled" :: Text)]]
   ]
@@ -771,7 +772,7 @@ testSpendEndToEnd ps = withBTCPaySpend ps $ \cc fake poller ctx@Ctx {cClock} -> 
   (\v -> (field "latePayment" v, field "balance" v)) <$> viewOf ctx first `shouldReturn` (Just $ J.object ["waiting" J..= ("crediting" :: Text)], Just J.Null)
   setRates fake ratesUp
   void $ capturingStderr $ forgetRates poller >> getCurrentTime >>= creditPass poller
-  (\v -> (field "latePayment" v, field "balance" v)) <$> viewOf ctx first `shouldReturn` (Just J.Null, balanceObject 5400 0)
+  (\v -> (field "latePayment" v, field "balance" v)) <$> viewOf ctx first `shouldReturn` (Just J.Null, balanceObject 5399 0)
   balanceView ctx src `shouldReturn` balanceObject 10000 0
   -- dynamis again with a new commitment: BTCPay settles the difference, and the poller queues the order and spends the hold
   (200, again) <- spend ctx src (dynamisAgain 3)

@@ -163,8 +163,19 @@ reaches a name invoice after the invoice closed: the money stays pending, the po
 once it is older than its read window (about 72 hours), and support settles it by hand. The service
 judges each invoice by the policy it was created with, so changing the setting later credits nothing
 that arrived under `HighSpeed`. With `MediumSpeed` (the template's value) or a slower policy, late
-bitcoin is credited to the order's balance once confirmed, at the lower of the invoice's rate and the
-rate when it is credited.
+bitcoin is credited to the order's balance once confirmed.
+
+A credit is the money's share of the invoice's price: the price times the crypto received, divided by
+the crypto the invoice asked, which includes the network fee BTCPay adds (to every Monero invoice, and
+to a Bitcoin invoice after a part payment), so the fee is never credited. It is also taken at the
+lower of the invoice's rate and the rate when it is credited, rounded down to the cent. So a whole
+late payment credits at most the price. A current rate below half the invoice's credits nothing: the
+money goes to support for good.
+
+**Overpayment.** Crypto above what an invoice asks is credited to the order's balance in the same
+way, once confirmed, also on an invoice paid in time: the extra's share of the price, at the lower
+rate. The service logs it at info as `names: invoice <id> was overpaid; credited <cents> cents of the
+extra to the balance of registration <id>`, and an extra it cannot credit is alerted as late money is.
 
 BTCPay keeps an invoice it has closed `Expired` (or `Invalid` after a cancel) when money arrives late.
 The invoice view reports `paidInFull` on such an invoice once BTCPay reads it `PaidLate` or
@@ -1074,12 +1085,13 @@ them later is logged as not applied and changes nothing.
 ## Refunding a name balance
 
 A paid name order keeps its money as a balance when it ends `taken` (another buyer registered the
-name first), when it moves to a cheaper name (the difference), and when a payment reaches its invoice
-after the invoice closed. The buyer spends a balance on another name from Your names, or asks for it
-back: the page tells them to write to chat@simplex.chat with the order's reference, which is its
-invoice id, or its registration id for an order without an invoice. Nothing is refunded
-automatically, and the service never learns where to send money. Support records each refund in
-`--run-cli` mode with the service stopped, like the other `//` commands:
+name first), when it moves to a cheaper name (the difference), when a payment reaches its invoice
+after the invoice closed, and when its invoice was paid more crypto than it asked (the extra). The
+buyer spends a balance on another name from Your names, or asks for it back: the page tells them to
+write to chat@simplex.chat with the order's reference, which is its invoice id, or its registration
+id for an order without an invoice. Nothing is refunded automatically, and the service never learns
+where to send money. Support records each refund in `--run-cli` mode with the service stopped, like
+the other `//` commands:
 
 ```
 //refund <reference>
@@ -1095,8 +1107,9 @@ automatically, and the service never learns where to send money. Support records
 
    `Paid by` starts at this order and follows every balance the money came through back to the
    first order: each order with what its invoice paid and by which method (`card`, `btc` or
-   `xmr`), the part paid from the balance of the next order listed, and, marked `late`, money
-   credited after its invoice closed.
+   `xmr`), the part paid from the balance of the next order listed, and money credited from its
+   invoice later: marked `late` when it arrived after the invoice closed, and `overpaid` when it is
+   the extra of an invoice that paid the order.
 2. Run the command the answer ends with. The cents must equal the whole balance: a refund zeroes it,
    and part of a balance is never refunded. Other cents record nothing, and the answer gives the
    balance.

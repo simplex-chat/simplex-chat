@@ -91,6 +91,7 @@ cardReceived cents confirmed =
       rcvCrypto = Nothing,
       rcvDue = Nothing,
       rcvUnits = Nothing,
+      rcvInvoicedUnits = Nothing,
       rcvRate = Nothing,
       rcvConfirmed = Confirmed {cfCents = CurrencyAmount confirmed, cfUnits = Nothing},
       rcvUncreditable = Nothing

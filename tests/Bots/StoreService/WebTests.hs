@@ -2170,6 +2170,7 @@ rcv amount crypto =
       rcvCrypto = crypto,
       rcvDue = Nothing,
       rcvUnits = Nothing,
+      rcvInvoicedUnits = Nothing,
       rcvRate = Nothing,
       rcvConfirmed = Confirmed {cfCents = CurrencyAmount 0, cfUnits = Nothing},
       rcvUncreditable = Nothing

@@ -279,6 +279,7 @@ signalOf now IntentRead {irStatus, irAmountReceived, irChargeCreated} =
           rcvCrypto = Nothing,
           rcvDue = Nothing,
           rcvUnits = Nothing,
+          rcvInvoicedUnits = Nothing,
           rcvRate = Nothing,
           rcvConfirmed = Confirmed {cfCents = amountFrom confirmed, cfUnits = Nothing},
           rcvUncreditable = Nothing

@@ -284,21 +284,23 @@ largerOf = "GREATEST"
 largerOf = "MAX"
 #endif
 
--- Once a row is settled it stays settled, so a later pending update cannot overwrite it. The confirmed figures and received units
--- only rise, so a settled sum that falls (a payment turned invalid, a reorg) leaves them; the invoice's rate is written once.
+-- Once a row is settled it stays settled, so a later pending update cannot overwrite it. The confirmed figures and the received and
+-- invoiced units only rise, so a settled sum that falls (a payment turned invalid, a reorg) leaves them; the invoice's rate is written once.
 qUpsertPayment :: Query
 qUpsertPayment =
   mkQuery $
     "INSERT INTO @payments "
       <> "(payment_id, invoice_id, provider, provider_ref, amount, currency, crypto_paid, crypto_due, paid_in_full, status, "
-      <> "received_units, confirmed_amount, confirmed_units, invoice_rate, created_at, updated_at) "
-      <> "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
+      <> "received_units, invoiced_units, confirmed_amount, confirmed_units, invoice_rate, created_at, updated_at) "
+      <> "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
       <> "ON CONFLICT (payment_id) DO UPDATE SET "
       <> "amount = "
       <> largerOf
       <> "(COALESCE(@payments.amount, 0), excluded.amount), "
       <> "received_units = "
       <> largerOfNullable "received_units"
+      <> ", invoiced_units = "
+      <> largerOfNullable "invoiced_units"
       <> ", confirmed_amount = "
       <> largerOf
       <> "(@payments.confirmed_amount, excluded.confirmed_amount), "
@@ -665,11 +667,11 @@ upsertPayment db InvoiceRow {irInvoiceId, irProvider, irProviderRef, irCurrency}
     qUpsertPayment
     ( (invId, invId, textEncode irProvider, irProviderRef, amount)
         :. (irCurrency, rcvCrypto, rcvDue, if paidInFull then 1 :: Int else 0, paymentStatusText status)
-        :. (rcvUnits, confirmedCents, cfUnits, rcvRate, at, at)
+        :. (rcvUnits, rcvInvoicedUnits, confirmedCents, cfUnits, rcvRate, at, at)
     )
   where
     InvoiceId invId = irInvoiceId
-    Received {rcvAmount = CurrencyAmount amount, rcvCrypto, rcvDue, rcvUnits, rcvRate, rcvConfirmed = Confirmed {cfCents = CurrencyAmount confirmedCents, cfUnits}} = received
+    Received {rcvAmount = CurrencyAmount amount, rcvCrypto, rcvDue, rcvUnits, rcvInvoicedUnits, rcvRate, rcvConfirmed = Confirmed {cfCents = CurrencyAmount confirmedCents, cfUnits}} = received
     at = truncateToSecond at'
 
 -- | Takes the invoice row's lock for the rest of the transaction; SQLite's transactions hold the whole database already.

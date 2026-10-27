@@ -79,6 +79,14 @@ namesLateCreditTests = describe "StoreService names: balance life" $ do
     it "credits an invoice past the read window after a hinted read" testHintPastWindow
     it "credits Stripe's succeeded amount without reading a rate" testStripeCredited
     it "credits late XMR in piconero when the plugin shows a confirmation, and alerts it to support when it shows none" testXmrLate
+  describe "price share" $ do
+    it "credits late XMR as its share of the price, so BTCPay's network fee is never credited" testPriceShareXmr
+    it "credits a whole late BTC payment with BTCPay's added fee at the price, and an overpaid one the share of all it received" testPriceShareBtc
+    it "credits nothing for an invoice with no invoiced units recorded, logging it as an error" testNoInvoicedUnits
+  describe "overpayment" $ do
+    it "credits the extra of an invoice overpaid in time to its order's balance, logged, once, and nothing for an exact or card payment" testOverpaidInTime
+    it "credits the extra at the next pass when its credit step could not read the rate" testOverpaidByPass
+    it "alerts the extra of an overpaid HighSpeed invoice to support, naming the invoiced units, and nothing for an exact one" testOverpaidHighSpeed
   describe "balances with late credits" $ do
     it "keeps a credit made while the balance is held, the held spend settling" testCreditWhileHeld
     it "refuses a covered spend that read the amount before a credit" testSpendBeforeCredit
@@ -131,6 +139,7 @@ btcPaid units confirmed =
       rcvCrypto = Just (T.pack $ show units),
       rcvDue = Nothing,
       rcvUnits = Just units,
+      rcvInvoicedUnits = Just lateUnits,
       rcvRate = Just "62500",
       rcvConfirmed = Confirmed {cfCents = CurrencyAmount (fromIntegral $ satCents confirmed), cfUnits = Just confirmed},
       rcvUncreditable = Nothing
@@ -143,6 +152,7 @@ cardPaid cents confirmed =
       rcvCrypto = Nothing,
       rcvDue = Nothing,
       rcvUnits = Nothing,
+      rcvInvoicedUnits = Nothing,
       rcvRate = Nothing,
       rcvConfirmed = Confirmed {cfCents = CurrencyAmount (fromIntegral confirmed), cfUnits = Nothing},
       rcvUncreditable = Nothing
@@ -150,6 +160,10 @@ cardPaid cents confirmed =
 
 nothingPaid :: Received
 nothingPaid = cardPaid 0 0
+
+-- | Bitcoin received and confirmed on an invoice that asked the given satoshi.
+btcPaidOf :: Int64 -> Int64 -> Int64 -> Received
+btcPaidOf invoiced units confirmed = (btcPaid units confirmed) {rcvInvoicedUnits = Just invoiced}
 
 -- | 320000 satoshi: 20000 cents at the invoice's rate, 19200 at the stub's current rate of 60000.5.
 lateUnits :: Int64
@@ -233,7 +247,7 @@ testHeldSettled :: IO ()
 testHeldSettled = withLate $ \l@Late {lStore = st} -> do
   source st "s" 10000
   holder st "h" "s" 10000 (at 60) `shouldReturn` Right ()
-  settleAt l "h" (SigSettled (btcPaid 480000 480000) (at 10)) (at 10) `shouldReturn` Right ISPaid
+  settleAt l "h" (SigSettled (btcPaidOf 480000 480000 480000) (at 10)) (at 10) `shouldReturn` Right ISPaid
   NameRegistration {nrPhase, nrLive, nrBalanceUsed} <- reg st "h"
   (nrPhase, nrLive, nrBalanceUsed) `shouldBe` (PQueued, True, 10000)
   figures st "s" (at 10) `shouldReturn` Just (0, 10000, 0, Nothing)
@@ -243,8 +257,8 @@ testFundedThenSettledLate :: IO ()
 testFundedThenSettledLate = withLate $ \l@Late {lStore = st} -> do
   source st "s" 10000
   holder st "h" "s" 10000 (at 60) `shouldReturn` Right ()
-  settleAt l "h" (SigFunded (btcPaid 480000 0) PaidInFull) (at 50) `shouldReturn` Right ISOpen
-  settleAt l "h" (SigSettled (btcPaid 480000 480000) (at 120)) (at 120) `shouldReturn` Right ISPaid
+  settleAt l "h" (SigFunded (btcPaidOf 480000 480000 0) PaidInFull) (at 50) `shouldReturn` Right ISOpen
+  settleAt l "h" (SigSettled (btcPaidOf 480000 480000 480000) (at 120)) (at 120) `shouldReturn` Right ISPaid
   nrPhase <$> reg st "h" `shouldReturn` PQueued
   figures st "s" (at 120) `shouldReturn` Just (0, 10000, 0, Nothing)
 
@@ -253,7 +267,7 @@ testHoldNotSpent = withLate $ \l@Late {lStore = st} -> do
   source st "unspentsrc" 10000
   holder st "unspent" "unspentsrc" 10000 (at 60) `shouldReturn` Right ()
   withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_balances SET reserved_by = NULL WHERE registration_id = ?" (Only ("unspentsrc" :: Text))
-  logs <- capturingStderr $ settleAt l "unspent" (SigSettled (btcPaid 480000 480000) (at 10)) (at 10) `shouldReturn` Right ISPaid
+  logs <- capturingStderr $ settleAt l "unspent" (SigSettled (btcPaidOf 480000 480000 480000) (at 10)) (at 10) `shouldReturn` Right ISPaid
   logs `shouldSatisfy` logged "ERROR" "queued registration unspent as paid, but the balance of registration unspentsrc it held could not be spent"
   nrPhase <$> reg st "unspent" `shouldReturn` PQueued
   balanceOf st "unspentsrc" `shouldReturn` Just (10000, 10000, 0)
@@ -282,7 +296,7 @@ testLiveOrderExistsHolder = withLate $ \l@Late {lStore = st} -> do
   holder st "a" "s" 10000 (at 60) `shouldReturn` Right ()
   meetsLiveOrder st "a"
   setRate l (Left $ ProviderError "rates down")
-  void $ readSignal l "a" (SigSettled (btcPaid lateUnits lateUnits) (at 10))
+  void $ readSignal l "a" (SigSettled (btcPaidOf 480000 lateUnits lateUnits) (at 10))
   figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
   balanceOf st "a" `shouldReturn` Nothing
   setRate l (Right stubRate)
@@ -296,7 +310,7 @@ testSettlementBeforeRefund = withLate $ \l@Late {lStore = st} -> do
   source st "s" 10000
   holder st "h" "s" 10000 (at 60) `shouldReturn` Right ()
   recordRefund turns st "s" 10000 (at 5) >>= (`shouldSatisfy` \case Left (RefundHeld _) -> True; _ -> False)
-  settleAt l "h" (SigSettled (btcPaid 480000 480000) (at 10)) (at 10) `shouldReturn` Right ISPaid
+  settleAt l "h" (SigSettled (btcPaidOf 480000 480000 480000) (at 10)) (at 10) `shouldReturn` Right ISPaid
   recordRefund turns st "s" 10000 (at 11) >>= (`shouldSatisfy` \case Left _ -> True; Right _ -> False)
   balanceOf st "s" `shouldReturn` Just (0, 10000, 0)
 
@@ -308,7 +322,7 @@ testLateCredited = withLate $ \l@Late {lStore = st} -> do
   holder st "credited" "paid" 10000 (at 60) `shouldReturn` Right ()
   settleAt l "credited" (SigClosed nothingPaid PaidInPart) (at 61) `shouldReturn` Right ISExpired
   figures st "paid" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
-  logs <- readSignal l "credited" (SigClosed (btcPaid lateUnits lateUnits) PaidInPart)
+  logs <- readSignal l "credited" (SigClosed (btcPaidOf 480000 lateUnits lateUnits) PaidInPart)
   logs `shouldSatisfy` logged "INFO" "invoice inv-credited credited 19200 cents to the balance of registration credited for 320000 units at 60000.5 (invoice 62500, current 60000.5)"
   logs `shouldNotSatisfy` logged "ERROR" "inv-credited"
   balanceOf st "credited" `shouldReturn` Just (19200, 19200, 0)
@@ -458,7 +472,7 @@ testRateProblemsNamed = withLate $ \l@Late {lStore = st} -> do
   settleAt l "norate" (SigClosed (btcPaid lateUnits lateUnits) {rcvRate = Nothing} PaidInPart) (at 70) `shouldReturn` Right ISExpired
   logs <- (<>) <$> passAt l (at 71) <*> passAt l (at 72)
   count "invoice inv-noprovider has late money to credit, but no provider" logs `shouldBe` 1
-  logs `shouldSatisfy` logged "ERROR" "invoice inv-norate has confirmed late money, but no invoice rate was recorded to credit it at"
+  logs `shouldSatisfy` logged "ERROR" "invoice inv-norate has confirmed late money, but no invoice rate or invoiced units were recorded to credit it at"
 
 testOneRateReadPerPass :: IO ()
 testOneRateReadPerPass = withLate $ \l@Late {lStore = st} -> do
@@ -550,6 +564,7 @@ xmrPaid uncreditable =
       rcvCrypto = Just "0.32095000",
       rcvDue = Nothing,
       rcvUnits = Just xmrUnits,
+      rcvInvoicedUnits = Just xmrUnits,
       rcvRate = Just "168.25",
       rcvConfirmed = maybe (Confirmed {cfCents = CurrencyAmount 5400, cfUnits = Just xmrUnits}) (const Confirmed {cfCents = CurrencyAmount 0, cfUnits = Just 0}) uncreditable,
       rcvUncreditable = uncreditable
@@ -560,7 +575,7 @@ xmrPaid uncreditable =
 testXmrLate :: IO ()
 testXmrLate = withLate $ \l@Late {lStore = st} -> do
   mapM_ (\r -> closedOrder l r False) ["xmrshown", "xmrnone"]
-  withTransaction st $ \db -> DB.execute_ db "UPDATE sx_badge_service_invoices SET payment_crypto_currency = 'xmr' WHERE invoice_id IN ('inv-xmrshown', 'inv-xmrnone')"
+  withTransaction st $ \db -> DB.execute_ db "UPDATE sx_badge_service_invoices SET payment_crypto_currency = 'xmr', amount = 5400 WHERE invoice_id IN ('inv-xmrshown', 'inv-xmrnone')"
   setRate l (Right $ rateOf "150" 150)
   void $ readSignal l "xmrshown" (SigSettled (xmrPaid Nothing) (at 70))
   creditsOf st "xmrshown" `shouldReturn` [(Just 320950000000, Just "168.25", Just "150", Just "150", 4814)]
@@ -571,6 +586,90 @@ testXmrLate = withLate $ \l@Late {lStore = st} -> do
   alertsAt l (Right stubRate) (pastWindow now 60)
     >>= (`shouldSatisfy` logged "ERROR" "invoice inv-xmrnone of order xmrnone: 320950000000 piconero received, 0 piconero confirmed, 0 piconero credited; the Monero plugin shows no confirmation of this money, so it is never credited by itself; refund by hand only a transaction confirmed on chain")
 
+-- price share
+
+-- | A closed unpaid order of the given cents whose invoice asked crypto of the given coin.
+closedOrderOf :: Late -> Text -> Text -> Int -> IO ()
+closedOrderOf l@Late {lStore} r coin cents = do
+  placeOrderRow lStore r False cents (at 60)
+  withTransaction lStore $ \db -> DB.execute db "UPDATE sx_badge_service_invoices SET payment_crypto_currency = ? WHERE invoice_id = ?" (coin, "inv-" <> r)
+  settleAt l r (SigClosed nothingPaid PaidInPart) (at 61) `shouldReturn` Right ISExpired
+
+-- | The review's $100 Monero invoice: 0.50211283 XMR at a rate of 200, 0.00211283 of it BTCPay's network fee.
+testPriceShareXmr :: IO ()
+testPriceShareXmr = withLate $ \l@Late {lStore = st} -> do
+  closedOrderOf l "xmr" "xmr" 10000
+  setRate l (Right $ rateOf "200" 200)
+  let piconero = 502112830000
+      paid = Received {rcvAmount = CurrencyAmount 10042, rcvCrypto = Just "0.50211283", rcvDue = Just "0", rcvUnits = Just piconero, rcvInvoicedUnits = Just piconero, rcvRate = Just "200", rcvConfirmed = Confirmed {cfCents = CurrencyAmount 10042, cfUnits = Just piconero}, rcvUncreditable = Nothing}
+  void $ readSignal l "xmr" (SigClosed paid PaidInFull)
+  creditsOf st "xmr" `shouldReturn` [(Just piconero, Just "200", Just "200", Just "200", 10000)]
+  balanceOf st "xmr" `shouldReturn` Just (10000, 10000, 0)
+
+testPriceShareBtc :: IO ()
+testPriceShareBtc = withLate $ \l@Late {lStore = st} -> do
+  closedOrder l "fee" False
+  closedOrder l "over" False
+  setRate l (Right $ rateOf "62500" 62500)
+  void $ readSignal l "fee" (SigClosed (btcPaidOf 330000 330000 330000) PaidInFull)
+  creditsOf st "fee" `shouldReturn` [(Just 330000, Just "62500", Just "62500", Just "62500", 20000)]
+  setRate l (Right stubRate)
+  void $ readSignal l "over" (SigClosed (btcPaidOf lateUnits 480000 480000) PaidInFull)
+  creditsOf st "over" `shouldReturn` [(Just 480000, Just "62500", Just "60000.5", Just "60000.5", 28800)]
+  balanceOf st "over" `shouldReturn` Just (28800, 28800, 0)
+
+testNoInvoicedUnits :: IO ()
+testNoInvoicedUnits = withLate $ \l@Late {lStore = st} -> do
+  closedOrder l "noinvoiced" False
+  settleAt l "noinvoiced" (SigClosed (btcPaid lateUnits lateUnits) {rcvInvoicedUnits = Nothing} PaidInFull) (at 70) `shouldReturn` Right ISExpired
+  logs <- passAt l (at 71)
+  logs `shouldSatisfy` logged "ERROR" "invoice inv-noinvoiced has confirmed late money, but no invoice rate or invoiced units were recorded to credit it at"
+  balanceOf st "noinvoiced" `shouldReturn` Nothing
+
+-- overpayment
+
+-- | 480000 satoshi on an invoice of 320000: the extra 160000 is 10000 cents of the price, 9600 at the stub's current rate.
+testOverpaidInTime :: IO ()
+testOverpaidInTime = withLate $ \l@Late {lStore = st} -> do
+  mapM_ (\(r, card) -> placeOrderRow st r card 20000 (at 60)) [("over", False), ("exact", False), ("card", True)]
+  logs <- readSignal l "over" (SigSettled (btcPaidOf lateUnits 480000 480000) (at 10))
+  logs `shouldSatisfy` logged "INFO" "invoice inv-over was overpaid; credited 9600 cents of the extra to the balance of registration over for 160000 units at 60000.5 (invoice 62500, current 60000.5)"
+  nrPhase <$> reg st "over" `shouldReturn` PQueued
+  creditsOf st "over" `shouldReturn` [(Just 160000, Just "62500", Just "60000.5", Just "60000.5", 9600)]
+  balanceOf st "over" `shouldReturn` Just (9600, 9600, 0)
+  void $ passAt l (at 20)
+  void $ readSignal l "over" (SigSettled (btcPaidOf lateUnits 480000 480000) (at 10))
+  length <$> creditsOf st "over" `shouldReturn` 1
+  void $ readSignal l "exact" (SigSettled (btcPaidOf lateUnits lateUnits lateUnits) (at 10))
+  void $ readSignal l "card" (SigSettled (cardPaid 20000 20000) (at 10))
+  void $ passAt l (at 21)
+  mapM (fmap nrPhase . reg st) ["exact", "card"] `shouldReturn` [PQueued, PQueued]
+  mapM (balanceOf st) ["exact", "card"] `shouldReturn` [Nothing, Nothing]
+
+testOverpaidByPass :: IO ()
+testOverpaidByPass = withLate $ \l@Late {lStore = st} -> do
+  placeOrderRow st "over" False 20000 (at 60)
+  setRate l (Left $ ProviderError "rates down")
+  void $ readSignal l "over" (SigSettled (btcPaidOf lateUnits 480000 480000) (at 10))
+  balanceOf st "over" `shouldReturn` Nothing
+  withTransaction st uncreditedLateInvoices `shouldReturn` [invOf "over"]
+  setRate l (Right stubRate)
+  void $ passAt l (at 20)
+  balanceOf st "over" `shouldReturn` Just (9600, 9600, 0)
+  withTransaction st uncreditedLateInvoices `shouldReturn` []
+
+testOverpaidHighSpeed :: IO ()
+testOverpaidHighSpeed = withLate $ \l@Late {lStore = st} -> do
+  mapM_ (\r -> placeOrderRow st r False 20000 (at 60)) ["hsover", "hsexact"]
+  let highSpeed units = (btcPaidOf lateUnits units 0) {rcvUncreditable = Just UCHighSpeed}
+  settleAt l "hsover" (SigSettled (highSpeed 480000) (at 70)) (at 70) `shouldReturn` Right ISPaid
+  settleAt l "hsexact" (SigSettled (highSpeed lateUnits) (at 70)) (at 70) `shouldReturn` Right ISPaid
+  void $ passAt l (at 71)
+  mapM (balanceOf st) ["hsover", "hsexact"] `shouldReturn` [Nothing, Nothing]
+  logs <- alertsAt l (Right stubRate) (pastWindow (at 70) 60)
+  logs `shouldSatisfy` logged "ERROR" "invoice inv-hsover of order hsover, overpaid: 320000 satoshi invoiced, 480000 satoshi received, 0 satoshi confirmed, 0 satoshi credited; the invoice was made under HighSpeed"
+  logs `shouldNotSatisfy` T.isInfixOf "inv-hsexact"
+
 -- balances with late credits
 
 testCreditWhileHeld :: IO ()
@@ -580,7 +679,7 @@ testCreditWhileHeld = withLate $ \l@Late {lStore = st} -> do
   holder st "h" "x" 19200 (at 60) `shouldReturn` Right ()
   void $ readSignal l "x" (SigClosed (btcPaid 400000 400000) PaidInPart)
   figures st "x" (at 10) `shouldReturn` Just (24000, 24000, 0, Just BalanceHold {bhHolder = RegistrationId "h", bhUntil = at 60, bhOverdue = False, bhFunded = False})
-  settleAt l "h" (SigSettled (btcPaid 330000 330000) (at 10)) (at 10) `shouldReturn` Right ISPaid
+  settleAt l "h" (SigSettled (btcPaidOf 332800 330000 330000) (at 10)) (at 10) `shouldReturn` Right ISPaid
   figures st "x" (at 10) `shouldReturn` Just (4800, 24000, 0, Nothing)
   invariantHolds st "x"
 
@@ -714,7 +813,7 @@ testConcurrentCredits = withServiceStores $ \open -> do
       let readRate :: CryptoCurrency -> IO (Either ProviderError Rate)
           readRate _ = Right stubRate <$ meet arrived
       (a, b) <- concurrently (creditLateInvoice st readRate (invOf r) (at 80)) (creditLateInvoice other readRate (invOf r) (at 80))
-      (n, length [() | COCredited _ <- [a, b]], length [() | CONothingDue <- [a, b]]) `shouldBe` (n, 1, 1)
+      (n, length [() | COCredited _ _ <- [a, b]], length [() | CONothingDue <- [a, b]]) `shouldBe` (n, 1, 1)
       length <$> creditsOf st r `shouldReturn` 1
       balanceOf st r `shouldReturn` Just (19200, 19200, 0)
     refused <- forM [1 .. rounds] $ \n -> do
@@ -749,7 +848,7 @@ testCreditAgainstSettlement = withServiceStores $ \open -> do
         raise = meet arrived >> settleOrder other otherWaiters Nothing (invOf r) (SigClosed (btcPaid lateUnits lateUnits) PaidInPart) (at 80)
     (credited, raised) <- concurrently (creditLateInvoice st readRate (invOf r) (at 80)) raise
     (n, raised) `shouldBe` (n, Right ISExpired)
-    credited `shouldSatisfy` \case COCredited _ -> True; _ -> False
+    credited `shouldSatisfy` \case COCredited _ _ -> True; _ -> False
     creditLateInvoice st (const $ pure $ Right stubRate) (invOf r) (at 81) >>= (`shouldSatisfy` (/= CORefused))
     units <- map (\(u, _, _, _, _) -> u) <$> creditsOf st r
     (n, sum (map (fromMaybe 0) units)) `shouldBe` (n, lateUnits)
