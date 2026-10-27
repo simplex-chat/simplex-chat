@@ -9,6 +9,7 @@ EXCLUDED = {
     "BadgesCheckOrderView_Previews",
     "BadgesHowLongView_Previews",
     "ChatPreviewView_Previews",
+    "MigrateFromDevice_Previews",
     "NewChatView_Previews",
     "ServersSummaryView_Previews",
 }

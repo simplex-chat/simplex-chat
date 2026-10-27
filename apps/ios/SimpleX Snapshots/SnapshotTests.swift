@@ -129,7 +129,6 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(MemberAdmissionView_Previews.self),
         SnapshotScene(MemberSupportChatToolbar_Previews.self),
         SnapshotScene(MemberSupportView_Previews.self),
-        SnapshotScene(MigrateFromDevice_Previews.self),
         SnapshotScene(MigrateToDevice_Previews.self),
         SnapshotScene(MigrateToGroupView_Previews.self),
         SnapshotScene(MsgContentView_Previews.self, allSizes: true),
@@ -207,8 +206,8 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
     if scene.height == nil {
         for _ in 0..<2 {
             let fit = host.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
-            let height = fit.height < .greatestFiniteMagnitude ? max(1, ceil(fit.height)) : screen.bounds.height
-            window.frame = CGRect(x: 0, y: 0, width: width, height: height)
+            let fill = host.sizeThatFits(in: screen.bounds.size)
+            window.frame = CGRect(x: 0, y: 0, width: width, height: ceil(max(fit.height, fill.height)))
             settle()
         }
     }
