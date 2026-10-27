@@ -94,9 +94,11 @@ idle_seconds = 60
 ; verifying it, so anyone who can reach this service can mint badges. The service refuses to start
 ; with this on beside an [apple] or [google] section. Its issuer key is always one released apps
 ; trust, so they accept every badge minted this way.
-; A subscription is answered renewing and charged for its plan: the App Store product's, the base
-; plan a Play test token test.<basePlanId>.<uuid> names, or the Play product's monthly one. The
-; plans are kept in memory, so a restart answers later renewals as ended, and refunds the unissued
+; A subscription is answered renewing and charged for its plan: the App Store product's, or the base
+; plan a Play test token test.<basePlanId>.<uuid> names when it is a plan of that product, and else
+; the product's monthly base plan, so a licence tester's purchase is credited too. An App Store tier
+; raise is charged for the raised plan, which its renewals then charge. The plans are kept in memory,
+; so a restart answers later renewals as ended, and refunds the unissued
 ; months of a plan still covered at its next month. Nothing is acknowledged, so Play refunds a
 ; licence tester's subscription once its acknowledgement window lapses.
 [dev]
