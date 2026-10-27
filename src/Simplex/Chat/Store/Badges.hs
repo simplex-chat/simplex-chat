@@ -239,9 +239,10 @@ holdStoreReceipt db g User {userId} origin invoiceId_ txRef@StoreTransactionRef 
         |]
         ((userId, invoiceId', provider, transactionRef, paymentJSON, now) :. (purchaseKey, purchasePrivKey, Binary mk, holdKind, now))
 
--- | Restore's hand-over of a transaction already recorded: a record that funds no purchase of this profile, only one
--- its payment moved away from, or one neither shown nor this profile's newest, which no resume reaches, is taken by
--- this profile and held as a move of its payment to it. True when its last refusal was transfer_limited, which the hand-over answers.
+-- | A hand-over of a transaction already recorded, by Restore or by a resubscription no resume reaches: a subscription
+-- record that funds no purchase of this profile, only one its payment moved away from, or one neither shown nor its
+-- owner's newest, is taken by this profile and held as a move of its payment to it; a one-time record never moves.
+-- True when its last refusal was transfer_limited, which the hand-over answers.
 holdStoreTransfer :: DB.Connection -> TVar ChaChaDRG -> User -> StoreTransactionRef -> ServicePayment -> UTCTime -> IO Bool
 holdStoreTransfer db g user@User {userId} txRef payment now =
   getReceiptRecord db txRef >>= \case
