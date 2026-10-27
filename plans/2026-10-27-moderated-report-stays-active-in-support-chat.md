@@ -58,4 +58,6 @@ Desktop AppImage on Linux, master compared with this branch, group with an owner
 
 Also tried on this branch: moderating while another member's support chat is open, three moderations in quick succession, moderating while scrolling, and opening Chat with admins only after the moderation. No exception, stale or duplicate item in any of them.
 
-Not tested: Android on a device (the changed code is shared with desktop), iOS, and "Archive reports" from the chat list on desktop while a member support chat of that group is open.
+Android (arm64 debug APKs on Waydroid, master compared with this branch): the member's own report and the moderator's open support chat show the same result as on desktop (master: report stays active, one `ClassCastException` for the member's own report; this branch: archived at once, no exception), and the control, two-report, closed-chat, moderator-moderates and relaunch cases pass on this branch.
+
+Not tested: iOS and "Archive reports" from the chat list on desktop while a member support chat of that group is open.
