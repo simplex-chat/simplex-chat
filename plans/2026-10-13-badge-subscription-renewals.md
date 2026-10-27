@@ -329,7 +329,7 @@ None. The timing and grace behaviour, the branch, who runs builds, tier changes,
 - The Apple verifier checks no certificate validity dates or revocation.
 - A Play subscription purchase is offered by the first offer on its base plan, not a named offer (`PlayStore.kt`).
 - Retirement does not signal the receipt worker.
-- After a renewal that lands once the shown credential has expired (billing-retry recovery), the request and the profile update happen in the same pass, because `presentIssuedBadge` presents as soon as the shown credential has expired. This already happens to late prepaid renewals; it weakens objective 3 for recovered subscriptions.
+- After a renewal that lands once the shown credential has expired (billing-retry recovery), the request and the profile update happen in the same pass, because `presentIssuedBadge` presents as soon as the shown credential has expired. This already happens to late prepaid renewals; it weakens objective 3 for recovered subscriptions. A raised tier is presented at once as well, whichever request granted it (the receipt worker's upgrade request in `creditStoreReceipt`, a renewal check in `presentIssuedBadge`): the subscriber raised the tier in their store, so the broadcast tells the store nothing new. A lower tier keeps the hold-back until the shown credential expires.
 
 ## 11. Follow-up runs
 
