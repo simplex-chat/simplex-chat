@@ -35,8 +35,8 @@ module Bots.StoreService.FakeEthNode
     setCommunityTerms,
     fakeCommunityTerms,
     fakeCommunityTermsText,
+    fakeNewCommunityTermsText,
     fakeNewCommunityTerms,
-    fakeTermsUrl,
     fakeSponsor,
     fakeBaseRegistrar,
     fakeResolver,
@@ -60,7 +60,6 @@ import qualified Data.ByteArray as BA
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as LB
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
@@ -68,7 +67,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word64)
 import Network.HTTP.Types (badGateway502, badRequest400, hContentType, ok200)
-import Network.Wai (Application, pathInfo, responseLBS, strictRequestBody)
+import Network.Wai (Application, responseLBS, strictRequestBody)
 import qualified Network.Wai.Handler.Warp as Warp
 import Numeric (readHex, showHex)
 import Simplex.Messaging.Crypto (keccak256)
@@ -78,7 +77,7 @@ import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 import StoreService.Config (ChainConfig (..))
-import StoreService.Names.Abi (addressWord, hex, selector, uint256)
+import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, addressWord, hex, selector, uint256)
 import StoreService.Names.Chain (TxRequest (..), decodeSignedTx)
 import System.Timeout (timeout)
 
@@ -143,8 +142,7 @@ fakeSponsor = address "0x9a676e781a523b5d0c0e43731313a708cb607508"
 fakeBaseRegistrar = address "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512"
 fakeResolver = address "0x2279b7a0a67db372996a5fab50d91eaa73d2ebe6"
 
--- | The controller's name policy; it lists no community name unless a test answers otherwise, and its terms are the text
--- the node serves at /terms.
+-- | The controller's name policy; it lists no community name unless a test answers otherwise, and keeps the terms text.
 fakeNamePolicy :: Address
 fakeNamePolicy = address "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707"
 
@@ -154,12 +152,12 @@ fakeCommunityTermsText = "bona fide community terms v1"
 fakeCommunityTerms :: ByteString
 fakeCommunityTerms = keccak256 fakeCommunityTermsText
 
--- | Community terms the node's page does not serve, as new terms set on chain before the page is updated.
-fakeNewCommunityTerms :: ByteString
-fakeNewCommunityTerms = keccak256 "bona fide community terms v2"
+-- | New community terms, as the owner's setTerms sets them after an order.
+fakeNewCommunityTermsText :: ByteString
+fakeNewCommunityTermsText = "bona fide community terms v2"
 
-fakeTermsUrl :: FakeEthNode -> Text
-fakeTermsUrl FakeEthNode {fnUrl} = T.pack fnUrl <> "/terms"
+fakeNewCommunityTerms :: ByteString
+fakeNewCommunityTerms = keccak256 fakeNewCommunityTermsText
 
 -- | The policy lists the name as a community name.
 listCommunityName :: FakeEthNode -> LabelHash -> IO ()
@@ -169,15 +167,21 @@ listCommunityName node lh = answerListing node lh $ Returns $ uint256 (1 :: Int)
 answerListing :: FakeEthNode -> LabelHash -> CallAnswer -> IO ()
 answerListing node (LabelHash lh) = answerCall node fakeNamePolicy (selector "bonaFideNames(bytes32)" <> lh)
 
--- | The policy's community terms are the text with this keccak256.
+-- | The policy keeps this text as its community terms, with its keccak256; an empty text is the policy before setTerms.
 setCommunityTerms :: FakeEthNode -> ByteString -> IO ()
-setCommunityTerms node termsHash = answerCall node fakeNamePolicy (selector "termsHash()") $ Returns termsHash
+setCommunityTerms node text = do
+  answerCall node fakeNamePolicy (selector "termsHash()") $ Returns $ if B.null text then B.replicate 32 0 else keccak256 text
+  answerCall node fakeNamePolicy (selector "termsText()") $ Returns $ abiString text
+
+abiString :: ByteString -> ByteString
+abiString text = abiTuple [Dynamic $ abiBytes text]
 
 defaultCall :: (ByteString, ByteString) -> Maybe CallAnswer
 defaultCall (to, calldata)
   | to == unAddress fakeController && calldata == selector "namePolicy()" = Just $ Returns $ addressWord fakeNamePolicy
   | to == unAddress fakeNamePolicy && selector "bonaFideNames(bytes32)" `B.isPrefixOf` calldata = Just $ Returns $ uint256 (0 :: Int)
   | to == unAddress fakeNamePolicy && calldata == selector "termsHash()" = Just $ Returns fakeCommunityTerms
+  | to == unAddress fakeNamePolicy && calldata == selector "termsText()" = Just $ Returns $ abiString fakeCommunityTermsText
   | otherwise = Nothing
 
 fakeRegistrarKey :: S.Secp256k1PrivateKey
@@ -339,9 +343,7 @@ fakeApp st req respond = do
           atomically $ takeTMVar gRelease `orElse` (readTVar st >>= check . fsClosed)
           answered method params
         Nothing -> answered method params
-    Nothing
-      | pathInfo req == ["terms"] -> respond $ responseLBS ok200 [] $ LB.fromStrict fakeCommunityTermsText
-      | otherwise -> respond $ responseLBS badRequest400 [] "not a JSON-RPC request"
+    Nothing -> respond $ responseLBS badRequest400 [] "not a JSON-RPC request"
   where
     request = J.withObject "request" $ \o -> (,) <$> o .: "method" <*> o .: "params"
     -- a gate holds one request only

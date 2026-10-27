@@ -407,8 +407,9 @@ each domain to its own port, as the all-in-one example in [Caddy](#caddy) does. 
 
 `compose.dev.yml` adds a container `chain`: an anvil chain on `127.0.0.1:8545` (chain id 31337)
 with the names contracts, deployed on its first start by the `apps/simplex-domains` submodule's
-webapp, which needs simplex.domains#7 for the name policy this service reads: until the submodule
-moves past it, every search answers 503. Its state is kept in `./data/chain`, so
+webapp, which needs simplex.domains#7 for the contracts whose name policy this service reads and
+which keeps the community terms' text on chain: until the submodule moves past it, every search
+answers 503. Its state is kept in `./data/chain`, so
 restarts keep the contracts, balances and registered names. Its keys are anvil's public test keys,
 so never use it beside a real chain. From `scripts/store-service/`:
 
@@ -541,7 +542,7 @@ IPv4-compatible and NAT64 forms of the IPv4 ones), are rejected, and so are thos
 host's own addresses, public ones included, since a rebinding name can answer with them too and
 reach whatever listens on the host. The exceptions are the
 endpoints the service is configured to use, on their ports: the RPC node (`[chain] rpc_url`),
-BTCPay (`[btcpay] host`), the community terms page (`[names] community_terms_url`), the database and the DNS resolvers in `/etc/resolv.conf`. Replies on
+BTCPay (`[btcpay] host`), the database and the DNS resolvers in `/etc/resolv.conf`. Replies on
 connections already open, such as Caddy's requests, pass, and so does IPv6 neighbour discovery on
 the link.
 
@@ -664,21 +665,15 @@ The controller owner's `setNamePolicy` takes effect for the service after a rest
 at once: until then the service reads the reservations, the list, the terms and the nonces from the
 old policy, so an order of a name the new policy reserves ends taken, and one of a name it lists
 does not register: the page signs again until the order lapses, and only the first relay spends gas.
-One more setting gives the community terms' text:
 
-- `community_terms_url`: the page of the community terms, which the order's checkbox links to beside
-  the name terms. It must be `https://`, or `http://` on 127.0.0.1 or localhost when `[chain] chain_id`
-  is 31337. When the policy is read at startup, the service fetches it and refuses to start when the
-  text does not hash to the policy's `termsHash`. When the policy sets new terms, the service fetches
-  it again on each search of an available listed name and each order, reveal and view of a listed
-  name until its text hashes to them. Until the text matches, and without this setting or before the
-  policy has terms, a search of an available listed name answers 503, and community names cannot be
-  ordered or revealed; a search of a registered or reserved one is answered without the check. To
-  change the terms, the owner sets the new hash on chain first and the page is replaced after it, so
-  no order signs a hash whose text the page no longer serves. Do not restart the service
-  between the two: until the page is replaced it refuses to start, and compose restarts it only 5
-  times. Never edit the page without setting its hash on chain first: every restart after the edit
-  is refused.
+The name policy keeps the community terms' text on chain, and `termsHash` is its keccak256, so the
+two cannot disagree. The service reads the text with `termsText()` and serves it, as plain text, at
+`GET /api/community-terms/<hash>`, which the order's checkbox links to beside the name terms; it
+answers `404` for any other hash, and the text it read last is kept until another hash is asked for.
+To change the terms, the contracts' owner calls `setTerms(text)`: an order signed under the old
+terms is asked to agree again before its reveal, and the old text stays in the calldata of its
+`setTerms` transaction. Until the owner first sets terms there is no text to agree to, so community
+names cannot be ordered, and the service warns at startup.
 
 `[community]` gives what each community name is for, one line per name: the label, as it is searched,
 then `=` and the text:
@@ -1164,8 +1159,7 @@ Your names; a later late payment credits it again, and a second refund adds to `
 payment against this service in Chromium, as they run against the webapp's mock. It:
 
 1. starts anvil on 8545 and deploys the contracts with the webapp's `dev/deploy.ts`, with a commitment
-   age of 5 seconds, and serves the webapp's `dev/community-terms.txt`, whose keccak256 `dev/deploy.ts`
-   sets as the name policy's terms, on 8198 as the ini's `community_terms_url`;
+   age of 5 seconds;
 2. builds the names site (`vite build`) into the run's folder;
 3. writes an ini for that deployment with `[names]` and `[chain]` and no `[btcpay]` or `[stripe]`,
    with the terms version `2026-10-23` and the one community name `bakers`, which the webapp's
@@ -1190,9 +1184,9 @@ Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts`
 Playwright's Chromium (`npm install`, `npx playwright install chromium`); and an `ens-contracts` checkout
 compiled as the webapp's `dev/start.sh` needs. The cases read the chain's addresses from the webapp's
 `dev/local-chain-0.json`, so the script stops when its deployment differs from it; run the webapp's
-`SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8180, 8181, 8199 and 8198 must be free:
+`SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8180, 8181 and 8199 must be free:
 the script stops before starting anything when one of them answers, and stops at once when anvil,
-the terms server, the service or the code server exits before it answers.
+the service or the code server exits before it answers.
 
 ```
 cabal build exe:simplex-store-service
@@ -1202,8 +1196,8 @@ ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/names-cont
 - `WEBAPP_DIR`: the names webapp (default: the `apps/simplex-domains` submodule's `webapp/`), which needs
   simplex.domains#7 for the name policy's terms and the community case until the submodule moves past it.
 - `STORE_SERVICE_BIN`: the service binary (default: `cabal list-bin exe:simplex-store-service`).
-- `SERVICE_PORT`, `BADGES_PORT`, `CODES_PORT`, `COMMUNITY_TERMS_PORT`: the service's names and badges
-  ports, the code server's and the terms server's (8180, 8181, 8199 and 8198).
+- `SERVICE_PORT`, `BADGES_PORT`, `CODES_PORT`: the service's names and badges ports and the code
+  server's (8180, 8181 and 8199).
 - Arguments, if given, are passed to `playwright test` in place of the default cases' title filter.
 
 The default cases cover search answers for an available name, Check your code and its rate-limit

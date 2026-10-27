@@ -34,8 +34,7 @@ import StoreService.Names.Abi (hex)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (newChainClient, nodeChainId)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
-import StoreService.Names.Community (TermsError (..), currentCommunityTerms, termsErrorText)
-import StoreService.Names.Contracts (Contracts, bonaFideName, namePolicy)
+import StoreService.Names.Contracts (Contracts, bonaFideName, communityTermsHash, namePolicy)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
@@ -68,6 +67,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
+import qualified Data.ByteString as B
 import Data.ByteString.Char8 (ByteString)
 import Data.Char (isSpace)
 import Data.Either (fromRight, isRight)
@@ -272,13 +272,13 @@ startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig 
     Just User {userId} -> do
       logInfo $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId
       ne@NamesEnv {neContracts} <- newNamesEnv cc userId nc chatStore turns waiters providers
-      checkNamePolicy nc neContracts >>= orExit
+      checkNamePolicy nc neContracts
       pure ne
 
-checkNamePolicy :: NamesConfig -> Contracts -> IO (Either String ())
-checkNamePolicy cfg@NamesConfig {nCommunity, nCommunityTermsUrl} ct =
+checkNamePolicy :: NamesConfig -> Contracts -> IO ()
+checkNamePolicy NamesConfig {nCommunity} ct =
   namePolicy ct >>= \case
-    Left e -> Right () <$ logWarn ("names: the controller's name policy could not be read, it is read on first use: " <> tshow e)
+    Left e -> logWarn ("names: the controller's name policy could not be read, it is read on first use: " <> tshow e)
     Right policy -> do
       logInfo $ "names: name policy " <> addressText policy
       forM_ (M.toList nCommunity) $ \(h, text) ->
@@ -286,12 +286,11 @@ checkNamePolicy cfg@NamesConfig {nCommunity, nCommunityTermsUrl} ct =
           Right False -> logWarn $ "names: [community] lists a name the name policy does not list, so it is sold as a plain name: " <> text
           Right True -> pure ()
           Left e -> logWarn $ "names: a [community] name's listing could not be read: " <> text <> ": " <> tshow e
-      currentCommunityTerms cfg ct >>= \case
-        Right h -> Right () <$ logInfo ("names: community terms " <> hex h <> " match community_terms_url")
-        Left e@TEMismatch {} -> pure $ Left $ "names: " <> T.unpack (termsErrorText e)
-        Left TENoTerms -> Right () <$ when (isJust nCommunityTermsUrl) (logWarn "names: the name policy has no community terms yet, so community names cannot be searched, ordered or revealed until the owner sets them")
-        Left TENoUrl -> Right () <$ logWarn "names: names.community_terms_url is not set, so community names cannot be searched, ordered or revealed until it is set and the service restarts"
-        Left (TEUnread e) -> Right () <$ logWarn ("names: the community terms could not be checked now: " <> e <> "; community names cannot be searched, ordered or revealed until they are")
+      communityTermsHash ct >>= \case
+        Right h
+          | h == B.replicate 32 0 -> logWarn "names: the name policy has no community terms yet, so community names cannot be ordered until the owner sets them"
+          | otherwise -> logInfo $ "names: community terms " <> hex h
+        Left e -> logWarn $ "names: the name policy's community terms could not be read: " <> tshow e
 
 -- | The workers resume every registration in their phases, and the code sweep runs at the start and then daily.
 namesLanes :: NamesEnv -> IO [IO ()]

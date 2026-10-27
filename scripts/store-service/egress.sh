@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Denies the store service's new outbound connections to private, loopback, link-local, unique-local,
 # CGNAT, unspecified and multicast addresses and to the host's own addresses, except the RPC node,
-# BTCPay, the community terms page and the database it is configured with and the system's DNS resolvers. Run as root; see the
+# BTCPay and the database it is configured with and the system's DNS resolvers. Run as root; see the
 # README's egress section.
 set -euo pipefail
 shopt -s inherit_errexit
@@ -213,7 +213,7 @@ allow_endpoint() {
 collect_allowed() {
   local setting section key url endpoint authority resolvers resolver
   [[ -r $ini ]] || die "cannot read $ini"
-  for setting in "chain rpc_url" "btcpay host" "names community_terms_url"; do
+  for setting in "chain rpc_url" "btcpay host"; do
     read -r section key <<<"$setting"
     url=$(ini_value "$section" "$key")
     if [[ $url ]]; then

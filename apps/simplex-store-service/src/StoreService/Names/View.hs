@@ -57,18 +57,18 @@ registrationView st cfg ct now r = do
       RPInvoice _ invId -> lateWait db invId
       _ -> pure Nothing
     pure (balance, late)
-  viewJSON cfg r balance late <$> readViewChain cfg ct r
+  viewJSON cfg r balance late <$> readViewChain ct r
 
 -- | The intent nonce only in committed; the acceptance too, until a reveal is stored, for a name the policy lists.
-readViewChain :: NamesConfig -> Contracts -> NameRegistration -> IO ViewReads
-readViewChain cfg ct NameRegistration {nrPhase, nrOwner, nrLabelHash, nrReveal} = case nrPhase of
+readViewChain :: Contracts -> NameRegistration -> IO ViewReads
+readViewChain ct NameRegistration {nrPhase, nrOwner, nrLabelHash, nrReveal} = case nrPhase of
   PCommitted -> do
     vr <- sponsorNonce ct nrOwner >>= \case
       Right nonce -> pure none {vrIntentNonce = Just nonce}
       Left _ -> pure none {vrUnread = ["intentNonce"]}
     if isJust nrReveal
       then pure vr
-      else currentAcceptance cfg ct nrLabelHash nrOwner <&> \case
+      else currentAcceptance ct nrLabelHash nrOwner <&> \case
         Right vrAcceptance -> vr {vrAcceptance}
         Left _ -> vr {vrUnread = vrUnread vr <> ["acceptance"]}
   _ -> pure none

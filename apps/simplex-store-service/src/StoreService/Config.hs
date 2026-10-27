@@ -30,7 +30,7 @@ where
 import qualified Control.Exception as E
 import StoreService.Log (logInfo, logWarn)
 import Control.Applicative (many)
-import Control.Monad (forM, forM_, mfilter, unless, when)
+import Control.Monad (forM_, mfilter, unless, when)
 import Data.Attoparsec.Combinator (lookAhead)
 import Data.Attoparsec.Text (Parser, endOfInput, isEndOfLine, parseOnly, satisfy, skipMany, skipSpace, skipWhile)
 import Data.Bifunctor (first)
@@ -165,8 +165,6 @@ data NamesConfig = NamesConfig
     nTerms :: TermsConfig,
     -- | What each community name is for, keyed by the label hash's bytes, as search receives a name.
     nCommunity :: Map ByteString Text,
-    -- | The page of the community terms text, whose keccak256 the name policy holds.
-    nCommunityTermsUrl :: Maybe Text,
     nChain :: ChainConfig
   }
   deriving (Eq, Show)
@@ -333,7 +331,7 @@ knownSettings =
     ("group", ["display_name", "description"]),
     ("dev", ["accept_unverified_store_receipts"]),
     ("issuer", ["index", "private_key", "dev_keys"]),
-    ("names", ["tld", "terms_version", "terms_url", "community_terms_url", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves"]),
+    ("names", ["tld", "terms_version", "terms_url", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves"]),
     ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap", "max_fee_per_gas"])
   ]
 
@@ -539,8 +537,7 @@ parseConfig ini = do
           nTerms <- termsSetting
           nCommunity <- communityList nTLD
           nChain <- chainSection
-          nCommunityTermsUrl <- communityTermsUrl nChain
-          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nTerms, nCommunity, nCommunityTermsUrl, nChain})
+          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nTerms, nCommunity, nChain})
     tldSetting =
       required "names" "tld" >>= \case
         "simplex" -> Right TLDSimplex
@@ -560,12 +557,6 @@ parseConfig ini = do
     httpsUrl u = case T.stripPrefix "https://" u of
       Just rest -> not (T.null rest) && T.all (\c -> not (isSpace c || isControl c)) rest
       Nothing -> False
-    -- a local run serves the terms from the same host, which has no certificate
-    communityTermsUrl ChainConfig {cChainId} = forM (present "names" "community_terms_url") $ \u -> do
-      unless (httpsUrl u || (cChainId == localChainId && loopbackUrl u)) $
-        Left "names.community_terms_url must be an https URL, or an http URL on 127.0.0.1 or localhost with the local chain"
-      pure u
-    loopbackUrl u = any (`T.isPrefixOf` u) ["http://127.0.0.1:", "http://127.0.0.1/", "http://localhost:", "http://localhost/"] && T.all (\c -> not (isSpace c || isControl c)) u
     communityList tld = M.fromList <$> mapM (communityEntry tld) (either (const []) id (keys "community" ini))
     communityEntry tld label = do
       let k = "community." <> T.unpack label

@@ -131,8 +131,8 @@ checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now revea
 -- | After the intent, so only a signed request reads the policy. A name the policy lists needs its owner's signature of
 -- the acceptance its view returns, with the intent's deadline; another name takes none.
 checkAcceptance :: NamesConfig -> Contracts -> NameRegistration -> Word64 -> Maybe TermsAcceptance -> IO (Either RevealRefusal ())
-checkAcceptance cfg@NamesConfig {nChain = ChainConfig {cChainId}} ct NameRegistration {nrLabelHash, nrOwner, nrCommitment} deadline acceptance =
-  currentAcceptance cfg ct nrLabelHash nrOwner >>= \case
+checkAcceptance NamesConfig {nChain = ChainConfig {cChainId}} ct NameRegistration {nrLabelHash, nrOwner, nrCommitment} deadline acceptance =
+  currentAcceptance ct nrLabelHash nrOwner >>= \case
     Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's community terms acceptance could not be read: " <> e)
     Right asked -> case (asked, acceptance) of
       (Nothing, Nothing) -> pure $ Right ()

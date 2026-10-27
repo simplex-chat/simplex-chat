@@ -80,7 +80,7 @@ namesRevealTests = describe "StoreService names: reveal" $ do
     it "stores the owner's acceptance of the policy's current terms, at the intent's deadline, with a listed name's reveal" testAcceptanceStored
     it "refuses a listed name's reveal without an acceptance, or by another signer, for other terms, at another nonce or another deadline, and an unlisted name's with one" testAcceptanceRefusals
     it "refuses a listed name's reveal whose acceptance is not an object or has a malformed field, storing nothing" testAcceptanceMalformed
-    it "answers 503 for a listed name's reveal while its listing or the owner's policy nonce cannot be read, or its terms are unverified, storing nothing" testAcceptanceUnavailable
+    it "answers 503 for a listed name's reveal while its listing or the owner's policy nonce cannot be read, storing nothing" testAcceptanceUnavailable
   describe "races" $ do
     it "answers registration_changed with the current view when the registration changed during the checks" testLostRace
     it "runs one at a time with /name for the name, exactly one of them taking effect" testRacesName
@@ -287,10 +287,6 @@ testAcceptanceUnavailable = withListedReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> 
       unavailable = do
         reveal ctx rid body `shouldReturn` refused 503 "provider_unavailable"
         nrReveal <$> stored ctx rid `shouldReturn` Nothing
-  -- terms on chain that the page's text does not hash to
-  setCommunityTerms cNode fakeNewCommunityTerms
-  unavailable
-  setCommunityTerms cNode fakeCommunityTerms
   answerCall cNode fakeNamePolicy noncesCall $ Reverts ""
   unavailable
   answerCall cNode fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)

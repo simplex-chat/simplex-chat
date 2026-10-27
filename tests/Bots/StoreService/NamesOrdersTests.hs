@@ -331,7 +331,6 @@ testNamesConfig node =
       nMaxOrderMoves = 3,
       nTerms = TermsConfig {tVersion = termsVersion, tUrl = termsUrl},
       nCommunity = M.empty,
-      nCommunityTermsUrl = Just $ fakeTermsUrl node,
       nChain = fakeChainConfig node
     }
 
@@ -797,12 +796,12 @@ termsChanged version community =
 otherCommunityTerms :: Text
 otherCommunityTerms = termsVersion <> "/community/" <> T.drop 2 (hex fakeNewCommunityTerms)
 
--- | A listed name's community entry: the ini's text, and the policy's terms the fake node serves.
-communityEntry :: J.ToJSON a => FakeEthNode -> a -> J.Value
-communityEntry node = communityEntryOf node fakeCommunityTerms
+-- | A listed name's community entry: the ini's text, and the policy's terms, linked where the service serves them.
+communityEntry :: J.ToJSON a => a -> J.Value
+communityEntry = communityEntryOf fakeCommunityTerms
 
-communityEntryOf :: J.ToJSON a => FakeEthNode -> ByteString -> a -> J.Value
-communityEntryOf node h for = J.object ["for" .= for, "terms" .= J.object ["url" .= fakeTermsUrl node, "hash" .= hex h]]
+communityEntryOf :: J.ToJSON a => ByteString -> a -> J.Value
+communityEntryOf h for = J.object ["for" .= for, "terms" .= J.object ["url" .= ("/api/community-terms/" <> hex h), "hash" .= hex h]]
 
 -- | The policy lists the name as a community name.
 listOnChain :: Ctx -> Text -> IO ()
@@ -827,7 +826,7 @@ testTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis" . list
   forM_ [olderTerms, communityTerms termsVersion, communityTerms olderTerms, T.replicate 112 "a"] $ \t ->
     placeOrder ctx aliceOrder {oTerms = t} `shouldReturn` termsChanged termsVersion Nothing
   forM_ [termsVersion, olderTerms, communityTerms olderTerms, otherCommunityTerms] $ \t ->
-    placeOrder ctx dynamis {oTerms = t} `shouldReturn` termsChanged termsVersion (Just $ communityEntry (cNode ctx) bakers)
+    placeOrder ctx dynamis {oTerms = t} `shouldReturn` termsChanged termsVersion (Just $ communityEntry bakers)
   stubCalls (cStub ctx) `shouldReturn` []
   registrationsOf ctx ownerA `shouldReturn` []
   (invId, v) <- placed ctx dynamis {oTerms = communityTerms termsVersion}
@@ -839,13 +838,13 @@ testCommunityTerms :: IO ()
 testCommunityTerms = withOrders $ \ctx0 -> withSettings (listName "alicebakery" . vectorTermStart) ctx0 $ \ctx -> do
   listOnChain ctx "alicebakery"
   writeIORef (cClock ctx) (posixSecondsToUTCTime $ fromIntegral $ oTimestamp vectorOrder)
-  postOrder ctx (withSignature vectorSignature $ unsignedBody vectorOrder) `shouldReturn` termsChanged termsVersion (Just $ communityEntry (cNode ctx) bakers)
+  postOrder ctx (withSignature vectorSignature $ unsignedBody vectorOrder) `shouldReturn` termsChanged termsVersion (Just $ communityEntry bakers)
   let community = vectorOrder {oTerms = communityTerms termsVersion}
       communitySignature = "0xaaae43ae111b0411c50cc0c09acb6bac1bdf3d338539341046189f84e785efe331c5bb7b43ad36fa84e0ce8bcaa6d7e5e42cf21c61eb172a0e4dc704ebcdf1001c"
   signedBody (cRandom ctx) community >>= (`shouldBe` withSignature communitySignature (unsignedBody community))
   (status, v) <- postOrder ctx $ withSignature communitySignature (unsignedBody community)
   (status, field "terms" . registrationOf =<< v, field "community" . registrationOf =<< v)
-    `shouldBe` (200, Just (J.String $ communityTerms termsVersion), Just (communityEntry (cNode ctx) bakers))
+    `shouldBe` (200, Just (J.String $ communityTerms termsVersion), Just (communityEntry bakers))
 
 testResendAfterBump :: IO ()
 testResendAfterBump = withOrders $ \ctx0 -> do
@@ -960,7 +959,7 @@ testCodeTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis") c
   forM_ [olderTerms, communityTerms termsVersion] $ \t ->
     register ctx code aliceOrder {oTerms = t} `shouldReturn` termsChanged termsVersion Nothing
   forM_ [termsVersion, communityTerms olderTerms, otherCommunityTerms] $ \t ->
-    register ctx code dynamis {oTerms = t} `shouldReturn` termsChanged termsVersion (Just $ communityEntry (cNode ctx) bakers)
+    register ctx code dynamis {oTerms = t} `shouldReturn` termsChanged termsVersion (Just $ communityEntry bakers)
   pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
   rid <- registered ctx code dynamis {oTerms = communityTerms termsVersion}
   nrAgreedTerms <$> registrationById ctx rid `shouldReturn` communityTerms termsVersion
@@ -1622,13 +1621,11 @@ testViewCommunity = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   let LabelHash aliceHash = labelHash "alicebakery"
       listing :: [(ByteString, Text)] -> NameRegistration -> Maybe J.Value
       listing entries r' = field "community" $ objectOf $ viewJSON (testNamesConfig node) {nCommunity = M.fromList entries} r' Nothing Nothing ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing}
-      entry = Just . communityEntry node
+      entry = Just . communityEntry
   listing [(aliceHash, "bakers and bakeries in Lisbon")] r `shouldBe` entry (Just ("bakers and bakeries in Lisbon" :: Text))
   -- the community terms the order signed, without a text in the ini
   listing [] r `shouldBe` entry (Nothing :: Maybe Text)
   listing [(aliceHash, "bakers and bakeries in Lisbon")] r {nrAgreedTerms = termsVersion} `shouldBe` Just J.Null
-  -- signed community terms without community_terms_url to link
-  field "community" (objectOf $ viewJSON (testNamesConfig node) {nCommunityTermsUrl = Nothing} r Nothing Nothing ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing}) `shouldBe` Just J.Null
 
 testViewTerms :: IO ()
 testViewTerms = withServiceStore $ \st -> withFakeEthNode $ \node -> do
@@ -1643,7 +1640,6 @@ testViewReads :: IO ()
 testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   g <- C.newRandom
   ct <- newContracts TLDSimplex =<< newChainClient g (fakeChainConfig node)
-  let cfg = testNamesConfig node
   answerCall node fakeSponsor noncesCall $ Returns $ uint256 (4 :: Int)
   Right () <- placePaid st "paid" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
   let inPhase phase = do
@@ -1651,14 +1647,14 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         Written _ <- withTransaction st $ \db -> updateRegistration db r {nrPhase = phase} t0
         withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
   committed <- inPhase PCommitted
-  readViewChain cfg ct committed `shouldReturn` ViewReads (Just 4) [] Nothing
+  readViewChain ct committed `shouldReturn` ViewReads (Just 4) [] Nothing
   -- the policy lists the name: the page signs the acceptance with the policy's nonce, until a reveal is stored
   listCommunityName node $ labelHash "alicebakery"
   answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
-  readViewChain cfg ct committed `shouldReturn` ViewReads (Just 4) [] (Just AcceptanceAsked {acPolicy = fakeNamePolicy, acTermsHash = fakeCommunityTerms, acNonce = 2})
-  readViewChain cfg ct committed {nrReveal = Just reveal} `shouldReturn` ViewReads (Just 4) [] Nothing
+  readViewChain ct committed `shouldReturn` ViewReads (Just 4) [] (Just AcceptanceAsked {acPolicy = fakeNamePolicy, acTermsHash = fakeCommunityTerms, acNonce = 2})
+  readViewChain ct committed {nrReveal = Just reveal} `shouldReturn` ViewReads (Just 4) [] Nothing
   taken <- inPhase PTaken
-  readViewChain cfg ct taken `shouldReturn` ViewReads Nothing [] Nothing
+  readViewChain ct taken `shouldReturn` ViewReads Nothing [] Nothing
 
 testViewUnread :: IO ()
 testViewUnread = withServiceStore $ \st -> withFakeEthNode $ \node -> do
@@ -1667,8 +1663,8 @@ testViewUnread = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   setFault node "eth_call" HttpFailure
   Right () <- placePaid st "paid" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
-  readViewChain (testNamesConfig node) ct r {nrPhase = PCommitted} `shouldReturn` ViewReads Nothing ["intentNonce", "acceptance"] Nothing
-  readViewChain (testNamesConfig node) ct r {nrPhase = PTaken} `shouldReturn` ViewReads Nothing [] Nothing
+  readViewChain ct r {nrPhase = PCommitted} `shouldReturn` ViewReads Nothing ["intentNonce", "acceptance"] Nothing
+  readViewChain ct r {nrPhase = PTaken} `shouldReturn` ViewReads Nothing [] Nothing
   let v = objectOf $ viewJSON (testNamesConfig node) r {nrPhase = PCommitted} Nothing Nothing (ViewReads Nothing ["intentNonce", "acceptance"] Nothing)
   (field "intentNonce" v, field "acceptance" v, field "unread" v) `shouldBe` (Just J.Null, Just J.Null, Just (J.toJSON ["intentNonce", "acceptance" :: Text]))
 

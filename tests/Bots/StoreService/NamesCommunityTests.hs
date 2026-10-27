@@ -4,30 +4,25 @@
 module Bots.StoreService.NamesCommunityTests (namesCommunityTests) where
 
 import Bots.StoreService.ConfigTests (chainSection, namesIni, namesRefusal, namesSection, parseIni, parsedNames, termsUrl, termsVersion, withIni)
-import Bots.StoreService.FakeEthNode (CallAnswer (..), answerCall, answerListing, fakeCommunityTerms, fakeCommunityTermsText, fakeController, fakeNewCommunityTerms, fakeTermsUrl, setCommunityTerms)
+import Bots.StoreService.FakeEthNode (CallAnswer (..), answerCall, answerListing, fakeCommunityTerms, fakeController, fakeNamePolicy, setCommunityTerms)
 import Bots.StoreService.NamesContractsTests (withContracts)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import Bots.StoreService.WebTests (capturingStderr)
-import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVarIO, writeTVar)
+import Control.Concurrent.STM (TVar)
 import Control.Monad (forM_, void)
 import Crypto.Random (ChaChaDRG)
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as LB
 import Data.Functor ((<&>))
 import Data.Ini (readIniFile)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Network.HTTP.Types (Status, notFound404, ok200)
-import Network.Wai (responseLBS)
-import qualified Network.Wai.Handler.Warp as Warp
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
-import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..), TermsConfig (..), unknownKeys)
 import StoreService.Names.Abi (bytes32FromHex, hex, selector)
-import StoreService.Names.Community (TermsError (..), agreedTermsHash, communityFor, currentCommunityTerms, maxTermsBytes, termsFor)
+import StoreService.Names.Community (agreedTermsHash, communityFor, termsFor)
+import StoreService.Names.View (addressText)
 import StoreService.Service (checkNamePolicy)
 import Test.Hspec
 
@@ -44,12 +39,9 @@ namesCommunityTests = describe "StoreService names: community" $ do
   it "names no community label as a setting nothing reads" testNoUnknownKeys
   it "logs how many community names it loaded" testLoadedCount
   it "gives the version for an unlisted name and its community variant with the terms' hash for a listed one, and reads that hash back" testTermsFor
-  it "reads community_terms_url: https, or http on loopback only on the local chain" testCommunityTermsUrl
-  it "takes the policy's terms once the page's text hashes to them, and fetches again for new terms, none without terms on chain or community_terms_url" $ testCurrentTerms g
-  it "checks the policy's terms and the [community] lines at startup, stopping only on terms the page does not hash to" $ testStartupCheck g
+  it "logs the name policy and its terms at startup, and checks the [community] lines" $ testStartupCheck g
   it "checks neither the terms nor the [community] lines when the policy cannot be read at startup" $ testStartupUnread g
-  it "warns at startup, without stopping, on no terms on chain, no community_terms_url or a page it cannot read" $ testStartupWarnings g
-  it "takes no terms from a page that answers another status or more than 1 MiB, or that cannot be reached" $ testTermsPageRefused g
+  it "warns at startup on a policy without terms, or whose terms cannot be read" $ testStartupWarnings g
 
 bakersText :: Text
 bakersText = "bakers and bakeries in Portugal"
@@ -146,15 +138,6 @@ testLoadedCount = do
   none <- capturingStderr $ void $ parseIni (namesIni namesSection chainSection)
   none `shouldSatisfy` T.isInfixOf "names: 0 community names loaded"
 
-withTermsUrl :: Text -> IO NamesConfig
-withTermsUrl url = parsedNames (namesSection <> ["community_terms_url = " <> url]) chainSection
-
--- | A page answering the status and text the test may change, at the URL it is given.
-withTermsPage :: TVar (Status, B.ByteString) -> (Text -> IO a) -> IO a
-withTermsPage page action =
-  Warp.testWithApplication (pure $ \_ respond -> readTVarIO page >>= \(status, text) -> respond $ responseLBS status [] $ LB.fromStrict text) $ \port ->
-    action $ "http://127.0.0.1:" <> T.pack (show port) <> "/terms"
-
 testTermsFor :: IO ()
 testTermsFor = do
   cfg <- parsedNames namesSection chainSection
@@ -168,77 +151,31 @@ testTermsFor = do
   agreedTermsHash (termsVersion <> "/community") `shouldBe` Nothing
   agreedTermsHash (termsVersion <> "/community/" <> T.toUpper hexDigits) `shouldBe` Nothing
 
-testCurrentTerms :: TVar ChaChaDRG -> IO ()
-testCurrentTerms g = withContracts g $ \node ct ->
-  newTVarIO (ok200, fakeCommunityTermsText) >>= \page -> withTermsPage page $ \url -> do
-    cfg <- withTermsUrl url
-    currentCommunityTerms cfg ct `shouldReturn` Right fakeCommunityTerms
-    -- checked once: a page edited without new terms on chain is not fetched again
-    atomically $ writeTVar page (ok200, "other text")
-    currentCommunityTerms cfg ct `shouldReturn` Right fakeCommunityTerms
-    setCommunityTerms node fakeNewCommunityTerms
-    currentCommunityTerms cfg ct `shouldReturn` Left (TEMismatch fakeNewCommunityTerms)
-    atomically $ writeTVar page (ok200, "bona fide community terms v2")
-    currentCommunityTerms cfg ct `shouldReturn` Right fakeNewCommunityTerms
-    setCommunityTerms node $ B.replicate 32 0
-    currentCommunityTerms cfg ct `shouldReturn` Left TENoTerms
-    setCommunityTerms node $ C.keccak256 "bona fide community terms v3"
-    currentCommunityTerms cfg {nCommunityTermsUrl = Nothing} ct `shouldReturn` Left TENoUrl
-
 testStartupCheck :: TVar ChaChaDRG -> IO ()
 testStartupCheck g = withContracts g $ \node ct -> do
-  cfg <- withTermsUrl (fakeTermsUrl node) <&> \c -> c {nCommunity = M.singleton (fromJust $ bytes32FromHex aliceHex) "Alice's bakery"}
-  warned <- capturingStderr $ checkNamePolicy cfg ct `shouldReturn` Right ()
-  warned `shouldSatisfy` T.isInfixOf "names: [community] lists a name the name policy does not list, so it is sold as a plain name: Alice's bakery"
-  setCommunityTerms node fakeNewCommunityTerms
-  checkNamePolicy cfg ct `shouldReturn` Left ("names: the text at names.community_terms_url does not hash to the name policy's terms " <> T.unpack (hex fakeNewCommunityTerms))
+  cfg <- parsedNames namesSection chainSection <&> \c -> c {nCommunity = M.singleton (fromJust $ bytes32FromHex aliceHex) "Alice's bakery"}
+  logged <- capturingStderr $ checkNamePolicy cfg ct
+  logged `shouldSatisfy` T.isInfixOf ("names: name policy " <> addressText fakeNamePolicy)
+  logged `shouldSatisfy` T.isInfixOf ("names: community terms " <> hex fakeCommunityTerms)
+  logged `shouldSatisfy` T.isInfixOf "names: [community] lists a name the name policy does not list, so it is sold as a plain name: Alice's bakery"
   answerListing node aliceHash $ Reverts ""
-  unread <- capturingStderr $ void $ checkNamePolicy cfg ct
+  unread <- capturingStderr $ checkNamePolicy cfg ct
   unread `shouldSatisfy` T.isInfixOf "names: a [community] name's listing could not be read: Alice's bakery"
 
 testStartupUnread :: TVar ChaChaDRG -> IO ()
 testStartupUnread g = withContracts g $ \node ct -> do
-  cfg <- withTermsUrl (fakeTermsUrl node) <&> \c -> c {nCommunity = M.singleton (fromJust $ bytes32FromHex aliceHex) "a bakery the policy is not read for"}
-  setCommunityTerms node fakeNewCommunityTerms
+  cfg <- parsedNames namesSection chainSection <&> \c -> c {nCommunity = M.singleton (fromJust $ bytes32FromHex aliceHex) "a bakery the policy is not read for"}
   answerCall node fakeController (selector "namePolicy()") $ Reverts ""
-  warned <- capturingStderr $ checkNamePolicy cfg ct `shouldReturn` Right ()
+  warned <- capturingStderr $ checkNamePolicy cfg ct
   warned `shouldSatisfy` T.isInfixOf "names: the controller's name policy could not be read, it is read on first use"
   -- a text no other case logs, so a line another case logs late cannot match it
   warned `shouldNotSatisfy` T.isInfixOf "a bakery the policy is not read for"
 
 testStartupWarnings :: TVar ChaChaDRG -> IO ()
 testStartupWarnings g = withContracts g $ \node ct -> do
-  cfg <- withTermsUrl (fakeTermsUrl node)
-  let warns c text = capturingStderr (checkNamePolicy c ct `shouldReturn` Right ()) >>= (`shouldSatisfy` T.isInfixOf text)
-  warns cfg {nCommunityTermsUrl = Nothing} "names: names.community_terms_url is not set, so community names cannot be searched, ordered or revealed until it is set and the service restarts"
-  unreachable <- withTermsUrl "http://127.0.0.1:1/terms"
-  warns unreachable "names: the community terms could not be checked now: names.community_terms_url could not be read: "
-  setCommunityTerms node $ B.replicate 32 0
-  -- no warning without community_terms_url; a text only this check logs, captured before this case logs it, as other cases log in parallel
-  quiet <- capturingStderr $ checkNamePolicy cfg {nCommunityTermsUrl = Nothing} ct `shouldReturn` Right ()
-  quiet `shouldNotSatisfy` T.isInfixOf "names: the name policy has no community terms yet"
-  warns cfg "names: the name policy has no community terms yet"
-
-testTermsPageRefused :: TVar ChaChaDRG -> IO ()
-testTermsPageRefused g = withContracts g $ \_ ct ->
-  newTVarIO (notFound404, fakeCommunityTermsText) >>= \page -> withTermsPage page $ \url -> do
-    cfg <- withTermsUrl url
-    currentCommunityTerms cfg ct `shouldReturn` Left (TEUnread "names.community_terms_url answered HTTP 404")
-    atomically $ writeTVar page (ok200, B.replicate (maxTermsBytes + 1) 0x61)
-    currentCommunityTerms cfg ct `shouldReturn` Left (TEUnread $ "names.community_terms_url answered more than " <> tshow maxTermsBytes <> " bytes")
-    unreachable <- withTermsUrl "http://127.0.0.1:1/terms"
-    Left (TEUnread e) <- currentCommunityTerms unreachable ct
-    e `shouldSatisfy` T.isPrefixOf "names.community_terms_url could not be read: "
-    atomically $ writeTVar page (ok200, fakeCommunityTermsText)
-    currentCommunityTerms cfg ct `shouldReturn` Right fakeCommunityTerms
-
-testCommunityTermsUrl :: IO ()
-testCommunityTermsUrl = do
-  (nCommunityTermsUrl <$> parsedNames namesSection chainSection) `shouldReturn` Nothing
-  forM_ ["https://simplex.chat/community-terms", "http://127.0.0.1:8180/terms", "http://localhost/terms"] $ \u ->
-    (nCommunityTermsUrl <$> withTermsUrl u) `shouldReturn` Just u
-  let refused = "names.community_terms_url must be an https URL, or an http URL on 127.0.0.1 or localhost with the local chain"
-      onMainnet = map (\l -> if l == "chain_id = 31337" then "chain_id = 1" else l) chainSection
-  forM_ ["http://simplex.chat/terms", "http://127.0.0.1.example/terms", "ftp://127.0.0.1/terms", "https://", "simplex.chat/terms"] $ \u ->
-    namesRefusal (namesSection <> ["community_terms_url = " <> u]) chainSection `shouldReturn` refused
-  namesRefusal (namesSection <> ["community_terms_url = http://127.0.0.1:8180/terms"]) onMainnet `shouldReturn` refused
+  cfg <- parsedNames namesSection chainSection
+  let warns text = capturingStderr (checkNamePolicy cfg ct) >>= (`shouldSatisfy` T.isInfixOf text)
+  setCommunityTerms node ""
+  warns "names: the name policy has no community terms yet, so community names cannot be ordered until the owner sets them"
+  answerCall node fakeNamePolicy (selector "termsHash()") $ Reverts ""
+  warns "names: the name policy's community terms could not be read: "

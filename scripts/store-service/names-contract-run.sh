@@ -12,7 +12,6 @@ ANVIL="${ANVIL:-anvil}"
 SERVICE_PORT="${SERVICE_PORT:-8180}"
 BADGES_PORT="${BADGES_PORT:-8181}"
 CODES_PORT="${CODES_PORT:-8199}"
-COMMUNITY_TERMS_PORT="${COMMUNITY_TERMS_PORT:-8198}"
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 STORE_SERVICE_BIN="${STORE_SERVICE_BIN:-$(cd "$REPO" && cabal list-bin exe:simplex-store-service)}"
 
@@ -27,8 +26,6 @@ MEMORY_STATES=8
 SERVICE_URL="http://127.0.0.1:$SERVICE_PORT"
 BADGES_URL="http://127.0.0.1:$BADGES_PORT"
 CODES_URL="http://127.0.0.1:$CODES_PORT"
-# dev/deploy.ts sets the name policy's community terms to this file's keccak256, which the service checks as it starts
-COMMUNITY_TERMS_URL="http://127.0.0.1:$COMMUNITY_TERMS_PORT/community-terms.txt"
 STARTUP_SECONDS=120
 CLI_TIMEOUT_SECONDS=120
 # The test suite's public issuer secret (issuerSecret in tests/Bots/StoreService/ConfigTests.hs), trusted
@@ -104,7 +101,7 @@ answering() {
 # Another chain on the port would take the deployment, and the cases would read that chain.
 refuse_taken_ports() {
   local url
-  for url in "$RPC_URL" "$SERVICE_URL" "$BADGES_URL" "$CODES_URL" "$COMMUNITY_TERMS_URL"; do
+  for url in "$RPC_URL" "$SERVICE_URL" "$BADGES_URL" "$CODES_URL"; do
     if curl -s -o /dev/null "$url"; then
       echo "something already answers on $url; stop it first" >&2
       exit 1
@@ -122,13 +119,6 @@ start_chain() {
     echo "the deployment differs from $WEBAPP_DIR/dev/local-chain-0.json, which the e2e helpers read; run its dev/start.sh with SLOTS=1 MIN_COMMITMENT_AGE=$MIN_COMMITMENT_AGE once" >&2
     exit 1
   fi
-}
-
-start_terms_server() {
-  mkdir -p "$RUN_DIR/terms"
-  cp "$WEBAPP_DIR/dev/community-terms.txt" "$RUN_DIR/terms/"
-  python3 -m http.server --bind 127.0.0.1 --directory "$RUN_DIR/terms" "$COMMUNITY_TERMS_PORT" > "$RUN_DIR/terms.log" 2>&1 &
-  answering $! "$COMMUNITY_TERMS_URL"
 }
 
 build_site() {
@@ -159,7 +149,6 @@ dev_keys = $DEV_ISSUER_INDEX:$DEV_ISSUER_SECRET
 tld = $(jq -r .tld "$chain")
 terms_version = $TERMS_VERSION
 terms_url = $TERMS_URL
-community_terms_url = $COMMUNITY_TERMS_URL
 
 [community]
 $COMMUNITY_LABEL = $COMMUNITY_TEXT
@@ -358,7 +347,6 @@ run_cases() {
 
 refuse_taken_ports
 start_chain
-start_terms_server
 build_site
 write_ini
 make_database

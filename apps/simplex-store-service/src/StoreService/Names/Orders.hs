@@ -274,7 +274,7 @@ checkDuration NamesConfig {nTermStart, nTermSlackSeconds} now years duration = d
 -- | The terms the order signed must be the current ones for its name, with the community terms' hash for a name the policy lists.
 checkTerms :: NamesConfig -> Contracts -> OrderFields -> IO (Either OrderRefusal ())
 checkTerms cfg ct OrderFields {ofLabelHash, ofAgreedTerms} =
-  nameCommunityTerms cfg ct ofLabelHash >>= \case
+  nameCommunityTerms ct ofLabelHash >>= \case
     Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: an order's community check failed: " <> e)
     Right h -> pure $ unless (ofAgreedTerms == termsFor cfg h) $ Left $ ORTermsChanged (termsJSON cfg) (communityJSON cfg ofLabelHash h)
 

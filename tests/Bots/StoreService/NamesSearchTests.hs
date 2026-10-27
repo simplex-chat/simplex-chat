@@ -49,6 +49,7 @@ import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), diffUTCTime, getCurrentTime)
 import Network.HTTP.Client (Manager, Request, RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, responseBody, responseHeaders, responseStatus)
 import qualified Network.HTTP.Client as HTTP
+import Network.HTTP.Types (hContentType)
 import Network.HTTP.Types.Status (statusCode)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -57,14 +58,14 @@ import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import StoreService.Config (ListenerConfig (..), NamesConfig (..), TermsConfig (..))
-import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, uint256)
+import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, selector, uint256)
 import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (ChatKind (..), HostResolver, LinkProfile (..), ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, updateRegistration)
 import StoreService.Web.Http (newHttpEnv, notFound, previewLimit, searchLimit)
 import StoreService.Web.Names (Route (..), namesApp)
-import StoreService.Web.Names.Search (previewHandler, searchHandler)
+import StoreService.Web.Names.Search (communityTermsHandler, previewHandler, searchHandler)
 import Test.Hspec
 
 namesSearchTests :: Spec
@@ -75,7 +76,7 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "answers a reserved name" $ testReserved g
     it "answers a name the chain has available as registered while its register here is sent, without a price" $ testRegistering g
     it "answers a registered name with its entities, raw records, owner, resolver, nonce, expiry and grace period" $ testRegistered g
-    it "answers a listed name's community entry when available, reserved, being registered here and registered, a plain answer for an ini line the policy does not list, the unchecked terms on chain for a name not available while its page does not match, and 503 for an available one then or while its listing is unread" $ testCommunity g
+    it "answers a listed name's community entry when available, reserved, being registered here and registered, a plain answer for an ini line the policy does not list, the terms on chain as they change, and 503 while its listing is unread" $ testCommunity g
     it "answers a name the policy lists without an ini line as a community name without its text" $ testCommunityWithoutText g
     it "makes one entity per short link of its record's kind, splitting on ';', and none from other values" $ testRecordLinks g
     it "makes entities of the first 5 short links of a record only, fetching no other" $ testRecordLinksCap g
@@ -93,6 +94,8 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "accepts a link to a private host with its profile unavailable, never fetching it" $ testPreviewPrivateHost g
     it "answers a link whose profile was not read unread" $ testPreviewUnread g
     it "takes a preview token for every request, whatever its outcome, and answers another method 405" $ testPreviewLimit g
+  describe "community terms" $ do
+    it "answers the policy's terms text by its hash, not_found to another hash or before the terms are set, provider_unavailable when unread and bad_request to a malformed hash" $ testCommunityTermsText g
 
 -- harness
 
@@ -107,6 +110,7 @@ withSearch g adjustConfig adjust action = withServiceStore $ \store -> withContr
   let cfg = adjustConfig $ namesConfig node
       routes = \case
         ["api", "link", "preview"] -> Just Route {rMethod = "POST", rLimit = previewLimit, rHandler = previewHandler ps}
+        ["api", "community-terms", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = communityTermsHandler (adjust ct) hash}
         ["api", "name", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = searchHandler cfg store (adjust ct) ps hash}
         _ -> Nothing
       app req respond = fromMaybe (respond notFound) (namesApp http routes req respond)
@@ -124,7 +128,6 @@ namesConfig node =
       nMaxOrderMoves = 3,
       nTerms = TermsConfig {tVersion = termsVersion, tUrl = termsUrl},
       nCommunity = M.empty,
-      nCommunityTermsUrl = Just $ fakeTermsUrl node,
       nChain = fakeChainConfig node
     }
 
@@ -135,16 +138,16 @@ listAlice :: NamesConfig -> NamesConfig
 listAlice cfg = cfg {nCommunity = M.singleton (fromJust $ bytes32FromHex aliceHex) aliceCommunity}
 
 -- | The answer as it reads for a name the policy lists, with its text from the ini and the policy's terms.
-listed :: FakeEthNode -> Answer -> Answer
-listed node = listedUnder node fakeCommunityTerms
+listed :: Answer -> Answer
+listed = listedUnder fakeCommunityTerms
 
 -- | As 'listed', under these community terms.
-listedUnder :: FakeEthNode -> ByteString -> Answer -> Answer
-listedUnder node h (status, answer) = (status, withEntry <$> answer)
+listedUnder :: ByteString -> Answer -> Answer
+listedUnder h (status, answer) = (status, withEntry <$> answer)
   where
     withEntry :: J.Value -> J.Value
     withEntry = \case
-      J.Object o -> J.Object $ KM.insert "community" (communityEntryOf node h aliceCommunity) o
+      J.Object o -> J.Object $ KM.insert "community" (communityEntryOf h aliceCommunity) o
       v -> v
 
 fetchMicros :: Int
@@ -378,31 +381,45 @@ testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
   -- an ini line for a name the policy does not list: a plain name
   searchAlice s 12 `shouldReturn` availableAnswer 10000
   listCommunityName node alice
-  searchAlice s 12 `shouldReturn` listed node (availableAnswer 10000)
+  searchAlice s 12 `shouldReturn` listed (availableAnswer 10000)
   reserved node
-  searchAlice s 12 `shouldReturn` listed node reservedAnswer
+  searchAlice s 12 `shouldReturn` listed reservedAnswer
   available node
   code <- issue store 1 usable
   placeCode store "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
   setPhase store PRegistering
-  searchAlice s 12 `shouldReturn` listed node registeringAnswer
+  searchAlice s 12 `shouldReturn` listed registeringAnswer
   registeredWith node fullLink ""
   let registered = registeredAnswer [] (recordsOf fullLink "") resolverText (J.toJSON (0 :: Int))
-  searchAlice s 12 `shouldReturn` listed node registered
-  -- terms on chain that the page's text does not hash to: a name not available is answered with them, as no order signs
-  -- them, an available one is not; nor is any name whose listing cannot be read
-  let unavailable = refused 503 "provider_unavailable"
-  setCommunityTerms node fakeNewCommunityTerms
-  searchAlice s 12 `shouldReturn` listedUnder node fakeNewCommunityTerms registered
+  searchAlice s 12 `shouldReturn` listed registered
+  -- new terms on chain: every answer carries them; a listing that cannot be read: no answer
+  setCommunityTerms node fakeNewCommunityTermsText
+  searchAlice s 12 `shouldReturn` listedUnder fakeNewCommunityTerms registered
   reserved node
-  searchAlice s 12 `shouldReturn` listedUnder node fakeNewCommunityTerms reservedAnswer
+  searchAlice s 12 `shouldReturn` listedUnder fakeNewCommunityTerms reservedAnswer
   available node
-  searchAlice s 12 `shouldReturn` listedUnder node fakeNewCommunityTerms registeringAnswer
+  searchAlice s 12 `shouldReturn` listedUnder fakeNewCommunityTerms registeringAnswer
   setPhase store PRegistered
-  searchAlice s 12 `shouldReturn` unavailable
-  setCommunityTerms node fakeCommunityTerms
+  searchAlice s 12 `shouldReturn` listedUnder fakeNewCommunityTerms (availableAnswer 10000)
   answerListing node alice $ Reverts ""
-  searchAlice s 12 `shouldReturn` unavailable
+  searchAlice s 12 `shouldReturn` refused 503 "provider_unavailable"
+
+testCommunityTermsText :: TVar ChaChaDRG -> IO ()
+testCommunityTermsText g = withSearch g id id $ \s@Search {node} -> do
+  let terms h = send s ("/api/community-terms/" <> T.unpack h) id
+      text r = (statusCode (responseStatus r), lookup hContentType (responseHeaders r), responseBody r)
+  text <$> terms (hex fakeCommunityTerms) `shouldReturn` (200, Just "text/plain; charset=utf-8", LB.fromStrict fakeCommunityTermsText)
+  answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` refused 404 "not_found"
+  -- the text kept is the one on chain now, so new terms replace it
+  setCommunityTerms node fakeNewCommunityTermsText
+  text <$> terms (hex fakeNewCommunityTerms) `shouldReturn` (200, Just "text/plain; charset=utf-8", LB.fromStrict fakeNewCommunityTermsText)
+  answerOf <$> terms (hex fakeCommunityTerms) `shouldReturn` refused 404 "not_found"
+  setCommunityTerms node ""
+  answerOf <$> terms (hex $ C.keccak256 "") `shouldReturn` refused 404 "not_found"
+  answerCall node fakeNamePolicy (selector "termsText()") $ Reverts ""
+  answerOf <$> terms (hex fakeCommunityTerms) `shouldReturn` refused 503 "provider_unavailable"
+  forM_ [T.toUpper (hex fakeCommunityTerms), T.drop 2 (hex fakeCommunityTerms), "0x12"] $ \h ->
+    answerOf <$> terms h `shouldReturn` refused 400 "bad_request"
 
 testCommunityWithoutText :: TVar ChaChaDRG -> IO ()
 testCommunityWithoutText g = withSearch g id id $ \s@Search {node} -> do
@@ -410,7 +427,7 @@ testCommunityWithoutText g = withSearch g id id $ \s@Search {node} -> do
   available node
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   answer <- searchAlice s 12
-  (snd answer >>= JT.parseMaybe (J.withObject "answer" (J..: "community"))) `shouldBe` Just (communityEntry node J.Null)
+  (snd answer >>= JT.parseMaybe (J.withObject "answer" (J..: "community"))) `shouldBe` Just (communityEntry J.Null)
 
 testRecordLinks :: TVar ChaChaDRG -> IO ()
 testRecordLinks g = withSearch g id id $ \s@Search {node} -> do
