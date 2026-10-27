@@ -3041,7 +3041,7 @@ markMessageReportsDeleted db User {userId} GroupInfo {groupId} ChatItem {meta = 
       (DBCIDeleted, deletedTs, groupMemberId, currentTs, userId, groupId, MCReport_, itemSharedMsgId, DBCINotDeleted)
 
 markMemberReportsDeleted :: DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> IO [ChatItemId]
-markMemberReportsDeleted db User {userId} GroupInfo {groupId} reportedMember byGroupMember = do
+markMemberReportsDeleted db User {userId} GroupInfo {groupId} member byGroupMember = do
   deletedTs <- getCurrentTime
   map fromOnly
     <$> DB.query
@@ -3053,7 +3053,7 @@ markMemberReportsDeleted db User {userId} GroupInfo {groupId} reportedMember byG
           AND (quoted_member_id = ? OR group_member_id = ?)
         RETURNING chat_item_id;
       |]
-      ((DBCIDeleted, deletedTs, groupMemberId' byGroupMember, deletedTs) :. (userId, groupId, MCReport_, DBCINotDeleted, memberId' reportedMember, groupMemberId' reportedMember))
+      ((DBCIDeleted, deletedTs, groupMemberId' byGroupMember, deletedTs) :. (userId, groupId, MCReport_, DBCINotDeleted, memberId' member, groupMemberId' member))
 
 markReceivedGroupReportsDeleted :: DB.Connection -> User -> GroupInfo -> UTCTime -> IO [ChatItemId]
 markReceivedGroupReportsDeleted db User {userId} GroupInfo {groupId, membership} deletedTs = do
