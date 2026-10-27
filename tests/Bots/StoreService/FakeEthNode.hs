@@ -182,6 +182,7 @@ defaultCall (to, calldata)
   | to == unAddress fakeNamePolicy && selector "bonaFideNames(bytes32)" `B.isPrefixOf` calldata = Just $ Returns $ uint256 (0 :: Int)
   | to == unAddress fakeNamePolicy && calldata == selector "termsHash()" = Just $ Returns fakeCommunityTerms
   | to == unAddress fakeNamePolicy && calldata == selector "termsText()" = Just $ Returns $ abiString fakeCommunityTermsText
+  | to == unAddress fakeNamePolicy && selector "acceptedTerms(bytes32,address)" `B.isPrefixOf` calldata = Just $ Returns $ B.replicate 32 0
   | otherwise = Nothing
 
 fakeRegistrarKey :: S.Secp256k1PrivateKey

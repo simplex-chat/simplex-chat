@@ -23,7 +23,6 @@ import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
 import Control.Monad (forM_, replicateM, replicateM_, void)
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as B
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.IORef (readIORef)
@@ -650,14 +649,13 @@ acceptedRevealFor policy ctx@Ctx {cRandom} r = do
   rewrite ctx r (\o -> o {nrReveal = Just rv {rvAcceptance = Just TermsAcceptance {taTermsHash = fakeCommunityTerms, taNonce = 0, taSignature = sig}}})
 
 -- | The terms hash the policy holds as accepted for the registration's commitment by its owner.
-answerAccepted :: W -> NameRegistration -> ByteString -> IO ()
-answerAccepted W {wCtx = Ctx {cNode}} NameRegistration {nrCommitment, nrOwner} h =
-  answerCall cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> nrCommitment <> addressWord nrOwner) $ Returns h
+answerAccepted :: W -> NameRegistration -> CallAnswer -> IO ()
+answerAccepted W {wCtx = Ctx {cNode}} NameRegistration {nrCommitment, nrOwner} =
+  answerCall cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> nrCommitment <> addressWord nrOwner)
 
 testAcceptanceRelayed :: IO ()
 testAcceptanceRelayed = withWorker $ \w@W {wCtx = ctx} -> do
   r@NameRegistration {nrReveal = Just NameReveal {rvDeadline, rvAcceptance = Just acceptance}} <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
-  answerAccepted w r $ B.replicate 32 0
   relay <- steps w r >>= awaiting
   [acceptRaw] <- sent w
   ((trTo &&& trData) <$> decodeSignedTx acceptRaw) `shouldBe` Right (fakeNamePolicy, acceptCalldata (nrCommitment r) (nrOwner r) rvDeadline acceptance)
@@ -665,7 +663,7 @@ testAcceptanceRelayed = withWorker $ \w@W {wCtx = ctx} -> do
   steps w r >>= awaiting >>= (`shouldBe` ptHash relay) . ptHash
   stored ctx r `shouldReturn` r
   void $ mineNewest w True
-  answerAccepted w r fakeCommunityTerms
+  answerAccepted w r $ Returns fakeCommunityTerms
   void $ published w r $ steps w r >>= awaiting
   [_, registerRaw] <- sent w
   (trTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor
@@ -674,19 +672,17 @@ testAcceptanceRelayed = withWorker $ \w@W {wCtx = ctx} -> do
 testAcceptanceBeforeWait :: IO ()
 testAcceptanceBeforeWait = withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder (\o -> (openPhase o) {nrRevealAfter = Just (orderSeconds + 60)}) >>= acceptedReveal ctx
-  answerAccepted w r $ B.replicate 32 0
   void $ steps w r >>= awaiting
   [acceptRaw] <- sent w
   (trTo <$> decodeSignedTx acceptRaw) `shouldBe` Right fakeNamePolicy
   void $ mineNewest w True
-  answerAccepted w r fakeCommunityTerms
+  answerAccepted w r $ Returns fakeCommunityTerms
   steps w r >>= waitingUntil >>= (`shouldBe` at (orderSeconds + 60))
   length <$> sent w `shouldReturn` 1
 
 testAcceptanceRefused :: IO ()
 testAcceptanceRefused = forM_ ["TermsMismatch(bytes32,bytes32)", "InvalidNonce()"] $ \revert -> withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
-  answerAccepted w r $ B.replicate 32 0
   dryRunsRevert w revert ""
   published w r (steps w r >>= waitingUntil) `shouldReturn` at (orderSeconds - minAge + maxAge + 1)
   x <- stored ctx r
@@ -696,6 +692,7 @@ testAcceptanceRefused = forM_ ["TermsMismatch(bytes32,bytes32)", "InvalidNonce()
 testAcceptanceUnread :: IO ()
 testAcceptanceUnread = withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
+  answerAccepted w r $ Reverts ""
   steps w r >>= retrying
   stored ctx r `shouldReturn` r
   sent w `shouldReturn` []
@@ -703,7 +700,6 @@ testAcceptanceUnread = withWorker $ \w@W {wCtx = ctx} -> do
 testAcceptanceOtherPolicy :: IO ()
 testAcceptanceOtherPolicy = withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder openPhase >>= acceptedRevealFor fakeSponsor ctx
-  answerAccepted w r $ B.replicate 32 0
   published w r (steps w r >>= waitingUntil) `shouldReturn` at (orderSeconds - minAge + maxAge + 1)
   x <- stored ctx r
   (nrPhase x, nrReveal x) `shouldBe` (PCommitted, Nothing)
@@ -712,7 +708,6 @@ testAcceptanceOtherPolicy = withWorker $ \w@W {wCtx = ctx} -> do
 testAcceptanceExpired :: IO ()
 testAcceptanceExpired = withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
-  answerAccepted w r $ B.replicate 32 0
   answerAvailable w True
   dryRunsRevert w "SignatureExpired()" ""
   steps w r >>= done

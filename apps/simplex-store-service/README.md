@@ -656,7 +656,7 @@ are added under `[names]`.
 
 The controller's name policy (`SimplexNamePolicy`, read from `namePolicy()` once at startup and
 logged, or on first use when that read fails or finds none) lists the community names: its bona fide
-list, which the owner edits on chain and the guardian can add to. A listed name can be registered
+list, which the contracts' owner edits on chain and the guardian can add to. A listed name can be registered
 only after its owner accepts the policy's current community terms on chain, identified by `termsHash`.
 A later `setNamePolicy` takes effect for the service after a restart, so restart it
 at once: until then the service reads the reservations, the list, the terms and the nonces from the
@@ -1202,7 +1202,7 @@ countdown, code orders to `registered` with and without links, a code order's na
 revealed in another browser, Edit links on a name registered with a code (the other Edit links case
 answers its own name and record requests in the page), a link whose data cannot be read now, a
 community name's marker and its Check your order wording, and a code order of a name the contracts'
-owner lists on chain, whose register records the owner's acceptance of the community terms. "search answers every kind of name" is not among them: it takes the chain down
+owner lists on chain, whose register records its buyer's acceptance of the community terms. "search answers every kind of name" is not among them: it takes the chain down
 with `/control/search`.
 
 Each case sends its own `X-Forwarded-For`, and the ini sets `trust_forwarded_for = on`, so each case

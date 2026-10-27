@@ -127,7 +127,7 @@ previewHandler ps req respond =
       _ -> respond invalidLink
     _ -> respond badRequest
 
--- | The community terms text the name policy keeps, for the page's link, by the hash it hashes to.
+-- | The name policy's community terms text for the page's link, answered only for the hash of that text.
 communityTermsHandler :: Contracts -> Text -> Request -> Respond -> IO ResponseReceived
 communityTermsHandler ct hashText _ respond = case bytes32FromHex hashText of
   Nothing -> respond badRequest
