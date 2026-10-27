@@ -56,8 +56,10 @@ private struct SnapshotScene {
 private func previewScenes() -> [SnapshotScene] {
     [
         SnapshotScene(ActiveCallOverlay_Previews.self),
+        SnapshotScene(AddChannelView_Previews.self),
         SnapshotScene(AddContactLearnMore_Previews.self),
         SnapshotScene(AddGroupMembersView_Previews.self),
+        SnapshotScene(AddGroupView_Previews.self),
         SnapshotScene(AdvancedNetworkSettings_Previews.self),
         SnapshotScene(BadgesHowItWorksView_Previews.self),
         SnapshotScene(BadgesRedeemCodeView_Previews.self),
@@ -84,6 +86,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(CIInvalidJSONView_Previews.self, allSizes: true),
         SnapshotScene(CIMemberCreatedContactView_Previews.self, allSizes: true),
         SnapshotScene(CIMetaView_Previews.self, allSizes: true),
+        SnapshotScene(CIVoiceView_Previews.self, allSizes: true),
         SnapshotScene(ComposeVoiceView_Previews.self),
         SnapshotScene(ConnectDesktopView_Previews.self),
         SnapshotScene(ContactConnectionInfo_Previews.self),
@@ -95,6 +98,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ContextMemberContactActionsView_Previews.self),
         SnapshotScene(ContextPendingMemberActionsView_Previews.self),
         SnapshotScene(ContextProfilePickerView_Previews.self),
+        SnapshotScene(CreateProfile_Previews.self),
         SnapshotScene(CreateSimpleXAddress_Previews.self),
         SnapshotScene(CustomTimePicker_Previews.self),
         SnapshotScene(DatabaseEncryptionView_Previews.self),
@@ -104,6 +108,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(DetermineWidth_Previews.self),
         SnapshotScene(DeveloperView_Previews.self),
         SnapshotScene(EmojiItemView_Previews.self, allSizes: true),
+        SnapshotScene(FramedCIVoiceView_Previews.self, allSizes: true),
         SnapshotScene(FramedItemView_Deleted_Previews.self, allSizes: true),
         SnapshotScene(FramedItemView_Edited_Previews.self, allSizes: true),
         SnapshotScene(FramedItemView_Previews.self, allSizes: true),
@@ -112,6 +117,8 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(GroupLinkView_Previews.self),
         SnapshotScene(GroupMemberInfoView_Previews.self),
         SnapshotScene(GroupPreferencesView_Previews.self),
+        SnapshotScene(GroupProfileView_Previews.self),
+        SnapshotScene(GroupWelcomeView_Previews.self),
         SnapshotScene(IncognitoHelp_Previews.self),
         SnapshotScene(IncomingCallView_Previews.self),
         SnapshotScene(IntegrityErrorItemView_Previews.self, allSizes: true),
@@ -153,6 +160,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(SetDeliveryReceiptsView_Previews.self),
         SnapshotScene(SettingsView_Previews.self),
         SnapshotScene(SimpleXInfo_Previews.self),
+        SnapshotScene(SmallLinkPreview_Previews.self),
         SnapshotScene(SupportSimpleXBanner_Previews.self),
         SnapshotScene(UserAddressLearnMore_Previews.self),
         SnapshotScene(UserAddressView_Previews.self),
@@ -201,6 +209,8 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
             settle()
         }
     }
+    window.endEditing(true)
+    removeAnimations(window.layer)
     let format = UIGraphicsImageRendererFormat.default()
     format.scale = 1
     format.preferredRange = .standard
@@ -211,6 +221,11 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
     window.isHidden = true
     window.rootViewController = nil
     return image
+}
+
+private func removeAnimations(_ layer: CALayer) {
+    layer.removeAllAnimations()
+    layer.sublayers?.forEach(removeAnimations)
 }
 
 private func settle() {
