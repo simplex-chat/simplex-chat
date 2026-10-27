@@ -89,8 +89,6 @@ import GHC.IO.Handle.FD (handleToFd)
 import Network.HTTP.Client (Manager, Request (..), RequestBody (..), Response, defaultManagerSettings, httpLbs, newManager, parseRequest, responseBody, responseHeaders, responseStatus, responseTimeoutMicro)
 import Network.HTTP.Types (Header, HeaderName, hCacheControl, hContentType)
 import Network.HTTP.Types.Status (statusCode)
-import qualified Network.Socket as N
-import qualified Network.Socket.ByteString as NB
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeType (..))
 import Simplex.Chat.StoreService (BadgeOffer (..), BadgePrice (..))
@@ -246,10 +244,11 @@ badgeWebTests = do
     it "answers a handler exception with 500 internal, and keeps serving" testHandlerExceptionIsContained
   describe "StoreService names: sites" $ do
     it "exports both sites, each with the publishable key" testExportsBothSites
-    it "picks the site by Host against names_hosts" testHostPicksTheSite
+    it "serves each site on its own port only, whatever the Host, and the API on both" testEachPortServesItsSite
+    it "listens on the badges port alone without the names site" testOneListenerWithoutTheNamesSite
     it "serves a names asset with its type" testServesANamesAsset
-    it "keeps every traversal spelling on the names host inside the names build" testNamesTraversalRefused
-    it "serves the badges site to a request with no Host header" testNoHostIsBadges
+    it "keeps every traversal spelling on the names port inside the names build" testNamesTraversalRefused
+    it "refuses a build folder that is not there, only where it is served or exported" testSiteDirsMustExist
   describe "store service settlement" $ do
     it "settles an open invoice: paid, a settled payment row, and the code" testSettlesAnOpenInvoice
     it "settles an expired invoice, because late settlement is routine" testLateSettlementIsLegal
@@ -1034,7 +1033,7 @@ prepareStaticDir root = do
 testServiceConfig :: FilePath -> Bool -> ServiceConfig
 testServiceConfig staticDir trustForwarded =
   ServiceConfig
-    { listener = ListenerConfig {lHost = "127.0.0.1", lPort = 0, lStaticDir = staticDir, lServeWebapp = True, lWebappExportDir = Nothing, lTrustForwardedFor = trustForwarded, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesHosts = []},
+    { listener = ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = staticDir, lServeWebapp = True, lBadgesExportDir = Nothing, lTrustForwardedFor = trustForwarded, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesPort = Nothing},
       btcpay = Nothing,
       stripe = Nothing,
       poll = PollConfig {pWaitingSeconds = 3, pIdleSeconds = 60},
@@ -1068,7 +1067,7 @@ testExportWebapp = do
   withTempDirectory "tests/tmp" "badge-export" $ \root -> do
     staticDir <- prepareStaticDir root
     let outDir = root </> "out"
-        lc = ListenerConfig {lHost = "127.0.0.1", lPort = 0, lStaticDir = staticDir, lServeWebapp = False, lWebappExportDir = Just outDir, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesHosts = []}
+        lc = ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = staticDir, lServeWebapp = False, lBadgesExportDir = Just outDir, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesPort = Nothing}
         stripeCfg = Just StripeConfig {sSecretKey = "rk_test_x", sPublishableKey = "pk_test_injected", sWebhookSecret = "whsec_x", sSessionMinutes = 60, sHost = "https://api.stripe.com"}
     exportWebapp lc stripeCfg
     idx <- LB.readFile (outDir </> "index.html")
@@ -1091,12 +1090,6 @@ namesFontPath = "fonts" </> "Manrope" </> "Manrope-Bold.woff2"
 namesManifest :: LB.ByteString
 namesManifest = "{\"name\":\"SimpleX names\"}"
 
-namesHost :: ByteString
-namesHost = "simplex.domains"
-
-namesIPv6Host :: Text
-namesIPv6Host = "[2001:db8::1]"
-
 prepareNamesDir :: FilePath -> IO FilePath
 prepareNamesDir root = do
   let namesDir = root </> "names"
@@ -1114,7 +1107,7 @@ testExportsBothSites = do
     namesDir <- prepareNamesDir root
     let badgesOut = root </> "badges-out"
         namesOut = root </> "names-out"
-        lc = (listener (testServiceConfig staticDir False)) {lServeWebapp = False, lWebappExportDir = Just badgesOut, lNamesStaticDir = Just namesDir, lNamesExportDir = Just namesOut}
+        lc = (listener (testServiceConfig staticDir False)) {lServeWebapp = False, lBadgesExportDir = Just badgesOut, lNamesStaticDir = Just namesDir, lNamesExportDir = Just namesOut}
     exportWebapp lc (Just publishTestStripe)
     badgesShell <- LB.readFile (badgesOut </> "index.html")
     LB.toStrict badgesShell `shouldSatisfy` BC.isInfixOf "content=\"pk_test_injected\""
@@ -1125,7 +1118,8 @@ testExportsBothSites = do
     LB.readFile (namesOut </> "manifest.webmanifest") >>= (`shouldBe` namesManifest)
     doesFileExist (namesOut </> "sw.js") `shouldReturn` False
 
-withBothSites :: (WebClient -> IO a) -> IO a
+-- | The badges site's client and the names site's, each on the port the env listens on for it.
+withBothSites :: (WebClient -> WebClient -> IO a) -> IO a
 withBothSites action =
   withServiceStore $ \st -> do
     createDirectoryIfMissing True "tests/tmp"
@@ -1133,45 +1127,62 @@ withBothSites action =
       staticDir <- prepareStaticDir root
       namesDir <- prepareNamesDir root
       let base = testServiceConfig staticDir True
-          cfg = base {listener = (listener base) {lNamesStaticDir = Just namesDir, lNamesHosts = [safeDecodeUtf8 namesHost, namesIPv6Host]}, stripe = Just publishTestStripe}
-      withListener [] True holdMicros st cfg (const action)
+          cfg = base {listener = (listener base) {lBadgesPort = 8080, lNamesStaticDir = Just namesDir, lNamesPort = Just 8081}, stripe = Just publishTestStripe}
+      withListener [] True holdMicros st cfg $ \env badges@(mgr, _) -> do
+        map fst (webListeners env) `shouldBe` [8080, 8081]
+        [_, (_, namesSite)] <- pure (webListeners env)
+        Warp.testWithApplicationSettings (webSettings (listener cfg)) (pure namesSite) $ \prt ->
+          action badges (mgr, "http://127.0.0.1:" <> show prt)
 
 webGetAt :: WebClient -> ByteString -> String -> IO (Response LB.ByteString)
 webGetAt client host target = webRequest client "GET" target [("Host", host)]
 
-testHostPicksTheSite :: IO ()
-testHostPicksTheSite = bounded "host picks the site" $ withBothSites $ \client -> do
-  forM_ [namesHost, "SIMPLEX.Domains:8443", "simplex.domains:80", "simplex.domains.", "simplex.domains.:443", "[2001:DB8::1]:8080", "[2001:db8::1]"] $ \host -> do
-    shell <- webGetAt client host "/"
-    (statusOf shell, responseBody shell) `shouldBe` (200, namesShellWithKey)
-    headerOf shell hContentType `shouldBe` Just "text/html; charset=utf-8"
-  namesIndex <- webGetAt client namesHost "/index.html"
+testEachPortServesItsSite :: IO ()
+testEachPortServesItsSite = bounded "each port its site" $ withBothSites $ \badges names -> do
+  forM_ ["simplex.domains", "badges.simplex.chat", "127.0.0.1"] $ \host -> do
+    namesShell <- webGetAt names host "/"
+    (statusOf namesShell, responseBody namesShell) `shouldBe` (200, namesShellWithKey)
+    headerOf namesShell hContentType `shouldBe` Just "text/html; charset=utf-8"
+    badgesShell <- webGetAt badges host "/"
+    statusOf badgesShell `shouldBe` 200
+    LB.toStrict (responseBody badgesShell) `shouldSatisfy` BC.isInfixOf "SimpleX badges"
+    LB.toStrict (responseBody badgesShell) `shouldSatisfy` BC.isInfixOf "content=\"pk_test_injected\""
+  namesIndex <- webGet names "/index.html"
   (statusOf namesIndex, responseBody namesIndex) `shouldBe` (200, namesShellWithKey)
-  forM_ ["badges.simplex.chat", "www.simplex.domains", "simplex.domains.example.org", "[::1]:8080", "[2001:db8::2]", "[2001:db8::10]:8080"] $ \host -> do
-    shell <- webGetAt client host "/"
-    statusOf shell `shouldBe` 200
-    LB.toStrict (responseBody shell) `shouldSatisfy` BC.isInfixOf "SimpleX badges"
-    LB.toStrict (responseBody shell) `shouldSatisfy` BC.isInfixOf "content=\"pk_test_injected\""
-  plain <- webGet client "/"
-  LB.toStrict (responseBody plain) `shouldSatisfy` BC.isInfixOf "SimpleX badges"
-  (statusOf <$> webGetAt client namesHost ("/assets/" <> buildHash <> "/main.js")) `shouldReturn` 404
-  (statusOf <$> webGetAt client namesHost "/sw.js") `shouldReturn` 404
-  (statusOf <$> webGetAt client "badges.simplex.chat" ("/" <> namesFontPath)) `shouldReturn` 404
-  postShell <- webRequest client "POST" "/" [("Host", namesHost)]
+  (statusOf <$> webGet names ("/assets/" <> buildHash <> "/main.js")) `shouldReturn` 404
+  (statusOf <$> webGet names "/sw.js") `shouldReturn` 404
+  (statusOf <$> webGet badges ("/" <> namesFontPath)) `shouldReturn` 404
+  (statusOf <$> webGet badges "/manifest.webmanifest") `shouldReturn` 404
+  postShell <- webRequest names "POST" "/" []
   statusOf postShell `shouldBe` 405
-  api <- webGetAt client namesHost "/api/invoice"
-  statusOf api `shouldBe` 405
-  headerOf api "Allow" `shouldBe` Just "POST"
+  forM_ [badges, names] $ \client -> do
+    api <- webGet client "/api/invoice"
+    statusOf api `shouldBe` 405
+    headerOf api "Allow" `shouldBe` Just "POST"
+    webhook <- webGet client "/webhooks/stripe"
+    statusOf webhook `shouldBe` 405
+    headerOf webhook "Allow" `shouldBe` Just "POST"
+
+testOneListenerWithoutTheNamesSite :: IO ()
+testOneListenerWithoutTheNamesSite =
+  withServiceStore $ \st -> do
+    createDirectoryIfMissing True "tests/tmp"
+    withTempDirectory "tests/tmp" "badge-static" $ \root -> do
+      staticDir <- prepareStaticDir root
+      let base = testServiceConfig staticDir False
+          apiOnly = base {listener = (listener base) {lBadgesPort = 8080, lServeWebapp = False}}
+      forM_ [base {listener = (listener base) {lBadgesPort = 8080}}, apiOnly] $ \cfg ->
+        withListener [] True holdMicros st cfg $ \env _ -> map fst (webListeners env) `shouldBe` [8080]
 
 testServesANamesAsset :: IO ()
-testServesANamesAsset = bounded "names asset" $ withBothSites $ \client -> do
-  font <- webGetAt client namesHost ("/" <> namesFontPath)
+testServesANamesAsset = bounded "names asset" $ withBothSites $ \_ names -> do
+  font <- webGet names ("/" <> namesFontPath)
   (statusOf font, responseBody font) `shouldBe` (200, namesFont)
   headerOf font hContentType `shouldBe` Just "font/woff2"
-  manifest <- webGetAt client namesHost "/manifest.webmanifest"
+  manifest <- webGet names "/manifest.webmanifest"
   (statusOf manifest, responseBody manifest) `shouldBe` (200, namesManifest)
   headerOf manifest hContentType `shouldBe` Just "application/manifest+json"
-  (statusOf <$> webGetAt client namesHost "/fonts/Manrope/absent.woff2") `shouldReturn` 404
+  (statusOf <$> webGet names "/fonts/Manrope/absent.woff2") `shouldReturn` 404
 
 namesTraversalSpellings :: [String]
 namesTraversalSpellings =
@@ -1184,23 +1195,29 @@ namesTraversalSpellings =
   ]
 
 testNamesTraversalRefused :: IO ()
-testNamesTraversalRefused = bounded "names traversal" $ withBothSites $ \client ->
+testNamesTraversalRefused = bounded "names traversal" $ withBothSites $ \_ names ->
   forM_ namesTraversalSpellings $ \target -> do
-    r <- webGetAt client namesHost target
+    r <- webGet names target
     (target, statusOf r, responseBody r) `shouldBe` (target, 404, notFoundBody)
 
--- | http-client always sends a Host header, so this request is written on a socket.
-testNoHostIsBadges :: IO ()
-testNoHostIsBadges = bounded "no Host header" $ withBothSites $ \(_, base) -> do
-  let port = reverse (takeWhile (/= ':') (reverse base))
-  addr : _ <- N.getAddrInfo (Just N.defaultHints {N.addrSocketType = N.Stream}) (Just "127.0.0.1") (Just port)
-  answer <- E.bracket (N.openSocket addr) N.close $ \sock -> do
-    N.connect sock (N.addrAddress addr)
-    NB.sendAll sock "GET / HTTP/1.0\r\n\r\n"
-    let readAll acc = NB.recv sock 4096 >>= \chunk -> if BS.null chunk then pure (BS.concat (reverse acc)) else readAll (chunk : acc)
-    readAll []
-  answer `shouldSatisfy` BC.isPrefixOf "HTTP/1.0 200"
-  answer `shouldSatisfy` BC.isInfixOf "SimpleX badges"
+testSiteDirsMustExist :: IO ()
+testSiteDirsMustExist = do
+  createDirectoryIfMissing True "tests/tmp"
+  withTempDirectory "tests/tmp" "site-dirs" $ \root -> do
+    staticDir <- prepareStaticDir root
+    namesDir <- prepareNamesDir root
+    let absent = root </> "absent"
+        lc = listener (testServiceConfig staticDir False)
+        missing site dir = Left ("listener." <> site <> "_static_dir = " <> dir <> " is not a directory; set it to the " <> site <> " build, since the default is the Docker image's path")
+    checkSiteDirs lc `shouldReturn` Right ()
+    checkSiteDirs lc {lNamesStaticDir = Just namesDir, lNamesPort = Just 8081} `shouldReturn` Right ()
+    checkSiteDirs lc {lBadgesStaticDir = absent} `shouldReturn` missing "badges" absent
+    checkSiteDirs lc {lBadgesStaticDir = absent, lServeWebapp = False} `shouldReturn` Right ()
+    checkSiteDirs lc {lBadgesStaticDir = absent, lServeWebapp = False, lBadgesExportDir = Just (root </> "out")} `shouldReturn` missing "badges" absent
+    checkSiteDirs lc {lNamesStaticDir = Just absent, lNamesPort = Just 8081} `shouldReturn` missing "names" absent
+    checkSiteDirs lc {lServeWebapp = False, lNamesStaticDir = Just absent} `shouldReturn` Right ()
+    checkSiteDirs lc {lServeWebapp = False, lNamesStaticDir = Just absent, lNamesExportDir = Just (root </> "names-out")} `shouldReturn` missing "names" absent
+    checkSiteDirs lc {lBadgesStaticDir = root </> "secret.txt"} `shouldReturn` missing "badges" (root </> "secret.txt")
 
 type WebClient = (Manager, String)
 

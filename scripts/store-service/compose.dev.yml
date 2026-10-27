@@ -1,0 +1,30 @@
+# Development: compose.yml plus a local chain with the names contracts, kept in ./data/chain across restarts.
+# Enable it with COMPOSE_FILE=compose.yml:compose.dev.yml in .env; unlike a compose.override.yml, it is never
+# picked up on its own.
+services:
+  chain:
+    build:
+      context: ../../apps/simplex-domains
+      dockerfile: webapp/dev/Dockerfile
+    image: simplex-names-dev-chain
+    restart: on-failure:5
+    # root, so the bind mount compose creates for ./data/chain is writable without preparing it
+    user: root
+    network_mode: host
+    environment:
+      # seconds a registration waits after its commit; the contracts' production value is 60
+      MIN_COMMITMENT_AGE: "10"
+    volumes:
+      - ./data/chain:/chain
+      - ./dev-chain.sh:/usr/local/bin/dev-chain.sh:ro
+    command: dev-chain.sh
+    healthcheck:
+      test: ["CMD", "test", "-f", "/chain/ready"]
+      interval: 5s
+      retries: 60
+      start_period: 30s
+    stop_grace_period: 20s
+
+  store-service:
+    depends_on:
+      chain: { condition: service_healthy }

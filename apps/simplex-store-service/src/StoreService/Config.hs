@@ -22,7 +22,6 @@ module StoreService.Config
     defaultSessionMinutes,
     minNameYears,
     localChainId,
-    hostName,
     readServiceConfig,
     unknownKeys,
   )
@@ -68,14 +67,16 @@ import Text.Read (readMaybe)
 
 data ListenerConfig = ListenerConfig
   { lHost :: Text,
-    lPort :: Int,
-    lStaticDir :: FilePath,
+    lBadgesPort :: Int,
+    lBadgesStaticDir :: FilePath,
     lServeWebapp :: Bool,
-    lWebappExportDir :: Maybe FilePath,
+    lBadgesExportDir :: Maybe FilePath,
     lTrustForwardedFor :: Bool,
+    -- | @Nothing@ without @[names]@.
     lNamesStaticDir :: Maybe FilePath,
     lNamesExportDir :: Maybe FilePath,
-    lNamesHosts :: [Text]
+    -- | @Nothing@ unless the names site is served, which takes @[names]@ and @serve_webapp@ on.
+    lNamesPort :: Maybe Int
   }
   deriving (Eq, Show)
 
@@ -257,6 +258,28 @@ defaultMaxFeePerGas = 100000000000
 defaultTermStart :: String
 defaultTermStart = "2027-01-01T00:00:00Z"
 
+-- | The builds' paths in the Docker image; a run outside it sets both.
+defaultBadgesStaticDir, defaultNamesStaticDir :: FilePath
+defaultBadgesStaticDir = "/srv/badges"
+defaultNamesStaticDir = "/srv/names"
+
+defaultBadgesPort, defaultNamesPort :: Int
+defaultBadgesPort = 8080
+defaultNamesPort = 8081
+
+-- | Keys of earlier releases, each refused with what replaced it.
+retiredListenerKeys :: [(Text, String)]
+retiredListenerKeys =
+  [ ("port", "listener.port is now listener.badges_port"),
+    ("static_dir", "listener.static_dir is now listener.badges_static_dir"),
+    ("webapp_export_dir", "listener.webapp_export_dir is now listener.badges_export_dir"),
+    ("names_hosts", "listener.names_hosts is replaced by listener.names_port: serve the names site on its own port")
+  ]
+
+-- | The [listener] keys only the names site reads.
+namesListenerKeys :: [Text]
+namesListenerKeys = ["names_static_dir", "names_export_dir", "names_port"]
+
 serviceKeyBytes :: Int
 serviceKeyBytes = 32
 
@@ -298,20 +321,10 @@ trailingNoise = skipSpace *> skipMany (comment *> skipSpace)
   where
     comment = satisfy (\c -> c == ';' || c == '#') *> skipWhile (not . isEndOfLine)
 
--- | A host as names_hosts compares it: in lower case, without a port or the root's trailing dot,
--- and an IPv6 literal whole in brackets, as a Host header carries it.
-hostName :: Text -> Text
-hostName h
-  | "[" `T.isPrefixOf` host = T.takeWhile (/= ']') host <> "]"
-  | T.count ":" host > 1 = "[" <> host <> "]"
-  | otherwise = fromMaybe name (T.stripSuffix "." name)
-  where
-    host = T.toLower (T.strip h)
-    name = T.takeWhile (/= ':') host
-
 knownSettings :: [(Text, [Text])]
 knownSettings =
-  [ ("listener", ["host", "port", "static_dir", "serve_webapp", "webapp_export_dir", "trust_forwarded_for", "names_static_dir", "names_export_dir", "names_hosts"]),
+  -- The retired keys are known, so parseConfig refuses them rather than a warning calling them ignored.
+  [ ("listener", ["host", "badges_port", "badges_static_dir", "serve_webapp", "badges_export_dir", "trust_forwarded_for"] <> namesListenerKeys <> map fst retiredListenerKeys),
     ("btcpay", ["host", "api_key", "store_id", "webhook_secret", "expiry_minutes", "speed_policy", "payment_tolerance"]),
     ("stripe", ["secret_key", "publishable_key", "webhook_secret", "session_minutes"]),
     ("poll", ["waiting_seconds", "idle_seconds"]),
@@ -339,19 +352,14 @@ unknownKeys ini = beforeAnySection <> unknownSections <> settings
 
 parseConfig :: Ini -> Either String ServiceConfig
 parseConfig ini = do
-  lStaticDir <- T.unpack <$> required "listener" "static_dir"
+  forM_ retiredListenerKeys $ \(k, e) -> when (isJust (look "listener" k)) (Left e)
   lHost <- optional "listener" "host" "127.0.0.1"
-  lPort <- do
-    p <- num "listener" "port" 8080
-    if 1 <= p && p <= 65535 then Right p else Left "listener.port must be between 1 and 65535"
+  lBadgesPort <- listenerPort "badges_port" defaultBadgesPort
+  let lBadgesStaticDir = maybe defaultBadgesStaticDir T.unpack (present "listener" "badges_static_dir")
   lServeWebapp <- bool "listener" "serve_webapp" True
-  let lWebappExportDir = T.unpack <$> present "listener" "webapp_export_dir"
+  let lBadgesExportDir = T.unpack <$> present "listener" "badges_export_dir"
   lTrustForwardedFor <- bool "listener" "trust_forwarded_for" False
-  let lNamesStaticDir = T.unpack <$> present "listener" "names_static_dir"
-      lNamesExportDir = T.unpack <$> present "listener" "names_export_dir"
-      lNamesHosts = maybe [] (filter (not . T.null) . map hostName . T.splitOn ",") (present "listener" "names_hosts")
-  when (isNothing lNamesStaticDir && (not (null lNamesHosts) || isJust lNamesExportDir)) $
-    Left "listener.names_static_dir is required with names_hosts or names_export_dir"
+  (lNamesStaticDir, lNamesExportDir, lNamesPort) <- namesSite lServeWebapp lBadgesPort
   btc <- btcpaySection
   str <- stripeSection
   iss <- issuerSection
@@ -371,7 +379,7 @@ parseConfig ini = do
     Left "[dev] accept_unverified_store_receipts must be off where [apple] or [google] verifies store receipts"
   pure
     ServiceConfig
-      { listener = ListenerConfig {lHost, lPort, lStaticDir, lServeWebapp, lWebappExportDir, lTrustForwardedFor, lNamesStaticDir, lNamesExportDir, lNamesHosts},
+      { listener = ListenerConfig {lHost, lBadgesPort, lBadgesStaticDir, lServeWebapp, lBadgesExportDir, lTrustForwardedFor, lNamesStaticDir, lNamesExportDir, lNamesPort},
         btcpay = btc,
         stripe = str,
         poll = PollConfig {pWaitingSeconds, pIdleSeconds},
@@ -389,6 +397,20 @@ parseConfig ini = do
     present s k = mfilter (not . T.null) (T.strip <$> look s k)
     required s k = maybe (Left (T.unpack s <> "." <> T.unpack k <> " is required")) Right (present s k)
     optional s k d = Right (fromMaybe d (present s k))
+    listenerPort k d = do
+      p <- num "listener" k d
+      if 1 <= p && p <= 65535 then Right p else Left ("listener." <> T.unpack k <> " must be between 1 and 65535")
+    unusedListenerKey k why = Left ("listener." <> T.unpack k <> " is set but " <> why <> ", so nothing would use it")
+    namesSite serve badgesPort
+      | not (hasSection "names") = case filter (isJust . look "listener") namesListenerKeys of
+          k : _ -> unusedListenerKey k "[names] is absent"
+          [] -> Right (Nothing, Nothing, Nothing)
+      | otherwise = do
+          when (not serve && isJust (look "listener" "names_port")) $ unusedListenerKey "names_port" "serve_webapp is off"
+          namesPort <- if serve then Just <$> listenerPort "names_port" defaultNamesPort else Right Nothing
+          when (namesPort == Just badgesPort) $ Left "listener.names_port must differ from listener.badges_port"
+          let staticDir = maybe defaultNamesStaticDir T.unpack (present "listener" "names_static_dir")
+          Right (Just staticDir, T.unpack <$> present "listener" "names_export_dir", namesPort)
     -- Integer, because readMaybe at Int wraps silently, reading 2^64+4 as 4.
     num s k d = case look s k of
       Nothing -> Right d

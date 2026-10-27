@@ -103,7 +103,7 @@ withSearch :: TVar ChaChaDRG -> (NamesConfig -> NamesConfig) -> (Contracts -> Co
 withSearch g adjustConfig adjust action = withServiceStore $ \store -> withContracts g $ \node ct -> do
   fetched <- newTVarIO []
   ps <- newProfiles defaultProfileLimits {fetchTimeout = fetchMicros} monotonicSeconds (fakeFetch fetched) stubResolver
-  http <- newHttpEnv ListenerConfig {lHost = "127.0.0.1", lPort = 0, lStaticDir = "", lServeWebapp = False, lWebappExportDir = Nothing, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesHosts = []}
+  http <- newHttpEnv ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = "", lServeWebapp = False, lBadgesExportDir = Nothing, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesPort = Nothing}
   let cfg = adjustConfig $ namesConfig node
       routes = \case
         ["api", "link", "preview"] -> Just Route {rMethod = "POST", rLimit = previewLimit, rHandler = previewHandler ps}

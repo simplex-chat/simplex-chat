@@ -109,7 +109,7 @@ testCodeStates = do
 -- The route as namesRoutes registers it, since a NamesEnv needs a running chat controller.
 withCodeCheck :: (DBStore -> Client -> IO a) -> IO a
 withCodeCheck action = withServiceStore $ \st -> do
-  http <- newHttpEnv ListenerConfig {lHost = "127.0.0.1", lPort = 0, lStaticDir = "", lServeWebapp = False, lWebappExportDir = Nothing, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesHosts = []}
+  http <- newHttpEnv ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = "", lServeWebapp = False, lBadgesExportDir = Nothing, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesPort = Nothing}
   let routes = \case
         ["api", "code", "check"] -> Just Route {rMethod = "POST", rLimit = codeLimit, rHandler = codeCheckHandler st}
         _ -> Nothing

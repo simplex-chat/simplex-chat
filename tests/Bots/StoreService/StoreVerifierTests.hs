@@ -583,7 +583,7 @@ testPlayAcknowledgementFails = withFakePlay $ \fake -> do
 testPlayConfiguredAcknowledges :: IO ()
 testPlayConfiguredAcknowledges = withFakePlay $ \fake@FakePlay {fpConfig} -> do
   let ini = takeDirectory (gServiceAccountFile fpConfig) </> "store_service.ini"
-  writeFile ini "[listener]\nstatic_dir = /srv/badges\n"
+  writeFile ini "[listener]\n"
   Right cfg <- readServiceConfig ini
   ServiceState {storeVerifier} <- newServiceState >>= configureStoreVerifier (Just cfg {playStore = Just fpConfig})
   answerPurchase fake testToken $ PlayRecord $ purchaseRecord 0 []

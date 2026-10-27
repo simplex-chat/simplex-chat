@@ -598,19 +598,24 @@ stopGroupService t cc = do
 stopChat :: ChatController -> IO ()
 stopChat cc = stopStoreService cc >> disposeAgentClient (smpAgent cc)
 
--- It writes the service's ini on a free port; Nothing omits the [group] section.
+-- It writes the service's ini on free ports, the names site's too with [names]; Nothing omits the [group] section.
 groupServiceOpts :: GroupSvc -> Maybe GroupConfig -> IO (StoreServiceOpts, Int)
 groupServiceOpts GroupSvc {gsKey = BadgeIssuerKey {secretKey}, gsStaticDir, gsIniSections, gsPs = ps@TestParams {tmpPath}} groupCfg = do
   (port, sock) <- openFreePort
-  close sock
+  (namesPort, namesSock) <- openFreePort
+  close sock >> close namesSock
   let iniPath = tmpPath </> "badge_group.ini"
+      namesSite
+        | "[names]" `elem` gsIniSections = ["names_static_dir = " <> gsStaticDir, "names_port = " <> show namesPort]
+        | otherwise = []
   writeFile iniPath $
     unlines $
       [ "[listener]",
         "host = 127.0.0.1",
-        "port = " <> show port,
-        "static_dir = " <> gsStaticDir
+        "badges_port = " <> show port,
+        "badges_static_dir = " <> gsStaticDir
       ]
+        <> namesSite
         <> maybe [] groupSection groupCfg
         <> map T.unpack gsIniSections
   pure ((mkStoreServiceOpts ps secretKey) {serviceConfigFile = Just iniPath, noAddress = True}, port)
