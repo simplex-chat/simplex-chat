@@ -247,7 +247,7 @@ chatGroupTests = do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
     it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
-    it "should archive reports about and by the member removed with messages" testGroupMemberReportsRemoveMember
+    it "should archive reports about the member removed with messages and update the reports count" testGroupMemberReportsRemoveMember
   describe "group member mentions" $ do
     it "should send and edit messages with member mentions" testMemberMention
     it "should forward and quote message updating mentioned member name" testForwardQuoteMention
@@ -8166,8 +8166,10 @@ testGroupMemberReportsRemoveMember =
       cath #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content")])
       threadDelay 1000000
       alice ##> "/rm #jokes bob messages=on"
-      alice <## "#jokes: 2 messages deleted by user"
-      alice <## "#jokes: you removed bob from the group with all messages (signed)"
+      alice
+        <### [ "#jokes: 2 messages deleted by user",
+               "#jokes: you removed bob from the group with all messages (signed)"
+             ]
       bob <## "#jokes: alice removed you from the group with all messages (signed)"
       bob <## "use /d #jokes to delete the group"
       cath <## "#jokes: 1 messages deleted by member alice"
