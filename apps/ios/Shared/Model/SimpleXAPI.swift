@@ -12,6 +12,7 @@ import UIKit
 import Dispatch
 import BackgroundTasks
 import SwiftUI
+import StoreKit
 @preconcurrency import SimpleXChat
 
 private var chatController: chat_ctrl?
@@ -2258,6 +2259,20 @@ func redeemErrorText(_ error: Error, purchase: Bool) -> String {
     }
     if case .subscribedBefore? = error as? BadgeStoreError {
         return NSLocalizedString("This Apple ID already has a badge subscription. Only the profile that bought it can continue it.", comment: "alert message")
+    }
+    if let e = error as? Product.PurchaseError {
+        switch e {
+        case .productUnavailable: return NSLocalizedString("This badge is not on sale.", comment: "alert message")
+        case .purchaseNotAllowed: return NSLocalizedString("In-app purchases are not allowed on this device.", comment: "alert message")
+        default: break
+        }
+    }
+    if let e = error as? StoreKitError {
+        switch e {
+        case .networkError: return NSLocalizedString("The store could not be reached.", comment: "alert message")
+        case .notAvailableInStorefront: return NSLocalizedString("This badge is not on sale.", comment: "alert message")
+        default: break
+        }
     }
     return String.localizedStringWithFormat(NSLocalizedString("Error: %@", comment: "alert message"), responseError(error))
 }
