@@ -543,8 +543,13 @@ eventTypeOf body = case J.decode body of
 webSettings :: ListenerConfig -> Warp.Settings
 webSettings ListenerConfig {lHost} =
   Warp.setHost (fromString (T.unpack lHost))
+    . Warp.setOnException logRequestException
     . Warp.setOnExceptionResponse (const internalError)
     $ Warp.defaultSettings
+
+-- | Warp's default writes the text and its newline apart, splitting a record another thread logs between them.
+logRequestException :: Maybe Request -> E.SomeException -> IO ()
+logRequestException _ e = when (Warp.defaultShouldDisplayException e) $ logError ("store service: a web request failed: " <> tshow e)
 
 -- | Each port with its app: the badges site's, and the names site's when it is served.
 webListeners :: WebEnv -> [(Int, Application)]
