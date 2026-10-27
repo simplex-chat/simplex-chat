@@ -38,7 +38,7 @@ TERMS_URL=https://simplex.chat/
 COMMUNITY_LABEL=bakers
 COMMUNITY_TEXT="bakers and bakeries in Portugal"
 
-# The cases at webapp fba4a63. Each case is its own client by X-Forwarded-For, which the service trusts
+# The cases at webapp eab00ff. Each case is its own client by X-Forwarded-For, which the service trusts
 # here, as the mock does. Each takes its prepaid code from POST /control/code, which the code server
 # below answers from the codes issued here, so CODES holds one per case that asks for one. "search
 # answers every kind of name" is not among them: it sets /control/search.
@@ -59,7 +59,7 @@ CASES=(
   "a code check past the service's limit counts down its wait, then checks the code again by itself"
   "a name's link whose data cannot be read now shows as its kind's default picture, and opens by the chat core's form"
   "a community name shows its marker after the name, a button whose popup says what the name is for"
-  "Check your order of a community name asks for the community wording, its terms linked and its ⓘ saying what the name is for, and Pay waits for the tick"
+  "a community name's order shows its community terms on their own step before Check your order, Continue waiting for their tick, and its ⓘ says what the name is for"
   "a prepaid code registers a name the contracts' owner listed on chain, its register recording the owner's acceptance of the community terms"
 )
 CODES=("name 8" "name 6" "name 6 years 5" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6")
