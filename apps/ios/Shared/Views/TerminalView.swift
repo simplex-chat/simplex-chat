@@ -195,7 +195,7 @@ struct TerminalView_Previews: PreviewProvider {
         let chatModel = ChatModel()
         chatModel.terminalItems = [
             .err(previewDate, APIResult<ChatResponse2>.invalid(type: "contactSubscribed", json: "{}".data(using: .utf8)!).unexpected),
-            .err(previewDate, APIResult<ChatResponse2>.invalid(type: "newChatItems", json: "{}".data(using: .utf8)!).unexpected)
+            .err(previewDate + 1, APIResult<ChatResponse2>.invalid(type: "newChatItems", json: "{}".data(using: .utf8)!).unexpected)
         ]
         return NavigationView {
             TerminalView()
