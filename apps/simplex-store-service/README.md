@@ -596,13 +596,14 @@ changes nothing, and `--check` then reports the chain absent.
 are added under `[names]`.
 
 The controller's name policy (`SimplexNamePolicy`, read once from `namePolicy()` at startup and
-logged) decides which names are community names: its bona fide list, which the owner edits on chain and
-the guardian can add to. A listed name can be registered only after its owner accepts the policy's current
-community terms on chain, identified by `termsHash`, the keccak256 of their text. The controller
-owner's `setNamePolicy` takes effect for the service after a restart, so restart it at once: until
-then the service reads the reservations, the list, the terms and the nonces from the old policy, so an order of a name the
-new policy reserves ends taken, and one of a name it lists does not register: the page signs again until the order lapses, and only the first relay spends gas. One
-more setting gives the community terms' text:
+logged) decides which names are community names: its bona fide list, which the owner edits on chain
+and the guardian can add to. A listed name can be registered only after its owner accepts the
+policy's current community terms on chain, identified by `termsHash`, the keccak256 of their text.
+The controller owner's `setNamePolicy` takes effect for the service after a restart, so restart it
+at once: until then the service reads the reservations, the list, the terms and the nonces from the
+old policy, so an order of a name the new policy reserves ends taken, and one of a name it lists
+does not register: the page signs again until the order lapses, and only the first relay spends gas.
+One more setting gives the community terms' text:
 
 - `community_terms_url`: the page of the community terms, which the order's checkbox links to beside
   the name terms. It must be `https://`, or `http://` on 127.0.0.1 or localhost when `[chain] chain_id`

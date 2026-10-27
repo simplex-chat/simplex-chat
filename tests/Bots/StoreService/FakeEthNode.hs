@@ -78,7 +78,7 @@ import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 import StoreService.Config (ChainConfig (..))
-import StoreService.Names.Abi (addressWord, hex, selector)
+import StoreService.Names.Abi (addressWord, hex, selector, uint256)
 import StoreService.Names.Chain (TxRequest (..), decodeSignedTx)
 import System.Timeout (timeout)
 
@@ -163,7 +163,7 @@ fakeTermsUrl FakeEthNode {fnUrl} = T.pack fnUrl <> "/terms"
 
 -- | The policy lists the name as a community name.
 listCommunityName :: FakeEthNode -> LabelHash -> IO ()
-listCommunityName node lh = answerListing node lh $ Returns $ B.replicate 31 0 <> "\x01"
+listCommunityName node lh = answerListing node lh $ Returns $ uint256 (1 :: Int)
 
 -- | The policy's answer to whether the name is a community name.
 answerListing :: FakeEthNode -> LabelHash -> CallAnswer -> IO ()
@@ -176,7 +176,7 @@ setCommunityTerms node termsHash = answerCall node fakeNamePolicy (selector "ter
 defaultCall :: (ByteString, ByteString) -> Maybe CallAnswer
 defaultCall (to, calldata)
   | to == unAddress fakeController && calldata == selector "namePolicy()" = Just $ Returns $ addressWord fakeNamePolicy
-  | to == unAddress fakeNamePolicy && selector "bonaFideNames(bytes32)" `B.isPrefixOf` calldata = Just $ Returns $ B.replicate 32 0
+  | to == unAddress fakeNamePolicy && selector "bonaFideNames(bytes32)" `B.isPrefixOf` calldata = Just $ Returns $ uint256 (0 :: Int)
   | to == unAddress fakeNamePolicy && calldata == selector "termsHash()" = Just $ Returns fakeCommunityTerms
   | otherwise = Nothing
 

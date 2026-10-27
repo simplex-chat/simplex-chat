@@ -56,7 +56,7 @@ searchHandler cfg@NamesConfig {nYears} st ct ps hashText req respond = case Labe
         Just (Right f, Right h) -> respond =<< searchAnswer cfg ps lh h f
         Just (Left e, _) -> unavailable $ tshow e
         Just (_, Left e) -> logWarn ("GET /api/name: the community terms check failed: " <> e) >> respond providerUnavailable
-        Nothing -> unavailable "timed out"
+        Nothing -> logWarn "GET /api/name: the chain reads or the community terms check timed out" >> respond providerUnavailable
   where
     found lh len registering =
       ExceptT (nameStatus ct lh) >>= \case
