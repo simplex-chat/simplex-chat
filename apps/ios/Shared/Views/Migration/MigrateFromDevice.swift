@@ -130,7 +130,7 @@ struct MigrateFromDevice: View {
                 if case let .uploadProgress(_, _, fileId, _, ctrl) = migrationState, let ctrl {
                     await cancelUploadedArchive(fileId, ctrl)
                 }
-                await chatReceiver?.stopAndCleanUp()
+                chatReceiver?.stopAndCleanUp()
                 try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
             }
         }
@@ -302,7 +302,7 @@ struct MigrateFromDevice: View {
             }
         }
         .onAppear {
-            Task { await chatReceiver?.stopAndCleanUp() }
+            chatReceiver?.stopAndCleanUp()
         }
     }
 
@@ -502,15 +502,14 @@ struct MigrateFromDevice: View {
     private func initTemporaryDatabase() async -> (chat_ctrl, User)? {
         let (status, ctrl) = chatInitTemporaryDatabase(url: tempDatabaseUrl)
         showErrorOnMigrationIfNeeded(status, $alert)
-        guard let ctrl else { return nil }
         do {
-            if let user = try startChatWithTemporaryDatabase(ctrl: ctrl) {
+            if let ctrl, let user = try startChatWithTemporaryDatabase(ctrl: ctrl) {
                 return (ctrl, user)
             }
         } catch let error {
             logger.error("Error while starting chat in temporary database: \(error.localizedDescription)")
         }
-        await stopChatWithTemporaryDatabase(ctrl: ctrl)
+        if let ctrl { await stopChatWithTemporaryDatabase(ctrl: ctrl) }
         return nil
     }
 
@@ -770,12 +769,12 @@ private class MigrationChatReceiver {
         }
     }
 
-    func stopAndCleanUp() async {
+    func stopAndCleanUp() {
         logger.debug("MigrationChatReceiver.stop")
         receiveMessages = false
         receiveLoop?.cancel()
         receiveLoop = nil
-        await stopChatWithTemporaryDatabase(ctrl: ctrl)
+        chat_close_store(ctrl)
         try? FileManager.default.removeItem(atPath: "\(databaseUrl.path)_chat.db")
         try? FileManager.default.removeItem(atPath: "\(databaseUrl.path)_agent.db")
     }

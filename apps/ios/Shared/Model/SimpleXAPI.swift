@@ -2446,7 +2446,7 @@ func stopChatWithTemporaryDatabase(ctrl: chat_ctrl) async {
     do {
         try await apiStopChat(ctrl: ctrl)
     } catch let error {
-        logger.error("stopChatWithTemporaryDatabase error: \(responseError(error))")
+        logger.error("Error stopping chat in temporary database: \(responseError(error))")
     }
     chat_close_store(ctrl)
 }
