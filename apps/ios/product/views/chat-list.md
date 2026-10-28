@@ -130,7 +130,7 @@ Triggers `reconnectAllServers()` after user confirmation alert ("Reconnect serve
 | Chat database not started | Settings row shows exclamation icon; chat running == false disables interactions |
 | No conversations yet | `ConnectOnboardingView` pages replace the list, with the crowdfunding banner below them where it applies |
 | Connection in progress | `ConnectProgressManager` overlay with connecting text |
-| Search with no results | "No chats found" in the middle of the list, unless an online search is running or shows results |
+| Search with no results | "No chats found" in the middle of the list, only after a directory search for the text finds nothing: not while "Search in Directory" is offered, a search runs or results show |
 | Online search running | Progress indicator in the search field (after about a second); tapping a result or clearing the search cancels it |
 | Loading more results | The "Load more" row is greyed and can't be tapped until the page arrives |
 | Directory search failed | "Search failed, tap to retry" row at the end of the results, in place of the load row |

@@ -542,6 +542,7 @@ struct ChatListView: View {
         let cs = filteredChats()
         let rows = onlineSearch.rows(shownChatIds: Set(cs.map { $0.id }))
         let showsCards = !onlineSearch.showResults
+        let showsSearchInDirectory = !searchString().isEmpty && !onlineSearch.showResults
         return ZStack {
             ScrollViewReader { scrollProxy in
                 List {
@@ -656,7 +657,7 @@ struct ChatListView: View {
                 }
             }
             // this covers the whole list, so it must not hide the online results or their messages
-            if cs.isEmpty && !chatModel.chats.isEmpty && !onlineSearch.searching && rows.isEmpty {
+            if cs.isEmpty && !chatModel.chats.isEmpty && !onlineSearch.searching && rows.isEmpty && !showsSearchInDirectory {
                 noChatsView()
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)

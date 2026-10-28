@@ -150,7 +150,7 @@ Each chat type provides specific dropdown menu items:
 | Loading | "Loading chats..." centered text |
 | No chats | "You have no chats" centered text, unless an online search runs or shows results |
 | No filtered chats | "No chats in list [tag name]" or "No unread chats" with clickable filter reset |
-| No search results | "No chats found" centered text, unless an online search is running or shows results |
+| No search results | "No chats found" centered text, only after a directory search for the text finds nothing: not while "Search in Directory" is offered, a search runs or results show |
 | Online search running | Progress indicator in the toolbar (after about a second); tapping a result or clearing the search cancels it |
 | Loading more results | The "Load more" row is greyed and can't be tapped until the page arrives |
 | Directory search failed | "Search failed, tap to retry" row at the end of the results, in place of the load row |

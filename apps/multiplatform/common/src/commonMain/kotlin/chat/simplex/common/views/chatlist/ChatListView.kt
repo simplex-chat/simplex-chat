@@ -1099,6 +1099,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val chats = filteredChats(searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList(), activeFilter.value)
   val rows = onlineSearch.rows(shownChatIds = chats.map { it.id }.toSet())
   val showsCards = !onlineSearch.showResults
+  val showsSearchInDirectory = searchTrimmed(searchText).isNotEmpty() && !searchShowingSimplexLink.value && !onlineSearch.showResults
   val topPaddingToContent = topPaddingToContent(false)
   val blankSpaceSize = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else topPaddingToContent
   LazyColumnWithScrollBar(
@@ -1207,7 +1208,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     }
   }
   // this covers the whole list, so it must not hide the online results or their messages
-  if (chats.isEmpty() && chatModel.chats.value.isNotEmpty() && !onlineSearch.searching && rows.isEmpty) {
+  if (chats.isEmpty() && chatModel.chats.value.isNotEmpty() && !onlineSearch.searching && rows.isEmpty && !showsSearchInDirectory) {
     Box(Modifier.fillMaxSize().imePadding().padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
       NoChatsView(searchText = searchText)
     }
