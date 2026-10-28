@@ -6,8 +6,7 @@ platform_dir=$1
 input=${TESTS:-}
 case "$input" in
   *[![:space:]]*)
-    # select-tests.sh doesn't read the base when the input names the tests
-    base=HEAD
+    base=""
     ;;
   *)
     upstream=$(gh api "repos/$GITHUB_REPOSITORY" --jq '.parent.owner.login // .owner.login')
