@@ -19,7 +19,7 @@ This answers issue #4482's second request (a parental PIN and approval before ad
 1. **Switch off, never watch.** A control removes a capability. No control keeps history, lists contacts or groups to the parent, or sends anything off the device.
 2. **The PIN never opens a path to the chats.** It opens only the parental screen and allow-once. Anything that would hand over the chats (database export and migration, the chat console, "Use from desktop") is off while controls are on, even for the parent; to use it, the parent turns the controls off, which the indicator shows while they are off *(provisional, P5)*.
 3. **Visible on the phone, invisible to contacts.** The restricted phone always shows that controls are on. No control sends a message or changes the profile.
-4. **Check every action where it goes to the core.** Each action the child starts is checked in the app's function that sends it to the chat core, so every button that reaches it is covered, including buttons added later. What the core does on its own (auto-accepting, ringing for a call, receiving inline files) is stopped by a small switch in the core *(provisional, P1)*. Buttons are also hidden, for a clean screen; hiding is presentation, not enforcement.
+4. **Check every action where it goes to the core.** Each action the child starts is checked in the app's function that sends it to the chat core, so every button that reaches it is covered, including buttons added later. What the core does on its own (auto-accepting, ringing for a call, receiving inline files) is stopped by a parental mode in the core *(provisional, P1)*. Buttons are also hidden, for a clean screen; hiding is presentation, not enforcement.
 5. **Fail closed.** A missing or unreadable PIN never opens the gate; an action the check can't classify counts as restricted.
 
 ## 3. Limits
@@ -28,7 +28,7 @@ The child holds the phone, so a determined, technically able child gets around t
 
 - **Reinstalling the app or clearing its data removes the controls.** On iPhone, Screen Time can stop the app being deleted (Settings → Screen Time → Content & Privacy Restrictions → iTunes & App Store Purchases → Deleting Apps, https://support.apple.com/en-gb/126807); the setup screen says how *(provisional, P9)*. On Android, Family Link approves new downloads but not an app it approved before (https://support.google.com/googleplay/answer/7103028: previously approved apps "will not require additional approval to download"), so reinstalling stays open there.
 - **A factory reset, "Erase All Content and Settings", watching the parent type the PIN, or another device.**
-- **One-off connections the child started on a hidden profile** before the controls (an unused one-time link, a request sent, a group being joined) can still complete: the app can't open a hidden profile without its password (section 7.3). Addresses and links of groups the child hosts, on hidden profiles too, are covered by the core switch.
+- **One-off connections the child started on a hidden profile** before the controls (an unused one-time link, a request sent, a group being joined) can still complete: the app can't open a hidden profile without its password (section 7.3). Addresses and links of groups the child hosts, on hidden profiles too, are covered by the parental mode.
 - **A channel the child owns keeps admitting subscribers through its relays**, since their joins never reach the child's core (`src/Simplex/Chat/Library/Subscriber.hs:1637-1638,1695-1717`), and a subscriber can write to the channel's admins (`src/Simplex/Chat/Library/Commands.hs:4964-4968`; that this reaches the child in the app is not traced). The parental screen says so when groups is switched off *(provisional, P15)*.
 - **Groups and channels the child is already in stay, and can gain new members** through other members' links *(provisional, P15)*.
 
@@ -46,7 +46,7 @@ The child holds the phone, so a determined, technically able child gets around t
 - **Kept out of the settings archive.** Importing a database or migrating to a device also imports the app settings packed with it (iOS `apps/ios/Shared/Model/SimpleXAPI.swift:2309-2317`, `apps/ios/Shared/Views/UserSettings/AppSettings.swift:14`; Kotlin `AppSettings`, `model/SimpleXAPI.kt:8711`). The switches and the PIN are not part of `AppSettings`.
 - **Outside the chat database.** Deleting the database and the self-destruct passcode leave them in place (iOS `apps/ios/Shared/Views/LocalAuth/LocalAuthView.swift:65-79`; Kotlin `views/localauth/LocalAuthView.kt:57-75` and `views/database/DatabaseView.kt:556-578` remove only database files and their own preferences). Deleting the app or its data removes them.
 - **Reinstall on iOS:** iOS can keep keychain items after the app is deleted, while the app-group container that holds the switches goes with the app. So on launch, if `kcParentPassword` exists and no switches are stored, the app removes it; a reinstalled app never asks for a PIN nobody remembers. The existing clean-up (`apps/ios/Shared/AppDelegate.swift:111-122`) stays as it is: its test, "no app-lock flag and no database", also passes after an in-app "Delete database", so adding the PIN to it would delete the PIN while the switches stay, leaving the controls stuck on. (That the app-group container goes on uninstall is iOS behaviour to confirm once on a device.)
-- **The core switch** (section 7.1) is held in memory and sent by the app at every chat start; nothing is stored in the chat database.
+- **The parental mode** (section 7.1) is held in memory and sent by the app at every chat start; nothing is stored in the chat database.
 
 ## 6. The parent gate and the parental screen
 
@@ -59,7 +59,7 @@ The child holds the phone, so a determined, technically able child gets around t
 2. Set or change the parent PIN.
 3. The switches, with the defaults of section 1. A new PIN is saved together with the first switch, so the reinstall rule of section 5 never removes a PIN in the middle of setup.
 4. When connecting or groups is switched off: one confirmation for the clean-up of section 7.3, and a note that groups and channels the child is already in stay *(provisional, P15)*.
-5. "Turn off parental controls": PIN, then the switches clear and the core switch is cleared, so addresses and group links work as before. Pending connections removed by the clean-up are not restored; the child starts new ones as needed.
+5. "Turn off parental controls": PIN, then the switches clear and the parental mode ends, so addresses and group links work as before. Pending connections removed by the clean-up are not restored; the child starts new ones as needed.
 
 **The indicator:** while any switch is off, a line "Parental controls on" at the top of the chat list (iOS `apps/ios/Shared/Views/ChatList/ChatListView.swift`; Kotlin `views/chatlist/ChatListView.kt`) and on the Settings screen, opening the parental screen *(provisional, P7)*.
 
@@ -67,11 +67,11 @@ The child holds the phone, so a determined, technically able child gets around t
 
 Each control lists where its check runs, on both platforms, and the screens where its buttons are hidden. A check that fails throws a new error, "Turned off by parental controls", which the existing error alerts show; for connecting, the alert offers "Allow once" (section 7.2).
 
-### 7.1 The core switch: what the core does on its own
+### 7.1 The parental mode: what the core does on its own
 
 Some connections, calls and files happen in the chat core with no app call: auto-accepting on an address, a business address, member contacts and group invitations; ringing for an incoming call; receiving small inline files. The app can't reach them on profiles other than the active one: address settings and the profile act only on the active user (`withUserId` → `checkSameUser`, `src/Simplex/Chat/Library/Internal.hs:3451-3457`), and the auto-accept setters need a hidden profile's password (`src/Simplex/Chat/Library/Commands.hs:541-551`). And the calls preference doesn't reach incognito contacts (`src/Simplex/Chat/Types.hs:695-698`) or contacts with their own calls setting (`src/Simplex/Chat/Types/Preferences.hs:1078-1080`).
 
-So the core gets a switch *(provisional, P1)*: a new local API command that sets which of `connect`, `groups`, `calls`, `receiveMedia` are off, held in memory like `APISetEncryptLocalFiles` (`Commands.hs:659`, `chatWriteVar encryptLocalFiles`). Each auto-accept setting is read through one effective value, "the setting is on and its switch is not off", computed once and used at every read listed below. While the switch is set:
+So the core gets a parental mode *(provisional, P1)*: a new local API command that sets which of `connect`, `groups`, `calls`, `receiveMedia` are off, held in memory like `APISetEncryptLocalFiles` (`Commands.hs:659`, `chatWriteVar encryptLocalFiles`). Each auto-accept setting is read through one effective value, "the setting is on and its switch is not off", computed once and used at every read listed below. While the parental mode is on:
 
 | Off | The core | Where |
 |---|---|---|
@@ -91,7 +91,7 @@ So the core gets a switch *(provisional, P1)*: a new local API command that sets
 - Share extension: in `initChat` on both branches, before `apiStartChat` and before `apiActivateChat` (`apps/ios/SimpleX SE/ShareModel.swift:179-201`; its file-encryption call at 198 runs after start, so it is not the pattern to copy).
 - Android: in `initChatController`, next to file encryption (`platform/Core.kt:138`, before the chat starts at 166 or 180); the app and its background service share one process and one core.
 
-It covers every profile, hidden ones included, the notification extension's core, and a database imported later. Nothing is sent to anyone and nothing is stored for the switch; the waiting records are the ones the setting-off paths already store. The address, group-link and preference settings are untouched, so turning the controls off brings them back as they were. Cost: one command, one variable, the checks above at about ten read sites, the per-push resend in the notification extension, and core tests for each.
+It covers every profile, hidden ones included, the notification extension's core, and a database imported later. Nothing is sent to anyone and nothing is stored for the parental mode; the waiting records are the ones the setting-off paths already store. The address, group-link and preference settings are untouched, so turning the controls off brings them back as they were. Cost: one command, one variable, the checks above at about ten read sites, the per-push resend in the notification extension, and core tests for each.
 
 ### 7.2 Connecting to new people (`connect`)
 
@@ -128,7 +128,7 @@ Only connecting has this exception; any other switch is changed on the parental 
 
 ### 7.3 Connections started before the controls
 
-Connections the child started before the controls complete in the core when the other side answers: an unused one-time link, a request sent to an address and accepted later, a prepared chat, a direct-contact invitation sent to a group member, a group being joined (`Subscriber.hs:484-518,619-636`). Blocking these in the core would also block allowed-once connections, which complete the same way. The child's own address and the links of groups the child hosts need nothing here: the core switch ignores what arrives on them (section 7.1), and they work again when the controls are off. Channels are the exception (section 3).
+Connections the child started before the controls complete in the core when the other side answers: an unused one-time link, a request sent to an address and accepted later, a prepared chat, a direct-contact invitation sent to a group member, a group being joined (`Subscriber.hs:484-518,619-636`). Blocking these in the core would also block allowed-once connections, which complete the same way. The child's own address and the links of groups the child hosts need nothing here: the parental mode ignores what arrives on them (section 7.1), and they work again when the controls are off. Channels are the exception (section 3).
 
 So when connecting or groups is switched off, after one confirmation, the app deletes *(provisional, P2)*:
 1. with connecting off: unused one-time links, requests the child sent that are still pending, direct-contact invitations the child sent to group members, and prepared chats not yet connected;
@@ -150,7 +150,7 @@ Off: the child can't create or join groups or channels, create group links, or a
 | Create a group link | `apiCreateGroupLink` 2090 | `apiCreateGroupLink` 2585 |
 | Admit a member waiting for review | `apiAcceptMember` 2017 | `apiAcceptMember` 2491 |
 
-While groups are off, the core switch keeps group invitations pending and ignores join requests to the links of groups the child hosts (section 7.1); a channel the child owns keeps admitting subscribers through its relays (section 3).
+While groups are off, the parental mode keeps group invitations pending and ignores join requests to the links of groups the child hosts (section 7.1); a channel the child owns keeps admitting subscribers through its relays (section 3).
 
 Buttons hidden:
 - iOS (`apps/ios/Shared/Views/`): "Create group" and "Create public channel" (`NewChat/NewChatMenuButton.swift:130-145`); "Join" on group invitations in the chat list and the chat (`ChatList/ChatListNavLink.swift:217-236,320-330`, `Chat/ChatItem/CIGroupInvitationView.swift:95-101`); "Join group" / "Join channel" in a prepared group (`Chat/ComposeMessage/ComposeView.swift:486-496`); creating a group link (`Chat/Group/GroupLinkView.swift:122-125,164-195`).
@@ -160,7 +160,7 @@ Buttons hidden:
 
 Off: no calls in or out.
 
-Incoming calls are turned away by the core switch (section 7.1) *(provisional, P3)*: no ringing in the app, on the iPhone call screen, through the notification extension or on Android's call screen, for every contact, incognito ones included. Rejecting sends nothing (`APIRejectCall`, `Commands.hs:1541-1552`; the local item at `Subscriber.hs:3078-3081`), so the caller sees a call nobody answers. No preference changes.
+Incoming calls are turned away by the parental mode (section 7.1) *(provisional, P3)*: no ringing in the app, on the iPhone call screen, through the notification extension or on Android's call screen, for every contact, incognito ones included. Rejecting sends nothing (`APIRejectCall`, `Commands.hs:1541-1552`; the local item at `Subscriber.hs:3078-3081`), so the caller sees a call nobody answers. No preference changes.
 
 Outgoing and answering, checked in the app:
 
@@ -241,13 +241,13 @@ Onboarding today (since #6888, 2026-04-27) is: introduction, first profile, "You
 - Desktop *(provisional, P10)*: the desktop app stores passcodes unencrypted (`apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/platform/Cryptor.desktop.kt:3-17`) in `settings.properties` (`platform/Resources.desktop.kt:40,64`), so every switch could be edited and the PIN read. The parental screen is hidden on desktop.
 - Approval from the parent's own phone. iOS 26's PermissionKit can send a child's request to the parent through Messages, but it shows the new contact's name to Apple's Messages, and Apple asks apps to use it only when they know the user is a child (WWDC25 session 293, https://developer.apple.com/videos/play/wwdc2025/293/) *(provisional, P12)*.
 - Time limits and app blocking: Screen Time and Family Link do these.
-- Checking every command in the core, so the console and every client are covered without locking them: the next step after the core switch of section 7.1, if the app checks prove too easy to get around *(provisional, P1)*.
+- Checking every command in the core, so the console and every client are covered without locking them: the next step after the parental mode of section 7.1, if the app checks prove too easy to get around *(provisional, P1)*.
 
 ## 12. Build order
 
 Each step ships on its own, iOS first, then Kotlin for Android.
 
-1. The core switch (7.1) with its tests; stored state, the parent PIN, the parent gate, the parental screen, the indicator, and the settings that are off (8).
+1. The parental mode (7.1) with its tests; stored state, the parent PIN, the parent gate, the parental screen, the indicator, and the settings that are off (8).
 2. Connecting: the checks and allow-once of 7.2, and the clean-up of 7.3.
 3. Groups and channels (7.4).
 4. Calls (7.5), sending files and voice (7.6), receiving media (7.7).
