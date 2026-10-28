@@ -182,11 +182,17 @@ layout() {
   relaunch
 }
 
+# The text goes to the device's shell as one single-quoted word, so neither shell interprets it; input text reads %s as
+# a space.
+input_text() {
+  local text=${1// /%s}
+  adb shell "input text '${text//\'/\'\\\'\'}'"
+}
+
 # The app, slowed by the ARM translation, drops characters typed faster than it takes them, so the text is typed a few
-# characters at a time, each part checked on the field. Each part goes to the device's shell as one single-quoted word,
-# so neither shell interprets it; input text reads %s as a space.
+# characters at a time, each part checked on the field; when the field holds only the start, the rest is typed again.
 type_text() {
-  local text=$1 typed="" part deadline=$((SECONDS + 10))
+  local text=$1 typed="" part shown rest retries deadline=$((SECONDS + 10))
   until screen focused; do
     if [ "$SECONDS" -ge "$deadline" ]; then
       echo "error: no text field has the focus"
@@ -198,13 +204,20 @@ type_text() {
     part=${text:0:8}
     text=${text:8}
     typed+=$part
-    part=${part// /%s}
-    adb shell "input text '${part//\'/\'\\\'\'}'"
+    input_text "$part"
+    retries=0
     deadline=$((SECONDS + 10))
     until screen focused "$typed"; do
       if [ "$SECONDS" -ge "$deadline" ]; then
-        echo "error: the field doesn't show \"$typed\""
-        return 1
+        shown=$(screen field) || shown=""
+        rest=${typed#"$shown"}
+        if [ "$retries" -ge 2 ] || [ -z "$shown" ] || [ -z "$rest" ] || [ "$rest" = "$typed" ]; then
+          echo "error: the field shows \"$shown\", not \"$typed\""
+          return 1
+        fi
+        input_text "$rest"
+        retries=$((retries + 1))
+        deadline=$((SECONDS + 10))
       fi
       sleep 1
     done
