@@ -380,6 +380,9 @@ expect_chat_list top
 products=$(dirname "$app")
 if [[ "$products" == */Build/Products/Debug-iphonesimulator ]]; then
   "$(dirname "$0")/snapshots.sh" "${products%/Build/Products/Debug-iphonesimulator}" "$UI_OUT/snapshots"
+  if "$ui" wait "would like to access the Camera" 10; then
+    "$ui" tap "Don’t Allow"
+  fi
 fi
 
 if [ -z "${BACKEND_DIR:-}" ]; then
