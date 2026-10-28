@@ -8,7 +8,6 @@ A feature's test on one platform is `scripts/ci/<platform>/tests/<feature>.sh`, 
 
 ```bash
 #!/bin/bash
-# Private notes: a note sent in "Private notes" shows in the chat and as the chat's preview in the chat list.
 # covers: apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/*
 # covers: apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/*
 
@@ -20,7 +19,6 @@ set -euo pipefail
 check "the note shows in the chat" "$ui" find "scripted note"
 ```
 
-- The first comment line says what the test checks.
 - `# covers:` lines list the code the test exercises, as shell patterns from the repo root (`*` also matches `/`). A run selects the test when its branch changes a file that matches one.
 - `# needs: backend` marks a test that needs the test backend. It gets `BACKEND_DIR`, the backend's work directory (`names-server`, `directory-link`, and on iOS `seed.md`). Without the backend, the test is skipped with a note.
 - The rest is bash over the platform's `ui`, the same commands a Claude session sends. `ui` alone prints them; each platform's README describes its driver.

@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# Settings: the toolbar's profile image opens the user picker, its "Settings" opens Settings, and a swipe down closes
-# it, with the one-hand UI and with the top bar.
 # covers: apps/ios/Shared/Views/ChatList/UserPicker.swift
 # covers: apps/ios/Shared/Views/UserSettings/SettingsView.swift
 # covers: apps/ios/Shared/Views/ChatList/ChatListView.swift
@@ -17,7 +15,6 @@ tap_profile_image() {
   "$ui" tap-xy $((x + 16)) $((y + 16))
 }
 
-# The sheet takes a moment to slide away.
 settings_closed() {
   local i tree
   for i in 1 2 3 4 5; do

@@ -1,11 +1,5 @@
 #!/bin/bash
 
-# The plan job's choice of feature tests: select-tests.sh's names joined by spaces as the step output `tests`, and a line
-# in the job summary. With an empty TESTS input, the changes are those since the run's commit's merge base with the
-# upstream repo's master (the fork's parent, or the repo itself), found with the compare API.
-# Usage: scripts/ci/app-tests/choose-feature-tests.sh <platform dir>, from the repo root, with TESTS, GH_TOKEN,
-# GITHUB_REPOSITORY, GITHUB_SHA, GITHUB_OUTPUT and GITHUB_STEP_SUMMARY set
-
 set -euo pipefail
 
 platform_dir=$1

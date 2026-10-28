@@ -165,8 +165,7 @@ layout() {
   return 1
 }
 
-# The y of the toolbar's title, "Chats", in the chat list pane, from OCR's lines. While the app starts, OCR can read
-# the same word elsewhere, such as in the right pane's "No selected chat".
+# While the app starts, OCR can read "Chats" elsewhere on the screen.
 toolbar_title_y() {
   awk '{
     split($1, at, ",")

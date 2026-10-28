@@ -1,14 +1,5 @@
 #!/bin/bash
 
-# Prints the feature tests of a platform (<platform dir>/tests/<name>.sh) that a run selects, sorted, one per line, and
-# on stderr why each is selected.
-# Usage: scripts/ci/app-tests/select-tests.sh <platform dir> <base commit> [<tests input>], from the repo root
-# The input is empty, none, all, or test names separated by spaces. Empty selects the tests the branch adds or changes
-# since <base commit> (its merge base with master), the tests whose "# covers:" patterns match a file it changes, and
-# all of them when it changes a file they run on: one in scripts/ci/app-tests, or in the platform dir other than tests/,
-# *.md and claude-*. A name without a test on this platform is noted, not refused, since one input can name the tests
-# of several platforms.
-
 set -euo pipefail
 
 if [ $# -lt 2 ]; then
@@ -95,6 +86,7 @@ elif [ -z "$keyword" ] && [ "$words" -gt 0 ]; then
     if [ -f "$platform_dir/tests/$name.sh" ]; then
       select_test "$name" "named in the tests input"
     else
+      # noted, not refused: one input can name the tests of several platforms
       echo "$name: no test on $platform" >&2
     fi
   done

@@ -1,9 +1,6 @@
 #!/bin/bash
 
-# The checks of a scripted UI test, shared by the platforms: check adds a PASS or FAIL line to checks.txt in UI_OUT and
-# goes on, note adds a NOTE line, fail ends the test, report_checks prints the lines and adds them to the job summary
-# under a heading, and fail_on_failed_checks ends the test if any check failed.
-# Sourced by each platform's lib.sh, with UI_OUT set. Runs under macOS's bash 3.2 on the iOS runner.
+# Runs under macOS's bash 3.2 on the iOS runner.
 
 checks=$UI_OUT/checks.txt
 

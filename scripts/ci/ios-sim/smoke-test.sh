@@ -7,9 +7,7 @@
 # With "images" it then turns off the encryption of local files, creates a group and sends tests/fixtures/test.jpg and
 # logo-large-rgba.png picked in the photo library, and checks the pixel sizes of the sent files.
 # Usage: scripts/ci/ios-sim/smoke-test.sh <path to SimpleX.app> <output dir> [images]
-# Each step saves a screenshot and an accessibility tree to the output dir and prints the tree to the log. What the
-# screens show is checked without stopping: every check is listed in checks.txt and the job summary, and the test fails
-# at the end if any failed.
+# Each step saves a screenshot and an accessibility tree to the output dir and prints the tree to the log.
 # Later steps of the job get SIM_UDID and UI_OUT, with the simulator still running.
 
 set -euo pipefail

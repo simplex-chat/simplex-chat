@@ -1,12 +1,6 @@
 #!/bin/bash
 
-# Runs feature tests (<platform dir>/tests/<test>.sh, chosen by select-tests.sh) on the app and the profile the smoke
-# test made, in the given order, each in its own process after restarting the app at the chat list in the reachable
-# layout (ui layout reachable). A test's screens, checks.txt and test.log go to <out dir>/<test>, and the job summary
-# gets a section per test: passed, failed or skipped. A test whose header says "# needs: backend" is skipped when
-# BACKEND_DIR is empty.
-# Usage: scripts/ci/app-tests/feature-tests.sh <platform dir> <out dir> <test>...
-# Exits 1 if any test failed. Runs under macOS's bash 3.2 on the iOS runner.
+# Runs under macOS's bash 3.2 on the iOS runner.
 
 set -euo pipefail
 

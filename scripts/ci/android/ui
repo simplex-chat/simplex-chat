@@ -190,7 +190,7 @@ input_text() {
 }
 
 # The app, slowed by the ARM translation, drops characters typed faster than it takes them, so the text is typed a few
-# characters at a time, each part checked on the field; when the field holds only the start, the rest is typed again.
+# characters at a time, each part checked on the field.
 type_text() {
   local text=$1 typed="" part shown rest retries deadline=$((SECONDS + 10))
   until screen focused; do
