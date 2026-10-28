@@ -3923,12 +3923,12 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Ends" xml:space="preserve" approved="no">
         <source>Ends</source>
-        <target state="translated">Termina</target>
+        <target state="translated">Scade il</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Ends on %@." xml:space="preserve" approved="no">
         <source>Ends on %@.</source>
-        <target state="translated">Termina il %@.</target>
+        <target state="translated">Scade il %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter Passcode" xml:space="preserve" approved="no">
@@ -7526,7 +7526,7 @@ Errore: %@</target>
       </trans-unit>
       <trans-unit id="Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out." xml:space="preserve" approved="no">
         <source>Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out.</source>
-        <target state="translated">I mesi prepagati non hanno data di fatturazione. Il distintivo viene ricreato ogni mese dal saldo che hai già pagato e termina quando si esaurisce.</target>
+        <target state="translated">I mesi prepagati non hanno data di fatturazione. Il distintivo viene ricreato ogni mese dal saldo che hai già pagato e scade quando si esaurisce.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve" approved="no">
@@ -10109,7 +10109,7 @@ Può accadere a causa di qualche bug o quando la connessione è compromessa.</ta
       </trans-unit>
       <trans-unit id="The code was accepted, but the badge it grants has already ended." xml:space="preserve" approved="no">
         <source>The code was accepted, but the badge it grants has already ended.</source>
-        <target state="translated">Il codice è stato accettato, ma il distintivo che concede è già terminato.</target>
+        <target state="translated">Il codice è stato accettato, ma il distintivo che concede è già scaduto.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The code you scanned is not a SimpleX link QR code." xml:space="preserve" approved="no">
@@ -10246,17 +10246,17 @@ i tuoi contatti e i tuoi gruppi.</target>
       </trans-unit>
       <trans-unit id="The store could not be reached." xml:space="preserve" approved="no">
         <source>The store could not be reached.</source>
-        <target state="translated">Impossibile raggiungere il negozio.</target>
+        <target state="translated">Impossibile raggiungere lo store.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The store did not confirm this purchase." xml:space="preserve" approved="no">
         <source>The store did not confirm this purchase.</source>
-        <target state="translated">Il negozio non ha confermato questo acquisto.</target>
+        <target state="translated">Lo store non ha confermato questo acquisto.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store." xml:space="preserve" approved="no">
         <source>The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store.</source>
-        <target state="translated">Il negozio ha restituito una transazione che Apple non ha firmato. SimpleX non può verificare questo acquisto con l'App Store.</target>
+        <target state="translated">Lo store ha restituito una transazione che Apple non ha firmato. SimpleX non può verificare questo acquisto con l'App Store.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve" approved="no">
@@ -10457,7 +10457,7 @@ alert subtitle</note>
       </trans-unit>
       <trans-unit id="This profile already has a badge. Redeem the code on another profile, or once this badge ends." xml:space="preserve" approved="no">
         <source>This profile already has a badge. Redeem the code on another profile, or once this badge ends.</source>
-        <target state="translated">Questo profilo ha già un distintivo. Riscatta il codice su un altro profilo, o una volta che questo distintivo termina.</target>
+        <target state="translated">Questo profilo ha già un distintivo. Riscatta il codice su un altro profilo, o una volta che questo distintivo scade.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This purchase was already credited to a badge on another device or profile." xml:space="preserve" approved="no">
@@ -10537,8 +10537,9 @@ Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzio
         <target state="translated">Per dimostrare a un contatto o a un server che hai un distintivo, l'app genera una nuova prova che rivela solo il tipo di distintivo e la data di scadenza, arrotondata alla settimana.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To purchase key" xml:space="preserve">
+      <trans-unit id="To purchase key" xml:space="preserve" approved="no">
         <source>To purchase key</source>
+        <target state="translated">Alla chiave di acquisto</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="To receive" xml:space="preserve" approved="no">
