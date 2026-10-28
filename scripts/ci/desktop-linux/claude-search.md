@@ -31,7 +31,7 @@ Run all of A and B in the default layout, with the toolbar at the bottom. Then m
    - **(both layouts)** no load row is left at the end, and nothing is cut off, overlapping or garbled.
 6. In the first layout, right-click #ci_group (`ui right-click <x> <y>` at its name): a menu with "Open" shows. Take a shot, then press Escape to close it without choosing Open.
 7. Press Escape to clear the search field. In the first layout, take a shot and check that the banner and the cards show again.
-8. In the first layout, click the search field and type `zqxvjk`, which no chat and no listing matches. Before searching, take a shot and check that "Search in Directory" is offered and "No chats found" is not shown anywhere. Click "Search in Directory", wait about 12 s, and take a shot: no results, and no "Search in Directory". "No chats found" doesn't show here even then, because the chat open in the right pane ("seeded notes") stays listed. Note both screenshot names, then press Escape to clear the search field.
+8. In the first layout, click the search field and type `zqxvjk`, which no chat and no listing matches. Before searching, take a shot and check that "Search in Directory" is offered. Click "Search in Directory", wait about 12 s, and take a shot: no results, and no "Search in Directory". Don't look for "No chats found": the chat open in the right pane ("seeded notes") stays listed, so this step can't show it (the scripted smoke test checks it after a restart). Note both screenshot names, then press Escape to clear the search field.
 
 **B. The Search key.**
 
