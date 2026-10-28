@@ -141,7 +141,7 @@ fun ModalData.MigrateToDeviceView(close: () -> Unit) {
       }
     }
   }
-  val chatReceiver = remember { mutableStateOf(null as MigrationToChatReceiver?) }
+  val chatReceiver = remember { stateGetOrPutNullable<MigrationToChatReceiver>("chatReceiver") { null } }
   ModalView(
     enableClose = !backDisabled.value,
     close = {
