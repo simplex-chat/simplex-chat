@@ -19,10 +19,15 @@ struct BadgesCheckOrderView: View {
     let level: BadgeLevel
     let period: BadgePeriod
     var startDate = Date()
+    var priceList: BadgePriceList? = nil
     @State private var purchasing = false
     @State private var privacyPolicyActive = false
     // presented from this view, not AlertManager: its host is behind the sheet these views open in
     @State private var alert: SomeAlert?
+
+    private var prices: BadgePriceList {
+        priceList ?? store.priceList(level, compact: false)
+    }
 
     var body: some View {
         GeometryReader { g in
@@ -41,7 +46,7 @@ struct BadgesCheckOrderView: View {
                         Divider()
                             .padding(.top, 8)
                             .padding(.bottom, 6)
-                        orderRow("Total", period.priceText(store.price(level, period, compact: false)))
+                        orderRow("Total", period.priceText(prices.price(period)))
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
@@ -49,7 +54,7 @@ struct BadgesCheckOrderView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .padding(.top, 20)
 
-                    if case let .price(p) = store.price(level, period, compact: false) {
+                    if case let .price(p) = prices.price(period) {
                         switch period {
                         case .monthly: footnote("Payment is charged to your Apple ID when you confirm the purchase. The subscription renews automatically at \(p) per month unless you cancel it at least 24 hours before the end of the current period. You can manage and cancel it in your App Store account settings.")
                         case .annual: footnote("Payment is charged to your Apple ID when you confirm the purchase. The subscription renews automatically at \(p) per year unless you cancel it at least 24 hours before the end of the current period. You can manage and cancel it in your App Store account settings.")
@@ -57,7 +62,7 @@ struct BadgesCheckOrderView: View {
                         }
                     }
 
-                    if !store.forSale(level, period) && store.subscribedBefore {
+                    if !prices.forSale(period) && prices.subscribedBefore {
                         footnote("This Apple ID already has a badge subscription. Only the profile that bought it can continue it.")
                     }
 
@@ -124,8 +129,8 @@ struct BadgesCheckOrderView: View {
     }
 
     private func payButton() -> some View {
-        let price = store.price(level, period, compact: false)
-        let disabled = !price.canPurchase || purchasing || !store.canBuy(chatModel.currentUser?.userId) || !store.forSale(level, period) || !AppStore.canMakePayments
+        let price = prices.price(period)
+        let disabled = !price.canPurchase || purchasing || !store.canBuy(chatModel.currentUser?.userId) || !prices.forSale(period) || !AppStore.canMakePayments
         return Button {
             purchase()
         } label: {
@@ -212,7 +217,12 @@ struct RestorePurchasesButton: View {
 struct BadgesCheckOrderView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesCheckOrderView(level: .supporter, period: .oneMonth, startDate: previewDate)
+            BadgesCheckOrderView(
+                level: .supporter,
+                period: .oneMonth,
+                startDate: previewDate,
+                priceList: BadgePriceList(oneMonth: .price("$7.00"), monthly: .price("$7.00"), annual: .price("$42.00"), monthlyAmount: 7, annualAmount: 42, subscriptionsForSale: true, subscribedBefore: false)
+            )
         }
     }
 }

@@ -53,6 +53,38 @@ enum BadgePrice {
     }
 }
 
+struct BadgePriceList {
+    let oneMonth: BadgePrice
+    let monthly: BadgePrice
+    let annual: BadgePrice
+    let monthlyAmount: Decimal?
+    let annualAmount: Decimal?
+    let subscriptionsForSale: Bool
+    let subscribedBefore: Bool
+
+    func price(_ period: BadgePeriod) -> BadgePrice {
+        switch period {
+        case .oneMonth: oneMonth
+        case .monthly: monthly
+        case .annual: annual
+        }
+    }
+
+    func forSale(_ period: BadgePeriod) -> Bool {
+        period == .oneMonth || subscriptionsForSale
+    }
+
+    // percentage the annual subscription saves against 12 monthly payments
+    var annualSavings: Int? {
+        guard let monthlyAmount, let annualAmount else { return nil }
+        let year = monthlyAmount * 12
+        guard year > 0, annualAmount < year else { return nil }
+        let saved = (year - annualAmount) / year * 100
+        let percent = Int(NSDecimalNumber(decimal: saved).doubleValue.rounded())
+        return percent > 0 ? percent : nil
+    }
+}
+
 struct BadgeStoreReceipt {
     // the signed token the badge service verifies - never transaction.jsonRepresentation
     let jws: String
@@ -169,16 +201,16 @@ final class BadgeStore: ObservableObject {
         }
     }
 
-    // percentage the annual subscription saves against 12 monthly payments
-    func annualSavings(_ level: BadgeLevel) -> Int? {
-        guard let monthly = products[badgeProductId(level, .monthly)],
-              let annual = products[badgeProductId(level, .annual)]
-        else { return nil }
-        let year = monthly.price * 12
-        guard year > 0, annual.price < year else { return nil }
-        let saved = (year - annual.price) / year * 100
-        let percent = Int(NSDecimalNumber(decimal: saved).doubleValue.rounded())
-        return percent > 0 ? percent : nil
+    func priceList(_ level: BadgeLevel, compact: Bool = true) -> BadgePriceList {
+        BadgePriceList(
+            oneMonth: price(level, .oneMonth, compact: compact),
+            monthly: price(level, .monthly, compact: compact),
+            annual: price(level, .annual, compact: compact),
+            monthlyAmount: products[badgeProductId(level, .monthly)]?.price,
+            annualAmount: products[badgeProductId(level, .annual)]?.price,
+            subscriptionsForSale: forSale(level, .monthly),
+            subscribedBefore: subscribedBefore
+        )
     }
 
     func load() async {
