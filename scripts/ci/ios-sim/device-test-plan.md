@@ -54,6 +54,7 @@ Run these on an iOS simulator or device on the Mac. Each case says what to do an
 | D14 | Profile with no conversations (onboarding pages shown) | The search bar is shown with the onboarding pages (below them with the one-hand UI, above them with the top bar). A search replaces them with the results while it runs or shows rows; a search that finds nothing shows a "No chats found" row; clearing the text brings the onboarding pages back |
 | D15 (AC8) | Long press a result | A menu with one item, "Open", over a lifted preview of the row (the row without its "Open"), drawn upright in both layouts. Choosing Open does what a tap does; dismissing the menu opens nothing |
 | D16 (AC5) | Manual only: a full-link entry you are already joining (joined, not yet connected) | Its caption says "Already joining" in place of the count, with nothing at the trailing edge; tapping it shows the usual "already joining" sheet or alert |
+| D17 | With a chat in the list, type `zqxvjk` (no chat or listing matches it), and look before searching; then tap "Search in Directory" | Before the search: "Search in Directory" is offered and "No chats found" is not shown anywhere; after the search finds nothing, the centred "No chats found" shows |
 
 ## Chat list: your chats (AC5)
 

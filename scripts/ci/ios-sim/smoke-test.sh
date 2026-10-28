@@ -9,6 +9,7 @@
 # asks again; the results show Open and their avatars, with no header, in both layouts; Open prepares a channel and
 # opens it without an alert, with its subscriber count; once joined, the channel is its chat row among the results, on
 # the chat list in both layouts and in New chat; the chat list's cards show while typing and hide under the results;
+# a text that no chat and no listing matches offers the directory, and "No chats found" shows only once it found nothing;
 # a page whose only result is that channel adds nothing; the load row says how many results are left, is disabled while
 # its page loads (a screenshot shows its colour) and offers a retry when that fails; and a long press on a result
 # shows a menu with Open (not fatal: the gesture is new to this harness; a screenshot shows it).
@@ -22,6 +23,8 @@ app=$1
 export UI_OUT=$2
 bundle_id=chat.simplex.app
 search_text="ci seed"
+# matches no chat and no listing
+no_match_text=zqxvjk
 ui=$(dirname "$0")/ui
 mkdir -p "$UI_OUT"
 
@@ -240,6 +243,32 @@ expect_cards_hidden_by_results() {
     exit 1
   fi
   echo "in the $1 layout the cards ($(paste -sd ',' - <<< "$typing")) show while typing, are hidden under the results and come back when the search is cleared"
+}
+
+# with a chat in the list, a text that matches no chat offers the directory; "No chats found" waits for its search to find nothing
+expect_no_chats_found_after_search() {
+  local tree retry
+  type_search "$no_match_text"
+  "$ui" shot no-match-typed
+  tree=$("$ui" tree)
+  if ! grep -qF '"Search in Directory"' <<< "$tree" || grep -qF '"No chats found"' <<< "$tree"; then
+    echo "error: for \"$no_match_text\" the chat list doesn't offer \"Search in Directory\", or shows \"No chats found\" before searching"
+    exit 1
+  fi
+  tap_search_in_directory
+  if ! "$ui" wait '"No chats found"' 30; then
+    retry=$(labelled_containing "Search failed, tap to retry")
+    if [ -z "$retry" ]; then
+      "$ui" shot no-match-searched-missing
+      echo "error: \"No chats found\" not shown after the directory search for \"$no_match_text\" found nothing"
+      exit 1
+    fi
+    tap_element "$retry"
+    "$ui" wait '"No chats found"' 30
+  fi
+  "$ui" shot no-match-searched
+  clear_search
+  echo "for \"$no_match_text\" the chat list offers \"Search in Directory\" without \"No chats found\", which shows once the directory found nothing"
 }
 
 # ci_cards is the only result for "ci cards": once joined, it must be its chat row, not a result to open
@@ -520,6 +549,7 @@ if grep -qF -e '"Search in Directory"' -e "All results on this page" -e "Search 
 fi
 echo "the search whose only result is the listed ci_cards adds no row and no note"
 clear_search
+expect_no_chats_found_after_search
 expect_cards_hidden_by_results reachable
 open_known_chat_from_results reachable
 "$ui" layout top
@@ -574,4 +604,4 @@ else
   echo "WARN: a long press on #ci_group shows no menu with Open; see the long-press-menu screenshot"
 fi
 clear_search || true
-echo "smoke test passed: onboarding reaches the chat list in both layouts; the first directory search asks to enable Directory search, Cancel sends nothing and Enable searches, and no later search asks; the search for \"$search_text\" shows #ci_group and #ci_channel with Open and their avatars, with no header; the Search key searches the directory and keeps \"Connect to …\"; Open opens a prepared channel without an alert, with its subscriber count; with a chat, the list's cards show while typing and hide under the results; a page of chats already listed adds nothing; the joined channel found by its description is its chat row on the chat list in both layouts and in New chat, and opens it; the load row says how many results are left, is disabled while its page loads and retries a failed page"
+echo "smoke test passed: onboarding reaches the chat list in both layouts; the first directory search asks to enable Directory search, Cancel sends nothing and Enable searches, and no later search asks; the search for \"$search_text\" shows #ci_group and #ci_channel with Open and their avatars, with no header; the Search key searches the directory and keeps \"Connect to …\"; Open opens a prepared channel without an alert, with its subscriber count; with a chat, the list's cards show while typing and hide under the results, and \"No chats found\" waits for a directory search that finds nothing; a page of chats already listed adds nothing; the joined channel found by its description is its chat row on the chat list in both layouts and in New chat, and opens it; the load row says how many results are left, is disabled while its page loads and retries a failed page"

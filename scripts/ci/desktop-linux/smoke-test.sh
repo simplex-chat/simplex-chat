@@ -13,6 +13,8 @@
 # through its result's Open, which opens the prepared channel without an alert, and checks, in both layouts, that a page
 # of chats already listed adds nothing and that ci_channel, when the list doesn't show it, is its chat's row among the
 # results, opening it without an alert; and, with the toolbar at the bottom, that it is a chat row in New chat too.
+# Restarted with no chat open, a text that matches nothing offers the directory, and "No chats found" shows only once
+# the directory found nothing too.
 # These three need NAMES_SERVER, the test SMP server's address.
 # Each step saves a numbered screenshot and the text read from it to the output dir, prints the text to the log,
 # and adds a line to steps.log there. What the screens show is checked without stopping: every check is listed in
@@ -32,6 +34,8 @@ case "$cases" in
     ;;
 esac
 search_text="ci seed"
+# matches no chat and no listing
+no_match_text=zqxvjk
 # backend.sh registered seeded.testing for ci_contact; as a SimpleX name candidate, Enter also searches the directory,
 # whose entries are "CI seeded ..."
 name_label=seeded
@@ -417,6 +421,26 @@ full_search() {
   fi
   cards_hidden "$layout, full search results"
   clear_search_and_check_cards "$layout full search"
+}
+
+# With chats in the list and none open, a text that matches no chat offers the directory; "No chats found" waits for
+# its search to find nothing.
+no_match_search() {
+  local layout=$1
+  "$ui" click-text "Search or paste SimpleX link"
+  "$ui" type "$no_match_text"
+  "$ui" wait "Search in Directory" 15 || true
+  "$ui" shot "$layout-no-match-typed"
+  check "$layout: \"Search in Directory\" offered for \"$no_match_text\"" on_screen "Search in Directory"
+  check "$layout: no \"No chats found\" before the directory search" not_on_screen "No chats found"
+  "$ui" click-text "Search in Directory"
+  if ! "$ui" wait "No chats found" 30 && on_screen "Search failed, tap to retry"; then
+    "$ui" click-text "Search failed, tap to retry"
+    "$ui" wait "No chats found" 30 || true
+  fi
+  "$ui" shot "$layout-no-match-searched"
+  check "$layout: \"No chats found\" once the directory search found nothing" on_screen "No chats found"
+  clear_search_field "$layout"
 }
 
 # The same Search key from the New chat sheet: one group of results, the contacts that match first, with Open on the results.
@@ -894,13 +918,18 @@ if [ "$cases" = search ]; then
   switch_toolbar bottom
   known_channel_searches bottom
   new_chat_known_channel
+  # the chat list always shows the chat open in the right pane, and only a restart closes it
+  "$ui" stop
+  "$ui" start "$app_dir"
+  "$ui" wait "Search or paste SimpleX link" 120 || fail "no chat list after restarting the app"
+  no_match_search bottom
 fi
 
 if grep -q '^FAIL' "$checks"; then
   fail "the smoke test failed checks: $(grep -c '^FAIL' "$checks") of $(grep -cE '^(PASS|FAIL)' "$checks")"
 fi
 if [ "$cases" = search ]; then
-  echo "smoke test passed: onboarding reached the chat list with the toolbar at the bottom and at the top, the first search enabled Directory search, the searches showed one list of results with Open and the load row, Open opened the prepared ci_channel without an alert, and the joined ci_channel is a chat row among the results (chat list in both layouts, New chat), and a page of chats already listed adds nothing"
+  echo "smoke test passed: onboarding reached the chat list with the toolbar at the bottom and at the top, the first search enabled Directory search, the searches showed one list of results with Open and the load row, \"No chats found\" waited for a directory search that found nothing, Open opened the prepared ci_channel without an alert, and the joined ci_channel is a chat row among the results (chat list in both layouts, New chat), and a page of chats already listed adds nothing"
   exit 0
 fi
 echo "smoke test passed: onboarding reached the chat list, which shows \"$local_chat\" with the toolbar at the bottom and at the top"

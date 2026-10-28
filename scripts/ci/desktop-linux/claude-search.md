@@ -31,6 +31,7 @@ Run all of A and B in the default layout, with the toolbar at the bottom. Then m
    - **(both layouts)** no load row is left at the end, and nothing is cut off, overlapping or garbled.
 6. In the first layout, right-click #ci_group (`ui right-click <x> <y>` at its name): a menu with "Open" shows. Take a shot, then press Escape to close it without choosing Open.
 7. Press Escape to clear the search field. In the first layout, take a shot and check that the banner and the cards show again.
+8. In the first layout, click the search field and type `zqxvjk`, which no chat and no listing matches. Before searching, take a shot and check that "Search in Directory" is offered and "No chats found" is not shown anywhere. Click "Search in Directory", wait about 12 s, and take a shot: no results, and no "Search in Directory". "No chats found" doesn't show here even then, because the chat open in the right pane ("seeded notes") stays listed. Note both screenshot names, then press Escape to clear the search field.
 
 **B. The Search key.**
 
@@ -54,7 +55,7 @@ Run all of A and B in the default layout, with the toolbar at the bottom. Then m
 5. Type `cinone`: a row "Connect to cinone.testing" shows. Press Enter: no alert about the name, no "Names" header, and "Connect to cinone.testing" stays; the search finds no directory entries.
 6. Open New chat with the pencil: at the right end of the bottom toolbar (about 363,730) when the toolbar is at the bottom; with the toolbar at the top, a round blue button at the bottom right of the chat list pane (about 341,710). Type `ci seed` in its search field and click "Search in Directory". In its results, one group without a header, with the contacts that match first (use the load row until #ci_group shows), ci_channel is a chat row like a contact's (its name without "#", no "Open"), and #ci_group keeps "Open". Close the sheet: Escape clears its search, then its back arrow (top left of the sheet) closes it.
 
-You have at most 120 turns, and the whole test fits in about 75 if you chain steps whose outcome you can predict with `ui do` and look at the screen after each chain. For example, in the first layout:
+You have at most 120 turns, and the whole test fits in about 80 if you chain steps whose outcome you can predict with `ui do` and look at the screen after each chain. For example, in the first layout:
 
 - `ui do click-text "Search or paste SimpleX link" -- type "ci seed" -- wait "Search in Directory" -- shot bottom-typed`
 - `ui do click-text "Search in Directory" -- wait "Enable Directory search" -- click-text "Cancel" -- shot bottom-consent-cancelled`
