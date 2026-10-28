@@ -131,5 +131,8 @@ echo "smoke test passed: onboarding reaches the chat list, which shows its onboa
 
 products=$(dirname "$app")
 if [[ "$products" == */Build/Products/Debug-iphonesimulator ]]; then
+  # the previews read the app's settings, and their references have the default private routing
+  xcrun simctl spawn "$SIM_UDID" defaults delete "$prefs" networkSMPProxyMode
   "$(dirname "$0")/snapshots.sh" "${products%/Build/Products/Debug-iphonesimulator}" "$UI_OUT/snapshots"
+  xcrun simctl spawn "$SIM_UDID" defaults write "$prefs" networkSMPProxyMode -string unknown
 fi
