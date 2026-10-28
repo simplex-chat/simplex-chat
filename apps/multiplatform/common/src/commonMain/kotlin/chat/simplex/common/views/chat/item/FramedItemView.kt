@@ -501,10 +501,8 @@ fun CIMarkdownText(
   Box(
     Modifier
       .padding(
-        start = if (terminal) CHAT_ITEM_TEXT_PADDING else BUBBLE_SIDE_INSET,
-        top = if (terminal) terminalTop + terminalHeadingGap(ci).toDp() else BUBBLE_TEXT_TOP_GAP.toDp(),
-        end = if (terminal) CHAT_ITEM_TEXT_PADDING else BUBBLE_SIDE_INSET,
-        bottom = if (terminal) 0.dp else BUBBLE_TEXT_BOTTOM_GAP.toDp()
+        if (terminal) PaddingValues(start = CHAT_ITEM_TEXT_PADDING, top = terminalTop + terminalHeadingGap(ci).toDp(), end = CHAT_ITEM_TEXT_PADDING)
+        else PaddingValues(start = BUBBLE_SIDE_INSET, top = BUBBLE_TEXT_TOP_GAP.toDp(), end = BUBBLE_SIDE_INSET, bottom = BUBBLE_TEXT_BOTTOM_GAP.toDp())
       )
   ) {
     MarkdownText(
