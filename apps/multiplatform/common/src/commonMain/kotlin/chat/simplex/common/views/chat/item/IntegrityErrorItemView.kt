@@ -80,14 +80,17 @@ fun RcvMsgErrorItemView(rcvMsgError: RcvMsgError, ci: ChatItem, showTimestamp: B
   name = "Dark Mode"
 )*/
 @Composable
-fun IntegrityErrorItemViewPreview() {
+fun IntegrityErrorItemViewPreview() = BubblePreview {
   SimpleXTheme {
-    IntegrityErrorItemView(
-      MsgErrorType.MsgBadHash(),
-      ChatItem.getDeletedContentSampleData(ts = previewDate),
-      showTimestamp = true,
-      null,
-      tailRendered = false,
-    )
+    val ci = ChatItem.getDeletedContentSampleData(ts = previewDate)
+    ChatItemClipped(ci) { tailRendered ->
+      IntegrityErrorItemView(
+        MsgErrorType.MsgBadHash(),
+        ci,
+        showTimestamp = true,
+        null,
+        tailRendered = tailRendered,
+      )
+    }
   }
 }

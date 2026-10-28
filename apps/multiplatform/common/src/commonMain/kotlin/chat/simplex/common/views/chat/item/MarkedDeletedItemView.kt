@@ -103,14 +103,17 @@ fun markedDeletedText(cItem: ChatItem, chatInfo: ChatInfo): String =
   name = "Dark Mode"
 )*/
 @Composable
-fun PreviewMarkedDeletedItemView() {
+fun PreviewMarkedDeletedItemView() = BubblePreview {
   SimpleXTheme {
-    DeletedItemView(
-      ChatItem.getSampleData(ts = previewDate, itemDeleted = CIDeleted.Deleted(previewDate)),
-      null,
-      showViaProxy = false,
-      showTimestamp = true,
-      tailRendered = false
-    )
+    val ci = ChatItem.getSampleData(ts = previewDate, itemDeleted = CIDeleted.Deleted(previewDate))
+    ChatItemClipped(ci) { tailRendered ->
+      DeletedItemView(
+        ci,
+        null,
+        showViaProxy = false,
+        showTimestamp = true,
+        tailRendered = tailRendered
+      )
+    }
   }
 }

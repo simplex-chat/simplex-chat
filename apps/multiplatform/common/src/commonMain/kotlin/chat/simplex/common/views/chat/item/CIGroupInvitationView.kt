@@ -172,7 +172,7 @@ fun CIGroupInvitationView(
   name = "Dark Mode"
 )*/
 @Composable
-fun PendingCIGroupInvitationViewPreview() {
+fun PendingCIGroupInvitationViewPreview() = BubblePreview {
   SimpleXTheme {
     CIGroupInvitationView(
       ci = previewDated(ChatItem.getGroupInvitationSample()),
@@ -190,7 +190,7 @@ fun PendingCIGroupInvitationViewPreview() {
   name = "Dark Mode"
 )*/
 @Composable
-fun CIGroupInvitationViewAcceptedPreview() {
+fun CIGroupInvitationViewAcceptedPreview() = BubblePreview {
   SimpleXTheme {
     CIGroupInvitationView(
       ci = previewDated(ChatItem.getGroupInvitationSample()),
@@ -205,7 +205,7 @@ fun CIGroupInvitationViewAcceptedPreview() {
 
 @Preview
 @Composable
-fun CIGroupInvitationViewLongNamePreview() {
+fun CIGroupInvitationViewLongNamePreview() = BubblePreview {
   SimpleXTheme {
     CIGroupInvitationView(
       ci = previewDated(ChatItem.getGroupInvitationSample()),

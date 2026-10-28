@@ -281,7 +281,7 @@ private fun StatusIconText(icon: Painter, color: Color) {
 
 @Preview
 @Composable
-fun PreviewCIMetaView() {
+fun PreviewCIMetaView() = BubblePreview {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), previewDate, "hello"
@@ -294,7 +294,7 @@ fun PreviewCIMetaView() {
 
 @Preview
 @Composable
-fun PreviewCIMetaViewUnread() {
+fun PreviewCIMetaViewUnread() = BubblePreview {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), previewDate, "hello",
@@ -308,7 +308,7 @@ fun PreviewCIMetaViewUnread() {
 
 @Preview
 @Composable
-fun PreviewCIMetaViewSendFailed() {
+fun PreviewCIMetaViewSendFailed() = BubblePreview {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), previewDate, "hello",
@@ -322,7 +322,7 @@ fun PreviewCIMetaViewSendFailed() {
 
 @Preview
 @Composable
-fun PreviewCIMetaViewSendNoAuth() {
+fun PreviewCIMetaViewSendNoAuth() = BubblePreview {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), previewDate, "hello", status = CIStatus.SndErrorAuth()
@@ -335,7 +335,7 @@ fun PreviewCIMetaViewSendNoAuth() {
 
 @Preview
 @Composable
-fun PreviewCIMetaViewSendSent() {
+fun PreviewCIMetaViewSendSent() = BubblePreview {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), previewDate, "hello", status = CIStatus.SndSent(SndCIStatusProgress.Complete)
@@ -348,7 +348,7 @@ fun PreviewCIMetaViewSendSent() {
 
 @Preview
 @Composable
-fun PreviewCIMetaViewEdited() {
+fun PreviewCIMetaViewEdited() = BubblePreview {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), previewDate, "hello",
@@ -362,7 +362,7 @@ fun PreviewCIMetaViewEdited() {
 
 @Preview
 @Composable
-fun PreviewCIMetaViewEditedUnread() {
+fun PreviewCIMetaViewEditedUnread() = BubblePreview {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectRcv(), previewDate, "hello",
@@ -377,7 +377,7 @@ fun PreviewCIMetaViewEditedUnread() {
 
 @Preview
 @Composable
-fun PreviewCIMetaViewEditedSent() {
+fun PreviewCIMetaViewEditedSent() = BubblePreview {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), previewDate, "hello",
@@ -392,7 +392,7 @@ fun PreviewCIMetaViewEditedSent() {
 
 @Preview
 @Composable
-fun PreviewCIMetaViewDeletedContent() {
+fun PreviewCIMetaViewDeletedContent() = BubblePreview {
   CIMetaView(
     chatItem = ChatItem.getDeletedContentSampleData(ts = previewDate),
     null,

@@ -1505,11 +1505,23 @@ val previewDate = Instant.fromEpochSeconds(1_736_936_100)
 fun previewDated(chatItem: ChatItem): ChatItem =
   chatItem.copy(meta = chatItem.meta.copy(itemTs = previewDate, createdAt = previewDate, updatedAt = previewDate))
 
+@Composable
+fun BubblePreview(content: @Composable () -> Unit) {
+  CompositionLocalProvider(LocalBubbleLayout provides !LocalTerminalLayout.current, content = content)
+}
+
+@Composable
+fun ChatItemClipped(chatItem: ChatItem, content: @Composable (tailRendered: Boolean) -> Unit) {
+  Box(Modifier.clipChatItem(chatItem, tailVisible = true)) {
+    content(chatItemTailRendered(chatItem, tailVisible = true, revealed = false))
+  }
+}
+
 @Preview
 @Composable
 fun PreviewChatItemView(
   chatItem: ChatItem = ChatItem.getSampleData(1, CIDirection.DirectSnd(), previewDate, "hello")
-) {
+) = BubblePreview {
   ChatItemView(
     chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
     rhId = null,
@@ -1559,7 +1571,7 @@ fun PreviewChatItemView(
 
 @Preview
 @Composable
-fun PreviewChatItemViewDeletedContent() {
+fun PreviewChatItemViewDeletedContent() = BubblePreview {
   SimpleXTheme {
     ChatItemView(
       chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),

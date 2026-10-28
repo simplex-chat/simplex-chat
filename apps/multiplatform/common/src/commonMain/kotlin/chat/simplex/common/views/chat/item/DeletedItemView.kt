@@ -57,14 +57,17 @@ fun ItemTextCard(ci: ChatItem, tailRendered: Boolean, firstLineFontSize: TextUni
   name = "Dark Mode"
 )*/
 @Composable
-fun PreviewDeletedItemView() {
+fun PreviewDeletedItemView() = BubblePreview {
   SimpleXTheme {
-    DeletedItemView(
-      ChatItem.getDeletedContentSampleData(ts = previewDate),
-      null,
-      showViaProxy = false,
-      showTimestamp = true,
-      tailRendered = false
-    )
+    val ci = ChatItem.getDeletedContentSampleData(ts = previewDate)
+    ChatItemClipped(ci) { tailRendered ->
+      DeletedItemView(
+        ci,
+        null,
+        showViaProxy = false,
+        showTimestamp = true,
+        tailRendered = tailRendered
+      )
+    }
   }
 }
