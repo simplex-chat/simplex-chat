@@ -238,9 +238,10 @@ jobs:
         id: smoke
         run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app" "$RUNNER_TEMP/smoke-test" images
 
+      # the smoke step then compares the app's previews with their references, which can fail after its checks passed
       - name: Run feature tests
         id: features
-        if: ${{ !cancelled() && steps.smoke.outcome == 'success' && needs.plan.outputs.tests != '' }}
+        if: ${{ !cancelled() && steps.smoke.outputs.checks == 'passed' && needs.plan.outputs.tests != '' }}
         timeout-minutes: 30
         env:
           TESTS: ${{ needs.plan.outputs.tests }}
