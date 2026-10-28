@@ -520,13 +520,13 @@ suspend fun initTemporaryDatabase(tempDatabaseFile: File, netCfg: NetCfg): Pair<
     if (ctrl != null) {
       val user = startChatWithTemporaryDatabase(ctrl, netCfg)
       if (user != null) return ctrl to user
-      chatCloseStore(ctrl)
     }
-    File(tempDatabaseFile.absolutePath + "_chat.db").delete()
-    File(tempDatabaseFile.absolutePath + "_agent.db").delete()
   } catch (e: Throwable) {
     Log.e(TAG, "Error while starting chat in temporary database: ${e.stackTraceToString()}")
   }
+  if (ctrl != null) controller.stopChatWithTemporaryDatabase(ctrl)
+  File(tempDatabaseFile.absolutePath + "_chat.db").delete()
+  File(tempDatabaseFile.absolutePath + "_agent.db").delete()
   return null
 }
 
@@ -734,12 +734,7 @@ private class MigrationFromChatReceiver(
   suspend fun stopAndCleanUp() {
     Log.d(TAG, "MigrationChatReceiver.stop")
     receiveMessages = false
-    try {
-      controller.apiStopChat(ctrl)
-    } catch (e: Exception) {
-      Log.e(TAG, "MigrationChatReceiver.stop error: ${e.stackTraceToString()}")
-    }
-    chatCloseStore(ctrl)
+    controller.stopChatWithTemporaryDatabase(ctrl)
     File(databaseUrl.absolutePath + "_chat.db").delete()
     File(databaseUrl.absolutePath + "_agent.db").delete()
   }

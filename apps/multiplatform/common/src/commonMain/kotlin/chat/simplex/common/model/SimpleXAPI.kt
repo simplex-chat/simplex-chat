@@ -786,6 +786,15 @@ object ChatController {
     return migrationActiveUser
   }
 
+  suspend fun stopChatWithTemporaryDatabase(ctrl: ChatCtrl) {
+    try {
+      apiStopChat(ctrl)
+    } catch (e: Exception) {
+      Log.e(TAG, "Error stopping chat in temporary database: ${e.stackTraceToString()}")
+    }
+    chatCloseStore(ctrl)
+  }
+
   suspend fun changeActiveUser(rhId: Long?, toUserId: Long, viewPwd: String?) {
     try {
       changeActiveUser_(rhId, toUserId, viewPwd)
