@@ -202,7 +202,7 @@ B4   header: 14dp start, as message text (user); text inset by bubbleTextPadding
      header and quote bands kept (user)
 B5   quote: text inset by bubbleTextPadding; Inter for the sender and the text (earlier owner decision: quotes in Inter)
 B6   emoji in a bubble: the text paddings; the reserve line with the full line height
-B7   deleted, moderated and error items: text inset by bubbleTextPadding; time on the text baseline;
+B7   deleted, moderated and error items: text inset by bubbleTextPadding; time on the last text baseline;
      the fill takes the bubble shape and the text keeps the tail space of a message (user)
 B8   file in a bubble: the last baseline of the size line BUBBLE_TEXT_INSET above the edge; the time and the ink bottom
      of the file icon on that baseline (user)
@@ -219,6 +219,8 @@ B13  calls: as on master, without the bubble typography (user)
 B14  group sender name: starts at the bubble edge, 4dp after the avatar, as the bubble (user, as iOS)
 B15  group invitation: the time on the last baseline of the card, at its end; its copy joined to the last word
      (user, 2026-10-26)
+B16  chat item previews: LocalBubbleLayout in each preview function; the previews of deleted and error items clipped
+     as in the chat, with the tail (user, 2026-10-28)
 ```
 
 ## 4. Kotlin
@@ -226,7 +228,8 @@ B15  group invitation: the time on the last baseline of the card, at its end; it
 ```
 chat/item/TerminalItemView.kt     LocalBubbleLayout; usesChatTypography(); chatTextStyle (was terminalTextStyle) in both layouts;
                                   inlineIcon in both layouts; metaBaseline shared by TerminalMetaLayout and the bubbles;
-                                  hasTerminalSender shared with the event runs of bubbles
+                                  hasTerminalSender shared with the event runs of bubbles;
+                                  bubbleTextStyle: chatTextStyle in bubbles only, for the texts of deleted and error items
 chat/item/FramedItemView.kt       BUBBLE_* constants, BUBBLE_SIDE_INSET among them; Modifier.bubbleTextPadding, Modifier.bubbleMeta(),
                                   RowScope.bubbleMetaOnBaseline(), MetaOnLastBaseline; header, quote, emoji, meta and text insets
 chat/item/CIMetaView.kt           metaReserveCopy (was terminalReserveSpaceForMeta); breakBefore: a breaking space instead of the word joiner
@@ -237,14 +240,18 @@ chat/item/MarkdownBlocks.kt       spacing, heading sizes and headingBox of termi
 chat/item/CIEventView.kt          chatEventTextStyle in both layouts; chatEventPadding without the vertical parameter
 chat/item/CIChatFeatureView.kt    merged icons one event line high in both layouts
 chat/item/CIFileView.kt           bubble: size line baseline inset from the bottom edge; fileIconOnBaseline
-chat/item/DeletedItemView.kt      bubble: bubbleTextPadding, time on the text baseline; RectangleShape, bubbleTailSpace
-chat/item/MarkedDeletedItemView.kt
-chat/item/IntegrityErrorItemView.kt
-chat/item/CIRcvDecryptionError.kt bubble: bubbleTextPadding, bubbleMeta, the copy of the time; RectangleShape, bubbleTailSpace
+chat/item/DeletedItemView.kt      ItemTextCard, one switch between the bubble and the terminal card: bubbleTextPadding, the time on
+                                  the last text baseline, the fill shaped by the item clip, bubbleTailSpace
+chat/item/MarkedDeletedItemView.kt ItemTextCard
+chat/item/IntegrityErrorItemView.kt ItemTextCard (CIMsgError)
+chat/item/CIRcvDecryptionError.kt DecryptionErrorCard, one switch: bubbleTextPadding, bubbleMeta, the copy of the time,
+                                  the fill shaped by the item clip, bubbleTailSpace
 chat/item/CIGroupInvitationView.kt bubble: the copy of the time joined to the last word; the time placed by MetaOnLastBaseline
-chat/item/ChatItemView.kt         calls without LocalBubbleLayout; tailRendered for deleted and error items; bubbleTailSpace
-chat/ChatView.kt                  LocalBubbleLayout provided for classic chats; row gaps in sp; event runs (eventRunLargeGap);
-                                  sender name at the bubble edge
+chat/item/ChatItemView.kt         calls without LocalBubbleLayout; tailRendered for deleted and error items; bubbleTailSpace;
+                                  chatItemTailRendered, shared with FramedItemView, chatItemOffset and ChatView;
+                                  BubblePreview and ChatItemClipped for the chat item previews
+chat/ChatView.kt                  LocalBubbleLayout provided for classic chats; row gaps in sp; event runs (eventRunLargeGap,
+                                  applied in ChatItemsList; rowItemSeparation as on master); sender name at the bubble edge
 usersettings/Appearance.kt        LocalBubbleLayout for the classic theme preview
 ```
 
