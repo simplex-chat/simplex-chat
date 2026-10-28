@@ -27,7 +27,6 @@ esac
 package=chat.simplex.app
 local_chat="seeded notes"
 search_field="Search or paste SimpleX link"
-# matches no chat
 no_match_text=zqxvjk
 ui=$(dirname "$0")/ui
 checks=$UI_OUT/checks.txt
