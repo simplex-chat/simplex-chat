@@ -1,4 +1,4 @@
-# Test: channel message signing and channel moderators in the SimpleX Chat desktop app
+# Test: switching profile clears the chat list search in the SimpleX Chat desktop app
 
 You are testing the SimpleX Chat desktop app, which runs on a virtual display on this machine. Drive it only with the `ui` helper, through Bash, one command per call: `ui <command> [args]`. Anything else is refused; don't look for ways around that, and if something blocks the test, report it. The commands are listed at the end.
 
@@ -8,66 +8,38 @@ Your working directory is where your output goes. `ui shot <name>` saves `screen
 
 - The app is already running, on its first screen, with a new, empty database: never run `ui start` or `ui stop`. Begin with `ui shot start` to see it.
 - After onboarding, the chat list is in the left pane (x 1 to 389) and chats open in the right pane. An empty chat list shows only its toolbar, with the profile picture at about 27,730 and a pencil (New chat) at about 363,730: the search field "Search or paste SimpleX link" appears once there is a chat. The toolbar is at the bottom of the left pane.
-- The channel uses the app's preset chat relays, on the internet. Creating it and joining it wait for them: wait up to 120 s there (`ui wait "<text>" 120`).
+- Check the chat list and the search field in the left pane only: the chat open in the right pane can show the same names.
 
 ## How to do things in the app
 
-- **Send a message:** click the message field at the bottom of the right pane (its placeholder is "Broadcast" for the channel's owner, "Message" for others), `ui type "<text>"`, then `ui key Return`. Check the message then shows in the chat.
-- **Channel info:** click the channel name at the top of the right pane. Press Escape to close it and other panes (preferences, member info, a message's info) and get back to the chat.
-- **Message menu:** `ui right-click <x> <y>` on the message's text (centre from `ui find`) opens its menu ("Info", "Moderate", …).
-- **Signatures are read as text, never from the seal icons:** a message's "Info" shows "Signed" (your own message), "Signed & verified" (someone else's, checked) or "Signature missing".
-- **Switch profile:** click the profile picture (about 27,730); the menu lists your other profiles by name: click the one you want. The chat list then shows that profile's chats; click "ci signing" in it.
-- **Add a profile:** profile picture → "Your chat profiles" → "Add profile". On "Create profile", click the field about 40 px below the text "Enter your name:", type the name, and click the "Create profile" button (the lower of the two "Create profile" texts; the upper one is the title). The new profile becomes the active one; press Escape until the chat list shows.
-- **Join by the copied link** (from a profile without chats): the pencil (about 363,730) → "Paste link" → "Tap to paste link". An alert names the channel with "Open channel": click it. The channel opens with "Tap Join channel" and a "Join channel" bar at the bottom: click the bar, and wait up to 120 s until the bottom of the chat shows "you are subscriber".
+- **Create a group:** the pencil (about 363,730) → "Create group". Click the field about 40 px below the text "Enter group name", type the name, and click "Create group" (the button below the field). If "Skip inviting members" shows, click it. Press Escape until the chat list shows; the group stays open in the right pane, since Escape doesn't close a chat.
+- **Type in the search field:** click "Search or paste SimpleX link" and `ui type "<text>"`. Escape clears the field, and so does the clear button at its right end: from typing until the next profile switch, press no Escape and don't click that button. A typed word of 5 or more letters, such as `alpha`, also shows "Connect to alpha.testing" near the field: don't click it. Before switching profile, check that the field still shows the text.
+- **Switch profile:** click the profile picture (about 27,730); the menu lists your other profiles by name: click the one you want. The chat list then shows that profile's chats.
+- **Add a profile:** profile picture → "Your chat profiles" → "Add profile". On "Create profile", click the field about 40 px below the text "Enter your name:", type the name, and click the "Create profile" button (the lower of the two "Create profile" texts; the upper one is the title). The new profile becomes the active one; press Escape until its chat list shows (for a profile without chats, the right pane shows "Talk to someone").
 
 ## The test
 
-The parts build on each other: run them in this order. cisub must join only after cimod has become a moderator (B2), so that cimod learns about cisub.
-
-**S. Setup.**
+The steps build on each other: run them in this order. Names are compared ignoring case.
 
 1. (S1) Onboarding. Each screen waits for the one before it; wait for a text before clicking it. The first screen has "Create your profile": click it. On "Create profile", click the field "Enter profile name", type `citester`, and click "Create profile". The next screen offers a database passphrase: click "Use random passphrase", then "OK" in the alert that follows. Click "Continue", then "Accept" on the screen after it. Wait up to 60 s for the chat list: the right pane shows "Talk to someone".
-2. (S2) Click the pencil, then "Create public channel". Click the field about 40 px below the text "Channel name", type `ci signing`, and click the "Create public channel" button (the lower of the two texts with that name). Wait up to 120 s for "Share link": the channel opens and its "Channel link" pane shows over it. If "N/M relays active" stays below M for 120 s with N at least 1, click "Continue", and "Continue" in the alert. On "Channel link", click "Continue". Check: the chat "ci signing" is open.
-3. (S3) Send `before signing`. Check: it shows in the chat.
+2. (P1) As citester, create the group `ci alpha`. Check: the chat list lists "ci alpha" and shows the search field "Search or paste SimpleX link".
+3. (P2) Add the profile `ciother` (it becomes the active profile), and as ciother create the group `ci beta`. Check: ciother's chat list lists "ci beta" and not "ci alpha".
+4. (P3) Switch to citester. Type `alpha` in the search field. Check: the list shows "ci alpha".
+5. (P4) With `alpha` still in the field, switch to ciother. Check: the search field is empty (it shows its placeholder "Search or paste SimpleX link"), the list shows "ci beta", and "No chats found" is not shown.
+6. (P5) As ciother, type `beta` in the search field, then switch to citester. Check: the search field is empty and the list shows "ci alpha".
+7. (P6) As citester, type `alpha` in the search field. Then add the profile `cinew`: it has no chats, so the right pane shows "Talk to someone". Then switch back to citester. Check: the search field is empty and the list shows "ci alpha".
 
-**A. "Sign messages" (as citester).**
-
-1. (A1) Channel info → "Channel preferences". Check: the first row is "Sign messages", and its footer says "Do not require signing messages." (the switch is off).
-2. (A2) Click the switch of "Sign messages", at the right end of its row. Check: the alert "Sign messages?" says "Messages sent before will show "signature missing" to subscribers who join later." and has "Enable" and "Cancel". Click "Cancel". Check: the footer says "Do not require signing messages." again.
-3. (A3) Click the switch again, then "Enable". Check: the footer says "Require signing messages.". Click "Save and notify channel subscribers", then press Escape until the chat shows. Check: the chat shows "Sign messages: on".
-4. (A4) Send `after signing`, right-click it → "Info". Check: the info says "Signed".
-5. (A5) Channel info → "Channel preferences". Check: the footer of "Chat with admins" says "Prohibit chats with admins." (saving in A3 did not turn it on). Press Escape until the chat shows.
-
-**J. A subscriber joins.**
-
-1. (J1) Channel info → "Channel link" → "Share link". Check: the toast "Copied to clipboard". Press Escape until the chat list shows.
-2. (J2) Add the profile `cimod`, and as cimod join by the copied link. Check: "you are subscriber".
-3. (A6) As cimod in "ci signing": click the message "before signing". Check: the alert "Signature missing" says "The message was sent before the channel started signing messages, or it is fake." Close it, right-click "before signing" → "Info". Check: "Signature missing". Then right-click "after signing" → "Info". Check: "Signed & verified".
-
-**B. A moderator.**
-
-1. (B1) Switch to citester → "ci signing" → channel info → "Subscribers" → "cimod". Click the "Change role" row. Check: the list offers exactly "subscriber", "contributor" and "moderator" (no admin, no owner).
-2. (B2) Click "moderator", then "Change" in the alert "Change role?". Check: cimod's role shows moderator, and the section above it is titled "Moderator". Press Escape until the chat shows. Check: the chat shows "you changed role of cimod to moderator".
-3. (B3) Switch to cimod → "ci signing". Check: the chat shows "changed your role to moderator". Send `moderator post`. Check: it shows in the chat.
-4. (J3) Add the profile `cisub`, and as cisub join by the same link (it is still on the clipboard; if not, copy it again as citester as in J1). Check: "you are subscriber".
-5. (J4) Switch to citester → "ci signing" → channel info → "Subscribers" → "cisub" → "Change role" → "contributor" → "Change". Check: cisub's role shows contributor, in the section titled "Contributor".
-6. (J5) Switch to cisub → "ci signing". Send `contributor post`. Check: it shows in the chat.
-7. (B4) Switch to cimod → "ci signing" → channel info. Check: it shows "Subscribers"; click it: the list includes "cisub".
-8. (B5) Click "cisub". Check: its info offers "Block for all" (don't click it yet). Press Escape until the chat shows.
-9. (B6) Right-click "contributor post" → "Moderate" → "Delete" in the alert "Delete member message?". Check: the message shows "moderated by cimod" in its place.
-10. (B7) Channel info → "Subscribers" → "cisub" → "Block for all" → "Block for all" in the alert "Block subscriber for all?". Check: cisub's info now offers "Unblock for all". Press Escape until the chat shows. Check: the chat shows "you blocked cisub".
-
-You have at most 300 turns, and the whole test fits in about 150 if you chain steps whose outcome you can predict with `ui do` and look at the screen after each chain. For example:
+You have at most 200 turns, and the whole test fits in about 80 if you chain steps whose outcome you can predict with `ui do` and look at the screen after each chain. For example:
 
 - `ui do click-text "Create your profile" -- wait "Enter profile name" -- click-text "Enter profile name" -- type citester -- shot profile`
-- `ui do click 363 730 -- click-text "Create public channel" 10 -- wait "Channel name" -- shot new-channel`
-- `ui do click-text "Broadcast" -- type "after signing" -- key Return -- wait "after signing" -- shot after-signing`
+- `ui do click 363 730 -- click-text "Create group" 10 -- wait "Enter group name" -- shot new-group`
+- `ui do click-text "Search or paste SimpleX link" -- type alpha -- shot P3`
 - `ui do click 27 730 -- click-text "Your chat profiles" 10 -- click-text "Add profile" 10 -- wait "Enter your name" -- shot add-profile`
 
-`ui do` stops at the first command that fails, so a failed chain tells you where it stopped. Take a shot at each check, named after its step (`ui shot A2`).
+`ui do` stops at the first command that fails, so a failed chain tells you where it stopped. Take a shot at each check, named after its step (`ui shot P4`).
 
 ## Report
 
-Write `report.md` in your working directory as you go, so a session that is cut short still leaves its results: one row per step (S1 to S3, A1 to A5, J1, J2, A6, B1 to B3, J3 to J5, B4 to B7), each check you ran as PASS or FAIL with its evidence (the text OCR read, screenshot names), and anything else unexpected. End your final message with one line: `CLAUDE-TEST: PASS` if every check you ran passed, otherwise `CLAUDE-TEST: FAIL` followed by the steps that failed.
+Write `report.md` in your working directory as you go, so a session that is cut short still leaves its results: one row per step (S1, P1 to P6), each check you ran as PASS or FAIL with its evidence (the text OCR read, screenshot names), and anything else unexpected. End your final message with one line: `CLAUDE-TEST: PASS` if every check you ran passed, otherwise `CLAUDE-TEST: FAIL` followed by the steps that failed.
 
 ## The ui helper
