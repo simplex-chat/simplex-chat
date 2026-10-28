@@ -3867,7 +3867,7 @@ fun PreviewChatLayout() {
       ChatItem.getSampleData(
         2, CIDirection.DirectRcv(), previewDate, "hello"
       ),
-      ChatItem.getDeletedContentSampleData(3),
+      ChatItem.getDeletedContentSampleData(3, ts = previewDate),
       ChatItem.getSampleData(
         4, CIDirection.DirectSnd(), previewDate, "hello"
       ),
@@ -3881,7 +3881,7 @@ fun PreviewChatLayout() {
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
     val searchValue = remember { mutableStateOf("") }
     ChatLayout(
-      chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
+      chatsCtx = remember { ChatModel.ChatsContext(secondaryContextFilter = null).also { it.chatItems.replaceAll(chatItems) } },
       remoteHostId = remember { mutableStateOf(null) },
       chat = remember { mutableStateOf(Chat.sampleData) },
       unreadCount = unreadCount,
@@ -3893,7 +3893,7 @@ fun PreviewChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
-      selectedChatItems = remember { mutableStateOf(setOf()) },
+      selectedChatItems = remember { mutableStateOf(null) },
       back = {},
       info = {},
       showReports = {},
@@ -3950,7 +3950,7 @@ fun PreviewGroupChatLayout() {
       ChatItem.getSampleData(
         2, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
       ),
-      ChatItem.getDeletedContentSampleData(3),
+      ChatItem.getDeletedContentSampleData(3, CIDirection.GroupRcv(GroupMember.sampleData), previewDate),
       ChatItem.getSampleData(
         4, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
       ),
@@ -3964,9 +3964,9 @@ fun PreviewGroupChatLayout() {
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
     val searchValue = remember { mutableStateOf("") }
     ChatLayout(
-      chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
+      chatsCtx = remember { ChatModel.ChatsContext(secondaryContextFilter = null).also { it.chatItems.replaceAll(chatItems) } },
       remoteHostId = remember { mutableStateOf(null) },
-      chat = remember { mutableStateOf(Chat.sampleData) },
+      chat = remember { mutableStateOf(Chat.sampleData.copy(chatInfo = ChatInfo.Group.sampleData)) },
       unreadCount = unreadCount,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       composeView = { _ -> },
@@ -3976,7 +3976,7 @@ fun PreviewGroupChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
-      selectedChatItems = remember { mutableStateOf(setOf()) },
+      selectedChatItems = remember { mutableStateOf(null) },
       back = {},
       info = {},
       showReports = {},
