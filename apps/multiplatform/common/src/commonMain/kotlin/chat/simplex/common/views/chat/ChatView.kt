@@ -3858,7 +3858,7 @@ private fun shouldShowAvatar(current: ChatItem, older: ChatItem?): Boolean {
   name = "Dark Mode"
 )*/
 @Composable
-fun PreviewChatLayout() {
+fun PreviewChatLayout() = BubblePreview {
   SimpleXTheme {
     val chatItems = listOf(
       ChatItem.getSampleData(
@@ -3941,7 +3941,7 @@ fun PreviewChatLayout() {
 
 @Preview
 @Composable
-fun PreviewGroupChatLayout() {
+fun PreviewGroupChatLayout() = BubblePreview {
   SimpleXTheme {
     val chatItems = listOf(
       ChatItem.getSampleData(

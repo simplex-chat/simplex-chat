@@ -210,6 +210,7 @@ B8   file in a bubble: the last baseline of the size line BUBBLE_TEXT_INSET abov
      of the file icon on that baseline (user)
 B9   events: line height of 12sp secondary text; feature icons and merged icons without height, one event line high (user)
 B10  row gaps in sp, values kept; a sender change in direct chats 8sp (user)
+     row gaps grow with the font, unlike the insets of B18 (user, 2026-10-28)
      events: 2sp between the events of a run, 8sp around the run; a message next to an event at a large gap,
      above an event with its tail and time; the avatar column of an event without its 8dp top padding (user)
 B11  markdown blocks in bubbles: spacing and line heights of terminal rows (user); headings × 1.5625, 1.25, 1, bold,
@@ -222,9 +223,11 @@ B14  group sender name: starts at the bubble edge, 4dp after the avatar, as the 
 B15  group invitation: the time on the last baseline of the card, at its end; its copy joined to the last word
      (user, 2026-10-26)
 B16  chat item previews: LocalBubbleLayout in each preview function; the previews of deleted and error items clipped
-     as in the chat (user, 2026-10-28)
+     as in the chat (user, 2026-10-28); the chat view previews, with messages since #7914, the same
 B17  tails only on items with message content: deleted, moderated, blocked, error, decryption error and invalid JSON
      items have no tail (user, 2026-10-28)
+     invalid JSON items, drawn without a fill, lose the tail offset: their text 9dp further from the screen edge
+     (user, 2026-10-28)
 B18  vertical bubble insets in dp: they keep their size at larger fonts, as master's paddings (user, 2026-10-28)
 ```
 
@@ -257,7 +260,8 @@ chat/item/ChatItemView.kt         calls without LocalBubbleLayout; shapeStyleWit
                                   chatItemTailRendered, shared with FramedItemView, chatItemOffset and ChatView;
                                   BubblePreview for the chat item previews
 chat/ChatView.kt                  LocalBubbleLayout provided for classic chats; row gaps in sp; event runs (eventRunLargeGap,
-                                  applied in ChatItemsList; rowItemSeparation as on master); sender name at the bubble edge
+                                  applied in ChatItemsList; rowItemSeparation as on master); sender name at the bubble edge;
+                                  BubblePreview for the chat view previews
 usersettings/Appearance.kt        LocalBubbleLayout for the classic theme preview
 ```
 
