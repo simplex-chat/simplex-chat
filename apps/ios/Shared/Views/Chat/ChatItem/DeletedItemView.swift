@@ -34,8 +34,10 @@ struct DeletedItemView: View {
 struct DeletedItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            DeletedItemView(chat: Chat.sampleData, chatItem: ChatItem.getDeletedContentSample())
-            DeletedItemView(chat: Chat.sampleData, chatItem: ChatItem.getDeletedContentSample(dir: .groupRcv(groupMember: GroupMember.sampleData)))
+            let ci1 = ChatItem.getDeletedContentSample(1, previewDate)
+            DeletedItemView(chat: Chat.sampleData, chatItem: ci1).modifier(ChatItemClipped(ci1, tailVisible: true))
+            let ci2 = ChatItem.getDeletedContentSample(dir: .groupRcv(groupMember: GroupMember.sampleData), previewDate)
+            DeletedItemView(chat: Chat.sampleData, chatItem: ci2).modifier(ChatItemClipped(ci2, tailVisible: true))
         }
         .previewLayout(.fixed(width: 360, height: 200))
     }

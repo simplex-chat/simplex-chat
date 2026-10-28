@@ -25,10 +25,12 @@ on:
       - "simplex-chat.cabal"
       - "cabal.project"
       - "Dockerfile*"
-      - "scripts/ci/**"
+      - "scripts/ci/*.sh"
       - "scripts/ci/ios-stub-libs.sh"
       - "scripts/desktop/**"
-      - ".github/**"
+      - ".github/workflows/build.yml"
+      - ".github/actions/**"
+      - ".github/changelog_conf.json"
       - "packages/simplex-chat-nodejs/**"
       - "packages/simplex-chat-client/types/typescript/**"
       - "packages/simplex-chat-python/**"
@@ -849,6 +851,9 @@ jobs:
     env:
       image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}
       source_hashes: dist-newstyle/sources.sha256
+      opt: O0
+      ghc_options: --ghc-options=-O0
+      cache_o0: false
     concurrency: *linux-concurrency
     strategy:
       fail-fast: false
@@ -1363,6 +1368,10 @@ jobs:
       - name: Point Command Line Tools SDK to Xcode SDK
         shell: bash
         run: sudo ln -sfn "$(xcrun --sdk macosx --show-sdk-path)" /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+
+      - name: Check the previews listed in the snapshot tests
+        shell: bash
+        run: python3 "apps/ios/SimpleX Snapshots/check-previews.py"
 
       - name: Build iOS app
         timeout-minutes: 60

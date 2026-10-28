@@ -398,6 +398,8 @@ struct ChooseServerOperatorsInfoView: View {
     }
 }
 
-#Preview {
-    OnboardingConditionsView(selectedOperatorIds: [])
+struct OnboardingConditionsView_Previews: PreviewProvider {
+    static var previews: some View {
+        OnboardingConditionsView(selectedOperatorIds: [])
+    }
 }

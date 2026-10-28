@@ -104,7 +104,7 @@ fun IntegrityErrorItemViewPreview() {
   SimpleXTheme {
     IntegrityErrorItemView(
       MsgErrorType.MsgBadHash(),
-      ChatItem.getDeletedContentSampleData(),
+      ChatItem.getDeletedContentSampleData(ts = previewDate),
       showTimestamp = true,
       null,
       tailRendered = false,

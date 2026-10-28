@@ -3869,20 +3869,20 @@ fun PreviewChatLayout() {
   SimpleXTheme {
     val chatItems = listOf(
       ChatItem.getSampleData(
-        1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
+        1, CIDirection.DirectSnd(), previewDate, "hello"
       ),
       ChatItem.getSampleData(
-        2, CIDirection.DirectRcv(), Clock.System.now(), "hello"
+        2, CIDirection.DirectRcv(), previewDate, "hello"
       ),
       ChatItem.getDeletedContentSampleData(3),
       ChatItem.getSampleData(
-        4, CIDirection.DirectSnd(), Clock.System.now(), "hello"
+        4, CIDirection.DirectSnd(), previewDate, "hello"
       ),
       ChatItem.getSampleData(
-        5, CIDirection.DirectSnd(), Clock.System.now(), "hello"
+        5, CIDirection.DirectSnd(), previewDate, "hello"
       ),
       ChatItem.getSampleData(
-        6, CIDirection.DirectRcv(), Clock.System.now(), "hello"
+        6, CIDirection.DirectRcv(), previewDate, "hello"
       )
     )
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
@@ -3952,20 +3952,20 @@ fun PreviewGroupChatLayout() {
   SimpleXTheme {
     val chatItems = listOf(
       ChatItem.getSampleData(
-        1, CIDirection.GroupSnd(), Clock.System.now(), "hello"
+        1, CIDirection.GroupSnd(), previewDate, "hello"
       ),
       ChatItem.getSampleData(
-        2, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
+        2, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
       ),
       ChatItem.getDeletedContentSampleData(3),
       ChatItem.getSampleData(
-        4, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
+        4, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
       ),
       ChatItem.getSampleData(
-        5, CIDirection.GroupSnd(), Clock.System.now(), "hello"
+        5, CIDirection.GroupSnd(), previewDate, "hello"
       ),
       ChatItem.getSampleData(
-        6, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
+        6, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
       )
     )
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
