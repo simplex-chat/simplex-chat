@@ -2,7 +2,9 @@
 
 # Installs the app in a new iPhone simulator and runs the scripted UI cases with the ui helper: onboarding to the
 # chat list with the one-hand UI (the default), then the chat list again with the top bar. It leaves the app in the one-hand UI.
-# With BACKEND_DIR, the work dir of the running test backend, it then searches the test directory: the first search
+# For an app in the derived data of a build, it then renders the previews of the SimpleX Snapshots tests to the snapshots
+# folder of the output dir (snapshots.sh).
+# With BACKEND_DIR, the work dir of the running test backend, it then relaunches the app and searches the test directory: the first search
 # asks to enable Directory search (Cancel sends nothing, Enable searches), and no later search, the Search key's included,
 # asks again; the results show Open and their avatars, with no header, in both layouts; Open prepares a channel and
 # opens it without an alert, with its subscriber count; once joined, the channel is its chat row among the results, on
@@ -378,10 +380,18 @@ expect_chat_list reachable
 "$ui" shot chat-list-top
 expect_chat_list top
 "$ui" layout reachable
+
+products=$(dirname "$app")
+if [[ "$products" == */Build/Products/Debug-iphonesimulator ]]; then
+  "$(dirname "$0")/snapshots.sh" "${products%/Build/Products/Debug-iphonesimulator}" "$UI_OUT/snapshots"
+fi
+
 if [ -z "${BACKEND_DIR:-}" ]; then
   echo "smoke test passed: onboarding reaches the chat list, which shows its onboarding pages and toolbar with the one-hand UI and with the top bar"
   exit 0
 fi
+
+"$ui" relaunch
 
 # typed text that is not a SimpleX name offers the directory
 "$ui" tap-value "Search or paste SimpleX link"

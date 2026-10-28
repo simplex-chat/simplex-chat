@@ -15,6 +15,7 @@ struct BadgesCheckOrderView: View {
     @ObservedObject private var store = BadgeStore.shared
     let level: BadgeLevel
     let period: BadgePeriod
+    var startDate = Date()
     @State private var purchasing = false
     // presented from this view, not AlertManager: its host is behind the sheet these views open in
     @State private var alert: SomeAlert?
@@ -49,7 +50,7 @@ struct BadgesCheckOrderView: View {
                     VStack(spacing: 10) {
                         payButton()
                             .padding(.vertical, 10)
-                        BadgeBillingFooter(period: period)
+                        BadgeBillingFooter(period: period, startDate: startDate)
                     }
                     .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }
@@ -125,7 +126,7 @@ struct BadgesCheckOrderView: View {
 struct BadgesCheckOrderView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesCheckOrderView(level: .supporter, period: .oneMonth)
+            BadgesCheckOrderView(level: .supporter, period: .oneMonth, startDate: previewDate)
         }
     }
 }

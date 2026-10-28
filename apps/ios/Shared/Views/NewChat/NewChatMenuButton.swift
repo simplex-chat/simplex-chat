@@ -587,6 +587,8 @@ struct DeletedChats: View {
     }
 }
 
-#Preview {
-    NewChatMenuButton(showNewChatSheet: Binding.constant(false))
+struct NewChatMenuButton_Previews: PreviewProvider {
+    static var previews: some View {
+        NewChatMenuButton(showNewChatSheet: Binding.constant(false))
+    }
 }

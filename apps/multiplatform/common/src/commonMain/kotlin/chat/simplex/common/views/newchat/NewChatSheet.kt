@@ -924,7 +924,7 @@ fun ActionButton(
 
 @Preview
 @Composable
-private fun PreviewNewChatSheet() {
+internal fun PreviewNewChatSheet() {
   SimpleXTheme {
     ModalData().NewChatSheet(rh = null, close = {})
   }

@@ -263,29 +263,35 @@ jobs:
           du -sh "$app"
           LD_LIBRARY_PATH="$app/lib/app/resources" ldd "$app/lib/app/resources/libapp-lib.so"
 
-      # for the Claude job; a tarball keeps the app's file modes, which an artifact drops
+      # a tarball keeps the app's file modes, which an artifact drops
       - name: Pack app
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && needs.plan.outputs.run-claude == 'true' }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: tar -czf "$RUNNER_TEMP/desktop-app.tar.gz" -C apps/multiplatform/release/main/app simplex
 
       - name: Upload app
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && needs.plan.outputs.run-claude == 'true' }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         uses: actions/upload-artifact@v7
         with:
           name: desktop-app
           path: ${{ runner.temp }}/desktop-app.tar.gz
           compression-level: 0
-          retention-days: 1
+          retention-days: 14
           if-no-files-found: error
 
       - name: Run desktop tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: apps/multiplatform
+        env:
+          SNAPSHOT_DIR: ${{ runner.temp }}/snapshots
         run: ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.daemon.jvmargs=-Xmx4g :common:desktopTest
 
       - name: Report desktop tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: scripts/ci/desktop-linux/test-summary.py apps/multiplatform/common/build/test-results/desktopTest
+
+      - name: Compare snapshots
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: python3 scripts/ci/snapshots-compare.py apps/multiplatform/common/src/desktopTest/snapshots "$RUNNER_TEMP/snapshots" "$RUNNER_TEMP/snapshots-diff"
 
       - name: Run smoke test
         if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.backend.outcome != 'failure' && steps.link.outcome != 'failure' }}
@@ -338,6 +344,17 @@ jobs:
           retention-days: 3
           if-no-files-found: warn
 
+      - name: Upload snapshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-snapshots
+          path: |
+            ${{ runner.temp }}/snapshots
+            ${{ runner.temp }}/snapshots-diff
+          retention-days: 3
+          if-no-files-found: warn
+
       - name: Upload backend logs
         if: ${{ !cancelled() && steps.backend.outcome != 'skipped' }}
         uses: actions/upload-artifact@v7
@@ -355,7 +372,7 @@ jobs:
     needs: [plan, app]
     if: ${{ !cancelled() && needs.plan.outputs.run-claude == 'true' && needs.app.result == 'success' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 120
     environment:
       name: app-sim-claude
       deployment: false
