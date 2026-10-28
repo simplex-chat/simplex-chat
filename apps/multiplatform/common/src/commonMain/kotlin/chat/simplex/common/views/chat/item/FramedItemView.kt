@@ -268,8 +268,7 @@ fun FramedItemView(
       endButton = endButton
     ) { inlineMeta ->
       Box(contentAlignment = Alignment.BottomEnd) {
-        val style = shapeStyle(ci, chatItemTailEnabled(), tailVisible, true)
-        val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+        val tailRendered = chatItemTailRendered(ci, tailVisible, revealed = true)
         Column(
           Modifier
             .width(IntrinsicSize.Max)

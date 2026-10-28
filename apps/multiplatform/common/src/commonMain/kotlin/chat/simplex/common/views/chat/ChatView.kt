@@ -2020,9 +2020,7 @@ fun BoxScope.ChatItemsList(
 
         @Composable
         fun adjustTailPaddingOffset(originalPadding: Dp, start: Boolean): Dp {
-          val chatItemTail = remember { appPreferences.chatItemTail.state }
-          val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
-          val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+          val tailRendered = chatItemTailRendered(cItem, itemSeparation.largeGap, revealed = true)
 
           return originalPadding + (if (tailRendered) 0.dp else if (start) msgTailWidthDp * 2 else msgTailWidthDp)
         }
@@ -2092,9 +2090,7 @@ fun BoxScope.ChatItemsList(
                         maxLines = 1
                       )
                       if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
-                        val chatItemTail = remember { appPreferences.chatItemTail.state }
-                        val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
-                        val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+                        val tailRendered = chatItemTailRendered(cItem, itemSeparation.largeGap, revealed = true)
 
                         Text(
                           member.memberRole.text(isChannel = chatInfo.isChannel),
@@ -2173,9 +2169,7 @@ fun BoxScope.ChatItemsList(
                         overflow = TextOverflow.Ellipsis,
                         maxLines = 1
                       )
-                      val chatItemTail = remember { appPreferences.chatItemTail.state }
-                      val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
-                      val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+                      val tailRendered = chatItemTailRendered(cItem, itemSeparation.largeGap, revealed = true)
                       Text(
                         generalGetString(MR.strings.channel_role_label),
                         Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF + if (tailRendered) msgTailWidthDp else 0.dp),
