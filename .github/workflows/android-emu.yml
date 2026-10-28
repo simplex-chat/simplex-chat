@@ -285,7 +285,6 @@ jobs:
           fi
           scripts/ci/android/smoke-test.sh "$RUNNER_TEMP/apk/$APK" "$RUNNER_TEMP/smoke-test" ${cases:-}
 
-      # an emulator that dies mid-test leaves no line in its own log: the kernel's and its crash reports say how
       - name: Emulator state after a failed smoke test
         if: ${{ !cancelled() && steps.smoke.outcome == 'failure' }}
         run: |
