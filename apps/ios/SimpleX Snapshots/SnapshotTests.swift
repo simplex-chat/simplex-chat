@@ -231,6 +231,9 @@ private func removeAnimations(_ layer: CALayer) {
     layer.sublayers?.forEach(removeAnimations)
 }
 
+@MainActor
 private func settle() {
-    RunLoop.main.run(until: Date().addingTimeInterval(0.6))
+    repeat {
+        RunLoop.main.run(until: Date().addingTimeInterval(0.6))
+    } while QRCode.generating > 0
 }

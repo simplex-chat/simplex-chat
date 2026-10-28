@@ -47,6 +47,7 @@ struct SimpleXLinkQRCode: View {
 private let smallQRRatio: CGFloat = 0.63
 
 struct QRCode: View {
+    private(set) static var generating = 0
     let uri: String
     var small: Bool = false
     var withLogo: Bool = true
@@ -90,7 +91,11 @@ struct QRCode: View {
             }
         }
         .onTapGesture(perform: makeScreenshotFunc)
-        .task { image = await generateImage(uri, tintColor: tintColor, errorLevel: small ? "M" : "L") }
+        .task {
+            Self.generating += 1
+            image = await generateImage(uri, tintColor: tintColor, errorLevel: small ? "M" : "L")
+            Self.generating -= 1
+        }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
