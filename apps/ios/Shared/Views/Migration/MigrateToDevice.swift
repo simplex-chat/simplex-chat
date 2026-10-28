@@ -339,8 +339,10 @@ struct MigrateToDevice: View {
             progressView()
         }
         .onAppear {
-            Task { await chatReceiver?.stopAndCleanUp() }
-            importArchive(archivePath)
+            Task {
+                await chatReceiver?.stopAndCleanUp()
+                importArchive(archivePath)
+            }
         }
     }
 
@@ -481,14 +483,15 @@ struct MigrateToDevice: View {
     private func initTemporaryDatabase() async -> (chat_ctrl, User)? {
         let (status, ctrl) = chatInitTemporaryDatabase(url: tempDatabaseUrl)
         showErrorOnMigrationIfNeeded(status, $alert)
+        guard let ctrl else { return nil }
         do {
-            if let ctrl, let user = try startChatWithTemporaryDatabase(ctrl: ctrl) {
+            if let user = try startChatWithTemporaryDatabase(ctrl: ctrl) {
                 return (ctrl, user)
             }
         } catch let error {
             logger.error("Error while starting chat in temporary database: \(error.localizedDescription)")
         }
-        if let ctrl { await stopChatWithTemporaryDatabase(ctrl: ctrl) }
+        await stopChatWithTemporaryDatabase(ctrl: ctrl)
         return nil
     }
 
@@ -674,7 +677,8 @@ private struct PassphraseEnteringView: View {
                         verifyingPassphrase = true
                         hideKeyboard()
                         Task {
-                            let (status, _) = chatInitTemporaryDatabase(url: getAppDatabasePath(), key: currentKey, confirmation: .yesUp)
+                            let (status, ctrl) = chatInitTemporaryDatabase(url: getAppDatabasePath(), key: currentKey, confirmation: .yesUp)
+                            if let ctrl { await stopChatWithTemporaryDatabase(ctrl: ctrl) }
                             let success = switch status {
                             case .ok, .invalidConfirmation: true
                             default: false

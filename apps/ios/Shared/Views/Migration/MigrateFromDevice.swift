@@ -502,14 +502,15 @@ struct MigrateFromDevice: View {
     private func initTemporaryDatabase() async -> (chat_ctrl, User)? {
         let (status, ctrl) = chatInitTemporaryDatabase(url: tempDatabaseUrl)
         showErrorOnMigrationIfNeeded(status, $alert)
+        guard let ctrl else { return nil }
         do {
-            if let ctrl, let user = try startChatWithTemporaryDatabase(ctrl: ctrl) {
+            if let user = try startChatWithTemporaryDatabase(ctrl: ctrl) {
                 return (ctrl, user)
             }
         } catch let error {
             logger.error("Error while starting chat in temporary database: \(error.localizedDescription)")
         }
-        if let ctrl { await stopChatWithTemporaryDatabase(ctrl: ctrl) }
+        await stopChatWithTemporaryDatabase(ctrl: ctrl)
         return nil
     }
 
