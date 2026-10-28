@@ -443,6 +443,20 @@ no_match_search() {
   clear_search_field "$layout"
 }
 
+# the pencil at the right of the bottom toolbar opens New chat; the chat list behind it has the same search field
+open_new_chat() {
+  "$ui" click 363 730
+  "$ui" wait "Create group" 10
+}
+
+# with the toolbar at the bottom Escape only clears the sheet's search; its back arrow closes it
+close_new_chat() {
+  "$ui" key Escape
+  "$ui" wait "Create group" 10
+  "$ui" click 27 730
+  back_to_chat_list || fail "no chat list after the New chat sheet"
+}
+
 # New chat shows its empty state, "No filtered contacts", only when it lists contacts: "Open new chat" for the registered
 # name prepares ci_contact first. A text that matches no contact offers the directory, and the empty state waits for its
 # search to find nothing.
@@ -452,8 +466,7 @@ new_chat_no_match_search() {
   "$ui" click-text "Connect to $name_label.testing" 15
   "$ui" click-text "Open new chat" 60 || fail "no \"Open new chat\" for $name_label.testing"
   back_to_chat_list || fail "no chat list after opening the new chat with ci_contact"
-  "$ui" click 363 730
-  "$ui" wait "Create group" 10
+  open_new_chat
   "$ui" click-text "Search or paste SimpleX link"
   "$ui" type "$no_match_text"
   "$ui" wait "Search in Directory" 15 || true
@@ -464,18 +477,12 @@ new_chat_no_match_search() {
   "$ui" wait "No filtered contacts" 30 || true
   "$ui" shot new-chat-no-match-searched
   check "New chat: \"No filtered contacts\" once the directory search found nothing" on_screen "No filtered contacts"
-  # with the toolbar at the bottom Escape only clears the sheet's search; its back arrow closes it
-  "$ui" key Escape
-  "$ui" wait "Create group" 10
-  "$ui" click 27 730
-  back_to_chat_list || fail "no chat list after the New chat sheet"
+  close_new_chat
 }
 
 # The same Search key from the New chat sheet: one group of results, the contacts that match first, with Open on the results.
 new_chat_sheet_search() {
-  # the pencil at the right of the bottom toolbar opens New chat; the chat list behind it has the same search field
-  "$ui" click 363 730
-  "$ui" wait "Create group" 10
+  open_new_chat
   "$ui" click-text "Search or paste SimpleX link"
   "$ui" type "$name_label"
   "$ui" wait "Connect to $name_label.testing" 15
@@ -490,11 +497,7 @@ new_chat_sheet_search() {
   check "New chat: #ci_group row has \"Open\"" open_in_row_of "#ci_group"
   check "New chat: #ci_channel row has \"Open\"" open_in_row_of "#ci_channel"
   check "New chat: \"Connect to $name_label.testing\" stays" on_screen "Connect to $name_label.testing"
-  # with the toolbar at the bottom Escape only clears the sheet's search; its back arrow closes it
-  "$ui" key Escape
-  "$ui" wait "Create group" 10
-  "$ui" click 27 730
-  back_to_chat_list || fail "no chat list after the New chat sheet"
+  close_new_chat
 }
 
 # OCR reads a Directory row's name with its "#", which normalise drops, and a chat's row without it
@@ -655,8 +658,7 @@ known_channel_searches() {
 
 # New chat lists only contacts, so there too the joined channel is a chat row among the results.
 new_chat_known_channel() {
-  "$ui" click 363 730
-  "$ui" wait "Create group" 10
+  open_new_chat
   "$ui" click-text "Search or paste SimpleX link"
   "$ui" type "$search_text"
   "$ui" wait "Search in Directory" 15
@@ -666,11 +668,7 @@ new_chat_known_channel() {
   check "New chat: ci_channel is its chat's row, not #ci_channel" no_ci_channel_directory_row
   check "New chat: only #ci_group has \"Open\", not ci_channel" [ "$(count_phrases left Open)" -eq 1 ]
   check "New chat: #ci_group row has \"Open\"" open_in_row_of "#ci_group"
-  # with the toolbar at the bottom Escape only clears the sheet's search; its back arrow closes it
-  "$ui" key Escape
-  "$ui" wait "Create group" 10
-  "$ui" click 27 730
-  back_to_chat_list || fail "no chat list after the New chat sheet"
+  close_new_chat
 }
 
 # Escape closes one screen at a time, and clears the search field
