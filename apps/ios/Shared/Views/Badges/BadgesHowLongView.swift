@@ -74,6 +74,7 @@ struct BadgesHowLongView: View {
     // store.forSale reads the active profile's badge
     @ObservedObject private var badgeModel = BadgeModel.shared
     let level: BadgeLevel
+    var startDate = Date()
     @State private var chosenPeriod: BadgePeriod? = nil
     @State private var continueActive = false
 
@@ -124,7 +125,7 @@ struct BadgesHowLongView: View {
                     VStack(spacing: 10) {
                         continueButton()
                             .padding(.vertical, 10)
-                        BadgeBillingFooter(period: selectedPeriod)
+                        BadgeBillingFooter(period: selectedPeriod, startDate: startDate)
                     }
                     .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }
@@ -207,6 +208,7 @@ struct BadgesHowLongView: View {
 struct BadgeBillingFooter: View {
     @EnvironmentObject var theme: AppTheme
     let period: BadgePeriod
+    let startDate: Date
 
     var body: some View {
         Text(billingFooter)
@@ -220,7 +222,7 @@ struct BadgeBillingFooter: View {
     private var billingFooter: LocalizedStringKey {
         // TODO [badges] from now only because a purchase is refused while a badge is held (refuseWhileBadgeHeld);
         // a top-up must count from the end of the existing balance
-        let endDate = Calendar.current.date(byAdding: .month, value: period.months, to: Date()) ?? Date()
+        let endDate = Calendar.current.date(byAdding: .month, value: period.months, to: startDate) ?? startDate
         let date = DateFormatter.localizedString(from: endDate, dateStyle: .long, timeStyle: .none)
         switch period {
         case .monthly, .annual: return "Renews on \(date). Cancel anytime."
@@ -232,7 +234,7 @@ struct BadgeBillingFooter: View {
 struct BadgesHowLongView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesHowLongView(level: .supporter)
+            BadgesHowLongView(level: .supporter, startDate: previewDate)
         }
     }
 }

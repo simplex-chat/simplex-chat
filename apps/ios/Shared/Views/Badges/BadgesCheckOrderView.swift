@@ -18,6 +18,7 @@ struct BadgesCheckOrderView: View {
     @ObservedObject private var badgeModel = BadgeModel.shared
     let level: BadgeLevel
     let period: BadgePeriod
+    var startDate = Date()
     @State private var purchasing = false
     @State private var privacyPolicyActive = false
     // presented from this view, not AlertManager: its host is behind the sheet these views open in
@@ -69,7 +70,7 @@ struct BadgesCheckOrderView: View {
                     VStack(spacing: 10) {
                         payButton()
                             .padding(.vertical, 10)
-                        BadgeBillingFooter(period: period)
+                        BadgeBillingFooter(period: period, startDate: startDate)
                         HStack(spacing: 20) {
                             Link("Terms of use", destination: appleStandardEULAURL)
                             ZStack {
@@ -211,7 +212,7 @@ struct RestorePurchasesButton: View {
 struct BadgesCheckOrderView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesCheckOrderView(level: .supporter, period: .oneMonth)
+            BadgesCheckOrderView(level: .supporter, period: .oneMonth, startDate: previewDate)
         }
     }
 }
