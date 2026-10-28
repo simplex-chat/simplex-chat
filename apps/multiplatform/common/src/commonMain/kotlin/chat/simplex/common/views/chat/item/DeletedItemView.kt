@@ -17,9 +17,9 @@ import chat.simplex.common.model.ChatItem
 import chat.simplex.common.ui.theme.*
 
 @Composable
-fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean, showTimestamp: Boolean, tailRendered: Boolean) {
+fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean, showTimestamp: Boolean) {
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
-    ItemTextCard(ci, tailRendered, 16.sp, inlineMeta) {
+    ItemTextCard(ci, 16.sp, inlineMeta) {
       Text(
         buildAnnotatedString {
           withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(ci.content.text) }
@@ -32,11 +32,11 @@ fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean,
 }
 
 @Composable
-fun ItemTextCard(ci: ChatItem, tailRendered: Boolean, firstLineFontSize: TextUnit, inlineMeta: (@Composable () -> Unit)?, modifier: Modifier = Modifier, text: @Composable RowScope.() -> Unit) {
+fun ItemTextCard(ci: ChatItem, firstLineFontSize: TextUnit, inlineMeta: (@Composable () -> Unit)?, modifier: Modifier = Modifier, text: @Composable RowScope.() -> Unit) {
   val color = if (ci.chatDir.sent) MaterialTheme.appColors.sentMessage else MaterialTheme.appColors.receivedMessage
   if (inlineMeta != null) {
     Surface(modifier, color = color, contentColor = LocalContentColor.current) {
-      Row(Modifier.bubbleTailSpace(ci.chatDir.sent, tailRendered).bubbleTextPadding(firstLineFontSize)) {
+      Row(Modifier.bubbleTextPadding(firstLineFontSize)) {
         text()
         Box(bubbleMetaOnBaseline()) {
           inlineMeta()
@@ -60,13 +60,12 @@ fun ItemTextCard(ci: ChatItem, tailRendered: Boolean, firstLineFontSize: TextUni
 fun PreviewDeletedItemView() = BubblePreview {
   SimpleXTheme {
     val ci = ChatItem.getDeletedContentSampleData(ts = previewDate)
-    ChatItemClipped(ci) { tailRendered ->
+    Box(Modifier.clipChatItem(ci)) {
       DeletedItemView(
         ci,
         null,
         showViaProxy = false,
-        showTimestamp = true,
-        tailRendered = tailRendered
+        showTimestamp = true
       )
     }
   }

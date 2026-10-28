@@ -166,12 +166,14 @@ line height      every text of a chat item: font size × 22/16 × f(w), Proporti
                  except cards, files, voice and calls (D8) and the one-line text of marked deleted items (its insets are set by baselines)
                  principle: one line-height ratio with the contrast factor; full line height for every line (D1, D2, D7)
                  the same function as terminal rows (chatTextStyle): the relation is the same
-inset            BUBBLE_TEXT_INSET 11sp (user): from a bubble or band edge to the capitals of the text under it,
-                 and from the last baseline to the edge under it
+inset            BUBBLE_TEXT_INSET 11dp (user): from a bubble or band edge to the capitals of the text under it,
+                 and from the last baseline to the edge under it; in dp, so it keeps its size at larger fonts (user)
                  principle: one inset for all parts; gaps measured from a baseline or an edge to the capitals or an edge
 side inset       BUBBLE_SIDE_INSET 14dp (user) for message text, captions, the header, the quote, deleted and error items,
                  an emoji under a quote or header, and the end of the time
-text paddings    BUBBLE_TEXT_TOP_GAP 5sp and BUBBLE_TEXT_BOTTOM_GAP 6.625sp: the inset for 16sp text with the full line height
+text paddings    bubbleTextBoxPadding(): BUBBLE_TEXT_INSET less the space of 16sp text with the full line height above its
+                 capitals (BUBBLE_LINE_ABOVE_CAPS 6sp) and under its last baseline (BUBBLE_LINE_BELOW_BASELINE 4.375sp);
+                 5 and 6.625 at font scale 1
 bands            header and quote text: bubbleTextPadding, the inset from the band edges by the first and last baselines
 time             the baseline of the time BUBBLE_TEXT_INSET above the bubble bottom, on the last baseline of the text
                  ticks without a time: where they stand next to a time (as terminal rows)
@@ -193,7 +195,7 @@ icons            header, feature and preference icons centred on their text, wit
 ## 3. Decisions
 
 ```
-B1   message text and captions: full line height; 5sp above, 6.625sp below; 14dp at the sides (user)
+B1   message text and captions: full line height; capitals and last baseline 11dp from the edges; 14dp at the sides (user)
 B2   time: baseline on the last text baseline, by its distance from the bubble bottom
 B3   reserve: the copy of the time in message text, under an emoji, in decryption errors and group invitations,
      after text with a breaking space before it and without the word joiner (user), in group invitations joined (B15);
@@ -203,7 +205,7 @@ B4   header: 14dp start, as message text (user); text inset by bubbleTextPadding
 B5   quote: text inset by bubbleTextPadding; Inter for the sender and the text (earlier owner decision: quotes in Inter)
 B6   emoji in a bubble: the text paddings; the reserve line with the full line height
 B7   deleted, moderated and error items: text inset by bubbleTextPadding; time on the last text baseline;
-     the fill takes the bubble shape and the text keeps the tail space of a message (user)
+     the fill takes the bubble shape, without a tail (user, 2026-10-28)
 B8   file in a bubble: the last baseline of the size line BUBBLE_TEXT_INSET above the edge; the time and the ink bottom
      of the file icon on that baseline (user)
 B9   events: line height of 12sp secondary text; feature icons and merged icons without height, one event line high (user)
@@ -212,7 +214,7 @@ B10  row gaps in sp, values kept; a sender change in direct chats 8sp (user)
      above an event with its tail and time; the avatar column of an event without its 8dp top padding (user)
 B11  markdown blocks in bubbles: spacing and line heights of terminal rows (user); headings × 1.5625, 1.25, 1, bold,
      capitals placed by headingBox, in both layouts (user)
-B12  unchanged: fills, tails, roundness, colours, themes, wallpapers, interaction; link preview, chat link card,
+B12  unchanged: fills, tails of messages, roundness, colours, themes, wallpapers, interaction; link preview, chat link card,
      group invitation (its time: B15), voice and call layout (D8: cards in the redesign); avatars; date separators
      (shared with terminal rows); reactions; emoji without bubble; chat item info
 B13  calls: as on master, without the bubble typography (user)
@@ -220,7 +222,10 @@ B14  group sender name: starts at the bubble edge, 4dp after the avatar, as the 
 B15  group invitation: the time on the last baseline of the card, at its end; its copy joined to the last word
      (user, 2026-10-26)
 B16  chat item previews: LocalBubbleLayout in each preview function; the previews of deleted and error items clipped
-     as in the chat, with the tail (user, 2026-10-28)
+     as in the chat (user, 2026-10-28)
+B17  tails only on items with message content: deleted, moderated, blocked, error, decryption error and invalid JSON
+     items have no tail (user, 2026-10-28)
+B18  vertical bubble insets in dp: they keep their size at larger fonts, as master's paddings (user, 2026-10-28)
 ```
 
 ## 4. Kotlin
@@ -230,8 +235,9 @@ chat/item/TerminalItemView.kt     LocalBubbleLayout; usesChatTypography(); chatT
                                   inlineIcon in both layouts; metaBaseline shared by TerminalMetaLayout and the bubbles;
                                   hasTerminalSender shared with the event runs of bubbles;
                                   bubbleTextStyle: chatTextStyle in bubbles only, for the texts of deleted and error items
-chat/item/FramedItemView.kt       BUBBLE_* constants, BUBBLE_SIDE_INSET among them; Modifier.bubbleTextPadding, Modifier.bubbleMeta(),
-                                  RowScope.bubbleMetaOnBaseline(), MetaOnLastBaseline; header, quote, emoji, meta and text insets
+chat/item/FramedItemView.kt       BUBBLE_* constants, BUBBLE_SIDE_INSET among them; Modifier.bubbleTextPadding, bubbleTextBoxPadding(),
+                                  Modifier.bubbleMeta(), RowScope.bubbleMetaOnBaseline(), MetaOnLastBaseline; header, quote, emoji,
+                                  meta and text insets
 chat/item/CIMetaView.kt           metaReserveCopy (was terminalReserveSpaceForMeta); breakBefore: a breaking space instead of the word joiner
 chat/item/TextItemView.kt         the copy for every message text with a time, breakBefore in bubbles after text;
                                   ruleMinWidth in terminal rows only
@@ -241,15 +247,15 @@ chat/item/CIEventView.kt          chatEventTextStyle in both layouts; chatEventP
 chat/item/CIChatFeatureView.kt    merged icons one event line high in both layouts
 chat/item/CIFileView.kt           bubble: size line baseline inset from the bottom edge; fileIconOnBaseline
 chat/item/DeletedItemView.kt      ItemTextCard, one switch between the bubble and the terminal card: bubbleTextPadding, the time on
-                                  the last text baseline, the fill shaped by the item clip, bubbleTailSpace
+                                  the last text baseline, the fill shaped by the item clip
 chat/item/MarkedDeletedItemView.kt ItemTextCard
 chat/item/IntegrityErrorItemView.kt ItemTextCard (CIMsgError)
 chat/item/CIRcvDecryptionError.kt DecryptionErrorCard, one switch: bubbleTextPadding, bubbleMeta, the copy of the time,
-                                  the fill shaped by the item clip, bubbleTailSpace
+                                  the fill shaped by the item clip
 chat/item/CIGroupInvitationView.kt bubble: the copy of the time joined to the last word; the time placed by MetaOnLastBaseline
-chat/item/ChatItemView.kt         calls without LocalBubbleLayout; tailRendered for deleted and error items; bubbleTailSpace;
+chat/item/ChatItemView.kt         calls without LocalBubbleLayout; shapeStyleWithTail: no tail without message content;
                                   chatItemTailRendered, shared with FramedItemView, chatItemOffset and ChatView;
-                                  BubblePreview and ChatItemClipped for the chat item previews
+                                  BubblePreview for the chat item previews
 chat/ChatView.kt                  LocalBubbleLayout provided for classic chats; row gaps in sp; event runs (eventRunLargeGap,
                                   applied in ChatItemsList; rowItemSeparation as on master); sender name at the bubble edge
 usersettings/Appearance.kt        LocalBubbleLayout for the classic theme preview
@@ -262,6 +268,7 @@ usersettings/Appearance.kt        LocalBubbleLayout for the classic theme previe
 - time baseline BUBBLE_TEXT_INSET above the bubble bottom
 - ticks without a time where they stand next to a time
 - text capitals and last baseline inset from the edges, BUBBLE_SIDE_INSET at the sides
+- insets keep their size at a larger font
 - no bottom inset before another part of the band
 - time on the text baseline in a card row
 - time on the last baseline of a card, at its end
@@ -285,7 +292,7 @@ reserve          "✓✓ 10:15 AM": 79px (92px) for a meta of 80px; at font scal
 header           text and icon 14dp from the edge (8dp); band 31px (30px)
 quote            Inter; full line heights; band 33px with one line (29px), taller with a sender and two lines
 deleted, errors  one-line card 34px (31px), as a one-line message; marked deleted 31px (27px); time on the text baseline
-                 decryption errors and legacy deleted items: the tail drawn, the text 14px from the visible edge (3px)
+                 decryption errors and legacy deleted items: no tail, the text 14px from the visible edge (3px)
 file             size line baseline 11px above the edge (9px); the time and the ink bottom of the file icon on it
 group invitation the time at the end of the card, 0–1px from the last text baseline (8–9px below it)
 events           runs: between event rows 8px of background in groups (avatars), 12–14px in direct chats;

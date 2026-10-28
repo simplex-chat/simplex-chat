@@ -27,7 +27,6 @@ fun CIRcvDecryptionError(
   msgCount: UInt,
   cInfo: ChatInfo,
   ci: ChatItem,
-  tailRendered: Boolean,
   updateContactStats: (Contact) -> Unit,
   updateMemberStats: (GroupInfo, GroupMember) -> Unit,
   syncContactConnection: (Contact) -> Unit,
@@ -47,7 +46,6 @@ fun CIRcvDecryptionError(
   fun BasicDecryptionErrorItem() {
     DecryptionErrorItem(
       ci,
-      tailRendered,
       onClick = {
         AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.decryption_error),
@@ -65,7 +63,6 @@ fun CIRcvDecryptionError(
         if (modelContactStats.ratchetSyncAllowed) {
           DecryptionErrorItemFixButton(
             ci,
-            tailRendered,
             onClick = {
               AlertManager.shared.showAlertDialog(
                 title = generalGetString(MR.strings.fix_connection_question),
@@ -79,7 +76,6 @@ fun CIRcvDecryptionError(
         } else if (!modelContactStats.ratchetSyncSupported) {
           DecryptionErrorItemFixButton(
             ci,
-            tailRendered,
             onClick = {
               AlertManager.shared.showAlertMsg(
                 title = generalGetString(MR.strings.fix_connection_not_supported_by_contact),
@@ -104,7 +100,6 @@ fun CIRcvDecryptionError(
       if (modelMemberStats.ratchetSyncAllowed) {
         DecryptionErrorItemFixButton(
           ci,
-          tailRendered,
           onClick = {
             AlertManager.shared.showAlertDialog(
               title = generalGetString(MR.strings.fix_connection_question),
@@ -118,7 +113,6 @@ fun CIRcvDecryptionError(
       } else if (!modelMemberStats.ratchetSyncSupported) {
         DecryptionErrorItemFixButton(
           ci,
-          tailRendered,
           onClick = {
             AlertManager.shared.showAlertMsg(
               title = generalGetString(MR.strings.fix_connection_not_supported_by_group_member),
@@ -141,12 +135,11 @@ fun CIRcvDecryptionError(
 @Composable
 fun DecryptionErrorItemFixButton(
   ci: ChatItem,
-  tailRendered: Boolean,
   onClick: () -> Unit,
   syncSupported: Boolean
 ) {
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL = null, showViaProxy = false, showTimestamp = true) }) { inlineMeta ->
-    DecryptionErrorCard(ci, tailRendered, onClick, inlineMeta) {
+    DecryptionErrorCard(onClick, inlineMeta) {
       Column(
         verticalArrangement = Arrangement.spacedBy(2.dp)
       ) {
@@ -183,11 +176,10 @@ fun DecryptionErrorItemFixButton(
 @Composable
 fun DecryptionErrorItem(
   ci: ChatItem,
-  tailRendered: Boolean,
   onClick: () -> Unit
 ) {
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL = null, showViaProxy = false, showTimestamp = true) }) { inlineMeta ->
-    DecryptionErrorCard(ci, tailRendered, onClick, inlineMeta) {
+    DecryptionErrorCard(onClick, inlineMeta) {
       val secondaryColor = MaterialTheme.colors.secondary
       Text(
         buildAnnotatedString {
@@ -203,11 +195,11 @@ fun DecryptionErrorItem(
 }
 
 @Composable
-private fun DecryptionErrorCard(ci: ChatItem, tailRendered: Boolean, onClick: () -> Unit, inlineMeta: (@Composable () -> Unit)?, content: @Composable () -> Unit) {
+private fun DecryptionErrorCard(onClick: () -> Unit, inlineMeta: (@Composable () -> Unit)?, content: @Composable () -> Unit) {
   val receivedColor = MaterialTheme.appColors.receivedMessage
   if (inlineMeta != null) {
     Surface(Modifier.clickable(onClick = onClick), color = receivedColor, contentColor = LocalContentColor.current) {
-      Box(Modifier.bubbleTailSpace(ci.chatDir.sent, tailRendered), contentAlignment = Alignment.BottomEnd) {
+      Box(contentAlignment = Alignment.BottomEnd) {
         Box(Modifier.bubbleTextPadding(16.sp)) {
           content()
         }

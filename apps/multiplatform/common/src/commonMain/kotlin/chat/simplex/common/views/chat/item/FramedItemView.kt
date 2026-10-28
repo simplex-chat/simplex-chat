@@ -133,7 +133,7 @@ fun FramedItemView(
       .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
       .then(
         if (terminal) Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, top = TERMINAL_HEADER_TOP_GAP.toDp(), end = 12.dp, bottom = TERMINAL_HEADER_BOTTOM_GAP.toDp())
-        else Modifier.bubbleTextPadding(12.sp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) BUBBLE_TEXT_INSET else 0.sp)
+        else Modifier.bubbleTextPadding(12.sp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) BUBBLE_TEXT_INSET else 0.dp)
       )
   }
 
@@ -272,7 +272,7 @@ fun FramedItemView(
         Column(
           Modifier
             .width(IntrinsicSize.Max)
-            .bubbleTailSpace(sent, tailRendered)
+            .padding(start = if (!sent && tailRendered) msgTailWidthDp else 0.dp, end = if (sent && tailRendered) msgTailWidthDp else 0.dp)
         ) {
           PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID, limitToPriorityWidth = !terminal || captionlessMedia) {
             @Composable
@@ -371,7 +371,7 @@ fun FramedItemView(
               }
             }
             if (ci.file == null && ci.formattedText == null && !ci.meta.isLive && isShortEmoji(ci.content.text)) {
-              Box(if (terminal) Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, top = TERMINAL_EMOJI_TOP_GAP.toDp(), end = CHAT_ITEM_TEXT_PADDING, bottom = TERMINAL_EMOJI_BOTTOM_GAP.toDp()) else Modifier.padding(start = BUBBLE_SIDE_INSET, top = BUBBLE_TEXT_TOP_GAP.toDp(), end = BUBBLE_SIDE_INSET, bottom = BUBBLE_TEXT_BOTTOM_GAP.toDp())) {
+              Box(if (terminal) Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, top = TERMINAL_EMOJI_TOP_GAP.toDp(), end = CHAT_ITEM_TEXT_PADDING, bottom = TERMINAL_EMOJI_BOTTOM_GAP.toDp()) else Modifier.padding(bubbleTextBoxPadding())) {
                 Column(
                   if (terminal) Modifier.messageLastLine() else Modifier.fillMaxWidth(),
                   horizontalAlignment = Alignment.CenterHorizontally
@@ -501,7 +501,7 @@ fun CIMarkdownText(
     Modifier
       .padding(
         if (terminal) PaddingValues(start = CHAT_ITEM_TEXT_PADDING, top = terminalTop + terminalHeadingGap(ci).toDp(), end = CHAT_ITEM_TEXT_PADDING)
-        else PaddingValues(start = BUBBLE_SIDE_INSET, top = BUBBLE_TEXT_TOP_GAP.toDp(), end = BUBBLE_SIDE_INSET, bottom = BUBBLE_TEXT_BOTTOM_GAP.toDp())
+        else bubbleTextBoxPadding()
       )
   ) {
     MarkdownText(
@@ -554,14 +554,24 @@ const val CHAT_COMPOSE_LAYOUT_ID = "chatCompose"
 const val CONSOLE_COMPOSE_LAYOUT_ID = "consoleCompose"
 val CHAT_ITEM_TEXT_PADDING = 12.dp
 val BUBBLE_SIDE_INSET = 14.dp
-val BUBBLE_TEXT_INSET = 11.sp
-val BUBBLE_TEXT_TOP_GAP = 5.sp
-val BUBBLE_TEXT_BOTTOM_GAP = 6.625.sp
+val BUBBLE_TEXT_INSET = 11.dp
+val BUBBLE_LINE_ABOVE_CAPS = 6.sp
+val BUBBLE_LINE_BELOW_BASELINE = 4.375.sp
 val BUBBLE_CLOSE_GAP = 2.sp
 val BUBBLE_FAR_GAP = 8.sp
 
-fun Modifier.bubbleTextPadding(firstLineFontSize: TextUnit, bottom: TextUnit = BUBBLE_TEXT_INSET): Modifier =
-  padding(horizontal = BUBBLE_SIDE_INSET).paddingFromBaseline(top = (BUBBLE_TEXT_INSET.value + firstLineFontSize.value * INTER_CAP_HEIGHT).sp, bottom = bottom)
+@Composable
+fun Modifier.bubbleTextPadding(firstLineFontSize: TextUnit, bottom: Dp = BUBBLE_TEXT_INSET): Modifier =
+  padding(horizontal = BUBBLE_SIDE_INSET).paddingFromBaseline(top = BUBBLE_TEXT_INSET + (firstLineFontSize * INTER_CAP_HEIGHT).toDp(), bottom = bottom)
+
+@Composable
+fun bubbleTextBoxPadding(): PaddingValues =
+  PaddingValues(
+    start = BUBBLE_SIDE_INSET,
+    top = (BUBBLE_TEXT_INSET - BUBBLE_LINE_ABOVE_CAPS.toDp()).coerceAtLeast(0.dp),
+    end = BUBBLE_SIDE_INSET,
+    bottom = (BUBBLE_TEXT_INSET - BUBBLE_LINE_BELOW_BASELINE.toDp()).coerceAtLeast(0.dp)
+  )
 
 fun Modifier.bubbleMeta(): Modifier =
   layout { measurable, constraints ->

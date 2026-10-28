@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.LastBaseline
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,7 +60,7 @@ class BubbleLayoutTest {
     }
     val part = placed.getValue("part")
     val text = placed.getValue("text").relativeTo(part)
-    val firstBaseline = with(density) { (BUBBLE_TEXT_INSET.value + 16 * INTER_CAP_HEIGHT).sp.roundToPx() }
+    val firstBaseline = with(density) { (BUBBLE_TEXT_INSET + (16 * INTER_CAP_HEIGHT).sp.toDp()).roundToPx() }
     val side = with(density) { BUBBLE_SIDE_INSET.roundToPx() }
     assertEquals(Placed(side, firstBaseline - 18, 100, 44), text)
     assertEquals(inset, part.height - (text.y + 22 + 18))
@@ -66,9 +68,24 @@ class BubbleLayoutTest {
   }
 
   @Test
+  fun insetsKeepTheirSizeAtLargerFont() {
+    renderScene {
+      CompositionLocalProvider(LocalDensity provides Density(1f, 1.5f)) {
+        Box(Modifier.record(placed, "part").bubbleTextPadding(16.sp)) {
+          Box(Modifier.record(placed, "text").fixed(100, 33, 27))
+        }
+      }
+    }
+    val part = placed.getValue("part")
+    val text = placed.getValue("text").relativeTo(part)
+    assertEquals((11 + 16 * 1.5f * INTER_CAP_HEIGHT).roundToInt(), text.y + 27)
+    assertEquals(inset, part.height - (text.y + 27))
+  }
+
+  @Test
   fun noBottomInsetBeforeAnotherPartOfTheBand() {
     renderScene {
-      Box(Modifier.record(placed, "part").bubbleTextPadding(12.sp, bottom = 0.sp)) {
+      Box(Modifier.record(placed, "part").bubbleTextPadding(12.sp, bottom = 0.dp)) {
         Box(Modifier.record(placed, "text").fixed(100, 15, 12))
       }
     }

@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
@@ -22,8 +23,8 @@ import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.*
 
 @Composable
-fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, tailRendered: Boolean) {
-  CIMsgError(ci, showTimestamp, timedMessagesTTL, tailRendered) {
+fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?) {
+  CIMsgError(ci, showTimestamp, timedMessagesTTL) {
     when (msgError) {
       is MsgErrorType.MsgSkipped ->
         AlertManager.shared.showAlertMsg(
@@ -48,9 +49,9 @@ fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, showTimestamp: 
 }
 
 @Composable
-fun CIMsgError(ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, tailRendered: Boolean, onClick: () -> Unit) {
+fun CIMsgError(ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, onClick: () -> Unit) {
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = false, showTimestamp = showTimestamp) }) { inlineMeta ->
-    ItemTextCard(ci, tailRendered, 16.sp, inlineMeta, Modifier.clickable(onClick = onClick)) {
+    ItemTextCard(ci, 16.sp, inlineMeta, Modifier.clickable(onClick = onClick)) {
       Text(
         buildAnnotatedString {
           withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
@@ -63,8 +64,8 @@ fun CIMsgError(ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, tai
 }
 
 @Composable
-fun RcvMsgErrorItemView(rcvMsgError: RcvMsgError, ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, tailRendered: Boolean) {
-  CIMsgError(ci, showTimestamp, timedMessagesTTL, tailRendered) {
+fun RcvMsgErrorItemView(rcvMsgError: RcvMsgError, ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?) {
+  CIMsgError(ci, showTimestamp, timedMessagesTTL) {
     AlertManager.shared.showAlertMsg(
       title = generalGetString(MR.strings.alert_title_msg_error),
       text = when (rcvMsgError) {
@@ -83,13 +84,12 @@ fun RcvMsgErrorItemView(rcvMsgError: RcvMsgError, ci: ChatItem, showTimestamp: B
 fun IntegrityErrorItemViewPreview() = BubblePreview {
   SimpleXTheme {
     val ci = ChatItem.getDeletedContentSampleData(ts = previewDate)
-    ChatItemClipped(ci) { tailRendered ->
+    Box(Modifier.clipChatItem(ci)) {
       IntegrityErrorItemView(
         MsgErrorType.MsgBadHash(),
         ci,
         showTimestamp = true,
         null,
-        tailRendered = tailRendered,
       )
     }
   }

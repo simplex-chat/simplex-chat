@@ -18,9 +18,9 @@ import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
-fun MarkedDeletedItemView(chatsCtx: ChatModel.ChatsContext, ci: ChatItem, chatInfo: ChatInfo, timedMessagesTTL: Int?, revealed: State<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean, tailRendered: Boolean) {
+fun MarkedDeletedItemView(chatsCtx: ChatModel.ChatsContext, ci: ChatItem, chatInfo: ChatInfo, timedMessagesTTL: Int?, revealed: State<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean) {
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
-    ItemTextCard(ci, tailRendered, 12.sp, inlineMeta) {
+    ItemTextCard(ci, 12.sp, inlineMeta) {
       Box(Modifier.weight(1f, false).alignBy(LastBaseline)) {
         MergedMarkedDeletedText(chatsCtx, ci, chatInfo, revealed)
       }
@@ -106,13 +106,12 @@ fun markedDeletedText(cItem: ChatItem, chatInfo: ChatInfo): String =
 fun PreviewMarkedDeletedItemView() = BubblePreview {
   SimpleXTheme {
     val ci = ChatItem.getSampleData(ts = previewDate, itemDeleted = CIDeleted.Deleted(previewDate))
-    ChatItemClipped(ci) { tailRendered ->
+    Box(Modifier.clipChatItem(ci)) {
       DeletedItemView(
         ci,
         null,
         showViaProxy = false,
-        showTimestamp = true,
-        tailRendered = tailRendered
+        showTimestamp = true
       )
     }
   }
