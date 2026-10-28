@@ -38,6 +38,109 @@ final class SnapshotTests: XCTestCase {
         let data = try JSONSerialization.data(withJSONObject: index, options: [.prettyPrinted, .sortedKeys])
         try data.write(to: dir.appendingPathComponent("index-\(size).json"))
     }
+
+    @MainActor
+    func testFirstLayout() throws {
+        NSTimeZone.default = try XCTUnwrap(TimeZone(identifier: "UTC"))
+        let env = ProcessInfo.processInfo.environment
+        let size = env["SNAPSHOT_SIZE"] ?? "large"
+        let dir = layoutCheckDir(env)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let windowScene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        ChatModel.shared.currentUser = User.sampleData
+        let theme = snapshotTheme(false)
+        CurrentColors = theme
+        let appTheme = theme.toAppTheme()
+        let fixtures = SnapshotFixtures()
+        var index: [[String: Any]] = []
+        for terminal in [true, false] {
+            let chats = [("direct", fixtures.overviewDirect(terminal: terminal)), ("group", fixtures.overviewGroup(terminal: terminal)), ("channel", fixtures.overviewChannel(terminal: terminal))]
+            for (name, rows) in chats {
+                let scene = "\(name)-\(terminal ? "terminal" : "classic")-\(size)"
+                let scrollView = EndlessScrollView<MergedItem>(frame: .zero)
+                let host = UIHostingController(rootView: ScrollRepresentable(scrollView: scrollView) { (i: Int, item: MergedItem) in
+                    rows.row(i, item)
+                        .environmentObject(ChatModel.shared)
+                        .environmentObject(appTheme)
+                })
+                let window = UIWindow(windowScene: windowScene)
+                window.overrideUserInterfaceStyle = .light
+                window.rootViewController = host
+                window.frame = windowScene.screen.bounds
+                window.isHidden = false
+                settle()
+                scrollView.updateItems(rows.mergedItems.items)
+                settle()
+                let first = scrollView.listState.visibleItems.map { $0.view.frame.height }
+                try XCTUnwrap(windowImage(window).pngData()).write(to: dir.appendingPathComponent("\(scene)-first.png"))
+                scrollView.updateItems(rows.mergedItems.items, true)
+                settle()
+                let reloaded = scrollView.listState.visibleItems.map { $0.view.frame.height }
+                try XCTUnwrap(windowImage(window).pngData()).write(to: dir.appendingPathComponent("\(scene)-reloaded.png"))
+                window.isHidden = true
+                window.rootViewController = nil
+                index.append(["scene": scene, "first": first, "reloaded": reloaded])
+                print("first layout \(scene): first \(first), reloaded \(reloaded)")
+            }
+        }
+        let data = try JSONSerialization.data(withJSONObject: index, options: [.prettyPrinted, .sortedKeys])
+        try data.write(to: dir.appendingPathComponent("first-layout-\(size).json"))
+    }
+
+    @MainActor
+    func testLayoutSwitch() throws {
+        let env = ProcessInfo.processInfo.environment
+        guard (env["SNAPSHOT_SIZE"] ?? "large") == "large" else { return }
+        let dir = layoutCheckDir(env)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let windowScene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        ChatModel.shared.currentUser = User.sampleData
+        let theme = snapshotTheme(false)
+        CurrentColors = theme
+        let appTheme = theme.toAppTheme()
+        let sceneDelegate = SceneDelegate()
+        let appearance = {
+            UIHostingController(rootView: AppearanceSettings()
+                .environmentObject(ChatModel.shared)
+                .environmentObject(sceneDelegate)
+                .environmentObject(appTheme))
+        }
+        chatLayoutDefault.set(.classic)
+        let window = UIWindow(windowScene: windowScene)
+        window.overrideUserInterfaceStyle = .light
+        window.rootViewController = appearance()
+        window.frame = windowScene.screen.bounds
+        window.isHidden = false
+        settle()
+        try XCTUnwrap(windowImage(window).pngData()).write(to: dir.appendingPathComponent("appearance-1-classic.png"))
+        chatLayoutDefault.set(.terminal)
+        settle()
+        try XCTUnwrap(windowImage(window).pngData()).write(to: dir.appendingPathComponent("appearance-2-terminal-switched.png"))
+        window.rootViewController = appearance()
+        settle()
+        try XCTUnwrap(windowImage(window).pngData()).write(to: dir.appendingPathComponent("appearance-3-terminal-reopened.png"))
+        chatLayoutDefault.set(.classic)
+        settle()
+        try XCTUnwrap(windowImage(window).pngData()).write(to: dir.appendingPathComponent("appearance-4-classic-switched.png"))
+        window.isHidden = true
+        window.rootViewController = nil
+    }
+}
+
+private func layoutCheckDir(_ env: [String: String]) -> URL {
+    URL(fileURLWithPath: env["SNAPSHOT_DIR"] ?? NSTemporaryDirectory() + "snapshots", isDirectory: true)
+        .deletingLastPathComponent()
+        .appendingPathComponent("layout-checks", isDirectory: true)
+}
+
+private func windowImage(_ window: UIWindow) -> UIImage {
+    let format = UIGraphicsImageRendererFormat.default()
+    format.scale = 1
+    format.preferredRange = .standard
+    format.opaque = true
+    return UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { _ in
+        _ = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+    }
 }
 
 private struct SnapshotScene {
@@ -347,7 +450,7 @@ private struct ChatRows: View {
         }
     }
 
-    private func row(_ index: Int, _ mergedItem: MergedItem) -> some View {
+    func row(_ index: Int, _ mergedItem: MergedItem) -> some View {
         let ci = switch mergedItem {
         case let .single(item, _, _): item.item
         case let .grouped(items, _, _, _, _, _, _, _): items.boxedValue.last!.item
@@ -516,7 +619,7 @@ private final class SnapshotFixtures {
         CIFile.getSample(fileId: id(), fileName: name, fileSize: 184_320, filePath: nil, fileStatus: .rcvInvitation)
     }
 
-    private func chatRows(_ chatInfo: ChatInfo, _ items: [ChatItem], terminal: Bool) -> some View {
+    private func chatRows(_ chatInfo: ChatInfo, _ items: [ChatItem], terminal: Bool) -> ChatRows {
         let im = ItemsModel(secondaryIMFilter: nil)
         im.reversedChatItems = items.reversed()
         let merged = MergedItems.create(im, [])
@@ -563,7 +666,7 @@ private final class SnapshotFixtures {
         ], terminal: terminal)
     }
 
-    func overviewDirect(terminal: Bool) -> some View {
+    func overviewDirect(terminal: Bool) -> ChatRows {
         chatRows(direct, [
             event(.directRcv, .rcvChatFeature(feature: .voice, enabled: FeatureEnabled(forUser: true, forContact: true), param: nil), -120),
             msg(.directRcv, "Hi! Did you see the **new release**?", -60),
@@ -576,7 +679,7 @@ private final class SnapshotFixtures {
         ], terminal: terminal)
     }
 
-    func overviewGroup(terminal: Bool) -> some View {
+    func overviewGroup(terminal: Bool) -> ChatRows {
         chatRows(teamChat, [
             event(.groupRcv(groupMember: carol), .rcvGroupEvent(rcvGroupEvent: .memberConnected), -130),
             msg(.groupRcv(groupMember: alice), "Welcome, carol!", -120, reactions: [reaction(.heart, 2, mine: true)]),
@@ -589,7 +692,7 @@ private final class SnapshotFixtures {
         ], terminal: terminal)
     }
 
-    func overviewChannel(terminal: Bool) -> some View {
+    func overviewChannel(terminal: Bool) -> ChatRows {
         chatRows(newsChat, [
             event(.channelRcv, .rcvGroupEvent(rcvGroupEvent: .groupUpdated(groupProfile: news.groupProfile)), -210),
             msg(.channelRcv, "**Version 7.1** is out", -200, reactions: [reaction(.thumbsup, 12), reaction(.heart, 5, mine: true)]),
