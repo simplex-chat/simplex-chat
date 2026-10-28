@@ -222,7 +222,7 @@ struct BadgesHowLongView_Previews: PreviewProvider {
             BadgesHowLongView(
                 level: .supporter,
                 startDate: previewDate,
-                priceList: BadgePriceList(oneMonth: .price("$7"), monthly: .price("$7"), annual: .price("$42"), annualSavings: 50)
+                priceList: BadgePriceList(oneMonth: .price("$7"), monthly: .price("$7"), annual: .price("$42"), monthlyAmount: 7, annualAmount: 42)
             )
         }
     }

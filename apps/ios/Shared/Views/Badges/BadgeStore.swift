@@ -66,7 +66,8 @@ struct BadgePriceList {
     let oneMonth: BadgePrice
     let monthly: BadgePrice
     let annual: BadgePrice
-    let annualSavings: Int?
+    let monthlyAmount: Decimal?
+    let annualAmount: Decimal?
 
     func price(_ period: BadgePeriod) -> BadgePrice {
         switch period {
@@ -74,6 +75,16 @@ struct BadgePriceList {
         case .monthly: monthly
         case .annual: annual
         }
+    }
+
+    // percentage the annual subscription saves against 12 monthly payments
+    var annualSavings: Int? {
+        guard let monthlyAmount, let annualAmount else { return nil }
+        let year = monthlyAmount * 12
+        guard year > 0, annualAmount < year else { return nil }
+        let saved = (year - annualAmount) / year * 100
+        let percent = Int(NSDecimalNumber(decimal: saved).doubleValue.rounded())
+        return percent > 0 ? percent : nil
     }
 }
 
@@ -167,24 +178,13 @@ final class BadgeStore: ObservableObject {
         }
     }
 
-    // percentage the annual subscription saves against 12 monthly payments
-    func annualSavings(_ level: BadgeLevel) -> Int? {
-        guard let monthly = products[badgeProductId(level, .monthly)],
-              let annual = products[badgeProductId(level, .annual)]
-        else { return nil }
-        let year = monthly.price * 12
-        guard year > 0, annual.price < year else { return nil }
-        let saved = (year - annual.price) / year * 100
-        let percent = Int(NSDecimalNumber(decimal: saved).doubleValue.rounded())
-        return percent > 0 ? percent : nil
-    }
-
     func priceList(_ level: BadgeLevel) -> BadgePriceList {
         BadgePriceList(
             oneMonth: price(level, .oneMonth),
             monthly: price(level, .monthly),
             annual: price(level, .annual),
-            annualSavings: annualSavings(level)
+            monthlyAmount: products[badgeProductId(level, .monthly)]?.price,
+            annualAmount: products[badgeProductId(level, .annual)]?.price
         )
     }
 
