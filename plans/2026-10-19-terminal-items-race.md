@@ -15,15 +15,8 @@ The private `ChatModel.addTerminalItem(item, maxItems)` is the only writer of `t
 
 ## Fix
 
-`@Synchronized` on the private `addTerminalItem(item, maxItems)`. Each write is then one read-trim-append, on whichever thread it runs. The lock is the `ChatModel` object, which no other code locks. The locked code copies at most 500 references and performs at most two Compose state writes, with no I/O and no suspension.
-
-## Approaches considered
-
-- The issue's diff (a lock field and one snapshot trimmed with `drop`): also correct, but it adds a field and changes trimming: after developer tools are turned off it cuts the log from 500 to 200 rows at once, while today the log stays at 500 rows, dropping the oldest row for each new one, until the app restarts.
-- Always posting writes to the main thread: every command and event would add a main-thread post while the console is closed, including during the bursts that trigger the race.
-- A lock-free update (a compare-and-set loop, or `terminalItems` as an `AtomicReference` or `MutableStateFlow`): more code, and the last two change its type and its reader in `TerminalView.kt`.
-- Clamping the `subList` bounds: no exception, but rows are still lost.
+`@Synchronized` on the private `addTerminalItem(item, maxItems)`. Each write is then one read-trim-append, on whichever thread it runs. The lock is the `ChatModel` object.
 
 ## Scope
 
-Android and desktop (common code). Every call of the public `addTerminalItem` calls the locked function. The iOS app stores its log in an actor and has no such race. Other `ChatModel` state written from several threads without a lock is not changed here.
+Android and desktop (common code). Every call of the public `addTerminalItem` calls the locked function. The iOS app stores its log in an actor and is unchanged. Other `ChatModel` state written from several threads without a lock is unchanged.
