@@ -2983,7 +2983,6 @@
     <string name="badges_ledger_from_purchase_key">Da chave de compra</string>
     <string name="badges_ledger_to_purchase_key">Para a chave de compra</string>
     <string name="badges_renewal_failed">Falha na renovação do distintivo</string>
-    <string name="badges_tap_for_details">Toque para ver os detalhes</string>
     <string name="badges_error_service_refused">O serviço de distintivos recusou a renovação: %1$s</string>
     <string name="badges_error_purchase_refused">O serviço de distintivos recusou a compra: %1$s</string>
     <string name="badges_error_no_response">O serviço de distintivos não respondeu.</string>

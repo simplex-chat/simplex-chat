@@ -3047,7 +3047,6 @@
     <string name="badges_level_supporter_summary">Unterstützer: Dateien bis 2 GB sind 7 Tage lang verfügbar.</string>
     <string name="badges_larger_files_longer">Unterstützen Sie SimpleX, um größere Dateien zu senden, die länger verfügbar bleiben.</string>
     <string name="emoji_category_symbols">Symbole</string>
-    <string name="badges_tap_for_details">Für Details tippen</string>
     <string name="keystore_key_storage_tee">TPM</string>
     <string name="chat_layout_terminal">Terminal</string>
     <string name="badges_error_test_purchase">Testkäufe werden nicht angerechnet. Badges können nur durch einen echten Kauf erworben werden.</string>

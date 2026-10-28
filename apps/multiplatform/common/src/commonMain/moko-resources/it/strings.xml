@@ -2959,7 +2959,6 @@
     <string name="badges_level_supporter_summary">Sostenitore: file fino a 2 GB disponibili per 7 giorni.</string>
     <string name="badges_larger_files_longer">Supporta SimpleX per inviare file più grandi che restano disponibili più a lungo</string>
     <string name="emoji_category_symbols">Simboli</string>
-    <string name="badges_tap_for_details">Tocca per i dettagli</string>
     <string name="badges_error_test_purchase">Gli acquisti di prova non sono accreditati. I distintivi possono essere comprati solo con un acquisto reale.</string>
     <string name="badges_error_credential_invalid">Il distintivo emesso dal servizio non può essere verificato.</string>
     <string name="badges_error_unreachable">Impossibile raggiungere il servizio dei distintivi.</string>

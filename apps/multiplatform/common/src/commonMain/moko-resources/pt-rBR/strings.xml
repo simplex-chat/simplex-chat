@@ -2958,6 +2958,5 @@
     <string name="badges_level_legend_file_storage">Armazenado por 21 dias</string>
     <string name="badges_level_supporter_file_storage">Armazenado por 7 dias</string>
     <string name="emoji_category_symbols">Símbolos</string>
-    <string name="badges_tap_for_details">Toque para ver detalhes</string>
     <string name="badges_error_test_purchase">Compras de teste não contam. Os selos só podem ser adquiridos com compras reais.</string>
 </resources>

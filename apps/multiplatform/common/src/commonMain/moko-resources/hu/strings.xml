@@ -2982,7 +2982,6 @@
     <string name="badges_ledger_from_purchase_key">A vásárlási kulcsról</string>
     <string name="badges_ledger_to_purchase_key">A vásárlási kulcsra</string>
     <string name="badges_renewal_failed">Nem sikerült megújítani a kitűzőt</string>
-    <string name="badges_tap_for_details">Koppintson ide a részletekért</string>
     <string name="badges_error_service_refused">A kitűzőszolgáltatás elutasította a megújítást: %1$s</string>
     <string name="badges_error_purchase_refused">A kitűzőszolgáltatás elutasította a vásárlást: %1$s</string>
     <string name="badges_error_no_response">A kitűzőszolgáltatás nem válaszolt.</string>
