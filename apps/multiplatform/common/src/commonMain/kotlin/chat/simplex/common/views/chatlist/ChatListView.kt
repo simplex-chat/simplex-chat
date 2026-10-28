@@ -493,11 +493,13 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
     } else {
       WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     }
+    val keyboardState by getKeyboardState()
+    var pagesHeight by remember { mutableStateOf(0) }
     Column(Modifier.fillMaxSize().padding(top = topPad, bottom = bottomPad).consumeWindowInsets(WindowInsets.navigationBars)) {
       if (!oneHandUI.value) {
         ChatListSearchBarWithTags(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate, onlineSearch)
       }
-      Box(Modifier.weight(1f).fillMaxWidth()) {
+      BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().onSizeChanged { if (keyboardState == KeyboardState.Closed) pagesHeight = it.height }) {
         if (onlineSearch.showResults) {
           val rows = onlineSearch.rows(shownChatIds = emptySet())
           val resultsState = rememberLazyListState()
@@ -519,7 +521,12 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
             }
           }
         } else if (appPlatform.isAndroid) {
-          ConnectOnboardingView()
+          val pagesHeightDp = if (pagesHeight > 0) with(LocalDensity.current) { pagesHeight.toDp() } else maxHeight
+          Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState(), reverseScrolling = true)) {
+            Box(Modifier.height(pagesHeightDp)) {
+              ConnectOnboardingView()
+            }
+          }
         }
       }
       if (oneHandUI.value) {
