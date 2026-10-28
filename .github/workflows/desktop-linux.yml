@@ -183,7 +183,7 @@ jobs:
     name: desktop app under Xvfb
     needs: [plan, core, backend]
     # core and backend are skipped when an earlier run built them, and backend also when the run doesn't start it
-    if: ${{ !cancelled() && !failure() && needs.plan.result == 'success' }}
+    if: ${{ !cancelled() && !failure() && needs.plan.result == 'success' && needs.core.result != 'cancelled' && needs.backend.result != 'cancelled' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
