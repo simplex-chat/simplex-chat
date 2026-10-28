@@ -42,7 +42,7 @@ The channel's link data lives on one SMP server, the link server, which already 
 | Server command | today's write with the hash and the owner keys, for now: room for 6 keys, so at most 5 owners while the creator is one (its queue key takes one) and 6 after it leaves |
 | Today's write on a link several owners write | refused by the server, so a stale or downgraded single-owner write can't erase other owners' changes |
 | A refused write | answered with the current data, so no read follows a write |
-| What a write starts from | each owner's stored copy of the link data; it reads first only without one, and at app start |
+| What a write starts from | each owner's stored copy of the link data; it reads first only without a usable one, and to confirm a refusal the copy shows; owners also read at channel open and app start |
 | Server code version | the first slice starts from the version simplex-chat uses now and adapts the server design to it |
 | Relays and owner actions | as today, not checked against the link: owners are trusted, and relays cannot forge their actions |
 | A removal at the moment of a promotion | the promotion wins: devices that applied the removal follow the link |
