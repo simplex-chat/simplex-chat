@@ -57,7 +57,7 @@ The child holds the phone, so a determined, technically able child gets around t
 
 **Asking for the PIN** reuses the PIN pad: a new `authenticateParent(reason:completed:)` sets `ChatModel.laRequest` with the parent PIN as `password` and `selfDestruct: false` (iOS `LocalAuthRequest`, `apps/ios/Shared/Views/Helpers/LocalAuthenticationUtils.swift:29-35`, checked in `LocalAuthView.swift:31`; Kotlin `views/localauth/LocalAuthView.kt:26-43`). It never uses system authentication, which the child can pass. It does not reuse `authenticate` or `authorize`: those follow the app-lock mode and treat "unavailable" as success (`LocalAuthenticationUtils.swift:19-26,39-58`). No PIN stored means the gate stays shut.
 
-**The parental screen** is a new row in the privacy settings, "Your privacy" on both platforms (iOS `apps/ios/Shared/Views/UserSettings/PrivacySettings.swift:57-76`, the "Device" section; Android `PrivacyDeviceSection`, `apps/multiplatform/common/src/androidMain/kotlin/chat/simplex/common/views/usersettings/PrivacySettings.android.kt:18-31`, titled at `views/usersettings/PrivacySettings.kt:61`). Opening it asks for the PIN once controls are on. In order:
+**The parental screen** is a new row in the privacy settings, "Your privacy" on both platforms (iOS `apps/ios/Shared/Views/UserSettings/PrivacySettings.swift:57-76`, the "Device" section; Android `PrivacyDeviceSection`, `apps/multiplatform/common/src/androidMain/kotlin/chat/simplex/common/views/usersettings/PrivacySettings.android.kt:18-31`, titled at `views/usersettings/PrivacySettings.kt:61`). Opening it asks for the PIN once controls are on. In order (section 14.2 has its states and words):
 1. What this does and doesn't do (section 3), and, on iOS, how to stop app deletion in Screen Time.
 2. Set or change the parent PIN.
 3. The switches, with the defaults of section 1, and the always-allowed contacts (section 7.9). During setup, "Turn on parental controls" saves the switches, and only while the PIN is stored. Leaving the screen without turning the controls on removes the new PIN, and a PIN left by an interrupted setup is removed at the next start by the reinstall rule of section 5, so the switches are never stored without a PIN.
@@ -227,7 +227,7 @@ The "Directory search" privacy setting that the pull request adds (iOS `apps/ios
 
 The parent can mark contacts, such as the parents themselves, as always allowed: calls, sending files, voice messages and receiving media then work in the direct chat with that contact whatever those four switches say. Connecting, groups and directory search have no such list: they concern people the child isn't in contact with yet. Groups are not covered: files that an always-allowed contact sends in a group follow the switches.
 
-**Adding a contact.** On the contact's page, a row "Always allowed" in a section of its own after the one with "Contact preferences" (iOS `apps/ios/Shared/Views/Chat/ChatInfoView.swift:185-206`; Kotlin `views/chat/ChatInfoView.kt:594-616`), shown while any of the four switches is off; turning it on or off asks for the PIN. The child opens that page and hands the phone over, so the parent sees only that contact. The parental screen lists the always-allowed contacts of the current profile by name, each removable there; it lists no other contacts. Two other ways were weighed: choosing from a list of all contacts on the parental screen, which shows the parent every contact; and offering it with "Allow once", which would apply to a contact that exists only after the other side accepts.
+**Adding a contact.** On the contact's page, a row "Always allowed" in a section of its own after the one with "Contact preferences" (iOS `apps/ios/Shared/Views/Chat/ChatInfoView.swift:185-206`; Kotlin `views/chat/ChatInfoView.kt:594-616`), shown while any of the four switches is off; turning it on or off asks for the PIN (section 14.7). The child opens that page and hands the phone over, so the parent sees only that contact. The parental screen lists the always-allowed contacts of the current profile by name, each removable there; it lists no other contacts. Two other ways were weighed: choosing from a list of all contacts on the parental screen, which shows the parent every contact; and offering it with "Allow once", which would apply to a contact that exists only after the other side accepts.
 
 **Where it is checked:**
 - The core: the calls and receiving-media rows of section 7.1 skip always-allowed contacts, matched by the connection ID of the contact's active connection (section 5); the app sends the list with the switches, at the same sites.
@@ -294,3 +294,88 @@ The answers on the decision page are applied above. Three choices stay provision
    - A. As designed: the PIN opens only the parental screen and allow-once; when the child has locked the app, the parent asks the child to unlock it. **Recommended:** it adds nothing to what a PIN holder can do, so an adult on whom the controls are imposed keeps a phone whose chats the PIN can't open (section 4).
    - B. The lock screen offers "Parental controls", which opens only the parental screen with the PIN: the parent changes the controls without the child's passcode and still sees no chats. It costs a way past the lock screen, so whoever holds the PIN can change the controls without the phone's owner unlocking it.
    - C. The PIN also unlocks the app: whoever holds the PIN reads the chats whenever they hold the phone. It drops principle 2 and the safeguard of section 4.
+
+## 14. Screens
+
+Drawn for iOS from the views they extend, at 85ba221d7, quoting their strings; what is new has a dashed outline. Android mirrors each screen in Compose with the same structure and words (CLAUDE.md, "Apps"); each part says where it differs. A switch that is on allows its feature; every refusal says "Turned off by parental controls"; the contacts of section 7.9 are called "Always allowed" on every screen.
+
+### 14.1 Your privacy: the "Parental controls" row
+
+![Your privacy, with the Parental controls row](2026-05-27-parental-controls-design/screens/privacy-settings.svg)
+
+- **Where:** the "Device" section, after "Protect app screen" (iOS `PrivacySettings.swift:57-76`). A navigation row like "SimpleX Lock" (`simplexLockRow`, 479-485): icon `hand.raised`, "Parental controls", value "Off" or "On". `checkmark.shield` is not used, since contact pages show it for verified contacts (`ChatInfoView.swift:382`).
+- **States:** off and on, as drawn. While connecting or groups is off, the "Auto-accept" footer adds "Paused by parental controls." under "These settings are for your current profile **name**." (section 7.1). While directory search is off, its setting from pull request #7881 is disabled, with "Directory search: turned off by parental controls." under the section (section 7.8).
+- **Android:** the row is in `PrivacyDeviceSection` (`PrivacySettings.android.kt:18-31`) as a `SettingsActionItemWithContent` with the value text, as `ChatLockItem`; desktop doesn't show it (P10).
+
+### 14.2 Parental controls
+
+![The parental controls screen: before a PIN, setup, and on](2026-05-27-parental-controls-design/screens/parental-controls.svg)
+
+Title "Parental controls", pushed from Your privacy.
+
+- **Before a PIN is set:** what the controls do and don't, in three short paragraphs (section 3), the Screen Time path on iOS only, and one main action, "Set parent PIN", below them. No switches are shown until a PIN exists.
+- **Setup, after the PIN (section 14.3):** "Allowed on this phone", seven switches with the defaults of section 1: "Connecting to new people", "Groups and channels", "Directory search" off; "Calls", "Sending files", "Voice messages", "Receiving files and media" on. Footer: "Switched off on every chat profile." and "Connecting and joining groups offer "Allow once"." The main action, "Turn on parental controls", sits under the list; with connecting or groups off, it asks the confirmation of section 14.5 first. Leaving the screen without turning the controls on removes the new PIN.
+- **On, opened with the PIN:** the same switches with their current values, then "Always allowed": the current profile's always-allowed contacts with avatar and name on one line, long names cut with "…", and the footer "Calls, files, voice and media always work with these contacts of your current profile **name**. Add a contact on its page. Tap one to remove it." Tapping a contact asks "Remove *name* from Always allowed?" with "Remove" and "Cancel". With no such contact, the section shows its footer only. While calls, sending files, voice and receiving media are all on, the section is hidden, since the list would change nothing. Then "Change parent PIN" (section 14.3) and "Turn off parental controls", which asks "Turn off parental controls?", "Everything switched off works again, and the PIN and the always-allowed contacts are removed.", with "Turn off" (destructive) and "Cancel". Switching the last switch back on asks the same, since no switch off means the controls are off (section 5).
+- **When a switch changes,** the app sends the parental mode to the core first and stores the switch only when the core accepts it. On an error the switch returns to its place, and an alert "Error saving parental controls" shows the error, to try again.
+- **Android:** `ColumnWithScrollBar` with `AppBarTitle`, `SectionView` and `SettingsPreferenceItem` rows, as `PrivacySettingsView` (`PrivacySettings.kt:60-116`); the main actions are the same filled buttons.
+
+### 14.3 The parent PIN
+
+![The parent PIN on the existing PIN pad](2026-05-27-parental-controls-design/screens/pin.svg)
+
+- **Setting it:** `SetAppPasscodeView` with the title "New parent PIN", the reason "At least 6 digits", then "Confirm parent PIN" with "Confirm" (section 6). "Save" stays disabled below 6 digits. A keychain error shows the existing "KeyChain error" alert (`SetAppPasscodeView.swift:56-58`), and the screen stays before a PIN.
+- **Asking for it:** `LocalAuthView` with the title "Enter parent PIN" and a reason that names the action: "Open parental controls", "Allow once", "Always allow *name*", "Change parent PIN", "Turn off parental controls". "Submit" and "Cancel" as today.
+- **A wrong PIN:** "Incorrect PIN", "The parent PIN didn't match. Nothing was allowed.", with "Try again", which shows the prompt again, and "Cancel". Cancelling the prompt leaves everything as it was.
+- **Android:** `SetAppPasscodeView.kt` and `LocalAuthView.kt`, which already mirror iOS; the landscape layout differs as it does today.
+
+### 14.4 "Turned off by parental controls" and "Allow once"
+
+![Turned off by parental controls, and Allow once](2026-05-27-parental-controls-design/screens/allow-once.svg)
+
+System alerts, as the app's others (`showAlert`). Title "Turned off by parental controls"; the message names the switch: "Connecting to new people is off.", "Joining groups and channels is off.", "Creating groups and channels is off.", "Calls are off.", "Sending files is off.", "Voice messages are off.", "Receiving files and media is off.".
+
+- **Connecting and joining** add "A parent can allow it once." and the buttons "Allow once" and "Cancel". "Allow once" asks for the PIN (section 14.3), then shows the approval "Allow once?" with the name: "Connect to *name*.", "Accept the request from *name*.", "Send *name* a direct contact invitation.", "Join the group *name*." or "Join the channel *name*.", and "The contact chose this name." or "Its owners chose this name.", since a name proves nothing; or, for an older link with no name, "This older link has no name in it. Ask who it is before allowing." "Allow" lets that one connection go through (sections 7.2, 7.4); "Cancel" drops the pass.
+- **Every other switch** adds "A parent can change this in Parental controls." with "OK".
+- Names are shown in full, wrapped; they come from other people and are shown as plain text.
+- **Android:** `AlertManager.shared.showAlertDialog` and `showAlertMsg` (`views/helpers/AlertManager.kt:126,212`), with the same words.
+
+### 14.5 Turning on: connections started earlier
+
+![Turning on: deleting connections started earlier](2026-05-27-parental-controls-design/screens/cleanup.svg)
+
+Depends on P2 (section 13), drawn for its recommended option.
+
+- "Turn on parental controls" with connecting or groups off, or switching either off later, asks "Delete pending connections?": "Unused one-time links, sent contact requests and groups still being joined are deleted on every chat profile that isn't hidden. Hidden profiles keep theirs. Groups and channels already joined stay." The buttons are "Delete and turn on" (destructive) and "Cancel"; later, "Delete and switch off". Nothing is listed by name.
+- The switches are stored and sent to the core first, then the connections are deleted (section 7.3), with the app's progress indicator over the screen. Deleting twice deletes nothing more, so an interrupted clean-up is run again at the next start until it ends, from a flag stored with the switches.
+- If some can't be deleted: "Not all were deleted", "Parental controls are on. Some pending connections couldn't be deleted; the app tries again when it next starts.", with "Try again" and "OK".
+- **Android:** the same alerts with `AlertManager`.
+
+### 14.6 Settings: "Parental controls on"
+
+![Your settings, with Parental controls on](2026-05-27-parental-controls-design/screens/settings.svg)
+
+- While any switch is off, a section before the others with one row: the `hand.raised` icon in orange, the colour Settings uses for an unencrypted database (`SettingsView.swift:533`), "Parental controls on", opening Parental controls after the PIN (section 6). The chat list shows nothing.
+- "Migrate to another device" is disabled, with "Migrating is off while parental controls are on." under its section (section 8). The other settings that are off are disabled where they are listed, each with the same kind of line: "Developer tools" in App version, export and import in Chat data, "Use from desktop" in the profile menu.
+- **Android:** a `SectionView` with a `SettingsActionItem` before the first section of `SettingsLayout` (`SettingsView.kt:99-101`); "Migrate to another device" is disabled through its `disabled` parameter (106).
+
+### 14.7 A contact's page: "Always allowed"
+
+![A contact's page with Always allowed](2026-05-27-parental-controls-design/screens/contact-info.svg)
+
+- A section after the one with "Contact preferences", shown while calls, sending files, voice or receiving media is off: a toggle "Always allowed" with the `hand.raised` icon, and the footer "Calls, files, voice and media with *name* work while parental controls are on. Changing this asks for the parent PIN." Toggling asks for the PIN with the reason "Always allow *name*"; a wrong PIN or "Cancel" returns the toggle.
+- The call buttons keep the disabled look they have when calls are prohibited and say "Turned off by parental controls" when tapped (section 7.5); for an always-allowed contact they work.
+- **Android:** a `SectionView` with a `SettingsActionItemWithContent` and a `DefaultSwitch`, as the auto-accept rows (`PrivacySettings.kt:349-356`), after the section at `ChatInfoView.kt:594-616`.
+
+### 14.8 A chat with the controls on
+
+![A chat with parental controls on](2026-05-27-parental-controls-design/screens/chat.svg)
+
+- **Receiving media off:** a plain grey area with the photo icon and "Hidden by parental controls" in place of each image or video preview, keeping the message's text; the same in place of a link preview's picture, keeping its title and site; a file keeps its name and size without the download button. Tapping any of them shows the alert of section 14.4. Quotes, the compose bar's context and the chat list show the photo icon without the picture (section 7.7).
+- **Sending files and voice off:** the attachment button and the voice button keep their places, greyed, as for "Files and media prohibited!" (`ComposeView.swift:1137-1144`) and "Voice messages prohibited!" (`SendMessageView.swift:295-330`); tapping them shows the alert. The text field is unchanged.
+- **Calls off:** the filter button takes the call button's place, as when calls are unavailable (`ChatView.swift:584-587`).
+- **An always-allowed contact:** the chat is as today.
+- **Android:** the toolbar leaves the call button out, as when calls are prohibited (`ChatView.kt:1295-1301`); the attachment and voice buttons are greyed in `ComposeView.kt` and `SendMsgView.kt`.
+
+### 14.9 Directory search while it is off
+
+Not drawn. The "Search in Directory" row isn't shown in the chat list's search or in New chat, and the keyboard's Search key filters the local chats only (section 7.8). With directory search on and groups off, results show as usual, and "Open" on one reaches the group check and its "Allow once".
