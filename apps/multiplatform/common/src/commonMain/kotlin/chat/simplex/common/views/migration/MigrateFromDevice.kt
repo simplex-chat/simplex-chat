@@ -343,7 +343,7 @@ private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: S
       text = stringResource(MR.strings.migrate_from_device_cancel_migration),
       textColor = MaterialTheme.colors.error,
       click = {
-        cancelMigration(fileId, ctrl)
+        cancelMigration(fileId, ctrl, chatReceiver)
       }
     ) {}
     SettingsActionItemWithContent(
@@ -613,9 +613,10 @@ private suspend fun cancelUploadedArchive(fileId: Long, ctrl: ChatCtrl) {
   controller.apiCancelFile(null, fileId, ctrl)
 }
 
-private fun cancelMigration(fileId: Long, ctrl: ChatCtrl) {
+private fun cancelMigration(fileId: Long, ctrl: ChatCtrl, chatReceiver: MigrationFromChatReceiver?) {
   withBGApi {
     cancelUploadedArchive(fileId, ctrl)
+    chatReceiver?.stopAndCleanUp()
     startChatAndDismiss()
   }
 }
@@ -730,9 +731,14 @@ private class MigrationFromChatReceiver(
     }
   }
 
-  fun stopAndCleanUp() {
+  suspend fun stopAndCleanUp() {
     Log.d(TAG, "MigrationChatReceiver.stop")
     receiveMessages = false
+    try {
+      controller.apiStopChat(ctrl)
+    } catch (e: Exception) {
+      Log.e(TAG, "MigrationChatReceiver.stop error: ${e.stackTraceToString()}")
+    }
     chatCloseStore(ctrl)
     File(databaseUrl.absolutePath + "_chat.db").delete()
     File(databaseUrl.absolutePath + "_agent.db").delete()

@@ -190,7 +190,7 @@ private fun ModalData.SectionByState(
     is MigrationToState.LinkDownloading -> migrationState.LinkDownloadingView(s.link, s.ctrl, s.user, s.archivePath, tempDatabaseFile, chatReceiver, s.netCfg, s.networkProxy)
     is MigrationToState.DownloadProgress -> DownloadProgressView(s.downloadedBytes, totalBytes = s.totalBytes)
     is MigrationToState.DownloadFailed -> migrationState.DownloadFailedView(s.link, chatReceiver.value, s.archivePath, s.netCfg, s.networkProxy)
-    is MigrationToState.ArchiveImport -> migrationState.ArchiveImportView(s.archivePath, s.netCfg, s.networkProxy)
+    is MigrationToState.ArchiveImport -> migrationState.ArchiveImportView(s.archivePath, s.netCfg, s.networkProxy, chatReceiver.value)
     is MigrationToState.ArchiveImportFailed -> migrationState.ArchiveImportFailedView(s.archivePath, s.netCfg, s.networkProxy)
     is MigrationToState.Passphrase -> migrationState.PassphraseEnteringView(currentKey = s.passphrase, s.netCfg, s.networkProxy)
     is MigrationToState.MigrationConfirmation -> migrationState.MigrationConfirmationView(s.status, s.passphrase, s.useKeychain, s.netCfg, s.networkProxy)
@@ -387,12 +387,13 @@ private fun MutableState<MigrationToState?>.DownloadFailedView(link: String, cha
 }
 
 @Composable
-private fun MutableState<MigrationToState?>.ArchiveImportView(archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
+private fun MutableState<MigrationToState?>.ArchiveImportView(archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?, chatReceiver: MigrationToChatReceiver?) {
   Box {
     SectionView(stringResource(MR.strings.migrate_to_device_importing_archive)) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
+    chatReceiver?.stopAndCleanUp()
     importArchive(archivePath, netCfg, networkProxy)
   }
 }
@@ -781,9 +782,14 @@ private class MigrationToChatReceiver(
     }
   }
 
-  fun stopAndCleanUp() {
+  suspend fun stopAndCleanUp() {
     Log.d(TAG, "MigrationChatReceiver.stop")
     receiveMessages = false
+    try {
+      controller.apiStopChat(ctrl)
+    } catch (e: Exception) {
+      Log.e(TAG, "MigrationChatReceiver.stop error: ${e.stackTraceToString()}")
+    }
     chatCloseStore(ctrl)
     File(databaseUrl.absolutePath + "_chat.db").delete()
     File(databaseUrl.absolutePath + "_agent.db").delete()

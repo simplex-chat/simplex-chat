@@ -1142,8 +1142,8 @@ object ChatController {
     }
   }
 
-  suspend fun apiStopChat(): Boolean {
-    val r = sendCmd(null, CC.ApiStopChat())
+  suspend fun apiStopChat(ctrl: ChatCtrl? = null): Boolean {
+    val r = sendCmd(null, CC.ApiStopChat(), ctrl)
     if (r.result is CR.ChatStopped) return true
     throw Exception("failed stopping chat: ${r.responseType} ${r.details}")
   }
