@@ -286,8 +286,6 @@ func chatEventText(_ ci: ChatItem, _ secondaryColor: Color, isChannel: Bool = fa
     chatEventText("\(ci.content.text(isChannel: isChannel))", ci.timestampText, secondaryColor)
 }
 
-let previewDate = Date(timeIntervalSince1970: 1_736_936_100)
-
 func previewDated(_ chatItem: ChatItem) -> ChatItem {
     var ci = chatItem
     ci.meta.itemTs = previewDate
