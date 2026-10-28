@@ -134,11 +134,23 @@ key() {
   sleep 1
 }
 
+# The snapshot tests' previews ask for the camera, and the prompt then covers the restarted app until it is answered.
 launch() {
+  local deadline t=""
   xcrun simctl terminate "$SIM_UDID" "$bundle_id" 2> /dev/null || true
   "$@"
   xcrun simctl launch "$SIM_UDID" "$bundle_id" > /dev/null
-  wait_for "$toolbar_button" 90
+  deadline=$((SECONDS + 90))
+  until t=$(tree 2> /dev/null) && grep -qF -- "$toolbar_button" <<< "$t"; do
+    if grep -qF 'would like to access' <<< "$t"; then
+      axe tap --label Allow --wait-timeout 5 --post-delay 2 --udid "$SIM_UDID" || true
+    fi
+    if [ "$SECONDS" -ge "$deadline" ]; then
+      echo "error: \"$toolbar_button\" not shown after 90 s"
+      return 1
+    fi
+    sleep 2
+  done
 }
 
 toolbar_y() {
