@@ -355,8 +355,8 @@ func apiCheckChatRunning() throws -> Bool {
     }
 }
 
-func apiStopChat() async throws {
-    let r: ChatResponse0 = try await chatSendCmd(.apiStopChat)
+func apiStopChat(ctrl: chat_ctrl? = nil) async throws {
+    let r: ChatResponse0 = try await chatSendCmd(.apiStopChat, ctrl: ctrl)
     switch r {
     case .chatStopped: return
     default: throw r.unexpected

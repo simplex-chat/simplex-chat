@@ -130,7 +130,7 @@ struct MigrateFromDevice: View {
                 if case let .uploadProgress(_, _, fileId, _, ctrl) = migrationState, let ctrl {
                     await cancelUploadedArchive(fileId, ctrl)
                 }
-                chatReceiver?.stopAndCleanUp()
+                await chatReceiver?.stopAndCleanUp()
                 try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
             }
         }
@@ -302,7 +302,7 @@ struct MigrateFromDevice: View {
             }
         }
         .onAppear {
-            chatReceiver?.stopAndCleanUp()
+            Task { await chatReceiver?.stopAndCleanUp() }
         }
     }
 
@@ -768,11 +768,16 @@ private class MigrationChatReceiver {
         }
     }
 
-    func stopAndCleanUp() {
+    func stopAndCleanUp() async {
         logger.debug("MigrationChatReceiver.stop")
         receiveMessages = false
         receiveLoop?.cancel()
         receiveLoop = nil
+        do {
+            try await apiStopChat(ctrl: ctrl)
+        } catch let error {
+            logger.error("MigrationChatReceiver.stop error: \(error.localizedDescription)")
+        }
         chat_close_store(ctrl)
         try? FileManager.default.removeItem(atPath: "\(databaseUrl.path)_chat.db")
         try? FileManager.default.removeItem(atPath: "\(databaseUrl.path)_agent.db")
