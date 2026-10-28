@@ -53,8 +53,8 @@
     <text x="150" y="65" font-size="17" font-weight="600" text-anchor="middle">Turned off by</text>
     <text x="150" y="86" font-size="17" font-weight="600" text-anchor="middle">parental controls</text>
     <text x="150" y="109" font-size="13" text-anchor="middle">Connecting to new people is off. This</text>
-    <text x="150" y="126" font-size="13" text-anchor="middle">older link has no name in it, so it can't</text>
-    <text x="150" y="143" font-size="13" text-anchor="middle">be allowed once: ask for a new link.</text>
+    <text x="150" y="126" font-size="13" text-anchor="middle">link has no name in it, so it can't be</text>
+    <text x="150" y="143" font-size="13" text-anchor="middle">allowed once: ask for a new link.</text>
     <path d="M15,161 H285" stroke="#c6c6c8" stroke-width="0.6"/>
     <text x="150" y="189" font-size="17" fill="#0088ff" text-anchor="middle" font-weight="600">OK</text>
     <rect x="11" y="31" width="278" height="178" rx="16" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
