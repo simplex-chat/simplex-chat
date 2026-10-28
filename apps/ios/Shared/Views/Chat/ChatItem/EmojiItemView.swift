@@ -46,8 +46,8 @@ func emojiText(_ text: String) -> Text {
 struct EmojiItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group{
-            EmojiItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂", .sndSent(sndProgress: .complete)))
-            EmojiItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(2, .directRcv, .now, "👍"))
+            EmojiItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, previewDate, "🙂", .sndSent(sndProgress: .complete)))
+            EmojiItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(2, .directRcv, previewDate, "👍"))
         }
         .previewLayout(.fixed(width: 360, height: 70))
     }

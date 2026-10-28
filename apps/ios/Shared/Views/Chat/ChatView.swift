@@ -3451,15 +3451,15 @@ struct ChatView_Previews: PreviewProvider {
         chatModel.chatId = "@1"
         let im = ItemsModel.shared
         im.reversedChatItems = [
-            ChatItem.getSample(1, .directSnd, .now, "hello"),
-            ChatItem.getSample(2, .directRcv, .now, "hi"),
-            ChatItem.getSample(3, .directRcv, .now, "hi there"),
-            ChatItem.getDeletedContentSample(4),
-            ChatItem.getSample(5, .directRcv, .now, "hello again"),
-            ChatItem.getSample(6, .directSnd, .now, "hi there!!!"),
-            ChatItem.getSample(7, .directSnd, .now, "how are you?"),
-            ChatItem.getSample(8, .directSnd, .now, "👍👍👍👍"),
-            ChatItem.getSample(9, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
+            ChatItem.getSample(1, .directSnd, previewDate, "hello"),
+            ChatItem.getSample(2, .directRcv, previewDate, "hi"),
+            ChatItem.getSample(3, .directRcv, previewDate, "hi there"),
+            ChatItem.getDeletedContentSample(4, previewDate),
+            ChatItem.getSample(5, .directRcv, previewDate, "hello again"),
+            ChatItem.getSample(6, .directSnd, previewDate, "hi there!!!"),
+            ChatItem.getSample(7, .directSnd, previewDate, "how are you?"),
+            ChatItem.getSample(8, .directSnd, previewDate, "👍👍👍👍"),
+            ChatItem.getSample(9, .directSnd, previewDate, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
         ]
         @State var showChatInfo = false
         return ChatView(

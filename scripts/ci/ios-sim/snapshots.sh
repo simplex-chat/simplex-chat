@@ -35,5 +35,5 @@ ls -l "$out"
 
 references="apps/ios/SimpleX Snapshots/References"
 if [ -d "$references" ]; then
-  python3 "$(dirname "$0")/snapshots-compare.py" "$references" "$out" "$(dirname "$out")/snapshots-diff"
+  python3 "$(dirname "$0")/../snapshots-compare.py" "$references" "$out" "$(dirname "$out")/snapshots-diff"
 fi

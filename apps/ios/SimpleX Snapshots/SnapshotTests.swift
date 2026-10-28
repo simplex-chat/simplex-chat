@@ -6,20 +6,19 @@ import UIKit
 
 final class SnapshotTests: XCTestCase {
     @MainActor
-    func testChatScenes() throws {
+    func testPreviews() throws {
         NSTimeZone.default = try XCTUnwrap(TimeZone(identifier: "UTC"))
         let env = ProcessInfo.processInfo.environment
         let dir = URL(fileURLWithPath: env["SNAPSHOT_DIR"] ?? NSTemporaryDirectory() + "snapshots", isDirectory: true)
         let size = env["SNAPSHOT_SIZE"] ?? "large"
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let windowScene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
-        let fixtures = SnapshotFixtures(width: windowScene.screen.bounds.width)
-        ChatModel.shared.currentUser = fixtures.user
+        ChatModel.shared.currentUser = User.sampleData
         var index: [[String: Any]] = []
         for dark in [false, true] {
             let theme = snapshotTheme(dark)
             CurrentColors = theme
-            for scene in fixtures.scenes(defaultSize: size == "large") {
+            for scene in previewScenes() where scene.allSizes || size == "large" {
                 let themeName = dark ? "dark" : "light"
                 let file = "\(scene.name)-\(themeName)-\(size).png"
                 let image = try renderScene(scene, theme.toAppTheme(), dark: dark, in: windowScene)
@@ -44,7 +43,147 @@ final class SnapshotTests: XCTestCase {
 private struct SnapshotScene {
     var name: String
     var height: CGFloat? = nil
+    var allSizes: Bool
     var view: AnyView
+
+    init<P: PreviewProvider>(_ preview: P.Type, allSizes: Bool = false) {
+        name = String(describing: preview).replacingOccurrences(of: "_Previews", with: "")
+        self.allSizes = allSizes
+        view = AnyView(preview.previews)
+    }
+}
+
+private func previewScenes() -> [SnapshotScene] {
+    [
+        SnapshotScene(ActiveCallOverlay_Previews.self),
+        SnapshotScene(AddChannelView_Previews.self),
+        SnapshotScene(AddContactLearnMore_Previews.self),
+        SnapshotScene(AddGroupMembersView_Previews.self),
+        SnapshotScene(AddGroupView_Previews.self),
+        SnapshotScene(AdvancedNetworkSettings_Previews.self),
+        SnapshotScene(BadgesCheckOrderView_Previews.self),
+        SnapshotScene(BadgesHowItWorksView_Previews.self),
+        SnapshotScene(BadgesHowLongView_Previews.self),
+        SnapshotScene(BadgesRedeemCodeView_Previews.self),
+        SnapshotScene(BadgesSupportSimplexView_Previews.self),
+        SnapshotScene(CallSettings_Previews.self),
+        SnapshotScene(ChannelMembersView_Previews.self),
+        SnapshotScene(ChannelRelaysView_Previews.self),
+        SnapshotScene(ChatHelp_Previews.self),
+        SnapshotScene(ChatInfoImage_Previews.self),
+        SnapshotScene(ChatInfoToolbar_Previews.self),
+        SnapshotScene(ChatInfoView_Previews.self),
+        SnapshotScene(ChatItemForwardingView_Previews.self),
+        SnapshotScene(ChatItemInfoView_Previews.self),
+        SnapshotScene(ChatItemView_NonMsgContentDeleted_Previews.self, allSizes: true),
+        SnapshotScene(ChatItemView_Previews.self, allSizes: true),
+        SnapshotScene(ChatListNavLink_Previews.self),
+        SnapshotScene(ChatListView_Previews.self),
+        SnapshotScene(ChatPreviewView_Previews.self),
+        SnapshotScene(ChatView_Previews.self),
+        SnapshotScene(CIChatFeatureView_Previews.self, allSizes: true),
+        SnapshotScene(CIEventView_Previews.self, allSizes: true),
+        SnapshotScene(CIFeaturePreferenceView_Previews.self, allSizes: true),
+        SnapshotScene(CIFileView_Previews.self, allSizes: true),
+        SnapshotScene(CIGroupInvitationView_Previews.self, allSizes: true),
+        SnapshotScene(CIInvalidJSONView_Previews.self, allSizes: true),
+        SnapshotScene(CIMemberCreatedContactView_Previews.self, allSizes: true),
+        SnapshotScene(CIMetaView_Previews.self, allSizes: true),
+        SnapshotScene(CIVoiceView_Previews.self, allSizes: true),
+        SnapshotScene(ClassicAvatars_Previews.self, allSizes: true),
+        SnapshotScene(ClassicOverviewChannel_Previews.self),
+        SnapshotScene(ClassicOverviewDirect_Previews.self),
+        SnapshotScene(ClassicOverviewGroup_Previews.self),
+        SnapshotScene(ComposeVoiceView_Previews.self),
+        SnapshotScene(ConnectDesktopView_Previews.self),
+        SnapshotScene(ContactConnectionInfo_Previews.self),
+        SnapshotScene(ContactConnectionView_Previews.self),
+        SnapshotScene(ContactPreferencesView_Previews.self),
+        SnapshotScene(ContactRequestView_Previews.self),
+        SnapshotScene(ContextContactRequestActionsView_Previews.self),
+        SnapshotScene(ContextItemView_Previews.self),
+        SnapshotScene(ContextMemberContactActionsView_Previews.self),
+        SnapshotScene(ContextPendingMemberActionsView_Previews.self),
+        SnapshotScene(ContextProfilePickerView_Previews.self),
+        SnapshotScene(CreateProfile_Previews.self),
+        SnapshotScene(CreateSimpleXAddress_Previews.self),
+        SnapshotScene(CustomTimePicker_Previews.self),
+        SnapshotScene(DatabaseEncryptionView_Previews.self),
+        SnapshotScene(DatabaseErrorView_Previews.self),
+        SnapshotScene(DatabaseView_Previews.self),
+        SnapshotScene(DeletedItemView_Previews.self, allSizes: true),
+        SnapshotScene(DetermineWidth_Previews.self),
+        SnapshotScene(DeveloperView_Previews.self),
+        SnapshotScene(EmojiItemView_Previews.self, allSizes: true),
+        SnapshotScene(FramedCIVoiceView_Previews.self, allSizes: true),
+        SnapshotScene(FramedItemView_Deleted_Previews.self, allSizes: true),
+        SnapshotScene(FramedItemView_Edited_Previews.self, allSizes: true),
+        SnapshotScene(FramedItemView_Previews.self, allSizes: true),
+        SnapshotScene(GetStakeBanner_Previews.self),
+        SnapshotScene(GroupChatInfoView_Previews.self),
+        SnapshotScene(GroupLinkView_Previews.self),
+        SnapshotScene(GroupMemberInfoView_Previews.self),
+        SnapshotScene(GroupPreferencesView_Previews.self),
+        SnapshotScene(GroupProfileView_Previews.self),
+        SnapshotScene(GroupWelcomeView_Previews.self),
+        SnapshotScene(IncognitoHelp_Previews.self),
+        SnapshotScene(IncomingCallView_Previews.self),
+        SnapshotScene(IntegrityErrorItemView_Previews.self, allSizes: true),
+        SnapshotScene(LargeLinkPreview_Previews.self, allSizes: true),
+        SnapshotScene(LocalAuthView_Previews.self),
+        SnapshotScene(MarkdownHelp_Previews.self),
+        SnapshotScene(MarkedDeletedItemView_Previews.self, allSizes: true),
+        SnapshotScene(MemberAdmissionView_Previews.self),
+        SnapshotScene(MemberSupportChatToolbar_Previews.self),
+        SnapshotScene(MemberSupportView_Previews.self),
+        SnapshotScene(MigrateToDevice_Previews.self),
+        SnapshotScene(MigrateToGroupView_Previews.self),
+        SnapshotScene(MsgContentView_Previews.self, allSizes: true),
+        SnapshotScene(NativeTextEditor_Previews.self),
+        SnapshotScene(NetworkServersView_Previews.self),
+        SnapshotScene(NewChatMenuButton_Previews.self),
+        SnapshotScene(NewFeaturesView_Previews.self),
+        SnapshotScene(NewServerView_Previews.self),
+        SnapshotScene(NotificationsModeView_Previews.self),
+        SnapshotScene(NotificationsView_Previews.self),
+        SnapshotScene(OnboardingConditionsView_Previews.self),
+        SnapshotScene(OnboardingStepsView_Previews.self),
+        SnapshotScene(OneHandUICard_Previews.self),
+        SnapshotScene(OperatorView_Previews.self),
+        SnapshotScene(PasscodeEntry_Previews.self),
+        SnapshotScene(PasscodeViewView_Previews.self),
+        SnapshotScene(PreferencesView_Previews.self),
+        SnapshotScene(PrivacySettings_Previews.self),
+        SnapshotScene(ProfileImage_Previews.self),
+        SnapshotScene(ProfilePrivacyView_Previews.self),
+        SnapshotScene(ProtocolServerView_Previews.self),
+        SnapshotScene(QRCode_Previews.self),
+        SnapshotScene(RTCServers_Previews.self),
+        SnapshotScene(ScanCodeView_Previews.self),
+        SnapshotScene(ScanProtocolServer_Previews.self),
+        SnapshotScene(SecondaryChatView_Previews.self),
+        SnapshotScene(SendMessageView_Previews.self),
+        SnapshotScene(SetAppPasscodeView_Previews.self),
+        SnapshotScene(SetDeliveryReceiptsView_Previews.self),
+        SnapshotScene(SettingsView_Previews.self),
+        SnapshotScene(SimpleXInfo_Previews.self),
+        SnapshotScene(SmallLinkPreview_Previews.self),
+        SnapshotScene(SupportSimpleXBanner_Previews.self),
+        SnapshotScene(TerminalAvatars_Previews.self, allSizes: true),
+        SnapshotScene(TerminalNames_Previews.self, allSizes: true),
+        SnapshotScene(TerminalOverviewChannel_Previews.self),
+        SnapshotScene(TerminalOverviewDirect_Previews.self),
+        SnapshotScene(TerminalOverviewGroup_Previews.self),
+        SnapshotScene(TerminalQuoteThumbnail_Previews.self, allSizes: true),
+        SnapshotScene(TerminalRuleOnly_Previews.self, allSizes: true),
+        SnapshotScene(UserAddressLearnMore_Previews.self),
+        SnapshotScene(UserAddressView_Previews.self),
+        SnapshotScene(UserPicker_Previews.self),
+        SnapshotScene(VerifyCodeView_Previews.self),
+        SnapshotScene(VersionView_Previews.self),
+        SnapshotScene(WhySimpleX_Previews.self),
+        SnapshotScene(YourServersView_Previews.self)
+    ]
 }
 
 private func snapshotTheme(_ dark: Bool) -> ThemeManager.ActiveTheme {
@@ -54,7 +193,7 @@ private func snapshotTheme(_ dark: Bool) -> ThemeManager.ActiveTheme {
         base: base,
         colors: (dark ? DarkColorPalette : LightColorPalette).clone(),
         appColors: (dark ? DarkColorPaletteApp : LightColorPaletteApp).clone(),
-        wallpaper: AppWallpaper(background: nil, tint: nil, type: PresetWallpaper.school.toType(base))
+        wallpaper: AppWallpaper(background: nil, tint: nil, type: .empty)
     )
 }
 
@@ -62,7 +201,7 @@ private func snapshotTheme(_ dark: Bool) -> ThemeManager.ActiveTheme {
 private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, in windowScene: UIWindowScene) throws -> UIImage {
     let screen = windowScene.screen
     let width = screen.bounds.width
-    let root = scene.view
+    let root = VStack(spacing: 0) { scene.view }
         .environmentObject(ChatModel.shared)
         .environmentObject(theme)
         .frame(width: width, height: scene.height)
@@ -79,12 +218,15 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
     if scene.height == nil {
         for _ in 0..<2 {
             let fit = host.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
-            window.frame = CGRect(x: 0, y: 0, width: width, height: ceil(fit.height))
+            let fill = host.sizeThatFits(in: screen.bounds.size)
+            window.frame = CGRect(x: 0, y: 0, width: width, height: ceil(max(fit.height, fill.height)))
             settle()
         }
     }
+    window.endEditing(true)
+    removeAnimations(window.layer)
     let format = UIGraphicsImageRendererFormat.default()
-    format.scale = screen.scale
+    format.scale = 1
     format.preferredRange = .standard
     format.opaque = true
     let image = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { _ in
@@ -95,8 +237,79 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
     return image
 }
 
+private func removeAnimations(_ layer: CALayer) {
+    layer.removeAllAnimations()
+    layer.sublayers?.forEach(removeAnimations)
+}
+
 private func settle() {
     RunLoop.main.run(until: Date().addingTimeInterval(0.6))
+}
+
+struct TerminalNames_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().names()
+    }
+}
+
+struct TerminalQuoteThumbnail_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().quoteThumbnail()
+    }
+}
+
+struct TerminalRuleOnly_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().ruleOnly()
+    }
+}
+
+struct TerminalAvatars_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().avatars(terminal: true)
+    }
+}
+
+struct ClassicAvatars_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().avatars(terminal: false)
+    }
+}
+
+struct TerminalOverviewDirect_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().overviewDirect(terminal: true)
+    }
+}
+
+struct ClassicOverviewDirect_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().overviewDirect(terminal: false)
+    }
+}
+
+struct TerminalOverviewGroup_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().overviewGroup(terminal: true)
+    }
+}
+
+struct ClassicOverviewGroup_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().overviewGroup(terminal: false)
+    }
+}
+
+struct TerminalOverviewChannel_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().overviewChannel(terminal: true)
+    }
+}
+
+struct ClassicOverviewChannel_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().overviewChannel(terminal: false)
+    }
 }
 
 private struct ChatRows: View {
@@ -105,7 +318,10 @@ private struct ChatRows: View {
     let im: ItemsModel
     let mergedItems: MergedItems
     let terminal: Bool
-    let width: CGFloat
+
+    private var width: CGFloat {
+        UIScreen.main.bounds.width
+    }
 
     var body: some View {
         let wallpaperImage = theme.wallpaper.type.image
@@ -206,47 +422,26 @@ private func imageBase64(_ color: UIColor, _ size: CGSize) -> String {
     return "data:image/jpg;base64," + (image.jpegData(compressionQuality: 0.8)?.base64EncodedString() ?? "")
 }
 
-private let markdownText = """
-**Welcome to the team!**
-
-# Rules
-1. Be kind
-2. Stay on topic
-
-> Quotes are shown with a bar
-
-`inline code`, *italic* text and a [link](https://simplex.chat).
-"""
-
-@MainActor
 private final class SnapshotFixtures {
     private var nextId: Int64 = 1
-    private let baseDate = Date(timeIntervalSince1970: 1_736_936_100)
     let photo = imageBase64(UIColor(red: 0.2, green: 0.4, blue: 0.8, alpha: 1), CGSize(width: 120, height: 80))
     let landscape = imageBase64(UIColor(red: 0.25, green: 0.55, blue: 0.35, alpha: 1), CGSize(width: 320, height: 200))
-    let user: User
     let alice: GroupMember
     let bob: GroupMember
     let carol: GroupMember
     let team: GroupInfo
     let news: GroupInfo
     let contact: Contact
-    let width: CGFloat
 
-    init(width: CGFloat) {
-        self.width = width
-        var u = User.sampleData
-        u.profile = LocalProfile(profileId: 100, displayName: "me", fullName: "", localAlias: "")
-        u.localDisplayName = "me"
-        user = u
+    init() {
         alice = Self.member(2, "alice", .admin, image: imageBase64(UIColor(red: 0.85, green: 0.45, blue: 0.3, alpha: 1), CGSize(width: 64, height: 64)))
         bob = Self.member(3, "bob", .member)
         carol = Self.member(4, "carol", .member, image: imageBase64(UIColor(red: 0.55, green: 0.35, blue: 0.75, alpha: 1), CGSize(width: 64, height: 64)))
         team = Self.group(1, "team", channel: false)
         news = Self.group(2, "SimpleX news", channel: true)
         var c = Contact.sampleData
-        c.profile = LocalProfile(profileId: 2, displayName: "alice", fullName: "", localAlias: "")
-        c.localDisplayName = "alice"
+        c.profile = LocalProfile(profileId: 2, displayName: "bob", fullName: "", localAlias: "")
+        c.localDisplayName = "bob"
         contact = c
     }
 
@@ -279,7 +474,7 @@ private final class SnapshotFixtures {
     }
 
     private func ts(_ minutes: Double) -> Date {
-        baseDate.addingTimeInterval(minutes * 60)
+        previewDate.addingTimeInterval(minutes * 60)
     }
 
     private func msg(_ dir: CIDirection, _ text: String, _ minutes: Double, quote: CIQuote? = nil, reactions: [CIReactionCount] = [], content: MsgContent? = nil, file: CIFile? = nil) -> ChatItem {
@@ -321,96 +516,55 @@ private final class SnapshotFixtures {
         CIFile.getSample(fileId: id(), fileName: name, fileSize: 184_320, filePath: nil, fileStatus: .rcvInvitation)
     }
 
-    private func chatRows(_ chatInfo: ChatInfo, _ items: [ChatItem], terminal: Bool) -> AnyView {
+    private func chatRows(_ chatInfo: ChatInfo, _ items: [ChatItem], terminal: Bool) -> some View {
         let im = ItemsModel(secondaryIMFilter: nil)
         im.reversedChatItems = items.reversed()
         let merged = MergedItems.create(im, [])
-        return AnyView(ChatRows(chat: Chat(chatInfo: chatInfo), im: im, mergedItems: merged, terminal: terminal, width: width))
+        return ChatRows(chat: Chat(chatInfo: chatInfo), im: im, mergedItems: merged, terminal: terminal)
     }
 
     private var direct: ChatInfo { .direct(contact: contact) }
     private var teamChat: ChatInfo { .group(groupInfo: team, groupChatScope: nil) }
     private var newsChat: ChatInfo { .group(groupInfo: news, groupChatScope: nil) }
 
-    func scenes(defaultSize: Bool) -> [SnapshotScene] {
-        var scenes = [
-            SnapshotScene(name: "names", view: chatRows(teamChat, namesItems(), terminal: true)),
-            markdownInfoScene(),
-            welcomeScene(),
-            SnapshotScene(name: "quote-thumbnail", view: chatRows(direct, quoteThumbnailItems(), terminal: true)),
-            SnapshotScene(name: "rule-only", view: chatRows(direct, ruleOnlyItems(), terminal: true)),
-            SnapshotScene(name: "avatars-classic", view: chatRows(teamChat, avatarItems(), terminal: false)),
-            SnapshotScene(name: "avatars-terminal", view: chatRows(teamChat, avatarItems(), terminal: true))
-        ]
-        if defaultSize {
-            for terminal in [false, true] {
-                let layout = terminal ? "terminal" : "classic"
-                scenes.append(SnapshotScene(name: "overview-direct-\(layout)", view: chatRows(direct, overviewDirectItems(), terminal: terminal)))
-                scenes.append(SnapshotScene(name: "overview-group-\(layout)", view: chatRows(teamChat, overviewGroupItems(), terminal: terminal)))
-                scenes.append(SnapshotScene(name: "overview-channel-\(layout)", view: chatRows(newsChat, overviewChannelItems(), terminal: terminal)))
-            }
-        }
-        return scenes
-    }
-
-    private func namesItems() -> [ChatItem] {
-        [
+    func names() -> some View {
+        chatRows(teamChat, [
             msg(.groupRcv(groupMember: alice), "Hi everyone, the build is green.", -30),
             msg(.groupRcv(groupMember: alice), "Release notes are in the channel.", -29),
             msg(.groupRcv(groupMember: bob), "Great, thanks!", -20, quote: quote(.groupRcv(groupMember: alice), "Hi everyone, the build is green.")),
             msg(.groupSnd, "I will check the release notes today.", -10)
-        ]
+        ], terminal: true)
     }
 
-    private func markdownInfoScene() -> SnapshotScene {
-        let ci = msg(.directRcv, markdownText, -5)
-        let version = ChatItemVersion(
-            chatItemVersionId: 1,
-            msgContent: .text(markdownText),
-            formattedText: ci.formattedText,
-            markdownBlocks: ci.markdownBlocks,
-            itemVersionTs: ci.meta.itemTs,
-            createdAt: ci.meta.itemTs
-        )
-        let info = ChatItemInfo(itemVersions: [version])
-        return SnapshotScene(name: "markdown-info", height: 760, view: AnyView(ChatItemInfoView(ci: ci, chatItemInfo: .constant(info))))
-    }
-
-    private func welcomeScene() -> SnapshotScene {
-        var g = team
-        g.groupProfile.description = markdownText
-        return SnapshotScene(name: "welcome", height: 560, view: AnyView(GroupWelcomeView(groupInfo: .constant(g), groupProfile: g.groupProfile, welcomeText: markdownText)))
-    }
-
-    private func quoteThumbnailItems() -> [ChatItem] {
-        [
+    func quoteThumbnail() -> some View {
+        chatRows(direct, [
             msg(.directRcv, "nice", -10, quote: quote(.directSnd, "photo", image: photo)),
             msg(.directRcv, "a longer reply that wraps over two lines in the terminal row below the quote with the image", -9, quote: quote(.directSnd, "a long caption of the quoted image that wraps over more than one line of the quote", image: photo)),
             msg(.directRcv, "ok", -8, quote: quote(.directRcv, "", image: photo)),
             msg(.directRcv, "a reply wider than the quote above it, so that the quote is narrower than the item", -7, quote: quote(.directSnd, "photo", image: photo)),
             msg(.directRcv, "a reply a bit wider than its quote", -6, quote: quote(.directSnd, "photo", image: photo))
-        ]
+        ], terminal: true)
     }
 
-    private func ruleOnlyItems() -> [ChatItem] {
-        [
+    func ruleOnly() -> some View {
+        chatRows(direct, [
             msg(.directRcv, "---", -10),
             msg(.directRcv, "---", -9, quote: quote(.directSnd, "a quoted message that is much wider than the rule"))
-        ]
+        ], terminal: true)
     }
 
-    private func avatarItems() -> [ChatItem] {
-        [
+    func avatars(terminal: Bool) -> some View {
+        chatRows(teamChat, [
             msg(.groupRcv(groupMember: alice), "Morning! Who is joining the call?", -40),
             msg(.groupRcv(groupMember: bob), "I am", -38),
             msg(.groupRcv(groupMember: bob), "Starting in 5 minutes", -37),
             msg(.groupRcv(groupMember: carol), "Count me in, a bit late", -35),
             msg(.groupSnd, "Great", -30)
-        ]
+        ], terminal: terminal)
     }
 
-    private func overviewDirectItems() -> [ChatItem] {
-        [
+    func overviewDirect(terminal: Bool) -> some View {
+        chatRows(direct, [
             event(.directRcv, .rcvChatFeature(feature: .voice, enabled: FeatureEnabled(forUser: true, forContact: true), param: nil), -120),
             msg(.directRcv, "Hi! Did you see the **new release**?", -60),
             msg(.directSnd, "Yes, *great* changes 🎉", -58, reactions: [reaction(.thumbsup, 1)]),
@@ -419,11 +573,11 @@ private final class SnapshotFixtures {
             msg(.directRcv, "", -40, content: .image(text: "", image: landscape), file: imageFile("photo.jpg")),
             msg(.directRcv, "", -35, content: .file(""), file: CIFile.getSample(fileId: id(), fileName: "report.pdf", fileSize: 245_760, filePath: nil, fileStatus: .rcvInvitation)),
             msg(.directSnd, "", -30, content: .voice(text: "", duration: 12), file: CIFile.getSample(fileId: id(), fileName: "voice.m4a", fileSize: 20_480, filePath: nil, fileStatus: .sndComplete))
-        ]
+        ], terminal: terminal)
     }
 
-    private func overviewGroupItems() -> [ChatItem] {
-        [
+    func overviewGroup(terminal: Bool) -> some View {
+        chatRows(teamChat, [
             event(.groupRcv(groupMember: carol), .rcvGroupEvent(rcvGroupEvent: .memberConnected), -130),
             msg(.groupRcv(groupMember: alice), "Welcome, carol!", -120, reactions: [reaction(.heart, 2, mine: true)]),
             msg(.groupRcv(groupMember: carol), "Thanks! Glad to be here", -118),
@@ -432,15 +586,15 @@ private final class SnapshotFixtures {
             msg(.groupRcv(groupMember: alice), "Plan for today:\n1. review\n2. **release**", -90),
             msg(.groupRcv(groupMember: bob), "", -80, content: .voice(text: "", duration: 21), file: CIFile.getSample(fileId: id(), fileName: "voice.m4a", fileSize: 30_720, filePath: nil, fileStatus: .rcvInvitation)),
             msg(.groupRcv(groupMember: carol), "", -70, content: .file(""), file: CIFile.getSample(fileId: id(), fileName: "notes.txt", fileSize: 2_048, filePath: nil, fileStatus: .rcvInvitation))
-        ]
+        ], terminal: terminal)
     }
 
-    private func overviewChannelItems() -> [ChatItem] {
-        [
+    func overviewChannel(terminal: Bool) -> some View {
+        chatRows(newsChat, [
             event(.channelRcv, .rcvGroupEvent(rcvGroupEvent: .groupUpdated(groupProfile: news.groupProfile)), -210),
             msg(.channelRcv, "**Version 7.1** is out", -200, reactions: [reaction(.thumbsup, 12), reaction(.heart, 5, mine: true)]),
             msg(.channelRcv, "## What's new\n- terminal layout\n- faster sync", -190),
             msg(.channelRcv, "Screenshot of the new layout", -180, content: .image(text: "Screenshot of the new layout", image: landscape), file: imageFile("screenshot.jpg"))
-        ]
+        ], terminal: terminal)
     }
 }

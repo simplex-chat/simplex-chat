@@ -23,6 +23,8 @@ public let CALL_RECONNECT_VERSION = 22
 
 public let contentModerationPostLink = URL(string: "https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.html#preventing-server-abuse-without-compromising-e2e-encryption")!
 
+public let previewDate = Date(timeIntervalSince1970: 1_736_936_100)
+
 public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var userId: Int64
     public var agentUserId: String
@@ -1830,6 +1832,7 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
         simplexLinks: fullPreferences.simplexLinks,
         reports: fullPreferences.reports,
         history: fullPreferences.history,
+        support: fullPreferences.support,
         signMessages: fullPreferences.signMessages,
         commands: fullPreferences.commands
     )
@@ -2654,8 +2657,8 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         chatSettings: ChatSettings.defaults,
         userPreferences: Preferences.sampleData,
         mergedPreferences: ContactUserPreferences.sampleData,
-        createdAt: .now,
-        updatedAt: .now,
+        createdAt: previewDate,
+        updatedAt: previewDate,
         contactGrpInvSent: false,
         chatTags: [],
         chatDeleted: false
@@ -3234,7 +3237,7 @@ public enum MsgVerified: Decodable, Equatable, Hashable {
         switch self {
         case .sigMissing: return (
                 NSLocalizedString("Signature missing", comment: "alert title"),
-                NSLocalizedString("The channel required this message to be signed, but the signature is missing.", comment: "alert message")
+                NSLocalizedString("The message was sent before the channel started signing messages, or it is fake.", comment: "alert message")
             )
         default: return nil
         }
@@ -3490,10 +3493,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         if groupInfo.useRelays && !groupInfo.isOwner { return nil }
         let userRole = groupInfo.membership.memberRole
         if groupInfo.useRelays {
-            // TODO [relays]: for now owners can only set observer/member in channels.
-            //   Restore the full Owner-excluded picker when moderator/admin promotion is supported:
-            // return GroupMemberRole.supportedRoles.filter { $0 <= userRole && $0 != .owner }
-            return [.observer, .member]
+            return [.observer, .member, .moderator]
         } else {
             return GroupMemberRole.supportedRoles.filter { $0 <= userRole }
         }

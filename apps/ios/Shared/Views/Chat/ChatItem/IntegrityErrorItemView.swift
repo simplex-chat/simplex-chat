@@ -106,6 +106,7 @@ struct RcvMsgErrorItemView: View {
 
 struct IntegrityErrorItemView_Previews: PreviewProvider {
     static var previews: some View {
-        IntegrityErrorItemView(chat: Chat.sampleData, msgError: .msgBadHash, chatItem: ChatItem.getIntegrityErrorSample())
+        let ci = previewDated(ChatItem.getIntegrityErrorSample())
+        IntegrityErrorItemView(chat: Chat.sampleData, msgError: .msgBadHash, chatItem: ci).modifier(ChatItemClipped(ci, tailVisible: true))
     }
 }

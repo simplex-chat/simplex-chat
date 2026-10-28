@@ -115,7 +115,7 @@ struct CIChatFeatureView_Previews: PreviewProvider {
         CIChatFeatureView(
             chat: Chat.sampleData,
             im: ItemsModel.shared,
-            chatItem: ChatItem.getChatFeatureSample(.fullDelete, enabled), feature: ChatFeature.fullDelete, iconColor: enabled.iconColor(.secondary)
+            chatItem: previewDated(ChatItem.getChatFeatureSample(.fullDelete, enabled)), feature: ChatFeature.fullDelete, iconColor: enabled.iconColor(.secondary)
         ).environment(\.revealed, true)
     }
 }

@@ -75,7 +75,7 @@ struct CIMemberCreatedContactView_Previews: PreviewProvider {
         let content = CIContent.rcvGroupEvent(rcvGroupEvent: .memberCreatedContact)
         let chatItem = ChatItem(
             chatDir: .groupRcv(groupMember: GroupMember.sampleData),
-            meta: CIMeta.getSample(1, .now, content.text, .rcvRead),
+            meta: CIMeta.getSample(1, previewDate, content.text, .rcvRead),
             content: content,
             quotedItem: nil,
             file: nil
