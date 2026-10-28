@@ -2932,4 +2932,7 @@
     <string name="badges_level_supporter_summary">Supporter : fichiers de 2 Go disponibles pendant 7 jours.</string>
     <string name="badges_level_legend_summary">Légende : fichiers de 5 Go disponibles pendant 21 jours.</string>
     <string name="badges_choose_your_badge_title">Choisissez votre badge</string>
+    <string name="sign_messages_question">Signer les messages ?</string>
+    <string name="sign_messages_alert_desc">Les messages envoyés auparavant apparaîtront sans signature aux abonnés qui rejoignent plus tard.</string>
+    <string name="sign_messages_enable">Activer</string>
 </resources>
