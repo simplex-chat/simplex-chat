@@ -336,7 +336,7 @@ jobs:
           BACKEND_DIR: ${{ steps.reach.outcome == 'success' && format('{0}/backend', runner.temp) || '' }}
         run: scripts/ci/app-tests/feature-tests.sh scripts/ci/android "$RUNNER_TEMP/smoke-test/tests" $TESTS
 
-      - name: Emulator state after a failed smoke test
+      - name: Emulator state after a failed test
         if: ${{ !cancelled() && (steps.smoke.outcome == 'failure' || steps.features.outcome == 'failure') }}
         run: |
           adb devices
