@@ -343,7 +343,7 @@ private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: S
       text = stringResource(MR.strings.migrate_from_device_cancel_migration),
       textColor = MaterialTheme.colors.error,
       click = {
-        cancelMigration(fileId, ctrl, chatReceiver)
+        cancelMigration(fileId, ctrl)
       }
     ) {}
     SettingsActionItemWithContent(
@@ -516,15 +516,15 @@ private fun MutableState<MigrationFromState>.uploadArchive(archivePath: String) 
 suspend fun initTemporaryDatabase(tempDatabaseFile: File, netCfg: NetCfg): Pair<ChatCtrl, User>? {
   val (status, ctrl) = chatInitTemporaryDatabase(tempDatabaseFile.absolutePath)
   showErrorOnMigrationIfNeeded(status)
-  try {
-    if (ctrl != null) {
+  if (ctrl != null) {
+    try {
       val user = startChatWithTemporaryDatabase(ctrl, netCfg)
       if (user != null) return ctrl to user
+    } catch (e: Throwable) {
+      Log.e(TAG, "Error while starting chat in temporary database: ${e.stackTraceToString()}")
     }
-  } catch (e: Throwable) {
-    Log.e(TAG, "Error while starting chat in temporary database: ${e.stackTraceToString()}")
+    controller.stopChatWithTemporaryDatabase(ctrl)
   }
-  if (ctrl != null) controller.stopChatWithTemporaryDatabase(ctrl)
   File(tempDatabaseFile.absolutePath + "_chat.db").delete()
   File(tempDatabaseFile.absolutePath + "_agent.db").delete()
   return null
@@ -613,10 +613,9 @@ private suspend fun cancelUploadedArchive(fileId: Long, ctrl: ChatCtrl) {
   controller.apiCancelFile(null, fileId, ctrl)
 }
 
-private fun cancelMigration(fileId: Long, ctrl: ChatCtrl, chatReceiver: MigrationFromChatReceiver?) {
+private fun cancelMigration(fileId: Long, ctrl: ChatCtrl) {
   withBGApi {
     cancelUploadedArchive(fileId, ctrl)
-    chatReceiver?.stopAndCleanUp()
     startChatAndDismiss()
   }
 }
@@ -731,10 +730,10 @@ private class MigrationFromChatReceiver(
     }
   }
 
-  suspend fun stopAndCleanUp() {
+  fun stopAndCleanUp() {
     Log.d(TAG, "MigrationChatReceiver.stop")
     receiveMessages = false
-    controller.stopChatWithTemporaryDatabase(ctrl)
+    chatCloseStore(ctrl)
     File(databaseUrl.absolutePath + "_chat.db").delete()
     File(databaseUrl.absolutePath + "_agent.db").delete()
   }
