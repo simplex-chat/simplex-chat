@@ -1,22 +1,37 @@
-# Device test plan: chat list cards and banners while searching
+# Device test plan: channel message signing and channel moderators
 
-The app as the scripted smoke test leaves it: the profile "citester", without conversations, so the chat list shows the onboarding pages. C1 creates a group, "ci cards", which gives the chat list its search field and its cards; the cases after it build on it. The top-bar session starts from the state the reachable session left: "ci cards" exists, and `ui layout` cleared the search field.
+The app as the scripted smoke test leaves it: the profile "citester", without conversations. The cases run in the order of the tables and build on each other: one channel, "ci signing", owned by citester, and two more profiles in this app, "cimod" and "cisub", that join it by its link. Do not reorder them: cisub must join only after cimod has become a moderator (B2), so that cimod learns about cisub.
 
 ## Setup
 
-- **Creating a group:** "Compose" (the pencil in the toolbar) → "Create group" → `ui tap-value "Enter group name…"`, `ui type "ci cards"`, and check the field's value in the tree (the keyboard may capitalize it: then fix it) → tap the "Create group" row (the button below the field, not the screen's title; use `ui tap-xy` if the label is ambiguous). The next screen offers to invite members: tap "Skip" if it shows, then leave the group's chat with the navigation back button. If you can't get back to the chat list, `ui relaunch` returns to it.
-- **The search field** is just above the toolbar with the one-hand UI (y about 754, the list tags above it) and at the top with the top bar. Tap it with `ui tap-value "Search or paste SimpleX link"` while it is empty. Its clear button is the `Image "Close"` (an x in a circle) at the right end of the field, shown only while the field has text: tap its centre with `ui tap-xy`, taken from `ui find Close` (the element in the field's row). If the field still shows the text after that, write it under "Harness notes" and clear it with "Cancel" next to the field.
-- **The cards** are list rows around the chats, not drawn over them; leave them open (never tap their x):
-  - the toolbar picker, a capsule with "Bottom bar" and "Top bar", the row nearest the search field;
-  - the connect card, two halves "New 1-time link" and "Paste link / Scan", beyond the chats, on the side away from the search field;
-  - the crowdfunding banner "Invest in SimpleX Chat!" ("Crowdfunding on Wefunder"), between the picker and the chats, shown only when the App Store country is the US or unknown, as it may be in the simulator;
-  - a badge banner (a title such as "Your badge expired"), in the same place, only for a profile with a badge: not expected here.
-- Judge what shows from the tree and a screenshot: a card counts as shown when its text is in the tree at a y on the screen and the screenshot shows it.
+- The channel uses the app's preset chat relays. Creating it and joining it wait for the relays: use `ui wait "<text>" 120` there, and take a shot if a wait fails.
+- **Sending a message:** in the chat, tap the message field at the bottom (find it in `ui tree`: the text view next to the send button; for the channel's owner its placeholder is "Broadcast"), `ui type "<text>"`, then tap the send button at the right end of the field. Check the message then shows in the chat.
+- **Channel info:** tap the channel name at the top of the chat (`ui find "ci signing"`, the element with the smallest y; tap it with `ui tap-xy`). Go back with the navigation back buttons; close a sheet by swiping it down.
+- **Message menu:** `ui long-press <x> <y>` on the message's text (centre from `ui find`) opens its menu ("Info", "Moderate", …). "Info" opens the message's details; close them by swiping down.
+- **Signatures are read as text, never from the seal icons:** a message's "Info" shows "Signed" (your own message), "Signed & verified" (someone else's, checked) or "Signature missing".
+- **Switching profile:** open the picker with your profile image (`Image "Account"`), then tap the other profile's name in the row at the top of the picker (`ui find <name>`, then `ui tap-xy`; the picker's elements are in the tree even while it is closed, so open it first). The chat list then shows that profile's chats; open "ci signing" from it.
+- **Adding a profile:** picker → "Your chat profiles" → "Add profile" → tap the field "Enter your name…" (`ui tap-value "Enter your name…"`), type the name, check the field's value in the tree (the keyboard may capitalize it: then fix it), tap "Create profile". The new profile becomes the active one; close "Your chat profiles" by swiping it down.
+- **Joining by the copied link** (from a profile without conversations): "Compose" → "Scan / Paste link" → "Tap to paste link". If iOS asks to allow pasting, tap "Allow Paste". An alert names the channel with "Open channel": tap it; the channel opens with "Tap Join channel" and a "Join channel" bar at the bottom: tap the bar, and wait up to 120 s until the chat shows "you are subscriber".
 
 | ID | Do | Expect |
 |----|----|--------|
-| C1 | As citester (after onboarding), create a group `ci cards` (Setup) and go back to the chat list | The list shows "ci cards", the search field, and cards around the chats: note in the report which of the "Bottom bar / Top bar" picker, "New 1-time link / Paste link / Scan" and "Invest in SimpleX Chat!" show. At least the picker or the connect card shows; if neither does, the case fails and C2 to C4 prove nothing |
-| C2 | Tap the search field and type `ci` (check the field's value) | "ci cards" is still listed; none of the cards or banners noted in C1 shows |
-| C3 | Clear the field with its clear (x) button | The field shows its placeholder again, and the cards noted in C1 are back |
-| C4 | Tap the search field and type `zzz` | "No chats found"; no cards or banners |
-| C5 | In the top-bar session: check "ci cards" is listed (if it is not, create it as in C1), note which cards show as in C1, then repeat C2 and C3 | The search field is at the top; the same as C2 and C3: while `ci` is typed, "ci cards" is listed and none of the noted cards shows; after clearing, they are back |
+| S2 | "Compose" → "Create public channel" → `ui tap-value "Enter channel name…"`, type `ci signing` (check the value) → tap the "Create public channel" button (the list row, not the title; use `ui tap-xy` if the label is ambiguous) → wait up to 120 s for "Channel link"; if "%d/%d relays active" stays below the total for 120 s with at least 1 active, tap "Continue" and "Continue" in the alert → on "Channel link" tap "Continue" (top right) | The channel "ci signing" opens as its chat |
+| S3 | Send `before signing` | "before signing" shows in the chat as sent |
+| A1 | Channel info → "Channel preferences" | The first row is the switch "Sign messages", off; its footer says "Do not require signing messages." |
+| A2 | Turn "Sign messages" on | Alert "Sign messages?" with the message "Messages sent before will show "signature missing" to subscribers who join later." and the buttons "Enable" and "Cancel". Tap "Cancel": the switch is off again |
+| A3 | Turn "Sign messages" on again, tap "Enable", then "Save and notify subscribers"; go back to the chat | After "Enable" the switch stays on (footer "Require signing messages."); after saving and going back, the chat shows the event "Sign messages: on" |
+| A4 | Send `after signing`, then long-press it → "Info" | The message's info says "Signed" |
+| A5 | Channel info → "Channel preferences" | "Chat with admins" is still off (its footer says "Prohibit chats with admins."); saving in A3 did not turn it on |
+| J1 | Channel info → "Channel link" → "Share link" → in the share sheet tap "Copy" (`ui find Copy`; if it is not in the tree, `ui tap-xy` at its position in the screenshot) → close the sheet and go back to the chat list | The link is copied (the sheet closes or shows it was copied) |
+| J2 | Add the profile `cimod`; as cimod, join by the copied link | The chat "ci signing" shows "you are subscriber" |
+| A6 | As cimod in "ci signing": tap the message "before signing"; then long-press it → "Info"; then long-press "after signing" → "Info" | Tapping "before signing" shows the alert "Signature missing" with "The message was sent before the channel started signing messages, or it is fake."; its info says "Signature missing"; the info of "after signing" says "Signed & verified" |
+| B1 | Switch to citester → "ci signing" → channel info → "Subscribers" → "cimod" → tap the "Change role" row | The role menu lists exactly "subscriber", "contributor" and "moderator" (no admin, no owner) |
+| B2 | Choose "moderator" → "Change role?" → "Change"; go back to the chat | cimod's info shows the role moderator under the section header "Moderator" (any case); the chat shows "you changed role of cimod to moderator" |
+| B3 | Switch to cimod → "ci signing"; send `moderator post` | The chat shows "changed your role to moderator"; "moderator post" shows as sent |
+| J3 | Add the profile `cisub`; as cisub, join by the same link (it is still on the clipboard; if not, copy it again as citester as in J1) | cisub's chat "ci signing" shows "you are subscriber" |
+| J4 | Switch to citester → "ci signing" → channel info → "Subscribers" → "cisub" → "Change role" → "contributor" → "Change" | cisub's role shows contributor, under the section header "Contributor" |
+| J5 | Switch to cisub → "ci signing"; send `contributor post` | "contributor post" shows as sent |
+| B4 | Switch to cimod → "ci signing" → channel info | The info shows "Subscribers"; its list includes "cisub" |
+| B5 | Open "cisub" in that list | cisub's info offers "Block for all" (do not tap it yet) |
+| B6 | Back in the chat, long-press "contributor post" → "Moderate" → "Delete member message?" → "Delete" | The message shows "moderated by cimod" in its place |
+| B7 | Channel info → "Subscribers" → "cisub" → "Block for all" → "Block subscriber for all?" → "Block for all" | cisub's info now offers "Unblock for all"; the chat shows "you blocked cisub" |
