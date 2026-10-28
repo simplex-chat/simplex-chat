@@ -339,6 +339,7 @@ struct MigrateToDevice: View {
             progressView()
         }
         .onAppear {
+            Task { await chatReceiver?.stopAndCleanUp() }
             importArchive(archivePath)
         }
     }
@@ -480,15 +481,14 @@ struct MigrateToDevice: View {
     private func initTemporaryDatabase() async -> (chat_ctrl, User)? {
         let (status, ctrl) = chatInitTemporaryDatabase(url: tempDatabaseUrl)
         showErrorOnMigrationIfNeeded(status, $alert)
-        guard let ctrl else { return nil }
         do {
-            if let user = try startChatWithTemporaryDatabase(ctrl: ctrl) {
+            if let ctrl, let user = try startChatWithTemporaryDatabase(ctrl: ctrl) {
                 return (ctrl, user)
             }
         } catch let error {
             logger.error("Error while starting chat in temporary database: \(error.localizedDescription)")
         }
-        await stopChatWithTemporaryDatabase(ctrl: ctrl)
+        if let ctrl { await stopChatWithTemporaryDatabase(ctrl: ctrl) }
         return nil
     }
 

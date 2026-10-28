@@ -2,18 +2,18 @@
 
 ## Problem
 
-After a device migration on iOS, the agent of the temporary chat controller stays active with its network clients until the app restarts, and each of its statistics saves fails every 10 seconds.
+After a device migration is imported on iOS, the agent of the temporary chat controller stays active until the app restarts, and each of its statistics saves fails every 10 seconds.
 
 ## Cause
 
-A migration uses a temporary chat controller (archive download on the new device, upload on the old device). Its agent is active from the creation of the controller and saves server statistics every 10 seconds; `/_stop` is never sent to the controller. `stopAndCleanUp` of `MigrationChatReceiver` closes its database with `chat_close_store`, which closes the database only, so each statistics save of the still active agent fails with "database closed". When the start of the controller fails (`initTemporaryDatabase`), the controller is neither stopped nor closed.
+The new device downloads the archive with a temporary chat controller. Its agent is active from the creation of the controller and saves server statistics every 10 seconds; `/_stop` is never sent to the controller. `stopAndCleanUp` of `MigrationChatReceiver` runs when the screen disappears, after `finishMigration` deletes the directory of the database files, and closes the database with `chat_close_store` without stopping the controller. When the start of a temporary controller fails (`initTemporaryDatabase`), the controller is neither stopped nor closed.
 
 ## Fix
 
-- `stopChatWithTemporaryDatabase(ctrl:)` in `SimpleXAPI.swift` sends `/_stop` to the controller (`apiStopChat(ctrl:)`) and closes its database with `chat_close_store`; a failed `/_stop` is logged.
-- `stopAndCleanUp` of both migration receivers calls it and becomes `async`; the two `.onAppear` call sites start it in a `Task`.
+- `stopChatWithTemporaryDatabase(ctrl:)` in `SimpleXAPI.swift` sends `/_stop` to the controller (`apiStopChat(ctrl:)`) and closes its database; a failed `/_stop` is logged.
+- New device: `stopAndCleanUp` of the receiver calls it and becomes `async`; the archive import view stops the download controller before the import.
 - `initTemporaryDatabase` of both screens calls it when the start fails and becomes `async`.
 
 ## Scope
 
-iOS: `MigrateToDevice.swift`, `MigrateFromDevice.swift`, and `SimpleXAPI.swift` (`apiStopChat` with an optional controller parameter, as in `apiStartChat`, and `stopChatWithTemporaryDatabase` next to `startChatWithTemporaryDatabase`). The main chat controller is unchanged.
+iOS: `MigrateToDevice.swift`, `initTemporaryDatabase` in `MigrateFromDevice.swift`, and `SimpleXAPI.swift`. The receiver of the old device is unchanged: `/_stop` cancels the remote deletion of the uploaded archive that its exits start.
