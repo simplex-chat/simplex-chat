@@ -2442,6 +2442,15 @@ func startChatWithTemporaryDatabase(ctrl: chat_ctrl) throws -> User? {
     return migrationActiveUser
 }
 
+func stopChatWithTemporaryDatabase(ctrl: chat_ctrl) async {
+    do {
+        try await apiStopChat(ctrl: ctrl)
+    } catch let error {
+        logger.error("stopChatWithTemporaryDatabase error: \(responseError(error))")
+    }
+    chat_close_store(ctrl)
+}
+
 func changeActiveUser(_ userId: Int64, viewPwd: String?) {
     do {
         try changeActiveUser_(userId, viewPwd: viewPwd)

@@ -477,22 +477,24 @@ struct MigrateToDevice: View {
         startDownloading(0, link, archivePath.path)
     }
 
-    private func initTemporaryDatabase() -> (chat_ctrl, User)? {
+    private func initTemporaryDatabase() async -> (chat_ctrl, User)? {
         let (status, ctrl) = chatInitTemporaryDatabase(url: tempDatabaseUrl)
         showErrorOnMigrationIfNeeded(status, $alert)
+        guard let ctrl else { return nil }
         do {
-            if let ctrl, let user = try startChatWithTemporaryDatabase(ctrl: ctrl) {
+            if let user = try startChatWithTemporaryDatabase(ctrl: ctrl) {
                 return (ctrl, user)
             }
         } catch let error {
             logger.error("Error while starting chat in temporary database: \(error.localizedDescription)")
         }
+        await stopChatWithTemporaryDatabase(ctrl: ctrl)
         return nil
     }
 
     private func startDownloading(_ totalBytes: Int64, _ link: String, _ archivePath: String) {
         Task {
-            guard let ctrlAndUser = initTemporaryDatabase() else {
+            guard let ctrlAndUser = await initTemporaryDatabase() else {
                 return migrationState = .downloadFailed(totalBytes: totalBytes, link: link, archivePath: archivePath)
             }
             let (ctrl, user) = ctrlAndUser
@@ -793,12 +795,7 @@ private class MigrationChatReceiver {
         receiveMessages = false
         receiveLoop?.cancel()
         receiveLoop = nil
-        do {
-            try await apiStopChat(ctrl: ctrl)
-        } catch let error {
-            logger.error("MigrationChatReceiver.stop error: \(error.localizedDescription)")
-        }
-        chat_close_store(ctrl)
+        await stopChatWithTemporaryDatabase(ctrl: ctrl)
         try? FileManager.default.removeItem(atPath: "\(databaseUrl.path)_chat.db")
         try? FileManager.default.removeItem(atPath: "\(databaseUrl.path)_agent.db")
     }
