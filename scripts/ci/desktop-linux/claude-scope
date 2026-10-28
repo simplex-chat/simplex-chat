@@ -2,5 +2,5 @@
 # backend: yes when the prompt uses the test backend; a run that asks for Claude must then start it too.
 # max-turns and max-budget-usd (optional) bound the session; claude-test.sh uses 60 and 3 when they're absent.
 backend: no
-max-turns: 300
+max-turns: 200
 max-budget-usd: 5
