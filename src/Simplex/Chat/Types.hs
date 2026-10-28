@@ -1395,6 +1395,12 @@ instance ToJSON ProbeHash where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+connProbeHash :: ByteString -> Probe -> ProbeHash
+connProbeHash connCode (Probe probe) = ProbeHash $ C.sha256Hash $ connCode <> probe
+
+connProbeCheckHash :: ByteString -> ProbeHash -> ProbeHash
+connProbeCheckHash connCode (ProbeHash probeHash) = ProbeHash $ C.sha256Hash $ connCode <> probeHash
+
 data GroupMemberCategory
   = GCUserMember
   | GCInviteeMember -- member invited by the user

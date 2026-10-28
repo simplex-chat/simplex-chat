@@ -1886,7 +1886,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           -- sendProbeHashes -> sendProbe (reversed - change order in code, may add delay)
           sendProbe probe
           ms <- map COMGroupMember <$> withStore' (\db -> getMatchingMembers db cxt user ct)
-          sendProbeHashes ms probe probeId
+          sendProbeHashes (COMContact ct) ms probe probeId
         else sendProbe . Probe =<< liftIO (encodedRandomBytes gVar 32)
       where
         sendProbe :: Probe -> CM ()
@@ -1902,26 +1902,44 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           (probe, probeId) <- withStore $ \db -> createSentProbe db gVar userId $ COMGroupMember m
           sendProbe probe
           cs <- map COMContact <$> withStore' (\db -> getMatchingMemberContacts db cxt user m)
-          sendProbeHashes cs probe probeId
+          sendProbeHashes (COMGroupMember m) cs probe probeId
         else sendProbe . Probe =<< liftIO (encodedRandomBytes gVar 32)
       where
         sendProbe :: Probe -> CM ()
         sendProbe probe = void $ sendDirectMemberMessage conn (XInfoProbe probe) groupId
 
-    sendProbeHashes :: [ContactOrMember] -> Probe -> Int64 -> CM ()
-    sendProbeHashes cgms probe probeId =
-      forM_ cgms $ \cgm -> sendProbeHash cgm `catchAllErrors` \_ -> pure ()
+    sendProbeHashes :: ContactOrMember -> [ContactOrMember] -> Probe -> Int64 -> CM ()
+    sendProbeHashes _ [] _ _ = pure ()
+    sendProbeHashes probeCgm cgms probe probeId = do
+      connCode <- getConnCodes (probeCgm : cgms)
+      forM_ (connCode probeCgm) $ \probeConnCode -> do
+        let probeHash = connProbeHash probeConnCode probe
+        forM_ cgms $ \cgm ->
+          forM_ (connCode cgm) (sendProbeHash cgm . (`connProbeCheckHash` probeHash)) `catchAllErrors` \_ -> pure ()
       where
-        probeHash = ProbeHash $ C.sha256Hash (unProbe probe)
-        sendProbeHash :: ContactOrMember -> CM ()
-        sendProbeHash cgm@(COMContact c) = do
-          void . sendDirectContactMessage user c $ XInfoProbeCheck probeHash
+        sendProbeHash :: ContactOrMember -> ProbeHash -> CM ()
+        sendProbeHash cgm@(COMContact c) checkHash = do
+          void . sendDirectContactMessage user c $ XInfoProbeCheck checkHash
           withStore' $ \db -> createSentProbeHash db userId probeId cgm
-        sendProbeHash (COMGroupMember GroupMember {activeConn = Nothing}) = pure ()
-        sendProbeHash cgm@(COMGroupMember m@GroupMember {groupId, activeConn = Just conn}) =
+        sendProbeHash (COMGroupMember GroupMember {activeConn = Nothing}) _ = pure ()
+        sendProbeHash cgm@(COMGroupMember m@GroupMember {groupId, activeConn = Just conn}) checkHash =
           when (memberCurrent m) $ do
-            void $ sendDirectMemberMessage conn (XInfoProbeCheck probeHash) groupId
+            void $ sendDirectMemberMessage conn (XInfoProbeCheck checkHash) groupId
             withStore' $ \db -> createSentProbeHash db userId probeId cgm
+
+    getMatchingContactsOrMembers :: DB.Connection -> ContactOrMember -> IO [ContactOrMember]
+    getMatchingContactsOrMembers db = \case
+      COMContact ct -> map COMGroupMember <$> getMatchingMembers db cxt user ct
+      COMGroupMember m -> map COMContact <$> getMatchingMemberContacts db cxt user m
+
+    getConnCodes :: [ContactOrMember] -> CM (ContactOrMember -> Maybe ByteString)
+    getConnCodes cgms = do
+      codes <- withAgent (`getConnectionsVerifyCodes` mapMaybe cgmConnId cgms)
+      pure $ \cgm -> codeAD <$> (cgmConnId cgm >>= (`M.lookup` codes))
+      where
+        cgmConnId = \case
+          COMContact ct -> contactConnId ct
+          COMGroupMember m -> memberConnId m
 
     messageWarning :: Text -> CM ()
     messageWarning = toView . CEvtMessageError user "warning"
@@ -2986,9 +3004,14 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       contactMerge <- readTVarIO =<< asks contactMergeEnabled
       -- [incognito] unless connected incognito
       when (contactMerge && not (contactOrMemberIncognito cgm2)) $ do
-        cgm1s <- withStore' $ \db -> matchReceivedProbe db cxt user cgm2 probe
-        let cgm1s' = filter (not . contactOrMemberIncognito) cgm1s
-        probeMatches cgm1s' cgm2
+        cgms <- withStore' (`getMatchingContactsOrMembers` cgm2)
+        connCode <- getConnCodes (cgm2 : cgms)
+        forM_ (connCode cgm2) $ \probeConnCode -> do
+          let probeHash = connProbeHash probeConnCode probe
+              cgmCheckHashes = mapMaybe (\cgm -> (cgm,) . (`connProbeCheckHash` probeHash) <$> connCode cgm) cgms
+          cgm1s <- withStore' $ \db -> matchReceivedProbe db user cgm2 probe probeHash cgmCheckHashes
+          let cgm1s' = filter (not . contactOrMemberIncognito) cgm1s
+          probeMatches cgm1s' cgm2
       where
         probeMatches :: [ContactOrMember] -> ContactOrMember -> CM ()
         probeMatches [] _ = pure ()
@@ -2998,14 +3021,17 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           probeMatches cgm1s' cgm2''
 
     xInfoProbeCheck :: ContactOrMember -> ProbeHash -> CM ()
-    xInfoProbeCheck cgm1 probeHash = do
+    xInfoProbeCheck cgm1 checkHash = do
       contactMerge <- readTVarIO =<< asks contactMergeEnabled
       -- [incognito] unless connected incognito
       when (contactMerge && not (contactOrMemberIncognito cgm1)) $ do
-        cgm2Probe_ <- withStore' $ \db -> matchReceivedProbeHash db cxt user cgm1 probeHash
-        forM_ cgm2Probe_ $ \(cgm2, probe) ->
-          unless (contactOrMemberIncognito cgm2) . void $
-            probeMatch cgm1 cgm2 probe
+        connCode <- getConnCodes [cgm1]
+        forM_ (connCode cgm1) $ \checkConnCode -> do
+          cgm2Probe_ <- withStore' $ \db ->
+            matchReceivedProbeHash db user cgm1 checkConnCode checkHash =<< getMatchingContactsOrMembers db cgm1
+          forM_ cgm2Probe_ $ \(cgm2, probe) ->
+            unless (contactOrMemberIncognito cgm2) . void $
+              probeMatch cgm1 cgm2 probe
 
     probeMatch :: ContactOrMember -> ContactOrMember -> Probe -> CM (Maybe ContactOrMember)
     probeMatch cgm1 cgm2 probe =

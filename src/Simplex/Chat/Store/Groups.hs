@@ -227,7 +227,7 @@ import Data.Either (rights)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (partition, sortOn)
-import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing)
+import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -2980,7 +2980,7 @@ getMatchingContacts db cxt user@User {userId} Contact {contactId, profile = Loca
 getMatchingMembers :: DB.Connection -> StoreCxt -> User -> Contact -> IO [GroupMember]
 getMatchingMembers db cxt user@User {userId} Contact {profile = LocalProfile {displayName, fullName, shortDescr, image}} = do
   memberIds <- map fromOnly <$> DB.query db q (userId, GCUserMember, displayName, fullName, shortDescr, image)
-  filter memberCurrent . rights <$> mapM (runExceptT . getGroupMemberById db cxt user) memberIds
+  rights <$> mapM (runExceptT . getGroupMemberById db cxt user) memberIds
   where
     -- only match with members without associated contact
     q =
@@ -3031,60 +3031,53 @@ createSentProbeHash db userId probeId to = do
     "INSERT INTO sent_probe_hashes (sent_probe_id, contact_id, group_member_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
     (probeId, ctId, gmId, userId, currentTs, currentTs)
 
-matchReceivedProbe :: DB.Connection -> StoreCxt -> User -> ContactOrMember -> Probe -> IO [ContactOrMember]
-matchReceivedProbe db cxt user@User {userId} from (Probe probe) = do
-  let probeHash = C.sha256Hash probe
-  cgmIds <-
-    DB.query
-      db
-      [sql|
-        SELECT r.contact_id, g.group_id, r.group_member_id
-        FROM received_probes r
-        LEFT JOIN contacts c ON r.contact_id = c.contact_id AND c.deleted = 0
-        LEFT JOIN group_members m ON r.group_member_id = m.group_member_id
-        LEFT JOIN groups g ON g.group_id = m.group_id
-        WHERE r.user_id = ? AND r.probe_hash = ? AND r.probe IS NULL
-      |]
-      (userId, Binary probeHash)
+matchReceivedProbe :: DB.Connection -> User -> ContactOrMember -> Probe -> ProbeHash -> [(ContactOrMember, ProbeHash)] -> IO [ContactOrMember]
+matchReceivedProbe db User {userId} from (Probe probe) (ProbeHash probeHash) cgmCheckHashes = do
+  cgms <- map fst <$> filterM receivedCheckHash cgmCheckHashes
   currentTs <- getCurrentTime
   let (ctId, gmId) = contactOrMemberIds from
   DB.execute
     db
     "INSERT INTO received_probes (contact_id, group_member_id, probe, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
     (ctId, gmId, Binary probe, Binary probeHash, userId, currentTs, currentTs)
-  let cgmIds' = filterFirstContactId cgmIds
-  catMaybes <$> mapM (getContactOrMember_ db cxt user) cgmIds'
+  pure $ filterFirstContact cgms
   where
-    filterFirstContactId :: [(Maybe ContactId, Maybe GroupId, Maybe GroupMemberId)] -> [(Maybe ContactId, Maybe GroupId, Maybe GroupMemberId)]
-    filterFirstContactId cgmIds = do
-      let (ctIds, memIds) = partition (\(ctId, _, _) -> isJust ctId) cgmIds
-          ctIds' = case ctIds of
+    receivedCheckHash :: (ContactOrMember, ProbeHash) -> IO Bool
+    receivedCheckHash (cgm, ProbeHash checkHash) = do
+      let (ctId, gmId) = contactOrMemberIds cgm
+      fromOnly . head
+        <$> DB.query
+          db
+          "SELECT EXISTS (SELECT 1 FROM received_probes WHERE user_id = ? AND probe_hash = ? AND probe IS NULL AND (contact_id = ? OR group_member_id = ?))"
+          (userId, Binary checkHash, ctId, gmId)
+    filterFirstContact :: [ContactOrMember] -> [ContactOrMember]
+    filterFirstContact cgms = do
+      let (cts, mems) = partition (\cgm -> isJust . fst $ contactOrMemberIds cgm) cgms
+          cts' = case cts of
             [] -> []
             (x : _) -> [x]
-      ctIds' <> memIds
+      cts' <> mems
 
-matchReceivedProbeHash :: DB.Connection -> StoreCxt -> User -> ContactOrMember -> ProbeHash -> IO (Maybe (ContactOrMember, Probe))
-matchReceivedProbeHash db cxt user@User {userId} from (ProbeHash probeHash) = do
-  probeIds <-
-    maybeFirstRow id $
-      DB.query
-        db
-        [sql|
-          SELECT r.probe, r.contact_id, g.group_id, r.group_member_id
-          FROM received_probes r
-          LEFT JOIN contacts c ON r.contact_id = c.contact_id AND c.deleted = 0
-          LEFT JOIN group_members m ON r.group_member_id = m.group_member_id
-          LEFT JOIN groups g ON g.group_id = m.group_id
-          WHERE r.user_id = ? AND r.probe_hash = ? AND r.probe IS NOT NULL
-        |]
-        (userId, Binary probeHash)
+matchReceivedProbeHash :: DB.Connection -> User -> ContactOrMember -> ByteString -> ProbeHash -> [ContactOrMember] -> IO (Maybe (ContactOrMember, Probe))
+matchReceivedProbeHash db User {userId} from checkConnCode checkHash cgms = do
+  cgmProbes <- concat <$> mapM matchingProbes cgms
   currentTs <- getCurrentTime
   let (ctId, gmId) = contactOrMemberIds from
   DB.execute
     db
     "INSERT INTO received_probes (contact_id, group_member_id, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-    (ctId, gmId, Binary probeHash, userId, currentTs, currentTs)
-  pure probeIds $>>= \(Only probe :. cgmIds) -> (,Probe probe) <$$> getContactOrMember_ db cxt user cgmIds
+    (ctId, gmId, Binary (unProbeHash checkHash), userId, currentTs, currentTs)
+  pure $ listToMaybe cgmProbes
+  where
+    matchingProbes :: ContactOrMember -> IO [(ContactOrMember, Probe)]
+    matchingProbes cgm = do
+      let (ctId, gmId) = contactOrMemberIds cgm
+      probes <-
+        DB.query
+          db
+          "SELECT probe, probe_hash FROM received_probes WHERE user_id = ? AND probe IS NOT NULL AND (contact_id = ? OR group_member_id = ?)"
+          (userId, ctId, gmId)
+      pure [(cgm, Probe probe) | (probe, probeHash) <- probes, connProbeCheckHash checkConnCode (ProbeHash probeHash) == checkHash]
 
 matchSentProbe :: DB.Connection -> StoreCxt -> User -> ContactOrMember -> Probe -> IO (Maybe ContactOrMember)
 matchSentProbe db cxt user@User {userId} _from (Probe probe) = do

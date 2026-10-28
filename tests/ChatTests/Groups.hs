@@ -33,13 +33,13 @@ import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
 import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
-import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, uniqueMsgMentions, updatedMentionNames)
+import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectContactMessage, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XGrpRelayInv, XInfo, XInfoProbe, XInfoProbeCheck, XMember, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -170,6 +170,8 @@ chatGroupTests = do
     it "new contact should merge with existing member" testMergeContactExistingMember
     it "new contact should merge with multiple existing members" testMergeContactMultipleMembers
     it "new group link host contact should merge with single existing contact out of multiple" testMergeGroupLinkHostMultipleContacts
+    it "member that passed on the probe of another member should not merge" testNoMergeRelayedProbe
+    it "contact that passed on the probe hash of another contact should not merge" testNoMergeRelayedProbeHash
   describe "create member contact" $ do
     it "create contact with group member with invitation message" testMemberContactMessage
     it "create contact with group member without invitation message" testMemberContactNoMessage
@@ -4886,6 +4888,68 @@ testMergeGroupLinkHostMultipleContacts =
       cath <### ["bob (Bob)", "bob_1 (Bob)"]
       bob `hasContactProfiles` ["bob", "cath", "cath"]
       cath `hasContactProfiles` ["cath", "bob", "bob"]
+
+testNoMergeRelayedProbe :: HasCallStack => TestParams -> IO ()
+testNoMergeRelayedProbe =
+  testChat4 aliceProfile bobProfile aliceProfile bobProfile $
+    \alice bob eveAsAlice eveAsBob -> do
+      connectUsers alice bob
+      joinGroupViaLink eveAsAlice "club" bob "bob" "Bob"
+      joinGroupViaLink eveAsBob "lounge" alice "alice" "Alice"
+      GroupMember {groupMemberId} <- getTestMember eveAsAlice "club" "bob"
+      let bobProbes =
+            withCCTransaction eveAsAlice $ \db ->
+              DB.query db "SELECT probe FROM received_probes WHERE group_member_id = ? AND probe IS NOT NULL" (Only groupMemberId) :: IO [Only ByteString]
+      (length <$> bobProbes) `shouldEventuallyReturn` 1
+      [Only probe] <- bobProbes
+      bob #> "@alice hi"
+      alice <# "bob> hi"
+      GroupMember {groupId, activeConn = Just conn} <- getTestMember eveAsBob "lounge" "alice"
+      runExceptT (sendDirectMemberMessage conn (XInfoProbe $ Probe probe) groupId) `runReaderT` chatController eveAsBob
+        >>= either (fail . show) (\_ -> pure ())
+      eveAsBob #> "#lounge hello"
+      alice <# "#lounge bob_1> hello"
+      memberContactId <$> getTestMember alice "lounge" "bob_1" `shouldReturn` Nothing
+      memberContactId <$> getTestMember bob "club" "alice_1" `shouldReturn` Nothing
+
+testNoMergeRelayedProbeHash :: HasCallStack => TestParams -> IO ()
+testNoMergeRelayedProbeHash =
+  testChat4 aliceProfile bobProfile aliceProfile bobProfile $
+    \alice bob eveAsAlice eveAsBob -> do
+      connectUsers bob eveAsAlice
+      connectUsers alice eveAsBob
+      joinGroupViaLink alice "team" bob "bob_1" "Bob"
+      let bobHashes =
+            withCCTransaction eveAsAlice $ \db ->
+              DB.query_ db "SELECT probe_hash FROM received_probes WHERE probe IS NULL" :: IO [Only ByteString]
+      (length <$> bobHashes) `shouldEventuallyReturn` 1
+      [Only probeHash] <- bobHashes
+      bob #> "#team hi"
+      alice <# "#team bob_1> hi"
+      ct <- getTestCCContact eveAsBob 2
+      withCCUser eveAsBob $ \user ->
+        runExceptT (sendDirectContactMessage user ct $ XInfoProbeCheck $ ProbeHash probeHash) `runReaderT` chatController eveAsBob
+          >>= either (fail . show) (\_ -> pure ())
+      eveAsBob #> "@alice hello"
+      alice <# "bob> hello"
+      memberContactId <$> getTestMember alice "team" "bob_1" `shouldReturn` Nothing
+
+joinGroupViaLink :: HasCallStack => TestCC -> String -> TestCC -> String -> String -> IO ()
+joinGroupViaLink host gName cc ccName ccFullName = do
+  host ##> ("/g " <> gName)
+  host <## ("group #" <> gName <> " is created")
+  host <## ("to add members use /a " <> gName <> " <name> or /create link #" <> gName)
+  host ##> ("/create link #" <> gName)
+  gLink <- getGroupLink host gName GRMember True
+  cc ##> ("/c " <> gLink)
+  cc <## "connection request sent!"
+  host <## (ccName <> " (" <> ccFullName <> "): accepting request to join group #" <> gName <> "...")
+  concurrentlyN_
+    [ host <## ("#" <> gName <> ": " <> ccName <> " joined the group"),
+      do
+        cc <## ("#" <> gName <> ": joining the group...")
+        cc <## ("#" <> gName <> ": you joined the group")
+    ]
 
 testMemberContactMessage :: HasCallStack => TestParams -> IO ()
 testMemberContactMessage =
