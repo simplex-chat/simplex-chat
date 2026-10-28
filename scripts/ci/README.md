@@ -114,6 +114,7 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 - Globs:
   - scripts/ci/packages_release.py
   - scripts/ci/test_packages_release.py
+  - scripts/ci/app-tests/**
 - CI, in build-linux: `scope-tests.sh ci-scripts` (step "Test changed scopes").
 - Local: `python3 scripts/ci/test_packages_release.py`; Python 3.11 or newer is required for tomllib (packages_release.py).
 

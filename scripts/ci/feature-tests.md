@@ -53,6 +53,8 @@ A change to the workflow files selects no test: a branch that changes the featur
 
 The run's `tests` input overrides this: feature names separated by spaces, `all` or `none` (Actions tab, or `gh workflow run <workflow>.yml --ref <branch> -f tests="private-notes"`). The plan job's log says why each test was selected, and its summary lists them.
 
+`SelectTestsTest` in `scripts/ci/test_packages_release.py` tests these rules; the reduced build runs it when a file in `scripts/ci/app-tests/` changes.
+
 Each test gets a section in the job summary, and its screens and `checks.txt` go to `tests/<feature>/` in the smoke-test artifact. One failed test doesn't stop the others; the step fails if any failed. A failed feature test fails the app job, so a run that also asks for Claude skips the Claude job: start it with `tests: none` to run Claude anyway.
 
 ## After the feature merges

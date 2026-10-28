@@ -514,6 +514,133 @@ class ChangesTest(GitRepoTest):
         self.assertEqual(self.builds("scripts/ci/packages_release.py"), set())
         self.assertEqual(self.values["scopes"], "ci-scripts")
 
+    def test_feature_test_selection_change_tests_the_ci_scripts(self):
+        self.assertEqual(self.builds("scripts/ci/app-tests/select-tests.sh"), set())
+        self.assertEqual(self.values["scopes"], "ci-scripts")
+
+
+class SelectTestsTest(GitRepoTest):
+    SHARED_FILES = [
+        "scripts/ci/app-tests/checks.sh",
+        "scripts/ci/desktop-linux/lib.sh",
+        "scripts/ci/desktop-linux/ui",
+        "scripts/ci/desktop-linux/screen-text.py",
+        "scripts/ci/desktop-linux/backend.sh",
+    ]
+
+    def setUp(self):
+        super().setUp()
+        for file in [
+            *self.SHARED_FILES,
+            "scripts/ci/android/lib.sh",
+            "apps/mp/views/chat/Compose.kt",
+            "apps/mp/Other.kt",
+            "apps/ios/View.swift",
+        ]:
+            self.write(file, "x")
+        self.write("scripts/ci/desktop-linux/tests/alpha.sh", "# covers: apps/mp/views/chat/*\n")
+        self.write(
+            "scripts/ci/desktop-linux/tests/beta.sh",
+            "# covers: apps/mp/views/chatlist/* apps/ios/*.swift\n# covers: apps/ios/SimpleX?NSE/*\n",
+        )
+        self.write("scripts/ci/android/tests/alpha.sh", "# covers: apps/mp/views/chat/*\n")
+        self.commit("base")
+        self.base = self.head()
+
+    def change_from_base(self, *files):
+        self.git("switch", "-q", "--detach", self.base)
+        for file in files:
+            self.write(file, "changed")
+        self.commit("change")
+
+    def select(self, tests_input=""):
+        script = packages_release.ROOT / "scripts/ci/app-tests/select-tests.sh"
+        return subprocess.run(
+            [script, "scripts/ci/desktop-linux", self.base, tests_input], cwd=self.repo, capture_output=True, text=True
+        )
+
+    def selected(self, tests_input=""):
+        result = self.select(tests_input)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return result.stdout.split()
+
+    def test_input_selects_names_all_or_none(self):
+        self.assertEqual(self.selected(), [])
+        self.assertEqual(self.selected("none"), [])
+        self.assertEqual(self.selected("all"), ["alpha", "beta"])
+        self.assertEqual(self.selected("beta"), ["beta"])
+        self.assertEqual(self.selected("alpha beta"), ["alpha", "beta"])
+        self.assertEqual(self.selected("gamma"), [])
+
+    def test_input_refuses_other_words(self):
+        self.assertEqual(self.select("../alpha").returncode, 2)
+        self.assertEqual(self.select("-x").returncode, 2)
+        self.assertEqual(self.select("Alpha").returncode, 2)
+        self.assertEqual(self.select("all beta").returncode, 2)
+        self.assertEqual(self.select("none beta").returncode, 2)
+
+    def test_none_overrides_changes(self):
+        self.change_from_base("apps/mp/views/chat/Compose.kt")
+        self.assertEqual(self.selected("none"), [])
+
+    def test_added_or_changed_test_is_selected(self):
+        self.change_from_base("scripts/ci/desktop-linux/tests/gamma.sh")
+        self.assertEqual(self.selected(), ["gamma"])
+        self.change_from_base("scripts/ci/desktop-linux/tests/beta.sh")
+        self.assertEqual(self.selected(), ["beta"])
+
+    def test_deleted_files_select_nothing(self):
+        self.git(
+            "rm",
+            "-q",
+            "scripts/ci/desktop-linux/tests/beta.sh",
+            "apps/mp/views/chat/Compose.kt",
+            "scripts/ci/desktop-linux/lib.sh",
+        )
+        self.commit("delete files")
+        self.assertEqual(self.selected(), [])
+
+    def test_change_selects_the_tests_covering_it(self):
+        self.change_from_base("apps/mp/views/chat/Compose.kt")
+        self.assertEqual(self.selected(), ["alpha"])
+        self.change_from_base("apps/mp/Other.kt")
+        self.assertEqual(self.selected(), [])
+
+    def test_covers_line_lists_patterns_separated_by_spaces(self):
+        self.change_from_base("apps/ios/View.swift")
+        self.assertEqual(self.selected(), ["beta"])
+
+    def test_star_matches_a_slash_and_question_mark_a_space(self):
+        self.change_from_base("apps/mp/views/chat/item/Item.kt")
+        self.assertEqual(self.selected(), ["alpha"])
+        self.change_from_base("apps/ios/SimpleX NSE/Info.plist")
+        self.assertEqual(self.selected(), ["beta"])
+
+    def test_change_to_what_tests_run_on_selects_every_test(self):
+        for file in self.SHARED_FILES:
+            self.change_from_base(file)
+            self.assertEqual(self.selected(), ["alpha", "beta"], file)
+
+    def test_docs_claude_files_and_other_platforms_select_nothing(self):
+        self.change_from_base(
+            "scripts/ci/desktop-linux/README.md",
+            "scripts/ci/desktop-linux/claude-test.md",
+            "scripts/ci/desktop-linux/claude-scope",
+            "scripts/ci/android/lib.sh",
+        )
+        self.assertEqual(self.selected(), [])
+
+    def test_test_file_whose_name_cannot_be_selected_is_refused(self):
+        self.change_from_base("scripts/ci/desktop-linux/tests/Bad_Name.sh")
+        self.assertEqual(self.select().returncode, 2)
+
+    def test_only_changes_between_the_base_and_head_count(self):
+        self.change_from_base("apps/mp/views/chat/Compose.kt")
+        branch = self.head()
+        self.change_from_base("apps/ios/View.swift")
+        self.git("switch", "-q", "--detach", branch)
+        self.assertEqual(self.selected(), ["alpha"])
+
 
 class PackageStateTest(GitRepoTest):
     def setUp(self):
