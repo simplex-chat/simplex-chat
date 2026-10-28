@@ -59,6 +59,8 @@ struct BadgePriceList {
     let annual: BadgePrice
     let monthlyAmount: Decimal?
     let annualAmount: Decimal?
+    let subscriptionsForSale: Bool
+    let subscribedBefore: Bool
 
     func price(_ period: BadgePeriod) -> BadgePrice {
         switch period {
@@ -66,6 +68,10 @@ struct BadgePriceList {
         case .monthly: monthly
         case .annual: annual
         }
+    }
+
+    func forSale(_ period: BadgePeriod) -> Bool {
+        period == .oneMonth || subscriptionsForSale
     }
 
     // percentage the annual subscription saves against 12 monthly payments
@@ -195,13 +201,15 @@ final class BadgeStore: ObservableObject {
         }
     }
 
-    func priceList(_ level: BadgeLevel) -> BadgePriceList {
+    func priceList(_ level: BadgeLevel, compact: Bool = true) -> BadgePriceList {
         BadgePriceList(
-            oneMonth: price(level, .oneMonth),
-            monthly: price(level, .monthly),
-            annual: price(level, .annual),
+            oneMonth: price(level, .oneMonth, compact: compact),
+            monthly: price(level, .monthly, compact: compact),
+            annual: price(level, .annual, compact: compact),
             monthlyAmount: products[badgeProductId(level, .monthly)]?.price,
-            annualAmount: products[badgeProductId(level, .annual)]?.price
+            annualAmount: products[badgeProductId(level, .annual)]?.price,
+            subscriptionsForSale: forSale(level, .monthly),
+            subscribedBefore: subscribedBefore
         )
     }
 
