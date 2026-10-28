@@ -3,8 +3,8 @@
 # The plan job's choice of feature tests: select-tests.sh's names joined by spaces as the step output `tests`, and a line
 # in the job summary. With an empty TESTS input, the changes are those since the run's commit's merge base with the
 # upstream repo's master (the fork's parent, or the repo itself), found with the compare API.
-# Usage: scripts/ci/choose-feature-tests.sh <platform dir>, from the repo root, with TESTS, GH_TOKEN, GITHUB_REPOSITORY,
-# GITHUB_SHA, GITHUB_OUTPUT and GITHUB_STEP_SUMMARY set
+# Usage: scripts/ci/app-tests/choose-feature-tests.sh <platform dir>, from the repo root, with TESTS, GH_TOKEN,
+# GITHUB_REPOSITORY, GITHUB_SHA, GITHUB_OUTPUT and GITHUB_STEP_SUMMARY set
 
 set -euo pipefail
 
@@ -21,7 +21,7 @@ case "$input" in
     git fetch -q --depth=1 origin "$base"
     ;;
 esac
-tests=$(scripts/ci/select-tests.sh "$platform_dir" "$base" "$input" | tr '\n' ' ')
+tests=$("$(dirname "$0")/select-tests.sh" "$platform_dir" "$base" "$input" | tr '\n' ' ')
 tests=${tests% }
 echo "tests=$tests" | tee -a "$GITHUB_OUTPUT"
 echo "- Feature tests: ${tests:-none}" >> "$GITHUB_STEP_SUMMARY"

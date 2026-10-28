@@ -24,7 +24,7 @@ check "the note shows in the chat" "$ui" find "scripted note"
 - `# covers:` lines list the code the test exercises, as shell patterns from the repo root (`*` also matches `/`). A run selects the test when its branch changes a file that matches one.
 - `# needs: backend` marks a test that needs the test backend. It gets `BACKEND_DIR`, the backend's work directory (`names-server`, `directory-link`, and on iOS `seed.md`). Without the backend, the test is skipped with a note.
 - The rest is bash over the platform's `ui`, the same commands a Claude session sends. `ui` alone prints them; each platform's README describes its driver.
-- `lib.sh` holds the platform's shared steps (finding text and positions, getting back to the chat list, opening Settings) and loads `scripts/ci/checks.sh`:
+- `lib.sh` holds the platform's shared steps (finding text and positions, getting back to the chat list, opening Settings) and loads `scripts/ci/app-tests/checks.sh`:
   - `check "<what is true>" <command>` records `PASS` or `FAIL` and goes on;
   - `fail "<why>"` ends the test;
   - `note "<text>"` records a remark for the summary.
@@ -49,7 +49,7 @@ The smoke test always runs. After it, the step "Run feature tests" runs, compare
 
 - the tests the branch adds or changes;
 - the tests whose `covers` patterns match a file the branch changes;
-- every test of a platform when what the tests run on changes: `scripts/ci/checks.sh`, `feature-tests.sh`, `select-tests.sh` or `choose-feature-tests.sh`, or a file in the platform's folder other than `tests/`, `*.md` and `claude-*`.
+- every test of a platform when what the tests run on changes: a file in `scripts/ci/app-tests/`, or in the platform's folder other than `tests/`, `*.md` and `claude-*`.
 
 The run's `tests` input overrides this: feature names separated by spaces, `all` or `none` (Actions tab, or `gh workflow run <workflow>.yml --ref <branch> -f tests="private-notes"`). The plan job's log says why each test was selected, and its summary lists them.
 

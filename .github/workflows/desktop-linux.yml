@@ -109,7 +109,7 @@ jobs:
         env:
           TESTS: ${{ inputs.tests }}
           GH_TOKEN: ${{ github.token }}
-        run: scripts/ci/choose-feature-tests.sh scripts/ci/desktop-linux
+        run: scripts/ci/app-tests/choose-feature-tests.sh scripts/ci/desktop-linux
 
   backend:
     name: test backend for the app
@@ -315,7 +315,7 @@ jobs:
         env:
           TESTS: ${{ needs.plan.outputs.tests }}
           BACKEND_DIR: ${{ steps.backend.outcome == 'success' && format('{0}/backend', runner.temp) || '' }}
-        run: scripts/ci/feature-tests.sh scripts/ci/desktop-linux "$RUNNER_TEMP/smoke-test/tests" $TESTS
+        run: scripts/ci/app-tests/feature-tests.sh scripts/ci/desktop-linux "$RUNNER_TEMP/smoke-test/tests" $TESTS
 
       - name: Stop test backend
         if: ${{ !cancelled() && steps.backend.outcome != 'skipped' }}

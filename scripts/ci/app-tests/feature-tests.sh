@@ -4,13 +4,13 @@
 # running, in the given order, each in its own process after restarting the app at the chat list in the reachable layout
 # (ui layout reachable). A test's screens and checks.txt go to <out dir>/<test>, and the job summary gets a section per
 # test: passed, failed or skipped. A test whose header says "# needs: backend" is skipped when BACKEND_DIR is empty.
-# Usage: scripts/ci/feature-tests.sh <platform dir> <out dir> <test>...
+# Usage: scripts/ci/app-tests/feature-tests.sh <platform dir> <out dir> <test>...
 # Exits 1 if any test failed. Runs under macOS's bash 3.2 on the iOS runner.
 
 set -euo pipefail
 
 if [ $# -lt 3 ]; then
-  echo "usage: scripts/ci/feature-tests.sh <platform dir> <out dir> <test>..."
+  echo "usage: scripts/ci/app-tests/feature-tests.sh <platform dir> <out dir> <test>..."
   exit 2
 fi
 here=$(dirname "$0")

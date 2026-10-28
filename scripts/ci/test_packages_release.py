@@ -486,7 +486,7 @@ class ChangesTest(GitRepoTest):
         self.assertEqual(self.builds("scripts/ci/prune-old-builds.sh"), {"haskell"})
 
     def test_app_test_scripts_build_nothing(self):
-        self.assertEqual(self.builds("scripts/ci/ios-sim/smoke-test.sh", "scripts/ci/desktop-linux/smoke-test.sh", "scripts/ci/android/ui", "scripts/ci/snapshots-compare.py", "scripts/ci/README.md"), set())
+        self.assertEqual(self.builds("scripts/ci/ios-sim/smoke-test.sh", "scripts/ci/desktop-linux/smoke-test.sh", "scripts/ci/android/ui", "scripts/ci/snapshots-compare.py", "scripts/ci/README.md", "scripts/ci/app-tests/feature-tests.sh", "scripts/ci/desktop-linux/tests/private-notes.sh"), set())
 
     def test_build_image_change_builds_the_core_and_kotlin(self):
         self.assertEqual(self.builds("Dockerfile.build"), {"haskell", "kotlin"})

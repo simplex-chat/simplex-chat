@@ -2,12 +2,12 @@
 
 # The Android app's shared steps over the ui helper, for the smoke test and the feature tests in tests/: positions of
 # texts, fields and switches in the accessibility tree, going back to a screen and opening Settings.
-# Sourced with UI_OUT set; it sets ui and sources ../checks.sh.
+# Sourced with UI_OUT set; it sets ui and sources ../app-tests/checks.sh.
 
 here=$(dirname "${BASH_SOURCE[0]}")
 ui=$here/ui
 search_field="Search or paste SimpleX link"
-. "$here/../checks.sh"
+. "$here/../app-tests/checks.sh"
 
 y_of() {
   local pos

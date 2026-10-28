@@ -2,11 +2,11 @@
 
 # The desktop app's shared steps over the ui helper, for the smoke test and the feature tests in tests/: text found by
 # OCR in the chat list pane, scrolling it, going back to the chat list and opening Settings.
-# Sourced with UI_OUT set; it sets ui and sources ../checks.sh.
+# Sourced with UI_OUT set; it sets ui and sources ../app-tests/checks.sh.
 
 here=$(dirname "${BASH_SOURCE[0]}")
 ui=$here/ui
-. "$here/../checks.sh"
+. "$here/../app-tests/checks.sh"
 
 # text compared as ui compares it: letters and digits, lowercase, a lowercase l read as i
 normalise() {
