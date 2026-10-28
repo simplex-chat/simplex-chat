@@ -77,10 +77,25 @@ final class SnapshotTests: XCTestCase {
                 settle()
                 let reloaded = scrollView.listState.visibleItems.map { $0.view.frame.height }
                 try XCTUnwrap(windowImage(window).pngData()).write(to: dir.appendingPathComponent("\(scene)-reloaded.png"))
+                let width = scrollView.bounds.width
+                let target = CGSize(width: width, height: .greatestFiniteMagnitude)
+                let items = rows.mergedItems.items
+                let cellRow = { (i: Int) in AnyView(rows.row(i, items[i]).environmentObject(ChatModel.shared).environmentObject(appTheme)) }
+                var swiftUI: [CGFloat] = [], cellDefault: [CGFloat] = [], cellTwice: [CGFloat] = [], cellRequired: [CGFloat] = []
+                for i in scrollView.listState.visibleItems.map(\.index) {
+                    swiftUI.append(UIHostingController(rootView: cellRow(i)).sizeThatFits(in: target).height)
+                    let cell = HostingCell<AnyView>()
+                    cell.set(content: cellRow(i), parent: host)
+                    cellDefault.append(cell.systemLayoutSizeFitting(target).height)
+                    cellTwice.append(cell.systemLayoutSizeFitting(target).height)
+                    let required = HostingCell<AnyView>()
+                    required.set(content: cellRow(i), parent: host)
+                    cellRequired.append(required.systemLayoutSizeFitting(target, withHorizontalFittingPriority: .required, verticalFittingPriority: .fittingSizeLevel).height)
+                }
                 window.isHidden = true
                 window.rootViewController = nil
-                index.append(["scene": scene, "first": first, "reloaded": reloaded])
-                print("first layout \(scene): first \(first), reloaded \(reloaded)")
+                index.append(["scene": scene, "first": first, "reloaded": reloaded, "swiftUI": swiftUI, "cellDefault": cellDefault, "cellTwice": cellTwice, "cellRequired": cellRequired])
+                print("first layout \(scene): first \(first), reloaded \(reloaded), swiftUI \(swiftUI), cellDefault \(cellDefault), cellTwice \(cellTwice), cellRequired \(cellRequired)")
             }
         }
         let data = try JSONSerialization.data(withJSONObject: index, options: [.prettyPrinted, .sortedKeys])
