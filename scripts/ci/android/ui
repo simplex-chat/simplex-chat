@@ -221,6 +221,15 @@ type_text() {
       fi
       sleep 1
     done
+    # characters late rather than dropped would arrive twice after typing them again
+    if [ "$retries" -gt 0 ]; then
+      sleep 2
+      shown=$(screen field) || shown=""
+      if [ "$shown" != "$typed" ]; then
+        echo "error: the field shows \"$shown\", not \"$typed\""
+        return 1
+      fi
+    fi
   done
 }
 
