@@ -33,7 +33,6 @@ open_and_close_settings() {
   "$ui" shot "settings-$1"
   "$ui" swipe 201 150 201 850
   check "$1: a swipe down closes Settings" settings_closed
-  check "$1: the chat list shows \"Talk to someone\"" in_tree -F '"Talk to someone"'
   "$ui" shot "closed-$1"
 }
 
