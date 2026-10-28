@@ -224,8 +224,6 @@ create_local_chat() {
   "$ui" shot local-chat
 }
 
-# Clicks a server role's value until its dropdown shows. The menu is open when an item reads exactly "yes", which no
-# role's value does ("default (yes)", "default (no)", "no"); it can take longer to show than OCR takes to read the screen.
 # The first item of the dropdown opened from the line at y $2, which repeats that line's value below it.
 menu_first_item() {
   local target line x y deadline=$((SECONDS + 10))
@@ -245,6 +243,8 @@ menu_first_item() {
   return 1
 }
 
+# Clicks a server role's value until its dropdown shows. The menu is open when an item reads exactly "yes", which no
+# role's value does ("default (yes)", "default (no)", "no"); it can take longer to show than OCR takes to read the screen.
 open_role_menu() {
   for _ in 1 2 3; do
     "$ui" click-text "$1" 10 || return 1
