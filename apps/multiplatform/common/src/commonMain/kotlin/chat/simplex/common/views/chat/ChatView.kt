@@ -3862,7 +3862,7 @@ fun PreviewChatLayout() {
       ),
       ChatItem.getSampleData(
         2, CIDirection.DirectRcv(), previewDate, "hello"
-      ),
+      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello"))),
       ChatItem.getDeletedContentSampleData(3, ts = previewDate),
       ChatItem.getSampleData(
         4, CIDirection.DirectSnd(), previewDate, "hello"
@@ -3872,19 +3872,26 @@ fun PreviewChatLayout() {
       ),
       ChatItem.getSampleData(
         6, CIDirection.DirectRcv(), previewDate, "hello"
-      )
+      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello")))
     )
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
     val searchValue = remember { mutableStateOf("") }
+    val chatsCtx = remember { ChatModel.ChatsContext(secondaryContextFilter = null).also { it.chatItems.replaceAll(chatItems) } }
+    val chat = remember { mutableStateOf(Chat.sampleData) }
+    val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) }
+    val attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) }
+    val showCommandsMenu = remember { mutableStateOf(false) }
     ChatLayout(
-      chatsCtx = remember { ChatModel.ChatsContext(secondaryContextFilter = null).also { it.chatItems.replaceAll(chatItems) } },
+      chatsCtx = chatsCtx,
       remoteHostId = remember { mutableStateOf(null) },
-      chat = remember { mutableStateOf(Chat.sampleData) },
+      chat = chat,
       unreadCount = unreadCount,
-      composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
-      composeView = { _ -> },
+      composeState = composeState,
+      composeView = { focusRequester ->
+        ComposeView(rhId = null, chatModel, chatsCtx, chat.value, composeState, showCommandsMenu, attachmentOption, showChooseAttachment = {}, focusRequester = focusRequester)
+      },
       scrollToItemId = remember { mutableStateOf(null) },
-      attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
+      attachmentOption = attachmentOption,
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
       searchValue,
       useLinkPreviews = true,
@@ -3927,7 +3934,7 @@ fun PreviewChatLayout() {
       developerTools = false,
       showViaProxy = false,
       showSearch = remember { mutableStateOf(false) },
-      showCommandsMenu = remember { mutableStateOf(false) },
+      showCommandsMenu = showCommandsMenu,
       contentFilter = remember { mutableStateOf(null) },
       availableContent = remember { mutableStateOf(ContentFilter.initialList) },
       searchPlaceholder = null
@@ -3945,29 +3952,36 @@ fun PreviewGroupChatLayout() {
       ),
       ChatItem.getSampleData(
         2, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
-      ),
+      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello"))),
       ChatItem.getDeletedContentSampleData(3, CIDirection.GroupRcv(GroupMember.sampleData), previewDate),
       ChatItem.getSampleData(
         4, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
-      ),
+      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello"))),
       ChatItem.getSampleData(
         5, CIDirection.GroupSnd(), previewDate, "hello"
       ),
       ChatItem.getSampleData(
         6, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
-      )
+      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello")))
     )
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
     val searchValue = remember { mutableStateOf("") }
+    val chatsCtx = remember { ChatModel.ChatsContext(secondaryContextFilter = null).also { it.chatItems.replaceAll(chatItems) } }
+    val chat = remember { mutableStateOf(Chat.sampleData.copy(chatInfo = ChatInfo.Group.sampleData)) }
+    val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) }
+    val attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) }
+    val showCommandsMenu = remember { mutableStateOf(false) }
     ChatLayout(
-      chatsCtx = remember { ChatModel.ChatsContext(secondaryContextFilter = null).also { it.chatItems.replaceAll(chatItems) } },
+      chatsCtx = chatsCtx,
       remoteHostId = remember { mutableStateOf(null) },
-      chat = remember { mutableStateOf(Chat.sampleData.copy(chatInfo = ChatInfo.Group.sampleData)) },
+      chat = chat,
       unreadCount = unreadCount,
-      composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
-      composeView = { _ -> },
+      composeState = composeState,
+      composeView = { focusRequester ->
+        ComposeView(rhId = null, chatModel, chatsCtx, chat.value, composeState, showCommandsMenu, attachmentOption, showChooseAttachment = {}, focusRequester = focusRequester)
+      },
       scrollToItemId = remember { mutableStateOf(null) },
-      attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
+      attachmentOption = attachmentOption,
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
       searchValue,
       useLinkPreviews = true,
@@ -4010,7 +4024,7 @@ fun PreviewGroupChatLayout() {
       developerTools = false,
       showViaProxy = false,
       showSearch = remember { mutableStateOf(false) },
-      showCommandsMenu = remember { mutableStateOf(false) },
+      showCommandsMenu = showCommandsMenu,
       contentFilter = remember { mutableStateOf(null) },
       availableContent = remember { mutableStateOf(ContentFilter.initialList) },
       searchPlaceholder = null
