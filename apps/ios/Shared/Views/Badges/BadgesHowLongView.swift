@@ -73,6 +73,7 @@ struct BadgesHowLongView: View {
     @ObservedObject private var store = BadgeStore.shared
     let level: BadgeLevel
     var startDate = Date()
+    var priceList: BadgePriceList? = nil
     @State private var selectedPeriod: BadgePeriod = badgePeriodsForSale.contains(.monthly) ? .monthly : .oneMonth
     @State private var continueActive = false
 
@@ -140,7 +141,7 @@ struct BadgesHowLongView: View {
                     .opacity(forSale ? 1 : 0.4)
                 Text(period.label)
                     .font(.subheadline)
-                period.priceText(store.price(level, period))
+                period.priceText((priceList ?? store.priceList(level)).price(period))
                     .font(.headline)
                 if let percent = savingsPercent(period) {
                     Text("\(percent)% off")
@@ -165,7 +166,7 @@ struct BadgesHowLongView: View {
     }
 
     private func savingsPercent(_ period: BadgePeriod) -> Int? {
-        period == .annual ? store.annualSavings(level) : nil
+        period == .annual ? (priceList ?? store.priceList(level)).annualSavings : nil
     }
 
     private func continueButton() -> some View {
@@ -218,7 +219,11 @@ struct BadgeBillingFooter: View {
 struct BadgesHowLongView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesHowLongView(level: .supporter, startDate: previewDate)
+            BadgesHowLongView(
+                level: .supporter,
+                startDate: previewDate,
+                priceList: BadgePriceList(oneMonth: .price("$7"), monthly: .price("$7"), annual: .price("$42"), annualSavings: 50)
+            )
         }
     }
 }

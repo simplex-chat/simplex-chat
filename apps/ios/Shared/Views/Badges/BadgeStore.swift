@@ -62,6 +62,21 @@ enum BadgePrice {
     }
 }
 
+struct BadgePriceList {
+    let oneMonth: BadgePrice
+    let monthly: BadgePrice
+    let annual: BadgePrice
+    let annualSavings: Int?
+
+    func price(_ period: BadgePeriod) -> BadgePrice {
+        switch period {
+        case .oneMonth: oneMonth
+        case .monthly: monthly
+        case .annual: annual
+        }
+    }
+}
+
 struct BadgeStoreReceipt {
     // the signed token the badge service verifies - never transaction.jsonRepresentation
     let jws: String
@@ -162,6 +177,15 @@ final class BadgeStore: ObservableObject {
         let saved = (year - annual.price) / year * 100
         let percent = Int(NSDecimalNumber(decimal: saved).doubleValue.rounded())
         return percent > 0 ? percent : nil
+    }
+
+    func priceList(_ level: BadgeLevel) -> BadgePriceList {
+        BadgePriceList(
+            oneMonth: price(level, .oneMonth),
+            monthly: price(level, .monthly),
+            annual: price(level, .annual),
+            annualSavings: annualSavings(level)
+        )
     }
 
     func load() async {

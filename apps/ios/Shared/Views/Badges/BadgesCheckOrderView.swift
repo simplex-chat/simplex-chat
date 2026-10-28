@@ -16,6 +16,7 @@ struct BadgesCheckOrderView: View {
     let level: BadgeLevel
     let period: BadgePeriod
     var startDate = Date()
+    var price: BadgePrice? = nil
     @State private var purchasing = false
     // presented from this view, not AlertManager: its host is behind the sheet these views open in
     @State private var alert: SomeAlert?
@@ -37,7 +38,7 @@ struct BadgesCheckOrderView: View {
                         Divider()
                             .padding(.top, 8)
                             .padding(.bottom, 6)
-                        orderRow("Total", period.priceText(store.price(level, period, compact: false)))
+                        orderRow("Total", period.priceText(price ?? store.price(level, period, compact: false)))
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
@@ -79,7 +80,7 @@ struct BadgesCheckOrderView: View {
     }
 
     private func payButton() -> some View {
-        let price = store.price(level, period, compact: false)
+        let price = self.price ?? store.price(level, period, compact: false)
         let disabled = !price.canPurchase || purchasing || !store.canBuy(chatModel.currentUser?.userId)
         return Button {
             purchase()
@@ -126,7 +127,7 @@ struct BadgesCheckOrderView: View {
 struct BadgesCheckOrderView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesCheckOrderView(level: .supporter, period: .oneMonth, startDate: previewDate)
+            BadgesCheckOrderView(level: .supporter, period: .oneMonth, startDate: previewDate, price: .price("$7.00"))
         }
     }
 }
