@@ -48,6 +48,7 @@ interface PlatformInterface {
   suspend fun androidAcknowledgeBadgePurchase(receipt: BadgeStoreReceipt) {}
   suspend fun androidFinishBadgePurchase(receipt: BadgeStoreReceipt) {}
   suspend fun androidUnfinishedBadgePurchases(): List<BadgePurchaseOutcome> = emptyList()
+  fun androidManageBadgeSubscription(productId: String) {}
   val androidApiLevel: Int? get() = null
   // The build distributed via Google Play, which has to follow its policies
   val androidIsPlayStoreBuild: Boolean get() = false
