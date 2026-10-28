@@ -1623,7 +1623,7 @@
     <string name="show_signature">Mostrar assinatura</string>
     <string name="show_encryption">Mostrar encriptação</string>
     <string name="signature_missing_alert_title">Assinatura em falta</string>
-    <string name="signature_missing_alert_desc">O canal exigia que esta mensagem fosse assinada, mas a assinatura está em falta.</string>
+    <string name="signature_missing_alert_desc">A mensagem foi enviada antes do canal começar a assinar mensagens, ou é falsa.</string>
     <string name="reset_verb">Redefinir</string>
     <string name="no_details">sem detalhes</string>
     <string name="tap_to_scan">Toque para ler</string>
@@ -2997,4 +2997,22 @@
     <string name="v7_1_supporter_badge_title">Distintivo de apoiante ❤️</string>
     <string name="v7_1_supporter_badge_body">Ajude a manter a rede em funcionamento — envie ficheiros até 2 GB.</string>
     <string name="file_already_exists_replace_question">O ficheiro já existe. Substituir?</string>
+    <string name="badges_error_store_purchase_open_purchase">Uma compra da loja está a ser adicionada a este perfil.</string>
+    <string name="badges_error_store_purchase_open">Uma compra da loja está a ser adicionada a este perfil. Resgate o código assim que for adicionado, ou noutro perfil.</string>
+    <string name="badges_payment_problem_title">Problema com pagamento do dístico</string>
+    <string name="member_info_section_title_contributor">Contribuidor</string>
+    <string name="sign_messages_enable">Ativar</string>
+    <string name="badges_subscription_ended">Terminou</string>
+    <string name="badges_subscription_ends">Termina %1$s</string>
+    <string name="badges_payment_problem_footer">A Google Play não conseguiu cobrar o seu meio de pagamento e está a tentar. Atualize-o para manter o seu dístico. Até que o pagamento seja aceite, não irá conseguir reinvindicar outro dístico.</string>
+    <string name="badges_manage_subscription">Gerir subscrição</string>
+    <string name="member_info_section_title_moderator">Moderador</string>
+    <string name="badges_nothing_to_restore_desc">Não foi encontrada nenhuma compra na Google Play à espera de ser adicionada.</string>
+    <string name="badges_nothing_to_restore">Nada a restaurar</string>
+    <string name="badges_subscription_disclosure_monthly">O pagamento é cobrado à sua conta Google Play quando confirma a compra. A subscrição renova automaticamente a %1$s por mês até que a cancele. Pode gerir e candelar as suas subscrições na Google Play.</string>
+    <string name="badges_subscription_disclosure_annual">O pagamento é cobrado à sua conta Google Play quando confirma a compra. A subscrição renova automaticamente a %1$s por ano até que a cancele. Pode gerir e candelar as suas subscrições na Google Play.</string>
+    <string name="badges_payment_problem">Problema com o pagamento</string>
+    <string name="badges_privacy_policy">Política de privacidade</string>
+    <string name="badges_subscription_renewing">A renovar</string>
+    <string name="badges_subscription_renews">Renova %1$s</string>
 </resources>
