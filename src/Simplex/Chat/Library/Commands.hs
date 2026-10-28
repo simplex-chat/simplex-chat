@@ -3900,7 +3900,10 @@ processChatCommand cxt nm = \case
                 (connId, binding) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
                 let ccLink = CCLink cReq $ serverShortLink <$> sLnk_
                 conn <- withFastStore' $ \db -> createDirectConnection' db userId connId ccLink contactId_ ConnPrepared incognitoProfile subMode chatV pqSup'
-                joinPreparedConn conn incognitoProfile $ pure $ Just $ directPresHeader binding
+                joinPreparedConn conn incognitoProfile (pure $ Just $ directPresHeader binding) `catchAllErrors` \e -> do
+                  when (isNothing contactId_ && joinNotDelivered e) $
+                    whenM (sndQueueNotSecured conn) $ deleteFailedJoin user conn
+                  throwError e
               joinPreparedConn conn incognitoProfile getPresHeader = do
                 profileToSend <- presentUserBadgeWith user incognitoProfile getPresHeader $ userProfileDirect user incognitoProfile Nothing True
                 dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend Nothing
@@ -3973,7 +3976,9 @@ processChatCommand cxt nm = \case
           subMode <- chatReadVar subscriptionMode
           let sLnk' = serverShortLink <$> sLnk
           conn <- withFastStore' $ \db -> createConnReqConnection db userId connId preparedEntity_ cReq reqHeader cReqHash1 sLnk' xContactId incognitoProfile_ groupLinkId subMode chatV pqSup
-          conn' <- joinContact user conn cReq incognitoProfile (Just reqHeader) xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ pqSup
+          conn' <- joinContact user conn cReq incognitoProfile (Just reqHeader) xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ pqSup `catchAllErrors` \e -> do
+            when (isNothing preparedEntity_ && joinNotDelivered e) $ deleteFailedJoin user conn
+            throwError e
           pure $ CVRSentInvitation conn' incognitoProfile
     connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> CreatedLinkContact -> CM ChatResponse
     connectContactViaAddress user@User {userId} incognito ct@Contact {contactId, activeConn} (CCLink cReq shortLink) =
@@ -4048,6 +4053,25 @@ processChatCommand cxt nm = \case
           pure (connId, chatV, directPresHeader binding)
     mkXContactId :: Maybe XContactId -> CM XContactId
     mkXContactId = maybe (XContactId <$> drgRandomBytes 16) pure
+    joinNotDelivered :: ChatError -> Bool
+    joinNotDelivered = \case
+      ChatErrorAgent (BROKER _ HOST) _ _ -> True
+      ChatErrorAgent (BROKER _ (NETWORK e)) _ _ -> case e of
+        SMP.NEConnectError _ -> True
+        SMP.NETLSError _ -> True
+        SMP.NEUnknownCAError -> True
+        SMP.NETimeoutError -> True
+        _ -> False
+      ChatErrorAgent (SMP _ SMP.AUTH) _ _ -> True
+      _ -> False
+    sndQueueNotSecured :: Connection -> CM Bool
+    sndQueueNotSecured conn = either (const False) notSecured <$> tryAllErrors (withAgent $ \a -> getConnectionServers a $ aConnId conn)
+      where
+        notSecured ConnectionStats {sndQueuesInfo} = all (\SndQueueInfo {status} -> status /= Secured) sndQueuesInfo
+    deleteFailedJoin :: User -> Connection -> CM ()
+    deleteFailedJoin User {userId} conn@Connection {connId} = flip catchAllErrors eToView $ do
+      deleteAgentConnectionAsync $ aConnId conn
+      withFastStore' $ \db -> deletePendingContactConnection db userId connId
     joinContact :: User -> Connection -> ConnReqContact -> Maybe Profile -> Maybe ProofPresHeader -> XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> Maybe (Maybe GroupInfoKeys) -> Maybe MemberId -> PQSupport -> CM Connection
     joinContact user conn cReq incognitoProfile reqHeader_ xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ pqSup = do
       -- gInfo_ is Maybe (Maybe GroupInfo), where Just Nothing means "some unknown group", e.g. when joining via link without profile
