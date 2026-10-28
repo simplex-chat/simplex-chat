@@ -40,7 +40,7 @@ Haiku 5.5 drives the app well: the smoke plan takes a few dozen turns and cents;
 
 ## Snapshots: `snapshots.sh`
 
-At the end of the app job's smoke test, `smoke-test.sh` runs `snapshots.sh <derived data> <smoke test dir>/snapshots` when the app it tested lies in the derived data of a build (`…/Build/Products/Debug-iphonesimulator`); the Claude job, which installs the app from a tarball, skips it.
+At the end of the app job's smoke test, `smoke-test.sh` runs `snapshots.sh <derived data> <smoke test dir>/snapshots` when the app it tested lies in the derived data of a build (`…/Build/Products/Debug-iphonesimulator`); the Claude job, which installs the app from a tarball, skips it. While the snapshots render, the smoke test removes its private routing setting (below), since the references show the default.
 
 `snapshots.sh` builds the unit-test target `SimpleX Snapshots` (`apps/ios/SimpleX Snapshots/SnapshotTests.swift`, hosted by the app) with `xcodebuild build-for-testing`, then runs it in the smoke test's simulator three times, after `xcrun simctl ui <udid> content_size` `large`, `extra-extra-extra-large` and `accessibility-medium`, and sets `large` back. The test hosts each preview listed in `previewScenes()` (the `previews` of a `PreviewProvider`, in a `VStack`) in a `UIHostingController` in a window of the screen's width and of the larger of two heights, the preview's ideal height and its height in a frame of the screen's size, in the light and dark themes without a wallpaper, ends text editing and removes the running animations, so a text cursor or a spinner is drawn the same in every run, and draws it with `drawHierarchy` at scale 1, one pixel per point. The chat item previews (`allSizes`) are rendered at the three sizes, the other previews at `large` only.
 
@@ -65,7 +65,7 @@ When `apps/ios/SimpleX Snapshots/References` exists, `snapshots.sh` then runs `s
 
 On master's code it starts and passes these checks (the directory answers searches sent as messages); service requests to the directory, which only `f/directory-search` answers, are not checked here.
 
-It writes what it seeded to `<work dir>/seed.md` (the Claude sessions get it) and logs to `<work dir>/*.log`; `stop`, `directory-stop`, `directory-start` and `listings` are its other commands. The app reaches it through the simulator, which shares the runner's network; pointing the app at the names server is a few steps in Settings, described in `claude-prompt.md`.
+It writes what it seeded to `<work dir>/seed.md` (the Claude sessions get it) and logs to `<work dir>/*.log`; `stop`, `directory-stop`, `directory-start` and `listings` are its other commands. The app reaches it through the simulator, which shares the runner's network; pointing the app at the names server is a few steps in Settings, described in `claude-prompt.md`. Before the app first starts, the smoke test sets private routing to unknown servers only (`networkSMPProxyMode` `unknown` in the app group's defaults), since the preset proxies can't reach 127.0.0.1.
 
 ## Other files
 
