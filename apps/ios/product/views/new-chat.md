@@ -79,7 +79,7 @@ The search field at the top of the New chat sheet filters "Your Contacts" and of
 | "Search in Directory" row | Below the field for non-empty text that is not a SimpleX link, until results for that text show or load; searches SimpleX Directory |
 | Keyboard Search key | The same directory search; it never looks up names |
 | Results card | While results show, one card without a header takes the place of "Your Contacts": first the contacts that match, then your chats among the results that the contacts don't include, as contact-style chat rows (avatar, name, favourite star, incognito mask) that open the chat and close the sheet; then the other results with New chat's small icons, each with "Open" (or "Already joining"), and the same long-press menu as on the chat list. Open opens the prepared chat and closes the sheet, as other New chat actions do. The card ends with the load row ("Load more · N left" or "Load more") or the retry row |
-| Contacts empty state | "No filtered contacts" / "No contacts" are not shown while the online search runs; they show when a finished search found nothing and no contact matches |
+| Contacts empty state | "No filtered contacts" / "No contacts" are not shown while "Search in Directory" is offered for the text or the online search runs; they show only after a directory search for the text finds nothing and no contact matches |
 
 While the "Directory search" switch is off, every online search asks with the same "Enable Directory search?" alert as on the chat list. Results disappear when the text changes or the user switches profile. Archived contacts keep their own search field without the Search key or online results.
 

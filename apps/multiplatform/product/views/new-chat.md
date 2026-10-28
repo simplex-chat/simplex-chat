@@ -93,7 +93,7 @@ The search field of the New chat sheet filters "Your contacts" and offers the sa
 | "Search in Directory" row | Below the field (after "Connect to …") for non-empty text that is not a SimpleX link, until results for that text show or load; searches SimpleX Directory |
 | Keyboard Search key | On Android the keyboard's Search action, on desktop Enter. The same directory search; it never looks up names |
 | Results card | One group of rows without a header, continuing the contacts that match with no divider between them. First your chats among the results that the contacts list doesn't show, as contact-style chat rows (avatar, name, favourite star, incognito mask) that open the chat and close the sheet; then the other results with the contact rows' avatar size, each with "Open" (or "Already joining") and the same long-press / right-click menu as on the chat list. Open opens the prepared chat and closes the sheet, as other New chat actions do. The card ends with the load row ("Load more · N left" or "Load more") or the retry row, which is the row farthest from the field in both layouts: at the bottom with the top bar, at the top of the reversed list with the one-hand UI |
-| Contacts empty state | "No filtered contacts" is not shown while the online search runs or shows results |
+| Contacts empty state | "No filtered contacts" is not shown while "Search in Directory" is offered for the text, the online search runs or shows results: it shows only after a directory search for the text finds nothing |
 | Online search running | Progress indicator in the search bar; closing the sheet cancels the search |
 | Directory search failed | "Search failed, tap to retry" row at the end of the results card |
 

@@ -178,7 +178,6 @@ private fun ModalData.NewChatSheetLayout(
     contactChats = allChats
   )
   val rows = onlineSearch.rows(shownChatIds = filteredContactChats.map { it.id }.toSet())
-  val showsEmptyState = !onlineSearch.searching && rows.isEmpty
   KeyChangeEffect(searchText.value.text) {
     onlineSearch.reset()
   }
@@ -204,6 +203,9 @@ private fun ModalData.NewChatSheetLayout(
   }
 
   fun searchTrimmed(): String = searchText.value.text.trim()
+
+  val showsSearchInDirectory = searchTrimmed().isNotEmpty() && !searchShowingSimplexLink.value && !onlineSearch.showResults
+  val showsEmptyState = !onlineSearch.searching && rows.isEmpty && !showsSearchInDirectory
 
   fun runDirectorySearch() {
     val text = searchTrimmed()
@@ -359,7 +361,7 @@ private fun ModalData.NewChatSheetLayout(
               Divider()
               ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
             }
-            if (searchTrimmed().isNotEmpty() && !searchShowingSimplexLink.value && !onlineSearch.showResults) {
+            if (showsSearchInDirectory) {
               Divider()
               SearchInDirectoryRow(onSearch = ::runDirectorySearch)
             }
@@ -457,7 +459,7 @@ private fun ModalData.NewChatSheetLayout(
             Divider()
             ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
           }
-          if (searchTrimmed().isNotEmpty() && !searchShowingSimplexLink.value && !onlineSearch.showResults) {
+          if (showsSearchInDirectory) {
             Divider()
             SearchInDirectoryRow(onSearch = ::runDirectorySearch)
           }

@@ -85,6 +85,7 @@ struct NewChatSheet: View {
 
     private func viewBody(_ showArchive: Bool) -> some View {
         List {
+            let showsSearchInDirectory = !searchTrimmed.isEmpty && !searchShowingSimplexLink && !onlineSearch.showResults
             VStack(spacing: 12) {
                 ContactsListSearchBar(
                     searchMode: $searchMode,
@@ -105,7 +106,7 @@ struct NewChatSheet: View {
                         dismiss: true
                     )
                 }
-                if !searchTrimmed.isEmpty, !searchShowingSimplexLink, !onlineSearch.showResults {
+                if showsSearchInDirectory {
                     SearchInDirectoryRow(searchFocussed: $searchFocussed, onSearch: runDirectorySearch)
                 }
             }
@@ -183,7 +184,7 @@ struct NewChatSheet: View {
                     searchShowingSimplexLink: $searchShowingSimplexLink,
                     searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
                     showDeletedChatIcon: true,
-                    showsEmptyState: !onlineSearch.searching
+                    showsEmptyState: !onlineSearch.searching && !showsSearchInDirectory
                 )
             }
         }
