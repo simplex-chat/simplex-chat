@@ -259,6 +259,9 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
     }
   }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
+  KeyChangeEffect(chatModel.currentUser.value?.userId) {
+    searchText.value = TextFieldValue()
+  }
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   Box(Modifier.fillMaxSize()) {
     if (oneHandUI.value) {
