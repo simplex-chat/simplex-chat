@@ -555,8 +555,9 @@ class SelectTestsTest(GitRepoTest):
 
     def select(self, tests_input=""):
         script = packages_release.ROOT / "scripts/ci/app-tests/select-tests.sh"
+        base = "" if tests_input else self.base
         return subprocess.run(
-            [script, "scripts/ci/desktop-linux", self.base, tests_input], cwd=self.repo, capture_output=True, text=True
+            [script, "scripts/ci/desktop-linux", base, tests_input], cwd=self.repo, capture_output=True, text=True
         )
 
     def selected(self, tests_input=""):
@@ -570,9 +571,10 @@ class SelectTestsTest(GitRepoTest):
         self.assertEqual(self.selected("all"), ["alpha", "beta"])
         self.assertEqual(self.selected("beta"), ["beta"])
         self.assertEqual(self.selected("alpha beta"), ["alpha", "beta"])
+        self.assertEqual(self.selected("beta alpha beta"), ["alpha", "beta"])
         self.assertEqual(self.selected("gamma"), [])
 
-    def test_input_refuses_other_words(self):
+    def test_other_words_in_the_input_fail(self):
         self.assertEqual(self.select("../alpha").returncode, 2)
         self.assertEqual(self.select("-x").returncode, 2)
         self.assertEqual(self.select("Alpha").returncode, 2)
@@ -627,15 +629,18 @@ class SelectTestsTest(GitRepoTest):
             "scripts/ci/desktop-linux/claude-test.md",
             "scripts/ci/desktop-linux/claude-scope",
             "scripts/ci/android/lib.sh",
+            "scripts/ci/android/tests/alpha.sh",
         )
         self.assertEqual(self.selected(), [])
 
-    def test_test_file_whose_name_cannot_be_selected_is_refused(self):
+    def test_test_file_whose_name_cannot_be_selected_fails(self):
         self.change_from_base("scripts/ci/desktop-linux/tests/Bad_Name.sh")
         self.assertEqual(self.select().returncode, 2)
 
     def test_only_changes_between_the_base_and_head_count(self):
         self.change_from_base("apps/mp/views/chat/Compose.kt")
+        self.write("apps/mp/Other.kt", "changed")
+        self.commit("second change")
         branch = self.head()
         self.change_from_base("apps/ios/View.swift")
         self.git("switch", "-q", "--detach", branch)
