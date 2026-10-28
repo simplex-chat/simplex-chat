@@ -89,7 +89,7 @@ struct AppearanceSettings: View {
                         currentColors: currentColors,
                         onChooseType: onChooseType
                     )
-                    .environment(\.terminalLayout, profileChatLayout(themeUserDestination == nil ? nil : m.currentUser) == .terminal)
+                    .environment(\.terminalLayout, profileChatLayout(themeUserDestination == nil ? nil : m.currentUser, appChatLayout) == .terminal)
                     .padding(.bottom, 10)
                     .listRowInsets(.init())
                     .listRowBackground(Color.clear)
