@@ -2,35 +2,29 @@
 
 ## Problem
 A failed connect via an old-format (long) contact address, one-time or group link, for example when its server is
-unreachable, shows an error and leaves a connection that the chat list never shows, so the user cannot delete it.
-For address and group links its receive queue on the user's own server is subscribed again on every app start.
+unreachable, is reported by an error, and the connection written for it is not shown in the chat list, so the user
+cannot delete it. For address and group links, its receive queue on the user's own server is subscribed again on every
+app start.
 
 ## Cause
-- `connect'` writes the row (`createConnReqConnection`, `Library/Commands.hs:3975`), then runs `joinContact` (`:3976`),
-  the only step that can fail. The row is `prepared`, `conn_type = contact`, with no contact. A one-time link joined
-  via `APIConnect` (`joinNewConn`, `:3887`) has the same order.
-- The row is kept on purpose: a retry with the same link finds it by hash and reuses its keys and `xContactId`, so a
-  join that reached the peer can still complete (#5018, `9a87f344b`; for address and group links since #6017, `524de4067`).
-- #5018 also hid such rows from the chat list (`conn_status != prepared` in `getContactConnectionChatPreviews_`,
-  `Store/Messages.hs:1184`). Its author's TODO said a failed join should be "filtered out of chat list" rather than
-  deleted.
+- In `connect'`, the row is written by `createConnReqConnection` (`Library/Commands.hs:3975`) before `joinContact`
+  (`:3976`), the only call in which an error can occur. The row is `prepared`, `conn_type = contact`, with
+  `contact_id` NULL. For a one-time link via `APIConnect`, `joinNewConn` (`:3887`) has the same order.
+- On a retry with the same link, the row is found by hash, and its keys and `xContactId` are reused (#5018,
+  `9a87f344b`; for address and group links since #6017, `524de4067`).
+- `prepared` rows are excluded from the chat list by `conn_status != prepared` in `getContactConnectionChatPreviews_`
+  (`Store/Messages.hs:1184`), added in #5018.
 
 ## Fix
-Remove the `conn_status != ?` filter. A failed join is listed as a pending connection and deleted like one:
-`deleteChat CTContactConnection` (`Library/Commands.hs:1392`) deletes the agent connection first, which removes the
-queue. Both apps already render `prepared` as not initiated. Rows already in users' databases appear with no migration.
-
-## Approaches considered
-- Delete the connection when the join fails: a one-time link whose queue the peer already secured breaks on retry
-  with new keys, and an address retry after a delivered request sends a duplicate one (#5018, #6017).
-- Delete only on permanent errors: `HOST` is grouped with temporary errors (`temporaryOrHostError`).
-- Keep the rows hidden and expire them in the cleanup manager: deletes a connection that may still complete later.
-- Chosen: list them; the user decides when to give up. Cost: each failed long-link join leaves a pending entry until
-  it is deleted or completes, and this reverses #5018's choice to hide them.
+The `conn_status != ?` filter is removed. A connection left by a failed join is listed as a pending connection and is
+deleted like one: in `deleteChat CTContactConnection` (`Library/Commands.hs:1392`), the agent connection is deleted
+first, and its receive queue with it. `prepared` is rendered as not initiated in both apps. Rows already stored in
+users' databases are listed after the update, without a migration.
 
 ## Scope
-Core only; both apps list what this query returns. In the apps, a short link with profile data leaves no such row:
-an unreachable short-link server fails before anything is written, and a resolved one creates a prepared contact or
-group. A short link whose plan has no profile data is joined like a long link (`ConnectPlan.kt:104`, `:170`,
-`:265`), and so is the terminal `/connect` of a short link after it is resolved (`Library/Commands.hs:4701`); both
-leave the same row and are fixed too. A SimpleX name address or a channel with relays goes through a prepared contact or group instead.
+Core only; both apps list the rows returned by this query. In the apps, a short link with profile data is resolved
+before any row is written: if the short-link server is unreachable, an error is returned first, and a resolved link is
+joined through a prepared contact or group. A short link whose plan lacks profile data is joined as a long link
+(`ConnectPlan.kt:104`, `:170`, `:265`), and so is a short link resolved by the terminal `/connect`
+(`Library/Commands.hs:4701`); in both cases the same row is written, and it is listed after this change. A SimpleX name
+address and a channel with relays are joined through a prepared contact or group.
