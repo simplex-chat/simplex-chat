@@ -19,7 +19,7 @@ set -euo pipefail
 check "the note shows in the chat" "$ui" find "scripted note"
 ```
 
-- `# covers:` lines list the code the test exercises, as shell patterns from the repo root (`*` also matches `/`). A run selects the test when its branch changes a file that matches one.
+- `# covers:` lines list the code the test exercises, as shell patterns from the repo root separated by spaces (`*` also matches `/`, `?` matches a space in a path). A run selects the test when its branch changes a file that matches one.
 - `# needs: backend` marks a test that needs the test backend. It gets `BACKEND_DIR`, the backend's work directory (`names-server`, `directory-link`, and on iOS `seed.md`). Without the backend, the test is skipped with a note.
 - The rest is bash over the platform's `ui`, the same commands a Claude session sends. `ui` alone prints them; each platform's README describes its driver.
 - `lib.sh` holds the platform's shared steps (on desktop and Android: finding text and positions, getting back to the chat list, opening Settings; on iOS: `in_tree`) and loads `scripts/ci/app-tests/checks.sh`:
@@ -43,11 +43,13 @@ Tests run one after another in name order and share that profile. A test may lea
 
 ## Which tests a run runs
 
-The smoke test always runs. After it, once its checks passed (on iOS, also when the preview snapshots it then compares differ), the step "Run feature tests" runs, compared with the upstream master:
+The smoke test always runs. After it, once its checks passed (on iOS, also when the preview snapshots it then compares differ), the step "Run feature tests" runs the tests chosen by comparing the branch with the upstream master:
 
 - the tests the branch adds or changes;
 - the tests whose `covers` patterns match a file the branch changes;
 - every test of a platform when what the tests run on changes: a file in `scripts/ci/app-tests/`, or in the platform's folder other than `tests/`, `*.md` and `claude-*`.
+
+A change to the workflow files selects no test: a branch that changes the feature test step is run with `tests: all`.
 
 The run's `tests` input overrides this: feature names separated by spaces, `all` or `none` (Actions tab, or `gh workflow run <workflow>.yml --ref <branch> -f tests="private-notes"`). The plan job's log says why each test was selected, and its summary lists them.
 
@@ -74,7 +76,7 @@ A Claude session on the runner explores the app with the same `ui` commands. Its
 
 To turn a session into a scripted test, list the commands it sent (`grep '^allow' <guard log>`), keep the ones that moved the app forward, drop the reads it made to find its way, and turn its conclusions into `check` lines. Then prove the test with a plain run.
 
-`ios-sim/tests/settings.sh` was written this way, from a session of the earlier smoke plan that opened Settings from the profile picker and closed it. Its taps and the swipe come from the guard log. The checks come from its report ("Your settings", "Network & servers", "Talk to someone" again after the swipe). The fixed point it tapped became a lookup of the element in the tree.
+`ios-sim/tests/settings.sh` was written this way, from a session of the earlier smoke plan that opened Settings from the profile picker and closed it. Its taps and the swipe come from the guard log. The checks come from its report ("Your settings", "Network & servers", and Settings gone after the swipe). The fixed point it tapped became a lookup of the element in the tree.
 
 On desktop and Android the Claude job starts at the app's first screen, not at the feature tests' starting point, so a session meant for this must first onboard and create the group, as `claude-test.md` asks.
 
