@@ -8,7 +8,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
@@ -146,52 +145,35 @@ fun DecryptionErrorItemFixButton(
   onClick: () -> Unit,
   syncSupported: Boolean
 ) {
-  val receivedColor = MaterialTheme.appColors.receivedMessage
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL = null, showViaProxy = false, showTimestamp = true) }) { inlineMeta ->
-    Surface(
-      Modifier.clickable(onClick = onClick),
-      shape = if (inlineMeta != null) RectangleShape else RoundedCornerShape(18.dp),
-      color = receivedColor,
-      contentColor = LocalContentColor.current
-    ) {
-      Box(
-        if (inlineMeta != null) Modifier.bubbleTailSpace(ci.chatDir.sent, tailRendered) else Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
-        contentAlignment = Alignment.BottomEnd,
+    DecryptionErrorCard(ci, tailRendered, onClick, inlineMeta) {
+      Column(
+        verticalArrangement = Arrangement.spacedBy(2.dp)
       ) {
-        Column(
-          if (inlineMeta != null) Modifier.bubbleTextPadding(16.sp) else Modifier,
-          verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
+        Text(
+          buildAnnotatedString {
+            withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
+          },
+          style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleTextStyle(16.sp, Color.Red))
+        )
+        Row {
+          Icon(
+            painterResource(MR.images.ic_sync_problem),
+            stringResource(MR.strings.fix_connection),
+            tint = if (syncSupported) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+          )
+          Spacer(Modifier.padding(2.dp))
+          val secondaryColor = MaterialTheme.colors.secondary
           Text(
             buildAnnotatedString {
-              withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
+              append(generalGetString(MR.strings.fix_connection))
+              if (inlineMeta != null) {
+                withStyle(reserveTimestampStyle) { append(metaReserveCopy(ci.meta, null, encrypted = null, signedFileVerified = null, secondaryColor = secondaryColor, showViaProxy = false, showTimestamp = true, breakBefore = true)) }
+                withStyle(reserveTimestampStyle) { append("    ") } // for icon
+              }
             },
-            style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(if (inlineMeta != null) chatTextStyle(16.sp, Color.Red) else TextStyle.Default)
+            color = if (syncSupported) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
           )
-          Row {
-            Icon(
-              painterResource(MR.images.ic_sync_problem),
-              stringResource(MR.strings.fix_connection),
-              tint = if (syncSupported) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
-            )
-            Spacer(Modifier.padding(2.dp))
-            val secondaryColor = MaterialTheme.colors.secondary
-            Text(
-              buildAnnotatedString {
-                append(generalGetString(MR.strings.fix_connection))
-                if (inlineMeta != null) {
-                  withStyle(reserveTimestampStyle) { append(metaReserveCopy(ci.meta, null, encrypted = null, signedFileVerified = null, secondaryColor = secondaryColor, showViaProxy = false, showTimestamp = true, breakBefore = true)) }
-                  withStyle(reserveTimestampStyle) { append("    ") } // for icon
-                }
-              },
-              color = if (syncSupported) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
-            )
-          }
-        }
-        if (inlineMeta != null) {
-          Box(Modifier.padding(end = BUBBLE_SIDE_INSET).bubbleMeta()) {
-            inlineMeta()
-          }
         }
       }
     }
@@ -204,34 +186,40 @@ fun DecryptionErrorItem(
   tailRendered: Boolean,
   onClick: () -> Unit
 ) {
-  val receivedColor = MaterialTheme.appColors.receivedMessage
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL = null, showViaProxy = false, showTimestamp = true) }) { inlineMeta ->
-    Surface(
-      Modifier.clickable(onClick = onClick),
-      shape = if (inlineMeta != null) RectangleShape else RoundedCornerShape(18.dp),
-      color = receivedColor,
-      contentColor = LocalContentColor.current
-    ) {
-      Box(
-        if (inlineMeta != null) Modifier.bubbleTailSpace(ci.chatDir.sent, tailRendered) else Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
-        contentAlignment = Alignment.BottomEnd,
-      ) {
-        val secondaryColor = MaterialTheme.colors.secondary
-        Text(
-          buildAnnotatedString {
-            withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
-            if (inlineMeta != null) {
-              withStyle(reserveTimestampStyle) { append(metaReserveCopy(ci.meta, null, encrypted = null, signedFileVerified = null, secondaryColor = secondaryColor, showViaProxy = false, showTimestamp = true, breakBefore = true)) }
-            }
-          },
-          if (inlineMeta != null) Modifier.bubbleTextPadding(16.sp) else Modifier,
-          style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(if (inlineMeta != null) chatTextStyle(16.sp, Color.Red) else TextStyle.Default)
-        )
-        if (inlineMeta != null) {
-          Box(Modifier.padding(end = BUBBLE_SIDE_INSET).bubbleMeta()) {
-            inlineMeta()
+    DecryptionErrorCard(ci, tailRendered, onClick, inlineMeta) {
+      val secondaryColor = MaterialTheme.colors.secondary
+      Text(
+        buildAnnotatedString {
+          withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
+          if (inlineMeta != null) {
+            withStyle(reserveTimestampStyle) { append(metaReserveCopy(ci.meta, null, encrypted = null, signedFileVerified = null, secondaryColor = secondaryColor, showViaProxy = false, showTimestamp = true, breakBefore = true)) }
           }
+        },
+        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleTextStyle(16.sp, Color.Red))
+      )
+    }
+  }
+}
+
+@Composable
+private fun DecryptionErrorCard(ci: ChatItem, tailRendered: Boolean, onClick: () -> Unit, inlineMeta: (@Composable () -> Unit)?, content: @Composable () -> Unit) {
+  val receivedColor = MaterialTheme.appColors.receivedMessage
+  if (inlineMeta != null) {
+    Surface(Modifier.clickable(onClick = onClick), color = receivedColor, contentColor = LocalContentColor.current) {
+      Box(Modifier.bubbleTailSpace(ci.chatDir.sent, tailRendered), contentAlignment = Alignment.BottomEnd) {
+        Box(Modifier.bubbleTextPadding(16.sp)) {
+          content()
         }
+        Box(Modifier.padding(end = BUBBLE_SIDE_INSET).bubbleMeta()) {
+          inlineMeta()
+        }
+      }
+    }
+  } else {
+    Surface(Modifier.clickable(onClick = onClick), shape = RoundedCornerShape(18.dp), color = receivedColor, contentColor = LocalContentColor.current) {
+      Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp), contentAlignment = Alignment.BottomEnd) {
+        content()
       }
     }
   }

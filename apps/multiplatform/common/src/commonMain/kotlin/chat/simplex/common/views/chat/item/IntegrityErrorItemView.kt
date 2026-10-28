@@ -1,17 +1,12 @@
 package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
@@ -54,31 +49,15 @@ fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, showTimestamp: 
 
 @Composable
 fun CIMsgError(ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, tailRendered: Boolean, onClick: () -> Unit) {
-  val receivedColor = MaterialTheme.appColors.receivedMessage
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = false, showTimestamp = showTimestamp) }) { inlineMeta ->
-    Surface(
-      Modifier.clickable(onClick = onClick),
-      shape = if (inlineMeta != null) RectangleShape else RoundedCornerShape(18.dp),
-      color = receivedColor,
-      contentColor = LocalContentColor.current
-    ) {
-      Row(
-        if (inlineMeta != null) Modifier.bubbleTailSpace(ci.chatDir.sent, tailRendered).bubbleTextPadding(16.sp) else Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.Bottom
-      ) {
-        Text(
-          buildAnnotatedString {
-            withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
-          },
-          style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(if (inlineMeta != null) chatTextStyle(16.sp, Color.Red) else TextStyle.Default),
-          modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp).alignBy(LastBaseline)
-        )
-        if (inlineMeta != null) {
-          Box(bubbleMetaOnBaseline()) {
-            inlineMeta()
-          }
-        }
-      }
+    ItemTextCard(ci, tailRendered, 16.sp, inlineMeta, Modifier.clickable(onClick = onClick)) {
+      Text(
+        buildAnnotatedString {
+          withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
+        },
+        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleTextStyle(16.sp, Color.Red)),
+        modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp).alignBy(LastBaseline)
+      )
     }
   }
 }

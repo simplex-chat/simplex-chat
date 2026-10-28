@@ -90,6 +90,10 @@ fun chatTextStyle(fontSize: TextUnit, color: Color = messageTextColor()): TextSt
   }
 
 @Composable
+fun bubbleTextStyle(fontSize: TextUnit, color: Color): TextStyle =
+  if (LocalBubbleLayout.current) chatTextStyle(fontSize, color) else TextStyle.Default
+
+@Composable
 private fun contrastLineHeightFactor(color: Color): Float {
   val background = MaterialTheme.colors.background
   val textContrast = lightnessContrast(messageTextColor(), background)

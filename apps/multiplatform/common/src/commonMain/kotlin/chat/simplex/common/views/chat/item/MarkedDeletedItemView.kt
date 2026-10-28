@@ -1,10 +1,8 @@
 package chat.simplex.common.views.chat.item
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
@@ -21,26 +19,10 @@ import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
 fun MarkedDeletedItemView(chatsCtx: ChatModel.ChatsContext, ci: ChatItem, chatInfo: ChatInfo, timedMessagesTTL: Int?, revealed: State<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean, tailRendered: Boolean) {
-  val sentColor = MaterialTheme.appColors.sentMessage
-  val receivedColor = MaterialTheme.appColors.receivedMessage
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
-    Surface(
-      shape = if (inlineMeta != null) RectangleShape else RoundedCornerShape(18.dp),
-      color = if (ci.chatDir.sent) sentColor else receivedColor,
-      contentColor = LocalContentColor.current
-    ) {
-      Row(
-        if (inlineMeta != null) Modifier.bubbleTailSpace(ci.chatDir.sent, tailRendered).bubbleTextPadding(12.sp) else Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        Box(Modifier.weight(1f, false).alignByBaseline()) {
-          MergedMarkedDeletedText(chatsCtx, ci, chatInfo, revealed)
-        }
-        if (inlineMeta != null) {
-          Box(bubbleMetaOnBaseline()) {
-            inlineMeta()
-          }
-        }
+    ItemTextCard(ci, tailRendered, 12.sp, inlineMeta) {
+      Box(Modifier.weight(1f, false).alignBy(LastBaseline)) {
+        MergedMarkedDeletedText(chatsCtx, ci, chatInfo, revealed)
       }
     }
   }
