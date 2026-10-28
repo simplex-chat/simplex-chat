@@ -441,7 +441,8 @@ private fun MutableState<MigrationToState?>.PassphraseEnteringView(currentKey: S
           verifyingPassphrase.value = true
           hideKeyboard(view)
           withBGApi {
-            val (status, _) = chatInitTemporaryDatabase(dbAbsolutePrefixPath, key = currentKey.value, confirmation = MigrationConfirmation.YesUp)
+            val (status, ctrl) = chatInitTemporaryDatabase(dbAbsolutePrefixPath, key = currentKey.value, confirmation = MigrationConfirmation.YesUp)
+            if (status == DBMigrationResult.OK && ctrl != null) controller.stopChatWithTemporaryDatabase(ctrl)
             val success = status == DBMigrationResult.OK || status == DBMigrationResult.InvalidConfirmation
             if (success) {
               state = MigrationToState.Migration(currentKey.value, MigrationConfirmation.YesUp, useKeychain.value, netCfg, networkProxy)

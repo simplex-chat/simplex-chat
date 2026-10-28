@@ -10,12 +10,14 @@ The new device downloads the archive with a temporary chat controller. Its agent
 - Successful import: the controller is not closed; `finishMigration` deletes the directory of its database files, and each statistics save fails with `SQLITE_READONLY_DBMOVED`, shown by the receiver loop of the controller, which also keeps running.
 - Back and download failure call `stopAndCleanUp`, and a failed start of the controller (`initTemporaryDatabase`, used by both migration screens) calls `chatCloseStore`: both close the database without stopping the controller, and each statistics save then fails with "database closed". When the start throws, the controller is not closed.
 - The receiver is kept in `remember`; an activity recreation during the download drops it, so nothing is stopped afterwards.
+- "Open chat" checks the passphrase by opening the imported database with `chatInitTemporaryDatabase` and discards the controller, so a second agent stays active on the main database.
 
 ## Fix
 
 - `stopChatWithTemporaryDatabase(ctrl)` in `SimpleXAPI.kt` sends `/_stop` to the controller (`apiStopChat(ctrl)`) and closes its database; a failed `/_stop` is logged.
 - New device: `stopAndCleanUp` of the receiver calls it; the download controller is stopped when the archive is downloaded, before the import (`ArchiveImportView`); the receiver is kept in the `ModalData` of the screen (`stateGetOrPutNullable`).
 - `initTemporaryDatabase` calls it when the start fails, also when the start throws, and then deletes the temporary database files.
+- The passphrase check calls it when the database is opened (`DBMigrationResult.OK`; only then the controller is created).
 
 ## Scope
 
