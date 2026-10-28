@@ -107,8 +107,7 @@ chatProfileTests = do
     it "create address on specified server" testCreateAddressOnServer
     it "retry connecting via contact link" testRetryConnectingViaContactLink
     it "retry connecting via address in contact profile after address keys rotation" testRetryConnectingContactViaAddress
-    it "failed joins that were not delivered are deleted" testFailedJoinsNotDeliveredDeleted
-    it "failed join with a secured queue is listed and completes on retry" testFailedJoinSecuredQueueListed
+    it "connections prepared for failed joins are shown in chat list" testFailedConnectViaLinksInChatList
     it "add contact link to profile" testProfileLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
     it "deduplicate contact requests" testDeduplicateContactRequests
@@ -1557,8 +1556,8 @@ testRetryConnectingContactViaAddress ps =
               }
         }
 
-testFailedJoinsNotDeliveredDeleted :: HasCallStack => TestParams -> IO ()
-testFailedJoinsNotDeliveredDeleted ps =
+testFailedConnectViaLinksInChatList :: HasCallStack => TestParams -> IO ()
+testFailedConnectViaLinksInChatList ps =
   withNewTestChatOpts ps opts' "alice" aliceProfile $ \alice ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       links <- withSmpServer' serverCfg' $ do
@@ -1576,45 +1575,18 @@ testFailedJoinsNotDeliveredDeleted ps =
       forM_ links $ \link -> do
         bob ##> ("/_connect 1 " <> link)
         bob <##. "smp agent error: BROKER"
-      connectionCount bob `shouldReturn` 0
+      bob @@@! [(":1", "", Just ConnPrepared), (":2", "", Just ConnPrepared), (":3", "", Just ConnPrepared)]
+      rcvQueueCount bob `shouldReturn` 2
+      forM_ [1 :: Int, 2, 3] $ \i -> do
+        bob ##> ("/_delete :" <> show i)
+        bob <## ("connection :" <> show i <> " deleted")
       bob @@@ []
       rcvQueueCount bob `shouldEventuallyReturn` 0
   where
-    connectionCount cc = do
-      [Only n] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT count(1) FROM connections"
-      pure (n :: Int)
     rcvQueueCount cc = do
       [Only n] <- withCCAgentTransaction cc $ \db -> DB.query_ db "SELECT count(1) FROM rcv_queues"
       pure (n :: Int)
     serverCfg' = (smpServerCfg ps) {transports = [(smpTestPort2 ps, transport @TLS, False)]}
-    opts' =
-      testOpts
-        { coreOptions =
-            testCoreOpts
-              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
-              }
-        }
-
-testFailedJoinSecuredQueueListed :: HasCallStack => TestParams -> IO ()
-testFailedJoinSecuredQueueListed ps =
-  withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatCfgOpts ps cfg' opts' "bob" bobProfile $ \bob -> do
-      alice ##> "/_connect 1"
-      inv <- getInvitation alice
-      bob ##> ("/_connect 1 " <> inv)
-      bob <##. "smp agent error: BROKER"
-      bob @@@! [(":1", "", Just ConnPrepared)]
-      withSmpServer' serverCfg' $ do
-        bob ##> ("/_connect 1 " <> inv)
-        bob <## "confirmation sent!"
-        concurrently_
-          (bob <## "alice (Alice): contact is connected")
-          (alice <## "bob (Bob): contact is connected")
-        alice <##> bob
-      bob <## "disconnected 1 connections on server localhost"
-  where
-    serverCfg' = (smpServerCfg ps) {transports = [(smpTestPort2 ps, transport @TLS, False)]}
-    cfg' = testCfg {agentConfig = testAgentCfg {persistErrorInterval = 0}}
     opts' =
       testOpts
         { coreOptions =
