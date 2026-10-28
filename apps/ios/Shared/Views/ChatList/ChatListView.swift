@@ -234,6 +234,11 @@ struct ChatListView: View {
                 }
             }
         }
+        .onChange(of: chatModel.currentUser?.userId) { _ in
+            searchText = ""
+            searchShowingSimplexLink = false
+            searchChatFilteredBySimplexLink = []
+        }
         .environmentObject(chatTagsModel)
     }
     
