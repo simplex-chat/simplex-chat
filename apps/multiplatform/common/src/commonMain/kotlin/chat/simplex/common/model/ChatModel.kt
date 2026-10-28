@@ -1865,6 +1865,24 @@ sealed class ChatInfo: SomeChat, NamedChat {
     else -> emptyList()
   }
 
+  val chatLayout: ChatLayoutMode? get() = when (this) {
+    is Direct -> contact.chatLayout
+    is Group -> groupInfo.groupProfile.chatLayout
+    else -> null
+  }
+
+  val uiThemes: ThemeModeOverrides? get() = when (this) {
+    is Direct -> contact.uiThemes
+    is Group -> groupInfo.uiThemes
+    else -> null
+  }
+
+  fun defaultChatLayout(user: User?): ChatLayoutMode =
+    chatLayout.known ?: profileChatLayout(user)
+
+  fun activeChatLayout(user: User?): ChatLayoutMode =
+    uiThemes?.chatLayout.known ?: defaultChatLayout(user)
+
   val contactCard: Boolean
     get() = when (this) {
       is Direct -> contact.isContactCard
@@ -1908,6 +1926,7 @@ data class Contact(
   val chatItemTTL: Long?,
   override val chatDeleted: Boolean,
   val uiThemes: ThemeModeOverrides? = null,
+  val chatLayout: ChatLayoutMode? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
@@ -1917,6 +1936,7 @@ data class Contact(
   val active get() = contactStatus == ContactStatus.Active
   override val nextConnect get() = sendMsgToConnect
   val nextSendGrpInv get() = contactGroupMemberId != null && !contactGrpInvSent
+  val callReconnectSupported get() = (activeConn?.peerChatVRange?.maxVersion ?: 0) >= CALL_RECONNECT_VERSION
   override val nextConnectPrepared get() = active && preparedContact != null && (activeConn == null || activeConn.connStatus == ConnStatus.Prepared)
   override val profileChangeProhibited get() = activeConn != null
   val nextAcceptContactRequest get() =
@@ -2200,6 +2220,39 @@ object ChatPeerTypeSerializer : KSerializer<ChatPeerType> {
     }
   override fun serialize(encoder: Encoder, value: ChatPeerType) = encoder.encodeString(value.text)
 }
+
+@Serializable(with = ChatLayoutModeSerializer::class)
+sealed class ChatLayoutMode {
+  @Serializable @SerialName("classic") object Classic: ChatLayoutMode()
+  @Serializable @SerialName("terminal") object Terminal: ChatLayoutMode()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): ChatLayoutMode()
+
+  val text: String
+    get() = when (this) {
+      is Classic -> "classic"
+      is Terminal -> "terminal"
+      is Unknown -> type
+    }
+
+  companion object {
+    fun fromText(text: String): ChatLayoutMode = when (text) {
+      "classic" -> Classic
+      "terminal" -> Terminal
+      else -> Unknown(text)
+    }
+  }
+}
+
+object ChatLayoutModeSerializer : KSerializer<ChatLayoutMode> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("ChatLayoutMode", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): ChatLayoutMode = ChatLayoutMode.fromText(decoder.decodeString())
+  override fun serialize(encoder: Encoder, value: ChatLayoutMode) = encoder.encodeString(value.text)
+}
+
+private val ChatLayoutMode?.known: ChatLayoutMode? get() = if (this is ChatLayoutMode.Unknown) null else this
+
+fun profileChatLayout(user: User?): ChatLayoutMode =
+  user?.uiThemes?.chatLayout.known ?: ChatController.appPrefs.chatLayout.state.value.known ?: ChatLayoutMode.Classic
 
 fun peerTypeIcon(peerType: ChatPeerType?): ImageResource =
   when (peerType) {
@@ -2695,7 +2748,8 @@ data class GroupProfile (
   val publicGroup: PublicGroupProfile? = null,
   override val localAlias: String = "",
   val groupPreferences: GroupPreferences? = null,
-  val memberAdmission: GroupMemberAdmission? = null
+  val memberAdmission: GroupMemberAdmission? = null,
+  val chatLayout: ChatLayoutMode? = null
 ): NamedChat {
   val isChannel: Boolean get() = publicGroup?.groupType == GroupType.Channel
 
@@ -2734,6 +2788,7 @@ data class ContactShortLinkData (
   val profile: Profile,
   val message: MsgContent?,
   val business: Boolean,
+  val chatLayout: ChatLayoutMode? = null,
   // set by the core when building the connection plan: the link profile's badge, verified and crypto-free
   val localBadge: LocalBadge? = null
 )
@@ -2987,10 +3042,7 @@ data class GroupMember (
     else if (groupInfo.useRelays && !groupInfo.isOwner) null
     else groupInfo.membership.memberRole.let { userRole ->
       if (groupInfo.useRelays)
-        // TODO [relays]: for now owners can only set observer/member in channels.
-        //   Restore the full Owner-excluded picker when moderator/admin promotion is supported:
-        // GroupMemberRole.selectableRoles.filter { it <= userRole && it != GroupMemberRole.Owner }
-        listOf(GroupMemberRole.Observer, GroupMemberRole.Member)
+        listOf(GroupMemberRole.Observer, GroupMemberRole.Member, GroupMemberRole.Moderator)
       else
         GroupMemberRole.selectableRoles.filter { it <= userRole }
     }

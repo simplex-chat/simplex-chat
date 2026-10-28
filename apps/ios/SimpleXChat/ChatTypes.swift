@@ -19,7 +19,11 @@ public let REPORTS_VERSION = 12
 // support group knocking (MsgScope)
 public let GROUP_KNOCKING_VERSION = 15
 
+public let CALL_RECONNECT_VERSION = 22
+
 public let contentModerationPostLink = URL(string: "https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.html#preventing-server-abuse-without-compromising-e2e-encryption")!
+
+public let previewDate = Date(timeIntervalSince1970: 1_736_936_100)
 
 public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var userId: Int64
@@ -256,6 +260,41 @@ extension ChatPeerType: Codable {
     public func encode(to encoder: Encoder) throws {
         var c = encoder.singleValueContainer()
         try c.encode(text)
+    }
+}
+
+public enum ChatLayout: Hashable {
+    case classic
+    case terminal
+    case unknown(String)
+}
+
+extension ChatLayout: RawRepresentable {
+    public init(rawValue: String) {
+        switch rawValue {
+        case "classic": self = .classic
+        case "terminal": self = .terminal
+        default: self = .unknown(rawValue)
+        }
+    }
+
+    public var rawValue: String {
+        switch self {
+        case .classic: "classic"
+        case .terminal: "terminal"
+        case let .unknown(s): s
+        }
+    }
+}
+
+extension ChatLayout: Codable {
+    public init(from decoder: Decoder) throws {
+        self.init(rawValue: try decoder.singleValueContainer().decode(String.self))
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
     }
 }
 
@@ -1781,6 +1820,7 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
         simplexLinks: fullPreferences.simplexLinks,
         reports: fullPreferences.reports,
         history: fullPreferences.history,
+        support: fullPreferences.support,
         signMessages: fullPreferences.signMessages,
         commands: fullPreferences.commands
     )
@@ -2505,6 +2545,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var sndReady: Bool { get { ready || activeConn?.connStatus == .sndReady } }
     public var active: Bool { get { contactStatus == .active } }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
+    public var callReconnectSupported: Bool { (activeConn?.peerChatVRange.maxVersion ?? 0) >= CALL_RECONNECT_VERSION }
     public var nextConnectPrepared: Bool { active && preparedContact != nil && (activeConn == nil || activeConn?.connStatus == .prepared) }
     public var profileChangeProhibited: Bool { activeConn != nil }
     public var nextAcceptContactRequest: Bool {
@@ -2579,8 +2620,8 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         chatSettings: ChatSettings.defaults,
         userPreferences: Preferences.sampleData,
         mergedPreferences: ContactUserPreferences.sampleData,
-        createdAt: .now,
-        updatedAt: .now,
+        createdAt: previewDate,
+        updatedAt: previewDate,
         contactGrpInvSent: false,
         chatTags: [],
         chatDeleted: false
@@ -3069,6 +3110,7 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
     public var publicGroup: PublicGroupProfile?
     public var groupPreferences: GroupPreferences?
     public var memberAdmission: GroupMemberAdmission?
+    public var chatLayout: ChatLayout?
     public var localAlias: String { "" }
 
     public var memberAdmission_: GroupMemberAdmission {
@@ -3116,6 +3158,7 @@ public struct ContactShortLinkData: Codable, Hashable {
     public var profile: Profile
     public var message: MsgContent?
     public var business: Bool
+    public var chatLayout: ChatLayout?
     // set by the core when building the connection plan: the link profile's badge, verified and crypto-free
     public var localBadge: LocalBadge?
 }
@@ -3157,7 +3200,7 @@ public enum MsgVerified: Decodable, Equatable, Hashable {
         switch self {
         case .sigMissing: return (
                 NSLocalizedString("Signature missing", comment: "alert title"),
-                NSLocalizedString("The channel required this message to be signed, but the signature is missing.", comment: "alert message")
+                NSLocalizedString("The message was sent before the channel started signing messages, or it is fake.", comment: "alert message")
             )
         default: return nil
         }
@@ -3413,10 +3456,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         if groupInfo.useRelays && !groupInfo.isOwner { return nil }
         let userRole = groupInfo.membership.memberRole
         if groupInfo.useRelays {
-            // TODO [relays]: for now owners can only set observer/member in channels.
-            //   Restore the full Owner-excluded picker when moderator/admin promotion is supported:
-            // return GroupMemberRole.supportedRoles.filter { $0 <= userRole && $0 != .owner }
-            return [.observer, .member]
+            return [.observer, .member, .moderator]
         } else {
             return GroupMemberRole.supportedRoles.filter { $0 <= userRole }
         }

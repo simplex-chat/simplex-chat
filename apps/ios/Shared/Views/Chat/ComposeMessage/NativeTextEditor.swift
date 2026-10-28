@@ -284,7 +284,7 @@ struct NativeTextEditor_Previews: PreviewProvider{
             disableEditing: Binding.constant(false),
             height: Binding.constant(100),
             focused: Binding.constant(false),
-            lastUnfocusedDate: Binding.constant(.now),
+            lastUnfocusedDate: Binding.constant(previewDate),
             placeholder: Binding.constant("Placeholder"),
             selectedRange: Binding.constant(NSRange(location: 0, length: 0)),
             onImagesAdded: { _ in }

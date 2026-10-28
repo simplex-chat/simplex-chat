@@ -56,6 +56,7 @@ import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import Simplex.Chat.Types.UITheme (ChatLayout)
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1, decompressedSize)
@@ -1612,6 +1613,7 @@ data ContactShortLinkData = ContactShortLinkData
   { profile :: Profile,
     message :: Maybe MsgContent,
     business :: Bool,
+    chatLayout :: Maybe ChatLayout,
     -- set by the receiving client for the UI: the link profile's badge, verified and crypto-free.
     -- never part of the published link data (the link carries the proof inside profile).
     localBadge :: Maybe LocalBadge

@@ -17,25 +17,26 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.datetime.Clock
 
 @Composable
 fun MarkedDeletedItemView(chatsCtx: ChatModel.ChatsContext, ci: ChatItem, chatInfo: ChatInfo, timedMessagesTTL: Int?, revealed: State<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean) {
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
-  Surface(
-    shape = RoundedCornerShape(18.dp),
-    color = if (ci.chatDir.sent) sentColor else receivedColor,
-    contentColor = LocalContentColor.current
-  ) {
-    Row(
-      Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-      verticalAlignment = Alignment.CenterVertically
+  ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
+    Surface(
+      shape = RoundedCornerShape(18.dp),
+      color = if (ci.chatDir.sent) sentColor else receivedColor,
+      contentColor = LocalContentColor.current
     ) {
-      Box(Modifier.weight(1f, false)) {
-        MergedMarkedDeletedText(chatsCtx, ci, chatInfo, revealed)
+      Row(
+        Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Box(Modifier.weight(1f, false)) {
+          MergedMarkedDeletedText(chatsCtx, ci, chatInfo, revealed)
+        }
+        inlineMeta?.invoke()
       }
-      CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
     }
   }
 }
@@ -118,7 +119,7 @@ fun markedDeletedText(cItem: ChatItem, chatInfo: ChatInfo): String =
 fun PreviewMarkedDeletedItemView() {
   SimpleXTheme {
     DeletedItemView(
-      ChatItem.getSampleData(itemDeleted = CIDeleted.Deleted(Clock.System.now())),
+      ChatItem.getSampleData(ts = previewDate, itemDeleted = CIDeleted.Deleted(previewDate)),
       null,
       showViaProxy = false,
       showTimestamp = true

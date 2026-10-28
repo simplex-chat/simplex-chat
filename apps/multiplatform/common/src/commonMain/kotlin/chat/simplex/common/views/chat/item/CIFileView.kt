@@ -43,6 +43,7 @@ fun CIFileView(
   val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
   val sizeMultiplier = 1f
   val progressSizeMultiplier = if (smallView) 0.7f else 1f
+  val terminal = LocalTerminalLayout.current
   @Composable
   fun fileIcon(
     innerIcon: Painter? = null,
@@ -133,7 +134,7 @@ fun CIFileView(
   fun fileIndicator() {
     Box(
       Modifier
-        .padding(top = 2.sp.toDp())
+        .padding(top = if (terminal) 0.dp else 2.sp.toDp())
         .size(40.sp.toDp() * sizeMultiplier)
         .clip(RoundedCornerShape(4.sp.toDp() * sizeMultiplier)),
       contentAlignment = Alignment.Center
@@ -205,7 +206,13 @@ fun CIFileView(
         onClick = onClick,
         onLongClick = { showMenu.value = true }
       )
-      .padding(if (smallView) PaddingValues() else PaddingValues(top = 4.sp.toDp(), bottom = 6.sp.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp())),
+      .padding(
+        when {
+          smallView -> PaddingValues()
+          terminal -> PaddingValues(top = TERMINAL_FILE_TOP_GAP.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp())
+          else -> PaddingValues(top = 4.sp.toDp(), bottom = 6.sp.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp())
+        }
+      ),
     verticalAlignment = Alignment.Bottom,
     horizontalArrangement = Arrangement.spacedBy(2.sp.toDp())
   ) {

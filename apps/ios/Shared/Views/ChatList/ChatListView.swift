@@ -1259,17 +1259,19 @@ struct ChatListView_Previews: PreviewProvider {
 
     static var previews: some View {
         let chatModel = ChatModel()
+        var contactRequest = UserContactRequest.sampleData
+        contactRequest.updatedAt = previewDate
         chatModel.updateChats([
             ChatData(
                 chatInfo: ChatInfo.sampleData.direct,
-                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
+                chatItems: [ChatItem.getSample(1, .directSnd, previewDate, "hello")]
             ),
             ChatData(
                 chatInfo: ChatInfo.sampleData.group,
-                chatItems: [ChatItem.getSample(1, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")]
+                chatItems: [ChatItem.getSample(1, .directSnd, previewDate, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")]
             ),
             ChatData(
-                chatInfo: ChatInfo.sampleData.contactRequest,
+                chatInfo: .contactRequest(contactRequest: contactRequest),
                 chatItems: []
             )
 

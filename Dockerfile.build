@@ -13,9 +13,9 @@ ARG GHCUP_VER=0.2.6.2
 ARG GHCUP_HASH_AMD64=9ed5da5449b48043a0d17e767c05d2ef585e25a639bb934329496c6d2fad9cf8
 ARG GHCUP_HASH_ARM64=65a5f05120288ee4f1a81d28825374b6af317456a351a586adfce90c6dc29e3b
 ARG GHCUP_METADATA=https://raw.githubusercontent.com/haskell/ghcup-metadata/ff5a77f2ee34afd9c49b970a45abfb7dac01cb8a/ghcup-0.1.0.yaml
-ARG JAVA_VER=17.0.17.10.1
-ARG JAVA_HASH_AMD64=e3e11daa5c22a45153bbeff1a0c21bf08631791e4e8d8ed14deba31c7cf9af1a
-ARG JAVA_HASH_ARM64=2b460859b681757b33a7591b6238ecaf51569d05d2684984e5f0a89c6514acbc
+ARG JAVA_VER=17.0.21.0.10
+ARG JAVA_HASH_AMD64=8e7577ddeb5b17a13c73a6fe80b592f6e70299cd19f54d06976986b0bc7ada87
+ARG JAVA_HASH_ARM64=c400e8ae70ee9565c23667bc3b4dd0fe5f7c403629ebb2cf9648c1d756b6b926
 
 ENV TZ=Etc/UTC \
     DEBIAN_FRONTEND=noninteractive
@@ -71,7 +71,7 @@ RUN apt-get update --error-on=any && \
 # to fix this :(
 RUN export JAVA_FILENAME='java-corretto.deb' \
            JAVA_VER_MAJOR=$(printf "${JAVA_VER}" | awk -F. '{print $1}') \
-           JAVA_VER_DEB=$(printf "${JAVA_VER}" | sed 's/\.1$/-1/') && \
+           JAVA_VER_DEB="${JAVA_VER}-1" && \
     case "$(uname -m)" in \
         x86_64)  export JAVA_ARCH='amd64' JAVA_HASH="$JAVA_HASH_AMD64" ;; \
         aarch64) export JAVA_ARCH='arm64' JAVA_HASH="$JAVA_HASH_ARM64" ;; \

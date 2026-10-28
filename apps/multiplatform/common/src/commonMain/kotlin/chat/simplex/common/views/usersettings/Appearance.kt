@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.TextFieldValue
@@ -38,7 +39,12 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
 import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
+import chat.simplex.common.views.chat.item.ChatItemSender
+import chat.simplex.common.views.chat.item.LocalTerminalLayout
 import chat.simplex.common.views.chat.item.PreviewChatItemView
+import chat.simplex.common.views.chat.item.TERMINAL_SENDER_TOP_GAP
+import chat.simplex.common.views.chat.item.TerminalChatItemRow
+import chat.simplex.common.views.chat.item.terminalRowGap
 import chat.simplex.common.views.chat.item.msgTailWidthDp
 import chat.simplex.res.*
 import com.godaddy.android.colorpicker.ClassicColorPicker
@@ -279,13 +285,14 @@ object AppearanceScope {
     val themeBackgroundColor = MaterialTheme.colors.background
     val backgroundColor =  backgroundColor ?: wallpaperType?.defaultBackgroundColor(theme, MaterialTheme.colors.background)
     val tintColor = tintColor ?: wallpaperType?.defaultTintColor(theme)
+    val terminal = LocalTerminalLayout.current
     Column(Modifier
       .drawWithCache {
-        if (wallpaperImage != null && wallpaperType != null && backgroundColor != null && tintColor != null) {
+        if (wallpaperImage != null && wallpaperType != null && backgroundColor != null && tintColor != null && !terminal) {
           chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor, null, null)
         } else {
           onDrawBehind {
-            drawRect(themeBackgroundColor)
+            drawRect(backgroundColor ?: themeBackgroundColor)
           }
         }
       }
@@ -293,18 +300,50 @@ object AppearanceScope {
     ) {
       if (withMessages) {
         val chatItemTail = remember { appPreferences.chatItemTail.state }
+        val alice = remember { ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), generalGetString(MR.strings.wallpaper_preview_hello_bob)) }
+        val reply = ChatItem.getSampleData(2, CIDirection.DirectSnd(), Clock.System.now(), stringResource(MR.strings.wallpaper_preview_hello_alice),
+          quotedItem = CIQuote(alice.chatDir, alice.id, sentAt = alice.meta.itemTs, formattedText = alice.formattedText, content = MsgContent.MCText(alice.content.text))
+        )
 
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = if (chatItemTail.value) Modifier else Modifier.padding(horizontal = msgTailWidthDp)) {
-          val alice = remember { ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), generalGetString(MR.strings.wallpaper_preview_hello_bob)) }
-          PreviewChatItemView(alice)
-          PreviewChatItemView(
-            ChatItem.getSampleData(2, CIDirection.DirectSnd(), Clock.System.now(), stringResource(MR.strings.wallpaper_preview_hello_alice),
-              quotedItem = CIQuote(alice.chatDir, alice.id, sentAt = alice.meta.itemTs, formattedText = alice.formattedText, content = MsgContent.MCText(alice.content.text))
-            )
-          )
+        @Composable
+        fun TerminalPreviewRow(item: ChatItem, older: ChatItem?, sender: ChatItemSender) {
+          TerminalChatItemRow(sender, gutter = 0.dp, topGap = terminalRowGap(item, older, separated = false, largeGap = true, hasSenderRow = true).toDp(), senderTopGap = if (older == null) 0.dp else TERMINAL_SENDER_TOP_GAP.toDp()) {
+            PreviewChatItemView(item)
+          }
         }
+
+        PreviewInEitherLayout(
+          terminal,
+          classic = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = if (chatItemTail.value) Modifier else Modifier.padding(horizontal = msgTailWidthDp)) {
+              PreviewChatItemView(alice)
+              PreviewChatItemView(reply)
+            }
+          },
+          terminalRows = {
+            Column {
+              TerminalPreviewRow(alice, null, ChatItemSender("alice", null, null, own = false, image = null))
+              TerminalPreviewRow(reply, alice, ChatItemSender("bob", null, null, own = true, image = null))
+            }
+          }
+        )
       } else {
         Box(Modifier.fillMaxSize())
+      }
+    }
+  }
+
+  @Composable
+  private fun PreviewInEitherLayout(terminal: Boolean, classic: @Composable () -> Unit, terminalRows: @Composable () -> Unit) {
+    Layout({
+      CompositionLocalProvider(LocalTerminalLayout provides false, content = classic)
+      CompositionLocalProvider(LocalTerminalLayout provides true, content = terminalRows)
+    }) { measurables, constraints ->
+      val placeables = measurables.map { it.measure(constraints) }
+      val shown = placeables[if (terminal) 1 else 0]
+      val height = placeables.maxOf { it.height }
+      layout(placeables.maxOf { it.width }, height) {
+        shown.placeRelative(0, (height - shown.height) / 2)
       }
     }
   }
@@ -326,6 +365,7 @@ object AppearanceScope {
     }
 
     val backgrounds = PresetWallpaper.entries.toList()
+    val terminal = LocalTerminalLayout.current
 
     fun LazyGridScope.gridContent(width: Dp, height: Dp) {
       @Composable
@@ -398,8 +438,10 @@ object AppearanceScope {
       items(items = backgrounds) { background ->
         BackgroundItem(background)
       }
-      item {
-        OwnBackgroundItem(selectedWallpaper)
+      if (!terminal) {
+        item {
+          OwnBackgroundItem(selectedWallpaper)
+        }
       }
     }
 
@@ -417,7 +459,7 @@ object AppearanceScope {
       val gridPadding = 12.dp
       val cardPadding = if (LocalCardScreen.current) CARD_PADDING * 2 else 0.dp
       val itemSize = (DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier - cardPadding - gridPadding * 5) / 4
-      val rows = ceil((PresetWallpaper.entries.size + 2) / 4f).roundToInt()
+      val rows = ceil((PresetWallpaper.entries.size + if (terminal) 1 else 2) / 4f).roundToInt()
       LazyVerticalGrid(
         columns = GridCells.Fixed(4),
         Modifier.height(itemSize * rows + gridPadding * (rows + 1)),
@@ -530,19 +572,22 @@ object AppearanceScope {
 
     SectionView(stringResource(MR.strings.settings_section_title_themes)) {
       ThemeDestinationPicker(themeUserDestination)
+      ChatLayoutRow(themeUserDestination)
 
       val importWallpaperLauncher = rememberFileChooserLauncher(true) { to: URI? ->
         if (to != null) onImport(to)
       }
 
-      WallpaperPresetSelector(
-        selectedWallpaper = wallpaperType,
-        baseTheme = currentTheme.base,
-        currentColors = { type ->
-          currentColors(type)
-        },
-        onChooseType = { onChooseType(it, importWallpaperLauncher) },
-      )
+      CompositionLocalProvider(LocalTerminalLayout provides profileLayoutIsTerminal(if (themeUserDestination.value == null) null else chatModel.currentUser.value)) {
+        WallpaperPresetSelector(
+          selectedWallpaper = wallpaperType,
+          baseTheme = currentTheme.base,
+          currentColors = { type ->
+            currentColors(type)
+          },
+          onChooseType = { onChooseType(it, importWallpaperLauncher) },
+        )
+      }
       val type = MaterialTheme.wallpaper.type
       if (type is WallpaperType.Image && (themeUserDestination.value == null || perUserTheme.value.wallpaper?.imageFile != null)) {
         SectionItemView(disabled = chatModel.remoteHostId != null && themeUserDestination.value != null, click = {
@@ -596,7 +641,9 @@ object AppearanceScope {
             val importWallpaperLauncher = rememberFileChooserLauncher(true) { to: URI? ->
               if (to != null) onImport(to)
             }
-            CustomizeThemeView { onChooseType(it, importWallpaperLauncher) }
+            CompositionLocalProvider(LocalTerminalLayout provides profileLayoutIsTerminal(null)) {
+              CustomizeThemeView { onChooseType(it, importWallpaperLauncher) }
+            }
           }
         } else {
           ModalManager.start.showModalCloseable(cardScreen = true) { close ->
@@ -619,11 +666,13 @@ object AppearanceScope {
       val wallpaperType = MaterialTheme.wallpaper.type
       val baseTheme = CurrentColors.collectAsState().value.base
 
+      val terminal = LocalTerminalLayout.current
       val editColor = { name: ThemeColor ->
         editColor(
           name,
           wallpaperType,
           wallpaperImage,
+          terminal,
           onColorChange = { color ->
             ThemeManager.saveAndApplyThemeColor(baseTheme, name, color)
             saveThemeToDatabase(null)
@@ -787,7 +836,7 @@ object AppearanceScope {
     }
   }
 
-  fun editColor(name: ThemeColor, wallpaperType: WallpaperType, wallpaperImage: ImageBitmap?, onColorChange: (Color?) -> Unit) {
+  fun editColor(name: ThemeColor, wallpaperType: WallpaperType, wallpaperImage: ImageBitmap?, terminal: Boolean, onColorChange: (Color?) -> Unit) {
     ModalManager.start.showModal {
       val baseTheme = CurrentColors.collectAsState().value.base
       val wallpaperBackgroundColor = MaterialTheme.wallpaper.background ?: wallpaperType.defaultBackgroundColor(baseTheme, MaterialTheme.colors.background)
@@ -808,9 +857,11 @@ object AppearanceScope {
         ThemeColor.RECEIVED_MESSAGE -> MaterialTheme.appColors.receivedMessage
         ThemeColor.RECEIVED_QUOTE -> MaterialTheme.appColors.receivedQuote
       }
-      ColorEditor(name, initialColor, baseTheme, MaterialTheme.wallpaper.type, wallpaperImage, currentColors = { CurrentColors.value },
-        onColorChange = onColorChange
-      )
+      CompositionLocalProvider(LocalTerminalLayout provides terminal) {
+        ColorEditor(name, initialColor, baseTheme, MaterialTheme.wallpaper.type, wallpaperImage, currentColors = { CurrentColors.value },
+          onColorChange = onColorChange
+        )
+      }
     }
   }
 
@@ -823,13 +874,15 @@ object AppearanceScope {
       globalThemeUsed.value = preferred == null
       preferred ?: ThemeManager.defaultActiveTheme(chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
     }
-    UserWallpaperEditor(
-      initialTheme,
-      applyToMode = if (themes.value.light == themes.value.dark) null else initialTheme.mode,
-      globalThemeUsed = globalThemeUsed,
-      save = { applyToMode, newTheme ->
-        save(applyToMode, newTheme, themes.value, userId, remoteHostId)
-      })
+    CompositionLocalProvider(LocalTerminalLayout provides profileLayoutIsTerminal(chatModel.currentUser.value)) {
+      UserWallpaperEditor(
+        initialTheme,
+        applyToMode = if (themes.value.light == themes.value.dark) null else initialTheme.mode,
+        globalThemeUsed = globalThemeUsed,
+        save = { applyToMode, newTheme ->
+          save(applyToMode, newTheme, themes.value, userId, remoteHostId)
+        })
+    }
     KeyChangeEffect(chatModel.currentUser.value?.userId, chatModel.remoteHostId) {
       close()
     }
@@ -871,7 +924,7 @@ object AppearanceScope {
       }
       changedThemes
     } else {
-      null
+      changedThemes?.layoutOnly()
     }
 
     val wallpaperFilesToDelete = wallpaperFiles - changedThemes?.light?.wallpaper?.imageFile - changedThemes?.dark?.wallpaper?.imageFile
@@ -890,6 +943,40 @@ object AppearanceScope {
     }
   }
 
+  private fun profileLayoutIsTerminal(user: User?): Boolean =
+    profileChatLayout(user) == ChatLayoutMode.Terminal
+
+  @Composable
+  private fun ChatLayoutRow(themeUserDestination: MutableState<Pair<Long, ThemeModeOverrides?>?>) {
+    val globalLayout = remember { derivedStateOf { profileChatLayout(null) } }
+    val dest = themeUserDestination.value
+    if (dest == null) {
+      ExposedDropDownSettingRow(
+        generalGetString(MR.strings.chat_layout),
+        listOf(ChatLayoutMode.Classic, ChatLayoutMode.Terminal).map { it to chatLayoutName(it) },
+        globalLayout,
+        onSelected = { layout -> appPrefs.chatLayout.set(layout) }
+      )
+    } else {
+      val (userId, themes) = dest
+      val userLayout = themes?.chatLayout
+      val otherLayout = otherChatLayout(globalLayout.value)
+      val selection = remember(userLayout, otherLayout) { mutableStateOf(if (userLayout == otherLayout) otherLayout else null) }
+      ExposedDropDownSettingRow(
+        generalGetString(MR.strings.chat_layout),
+        listOf(
+          null to "${chatLayoutName(globalLayout.value)} ${generalGetString(MR.strings.chat_layout_default_suffix)}",
+          otherLayout to chatLayoutName(otherLayout)
+        ),
+        selection,
+        onSelected = { layout ->
+          themeUserDestination.value = userId to themes.withChatLayout(layout)
+          saveThemeToDatabase(themeUserDestination.value)
+        }
+      )
+    }
+  }
+
   @Composable
   fun ThemeDestinationPicker(themeUserDestination: MutableState<Pair<Long, ThemeModeOverrides?>?>) {
     val themeUserDest = remember(themeUserDestination.value?.first) { mutableStateOf(themeUserDestination.value?.first) }
@@ -897,7 +984,7 @@ object AppearanceScope {
       if (themeUserDestination.value == null) {
         // Easiest way to hide per-user customization.
         // Otherwise, it would be needed to make global variable and to use it everywhere for making a decision to include these overrides into active theme constructing or not
-        chatModel.currentUser.value = chatModel.currentUser.value?.copy(uiThemes = null)
+        chatModel.currentUser.value = chatModel.currentUser.value?.let { it.copy(uiThemes = it.uiThemes?.layoutOnly()) }
       } else {
         chatModel.updateCurrentUserUiThemes(chatModel.remoteHostId(), chatModel.users.firstOrNull { it.user.userId == chatModel.currentUser.value?.userId }?.user?.uiThemes)
       }
@@ -1198,10 +1285,11 @@ fun WallpaperSetupView(
   firstSectionTitle: String? = null,
 ) {
   val hasWallpaperSettings = wallpaperType is WallpaperType.Preset || wallpaperType is WallpaperType.Image
+  val terminal = LocalTerminalLayout.current
 
   if (hasWallpaperSettings) {
     SectionView(firstSectionTitle) {
-      if (wallpaperType is WallpaperType.Image) {
+      if (wallpaperType is WallpaperType.Image && !terminal) {
         val state = remember(wallpaperType.scaleType, initialWallpaper?.type) { mutableStateOf(wallpaperType.scaleType ?: (initialWallpaper?.type as? WallpaperType.Image)?.scaleType ?: WallpaperScaleType.FILL) }
         val values = remember {
           WallpaperScaleType.entries.map { it to generalGetString(it.text) }
@@ -1216,7 +1304,7 @@ fun WallpaperSetupView(
         )
       }
 
-      if (wallpaperType is WallpaperType.Preset || (wallpaperType is WallpaperType.Image && wallpaperType.scaleType == WallpaperScaleType.REPEAT)) {
+      if ((wallpaperType is WallpaperType.Preset || (wallpaperType is WallpaperType.Image && wallpaperType.scaleType == WallpaperScaleType.REPEAT)) && !terminal) {
         val state = remember(wallpaperType, initialWallpaper?.type?.scale) { mutableStateOf(wallpaperType.scale ?: initialWallpaper?.type?.scale ?: 1f) }
         Row(Modifier.padding(horizontal = DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
           Text("${state.value}".substring(0, min("${state.value}".length, 4)), Modifier.width(50.dp))
@@ -1240,11 +1328,13 @@ fun WallpaperSetupView(
         Text(title)
         Icon(painterResource(MR.images.ic_circle_filled), title, tint = wallpaperBackgroundColor)
       }
-      val wallpaperTintColor = initialWallpaper?.tint ?: wallpaperType.defaultTintColor(theme)
-      SectionItemViewSpaceBetween({ editColor(ThemeColor.WALLPAPER_TINT) }) {
-        val title = generalGetString(MR.strings.color_wallpaper_tint)
-        Text(title)
-        Icon(painterResource(MR.images.ic_circle_filled), title, tint = wallpaperTintColor)
+      if (!terminal) {
+        val wallpaperTintColor = initialWallpaper?.tint ?: wallpaperType.defaultTintColor(theme)
+        SectionItemViewSpaceBetween({ editColor(ThemeColor.WALLPAPER_TINT) }) {
+          val title = generalGetString(MR.strings.color_wallpaper_tint)
+          Text(title)
+          Icon(painterResource(MR.images.ic_circle_filled), title, tint = wallpaperTintColor)
+        }
       }
     }
     SectionDividerSpaced()
@@ -1290,7 +1380,7 @@ private fun ColorPicker(initialColor: Color, showAlphaBar: Boolean, onColorChang
 private fun removeUserThemeModeOverrides(themeUserDestination: MutableState<Pair<Long, ThemeModeOverrides?>?>, perUserTheme: MutableState<ThemeModeOverride>) {
   val dest = themeUserDestination.value ?: return
   perUserTheme.value = ThemeModeOverride()
-  themeUserDestination.value = dest.first to null
+  themeUserDestination.value = dest.first to dest.second?.layoutOnly()
   val wallpaperFilesToDelete = listOf(
     (chatModel.currentUser.value?.uiThemes?.light?.type as? WallpaperType.Image)?.filename,
     (chatModel.currentUser.value?.uiThemes?.dark?.type as? WallpaperType.Image)?.filename

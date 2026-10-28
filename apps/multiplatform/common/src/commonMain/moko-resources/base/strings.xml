@@ -697,6 +697,7 @@
   <string name="file_will_be_received_when_contact_completes_uploading">File will be received when your contact completes uploading it.</string>
   <string name="file_will_be_received_when_contact_is_online">File will be received when your contact is online, please wait or check later!</string>
   <string name="file_saved">File saved</string>
+  <string name="file_already_exists_replace_question">File already exists. Replace it?</string>
   <string name="file_not_found">File not found</string>
   <string name="error_saving_file">Error saving file</string>
   <string name="markdown_formatted_view">Formatted view</string>
@@ -787,10 +788,13 @@
   <string name="do_not_require_message_signatures">Do not require signing messages.</string>
   <string name="message_signatures_are_required">Message signing is required.</string>
   <string name="message_signatures_are_not_required">Message signing is not required.</string>
+  <string name="sign_messages_question">Sign messages?</string>
+  <string name="sign_messages_alert_desc">Messages sent before will show "signature missing" to subscribers who join later.</string>
+  <string name="sign_messages_enable">Enable</string>
   <string name="show_signature">Show signature</string>
   <string name="show_encryption">Show encryption</string>
   <string name="signature_missing_alert_title">Signature missing</string>
-  <string name="signature_missing_alert_desc">The channel required this message to be signed, but the signature is missing.</string>
+  <string name="signature_missing_alert_desc">The message was sent before the channel started signing messages, or it is fake.</string>
   <string name="live_message">Live message!</string>
   <string name="send_live_message_desc">Send a live message - it will update for the recipient(s) as you type it</string>
   <string name="send_verb">Send</string>
@@ -2304,6 +2308,11 @@
   <string name="chat_theme_apply_to_all_modes">All color modes</string>
   <string name="chat_theme_apply_to_light_mode">Light mode</string>
   <string name="chat_theme_apply_to_dark_mode">Dark mode</string>
+  <string name="chat_layout">Chat layout</string>
+  <string name="chat_layout_classic">Classic</string>
+  <string name="chat_layout_terminal">Terminal</string>
+  <string name="chat_layout_chat_suffix">(chat)</string>
+  <string name="chat_layout_default_suffix">(default)</string>
 
 
   <!-- Preferences.kt -->
@@ -3087,6 +3096,8 @@
   <!-- GroupMemberInfoView.kt channel-related -->
   <string name="member_info_section_title_relay">Relay</string>
   <string name="member_info_section_title_owner">Owner</string>
+  <string name="member_info_section_title_moderator">Moderator</string>
+  <string name="member_info_section_title_contributor">Contributor</string>
   <string name="member_info_section_title_subscriber">Subscriber</string>
   <string name="info_row_channel">Channel</string>
   <string name="info_row_relay_link">Relay link</string>

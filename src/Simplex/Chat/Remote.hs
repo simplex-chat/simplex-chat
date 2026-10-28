@@ -297,9 +297,9 @@ cancelRemoteHost handlingError = \case
     closeConnection tls
   RHSessionConnected {rchClient, tls, rhClient = RemoteHostClient {httpClient}, pollAction} -> do
     uninterruptibleCancel pollAction
+    unless handlingError $ closeHTTP2Client httpClient `catchAny` (logError . tshow)
     cancelHostClient rchClient `catchAny` (logError . tshow)
     closeConnection tls `catchAny` (logError . tshow)
-    unless handlingError $ closeHTTP2Client httpClient `catchAny` (logError . tshow)
   where
     cancelPendingSession RHPendingSession {rchClient, rhsWaitSession} = do
       unless handlingError $ uninterruptibleCancel rhsWaitSession `catchAny` (logError . tshow)

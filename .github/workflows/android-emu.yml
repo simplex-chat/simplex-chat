@@ -250,13 +250,13 @@ jobs:
           unzip -l "$RUNNER_TEMP/apk/$APK" | grep -E ' lib/'
 
       - name: Upload app
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && needs.plan.outputs.run-claude == 'true' }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         uses: actions/upload-artifact@v7
         with:
           name: android-app
           path: ${{ runner.temp }}/apk/${{ env.APK }}
           compression-level: 0
-          retention-days: 1
+          retention-days: 14
           if-no-files-found: error
 
       - name: Install emulator and system image
