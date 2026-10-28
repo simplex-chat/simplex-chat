@@ -4359,11 +4359,11 @@ Query:
         SELECT via_contact_uri
         FROM connections
         WHERE user_id = ? AND via_short_link_contact = ? AND via_contact_uri IS NOT NULL LIMIT 1
-
+      
 Plan:
 SEARCH connections USING INDEX idx_connections_to_subscribe (user_id=?)
 
-Query:
+Query: 
         UPDATE badge_store_receipts
         SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = ?, hold_kind = ?,
           user_id = COALESCE((SELECT p.user_id FROM badge_purchases p WHERE p.badge_store_receipt_id = ?), user_id)
