@@ -8,6 +8,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -36,7 +37,7 @@ fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean,
             withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(ci.content.text) }
           },
           style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(if (inlineMeta != null) chatTextStyle(16.sp, MaterialTheme.colors.secondary) else TextStyle.Default),
-          modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp).alignByBaseline()
+          modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp).alignBy(LastBaseline)
         )
         if (inlineMeta != null) {
           Box(bubbleMetaOnBaseline()) {

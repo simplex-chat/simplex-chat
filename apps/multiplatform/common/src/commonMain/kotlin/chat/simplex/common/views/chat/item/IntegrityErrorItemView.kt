@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -70,7 +71,7 @@ fun CIMsgError(ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, tai
             withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
           },
           style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(if (inlineMeta != null) chatTextStyle(16.sp, Color.Red) else TextStyle.Default),
-          modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp).alignByBaseline()
+          modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp).alignBy(LastBaseline)
         )
         if (inlineMeta != null) {
           Box(bubbleMetaOnBaseline()) {
