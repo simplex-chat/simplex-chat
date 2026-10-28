@@ -95,6 +95,8 @@ When a relay address link (`/r` path) is opened via URL deep link, `ContentView.
 - **Address creation card** (`AddressCreationCard`): Prompts user to create a SimpleX address
 - **Crowdfunding banner** (`GetStakeBanner`): Shown to users in the US only, above the chats and below the onboarding pages. Tapping it opens `GetStakeView` (invest on Wefunder). The dismiss X appears once the banner has been tapped and there is at least one chat; dismissing hides it until hints are reset
 
+While the search field has text, these cards and the banners (crowdfunding or badges) are hidden; they come back when the text is cleared.
+
 ### Pull-to-Refresh
 
 Triggers `reconnectAllServers()` after user confirmation alert ("Reconnect servers?"). Uses additional traffic to force message delivery.
