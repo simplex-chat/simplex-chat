@@ -2460,7 +2460,8 @@ fun BoxScope.ChatItemsList(
           hasSenderRow = showAvatar
         )
         val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
-        val itemSeparation = rowItemSeparation(merged, groupEvents = !LocalTerminalLayout.current)
+        val eventGapBelow = if (LocalTerminalLayout.current) null else eventRunLargeGap(item, listItem.prevItem)
+        val itemSeparation = rowItemSeparation(merged).let { if (eventGapBelow == null) it else it.copy(timestamp = it.timestamp || eventGapBelow, largeGap = eventGapBelow) }
         val eventGapAbove = if (LocalTerminalLayout.current) null else eventRunLargeGap(merged.oldest().item, older)
         val prevItemSeparationLargeGap: Boolean
         if (eventGapAbove != null) {
@@ -3807,16 +3808,14 @@ private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?): ItemSepa
   )
 }
 
-private fun rowItemSeparation(row: MergedItem, groupEvents: Boolean): ItemSeparation {
+private fun rowItemSeparation(row: MergedItem): ItemSeparation {
   val newest = row.newest()
-  val separation = getItemSeparation(newest.item, if (row.revealed) newest.prevItem else null)
-  val eventGapBelow = if (groupEvents) eventRunLargeGap(newest.item, newest.prevItem) else null
-  return if (eventGapBelow == null) separation else separation.copy(timestamp = separation.timestamp || eventGapBelow, largeGap = eventGapBelow)
+  return getItemSeparation(newest.item, if (row.revealed) newest.prevItem else null)
 }
 
 fun terminalRowsSeparated(olderRow: MergedItem?): Boolean {
   if (olderRow == null) return false
-  return olderRow.newest().item.content is CIContent.ChatBanner || rowItemSeparation(olderRow, groupEvents = false).date != null
+  return olderRow.newest().item.content is CIContent.ChatBanner || rowItemSeparation(olderRow).date != null
 }
 
 private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): Boolean {
