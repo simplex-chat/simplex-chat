@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Installs the APK in the booted emulator (emulator.sh) and runs the scripted UI cases with the ui helper: onboarding to
-# the chat list, a local group, then the chat list with the reachable toolbar (the default) and with the top bar.
+# the chat list, a local group, then the chat list with the reachable toolbar (the default) and with the top bar, where
+# text typed in the search field hides the cards and the banner until the field is cleared.
 # Usage: scripts/ci/android/smoke-test.sh <apk> <output dir> [start|onboarding|layouts|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list. "backend"
 # also adds the test SMP server (NAMES_SERVER, from backend.sh, reached through emulator.sh reverse) under Your servers
@@ -26,8 +27,12 @@ esac
 package=chat.simplex.app
 local_chat="seeded notes"
 search_field="Search or paste SimpleX link"
+# matches "$local_chat", and is too short for a SimpleX name, which would add a row to connect to it
+filter_text=seed
 ui=$(dirname "$0")/ui
 checks=$UI_OUT/checks.txt
+# the Wefunder banner, the reachable toolbars card and the connect cards, which the chat list hides while the search field has text
+cards=("Invest in SimpleX Chat" "Top bar" "New 1-time link")
 mkdir -p "$UI_OUT"
 : > "$checks"
 if [ -n "${GITHUB_ENV:-}" ]; then
@@ -258,6 +263,81 @@ check_layout() {
   fi
 }
 
+not_found() {
+  ! "$ui" find "$1" > /dev/null 2>&1
+}
+
+# the reachable toolbars card or the connect cards, which a new profile's chat list shows until they are closed
+picker_or_connect_card_shown() {
+  local card
+  for card in "${shown_cards[@]}"; do
+    case "$card" in
+      "Top bar" | "New 1-time link") return 0 ;;
+    esac
+  done
+  return 1
+}
+
+# Records which of the cards the chat list shows with the search field empty, in shown_cards.
+cards_with_empty_search() {
+  local layout=$1 card
+  shown_cards=()
+  for card in "${cards[@]}"; do
+    if "$ui" find "$card" > /dev/null 2>&1; then
+      shown_cards+=("$card")
+    fi
+  done
+  echo "NOTE $layout: with the search field empty, the chat list shows: ${shown_cards[*]:-none of the cards}" | tee -a "$checks"
+  check "$layout: the reachable toolbars card or the connect cards shown with the search field empty" picker_or_connect_card_shown
+}
+
+cards_hidden() {
+  local what=$1 card
+  for card in "${shown_cards[@]}"; do
+    check "$what: \"$card\" hidden" not_found "$card"
+  done
+}
+
+# Taps the search field's clear button, a "Close button" in the row of the field that shows the text: the cards have
+# close buttons of their own.
+clear_search() {
+  local top bottom line x y
+  read -r _ _ _ top _ bottom < <("$ui" find "$1") || return 1
+  while IFS= read -r line; do
+    x=${line%%,*}
+    y=${line#*,}
+    y=${y%% *}
+    if [ "${line#* }" = "Close button" ] && [ "$y" -ge "$top" ] && [ "$y" -le "$bottom" ]; then
+      "$ui" click "$x" "$y"
+      return 0
+    fi
+  done < <("$ui" text)
+  return 1
+}
+
+# The clear button also closes the keyboard, so the whole list shows again.
+clear_search_and_check_cards() {
+  local what=$1 card
+  check "$what: the search field's clear button tapped" clear_search "$filter_text"
+  "$ui" wait "$search_field" 10 || true
+  "$ui" shot "$(tr -cd 'a-z-' <<< "${what// /-}")-cleared"
+  for card in "${shown_cards[@]}"; do
+    check "$what: \"$card\" back after clearing the search" "$ui" find "$card"
+  done
+}
+
+# Text typed in the search field that still matches the local chat hides the cards that showed before it.
+check_cards_while_searching() {
+  local layout=$1
+  cards_with_empty_search "$layout"
+  "$ui" click-text "$search_field"
+  "$ui" type "$filter_text"
+  "$ui" shot "$layout-search-typed"
+  check "$layout: \"$local_chat\" listed while searching" "$ui" find "$local_chat"
+  cards_hidden "$layout, search typed"
+  clear_search_and_check_cards "$layout search"
+}
+
 # private routing to unknown servers only: the preset servers that would proxy to the test SMP server can't reach the
 # runner's 127.0.0.1; developer tools at the debug level put the app's debug log in logcat
 started=$SECONDS
@@ -292,8 +372,10 @@ if [ "$cases" != onboarding ]; then
   fi
   create_local_chat
   check_layout reachable
+  check_cards_while_searching reachable
   "$ui" layout top
   check_layout top
+  check_cards_while_searching top
 fi
 check "the app is running and logged no crash" app_running
 

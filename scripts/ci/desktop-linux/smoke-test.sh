@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Starts the desktop app on a virtual display and runs the scripted UI cases with the ui helper: onboarding to the
-# chat list, a local group, then the chat list with the toolbar at the bottom (the default) and at the top.
+# chat list, a local group, then the chat list with the toolbar at the bottom (the default) and at the top, where text
+# typed in the search field hides the cards and the banner until the field is cleared.
 # Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|layouts|setup|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
 # "setup" creates the group, makes the test SMP server (backend.sh) the one that resolves SimpleX names, and stops;
@@ -27,8 +28,12 @@ esac
 # backend.sh registered seeded.testing for ci_contact
 name_label=seeded
 local_chat="seeded notes"
+# matches "$local_chat", and is too short for a SimpleX name, which would add a row to connect to it
+filter_text=seed
 ui=$(dirname "$0")/ui
 checks=$UI_OUT/checks.txt
+# the Wefunder banner, the reachable toolbars card and the connect cards, which the chat list hides while the search field has text
+cards=("Invest in SimpleX Chat" "Top bar" "New 1-time link")
 # switches are at the right of the left pane, where Settings open
 switch_x=335
 mkdir -p "$UI_OUT"
@@ -149,6 +154,83 @@ scroll_to() {
     "$ui" scroll 195 400 down
   done
   return 1
+}
+
+# the phrases in the chat list pane, left of x 390, one per line, normalised; the right pane can show a banner too
+left_pane_text() {
+  local line
+  "$ui" text | while IFS= read -r line; do
+    if [ "${line%%,*}" -lt 390 ]; then
+      normalise "${line#* }"
+      echo
+    fi
+  done
+}
+
+not_in() {
+  ! grep -qF "$(normalise "$2")" <<< "$1"
+}
+
+is_in() {
+  grep -qF "$(normalise "$2")" <<< "$1"
+}
+
+# the reachable toolbars card or the connect cards, which a new profile's chat list shows until they are closed
+picker_or_connect_card_shown() {
+  local card
+  for card in "${shown_cards[@]}"; do
+    case "$card" in
+      "Top bar" | "New 1-time link") return 0 ;;
+    esac
+  done
+  return 1
+}
+
+# Records which of the cards the chat list shows with the search field empty, in shown_cards.
+cards_with_empty_search() {
+  local layout=$1 screen card
+  screen=$(left_pane_text)
+  shown_cards=()
+  for card in "${cards[@]}"; do
+    if is_in "$screen" "$card"; then
+      shown_cards+=("$card")
+    fi
+  done
+  echo "NOTE $layout: with the search field empty, the chat list shows: ${shown_cards[*]:-none of the cards}" | tee -a "$checks"
+  check "$layout: the reachable toolbars card or the connect cards shown with the search field empty" picker_or_connect_card_shown
+}
+
+cards_hidden() {
+  local what=$1 screen card
+  screen=$(left_pane_text)
+  for card in "${shown_cards[@]}"; do
+    check "$what: \"$card\" hidden" not_in "$screen" "$card"
+  done
+}
+
+# Escape clears the search field
+clear_search_and_check_cards() {
+  local what=$1 screen card
+  "$ui" key Escape
+  "$ui" wait "Search or paste SimpleX link" 10 || true
+  "$ui" shot "$(tr -cd 'a-z-' <<< "${what// /-}")-cleared"
+  screen=$(left_pane_text)
+  for card in "${shown_cards[@]}"; do
+    check "$what: \"$card\" back after clearing the search" is_in "$screen" "$card"
+  done
+}
+
+# Text typed in the search field that still matches the local chat hides the cards that showed before it.
+check_cards_while_searching() {
+  local layout=$1
+  cards_with_empty_search "$layout"
+  "$ui" click-text "Search or paste SimpleX link"
+  "$ui" type "$filter_text"
+  sleep 1
+  "$ui" shot "$layout-search-typed"
+  check "$layout: \"$local_chat\" listed while searching" on_screen "$local_chat"
+  cards_hidden "$layout, search typed"
+  clear_search_and_check_cards "$layout search"
 }
 
 # Escape closes one screen at a time, and clears the search field
@@ -365,10 +447,12 @@ if [ "$cases" = setup ] || [ "$cases" = backend ]; then
 fi
 
 check_layout bottom
+check_cards_while_searching bottom
 use_top_toolbar
 check_layout top
+check_cards_while_searching top
 
 if grep -q '^FAIL' "$checks"; then
   fail "the smoke test failed checks: $(grep -c '^FAIL' "$checks") of $(grep -cE '^(PASS|FAIL)' "$checks")"
 fi
-echo "smoke test passed: onboarding reached the chat list, which shows \"$local_chat\" with the toolbar at the bottom and at the top"
+echo "smoke test passed: onboarding reached the chat list, which shows \"$local_chat\" with the toolbar at the bottom and at the top, and hides its cards while the search field has text"
