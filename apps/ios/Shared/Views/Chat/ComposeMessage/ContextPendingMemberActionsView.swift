@@ -98,9 +98,11 @@ func acceptMember(_ groupInfo: GroupInfo, _ member: GroupMember, _ role: GroupMe
     }
 }
 
-#Preview {
-    ContextPendingMemberActionsView(
-        groupInfo: GroupInfo.sampleData,
-        member: GroupMember.sampleData
-    )
+struct ContextPendingMemberActionsView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContextPendingMemberActionsView(
+            groupInfo: GroupInfo.sampleData,
+            member: GroupMember.sampleData
+        )
+    }
 }

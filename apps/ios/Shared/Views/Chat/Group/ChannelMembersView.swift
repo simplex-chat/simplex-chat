@@ -104,9 +104,11 @@ struct ChannelMembersView: View {
     }
 }
 
-#Preview {
-    ChannelMembersView(
-        chat: Chat.sampleData,
-        groupInfo: GroupInfo.sampleData
-    )
+struct ChannelMembersView_Previews: PreviewProvider {
+    static var previews: some View {
+        ChannelMembersView(
+            chat: Chat.sampleData,
+            groupInfo: GroupInfo.sampleData
+        )
+    }
 }

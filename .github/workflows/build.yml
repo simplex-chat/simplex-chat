@@ -1369,6 +1369,10 @@ jobs:
         shell: bash
         run: sudo ln -sfn "$(xcrun --sdk macosx --show-sdk-path)" /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 
+      - name: Check the previews listed in the snapshot tests
+        shell: bash
+        run: python3 "apps/ios/SimpleX Snapshots/check-previews.py"
+
       - name: Build iOS app
         timeout-minutes: 60
         shell: bash
