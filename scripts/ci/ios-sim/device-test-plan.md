@@ -74,7 +74,7 @@ Run these on an iOS simulator or device on the Mac. Each case says what to do an
 | W3 | Paste a link | No "Search in Directory"; the link connects as before |
 | W4 | Press the keyboard **Search** key | The directory results, after the alert while the switch is off; "Connect to …" stays; "Search in Directory" hides while the results show |
 | W5 | Results arrive | One card without a header: the contacts that match, your chats, then the results with 30-pt avatars and "Open", the load row last; no "Your Contacts" header while results show |
-| W6 | Search with no contact matching | "No filtered contacts" is hidden while searching and when there are results; shown when nothing is found anywhere |
+| W6 | Search with no contact matching | "No filtered contacts" is hidden while searching, when there are results and while "Search in Directory" is offered for the text; shown when nothing is found anywhere |
 | W7 | Tap a result or its "Open" | The sheet closes and the chat opens prepared, with no alert |
 | W8 | Long press a result | A menu with "Open", as in D15 |
 | W9 | Close the sheet while a search runs | The spinner stops; the chat list is unaffected |

@@ -332,7 +332,7 @@ tap_element() {
 # chat row. The chat list behind the sheet may be in the tree too, with its own search field (at the bottom with the
 # one-hand UI) and ci_cards row, so the sheet's field is the topmost one and its row is the ci_cards element the search adds.
 search_in_new_chat() {
-  local before row deadline
+  local before row deadline tree
   before=$(labelled ci_cards)
   "$ui" tap Compose
   "$ui" wait "Create 1-time link" 10
@@ -345,6 +345,21 @@ search_in_new_chat() {
     echo "error: in New chat #ci_group is not a result with Open on its row"
     exit 1
   fi
+  tap_element "$(topmost "$("$ui" tree | grep -F 'TextField null value=')")"
+  "$ui" tap Cancel
+  # the profile has no contacts, so New chat's empty state is "No contacts"
+  tap_element "$(topmost "$("$ui" tree | grep -F 'TextField null value="Search or paste SimpleX link"')")"
+  "$ui" type "$no_match_text"
+  sleep 2
+  "$ui" shot new-chat-no-match-typed
+  tree=$("$ui" tree)
+  if ! grep -qF '"Search in Directory"' <<< "$tree" || grep -qF -e '"No contacts"' -e '"No filtered contacts"' <<< "$tree"; then
+    echo "error: for \"$no_match_text\" New chat doesn't offer \"Search in Directory\", or shows its empty state before searching"
+    exit 1
+  fi
+  tap_search_in_directory
+  "$ui" wait '"No contacts"' 30
+  "$ui" shot new-chat-no-match-searched
   tap_element "$(topmost "$("$ui" tree | grep -F 'TextField null value=')")"
   "$ui" tap Cancel
   tap_element "$(topmost "$("$ui" tree | grep -F 'TextField null value="Search or paste SimpleX link"')")"
@@ -366,7 +381,7 @@ search_in_new_chat() {
   "$ui" wait "you are subscriber" 30
   "$ui" shot known-chat-opened-new-chat
   "$ui" tap Back
-  echo "in New chat #ci_group is a result with Open, and the directory result for the joined ci_cards is its chat row ($row), which closes the sheet and opens the channel"
+  echo "in New chat #ci_group is a result with Open, \"No contacts\" shows only once the search for \"$no_match_text\" found nothing, and the directory result for the joined ci_cards is its chat row ($row), which closes the sheet and opens the channel"
 }
 
 xcrun simctl install "$SIM_UDID" "$app"

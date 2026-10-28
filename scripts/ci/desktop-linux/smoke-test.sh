@@ -14,7 +14,7 @@
 # of chats already listed adds nothing and that ci_channel, when the list doesn't show it, is its chat's row among the
 # results, opening it without an alert; and, with the toolbar at the bottom, that it is a chat row in New chat too.
 # Restarted with no chat open, a text that matches nothing offers the directory, and "No chats found" shows only once
-# the directory found nothing too.
+# the directory found nothing too; and, with ci_contact prepared through its name, New chat's "No filtered contacts" too.
 # These three need NAMES_SERVER, the test SMP server's address.
 # Each step saves a numbered screenshot and the text read from it to the output dir, prints the text to the log,
 # and adds a line to steps.log there. What the screens show is checked without stopping: every check is listed in
@@ -441,6 +441,34 @@ no_match_search() {
   "$ui" shot "$layout-no-match-searched"
   check "$layout: \"No chats found\" once the directory search found nothing" on_screen "No chats found"
   clear_search_field "$layout"
+}
+
+# New chat shows its empty state, "No filtered contacts", only when it lists contacts: "Open new chat" for the registered
+# name prepares ci_contact first. A text that matches no contact offers the directory, and the empty state waits for its
+# search to find nothing.
+new_chat_no_match_search() {
+  "$ui" click-text "Search or paste SimpleX link"
+  "$ui" type "$name_label"
+  "$ui" click-text "Connect to $name_label.testing" 15
+  "$ui" click-text "Open new chat" 60 || fail "no \"Open new chat\" for $name_label.testing"
+  back_to_chat_list || fail "no chat list after opening the new chat with ci_contact"
+  "$ui" click 363 730
+  "$ui" wait "Create group" 10
+  "$ui" click-text "Search or paste SimpleX link"
+  "$ui" type "$no_match_text"
+  "$ui" wait "Search in Directory" 15 || true
+  "$ui" shot new-chat-no-match-typed
+  check "New chat: \"Search in Directory\" offered for \"$no_match_text\"" on_screen "Search in Directory"
+  check "New chat: no \"No filtered contacts\" before the directory search" not_on_screen "No filtered contacts"
+  "$ui" click-text "Search in Directory"
+  "$ui" wait "No filtered contacts" 30 || true
+  "$ui" shot new-chat-no-match-searched
+  check "New chat: \"No filtered contacts\" once the directory search found nothing" on_screen "No filtered contacts"
+  # with the toolbar at the bottom Escape only clears the sheet's search; its back arrow closes it
+  "$ui" key Escape
+  "$ui" wait "Create group" 10
+  "$ui" click 27 730
+  back_to_chat_list || fail "no chat list after the New chat sheet"
 }
 
 # The same Search key from the New chat sheet: one group of results, the contacts that match first, with Open on the results.
@@ -923,13 +951,14 @@ if [ "$cases" = search ]; then
   "$ui" start "$app_dir"
   "$ui" wait "Search or paste SimpleX link" 120 || fail "no chat list after restarting the app"
   no_match_search bottom
+  new_chat_no_match_search
 fi
 
 if grep -q '^FAIL' "$checks"; then
   fail "the smoke test failed checks: $(grep -c '^FAIL' "$checks") of $(grep -cE '^(PASS|FAIL)' "$checks")"
 fi
 if [ "$cases" = search ]; then
-  echo "smoke test passed: onboarding reached the chat list with the toolbar at the bottom and at the top, the first search enabled Directory search, the searches showed one list of results with Open and the load row, \"No chats found\" waited for a directory search that found nothing, Open opened the prepared ci_channel without an alert, and the joined ci_channel is a chat row among the results (chat list in both layouts, New chat), and a page of chats already listed adds nothing"
+  echo "smoke test passed: onboarding reached the chat list with the toolbar at the bottom and at the top, the first search enabled Directory search, the searches showed one list of results with Open and the load row, \"No chats found\" and New chat's \"No filtered contacts\" waited for a directory search that found nothing, Open opened the prepared ci_channel without an alert, and the joined ci_channel is a chat row among the results (chat list in both layouts, New chat), and a page of chats already listed adds nothing"
   exit 0
 fi
 echo "smoke test passed: onboarding reached the chat list, which shows \"$local_chat\" with the toolbar at the bottom and at the top"
