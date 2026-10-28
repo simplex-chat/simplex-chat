@@ -25,7 +25,7 @@ Single-owner channels, and channels whose owner invitations nobody accepted, kee
 
 The channel's link data lives on one SMP server, the link server, which already orders every write to it. The design makes it order everything the owners share ([diagram 1](2026-10-15-channel-multi-owner-s3min-sketches/1-components.svg)):
 
-- **One new server command, `LSWP`.** An owner keeps a copy of the link data, makes its one change to it, and writes it back with the hash of the copy; the server accepts it only if the data is unchanged, replacing the owner keys in the same step. Otherwise the server answers with the current data, and the owner re-applies its change to it, so no read comes before or after a write ([diagram 2](2026-10-15-channel-multi-owner-s3min-sketches/2-owner-write.svg)).
+- **One new server command, `LSWP`.** An owner keeps a copy of the link data, makes its one change to it, and writes it back with the hash of the copy; the server accepts it only if the data is unchanged, replacing the owner keys in the same step. Otherwise the server answers with the current data, and the owner re-applies its change to it, with no read ([diagram 2](2026-10-15-channel-multi-owner-s3min-sketches/2-owner-write.svg)).
 - **Role changes are numbered on the link server**, claimed with the same command from the complete current roster, so each version has one author who had all earlier ones, as members and relays expect today ([diagram 3](2026-10-15-channel-multi-owner-s3min-sketches/3-roster-claims.svg)).
 - **Consent.** The promoter invites the member in its support chat; the member accepts; one write adds it. The verified security code stops a relay that substituted the member's key ([diagram 4](2026-10-15-channel-multi-owner-s3min-sketches/4-promotion.svg)).
 - **Background work** (finishing a promotion, publishing relays and the count, repairing the link after a race, re-sending a roster) runs as agent commands the agent stores and retries; each step works out what is left from the latest link data.
@@ -41,9 +41,9 @@ The channel's link data lives on one SMP server, the link server, which already 
 | Optional parts | left out: invitation cancel, field-by-field profile merge, equal-version tie-break, retiring the root key |
 | Server command | today's write with the hash and the owner keys, for now: room for 6 keys, so at most 5 owners while the creator is one (its queue key takes one) and 6 after it leaves |
 | Today's write on a link several owners write | refused by the server, so a stale or downgraded single-owner write can't erase other owners' changes |
-| A refused write | answered with the current data, so no read follows a write |
+| A refused write | answered with the current data, so no read follows it |
 | What a write starts from | each owner's stored copy of the link data; it reads first only without a usable one, and to confirm a refusal the copy shows; owners also read at channel open and app start |
-| Server code version | the first slice starts from the version simplex-chat uses now and adapts the server design to it |
+| Server code version | the first slice starts from the version this branch pins (`8bc4d360`) and adapts the server design to it |
 | Relays and owner actions | as today, not checked against the link: owners are trusted, and relays cannot forge their actions |
 | A removal at the moment of a promotion | the promotion wins: devices that applied the removal follow the link |
 | Blocking and unblocking | not ordered, as in groups today |
