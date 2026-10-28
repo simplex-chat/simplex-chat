@@ -26,6 +26,7 @@
     <rect x="106" y="322" width="82" height="60" rx="10" fill="#ffffff"/><use href="#i-phone" x="147" y="344" fill="#c7c7cc"/><text x="147" y="372" font-size="12" fill="#c7c7cc" text-anchor="middle">call</text>
     <rect x="196" y="322" width="82" height="60" rx="10" fill="#ffffff"/><use href="#i-video" x="237" y="344" fill="#c7c7cc"/><text x="237" y="372" font-size="12" fill="#c7c7cc" text-anchor="middle">video</text>
     <rect x="286" y="322" width="82" height="60" rx="10" fill="#ffffff"/><use href="#i-bell" x="327" y="344" stroke="#0088ff"/><text x="327" y="372" font-size="12" fill="#0088ff" text-anchor="middle">mute</text>
+    <rect x="102" y="318" width="180" height="68" rx="12" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
 
     <rect x="16" y="406" width="358" height="132" rx="10" fill="#ffffff"/>
     <use href="#i-switch" x="46" y="428"/><text x="72" y="433" font-size="17">Contact preferences</text><text x="362" y="433" font-size="17" fill="#c7c7cc">›</text>

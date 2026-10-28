@@ -75,8 +75,8 @@
     <rect x="60" y="346" width="270" height="152" rx="14" fill="#f2f2f2"/>
     <text x="195" y="376" font-size="17" font-weight="600" text-anchor="middle">Turned off by</text>
     <text x="195" y="397" font-size="17" font-weight="600" text-anchor="middle">parental controls</text>
-    <text x="195" y="420" font-size="13" text-anchor="middle">Sending files is off. A parent can</text>
-    <text x="195" y="437" font-size="13" text-anchor="middle">change this in Parental controls.</text>
+    <text x="195" y="420" font-size="13" text-anchor="middle">Sending files and media is off. A parent</text>
+    <text x="195" y="437" font-size="13" text-anchor="middle">can change this in Parental controls.</text>
     <path d="M60,454 H330" stroke="#c6c6c8" stroke-width="0.6"/>
     <text x="195" y="482" font-size="17" fill="#0088ff" text-anchor="middle" font-weight="600">OK</text>
     <rect x="56" y="342" width="278" height="160" rx="16" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>

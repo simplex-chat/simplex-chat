@@ -5,7 +5,7 @@
   <text x="0" y="22" font-size="15" font-weight="600" fill="#162120">1. Connecting to someone new</text>
   <text x="330" y="22" font-size="15" font-weight="600" fill="#162120">2. After the PIN: the contact's name</text>
   <text x="660" y="22" font-size="15" font-weight="600" fill="#162120">3. After the PIN: the group's name</text>
-  <text x="0" y="318" font-size="15" font-weight="600" fill="#162120">4. After the PIN: a link with no name</text>
+  <text x="0" y="318" font-size="15" font-weight="600" fill="#162120">4. A link with no name: no Allow once</text>
   <text x="330" y="318" font-size="15" font-weight="600" fill="#162120">5. Joining a group</text>
   <text x="660" y="318" font-size="15" font-weight="600" fill="#162120">6. Any other switch</text>
 
@@ -49,14 +49,15 @@
 
   <g transform="translate(0,332)">
     <rect width="300" height="240" rx="12" fill="#8f8f93"/>
-    <rect x="15" y="54" width="270" height="132" rx="14" fill="#f2f2f2"/>
-    <text x="150" y="85" font-size="17" font-weight="600" text-anchor="middle">Allow once?</text>
-    <text x="150" y="108" font-size="13" text-anchor="middle">This older link has no name in it.</text>
-    <text x="150" y="125" font-size="13" text-anchor="middle">Ask who it is before allowing.</text>
-    <path d="M15,142 H285 M150,142 V186" stroke="#c6c6c8" stroke-width="0.6"/>
-    <text x="82" y="170" font-size="17" fill="#0088ff" text-anchor="middle">Cancel</text>
-    <text x="218" y="170" font-size="17" fill="#0088ff" text-anchor="middle" font-weight="600">Allow</text>
-    <rect x="11" y="50" width="278" height="140" rx="16" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+    <rect x="15" y="35" width="270" height="170" rx="14" fill="#f2f2f2"/>
+    <text x="150" y="65" font-size="17" font-weight="600" text-anchor="middle">Turned off by</text>
+    <text x="150" y="86" font-size="17" font-weight="600" text-anchor="middle">parental controls</text>
+    <text x="150" y="109" font-size="13" text-anchor="middle">Connecting to new people is off. This</text>
+    <text x="150" y="126" font-size="13" text-anchor="middle">older link has no name in it, so it can't</text>
+    <text x="150" y="143" font-size="13" text-anchor="middle">be allowed once: ask for a new link.</text>
+    <path d="M15,161 H285" stroke="#c6c6c8" stroke-width="0.6"/>
+    <text x="150" y="189" font-size="17" fill="#0088ff" text-anchor="middle" font-weight="600">OK</text>
+    <rect x="11" y="31" width="278" height="178" rx="16" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
   </g>
 
   <g transform="translate(330,332)">
@@ -84,5 +85,5 @@
     <rect x="11" y="40" width="278" height="160" rx="16" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
   </g>
 
-  <text x="0" y="592" font-size="12" fill="#56625f">System alerts, as the app's other alerts (showAlert). "Allow once" asks for the PIN, then shows panel 2, 3 or 4; "Allow" lets that one connection go through.</text>
+  <text x="0" y="592" font-size="12" fill="#56625f">System alerts, as the app's other alerts (showAlert). "Allow once" asks for the PIN, then shows panel 2 or 3; "Allow" lets that one connection go through.</text>
 </svg>

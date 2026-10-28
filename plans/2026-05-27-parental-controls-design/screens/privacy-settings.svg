@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="820" height="910" viewBox="0 0 820 910" font-family="-apple-system, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#000000">
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="928" viewBox="0 0 820 928" font-family="-apple-system, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#000000">
   <title>Your privacy, with the Parental controls row</title>
   <defs>
     <g id="i-lock" fill="none" stroke="#8a8a8e" stroke-width="1.6"><rect x="-7" y="-2" width="14" height="10" rx="2"/><path d="M-4.5,-2 V-5 A4.5,4.5 0 0 1 4.5,-5 V-2"/></g>
@@ -16,13 +16,13 @@
     <g id="t-on"><rect width="51" height="31" rx="15.5" fill="#34c759"/><circle cx="35.5" cy="15.5" r="13.5" fill="#ffffff"/></g>
     <g id="t-off"><rect width="51" height="31" rx="15.5" fill="#e9e9eb"/><circle cx="15.5" cy="15.5" r="13.5" fill="#ffffff" stroke="#d1d1d6" stroke-width="0.5"/></g>
   </defs>
-  <rect width="820" height="910" fill="#ffffff"/>
+  <rect width="820" height="928" fill="#ffffff"/>
 
   <text x="0" y="22" font-size="15" font-weight="600" fill="#162120">Parental controls off</text>
   <text x="430" y="22" font-size="15" font-weight="600" fill="#162120">Parental controls on</text>
 
   <g transform="translate(0,36)">
-    <rect width="390" height="836" rx="24" fill="#f2f2f7" stroke="#d0d5d4"/>
+    <rect width="390" height="854" rx="24" fill="#f2f2f7" stroke="#d0d5d4"/>
     <text x="16" y="36" font-size="17" fill="#0088ff">‹ Your settings</text>
     <text x="20" y="84" font-size="32" font-weight="700">Your privacy</text>
 
@@ -61,7 +61,7 @@
   </g>
 
   <g transform="translate(430,36)">
-    <rect width="390" height="836" rx="24" fill="#f2f2f7" stroke="#d0d5d4"/>
+    <rect width="390" height="854" rx="24" fill="#f2f2f7" stroke="#d0d5d4"/>
     <text x="16" y="36" font-size="17" fill="#0088ff">‹ Your settings</text>
     <text x="20" y="84" font-size="32" font-weight="700">Your privacy</text>
 
@@ -96,12 +96,13 @@
     <path d="M72,676 H374" stroke="#c6c6c8" stroke-width="0.5"/>
     <use href="#i-person2" x="46" y="698"/><text x="72" y="703" font-size="17">Group invitations</text><use href="#t-off" x="313" y="682"/>
     <text x="36" y="740" font-size="13" fill="#8a8a8e">These settings are for your current profile <tspan font-weight="700">Anna</tspan>.</text>
-    <text x="36" y="760" font-size="13" fill="#8a8a8e">Paused by parental controls.</text>
-    <rect x="28" y="746" width="334" height="22" rx="6" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+    <text x="36" y="760" font-size="13" fill="#8a8a8e">Contact requests in groups: paused by parental controls.</text>
+    <text x="36" y="778" font-size="13" fill="#8a8a8e">Group invitations: paused by parental controls.</text>
+    <rect x="28" y="746" width="346" height="40" rx="6" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
 
-    <rect x="16" y="784" width="358" height="44" rx="10" fill="#ffffff"/>
-    <use href="#i-dots" x="46" y="806"/><text x="72" y="811" font-size="17">More privacy</text><text x="362" y="811" font-size="17" fill="#c7c7cc">›</text>
+    <rect x="16" y="802" width="358" height="44" rx="10" fill="#ffffff"/>
+    <use href="#i-dots" x="46" y="824"/><text x="72" y="829" font-size="17">More privacy</text><text x="362" y="829" font-size="17" fill="#c7c7cc">›</text>
   </g>
 
-  <text x="0" y="898" font-size="12" fill="#56625f">Dashed outline: new. From PrivacySettings.swift at master 85ba221d7; the Directory search row is added by pull request 7881 (e90838ea9).</text>
+  <text x="0" y="916" font-size="12" fill="#56625f">Dashed outline: new. From PrivacySettings.swift at master 85ba221d7; the Directory search row is added by pull request 7881 (e90838ea9).</text>
 </svg>

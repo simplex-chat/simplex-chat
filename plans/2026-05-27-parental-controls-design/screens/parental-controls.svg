@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1250" height="930" viewBox="0 0 1250 930" font-family="-apple-system, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#000000">
+<svg xmlns="http://www.w3.org/2000/svg" width="1250" height="966" viewBox="0 0 1250 966" font-family="-apple-system, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#000000">
   <title>The parental controls screen: before a PIN, setup, and on</title>
   <defs>
     <g id="i-personplus" fill="none" stroke="#8a8a8e" stroke-width="1.6"><circle cx="-2.5" cy="-4" r="4"/><path d="M-10,9 C-10,3 5,3 5,9"/><path d="M7,-6 V0 M4,-3 H10"/></g>
@@ -11,14 +11,14 @@
     <g id="t-on"><rect width="51" height="31" rx="15.5" fill="#34c759"/><circle cx="35.5" cy="15.5" r="13.5" fill="#ffffff"/></g>
     <g id="t-off"><rect width="51" height="31" rx="15.5" fill="#e9e9eb"/><circle cx="15.5" cy="15.5" r="13.5" fill="#ffffff" stroke="#d1d1d6" stroke-width="0.5"/></g>
   </defs>
-  <rect width="1250" height="930" fill="#ffffff"/>
+  <rect width="1250" height="966" fill="#ffffff"/>
 
   <text x="0" y="22" font-size="15" font-weight="600" fill="#162120">1. Before a PIN is set</text>
   <text x="430" y="22" font-size="15" font-weight="600" fill="#162120">2. Setup, after the PIN, with the defaults</text>
   <text x="860" y="22" font-size="15" font-weight="600" fill="#162120">3. On, opened with the PIN</text>
 
   <g transform="translate(0,36)">
-    <rect width="390" height="540" rx="24" fill="#f2f2f7" stroke="#17708a" stroke-width="1.4" stroke-dasharray="6 4"/>
+    <rect width="390" height="570" rx="24" fill="#f2f2f7" stroke="#17708a" stroke-width="1.4" stroke-dasharray="6 4"/>
     <text x="16" y="36" font-size="17" fill="#0088ff">‹ Your privacy</text>
     <text x="20" y="84" font-size="32" font-weight="700">Parental controls</text>
     <g font-size="16">
@@ -26,20 +26,22 @@
       <text x="20" y="151">groups, calls, files and media on this</text>
       <text x="20" y="172">phone. A PIN the child doesn't know</text>
       <text x="20" y="193">protects the switches.</text>
-      <text x="20" y="226">The PIN never opens the child's chats,</text>
-      <text x="20" y="247">contacts or groups.</text>
-      <text x="20" y="280">This stops casual use: deleting the app</text>
-      <text x="20" y="301">removes the controls. To prevent that, in</text>
-      <text x="20" y="322">iPhone Settings: Screen Time → Content &amp;</text>
-      <text x="20" y="343">Privacy Restrictions → iTunes &amp; App Store</text>
-      <text x="20" y="364">Purchases → Deleting Apps → Don't Allow.</text>
+      <text x="20" y="226">The PIN never opens the child's chats.</text>
+      <text x="20" y="259">This stops casual use: deleting the app</text>
+      <text x="20" y="280">removes the controls. To prevent that, in</text>
+      <text x="20" y="301">iPhone Settings: Screen Time → Content &amp;</text>
+      <text x="20" y="322">Privacy Restrictions → iTunes &amp; App Store</text>
+      <text x="20" y="343">Purchases → Deleting Apps → Don't Allow.</text>
+      <text x="20" y="376">If the PIN is forgotten, only deleting</text>
+      <text x="20" y="397">the app removes the controls, and the</text>
+      <text x="20" y="418">chats go with it.</text>
     </g>
-    <rect x="16" y="400" width="358" height="50" rx="12" fill="#0088ff"/>
-    <text x="195" y="431" font-size="17" font-weight="600" fill="#ffffff" text-anchor="middle">Set parent PIN</text>
+    <rect x="16" y="450" width="358" height="50" rx="12" fill="#0088ff"/>
+    <text x="195" y="481" font-size="17" font-weight="600" fill="#ffffff" text-anchor="middle">Set parent PIN</text>
   </g>
 
   <g transform="translate(430,36)">
-    <rect width="390" height="600" rx="24" fill="#f2f2f7" stroke="#17708a" stroke-width="1.4" stroke-dasharray="6 4"/>
+    <rect width="390" height="640" rx="24" fill="#f2f2f7" stroke="#17708a" stroke-width="1.4" stroke-dasharray="6 4"/>
     <text x="16" y="36" font-size="17" fill="#0088ff">‹ Your privacy</text>
     <text x="20" y="84" font-size="32" font-weight="700">Parental controls</text>
     <text x="36" y="122" font-size="13" fill="#8a8a8e">ALLOWED ON THIS PHONE</text>
@@ -52,19 +54,21 @@
     <path d="M72,264 H374" stroke="#c6c6c8" stroke-width="0.5"/>
     <use href="#i-phone" x="46" y="286"/><text x="72" y="291" font-size="17">Calls</text><use href="#t-on" x="313" y="270"/>
     <path d="M72,308 H374" stroke="#c6c6c8" stroke-width="0.5"/>
-    <use href="#i-clip" x="46" y="330"/><text x="72" y="335" font-size="17">Sending files</text><use href="#t-on" x="313" y="314"/>
+    <use href="#i-clip" x="46" y="330"/><text x="72" y="335" font-size="17">Sending files and media</text><use href="#t-on" x="313" y="314"/>
     <path d="M72,352 H374" stroke="#c6c6c8" stroke-width="0.5"/>
-    <use href="#i-mic" x="46" y="374"/><text x="72" y="379" font-size="17">Voice messages</text><use href="#t-on" x="313" y="358"/>
+    <use href="#i-mic" x="46" y="374"/><text x="72" y="379" font-size="17">Sending voice messages</text><use href="#t-on" x="313" y="358"/>
     <path d="M72,396 H374" stroke="#c6c6c8" stroke-width="0.5"/>
     <use href="#i-photo" x="46" y="418"/><text x="72" y="423" font-size="17">Receiving files and media</text><use href="#t-on" x="313" y="402"/>
     <text x="36" y="460" font-size="13" fill="#8a8a8e">Switched off on every chat profile.</text>
     <text x="36" y="478" font-size="13" fill="#8a8a8e">Connecting and joining groups offer "Allow once".</text>
-    <rect x="16" y="510" width="358" height="50" rx="12" fill="#0088ff"/>
-    <text x="195" y="541" font-size="17" font-weight="600" fill="#ffffff" text-anchor="middle">Turn on parental controls</text>
+    <text x="36" y="496" font-size="13" fill="#8a8a8e">Groups and channels already joined stay, and a</text>
+    <text x="36" y="514" font-size="13" fill="#8a8a8e">channel the child owns keeps admitting subscribers.</text>
+    <rect x="16" y="548" width="358" height="50" rx="12" fill="#0088ff"/>
+    <text x="195" y="579" font-size="17" font-weight="600" fill="#ffffff" text-anchor="middle">Turn on parental controls</text>
   </g>
 
   <g transform="translate(860,36)">
-    <rect width="390" height="860" rx="24" fill="#f2f2f7" stroke="#17708a" stroke-width="1.4" stroke-dasharray="6 4"/>
+    <rect width="390" height="896" rx="24" fill="#f2f2f7" stroke="#17708a" stroke-width="1.4" stroke-dasharray="6 4"/>
     <text x="16" y="36" font-size="17" fill="#0088ff">‹ Your privacy</text>
     <text x="20" y="84" font-size="32" font-weight="700">Parental controls</text>
     <text x="36" y="122" font-size="13" fill="#8a8a8e">ALLOWED ON THIS PHONE</text>
@@ -77,30 +81,32 @@
     <path d="M72,264 H374" stroke="#c6c6c8" stroke-width="0.5"/>
     <use href="#i-phone" x="46" y="286"/><text x="72" y="291" font-size="17">Calls</text><use href="#t-off" x="313" y="270"/>
     <path d="M72,308 H374" stroke="#c6c6c8" stroke-width="0.5"/>
-    <use href="#i-clip" x="46" y="330"/><text x="72" y="335" font-size="17">Sending files</text><use href="#t-on" x="313" y="314"/>
+    <use href="#i-clip" x="46" y="330"/><text x="72" y="335" font-size="17">Sending files and media</text><use href="#t-on" x="313" y="314"/>
     <path d="M72,352 H374" stroke="#c6c6c8" stroke-width="0.5"/>
-    <use href="#i-mic" x="46" y="374"/><text x="72" y="379" font-size="17">Voice messages</text><use href="#t-on" x="313" y="358"/>
+    <use href="#i-mic" x="46" y="374"/><text x="72" y="379" font-size="17">Sending voice messages</text><use href="#t-on" x="313" y="358"/>
     <path d="M72,396 H374" stroke="#c6c6c8" stroke-width="0.5"/>
     <use href="#i-photo" x="46" y="418"/><text x="72" y="423" font-size="17">Receiving files and media</text><use href="#t-off" x="313" y="402"/>
     <text x="36" y="460" font-size="13" fill="#8a8a8e">Switched off on every chat profile.</text>
     <text x="36" y="478" font-size="13" fill="#8a8a8e">Connecting and joining groups offer "Allow once".</text>
+    <text x="36" y="496" font-size="13" fill="#8a8a8e">Groups and channels already joined stay, and a</text>
+    <text x="36" y="514" font-size="13" fill="#8a8a8e">channel the child owns keeps admitting subscribers.</text>
 
-    <text x="36" y="516" font-size="13" fill="#8a8a8e">ALWAYS ALLOWED</text>
-    <rect x="16" y="526" width="358" height="104" rx="10" fill="#ffffff"/>
-    <circle cx="50" cy="552" r="18" fill="#c7c7cc"/><text x="50" y="558" font-size="16" fill="#ffffff" text-anchor="middle" font-weight="600">M</text>
-    <text x="80" y="558" font-size="17">Mum</text>
-    <path d="M80,578 H374" stroke="#c6c6c8" stroke-width="0.5"/>
-    <circle cx="50" cy="604" r="18" fill="#c7c7cc"/><text x="50" y="610" font-size="16" fill="#ffffff" text-anchor="middle" font-weight="600">G</text>
-    <text x="80" y="610" font-size="17">Grandma Elisabeth-Marga…</text>
-    <text x="36" y="650" font-size="13" fill="#8a8a8e">Calls, files, voice and media always work with</text>
-    <text x="36" y="668" font-size="13" fill="#8a8a8e">these contacts of your current profile <tspan font-weight="700">Anna</tspan>.</text>
-    <text x="36" y="686" font-size="13" fill="#8a8a8e">Add a contact on its page. Tap one to remove it.</text>
+    <text x="36" y="552" font-size="13" fill="#8a8a8e">ALWAYS ALLOWED</text>
+    <rect x="16" y="562" width="358" height="104" rx="10" fill="#ffffff"/>
+    <circle cx="50" cy="588" r="18" fill="#c7c7cc"/><text x="50" y="594" font-size="16" fill="#ffffff" text-anchor="middle" font-weight="600">M</text>
+    <text x="80" y="594" font-size="17">Mum</text>
+    <path d="M80,614 H374" stroke="#c6c6c8" stroke-width="0.5"/>
+    <circle cx="50" cy="640" r="18" fill="#c7c7cc"/><text x="50" y="646" font-size="16" fill="#ffffff" text-anchor="middle" font-weight="600">G</text>
+    <text x="80" y="646" font-size="17">Grandma Elisabeth-Marga…</text>
+    <text x="36" y="686" font-size="13" fill="#8a8a8e">Calls, files, voice and media always work with</text>
+    <text x="36" y="704" font-size="13" fill="#8a8a8e">these contacts of your current profile <tspan font-weight="700">Anna</tspan>.</text>
+    <text x="36" y="722" font-size="13" fill="#8a8a8e">Add a contact on its page. Tap one to remove it.</text>
 
-    <rect x="16" y="714" width="358" height="44" rx="10" fill="#ffffff"/>
-    <text x="36" y="741" font-size="17" fill="#0088ff">Change parent PIN</text>
-    <rect x="16" y="786" width="358" height="44" rx="10" fill="#ffffff"/>
-    <text x="36" y="813" font-size="17" fill="#ff3b30">Turn off parental controls</text>
+    <rect x="16" y="750" width="358" height="44" rx="10" fill="#ffffff"/>
+    <text x="36" y="777" font-size="17" fill="#0088ff">Change parent PIN</text>
+    <rect x="16" y="822" width="358" height="44" rx="10" fill="#ffffff"/>
+    <text x="36" y="849" font-size="17" fill="#ff3b30">Turn off parental controls</text>
   </g>
 
-  <text x="0" y="918" font-size="12" fill="#56625f">Dashed outline: a new screen. A switch that is on allows the feature. The Always allowed list is hidden while calls, files, voice and media are all on.</text>
+  <text x="0" y="954" font-size="12" fill="#56625f">Dashed outline: a new screen. A switch that is on allows the feature. The Always allowed list is hidden while calls, files, voice and media are all on.</text>
 </svg>

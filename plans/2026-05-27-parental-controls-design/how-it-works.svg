@@ -44,13 +44,13 @@
   <text x="656" y="126" font-size="12">Contacts, groups: "Allow once".</text>
   <text x="656" y="143" font-size="12">The parent enters the PIN, sees</text>
   <text x="656" y="160" font-size="12">the name, and that one goes ahead</text>
-  <text x="656" y="177" font-size="11.5" fill="#56625f">Other switches change in Settings</text>
+  <text x="656" y="177" font-size="11.5" fill="#56625f">Others change in Parental controls</text>
 
   <text x="460" y="21" font-size="11" text-anchor="middle" fill="#56625f">switches passed to the core at every start</text>
   <rect x="644" y="6" width="228" height="66" rx="8" fill="#ffffff" stroke="#d9e1df"/>
   <text x="656" y="26" font-size="12.5" font-weight="600">Parental mode in the core</text>
   <text x="656" y="44" font-size="12">Pauses auto-accepts, inline files</text>
-  <text x="656" y="62" font-size="12">Calls ring only if always allowed</text>
+  <text x="656" y="62" font-size="11.5">Calls off: always-allowed still ring</text>
 
   <rect x="644" y="198" width="228" height="44" rx="8" fill="#ffffff" stroke="#d9e1df"/>
   <text x="656" y="218" font-size="12.5" font-weight="600">What contacts see</text>

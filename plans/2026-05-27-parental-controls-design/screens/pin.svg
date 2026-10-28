@@ -21,7 +21,7 @@
     <rect width="390" height="844" rx="24" fill="#ffffff" stroke="#d0d5d4"/>
     <text x="195" y="76" font-size="28" font-weight="700" text-anchor="middle">New parent PIN</text>
     <text x="195" y="108" font-size="17" text-anchor="middle">At least 6 digits</text>
-    <rect x="70" y="92" width="250" height="24" rx="6" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+    <rect x="30" y="50" width="330" height="70" rx="8" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
     <text x="195" y="358" font-size="17" text-anchor="middle">●●●●</text>
     <use href="#pad"/>
     <g font-size="17" fill="#0088ff"><path d="M97,808 L107,818 M107,808 L97,818" stroke="#0088ff" stroke-width="2"/><text x="114" y="819">Cancel</text></g>
@@ -51,7 +51,7 @@
     <rect x="60" y="342" width="270" height="140" rx="14" fill="#f2f2f2"/>
     <text x="195" y="377" font-size="17" font-weight="600" text-anchor="middle">Incorrect PIN</text>
     <text x="195" y="399" font-size="13" text-anchor="middle">The parent PIN didn't match.</text>
-    <text x="195" y="416" font-size="13" text-anchor="middle">Nothing was allowed.</text>
+    <text x="195" y="416" font-size="13" text-anchor="middle">Nothing was changed.</text>
     <path d="M60,438 H330 M195,438 V482" stroke="#c6c6c8" stroke-width="0.6"/>
     <text x="127" y="466" font-size="17" fill="#0088ff" text-anchor="middle">Cancel</text>
     <text x="262" y="466" font-size="17" fill="#0088ff" text-anchor="middle" font-weight="600">Try again</text>
