@@ -108,6 +108,9 @@ chatProfileTests = do
     it "retry connecting via contact link" testRetryConnectingViaContactLink
     it "retry connecting via address in contact profile after address keys rotation" testRetryConnectingContactViaAddress
     it "connections prepared for failed joins are shown in chat list" testFailedConnectViaLinksInChatList
+#if !defined(dbPostgres)
+    it "failed join to an address leaves no receive queue after deleting the connection" testFailedConnectDeletesRcvQueue
+#endif
     it "add contact link to profile" testProfileLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
     it "deduplicate contact requests" testDeduplicateContactRequests
@@ -1589,6 +1592,36 @@ testFailedConnectViaLinksInChatList ps = testChatOpts2 opts' aliceProfile bobPro
               { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
               }
         }
+
+#if !defined(dbPostgres)
+testFailedConnectDeletesRcvQueue :: HasCallStack => TestParams -> IO ()
+testFailedConnectDeletesRcvQueue ps = testChat2 aliceProfile bobProfile test ps
+  where
+    test alice bob = do
+      cLink <- withSmpServer' altServerCfg $ do
+        alice ##> ("/_address 1 " <> smpServer2Str ps)
+        getContactLink alice True
+      alice <## "disconnected 1 connections on server localhost"
+      bob ##> ("/_connect 1 " <> cLink)
+      bob <##. "smp agent error: BROKER"
+      bob @@@ [(":1", "")]
+      rcvQueueCount bob `shouldReturn` "1"
+      bob ##> "/_delete :1"
+      bob <## "connection :1 deleted"
+      bob @@@ []
+      waitRcvQueueCount bob "0" (50 :: Int)
+    altServerCfg =
+      (smpServerCfg ps) {transports = [(smpTestPort2 ps, transport @TLS, False)]}
+    rcvQueueCount cc = do
+      cc ##> "/sql agent SELECT count(*) FROM rcv_queues"
+      cc <## "count(*)"
+      getTermLine cc
+    waitRcvQueueCount cc expected n = do
+      count <- rcvQueueCount cc
+      if count == expected || n <= 0
+        then count `shouldBe` expected
+        else threadDelay 100000 >> waitRcvQueueCount cc expected (n - 1)
+#endif
 
 testProfileLink :: HasCallStack => TestParams -> IO ()
 testProfileLink =
