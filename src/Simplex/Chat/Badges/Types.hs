@@ -20,6 +20,7 @@ module Simplex.Chat.Badges.Types
     LedgerDebitType (..),
     BadgeAlertKind (..),
     BadgeServiceErrorCode (..),
+    SubscriptionState (..),
     BadgeIssueFailure (..),
     BadgeIssueError (..),
     BadgeFunding (..),
@@ -29,8 +30,10 @@ module Simplex.Chat.Badges.Types
     BadgeIssuance (..),
     BadgeAlert (..),
     BadgeAlertPrice (..),
+    BadgeSubscription (..),
     BadgeState (..),
     OpenStorePurchase (..),
+    StoreReceiptOrigin (..),
   ) where
 
 import Control.Applicative ((<|>))
@@ -117,13 +120,14 @@ data LedgerDebitType
   deriving (Eq, Show)
 
 -- unconfirmed draft
-data BadgeAlertKind = BARenewalApproaching | BAPaymentIssue | BASubscriptionEnded | BAPrepaidEnding | BASupportEnded | BAIssueFailed
+data BadgeAlertKind = BARenewalApproaching | BAPaymentIssue | BASubscriptionCancelled | BASubscriptionEnded | BAPrepaidEnding | BASupportEnded | BAIssueFailed
   deriving (Eq, Show)
 
 instance TextEncoding BadgeAlertKind where
   textEncode = \case
     BARenewalApproaching -> "renewal_approaching"
     BAPaymentIssue -> "payment_issue"
+    BASubscriptionCancelled -> "subscription_cancelled"
     BASubscriptionEnded -> "subscription_ended"
     BAPrepaidEnding -> "prepaid_ending"
     BASupportEnded -> "support_ended"
@@ -131,6 +135,7 @@ instance TextEncoding BadgeAlertKind where
   textDecode = \case
     "renewal_approaching" -> Just BARenewalApproaching
     "payment_issue" -> Just BAPaymentIssue
+    "subscription_cancelled" -> Just BASubscriptionCancelled
     "subscription_ended" -> Just BASubscriptionEnded
     "prepaid_ending" -> Just BAPrepaidEnding
     "support_ended" -> Just BASupportEnded
@@ -244,9 +249,19 @@ data BadgeServiceErrorCode
   | BSECodeExpired
   | BSEReceiptInvalid
   | BSEReceiptUsed
+  | BSETransferLimited -- the subscription moved from another key whose credential has not expired yet
   | BSETestPurchase -- the store vouched for a purchase that cost nothing: Apple's sandbox, a Play license tester
   | BSEInternal
   | BSEUnknown Text -- forwards-compatible: service is deployed ahead of clients
+  deriving (Eq, Show)
+
+-- | The store's answer as the service last read it. A client reads a state it does not know as not ended.
+data SubscriptionState
+  = SSRenewing
+  | SSCancelled -- auto-renew is off, and the paid period still runs
+  | SSBillingRetry -- a charge failed and the store is retrying it: grace, retry or hold
+  | SSEnded -- no charge will come: expired, revoked or refunded
+  | SSUnknown Text -- forwards-compatible: service is deployed ahead of clients
   deriving (Eq, Show)
 
 -- | Why a renewal request ended without a credential stored. retryable is the service's own view of
@@ -280,20 +295,37 @@ data BadgeState = BadgeState
     willRenew :: Bool,
     alert :: Maybe BadgeAlert,
     issueError :: Maybe BadgeIssueError,
-    nextWakeAt :: Maybe UTCTime
+    nextWakeAt :: Maybe UTCTime,
+    subscription :: Maybe BadgeSubscription
   }
   deriving (Show)
 
+-- | A store subscription funding the purchase: the latest charge's plan, and the store's state as last observed.
+data BadgeSubscription = BadgeSubscription
+  { planMonths :: Int,
+    status :: Maybe SubscriptionState,
+    transactionRef :: Maybe Text -- the store receipt's: Apple's original transaction id, or a hash of Play's token
+  }
+  deriving (Eq, Show)
+
 -- | One of a profile's store purchases that no receipt has reached yet, or whose receipt is held until
 -- the service credits it; transactionRef is set once a receipt arrived. Neither reference is a secret:
--- Apple's is the transaction id, Google's is a hash of the token. creditError is set only while the
--- held receipt's last attempt failed in a way that cannot clear on its own.
+-- Apple's is the transaction id, or a subscription's original one; Google's is a hash of the token.
+-- creditError is set only while the held receipt's last attempt failed in a way that cannot clear on its own.
 data OpenStorePurchase = OpenStorePurchase
   { invoiceId :: Maybe Text,
     transactionRef :: Maybe Text,
     creditError :: Maybe BadgeIssueFailure
   }
   deriving (Show)
+
+-- | Where the app found a store transaction it hands over. The store lists an account's purchases on every
+-- device signed into it, so a listed one is claimed only by a core that already has a record for it.
+data StoreReceiptOrigin
+  = SROPurchased -- the app's own purchase call
+  | SROListed -- the store's list of unfinished transactions, or its updates
+  | SRORestored -- Restore's hand-over of what the store lists as this account's, moved to this profile
+  deriving (Eq, Show)
 
 instance TextEncoding BadgePurchaseStatus where
   textEncode = \case
@@ -346,6 +378,7 @@ instance TextEncoding BadgeServiceErrorCode where
     BSECodeExpired -> "code_expired"
     BSEReceiptInvalid -> "receipt_invalid"
     BSEReceiptUsed -> "receipt_used"
+    BSETransferLimited -> "transfer_limited"
     BSETestPurchase -> "test_purchase"
     BSEInternal -> "internal"
     BSEUnknown t -> t
@@ -367,6 +400,7 @@ instance TextEncoding BadgeServiceErrorCode where
     "code_expired" -> BSECodeExpired
     "receipt_invalid" -> BSEReceiptInvalid
     "receipt_used" -> BSEReceiptUsed
+    "transfer_limited" -> BSETransferLimited
     "test_purchase" -> BSETestPurchase
     "internal" -> BSEInternal
     t -> BSEUnknown t
@@ -377,6 +411,31 @@ instance ToJSON BadgeServiceErrorCode where
 
 instance FromJSON BadgeServiceErrorCode where
   parseJSON = textParseJSON "BadgeServiceErrorCode"
+
+instance TextEncoding SubscriptionState where
+  textEncode = \case
+    SSRenewing -> "renewing"
+    SSCancelled -> "cancelled"
+    SSBillingRetry -> "billingRetry"
+    SSEnded -> "ended"
+    SSUnknown t -> t
+  textDecode s = Just $ case s of
+    "renewing" -> SSRenewing
+    "cancelled" -> SSCancelled
+    "billingRetry" -> SSBillingRetry
+    "ended" -> SSEnded
+    t -> SSUnknown t
+
+instance ToJSON SubscriptionState where
+  toJSON = textToJSON
+  toEncoding = textToEncoding
+
+instance FromJSON SubscriptionState where
+  parseJSON = textParseJSON "SubscriptionState"
+
+instance FromField SubscriptionState where fromField = fromTextField_ textDecode
+
+instance ToField SubscriptionState where toField = toField . textEncode
 
 instance StrEncoding BadgeIssueFailure where
   strEncode = \case
@@ -426,6 +485,8 @@ $(JQ.deriveJSON defaultJSON ''BadgeAlert)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "BIF") ''BadgeIssueFailure)
 
 $(JQ.deriveJSON defaultJSON ''BadgeIssueError)
+
+$(JQ.deriveJSON defaultJSON ''BadgeSubscription)
 
 $(JQ.deriveJSON defaultJSON ''BadgeState)
 

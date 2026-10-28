@@ -71,11 +71,18 @@ enum BadgePeriod: String, CaseIterable, Identifiable {
 struct BadgesHowLongView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var store = BadgeStore.shared
+    // store.forSale reads the active profile's badge
+    @ObservedObject private var badgeModel = BadgeModel.shared
     let level: BadgeLevel
     var startDate = Date()
     var priceList: BadgePriceList? = nil
-    @State private var selectedPeriod: BadgePeriod = badgePeriodsForSale.contains(.monthly) ? .monthly : .oneMonth
+    @State private var chosenPeriod: BadgePeriod? = nil
     @State private var continueActive = false
+
+    // monthly once subscriptions turn out to be for sale, unless a period was chosen before that
+    private var selectedPeriod: BadgePeriod {
+        chosenPeriod ?? (store.forSale(level, .monthly) ? .monthly : .oneMonth)
+    }
 
     var body: some View {
         GeometryReader { g in
@@ -106,6 +113,14 @@ struct BadgesHowLongView: View {
                     }
                     .fixedSize(horizontal: false, vertical: true)
 
+                    if !store.forSale(level, .monthly) && store.subscribedBefore {
+                        Text("This Apple ID already has a badge subscription. Only the profile that bought it can continue it.")
+                            .font(.footnote)
+                            .foregroundColor(theme.colors.secondary)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
                     Spacer(minLength: 20)
 
                     VStack(spacing: 10) {
@@ -128,9 +143,9 @@ struct BadgesHowLongView: View {
 
     private func periodCard(_ period: BadgePeriod) -> some View {
         let isSelected = period == selectedPeriod
-        let forSale = badgePeriodsForSale.contains(period)
+        let forSale = store.forSale(level, period)
         return Button {
-            selectedPeriod = period
+            chosenPeriod = period
         } label: {
             VStack(spacing: 12) {
                 Image(systemName: period.icon)
@@ -172,6 +187,7 @@ struct BadgesHowLongView: View {
     private func continueButton() -> some View {
         ZStack {
             Button {
+                chosenPeriod = selectedPeriod
                 continueActive = true
             } label: {
                 Text("Continue")

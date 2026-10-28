@@ -9,6 +9,7 @@
 import Foundation
 import Combine
 import StoreKit
+import UIKit
 import SimpleXChat
 
 // TODO [badges] product ids will come from app config and prices from the badge service catalog;
@@ -27,16 +28,6 @@ func badgeProductId(_ level: BadgeLevel, _ period: BadgePeriod) -> String {
 let badgeProductIds: [String] = BadgeLevel.allCases.flatMap { level in
     BadgePeriod.allCases.map { badgeProductId(level, $0) }
 }
-
-// the only products sent to the badge service: nothing delivers a subscription yet
-let badgeOneTimeProductIds: Set<String> = Set(BadgeLevel.allCases.map { badgeProductId($0, .oneMonth) })
-
-// subscriptions are for sale once renewals are delivered
-let badgePeriodsForSale: [BadgePeriod] = [.oneMonth]
-
-// A subscription's id only: core mints a one-time purchase's, and a subscription is never sent to core.
-// Apple requires a UUID - it is sent as appAccountToken and echoed back in the signed transaction.
-func newBadgeInvoiceId() -> UUID { UUID() }
 
 // the page's app flag rides in the fragment, which never reaches the service
 let badgePageUrl = "https://badges.simplex.chat/#/tier?app=true"
@@ -118,6 +109,8 @@ enum BadgeStoreError: Error {
     case unknownPurchaseResult
     case noActiveProfile
     case invalidInvoiceId(String)
+    case noWindowScene
+    case subscribedBefore
 }
 
 final class BadgeStore: ObservableObject {
@@ -137,6 +130,9 @@ final class BadgeStore: ObservableObject {
     // set once presentUnfinished has read the store: until then, an Ask to Buy approved while the app was
     // closed, or a purchase it died before handing over, are both unknown, so canBuy refuses to buy again
     @Published private var reconciledOnce = false
+    // the original ids of the Apple ID's subscriptions; nil until load() has read them. Apple folds a new subscription
+    // of an Apple ID that subscribed before into the earlier one, which core resumes only for the profile it retired
+    @Published private(set) var priorSubscriptions: Set<String>? = nil
     // the sweep has no buyer waiting and runs at four triggers, so a failure that cannot clear is told once a run
     private var sweepFailureShown = false
     private var transactionUpdates: Task<Void, Never>? = nil
@@ -169,6 +165,27 @@ final class BadgeStore: ObservableObject {
         return storePurchases.purchases
     }
 
+    func forSale(_ level: BadgeLevel, _ period: BadgePeriod) -> Bool {
+        switch period {
+        case .oneMonth: true
+        case .monthly, .annual: priorSubscriptions?.allSatisfy { $0 == resumableSubscription(level) } ?? false
+        }
+    }
+
+    // a subscription of an Apple ID that subscribed before resumes only the active profile's newest purchase,
+    // once its badge is retired and only at its own level, as the service grants a new charge only of the same tier
+    private func resumableSubscription(_ level: BadgeLevel) -> String? {
+        let badgeModel = BadgeModel.shared
+        guard badgeModel.userId == ChatModel.shared.currentUser?.userId,
+              let badgeState = badgeModel.badgeState,
+              !badgeState.shown,
+              badgeState.badgeType == level.badgeType
+        else { return nil }
+        return badgeState.subscription?.transactionRef
+    }
+
+    var subscribedBefore: Bool { priorSubscriptions?.isEmpty == false }
+
     func price(_ level: BadgeLevel, _ period: BadgePeriod, compact: Bool = true) -> BadgePrice {
         switch state {
         case .notLoaded, .loading: return .loading
@@ -200,8 +217,10 @@ final class BadgeStore: ObservableObject {
                 let storefront = await Storefront.current
                 logger.warning("BadgeStore.load: no product returned for \(missing.joined(separator: ", ")) - bundle \(Bundle.main.bundleIdentifier ?? "?"), storefront \(storefront?.countryCode ?? "none"), canMakePayments \(AppStore.canMakePayments)")
             }
+            let prior = await subscriptionOriginalIds()
             await MainActor.run {
                 products = byId
+                priorSubscriptions = prior
                 state = .loaded
             }
         } catch let error {
@@ -210,17 +229,19 @@ final class BadgeStore: ObservableObject {
         }
     }
 
-    // A one-time purchase has its core record before the store charges, and every store outcome reaches it.
+    // A purchase has its core record before the store charges, and every store outcome reaches it.
     func purchase(_ level: BadgeLevel, _ period: BadgePeriod) async throws -> BadgePurchaseOutcome {
         let productId = badgeProductId(level, period)
         guard let product = await MainActor.run(body: { products[productId] }) else {
             throw BadgeStoreError.productUnavailable(productId: productId)
         }
-        // a subscription is never sent to core, so nothing would ever finish it later
-        guard badgeOneTimeProductIds.contains(productId) else {
-            let outcome = try await storePurchase(product, newBadgeInvoiceId())
-            if case let .purchased(receipt) = outcome { await receipt.transaction.finish() }
-            return outcome
+        // another device on this Apple ID may have subscribed since load(), and Apple would fold this purchase into that one
+        if product.type == .autoRenewable {
+            let prior = await subscriptionOriginalIds()
+            await MainActor.run { priorSubscriptions = priorSubscriptions?.union(prior) }
+        }
+        guard await MainActor.run(body: { forSale(level, period) }) else {
+            throw BadgeStoreError.subscribedBefore
         }
         guard let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }) else {
             throw BadgeStoreError.noActiveProfile
@@ -231,8 +252,16 @@ final class BadgeStore: ObservableObject {
         await loadBadgeStateAsync(userId)
         do {
             let outcome = try await storePurchase(product, invoiceId)
+            if product.type == .autoRenewable {
+                switch outcome {
+                case let .purchased(receipt): await MainActor.run { _ = priorSubscriptions?.insert(String(receipt.transaction.originalID)) }
+                // StoreKit lists no deferred purchase, so subscriptions stay shut for this run
+                case .pending: await MainActor.run { priorSubscriptions = nil }
+                case .cancelled: break
+                }
+            }
             if case let .purchased(receipt) = outcome, receipt.signatureVerified {
-                try await handOver(receipt)
+                try await handOver(receipt, origin: .purchased)
             }
             await MainActor.run { buying = false }
             return outcome
@@ -256,11 +285,11 @@ final class BadgeStore: ObservableObject {
 
     // Core holds the receipt and credits it; the transaction stays unfinished until core answers it credited
     // or refused, as an unfinished transaction is what the store re-delivers if anything is lost on the way.
-    private func handOver(_ receipt: BadgeStoreReceipt) async throws {
+    private func handOver(_ receipt: BadgeStoreReceipt, origin: StoreReceiptOrigin) async throws {
         guard let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }) else { return }
         // a refusal is announced from core's event for it, so only an unexpected answer reaches the buyer
         do {
-            switch try await apiPurchaseBadge(userId, receipt.echoedInvoiceId, .apple(jws: receipt.jws)) {
+            switch try await apiPurchaseBadge(userId, receipt.echoedInvoiceId, origin: origin, .apple(jws: receipt.jws)) {
             case let .held(user, badgeState, storePurchases):
                 await MainActor.run {
                     // the answer is the owner's, which may be another profile and a hidden one
@@ -278,10 +307,15 @@ final class BadgeStore: ObservableObject {
                     }
                 }
                 await receipt.transaction.finish()
+            case .notRecorded:
+                // left unfinished, for the device that bought it, or for Restore to claim it here
+                break
             }
         } catch let error where badgeReceiptRefused(error) {
             logger.error("BadgeStore.handOver: \(responseError(error))")
             await receipt.transaction.finish()
+            // Restore found this purchase, so it says why it was refused rather than that there was nothing to restore
+            if origin == .restored { throw error }
         }
     }
 
@@ -323,10 +357,11 @@ final class BadgeStore: ObservableObject {
     func presentUnfinished() async {
         await listenForTransactions()
         for await verification in Transaction.unfinished {
-            await reconcile(verification)
+            await reconcileListed(verification)
         }
         await loadCurrentBadgeState()
         await MainActor.run { reconciledOnce = true }
+        await reportSubscriptionStates()
     }
 
     // transactions the store settles outside a purchase call, such as an approved Ask to Buy
@@ -335,31 +370,131 @@ final class BadgeStore: ObservableObject {
         if transactionUpdates == nil {
             transactionUpdates = Task.detached {
                 for await verification in Transaction.updates {
-                    await BadgeStore.shared.reconcile(verification)
+                    await BadgeStore.shared.reconcileListed(verification)
                 }
             }
         }
     }
 
-    // an unverified one-time transaction is never sent, and left unfinished rather than lost
-    private func reconcile(_ verification: VerificationResult<Transaction>) async {
-        let receipt = storeReceipt(verification)
-        if !badgeOneTimeProductIds.contains(receipt.productId) {
-            await receipt.transaction.finish()
-        } else if receipt.signatureVerified {
-            // the receipt stays unfinished, so the next sweep hands it over again
-            do { try await handOver(receipt) } catch let error {
-                logger.error("BadgeStore.reconcile: \(responseError(error))")
-                await MainActor.run {
-                    // showAlert presents on the top view controller, which the launch sweep can precede;
-                    // an alert with nowhere to go must not spend the one this run gets
-                    if !sweepFailureShown, getTopViewController() != nil {
-                        sweepFailureShown = true
-                        showAlert(NSLocalizedString("Purchase error", comment: "alert title"), message: redeemErrorText(error, purchase: true))
-                    }
+    // the store lists an Apple ID's transactions on every device signed into it, so these are handed over as listed
+    private func reconcileListed(_ verification: VerificationResult<Transaction>) async {
+        // the receipt stays unfinished, so the next sweep hands it over again
+        do { try await reconcile(verification, origin: .listed) } catch let error {
+            logger.error("BadgeStore.reconcile: \(responseError(error))")
+            await MainActor.run {
+                // showAlert presents on the top view controller, which the launch sweep can precede;
+                // an alert with nowhere to go must not spend the one this run gets
+                if !sweepFailureShown, getTopViewController() != nil {
+                    sweepFailureShown = true
+                    showAlert(NSLocalizedString("Purchase error", comment: "alert title"), message: redeemErrorText(error, purchase: true))
                 }
             }
         }
+    }
+
+    // an unverified transaction is never sent, and left unfinished rather than lost
+    private func reconcile(_ verification: VerificationResult<Transaction>, origin: StoreReceiptOrigin) async throws {
+        let receipt = storeReceipt(verification)
+        let t = receipt.transaction
+        if t.productType == .autoRenewable { await MainActor.run { _ = priorSubscriptions?.insert(String(t.originalID)) } }
+        if t.productType == .autoRenewable && t.revocationDate != nil {
+            // the service refuses a revoked charge as invalid, and that would refuse the whole subscription's record
+            await t.finish()
+        } else if !badgeProductIds.contains(receipt.productId) {
+            await t.finish()
+        } else if receipt.signatureVerified {
+            try await handOver(receipt, origin: origin)
+        }
+    }
+
+    // The service asks the store only once the paid period ends, so a cancellation or a failed charge before
+    // then is seen only here. Sent with the latest transaction, which names the subscription as its first one did.
+    func reportSubscriptionStates() async {
+        guard !(await subscriptionOriginalIds()).isEmpty else { return }
+        await load()
+        guard let subscription = await MainActor.run(body: { products.values.first { $0.type == .autoRenewable }?.subscription }) else { return }
+        do {
+            for status in try await subscription.status {
+                guard case let .verified(renewalInfo) = status.renewalInfo, case .verified = status.transaction else { continue }
+                let state: BadgeSubscriptionState? = switch status.state {
+                case .subscribed: renewalInfo.willAutoRenew ? .renewing : .cancelled
+                case .inBillingRetryPeriod, .inGracePeriod: .billingRetry
+                case .expired, .revoked: .ended
+                default: nil
+                }
+                if let state {
+                    try await apiSetBadgeSubscriptionStatus(state, .apple(jws: status.transaction.jwsRepresentation))
+                }
+            }
+        } catch let error {
+            logger.error("BadgeStore.reportSubscriptionStates: \(responseError(error))")
+        }
+    }
+
+    func manageSubscriptions() async {
+        let scene = await MainActor.run {
+            UIApplication.shared.connectedScenes
+                .compactMap { $0 as? UIWindowScene }
+                .first { $0.windows.contains(where: \.isKeyWindow) }
+        }
+        do {
+            guard let scene else { throw BadgeStoreError.noWindowScene }
+            try await AppStore.showManageSubscriptions(in: scene)
+        } catch let error {
+            logger.error("BadgeStore.manageSubscriptions: \(String(describing: error))")
+            if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
+                await MainActor.run { UIApplication.shared.open(url) }
+            }
+        }
+        await reportSubscriptionStates()
+        await loadCurrentBadgeState()
+    }
+
+    // Hands over as restored whatever the store lists, so this profile claims it, also from another install or profile.
+    // Answers whether a badge is shown, or a purchase is being added or awaits approval, afterwards.
+    func restorePurchases() async throws -> Bool {
+        try await AppStore.sync()
+        var handOverError: Error? = nil
+        var handedOver: Set<UInt64> = []
+        for transactions in [Transaction.currentEntitlements, Transaction.unfinished] {
+            for await verification in transactions {
+                // a repeat would be refused once the first hand-over's badge is shown
+                guard handedOver.insert(verification.unsafePayloadValue.id).inserted else { continue }
+                do { try await reconcile(verification, origin: .restored) } catch let error {
+                    logger.error("BadgeStore.restorePurchases: \(responseError(error))")
+                    if handOverError == nil { handOverError = error }
+                }
+            }
+        }
+        await reportSubscriptionStates()
+        await loadCurrentBadgeState()
+        let restored: Bool = await MainActor.run {
+            let userId = ChatModel.shared.currentUser?.userId
+            let badgeShown = BadgeModel.shared.userId == userId && BadgeModel.shared.badgeState?.shown == true
+            return badgeShown || purchaseState(userId) != nil
+        }
+        if !restored, let handOverError { throw handOverError }
+        return restored
+    }
+
+    func subscriptionPrice(_ badgeType: BadgeType, planMonths: Int) -> String? {
+        let period: BadgePeriod? = switch planMonths {
+        case 1: .monthly
+        case 12: .annual
+        default: nil
+        }
+        guard let period, let level = BadgeLevel.allCases.first(where: { $0.badgeType == badgeType }) else { return nil }
+        return products[badgeProductId(level, period)]?.displayPrice
+    }
+
+    // an unverified transaction counts too: Apple, not this check, decides what a new subscription folds into
+    private func subscriptionOriginalIds() async -> Set<String> {
+        var ids: Set<String> = []
+        for await verification in Transaction.all {
+            let t = verification.unsafePayloadValue
+            if t.productType == .autoRenewable { ids.insert(String(t.originalID)) }
+        }
+        return ids
     }
 
     @MainActor
@@ -402,8 +537,11 @@ private func storeReceipt(_ verification: VerificationResult<Transaction>) -> Ba
 // the codes core refuses a receipt with for good, after which the store may stop re-delivering it;
 // a sweep that hands over a receipt refused while the app was not running learns it only from this answer
 private func badgeReceiptRefused(_ error: Error) -> Bool {
-    if case let .error(.badgeRedeemError(.serviceError(code))) = error as? ChatError {
-        return code == .receiptInvalid || code == .receiptUsed || code == .testPurchase
-    }
-    return false
+    let code = badgeServiceErrorCode(error)
+    return code == .receiptInvalid || code == .receiptUsed || code == .testPurchase || code == .transferLimited
+}
+
+private func badgeServiceErrorCode(_ error: Error) -> BadgeServiceErrorCode? {
+    if case let .error(.badgeRedeemError(.serviceError(code))) = error as? ChatError { return code }
+    return nil
 }

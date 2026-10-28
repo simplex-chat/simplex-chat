@@ -643,7 +643,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p tests/tmp
-          sudo mount -t tmpfs -o size=512M tmpfs tests/tmp
+          sudo mount -t tmpfs -o size=2G tmpfs tests/tmp
           sudo chown $(id -u):$(id -g) tests/tmp
 
       - name: Run tests
@@ -1218,7 +1218,7 @@ jobs:
         if: matrix.should_run == true && matrix.arch == 'aarch64'
         shell: bash
         run: |
-          disk=$(hdiutil attach -nomount ram://1048576 | tr -d '[:space:]')
+          disk=$(hdiutil attach -nomount ram://4194304 | tr -d '[:space:]')
           diskutil erasevolume HFS+ tests "$disk"
           ln -s /Volumes/tests tests/tmp
 
