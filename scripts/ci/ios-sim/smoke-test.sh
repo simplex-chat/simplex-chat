@@ -194,6 +194,17 @@ clear_search() {
   "$ui" tap Cancel
 }
 
+# New chat's empty search field: the topmost one, as the chat list's behind the sheet can be in the tree too
+focus_new_chat_search() {
+  tap_element "$(topmost "$("$ui" tree | grep -F 'TextField null value="Search or paste SimpleX link"')")"
+}
+
+# "Cancel" exists only while New chat's field is focused, and the sheet's field is the topmost one
+clear_new_chat_search() {
+  tap_element "$(topmost "$("$ui" tree | grep -F 'TextField null value=')")"
+  "$ui" tap Cancel
+}
+
 # the first launch with more than two chats asks to turn on SimpleX Lock (laNoticeAlert in ContentView.swift)
 dismiss_lock_notice() {
   if "$ui" wait "SimpleX Lock" 10; then
@@ -336,7 +347,7 @@ search_in_new_chat() {
   before=$(labelled ci_cards)
   "$ui" tap Compose
   "$ui" wait "Create 1-time link" 10
-  tap_element "$(topmost "$("$ui" tree | grep -F 'TextField null value="Search or paste SimpleX link"')")"
+  focus_new_chat_search
   "$ui" type "$search_text"
   sleep 2
   search_directory '"#ci_group"'
@@ -345,10 +356,9 @@ search_in_new_chat() {
     echo "error: in New chat #ci_group is not a result with Open on its row"
     exit 1
   fi
-  tap_element "$(topmost "$("$ui" tree | grep -F 'TextField null value=')")"
-  "$ui" tap Cancel
+  clear_new_chat_search
   # the profile has no contacts, so New chat's empty state is "No contacts"
-  tap_element "$(topmost "$("$ui" tree | grep -F 'TextField null value="Search or paste SimpleX link"')")"
+  focus_new_chat_search
   "$ui" type "$no_match_text"
   sleep 2
   "$ui" shot new-chat-no-match-typed
@@ -360,9 +370,8 @@ search_in_new_chat() {
   tap_search_in_directory
   "$ui" wait '"No contacts"' 30
   "$ui" shot new-chat-no-match-searched
-  tap_element "$(topmost "$("$ui" tree | grep -F 'TextField null value=')")"
-  "$ui" tap Cancel
-  tap_element "$(topmost "$("$ui" tree | grep -F 'TextField null value="Search or paste SimpleX link"')")"
+  clear_new_chat_search
+  focus_new_chat_search
   "$ui" type "ci cards"
   sleep 2
   tap_search_in_directory
