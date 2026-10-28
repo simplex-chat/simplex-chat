@@ -2998,4 +2998,12 @@
     <string name="chat_layout_terminal">Terminál</string>
     <string name="chat_layout_chat_suffix">(csevegő)</string>
     <string name="file_already_exists_replace_question">A fájl már létezik. Lecseréli?</string>
+    <string name="member_info_section_title_moderator">Moderátor</string>
+    <string name="member_info_section_title_contributor">Közreműködő</string>
+    <string name="sign_messages_enable">Engedélyezés</string>
+    <string name="badges_subscription_ended">Lejárt</string>
+    <string name="badges_subscription_ends">Lejár ekkor: %1$s</string>
+    <string name="badges_manage_subscription">Feliratkozás kezelése</string>
+    <string name="badges_subscription">Feliratkozás</string>
+    <string name="badges_subscription_cancelled_title">Feliratkozás megszakítva</string>
 </resources>
