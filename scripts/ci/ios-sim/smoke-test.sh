@@ -341,10 +341,6 @@ search_in_new_chat() {
 }
 
 xcrun simctl install "$SIM_UDID" "$app"
-# private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP
-# server on localhost
-prefs=$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" group.chat.simplex.app)/Library/Preferences/group.chat.simplex.app
-xcrun simctl spawn "$SIM_UDID" defaults write "$prefs" networkSMPProxyMode -string unknown
 xcrun simctl launch "$SIM_UDID" "$bundle_id"
 
 # onboarding to the chat list
@@ -391,6 +387,11 @@ if [ -z "${BACKEND_DIR:-}" ]; then
   exit 0
 fi
 
+# private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP
+# server on localhost
+xcrun simctl terminate "$SIM_UDID" "$bundle_id" 2> /dev/null || true
+prefs=$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" group.chat.simplex.app)/Library/Preferences/group.chat.simplex.app
+xcrun simctl spawn "$SIM_UDID" defaults write "$prefs" networkSMPProxyMode -string unknown
 "$ui" relaunch
 
 # typed text that is not a SimpleX name offers the directory
