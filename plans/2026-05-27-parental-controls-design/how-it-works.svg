@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="896" height="360" viewBox="-8 -8 896 360" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" fill="#162120">
+  <title>How the parental controls work</title>
+  <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#56625f"/></marker></defs>
+  <rect x="-8" y="-8" width="896" height="360" fill="#ffffff"/>
+
+  <rect x="8" y="10" width="232" height="232" rx="8" fill="#ffffff" stroke="#d9e1df"/>
+  <text x="22" y="34" font-size="15" font-weight="600">Parent, once</text>
+  <text x="22" y="56" font-size="12.5" fill="#56625f">Settings → privacy settings</text>
+  <text x="22" y="72" font-size="12.5" fill="#56625f">→ Parental controls</text>
+  <text x="22" y="98" font-size="13">Parent PIN  ● ● ● ● ● ●</text>
+  <text x="22" y="126" font-size="13">Connecting to new people</text><text x="226" y="126" font-size="12" text-anchor="end" fill="#a3452c" font-weight="600">off</text>
+  <text x="22" y="148" font-size="13">Groups and channels</text><text x="226" y="148" font-size="12" text-anchor="end" fill="#a3452c" font-weight="600">off</text>
+  <text x="22" y="170" font-size="13">Calls</text><text x="226" y="170" font-size="12" text-anchor="end" fill="#56625f">on by default</text>
+  <text x="22" y="192" font-size="13">Sending files, voice</text><text x="226" y="192" font-size="12" text-anchor="end" fill="#56625f">on by default</text>
+  <text x="22" y="214" font-size="13">Receiving media</text><text x="226" y="214" font-size="12" text-anchor="end" fill="#56625f">on by default</text>
+  <text x="22" y="234" font-size="11.5" fill="#56625f">Phone shows "Parental controls on"</text>
+
+  <text x="270" y="34" font-size="15" font-weight="600">Child, every day</text>
+  <rect x="270" y="46" width="150" height="24" rx="12" fill="#f3f6f6" stroke="#d9e1df"/><text x="345" y="62" font-size="12.5" text-anchor="middle">Scan a code</text>
+  <rect x="270" y="76" width="150" height="24" rx="12" fill="#f3f6f6" stroke="#d9e1df"/><text x="345" y="92" font-size="12.5" text-anchor="middle">Open or paste a link</text>
+  <rect x="270" y="106" width="150" height="24" rx="12" fill="#f3f6f6" stroke="#d9e1df"/><text x="345" y="122" font-size="12.5" text-anchor="middle">Accept a request</text>
+  <rect x="270" y="136" width="150" height="24" rx="12" fill="#f3f6f6" stroke="#d9e1df"/><text x="345" y="152" font-size="12.5" text-anchor="middle">Join a group</text>
+  <rect x="270" y="166" width="150" height="24" rx="12" fill="#f3f6f6" stroke="#d9e1df"/><text x="345" y="182" font-size="12.5" text-anchor="middle">Start a call</text>
+  <rect x="270" y="196" width="150" height="24" rx="12" fill="#f3f6f6" stroke="#d9e1df"/><text x="345" y="212" font-size="12.5" text-anchor="middle">Send or get a file</text>
+  <g stroke="#56625f" stroke-width="1.4" fill="none">
+    <path d="M420,58 C440,58 440,133 458,133"/>
+    <path d="M420,88 C440,88 440,133 458,133"/>
+    <path d="M420,118 L458,133"/>
+    <path d="M420,148 L458,133"/>
+    <path d="M420,178 C440,178 440,133 458,133"/>
+    <path d="M420,208 C440,208 440,133 458,133" marker-end="url(#ah)"/>
+    <path d="M612,133 L640,133" marker-end="url(#ah)"/>
+    <path d="M240,16 C300,2 580,2 640,16" marker-end="url(#ah)"/>
+  </g>
+
+  <rect x="462" y="96" width="150" height="74" rx="8" fill="#e2f0f3" stroke="#17708a"/>
+  <text x="537" y="122" font-size="13" text-anchor="middle" font-weight="600">One check per action</text>
+  <text x="537" y="140" font-size="12" text-anchor="middle">where the app hands</text>
+  <text x="537" y="156" font-size="12" text-anchor="middle">it to the chat core</text>
+
+  <rect x="644" y="80" width="228" height="106" rx="8" fill="#f8e7e1" stroke="#a3452c"/>
+  <text x="656" y="104" font-size="13" fill="#a3452c" font-weight="600">If switched off: an alert</text>
+  <text x="656" y="126" font-size="12">For connecting, "Allow once":</text>
+  <text x="656" y="143" font-size="12">the parent enters the PIN, sees</text>
+  <text x="656" y="160" font-size="12">the name, and that one goes ahead</text>
+  <text x="656" y="177" font-size="11.5" fill="#56625f">Other switches change in Settings</text>
+
+  <text x="460" y="21" font-size="11" text-anchor="middle" fill="#56625f">switches passed to the core at every start</text>
+  <rect x="644" y="6" width="228" height="66" rx="8" fill="#ffffff" stroke="#d9e1df"/>
+  <text x="656" y="26" font-size="12.5" font-weight="600">Parental mode in the core</text>
+  <text x="656" y="44" font-size="12">Pauses auto-accepts, inline files</text>
+  <text x="656" y="62" font-size="12">Incoming calls never ring</text>
+
+  <rect x="644" y="198" width="228" height="44" rx="8" fill="#ffffff" stroke="#d9e1df"/>
+  <text x="656" y="218" font-size="12.5" font-weight="600">What contacts see</text>
+  <text x="656" y="234" font-size="12" fill="#56625f">only unanswered calls and requests</text>
+
+  <rect x="8" y="262" width="864" height="74" rx="8" fill="#e3f3e9" stroke="#2b7a4b"/>
+  <text x="22" y="284" font-size="14" font-weight="600">Reinstalling the app removes the controls</text>
+  <text x="22" y="304" font-size="12.5">iPhone: Screen Time → Deleting Apps: Don't Allow stops that; setup explains how.</text>
+  <text x="22" y="322" font-size="12.5">Android has no such setting: Family Link doesn't ask again for an app it approved before.</text>
+</svg>

@@ -14,6 +14,8 @@ Nothing in this feature reads, keeps, shows or reports the child's messages, con
 
 This answers issue #4482's second request (a parental PIN and approval before adding contacts). Its first request, forwarding the child's messages to a parent, is monitoring and is not built.
 
+![How the parental controls work](2026-05-27-parental-controls-design/how-it-works.svg)
+
 ## 2. Principles
 
 1. **Switch off, never watch.** A control removes a capability. No control keeps history, lists contacts or groups to the parent, or sends anything off the device.
