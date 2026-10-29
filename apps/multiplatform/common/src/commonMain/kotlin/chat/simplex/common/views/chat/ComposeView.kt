@@ -446,7 +446,7 @@ fun ComposeView(
 
   val linkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   // default value parsed because of draft
-  val hasSimplexLink = rememberSaveable { mutableStateOf(composeState.value.message.text.isNotEmpty() && getMessageLinks(parseToMarkdown(composeState.value.message.text)).second) }
+  val hasSimplexLink = rememberSaveable { mutableStateOf(getMessageLinks(parseToMarkdown(composeState.value.message.text)).second) }
   val prevLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   val pendingLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   val useLinkPreviews = true

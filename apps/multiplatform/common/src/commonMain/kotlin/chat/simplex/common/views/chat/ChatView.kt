@@ -3876,22 +3876,15 @@ fun PreviewChatLayout() {
     )
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
     val searchValue = remember { mutableStateOf("") }
-    val chatsCtx = remember { ChatModel.ChatsContext(secondaryContextFilter = null).also { it.chatItems.replaceAll(chatItems) } }
-    val chat = remember { mutableStateOf(Chat.sampleData) }
-    val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) }
-    val attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) }
-    val showCommandsMenu = remember { mutableStateOf(false) }
     ChatLayout(
-      chatsCtx = chatsCtx,
+      chatsCtx = remember { ChatModel.ChatsContext(secondaryContextFilter = null).also { it.chatItems.replaceAll(chatItems) } },
       remoteHostId = remember { mutableStateOf(null) },
-      chat = chat,
+      chat = remember { mutableStateOf(Chat.sampleData) },
       unreadCount = unreadCount,
-      composeState = composeState,
-      composeView = { focusRequester ->
-        ComposeView(rhId = null, chatModel, chatsCtx, chat.value, composeState, showCommandsMenu, attachmentOption, showChooseAttachment = {}, focusRequester = focusRequester)
-      },
+      composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
+      composeView = { _ -> },
       scrollToItemId = remember { mutableStateOf(null) },
-      attachmentOption = attachmentOption,
+      attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
       searchValue,
       useLinkPreviews = true,
@@ -3934,7 +3927,7 @@ fun PreviewChatLayout() {
       developerTools = false,
       showViaProxy = false,
       showSearch = remember { mutableStateOf(false) },
-      showCommandsMenu = showCommandsMenu,
+      showCommandsMenu = remember { mutableStateOf(false) },
       contentFilter = remember { mutableStateOf(null) },
       availableContent = remember { mutableStateOf(ContentFilter.initialList) },
       searchPlaceholder = null
@@ -3966,22 +3959,15 @@ fun PreviewGroupChatLayout() {
     )
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
     val searchValue = remember { mutableStateOf("") }
-    val chatsCtx = remember { ChatModel.ChatsContext(secondaryContextFilter = null).also { it.chatItems.replaceAll(chatItems) } }
-    val chat = remember { mutableStateOf(Chat.sampleData.copy(chatInfo = ChatInfo.Group.sampleData)) }
-    val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) }
-    val attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) }
-    val showCommandsMenu = remember { mutableStateOf(false) }
     ChatLayout(
-      chatsCtx = chatsCtx,
+      chatsCtx = remember { ChatModel.ChatsContext(secondaryContextFilter = null).also { it.chatItems.replaceAll(chatItems) } },
       remoteHostId = remember { mutableStateOf(null) },
-      chat = chat,
+      chat = remember { mutableStateOf(Chat.sampleData.copy(chatInfo = ChatInfo.Group.sampleData)) },
       unreadCount = unreadCount,
-      composeState = composeState,
-      composeView = { focusRequester ->
-        ComposeView(rhId = null, chatModel, chatsCtx, chat.value, composeState, showCommandsMenu, attachmentOption, showChooseAttachment = {}, focusRequester = focusRequester)
-      },
+      composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
+      composeView = { _ -> },
       scrollToItemId = remember { mutableStateOf(null) },
-      attachmentOption = attachmentOption,
+      attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
       searchValue,
       useLinkPreviews = true,
@@ -4024,7 +4010,7 @@ fun PreviewGroupChatLayout() {
       developerTools = false,
       showViaProxy = false,
       showSearch = remember { mutableStateOf(false) },
-      showCommandsMenu = showCommandsMenu,
+      showCommandsMenu = remember { mutableStateOf(false) },
       contentFilter = remember { mutableStateOf(null) },
       availableContent = remember { mutableStateOf(ContentFilter.initialList) },
       searchPlaceholder = null
