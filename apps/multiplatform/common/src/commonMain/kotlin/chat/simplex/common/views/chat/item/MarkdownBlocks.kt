@@ -154,8 +154,10 @@ fun Modifier.quoteBar(textColor: Color): Modifier {
   return drawBehind {
     val width = barWidth.roundToPx().toFloat()
     drawRoundRect(color, Offset(if (layoutDirection == LayoutDirection.Ltr) 0f else size.width - width, 0f), Size(width, size.height), CornerRadius(2.dp.toPx()))
-  }.padding(start = barWidth + 10.dp)
+  }.padding(start = barWidth + QUOTE_BAR_GAP)
 }
+
+val QUOTE_BAR_GAP = 10.dp
 
 private fun Modifier.headingBox(scale: Float, bodyFontSize: TextUnit): Modifier =
   layout { measurable, constraints ->

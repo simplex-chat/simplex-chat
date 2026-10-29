@@ -349,7 +349,7 @@ private fun SenderNameAndRole(sender: ChatItemSender, modifier: Modifier) {
 
 @Composable
 fun terminalGutter(chatInfo: ChatInfo): Dp =
-  if (chatInfo is ChatInfo.Group) MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + 4.dp else 0.dp
+  if (chatInfo is ChatInfo.Group) MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + CHAT_ITEM_TEXT_PADDING else 0.dp
 
 @Composable
 fun TerminalChatItemRow(
@@ -377,7 +377,7 @@ fun TerminalChatItemRow(
       }
     },
     modifier
-      .padding(top = topGap + if (sender != null) senderTopGap else 0.dp, start = 8.dp, end = 12.dp)
+      .padding(top = topGap + if (sender != null) senderTopGap else 0.dp)
       .fillMaxWidth()
   ) { measurables, constraints ->
     val messageStart = gutter.roundToPx()
@@ -388,7 +388,7 @@ fun TerminalChatItemRow(
     val message = measurables[2].measure(messageConstraints)
     val messageTop = name.height
     layout(constraints.maxWidth, max(messageTop + message.height, avatar.height)) {
-      avatar.placeRelative(0, 0)
+      avatar.placeRelative(CHAT_ITEM_TEXT_PADDING.roundToPx(), 0)
       name.placeRelative(messageStart, 0)
       message.placeRelative(messageStart, messageTop)
     }
