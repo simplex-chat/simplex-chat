@@ -93,7 +93,6 @@ import UnliftIO.Temporary (withTempDirectory)
 import Database.PostgreSQL.Simple (Only (..))
 #else
 import Database.SQLite.Simple (Only (..))
-import System.FilePath ((</>))
 #endif
 import Test.Hspec hiding (it)
 
