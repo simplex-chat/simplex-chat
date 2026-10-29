@@ -752,7 +752,7 @@ fileprivate struct SupporterBadgeWhatsNew: View {
     @EnvironmentObject var theme: AppTheme
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .bottom, spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Supporter badge ❤️")
                     .font(.title3)
@@ -764,6 +764,7 @@ fileprivate struct SupporterBadgeWhatsNew: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             heroThumbnail()
+                .frame(height: 0, alignment: .bottom)
         }
     }
 

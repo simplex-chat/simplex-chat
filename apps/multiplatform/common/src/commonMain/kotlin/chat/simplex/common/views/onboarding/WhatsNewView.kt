@@ -25,6 +25,7 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalUriHandler
 import dev.icerock.moko.resources.compose.painterResource
@@ -1008,7 +1009,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
 
 @Composable
 private fun SupporterBadgeWhatsNew() {
-  Row(Modifier.padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+  Row(Modifier.padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Bottom) {
     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
       Text(
         stringResource(MR.strings.v7_1_supporter_badge_title),
@@ -1027,17 +1028,22 @@ private fun SupporterBadgeWhatsNew() {
         painterResource(if (isDark) MR.images.phone_supporter_light else MR.images.phone_supporter),
         contentDescription = null,
         contentScale = ContentScale.Fit,
-        modifier = Modifier.size(110.dp)
+        modifier = Modifier.size(110.dp).overhangUp()
       )
     } else {
       Image(
         painterResource(MR.images.badge_supporter),
         contentDescription = null,
         contentScale = ContentScale.Fit,
-        modifier = Modifier.size(72.dp)
+        modifier = Modifier.size(72.dp).overhangUp()
       )
     }
   }
+}
+
+private fun Modifier.overhangUp(): Modifier = layout { measurable, constraints ->
+  val placeable = measurable.measure(constraints)
+  layout(placeable.width, 0) { placeable.place(0, -placeable.height) }
 }
 
 private val lastVersion = versionDescriptions.last().version
