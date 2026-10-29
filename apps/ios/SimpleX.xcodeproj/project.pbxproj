@@ -193,8 +193,8 @@
 		64C3B0212A0D359700E19930 /* CustomTimePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C3B0202A0D359700E19930 /* CustomTimePicker.swift */; };
 		64C8299D2D54AEEE006B9E89 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64C829982D54AEED006B9E89 /* libgmp.a */; };
 		64C8299E2D54AEEE006B9E89 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64C829992D54AEEE006B9E89 /* libffi.a */; };
-		64C8299F2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs-ghc9.6.3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64C8299A2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs-ghc9.6.3.a */; };
-		64C829A02D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64C8299B2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs.a */; };
+		64C8299F2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-C2bYStpiFGU19PwEXn8BAE-ghc9.6.3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64C8299A2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-C2bYStpiFGU19PwEXn8BAE-ghc9.6.3.a */; };
+		64C829A02D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-C2bYStpiFGU19PwEXn8BAE.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64C8299B2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-C2bYStpiFGU19PwEXn8BAE.a */; };
 		64C829A12D54AEEE006B9E89 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64C8299C2D54AEEE006B9E89 /* libgmpxx.a */; };
 		64D0C2C029F9688300B38D5F /* UserAddressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D0C2BF29F9688300B38D5F /* UserAddressView.swift */; };
 		64D0C2C229FA57AB00B38D5F /* UserAddressLearnMore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D0C2C129FA57AB00B38D5F /* UserAddressLearnMore.swift */; };
@@ -268,6 +268,8 @@
 		E559A0A12E3F77EE00B26F74 /* CommandsMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E559A0A02E3F77EE00B26F74 /* CommandsMenuView.swift */; };
 		E5A0B0012F960000AAAA0001 /* YourNetwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A0B0022F960000AAAA0001 /* YourNetwork.swift */; };
 		E5AEC0AB2F91A6EB00270665 /* CIChatLinkHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0AA2F91A6EA00270665 /* CIChatLinkHeader.swift */; };
+		E5AEC0B22F9C000100270665 /* TerminalItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0B12F9C000100270665 /* TerminalItemView.swift */; };
+		E5AEC0C22F9C000100270665 /* SnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0C12F9C000100270665 /* SnapshotTests.swift */; };
 		E5AEC0AF2F91A73500270665 /* ComposeChatLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0AE2F91A73500270665 /* ComposeChatLinkView.swift */; };
 		E5C0BBE82F82B45500EA7527 /* SimpleXAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */; };
 		E5C0BBE92F82B45500EA7527 /* SimpleXAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */; };
@@ -285,6 +287,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		E5AEC0C92F9C000100270665 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5CA059BE279559F40002BEB4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5CA059C9279559F40002BEB4;
+			remoteInfo = "SimpleX (iOS)";
+		};
 		5CA059D8279559F40002BEB4 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 5CA059BE279559F40002BEB4 /* Project object */;
@@ -591,8 +600,8 @@
 		64C3B0202A0D359700E19930 /* CustomTimePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTimePicker.swift; sourceTree = "<group>"; };
 		64C829982D54AEED006B9E89 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
 		64C829992D54AEEE006B9E89 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
-		64C8299A2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs-ghc9.6.3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs-ghc9.6.3.a"; sourceTree = "<group>"; };
-		64C8299B2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs.a"; sourceTree = "<group>"; };
+		64C8299A2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-C2bYStpiFGU19PwEXn8BAE-ghc9.6.3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-7.1.0.14-C2bYStpiFGU19PwEXn8BAE-ghc9.6.3.a"; sourceTree = "<group>"; };
+		64C8299B2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-C2bYStpiFGU19PwEXn8BAE.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-7.1.0.14-C2bYStpiFGU19PwEXn8BAE.a"; sourceTree = "<group>"; };
 		64C8299C2D54AEEE006B9E89 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
 		64D0C2BF29F9688300B38D5F /* UserAddressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAddressView.swift; sourceTree = "<group>"; };
 		64D0C2C129FA57AB00B38D5F /* UserAddressLearnMore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAddressLearnMore.swift; sourceTree = "<group>"; };
@@ -662,6 +671,9 @@
 		E559A0A02E3F77EE00B26F74 /* CommandsMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandsMenuView.swift; sourceTree = "<group>"; };
 		E5A0B0022F960000AAAA0001 /* YourNetwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YourNetwork.swift; sourceTree = "<group>"; };
 		E5AEC0AA2F91A6EA00270665 /* CIChatLinkHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIChatLinkHeader.swift; sourceTree = "<group>"; };
+		E5AEC0B12F9C000100270665 /* TerminalItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalItemView.swift; sourceTree = "<group>"; };
+		E5AEC0C12F9C000100270665 /* SnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotTests.swift; sourceTree = "<group>"; };
+		E5AEC0C32F9C000100270665 /* SimpleX Snapshots.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SimpleX Snapshots.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E5AEC0AE2F91A73500270665 /* ComposeChatLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeChatLinkView.swift; sourceTree = "<group>"; };
 		E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = SimpleXAssets.xcassets; sourceTree = "<group>"; };
 		E5C0BBEA2F82B45500EA7527 /* SharedAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = SharedAssets.xcassets; sourceTree = "<group>"; };
@@ -752,6 +764,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E5AEC0C62F9C000100270665 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5CDCAD422818589900503DA2 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -769,8 +788,8 @@
 				64C8299D2D54AEEE006B9E89 /* libgmp.a in Frameworks */,
 				64C8299E2D54AEEE006B9E89 /* libffi.a in Frameworks */,
 				64C829A12D54AEEE006B9E89 /* libgmpxx.a in Frameworks */,
-				64C8299F2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs-ghc9.6.3.a in Frameworks */,
-				64C829A02D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs.a in Frameworks */,
+				64C8299F2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-C2bYStpiFGU19PwEXn8BAE-ghc9.6.3.a in Frameworks */,
+				64C829A02D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-C2bYStpiFGU19PwEXn8BAE.a in Frameworks */,
 				CE38A29C2C3FCD72005ED185 /* SwiftyGif in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -857,8 +876,8 @@
 				64C829992D54AEEE006B9E89 /* libffi.a */,
 				64C829982D54AEED006B9E89 /* libgmp.a */,
 				64C8299C2D54AEEE006B9E89 /* libgmpxx.a */,
-				64C8299A2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs-ghc9.6.3.a */,
-				64C8299B2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs.a */,
+				64C8299A2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-C2bYStpiFGU19PwEXn8BAE-ghc9.6.3.a */,
+				64C8299B2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-C2bYStpiFGU19PwEXn8BAE.a */,
 			);
 			path = Libraries;
 			sourceTree = "<group>";
@@ -939,6 +958,7 @@
 				5CDCAD462818589900503DA2 /* SimpleX NSE */,
 				CEE723A82C3BD3D70009AE93 /* SimpleX SE */,
 				5CA059DA279559F40002BEB4 /* Tests iOS */,
+				E5AEC0C42F9C000100270665 /* SimpleX Snapshots */,
 				5CE2BA692845308900EC33A6 /* SimpleXChat */,
 				5CA059CB279559F40002BEB4 /* Products */,
 				5C764E7A279C71D4000C6508 /* Frameworks */,
@@ -968,6 +988,7 @@
 			children = (
 				5CA059CA279559F40002BEB4 /* SimpleX.app */,
 				5CA059D7279559F40002BEB4 /* Tests iOS.xctest */,
+				E5AEC0C32F9C000100270665 /* SimpleX Snapshots.xctest */,
 				5CDCAD452818589900503DA2 /* SimpleX NSE.appex */,
 				5CE2BA682845308900EC33A6 /* SimpleXChat.framework */,
 				CEE723A72C3BD3D70009AE93 /* SimpleX SE.appex */,
@@ -982,6 +1003,14 @@
 				5CA059DD279559F40002BEB4 /* Tests_iOSLaunchTests.swift */,
 			);
 			path = "Tests iOS";
+			sourceTree = "<group>";
+		};
+		E5AEC0C42F9C000100270665 /* SimpleX Snapshots */ = {
+			isa = PBXGroup;
+			children = (
+				E5AEC0C12F9C000100270665 /* SnapshotTests.swift */,
+			);
+			path = "SimpleX Snapshots";
 			sourceTree = "<group>";
 		};
 		5CA8D01B2AD9B076001FD661 /* RemoteAccess */ = {
@@ -1144,6 +1173,7 @@
 				5C58BCD5292BEBE600AF9E4F /* CIChatFeatureView.swift */,
 				5C7031152953C97F00150A12 /* CIFeaturePreferenceView.swift */,
 				E5AEC0AA2F91A6EA00270665 /* CIChatLinkHeader.swift */,
+				E5AEC0B12F9C000100270665 /* TerminalItemView.swift */,
 				644EFFE1292D089800525D5B /* FramedCIVoiceView.swift */,
 				644EFFE32937BE9700525D5B /* MarkedDeletedItemView.swift */,
 				1841511920742C6E152E469F /* AnimatedImageView.swift */,
@@ -1364,6 +1394,24 @@
 			productReference = 5CA059D7279559F40002BEB4 /* Tests iOS.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		E5AEC0C82F9C000100270665 /* SimpleX Snapshots */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E5AEC0CB2F9C000100270665 /* Build configuration list for PBXNativeTarget "SimpleX Snapshots" */;
+			buildPhases = (
+				E5AEC0C52F9C000100270665 /* Sources */,
+				E5AEC0C62F9C000100270665 /* Frameworks */,
+				E5AEC0C72F9C000100270665 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E5AEC0CA2F9C000100270665 /* PBXTargetDependency */,
+			);
+			name = "SimpleX Snapshots";
+			productName = "SimpleX Snapshots";
+			productReference = E5AEC0C32F9C000100270665 /* SimpleX Snapshots.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		5CDCAD442818589900503DA2 /* SimpleX NSE */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5CDCAD502818589900503DA2 /* Build configuration list for PBXNativeTarget "SimpleX NSE" */;
@@ -1451,6 +1499,10 @@
 					CEE723A62C3BD3D70009AE93 = {
 						CreatedOnToolsVersion = 15.4;
 					};
+					E5AEC0C82F9C000100270665 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = 5CA059C9279559F40002BEB4;
+					};
 				};
 			};
 			buildConfigurationList = 5CA059C1279559F40002BEB4 /* Build configuration list for PBXProject "SimpleX" */;
@@ -1493,6 +1545,7 @@
 			targets = (
 				5CA059C9279559F40002BEB4 /* SimpleX (iOS) */,
 				5CA059D6279559F40002BEB4 /* Tests iOS */,
+				E5AEC0C82F9C000100270665 /* SimpleX Snapshots */,
 				5CDCAD442818589900503DA2 /* SimpleX NSE */,
 				CEE723A62C3BD3D70009AE93 /* SimpleX SE */,
 				5CE2BA672845308900EC33A6 /* SimpleXChat */,
@@ -1515,6 +1568,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		5CA059D5279559F40002BEB4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E5AEC0C72F9C000100270665 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1738,6 +1798,7 @@
 				5CC1C99527A6CF7F000D9FF6 /* ShareSheet.swift in Sources */,
 				5C5E5D3B2824468B00B0488A /* ActiveCallView.swift in Sources */,
 				E5AEC0AB2F91A6EB00270665 /* CIChatLinkHeader.swift in Sources */,
+				E5AEC0B22F9C000100270665 /* TerminalItemView.swift in Sources */,
 				B70A39732D24090D00E80A5F /* TagListView.swift in Sources */,
 				5C2E260727A2941F00F70299 /* SimpleXAPI.swift in Sources */,
 				64E5E3632DF71A4E00A4D530 /* ContextContactRequestActionsView.swift in Sources */,
@@ -1790,6 +1851,14 @@
 			files = (
 				5CA059DE279559F40002BEB4 /* Tests_iOSLaunchTests.swift in Sources */,
 				5CA059DC279559F40002BEB4 /* Tests_iOS.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E5AEC0C52F9C000100270665 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E5AEC0C22F9C000100270665 /* SnapshotTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1846,6 +1915,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		E5AEC0CA2F9C000100270665 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5CA059C9279559F40002BEB4 /* SimpleX (iOS) */;
+			targetProxy = E5AEC0C92F9C000100270665 /* PBXContainerItemProxy */;
+		};
 		5CA059D9279559F40002BEB4 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 5CA059C9279559F40002BEB4 /* SimpleX (iOS) */;
@@ -2285,6 +2359,43 @@
 			};
 			name = Release;
 		};
+		E5AEC0CC2F9C000100270665 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 5NN7GUYB6T;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "chat.simplex.app.snapshots";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SimpleX.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SimpleX";
+			};
+			name = Debug;
+		};
+		E5AEC0CD2F9C000100270665 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 5NN7GUYB6T;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "chat.simplex.app.snapshots";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SimpleX.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SimpleX";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		5CDCAD4E2818589900503DA2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2560,6 +2671,15 @@
 			buildConfigurations = (
 				5CA059FA279559F40002BEB4 /* Debug */,
 				5CA059FB279559F40002BEB4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E5AEC0CB2F9C000100270665 /* Build configuration list for PBXNativeTarget "SimpleX Snapshots" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E5AEC0CC2F9C000100270665 /* Debug */,
+				E5AEC0CD2F9C000100270665 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

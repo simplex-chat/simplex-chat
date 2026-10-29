@@ -1,6 +1,7 @@
 package chat.simplex.common.views.badges
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -17,6 +18,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingActionButton
+import chat.simplex.common.views.usersettings.networkAndServers.ConditionsTextView
 import chat.simplex.res.*
 
 @Composable
@@ -55,13 +57,47 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
       OrderRow(MR.strings.badges_order_total, period.priceText(BadgeStore.price(level, period, compact = false)))
     }
 
+    val price = BadgeStore.price(level, period, compact = false)
+    if (price is BadgePrice.Price) {
+      when (period) {
+        BadgePeriod.Monthly -> Footnote(String.format(stringResource(MR.strings.badges_subscription_disclosure_monthly), price.price))
+        BadgePeriod.Annual -> Footnote(String.format(stringResource(MR.strings.badges_subscription_disclosure_annual), price.price))
+        BadgePeriod.OneMonth -> {}
+      }
+    }
+
     Spacer(Modifier.weight(1f).heightIn(min = 20.dp))
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
       PayButton(level, period, purchasing)
       BadgeBillingFooter(period)
+      Text(
+        stringResource(MR.strings.badges_privacy_policy),
+        Modifier.clickable { modalManager.showModal { BadgeConditionsView() } },
+        style = MaterialTheme.typography.body2,
+        color = MaterialTheme.colors.primary
+      )
     }
   }
+}
+
+@Composable
+private fun BadgeConditionsView() {
+  ColumnWithScrollBar(Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
+    AppBarTitle(stringResource(MR.strings.badges_privacy_policy), enableAlphaChanges = false, withPadding = false, bottomPadding = DEFAULT_PADDING)
+    Column(Modifier.weight(1f).padding(bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF)) {
+      ConditionsTextView(chatModel.remoteHostId())
+    }
+  }
+}
+
+@Composable
+private fun Footnote(text: String) {
+  Text(
+    text,
+    style = MaterialTheme.typography.body2,
+    color = MaterialTheme.colors.secondary
+  )
 }
 
 @Composable
@@ -99,9 +135,48 @@ private fun purchase(level: BadgeLevel, period: BadgePeriod, purchasing: Mutable
       purchasing.value = false
       AlertManager.shared.showAlertMsg(
         title = generalGetString(MR.strings.badges_purchase_error),
-        text = if (e is BadgeStoreError.ApiError) chatModel.controller.redeemErrorText(e.err, purchase = true)
-          else "${generalGetString(MR.strings.error_prefix)}: ${e.message ?: e}"
+        text = when (e) {
+          is BadgeStoreError.ApiError -> chatModel.controller.redeemErrorText(e.err, purchase = true)
+          else -> badgeStoreErrorText(e) ?: "${generalGetString(MR.strings.error_prefix)}: ${e.message ?: e}"
+        }
       )
     }
+  }
+}
+
+// the store rows act on this device's store, which a profile on a remote host cannot use
+val badgeStoreLane: Boolean get() = badgeStoreAvailable && chatModel.remoteHostId() == null
+
+@Composable
+fun RestorePurchasesButton() {
+  val restoring = remember { mutableStateOf(false) }
+  Text(
+    stringResource(MR.strings.badges_restore_purchases),
+    Modifier.clickable(enabled = !restoring.value) { restoreBadgePurchases(restoring) },
+    style = MaterialTheme.typography.body2,
+    color = MaterialTheme.colors.primary
+  )
+}
+
+fun restoreBadgePurchases(restoring: MutableState<Boolean>) {
+  restoring.value = true
+  withLongRunningApi {
+    try {
+      val found = BadgeStore.restorePurchases()
+      if (!found) {
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(MR.strings.badges_nothing_to_restore),
+          text = generalGetString(MR.strings.badges_nothing_to_restore_desc)
+        )
+      }
+    } catch (e: Exception) {
+      Log.e(TAG, "RestorePurchasesButton: ${e.stackTraceToString()}")
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.badges_restore_failed),
+        text = if (e is BadgeStoreError.ApiError) chatModel.controller.redeemErrorText(e.err, purchase = true)
+          else badgeStoreErrorText(e) ?: "${generalGetString(MR.strings.error_prefix)}: ${e.message ?: e}"
+      )
+    }
+    restoring.value = false
   }
 }

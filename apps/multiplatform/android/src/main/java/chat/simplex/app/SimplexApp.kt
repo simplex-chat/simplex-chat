@@ -361,6 +361,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
       override suspend fun androidUnfinishedBadgePurchases(): List<BadgePurchaseOutcome> = unfinishedBadgePurchases()
 
+      override fun androidManageBadgeSubscription(productId: String) = manageBadgeSubscription(productId)
+
       @SuppressLint("SourceLockedOrientationActivity")
       @Composable
       override fun androidLockPortraitOrientation() {

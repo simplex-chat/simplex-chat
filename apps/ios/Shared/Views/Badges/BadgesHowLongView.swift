@@ -71,9 +71,22 @@ enum BadgePeriod: String, CaseIterable, Identifiable {
 struct BadgesHowLongView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var store = BadgeStore.shared
+    // store.forSale reads the active profile's badge
+    @ObservedObject private var badgeModel = BadgeModel.shared
     let level: BadgeLevel
-    @State private var selectedPeriod: BadgePeriod = badgePeriodsForSale.contains(.monthly) ? .monthly : .oneMonth
+    var startDate = Date()
+    var priceList: BadgePriceList? = nil
+    @State private var chosenPeriod: BadgePeriod? = nil
     @State private var continueActive = false
+
+    private var prices: BadgePriceList {
+        priceList ?? store.priceList(level)
+    }
+
+    // monthly once subscriptions turn out to be for sale, unless a period was chosen before that
+    private var selectedPeriod: BadgePeriod {
+        chosenPeriod ?? (prices.forSale(.monthly) ? .monthly : .oneMonth)
+    }
 
     var body: some View {
         GeometryReader { g in
@@ -104,12 +117,20 @@ struct BadgesHowLongView: View {
                     }
                     .fixedSize(horizontal: false, vertical: true)
 
+                    if !prices.forSale(.monthly) && prices.subscribedBefore {
+                        Text("This Apple ID already has a badge subscription. Only the profile that bought it can continue it.")
+                            .font(.footnote)
+                            .foregroundColor(theme.colors.secondary)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
                     Spacer(minLength: 20)
 
                     VStack(spacing: 10) {
                         continueButton()
                             .padding(.vertical, 10)
-                        BadgeBillingFooter(period: selectedPeriod)
+                        BadgeBillingFooter(period: selectedPeriod, startDate: startDate)
                     }
                     .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }
@@ -126,9 +147,9 @@ struct BadgesHowLongView: View {
 
     private func periodCard(_ period: BadgePeriod) -> some View {
         let isSelected = period == selectedPeriod
-        let forSale = badgePeriodsForSale.contains(period)
+        let forSale = prices.forSale(period)
         return Button {
-            selectedPeriod = period
+            chosenPeriod = period
         } label: {
             VStack(spacing: 12) {
                 Image(systemName: period.icon)
@@ -139,7 +160,7 @@ struct BadgesHowLongView: View {
                     .opacity(forSale ? 1 : 0.4)
                 Text(period.label)
                     .font(.subheadline)
-                period.priceText(store.price(level, period))
+                period.priceText(prices.price(period))
                     .font(.headline)
                 if let percent = savingsPercent(period) {
                     Text("\(percent)% off")
@@ -164,12 +185,13 @@ struct BadgesHowLongView: View {
     }
 
     private func savingsPercent(_ period: BadgePeriod) -> Int? {
-        period == .annual ? store.annualSavings(level) : nil
+        period == .annual ? prices.annualSavings : nil
     }
 
     private func continueButton() -> some View {
         ZStack {
             Button {
+                chosenPeriod = selectedPeriod
                 continueActive = true
             } label: {
                 Text("Continue")
@@ -191,6 +213,7 @@ struct BadgesHowLongView: View {
 struct BadgeBillingFooter: View {
     @EnvironmentObject var theme: AppTheme
     let period: BadgePeriod
+    let startDate: Date
 
     var body: some View {
         Text(billingFooter)
@@ -204,7 +227,7 @@ struct BadgeBillingFooter: View {
     private var billingFooter: LocalizedStringKey {
         // TODO [badges] from now only because a purchase is refused while a badge is held (refuseWhileBadgeHeld);
         // a top-up must count from the end of the existing balance
-        let endDate = Calendar.current.date(byAdding: .month, value: period.months, to: Date()) ?? Date()
+        let endDate = Calendar.current.date(byAdding: .month, value: period.months, to: startDate) ?? startDate
         let date = DateFormatter.localizedString(from: endDate, dateStyle: .long, timeStyle: .none)
         switch period {
         case .monthly, .annual: return "Renews on \(date). Cancel anytime."
@@ -216,7 +239,11 @@ struct BadgeBillingFooter: View {
 struct BadgesHowLongView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesHowLongView(level: .supporter)
+            BadgesHowLongView(
+                level: .supporter,
+                startDate: previewDate,
+                priceList: BadgePriceList(oneMonth: .price("$7"), monthly: .price("$7"), annual: .price("$42"), monthlyAmount: 7, annualAmount: 42, subscriptionsForSale: true, subscribedBefore: false)
+            )
         }
     }
 }

@@ -25,10 +25,12 @@ on:
       - "simplex-chat.cabal"
       - "cabal.project"
       - "Dockerfile*"
-      - "scripts/ci/**"
+      - "scripts/ci/*.sh"
       - "scripts/ci/ios-stub-libs.sh"
       - "scripts/desktop/**"
-      - ".github/**"
+      - ".github/workflows/build.yml"
+      - ".github/actions/**"
+      - ".github/changelog_conf.json"
       - "packages/simplex-chat-nodejs/**"
       - "packages/simplex-chat-client/types/typescript/**"
       - "packages/simplex-chat-python/**"
@@ -54,7 +56,7 @@ env:
   release: ${{ startsWith(github.ref, 'refs/tags/v') }}
   branch: ${{ github.base_ref || github.ref_name }}
   cache_o0: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable') }}
-  release_branch: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable') && github.ref_name || '' }}
+  release_branch: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable') && github.repository == 'simplex-chat/simplex-chat' && github.ref_name || '' }}
   ZSTD_CLEVEL: 9
 
 # This workflow uses custom actions (prepare-build and prepare-release) defined in:
@@ -124,7 +126,7 @@ jobs:
       publish: ${{ steps.publish.outputs.nodejs_version || steps.publish.outputs.python_version }}
       packages: ${{ steps.changes.outputs.packages }}
       scopes: ${{ steps.changes.outputs.scopes }}
-      reduced: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == true }}
+      reduced: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == true || (github.event_name == 'push' && github.ref_type == 'branch' && github.repository != 'simplex-chat/simplex-chat') }}
     steps:
       - name: Reject a manual run on a tag
         if: github.event_name == 'workflow_dispatch' && github.ref_type == 'tag'
@@ -141,14 +143,12 @@ jobs:
         id: changes
         shell: bash
         env:
-          BASE: ${{ github.event.pull_request.base.sha }}
           BASE_BRANCH: ${{ inputs.base }}
           GH_TOKEN: ${{ github.token }}
         run: |
           case "$GITHUB_EVENT_NAME" in
             pull_request)
-              git fetch -q --depth=1 origin "$BASE"
-              python3 scripts/ci/packages_release.py changes "$BASE"
+              python3 scripts/ci/packages_release.py changes HEAD^1
               ;;
             workflow_dispatch)
               base=$(gh api "repos/$GITHUB_REPOSITORY/compare/$BASE_BRANCH...$GITHUB_REF_NAME" --jq .merge_base_commit.sha)
@@ -157,7 +157,7 @@ jobs:
               ;;
             *)
               echo "haskell=true"
-              if [ "$GITHUB_REF_TYPE" = branch ]; then
+              if [ -n "$release_branch" ]; then
                 echo "kotlin=true"
                 echo "ios=true"
                 python3 scripts/ci/packages_release.py scopes
@@ -643,7 +643,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p tests/tmp
-          sudo mount -t tmpfs -o size=512M tmpfs tests/tmp
+          sudo mount -t tmpfs -o size=2G tmpfs tests/tmp
           sudo chown $(id -u):$(id -g) tests/tmp
 
       - name: Run tests
@@ -655,7 +655,7 @@ jobs:
           TESTS: ${{ github.event_name == 'workflow_dispatch' && inputs.tests || '' }}
           PR_BODY: ${{ github.event.pull_request.draft == true && github.event.pull_request.body || '' }}
           ATTEMPTS: ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) && 3 || 1 }}
-        run: scripts/ci/run-tests.sh ./simplex-chat-test
+        run: scripts/ci/run-tests.sh timeout 35m ./simplex-chat-test
 
       # Compiling the desktop and Android targets of :common in parallel exceeds the 2 GB Kotlin daemon heap.
       # cmakeBuildAndCopy links the JNI library against libsimplex, which this job does not build.
@@ -807,7 +807,7 @@ jobs:
   build-linux-push:
     name: "ubuntu-${{ matrix.os }}-${{ matrix.arch }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
     needs: [maybe-release, variables]
-    if: github.event_name == 'push'
+    if: needs.maybe-release.outputs.reduced != 'true' && github.event_name == 'push'
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: write
@@ -851,6 +851,9 @@ jobs:
     env:
       image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}
       source_hashes: dist-newstyle/sources.sha256
+      opt: O0
+      ghc_options: --ghc-options=-O0
+      cache_o0: false
     concurrency: *linux-concurrency
     strategy:
       fail-fast: false
@@ -1215,7 +1218,7 @@ jobs:
         if: matrix.should_run == true && matrix.arch == 'aarch64'
         shell: bash
         run: |
-          disk=$(hdiutil attach -nomount ram://1048576 | tr -d '[:space:]')
+          disk=$(hdiutil attach -nomount ram://4194304 | tr -d '[:space:]')
           diskutil erasevolume HFS+ tests "$disk"
           ln -s /Volumes/tests tests/tmp
 
@@ -1365,6 +1368,10 @@ jobs:
       - name: Point Command Line Tools SDK to Xcode SDK
         shell: bash
         run: sudo ln -sfn "$(xcrun --sdk macosx --show-sdk-path)" /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+
+      - name: Check the previews listed in the snapshot tests
+        shell: bash
+        run: python3 "apps/ios/SimpleX Snapshots/check-previews.py"
 
       - name: Build iOS app
         timeout-minutes: 60

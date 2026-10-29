@@ -213,6 +213,13 @@ enum MergedItem: Identifiable, Hashable, Equatable {
         }
     }
 
+    var revealed: Bool {
+        switch self {
+        case .single: true
+        case let .grouped(_, revealed, _, _, _, _, _, _): revealed
+        }
+    }
+
     func hasUnread() -> Bool {
         switch self {
         case let .single(item, _, _): item.item.isRcvNew
