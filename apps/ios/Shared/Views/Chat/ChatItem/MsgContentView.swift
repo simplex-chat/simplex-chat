@@ -1020,7 +1020,7 @@ func stripFormattedTextLink(_ ft: [FormattedText]?, _ link: String) -> [Formatte
 
 struct MsgContentView_Previews: PreviewProvider {
     static var previews: some View {
-        let chatItem = ChatItem.getSample(1, .directSnd, .now, "hello")
+        let chatItem = ChatItem.getSample(1, .directSnd, previewDate, "hello")
         return MsgContentView(
             chat: Chat.sampleData,
             text: chatItem.text,

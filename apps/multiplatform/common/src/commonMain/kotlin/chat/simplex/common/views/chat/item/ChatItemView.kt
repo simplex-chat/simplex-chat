@@ -37,7 +37,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
-import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.math.*
 
 // TODO refactor so that FramedItemView can show all CIContent items if they're deleted (see Swift code)
@@ -1496,10 +1496,15 @@ fun moderateMessagesAlertDialog(itemIds: List<Long>, questionText: String, delet
 
 expect fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager)
 
+val previewDate = Instant.fromEpochSeconds(1_736_936_100)
+
+fun previewDated(chatItem: ChatItem): ChatItem =
+  chatItem.copy(meta = chatItem.meta.copy(itemTs = previewDate, createdAt = previewDate, updatedAt = previewDate))
+
 @Preview
 @Composable
 fun PreviewChatItemView(
-  chatItem: ChatItem = ChatItem.getSampleData(1, CIDirection.DirectSnd(), Clock.System.now(), "hello")
+  chatItem: ChatItem = ChatItem.getSampleData(1, CIDirection.DirectSnd(), previewDate, "hello")
 ) {
   ChatItemView(
     chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
@@ -1556,7 +1561,7 @@ fun PreviewChatItemViewDeletedContent() {
       chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
       rhId = null,
       Chat.sampleData,
-      ChatItem.getDeletedContentSampleData(),
+      ChatItem.getDeletedContentSampleData(ts = previewDate),
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },

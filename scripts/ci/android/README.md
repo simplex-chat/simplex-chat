@@ -19,7 +19,7 @@ Every run builds the core library, and the backend when it's asked for, from the
 | `backend` (opt-in) | desktop-linux's `build-backend.sh` | about 30 min, skipped when reused |
 | `release` (opt-in) | the latest release's arm64 APK, its signer checked against SimpleX's key, onboarding only | about 4 min |
 
-Results are artifacts: `android-smoke-test` (numbered screenshots, the accessibility tree and the text of each, `steps.log`, `checks.txt`, logcat as `app.log`, `emulator.log`), `android-release-smoke-test`, `android-claude-test`, and the backend's logs; `android-app`, the APK for the Claude job, is kept a day. The job summaries list the checks and the Claude usage.
+Results are artifacts: `android-smoke-test` (numbered screenshots, the accessibility tree and the text of each, `steps.log`, `checks.txt`, logcat as `app.log`, `emulator.log`), `android-release-smoke-test`, `android-claude-test`, and the backend's logs; `android-app`, the APK for manual tests and the Claude job, is kept 14 days. The job summaries list the checks and the Claude usage.
 
 ## The emulator
 

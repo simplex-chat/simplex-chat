@@ -379,18 +379,39 @@ struct ChatListView: View {
         }
     }
     
-    // the onboarding cards replace the whole chat list, and the support-ended banner lives in the
-    // list - a lapsed supporter is not a newcomer, and must be told even with no conversations yet
+    // the onboarding cards replace the whole chat list, and the badge alert banner lives in the
+    // list - a supporter is not a newcomer, and must be told even with no conversations yet
     private var shouldShowOnboarding: Bool {
-        !addressCreationCardShown && !chatModel.chats.isEmpty && !hasConversations && !supportEnded && !badgeIssueFailed
+        !addressCreationCardShown && !chatModel.chats.isEmpty && !hasConversations && bannerBadgeAlert == nil
     }
 
-    private var supportEnded: Bool {
-        badgeModel.alert?.kind == .supportEnded && badgeModel.userId == chatModel.currentUser?.userId
+    // the current profile's badge alert, if it is a kind the chat list has a banner for
+    private var bannerBadgeAlert: BadgeAlert? {
+        guard let alert = badgeModel.alert, badgeModel.userId == chatModel.currentUser?.userId else { return nil }
+        switch alert.kind {
+        case .supportEnded, .issueFailed, .subscriptionEnded, .paymentIssue, .subscriptionCancelled, .renewalApproaching: return alert
+        case .prepaidEnding, .unknown: return nil
+        }
     }
 
-    private var badgeIssueFailed: Bool {
-        badgeModel.alert?.kind == .issueFailed && badgeModel.userId == chatModel.currentUser?.userId
+    private var renewalPrice: String? {
+        guard let badgeState = badgeModel.badgeState, let subscription = badgeState.subscription else { return nil }
+        return BadgeStore.shared.subscriptionPrice(badgeState.badgeType, planMonths: subscription.planMonths)
+    }
+
+    private var renewalFailure: LocalizedStringKey {
+        guard let issueError = badgeModel.badgeState?.issueError else { return "Your badge could not be renewed." }
+        return "\(issueError.reason.text)"
+    }
+
+    private func badgeAlertBanner(_ title: LocalizedStringKey, _ subtitle: LocalizedStringKey, warning: Bool = false, dismissTitle: String) -> some View {
+        SupportSimpleXBanner(
+            title: title,
+            subtitle: subtitle,
+            warning: warning,
+            onTap: { showBadgesSheet = true },
+            onDismiss: { showBadgeAlertDismissAlert(dismissTitle) }
+        )
     }
 
     private func showBadgeAlertDismissAlert(_ title: String) {
@@ -481,34 +502,36 @@ struct ChatListView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                     }
-                    // one slot: a badge the user paid for ending outranks the pitch to get one
-                    if supportEnded, let alert = badgeModel.alert {
-                        SupportSimpleXBanner(
-                            title: "Your badge expired",
-                            subtitle: "Your badge expired on \(alert.dateText).",
-                            onTap: { showBadgesSheet = true },
-                            onDismiss: { showBadgeAlertDismissAlert(NSLocalizedString("Your badge expired", comment: "alert title")) }
-                        )
+                    // one slot: an alert about a badge the user paid for outranks the pitch to get one
+                    if let alert = bannerBadgeAlert {
+                        Group {
+                            switch alert.kind {
+                            case .supportEnded:
+                                badgeAlertBanner("Your badge expired", "Your badge expired on \(alert.dateText).", dismissTitle: NSLocalizedString("Your badge expired", comment: "alert title"))
+                            case .issueFailed:
+                                badgeAlertBanner("Badge renewal failed", renewalFailure, warning: true, dismissTitle: NSLocalizedString("Badge renewal failed", comment: "alert title"))
+                            case .subscriptionEnded:
+                                badgeAlertBanner("Your subscription ended", "Your badge subscription ended on \(alert.dateText).", dismissTitle: NSLocalizedString("Your subscription ended", comment: "alert title"))
+                            case .paymentIssue:
+                                badgeAlertBanner("Badge payment problem", "The store could not charge your payment method.", warning: true, dismissTitle: NSLocalizedString("Badge payment problem", comment: "alert title"))
+                            case .subscriptionCancelled:
+                                badgeAlertBanner("Subscription cancelled", "Your badge stays until \(alert.dateText).", dismissTitle: NSLocalizedString("Subscription cancelled", comment: "alert title"))
+                            case .renewalApproaching:
+                                if let price = renewalPrice {
+                                    badgeAlertBanner("Your badge renews soon", "Renews on \(alert.dateText) for \(price).", dismissTitle: NSLocalizedString("Your badge renews soon", comment: "alert title"))
+                                } else {
+                                    badgeAlertBanner("Your badge renews soon", "Renews on \(alert.dateText).", dismissTitle: NSLocalizedString("Your badge renews soon", comment: "alert title"))
+                                }
+                            case .prepaidEnding, .unknown:
+                                EmptyView()
+                            }
+                        }
                             .padding(.vertical, 3)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                             .zIndex(1)
-                            .onAppear { chatModel.chatListBanner = .badgeExpired }
-                    } else if badgeIssueFailed {
-                        SupportSimpleXBanner(
-                            title: "Badge renewal failed",
-                            subtitle: "Tap for details",
-                            warning: true,
-                            onTap: { showBadgesSheet = true },
-                            onDismiss: { showBadgeAlertDismissAlert(NSLocalizedString("Badge renewal failed", comment: "alert title")) }
-                        )
-                            .padding(.vertical, 3)
-                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.clear)
-                            .zIndex(1)
-                            .onAppear { chatModel.chatListBanner = .badgeIssueFailed }
+                            .onAppear { chatModel.chatListBanner = .badgeAlert }
                     // noShownBadge is false until the badge state loads: the pitch must not lock the slot and then
                     // be hidden by a supporter's badge arriving a moment later, leaving the slot empty for the session
                     } else if chatModel.bannerSlotFree(for: .badgePitch) && !supporterBannerShown && noShownBadge() && chatModel.chats.count > 3 {
@@ -1236,17 +1259,19 @@ struct ChatListView_Previews: PreviewProvider {
 
     static var previews: some View {
         let chatModel = ChatModel()
+        var contactRequest = UserContactRequest.sampleData
+        contactRequest.updatedAt = previewDate
         chatModel.updateChats([
             ChatData(
                 chatInfo: ChatInfo.sampleData.direct,
-                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
+                chatItems: [ChatItem.getSample(1, .directSnd, previewDate, "hello")]
             ),
             ChatData(
                 chatInfo: ChatInfo.sampleData.group,
-                chatItems: [ChatItem.getSample(1, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")]
+                chatItems: [ChatItem.getSample(1, .directSnd, previewDate, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")]
             ),
             ChatData(
-                chatInfo: ChatInfo.sampleData.contactRequest,
+                chatInfo: .contactRequest(contactRequest: contactRequest),
                 chatItems: []
             )
 
