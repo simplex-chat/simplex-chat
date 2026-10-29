@@ -272,8 +272,8 @@ checkDuration NamesConfig {nTermStart, nTermSlackSeconds} now years duration = d
       expected = max 0 (unixSeconds nTermStart - unixSeconds now)
   when (free < 0 || abs (free - expected) > toInteger nTermSlackSeconds) $ Left ORBadRequest
 
--- | The paid years of an order whose payment covers these years: a community name's are fixed, by the terms it signed,
--- which 'checkTerms' holds to the name's.
+-- | The paid years of an order whose payment covers these years, communityYears when it signed community terms, which
+-- 'checkTerms' checks are its name's.
 orderYears :: OrderFields -> Int -> Int
 orderYears OrderFields {ofAgreedTerms} = yearsFor (agreedTermsHash ofAgreedTerms)
 
@@ -326,7 +326,7 @@ checkMoveMeets st NameRegistration {nrId = rid, nrOwner} OrderFields {ofLabelHas
 
 -- | The new name's chain price for its years, at most what the order is worth, becomes its price.
 checkMovePrice :: Contracts -> NameRegistration -> Int -> Int -> IO (Either OrderRefusal Int)
-checkMovePrice ct NameRegistration {nrPrice} years len =
+checkMovePrice ct NameRegistration {nrPrice} len years =
   chainPriceCents ct len years >>= \case
     Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: a move's price read failed: " <> tshow e)
     Right price

@@ -7,7 +7,6 @@ module StoreService.Names.Community
     termsFor,
     agreedTermsHash,
     communityJSON,
-    communityYears,
     yearsFor,
     termsJSON,
     nameCommunityTerms,
@@ -54,7 +53,6 @@ communityJSON cfg lh = maybe J.Null (\h -> J.object ["for" .= communityFor cfg l
 communityYears :: Int
 communityYears = 2
 
--- | The paid years of a name with these community terms, or Nothing for plain terms.
 yearsFor :: Maybe ByteString -> Int -> Int
 yearsFor h years = maybe years (const communityYears) h
 

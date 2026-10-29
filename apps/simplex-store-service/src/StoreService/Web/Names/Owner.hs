@@ -126,8 +126,8 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
           firstRefusal [checkMoveMeets oeStore r fields now, pure $ checkDuration oeConfig now years ofDuration, checkTerms oeConfig oeContracts fields, checkNameFree oeContracts oeStore ofLabelHash] >>= \case
             Just refusal -> refuse refusal
             Nothing -> case nrPayment of
-              RPInvoice {} -> checkMovePrice oeContracts r years ofLength >>= either refuse (write now r fields)
-              RPBalance -> checkMovePrice oeContracts r years ofLength >>= either refuse (write now r fields)
+              RPInvoice {} -> checkMovePrice oeContracts r ofLength years >>= either refuse (write now r fields)
+              RPBalance -> checkMovePrice oeContracts r ofLength years >>= either refuse (write now r fields)
               RPCode _ -> write now r fields nrPrice
       where
         years = orderYears fields nrYears

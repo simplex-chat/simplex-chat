@@ -38,7 +38,7 @@ TERMS_URL=https://simplex.chat/
 COMMUNITY_LABEL=bakers
 COMMUNITY_TEXT="bakers and bakeries in Portugal"
 
-# The cases at webapp eab00ff. Each case is its own client by X-Forwarded-For, which the service trusts
+# The cases at webapp 6c53656. Each case is its own client by X-Forwarded-For, which the service trusts
 # here, as the mock does. Each takes its prepaid code from POST /control/code, which the code server
 # below answers from the codes issued here, so CODES holds one per case that asks for one. "search
 # answers every kind of name" is not among them: it sets /control/search.
@@ -61,8 +61,9 @@ CASES=(
   "a community name shows its marker after the name, a button whose popup says what the name is for"
   "a community name's order shows its community terms on their own step before Check your order, Continue waiting for their tick, and its ⓘ says what the name is for"
   "a prepaid code registers a name the contracts' owner listed on chain, its register recording the owner's acceptance of the community terms"
+  "a prepaid code for 5 years registers a community name for its 2 years and the free days, saying the code's other years are not used"
 )
-CODES=("name 8" "name 6" "name 6 years 5" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6")
+CODES=("name 8" "name 6" "name 6 years 5" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6 years 5")
 
 RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/names-contract-run.XXXXXX")"
 INI="$RUN_DIR/store_service.ini"

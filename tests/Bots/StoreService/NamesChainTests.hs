@@ -60,7 +60,6 @@ viemSelectors =
     ("836588c9", RNCommitmentNotFound),
     ("74480cc9", RNCommitmentTooNew),
     ("256e2216", RNCommitmentTooOld),
-    ("b666aeb7", RNDurationTooLong),
     ("9a71997b", RNDurationTooShort),
     ("a8cab3d1", RNFrozen),
     ("2a1b2dd8", RNInsufficientAllowance),

@@ -58,7 +58,6 @@ searchHandler cfg@NamesConfig {nYears} st ct ps hashText req respond = case Labe
         Just (Left e) -> unavailable $ tshow e
         Nothing -> unavailable "timed out"
   where
-    -- the price is for the name's years, which its community terms fix
     found lh len registering = do
       (status, h) <- ExceptT $ together $ (,) <$> concurrent (nameStatus ct lh) <*> concurrent (nameCommunityTerms ct lh)
       (,h) <$> case status of
@@ -85,7 +84,7 @@ searchAnswer :: NamesConfig -> Profiles -> LabelHash -> Maybe ByteString -> Foun
 searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nChain = ChainConfig {cChainId, cResolver, cSponsor}} ps lh h = \case
   FAvailable price ->
     ok $
-      ["status" .= ("available" :: Text), "price" .= price, "currency" .= ("usd" :: Text), "years" .= yearsFor h nYears, "termStart" .= termStart]
+      ["status" .= ("available" :: Text), "price" .= price, "currency" .= ("usd" :: Text), "years" .= nYears, "termStart" .= termStart]
         <> ["resolver" .= addressText cResolver, "sponsor" .= addressText cSponsor]
         <> chain
         <> ["terms" .= termsJSON cfg]

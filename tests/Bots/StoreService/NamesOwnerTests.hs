@@ -30,7 +30,7 @@ where
 
 import Bots.StoreService.ConfigTests (termsVersion)
 import Bots.StoreService.FakeEthNode
-import Bots.StoreService.NamesContractsTests (registrarOf, unhex)
+import Bots.StoreService.NamesContractsTests (registrarOf, rentPriceAnswer, unhex)
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, order, ownerA, paidOrder, t0)
 import Bots.StoreService.WebTests (capturingStderr, digestFixture, jsonObject, statusOf, webGet)
@@ -93,6 +93,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "moves an order by a body differing only in terms, storing them" testMoveTermsOnly
     it "answers terms_changed for an old version or the wrong variant, listed or not, a body differing only in terms included, and moves under the community terms, storing them" testMoveTermsChanged
     it "checks a code order moved to a community name for 2 years, and moved on to another name for its code's years again" testMoveCommunityYears
+    it "prices a paid order moved to a community name for 2 years, whatever years it paid for" testMoveCommunityPaidYears
     it "checks the terms after the timestamp, /retry's first check, the existing orders and the duration, before the chain" testMoveTermsCheckOrder
     it "answers move_limit before checking the terms" testMoveLimitBeforeTerms
     it "answers the fourth move move_limit with the current view, changing nothing" testMoveLimit
@@ -521,7 +522,21 @@ testMoveCommunityYears = withOwnerAs (listName "alicebakers") $ \ctx -> do
   again <- rewrite ctx r failedPhase
   toPlain <- moveTo ctx "alicecakes" 11
   void $ moved ctx keyA again toPlain {ofDuration = yearsDuration 5 orderTime}
-  (\s -> (nrYears s, nrDuration s)) <$> stored ctx r `shouldReturn` (5, yearsDuration 5 orderTime)
+  (nrYears &&& nrDuration) <$> stored ctx r `shouldReturn` (5, yearsDuration 5 orderTime)
+
+testMoveCommunityPaidYears :: IO ()
+testMoveCommunityPaidYears = withOwnerAs ((\c -> c {nYears = 3}) . listName "alicebakers") $ \ctx -> do
+  listOnChain ctx "alicebakers"
+  answerFree ctx "alicebakers"
+  answerCall (cNode ctx) fakeController threeYearsOf11 $ Returns $ rentPriceAnswer 15000
+  r <- paidIn ctx aliceOrder {oDuration = yearsDuration 3 orderTime, oPrice = 15000} failedPhase
+  to <- (\f -> f {ofAgreedTerms = communityTerms termsVersion}) <$> moveTo ctx "alicebakers" 10
+  void $ moved ctx keyA r to
+  (nrYears &&& nrPrice) <$> stored ctx r `shouldReturn` (3, 10000)
+  balanceOf ctx r `shouldReturn` Just (5000, 5000)
+  where
+    -- viem: rentPriceUSD of 11 letters for 3 years
+    threeYearsOf11 = unhex "9ff7ec0900000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000005a39a80000000000000000000000000000000000000000000000000000000000000000b6161616161616161616161000000000000000000000000000000000000000000"
 
 testMoveTermsCheckOrder :: IO ()
 testMoveTermsCheckOrder = withOwner $ \ctx@Ctx {cNode} -> do
