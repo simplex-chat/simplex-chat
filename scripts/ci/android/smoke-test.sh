@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Installs the APK in the booted emulator (emulator.sh) and runs the scripted UI cases with the ui helper: onboarding to
-# the chat list, a local group, then the chat list with the reachable toolbar (the default) and with the top bar.
+# the chat list, the onboarding cards with the search field's keyboard open, a local group, a search that matches no chat,
+# then the chat list with the reachable toolbar (the default) and with the top bar.
 # Usage: scripts/ci/android/smoke-test.sh <apk> <output dir> [start|onboarding|layouts|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list. "backend"
 # also adds the test SMP server (NAMES_SERVER, from backend.sh, reached through emulator.sh reverse) under Your servers
@@ -26,6 +27,7 @@ esac
 package=chat.simplex.app
 local_chat="seeded notes"
 search_field="Search or paste SimpleX link"
+no_match_text=zqxvjk
 ui=$(dirname "$0")/ui
 checks=$UI_OUT/checks.txt
 mkdir -p "$UI_OUT"
@@ -258,6 +260,91 @@ check_layout() {
   fi
 }
 
+not_on_screen() {
+  ! "$ui" find "$1" > /dev/null 2>&1
+}
+
+# the two numbers differ by at most the third
+near() {
+  [ $(($1 - $2)) -le "$3" ] && [ $(($2 - $1)) -le "$3" ]
+}
+
+# The bottom edge of the text's element: a card title that the onboarding pages' scroll cuts at the top keeps its bottom.
+bottom_of() {
+  local pos
+  pos=$("$ui" find "$1") || return 1
+  cut -d ' ' -f 6 <<< "$pos"
+}
+
+# Prints the search field's y once two reads a second apart agree and it is <test> <y> (as in "-lt 2000"), waiting up to 15 s.
+settled_field_y() {
+  local deadline=$((SECONDS + 15)) y previous=""
+  while [ "$SECONDS" -lt "$deadline" ]; do
+    y=$(y_of "$search_field") || y=""
+    if [ -n "$y" ] && [ "$y" = "$previous" ] && [ "$y" "$1" "$2" ]; then
+      echo "$y"
+      return 0
+    fi
+    previous=$y
+    sleep 1
+  done
+  return 1
+}
+
+title_back_at() {
+  local y
+  y=$(bottom_of "$1") || return 1
+  near "$y" "$2" 4
+}
+
+# With the reachable toolbar and no chats, the search field's keyboard scrolls the onboarding pages instead of shrinking
+# the cards: the card titles keep their distance, or, with the upper one scrolled out of view, the lower one moves up as
+# much as the search field. Closing the keyboard puts them back.
+onboarding_cards_keep_size() {
+  local upper="Let someone connect to you" lower="Connect via link or QR code"
+  local field upper_y lower_y field_open upper_open lower_open field_closed
+  field=$(y_of "$search_field") || fail "no search field under the onboarding pages"
+  upper_y=$(bottom_of "$upper") || fail "no \"$upper\" card on the onboarding page"
+  lower_y=$(bottom_of "$lower") || fail "no \"$lower\" card on the onboarding page"
+  "$ui" shot onboarding-keyboard-closed
+  "$ui" click-text "$search_field"
+  field_open=$(settled_field_y -lt $((field - 100))) || field_open=""
+  "$ui" shot onboarding-keyboard-open
+  check "onboarding: the search field moved up above the keyboard, from y $field" [ -n "$field_open" ]
+  [ -n "$field_open" ] || return 0
+  upper_open=$(bottom_of "$upper") || upper_open=""
+  lower_open=$(bottom_of "$lower") || lower_open=""
+  check "onboarding: \"$lower\" on screen with the keyboard open" [ -n "$lower_open" ]
+  if [ -n "$upper_open" ] && [ -n "$lower_open" ]; then
+    check "onboarding: the card titles keep their distance of $((lower_y - upper_y)) px with the keyboard open" \
+      near $((lower_open - upper_open)) $((lower_y - upper_y)) 4
+  elif [ -n "$lower_open" ]; then
+    check "onboarding: \"$lower\" moved up as much as the search field, $((field - field_open)) px" \
+      near $((lower_y - lower_open)) $((field - field_open)) 8
+  fi
+  "$ui" key BACK
+  field_closed=$(settled_field_y -gt $((field - 100))) || field_closed=""
+  "$ui" shot onboarding-keyboard-closed-again
+  check "onboarding: the search field back at y $field once the keyboard closed" near "${field_closed:-0}" "$field" 4
+  check "onboarding: \"$upper\" back at y $upper_y" title_back_at "$upper" "$upper_y"
+  check "onboarding: \"$lower\" back at y $lower_y" title_back_at "$lower" "$lower_y"
+}
+
+# With a chat in the list, a text that matches no chat offers the directory, with no "No chats found" before a directory
+# search; these runs have no directory to search.
+no_match_search() {
+  "$ui" click-text "$search_field"
+  "$ui" type "$no_match_text"
+  "$ui" wait "Search in Directory" 15 || true
+  "$ui" shot no-match-typed
+  check "reachable: \"Search in Directory\" offered for \"$no_match_text\"" "$ui" find "Search in Directory"
+  check "reachable: no \"No chats found\" before a directory search" not_on_screen "No chats found"
+  for _ in $(seq ${#no_match_text}); do
+    "$ui" key DEL
+  done
+  "$ui" wait "$search_field" 10 || fail "the search field still has text after deleting \"$no_match_text\""
+}
+
 # private routing to unknown servers only: the preset servers that would proxy to the test SMP server can't reach the
 # runner's 127.0.0.1; developer tools at the debug level put the app's debug log in logcat
 started=$SECONDS
@@ -286,12 +373,14 @@ allow_notifications_and_accept || fail "no chat list 120 s after Your network"
 echo "onboarding reached the chat list $((SECONDS - started)) s after the start"
 
 if [ "$cases" != onboarding ]; then
+  onboarding_cards_keep_size
   if [ "$cases" = backend ]; then
     : "${NAMES_SERVER:?NAMES_SERVER must be the test SMP server address}"
     test_server
   fi
   create_local_chat
   check_layout reachable
+  no_match_search
   "$ui" layout top
   check_layout top
 fi

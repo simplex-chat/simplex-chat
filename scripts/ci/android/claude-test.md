@@ -20,6 +20,7 @@ Your working directory is where your output goes. `ui shot <name>` saves `screen
 4. The app explains instant notifications in an alert: click "Allow". Android then asks whether the app may always run in the background: click "Allow" again.
 5. Click "Accept" on the conditions screen.
 6. Wait up to 60 s for the chat list, which shows "Talk to someone" while there are no conversations. Take a shot.
+7. Tap the search field "Search or paste SimpleX link" so that the keyboard opens, and take a shot. Check, comparing the two shots and noting the evidence (screenshot names, the card titles' positions): the two cards and their pictures are the same size as before (the cards' heights and the distance between their titles "Let someone connect to you" and "Connect via link or QR code"), or, if "Let someone connect to you" has scrolled out of view, "Connect via link or QR code" moved up by about as much as the search field did, and its picture is not smaller; and the search field is visible above the keyboard. Then swipe down on the cards area (`ui scroll 540 900 up 1`) and take a shot: the page's top, with its title "Talk to someone", shows. Press `ui key BACK` exactly once, never a second time: it closes the keyboard, and a BACK with the keyboard closed leaves the app. A shot taken right after can still show the keyboard (pictures can lag the tree): take another shot a second later, and trust the tree's positions (the search field back at the bottom) over a stale picture.
 
 **B. A group, and the chat list with the toolbar at the bottom.**
 
@@ -29,6 +30,7 @@ Your working directory is where your output goes. `ui shot <name>` saves `screen
    - "seeded notes" is listed;
    - the search field "Search or paste SimpleX link" is in the bottom half of the screen (y over 1200), and "Add list" is just above it;
    - nothing is cut off, overlapping or garbled.
+4. Tap the search field and type `zqxvjk`, which no chat matches, and take a shot. Check, noting the evidence: "Search in Directory" is offered, and "No chats found" is not shown anywhere. Don't tap "Search in Directory": this test has no directory. Clear the field (`ui key DEL DEL DEL DEL DEL DEL`) and take a shot: the field shows its placeholder again.
 
 **Between the layouts:** run `ui layout top`: it restarts the app with the toolbar at the top.
 
@@ -38,7 +40,7 @@ Your working directory is where your output goes. `ui shot <name>` saves `screen
 - the search field is in the top half of the screen (y under 1200), and "Add list" is just below it;
 - nothing is cut off, overlapping or garbled. "Start new chat" is now a floating button at the bottom right, drawn over whatever the list shows there: note what it covers, but that alone is not a failure.
 
-You have at most 60 turns, and the whole test fits in about 25 if you chain steps whose outcome you can predict with `ui do` and look at the screen after each chain. For example:
+You have at most 60 turns, and the whole test fits in about 30 if you chain steps whose outcome you can predict with `ui do` and look at the screen after each chain. For example:
 
 - `ui do click-text "Get started" -- click-text "Enter profile name" 30 -- type citester -- shot profile`
 - `ui do click-text "Create profile" -- wait Continue 60 -- shot your-network`

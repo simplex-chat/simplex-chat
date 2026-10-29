@@ -25,6 +25,7 @@ import Control.Applicative (optional, (<|>))
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
 import Data.Char (isSpace)
+import qualified Data.Aeson as J
 import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.Maybe (fromMaybe, isNothing)
@@ -66,6 +67,7 @@ data DirectoryEvent
   | DEItemEditIgnored Contact
   | DEItemDeleteIgnored Contact
   | DEContactCommand Contact ChatItemId ADirectoryCmd
+  | DEServiceRequest AgentInvId J.Object
   | DEVoiceUploadEnded FilePath
   | DELogChatResponse Text
   deriving (Show)
@@ -111,6 +113,7 @@ crDirectoryEvent_ = \case
     where
       ciId = chatItemId' ci
       err = ADC SDRUser DCUnknownCommand
+  CEvtServiceRequest {requestId, requestData} -> Just $ DEServiceRequest requestId requestData
   CEvtSndFileCompleteXFTP {chatItem, fileTransferMeta} -> voiceUploadEnded (Just chatItem) fileTransferMeta
   CEvtSndFileError {chatItem_, fileTransferMeta} -> voiceUploadEnded chatItem_ fileTransferMeta
   CEvtMessageError {severity, errorMessage} -> Just $ DELogChatResponse $ "message error: " <> severity <> ", " <> errorMessage

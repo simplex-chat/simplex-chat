@@ -3,7 +3,8 @@
 # Runs Claude Code to repeat the smoke test with the ui helper, as the prompt (claude-test.md unless given) describes,
 # and passes when its final message ends with "CLAUDE-TEST: PASS".
 # Usage: scripts/ci/desktop-linux/claude-test.sh <output dir> <transcript .jsonl> [prompt .md]
-# Expects the app started (smoke-test.sh ... start) with UI_OUT under <output dir>, claude and ui on PATH,
+# Expects the app started as the prompt says (smoke-test.sh ... start for claude-test.md, ... setup for
+# claude-search.md) with UI_OUT under <output dir>, claude and ui on PATH,
 # CLAUDE_MODEL and CLAUDE_CODE_OAUTH_TOKEN. Claude works in <output dir>: the screenshots, its report.md and the
 # prompt it was given end up there. The transcript, Claude Code's stderr (<transcript>.stderr) and the guard hook's
 # log (<transcript>.guard.log) are kept outside it, where Claude can't write. If any of them holds the token, all are

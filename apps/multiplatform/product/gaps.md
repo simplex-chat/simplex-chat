@@ -16,6 +16,8 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 8. [Desktop: App Link Registration](#gap-08-desktop-app-link-registration)
 9. [Desktop: Emoji Picker Without Skin Tones and Localized Search](#gap-09-desktop-emoji-picker-without-skin-tones-and-localized-search)
 10. [Badges: Limits on Moving a Badge to a New Device or Profile](#gap-10-badges-limits-on-moving-a-badge-to-a-new-device-or-profile)
+11. [Online Search: Groups Joined Without the Listed Short Link Still Appear as Results With Open](#gap-11-online-search-groups-joined-without-the-listed-short-link-still-appear-as-results-with-open)
+12. [Online Search: The Count of Results Left Can Include Listings the Directory Never Sends](#gap-12-online-search-the-count-of-results-left-can-include-listings-the-directory-never-sends)
 
 ---
 
@@ -377,3 +379,60 @@ A subscriber who moves the badge again before the previous key's credential expi
 1. Restore by a receipt code for Stripe and crypto purchases, shared with iOS.
 2. Announce a limited move on the first Restore.
 3. Before a Play plan change becomes possible, credit its new token without waiting for Restore.
+
+---
+
+## GAP-11: Online Search: Groups Joined Without the Listed Short Link Still Appear as Results With Open
+
+**Severity:** Low
+**Category:** UI / UX
+**Platforms:** Android, Desktop
+
+### Description
+
+A directory entry is matched to a local chat by a store-only plan of its link (`apiConnectPlan` with `PlanResolveMode.PRMNever`, then `directoryResultState`), which finds a group only when it was prepared from that short link (every short-link join in current apps, Open included), joined with `/c` and that short link (the join connection stores the full link under it), or joined with the full link the directory sends. A group joined otherwise shows as a result with Open beside its own chat row:
+
+- a group joined with a full link (an older app) when the directory sends the short link: Open's online plan finds it known and shows the "Open group" alert;
+- a member added by invitation, or one who joined through a link the owner has since replaced: the online plan is `Ok`, so Open prepares and opens a second copy of the group without asking (before, the "Open group?" confirm led to the same copy).
+
+Accepted for now: channels, the directory's main content, are always joined through a prepared group. "Already joining" is reachable for a short-link entry with a pending `/c` join and for entries the directory sends with a full link. The core tests "short link without resolving: prepared and /c-joined groups known, invited member not found" and "short link without resolving: pending /c join is connecting" (tests/ChatTests/Groups.hs) pin the store-only contract, including the `/c` and invited-member cases.
+
+### Affected Locations
+
+- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `OnlineSearchModel.resultState`, `OnlineSearchModel.rows`, `openDirectoryResult`
+- `common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt` -- `planLocalChatId`, `directoryResultState`
+- See [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
+
+### Impact
+
+A group the user is already in can appear as a result with Open. For a group joined with a full link, Open shows the known group's alert and joining is not repeated; for an invited member, Open adds a second, prepared copy of the group to the chat list.
+
+### Recommendation
+
+Recognising invited members needs a link in the group record that matches the listed one, which they don't have today: the owner would have to share the group's current link, a protocol change.
+
+---
+
+## GAP-12: Online Search: The Count of Results Left Can Include Listings the Directory Never Sends
+
+**Severity:** Low
+**Category:** UI / UX
+**Platforms:** Android, Desktop
+
+### Description
+
+The directory's `moreCount` counts the matching listings after the page, including listings without a public link, which it never sends. "Load more · N left" can therefore promise more results than loading brings, and a last page can come back empty.
+
+### Affected Locations
+
+- `apps/simplex-directory-service/src/Directory/Rpc.hs` -- `searchResultsPage` (`moreCount`)
+- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `DirectoryLoadMoreRow`
+- See [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
+
+### Impact
+
+The load row's count can be higher than the number of results still to come.
+
+### Recommendation
+
+Count only listings with a public link in the directory's count query.

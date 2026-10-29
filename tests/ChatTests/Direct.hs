@@ -21,7 +21,7 @@ import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.List (intercalate, isPrefixOf, stripPrefix)
+import Data.List (intercalate, isPrefixOf, isSuffixOf, stripPrefix)
 import qualified Data.Map.Strict as M
 import Data.Maybe (isJust, isNothing)
 import qualified Data.Text as T
@@ -29,10 +29,11 @@ import GHC.Conc (ThreadStatus (..), threadStatus)
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), PresetServers (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatResponse (CRServiceResponse), PresetServers (..))
+import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (supportedChatVRange)
+import Simplex.Chat.Protocol (maxServiceBodyLength, supportedChatVRange)
 import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
@@ -132,6 +133,9 @@ chatDirectTests = do
     it "signed service request delivers the verified key" testSignedServiceRequest
     it "service request dropped when service processing is off" testServiceRequestDroppedWhenOff
     it "service request to a non-DR address fails fast" testServiceRequestNonDRAddress
+    it "service request to an address upgraded by key rotation" testServiceRequestUpgradedAddress
+    it "service request over the size bound travels compressed" testServiceRequestCompressed
+    it "service request rejected without a reason times out" testServiceRequestRejectedNoReason
     it "create user with same servers" testCreateUserSameServers
     it "delete user" testDeleteUser
     it "delete user with chat tags" testDeleteUserChatTags
@@ -2068,9 +2072,6 @@ testServiceRequestResponse =
           replyConnId <- serviceReplyConnId alice
           alice <## ("service reply sent, connection id: " <> replyConnId)
       )
-  where
-    serviceRequestId cc = getTermLine cc >>= maybe (serviceRequestId cc) pure . stripPrefix "service request "
-    serviceReplyConnId cc = getTermLine cc >>= maybe (serviceReplyConnId cc) pure . stripPrefix "service reply accepted, connection id: "
 
 testSignedServiceRequest :: HasCallStack => TestParams -> IO ()
 testSignedServiceRequest =
@@ -2098,9 +2099,12 @@ testSignedServiceRequest =
           replyConnId <- serviceReplyConnId alice
           alice <## ("service reply sent, connection id: " <> replyConnId)
       )
-  where
-    serviceRequestId cc = getTermLine cc >>= maybe (serviceRequestId cc) pure . stripPrefix "service request "
-    serviceReplyConnId cc = getTermLine cc >>= maybe (serviceReplyConnId cc) pure . stripPrefix "service reply accepted, connection id: "
+
+serviceRequestId :: HasCallStack => TestCC -> IO String
+serviceRequestId cc = getTermLine cc >>= maybe (serviceRequestId cc) pure . stripPrefix "service request "
+
+serviceReplyConnId :: HasCallStack => TestCC -> IO String
+serviceReplyConnId cc = getTermLine cc >>= maybe (serviceReplyConnId cc) pure . stripPrefix "service reply accepted, connection id: "
 
 testServiceRequestDroppedWhenOff :: HasCallStack => TestParams -> IO ()
 testServiceRequestDroppedWhenOff =
@@ -2117,6 +2121,83 @@ testServiceRequestNonDRAddress =
     (sLink, _) <- getContactLinks alice True
     bob ##> ("/_service_request 1 " <> sLink <> " {\"ping\":1}")
     bob <## "smp agent error: AGENT {agentErr = A_SERVICE {serviceError = ASENotDRAddress}}"
+
+-- an address created without DR keys gets them from a key rotation, and keeps the same link,
+-- so a published address can be upgraded in place rather than replaced
+testServiceRequestUpgradedAddress :: HasCallStack => TestParams -> IO ()
+testServiceRequestUpgradedAddress =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad"
+    (sLink, _) <- getContactLinks alice True
+    alice ##> "/_rotate_address_keys 1"
+    (sLink', _) <- getContactLinks alice False
+    alice <## "auto_accept off"
+    sLink' `shouldBe` sLink
+    alice ##> "/_stop"
+    alice <## "chat stopped"
+    alice ##> "/_start main=on snd_files=on service_requests=on"
+    alice <## "chat started"
+    concurrently_
+      ( do
+          bob ##> ("/_service_request 1 " <> sLink <> " {\"ping\":1}")
+          bob <## "service response: {\"pong\":2}"
+      )
+      ( do
+          reqId <- serviceRequestId alice
+          alice <## "request: {\"ping\":1}"
+          alice ##> ("/_service_response 1 " <> reqId <> " {\"pong\":2}")
+          replyConnId <- serviceReplyConnId alice
+          alice <## ("service reply sent, connection id: " <> replyConnId)
+      )
+
+testServiceRequestCompressed :: HasCallStack => TestParams -> IO ()
+testServiceRequestCompressed =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad pq_ratchet=on"
+    (sLink, _) <- getContactLinks alice True
+    alice ##> "/_stop"
+    alice <## "chat stopped"
+    alice ##> "/_start main=on snd_files=on service_requests=on"
+    alice <### ["chat started", "subscribed 1 connections on server localhost"]
+    let request = "{\"ping\":\"" <> unwords (map show [1 .. 3000 :: Int]) <> "\"}"
+    length request `shouldSatisfy` (> maxServiceBodyLength)
+    concurrently_
+      ( do
+          r <- sendChatCmdStr (chatController bob) ("/_service_request 1 " <> sLink <> " " <> request)
+          case r of
+            Right (CRServiceResponse _ responseData) -> J.encode responseData `shouldBe` "{\"pong\":2}"
+            _ -> expectationFailure $ "unexpected response: " <> show r
+      )
+      ( do
+          reqId <- serviceRequestId alice
+          -- the test terminal queues only the last row of a line that wrapped
+          received <- getTermLine alice
+          received `shouldSatisfy` (`isSuffixOf` ("request: " <> request))
+          alice ##> ("/_service_response 1 " <> reqId <> " {\"pong\":2}")
+          replyConnId <- serviceReplyConnId alice
+          alice <## ("service reply sent, connection id: " <> replyConnId)
+      )
+
+testServiceRequestRejectedNoReason :: HasCallStack => TestParams -> IO ()
+testServiceRequestRejectedNoReason =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad pq_ratchet=on"
+    (sLink, _) <- getContactLinks alice True
+    alice ##> "/_stop"
+    alice <## "chat stopped"
+    alice ##> "/_start main=on snd_files=on service_requests=on"
+    alice <### ["chat started", "subscribed 1 connections on server localhost"]
+    concurrently_
+      ( do
+          bob ##> ("/_service_request 1 " <> sLink <> " timeout=5 {\"ping\":1}")
+          bob <## "smp agent error: AGENT {agentErr = A_SERVICE {serviceError = ASETimeout}}"
+      )
+      ( do
+          reqId <- serviceRequestId alice
+          alice <## "request: {\"ping\":1}"
+          alice ##> ("/_reject_service_request 1 " <> reqId)
+          alice <## "ok"
+      )
 
 testMultipleUserAddresses :: HasCallStack => TestParams -> IO ()
 testMultipleUserAddresses =

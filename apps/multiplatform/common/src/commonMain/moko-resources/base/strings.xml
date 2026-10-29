@@ -514,6 +514,16 @@
   <string name="contact_should_accept">contact should accept…</string>
   <string name="connect_with_contact_name_question">Connect with %1$s?</string>
   <string name="search_or_paste_simplex_link">Search or paste SimpleX link</string>
+  <string name="search_in_directory">Search in Directory</string>
+  <string name="enable_directory_search_question">Enable Directory search?</string>
+  <string name="enable_directory_search_alert_desc">Search text is sent to SimpleX Directory, each search separately and without your profile.</string>
+  <string name="enable_verb">Enable</string>
+  <string name="directory_search_n_members">%1$d members</string>
+  <string name="directory_search_already_joining">Already joining</string>
+  <string name="directory_search_load_more">Load more</string>
+  <string name="directory_search_load_more_n_left">Load more · %1$d left</string>
+  <string name="directory_search_failed_retry">Search failed, tap to retry</string>
+  <string name="searching_directory">Searching directory…</string>
 
   <!-- ChatView.kt -->
   <string name="no_selected_chat">No selected chat</string>
@@ -1493,6 +1503,7 @@
   <string name="app_will_ask_to_confirm_unknown_file_servers">The app will ask to confirm downloads from unknown file servers (except .onion or when SOCKS proxy is enabled).</string>
   <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Without Tor or VPN, your IP address will be visible to file servers.</string>
   <string name="send_link_previews">Send link previews</string>
+  <string name="directory_search">Directory search</string>
   <string name="sanitize_links_toggle">Remove link tracking</string>
   <string name="privacy_show_last_messages">Show last messages</string>
   <string name="privacy_message_draft">Message draft</string>

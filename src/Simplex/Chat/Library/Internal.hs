@@ -2498,18 +2498,10 @@ batchSndMessagesJSON :: BatchMode -> NonEmpty (Either ChatError SndMessage) -> [
 batchSndMessagesJSON mode = batchMessages mode maxEncodedMsgLength . L.toList
 
 compressToLimit :: MonadError ChatError m => Int -> MsgBody -> m MsgBody
-compressToLimit maxLen s
-  | B.length s <= maxLen = pure s
-  | B.length s' <= maxLen = pure s'
-  | otherwise = throwError $ ChatError $ CEException "large compressed body"
-  where
-    s' = compressedBatchMsgBody_ s
+compressToLimit maxLen = maybe (throwError $ ChatError $ CEException "large compressed body") pure . compressBodyTo maxLen
 
 compressConnInfo :: PQSupport -> MsgBody -> CM MsgBody
 compressConnInfo pqSup = compressToLimit $ e2eEncConnInfoLength pqSup - 2 - maxReplyQueueFraming
-
-maxReplyQueueFraming :: Int
-maxReplyQueueFraming = 256
 
 encodeConnInfo :: MsgEncodingI e => ChatMsgEvent e -> CM ByteString
 encodeConnInfo = encodeConnInfoPQ PQSupportOff

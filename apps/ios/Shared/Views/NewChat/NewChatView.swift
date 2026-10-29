@@ -1199,30 +1199,49 @@ private func showPrepareGroupAlert(
         secondTitle: connectOtherButton,
         onCancel: { cleanup?() },
         onConfirm: {
-            Task {
-                do {
-                    let chat = try await apiPrepareGroup(connLink: connectionLink, directLink: groupShortLinkInfo?.direct ?? true, groupShortLinkData: groupShortLinkData, verifiedDomain: verifiedDomain)
-                    await MainActor.run {
-                        if let relays = groupShortLinkInfo?.groupRelays, !relays.isEmpty,
-                           case let .group(gInfo, _) = chat.chatInfo {
-                            ChatModel.shared.channelRelayHostnames[gInfo.groupId] = relays
-                        }
-                        ChatModel.shared.addChat(Chat(chat))
-                        openKnownChat(chat.id, dismiss: dismiss, cleanup: cleanup)
-                    }
-                } catch let error {
-                    logger.error("showPrepareGroupAlert apiPrepareGroup error: \(error.localizedDescription)")
-                    showAlert(NSLocalizedString(isChannel ? "Error opening channel" : "Error opening group", comment: "alert title"), message: responseError(error))
-                    await MainActor.run {
-                        cleanup?()
-                    }
-                }
-            }
+            prepareAndOpenGroup(
+                connectionLink: connectionLink,
+                groupShortLinkInfo: groupShortLinkInfo,
+                groupShortLinkData: groupShortLinkData,
+                verifiedDomain: verifiedDomain,
+                dismiss: dismiss,
+                cleanup: cleanup
+            )
         },
         onSecond: connectOtherLink.map { link in
             { planAndConnect(link, theme: theme, dismiss: dismiss, cleanup: cleanup) }
         }
     )
+}
+
+private func prepareAndOpenGroup(
+    connectionLink: CreatedConnLink,
+    groupShortLinkInfo: GroupShortLinkInfo?,
+    groupShortLinkData: GroupShortLinkData,
+    verifiedDomain: SimplexDomain?,
+    dismiss: Bool,
+    cleanup: (() -> Void)?
+) {
+    let isChannel = !(groupShortLinkInfo?.direct ?? true)
+    Task {
+        do {
+            let chat = try await apiPrepareGroup(connLink: connectionLink, directLink: groupShortLinkInfo?.direct ?? true, groupShortLinkData: groupShortLinkData, verifiedDomain: verifiedDomain)
+            await MainActor.run {
+                if let relays = groupShortLinkInfo?.groupRelays, !relays.isEmpty,
+                   case let .group(gInfo, _) = chat.chatInfo {
+                    ChatModel.shared.channelRelayHostnames[gInfo.groupId] = relays
+                }
+                ChatModel.shared.addChat(Chat(chat))
+                openKnownChat(chat.id, dismiss: dismiss, cleanup: cleanup)
+            }
+        } catch let error {
+            logger.error("prepareAndOpenGroup apiPrepareGroup error: \(error.localizedDescription)")
+            showAlert(NSLocalizedString(isChannel ? "Error opening channel" : "Error opening group", comment: "alert title"), message: responseError(error))
+            await MainActor.run {
+                cleanup?()
+            }
+        }
+    }
 }
 
 private func showOpenKnownContactAlert(
@@ -1315,6 +1334,10 @@ private func showOpenKnownGroupAlert(
     )
 }
 
+enum PrepareGroupMode {
+    case confirm, open
+}
+
 // Spec: spec/client/navigation.md#planAndConnect
 func planAndConnect(
     _ shortOrFullLink: String,
@@ -1323,7 +1346,8 @@ func planAndConnect(
     dismiss: Bool,
     cleanup: (() -> Void)? = nil,
     filterKnownContact: ((Contact) -> Void)? = nil,
-    filterKnownGroup: ((GroupInfo) -> Void)? = nil
+    filterKnownGroup: ((GroupInfo) -> Void)? = nil,
+    prepareGroup: PrepareGroupMode = .confirm
 ) {
     switch strConnectTarget(shortOrFullLink) {
     case let .link(_, linkType, _):
@@ -1524,18 +1548,31 @@ func planAndConnect(
                         if let groupSLinkData = groupSLinkData_ {
                             logger.debug("planAndConnect, .groupLink, .ok, short link data present")
                             await MainActor.run {
-                                showPrepareGroupAlert(
-                                    connectionLink: connectionLink,
-                                    groupShortLinkInfo: groupShortLinkInfo_,
-                                    groupShortLinkData: groupSLinkData,
-                                    ownerVerification: ownerVerification,
-                                    verifiedDomain: planSimplexName?.nameDomain,
-                                    connectOtherButton: connectOtherButton,
-                                    connectOtherLink: connectOtherLink,
-                                    theme: theme,
-                                    dismiss: dismiss,
-                                    cleanup: cleanup
-                                )
+                                let mode: PrepareGroupMode = ownerVerification == nil && connectOtherLink == nil ? prepareGroup : .confirm
+                                switch mode {
+                                case .confirm:
+                                    showPrepareGroupAlert(
+                                        connectionLink: connectionLink,
+                                        groupShortLinkInfo: groupShortLinkInfo_,
+                                        groupShortLinkData: groupSLinkData,
+                                        ownerVerification: ownerVerification,
+                                        verifiedDomain: planSimplexName?.nameDomain,
+                                        connectOtherButton: connectOtherButton,
+                                        connectOtherLink: connectOtherLink,
+                                        theme: theme,
+                                        dismiss: dismiss,
+                                        cleanup: cleanup
+                                    )
+                                case .open:
+                                    prepareAndOpenGroup(
+                                        connectionLink: connectionLink,
+                                        groupShortLinkInfo: groupShortLinkInfo_,
+                                        groupShortLinkData: groupSLinkData,
+                                        verifiedDomain: planSimplexName?.nameDomain,
+                                        dismiss: dismiss,
+                                        cleanup: cleanup
+                                    )
+                                }
                             }
                         } else {
                             logger.debug("planAndConnect, .groupLink, .ok, no short link data")

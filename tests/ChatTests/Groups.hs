@@ -145,6 +145,8 @@ chatGroupTests = do
     it "admin that joined via link introduces member for moderator review" testGLinkReviewIntroduce
   describe "group link connection plan" $ do
     it "ok to connect; known group" testPlanGroupLinkKnown
+    it "short link without resolving: prepared and /c-joined groups known, invited member not found" testPlanGroupShortLinkNoResolve
+    it "short link without resolving: pending /c join is connecting" testPlanGroupShortLinkNoResolveConnecting
     it "own group link" testPlanGroupLinkOwn
     it "group link without contact - connecting" testPlanGroupLinkConnecting
     it "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
@@ -4204,6 +4206,98 @@ testPlanGroupLinkKnown =
       bob ##> ("/c " <> gLink)
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
+
+testPlanGroupShortLinkNoResolve :: HasCallStack => TestParams -> IO ()
+testPlanGroupShortLinkNoResolve =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      threadDelay 100000
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/create link #team"
+      (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
+      let planNoResolve cc = cc ##> ("/_connect plan 1 " <> shortLink <> " resolve=never")
+
+      planNoResolve bob
+      bob <## "no matching chat found, name resolution is disabled"
+
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: ok to connect directly"
+      groupSLinkData <- getTermLine bob
+      bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
+      bob <## "#team: group is prepared"
+      planNoResolve bob
+      bob <## "group link: known prepared group #team"
+
+      bob ##> "/_connect group #1"
+      bob <## "#team: connection started"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob joined the group",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+        ]
+      planNoResolve bob
+      bob <## "group link: known group #team"
+      bob <## "use #team <message> to send messages"
+
+      cath ##> ("/c " <> shortLink)
+      cath <## "connection request sent!"
+      alice <## "cath (Catherine): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          do
+            cath <## "#team: joining the group..."
+            cath <## "#team: you joined the group"
+            cath <## "#team: member bob (Bob) is connected",
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+      planNoResolve cath
+      cath <## "group link: known group #team"
+      cath <## "use #team <message> to send messages"
+
+      connectUsers alice dan
+      addMember "team" alice dan GRMember
+      dan ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: dan joined the group",
+          do
+            dan <## "#team: you joined the group"
+            dan
+              <### [ "#team: member bob (Bob) is connected",
+                     "#team: member cath (Catherine) is connected"
+                   ],
+          do
+            bob <## "#team: alice added dan (Daniel) to the group (connecting...)"
+            bob <## "#team: new member dan is connected",
+          do
+            cath <## "#team: alice added dan (Daniel) to the group (connecting...)"
+            cath <## "#team: new member dan is connected"
+        ]
+      planNoResolve dan
+      dan <## "no matching chat found, name resolution is disabled"
+
+testPlanGroupShortLinkNoResolveConnecting :: HasCallStack => TestParams -> IO ()
+testPlanGroupShortLinkNoResolveConnecting ps = do
+  shortLink <- withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    threadDelay 100000
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice ##> "/create link #team"
+    fst <$> getGroupLinks alice "team" GRMember True
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
+    threadDelay 100000
+
+    bob ##> ("/c " <> shortLink)
+    bob <## "connection request sent!"
+
+    bob ##> ("/_connect plan 1 " <> shortLink <> " resolve=never")
+    bob <## "group link: connecting, allowed to reconnect"
 
 testPlanGroupLinkConnecting :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkConnecting ps = do

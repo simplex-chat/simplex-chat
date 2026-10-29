@@ -232,6 +232,14 @@ jobs:
         timeout-minutes: 30
         run: scripts/ci/ios-sim/backend.sh start ~/Downloads/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
 
+      - name: Point the app at the test directory
+        if: env.START_BACKEND == 'true'
+        run: |
+          link=$(cat "$RUNNER_TEMP/backend/directory-link")
+          file=apps/ios/Shared/Model/DirectorySearch.swift
+          sed -i '' "s|^let DIRECTORY_SERVICE_LINK = \".*\"$|let DIRECTORY_SERVICE_LINK = \"$link\"|" "$file"
+          grep -F "let DIRECTORY_SERVICE_LINK = \"$link\"" "$file"
+
       - name: Build app
         run: |
           xcodebuild build -quiet \
@@ -266,11 +274,29 @@ jobs:
         run: scripts/ci/ios-sim/install-axe.sh
 
       - name: Run smoke test
+        env:
+          BACKEND_DIR: ${{ env.START_BACKEND == 'true' && format('{0}/backend', runner.temp) || '' }}
         run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app" "$RUNNER_TEMP/smoke-test"
 
       - name: Stop test backend
+        id: stop-backend
         if: ${{ !cancelled() && env.START_BACKEND == 'true' }}
         run: scripts/ci/ios-sim/backend.sh stop "$RUNNER_TEMP/backend"
+
+      # the app points at this backend's directory, so the Claude job starts this backend again rather than a new one
+      - name: Pack backend state
+        if: ${{ !cancelled() && steps.stop-backend.outcome == 'success' && needs.plan.outputs.claude-backend == 'yes' }}
+        run: tar -czf "$RUNNER_TEMP/backend-state.tar.gz" --exclude=./bin -C "$RUNNER_TEMP/backend" .
+
+      - name: Upload backend state
+        if: ${{ !cancelled() && steps.stop-backend.outcome == 'success' && needs.plan.outputs.claude-backend == 'yes' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-sim-backend-state
+          path: ${{ runner.temp }}/backend-state.tar.gz
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
 
       - name: Upload smoke test results
         if: ${{ !cancelled() }}
@@ -342,16 +368,28 @@ jobs:
           run-id: ${{ needs.plan.outputs.backend-run || github.run_id }}
           github-token: ${{ github.token }}
 
-      - name: Start test backend
+      - name: Download backend state
+        if: needs.plan.outputs.claude-backend == 'yes'
+        uses: actions/download-artifact@v8
+        with:
+          name: ios-sim-backend-state
+          path: ${{ runner.temp }}
+
+      - name: Start the app job's test backend again
         id: backend
         if: needs.plan.outputs.claude-backend == 'yes'
-        timeout-minutes: 30
-        run: scripts/ci/ios-sim/backend.sh start ~/Downloads/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
+        timeout-minutes: 10
+        run: |
+          mkdir -p "$RUNNER_TEMP/backend"
+          tar -xzf "$RUNNER_TEMP/backend-state.tar.gz" -C "$RUNNER_TEMP/backend"
+          scripts/ci/ios-sim/backend.sh resume ~/Downloads/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
 
       - name: Install AXe
         run: scripts/ci/ios-sim/install-axe.sh
 
       - name: Run smoke test
+        env:
+          BACKEND_DIR: ${{ steps.backend.outcome == 'success' && format('{0}/backend', runner.temp) || '' }}
         run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/SimpleX.app" "$RUNNER_TEMP/claude-test/smoke-test"
 
       - name: Install Claude Code

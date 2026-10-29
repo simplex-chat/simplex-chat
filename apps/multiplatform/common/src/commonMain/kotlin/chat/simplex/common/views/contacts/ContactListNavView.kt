@@ -135,6 +135,26 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDel
                 selectedChat,
                 nextChatSelected)
         }
+        is ChatInfo.Group -> {
+            ChatListNavLinkLayout(
+                chatLinkPreview = {
+                    tryOrShowError("${chat.id}ContactListNavLink", error = { ErrorChatListItem() }) {
+                        ContactPreviewView(chat, disabled, showDeletedChatIcon)
+                    }
+                },
+                click = {
+                    hideKeyboard(view)
+                    withApi {
+                        openChat(secondaryChatsCtx = null, rhId, chat.chatInfo)
+                        ModalManager.start.closeModals()
+                    }
+                },
+                dropdownMenuItems = null,
+                showMenu,
+                disabled,
+                selectedChat,
+                nextChatSelected)
+        }
         else -> {}
     }
 }

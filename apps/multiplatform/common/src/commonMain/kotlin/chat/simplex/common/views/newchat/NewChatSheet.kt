@@ -138,6 +138,7 @@ private fun ModalData.NewChatSheetLayout(
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<Set<String>>(emptySet()) }
   val connectNameCandidate = remember { mutableStateOf<String?>(null) }
+  val onlineSearch = remember { OnlineSearchModel() }
   val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
   val baseContactTypes = remember { listOf(ContactType.CARD, ContactType.CONTACT_WITH_REQUEST, ContactType.REQUEST, ContactType.RECENT) }
   val contactTypes by remember(searchText.value.text.isEmpty()) {
@@ -176,6 +177,41 @@ private fun ModalData.NewChatSheetLayout(
     searchText = searchText.value.text,
     contactChats = allChats
   )
+  val rows = onlineSearch.rows(shownChatIds = filteredContactChats.map { it.id }.toSet())
+  KeyChangeEffect(searchText.value.text) {
+    onlineSearch.reset()
+  }
+  KeyChangeEffect(chatModel.currentUser.value?.userId) {
+    onlineSearch.reset()
+  }
+
+  // emitted in this order, the load row is the row farthest from the field in both layouts
+  fun LazyListScope.onlineSearchSection(rows: OnlineSearchRows) {
+    if (!rows.isEmpty) {
+      items(rows.yourChats.mapNotNull { chatModel.getChat(it) }, key = { it.remoteHostId to it.id }) { chat ->
+        ContactListNavLinkView(chat, remember { mutableStateOf(false) }, showDeletedChatIcon = true)
+      }
+      items(rows.results, key = { it.id }) { result ->
+        DirectoryResultNavLink(result, imageSize = 42.dp, previewModifier = Modifier.padding(horizontal = DEFAULT_PADDING_HALF), close = close, cleanup = null)
+      }
+      when (rows.footer) {
+        DirectoryFooter.Retry -> item { DirectoryRetryRow(onlineSearch) }
+        DirectoryFooter.LoadMore -> item { DirectoryLoadMoreRow(onlineSearch) }
+        null -> {}
+      }
+    }
+  }
+
+  fun searchTrimmed(): String = searchText.value.text.trim()
+
+  val showsSearchInDirectory = searchTrimmed().isNotEmpty() && !searchShowingSimplexLink.value && !onlineSearch.showResults
+  val showsEmptyState = !onlineSearch.searching && rows.isEmpty && !showsSearchInDirectory
+
+  fun runDirectorySearch() {
+    val text = searchTrimmed()
+    if (text.isEmpty() || searchShowingSimplexLink.value) return
+    confirmDirectorySearch { withApi { onlineSearch.searchDirectory(text) } }
+  }
 
   val sectionModifier = Modifier.fillMaxWidth()
   val deletedContactTypes = listOf(ContactType.CHAT_DELETED)
@@ -259,13 +295,15 @@ private fun ModalData.NewChatSheetLayout(
 
   @Composable
   fun NoFilteredContactsItem() {
-    if (filteredContactChats.isEmpty() && allChats.isNotEmpty()) {
-      Column(sectionModifier.fillMaxSize().padding(DEFAULT_PADDING)) {
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-          Text(
-            generalGetString(MR.strings.no_filtered_contacts),
-            color = MaterialTheme.colors.secondary
-          )
+    if (showsEmptyState) {
+      if (filteredContactChats.isEmpty() && allChats.isNotEmpty()) {
+        Column(sectionModifier.fillMaxSize().padding(DEFAULT_PADDING)) {
+          Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Text(
+              generalGetString(MR.strings.no_filtered_contacts),
+              color = MaterialTheme.colors.secondary
+            )
+          }
         }
       }
     }
@@ -316,10 +354,16 @@ private fun ModalData.NewChatSheetLayout(
               searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
               connectNameCandidate = connectNameCandidate,
               close = close,
+              onSearch = ::runDirectorySearch,
             )
-            connectNameCandidate.value?.let { candidate ->
+            val candidate = connectNameCandidate.value
+            if (candidate != null) {
               Divider()
               ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
+            }
+            if (showsSearchInDirectory) {
+              Divider()
+              SearchInDirectoryRow(onSearch = ::runDirectorySearch)
             }
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
           }
@@ -346,6 +390,7 @@ private fun ModalData.NewChatSheetLayout(
         }
         ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
       }
+      onlineSearchSection(rows)
       if (appPlatform.isAndroid) {
         item {
           Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
@@ -407,10 +452,16 @@ private fun ModalData.NewChatSheetLayout(
             searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
             connectNameCandidate = connectNameCandidate,
             close = close,
+            onSearch = ::runDirectorySearch,
           )
-          connectNameCandidate.value?.let { candidate ->
+          val candidate = connectNameCandidate.value
+          if (candidate != null) {
             Divider()
             ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
+          }
+          if (showsSearchInDirectory) {
+            Divider()
+            SearchInDirectoryRow(onSearch = ::runDirectorySearch)
           }
           Divider()
         }
@@ -435,6 +486,7 @@ private fun ModalData.NewChatSheetLayout(
         }
         ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
       }
+      onlineSearchSection(rows)
       if (appPlatform.isAndroid) {
         item {
           Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
@@ -480,6 +532,7 @@ private fun ContactsSearchBar(
   searchChatFilteredBySimplexLink: MutableState<Set<String>>,
   connectNameCandidate: MutableState<String?>,
   close: () -> Unit,
+  onSearch: (() -> Unit)? = null,
 ) {
   var focused by remember { mutableStateOf(false) }
 
@@ -499,6 +552,7 @@ private fun ContactsSearchBar(
       trailingContent = null,
       // the clear button must line up with the filter icon it replaces, so no reduction here
       reducedCloseButtonPadding = 0.dp,
+      onSearch = onSearch,
     ) {
       searchText.value = searchText.value.copy(it)
     }
