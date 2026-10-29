@@ -12,13 +12,15 @@ import SimpleXChat
 struct VersionView: View {
     @EnvironmentObject var theme: AppTheme
     @State var versionInfo: CoreVersionInfo?
+    // do not pass
+    var previewVersionInfo: CoreVersionInfo? = nil
 
     var body: some View {
         List {
             Section {
                 Text("App version: v\(appVersion ?? "?")")
                 Text("App build: \(appBuild ?? "?")")
-                if let info = versionInfo {
+                if let info = previewVersionInfo ?? versionInfo {
                     Text("Core version: v\(info.version)")
                     if let v = try? AttributedString(markdown: "simplexmq: v\(info.simplexmqVersion) ([\(info.simplexmqCommit.prefix(7))](https://github.com/simplex-chat/simplexmq/commit/\(info.simplexmqCommit)))") {
                         Text(v)
@@ -38,6 +40,7 @@ struct VersionView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onAppear {
+            if previewVersionInfo != nil { return }
             do {
                 versionInfo = try apiGetVersion()
             } catch let error {
@@ -49,6 +52,6 @@ struct VersionView: View {
 
 struct VersionView_Previews: PreviewProvider {
     static var previews: some View {
-        VersionView()
+        VersionView(previewVersionInfo: CoreVersionInfo(version: "7.1.0.14", simplexmqVersion: "7.1.0.14", simplexmqCommit: "c0c416daf052eb0215ae432ae665522a7c96c0a6"))
     }
 }

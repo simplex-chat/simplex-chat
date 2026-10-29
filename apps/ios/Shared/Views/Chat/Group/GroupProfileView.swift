@@ -26,6 +26,8 @@ struct GroupProfileView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var groupInfo: GroupInfo
     @State var groupProfile: GroupProfile
+    // do not pass
+    var previewShortDescrLength: Int? = nil
     @State private var shortDescr: String = ""
     @State private var currentProfileHash: Int?
     @State private var showChooseSource = false
@@ -176,7 +178,7 @@ struct GroupProfileView: View {
     }
 
     private func shortDescrFitsLimit() -> Bool {
-        chatJsonLength(shortDescr) <= MAX_BIO_LENGTH_BYTES
+        (previewShortDescrLength ?? chatJsonLength(shortDescr)) <= MAX_BIO_LENGTH_BYTES
     }
 
     func saveProfile() {
@@ -205,7 +207,8 @@ struct GroupProfileView_Previews: PreviewProvider {
     static var previews: some View {
         GroupProfileView(
             groupInfo: Binding.constant(GroupInfo.sampleData),
-            groupProfile: GroupProfile.sampleData
+            groupProfile: GroupProfile.sampleData,
+            previewShortDescrLength: 0
         )
     }
 }

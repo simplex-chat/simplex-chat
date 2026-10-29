@@ -1191,6 +1191,9 @@ func getUserInterfaceStyleDefault() -> UIUserInterfaceStyle {
 
 struct AppearanceSettings_Previews: PreviewProvider {
     static var previews: some View {
-        AppearanceSettings()
+        let m = ChatModel(migrationState: nil)
+        m.users = [UserInfo.sampleData]
+        return AppearanceSettings()
+            .environmentObject(m)
     }
 }

@@ -307,6 +307,8 @@ struct SettingsView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @EnvironmentObject var theme: AppTheme
+    // do not pass
+    var previewInUS: Bool? = nil
     @State private var showProgress: Bool = false
 
     var body: some View {
@@ -420,7 +422,7 @@ struct SettingsView: View {
                 }
             }
 
-            if isInUS {
+            if previewInUS ?? isInUS {
                 Section(header: Text("You can now invest in SimpleX Chat").foregroundColor(theme.colors.secondary)) {
                     NavigationLink {
                         GetStakeView(fromSettings: true, showFirstImage: true)
@@ -626,9 +628,7 @@ func profileName(_ profileOf: NamedChat) -> Text {
 
 struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
-        let chatModel = ChatModel()
-        chatModel.currentUser = User.sampleData
-        return SettingsView()
-            .environmentObject(chatModel)
+        SettingsView(previewInUS: true)
+            .environmentObject(ChatModel(migrationState: nil))
     }
 }

@@ -14,6 +14,8 @@ struct CallSettings: View {
     @AppStorage(DEFAULT_WEBRTC_POLICY_RELAY) private var webrtcPolicyRelay = true
     @AppStorage(GROUP_DEFAULT_CALL_KIT_ENABLED, store: groupDefaults) private var callKitEnabled = true
     @AppStorage(DEFAULT_CALL_KIT_CALLS_IN_RECENTS) private var callKitCallsInRecents = false
+    // do not pass
+    var previewInChina: Bool? = nil
     private let allowChangingCallsHistory = false
 
     var body: some View {
@@ -41,7 +43,7 @@ struct CallSettings: View {
                     }
                 }
 
-                if !CallController.isInChina {
+                if !(previewInChina ?? CallController.isInChina) {
                     Section {
                         Toggle("Use iOS call interface", isOn: $callKitEnabled)
                         Toggle("Show calls in phone history", isOn: $callKitCallsInRecents)
@@ -83,6 +85,6 @@ func textListItem(_ n: String, _ text: LocalizedStringKey) -> some View {
 
 struct CallSettings_Previews: PreviewProvider {
     static var previews: some View {
-        CallSettings()
+        CallSettings(previewInChina: false)
     }
 }

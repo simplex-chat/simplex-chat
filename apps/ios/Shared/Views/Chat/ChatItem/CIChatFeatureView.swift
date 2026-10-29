@@ -110,7 +110,7 @@ struct CIChatFeatureView_Previews: PreviewProvider {
         let enabled = FeatureEnabled(forUser: false, forContact: false)
         CIChatFeatureView(
             chat: Chat.sampleData,
-            im: ItemsModel.shared,
+            im: ItemsModel(),
             chatItem: previewDated(ChatItem.getChatFeatureSample(.fullDelete, enabled)), feature: ChatFeature.fullDelete, iconColor: enabled.iconColor(.secondary)
         ).environment(\.revealed, true)
     }

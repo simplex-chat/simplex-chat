@@ -23,6 +23,10 @@ struct GroupChatInfoView: View {
     @Binding var composeState: ComposeState
     var onSearch: () -> Void
     @State var localAlias: String
+    // do not pass
+    var previewGroupLink: GroupLink? = nil
+    // do not pass
+    var previewChatItemTTL: ChatItemTTL? = nil
     @State private var showSharePicker = false
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: GroupChatInfoViewAlert? = nil
@@ -33,7 +37,8 @@ struct GroupChatInfoView: View {
     @State private var connectionStats: ConnectionStats?
     @State private var connectionCode: String?
     @State private var sendReceipts = SendReceipts.userDefault(true)
-    @State private var sendReceiptsUserDefault = true
+    // do not pass
+    @State var sendReceiptsUserDefault = true
     @State private var progressIndicator = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var searchText: String = ""
@@ -202,7 +207,7 @@ struct GroupChatInfoView: View {
                         } label: {
                             Label("Chat theme", systemImage: "photo")
                         }
-                        ChatTTLOption(chat: chat, progressIndicator: $progressIndicator)
+                        ChatTTLOption(chat: chat, progressIndicator: $progressIndicator, previewChatItemTTL: previewChatItemTTL)
                     } footer: {
                         Text("Delete chat messages from your device.")
                     }
@@ -302,7 +307,7 @@ struct GroupChatInfoView: View {
             sendReceipts = SendReceipts.fromBool(groupInfo.chatSettings.sendRcpts, userDefault: sendReceiptsUserDefault)
             if !groupInfo.useRelays || groupInfo.isOwner {
                 do {
-                    if let gLink = try apiGetGroupLink(groupInfo.groupId) {
+                    if let gLink = try previewGroupLink ?? apiGetGroupLink(groupInfo.groupId) {
                         groupLink = gLink
                         groupLinkMemberRole = gLink.acceptMemberRole
                     }
@@ -1230,7 +1235,18 @@ struct GroupChatInfoView_Previews: PreviewProvider {
             scrollToItemId: Binding.constant(nil),
             composeState: Binding.constant(ComposeState()),
             onSearch: {},
-            localAlias: ""
+            localAlias: "",
+            previewGroupLink: GroupLink(
+                userContactLinkId: 1,
+                connLinkContact: CreatedConnLink(connFullLink: "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", connShortLink: nil),
+                shortLinkDataSet: false,
+                shortLinkLargeDataSet: false,
+                groupLinkId: "abc",
+                acceptMemberRole: .member
+            ),
+            previewChatItemTTL: ChatItemTTL.none,
+            sendReceiptsUserDefault: false
         )
+        .environmentObject(ChatModel(migrationState: nil))
     }
 }

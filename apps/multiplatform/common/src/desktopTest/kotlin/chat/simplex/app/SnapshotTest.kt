@@ -11,7 +11,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowState
-import chat.simplex.common.AppPreview
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.simplexWindowState
@@ -68,6 +67,7 @@ private val previewScenes = listOf(
   SnapshotScene("AddGroupMembersView.PreviewAddGroupMembersLayout") { PreviewAddGroupMembersLayout() },
   SnapshotScene("GroupChatInfoView.PreviewGroupChatInfoLayout") { PreviewGroupChatInfoLayout() },
   SnapshotScene("GroupMemberInfoView.PreviewGroupMemberInfoLayout") { PreviewGroupMemberInfoLayout() },
+  SnapshotScene("GroupProfileView.PreviewGroupProfileLayout") { PreviewGroupProfileLayout() },
   SnapshotScene("CIEventView.CIEventViewPreview", chatItemFontScales) { CIEventViewPreview() },
   SnapshotScene("CIGroupInvitationView.PendingCIGroupInvitationViewPreview", chatItemFontScales) { PendingCIGroupInvitationViewPreview() },
   SnapshotScene("CIGroupInvitationView.CIGroupInvitationViewAcceptedPreview", chatItemFontScales) { CIGroupInvitationViewAcceptedPreview() },
@@ -99,6 +99,8 @@ private val previewScenes = listOf(
   SnapshotScene("LinkPreviews.PreviewComposeLinkView") { PreviewComposeLinkView() },
   SnapshotScene("LinkPreviews.PreviewComposeLinkViewLoading") { PreviewComposeLinkViewLoading() },
   SnapshotScene("SimpleButton.PreviewShareButton") { PreviewShareButton() },
+  SnapshotScene("AddChannelView.PreviewAddChannelView") { PreviewAddChannelView() },
+  SnapshotScene("AddGroupView.PreviewAddGroupLayout") { PreviewAddGroupLayout() },
   SnapshotScene("ContactConnectionInfoView.PreviewContactConnectionInfoView") { PreviewContactConnectionInfoView() },
   SnapshotScene("NewChatSheet.PreviewNewChatSheet") { PreviewNewChatSheet() },
   SnapshotScene("QRCode.PreviewQRCode") { PreviewQRCode() },
@@ -110,17 +112,10 @@ private val previewScenes = listOf(
   SnapshotScene("SettingsView.PreviewSettingsLayout") { PreviewSettingsLayout() },
   SnapshotScene("UserAddressView.PreviewUserAddressLayoutNoAddress") { PreviewUserAddressLayoutNoAddress() },
   SnapshotScene("UserAddressView.PreviewUserAddressLayoutAddressCreated") { PreviewUserAddressLayoutAddressCreated() },
+  SnapshotScene("UserProfileView.PreviewUserProfileLayoutEditOff") { PreviewUserProfileLayoutEditOff() },
+  SnapshotScene("UserProfileView.PreviewUserProfileLayoutEditOn") { PreviewUserProfileLayoutEditOn() },
   SnapshotScene("AdvancedNetworkSettings.PreviewAdvancedNetworkSettingsLayout") { PreviewAdvancedNetworkSettingsLayout() },
   SnapshotScene("NetworkAndServers.PreviewNetworkAndServersLayout") { PreviewNetworkAndServersLayout() },
-  SnapshotScene("DesktopApp.AppPreview") { AppPreview() },
-)
-
-private val previewsCallingCore = listOf(
-  "AddChannelView.PreviewAddChannelView",
-  "AddGroupView.PreviewAddGroupLayout",
-  "GroupProfileView.PreviewGroupProfileLayout",
-  "UserProfileView.PreviewUserProfileLayoutEditOff",
-  "UserProfileView.PreviewUserProfileLayoutEditOn",
 )
 
 private val previewFunction = Regex("""@Preview\s+(?:@Composable\s+)?(?:\w+\s+)*fun\s+(\w+)""")
@@ -128,7 +123,7 @@ private val previewFunction = Regex("""@Preview\s+(?:@Composable\s+)?(?:\w+\s+)*
 class SnapshotTest {
   @Test
   fun everyPreviewIsRendered() {
-    assertEquals(previewsInSources(), (previewScenes.map { it.name } + previewsCallingCore).sorted())
+    assertEquals(previewsInSources(), previewScenes.map { it.name }.sorted())
   }
 
   @Test
@@ -139,12 +134,28 @@ class SnapshotTest {
     val theme = appPrefs.currentTheme.get()!!
     val themeOverrides = appPrefs.themeOverrides.get()
     val fontScale = appPrefs.fontScale.get()
+    val densityScale = appPrefs.densityScale.get()
+    val oneHandUI = appPrefs.oneHandUI.get()
+    val chatBottomBar = appPrefs.chatBottomBar.get()
+    val chatItemRoundness = appPrefs.chatItemRoundness.get()
+    val chatItemTail = appPrefs.chatItemTail.get()
+    val privacyMediaBlurRadius = appPrefs.privacyMediaBlurRadius.get()
+    val appearanceBarsBlurRadius = appPrefs.appearanceBarsBlurRadius.get()
+    val inAppBarsAlpha = appPrefs.inAppBarsAlpha.get()
     val index = mutableListOf<Snapshot>()
     val failures = mutableListOf<String>()
     try {
       Locale.setDefault(Locale.US)
       TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
       simplexWindowState.windowState = WindowState(size = DpSize(SCENE_WIDTH.dp, SCENE_MAX_HEIGHT.dp))
+      appPrefs.densityScale.set(1f)
+      appPrefs.oneHandUI.set(true)
+      appPrefs.chatBottomBar.set(true)
+      appPrefs.chatItemRoundness.set(0.75f)
+      appPrefs.chatItemTail.set(true)
+      appPrefs.privacyMediaBlurRadius.set(0)
+      appPrefs.appearanceBarsBlurRadius.set(if (appPrefs.deviceSupportsBlur) 50 else 0)
+      appPrefs.inAppBarsAlpha.set(appPrefs.inAppBarsDefaultAlpha)
       appPrefs.themeOverrides.set(listOf(ThemeOverrides(base = DefaultTheme.LIGHT), ThemeOverrides(base = DefaultTheme.DARK)))
       for (base in listOf(DefaultTheme.LIGHT, DefaultTheme.DARK)) {
         ThemeManager.applyTheme(base.themeName)
@@ -170,6 +181,14 @@ class SnapshotTest {
       TimeZone.setDefault(timeZone)
       appPrefs.themeOverrides.set(themeOverrides)
       appPrefs.fontScale.set(fontScale)
+      appPrefs.densityScale.set(densityScale)
+      appPrefs.oneHandUI.set(oneHandUI)
+      appPrefs.chatBottomBar.set(chatBottomBar)
+      appPrefs.chatItemRoundness.set(chatItemRoundness)
+      appPrefs.chatItemTail.set(chatItemTail)
+      appPrefs.privacyMediaBlurRadius.set(privacyMediaBlurRadius)
+      appPrefs.appearanceBarsBlurRadius.set(appearanceBarsBlurRadius)
+      appPrefs.inAppBarsAlpha.set(inAppBarsAlpha)
       ThemeManager.applyTheme(theme)
     }
     assertEquals(emptyList(), failures)

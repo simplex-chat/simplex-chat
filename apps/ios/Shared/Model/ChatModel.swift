@@ -455,7 +455,7 @@ final class ChatModel: ObservableObject {
     @Published var remoteCtrlSession: RemoteCtrlSession?
     // currently showing invitation
     @Published var showingInvitation: ShowingInvitation?
-    @Published var migrationState: MigrationToState? = MigrationToDeviceState.makeMigrationState()
+    @Published var migrationState: MigrationToState?
     // audio recording and playback
     @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source
     @Published var draft: ComposeState?
@@ -495,6 +495,13 @@ final class ChatModel: ObservableObject {
     }
 
     static let shared = ChatModel()
+
+    init(
+        // do not pass
+        migrationState: MigrationToState? = MigrationToDeviceState.makeMigrationState()
+    ) {
+        self.migrationState = migrationState
+    }
 
     let im = ItemsModel.shared
 

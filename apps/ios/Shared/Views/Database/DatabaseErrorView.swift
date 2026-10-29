@@ -15,8 +15,11 @@ struct DatabaseErrorView: View {
     @EnvironmentObject var theme: AppTheme
     @State var status: DBMigrationResult
     @State private var dbKey = ""
-    @State private var storedDBKey = kcDatabasePassword.get()
+    // do not pass
+    @State var storedDBKey = kcDatabasePassword.get()
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
+    // do not pass
+    var previewShowRestoreDbButton: Bool? = nil
     @State private var showRestoreDbButton = false
     @State private var starting = false
 
@@ -146,7 +149,7 @@ struct DatabaseErrorView: View {
         .padding(.top, 75)
         .padding(.bottom, 25)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .onAppear() { showRestoreDbButton = shouldShowRestoreDbButton() }
+        .onAppear() { showRestoreDbButton = previewShowRestoreDbButton ?? shouldShowRestoreDbButton() }
     }
 
     private func titleText(_ s: LocalizedStringKey) -> some View {
@@ -298,6 +301,6 @@ struct DatabaseErrorView: View {
 
 struct DatabaseErrorView_Previews: PreviewProvider {
     static var previews: some View {
-        DatabaseErrorView(status: .errorNotADatabase(dbFile: "simplex_v1_chat.db"))
+        DatabaseErrorView(status: .errorNotADatabase(dbFile: "simplex_v1_chat.db"), storedDBKey: "passphrase", previewShowRestoreDbButton: false)
     }
 }

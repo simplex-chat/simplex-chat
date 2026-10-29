@@ -43,12 +43,16 @@ struct DatabaseEncryptionView: View {
     @State private var alert: DatabaseEncryptionAlert? = nil
     @State private var progressIndicator = false
     @State private var useKeychainToggle = storeDBPassphraseGroupDefault.get()
-    @State private var initialRandomDBPassphrase = initialRandomDBPassphraseGroupDefault.get()
-    @State private var storedKey = kcDatabasePassword.get() != nil
+    // do not pass
+    @State var initialRandomDBPassphrase = initialRandomDBPassphraseGroupDefault.get()
+    // do not pass
+    @State var storedKey = kcDatabasePassword.get() != nil
     @State private var currentKey = ""
     @State private var newKey = ""
     @State private var confirmNewKey = ""
     @State private var currentKeyShown = false
+    // do not pass
+    var previewDatabasePassword: String? = nil
 
     let stopChatRunBlockStartChat: (Binding<Bool>, @escaping () async throws -> Bool) -> Void
 
@@ -136,7 +140,7 @@ struct DatabaseEncryptionView: View {
             .font(.callout)
         }
         .onAppear {
-            if initialRandomDBPassphrase { currentKey = kcDatabasePassword.get() ?? "" }
+            if initialRandomDBPassphrase { currentKey = previewDatabasePassword ?? kcDatabasePassword.get() ?? "" }
         }
         .disabled(progressIndicator)
         .alert(item: $alert) { item in databaseEncryptionAlert(item) }
@@ -393,6 +397,14 @@ func validKey(_ s: String) -> Bool {
 
 struct DatabaseEncryptionView_Previews: PreviewProvider {
     static var previews: some View {
-        DatabaseEncryptionView(useKeychain: Binding.constant(true), migration: false, stopChatRunBlockStartChat: { _, _ in true })
+        DatabaseEncryptionView(
+            useKeychain: Binding.constant(true),
+            migration: false,
+            initialRandomDBPassphrase: true,
+            storedKey: true,
+            previewDatabasePassword: "random passphrase",
+            stopChatRunBlockStartChat: { _, _ in true }
+        )
+        .environmentObject(ChatModel(migrationState: nil))
     }
 }

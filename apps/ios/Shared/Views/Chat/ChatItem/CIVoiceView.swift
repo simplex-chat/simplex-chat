@@ -442,7 +442,7 @@ class VoiceItemState {
 
 struct CIVoiceView_Previews: PreviewProvider {
     static var previews: some View {
-        let im = ItemsModel.shared
+        let im = ItemsModel()
         let sentVoiceMessage: ChatItem = ChatItem(
             chatDir: .directSnd,
             meta: CIMeta.getSample(1, previewDate, "", .sndSent(sndProgress: .complete), itemEdited: true),
@@ -475,5 +475,6 @@ struct CIVoiceView_Previews: PreviewProvider {
             ChatItemView(chat: Chat.sampleData, im: im, chatItem: voiceMessageWtFile, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: .constant(true)).modifier(ChatItemClipped(voiceMessageWtFile, tailVisible: true))
         }
         .previewLayout(.fixed(width: 360, height: 360))
+        .environmentObject(ChatModel(migrationState: nil))
     }
 }

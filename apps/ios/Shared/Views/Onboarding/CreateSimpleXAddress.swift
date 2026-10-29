@@ -15,6 +15,8 @@ import SimpleXChat
 
 struct CreateSimpleXAddress: View {
     @EnvironmentObject var m: ChatModel
+    // do not pass
+    var previewQRImage: UIImage? = nil
     @State private var progressIndicator = false
     @State private var showMailView = false
     @State private var mailViewResult: Result<MFMailComposeResult, Error>? = nil
@@ -32,7 +34,7 @@ struct CreateSimpleXAddress: View {
                         Spacer()
 
                         if let userAddress = m.userAddress {
-                            SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: Binding.constant(false))
+                            SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: Binding.constant(false), previewImage: previewQRImage)
                                 .frame(maxHeight: g.size.width)
                             shareQRCodeButton(userAddress)
                                 .frame(maxWidth: .infinity)
@@ -197,6 +199,10 @@ struct SendAddressMailView: View {
 
 struct CreateSimpleXAddress_Previews: PreviewProvider {
     static var previews: some View {
-        CreateSimpleXAddress()
+        let chatModel = ChatModel(migrationState: nil)
+        chatModel.userAddress = UserContactLink(CreatedConnLink(connFullLink: "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", connShortLink: nil))
+
+        return CreateSimpleXAddress(previewQRImage: UIImage(named: "preview-qr-code"))
+            .environmentObject(chatModel)
     }
 }

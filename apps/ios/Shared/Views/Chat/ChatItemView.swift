@@ -296,7 +296,7 @@ func previewDated(_ chatItem: ChatItem) -> ChatItem {
 
 struct ChatItemView_Previews: PreviewProvider {
     static var previews: some View {
-        let im = ItemsModel.shared
+        let im = ItemsModel()
         Group{
             let ci1 = ChatItem.getSample(1, .directSnd, previewDate, "hello")
             ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci1, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).modifier(ChatItemClipped(ci1, tailVisible: true))
@@ -325,7 +325,7 @@ struct ChatItemView_Previews: PreviewProvider {
 
 struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
     static var previews: some View {
-        let im = ItemsModel.shared
+        let im = ItemsModel()
         let ciFeatureContent = CIContent.rcvChatFeature(feature: .fullDelete, enabled: FeatureEnabled(forUser: false, forContact: false), param: nil)
         Group{
             let ci1 = ChatItem(

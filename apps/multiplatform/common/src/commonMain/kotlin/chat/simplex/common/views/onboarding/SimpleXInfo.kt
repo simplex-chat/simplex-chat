@@ -103,7 +103,9 @@ private fun SimpleXInfoDesktop(chatModel: ChatModel) {
 @Composable
 fun SimpleXInfoLayout(
   user: User?,
-  onboardingStage: SharedPreference<OnboardingStage>?
+  onboardingStage: SharedPreference<OnboardingStage>?,
+  // do not pass
+  previewMigrationState: MutableState<MigrationToState?>? = null
 ) {
   val topBar = onboardingStage == null && !appPrefs.oneHandUI.state.value
   val modifier = Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING)
@@ -165,7 +167,7 @@ fun SimpleXInfoLayout(
   )
   }
   LaunchedEffect(Unit) {
-    if (chatModel.migrationState.value != null && !ModalManager.fullscreen.hasModalsOpen()) {
+    if ((previewMigrationState ?: chatModel.migrationState).value != null && !ModalManager.fullscreen.hasModalsOpen()) {
       ModalManager.fullscreen.showCustomModal(animated = false) { close -> MigrateToDeviceView(close) }
     }
   }
@@ -305,7 +307,8 @@ fun PreviewSimpleXInfo() {
   SimpleXTheme {
     SimpleXInfoLayout(
       user = null,
-      onboardingStage = null
+      onboardingStage = null,
+      previewMigrationState = remember { mutableStateOf<MigrationToState?>(null) }
     )
   }
 }

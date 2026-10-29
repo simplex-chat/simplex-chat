@@ -144,5 +144,6 @@ struct ChatInfoToolbar_Previews: PreviewProvider {
     static var previews: some View {
         ChatInfoToolbar(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []))
             .environmentObject(CurrentColors.toAppTheme())
+            .environmentObject(ChatModel(migrationState: nil))
     }
 }

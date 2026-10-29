@@ -14,6 +14,8 @@ struct AddGroupView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
+    // do not pass
+    var previewValidName: String? = nil
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
     @State private var chat: Chat?
     @State private var groupInfo: GroupInfo?
@@ -167,7 +169,7 @@ struct AddGroupView: View {
     func groupNameTextField() -> some View {
         ZStack(alignment: .leading) {
             let name = profile.displayName.trimmingCharacters(in: .whitespaces)
-            if name != mkValidName(name) {
+            if name != (previewValidName ?? mkValidName(name)) {
                 Button {
                     showInvalidNameAlert = true
                 } label: {
@@ -236,6 +238,6 @@ func hideKeyboard() {
 
 struct AddGroupView_Previews: PreviewProvider {
     static var previews: some View {
-        AddGroupView()
+        AddGroupView(previewValidName: "")
     }
 }

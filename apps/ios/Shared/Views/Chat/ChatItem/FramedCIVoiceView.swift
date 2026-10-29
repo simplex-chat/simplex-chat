@@ -79,7 +79,7 @@ struct FramedCIVoiceView: View {
 
 struct FramedCIVoiceView_Previews: PreviewProvider {
     static var previews: some View {
-        let im = ItemsModel.shared
+        let im = ItemsModel()
         let sentVoiceMessage: ChatItem = ChatItem(
             chatDir: .directSnd,
             meta: CIMeta.getSample(1, previewDate, "", .sndSent(sndProgress: .complete), itemEdited: true),
@@ -106,5 +106,6 @@ struct FramedCIVoiceView_Previews: PreviewProvider {
         }
         .environment(\.revealed, false)
         .previewLayout(.fixed(width: 360, height: 360))
+        .environmentObject(ChatModel(migrationState: nil))
     }
 }

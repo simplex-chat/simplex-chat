@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextAlign
@@ -282,6 +283,8 @@ private fun UserAddressLayout(
   setProfileAddress: (Boolean) -> Unit,
   deleteAddress: () -> Unit,
   saveAddressSettings: (AddressSettingsState, MutableState<AddressSettingsState>) -> Unit,
+  // do not pass
+  previewQRImage: ImageBitmap? = null,
 ) {
   ColumnWithScrollBar {
     if (!onboarding) {
@@ -335,7 +338,7 @@ private fun UserAddressLayout(
             Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
             style = MaterialTheme.typography.body1
           )
-          SimpleXCreatedLinkQRCode(userAddress.connLinkContact, short = showShortLink.value)
+          SimpleXCreatedLinkQRCode(userAddress.connLinkContact, short = showShortLink.value, previewImage = previewQRImage)
         } else {
           val addressSettingsState = remember { mutableStateOf(AddressSettingsState(settings = userAddress.addressSettings)) }
           val savedAddressSettingsState = remember { mutableStateOf(addressSettingsState.value) }
@@ -344,7 +347,7 @@ private fun UserAddressLayout(
             stringResource(MR.strings.for_social_media),
             titleButton = if (userAddress.connLinkContact.connShortLink != null) {{ ToggleShortLinkButton(showShortLink) }} else null
           ) {
-            SimpleXCreatedLinkQRCode(userAddress.connLinkContact, short = showShortLink.value)
+            SimpleXCreatedLinkQRCode(userAddress.connLinkContact, short = showShortLink.value, previewImage = previewQRImage)
             if (userAddress.shouldBeUpgraded) {
               AddShortLinkButton(text = stringResource(MR.strings.add_short_link)) { showAddShortLinkAlert(null) }
             }
@@ -853,6 +856,7 @@ fun PreviewUserAddressLayoutAddressCreated() {
       learnMore = {},
       shareViaProfile = remember { mutableStateOf(false) },
       sendEmail = {},
+      previewQRImage = previewQRCodeImage(),
     )
   }
 }

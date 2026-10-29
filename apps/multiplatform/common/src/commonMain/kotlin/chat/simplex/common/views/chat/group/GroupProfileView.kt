@@ -54,6 +54,8 @@ fun GroupProfileLayout(
   groupInfo: GroupInfo,
   groupProfile: GroupProfile,
   saveProfile: (GroupProfile) -> Unit,
+  // do not pass
+  previewShortDescrFits: Boolean? = null,
 ) {
   val isChannel = groupInfo.useRelays
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
@@ -157,7 +159,7 @@ fun GroupProfileLayout(
                 stringResource(MR.strings.group_short_descr_field),
                 fontSize = 16.sp,
               )
-              if (!bioFitsLimit(shortDescr.value)) {
+              if (!(previewShortDescrFits ?: bioFitsLimit(shortDescr.value))) {
                 Spacer(Modifier.size(DEFAULT_PADDING_HALF))
                 IconButton(
                   onClick = { AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.group_descr_too_large)) },
@@ -167,7 +169,7 @@ fun GroupProfileLayout(
                 }
               }
             }
-            ProfileNameField(shortDescr, "", isValid = { bioFitsLimit(it) })
+            ProfileNameField(shortDescr, "", isValid = { previewShortDescrFits ?: bioFitsLimit(it) })
 
             Spacer(Modifier.height(DEFAULT_PADDING))
             val enabled = !dataUnchanged && canUpdateProfile(displayName.value, shortDescr.value, groupProfile)
@@ -234,7 +236,8 @@ fun PreviewGroupProfileLayout() {
       close = {},
       groupInfo = GroupInfo.sampleData,
       groupProfile = GroupProfile.sampleData,
-      saveProfile = { _ -> }
+      saveProfile = { _ -> },
+      previewShortDescrFits = true
     )
   }
 }

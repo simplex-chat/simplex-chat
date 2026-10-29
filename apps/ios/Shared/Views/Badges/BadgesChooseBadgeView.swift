@@ -55,6 +55,10 @@ enum BadgeLevel: String, CaseIterable, Identifiable {
 struct BadgesChooseBadgeView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var store = BadgeStore.shared
+    // do not pass
+    var previewMonthlyPrices: [BadgeLevel: BadgePrice]? = nil
+    // do not pass
+    var previewBrowserAllowed: Bool? = nil
     @State private var selectedLevel: BadgeLevel = .supporter
     @State private var continueActive = false
 
@@ -95,7 +99,7 @@ struct BadgesChooseBadgeView: View {
                             .padding(.vertical, 10)
                         // redeeming a code is here only when Support SimpleX offers the browser instead
                         Group {
-                            if badgeBrowserAllowed {
+                            if previewBrowserAllowed ?? badgeBrowserAllowed {
                                 RedeemCodeButton()
                             } else {
                                 Color.clear
@@ -113,7 +117,7 @@ struct BadgesChooseBadgeView: View {
         }
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
-        .task { await store.load() }
+        .task { if previewMonthlyPrices == nil { await store.load() } }
     }
 
     private func levelCard(_ level: BadgeLevel) -> some View {
@@ -130,7 +134,7 @@ struct BadgesChooseBadgeView: View {
                 Text(level.title)
                     .font(.title3)
                     .fontWeight(.bold)
-                BadgePeriod.monthly.priceText(store.price(level, .monthly))
+                BadgePeriod.monthly.priceText(previewMonthlyPrices?[level] ?? store.price(level, .monthly))
                     .font(.body)
                 VStack(spacing: 2) {
                     Text(level.fileSize)
@@ -177,7 +181,7 @@ struct BadgesChooseBadgeView: View {
 struct BadgesChooseBadgeView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesChooseBadgeView()
+            BadgesChooseBadgeView(previewMonthlyPrices: [.supporter: .price("$7"), .legend: .price("$70")], previewBrowserAllowed: false)
         }
     }
 }

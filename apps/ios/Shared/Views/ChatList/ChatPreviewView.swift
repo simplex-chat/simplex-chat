@@ -596,5 +596,6 @@ struct ChatPreviewView_Previews: PreviewProvider {
             ), progressByTimeout: Binding.constant(false))
         }
         .previewLayout(.fixed(width: 360, height: 78))
+        .environmentObject(ChatModel(migrationState: nil))
     }
 }

@@ -12,12 +12,14 @@ import SwiftUI
 // Spec: spec/client/navigation.md#OnboardingView
 struct OnboardingView: View {
     var onboarding: OnboardingStage
+    // do not pass
+    var previewVersionSaved = false
 
     var body: some View {
         NavigationView {
             switch onboarding {
             case .step1_SimpleXInfo:
-                SimpleXInfo(onboarding: true)
+                SimpleXInfo(onboarding: true, previewVersionSaved: previewVersionSaved)
                     .modifier(ThemedBackground())
             case .step2_CreateProfile:
                 CreateFirstProfile()
@@ -58,6 +60,7 @@ enum OnboardingStage: String, Identifiable {
 
 struct OnboardingStepsView_Previews: PreviewProvider {
     static var previews: some View {
-        OnboardingView(onboarding: .step1_SimpleXInfo)
+        OnboardingView(onboarding: .step1_SimpleXInfo, previewVersionSaved: true)
+            .environmentObject(ChatModel(migrationState: nil))
     }
 }

@@ -80,7 +80,9 @@ fun AddGroupLayout(
   createGroup: (Boolean, GroupProfile) -> Unit,
   incognitoPref: SharedPreference<Boolean>,
   rhId: Long?,
-  close: () -> Unit
+  close: () -> Unit,
+  // do not pass
+  previewNameValid: Boolean? = null
 ) {
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
@@ -143,7 +145,7 @@ fun AddGroupLayout(
               stringResource(MR.strings.group_display_name_field),
               fontSize = 16.sp
             )
-            if (!isValidDisplayName(displayName.value.trim())) {
+            if (!(previewNameValid ?: isValidDisplayName(displayName.value.trim()))) {
               Spacer(Modifier.size(DEFAULT_PADDING_HALF))
               IconButton({ showInvalidNameAlert(mkValidName(displayName.value.trim()), displayName) }, Modifier.size(20.dp)) {
                 Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
@@ -151,7 +153,7 @@ fun AddGroupLayout(
             }
           }
           Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-            ProfileNameField(displayName, "", { isValidDisplayName(it.trim()) }, focusRequester)
+            ProfileNameField(displayName, "", { previewNameValid ?: isValidDisplayName(it.trim()) }, focusRequester)
           }
           Spacer(Modifier.height(8.dp))
 
@@ -202,6 +204,7 @@ fun PreviewAddGroupLayout() {
       incognitoPref = SharedPreference({ false }, {}),
       close = {},
       rhId = null,
+      previewNameValid = true,
     )
   }
 }

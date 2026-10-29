@@ -17,6 +17,8 @@ struct SimpleXInfo: View {
     @State private var showWhyBuilt = false
     @State private var createProfileNavLinkActive = false
     var onboarding: Bool
+    // do not pass
+    var previewVersionSaved = false
 
     var body: some View {
         GeometryReader { g in
@@ -110,7 +112,7 @@ struct SimpleXInfo: View {
             }
         }
         .onAppear() {
-            setLastVersionDefault()
+            if !previewVersionSaved { setLastVersionDefault() }
         }
         .frame(maxHeight: .infinity)
         .navigationBarHidden(true) // necessary on iOS 15
@@ -143,6 +145,7 @@ let textNewLine = Text(verbatim: "\n")
 
 struct SimpleXInfo_Previews: PreviewProvider {
     static var previews: some View {
-        SimpleXInfo(onboarding: true)
+        SimpleXInfo(onboarding: true, previewVersionSaved: true)
+            .environmentObject(ChatModel(migrationState: nil))
     }
 }

@@ -8,18 +8,27 @@
 
 import SwiftUI
 import CodeScanner
+import AVFoundation
 
 struct ScanCodeView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var connectionVerified: Bool
     var verify: (String?) async -> (Bool, String)?
+    // do not pass
+    var previewCameraStatus: AVAuthorizationStatus? = nil
     @State private var showCodeError = false
 
     var body: some View {
         VStack(alignment: .leading) {
-            CodeScannerView(codeTypes: [.qr], scanMode: .oncePerCode, completion: processQRCode)
-                .aspectRatio(1, contentMode: .fit)
-                .cornerRadius(12)
+            Group {
+                if let previewCameraStatus {
+                    ScannerInView(showQRCodeScanner: .constant(false), processQRCode: processQRCode, previewCameraStatus: previewCameraStatus)
+                } else {
+                    CodeScannerView(codeTypes: [.qr], scanMode: .oncePerCode, completion: processQRCode)
+                }
+            }
+            .aspectRatio(1, contentMode: .fit)
+            .cornerRadius(12)
             Text("Scan security code from your contact's app.")
                 .padding(.top)
         }
@@ -55,6 +64,6 @@ struct ScanCodeView: View {
 
 struct ScanCodeView_Previews: PreviewProvider {
     static var previews: some View {
-        ScanCodeView(connectionVerified: Binding.constant(true), verify: {_ in nil})
+        ScanCodeView(connectionVerified: Binding.constant(true), verify: {_ in nil}, previewCameraStatus: .denied)
     }
 }

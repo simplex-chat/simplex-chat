@@ -583,6 +583,15 @@ public struct ConnectionStats: Decodable, Hashable {
     public var ratchetSyncInProgress: Bool {
         [.started, .agreed].contains(ratchetSyncState)
     }
+
+    public static let sampleData = ConnectionStats(
+        connAgentVersion: 7,
+        rcvQueuesInfo: [RcvQueueInfo(rcvServer: "smp://abcd@smp8.simplex.im", status: .active, canAbortSwitch: false, subStatus: .active)],
+        sndQueuesInfo: [SndQueueInfo(sndServer: "smp://abcd@smp9.simplex.im", status: .active)],
+        ratchetSyncState: .ok,
+        ratchetSyncSupported: true,
+        subStatus: .active
+    )
 }
 
 public struct RcvQueueInfo: Decodable, Hashable {

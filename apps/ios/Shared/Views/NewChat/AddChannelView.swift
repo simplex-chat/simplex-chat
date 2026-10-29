@@ -13,6 +13,10 @@ struct AddChannelView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
+    // do not pass
+    var previewValidName: String? = nil
+    // do not pass
+    var previewHasRelays: Bool? = nil
     @StateObject private var channelRelaysModel = ChannelRelaysModel.shared
     @StateObject private var ss = SaveableSettings()
     @State private var profile = GroupProfile(displayName: "", fullName: "")
@@ -110,7 +114,11 @@ struct AddChannelView: View {
             .compactSectionSpacing()
         }
         .onAppear {
-            Task { hasRelays = await checkHasRelays() }
+            if let previewHasRelays {
+                hasRelays = previewHasRelays
+            } else {
+                Task { hasRelays = await checkHasRelays() }
+            }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 focusDisplayName = true
             }
@@ -146,7 +154,7 @@ struct AddChannelView: View {
     private func channelNameTextField() -> some View {
         ZStack(alignment: .leading) {
             let name = profile.displayName.trimmingCharacters(in: .whitespaces)
-            if name != mkValidName(name) {
+            if name != (previewValidName ?? mkValidName(name)) {
                 Button {
                     showInvalidChannelNameAlert()
                 } label: {
@@ -533,6 +541,6 @@ struct RelayProgressIndicator: View {
 
 struct AddChannelView_Previews: PreviewProvider {
     static var previews: some View {
-        AddChannelView()
+        AddChannelView(previewValidName: "", previewHasRelays: true)
     }
 }

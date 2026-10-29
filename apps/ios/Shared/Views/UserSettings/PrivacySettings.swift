@@ -12,6 +12,8 @@ import SimpleXChat
 struct PrivacySettings: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
+    // do not pass
+    var previewUserName: String? = nil
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS, store: groupDefaults) private var useLinkPreviews = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS, store: groupDefaults) private var privacySanitizeLinks = false
@@ -129,7 +131,7 @@ struct PrivacySettings: View {
                     Text("Auto-accept")
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
-                    Text("These settings are for your current profile **\(m.currentUser?.displayName ?? "")**.")
+                    Text("These settings are for your current profile **\(previewUserName ?? m.currentUser?.displayName ?? "")**.")
                         .foregroundColor(theme.colors.secondary)
                 }
 
@@ -909,6 +911,7 @@ struct SimplexLockView: View {
 
 struct PrivacySettings_Previews: PreviewProvider {
     static var previews: some View {
-        PrivacySettings()
+        PrivacySettings(previewUserName: "alice")
+            .environmentObject(ChatModel(migrationState: nil))
     }
 }

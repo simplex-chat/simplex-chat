@@ -97,5 +97,6 @@ struct SetDeliveryReceiptsView: View {
 struct SetDeliveryReceiptsView_Previews: PreviewProvider {
     static var previews: some View {
         SetDeliveryReceiptsView()
+            .environmentObject(ChatModel(migrationState: nil))
     }
 }

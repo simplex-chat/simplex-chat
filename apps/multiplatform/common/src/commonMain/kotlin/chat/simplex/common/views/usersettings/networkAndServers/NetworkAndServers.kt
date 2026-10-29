@@ -1035,8 +1035,8 @@ fun PreviewNetworkAndServersLayout() {
       networkUseSocksProxy = remember { mutableStateOf(true) },
       onionHosts = remember { mutableStateOf(OnionHosts.PREFER) },
       toggleSocksProxy = {},
-      currUserServers =  remember { mutableStateOf(emptyList()) },
-      userServers = remember { mutableStateOf(emptyList()) },
+      currUserServers =  remember { mutableStateOf(listOf(UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator)) },
+      userServers = remember { mutableStateOf(listOf(UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator)) },
       serverErrors = remember { mutableStateOf(emptyList()) },
       serverWarnings = remember { mutableStateOf(emptyList()) }
     )

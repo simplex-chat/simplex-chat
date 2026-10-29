@@ -976,7 +976,9 @@ fun ChatLayout(
   showCommandsMenu: MutableState<Boolean>,
   contentFilter: MutableState<ContentFilter?>,
   availableContent: State<List<ContentFilter>>,
-  searchPlaceholder: String?
+  searchPlaceholder: String?,
+  // do not pass
+  previewNow: Instant? = null
 ) {
   val chatInfo = remember { derivedStateOf { chat.value?.chatInfo } }
   val scope = rememberCoroutineScope()
@@ -1036,6 +1038,7 @@ fun ChatLayout(
                   receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
                   updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
                   setReaction, showItemDetails, markItemsRead, markChatRead, closeSearch, remember { { onComposed(it) } }, developerTools, showViaProxy, contentFilter,
+                  previewNow = previewNow,
                 )
               }
               if (chatInfo is ChatInfo.Group && composeState.value.message.text.isNotEmpty()) {
@@ -1793,7 +1796,9 @@ fun BoxScope.ChatItemsList(
   onComposed: suspend (chatId: String) -> Unit,
   developerTools: Boolean,
   showViaProxy: Boolean,
-  contentFilter: State<ContentFilter?> = remember { mutableStateOf(null) }
+  contentFilter: State<ContentFilter?> = remember { mutableStateOf(null) },
+  // do not pass
+  previewNow: Instant? = null
 ) {
   val chatInfo = chat.chatInfo
   val loadingTopItems = remember { mutableStateOf(false) }
@@ -2273,7 +2278,7 @@ fun BoxScope.ChatItemsList(
         }
       }
       if (itemSeparation.date != null) {
-        DateSeparator(itemSeparation.date)
+        DateSeparator(itemSeparation.date, previewNow)
       }
       ChatItemView(cItem, range, itemSeparation, previousItemSeparationLargeGap)
     }
@@ -2445,7 +2450,7 @@ fun BoxScope.ChatItemsList(
 
           val prevItem = listItem.prevItem
           if (prevItem != null) {
-            DateSeparator(prevItem.meta.itemTs)
+            DateSeparator(prevItem.meta.itemTs, previewNow)
           }
         }
       } else {
@@ -2482,7 +2487,7 @@ fun BoxScope.ChatItemsList(
 
         if (last != null) {
           // no using separate item(){} block in order to have total number of items in LazyColumn match number of merged items
-          DateSeparator(last.meta.itemTs)
+          DateSeparator(last.meta.itemTs, previewNow)
         }
         if (item.isRcvNew) {
           val itemIds = when (merged) {
@@ -3095,9 +3100,13 @@ private fun ButtonRow(horizontalArrangement: Arrangement.Horizontal, content: @C
 }
 
 @Composable
-private fun DateSeparator(date: Instant) {
+private fun DateSeparator(
+  date: Instant,
+  // do not pass
+  previewNow: Instant? = null
+) {
   Text(
-    text = getTimestampDateText(date),
+    text = getTimestampDateText(date, previewNow = previewNow),
     Modifier.padding(vertical = DEFAULT_PADDING_HALF + 4.dp, horizontal = DEFAULT_PADDING_HALF).fillMaxWidth(),
     fontSize = 14.sp,
     fontWeight = FontWeight.Medium,
@@ -3930,7 +3939,8 @@ fun PreviewChatLayout() {
       showCommandsMenu = remember { mutableStateOf(false) },
       contentFilter = remember { mutableStateOf(null) },
       availableContent = remember { mutableStateOf(ContentFilter.initialList) },
-      searchPlaceholder = null
+      searchPlaceholder = null,
+      previewNow = previewDate
     )
   }
 }
@@ -4013,7 +4023,8 @@ fun PreviewGroupChatLayout() {
       showCommandsMenu = remember { mutableStateOf(false) },
       contentFilter = remember { mutableStateOf(null) },
       availableContent = remember { mutableStateOf(ContentFilter.initialList) },
-      searchPlaceholder = null
+      searchPlaceholder = null,
+      previewNow = previewDate
     )
   }
 }

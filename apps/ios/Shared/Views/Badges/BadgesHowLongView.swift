@@ -75,6 +75,7 @@ struct BadgesHowLongView: View {
     @ObservedObject private var badgeModel = BadgeModel.shared
     let level: BadgeLevel
     var startDate = Date()
+    // do not pass
     var priceList: BadgePriceList? = nil
     @State private var chosenPeriod: BadgePeriod? = nil
     @State private var continueActive = false
@@ -142,7 +143,7 @@ struct BadgesHowLongView: View {
         }
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
-        .task { await store.load() }
+        .task { if priceList == nil { await store.load() } }
     }
 
     private func periodCard(_ period: BadgePeriod) -> some View {

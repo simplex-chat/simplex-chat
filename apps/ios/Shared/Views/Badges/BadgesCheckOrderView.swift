@@ -19,7 +19,12 @@ struct BadgesCheckOrderView: View {
     let level: BadgeLevel
     let period: BadgePeriod
     var startDate = Date()
+    // do not pass
     var priceList: BadgePriceList? = nil
+    // do not pass
+    var previewCanBuy: Bool? = nil
+    // do not pass
+    var previewCanMakePayments: Bool? = nil
     @State private var purchasing = false
     @State private var privacyPolicyActive = false
     // presented from this view, not AlertManager: its host is behind the sheet these views open in
@@ -66,7 +71,7 @@ struct BadgesCheckOrderView: View {
                         footnote("This Apple ID already has a badge subscription. Only the profile that bought it can continue it.")
                     }
 
-                    if !AppStore.canMakePayments {
+                    if !(previewCanMakePayments ?? AppStore.canMakePayments) {
                         footnote("In-app purchases are not allowed on this device.")
                     }
 
@@ -104,7 +109,7 @@ struct BadgesCheckOrderView: View {
         }
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
-        .task { await store.load() }
+        .task { if priceList == nil { await store.load() } }
         .alert(item: $alert) { $0.alert }
     }
 
@@ -130,7 +135,7 @@ struct BadgesCheckOrderView: View {
 
     private func payButton() -> some View {
         let price = prices.price(period)
-        let disabled = !price.canPurchase || purchasing || !store.canBuy(chatModel.currentUser?.userId) || !prices.forSale(period) || !AppStore.canMakePayments
+        let disabled = !price.canPurchase || purchasing || !(previewCanBuy ?? store.canBuy(chatModel.currentUser?.userId)) || !prices.forSale(period) || !(previewCanMakePayments ?? AppStore.canMakePayments)
         return Button {
             purchase()
         } label: {
@@ -221,7 +226,9 @@ struct BadgesCheckOrderView_Previews: PreviewProvider {
                 level: .supporter,
                 period: .oneMonth,
                 startDate: previewDate,
-                priceList: BadgePriceList(oneMonth: .price("$7.00"), monthly: .price("$7.00"), annual: .price("$42.00"), monthlyAmount: 7, annualAmount: 42, subscriptionsForSale: true, subscribedBefore: false)
+                priceList: BadgePriceList(oneMonth: .price("$7.00"), monthly: .price("$7.00"), annual: .price("$42.00"), monthlyAmount: 7, annualAmount: 42, subscriptionsForSale: true, subscribedBefore: false),
+                previewCanBuy: true,
+                previewCanMakePayments: true
             )
         }
     }

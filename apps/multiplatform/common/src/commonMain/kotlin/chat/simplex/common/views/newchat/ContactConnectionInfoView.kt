@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.painterResource
@@ -85,6 +86,8 @@ private fun ContactConnectionInfoLayout(
   deleteConnection: () -> Unit,
   onLocalAliasChanged: (String) -> Unit,
   learnMore: () -> Unit,
+  // do not pass
+  previewQRImage: ImageBitmap? = null,
 ) {
   @Composable fun incognitoEnabled() {
     if (contactConnection.incognito) {
@@ -138,7 +141,7 @@ private fun ContactConnectionInfoLayout(
         stringResource(MR.strings.one_time_link),
         titleButton = if (connLink.connShortLink == null) null else {{ ToggleShortLinkButton(showShortLink) }}
       ) {
-        SimpleXCreatedLinkQRCode(connLink, short = showShortLink.value)
+        SimpleXCreatedLinkQRCode(connLink, short = showShortLink.value, previewImage = previewQRImage)
         incognitoEnabled()
         ShareLinkButton(connLink.simplexChatUri(short = showShortLink.value))
         OneTimeLinkLearnMoreButton(learnMore)
@@ -219,7 +222,8 @@ internal fun PreviewContactConnectionInfoView() {
       rhId = null,
       deleteConnection = {},
       onLocalAliasChanged = {},
-      learnMore = {}
+      learnMore = {},
+      previewQRImage = previewQRCodeImage()
     )
   }
 }

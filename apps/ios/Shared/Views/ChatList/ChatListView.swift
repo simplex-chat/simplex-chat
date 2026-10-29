@@ -154,9 +154,16 @@ struct UserPickerSheetView: View {
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
     @StateObject private var connectProgressManager = ConnectProgressManager.shared
-    @ObservedObject private var badgeModel = BadgeModel.shared
+    // do not pass
+    @ObservedObject var badgeModel = BadgeModel.shared
     @EnvironmentObject var theme: AppTheme
     @Binding var activeUserPickerSheet: UserPickerSheet?
+    // do not pass
+    var previewSubsTotal: (SMPServerSubs, Bool)? = nil
+    // do not pass
+    var previewInUS: Bool? = nil
+    // do not pass
+    var previewNoShownBadge: Bool? = nil
     @State private var showNewChatSheet = false
     @State private var showGetStakeSheet = false
     @State private var searchMode = false
@@ -167,7 +174,8 @@ struct ChatListView: View {
     @State private var scrollToSearchBar = false
     @State private var userPickerShown: Bool = false
     @State private var sheet: SomeSheet<AnyView>? = nil
-    @StateObject private var chatTagsModel = ChatTagsModel.shared
+    // do not pass
+    @StateObject var chatTagsModel = ChatTagsModel.shared
     @State private var scrollToItemId: ChatItem.ID? = nil
 
     // iOS 15 is required it to show/hide toolbar while chat is hidden/visible
@@ -320,7 +328,7 @@ struct ChatListView: View {
     
     @ToolbarContentBuilder var topToolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) { leadingToolbarItem }
-        ToolbarItem(placement: .principal) { if !shouldShowOnboarding { SubsStatusIndicator() } }
+        ToolbarItem(placement: .principal) { if !shouldShowOnboarding { SubsStatusIndicator(previewSubsTotal: previewSubsTotal) } }
         ToolbarItem(placement: .topBarTrailing) { trailingToolbarItem }
     }
 
@@ -331,7 +339,7 @@ struct ChatListView: View {
                 leadingToolbarItem.padding(.bottom, padding)
                 Spacer()
                 if !shouldShowOnboarding {
-                    SubsStatusIndicator().padding(.bottom, padding)
+                    SubsStatusIndicator(previewSubsTotal: previewSubsTotal).padding(.bottom, padding)
                     Spacer()
                 }
                 trailingToolbarItem.padding(.bottom, padding)
@@ -347,7 +355,7 @@ struct ChatListView: View {
             leadingToolbarItem.padding(.bottom, padding)
             Spacer()
             if !shouldShowOnboarding {
-                SubsStatusIndicator().padding(.bottom, padding)
+                SubsStatusIndicator(previewSubsTotal: previewSubsTotal).padding(.bottom, padding)
                 Spacer()
             }
             trailingToolbarItem.padding(.bottom, padding)
@@ -455,7 +463,7 @@ struct ChatListView: View {
         if shouldShowOnboarding {
             VStack(spacing: 0) {
                 ConnectOnboardingView()
-                if chatModel.bannerSlotFree(for: .getStake) && isInUS && !getStakeBannerDismissed {
+                if chatModel.bannerSlotFree(for: .getStake) && (previewInUS ?? isInUS) && !getStakeBannerDismissed {
                     GetStakeBanner(showDismiss: false, onTap: openGetStake, onDismiss: {})
                         .padding(.horizontal, 20)
                         .padding(.bottom, 8)
@@ -534,7 +542,7 @@ struct ChatListView: View {
                             .onAppear { chatModel.chatListBanner = .badgeAlert }
                     // noShownBadge is false until the badge state loads: the pitch must not lock the slot and then
                     // be hidden by a supporter's badge arriving a moment later, leaving the slot empty for the session
-                    } else if chatModel.bannerSlotFree(for: .badgePitch) && !supporterBannerShown && noShownBadge() && chatModel.chats.count > 3 {
+                    } else if chatModel.bannerSlotFree(for: .badgePitch) && !supporterBannerShown && (previewNoShownBadge ?? noShownBadge()) && chatModel.chats.count > 3 {
                         SupportSimpleXBanner(
                             showDismiss: supporterBannerTapped,
                             onTap: {
@@ -549,7 +557,7 @@ struct ChatListView: View {
                             .listRowBackground(Color.clear)
                             .zIndex(1)
                             .onAppear { chatModel.chatListBanner = .badgePitch }
-                    } else if chatModel.bannerSlotFree(for: .getStake) && isInUS && !getStakeBannerDismissed {
+                    } else if chatModel.bannerSlotFree(for: .getStake) && (previewInUS ?? isInUS) && !getStakeBannerDismissed {
                         GetStakeBanner(
                             showDismiss: getStakeBannerTapped && !chatModel.chats.isEmpty,
                             onTap: openGetStake,
@@ -713,6 +721,8 @@ struct ChatListView: View {
 }
 
 struct SubsStatusIndicator: View {
+    // do not pass
+    var previewSubsTotal: (SMPServerSubs, Bool)? = nil
     @State private var subs: SMPServerSubs = SMPServerSubs.newSMPServerSubs
     @State private var hasSess: Bool = false
     @State private var task: Task<Void, Never>?
@@ -734,6 +744,10 @@ struct SubsStatusIndicator: View {
         }
         .disabled(ChatModel.shared.chatRunning != true)
         .onAppear {
+            if let previewSubsTotal {
+                (subs, hasSess) = previewSubsTotal
+                return
+            }
             startTask()
         }
         .onDisappear {
@@ -1281,10 +1295,10 @@ struct ChatListView_Previews: PreviewProvider {
     @State static var userPickerSheet: UserPickerSheet? = .none
 
     static var previews: some View {
-        let chatModel = ChatModel()
+        let chatModel = ChatModel(migrationState: nil)
         var contactRequest = UserContactRequest.sampleData
         contactRequest.updatedAt = previewDate
-        chatModel.updateChats([
+        [
             ChatData(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, previewDate, "hello")]
@@ -1298,12 +1312,26 @@ struct ChatListView_Previews: PreviewProvider {
                 chatItems: []
             )
 
-        ])
+        ].enumerated().forEach { chatModel.addChat_(Chat($1), at: $0) }
         return Group {
-            ChatListView(activeUserPickerSheet: $userPickerSheet)
+            ChatListView(
+                badgeModel: BadgeModel(),
+                activeUserPickerSheet: $userPickerSheet,
+                previewSubsTotal: (SMPServerSubs(ssActive: 3, ssPending: 0), true),
+                previewInUS: true,
+                previewNoShownBadge: false,
+                chatTagsModel: ChatTagsModel()
+            )
                 .environmentObject(chatModel)
-            ChatListView(activeUserPickerSheet: $userPickerSheet)
-                .environmentObject(ChatModel())
+            ChatListView(
+                badgeModel: BadgeModel(),
+                activeUserPickerSheet: $userPickerSheet,
+                previewSubsTotal: (SMPServerSubs(ssActive: 3, ssPending: 0), true),
+                previewInUS: true,
+                previewNoShownBadge: false,
+                chatTagsModel: ChatTagsModel()
+            )
+                .environmentObject(ChatModel(migrationState: nil))
         }
     }
 }

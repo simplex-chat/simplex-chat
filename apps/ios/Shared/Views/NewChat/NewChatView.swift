@@ -81,8 +81,11 @@ struct NewChatView: View {
     @State var selection: NewChatOption
     @State var showQRCodeScanner = false
     var onboarding: Bool = false
+    // do not pass
+    var previewQRImage: UIImage? = nil
     @State private var invitationUsed: Bool = false
-    @State private var connLinkInvitation: CreatedConnLink = CreatedConnLink(connFullLink: "", connShortLink: nil)
+    // do not pass
+    @State var connLinkInvitation: CreatedConnLink = CreatedConnLink(connFullLink: "", connShortLink: nil)
     @State private var showShortLink = true
     @State private var creatingConnReq = false
     @State var choosingProfile = false
@@ -189,7 +192,8 @@ struct NewChatView: View {
                     connLinkInvitation: $connLinkInvitation,
                     showShortLink: $showShortLink,
                     choosingProfile: $choosingProfile,
-                    onboarding: onboarding
+                    onboarding: onboarding,
+                    previewQRImage: previewQRImage
                 )
             } else if creatingConnReq {
                 creatingLinkProgressView()
@@ -254,6 +258,8 @@ private struct InviteView: View {
     @Binding var showShortLink: Bool
     @Binding var choosingProfile: Bool
     var onboarding: Bool = false
+    // do not pass
+    var previewQRImage: UIImage? = nil
 
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
 
@@ -348,7 +354,7 @@ private struct InviteView: View {
 
     private func qrCodeView() -> some View {
         Section {
-            SimpleXCreatedLinkQRCode(link: connLinkInvitation, short: $showShortLink, onShare: setInvitationUsed)
+            SimpleXCreatedLinkQRCode(link: connLinkInvitation, short: $showShortLink, onShare: setInvitationUsed, previewImage: previewQRImage)
                 .id("simplex-qrcode-view-for-\(connLinkInvitation.simplexChatUri(short: showShortLink))")
                 .padding()
                 .background(
@@ -740,6 +746,8 @@ struct ScannerInView: View {
     @State private var cameraAuthorizationStatus: AVAuthorizationStatus?
     var scanMode: ScanMode = .continuous
     var placeholderBackground = Color(uiColor: .secondarySystemGroupedBackground)
+    // do not pass
+    var previewCameraStatus: AVAuthorizationStatus? = nil
 
     var body: some View {
         Group {
@@ -788,7 +796,7 @@ struct ScannerInView: View {
             }
         }
         .task {
-            let status = AVCaptureDevice.authorizationStatus(for: .video)
+            let status = previewCameraStatus ?? AVCaptureDevice.authorizationStatus(for: .video)
             cameraAuthorizationStatus = status
             if showQRCodeScanner {
                 switch status {
@@ -1807,7 +1815,9 @@ struct NewChatView_Previews: PreviewProvider {
         @State var contactConnection: PendingContactConnection? = nil
 
         NewChatView(
-            selection: .invite
+            selection: .invite,
+            previewQRImage: UIImage(named: "preview-qr-code"),
+            connLinkInvitation: CreatedConnLink(connFullLink: "https://simplex.chat/invitation#/?v=1&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FFe5ICmvrm4wkrr6X1LTMii-lhBqLeB76%23MCowBQYDK2VuAyEAdhZZsHpuaAk3Hh1q0uNb_6hGTpuwBIrsp2z9U2T0oC0%3D&e2e=v%3D1%26x3dh%3DMEIwBQYDK2VvAzkAcz6jJk71InuxA0bOX7OUhddfB8Ov7xwQIlIDeXBRZaOntUU4brU5Y3rBzroZBdQJi0FKdtt_D7I%3D%2CMEIwBQYDK2VvAzkA-hDvk1duBi1hlOr08VWSI-Ou4JNNSQjseY69QyKm7Kgg1zZjbpGfyBqSZ2eqys6xtoV4ZtoQUXQ%3D", connShortLink: nil)
         )
     }
 }

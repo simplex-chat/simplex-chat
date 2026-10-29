@@ -21,10 +21,14 @@ struct ChatItemForwardingView: View {
     var isProhibited: ((Chat) -> Bool)? = nil
     var onSelectChat: ((Chat) -> Void)? = nil
     var includeLocal: Bool = true
+    // do not pass
+    var previewChats: [Chat]? = nil
+    // do not pass
+    var previewHasSimplexLink: Bool? = nil
 
     @State private var searchText: String = ""
     @State private var alert: SomeAlert?
-    private var chatsToForwardTo: [Chat] { filterChatsToForwardTo(chats: ChatModel.shared.chats, includeLocal: includeLocal) }
+    private var chatsToForwardTo: [Chat] { filterChatsToForwardTo(chats: previewChats ?? ChatModel.shared.chats, includeLocal: includeLocal) }
 
     var body: some View {
         NavigationView {
@@ -77,7 +81,7 @@ struct ChatItemForwardingView: View {
     @ViewBuilder private func forwardListChatView(_ chat: Chat) -> some View {
         let prohibited = isProhibited?(chat) ?? chatItems.map { ci in
             chat.prohibitedByPref(
-                hasSimplexLink: hasSimplexLink(ci.content.msgContent?.text),
+                hasSimplexLink: previewHasSimplexLink ?? hasSimplexLink(ci.content.msgContent?.text),
                 isMediaOrFileAttachment: ci.content.msgContent?.isMediaOrFileAttachment ?? false,
                 isVoice: ci.content.msgContent?.isVoice ?? false
             )
@@ -134,7 +138,12 @@ struct ChatItemForwardingView_Previews: PreviewProvider {
         ChatItemForwardingView(
             chatItems: [ChatItem.getSample(1, .directSnd, previewDate, "hello")],
             fromChatInfo: .direct(contact: Contact.sampleData),
-            composeState: Binding.constant(ComposeState(message: "hello"))
+            composeState: Binding.constant(ComposeState(message: "hello")),
+            previewChats: [
+                Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
+                Chat(chatInfo: ChatInfo.sampleData.group, chatItems: [])
+            ],
+            previewHasSimplexLink: false
         ).environmentObject(CurrentColors.toAppTheme())
     }
 }

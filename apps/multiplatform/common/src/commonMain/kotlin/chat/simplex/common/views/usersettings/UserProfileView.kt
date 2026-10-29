@@ -62,6 +62,8 @@ fun UserProfileLayout(
   profile: Profile,
   close: () -> Unit,
   saveProfile: (String, String, String, String, String?) -> Unit,
+  // do not pass
+  previewShortDescrFits: Boolean? = null,
 ) {
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val displayName = remember { mutableStateOf(profile.displayName) }
@@ -215,7 +217,7 @@ fun UserProfileLayout(
                 stringResource(MR.strings.short_descr__field),
                 fontSize = 16.sp,
               )
-              if (!bioFitsLimit(shortDescr.value)) {
+              if (!(previewShortDescrFits ?: bioFitsLimit(shortDescr.value))) {
                 Spacer(Modifier.size(DEFAULT_PADDING_HALF))
                 IconButton(
                   onClick = { AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.bio_too_large)) },
@@ -315,7 +317,8 @@ fun PreviewUserProfileLayoutEditOff() {
     UserProfileLayout(
       profile = Profile.sampleData,
       close = {},
-      saveProfile = { _, _, _, _, _ -> }
+      saveProfile = { _, _, _, _, _ -> },
+      previewShortDescrFits = true
     )
   }
 }
@@ -331,7 +334,8 @@ fun PreviewUserProfileLayoutEditOn() {
     UserProfileLayout(
       profile = Profile.sampleData,
       close = {},
-      saveProfile = { _, _, _, _, _ -> }
+      saveProfile = { _, _, _, _, _ -> },
+      previewShortDescrFits = true
     )
   }
 }
