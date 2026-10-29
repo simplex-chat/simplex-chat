@@ -42,7 +42,7 @@ func bodyScaled(_ points: CGFloat) -> CGFloat {
 }
 
 func messageTextColor(_ theme: AppTheme) -> Color {
-    theme.colors.onSurface.opacity(theme.colors.isLight ? 1 : 0.87)
+    theme.colors.onSurface.opacity(theme.colors.isLight ? 1 : 0.95)
 }
 
 func terminalBackgroundColor(_ theme: AppTheme) -> Color {

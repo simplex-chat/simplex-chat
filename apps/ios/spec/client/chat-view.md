@@ -192,7 +192,7 @@ Renders emoji-only messages (messages containing only emoji characters) in a lar
 
 Renders message text with SimpleX markdown formatting (bold, italic, code, links, mentions). Blocks of `markdownBlocks` (headings, lists, quotes, code blocks, tables, rules) are drawn as a column of views by `MarkdownBlocksView`; code blocks and tables scroll sideways.
 
-Text colour: `textColor`, else `messageTextColor(theme)`: `onSurface`, at 87% in dark themes. `FramedItemView` passes `onSurface` for quote text (terminal rows: 70%). `MarkdownView` (chat item info, group welcome message, profile description) draws its text in `messageTextColor(theme)`.
+Text colour: `textColor`, else `messageTextColor(theme)`: `onSurface`, at 95% in dark themes. `FramedItemView` passes `onSurface` for quote text (terminal rows: 70%). `MarkdownView` (chat item info, group welcome message, profile description) draws its text in `messageTextColor(theme)`.
 
 ### DeletedItemView / MarkedDeletedItemView
 
