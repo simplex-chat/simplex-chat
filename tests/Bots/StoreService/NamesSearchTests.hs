@@ -78,6 +78,7 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "answers a registered name with its entities, raw records, owner, resolver, nonce, expiry and grace period" $ testRegistered g
     it "answers a listed name's community entry when available, reserved, being registered here and registered, a plain answer for an ini line the policy does not list, the terms on chain as they change, and 503 while its listing is unread" $ testCommunity g
     it "answers a name the policy lists without an ini line as a community name without its text" $ testCommunityWithoutText g
+    it "answers a listed name for 2 years at their price, whatever years the configuration gives" $ testCommunityYears g
     it "makes one entity per short link of its record's kind, splitting on ';', and none from other values" $ testRecordLinks g
     it "makes entities of the first 5 short links of a record only, fetching no other" $ testRecordLinksCap g
     it "reads no records from another resolver" $ testOtherResolver g
@@ -427,6 +428,14 @@ testCommunityWithoutText g = withSearch g id id $ \s@Search {node} -> do
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   answer <- searchAlice s 12
   (snd answer >>= JT.parseMaybe (J.withObject "answer" (J..: "community"))) `shouldBe` Just (communityEntry J.Null)
+
+testCommunityYears :: TVar ChaChaDRG -> IO ()
+testCommunityYears g = withSearch g (\c -> c {nYears = 3}) id $ \s@Search {node} -> do
+  listCommunityName node alice
+  available node
+  answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
+  answer <- searchAlice s 12
+  (snd answer >>= JT.parseMaybe (J.withObject "answer" $ \o -> (,) <$> o J..: "years" <*> o J..: "price")) `shouldBe` Just (2 :: Int, 10000 :: Int)
 
 testRecordLinks :: TVar ChaChaDRG -> IO ()
 testRecordLinks g = withSearch g id id $ \s@Search {node} -> do

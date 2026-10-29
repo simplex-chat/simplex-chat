@@ -28,6 +28,7 @@ module StoreService.Names.Orders
     codeOrderInsert,
     checkTimestamp,
     checkDuration,
+    orderYears,
     checkTerms,
     checkNameFree,
     checkPrice,
@@ -67,7 +68,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Log (logError, logWarn)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
-import StoreService.Names.Community (communityJSON, nameCommunityTerms, termsFor, termsJSON)
+import StoreService.Names.Community (agreedTermsHash, communityJSON, nameCommunityTerms, termsFor, termsJSON, yearsFor)
 import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, confirmedTag, nameExpires, nameStatus, noCommunityTerms, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
@@ -271,6 +272,11 @@ checkDuration NamesConfig {nTermStart, nTermSlackSeconds} now years duration = d
       expected = max 0 (unixSeconds nTermStart - unixSeconds now)
   when (free < 0 || abs (free - expected) > toInteger nTermSlackSeconds) $ Left ORBadRequest
 
+-- | The paid years of an order whose payment covers these years: a community name's are fixed, by the terms it signed,
+-- which 'checkTerms' holds to the name's.
+orderYears :: OrderFields -> Int -> Int
+orderYears OrderFields {ofAgreedTerms} = yearsFor (agreedTermsHash ofAgreedTerms)
+
 -- | The terms the order signed must be the current ones for its name, with the community terms' hash for a name the policy lists,
 -- which cannot be ordered before the owner sets those terms.
 checkTerms :: NamesConfig -> Contracts -> OrderFields -> IO (Either OrderRefusal ())
@@ -318,10 +324,10 @@ checkMoveMeets st NameRegistration {nrId = rid, nrOwner} OrderFields {ofLabelHas
   orders <- withTransaction st $ \db -> getLiveOrders db ofCommitment nrOwner ofLabelHash now
   pure $ if any ((/= rid) . nrId . loRegistration) orders then Left OROrderExists else Right ()
 
--- | The new name's chain price for the order's years, at most what the order is worth, becomes its price.
-checkMovePrice :: Contracts -> NameRegistration -> Int -> IO (Either OrderRefusal Int)
-checkMovePrice ct NameRegistration {nrPrice, nrYears} len =
-  chainPriceCents ct len nrYears >>= \case
+-- | The new name's chain price for its years, at most what the order is worth, becomes its price.
+checkMovePrice :: Contracts -> NameRegistration -> Int -> Int -> IO (Either OrderRefusal Int)
+checkMovePrice ct NameRegistration {nrPrice} years len =
+  chainPriceCents ct len years >>= \case
     Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: a move's price read failed: " <> tshow e)
     Right price
       | price > nrPrice -> pure $ Left $ ORPriceTooHigh price

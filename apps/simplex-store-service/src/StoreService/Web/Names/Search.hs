@@ -28,7 +28,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Log (logWarn)
 import StoreService.Names.Abi (bytes32FromHex)
-import StoreService.Names.Community (communityJSON, nameCommunityTerms, termsJSON)
+import StoreService.Names.Community (communityJSON, nameCommunityTerms, termsJSON, yearsFor)
 import StoreService.Names.Contracts
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
@@ -53,16 +53,18 @@ searchHandler cfg@NamesConfig {nYears} st ct ps hashText req respond = case Labe
     Nothing -> respond invalidName
     Just len -> do
       registering <- withTransaction st (`isLabelRegistering` lh)
-      timeout (ctDeadline ct) (together $ (,) <$> concurrent (runExceptT $ found lh len registering) <*> concurrent (nameCommunityTerms ct lh)) >>= \case
+      timeout (ctDeadline ct) (runExceptT $ found lh len registering) >>= \case
         Just (Right (f, h)) -> respond =<< searchAnswer cfg ps lh h f
         Just (Left e) -> unavailable $ tshow e
         Nothing -> unavailable "timed out"
   where
-    found lh len registering =
-      ExceptT (nameStatus ct lh) >>= \case
+    -- the price is for the name's years, which its community terms fix
+    found lh len registering = do
+      (status, h) <- ExceptT $ together $ (,) <$> concurrent (nameStatus ct lh) <*> concurrent (nameCommunityTerms ct lh)
+      (,h) <$> case status of
         NSAvailable
           | registering -> pure FRegistering
-          | otherwise -> FAvailable <$> ExceptT (chainPriceCents ct len nYears)
+          | otherwise -> FAvailable <$> ExceptT (chainPriceCents ct len (yearsFor h nYears))
         NSReserved -> pure FReserved
         NSRegistered name -> FRegistered name <$> ExceptT (nameRecords ct lh name)
     unavailable :: Text -> IO ResponseReceived
@@ -83,7 +85,7 @@ searchAnswer :: NamesConfig -> Profiles -> LabelHash -> Maybe ByteString -> Foun
 searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nChain = ChainConfig {cChainId, cResolver, cSponsor}} ps lh h = \case
   FAvailable price ->
     ok $
-      ["status" .= ("available" :: Text), "price" .= price, "currency" .= ("usd" :: Text), "years" .= nYears, "termStart" .= termStart]
+      ["status" .= ("available" :: Text), "price" .= price, "currency" .= ("usd" :: Text), "years" .= yearsFor h nYears, "termStart" .= termStart]
         <> ["resolver" .= addressText cResolver, "sponsor" .= addressText cSponsor]
         <> chain
         <> ["terms" .= termsJSON cfg]

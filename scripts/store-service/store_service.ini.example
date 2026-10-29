@@ -83,7 +83,7 @@ private_key = replace-me
 ; hyphens), and the page the order's checkbox links to; both required, read only at startup
 ;terms_version = 2026-10-23
 ;terms_url = https://simplex.chat/
-; the paid years of a name; at least 2, the controller's minimum
+; the paid years of a name, except a community name's, which are 2; at least 2, the controller's minimum
 ;years = 2
 ; a name's term starts here; the days until then are free
 ;term_start = 2027-01-01T00:00:00Z

@@ -123,12 +123,14 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
     moveChecked now r@NameRegistration {nrMoves, nrYears, nrPrice, nrPayment} fields@OrderFields {ofLabelHash, ofLength, ofDuration}
       | nrMoves >= nMaxOrderMoves oeConfig = answerNow <$> registrationRefusalResponse env "move_limit" rid
       | otherwise =
-          firstRefusal [checkMoveMeets oeStore r fields now, pure $ checkDuration oeConfig now nrYears ofDuration, checkTerms oeConfig oeContracts fields, checkNameFree oeContracts oeStore ofLabelHash] >>= \case
+          firstRefusal [checkMoveMeets oeStore r fields now, pure $ checkDuration oeConfig now years ofDuration, checkTerms oeConfig oeContracts fields, checkNameFree oeContracts oeStore ofLabelHash] >>= \case
             Just refusal -> refuse refusal
             Nothing -> case nrPayment of
-              RPInvoice {} -> checkMovePrice oeContracts r ofLength >>= either refuse (write now r fields)
-              RPBalance -> checkMovePrice oeContracts r ofLength >>= either refuse (write now r fields)
+              RPInvoice {} -> checkMovePrice oeContracts r years ofLength >>= either refuse (write now r fields)
+              RPBalance -> checkMovePrice oeContracts r years ofLength >>= either refuse (write now r fields)
               RPCode _ -> write now r fields nrPrice
+      where
+        years = orderYears fields nrYears
     write now r fields price =
       retargetOrder env r fields price >>= \case
         Right v -> movedAnswer now v

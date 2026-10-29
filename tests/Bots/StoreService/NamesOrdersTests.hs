@@ -161,6 +161,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "closes an overdue paid order of the same wallet and name, cancelling its invoice after" testCodeClosesOverdue
     it "refuses each code that cannot pay with its tag, the state before the cover" testCodeRefusals
     it "checks the duration for the code's years" testCodeYears
+    it "checks a community name's code order for 2 years, whatever its code's years, keeping the code's" testCommunityCodeYears
     it "answers name_taken and name_check_unavailable before the code's state and cover, leaving the code unreserved" testCodeNameChecks
     it "refuses sealed over 11095 characters, a body over 16384 bytes and malformed fields, accepting the longest order" testCodeSizes
     it "runs code orders in the code's turn, one of two spending one code for two names winning, the other answered code_reserved" testConcurrentCodeOrders
@@ -175,6 +176,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "answers terms_changed for a code order under old terms, listed or not, leaving the code unreserved, and accepts the community terms" testCodeTermsChanged
     it "answers a code order's exact resend after the version changed" testCodeResendAfterBump
     it "checks a code order's terms after the timestamp, with the community listing's read, before the name check and the code's state" testCodeTermsCheckOrder
+    it "checks a community name's order for 2 years at their price, whatever years the configuration gives, storing 2" testCommunityInvoiceYears
   describe "closed orders" $ do
     it "accepts a new order of the same wallet and name after a cancel" testOrderAfterCancel
     it "closes an overdue order of the same wallet and name before the poller marks it, cancelling its invoice after" testOverdueClosed
@@ -806,7 +808,7 @@ communityEntry :: J.ToJSON a => a -> J.Value
 communityEntry = communityEntryOf fakeCommunityTerms
 
 communityEntryOf :: J.ToJSON a => ByteString -> a -> J.Value
-communityEntryOf h for = J.object ["for" .= for, "terms" .= J.object ["url" .= ("/api/community-terms/" <> hex h), "hash" .= hex h]]
+communityEntryOf h for = J.object ["for" .= for, "years" .= (2 :: Int), "terms" .= J.object ["url" .= ("/api/community-terms/" <> hex h), "hash" .= hex h]]
 
 -- | The policy lists the name as a community name.
 listOnChain :: Ctx -> Text -> IO ()
@@ -979,6 +981,14 @@ testCodeTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis") c
   nrAgreedTerms <$> registrationById ctx rid `shouldReturn` communityTerms termsVersion
   pcReservedBy <$> readCode ctx issued `shouldReturn` Just rid
 
+testCommunityInvoiceYears :: IO ()
+testCommunityInvoiceYears = withOrders $ \ctx0 -> withSettings ((\c -> c {nYears = 3}) . listName "dynamis") ctx0 $ \ctx -> do
+  listOnChain ctx "dynamis"
+  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000, oTerms = communityTerms termsVersion}
+  placeOrder ctx dynamis {oDuration = yearsDuration 3 orderTime} `shouldReturn` refusedWith 400 "bad_request"
+  fst <$> placeOrder ctx dynamis `shouldReturn` 200
+  map nrYears <$> registrationsOf ctx ownerA `shouldReturn` [2]
+
 testCodeResendAfterBump :: IO ()
 testCodeResendAfterBump = withOrders $ \ctx0 -> do
   (code, _) <- issueCode ctx0 8 2 id
@@ -1110,6 +1120,15 @@ testCodeYears = withOrders $ \ctx -> do
   register ctx code aliceOrder `shouldReturn` refusedWith 400 "bad_request"
   rid <- registered ctx code aliceOrder {oDuration = yearsDuration 5 orderTime}
   (nrYears &&& nrDuration) <$> registrationById ctx rid `shouldReturn` (5, yearsDuration 5 orderTime)
+
+testCommunityCodeYears :: IO ()
+testCommunityCodeYears = withOrders $ \ctx0 -> withSettings (listName "dynamis") ctx0 $ \ctx -> do
+  listOnChain ctx "dynamis"
+  (code, _) <- issueCode ctx 7 5 id
+  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oTerms = communityTerms termsVersion}
+  register ctx code dynamis {oDuration = yearsDuration 5 orderTime} `shouldReturn` refusedWith 400 "bad_request"
+  rid <- registered ctx code dynamis
+  (nrYears &&& nrDuration) <$> registrationById ctx rid `shouldReturn` (5, yearsDuration 2 orderTime)
 
 testCodeNameChecks :: IO ()
 testCodeNameChecks = withOrders $ \ctx@Ctx {cNode = node} -> do

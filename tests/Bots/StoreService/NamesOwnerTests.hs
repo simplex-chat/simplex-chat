@@ -92,6 +92,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "answers a repeat after the terms version changed with the view unchanged, counting no second move" testMoveRepeatAfterBump
     it "moves an order by a body differing only in terms, storing them" testMoveTermsOnly
     it "answers terms_changed for an old version or the wrong variant, listed or not, a body differing only in terms included, and moves under the community terms, storing them" testMoveTermsChanged
+    it "checks a code order moved to a community name for 2 years, and moved on to another name for its code's years again" testMoveCommunityYears
     it "checks the terms after the timestamp, /retry's first check, the existing orders and the duration, before the chain" testMoveTermsCheckOrder
     it "answers move_limit before checking the terms" testMoveLimitBeforeTerms
     it "answers the fourth move move_limit with the current view, changing nothing" testMoveLimit
@@ -505,6 +506,22 @@ testMoveTermsChanged = withOwnerAs (listName "alicebakers") $ \ctx -> do
   v <- moved ctx keyA r to {ofAgreedTerms = communityTerms termsVersion}
   fieldsIn v [("terms", J.String $ communityTerms termsVersion), ("community", communityEntry bakers)]
   nrAgreedTerms <$> stored ctx r `shouldReturn` communityTerms termsVersion
+
+testMoveCommunityYears :: IO ()
+testMoveCommunityYears = withOwnerAs (listName "alicebakers") $ \ctx -> do
+  listOnChain ctx "alicebakers"
+  answerFree ctx "alicebakers"
+  (code, _) <- issueCode ctx 8 5 id
+  r <- registrationById ctx =<< registered ctx code aliceOrder {oDuration = yearsDuration 5 orderTime}
+  failed <- rewrite ctx r failedPhase
+  to <- (\f -> f {ofAgreedTerms = communityTerms termsVersion}) <$> moveTo ctx "alicebakers" 10
+  move ctx keyA failed to {ofDuration = yearsDuration 5 orderTime} `shouldReturn` refusedWith 400 "bad_request"
+  void $ moved ctx keyA failed to
+  answerFree ctx "alicecakes"
+  again <- rewrite ctx r failedPhase
+  toPlain <- moveTo ctx "alicecakes" 11
+  void $ moved ctx keyA again toPlain {ofDuration = yearsDuration 5 orderTime}
+  (\s -> (nrYears s, nrDuration s)) <$> stored ctx r `shouldReturn` (5, yearsDuration 5 orderTime)
 
 testMoveTermsCheckOrder :: IO ()
 testMoveTermsCheckOrder = withOwner $ \ctx@Ctx {cNode} -> do

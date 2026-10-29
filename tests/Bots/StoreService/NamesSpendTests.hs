@@ -44,7 +44,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (signRecoverable)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
-import StoreService.Config (BTCPayConfig (..), ServiceConfig (..))
+import StoreService.Config (BTCPayConfig (..), NamesConfig (..), ServiceConfig (..))
 import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Balances (RefundRefusal (..), recordRefund)
 import StoreService.Names.Orders (OrdersEnv (..))
@@ -86,6 +86,7 @@ namesSpendTests = describe "StoreService names: spend" $ do
     it "counts spends against the create limit" testSpendLimit
   describe "terms" $ do
     it "answers terms_changed for an old version or the wrong variant, listed or not, and stores the community terms, covered and by difference" testSpendTermsChanged
+    it "checks a spend for a community name for 2 years at their price, whatever years the configuration gives, storing 2" testSpendCommunityYears
     it "answers an exact resend after the version changed, covered and by difference" testSpendResendAfterBump
     it "checks the terms after the timestamp and the duration, with the community listing's read, before the balance and the name check" testSpendTermsCheckOrder
   describe "holders" $ do
@@ -441,6 +442,15 @@ testSpendTermsChanged = withSpend $ \ctx0 -> serveSpend (configured (listName "d
     (status, v) <- spend listing low (difference 4000) {sbOrder = aliceOrder {oTerms = communityTerms termsVersion}}
     status `shouldBe` 200
     nrAgreedTerms <$> invoiceRegistration listing (invoiceIdOf v) `shouldReturn` communityTerms termsVersion
+
+testSpendCommunityYears :: IO ()
+testSpendCommunityYears = withSpend $ \ctx0 -> serveSpend (configured ((\c -> c {nYears = 3}) . listName "dynamis") ctx0) $ \ctx -> do
+  listOnChain ctx "dynamis"
+  src <- sourceOf ctx "src" 30000
+  let community = dynamisOrder {oTerms = communityTerms termsVersion}
+  spend ctx src (dynamis 30000 Nothing) {sbOrder = community {oDuration = yearsDuration 3 orderTime}} `shouldReturn` refusedWith 400 "bad_request"
+  rid <- registrationAnswer . snd <$> spend ctx src (dynamis 30000 Nothing) {sbOrder = community}
+  nrYears <$> registrationById ctx rid `shouldReturn` 2
 
 testSpendResendAfterBump :: IO ()
 testSpendResendAfterBump = withSpend $ \ctx0 -> do

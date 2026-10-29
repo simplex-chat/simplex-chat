@@ -19,6 +19,7 @@ data RevertName
   | RNCommitmentNotFound
   | RNCommitmentTooNew
   | RNCommitmentTooOld
+  | RNDurationTooLong
   | RNDurationTooShort
   | RNFrozen
   | RNInsufficientAllowance
@@ -71,6 +72,7 @@ revertSignature = \case
   RNCommitmentNotFound -> Just "CommitmentNotFound(bytes32)"
   RNCommitmentTooNew -> Just "CommitmentTooNew(bytes32,uint256,uint256)"
   RNCommitmentTooOld -> Just "CommitmentTooOld(bytes32,uint256,uint256)"
+  RNDurationTooLong -> Just "DurationTooLong(uint256)"
   RNDurationTooShort -> Just "DurationTooShort(uint256)"
   RNFrozen -> Just "Frozen()"
   RNInsufficientAllowance -> Just "InsufficientAllowance(uint256,uint256)"

@@ -729,6 +729,10 @@ at once: until then the service reads the reservations, the list, the terms and 
 old policy, so an order of a name the new policy reserves ends taken, and one of a name it lists
 does not register: the page signs again until the order lapses, and only the first relay spends gas.
 
+A community name is registered for 2 paid years, plus the free days before `[names] term_start`,
+whatever years `[names] years` or its prepaid code gives, since the controller holds a community name
+to 1095 days. A code for more years still registers it for 2.
+
 The name policy keeps the community terms' text on chain, and `termsHash` is its keccak256, so the
 two always match. The service reads the text with `termsText()` and serves it, as plain text, at
 `GET /api/community-terms/<hash>`, which the order's checkbox links to beside the name terms; it
@@ -1069,7 +1073,7 @@ whether the code was sold (`paid`), is awaiting payment (`unpaid`), or was issue
 code row when the invoice is created, and settlement is what marks it paid.
 
 `//issue name` makes a prepaid name code (`SN<length>-…`): it pays for one name of at least
-`<length>` letters, 6 to 63, for `years` years, 2 to 10 (default 2). The status is as above: an
+`<length>` letters, 6 to 63, for `years` years, 2 to 10 (default 2), and a community name for 2. The status is as above: an
 order refuses an `unpaid` name code with `payment_pending`.
 
 The code is printed once and only its `SHA-256` is stored, so a code that is not copied when it is

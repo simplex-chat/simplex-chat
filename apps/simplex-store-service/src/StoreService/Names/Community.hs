@@ -7,6 +7,8 @@ module StoreService.Names.Community
     termsFor,
     agreedTermsHash,
     communityJSON,
+    communityYears,
+    yearsFor,
     termsJSON,
     nameCommunityTerms,
     AcceptanceAsked (..),
@@ -46,7 +48,15 @@ communityTermsSuffix = "/community/"
 
 -- | Null for plain terms. The page links the text the service serves from the name policy.
 communityJSON :: NamesConfig -> LabelHash -> Maybe ByteString -> J.Value
-communityJSON cfg lh = maybe J.Null (\h -> J.object ["for" .= communityFor cfg lh, "terms" .= J.object ["url" .= ("/api/community-terms/" <> hex h), "hash" .= hex h]])
+communityJSON cfg lh = maybe J.Null (\h -> J.object ["for" .= communityFor cfg lh, "years" .= communityYears, "terms" .= J.object ["url" .= ("/api/community-terms/" <> hex h), "hash" .= hex h]])
+
+-- | A community name is registered for this many paid years, whatever years its code or the configuration gives other names.
+communityYears :: Int
+communityYears = 2
+
+-- | The paid years of a name with these community terms, or Nothing for plain terms.
+yearsFor :: Maybe ByteString -> Int -> Int
+yearsFor h years = maybe years (const communityYears) h
 
 termsJSON :: NamesConfig -> J.Value
 termsJSON NamesConfig {nTerms = TermsConfig {tVersion, tUrl}} = J.object ["version" .= tVersion, "url" .= tUrl]

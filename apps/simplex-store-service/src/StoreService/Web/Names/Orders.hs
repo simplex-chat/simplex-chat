@@ -101,7 +101,7 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} cfg providers waiters
     refuse = refused what
     newOrder InvoiceOrder {ioRequest = req@OrderRequest {orOwner, orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp}, ioMethod, ioPrice} = do
       now <- oeNow
-      let years = nYears $ oeConfig env
+      let years = orderYears fields $ nYears $ oeConfig env
           price = fromIntegral ioPrice
           checks =
             [ pure $ checkTimestamp now orTimestamp,
@@ -145,7 +145,7 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} cfg providers waiters 
         Right ProviderInvoice {piProviderRef, piDestination} -> do
           rid <- newRegistrationId
           let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ivMethod) now, nniCreatedAt = now}
-              registration = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig}
+              registration = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = orderYears orFields $ nYears oeConfig}
               paid = PaidOrder {poMethod = ivMethod, poPrice = ivPrice, poInvoiceId = invId, poProviderRef = piProviderRef}
           placeOrder env req ivHolders (\db at -> insertNameInvoice db invoice >> ivInsert registration paid db at)
             `E.catch` strandedBy provider piProviderRef
@@ -214,7 +214,7 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} 
     newOrder now order@OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofDuration}, orTimestamp} code@PrepaidCode {pcYears} = do
       let checks =
             [ pure $ checkTimestamp now orTimestamp,
-              pure $ checkDuration oeConfig now pcYears ofDuration,
+              pure $ checkDuration oeConfig now (orderYears fields pcYears) ofDuration,
               checkTerms oeConfig oeContracts fields,
               checkNameFree oeContracts oeStore ofLabelHash
             ]
@@ -259,7 +259,7 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} cfg 
         EOMeets -> refuse OROrderExists
         EONew _ -> runExceptT (checked now order spend) >>= either refuse (place order spend)
     checked now OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp} spend@Spend {spPrice} = do
-      let years = nYears oeConfig
+      let years = orderYears fields $ nYears oeConfig
       liftEither $ checkTimestamp now orTimestamp
       liftEither $ checkDuration oeConfig now years ofDuration
       ExceptT $ checkTerms oeConfig oeContracts fields
@@ -270,7 +270,7 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} cfg 
     place order@OrderRequest {orOwner, orFields} spend@Spend {spPrice, spBalance, spMethod} holder = case spMethod of
       Nothing -> do
         rid <- newRegistrationId
-        let new = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig}
+        let new = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = orderYears orFields $ nYears oeConfig}
         placeOrder env order (maybeToList holder) (coveredOrderInsert spend new) >>= \case
           Left refusal -> refuse refusal
           Right closed -> pure Answer {aResponse = registrationAnswer rid, aAfter = announceClosed env providers waiters closed}
