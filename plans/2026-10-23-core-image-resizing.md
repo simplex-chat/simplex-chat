@@ -74,10 +74,10 @@ Decoding, `Image.hs`:
 - PNG, input starting with the signature `89 50 4E 47 0D 0A 1A 0A`, decoded by libspng with `Spng.decodePng`:
   1. the header (IHDR) first; `Left` for a side above 16384
   2. `maxMemoryMB`: half of `maxDecodeMemoryMB`, so that the decoded pixels and their premultiplied copy fit `maxDecodeMemoryMB`; `Left` when the decoded pixels exceed it, before they are allocated
-  3. `Left` for any libspng error, including short image data, a chunk with a wrong CRC, the last chunk among them, a missing IEND and any other truncation; a PNG cut within the IEND CRC decodes (libspng)
+  3. `Left` for any libspng error, including short image data, a chunk with a wrong CRC, the last chunk among them, a missing IEND, any other truncation and a zTXt or iTXt chunk that decompresses to more than 512 KiB; a PNG cut within the IEND CRC decodes (libspng)
   4. constructor: `ImageRGBA8` for a colour type with alpha or a `tRNS` chunk, otherwise `ImageRGB8`; 16-bit samples converted to 8 bits
   5. the full image, halved to the display size by `fitImage`
-  6. the input ICC profile: the decompressed iCCP profile from `Spng.decodePng`; `Left` for a profile above the 64 MiB chunk limit
+  6. the input ICC profile: the decompressed iCCP profile from `Spng.decodePng`; `Left` for a profile that decompresses to more than 1 MiB
 - Other formats: `Left "unsupported image format"`.
 - Constructors of a decoded JPEG:
 
@@ -352,7 +352,7 @@ Native code:
 
   | package | during review | before the final pull request |
   |---|---|---|
-  | hs-jpeg-turbo (`jpeg-turbo`, `JuicyPixels-jpeg-turbo`, `JuicyPixels-spng`) | evgeny-simplex/hs-jpeg-turbo, branch `ep/jpeg-decode` at `4db152c` | a simplex-chat/hs-jpeg-turbo commit |
+  | hs-jpeg-turbo (`jpeg-turbo`, `JuicyPixels-jpeg-turbo`, `JuicyPixels-spng`) | evgeny-simplex/hs-jpeg-turbo, branch `ep/jpeg-decode` at `94209f7` | a simplex-chat/hs-jpeg-turbo commit |
   | JuicyPixels-stbir, with nothings/stb as a submodule | evgeny-simplex/JuicyPixels-stbir, branch `ep/stb-submodule` at `3e53b11` | a simplex-chat/JuicyPixels-stbir commit |
   | JuicyPixels 3.3.8 | Hackage | Hackage |
 
@@ -368,9 +368,9 @@ Out of scope: WebP, a separate PR after this one.
 
 ## hs-jpeg-turbo fork
 
-Branch `ep/jpeg-decode` at `4db152c`:
+Branch `ep/jpeg-decode` at `94209f7`:
 - mozjpeg compiled by cabal, as in "Native code"; arithmetic-coded JPEGs are decoded, the arithmetic encoder is not compiled.
-- `encodeRGB :: EncodableRGB px => Int -> Maybe ByteString -> Image px -> IO ByteString`: `jpeg_turbo_encode` (`cbits/encode.c`, `MozJPEG.hsc`): `jpeg_set_defaults`, `jpeg_set_quality`, the output in a buffer grown by doubling, its size returned as `size_t`; libjpeg errors and warnings end the encoding with their text.
+- `encodeRGB :: EncodableRGB px => Int -> Maybe ByteString -> Image px -> IO ByteString`: `jpeg_turbo_encode` (`cbits/encode.c`, `MozJPEG.hsc`): `jpeg_set_defaults`, `jpeg_set_quality`, the output in a buffer grown by doubling, its size returned as `size_t`; libjpeg errors and warnings end the encoding with their text; the encoder state is kept in one allocation, and it and the output buffer are freed on every path, after an error too.
   - the ICC profile, when given: `jpeg_write_icc_profile`, APP2 segments after APP0; `error` for a length outside 1..16707345 (255 segments of 65519 bytes)
   - `error` when the buffer size cannot be doubled
 - `Codec.Picture.JPEGTurbo` exports, besides `encodeRGB` and `EncodableRGB`:
@@ -410,7 +410,7 @@ Branch `ep/jpeg-decode` at `4db152c`:
   | YCCK | `TJPF_CMYK`, samples inverted in the output buffer | 4 | `ImageCMYK8` |
 
 - Sides: the JPEG sides divided by 1, 2, 4 or 8, rounded up.
-- The bytes per pixel are passed with each pixel format; the output buffer size is their product with the sides.
+- The bytes per pixel are TurboJPEG's `tjPixelSize` of the pixel format; the output buffer size is their product with the sides.
 - The pixels are written into a pinned buffer that becomes the image data without a copy.
 - `readJpegHeader` and `decodeJpeg` run in a bound thread when the RTS is threaded (`runInBoundThread`): the error text, kept by mozjpeg per handle or per OS thread, is read in the thread of the failed call.
 - Tests (`JuicyPixels-jpeg-turbo/test/JPTest.hs`), on generated JPEGs:
@@ -424,7 +424,7 @@ Branch `ep/jpeg-decode` at `4db152c`:
   - limits: `maxMemoryMB` 1 refuses a progressive 1000×1000 JPEG and decodes the baseline one; `maxPixels` one below the pixel count refused, equal accepted; invalid options refused
   - a progressive JPEG from `test/progressive.c` with its AC scan repeated 600 times: `Left`
   - ICC profiles of 1, 65519, 65520 and 16707345 bytes: read back by libjpeg's `jpeg_read_icc_profile` (`test/icc.c`), and the JPEG without its APP2 segments equal to the JPEG without a profile; 0 and 16707346 bytes: `error`
-- Tests (`jpeg-turbo/test/FFITest.hs`): mozjpeg's `testimgari.jpg` decoded as `testimgint.jpg` at the four scales.
+- Tests (`jpeg-turbo/test/FFITest.hs`): mozjpeg's `testimgari.jpg` decoded as `testimgint.jpg` at the four scales; `jpeg_turbo_encode` of a 0×1 image: −1, libjpeg's message "Empty JPEG image (DNL not supported)" and no output buffer.
 - CI:
   - `.github/scripts/encode.c`: baseline and progressive JPEGs at five qualities, and their decodes at the four scales, compared byte for byte between the cabal and CMake builds
   - `armv7-check.sh`, on `ubuntu-24.04-arm`: the cabal sources cross-compiled for armv7 and run natively; Neon selected only with the `linux32` personality; JPEGs and decodes identical with Neon and with the C code paths
@@ -435,12 +435,15 @@ Branch `ep/jpeg-decode` at `4db152c`:
   - `decodePng :: DecodeOptions -> ByteString -> IO (Either String (DynamicImage, Maybe ByteString))`: the image and the decompressed iCCP profile
   - `PngHeader`: `pngWidth`, `pngHeight`, `pngBitDepth`, `pngColorType`
   - `newtype DecodeOptions = DecodeOptions {maxMemoryMB :: Int}`, at least 1
-  - limits: sides 16384 (`spng_set_image_limits`), chunks 64 MiB (`spng_set_chunk_limits`), decoded pixels `maxMemoryMB`
+  - limits:
+    - sides 16384 (`spng_set_image_limits`)
+    - `spng_set_chunk_limits` 1 MiB and 64 MiB: `Left` for an iCCP chunk that decompresses to more than 1 MiB and for a zTXt or iTXt chunk that decompresses to more than 512 KiB; the chunk data kept by libspng at most 64 MiB
+    - decoded pixels `maxMemoryMB`
   - the chunks after the image data are read (`spng_decode_chunks`): `Left` for a wrong CRC of the last chunk and a missing IEND
   - output: `ImageRGBA8` (`SPNG_FMT_RGBA8`) for a colour type with alpha or a `tRNS` chunk, otherwise `ImageRGB8` (`SPNG_FMT_RGB8`)
-  - `encodePng :: EncodeOptions -> Image PixelRGBA8 -> IO (Either String ByteString)`: 8-bit truecolour with alpha, to a buffer
+  - `encodePng :: EncodeOptions -> Image PixelRGBA8 -> IO (Either String ByteString)`: 8-bit truecolour with alpha, to a buffer; the buffer of `spng_get_png_buffer` is taken into the `ByteString` with asynchronous exceptions masked (`mask_`), so that it is freed after one too
   - `EncodeOptions`: `compressionLevel :: Int`, 0..9; `filtering :: Bool`, `False` for `SPNG_DISABLE_FILTERING`; `iccProfile :: Maybe ByteString`, an iCCP chunk named "ICC Profile", `Left` for an empty profile
-  - tests (`test/SpngTest.hs`): 16 PngSuite images equal to JuicyPixels' decodes and to a pinned FNV-1a hash; headers; a generated PNG; short image data, a 65537×65537 header, wrong CRCs, the last one included, a missing IEND, a missing image and truncations: `Left`; the memory limit; encoding: gradients of 7 sizes with and without filters decoded back to the same samples, a pinned FNV-1a hash of the PNGs, invalid options, a 0×0 image, short image data and an empty profile refused; a 100000-byte profile decoded from a generated iCCP chunk and kept by encoding; a profile above 64 MiB: `Left`
+  - tests (`test/SpngTest.hs`): 16 PngSuite images equal to JuicyPixels' decodes and to a pinned FNV-1a hash; headers; a generated PNG; short image data, a 65537×65537 header, wrong CRCs, the last one included, a missing IEND, a missing image and truncations: `Left`; the memory limit; encoding: gradients of 7 sizes with and without filters decoded back to the same samples, a pinned FNV-1a hash of the PNGs, invalid options, a 0×0 image, short image data and an empty profile refused; a 1 MiB profile decoded from a generated iCCP chunk and kept by encoding; a profile above 1 MiB: `Left`; 1000 zTXt chunks with broken streams that decompress to 512 KiB: decoded; to 512 KiB + 1 byte: `Left`
 
 ## JuicyPixels-stbir fork
 
@@ -672,7 +675,7 @@ Python, `packages/simplex-chat-python/src/simplex_chat/`:
 
 Build:
 - `cabal.project`, `source-repository-package`:
-  - hs-jpeg-turbo (`:76-80`): evgeny-simplex/hs-jpeg-turbo at `4db152c`, subdirectories `JuicyPixels-jpeg-turbo`, `JuicyPixels-spng` and `jpeg-turbo`
+  - hs-jpeg-turbo (`:76-80`): evgeny-simplex/hs-jpeg-turbo at `94209f7`, subdirectories `JuicyPixels-jpeg-turbo`, `JuicyPixels-spng` and `jpeg-turbo`
   - JuicyPixels-stbir (`:82-85`): evgeny-simplex/JuicyPixels-stbir at `3e53b11`
 - `scripts/nix/sha256map.nix:12-13`: the hashes of both forks, computed with submodules.
 - `dist-newstyle/src/hs-jpeg-t*` and `dist-newstyle/src/JuicyPixe*` in the Windows removals:
@@ -728,17 +731,17 @@ License notices, `docs/dependencies/`:
   `[stb_image_resize](https://github.com/nothings/stb): image scaling ([MIT or public domain](./licences/apps/stb_image_resize/LICENSE))`
 - `licences/apps/mozjpeg/LICENSE.md` and `README.ijg`: copies from mozjpeg `08265790`, the submodule of the hs-jpeg-turbo fork.
 - `licences/apps/stb_image_resize/LICENSE`: `cbits/stb/stb_image_resize.h:2596-2632` of the JuicyPixels-stbir fork at `3e53b11`.
-- `licences/apps/libspng/LICENSE`: libspng's `LICENSE` (BSD-2-Clause); `licences/apps/libspng/LICENSE-libpng`: `spng/spng.c:6149-6180` (libpng-2.0), without the comment markers; from libspng `fb768002`, the submodule of the hs-jpeg-turbo fork at `4db152c`.
-- `licences/apps/miniz/LICENSE`: miniz's `LICENSE` (MIT), from miniz 3.1.2 (`77d0dce8`), the submodule of the hs-jpeg-turbo fork at `4db152c`.
+- `licences/apps/libspng/LICENSE`: libspng's `LICENSE` (BSD-2-Clause); `licences/apps/libspng/LICENSE-libpng`: `spng/spng.c:6149-6180` (libpng-2.0), without the comment markers; from libspng `fb768002`, the submodule of the hs-jpeg-turbo fork at `94209f7`.
+- `licences/apps/miniz/LICENSE`: miniz's `LICENSE` (MIT), from miniz 3.1.2 (`77d0dce8`), the submodule of the hs-jpeg-turbo fork at `94209f7`.
 - `licences/apps/compact-icc-profiles/license`: the `license` (CC0 1.0) of saucecontrol/Compact-ICC-Profiles at `bdd84663`, the source of `DisplayP3-v4.icc`.
 - `HASKELL.md`:
   - direct dependencies (`:25-28`):
     - `JuicyPixels` 3.3.8, Hackage
-    - `JuicyPixels-jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `4db152c`
-    - `JuicyPixels-spng` 0.1.0.0, hs-jpeg-turbo fork at `4db152c`, `BSD-3-Clause AND BSD-2-Clause AND libpng-2.0 AND MIT`
+    - `JuicyPixels-jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `94209f7`
+    - `JuicyPixels-spng` 0.1.0.0, hs-jpeg-turbo fork at `94209f7`, `BSD-3-Clause AND BSD-2-Clause AND libpng-2.0 AND MIT`
     - `JuicyPixels-stbir` 0.1.0.0, JuicyPixels-stbir fork at `3e53b11`, `BSD-3-Clause AND (MIT OR Unlicense)`
   - direct dependency (`:55`): `vector` 0.13.1.0, moved from the indirect dependencies
-  - indirect dependency (`:145`): `jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `4db152c`, `BSD-3-Clause AND IJG AND Zlib`
+  - indirect dependency (`:145`): `jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `94209f7`, `BSD-3-Clause AND IJG AND Zlib`
   - each of the five added to the dependents of the packages it depends on, among:
     - `bytestring` (`:11`)
     - `containers` (`:14`)
