@@ -117,6 +117,8 @@ Each chat type provides specific dropdown menu items:
 | FAB (new chat button) | Standard mode, search empty, chat running | `FloatingActionButton` at bottom-right, pencil icon, opens `NewChatSheet` |
 | Crowdfunding banner (`GetStakeBanner`) | `crowdfundingAvailable()` and not dismissed | Gradient card above the chats, and below the onboarding cards when there are no conversations; opens `GetStakeView`. The dismiss X appears once the banner has been tapped and there is at least one chat; dismissing hides it until hints are reset |
 
+While the search field has text, the one-hand UI card, the address creation card and the banners (crowdfunding or badges) are hidden; they come back when the text is cleared.
+
 ### Empty States
 
 | State | Display |

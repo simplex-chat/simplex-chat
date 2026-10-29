@@ -476,6 +476,7 @@ struct ChatListView: View {
 
     private var chatListContent: some View {
         let cs = filteredChats()
+        let showsCards = searchText.trimmingCharacters(in: .whitespaces).isEmpty
         return ZStack {
             ScrollViewReader { scrollProxy in
                 List {
@@ -495,7 +496,7 @@ struct ChatListView: View {
                         .padding(.top, oneHandUI ? 8 : 0)
                         .id("searchBar")
                     }
-                    if !oneHandUICardShown {
+                    if showsCards && !oneHandUICardShown {
                         OneHandUICard()
                             .padding(.vertical, 6)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
@@ -503,7 +504,7 @@ struct ChatListView: View {
                             .listRowBackground(Color.clear)
                     }
                     // one slot: an alert about a badge the user paid for outranks the pitch to get one
-                    if let alert = bannerBadgeAlert {
+                    if showsCards, let alert = bannerBadgeAlert {
                         Group {
                             switch alert.kind {
                             case .supportEnded:
@@ -534,7 +535,7 @@ struct ChatListView: View {
                             .onAppear { chatModel.chatListBanner = .badgeAlert }
                     // noShownBadge is false until the badge state loads: the pitch must not lock the slot and then
                     // be hidden by a supporter's badge arriving a moment later, leaving the slot empty for the session
-                    } else if chatModel.bannerSlotFree(for: .badgePitch) && !supporterBannerShown && noShownBadge() && chatModel.chats.count > 3 {
+                    } else if showsCards && chatModel.bannerSlotFree(for: .badgePitch) && !supporterBannerShown && noShownBadge() && chatModel.chats.count > 3 {
                         SupportSimpleXBanner(
                             showDismiss: supporterBannerTapped,
                             onTap: {
@@ -549,7 +550,7 @@ struct ChatListView: View {
                             .listRowBackground(Color.clear)
                             .zIndex(1)
                             .onAppear { chatModel.chatListBanner = .badgePitch }
-                    } else if chatModel.bannerSlotFree(for: .getStake) && isInUS && !getStakeBannerDismissed {
+                    } else if showsCards && chatModel.bannerSlotFree(for: .getStake) && isInUS && !getStakeBannerDismissed {
                         GetStakeBanner(
                             showDismiss: getStakeBannerTapped && !chatModel.chats.isEmpty,
                             onTap: openGetStake,
@@ -581,7 +582,7 @@ struct ChatListView: View {
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
                         }
                     }
-                    if !addressCreationCardShown && hasConversations {
+                    if showsCards && !addressCreationCardShown && hasConversations {
                         ConnectBannerCard()
                             .padding(.vertical, 6)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
