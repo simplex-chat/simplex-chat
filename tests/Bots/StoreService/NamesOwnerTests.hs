@@ -478,7 +478,7 @@ testMoveRepeatAfterBump = withOwner $ \ctx -> do
   first' <- postMove ctx (nrId r) body
   fst first' `shouldBe` 200
   movedOnce <- stored ctx r
-  setNameTerms (cNode ctx) fakeNewNameTermsText
+  setGeneralTerms (cNode ctx) fakeNewGeneralTermsText
   advance ctx 60
   postMove ctx (nrId r) body `shouldReturn` first'
   stored ctx r `shouldReturn` movedOnce
@@ -497,8 +497,8 @@ testMoveTermsChanged = withOwnerAs (listName "alicebakers") $ \ctx -> do
   answerFree ctx "alicebakers"
   r <- paidIn ctx aliceOrder failedPhase
   forM_ [olderTerms, communityTerms] $ \t ->
-    move ctx keyA r (currentFields r) {ofCommitment = commitmentOf 11, ofAgreedTerms = t} `shouldReturn` termsChanged fakeNameTermsText Nothing
-  move ctx keyA r (currentFields r) {ofAgreedTerms = olderTerms} `shouldReturn` termsChanged fakeNameTermsText Nothing
+    move ctx keyA r (currentFields r) {ofCommitment = commitmentOf 11, ofAgreedTerms = t} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
+  move ctx keyA r (currentFields r) {ofAgreedTerms = olderTerms} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
   to <- moveTo ctx "alicebakers" 10
   forM_ [plainTerms, olderTerms, otherCommunityTerms] $ \t ->
     move ctx keyA r to {ofAgreedTerms = t} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
@@ -551,11 +551,11 @@ testMoveTermsCheckOrder = withOwner $ \ctx@Ctx {cNode} -> do
   toDynamis <- moveTo ctx "dynamis" 10
   move ctx keyA r toDynamis {ofAgreedTerms = olderTerms} `shouldReturn` refusedWith 409 "order_exists"
   move ctx keyA r to {ofDuration = ofDuration to + 3601} `shouldReturn` refusedWith 400 "bad_request"
-  setNameTerms cNode ""
+  setGeneralTerms cNode ""
   move ctx keyA r to `shouldReturn` refusedWith 503 "terms_unavailable"
-  setNameTerms cNode fakeNameTermsText
+  setGeneralTerms cNode fakeGeneralTermsText
   answerReserved ctx "alicebakers" 1
-  move ctx keyA r to `shouldReturn` termsChanged fakeNameTermsText Nothing
+  move ctx keyA r to `shouldReturn` termsChanged fakeGeneralTermsText Nothing
   stored ctx r `shouldReturn` r
   answerExpiry ctx "alicebakery" (seconds orderTime + 2 * 31536000)
   answerOwner ctx "alicebakery" ownerA

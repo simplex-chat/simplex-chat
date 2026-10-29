@@ -639,11 +639,11 @@ testInvalidNonce = forM_ ["InvalidNonce()", "TermsNotAccepted(string)"] $ \rever
   (nrPhase x, nrReveal x, nrVersion x, nrRevealBefore x) `shouldBe` (PCommitted, Nothing, nrVersion r + 1, nrRevealBefore r)
   sent w `shouldReturn` []
 
--- | The page's reveal with its acceptance of the policy's name terms.
+-- | The page's reveal with its acceptance of the policy's general terms.
 acceptedReveal :: Ctx -> NameRegistration -> IO NameRegistration
-acceptedReveal = acceptedRevealFor fakeNamePolicy False fakeNameTerms
+acceptedReveal = acceptedRevealFor fakeNamePolicy False fakeGeneralTerms
 
--- | The page's reveal with its acceptance of these terms signed for the given policy, as community name terms or name terms.
+-- | The page's reveal with its acceptance of these terms signed for the given policy, as community terms or general terms.
 acceptedRevealFor :: Address -> Bool -> ByteString -> Ctx -> NameRegistration -> IO NameRegistration
 acceptedRevealFor policy community terms ctx@Ctx {cRandom} r = do
   rv <- signedReveal ctx keyA reveal {rvLabel = "alicebakery"} r
@@ -656,7 +656,7 @@ answerAccepted W {wCtx = Ctx {cNode}} NameRegistration {nrCommitment, nrOwner} =
   answerCall cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> nrCommitment <> addressWord nrOwner)
 
 testAcceptanceRelayed :: IO ()
-testAcceptanceRelayed = forM_ [(False, fakeNameTerms, plainTerms), (True, fakeCommunityTerms, communityTerms)] $ \(community, terms, signed) -> withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
+testAcceptanceRelayed = forM_ [(False, fakeGeneralTerms, plainTerms), (True, fakeCommunityTerms, communityTerms)] $ \(community, terms, signed) -> withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   when community $ listCommunityName cNode $ labelHash "alicebakery"
   r@NameRegistration {nrReveal = Just NameReveal {rvDeadline, rvAcceptance = Just acceptance}} <- paidIn ctx aliceOrder {oTerms = signed} openPhase >>= acceptedRevealFor fakeNamePolicy community terms ctx
   relay <- steps w r >>= awaiting
@@ -679,7 +679,7 @@ testAcceptanceBeforeWait = withWorker $ \w@W {wCtx = ctx} -> do
   [acceptRaw] <- sent w
   (trTo <$> decodeSignedTx acceptRaw) `shouldBe` Right fakeNamePolicy
   void $ mineNewest w True
-  answerAccepted w r $ Returns fakeNameTerms
+  answerAccepted w r $ Returns fakeGeneralTerms
   steps w r >>= waitingUntil >>= (`shouldBe` at (orderSeconds + 60))
   length <$> sent w `shouldReturn` 1
 
@@ -695,7 +695,7 @@ testAcceptanceRefused = forM_ ["TermsMismatch(bytes32,bytes32)", "InvalidNonce()
 testAcceptanceSentFirst :: IO ()
 testAcceptanceSentFirst = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   r@NameRegistration {nrReveal = Just NameReveal {rvDeadline, rvAcceptance = Just acceptance}} <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
-  answerAccepted w r $ Returns fakeNameTerms
+  answerAccepted w r $ Returns fakeGeneralTerms
   answerCallOnce cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> nrCommitment r <> addressWord (nrOwner r)) $ Returns $ uint256 (0 :: Int)
   revertDryRun cNode (acceptCalldata (termsKind False) (nrCommitment r) (nrOwner r) rvDeadline acceptance) $ Just $ selector "InvalidNonce()"
   void $ steps w r >>= awaiting
@@ -709,7 +709,7 @@ testAcceptanceMinedFailed = withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
   void $ steps w r >>= awaiting
   void $ mineNewest w False
-  answerAccepted w r $ Returns fakeNameTerms
+  answerAccepted w r $ Returns fakeGeneralTerms
   void $ published w r $ steps w r >>= awaiting
   [_, registerRaw] <- sent w
   (trTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor
@@ -725,7 +725,7 @@ testAcceptanceUnread = withWorker $ \w@W {wCtx = ctx} -> do
   sent w `shouldReturn` []
 
 testAcceptanceOtherPolicy :: IO ()
-testAcceptanceOtherPolicy = forM_ [acceptedRevealFor fakeSponsor False fakeNameTerms, acceptedRevealFor fakeNamePolicy True fakeNameTerms] $ \accepted -> withWorker $ \w@W {wCtx = ctx} -> do
+testAcceptanceOtherPolicy = forM_ [acceptedRevealFor fakeSponsor False fakeGeneralTerms, acceptedRevealFor fakeNamePolicy True fakeGeneralTerms] $ \accepted -> withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder openPhase >>= accepted ctx
   published w r (steps w r >>= waitingUntil) `shouldReturn` at (orderSeconds - minAge + maxAge + 1)
   x <- stored ctx r

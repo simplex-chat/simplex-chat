@@ -48,7 +48,7 @@ import StoreService.Names.Abi (hex)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (newChainClient, nodeChainId)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
-import StoreService.Names.Contracts (Contracts, Terms (..), TermsRefusal (..), bonaFideName, namePolicy, termsLinks, termsOf, termsText)
+import StoreService.Names.Contracts (Contracts, Terms (..), TermsRefusal (..), communityName, namePolicy, termsLinks, termsOf, termsText)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
@@ -315,14 +315,14 @@ logNamePolicy NamesConfig {nCommunity} ct =
     Right policy -> do
       logInfo $ "names: name policy " <> addressText policy
       forM_ (M.toList nCommunity) $ \(h, text) ->
-        bonaFideName ct (LabelHash h) >>= \case
+        communityName ct (LabelHash h) >>= \case
           Right False -> logWarn $ "names: [community] lists a name the name policy does not list, so it is sold as a plain name: " <> text
           Right True -> pure ()
           Left e -> logWarn $ "names: a [community] name's listing could not be read: " <> text <> ": " <> tshow e
       termsLinks ct >>= \case
-        Right (nameLink, communityLink) -> do
-          logTerms "name terms" "plain names" nameLink
-          logTerms "community name terms" "community names" communityLink
+        Right (generalLink, communityLink) -> do
+          logTerms "general terms" "plain names" generalLink
+          logTerms "community terms" "community names" communityLink
         Left e -> logWarn $ "names: the name policy's terms could not be read: " <> tshow e
   where
     logTerms what sold link = case termsOf link of

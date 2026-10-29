@@ -853,10 +853,10 @@ changes nothing, and `--check` then reports the chain absent.
 
 The controller's name policy (`SimplexNamePolicy`, read from `namePolicy()` once at startup and
 logged, or on first use when that read fails or finds none) holds the links of two sets of terms:
-`nameTermsLink()`, the name terms, and `communityNameTermsLink()`, the community name terms. It lists
-the community names: its bona fide list, which the contracts' owner edits on chain and the guardian
-can add to. A listed name is sold under the community name terms, which include the name terms that
-apply to it, and any other name under the name terms. A name is registered only after its owner
+`generalTermsLink()`, the general terms, and `communityTermsLink()`, the community terms. It keeps
+the list of community names, which the contracts' owner edits on chain and the guardian
+can add to. A listed name is sold under the community terms, which include the general terms that
+apply to it, and any other name under the general terms. A name is registered only after its owner
 accepts the current terms of its kind on chain, once.
 
 **Upgrading:** `[names] terms_version` and `terms_url` are no longer read: the service warns at
@@ -898,7 +898,7 @@ takes, or has a text the service cannot fetch now. An available name's search an
 `"terms": null`, and an order, a code order, a move or a spend of such a name answers
 `503 terms_unavailable` before any payment, with `Retry-After` while the fetch waits. The service
 logs both links at startup, and warns for each that leaves names unavailable. To change the terms,
-the contracts' owner calls `setNameTerms(link)` or `setCommunityNameTerms(link)`; an order signed
+the contracts' owner calls `setGeneralTerms(link)` or `setCommunityTerms(link)`; an order signed
 under the old terms is asked to agree again before its reveal.
 
 `[community]` gives what each community name is for, one line per name: the label, as it is searched,
@@ -936,9 +936,9 @@ page and the service are deployed together.
 
 On chain the order is the same for every name: the service commits, the page signs the reveal, the
 service registers. With the reveal the page signs the acceptance of the terms of the name's kind for
-the commitment, `AcceptNameTerms` or `AcceptCommunityNameTerms`, at the policy's nonce and the
-reveal's deadline, and the service relays it with `commitUnderNameTermsWithSig` or
-`commitUnderCommunityNameTermsWithSig` as soon as the reveal is stored, then registers. A relay or a
+the commitment, `AcceptGeneralTerms` or `AcceptCommunityTerms`, at the policy's nonce and the
+reveal's deadline, and the service relays it with `commitUnderGeneralTermsWithSig` or
+`commitUnderCommunityTermsWithSig` as soon as the reveal is stored, then registers. A relay or a
 register refused for the acceptance (new terms, a used nonce), an acceptance of the other kind of
 terms, or one signed for the name policy before a `setNamePolicy`, clears the reveal, and the page
 signs again. A relay that reverts while the policy holds that acceptance for the commitment, as when
@@ -947,7 +947,7 @@ another sent it first, is followed by the register.
 ### The gas key
 
 `[chain] service_key` is the registrar key: an Ethereum account (EOA) that sends every names
-transaction, `commit` to the controller, each name's terms acceptance (`commitUnderNameTermsWithSig` or `commitUnderCommunityNameTermsWithSig`) to the name policy, `registerWithCredit` to the sponsor, and the owners' record
+transaction, `commit` to the controller, each name's terms acceptance (`commitUnderGeneralTermsWithSig` or `commitUnderCommunityTermsWithSig`) to the name policy, `registerWithCredit` to the sponsor, and the owners' record
 edits (`setTextWithSig`, `clearRecordsWithSig`) to the resolver. It pays only their gas, in ETH. The
 names' rent is spent from its allowance on the sponsor, in USD, which the guardian sets. It holds no
 names.
@@ -1078,7 +1078,7 @@ reads, clears and logs its acceptance, as a community name's did:
 | Transaction | Gas limit | Gas used | Limit × 100 gwei |
 |---|---|---|---|
 | `commit` | 58,983 | 53,521 | 0.0059 ETH |
-| `commitUnderNameTermsWithSig` or `commitUnderCommunityNameTermsWithSig`, the acceptance | 95,795 | 94,791 | 0.0096 ETH |
+| `commitUnderGeneralTermsWithSig` or `commitUnderCommunityTermsWithSig`, the acceptance | 95,795 | 94,791 | 0.0096 ETH |
 | `registerWithCredit`, no links | 568,116 | 504,408 | 0.0568 ETH |
 | `registerWithCredit`, one link | 3,673,412 | 3,489,551 | 0.3673 ETH |
 | `registerWithCredit`, two links | 6,791,417 | 6,467,815 | 0.6791 ETH |
@@ -1438,7 +1438,7 @@ ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/dev/contra
 
 The default cases cover search answers for an available name, Check your code and its rate-limit
 countdown, code orders to `registered` with and without links, one whose register records its buyer's
-acceptance of the name terms, a code order's name code restored and
+acceptance of the general terms, a code order's name code restored and
 revealed in another browser, Edit links on a name registered with a code (the other Edit links case
 answers its own name and record requests in the page), a link whose data cannot be read now, a
 community name's marker and its Check your order wording, and a code order of a name the contracts'

@@ -40,8 +40,8 @@ badgeNameRegistrationTests = describe "StoreService names: registration" $ do
     it "rejects a secret that is not 32 bytes" $ testVerifyShortSecret g
   -- viem's hashTypedData and encodeFunctionData against the SimplexNamePolicy ABI of ens-contracts 23bc1b3
   describe "terms acceptance" $ do
-    it "hashes AcceptNameTerms and AcceptCommunityNameTerms as the policy does" testAcceptanceDigest
-    it "encodes commitUnderNameTermsWithSig and commitUnderCommunityNameTermsWithSig" testAcceptCalldata
+    it "hashes AcceptGeneralTerms and AcceptCommunityTerms as the policy does" testAcceptanceDigest
+    it "encodes commitUnderGeneralTermsWithSig and commitUnderCommunityTermsWithSig" testAcceptCalldata
     it "verifies the owner's acceptance, and rejects another signer, another deadline and the other kind of terms" $ testVerifyAcceptance g
   it "reads the register's dry run reverting as the sponsor's error" $ testRevertedDryRun g
   it "registers a name the client committed to without revealing it" $ testCommitThenRegister g
@@ -165,9 +165,9 @@ expectedTransaction g nonce to calldata =
 acceptanceDomain :: Eip712Domain
 acceptanceDomain = policyDomain fakeChainId fakeNamePolicy
 
--- viem: keccak256(toHex("bona fide community terms v1")) and keccak256(toHex("alicebakery commitment"))
+-- viem: keccak256(toHex("SimpleX community terms v1")) and keccak256(toHex("alicebakery commitment"))
 acceptedHash, acceptedCommitment :: ByteString
-acceptedHash = fromHex "e2937ea655d8e743e2a8cecbab83acdf055846c80e13001ec1f8dc404e4ef2d9"
+acceptedHash = fromHex "eed23f946d290583f5f55c2ae8255db70adac4fc4c5de714a920d35eed9c7dac"
 acceptedCommitment = fromHex "26d4dc807322bcdc1f68a2459b580919c4e6c5629d07cb20c38a31f7b72b7e5d"
 
 acceptanceDeadline :: Word64
@@ -175,8 +175,8 @@ acceptanceDeadline = 1767315600
 
 testAcceptanceDigest :: IO ()
 testAcceptanceDigest = do
-  toHex (acceptanceDigest acceptanceDomain (termsKind False) acceptedCommitment acceptedHash 3 acceptanceDeadline) `shouldBe` "070755e9e268d66590814c83dcc532dda4226f92333c89b68f62f307d6d4d8c9"
-  toHex (acceptanceDigest acceptanceDomain (termsKind True) acceptedCommitment acceptedHash 3 acceptanceDeadline) `shouldBe` "ee1c94d3f30eb67315ce80e1f874e25ba862404441f2bb4c1313ef25896a99dc"
+  toHex (acceptanceDigest acceptanceDomain (termsKind False) acceptedCommitment acceptedHash 3 acceptanceDeadline) `shouldBe` "f486b536cdf4e28031b02fb4345f26678a088d84846a0a6c72896062af283065"
+  toHex (acceptanceDigest acceptanceDomain (termsKind True) acceptedCommitment acceptedHash 3 acceptanceDeadline) `shouldBe` "6df583ad3bcbef3e4061599fa9d45174fcda5731764320cd08ade35c8324eef7"
 
 testAcceptCalldata :: IO ()
 testAcceptCalldata = do
@@ -184,13 +184,13 @@ testAcceptCalldata = do
   let acceptance = TermsAcceptance {taTermsHash = acceptedHash, taNonce = 3, taSignature = sig}
       calldata community = toHex (acceptCalldata (termsKind community) acceptedCommitment (address "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955") acceptanceDeadline acceptance)
       args =
-        "26d4dc807322bcdc1f68a2459b580919c4e6c5629d07cb20c38a31f7b72b7e5de2937ea655d8e743e2a8cecbab83acdf055846c80e13001ec1f8dc404e4ef2d9\
+        "26d4dc807322bcdc1f68a2459b580919c4e6c5629d07cb20c38a31f7b72b7e5deed23f946d290583f5f55c2ae8255db70adac4fc4c5de714a920d35eed9c7dac\
         \00000000000000000000000014dc79964da2c08b23698b3d3cc7ca32193d99550000000000000000000000000000000000000000000000000000000000000003\
         \000000000000000000000000000000000000000000000000000000006957189000000000000000000000000000000000000000000000000000000000000000c0\
         \00000000000000000000000000000000000000000000000000000000000000411111111111111111111111111111111111111111111111111111111111111111\
         \22222222222222222222222222222222222222222222222222222222222222221b00000000000000000000000000000000000000000000000000000000000000"
-  calldata False `shouldBe` "dbaf206e" <> args
-  calldata True `shouldBe` "943e5fa4" <> args
+  calldata False `shouldBe` "c50f972f" <> args
+  calldata True `shouldBe` "4b1a8e04" <> args
 
 testVerifyAcceptance :: TVar ChaChaDRG -> IO ()
 testVerifyAcceptance g = do

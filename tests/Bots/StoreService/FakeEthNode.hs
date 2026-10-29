@@ -34,7 +34,7 @@ module Bots.StoreService.FakeEthNode
     fakeNamePolicy,
     listCommunityName,
     answerListing,
-    setNameTerms,
+    setGeneralTerms,
     setCommunityTerms,
     answerText,
     servedText,
@@ -43,10 +43,10 @@ module Bots.StoreService.FakeEthNode
     fakeTermsPath,
     fakeTermsHash,
     plainTerms,
-    fakeNameTerms,
-    fakeNameTermsText,
-    fakeNewNameTermsText,
-    fakeNewNameTerms,
+    fakeGeneralTerms,
+    fakeGeneralTermsText,
+    fakeNewGeneralTermsText,
+    fakeNewGeneralTerms,
     fakeCommunityTerms,
     fakeCommunityTermsText,
     fakeNewCommunityTermsText,
@@ -168,15 +168,15 @@ fakeResolver = address "0x2279b7a0a67db372996a5fab50d91eaa73d2ebe6"
 fakeNamePolicy :: Address
 fakeNamePolicy = address "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707"
 
-fakeNameTermsText, fakeNewNameTermsText, fakeCommunityTermsText, fakeNewCommunityTermsText :: ByteString
-fakeNameTermsText = "SimpleX name terms v1"
-fakeNewNameTermsText = "SimpleX name terms v2"
-fakeCommunityTermsText = "bona fide community terms v1"
-fakeNewCommunityTermsText = "bona fide community terms v2"
+fakeGeneralTermsText, fakeNewGeneralTermsText, fakeCommunityTermsText, fakeNewCommunityTermsText :: ByteString
+fakeGeneralTermsText = "SimpleX general terms v1"
+fakeNewGeneralTermsText = "SimpleX general terms v2"
+fakeCommunityTermsText = "SimpleX community terms v1"
+fakeNewCommunityTermsText = "SimpleX community terms v2"
 
-fakeNameTerms, fakeNewNameTerms, fakeCommunityTerms, fakeNewCommunityTerms :: ByteString
-fakeNameTerms = fakeTermsHash fakeNameTermsText
-fakeNewNameTerms = fakeTermsHash fakeNewNameTermsText
+fakeGeneralTerms, fakeNewGeneralTerms, fakeCommunityTerms, fakeNewCommunityTerms :: ByteString
+fakeGeneralTerms = fakeTermsHash fakeGeneralTermsText
+fakeNewGeneralTerms = fakeTermsHash fakeNewGeneralTermsText
 fakeCommunityTerms = fakeTermsHash fakeCommunityTermsText
 fakeNewCommunityTerms = fakeTermsHash fakeNewCommunityTermsText
 
@@ -190,7 +190,7 @@ fakeTermsHash :: ByteString -> ByteString
 fakeTermsHash = keccak256 . encodeUtf8 . fakeTermsLink
 
 plainTerms :: Text
-plainTerms = T.drop 2 $ hex fakeNameTerms
+plainTerms = T.drop 2 $ hex fakeGeneralTerms
 
 -- | The policy lists the name as a community name.
 listCommunityName :: FakeEthNode -> LabelHash -> IO ()
@@ -198,12 +198,12 @@ listCommunityName node lh = answerListing node lh $ Returns $ uint256 (1 :: Int)
 
 -- | The policy's answer to whether the name is a community name.
 answerListing :: FakeEthNode -> LabelHash -> CallAnswer -> IO ()
-answerListing node (LabelHash lh) = answerCall node fakeNamePolicy (selector "bonaFideNames(bytes32)" <> lh)
+answerListing node (LabelHash lh) = answerCall node fakeNamePolicy (selector "communityNames(bytes32)" <> lh)
 
 -- | The policy links this text, which the node serves; an empty text is a link not set.
-setNameTerms, setCommunityTerms :: FakeEthNode -> ByteString -> IO ()
-setNameTerms node = setTerms node "nameTermsLink()"
-setCommunityTerms node = setTerms node "communityNameTermsLink()"
+setGeneralTerms, setCommunityTerms :: FakeEthNode -> ByteString -> IO ()
+setGeneralTerms node = setTerms node "generalTermsLink()"
+setCommunityTerms node = setTerms node "communityTermsLink()"
 
 setTerms :: FakeEthNode -> ByteString -> ByteString -> IO ()
 setTerms node getter text = do
@@ -225,9 +225,9 @@ linkAnswer link = abiTuple [Dynamic $ abiBytes $ encodeUtf8 link]
 defaultCall :: (ByteString, ByteString) -> Maybe CallAnswer
 defaultCall (to, calldata)
   | to == unAddress fakeController && calldata == selector "namePolicy()" = Just $ Returns $ addressWord fakeNamePolicy
-  | to == unAddress fakeNamePolicy && selector "bonaFideNames(bytes32)" `B.isPrefixOf` calldata = Just $ Returns $ uint256 (0 :: Int)
-  | to == unAddress fakeNamePolicy && calldata == selector "nameTermsLink()" = Just $ Returns $ linkAnswer $ fakeTermsLink fakeNameTermsText
-  | to == unAddress fakeNamePolicy && calldata == selector "communityNameTermsLink()" = Just $ Returns $ linkAnswer $ fakeTermsLink fakeCommunityTermsText
+  | to == unAddress fakeNamePolicy && selector "communityNames(bytes32)" `B.isPrefixOf` calldata = Just $ Returns $ uint256 (0 :: Int)
+  | to == unAddress fakeNamePolicy && calldata == selector "generalTermsLink()" = Just $ Returns $ linkAnswer $ fakeTermsLink fakeGeneralTermsText
+  | to == unAddress fakeNamePolicy && calldata == selector "communityTermsLink()" = Just $ Returns $ linkAnswer $ fakeTermsLink fakeCommunityTermsText
   | to == unAddress fakeNamePolicy && selector "acceptedTerms(bytes32,address)" `B.isPrefixOf` calldata = Just $ Returns $ B.replicate 32 0
   | to == unAddress fakeNamePolicy && selector "nonces(address)" `B.isPrefixOf` calldata = Just $ Returns $ uint256 (0 :: Int)
   | otherwise = Nothing
@@ -257,7 +257,7 @@ withFakeEthNode action = do
           fsBlock = (1, genesisTime),
           fsBlockTimes = M.fromList [(0, genesisTime - blockSeconds), (1, genesisTime)],
           fsFees = (fakeTip, fakeBaseFee),
-          fsTexts = M.fromList [(fakeTermsPath t, servedText t) | t <- [fakeNameTermsText, fakeNewNameTermsText, fakeCommunityTermsText, fakeNewCommunityTermsText]],
+          fsTexts = M.fromList [(fakeTermsPath t, servedText t) | t <- [fakeGeneralTermsText, fakeNewGeneralTermsText, fakeCommunityTermsText, fakeNewCommunityTermsText]],
           fsFetched = [],
           fsClosed = False
         }

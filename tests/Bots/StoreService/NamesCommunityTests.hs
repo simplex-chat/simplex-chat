@@ -4,7 +4,7 @@
 module Bots.StoreService.NamesCommunityTests (namesCommunityTests) where
 
 import Bots.StoreService.ConfigTests (chainSection, namesIni, namesRefusal, namesSection, parseIni, parsedNames, withIni)
-import Bots.StoreService.FakeEthNode (CallAnswer (..), TextAnswer (..), answerCall, answerListing, answerText, fakeCommunityTerms, fakeCommunityTermsText, fakeController, fakeNamePolicy, fakeNameTerms, fakeNameTermsText, fakeNewCommunityTermsText, fakeTermsLink, fakeTermsPath, setCommunityTerms, setNameTerms)
+import Bots.StoreService.FakeEthNode (CallAnswer (..), TextAnswer (..), answerCall, answerListing, answerText, fakeCommunityTerms, fakeCommunityTermsText, fakeController, fakeGeneralTerms, fakeGeneralTermsText, fakeNamePolicy, fakeNewCommunityTermsText, fakeTermsLink, fakeTermsPath, setCommunityTerms, setGeneralTerms)
 import Bots.StoreService.NamesContractsTests (withContracts)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import Bots.StoreService.WebTests (capturingStderr)
@@ -143,8 +143,8 @@ testStartupCheck g = withContracts g $ \node ct -> do
   cfg <- withCommunity ["alicebakery = Alice's bakery"]
   logged <- capturingStderr $ logNamePolicy cfg ct
   logged `shouldSatisfy` T.isInfixOf ("names: name policy " <> addressText fakeNamePolicy)
-  logged `shouldSatisfy` T.isInfixOf ("names: name terms " <> fakeTermsLink fakeNameTermsText <> ", accepted as " <> hex fakeNameTerms)
-  logged `shouldSatisfy` T.isInfixOf ("names: community name terms " <> fakeTermsLink fakeCommunityTermsText <> ", accepted as " <> hex fakeCommunityTerms)
+  logged `shouldSatisfy` T.isInfixOf ("names: general terms " <> fakeTermsLink fakeGeneralTermsText <> ", accepted as " <> hex fakeGeneralTerms)
+  logged `shouldSatisfy` T.isInfixOf ("names: community terms " <> fakeTermsLink fakeCommunityTermsText <> ", accepted as " <> hex fakeCommunityTerms)
   logged `shouldSatisfy` T.isInfixOf "names: [community] lists a name the name policy does not list, so it is sold as a plain name: Alice's bakery"
   answerListing node aliceHash $ Reverts ""
   unread <- capturingStderr $ logNamePolicy cfg ct
@@ -164,14 +164,14 @@ testStartupWarnings g = withContracts g $ \node ct -> do
   cfg <- parsedNames namesSection chainSection
   let warns text = capturingStderr (logNamePolicy cfg ct) >>= (`shouldSatisfy` T.isInfixOf text)
       otherLink = "https://example.org/simplex-chat/terms.md"
-  setNameTerms node ""
-  warns "names: the name policy has no name terms yet, so plain names cannot be ordered until the owner sets them"
+  setGeneralTerms node ""
+  warns "names: the name policy has no general terms yet, so plain names cannot be ordered until the owner sets them"
   setCommunityTerms node ""
-  warns "names: the name policy has no community name terms yet, so community names cannot be ordered until the owner sets them"
-  answerCall node fakeNamePolicy (selector "nameTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes $ encodeUtf8 otherLink]
-  warns $ "names: the name policy's name terms are not a link the service takes, so plain names cannot be ordered: " <> otherLink
+  warns "names: the name policy has no community terms yet, so community names cannot be ordered until the owner sets them"
+  answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes $ encodeUtf8 otherLink]
+  warns $ "names: the name policy's general terms are not a link the service takes, so plain names cannot be ordered: " <> otherLink
   setCommunityTerms node fakeNewCommunityTermsText
   answerText node (fakeTermsPath fakeNewCommunityTermsText) $ TextAnswer status404 [] ""
-  warns $ "names: the text of the community name terms could not be fetched, so community names cannot be ordered until it is: " <> fakeTermsLink fakeNewCommunityTermsText
-  answerCall node fakeNamePolicy (selector "nameTermsLink()") $ Reverts ""
+  warns $ "names: the text of the community terms could not be fetched, so community names cannot be ordered until it is: " <> fakeTermsLink fakeNewCommunityTermsText
+  answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Reverts ""
   warns "names: the name policy's terms could not be read: "

@@ -100,13 +100,13 @@ termsKind :: Bool -> TermsKind
 termsKind community
   | community =
       TermsKind
-        { tkAcceptType = "AcceptCommunityNameTerms(bytes32 commitment,bytes32 termsHash,uint256 nonce,uint256 deadline)",
-          tkRelayFunction = "commitUnderCommunityNameTermsWithSig(bytes32,bytes32,address,uint256,uint256,bytes)"
+        { tkAcceptType = "AcceptCommunityTerms(bytes32 commitment,bytes32 termsHash,uint256 nonce,uint256 deadline)",
+          tkRelayFunction = "commitUnderCommunityTermsWithSig(bytes32,bytes32,address,uint256,uint256,bytes)"
         }
   | otherwise =
       TermsKind
-        { tkAcceptType = "AcceptNameTerms(bytes32 commitment,bytes32 termsHash,uint256 nonce,uint256 deadline)",
-          tkRelayFunction = "commitUnderNameTermsWithSig(bytes32,bytes32,address,uint256,uint256,bytes)"
+        { tkAcceptType = "AcceptGeneralTerms(bytes32 commitment,bytes32 termsHash,uint256 nonce,uint256 deadline)",
+          tkRelayFunction = "commitUnderGeneralTermsWithSig(bytes32,bytes32,address,uint256,uint256,bytes)"
         }
 
 makeCommitment :: Registration -> ByteString

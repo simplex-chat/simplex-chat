@@ -136,7 +136,7 @@ termsHandler ct hashText _ respond = case bytes32FromHex hashText of
   Just h ->
     termsLinks ct >>= \case
       Left e -> logWarn ("GET /api/terms: a chain read failed: " <> tshow e) >> respond providerUnavailable
-      Right (nameLink, communityLink) -> case find ((h ==) . tmHash) $ mapMaybe termsOf [nameLink, communityLink] of
+      Right (generalLink, communityLink) -> case find ((h ==) . tmHash) $ mapMaybe termsOf [generalLink, communityLink] of
         Nothing -> respond notFound
         Just t@Terms {tmLink} ->
           termsText ct t >>= \case

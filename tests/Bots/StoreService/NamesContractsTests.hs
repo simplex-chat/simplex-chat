@@ -135,10 +135,10 @@ testNamePolicy g = withContracts g $ \node ct -> do
   -- read once: a controller answering no more keeps the policy read
   answerCall node fakeController (selector "namePolicy()") $ Reverts ""
   nameStatus ct alice `shouldReturn` Right NSReserved
-  bonaFideName ct alice `shouldReturn` Right False
+  communityName ct alice `shouldReturn` Right False
   listCommunityName node alice
-  bonaFideName ct alice `shouldReturn` Right True
-  termsLinks ct `shouldReturn` Right (fakeTermsLink fakeNameTermsText, fakeTermsLink fakeCommunityTermsText)
+  communityName ct alice `shouldReturn` Right True
+  termsLinks ct `shouldReturn` Right (fakeTermsLink fakeGeneralTermsText, fakeTermsLink fakeCommunityTermsText)
   answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (5 :: Int)
   policyNonce ct owner `shouldReturn` Right 5
   answerCall node fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> commitment <> addressWord owner) $ Returns fakeCommunityTerms
@@ -147,34 +147,34 @@ testNamePolicy g = withContracts g $ \node ct -> do
 testTermsLinks :: TVar ChaChaDRG -> IO ()
 testTermsLinks g = withContracts g $ \node ct -> do
   setBlock node 100 now
-  answerCallFrom node 101 fakeNamePolicy (selector "nameTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes ""]
-  answerCallFrom node 101 fakeNamePolicy (selector "communityNameTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes $ encodeUtf8 $ fakeTermsLink fakeNewCommunityTermsText]
-  termsLinks ct `shouldReturn` Right (fakeTermsLink fakeNameTermsText, fakeTermsLink fakeCommunityTermsText)
+  answerCallFrom node 101 fakeNamePolicy (selector "generalTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes ""]
+  answerCallFrom node 101 fakeNamePolicy (selector "communityTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes $ encodeUtf8 $ fakeTermsLink fakeNewCommunityTermsText]
+  termsLinks ct `shouldReturn` Right (fakeTermsLink fakeGeneralTermsText, fakeTermsLink fakeCommunityTermsText)
   setBlock node 101 now
   termsLinks ct `shouldReturn` Right ("", fakeTermsLink fakeNewCommunityTermsText)
   termsOf "" `shouldBe` Nothing
-  termsOf viemLink `shouldBe` Just Terms {tmLink = viemLink, tmHash = unhex "8fc029d327a103ce0a2f9a3fca8095448466db3a9edcb9baaeb4c0bd0a7698f6"}
+  termsOf viemLink `shouldBe` Just Terms {tmLink = viemLink, tmHash = unhex "c2ff2149afa84a77e3a041b2925ebd08a22c1e91a74abd8b82fd17e45c15cb7f"}
   where
-    viemLink = "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/4cb24444a1f2e3d4c5b6a7980716253443526170/docs/name-terms.md#sha256=0b2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff001"
+    viemLink = "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/4cb24444a1f2e3d4c5b6a7980716253443526170/docs/general-terms.md#sha256=0b2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff001"
 
 testTermsTextKept :: TVar ChaChaDRG -> IO ()
 testTermsTextKept g = withContracts g $ \node ct -> do
-  termsText ct (termsAt fakeNameTermsText) `shouldReturn` Right "SimpleX name terms v1"
-  answerText node (fakeTermsPath fakeNameTermsText) $ TextAnswer status404 [] ""
-  termsText ct (termsAt fakeNameTermsText) `shouldReturn` Right "SimpleX name terms v1"
-  fetchedTexts node `shouldReturn` [fakeTermsPath fakeNameTermsText]
+  termsText ct (termsAt fakeGeneralTermsText) `shouldReturn` Right "SimpleX general terms v1"
+  answerText node (fakeTermsPath fakeGeneralTermsText) $ TextAnswer status404 [] ""
+  termsText ct (termsAt fakeGeneralTermsText) `shouldReturn` Right "SimpleX general terms v1"
+  fetchedTexts node `shouldReturn` [fakeTermsPath fakeGeneralTermsText]
 
 testTermsLinkForms :: TVar ChaChaDRG -> IO ()
 testTermsLinkForms g = withFakeEthNode $ \node -> do
   c <- fakeChainClient g node
   ct <- (\x -> x {ctTermsBackoff = 0}) <$> newContracts TLDSimplex c
   otherChain <- newContracts TLDSimplex c {ccConfig = (ccConfig c) {cChainId = 1}}
-  let digest = T.drop 2 $ hex $ C.sha256Hash fakeNameTermsText
+  let digest = T.drop 2 $ hex $ C.sha256Hash fakeGeneralTermsText
       commit = T.replicate 40 "a"
       commitPath path = "/simplex-chat/simplex-chat/raw/commit/" <> commit <> path
       taken = ["https://git.simplex.chat" <> commitPath "/docs/terms.md", "https://git.simplex.chat" <> commitPath "/a/b_c-d.e/terms.v1.md", "http://127.0.0.1:8098/terms/terms.md"]
-  forM_ [commitPath "/docs/terms.md", commitPath "/a/b_c-d.e/terms.v1.md", "/terms/terms.md"] $ \path -> answerText node path $ servedText fakeNameTermsText
-  forM_ taken $ \url -> termsText ct (fromJust $ termsOf $ url <> "#sha256=" <> digest) `shouldReturn` Right "SimpleX name terms v1"
+  forM_ [commitPath "/docs/terms.md", commitPath "/a/b_c-d.e/terms.v1.md", "/terms/terms.md"] $ \path -> answerText node path $ servedText fakeGeneralTermsText
+  forM_ taken $ \url -> termsText ct (fromJust $ termsOf $ url <> "#sha256=" <> digest) `shouldReturn` Right "SimpleX general terms v1"
   let refused link = (link,) <$> termsText ct (fromJust $ termsOf link) `shouldReturn` (link, Left TRLink)
   forM_
     [ "http://git.simplex.chat" <> commitPath "/docs/terms.md#sha256=" <> digest,
@@ -224,38 +224,38 @@ testTermsTextRefused g = withContracts g $ \node ct0 -> do
 
 testTermsBackoff :: TVar ChaChaDRG -> IO ()
 testTermsBackoff g = withContracts g $ \node ct -> do
-  let namePath = fakeTermsPath fakeNameTermsText
+  let generalPath = fakeTermsPath fakeGeneralTermsText
       waitsUpTo seconds = \case
         Left (TRWait n) -> n >= 1 && n <= seconds
         _ -> False
-  answerText node namePath $ TextAnswer status429 [("Retry-After", "2")] ""
-  termsText ct (termsAt fakeNameTermsText) `shouldReturn` Left (TRWait 30)
-  termsText ct (termsAt fakeNameTermsText) >>= (`shouldSatisfy` waitsUpTo 30)
+  answerText node generalPath $ TextAnswer status429 [("Retry-After", "2")] ""
+  termsText ct (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 30)
+  termsText ct (termsAt fakeGeneralTermsText) >>= (`shouldSatisfy` waitsUpTo 30)
   termsText ct (termsAt fakeCommunityTermsText) >>= (`shouldSatisfy` waitsUpTo 30)
-  fetchedTexts node `shouldReturn` [namePath]
+  fetchedTexts node `shouldReturn` [generalPath]
   short <- (\x -> x {ctTermsBackoff = 1}) <$> (newContracts TLDSimplex =<< fakeChainClient g node)
-  answerText node namePath $ TextAnswer status503 [] ""
-  termsText short (termsAt fakeNameTermsText) `shouldReturn` Left (TRWait 1)
-  termsText short (termsAt fakeNameTermsText) `shouldReturn` Left (TRWait 1)
+  answerText node generalPath $ TextAnswer status503 [] ""
+  termsText short (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 1)
+  termsText short (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 1)
   threadDelay 1100000
-  answerText node namePath $ TextAnswer status503 [("Retry-After", "2")] ""
-  termsText short (termsAt fakeNameTermsText) `shouldReturn` Left (TRWait 2)
-  answerText node namePath $ servedText fakeNameTermsText
+  answerText node generalPath $ TextAnswer status503 [("Retry-After", "2")] ""
+  termsText short (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 2)
+  answerText node generalPath $ servedText fakeGeneralTermsText
   threadDelay 1100000
   termsText short (termsAt fakeCommunityTermsText) >>= (`shouldSatisfy` waitsUpTo 1)
   threadDelay 1000000
-  termsText short (termsAt fakeNameTermsText) `shouldReturn` Right "SimpleX name terms v1"
+  termsText short (termsAt fakeGeneralTermsText) `shouldReturn` Right "SimpleX general terms v1"
   length <$> fetchedTexts node `shouldReturn` 4
   capped <- newContracts TLDSimplex =<< fakeChainClient g node
-  answerText node namePath $ TextAnswer status429 [("Retry-After", "999999999")] ""
-  termsText capped (termsAt fakeNameTermsText) `shouldReturn` Left (TRWait 3600)
+  answerText node generalPath $ TextAnswer status429 [("Retry-After", "999999999")] ""
+  termsText capped (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 3600)
 
 testTermsTimeout :: TVar ChaChaDRG -> IO ()
 testTermsTimeout g = withFakeEthNode $ \node -> do
   c <- fakeChainClient g node
   ct <- newContracts TLDSimplex c {ccTimeout = testDeadline}
   setFault node "GET" $ Slow 2000000
-  elapsed <- timed $ termsText ct (termsAt fakeNameTermsText) `shouldReturn` Left (TRWait 30)
+  elapsed <- timed $ termsText ct (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 30)
   elapsed `shouldSatisfy` (< 1)
 
 termsAt :: ByteString -> Terms

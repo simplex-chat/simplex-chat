@@ -29,12 +29,12 @@ import Simplex.Messaging.SimplexName (LabelHash (..))
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Abi (bytes32FromHex, hex)
 import StoreService.Names.Chain (ChainError (..))
-import StoreService.Names.Contracts (Contracts, Terms (..), TermsRefusal (..), bonaFideName, concurrent, namePolicy, policyNonce, termsLinks, termsOf, termsText, together)
+import StoreService.Names.Contracts (Contracts, Terms (..), TermsRefusal (..), communityName, concurrent, namePolicy, policyNonce, termsLinks, termsOf, termsText, together)
 
 communityFor :: NamesConfig -> LabelHash -> Maybe Text
 communityFor NamesConfig {nCommunity} (LabelHash h) = M.lookup h nCommunity
 
--- | The prefix records that the buyer agreed to the community name terms, whose hash follows it.
+-- | The prefix records that the buyer agreed to the community terms, whose hash follows it.
 termsFor :: Bool -> Terms -> Text
 termsFor listed Terms {tmHash} = (if listed then communityTermsPrefix else "") <> T.drop 2 (hex tmHash)
 
@@ -64,12 +64,12 @@ yearsFor listed years = if listed then communityYears else years
 termsJSON :: Maybe Terms -> J.Value
 termsJSON = maybe J.Null $ \Terms {tmLink, tmHash} -> J.object ["hash" .= hex tmHash, "link" .= tmLink]
 
--- | Whether the policy lists the name, and the terms it is sold under: the community name terms for a listed name, else the
--- name terms; Nothing until the owner sets them.
+-- | Whether the policy lists the name, and the terms it is sold under: the community terms for a listed name, else the
+-- general terms; Nothing until the owner sets them.
 nameTerms :: Contracts -> LabelHash -> IO (Either ChainError (Bool, Maybe Terms))
-nameTerms ct lh = together $ kindTerms <$> concurrent (bonaFideName ct lh) <*> concurrent (termsLinks ct)
+nameTerms ct lh = together $ kindTerms <$> concurrent (communityName ct lh) <*> concurrent (termsLinks ct)
   where
-    kindTerms listed (nameLink, communityLink) = (listed, termsOf $ if listed then communityLink else nameLink)
+    kindTerms listed (generalLink, communityLink) = (listed, termsOf $ if listed then communityLink else generalLink)
 
 readableTerms :: Contracts -> Maybe Terms -> IO (Either (Maybe Int) Terms)
 readableTerms ct = maybe (pure $ Left Nothing) $ \t -> bimap waitOf (const t) <$> termsText ct t

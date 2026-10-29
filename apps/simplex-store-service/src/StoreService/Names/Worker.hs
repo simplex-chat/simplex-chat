@@ -41,7 +41,7 @@ import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Log (logError, logInfo, logWarn, safely, safelyWith)
 import StoreService.Names.Chain (Block (..), ChainClient, ChainError (..), TxHash, blockAt)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, releaseCode, reserveCode)
-import StoreService.Names.Contracts (CommitmentAges (..), acceptedTerms, bonaFideName, commitmentAges, commitmentTime, controllerAvailable, namePolicy, sponsorNonce)
+import StoreService.Names.Contracts (CommitmentAges (..), acceptedTerms, commitmentAges, commitmentTime, communityName, controllerAvailable, namePolicy, sponsorNonce)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), WriteRefusal (..), confirmLanded, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
@@ -286,7 +286,7 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
   inFlightTransaction wkSender (TxAccept regId) >>= \case
     Just p -> pure $ Just $ Await p
     Nothing ->
-      runExceptT ((,,) <$> ExceptT (namePolicy oeContracts) <*> ExceptT (bonaFideName oeContracts nrLabelHash) <*> ExceptT held) >>= \case
+      runExceptT ((,,) <$> ExceptT (namePolicy oeContracts) <*> ExceptT (communityName oeContracts nrLabelHash) <*> ExceptT held) >>= \case
         Left e -> pure $ Just $ failure r e
         Right (policy, listed, accepted)
           | accepted == taTermsHash -> pure Nothing

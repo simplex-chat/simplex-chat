@@ -20,7 +20,7 @@ module StoreService.Names.Contracts
     sponsorNonce,
     resolverNonce,
     namePolicy,
-    bonaFideName,
+    communityName,
     termsLinks,
     termsOf,
     termsText,
@@ -193,15 +193,15 @@ namePolicy ct@Contracts {ctNamePolicy} = readOnce ctNamePolicy $ (>>= nonZero) <
   where
     nonZero policy = if B.all (== '\NUL') (unAddress policy) then Left (ChainUnavailable "the controller has no name policy yet") else Right policy
 
-bonaFideName :: Contracts -> LabelHash -> IO (Either ChainError Bool)
-bonaFideName ct lh = policyCall ct ("bonaFideNames(bytes32)", labelHashArg lh) decodeBool
+communityName :: Contracts -> LabelHash -> IO (Either ChainError Bool)
+communityName ct lh = policyCall ct ("communityNames(bytes32)", labelHashArg lh) decodeBool
 
 termsLinks :: Contracts -> IO (Either ChainError (Text, Text))
 termsLinks ct@Contracts {ctChain} = runExceptT $ do
   policy <- ExceptT $ namePolicy ct
   Block {blockNumber} <- ExceptT $ latestBlock ctChain
   let link signature = concurrent $ callAt ct (AtBlock blockNumber) policy (signature, "") decodeString
-  ExceptT $ together $ (,) <$> link "nameTermsLink()" <*> link "communityNameTermsLink()"
+  ExceptT $ together $ (,) <$> link "generalTermsLink()" <*> link "communityTermsLink()"
 
 termsOf :: Text -> Maybe Terms
 termsOf link

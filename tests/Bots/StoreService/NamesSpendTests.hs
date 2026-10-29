@@ -84,7 +84,7 @@ namesSpendTests = describe "StoreService names: spend" $ do
     it "refuses sealed missing or over 11095 characters and a body over 16384 bytes, accepting the longest" testSpendSizes
     it "counts spends against the create limit" testSpendLimit
   describe "terms" $ do
-    it "answers terms_changed for other terms or the other kind, listed or not, and stores the community name terms, covered and by difference" testSpendTermsChanged
+    it "answers terms_changed for other terms or the other kind, listed or not, and stores the community terms, covered and by difference" testSpendTermsChanged
     it "checks a spend for a community name for 2 years at their price, whatever years the configuration gives, storing those years" testSpendCommunityYears
     it "answers an exact resend after the terms changed on chain, covered and by difference" testSpendResendAfterBump
     it "checks the terms after the timestamp and the duration, with the community listing's read, before the balance and the name check, answering terms_unavailable while they are not set" testSpendTermsCheckOrder
@@ -429,7 +429,7 @@ testSpendTermsChanged = withSpend $ \ctx0 -> serveSpend (configured (listName "d
   listOnChain ctx "dynamis"
   src <- sourceOf ctx "src" 30000
   forM_ [olderTerms, communityTerms] $ \t ->
-    spend ctx src (covered 30000) {sbOrder = aliceOrder {oTerms = t}} `shouldReturn` termsChanged fakeNameTermsText Nothing
+    spend ctx src (covered 30000) {sbOrder = aliceOrder {oTerms = t}} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
   forM_ [plainTerms, olderTerms, otherCommunityTerms] $ \t ->
     spend ctx src (dynamis 30000 Nothing) {sbOrder = dynamisOrder {oTerms = t}} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
   amountOf ctx src `shouldReturn` Just 30000
@@ -459,7 +459,7 @@ testSpendResendAfterBump = withSpend $ \ctx0 -> do
   (200, Just coveredAnswer) <- postSpend ctx0 src coveredBody
   differenceBody <- spendBody ctx0 low (dynamis 5000 (Just "btc"))
   (200, Just differenceView) <- postSpend ctx0 low differenceBody
-  setNameTerms (cNode ctx0) fakeNewNameTermsText
+  setGeneralTerms (cNode ctx0) fakeNewGeneralTermsText
   advance ctx0 60
   postSpend ctx0 src coveredBody `shouldReturn` (200, Just coveredAnswer)
   postSpend ctx0 low differenceBody `shouldReturn` (200, Just differenceView)
@@ -471,12 +471,12 @@ testSpendTermsCheckOrder = withSpend $ \ctx@Ctx {cNode = node} -> do
   let old = aliceOrder {oTerms = olderTerms}
   spend ctx src (covered 15000) {sbOrder = old {oTimestamp = seconds orderTime + 601}} `shouldReturn` refusedWith 400 "bad_request"
   spend ctx src (covered 15000) {sbOrder = old {oDuration = oDuration old + 3601}} `shouldReturn` refusedWith 400 "bad_request"
-  spend ctx src (covered 14000) {sbOrder = old} `shouldReturn` termsChanged fakeNameTermsText Nothing
+  spend ctx src (covered 14000) {sbOrder = old} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
   answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (1 :: Int)
-  spend ctx src (covered 15000) {sbOrder = old {oPrice = 9000}} `shouldReturn` termsChanged fakeNameTermsText Nothing
-  setNameTerms node ""
+  spend ctx src (covered 15000) {sbOrder = old {oPrice = 9000}} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
+  setGeneralTerms node ""
   spend ctx src (covered 14000) {sbOrder = old {oPrice = 9000}} `shouldReturn` refusedWith 503 "terms_unavailable"
-  setNameTerms node fakeNameTermsText
+  setGeneralTerms node fakeGeneralTermsText
   setFault node "eth_call" HttpFailure
   spend ctx src (covered 15000) {sbOrder = old} `shouldReturn` refusedWith 503 "name_check_unavailable"
   amountOf ctx src `shouldReturn` Just 15000

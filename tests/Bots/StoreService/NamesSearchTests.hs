@@ -275,7 +275,7 @@ availableAnswer price =
       "chainId" .= fakeChainId,
       "tld" .= str "simplex",
       "community" .= J.Null,
-      "terms" .= termsEntry fakeNameTermsText
+      "terms" .= termsEntry fakeGeneralTermsText
     ]
 
 registeredAnswer :: [J.Value] -> J.Value -> Text -> J.Value -> Answer
@@ -411,17 +411,17 @@ testTermsUnavailable :: TVar ChaChaDRG -> IO ()
 testTermsUnavailable g = withSearch g listAlice id $ \s@Search {node} -> do
   available node
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
-  setNameTerms node ""
+  setGeneralTerms node ""
   searchAlice s 12 `shouldReturn` withTerms J.Null (availableAnswer 10000)
   listCommunityName node alice
   searchAlice s 12 `shouldReturn` listed (availableAnswer 10000)
   setCommunityTerms node ""
   searchAlice s 12 `shouldReturn` withTerms J.Null (listed $ availableAnswer 10000)
   answerListing node alice $ Returns $ uint256 (0 :: Int)
-  answerCall node fakeNamePolicy (selector "nameTermsLink()") $ Returns $ textAnswer "https://example.org/terms.md"
+  answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Returns $ textAnswer "https://example.org/terms.md"
   searchAlice s 12 `shouldReturn` withTerms J.Null (availableAnswer 10000)
-  setNameTerms node fakeNewNameTermsText
-  answerText node (fakeTermsPath fakeNewNameTermsText) $ TextAnswer status429 [("Retry-After", "2")] ""
+  setGeneralTerms node fakeNewGeneralTermsText
+  answerText node (fakeTermsPath fakeNewGeneralTermsText) $ TextAnswer status429 [("Retry-After", "2")] ""
   searchAlice s 12 `shouldReturn` withTerms J.Null (availableAnswer 10000)
 
 testTerms :: TVar ChaChaDRG -> IO ()
@@ -429,26 +429,26 @@ testTerms g = withSearch g id id $ \s@Search {node} -> do
   let terms h = send s ("/api/terms/" <> T.unpack h) id
       termsAnswer text = ok ["link" .= fakeTermsLink text, "text" .= decodeUtf8 text]
       otherLink = "https://example.org/terms.md"
-  answerOf <$> terms (hex fakeNameTerms) `shouldReturn` termsAnswer fakeNameTermsText
+  answerOf <$> terms (hex fakeGeneralTerms) `shouldReturn` termsAnswer fakeGeneralTermsText
   answerOf <$> terms (hex fakeCommunityTerms) `shouldReturn` termsAnswer fakeCommunityTermsText
   answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` refused 404 "not_found"
   setCommunityTerms node fakeNewCommunityTermsText
   answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` termsAnswer fakeNewCommunityTermsText
   answerOf <$> terms (hex fakeCommunityTerms) `shouldReturn` refused 404 "not_found"
-  setNameTerms node ""
+  setGeneralTerms node ""
   answerOf <$> terms (hex $ C.keccak256 "") `shouldReturn` refused 404 "not_found"
-  answerOf <$> terms (hex fakeNameTerms) `shouldReturn` refused 404 "not_found"
-  answerCall node fakeNamePolicy (selector "nameTermsLink()") $ Returns $ textAnswer otherLink
+  answerOf <$> terms (hex fakeGeneralTerms) `shouldReturn` refused 404 "not_found"
+  answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Returns $ textAnswer otherLink
   answerOf <$> terms (hex $ C.keccak256 $ encodeUtf8 otherLink) `shouldReturn` refused 404 "not_found"
-  setNameTerms node fakeNewNameTermsText
-  answerText node (fakeTermsPath fakeNewNameTermsText) $ TextAnswer status429 [("Retry-After", "60")] ""
-  r <- terms (hex fakeNewNameTerms)
+  setGeneralTerms node fakeNewGeneralTermsText
+  answerText node (fakeTermsPath fakeNewGeneralTermsText) $ TextAnswer status429 [("Retry-After", "60")] ""
+  r <- terms (hex fakeNewGeneralTerms)
   (answerOf r, lookup "Retry-After" (responseHeaders r)) `shouldBe` (refused 503 "terms_unavailable", Just "60")
-  answerText node (fakeTermsPath fakeNewNameTermsText) $ TextAnswer status404 [] ""
+  answerText node (fakeTermsPath fakeNewGeneralTermsText) $ TextAnswer status404 [] ""
   answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` termsAnswer fakeNewCommunityTermsText
-  answerCall node fakeNamePolicy (selector "nameTermsLink()") $ Reverts ""
+  answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Reverts ""
   answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` refused 503 "provider_unavailable"
-  forM_ [T.toUpper (hex fakeNameTerms), T.drop 2 (hex fakeNameTerms), "0x12"] $ \h ->
+  forM_ [T.toUpper (hex fakeGeneralTerms), T.drop 2 (hex fakeGeneralTerms), "0x12"] $ \h ->
     answerOf <$> terms h `shouldReturn` refused 400 "bad_request"
 
 testCommunityWithoutText :: TVar ChaChaDRG -> IO ()

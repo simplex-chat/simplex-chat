@@ -52,7 +52,7 @@ CASES=(
   "the registering page keeps its heading still on a phone from the commit to the name being registered"
   "a registration's stages are said as each is reached, not each second of the wait"
   "Edit links keeps several links on chain as the contact address they hold, and emptying the field removes them"
-  "a prepaid code registers a name with its links, which its records on chain then hold, its register recording the owner's acceptance of the name terms"
+  "a prepaid code registers a name with its links, which its records on chain then hold, its register recording the owner's acceptance of the general terms"
   "a code order's name code, entered in another browser before the reveal, lets that browser reveal and register the name"
   "Edit links on a name registered with a code adds its links on chain, then changes one"
   "a code check past the service's limit counts down its wait, then checks the code again by itself"
