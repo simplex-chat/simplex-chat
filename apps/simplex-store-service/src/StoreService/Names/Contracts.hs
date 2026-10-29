@@ -123,6 +123,9 @@ nameReadsDeadline = 10000000
 termsBackoffSeconds :: Int
 termsBackoffSeconds = 30
 
+maxTermsBackoffSeconds :: Int
+maxTermsBackoffSeconds = 3600
+
 maxTermsBytes :: Int
 maxTermsBytes = 256 * 1024
 
@@ -226,7 +229,7 @@ fetchTerms Contracts {ctChain, ctTermsTexts, ctFetchAfter, ctTermsBackoff} Terms
           (>>= checked digest) <$> fetchText ctChain maxTermsBytes url >>= \case
             Right text -> Right text <$ modifyIORef' ctTermsTexts (M.insert tmHash text)
             Left (reason, retryAfter) -> do
-              let wait = max ctTermsBackoff $ fromMaybe 0 retryAfter
+              let wait = min maxTermsBackoffSeconds $ max ctTermsBackoff $ fromMaybe 0 retryAfter
               failedAt <- getCurrentTime
               writeIORef ctFetchAfter $ addUTCTime (fromIntegral wait) failedAt
               logWarn $ "names: the terms text of " <> tmLink <> " could not be fetched, " <> reason <> "; none is fetched for " <> tshow wait <> " seconds"

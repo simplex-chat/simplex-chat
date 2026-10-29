@@ -89,7 +89,7 @@ namesContractsTests = describe "StoreService names: contracts" $ do
     it "fetches a terms text once, keeping it by its link's hash" $ testTermsTextKept g
     it "takes only a git.simplex.chat link of one .md file at one commit with the file's SHA-256, or a loopback link on the local chain, fetching nothing else" $ testTermsLinkForms g
     it "refuses an answer other than a 200 UTF-8 text of at most 256 KB with the link's SHA-256, following no redirect" $ testTermsTextRefused g
-    it "fetches no terms text for 30 seconds after a failed fetch, or as long as its Retry-After asks" $ testTermsBackoff g
+    it "fetches no terms text for 30 seconds after a failed fetch, or as long as its Retry-After asks, up to an hour" $ testTermsBackoff g
     it "gives up a terms fetch past the call timeout" $ testTermsTimeout g
   describe "failures" $ do
     it "fails a status on a failed read, never reading it as available" $ testFailedRead g
@@ -246,6 +246,9 @@ testTermsBackoff g = withContracts g $ \node ct -> do
   threadDelay 1000000
   termsText short (termsAt fakeNameTermsText) `shouldReturn` Right "SimpleX name terms v1"
   length <$> fetchedTexts node `shouldReturn` 4
+  capped <- newContracts TLDSimplex =<< fakeChainClient g node
+  answerText node namePath $ TextAnswer status429 [("Retry-After", "999999999")] ""
+  termsText capped (termsAt fakeNameTermsText) `shouldReturn` Left (TRWait 3600)
 
 testTermsTimeout :: TVar ChaChaDRG -> IO ()
 testTermsTimeout g = withFakeEthNode $ \node -> do
