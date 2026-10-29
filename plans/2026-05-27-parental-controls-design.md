@@ -19,7 +19,7 @@ This answers issue #4482's second request (a parental PIN and approval before ad
 ## 2. Principles
 
 1. **Switch off, never watch.** A control removes a capability. No control keeps history, lists contacts or groups to the parent beyond the always-allowed contacts the parent chose, or sends anything off the device.
-2. **The PIN never opens a path to the chats.** It opens only the parental screen, allow-once and a contact's "Always allowed" (section 7.9). Anything that would hand over the chats (database export and migration, the chat console, "Use from desktop") is off while controls are on, even for the parent; to use it, the parent turns the controls off, which removes the indicator from Settings *(provisional, P5)*.
+2. **The PIN never opens a path to the chats.** It opens only the parental screen, allow-once and a contact's "Always allowed" (section 7.9). Anything that would hand over the chats (database export and migration, the chat console, "Use from desktop") is off while controls are on, even for the parent; to use it, the parent turns the controls off, which removes the indicator from Settings.
 3. **Visible on the phone, invisible to contacts.** Settings shows that controls are on, and an action the controls refuse says "Turned off by parental controls". No control sends a message or changes the profile, apart from leaving a group still being joined when groups are switched off (section 7.3).
 4. **Check every action where it goes to the core.** Each action the child starts is checked in the app's function that sends it to the chat core, so every button that reaches it is covered, including buttons added later. What the core does on its own (auto-accepting, ringing for a call, receiving inline files) is stopped by a parental mode in the core. Buttons are also hidden or disabled, for a clean screen; that is presentation, not enforcement.
 5. **Fail closed.** A missing or unreadable PIN never opens the gate; an action the check can't classify counts as restricted.
@@ -38,7 +38,7 @@ The child holds the phone, so a determined, technically able child gets around t
 ## 4. Who could misuse it
 
 - **The child getting around it.** Covered: every connecting path the child can start (section 7.2); what the core would do on its own, on every profile, hidden ones included, and in an imported database (section 7.1); connections started before the controls, on profiles the app can open, apart from those kept after a failed link join until #7922 (section 7.3); the chat console, database import and migration, including the "Migrate" offered by onboarding after the database is deleted, and "Use from desktop" (all off, section 8). Not covered: section 3.
-- **The parent sliding into watching.** The PIN opens only the parental screen, allow-once and "Always allowed" (principle 2), so it gives no access to the chats beyond holding the unlocked app, which shows them anyway. App lock, self-destruct and profiles, including hidden ones, stay the child's *(provisional, P5)*, so the child decides who can open the app. Allow-once shows the parent only the name of the one contact or group being approved, which the child is asking for. Always-allowed contacts are added one at a time on that contact's page (section 7.9), so the parent sees only the contacts the child shows them. The clean-up of section 7.3 lists nothing by name.
+- **The parent sliding into watching.** The PIN opens only the parental screen, allow-once and "Always allowed" (principle 2), so it gives no access to the chats beyond holding the unlocked app, which shows them anyway. App lock, self-destruct and profiles, including hidden ones, stay the child's, so the child decides who can open the app. Allow-once shows the parent only the name of the one contact or group being approved, which the child is asking for. Always-allowed contacts are added one at a time on that contact's page (section 7.9), so the parent sees only the contacts the child shows them. The clean-up of section 7.3 lists nothing by name.
 - **One adult imposing it on another.** Someone who keeps the PIN can stop an adult reaching anyone new. The chat list shows nothing, so the adult learns of the controls from the "Parental controls on" row at the top of Settings, from the alert "Turned off by parental controls" on every action the checks refuse, from the disabled attachment and voice buttons, which say the same when tapped, from the placeholders that replace pictures, and from the "Audio/video calls: received, prohibited" item that each turned-away call leaves in the chat (`apps/ios/SimpleXChat/ChatTypes.swift:4778`). Hidden buttons give no sign, so an adult who doesn't open Settings and doesn't try a refused action may not notice the controls for some time. The always-allowed list also lets that person switch off calls, files, voice and media with everyone but themselves; the adult then sees "Turned off by parental controls" on the call and attachment buttons of every other contact. Safeguards: deleting the app or its data always removes the controls, because the app does not make them survive a reinstall; nothing is controlled remotely; the PIN opens nothing of the chats.
 - **Strangers contacting the child.** They must not learn the phone is restricted, since that would mark a child. Section 9 lists what a contact can see; none of it is specific to these controls.
 
@@ -243,7 +243,7 @@ Removing the contact's entry, deleting the contact, or turning the controls off 
 
 **Need the PIN:** only the parental controls screen, allow-once and a contact's "Always allowed".
 
-**Off entirely, even for the parent** *(provisional, P5)*, shown disabled where the setting is listed, because each would hand the chats to whoever uses it or skip every check:
+**Off entirely, even for the parent**, shown disabled where the setting is listed, because each would hand the chats to whoever uses it or skip every check:
 
 | Setting | Why | iOS | Kotlin |
 |---|---|---|---|
@@ -272,6 +272,7 @@ Onboarding today (since #6888, 2026-04-27) is: introduction, first profile, "You
 ## 11. Not built
 
 - Forwarding or showing the child's messages, contacts or groups to anyone.
+- The parent unlocking the app. A PIN that unlocks it would let whoever holds the PIN read the chats; a "Parental controls" entry on the lock screen would let them change the controls on a locked phone without its owner, and show anyone holding the phone that controls are on. When the child has locked the app, the parent asks the child to unlock it, so on a locked app the controls change only once its owner unlocks it (section 4).
 - Preventing the child from deleting messages or chats, or forcing disappearing messages off: they exist only to keep history for reading.
 - An "incognito off" switch: it doesn't stop anyone reaching the child; it only makes the child show their real name and photo to everyone they connect with.
 - Making the controls survive deleting the app. On iOS the keychain can outlive the app, but the app removes its keychain passcodes after a reinstall on purpose (`apps/ios/Shared/AppDelegate.swift:111-122`, #3841), and Apple's engineers call keychain survival undocumented (https://developer.apple.com/forums/thread/36442). On Android, Block Store keeps up to 16 small entries across a reinstall when the user's backup is on, in builds with Google Play services (https://developer.android.com/identity/block-store), so not in the F-Droid build. Either would take away the simple way out for an adult on whom the controls were imposed; on iOS, Screen Time does it with the parent's own passcode.
@@ -309,14 +310,10 @@ The answers on the decision page are applied above. Choices made in applying the
 - Profile and group pictures stay when receiving media is off (section 7.7), including new members' and changed ones.
 - The clean-up leaves a group still being joined before deleting it, which sends the group's usual leave message (section 7.3). The alternatives: keep such groups and let their joins complete (a stated limit), or a core path that deletes them without leaving.
 
-Three choices stay provisional:
+Two choices stay provisional:
 
 1. **Connections started before the controls (P2), for the project owner.** The design deletes them on every profile the app can open, without listing them (section 7.3). The other options are listing them for the parent to keep or delete, which shows the parent the child's profiles and group names, or leaving them with a sentence on the setup screen.
 2. **Desktop (P10), for the project owner.** The design leaves the desktop app out, since its settings file keeps passcodes in plain text (section 11). The user leans the same way.
-3. **The parent unlocking the app (P5, asked on the decision page as a question of its own).** The user suggests that the parent should be able to unlock the app, which conflicts with principle 2: the PIN never opens a path to the chats. The options:
-   - A. As designed: the PIN opens only the parental screen, allow-once and "Always allowed"; when the child has locked the app, the parent asks the child to unlock it. **Recommended:** it adds nothing to what a PIN holder can do, so an adult on whom the controls are imposed keeps a phone whose chats the PIN can't open (section 4).
-   - B. The lock screen offers "Parental controls", which opens only the parental screen with the PIN: the parent changes the controls without the child's passcode and still sees no chats. It costs a way past the lock screen, so whoever holds the PIN can change the controls without the phone's owner unlocking it, and the lock screen then shows anyone holding the phone that controls are on.
-   - C. The PIN also unlocks the app: whoever holds the PIN reads the chats whenever they hold the phone. It drops principle 2 and the safeguard of section 4.
 
 ## 14. Screens
 
