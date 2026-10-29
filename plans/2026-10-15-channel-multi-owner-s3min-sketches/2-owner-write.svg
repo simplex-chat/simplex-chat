@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="452" viewBox="0 0 840 452" role="img" aria-label="Two owners change the link at the same time. Both hold a copy of the link data D1 with hash h1, so neither reads first. O2 swaps first with LSWP and hash h1; the server stores D2 and answers OK, and O2 announces its change. O1's swap still carries h1, so the server stores nothing and answers with the current data D2, whose hash h2 O1 computes; O1 re-applies its change to D2 and swaps again with h2, which lands, and then announces its change.">
+  <defs>
+    <marker id="d2-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#24292f"/>
+    </marker>
+    <marker id="d2-arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#b42318"/>
+    </marker>
+  </defs>
+  <rect width="840" height="452" fill="#fbfaf7"/>
+  <rect x="0.5" y="0.5" width="839" height="451" fill="none" stroke="#d9d5cc"/>
+  <g font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#1f2328">
+    <text x="20" y="30" font-size="16" font-weight="700">Two owners change the link at the same time</text>
+    <text x="20" y="50" fill="#5b636e">Each owner writes from its copy. A refused write comes back with the current data, so no read is needed.</text>
+
+    <line x1="180" y1="96" x2="180" y2="414" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="420" y1="96" x2="420" y2="414" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="660" y1="96" x2="660" y2="414" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <rect x="110" y="66" width="140" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="180" y="86" text-anchor="middle" font-size="13" font-weight="700">Owner O1</text>
+    <rect x="345" y="66" width="150" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="420" y="86" text-anchor="middle" font-size="13" font-weight="700">Link server</text>
+    <rect x="590" y="66" width="140" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="660" y="86" text-anchor="middle" font-size="13" font-weight="700">Owner O2</text>
+
+    <rect x="335" y="108" width="170" height="22" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="420" y="123" text-anchor="middle">holds D1 · hash h1</text>
+    <text x="168" y="123" text-anchor="end" fill="#5b636e">copy: D1, h1</text>
+    <text x="672" y="123" fill="#5b636e">copy: D1, h1</text>
+    <text x="168" y="152" text-anchor="end" fill="#5b636e">applies change A</text>
+    <text x="672" y="152" fill="#5b636e">applies change B</text>
+
+    <line x1="660" y1="180" x2="422" y2="180" stroke="#24292f" stroke-width="1.5" marker-end="url(#d2-arrow)"/>
+    <text x="540" y="173" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">LSWP h1: D1 + B</text>
+    <rect x="325" y="190" width="190" height="22" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="420" y="205" text-anchor="middle">h1 matches: stores D2 · h2</text>
+    <line x1="420" y1="232" x2="658" y2="232" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d2-arrow)"/>
+    <text x="540" y="225" text-anchor="middle" font-weight="700">OK</text>
+    <text x="672" y="236" fill="#5b636e">announces B to relays</text>
+
+    <line x1="180" y1="262" x2="418" y2="262" stroke="#24292f" stroke-width="1.5" marker-end="url(#d2-arrow)"/>
+    <text x="300" y="255" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">LSWP h1: D1 + A</text>
+    <rect x="325" y="272" width="190" height="22" rx="5" fill="#fbe9e7" stroke="#b42318"/>
+    <text x="420" y="287" text-anchor="middle" fill="#b42318">h2 ≠ h1: nothing stored</text>
+    <line x1="420" y1="314" x2="182" y2="314" stroke="#b42318" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d2-arrow-red)"/>
+    <text x="300" y="307" text-anchor="middle" fill="#b42318"><tspan font-weight="700">refused</tspan>, with the current D2</text>
+    <text x="168" y="318" text-anchor="end" fill="#5b636e">re-applies A to D2 (h2)</text>
+
+    <line x1="180" y1="344" x2="418" y2="344" stroke="#24292f" stroke-width="1.5" marker-end="url(#d2-arrow)"/>
+    <text x="300" y="337" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">LSWP h2: D2 + A</text>
+    <rect x="325" y="354" width="190" height="22" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="420" y="369" text-anchor="middle">h2 matches: stores D3 · h3</text>
+    <line x1="420" y1="396" x2="182" y2="396" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d2-arrow)"/>
+    <text x="300" y="389" text-anchor="middle" font-weight="700">OK</text>
+    <text x="168" y="400" text-anchor="end" fill="#5b636e">announces A to relays</text>
+
+    <text x="20" y="438" fill="#5b636e">Solid arrow: request · dashed arrow: reply · red: refused</text>
+  </g>
+</svg>

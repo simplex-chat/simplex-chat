@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="498" viewBox="0 0 840 498" role="img" aria-label="Who holds what in a multi-owner channel. The link server holds the channel's link queue: the recipient keys that may write it (the key the creator made the queue with, while the creator is an owner, plus every current owner's member key, the creator's included, at most 6 keys) and the signed link data (owner chain, relays, profile, count, plus revoked owners, a write counter and the roster version and author). Owners keep a copy of the link data and write it with LSWP over a direct connection; a refused write comes back with the current data. Owners read it through a proxy at channel open and app start, and when they have no copy; relays read it at invitation and every 15 minutes; members read it at channel open and join. Owners and relays exchange events and the roster, and relays send a new owner member pages; relays forward events and the roster to members. Relays and members skip profile updates older than the ones they hold.">
+  <defs>
+    <marker id="d1-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#24292f"/>
+    </marker>
+    <marker id="d1-arrow-new" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0b5cad"/>
+    </marker>
+  </defs>
+  <rect width="840" height="498" fill="#fbfaf7"/>
+  <rect x="0.5" y="0.5" width="839" height="497" fill="none" stroke="#d9d5cc"/>
+  <g font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#1f2328">
+    <text x="20" y="30" font-size="16" font-weight="700">Who holds what, and who talks to whom</text>
+    <text x="20" y="50" fill="#5b636e">Owners write the link; relays and members only read it. <tspan fill="#0b5cad">Blue marks what the plan adds.</tspan></text>
+
+    <rect x="130" y="66" width="580" height="156" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="420" y="88" text-anchor="middle" font-size="14" font-weight="700">Link server: the channel's link queue</text>
+    <line x1="420" y1="100" x2="420" y2="212" stroke="#d9d5cc"/>
+    <text x="146" y="118" font-weight="700">May write it: recipient keys</text>
+    <text x="146" y="138">the key the creator made the queue</text>
+    <text x="146" y="154">with, <tspan fill="#0b5cad">while the creator is an owner</tspan></text>
+    <text x="146" y="172" fill="#0b5cad">+ every current owner's member key,</text>
+    <text x="146" y="188" fill="#0b5cad">the creator's included: at most 6 keys,</text>
+    <text x="146" y="206" fill="#0b5cad">replaced together with the data</text>
+    <text x="436" y="118" font-weight="700">Link data, signed and encrypted</text>
+    <text x="436" y="138">owner chain, relays, profile, count</text>
+    <text x="436" y="156" fill="#0b5cad">+ revoked owners, write counter,</text>
+    <text x="436" y="172" fill="#0b5cad">+ roster version and its author</text>
+    <text x="436" y="190" fill="#0b5cad">multi-owner: written only by LSWP</text>
+
+    <line x1="150" y1="316" x2="150" y2="224" stroke="#0b5cad" stroke-width="2" marker-end="url(#d1-arrow-new)"/>
+    <text x="142" y="250" text-anchor="end" fill="#0b5cad" font-weight="700">LSWP</text>
+    <text x="142" y="266" text-anchor="end" fill="#0b5cad">direct; if refused,</text>
+    <text x="142" y="282" text-anchor="end" fill="#0b5cad">the current data</text>
+    <line x1="200" y1="224" x2="200" y2="314" stroke="#0b5cad" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d1-arrow-new)"/>
+    <text x="208" y="250" fill="#0b5cad">read at channel open,</text>
+    <text x="208" y="266" fill="#0b5cad">app start, without a</text>
+    <text x="208" y="282" fill="#0b5cad">copy (proxied)</text>
+    <line x1="420" y1="224" x2="420" y2="314" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d1-arrow)"/>
+    <text x="428" y="260">read at invitation</text>
+    <text x="428" y="276">and every 15 min</text>
+    <line x1="680" y1="224" x2="680" y2="314" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d1-arrow)"/>
+    <text x="688" y="260">read at channel</text>
+    <text x="688" y="276">open and join</text>
+
+    <rect x="20" y="316" width="200" height="132" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="120" y="338" text-anchor="middle" font-size="14" font-weight="700">Owners, all equal</text>
+    <text x="34" y="362">write the link</text>
+    <text x="34" y="380" fill="#0b5cad">keep a copy of the link data</text>
+    <text x="34" y="398">sign link data and events</text>
+    <text x="34" y="416">keep the full roster</text>
+
+    <rect x="320" y="316" width="200" height="132" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="420" y="338" text-anchor="middle" font-size="14" font-weight="700">Relays</text>
+    <text x="334" y="362">forward owner-signed events</text>
+    <text x="334" y="380">serve the roster</text>
+    <text x="334" y="398" fill="#0b5cad">serve member pages</text>
+    <text x="334" y="416" fill="#0b5cad">skip older profile updates</text>
+    <text x="334" y="436" fill="#5b636e">cannot forge an owner</text>
+
+    <rect x="620" y="316" width="200" height="132" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="720" y="338" text-anchor="middle" font-size="14" font-weight="700">Members</text>
+    <text x="634" y="362">apply roles in version order</text>
+    <text x="634" y="380" fill="#0b5cad">skip older profile updates</text>
+    <text x="634" y="398">learn owners from the link</text>
+    <text x="634" y="416" fill="#0b5cad">and from <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">x.grp.owner.add</tspan></text>
+
+    <text x="270" y="350" text-anchor="middle" font-size="11">events, roster</text>
+    <text x="270" y="364" text-anchor="middle" font-size="11" fill="#0b5cad">member pages</text>
+    <line x1="223" y1="378" x2="317" y2="378" stroke="#24292f" stroke-width="1.5" marker-start="url(#d1-arrow)" marker-end="url(#d1-arrow)"/>
+    <text x="570" y="350" text-anchor="middle" font-size="11">forwarded</text>
+    <text x="570" y="364" text-anchor="middle" font-size="11">events, roster</text>
+    <line x1="523" y1="378" x2="617" y2="378" stroke="#24292f" stroke-width="1.5" marker-end="url(#d1-arrow)"/>
+
+    <text x="20" y="478" fill="#5b636e">Solid arrow: write or message · dashed arrow: read · blue: new in this plan</text>
+  </g>
+</svg>

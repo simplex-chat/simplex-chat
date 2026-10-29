@@ -1,0 +1,659 @@
+<meta charset="utf-8">
+<title>Channel multi-owner (S3-min)</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Layout: one reading column for prose; tables and diagrams widen to the page and scroll sideways on phones. */
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --fg: #1c2230;
+    --muted: #586174;
+    --rule: #d8dde5;
+    --accent: #9a520f;
+    --code-bg: #eaedf2;
+    --font-display: "Iowan Old Style", Charter, "Bitstream Charter", "Sitka Heading", Cambria, Georgia, serif;
+    --font-body: -apple-system, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12161d;
+      --surface: #191f28;
+      --fg: #e3e7ee;
+      --muted: #9aa4b3;
+      --rule: #2d3542;
+      --accent: #e6a463;
+      --code-bg: #232b36;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12161d;
+    --surface: #191f28;
+    --fg: #e3e7ee;
+    --muted: #9aa4b3;
+    --rule: #2d3542;
+    --accent: #e6a463;
+    --code-bg: #232b36;
+    color-scheme: dark;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  .page {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding-block: 28px 64px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .page > p, .page > ul, .page > h1, .page > h2, .page > header { max-width: 74ch; }
+  header { display: flex; flex-direction: column; gap: 8px; }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1, h2 { font-family: var(--font-display); font-weight: 700; text-wrap: balance; margin: 0; line-height: 1.2; }
+  h1 { font-size: 1.9rem; }
+  h2 { font-size: 1.45rem; margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--rule); }
+  p, ul { margin: 0; }
+  ul { padding-left: 1.3em; display: flex; flex-direction: column; gap: 8px; }
+  .headline { font-size: 1.15rem; font-weight: 600; line-height: 1.45; }
+  .muted { color: var(--muted); font-size: 0.9rem; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    padding: 0.08em 0.32em;
+    border-radius: 4px;
+    overflow-wrap: anywhere;
+  }
+  .cite { font-family: var(--font-mono); font-size: 0.78em; color: var(--muted); white-space: nowrap; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); max-width: 74ch; }
+  table { border-collapse: collapse; width: 100%; font: inherit; font-size: 0.9rem; color: inherit; line-height: 1.5; }
+  th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--rule); }
+  tr:last-child td { border-bottom: 0; }
+  th { font-weight: 600; color: var(--muted); font-size: 0.8rem; letter-spacing: 0.04em; text-transform: uppercase; }
+  td.nowrap { white-space: nowrap; }
+  figure { margin: 6px 0; display: flex; flex-direction: column; gap: 8px; }
+  .fig-scroll { overflow-x: auto; border-radius: 8px; }
+  .fig-scroll svg { display: block; width: 100%; max-width: 840px; min-width: 680px; height: auto; }
+  figcaption { font-size: 0.95rem; max-width: 74ch; display: flex; flex-direction: column; gap: 4px; }
+  [hidden] { display: none !important; }
+  .pics { display: flex; flex-direction: column; gap: 8px; }
+  .pic-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pic-tabs button {
+    font: inherit;
+    font-size: 0.85rem;
+    color: var(--fg);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: 3px 11px;
+    cursor: pointer;
+  }
+  .pic-tabs button[aria-selected="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  details.sources { font-size: 0.85rem; color: var(--muted); max-width: 74ch; }
+  details.sources summary { cursor: pointer; width: max-content; max-width: 100%; }
+  details.sources ul { margin-top: 6px; gap: 3px; }
+  .src { font-size: 0.8rem; white-space: nowrap; }
+  @media (max-width: 520px) {
+    h1 { font-size: 1.6rem; }
+    body { font-size: 15px; }
+  }
+</style>
+
+<main class="page">
+  <header>
+    <span class="eyebrow">simplex-chat · design and plan · not built yet</span>
+    <h1>Channels with several owners</h1>
+    <p class="headline">The plan lets a channel have up to six equal owners (five while its creator is one): the server that holds the channel's link takes their changes one at a time, so concurrent changes are never lost or undone. Every design question is decided and nothing needs your decision now; nothing is built yet, and the server part and the first chat part can start side by side.</p>
+  </header>
+
+  <section class="pics" aria-label="How it works, in pictures">
+    <div class="pic-tabs" role="tablist" aria-label="Pictures" hidden>
+      <button type="button" role="tab" data-pic="owner-write">Two owners change the link at once</button>
+      <button type="button" role="tab" data-pic="components">Who holds what</button>
+      <button type="button" role="tab" data-pic="promotion">Adding an owner</button>
+      <button type="button" role="tab" data-pic="removal">Removing an owner, leaving</button>
+      <button type="button" role="tab" data-pic="roster">Two owners change roles</button>
+    </div>
+
+  <figure id="owner-write" class="pic">
+    <div class="fig-scroll">
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="452" viewBox="0 0 840 452" role="img" aria-label="Two owners change the link at the same time. Both hold a copy of the link data D1 with hash h1, so neither reads first. O2 swaps first with LSWP and hash h1; the server stores D2 and answers OK, and O2 announces its change. O1's swap still carries h1, so the server stores nothing and answers with the current data D2, whose hash h2 O1 computes; O1 re-applies its change to D2 and swaps again with h2, which lands, and then announces its change.">
+  <defs>
+    <marker id="d2-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#24292f"/>
+    </marker>
+    <marker id="d2-arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#b42318"/>
+    </marker>
+  </defs>
+  <rect width="840" height="452" fill="#fbfaf7"/>
+  <rect x="0.5" y="0.5" width="839" height="451" fill="none" stroke="#d9d5cc"/>
+  <g font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#1f2328">
+    <text x="20" y="30" font-size="16" font-weight="700">Two owners change the link at the same time</text>
+    <text x="20" y="50" fill="#5b636e">Each owner writes from its copy. A refused write comes back with the current data, so no read is needed.</text>
+
+    <line x1="180" y1="96" x2="180" y2="414" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="420" y1="96" x2="420" y2="414" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="660" y1="96" x2="660" y2="414" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <rect x="110" y="66" width="140" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="180" y="86" text-anchor="middle" font-size="13" font-weight="700">Owner O1</text>
+    <rect x="345" y="66" width="150" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="420" y="86" text-anchor="middle" font-size="13" font-weight="700">Link server</text>
+    <rect x="590" y="66" width="140" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="660" y="86" text-anchor="middle" font-size="13" font-weight="700">Owner O2</text>
+
+    <rect x="335" y="108" width="170" height="22" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="420" y="123" text-anchor="middle">holds D1 · hash h1</text>
+    <text x="168" y="123" text-anchor="end" fill="#5b636e">copy: D1, h1</text>
+    <text x="672" y="123" fill="#5b636e">copy: D1, h1</text>
+    <text x="168" y="152" text-anchor="end" fill="#5b636e">applies change A</text>
+    <text x="672" y="152" fill="#5b636e">applies change B</text>
+
+    <line x1="660" y1="180" x2="422" y2="180" stroke="#24292f" stroke-width="1.5" marker-end="url(#d2-arrow)"/>
+    <text x="540" y="173" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">LSWP h1: D1 + B</text>
+    <rect x="325" y="190" width="190" height="22" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="420" y="205" text-anchor="middle">h1 matches: stores D2 · h2</text>
+    <line x1="420" y1="232" x2="658" y2="232" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d2-arrow)"/>
+    <text x="540" y="225" text-anchor="middle" font-weight="700">OK</text>
+    <text x="672" y="236" fill="#5b636e">announces B to relays</text>
+
+    <line x1="180" y1="262" x2="418" y2="262" stroke="#24292f" stroke-width="1.5" marker-end="url(#d2-arrow)"/>
+    <text x="300" y="255" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">LSWP h1: D1 + A</text>
+    <rect x="325" y="272" width="190" height="22" rx="5" fill="#fbe9e7" stroke="#b42318"/>
+    <text x="420" y="287" text-anchor="middle" fill="#b42318">h2 ≠ h1: nothing stored</text>
+    <line x1="420" y1="314" x2="182" y2="314" stroke="#b42318" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d2-arrow-red)"/>
+    <text x="300" y="307" text-anchor="middle" fill="#b42318"><tspan font-weight="700">refused</tspan>, with the current D2</text>
+    <text x="168" y="318" text-anchor="end" fill="#5b636e">re-applies A to D2 (h2)</text>
+
+    <line x1="180" y1="344" x2="418" y2="344" stroke="#24292f" stroke-width="1.5" marker-end="url(#d2-arrow)"/>
+    <text x="300" y="337" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">LSWP h2: D2 + A</text>
+    <rect x="325" y="354" width="190" height="22" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="420" y="369" text-anchor="middle">h2 matches: stores D3 · h3</text>
+    <line x1="420" y1="396" x2="182" y2="396" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d2-arrow)"/>
+    <text x="300" y="389" text-anchor="middle" font-weight="700">OK</text>
+    <text x="168" y="400" text-anchor="end" fill="#5b636e">announces A to relays</text>
+
+    <text x="20" y="438" fill="#5b636e">Solid arrow: request · dashed arrow: reply · red: refused</text>
+  </g>
+</svg>
+    </div>
+    <figcaption>
+      <span><code>LSWP</code> (link swap) is the new write command. Each owner keeps a copy of the link data and its hash (h1, h2) and writes from it; the server stores the write only if that hash still matches what it holds.</span>
+      <span>Otherwise it stores nothing and sends back the current data, and the owner re-applies its change to that and writes again, five swaps at most in all. Neither change is lost, and the refused owner needs no read.</span>
+    </figcaption>
+    <details class="sources"><summary>Sources</summary>
+      <ul>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L28">Overview, How it works</a>: the one new server command</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L44-L46">Plan §4.1</a>: the hash, <code>LSWP</code> and the reply with the current data</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L99">Plan §4.3</a>: the stored copy</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L105-L115">Plan §4.4</a>: write from the copy, at most five swaps, then the announcement</li>
+      </ul>
+    </details>
+  </figure>
+
+  <figure id="components" class="pic">
+    <div class="fig-scroll">
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="498" viewBox="0 0 840 498" role="img" aria-label="Who holds what in a multi-owner channel. The link server holds the channel's link queue: the recipient keys that may write it (the key the creator made the queue with, while the creator is an owner, plus every current owner's member key, the creator's included, at most 6 keys) and the signed link data (owner chain, relays, profile, count, plus revoked owners, a write counter and the roster version and author). Owners keep a copy of the link data and write it with LSWP over a direct connection; a refused write comes back with the current data. Owners read it through a proxy at channel open and app start, and when they have no copy; relays read it at invitation and every 15 minutes; members read it at channel open and join. Owners and relays exchange events and the roster, and relays send a new owner member pages; relays forward events and the roster to members. Relays and members skip profile updates older than the ones they hold.">
+  <defs>
+    <marker id="d1-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#24292f"/>
+    </marker>
+    <marker id="d1-arrow-new" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0b5cad"/>
+    </marker>
+  </defs>
+  <rect width="840" height="498" fill="#fbfaf7"/>
+  <rect x="0.5" y="0.5" width="839" height="497" fill="none" stroke="#d9d5cc"/>
+  <g font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#1f2328">
+    <text x="20" y="30" font-size="16" font-weight="700">Who holds what, and who talks to whom</text>
+    <text x="20" y="50" fill="#5b636e">Owners write the link; relays and members only read it. <tspan fill="#0b5cad">Blue marks what the plan adds.</tspan></text>
+
+    <rect x="130" y="66" width="580" height="156" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="420" y="88" text-anchor="middle" font-size="14" font-weight="700">Link server: the channel's link queue</text>
+    <line x1="420" y1="100" x2="420" y2="212" stroke="#d9d5cc"/>
+    <text x="146" y="118" font-weight="700">May write it: recipient keys</text>
+    <text x="146" y="138">the key the creator made the queue</text>
+    <text x="146" y="154">with, <tspan fill="#0b5cad">while the creator is an owner</tspan></text>
+    <text x="146" y="172" fill="#0b5cad">+ every current owner's member key,</text>
+    <text x="146" y="188" fill="#0b5cad">the creator's included: at most 6 keys,</text>
+    <text x="146" y="206" fill="#0b5cad">replaced together with the data</text>
+    <text x="436" y="118" font-weight="700">Link data, signed and encrypted</text>
+    <text x="436" y="138">owner chain, relays, profile, count</text>
+    <text x="436" y="156" fill="#0b5cad">+ revoked owners, write counter,</text>
+    <text x="436" y="172" fill="#0b5cad">+ roster version and its author</text>
+    <text x="436" y="190" fill="#0b5cad">multi-owner: written only by LSWP</text>
+
+    <line x1="150" y1="316" x2="150" y2="224" stroke="#0b5cad" stroke-width="2" marker-end="url(#d1-arrow-new)"/>
+    <text x="142" y="250" text-anchor="end" fill="#0b5cad" font-weight="700">LSWP</text>
+    <text x="142" y="266" text-anchor="end" fill="#0b5cad">direct; if refused,</text>
+    <text x="142" y="282" text-anchor="end" fill="#0b5cad">the current data</text>
+    <line x1="200" y1="224" x2="200" y2="314" stroke="#0b5cad" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d1-arrow-new)"/>
+    <text x="208" y="250" fill="#0b5cad">read at channel open,</text>
+    <text x="208" y="266" fill="#0b5cad">app start, without a</text>
+    <text x="208" y="282" fill="#0b5cad">copy (proxied)</text>
+    <line x1="420" y1="224" x2="420" y2="314" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d1-arrow)"/>
+    <text x="428" y="260">read at invitation</text>
+    <text x="428" y="276">and every 15 min</text>
+    <line x1="680" y1="224" x2="680" y2="314" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d1-arrow)"/>
+    <text x="688" y="260">read at channel</text>
+    <text x="688" y="276">open and join</text>
+
+    <rect x="20" y="316" width="200" height="132" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="120" y="338" text-anchor="middle" font-size="14" font-weight="700">Owners, all equal</text>
+    <text x="34" y="362">write the link</text>
+    <text x="34" y="380" fill="#0b5cad">keep a copy of the link data</text>
+    <text x="34" y="398">sign link data and events</text>
+    <text x="34" y="416">keep the full roster</text>
+
+    <rect x="320" y="316" width="200" height="132" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="420" y="338" text-anchor="middle" font-size="14" font-weight="700">Relays</text>
+    <text x="334" y="362">forward owner-signed events</text>
+    <text x="334" y="380">serve the roster</text>
+    <text x="334" y="398" fill="#0b5cad">serve member pages</text>
+    <text x="334" y="416" fill="#0b5cad">skip older profile updates</text>
+    <text x="334" y="436" fill="#5b636e">cannot forge an owner</text>
+
+    <rect x="620" y="316" width="200" height="132" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="720" y="338" text-anchor="middle" font-size="14" font-weight="700">Members</text>
+    <text x="634" y="362">apply roles in version order</text>
+    <text x="634" y="380" fill="#0b5cad">skip older profile updates</text>
+    <text x="634" y="398">learn owners from the link</text>
+    <text x="634" y="416" fill="#0b5cad">and from <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">x.grp.owner.add</tspan></text>
+
+    <text x="270" y="350" text-anchor="middle" font-size="11">events, roster</text>
+    <text x="270" y="364" text-anchor="middle" font-size="11" fill="#0b5cad">member pages</text>
+    <line x1="223" y1="378" x2="317" y2="378" stroke="#24292f" stroke-width="1.5" marker-start="url(#d1-arrow)" marker-end="url(#d1-arrow)"/>
+    <text x="570" y="350" text-anchor="middle" font-size="11">forwarded</text>
+    <text x="570" y="364" text-anchor="middle" font-size="11">events, roster</text>
+    <line x1="523" y1="378" x2="617" y2="378" stroke="#24292f" stroke-width="1.5" marker-end="url(#d1-arrow)"/>
+
+    <text x="20" y="478" fill="#5b636e">Solid arrow: write or message · dashed arrow: read · blue: new in this plan</text>
+  </g>
+</svg>
+    </div>
+    <figcaption>
+      <span>Only owners write the channel's link, and the server accepts a write only with one of the keys it holds: at most six, one of them the key the creator made the link with, while the creator is an owner. So a channel has up to six owners, five while the creator is one.</span>
+      <span>Relays and members only read the link; relays carry everything else between owners and members, as today. Blue marks what the plan adds.</span>
+    </figcaption>
+    <details class="sources"><summary>Sources</summary>
+      <ul>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L26-L32">Overview, How it works</a>: the link server orders what owners share</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L45">Plan §4.1</a>: room for 6 keys; the key set swapped with the data</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L83-L89">Plan §4.3</a>: the new link-data fields</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L99">Plan §4.3, stored copy</a>: when a write reads first, and the device's other reads</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L111">Plan §4.4, step 3</a>: which keys may write</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L144">Plan §4.4</a>: who reads the link, and when</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L197-L199">Plan §4.7</a>: member pages for a new owner</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L256">Plan §4.12</a>: older profile updates skipped</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L322-L327">Plan §5</a>: relays can't forge owners; the 15-minute relay check; writes direct, reads private</li>
+      </ul>
+    </details>
+  </figure>
+
+  <figure id="promotion" class="pic">
+    <div class="fig-scroll">
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="510" viewBox="0 0 840 510" role="img" aria-label="Adding an owner. Owner O1 checks that member M's security code is verified, that the channel has fewer than 6 owner keys, and that the relays and the link server are upgraded, then sends x.grp.owner.inv, which relays deliver to M's support chat. M is asked whether to become an owner, told that everyone will see its profile and the link server its IP address, and accepts with x.grp.owner.acpt. In a background link sync O1 adds M's chain entry and key to its copy of the link data (read first if it has none, as on the creator's first promotion) with one LSWP; the reply shows M's entry, so O1 sends x.grp.owner.add, which relays apply and forward to everyone, M included. M then pulls the member list from a relay page by page.">
+  <defs>
+    <marker id="d4-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#24292f"/>
+    </marker>
+  </defs>
+  <rect width="840" height="510" fill="#fbfaf7"/>
+  <rect x="0.5" y="0.5" width="839" height="509" fill="none" stroke="#d9d5cc"/>
+  <g font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#1f2328">
+    <text x="20" y="30" font-size="16" font-weight="700">Adding an owner: consent, one link write, then the commit</text>
+    <text x="20" y="50" fill="#5b636e">Owner O1 promotes member M. Every message between owners and M goes through the relays.</text>
+
+    <line x1="200" y1="96" x2="200" y2="476" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="380" y1="96" x2="380" y2="476" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="560" y1="96" x2="560" y2="476" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="720" y1="96" x2="720" y2="476" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <rect x="135" y="66" width="130" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="200" y="86" text-anchor="middle" font-size="13" font-weight="700">Link server</text>
+    <rect x="315" y="66" width="130" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="380" y="86" text-anchor="middle" font-size="13" font-weight="700">Owner O1</text>
+    <rect x="500" y="66" width="120" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="560" y="86" text-anchor="middle" font-size="13" font-weight="700">Relays</text>
+    <rect x="655" y="66" width="130" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="720" y="86" text-anchor="middle" font-size="13" font-weight="700">Member M</text>
+
+    <text x="20" y="124" font-weight="700" fill="#5b636e">Invite</text>
+    <rect x="265" y="102" width="230" height="50" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="380" y="116" text-anchor="middle" font-size="11.5">checks: M's code verified,</text>
+    <text x="380" y="130" text-anchor="middle" font-size="11.5">fewer than 6 owner keys,</text>
+    <text x="380" y="144" text-anchor="middle" font-size="11.5">relays and link server upgraded</text>
+    <line x1="380" y1="170" x2="558" y2="170" stroke="#24292f" stroke-width="1.5" marker-end="url(#d4-arrow)"/>
+    <text x="470" y="163" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">x.grp.owner.inv</text>
+    <line x1="560" y1="170" x2="718" y2="170" stroke="#24292f" stroke-width="1.5" marker-end="url(#d4-arrow)"/>
+    <text x="640" y="163" text-anchor="middle" font-size="11">to M's support chat</text>
+    <rect x="606" y="180" width="226" height="50" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="719" y="195" text-anchor="middle" font-size="11.5" font-weight="700">“Become an owner?”</text>
+    <text x="719" y="209" text-anchor="middle" font-size="11.5">everyone will see its profile;</text>
+    <text x="719" y="223" text-anchor="middle" font-size="11.5">the link server will see its IP</text>
+
+    <text x="20" y="256" font-weight="700" fill="#5b636e">Accept</text>
+    <line x1="720" y1="252" x2="562" y2="252" stroke="#24292f" stroke-width="1.5" marker-end="url(#d4-arrow)"/>
+    <text x="640" y="245" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">x.grp.owner.acpt</text>
+    <line x1="560" y1="252" x2="382" y2="252" stroke="#24292f" stroke-width="1.5" marker-end="url(#d4-arrow)"/>
+    <text x="470" y="245" text-anchor="middle" font-size="11">from M's support chat</text>
+
+    <text x="20" y="288" font-weight="700" fill="#5b636e">Link sync</text>
+    <text x="20" y="302" font-size="11" fill="#5b636e">in the background</text>
+    <text x="392" y="288" font-size="11" fill="#5b636e">from its copy (or a read)</text>
+    <line x1="380" y1="284" x2="202" y2="284" stroke="#24292f" stroke-width="1.5" marker-end="url(#d4-arrow)"/>
+    <text x="290" y="277" text-anchor="middle"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">LSWP</tspan>: add M and its key</text>
+    <rect x="88" y="294" width="224" height="36" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="200" y="308" text-anchor="middle" font-size="11.5">chain + M's entry, signed by O1;</text>
+    <text x="200" y="323" text-anchor="middle" font-size="11.5">key set + M's key</text>
+    <line x1="200" y1="350" x2="378" y2="350" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d4-arrow)"/>
+    <text x="290" y="343" text-anchor="middle"><tspan font-weight="700">OK</tspan>: the data shows M</text>
+
+    <text x="20" y="384" font-weight="700" fill="#5b636e">Commit</text>
+    <line x1="380" y1="380" x2="558" y2="380" stroke="#24292f" stroke-width="1.5" marker-end="url(#d4-arrow)"/>
+    <text x="470" y="373" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">x.grp.owner.add</text>
+    <line x1="560" y1="380" x2="718" y2="380" stroke="#24292f" stroke-width="1.5" marker-end="url(#d4-arrow)"/>
+    <text x="640" y="373" text-anchor="middle" font-size="11">to everyone, M included</text>
+    <rect x="480" y="390" width="160" height="22" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="560" y="405" text-anchor="middle" font-size="11.5">apply it: M is an owner</text>
+    <rect x="655" y="390" width="130" height="22" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="720" y="405" text-anchor="middle" font-size="11.5">is now an owner</text>
+
+    <text x="20" y="446" font-weight="700" fill="#5b636e">Catch-up</text>
+    <line x1="720" y1="442" x2="562" y2="442" stroke="#24292f" stroke-width="1.5" marker-end="url(#d4-arrow)"/>
+    <text x="640" y="435" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">x.grp.members.req</text>
+    <line x1="560" y1="464" x2="718" y2="464" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d4-arrow)"/>
+    <text x="640" y="457" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">x.grp.members.page</text>
+    <text x="732" y="468" font-size="11" fill="#5b636e">until the last</text>
+
+    <text x="20" y="498" fill="#5b636e">Solid arrow: request or message · dashed arrow: reply</text>
+  </g>
+</svg>
+    </div>
+    <figcaption>
+      <span>A member becomes an owner only after its security code is verified and it accepts, and only while the channel has room for another owner. One link write then adds it; the write's reply already shows it, so the announcement follows with no read.</span>
+      <span>In order: the invitation, the acceptance, the link write, the announcement to everyone, the new owner's download of the member list from a relay. Handing a channel over is this promotion, then the creator leaves.</span>
+    </figcaption>
+    <details class="sources"><summary>Sources</summary>
+      <ul>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L14">Overview, What owners can do</a>: make a member an owner, up to 6 owners</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L172-L193">Plan §4.6</a>: invite (with the owner limit), accept, the link write, the commit</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L197-L199">Plan §4.7</a>: the new owner's member list</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L383">Plan §6.1</a>: the "Become an owner?" question</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L409">Plan §7, T3</a>: the creator promotes M and leaves</li>
+      </ul>
+    </details>
+  </figure>
+
+  <figure id="removal" class="pic">
+    <div class="fig-scroll">
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="516" viewBox="0 0 840 516" role="img" aria-label="Removing an owner, and leaving. To remove owner X, owner O1 swaps its copy of the link with LSWP to revoke X, which drops X's key from the key set; then it sends x.grp.mem.del, which relays deliver first to X and then to everyone else. Relays delete their connection to X, X applies the removal and erases its keys, others hold X as departed, and the link server answers AUTH to any later LSWP or DEL by X. An owner that leaves is refused if no other current owner remains; if its own last roster was not stored or sent, it re-signs it with one more LSWP and waits up to 30 seconds for it to be sent, or the leave is refused; then it swaps to revoke itself, sends x.grp.leave and erases its keys.">
+  <defs>
+    <marker id="d5-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#24292f"/>
+    </marker>
+    <marker id="d5-arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#b42318"/>
+    </marker>
+  </defs>
+  <rect width="840" height="516" fill="#fbfaf7"/>
+  <rect x="0.5" y="0.5" width="839" height="515" fill="none" stroke="#d9d5cc"/>
+  <g font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#1f2328">
+    <text x="20" y="30" font-size="16" font-weight="700">Removing an owner, and leaving</text>
+    <text x="20" y="50" fill="#5b636e">Both land on the link first: the swap drops the owner's key at once, then the announcement follows.</text>
+
+    <text x="20" y="78" font-weight="700" fill="#5b636e">An owner removes owner X</text>
+    <line x1="150" y1="114" x2="150" y2="354" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="310" y1="114" x2="310" y2="354" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="470" y1="114" x2="470" y2="354" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="620" y1="114" x2="620" y2="354" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="760" y1="114" x2="760" y2="354" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <rect x="90" y="86" width="120" height="28" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="150" y="105" text-anchor="middle" font-size="13" font-weight="700">Link server</text>
+    <rect x="250" y="86" width="120" height="28" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="310" y="105" text-anchor="middle" font-size="13" font-weight="700">Owner O1</text>
+    <rect x="410" y="86" width="120" height="28" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="470" y="105" text-anchor="middle" font-size="13" font-weight="700">Relays</text>
+    <rect x="560" y="86" width="120" height="28" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="620" y="105" text-anchor="middle" font-size="13" font-weight="700">Owner X</text>
+    <rect x="700" y="86" width="120" height="28" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="760" y="105" text-anchor="middle" font-size="13" font-weight="700">Everyone else</text>
+
+    <text x="322" y="142" font-size="11" fill="#5b636e">from its copy</text>
+    <line x1="310" y1="138" x2="152" y2="138" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
+    <text x="230" y="131" text-anchor="middle"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">LSWP</tspan>: revoke X</text>
+    <rect x="50" y="148" width="200" height="36" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="150" y="162" text-anchor="middle" font-size="11.5">X revoked;</text>
+    <text x="150" y="177" text-anchor="middle" font-size="11.5">X's key out of the key set</text>
+    <line x1="150" y1="204" x2="308" y2="204" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d5-arrow)"/>
+    <text x="230" y="197" text-anchor="middle" font-weight="700">OK</text>
+    <line x1="310" y1="228" x2="468" y2="228" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
+    <text x="390" y="221" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">x.grp.mem.del X</text>
+    <line x1="470" y1="250" x2="618" y2="250" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
+    <text x="545" y="243" text-anchor="middle" font-size="11">first to X</text>
+    <line x1="470" y1="272" x2="758" y2="272" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
+    <text x="690" y="265" text-anchor="middle" font-size="11">then to everyone else</text>
+    <rect x="398" y="284" width="144" height="34" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="470" y="298" text-anchor="middle" font-size="11.5">delete their</text>
+    <text x="470" y="312" text-anchor="middle" font-size="11.5">connection to X</text>
+    <rect x="548" y="284" width="144" height="34" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="620" y="298" text-anchor="middle" font-size="11.5">applies it,</text>
+    <text x="620" y="312" text-anchor="middle" font-size="11.5">erases its keys</text>
+    <rect x="704" y="284" width="112" height="34" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="760" y="305" text-anchor="middle" font-size="11.5">X departed</text>
+    <line x1="150" y1="344" x2="618" y2="344" stroke="#b42318" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d5-arrow-red)"/>
+    <text x="390" y="337" text-anchor="middle" fill="#b42318">AUTH to any later LSWP or DEL by X</text>
+
+    <text x="20" y="386" font-weight="700" fill="#5b636e">An owner leaves, the creator included</text>
+    <rect x="20" y="400" width="200" height="70" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="120" y="431" text-anchor="middle" font-size="11.5">refused if no other</text>
+    <text x="120" y="446" text-anchor="middle" font-size="11.5">current owner remains</text>
+    <line x1="222" y1="435" x2="262" y2="435" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
+    <rect x="264" y="400" width="270" height="70" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="399" y="417" text-anchor="middle" font-size="11.5">if its own last roster isn't stored</text>
+    <text x="399" y="432" text-anchor="middle" font-size="11.5">or sent: re-sign it with one more LSWP</text>
+    <text x="399" y="447" text-anchor="middle" font-size="11.5">and wait up to 30 s for it to be sent;</text>
+    <text x="399" y="462" text-anchor="middle" font-size="11.5">if it isn't, the leave is refused</text>
+    <line x1="536" y1="435" x2="572" y2="435" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
+    <rect x="574" y="400" width="246" height="70" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="697" y="431" text-anchor="middle" font-size="11.5"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">LSWP</tspan>: revoke itself, drop its key;</text>
+    <text x="697" y="446" text-anchor="middle" font-size="11.5">then <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">x.grp.leave</tspan>, erase its keys</text>
+
+    <text x="20" y="502" fill="#5b636e">Solid arrow: request, message or next step · dashed arrow: reply · red: refused</text>
+  </g>
+</svg>
+    </div>
+    <figcaption>
+      <span>A removal or a leave lands on the link first: from then on the server refuses the departed owner's key (<code>AUTH</code>), and the announcement follows.</span>
+      <span>The last owner can't leave. An owner whose last role change may not have reached any relay re-sends it before leaving, so it isn't lost.</span>
+    </figcaption>
+    <details class="sources"><summary>Sources</summary>
+      <ul>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L16-L17">Overview, What owners can do</a>: remove an owner, leave</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L203-L207">Plan §4.8</a>: removing an owner</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L209-L217">Plan §4.9</a>: leaving, with the re-sign and the 30-second wait</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L16">Plan §1, AC4</a>: the removed owner's writes and <code>DEL</code> get <code>AUTH</code></li>
+      </ul>
+    </details>
+  </figure>
+
+  <figure id="roster" class="pic">
+    <div class="fig-scroll">
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="540" viewBox="0 0 840 540" role="img" aria-label="Two owners change roles. The link names roster version 7 by O1; both owners hold roster 7 and a copy of the link naming it. O2 claims version 8 with LSWP from its copy, and sends roster 8 with its role change to the relays, which forward them to members. O1 then claims version 8 from its older copy: the server refuses and sends back the current data, which names version 8 by O2; O1 doesn't hold 8, so the role change is refused with catching up, try again, and O1 asks the relays for the roster. Once it holds 8, the user's retry claims version 9 and sends roster 9 with its role change.">
+  <defs>
+    <marker id="d3-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#24292f"/>
+    </marker>
+    <marker id="d3-arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#b42318"/>
+    </marker>
+  </defs>
+  <rect width="840" height="540" fill="#fbfaf7"/>
+  <rect x="0.5" y="0.5" width="839" height="539" fill="none" stroke="#d9d5cc"/>
+  <g font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#1f2328">
+    <text x="20" y="30" font-size="16" font-weight="700">Two owners change roles: each claims the next roster version on the link</text>
+    <text x="20" y="50" fill="#5b636e">An owner claims version v + 1 only while it holds the complete roster at v, the version the link names.</text>
+
+    <line x1="130" y1="96" x2="130" y2="512" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="350" y1="96" x2="350" y2="512" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="560" y1="96" x2="560" y2="512" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="750" y1="136" x2="750" y2="512" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <rect x="65" y="66" width="130" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="130" y="86" text-anchor="middle" font-size="13" font-weight="700">Owner O1</text>
+    <rect x="280" y="66" width="140" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="350" y="86" text-anchor="middle" font-size="13" font-weight="700">Link server</text>
+    <rect x="495" y="66" width="130" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="560" y="86" text-anchor="middle" font-size="13" font-weight="700">Owner O2</text>
+    <rect x="690" y="66" width="120" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="750" y="86" text-anchor="middle" font-size="13" font-weight="700">Relays</text>
+    <text x="750" y="112" text-anchor="middle" font-size="11" fill="#5b636e">forward to members,</text>
+    <text x="750" y="126" text-anchor="middle" font-size="11" fill="#5b636e">applied in version order</text>
+
+    <text x="118" y="118" text-anchor="end" fill="#5b636e">holds 7</text>
+    <rect x="285" y="104" width="130" height="22" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="350" y="119" text-anchor="middle">roster 7 by O1</text>
+    <text x="572" y="118" fill="#5b636e">holds 7</text>
+    <text x="572" y="150" fill="#5b636e">copy names 7: may claim 8</text>
+
+    <line x1="560" y1="176" x2="352" y2="176" stroke="#24292f" stroke-width="1.5" marker-end="url(#d3-arrow)"/>
+    <text x="455" y="169" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">LSWP: roster 8 by O2</text>
+    <rect x="285" y="186" width="130" height="22" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="350" y="201" text-anchor="middle">roster 8 by O2</text>
+    <line x1="350" y1="228" x2="558" y2="228" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d3-arrow)"/>
+    <text x="455" y="221" text-anchor="middle" font-weight="700">OK</text>
+    <line x1="560" y1="254" x2="748" y2="254" stroke="#24292f" stroke-width="1.5" marker-end="url(#d3-arrow)"/>
+    <text x="655" y="247" text-anchor="middle" font-size="11">roster 8, role change at 8</text>
+
+    <line x1="130" y1="286" x2="348" y2="286" stroke="#24292f" stroke-width="1.5" marker-end="url(#d3-arrow)"/>
+    <text x="240" y="279" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">LSWP: roster 8 by O1</text>
+    <text x="118" y="270" text-anchor="end" font-size="11" fill="#5b636e">user changes</text>
+    <text x="118" y="284" text-anchor="end" font-size="11" fill="#5b636e">a role; copy</text>
+    <text x="118" y="298" text-anchor="end" font-size="11" fill="#5b636e">names 7</text>
+    <line x1="350" y1="310" x2="132" y2="310" stroke="#b42318" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d3-arrow-red)"/>
+    <text x="240" y="303" text-anchor="middle" fill="#b42318">refused: roster 8 by O2</text>
+    <rect x="20" y="320" width="220" height="40" rx="5" fill="#fbe9e7" stroke="#b42318"/>
+    <text x="130" y="336" text-anchor="middle" fill="#b42318">holds 7, link names 8: refused,</text>
+    <text x="130" y="352" text-anchor="middle" fill="#b42318" font-weight="700">“catching up, try again”</text>
+    <line x1="130" y1="384" x2="748" y2="384" stroke="#24292f" stroke-width="1.5" marker-end="url(#d3-arrow)"/>
+    <text x="240" y="377" text-anchor="middle">roster request (holds 7)</text>
+    <line x1="750" y1="408" x2="132" y2="408" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d3-arrow)"/>
+    <text x="240" y="401" text-anchor="middle">roster 8</text>
+    <text x="118" y="430" text-anchor="end" fill="#5b636e">holds 8</text>
+
+    <line x1="130" y1="452" x2="348" y2="452" stroke="#24292f" stroke-width="1.5" marker-end="url(#d3-arrow)"/>
+    <text x="240" y="445" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">LSWP: roster 9 by O1</text>
+    <text x="118" y="456" text-anchor="end" font-size="11" fill="#5b636e">user retries</text>
+    <line x1="350" y1="472" x2="132" y2="472" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d3-arrow)"/>
+    <text x="240" y="465" text-anchor="middle" font-weight="700">OK</text>
+    <line x1="130" y1="500" x2="748" y2="500" stroke="#24292f" stroke-width="1.5" marker-end="url(#d3-arrow)"/>
+    <text x="455" y="493" text-anchor="middle" font-size="11">roster 9, role change at 9</text>
+
+    <text x="20" y="530" fill="#5b636e">Solid arrow: request or message · dashed arrow: reply · red: refused</text>
+  </g>
+</svg>
+    </div>
+    <figcaption>
+      <span>The roster is the signed list of member, moderator and admin roles; 7, 8 and 9 are its versions. An owner claims the next version only while it holds every earlier one, so members and relays apply role changes in order, as today.</span>
+      <span>An owner whose copy is behind learns the newer version from its refused write, fetches that roster from a relay, and its user sees "catching up, try again" for a few seconds.</span>
+    </figcaption>
+    <details class="sources"><summary>Sources</summary>
+      <ul>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L29">Overview, How it works</a>: role changes numbered on the link server</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L15">Overview, What owners can do</a> and <a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L230">plan §4.10</a>: the roster's roles, owners outside it</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L53">Overview, Trade-offs users notice</a>: "catching up, try again"</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L221-L226">Plan §4.10</a>: claims from the complete roster, and the roster request</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L307">Plan §4.17</a>: two role changes at once</li>
+      </ul>
+    </details>
+  </figure>
+  </section>
+
+  <ul class="lines">
+    <li><b>For users.</b> Today a channel has one owner, its creator. With the plan any owner can post, edit the channel, change roles, manage relays and destroy the channel; a member becomes an owner only after its security code is verified and it accepts an invitation; owners can remove each other, and the channel keeps working after the creator leaves. Up to six owners, five while the creator is one. <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L3-L22">overview</a></li>
+    <li><b>How.</b> Each owner keeps a copy of the channel's link data, makes its one change and writes it back; the server takes the write only if nobody wrote since, and otherwise sends back the current data for the owner to re-apply its change. The roster, the signed list of member, moderator and admin roles, is numbered on the same server, so relays and members keep today's role protocol. <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L24-L32">overview</a></li>
+    <li><b>What users notice.</b> Owner actions need that server, posting doesn't; a role change takes 1–3 seconds and can be refused for a few seconds after another owner's ("catching up, try again"); a new owner's device connects to the server directly, showing it the device's IP address, and the invitation says so. <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L51-L60">overview</a> <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L38">timing</a></li>
+    <li><b>Trust.</b> Owners trust each other as the single owner is trusted today: any owner can destroy the channel or lock the others out. The design guards against dishonest relays and a server that withholds the link or serves an old copy. <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L3">overview</a> <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L62-L68">risks</a></li>
+    <li><b>Cost and order.</b> About 112 hours of work, building, testing and reviewing included. The server part and the first chat part (new messages and data, needing nothing from the new server) start side by side; then the chat core moves onto the new server, with the iOS, Android and desktop apps after the core parts they need, built and tested on GitHub's runners. The riskiest part, role changes by several owners reaching every member in order, is mostly tested before any app work in the planned order. <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L329-L352">plan</a> <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L469">risk</a></li>
+  </ul>
+
+  <h2 id="decided">Decided</h2>
+  <ul>
+    <li>An owner's write keeps the shape of today's write and adds the hash and the owner keys, for now. That leaves room for six keys: up to five owners while the creator is one, six after it leaves. <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L42">overview</a> <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L45">plan</a></li>
+    <li>The server refuses today's write on a link several owners write, so a stale write, or one from an older app, can't erase the other owners' changes. Single-owner channels are unaffected. <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L43">overview</a> <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L47">plan</a></li>
+    <li>A write refused because the data changed is answered with the current data, so no read follows it. <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L44">overview</a> <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L113">plan</a></li>
+    <li>Each owner writes from its stored copy of the link data; it reads before a write only without a usable copy or to confirm a refusal the copy shows, and also at channel open and app start. It costs one database column; owners read the link less, and the server learns nothing new, since a refused write's data comes back over the connection the write already uses. <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L45">overview</a> <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L99">copy</a> <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L327">privacy</a></li>
+    <li>The server part starts from the server code version this branch pins and adapts the design to it. <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L46">overview</a> <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L54">plan</a></li>
+  </ul>
+
+  <h2 id="reference">For programmers</h2>
+  <p class="muted">What the pictures don't show; the plan's sections have the rest. Each link opens the cited lines of the <a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md">overview</a> or the <a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md">implementation plan</a> at the commit this page describes.</p>
+  <ul>
+    <li><b>Wire.</b> SMP v24, the server protocol's next version: <code>LSWP linkId hash [keys] (fixedData, userData)</code> answers <code>OK</code>, or <code>LCUR</code> (current) with the stored user data when the hash differs; <code>LSET</code> gets <code>AUTH</code> on a queue with several keys; not proxied. Chat protocol v23: <code>x.grp.owner.inv</code>, <code>x.grp.owner.acpt</code>, <code>x.grp.owner.add</code> (invite, consent, commit), <code>x.grp.members.req</code> and <code>x.grp.members.page</code> (member list), <code>linkVersion</code> in <code>x.grp.info</code>. <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L41-L54">§4.1</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L155-L168">§4.5</a>]</span></li>
+    <li><b>Agent.</b> Owners store and write from <code>OwnerLinkData</code> (encrypted fixed data, signed user data, hash); a swap returns <code>LSRSwapped</code> or <code>LSRChanged</code> with the link's data after it, directly or as the <code>LSWAP</code> event of an async command. <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L56-L77">§4.2</a>]</span></li>
+    <li><b>Chat.</b> A user's command writes with <code>writeChannelLink</code>; background work (finishing a promotion, relays, the count, roster re-sends) runs as link syncs of agent async commands. Both continue with <code>continueChannelLink</code>, which re-derives what is left from the latest data and the database, at most five swaps per trigger. Link data older than the stored <code>linkVersion</code> is ignored, and a read only adds owners or marks revoked ones departed. <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L101-L151">§4.4</a>]</span></li>
+    <li><b>Roster.</b> Claims come from the complete roster; roster messages from an owner who has since left are still applied in version order; a version by an owner who has left that no relay serves is skipped after a day. <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L219-L246">§4.10</a>]</span></li>
+    <li><b>Data and API.</b> One migration, nine columns, no new table; <code>/owner invite #&lt;group&gt; &lt;member&gt;</code> and <code>/_owner accept #&lt;groupId&gt; &lt;chatItemId&gt; [direct=on]</code>; refusals as <code>CEChannelLink</code> errors. <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L283-L298">§4.16</a>]</span></li>
+    <li><b>Risks.</b> The riskiest assumption is that today's roster protocol converges when versions are claimed through the link (tests in S9, S10 and S13); next, that background callbacks re-derived from the latest data are idempotent (T17, in S8). S1 first proves the swap's atomicity and that six keys fit. Trade-offs and residual risks: <a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L51-L73">overview</a>. <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L467-L473">§8</a>]</span></li>
+  </ul>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Slices</th><th>What</th><th>Starts</th></tr></thead>
+      <tbody>
+        <tr><td class="nowrap">S1–S2</td><td>simplexmq: the swap, SMP v24, the agent</td><td>first</td></tr>
+        <tr><td class="nowrap">S3</td><td>chat: new messages and data, nothing that needs the new server</td><td>beside S1–S2</td></tr>
+        <tr><td class="nowrap">S4–S5</td><td>chat on the new server: writes from the copy, link syncs, profile, relays, count</td><td>after S2 and S3</td></tr>
+        <tr><td class="nowrap">S6</td><td>CI: a test backend with channels on a v24 link server</td><td>after S4's first part</td></tr>
+        <tr><td class="nowrap">S7–S10</td><td>promotion, member list, guards; roster through the link</td><td>after S5</td></tr>
+        <tr><td class="nowrap">S11–S12</td><td>apps: invitation and promotion, iOS then Kotlin</td><td>after S6 and S8</td></tr>
+        <tr><td class="nowrap">S13–S14</td><td>leave, removal, destroy</td><td>after S10</td></tr>
+        <tr><td class="nowrap">S15–S16</td><td>apps: owner management, iOS then Kotlin</td><td>after S11–S14</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">Sixteen slices; each compiles and passes its tests alone <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/03a4636f61c5b5dbdb63609f35dcc7b2e73b7170/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L329-L373">§6</a>]</span>.</p>
+</main>
+<script>
+(function () {
+  "use strict";
+  var pics = Array.prototype.slice.call(document.querySelectorAll("figure.pic"));
+  var picTabs = document.querySelector(".pic-tabs");
+
+  // One picture at a time; without this script all five show, stacked.
+  function showPic(id) {
+    pics.forEach(function (f) { f.hidden = f.id !== id; });
+    Array.prototype.forEach.call(picTabs.children, function (b) { b.setAttribute("aria-selected", String(b.dataset.pic === id)); });
+  }
+  Array.prototype.forEach.call(picTabs.children, function (b) {
+    b.addEventListener("click", function () { showPic(b.dataset.pic); });
+  });
+  picTabs.hidden = false;
+  showPic(pics[0].id);
+
+  function showTarget() {
+    var el = location.hash.length > 1 ? document.getElementById(location.hash.slice(1)) : null;
+    if (!el) return;
+    if (pics.indexOf(el) >= 0) showPic(el.id);
+    el.scrollIntoView();
+  }
+  window.addEventListener("hashchange", showTarget);
+  showTarget();
+})();
+</script>
