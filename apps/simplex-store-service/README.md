@@ -1394,11 +1394,11 @@ Your names; a later late payment credits it again, and a second refund adds to `
 payment against this service in Chromium, as they run against the webapp's mock. It:
 
 1. starts anvil on 8545 and deploys the contracts with the webapp's `dev/deploy.ts`, with a commitment
-   age of 5 seconds;
+   age of 5 seconds, and the webapp's `dev/serve-terms.ts` on 8098, which serves the texts of the terms'
+   links that the deploy sets;
 2. builds the names site (`vite build`) into the run's folder;
 3. writes an ini for that deployment with `[names]` and `[chain]` and no `[btcpay]` or `[stripe]`,
-   with the terms version `2026-10-23` and the one community name `bakers`, which the webapp's
-   community cases search for,
+   with the one community name `bakers`, which the webapp's community cases search for,
    serving the names site all in one on `SERVICE_PORT` and the badges site, from an empty folder, on
    `BADGES_PORT`, and signing with the test suite's
    public issuer secret (`issuerSecret` in `tests/Bots/StoreService/ConfigTests.hs`), trusted through
@@ -1417,13 +1417,13 @@ It needs bash 5.1 or later (for `wait -n -p`), `cabal` (for the default `STORE_S
 Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts` as TypeScript, as its
 `dev/start.sh` does), `jq`, `curl` and `python3`; the webapp with its packages and
 Playwright's Chromium (`npm install`, `npx playwright install chromium`); and the compiled
-`ens-contracts` submodule (simplex-network/ens-contracts#45) of a simplex-namespace-contract checkout
-(brenzi/simplex-namespace-contract#8), whose `bona-fide-terms.simplex.md` the deploy sets as the community terms,
+`ens-contracts` submodule (simplex-network/ens-contracts#47) of a simplex-namespace-contract checkout
+(brenzi/simplex-namespace-contract#10), whose `test/fixtures/terms/` the deploy links as the terms,
 as the webapp's `dev/start.sh` needs. The cases read the chain's addresses from the webapp's
 `dev/local-chain-0.json`, so the script stops when its deployment differs from it; run the webapp's
-`SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8180, 8181 and 8199 must be free:
+`SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8098, 8180, 8181 and 8199 must be free:
 the script stops before starting anything when one of them answers, and stops at once when anvil,
-the service or the code server exits before it answers.
+the terms server, the service or the code server exits before it answers.
 
 ```
 cabal build exe:simplex-store-service
@@ -1437,7 +1437,8 @@ ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/dev/contra
 - Arguments, if given, are passed to `playwright test` in place of the default cases' title filter.
 
 The default cases cover search answers for an available name, Check your code and its rate-limit
-countdown, code orders to `registered` with and without links, a code order's name code restored and
+countdown, code orders to `registered` with and without links, one whose register records its buyer's
+acceptance of the name terms, a code order's name code restored and
 revealed in another browser, Edit links on a name registered with a code (the other Edit links case
 answers its own name and record requests in the page), a link whose data cannot be read now, a
 community name's marker and its Check your order wording, and a code order of a name the contracts'

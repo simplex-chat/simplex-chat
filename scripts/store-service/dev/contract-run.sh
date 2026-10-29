@@ -26,19 +26,18 @@ MEMORY_STATES=8
 SERVICE_URL="http://127.0.0.1:$SERVICE_PORT"
 BADGES_URL="http://127.0.0.1:$BADGES_PORT"
 CODES_URL="http://127.0.0.1:$CODES_PORT"
+TERMS_URL="http://127.0.0.1:8098"
 STARTUP_SECONDS=120
 CLI_TIMEOUT_SECONDS=120
 # The test suite's public issuer secret (issuerSecret in tests/Bots/StoreService/ConfigTests.hs), trusted
 # through [issuer] dev_keys, which the service accepts only on chain 31337. Never use it elsewhere.
 DEV_ISSUER_INDEX=999
 DEV_ISSUER_SECRET=Ea5wG-J2mQjPBu9YfSJRKPnGnzoIdEE-8VaMh_wY2Bg=
-TERMS_VERSION=2026-10-23
-TERMS_URL=https://simplex.chat/
 # the community name the webapp's community cases search for
 COMMUNITY_LABEL=bakers
 COMMUNITY_TEXT="bakers and bakeries in Portugal"
 
-# The cases at webapp 1fa9338. Each case is its own client by X-Forwarded-For, which the service trusts
+# The cases at webapp 0ad2432. Each case is its own client by X-Forwarded-For, which the service trusts
 # here, as the mock does. Each takes its prepaid code from POST /control/code, which the code server
 # below answers from the codes issued here, so CODES holds one per case that asks for one. "search
 # answers every kind of name" is not among them: it sets /control/search.
@@ -53,7 +52,7 @@ CASES=(
   "the registering page keeps its heading still on a phone from the commit to the name being registered"
   "a registration's stages are said as each is reached, not each second of the wait"
   "Edit links keeps several links on chain as the contact address they hold, and emptying the field removes them"
-  "a prepaid code registers a name with its links, which its records on chain then hold"
+  "a prepaid code registers a name with its links, which its records on chain then hold, its register recording the owner's acceptance of the name terms"
   "a code order's name code, entered in another browser before the reveal, lets that browser reveal and register the name"
   "Edit links on a name registered with a code adds its links on chain, then changes one"
   "a code check past the service's limit counts down its wait, then checks the code again by itself"
@@ -102,7 +101,7 @@ answering() {
 # Another chain on the port would take the deployment, and the cases would read that chain.
 refuse_taken_ports() {
   local url
-  for url in "$RPC_URL" "$SERVICE_URL" "$BADGES_URL" "$CODES_URL"; do
+  for url in "$RPC_URL" "$SERVICE_URL" "$BADGES_URL" "$CODES_URL" "$TERMS_URL"; do
     if curl -s -o /dev/null "$url"; then
       echo "something already answers on $url; stop it first" >&2
       exit 1
@@ -120,6 +119,11 @@ start_chain() {
     echo "the deployment differs from $WEBAPP_DIR/dev/local-chain-0.json, which the e2e helpers read; run its dev/start.sh with SLOTS=1 MIN_COMMITMENT_AGE=$MIN_COMMITMENT_AGE once" >&2
     exit 1
   fi
+}
+
+start_terms() {
+  (cd "$WEBAPP_DIR" && node dev/serve-terms.ts) > "$RUN_DIR/terms.log" 2>&1 &
+  answering $! "$TERMS_URL/terms/"
 }
 
 build_site() {
@@ -148,8 +152,6 @@ dev_keys = $DEV_ISSUER_INDEX:$DEV_ISSUER_SECRET
 
 [names]
 tld = $(jq -r .tld "$chain")
-terms_version = $TERMS_VERSION
-terms_url = $TERMS_URL
 
 [community]
 $COMMUNITY_LABEL = $COMMUNITY_TEXT
@@ -348,6 +350,7 @@ run_cases() {
 
 refuse_taken_ports
 start_chain
+start_terms
 build_site
 write_ini
 make_database
