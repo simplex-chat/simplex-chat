@@ -45,7 +45,7 @@ import StoreService.Names.Abi (abiBytes, abiTuple, addressWord, AbiValue (..), h
 import StoreService.Names.Chain (Block (..), ChainClient, Receipt (..), TxHash (..), TxRequest (..), blockAt, decodeSignedTx, newChainClient)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange)
-import StoreService.Names.Registration (RegisterIntent (..), TermsAcceptance (..), acceptCalldata, acceptanceDigest, commitCalldata, policyDomain, registerIntentDigest, registerWithCreditCalldata, sponsorDomain)
+import StoreService.Names.Registration (RegisterIntent (..), TermsAcceptance (..), acceptCalldata, acceptanceDigest, commitCalldata, policyDomain, registerIntentDigest, registerWithCreditCalldata, sponsorDomain, termsKind)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Sender
 import StoreService.Names.Signatures (OrderFields (..))
@@ -97,8 +97,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "relays the reveal's acceptance of the terms of the name's kind to the name policy as soon as it is stored, and registers once the policy holds it" testAcceptanceRelayed
     it "relays the acceptance before the wait for revealAfter, then waits for it" testAcceptanceBeforeWait
     it "clears the reveal when the relay's dry run refuses the acceptance for new terms or a used nonce, staying committed" testAcceptanceRefused
-    it "registers, keeping the reveal, when the relay's dry run reverts while the policy holds the acceptance another sent first" testAcceptanceSentFirst
-    it "retries the relay while the policy's acceptance for the commitment cannot be read, sending nothing" testAcceptanceUnread
+    it "registers, keeping the reveal, when the relay's dry run reverts while the policy holds the acceptance another sent first" testAcceptanceSentFirst    it "retries the relay while the policy's acceptance for the commitment cannot be read, sending nothing" testAcceptanceUnread
     it "clears the reveal of an acceptance signed for another policy or for the other kind of terms, sending nothing, for the page to sign again" testAcceptanceOtherPolicy
     it "judges a relay past the acceptance's deadline as a register past it, failing the order" testAcceptanceExpired
     it "relays no acceptance once the commitment lapsed, so the policy commits nothing again" testAcceptanceLapsed
@@ -646,7 +645,7 @@ acceptedReveal = acceptedRevealFor fakeNamePolicy False fakeNameTerms
 acceptedRevealFor :: Address -> Bool -> ByteString -> Ctx -> NameRegistration -> IO NameRegistration
 acceptedRevealFor policy community terms ctx@Ctx {cRandom} r = do
   rv <- signedReveal ctx keyA reveal {rvLabel = "alicebakery"} r
-  sig <- either (error . show) id <$> signRecoverable cRandom keyA (acceptanceDigest (policyDomain fakeChainId policy) community (nrCommitment r) terms 0 (rvDeadline rv))
+  sig <- either (error . show) id <$> signRecoverable cRandom keyA (acceptanceDigest (policyDomain fakeChainId policy) (termsKind community) (nrCommitment r) terms 0 (rvDeadline rv))
   rewrite ctx r (\o -> o {nrReveal = Just rv {rvAcceptance = Just TermsAcceptance {taTermsHash = terms, taNonce = 0, taSignature = sig}}})
 
 -- | The terms hash the policy holds as accepted for the registration's commitment by its owner.
@@ -660,7 +659,7 @@ testAcceptanceRelayed = forM_ [(False, fakeNameTerms, plainTerms), (True, fakeCo
   r@NameRegistration {nrReveal = Just NameReveal {rvDeadline, rvAcceptance = Just acceptance}} <- paidIn ctx aliceOrder {oTerms = signed} openPhase >>= acceptedRevealFor fakeNamePolicy community terms ctx
   relay <- steps w r >>= awaiting
   [acceptRaw] <- sent w
-  ((trTo &&& trData) <$> decodeSignedTx acceptRaw) `shouldBe` Right (fakeNamePolicy, acceptCalldata community (nrCommitment r) (nrOwner r) rvDeadline acceptance)
+  ((trTo &&& trData) <$> decodeSignedTx acceptRaw) `shouldBe` Right (fakeNamePolicy, acceptCalldata (termsKind community) (nrCommitment r) (nrOwner r) rvDeadline acceptance)
   -- in flight, it is waited for, and nothing else is sent
   steps w r >>= awaiting >>= (`shouldBe` ptHash relay) . ptHash
   stored ctx r `shouldReturn` r
@@ -696,7 +695,7 @@ testAcceptanceSentFirst = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   r@NameRegistration {nrReveal = Just NameReveal {rvDeadline, rvAcceptance = Just acceptance}} <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
   answerAccepted w r $ Returns fakeNameTerms
   answerCallOnce cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> nrCommitment r <> addressWord (nrOwner r)) $ Returns $ uint256 (0 :: Int)
-  revertDryRun cNode (acceptCalldata False (nrCommitment r) (nrOwner r) rvDeadline acceptance) $ Just $ selector "InvalidNonce()"
+  revertDryRun cNode (acceptCalldata (termsKind False) (nrCommitment r) (nrOwner r) rvDeadline acceptance) $ Just $ selector "InvalidNonce()"
   void $ steps w r >>= awaiting
   [registerRaw] <- sent w
   (trTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor

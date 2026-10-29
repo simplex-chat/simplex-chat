@@ -42,7 +42,7 @@ import StoreService.Names.Contracts (Contracts, sponsorNonce)
 import StoreService.Names.Label (validLabel)
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Orders (integerField, textField)
-import StoreService.Names.Registration (RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, policyDomain, sponsorDomain, verifyAcceptance, verifyRegisterIntent)
+import StoreService.Names.Registration (RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, policyDomain, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Signatures (parseSignature)
 import StoreService.Names.Store (NameRegistration (..), NameReveal (..))
 
@@ -136,7 +136,7 @@ checkAcceptance NamesConfig {nChain = ChainConfig {cChainId}} ct NameRegistratio
     Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's terms acceptance could not be read: " <> tshow e)
     Right AcceptanceAsked {acCommunity, acPolicy, acTermsHash, acNonce} -> case acceptance of
       Just a@TermsAcceptance {taTermsHash, taNonce}
-        | taTermsHash == acTermsHash && taNonce == acNonce -> first (const RVBadRequest) <$> verifyAcceptance (policyDomain cChainId acPolicy) acCommunity nrOwner nrCommitment deadline a
+        | taTermsHash == acTermsHash && taNonce == acNonce -> first (const RVBadRequest) <$> verifyAcceptance (policyDomain cChainId acPolicy) (termsKind acCommunity) nrOwner nrCommitment deadline a
       _ -> pure $ Left RVBadRequest
 
 linksValid :: Registration -> Bool

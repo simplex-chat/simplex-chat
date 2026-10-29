@@ -46,7 +46,7 @@ import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Links (linkMaxBytes)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (Registration (..), TermsAcceptance (..), acceptanceDigest, makeCommitment, policyDomain, registerIntentDigest, sponsorDomain)
+import StoreService.Names.Registration (Registration (..), TermsAcceptance (..), acceptanceDigest, makeCommitment, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), NameReveal (..), getRegistration)
 import StoreService.Names.Turns (labelTurnCount)
 import StoreService.Web.Http (createLimit, holdMicros, maxBodyBytes, nameBodyBytes, readLimit)
@@ -228,7 +228,7 @@ signAcceptance ctx key community terms nonce = acceptanceOf ctx key alice commun
 -- | The acceptance signed with the given deadline, which must be the intent's.
 acceptanceOf :: Ctx -> Secp256k1PrivateKey -> Registration -> Bool -> B.ByteString -> Word64 -> Word64 -> IO TermsAcceptance
 acceptanceOf Ctx {cRandom} key r community terms nonce deadline = do
-  sig <- either error id <$> signRecoverable cRandom key (acceptanceDigest (policyDomain fakeChainId fakeNamePolicy) community (makeCommitment r) terms nonce deadline)
+  sig <- either error id <$> signRecoverable cRandom key (acceptanceDigest (policyDomain fakeChainId fakeNamePolicy) (termsKind community) (makeCommitment r) terms nonce deadline)
   pure TermsAcceptance {taTermsHash = terms, taNonce = nonce, taSignature = sig}
 
 withAcceptance :: TermsAcceptance -> J.Object -> J.Object

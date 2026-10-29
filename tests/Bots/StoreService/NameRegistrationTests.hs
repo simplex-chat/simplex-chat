@@ -175,14 +175,14 @@ acceptanceDeadline = 1767315600
 
 testAcceptanceDigest :: IO ()
 testAcceptanceDigest = do
-  toHex (acceptanceDigest acceptanceDomain False acceptedCommitment acceptedHash 3 acceptanceDeadline) `shouldBe` "070755e9e268d66590814c83dcc532dda4226f92333c89b68f62f307d6d4d8c9"
-  toHex (acceptanceDigest acceptanceDomain True acceptedCommitment acceptedHash 3 acceptanceDeadline) `shouldBe` "ee1c94d3f30eb67315ce80e1f874e25ba862404441f2bb4c1313ef25896a99dc"
+  toHex (acceptanceDigest acceptanceDomain (termsKind False) acceptedCommitment acceptedHash 3 acceptanceDeadline) `shouldBe` "070755e9e268d66590814c83dcc532dda4226f92333c89b68f62f307d6d4d8c9"
+  toHex (acceptanceDigest acceptanceDomain (termsKind True) acceptedCommitment acceptedHash 3 acceptanceDeadline) `shouldBe` "ee1c94d3f30eb67315ce80e1f874e25ba862404441f2bb4c1313ef25896a99dc"
 
 testAcceptCalldata :: IO ()
 testAcceptCalldata = do
   sig <- either (fail . show) pure $ parseSignature $ "0x" <> T.replicate 32 "11" <> T.replicate 32 "22" <> "1b"
   let acceptance = TermsAcceptance {taTermsHash = acceptedHash, taNonce = 3, taSignature = sig}
-      calldata community = toHex (acceptCalldata community acceptedCommitment (address "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955") acceptanceDeadline acceptance)
+      calldata community = toHex (acceptCalldata (termsKind community) acceptedCommitment (address "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955") acceptanceDeadline acceptance)
       args =
         "26d4dc807322bcdc1f68a2459b580919c4e6c5629d07cb20c38a31f7b72b7e5de2937ea655d8e743e2a8cecbab83acdf055846c80e13001ec1f8dc404e4ef2d9\
         \00000000000000000000000014dc79964da2c08b23698b3d3cc7ca32193d99550000000000000000000000000000000000000000000000000000000000000003\
@@ -196,9 +196,9 @@ testVerifyAcceptance :: TVar ChaChaDRG -> IO ()
 testVerifyAcceptance g = do
   owner <- newEphemeralWallet g
   other <- newEphemeralWallet g
-  sig <- signRecoverable g (ewKey owner) (acceptanceDigest acceptanceDomain True acceptedCommitment acceptedHash 3 acceptanceDeadline) >>= either fail pure
+  sig <- signRecoverable g (ewKey owner) (acceptanceDigest acceptanceDomain (termsKind True) acceptedCommitment acceptedHash 3 acceptanceDeadline) >>= either fail pure
   let acceptance = TermsAcceptance {taTermsHash = acceptedHash, taNonce = 3, taSignature = sig}
-      verify community w = verifyAcceptance acceptanceDomain community (ewAddress w) acceptedCommitment
+      verify community w = verifyAcceptance acceptanceDomain (termsKind community) (ewAddress w) acceptedCommitment
   verify True owner acceptanceDeadline acceptance `shouldReturn` Right ()
   verify True other acceptanceDeadline acceptance `shouldReturn` Left "acceptance is not signed by the owner"
   verify True owner (acceptanceDeadline + 1) acceptance `shouldReturn` Left "acceptance is not signed by the owner"

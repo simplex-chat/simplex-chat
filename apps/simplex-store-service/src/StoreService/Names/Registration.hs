@@ -5,6 +5,8 @@ module StoreService.Names.Registration
   ( Registration (..),
     RegisterIntent (..),
     TermsAcceptance (..),
+    TermsKind (..),
+    termsKind,
     Node,
     nodeBytes,
     namehash,
@@ -92,6 +94,21 @@ data TermsAcceptance = TermsAcceptance
   }
   deriving (Eq, Show)
 
+data TermsKind = TermsKind {tkAcceptType :: ByteString, tkRelayFunction :: ByteString}
+
+termsKind :: Bool -> TermsKind
+termsKind community
+  | community =
+      TermsKind
+        { tkAcceptType = "AcceptCommunityNameTerms(bytes32 commitment,bytes32 termsHash,uint256 nonce,uint256 deadline)",
+          tkRelayFunction = "commitUnderCommunityNameTermsWithSig(bytes32,bytes32,address,uint256,uint256,bytes)"
+        }
+  | otherwise =
+      TermsKind
+        { tkAcceptType = "AcceptNameTerms(bytes32 commitment,bytes32 termsHash,uint256 nonce,uint256 deadline)",
+          tkRelayFunction = "commitUnderNameTermsWithSig(bytes32,bytes32,address,uint256,uint256,bytes)"
+        }
+
 makeCommitment :: Registration -> ByteString
 makeCommitment r = keccak256 $ abiTuple [Dynamic $ registrationTuple r]
 
@@ -129,28 +146,21 @@ verifyRegisterIntent domain now RegisterIntent {riRegistration = r@Registration 
   signer <- ExceptT $ recoverAddress riSignature $ registerIntentDigest domain r riNonce riDeadline
   unless (signer == rOwner) $ throwError "intent is not signed by the owner"
 
-acceptanceDigest :: Eip712Domain -> Bool -> ByteString -> ByteString -> Word64 -> Word64 -> ByteString
-acceptanceDigest domain community commitment termsHash nonce deadline =
+acceptanceDigest :: Eip712Domain -> TermsKind -> ByteString -> ByteString -> Word64 -> Word64 -> ByteString
+acceptanceDigest domain TermsKind {tkAcceptType} commitment termsHash nonce deadline =
   hashTypedData
     domain
-    ( if community
-        then "AcceptCommunityNameTerms(bytes32 commitment,bytes32 termsHash,uint256 nonce,uint256 deadline)"
-        else "AcceptNameTerms(bytes32 commitment,bytes32 termsHash,uint256 nonce,uint256 deadline)"
-    )
+    tkAcceptType
     [bytes32 commitment, bytes32 termsHash, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
 
-verifyAcceptance :: Eip712Domain -> Bool -> Address -> ByteString -> Word64 -> TermsAcceptance -> IO (Either String ())
-verifyAcceptance domain community owner commitment deadline TermsAcceptance {taTermsHash, taNonce, taSignature} = runExceptT $ do
-  signer <- ExceptT $ recoverAddress taSignature $ acceptanceDigest domain community commitment taTermsHash taNonce deadline
+verifyAcceptance :: Eip712Domain -> TermsKind -> Address -> ByteString -> Word64 -> TermsAcceptance -> IO (Either String ())
+verifyAcceptance domain kind owner commitment deadline TermsAcceptance {taTermsHash, taNonce, taSignature} = runExceptT $ do
+  signer <- ExceptT $ recoverAddress taSignature $ acceptanceDigest domain kind commitment taTermsHash taNonce deadline
   unless (signer == owner) $ throwError "acceptance is not signed by the owner"
 
-acceptCalldata :: Bool -> ByteString -> Address -> Word64 -> TermsAcceptance -> ByteString
-acceptCalldata community commitment owner deadline TermsAcceptance {taTermsHash, taNonce, taSignature} =
-  selector
-    ( if community
-        then "commitUnderCommunityNameTermsWithSig(bytes32,bytes32,address,uint256,uint256,bytes)"
-        else "commitUnderNameTermsWithSig(bytes32,bytes32,address,uint256,uint256,bytes)"
-    )
+acceptCalldata :: TermsKind -> ByteString -> Address -> Word64 -> TermsAcceptance -> ByteString
+acceptCalldata TermsKind {tkRelayFunction} commitment owner deadline TermsAcceptance {taTermsHash, taNonce, taSignature} =
+  selector tkRelayFunction
     <> abiTuple
       [ Static commitment,
         Static taTermsHash,

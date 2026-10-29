@@ -44,7 +44,7 @@ import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, releaseCode, res
 import StoreService.Names.Contracts (CommitmentAges (..), acceptedTerms, bonaFideName, commitmentAges, commitmentTime, controllerAvailable, namePolicy, sponsorNonce)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), WriteRefusal (..), confirmLanded, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
-import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, verifyAcceptance, verifyRegisterIntent)
+import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcome, inFlightTransaction, ptHash, submitTransaction)
@@ -290,16 +290,16 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
         Left e -> pure $ Just $ failure r e
         Right (policy, listed, accepted)
           | accepted == taTermsHash -> pure Nothing
-          | otherwise -> Just <$> relay policy listed
+          | otherwise -> Just <$> relay policy (termsKind listed)
   where
     held = acceptedTerms oeContracts nrCommitment nrOwner
-    relay policy listed =
-      verifyAcceptance (policyDomain cChainId policy) listed nrOwner nrCommitment deadline a >>= \case
+    relay policy kind =
+      verifyAcceptance (policyDomain cChainId policy) kind nrOwner nrCommitment deadline a >>= \case
         Left refusal -> do
           logWarn $ "names worker: registration " <> rid <> ": its stored acceptance is refused, " <> T.pack refusal
           save w now r {nrReveal = Nothing}
         Right () ->
-          submitTransaction wkSender (TxAccept regId) policy (acceptCalldata listed nrCommitment nrOwner deadline a) >>= \case
+          submitTransaction wkSender (TxAccept regId) policy (acceptCalldata kind nrCommitment nrOwner deadline a) >>= \case
             Right p -> pure $ Await p
             Left SEInFlight -> pure Again
             Left (SEChain (ChainReverted reason)) ->
