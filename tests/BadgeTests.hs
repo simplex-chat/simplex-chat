@@ -1549,7 +1549,6 @@ testServiceWireTags = do
   drg <- C.newRandom
   masterKey <- generateMasterKey drg
   let badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = futureTime, badgeExtra = ""}
-      badgeRequest = BadgeRequest {masterKey, badgeInfo}
       payment = SPInvoice {invoiceId = InvoiceId "inv-1"}
       balance = BadgeBalance {lastEntry = testEntry}
       statement = BadgeStatement {entries = [testEntry], previousEntryId = Nothing}
@@ -1569,14 +1568,15 @@ testServiceWireTags = do
           STCGetBadgeInvoice {priceId = BadgePriceId "price-1", offerId = Just (BadgeOfferId "offer-1"), badgeInfo, paymentVia = SPMCard {provider = CPStripe}, upgrade = Nothing},
           STCRedeemBadgeCode {masterKey, code = "SB-4K2P7-TQ9M1-ZX3RB-8HJ5W"},
           STCPurchaseBadge {masterKey, payment, upgrade = Nothing},
-          STCUpgradeBadgeSubscription {badgeRequest, payment, balance},
+          STCUpgradeBadgeSubscription {payment, balance},
+          STCTransferBadge {masterKey, payment},
           STCIssueBadge {balance},
           STCPauseBadge
         ]
       responses =
         [ STPBadgeCatalog {catalog = BadgeCatalog {prices = [], offers = []}, badgeStatement = Just statement},
           STPBadgeInvoice {invoice, badgeType = BTSupporter, months = 3},
-          STPBadgeCredential {credential = Nothing, receipt = Just "receipt", statement},
+          STPBadgeCredential {credential = Nothing, receipt = Just "receipt", statement, subscription = Just SSRenewing},
           STPError {code = STEInternal, message = Nothing, retryAfter = Nothing}
         ]
       errors =
@@ -1597,6 +1597,7 @@ testServiceWireTags = do
           STECodeExpired,
           STEReceiptInvalid,
           STEReceiptUsed,
+          STETransferLimited,
           STETestPurchase,
           STEInternal,
           STEUnknown "future_code"
@@ -1613,6 +1614,7 @@ testServiceWireTags = do
       STCRedeemBadgeCode {} -> "redeemBadgeCode"
       STCPurchaseBadge {} -> "purchaseBadge"
       STCUpgradeBadgeSubscription {} -> "upgradeBadgeSubscription"
+      STCTransferBadge {} -> "transferBadge"
       STCIssueBadge {} -> "issueBadge"
       STCPauseBadge -> "pauseBadge"
     responseTag = \case
@@ -1638,6 +1640,7 @@ testServiceWireTags = do
       STECodeExpired -> "code_expired"
       STEReceiptInvalid -> "receipt_invalid"
       STEReceiptUsed -> "receipt_used"
+      STETransferLimited -> "transfer_limited"
       STETestPurchase -> "test_purchase"
       STEInternal -> "internal"
       STEUnknown t -> t
