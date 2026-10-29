@@ -109,6 +109,7 @@ data OrderRefusal
   | ORBalanceChanged (Maybe Balance)
   | -- | the current terms and the name's community entry, as the answer carries them
     ORTermsChanged J.Value J.Value
+  | ORCodesOnly
   deriving (Eq, Show)
 
 newtype OrderRefused = OrderRefused OrderRefusal

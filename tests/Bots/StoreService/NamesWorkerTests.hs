@@ -12,7 +12,7 @@ import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, ownerA, paidOrder, reveal)
-import Bots.StoreService.WebTests (capturingStderr, jsonObject, statusOf, webGet, webRequestBody)
+import Bots.StoreService.WebTests (capturingStderr, jsonObject, statusOf, stubCalls, webGet, webRequestBody)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
@@ -32,7 +32,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
-import Network.HTTP.Client (defaultManagerSettings, newManager)
+import Network.HTTP.Client (defaultManagerSettings, newManager, responseBody)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
@@ -41,6 +41,7 @@ import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.Util (tshow)
+import StoreService.Config (NamesConfig)
 import StoreService.Names.Abi (abiBytes, abiTuple, addressWord, AbiValue (..), hex, selector, uint256)
 import StoreService.Names.Chain (Block (..), ChainClient, Receipt (..), TxHash (..), TxRequest (..), blockAt, decodeSignedTx, newChainClient)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
@@ -72,6 +73,7 @@ workerTests :: Spec
 workerTests = describe "StoreService names: worker" $ do
   describe "commit" $ do
     it "commits, waits for the reveal and revealAfter, and registers a code order, spending its code and publishing each change" testCommitWaitRegister
+    it "registers a code order with codes_only on, from the code check to the registered view, refusing a paid order" testCodesOnlyRegister
     it "waits for a pending commit without sending another, following its fee-bumped replacement" testPendingCommit
     it "goes to committed when the commit reverts UnexpiredCommitmentExists, in its dry run or mined, with the commitment's times" testUnexpiredCommitment
     it "sends a commit mined out of gas again" testCommitOutOfGas
@@ -134,7 +136,12 @@ data W = W
 
 -- | The worker over the orders' store and fake node, with the registration poll and Try again as namesRoutes registers them.
 withWorker :: (W -> IO a) -> IO a
-withWorker action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb} -> do
+withWorker = withWorkerAs id
+
+-- | With the names settings changed, as the service reads them at startup.
+withWorkerAs :: (NamesConfig -> NamesConfig) -> (W -> IO a) -> IO a
+withWorkerAs settings action = withOrders $ \open -> do
+  let ctx@Ctx {cNode, cOrders, cWeb} = configured settings open
   answerCall cNode fakeController minCommitmentAgeCall $ Returns $ uint256 minAge
   answerCall cNode fakeController maxCommitmentAgeCall $ Returns $ uint256 maxAge
   answerUnowned ctx "alicebakery"
@@ -284,8 +291,23 @@ nowOf Ctx {cClock} = readIORef cClock
 -- tests
 
 testCommitWaitRegister :: IO ()
-testCommitWaitRegister = withWorker $ \w@W {wCtx = ctx} -> do
-  (r, code) <- codeIn ctx 8 aliceOrder id
+testCommitWaitRegister = withWorker $ \w@W {wCtx = ctx} -> codeIn ctx 8 aliceOrder id >>= commitWaitRegister w
+
+testCodesOnlyRegister :: IO ()
+testCodesOnlyRegister = withWorkerAs codesOnly $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
+  (text, code) <- issueCode ctx 8 2 id
+  (status, coverage) <- post ctx "/api/code/check" (J.encode $ J.object ["code" J..= text])
+  (status, field "state" =<< coverage) `shouldBe` (200, Just "unused")
+  placeOrder ctx aliceOrder `shouldReturn` refusedWith 403 "codes_only"
+  r <- registrationById ctx =<< registered ctx text aliceOrder
+  commitWaitRegister w (r, code)
+  (status', view) <- (statusOf &&& J.decode . responseBody) <$> webGet cClient (registrationPath $ nrId r)
+  (status', field "phase" =<< view) `shouldBe` (200, Just "registered")
+  stubCalls (cStub ctx) `shouldReturn` []
+
+-- | A queued code order, committed, revealed and registered.
+commitWaitRegister :: W -> (NameRegistration, PrepaidCode) -> IO ()
+commitWaitRegister w@W {wCtx = ctx} (r, code) = do
   answerExpiry ctx "alicebakery" expiry
   answerCommitment w r 0
   void $ published w r $ steps w r >>= awaiting

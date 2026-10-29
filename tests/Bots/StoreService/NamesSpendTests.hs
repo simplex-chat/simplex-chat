@@ -10,7 +10,7 @@ import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, setRates,
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (reservedNamesCall)
 import Bots.StoreService.ConfigTests (termsVersion)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, bumpedTerms, commitmentOf, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyA, keyB, listName, malformedTerms, olderTerms, orderTime, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, termsChanged, withOrdersOn, yearsDuration)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, bumpedTerms, codesOnly, commitmentOf, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyA, keyB, listName, malformedTerms, olderTerms, orderTime, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, termsChanged, withOrdersOn, yearsDuration)
 import Bots.StoreService.NamesOwnerTests (findBody, postFind)
 import Bots.StoreService.NamesStoreTests (at, order, ownerA, placePaid, reg, t0, write)
 import Bots.StoreService.WebTests (StubCall (..), capturingStderr, StubState (..), jsonObject, rcv, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores)
@@ -84,6 +84,7 @@ namesSpendTests = describe "StoreService names: spend" $ do
     it "refuses a card difference below the card minimum after the price check, accepting it by crypto and at the minimum" testCardMinimum
     it "refuses sealed missing or over 11095 characters and a body over 16384 bytes, accepting the longest" testSpendSizes
     it "counts spends against the create limit" testSpendLimit
+    it "answers 403 codes_only to a covered spend, a difference, a malformed body and an unknown order, spending nothing and reaching no provider" testSpendCodesOnly
   describe "terms" $ do
     it "answers terms_changed for an old version or the wrong variant, listed or not, and stores the community terms, covered and by difference" testSpendTermsChanged
     it "answers an exact resend after the version changed, covered and by difference" testSpendResendAfterBump
@@ -104,6 +105,20 @@ namesSpendChatTests :: SpecWith TestParams
 namesSpendChatTests =
   describe "StoreService names: spend end to end" $
     it "spends a taken order's balance on a dearer name through BTCPay and the poller, credits a late payment, and refunds the rest" testSpendEndToEnd
+
+testSpendCodesOnly :: IO ()
+testSpendCodesOnly = withSpend $ \open -> do
+  source <- sourceOf open "s" 10000
+  serveSpend (configured codesOnly open) $ \ctx -> do
+    spend ctx source (covered 10000) `shouldReturn` refusedWith 403 "codes_only"
+    spend ctx source (dynamis 10000 $ Just "btc") `shouldReturn` refusedWith 403 "codes_only"
+    postSpend ctx source KM.empty `shouldReturn` refusedWith 403 "codes_only"
+    postSpend ctx (RegistrationId "unknown") KM.empty `shouldReturn` refusedWith 403 "codes_only"
+    amountOf ctx source `shouldReturn` Just 10000
+    paidFrom ctx source `shouldReturn` []
+    stubCalls (cStub ctx) `shouldReturn` []
+  -- nothing the refusals left meets the same spend with codes_only off
+  fst <$> spend open source (covered 10000) `shouldReturn` 200
 
 -- fixtures
 
