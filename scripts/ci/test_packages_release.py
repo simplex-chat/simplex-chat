@@ -485,11 +485,20 @@ class ChangesTest(GitRepoTest):
     def test_other_ci_script_builds_the_core(self):
         self.assertEqual(self.builds("scripts/ci/prune-old-builds.sh"), {"haskell"})
 
+    def test_app_test_scripts_build_nothing(self):
+        self.assertEqual(self.builds("scripts/ci/ios-sim/smoke-test.sh", "scripts/ci/desktop-linux/smoke-test.sh", "scripts/ci/android/ui", "scripts/ci/snapshots-compare.py", "scripts/ci/README.md"), set())
+
     def test_build_image_change_builds_the_core_and_kotlin(self):
         self.assertEqual(self.builds("Dockerfile.build"), {"haskell", "kotlin"})
 
     def test_workflow_change_builds_the_core_and_kotlin(self):
         self.assertEqual(self.builds(".github/workflows/build.yml"), {"haskell", "kotlin"})
+
+    def test_build_action_change_builds_the_core_and_kotlin(self):
+        self.assertEqual(self.builds(".github/actions/prepare-build/action.yml"), {"haskell", "kotlin"})
+
+    def test_other_workflow_change_builds_nothing(self):
+        self.assertEqual(self.builds(".github/workflows/ios-sim.yml", ".github/workflows/desktop-linux.yml", ".github/ISSUE_TEMPLATE/bug.md"), set())
 
     def test_unrelated_change_builds_nothing(self):
         self.assertEqual(self.builds("docs/guide.md", "packages/pkg/src.txt"), set())
@@ -502,7 +511,7 @@ class ChangesTest(GitRepoTest):
         self.assertEqual(self.values["scopes"], "badge-web")
 
     def test_release_script_change_tests_the_ci_scripts(self):
-        self.assertEqual(self.builds("scripts/ci/packages_release.py"), {"haskell"})
+        self.assertEqual(self.builds("scripts/ci/packages_release.py"), set())
         self.assertEqual(self.values["scopes"], "ci-scripts")
 
 

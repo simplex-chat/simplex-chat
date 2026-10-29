@@ -280,7 +280,10 @@ CREATE TABLE test_chat_schema.badge_purchases (
     issue_error_at timestamp with time zone,
     issue_error text,
     next_wake_at timestamp with time zone,
-    badge_store_receipt_id bigint
+    badge_store_receipt_id bigint,
+    subscription_status text,
+    unrenewed_since timestamp with time zone,
+    last_unrenewed_at timestamp with time zone
 );
 
 
@@ -310,7 +313,8 @@ CREATE TABLE test_chat_schema.badge_store_receipts (
     next_attempt_at timestamp with time zone,
     retry_delay bigint,
     retry_count bigint DEFAULT 0 NOT NULL,
-    credit_error text
+    credit_error text,
+    hold_kind text DEFAULT 'purchase'::text NOT NULL
 );
 
 

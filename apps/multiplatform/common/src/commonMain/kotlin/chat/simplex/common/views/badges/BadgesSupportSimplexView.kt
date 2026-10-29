@@ -63,24 +63,26 @@ fun BadgesSupportSimplexView(modalManager: ModalManager, unwindToDepth: Int) {
 
     Spacer(Modifier.weight(1f))
 
-    // In-app purchase is not released: the badge is chosen on the site, and the code redeemed
-    // here. Revert this commit to restore the block below.
-    // Column(horizontalAlignment = Alignment.CenterHorizontally) {
-    //   if (badgeStoreAvailable) {
-    //     ChooseLevelButton(modalManager, unwindToDepth)
-    //     if (badgeBrowserAllowed()) {
-    //       BuyInBrowserTextButton()
-    //     } else {
-    //       RedeemCodeButton(modalManager, unwindToDepth)
-    //     }
-    //   } else {
-    //     BuyInBrowserButton(modalManager, unwindToDepth)
-    //     RedeemCodeButton(modalManager, unwindToDepth)
-    //   }
-    // }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      ChooseBadgeOnSiteButton(modalManager, unwindToDepth)
-      RedeemCodeButton(modalManager, unwindToDepth)
+      if (badgeStoreAvailable) {
+        ChooseLevelButton(modalManager, unwindToDepth)
+        if (badgeBrowserAllowed()) {
+          BuyInBrowserTextButton()
+        } else {
+          RedeemCodeButton(modalManager, unwindToDepth)
+        }
+        RestorePurchasesButton()
+        Text(
+          stringResource(MR.strings.badges_restore_purchases_footnote),
+          Modifier.padding(top = DEFAULT_PADDING_HALF),
+          style = MaterialTheme.typography.body2,
+          color = MaterialTheme.colors.secondary,
+          textAlign = TextAlign.Center
+        )
+      } else {
+        BuyInBrowserButton(modalManager, unwindToDepth)
+        RedeemCodeButton(modalManager, unwindToDepth)
+      }
     }
   }
 }
@@ -137,25 +139,6 @@ private fun BuyInBrowserTextButton() {
   TextButtonBelowOnboardingButton(
     text = stringResource(MR.strings.badges_buy_in_browser),
     onClick = { uriHandler.openUriCatching(badgePageUrl(appLinkSchemeRegistered())) }
-  )
-}
-
-// In-app purchase is not released: delete with the commented block above to restore it.
-@Composable
-private fun ChooseBadgeOnSiteButton(modalManager: ModalManager, unwindToDepth: Int) {
-  val uriHandler = LocalUriHandler.current
-  OnboardingActionButton(
-    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
-    labelId = MR.strings.badges_choose_your_badge_title,
-    onboarding = null,
-    onclick = {
-      val linkReturns = appLinkSchemeRegistered()
-      uriHandler.openUriCatching(badgePageUrl(linkReturns))
-      // with no scheme to bring the code back, the code is pasted into this screen, opened beside the browser
-      if (!linkReturns && !modalManager.hasModalOpen(ModalViewId.BADGE_REDEEM_CODE)) {
-        modalManager.showModal(id = ModalViewId.BADGE_REDEEM_CODE) { BadgesRedeemCodeView(modalManager, unwindToDepth) }
-      }
-    }
   )
 }
 

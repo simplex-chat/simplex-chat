@@ -408,18 +408,20 @@ Delegates to the standard Compose function which reads `Configuration.uiMode`.
 **Desktop** ([`Theme.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/ui/theme/Theme.desktop.kt)):
 
 ```kotlin
-private val detector: OsThemeDetector = OsThemeDetector.getDetector()
-  .apply { registerListener(::reactOnDarkThemeChanges) }
+private val detector: OsThemeDetector? = systemThemeDetector
+  ?.apply { registerListener(::reactOnDarkThemeChanges) }
 
 @Composable
 actual fun isSystemInDarkTheme(): Boolean = try {
-  detector.isDark
+  detector?.isDark ?: false
 } catch (e: Exception) {
   false  // Fallback for macOS exceptions
 }
 ```
 
 Uses the [jSystemThemeDetector](https://github.com/Dansoftowner/jSystemThemeDetector) library (`OsThemeDetector`). The detector also registers a listener that calls `reactOnDarkThemeChanges()` proactively when the OS theme changes, ensuring the app responds even outside of composition.
+
+`systemThemeDetector` is declared in `Resources.desktop.kt` as `OsThemeDetector.getDetector()` guarded by `catch (_: LinkageError)`. It is `null` when JNA's native library cannot be loaded; the app then starts with the light theme, `isInNightMode()` and `isSystemInDarkTheme()` return `false`, and no listener is registered.
 
 ### reactOnDarkThemeChanges
 

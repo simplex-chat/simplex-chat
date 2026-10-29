@@ -17,7 +17,6 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.datetime.Clock
 
 @Composable
 fun MarkedDeletedItemView(chatsCtx: ChatModel.ChatsContext, ci: ChatItem, chatInfo: ChatInfo, timedMessagesTTL: Int?, revealed: State<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean) {
@@ -120,7 +119,7 @@ fun markedDeletedText(cItem: ChatItem, chatInfo: ChatInfo): String =
 fun PreviewMarkedDeletedItemView() {
   SimpleXTheme {
     DeletedItemView(
-      ChatItem.getSampleData(itemDeleted = CIDeleted.Deleted(Clock.System.now())),
+      ChatItem.getSampleData(ts = previewDate, itemDeleted = CIDeleted.Deleted(previewDate)),
       null,
       showViaProxy = false,
       showTimestamp = true
