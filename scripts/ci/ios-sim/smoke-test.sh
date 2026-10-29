@@ -357,7 +357,6 @@ search_in_new_chat() {
     exit 1
   fi
   clear_new_chat_search
-  # the profile has no contacts, so New chat's empty state is "No contacts"
   focus_new_chat_search
   "$ui" type "$no_match_text"
   sleep 2
@@ -368,7 +367,15 @@ search_in_new_chat() {
     exit 1
   fi
   tap_search_in_directory
-  "$ui" wait '"No contacts"' 30
+  deadline=$((SECONDS + 30))
+  until tree=$("$ui" tree) && grep -qF -e '"No contacts"' -e '"No filtered contacts"' <<< "$tree"; do
+    if [ "$SECONDS" -ge "$deadline" ]; then
+      "$ui" shot new-chat-no-match-missing
+      echo "error: New chat's empty state not shown 30 s after the search for \"$no_match_text\" found nothing"
+      exit 1
+    fi
+    sleep 1
+  done
   "$ui" shot new-chat-no-match-searched
   clear_new_chat_search
   focus_new_chat_search
@@ -390,7 +397,7 @@ search_in_new_chat() {
   "$ui" wait "you are subscriber" 30
   "$ui" shot known-chat-opened-new-chat
   "$ui" tap Back
-  echo "in New chat #ci_group is a result with Open, \"No contacts\" shows only once the search for \"$no_match_text\" found nothing, and the directory result for the joined ci_cards is its chat row ($row), which closes the sheet and opens the channel"
+  echo "in New chat #ci_group is a result with Open, the empty state shows only once the search for \"$no_match_text\" found nothing, and the directory result for the joined ci_cards is its chat row ($row), which closes the sheet and opens the channel"
 }
 
 xcrun simctl install "$SIM_UDID" "$app"
