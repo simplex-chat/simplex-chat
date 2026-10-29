@@ -145,7 +145,7 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} cfg providers waiters 
         Right ProviderInvoice {piProviderRef, piDestination} -> do
           rid <- newRegistrationId
           let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ivMethod) now, nniCreatedAt = now}
-              registration = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = orderYears orFields $ nYears oeConfig}
+              registration = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig}
               paid = PaidOrder {poMethod = ivMethod, poPrice = ivPrice, poInvoiceId = invId, poProviderRef = piProviderRef}
           placeOrder env req ivHolders (\db at -> insertNameInvoice db invoice >> ivInsert registration paid db at)
             `E.catch` strandedBy provider piProviderRef
@@ -270,7 +270,7 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} cfg 
     place order@OrderRequest {orOwner, orFields} spend@Spend {spPrice, spBalance, spMethod} holder = case spMethod of
       Nothing -> do
         rid <- newRegistrationId
-        let new = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = orderYears orFields $ nYears oeConfig}
+        let new = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig}
         placeOrder env order (maybeToList holder) (coveredOrderInsert spend new) >>= \case
           Left refusal -> refuse refusal
           Right closed -> pure Answer {aResponse = registrationAnswer rid, aAfter = announceClosed env providers waiters closed}

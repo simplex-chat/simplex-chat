@@ -177,7 +177,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "answers terms_changed for a code order under old terms, listed or not, leaving the code unreserved, and accepts the community terms" testCodeTermsChanged
     it "answers a code order's exact resend after the version changed" testCodeResendAfterBump
     it "checks a code order's terms after the timestamp, with the community listing's read, before the name check and the code's state" testCodeTermsCheckOrder
-    it "checks a community name's order for 2 years at their price, whatever years the configuration gives, storing 2" testCommunityInvoiceYears
+    it "checks a community name's order for 2 years at their price, whatever years the configuration gives, storing those years" testCommunityInvoiceYears
   describe "closed orders" $ do
     it "accepts a new order of the same wallet and name after a cancel" testOrderAfterCancel
     it "closes an overdue order of the same wallet and name before the poller marks it, cancelling its invoice after" testOverdueClosed
@@ -991,7 +991,7 @@ testCommunityInvoiceYears = withOrders $ \ctx0 -> withSettings (threeYears . lis
   let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000, oTerms = communityTerms termsVersion}
   placeOrder ctx dynamis {oDuration = yearsDuration 3 orderTime} `shouldReturn` refusedWith 400 "bad_request"
   fst <$> placeOrder ctx dynamis `shouldReturn` 200
-  map nrYears <$> registrationsOf ctx ownerA `shouldReturn` [2]
+  map nrYears <$> registrationsOf ctx ownerA `shouldReturn` [3]
 
 testCodeResendAfterBump :: IO ()
 testCodeResendAfterBump = withOrders $ \ctx0 -> do

@@ -86,7 +86,7 @@ namesSpendTests = describe "StoreService names: spend" $ do
     it "counts spends against the create limit" testSpendLimit
   describe "terms" $ do
     it "answers terms_changed for an old version or the wrong variant, listed or not, and stores the community terms, covered and by difference" testSpendTermsChanged
-    it "checks a spend for a community name for 2 years at their price, whatever years the configuration gives, storing 2" testSpendCommunityYears
+    it "checks a spend for a community name for 2 years at their price, whatever years the configuration gives, storing those years" testSpendCommunityYears
     it "answers an exact resend after the version changed, covered and by difference" testSpendResendAfterBump
     it "checks the terms after the timestamp and the duration, with the community listing's read, before the balance and the name check" testSpendTermsCheckOrder
   describe "holders" $ do
@@ -450,7 +450,7 @@ testSpendCommunityYears = withSpend $ \ctx0 -> serveSpend (configured (threeYear
   let community = dynamisOrder {oTerms = communityTerms termsVersion}
   spend ctx src (dynamis 30000 Nothing) {sbOrder = community {oDuration = yearsDuration 3 orderTime}} `shouldReturn` refusedWith 400 "bad_request"
   rid <- registrationAnswer . snd <$> spend ctx src (dynamis 30000 Nothing) {sbOrder = community}
-  nrYears <$> registrationById ctx rid `shouldReturn` 2
+  nrYears <$> registrationById ctx rid `shouldReturn` 3
 
 testSpendResendAfterBump :: IO ()
 testSpendResendAfterBump = withSpend $ \ctx0 -> do
