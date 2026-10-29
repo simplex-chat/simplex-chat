@@ -1464,8 +1464,8 @@ Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts`
 `dev/start.sh` does), `jq`, `curl` and `python3`; the webapp with its packages and
 Playwright's Chromium (`npm install`, `npx playwright install chromium`); and the compiled
 `ens-contracts` submodule (simplex-network/ens-contracts#47) of a simplex-namespace-contract checkout
-(brenzi/simplex-namespace-contract#10), whose `test/fixtures/terms/` the deploy links as the terms,
-as the webapp's `dev/start.sh` needs. The cases read the chain's addresses from the webapp's
+(brenzi/simplex-namespace-contract main, since #10), whose `test/fixtures/terms/` the deploy links
+as the terms, as the webapp's `dev/start.sh` needs. The cases read the chain's addresses from the webapp's
 `dev/local-chain-0.json`, so the script stops when its deployment differs from it; run the webapp's
 `SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8098, 8180, 8181 and 8199 must be free:
 the script stops before starting anything when one of them answers, and stops at once when anvil,
