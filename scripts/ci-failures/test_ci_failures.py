@@ -6,7 +6,7 @@ import unittest.mock
 import urllib.error
 from pathlib import Path
 
-import flakes
+import ci_failures
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 CHAT = "simplex-chat/simplex-chat"
@@ -15,7 +15,7 @@ LINUX = "ubuntu-22.04-x86_64 (CLI,Desktop), GHC: 9.6.3"
 LINUX_GHC8 = "ubuntu-22.04-x86_64 (CLI,Desktop), GHC: 8.10.7"
 LINUX_SMP = "ubuntu-22.04-x86-64, GHC: 8.10.7"
 MASTER = {"id": 1, "event": "push", "head_branch": "master", "head_sha": "a" * 40, "created_at": "2026-10-20T12:44:00Z"}
-DISPATCH = {**MASTER, "event": "workflow_dispatch", "head_branch": "ep/ci-flakes"}
+DISPATCH = {**MASTER, "event": "workflow_dispatch", "head_branch": "ep/x"}
 TIME = datetime.datetime(2026, 10, 26, tzinfo=datetime.timezone.utc)
 
 
@@ -23,8 +23,8 @@ def fixture(name: str) -> str:
     return (FIXTURES / name).read_text(encoding="utf-8")
 
 
-def lines(name: str) -> list[flakes.Line]:
-    return flakes.log_lines(fixture(name))
+def lines(name: str) -> list[ci_failures.Line]:
+    return ci_failures.log_lines(fixture(name))
 
 
 def job(name, test, conclusion, earlier=(("Build CLI", "success"),), step="Run tests", status="completed", job_id=2):
@@ -48,7 +48,7 @@ def record(repository, job, log=None, run=MASTER):
             raise AssertionError("the log is not needed")
         return fixture(log) if log else None
 
-    return flakes.job_record(repository, run, job, read_log)[0]
+    return ci_failures.job_record(repository, run, job, read_log)[0]
 
 
 class OutcomeTest(unittest.TestCase):
@@ -86,7 +86,7 @@ class OutcomeTest(unittest.TestCase):
     def test_test_step_failure_without_failed_tests_or_timeout_is_a_crash(self):
         empty = fixture("no-tests-selected.log").replace("No tests selected", "0 examples, 0 failures")
         for log in (fixture("build-fatal.log"), empty):
-            crashed = flakes.job_record(CHAT, MASTER, job(LINUX, "failure", "failure"), lambda: log)[0]
+            crashed = ci_failures.job_record(CHAT, MASTER, job(LINUX, "failure", "failure"), lambda: log)[0]
             self.assertEqual((crashed["outcome"], crashed["build"]["step"]), ("crashed", "Run tests"))
 
     def test_simplexmq_retries_are_read_from_passed_and_failed_jobs(self):
@@ -113,7 +113,9 @@ class OutcomeTest(unittest.TestCase):
             "crashed": log.replace("1412 examples, 1 failure", "0 examples, 0 failures"),
         }
         for outcome, text in logs.items():
-            tested = flakes.job_record(SMP, MASTER, job(LINUX_SMP, "failure", "failure", step="Test"), lambda: text)[0]
+            tested = ci_failures.job_record(
+                SMP, MASTER, job(LINUX_SMP, "failure", "failure", step="Test"), lambda: text
+            )[0]
             self.assertEqual((tested["outcome"], tested["retries"]), (outcome, []))
 
     def test_retries_are_not_read_from_simplex_chat_jobs(self):
@@ -140,8 +142,8 @@ class OutcomeTest(unittest.TestCase):
         with_body = "\n".join(lines[:after] + body + lines[after:])
         for test in ("success", "failure"):
             tested = job(LINUX_SMP, test, test, step="Test")
-            plain = flakes.job_record(SMP, PULL_RUN, tested, lambda: log)[0]
-            self.assertEqual(flakes.job_record(SMP, PULL_RUN, tested, lambda: with_body)[0], plain)
+            plain = ci_failures.job_record(SMP, PULL_RUN, tested, lambda: log)[0]
+            self.assertEqual(ci_failures.job_record(SMP, PULL_RUN, tested, lambda: with_body)[0], plain)
 
     def test_passed_job_on_stable_or_a_tag_keeps_failures_of_earlier_attempts(self):
         for branch in ("stable", "v6.4.1"):
@@ -167,26 +169,26 @@ class OutcomeTest(unittest.TestCase):
 
     def test_cancelled_job_without_steps_is_counted_when_its_job_key_is_tested(self):
         cancelled = job(LINUX, "absent", "cancelled", earlier=())
-        self.assertTrue(flakes.is_counted(cancelled, "Run tests", {flakes.job_key(LINUX)}))
-        self.assertFalse(flakes.is_counted(cancelled, "Run tests", set()))
+        self.assertTrue(ci_failures.is_counted(cancelled, "Run tests", {ci_failures.job_key(LINUX)}))
+        self.assertFalse(ci_failures.is_counted(cancelled, "Run tests", set()))
 
     def test_job_keys(self):
-        self.assertEqual(flakes.job_key("macos-latest (CLI,Desktop), GHC: 9.6.3"), "macos-latest GHC 9.6.3")
-        self.assertEqual(flakes.job_key(LINUX_SMP), "ubuntu-22.04-x86-64 GHC 8.10.7")
-        self.assertIsNone(flakes.job_key("resolver (python)"))
-        self.assertIsNone(flakes.job_key("macos-latest (iOS)"))
-        self.assertIsNone(flakes.job_key("ubuntu-${{ matrix.os }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"))
+        self.assertEqual(ci_failures.job_key("macos-latest (CLI,Desktop), GHC: 9.6.3"), "macos-latest GHC 9.6.3")
+        self.assertEqual(ci_failures.job_key(LINUX_SMP), "ubuntu-22.04-x86-64 GHC 8.10.7")
+        self.assertIsNone(ci_failures.job_key("resolver (python)"))
+        self.assertIsNone(ci_failures.job_key("macos-latest (iOS)"))
+        self.assertIsNone(ci_failures.job_key("ubuntu-${{ matrix.os }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"))
 
 
 class FailureTest(unittest.TestCase):
     def test_failures_equal_the_summary_count(self):
         counts = {"hspec-2.11-failures.log": 3, "hspec-2.7-failures.log": 12, "simplexmq-retries.log": 1}
         for log, count in counts.items():
-            output = flakes.test_output(lines(log))
+            output = ci_failures.test_output(lines(log))
             self.assertEqual((len(output.failures), sum(output.summaries)), (count, count))
 
     def test_failure_records(self):
-        failure = flakes.test_output(lines("hspec-2.7-failures.log")).failures[1]
+        failure = ci_failures.test_output(lines("hspec-2.7-failures.log")).failures[1]
         self.assertEqual(
             failure["test"], "/SimpleX chat client/direct tests/maintenance mode/export/import chat with files/"
         )
@@ -207,31 +209,33 @@ class FailureTest(unittest.TestCase):
         log = fixture("hspec-2.11-failures.log")
         marked = "\n".join(chr(0xFEFF) + line if "To rerun use:" in line else line for line in log.split("\n"))
         for variant in (marked, log.replace("\n", "\r\n")):
-            self.assertEqual(flakes.log_lines(variant), flakes.log_lines(log))
+            self.assertEqual(ci_failures.log_lines(variant), ci_failures.log_lines(log))
 
     def test_reason_keeps_3_lines_and_the_signature_all_lines(self):
         texts = ["Failures:", "  1) a", *(f"       line {n}" for n in range(1, 5)), '  To rerun use: --match "/a/"']
-        failure = flakes.test_output([flakes.Line(TIME, text) for text in texts]).failures[0]
+        failure = ci_failures.test_output([ci_failures.Line(TIME, text) for text in texts]).failures[0]
         self.assertEqual(failure["reason"], ["line 1", "line 2", "line 3"])
         self.assertEqual(failure["signature"], "line N | line N | line N | line N")
 
     def test_reason_lines_are_indented_by_7_spaces(self):
         texts = ["Failures:", "  1) a", "       line 1", "unindented", "       line 2", '  To rerun use: --match "/a/"']
-        failure = flakes.test_output([flakes.Line(TIME, text) for text in texts]).failures[0]
+        failure = ci_failures.test_output([ci_failures.Line(TIME, text) for text in texts]).failures[0]
         self.assertEqual(failure["reason"], ["line 1", "line 2"])
 
     def test_both_hspec_versions_give_one_signature(self):
-        current = flakes.test_output(lines("hspec-2.11-failures.log")).failures[2]
-        older = flakes.test_output(lines("hspec-2.7-failures.log")).failures[0]
+        current = ci_failures.test_output(lines("hspec-2.11-failures.log")).failures[2]
+        older = ci_failures.test_output(lines("hspec-2.7-failures.log")).failures[0]
         self.assertTrue(current["signature"].startswith('expected: "Your new chat address is created!" | but got: '))
         self.assertEqual(current["signature"], older["signature"])
 
     def test_signature_replaces_identifiers_digits_and_spaces(self):
-        self.assertEqual(flakes.signature("queue AbCdEfGhIjKlMnOp1  failed after 30 s"), "queue X failed after N s")
-        self.assertEqual(flakes.signature("x" * 120), "x" * 100)
+        self.assertEqual(
+            ci_failures.signature("queue AbCdEfGhIjKlMnOp1  failed after 30 s"), "queue X failed after N s"
+        )
+        self.assertEqual(ci_failures.signature("x" * 120), "x" * 100)
 
     def test_haskell_string(self):
-        self.assertEqual(flakes.haskell_string('"/a \\"b\\"/\\955\\&1/"'), '/a "b"/λ1/')
+        self.assertEqual(ci_failures.haskell_string('"/a \\"b\\"/\\955\\&1/"'), '/a "b"/λ1/')
 
     def test_retry_location_is_its_file(self):
         retry = (
@@ -240,7 +244,9 @@ class FailureTest(unittest.TestCase):
             'srcLocEndLine = 407, srcLocEndCol = 20})) (ExpectedButGot Nothing "False" "True")'
         )
         signature = 'HUnitFailure tests/CoreTests/CryptoTests.hs (ExpectedButGot Nothing "False" "True")'
-        self.assertEqual(flakes.retries([flakes.Line(TIME, retry)]), [{"label": None, "signature": signature}])
+        self.assertEqual(
+            ci_failures.retries([ci_failures.Line(TIME, retry)]), [{"label": None, "signature": signature}]
+        )
 
     def test_failed_retry_lines_with_and_without_label(self):
         lines = [
@@ -248,7 +254,7 @@ class FailureTest(unittest.TestCase):
             'Test failed: "sends \\"hello\\"", location Nothing, reason: ExpectedButGot Nothing "1" "2"',
         ]
         self.assertEqual(
-            flakes.retries([flakes.Line(TIME, line) for line in lines]),
+            ci_failures.retries([ci_failures.Line(TIME, line) for line in lines]),
             [
                 {"label": None, "signature": 'location Nothing, reason: Reason "no notification"'},
                 {"label": 'sends "hello"', "signature": 'location Nothing, reason: ExpectedButGot Nothing "N" "N"'},
@@ -256,7 +262,7 @@ class FailureTest(unittest.TestCase):
         )
 
     def test_build_signature_includes_the_error_message(self):
-        _, key = flakes.failed_step_signature(lines("build-ghc-error.log"))
+        _, key = ci_failures.failed_step_signature(lines("build-ghc-error.log"))
         self.assertEqual(
             key,
             "src/Simplex/Chat/View.hs:N:N: error: [-Wincomplete-patterns, -Werror=incomplete-patterns] | Pattern ",
@@ -273,14 +279,14 @@ class FailureTest(unittest.TestCase):
             "",
             "##[error]Process completed with exit code 1.",
         ]
-        raw, _ = flakes.failed_step_signature([flakes.Line(TIME, text) for text in texts])
+        raw, _ = ci_failures.failed_step_signature([ci_failures.Line(TIME, text) for text in texts])
         self.assertEqual(raw, "Error: cabal: Failed to build simplexmq.")
 
 
 class HangTest(unittest.TestCase):
     def hang(self, log):
         parsed = lines(log)
-        return flakes.hang(parsed, flakes.step_timeout(parsed, "Run tests"))
+        return ci_failures.hang(parsed, ci_failures.step_timeout(parsed, "Run tests"))
 
     def test_last_reported_item_and_silence(self):
         current = self.hang("hspec-2.11-timeout.log")
@@ -309,19 +315,19 @@ class HangTest(unittest.TestCase):
             "/SimpleX Directory service bot/should register group/",
             "/Save query plans/verify and overwrite query plans/",
         ]
-        self.assertEqual([path for path, _ in flakes.spec_items(lines("hspec-2.11-pending.log"))], expected)
+        self.assertEqual([path for path, _ in ci_failures.spec_items(lines("hspec-2.11-pending.log"))], expected)
 
     def test_indented_lines_starting_with_a_bracket_are_not_groups(self):
         texts = ["Chat client", "  group tests", "    a [✔]", "  [INFO] b", "    b [✔]", "2 examples, 0 failures"]
         self.assertEqual(
-            flakes.spec_items([flakes.Line(TIME, text) for text in texts]),
+            ci_failures.spec_items([ci_failures.Line(TIME, text) for text in texts]),
             [["/Chat client/group tests/a/", "a"], ["/Chat client/group tests/b/", "b"]],
         )
 
     def next_item(self, timeout, spec_log):
         with tempfile.TemporaryDirectory() as directory:
-            collector = flakes.Collector(None, flakes.Cache(Path(directory)))
-            spec = flakes.spec_items(lines(spec_log))
+            collector = ci_failures.Collector(None, ci_failures.Cache(Path(directory)))
+            spec = ci_failures.spec_items(lines(spec_log))
             collector.update_spec(CHAT, {"job": 3, "job_key": timeout["job_key"], "branch": "master"}, spec)
             return collector.next_item(timeout, "master")
 
@@ -338,19 +344,19 @@ class HangTest(unittest.TestCase):
         log = fixture("hspec-2.7-timeout.log").replace(
             "  verify .lint fkey-indexes", "        should send files from CLI without /store FAILED [1]"
         )
-        timeout = flakes.job_record(CHAT, MASTER, job(LINUX_GHC8, "failure", "failure"), lambda: log)[0]
+        timeout = ci_failures.job_record(CHAT, MASTER, job(LINUX_GHC8, "failure", "failure"), lambda: log)[0]
         self.assertEqual(timeout["hang"]["item"], "should send files from CLI without /store")
         self.assertEqual(self.next_item(timeout, "hspec-2.7-failures.log"), "switches remote hosts")
 
     def test_timeout_before_the_first_item_of_the_test_step(self):
         log = "\n".join(line for line in fixture("hspec-2.7-timeout.log").split("\n") if "Z   verify " not in line)
-        timeout = flakes.job_record(CHAT, MASTER, job(LINUX_GHC8, "failure", "failure"), lambda: log)[0]
+        timeout = ci_failures.job_record(CHAT, MASTER, job(LINUX_GHC8, "failure", "failure"), lambda: log)[0]
         self.assertEqual((timeout["outcome"], timeout["hang"]["item"]), ("timeout", None))
 
     def test_spec_is_kept_from_the_newest_job(self):
-        key = flakes.job_key(LINUX)
+        key = ci_failures.job_key(LINUX)
         with tempfile.TemporaryDirectory() as directory:
-            collector = flakes.Collector(None, flakes.Cache(Path(directory)))
+            collector = ci_failures.Collector(None, ci_failures.Cache(Path(directory)))
             for job_id in (3, 5, 4):
                 spec_record = {"job": job_id, "job_key": key, "branch": "master"}
                 collector.update_spec(CHAT, spec_record, [[f"/{job_id}/", str(job_id)]])
@@ -358,28 +364,28 @@ class HangTest(unittest.TestCase):
 
     def test_next_item_is_read_from_the_spec_of_the_window_branch(self):
         timeout = record(CHAT, job(LINUX, "failure", "failure"), "hspec-2.11-timeout.log")
-        master = flakes.spec_items(lines("hspec-2.11-failures.log"))
+        master = ci_failures.spec_items(lines("hspec-2.11-failures.log"))
         stable = [item for item in master if item[1] != "verify schema down migrations"]
         with tempfile.TemporaryDirectory() as directory:
-            collector = flakes.Collector(None, flakes.Cache(Path(directory)))
+            collector = ci_failures.Collector(None, ci_failures.Cache(Path(directory)))
             collector.update_spec(CHAT, {"job": 3, "job_key": timeout["job_key"], "branch": "master"}, master)
             collector.update_spec(CHAT, {"job": 4, "job_key": timeout["job_key"], "branch": "stable"}, stable)
-            collector.resolve_hangs([flakes.RunRecords(MASTER, [(None, timeout)])], "master")
+            collector.resolve_hangs([ci_failures.RunRecords(MASTER, [(None, timeout)])], "master")
         self.assertEqual(timeout["hang"]["next"], "verify schema down migrations")
 
     def test_spec_is_saved_from_push_runs_only(self):
         logs = {PUSH_RUN["id"]: "hspec-2.11-failures.log", PULL_RUN["id"]: "hspec-2.11-failures.log"}
         with tempfile.TemporaryDirectory() as directory:
-            collector = flakes.Collector(FakeGitHub(logs), flakes.Cache(Path(directory)))
+            collector = ci_failures.Collector(FakeGitHub(logs), ci_failures.Cache(Path(directory)))
             collector.runs(CHAT, [PUSH_RUN])
             collector.runs(CHAT, [PULL_RUN])
-            self.assertEqual(collector.cache.read(CHAT, "spec/master", flakes.job_key(LINUX))["job"], 1000)
+            self.assertEqual(collector.cache.read(CHAT, "spec/master", ci_failures.job_key(LINUX))["job"], 1000)
 
     def test_pr_reads_the_next_item_from_the_window_on_a_cold_cache(self):
         logs = {PUSH_RUN["id"]: "hspec-2.11-failures.log", PULL_RUN["id"]: "hspec-2.11-timeout.log"}
         with tempfile.TemporaryDirectory() as directory:
-            collector = flakes.Collector(FakeGitHub(logs), flakes.Cache(Path(directory)))
-            report = flakes.pr_command(collector, argparse.Namespace(url=PULL["html_url"], window=30)).text
+            collector = ci_failures.Collector(FakeGitHub(logs), ci_failures.Cache(Path(directory)))
+            report = ci_failures.pr_command(collector, argparse.Namespace(url=PULL["html_url"], window=30)).text
             self.assertIn("next item: verify schema down migrations", report)
 
 
@@ -445,8 +451,8 @@ class CollectorTest(unittest.TestCase):
         runs = [later, other, *own, PUSH_RUN]
         logs = {run["id"]: "hspec-2.11-failures.log" for run in runs}
         with tempfile.TemporaryDirectory() as directory:
-            collector = flakes.Collector(FakeGitHub(logs, runs), flakes.Cache(Path(directory)))
-            report = flakes.pr_command(collector, argparse.Namespace(url=PULL["html_url"], window=30)).text
+            collector = ci_failures.Collector(FakeGitHub(logs, runs), ci_failures.Cache(Path(directory)))
+            report = ci_failures.pr_command(collector, argparse.Namespace(url=PULL["html_url"], window=30)).text
         self.assertIn(f"Run: {own[0]['html_url']}, attempt 1", report)
         self.assertIn("Window: simplex-chat/simplex-chat master: 1 runs, 2026-10-21 to 2026-10-21", report)
         self.assertIn("| 10 of 10 | 1 of 1 | 0 | on master |", report)
@@ -454,13 +460,13 @@ class CollectorTest(unittest.TestCase):
     def test_unfinished_runs_and_jobs_in_progress_are_not_cached(self):
         unfinished = {**PULL_RUN, "status": "in_progress"}
         with tempfile.TemporaryDirectory() as directory:
-            collector = flakes.Collector(FakeGitHub({}), flakes.Cache(Path(directory)))
+            collector = ci_failures.Collector(FakeGitHub({}), ci_failures.Cache(Path(directory)))
             collector.run_jobs(CHAT, unfinished)
             collector.record(CHAT, unfinished, job(LINUX, None, None, status="in_progress"))
             self.assertEqual(list(Path(directory).iterdir()), [])
 
     def test_log_is_missing_after_410_from_the_api_or_404_from_the_blob(self):
-        github = flakes.GitHub("token")
+        github = ci_failures.GitHub("token")
         github.opener = FakeOpener(410)
         self.assertIsNone(github.log(CHAT, 2))
         github.opener = FakeOpener(302, "https://blob.example/2")
@@ -471,9 +477,9 @@ class CollectorTest(unittest.TestCase):
         path = "SimpleX chat client/group tests/group history/quoted messages"
         logs = {PUSH_RUN["id"]: "hspec-2.11-failures.log"}
         with tempfile.TemporaryDirectory() as directory:
-            collector = flakes.Collector(FakeGitHub(logs), flakes.Cache(Path(directory)))
+            collector = ci_failures.Collector(FakeGitHub(logs), ci_failures.Cache(Path(directory)))
             args = argparse.Namespace(url=f"https://github.com/{CHAT}", base="master", window=30, path=path)
-            failures = flakes.test_command(collector, args).data["failures"]
+            failures = ci_failures.test_command(collector, args).data["failures"]
         self.assertEqual([failure["test"] for failure in failures], [f"/{path}/"])
 
 
@@ -496,7 +502,7 @@ def entry(run_id, created, jobs):
             "run_attempt": attempt,
             "job": job_id,
             "url": tested["html_url"],
-            "job_key": flakes.job_key(name),
+            "job_key": ci_failures.job_key(name),
             "outcome": "failed" if tests else "passed",
             "build": None,
             "failures": failures,
@@ -504,17 +510,17 @@ def entry(run_id, created, jobs):
             "retries": [],
             "summaries": [len(tests)],
         }))
-    return flakes.RunRecords(run, entries)
+    return ci_failures.RunRecords(run, entries)
 
 
 class ReportTest(unittest.TestCase):
     def test_labels_compare_failures_with_the_window(self):
-        window = flakes.Window(CHAT, "master", [
+        window = ci_failures.Window(CHAT, "master", [
             entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, ["/a/"]), (LINUX_GHC8, 1, [])]),
             entry(11, "2026-10-20T00:00:00Z", [(LINUX, 1, []), (LINUX_GHC8, 1, ["/b/"])]),
         ])
         analysed = entry(20, "2026-10-22T00:00:00Z", [(LINUX, 1, ["/a/", "/b/", "/c/"]), (LINUX, 2, [])])
-        report = flakes.run_report("CI failures", analysed, window, [analysed]).text
+        report = ci_failures.run_report("CI failures", analysed, window, [analysed]).text
         self.assertIn("| /a/ | s | 1 of 1 | 1 of 2 | 0 | on master, passed on re-run |", report)
         self.assertIn("| /b/ | s | 1 of 1 | 0 of 2 | 1 | on master, other jobs, passed on re-run |", report)
         self.assertIn("| /c/ | s | 1 of 1 | 0 of 2 | 0 | new, passed on re-run |", report)
@@ -522,12 +528,12 @@ class ReportTest(unittest.TestCase):
         self.assertIn("Parser check: 6 of 6 logs with summaries match their failure counts", report)
 
     def test_window_and_passed_jobs_use_the_latest_attempt_in_any_listing_order(self):
-        window = flakes.Window(CHAT, "master", [
+        window = ci_failures.Window(CHAT, "master", [
             entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, ["/a/"]), (LINUX, 2, [])]),
             entry(11, "2026-10-20T00:00:00Z", [(LINUX, 2, []), (LINUX, 1, ["/a/"])]),
         ])
         analysed = entry(20, "2026-10-22T00:00:00Z", [(LINUX, 2, []), (LINUX, 1, ["/a/"])])
-        report = flakes.run_report("CI failures", analysed, window, None).text
+        report = ci_failures.run_report("CI failures", analysed, window, None).text
         self.assertIn("| /a/ | s | 0 of 2 | 0 | new, passed on re-run |", report)
         self.assertIn("Passed: ubuntu-22.04-x86_64 GHC 9.6.3", report)
 
@@ -536,7 +542,7 @@ class ReportTest(unittest.TestCase):
         differing = run.entries[0][1]
         differing["summaries"] = [3]
         self.assertEqual(
-            flakes.parser_check([record for _, record in run.entries]).split("\n"),
+            ci_failures.parser_check([record for _, record in run.entries]).split("\n"),
             [
                 "Parser check: 1 of 2 logs with summaries match their failure counts",
                 f"- {differing['url']}: 2 failures parsed, 3 in summaries",
@@ -544,48 +550,48 @@ class ReportTest(unittest.TestCase):
         )
 
     def test_test_passed_on_re_run_inside_the_test_step(self):
-        window = flakes.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, [])])])
+        window = ci_failures.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, [])])])
         analysed = entry(20, "2026-10-22T00:00:00Z", [(LINUX, 1, ["/a/", "/b/"])])
         tested = analysed.entries[0][1]
         tested["failures"].append({**tested["failures"][1], "step_attempt": 2})
         tested["summaries"] = [2, 1]
-        report = flakes.run_report("CI failures", analysed, window, None).text
+        report = ci_failures.run_report("CI failures", analysed, window, None).text
         self.assertIn("| /a/ | s | 0 of 1 | 0 | new, passed on re-run |", report)
         self.assertIn("| /b/ | s | 0 of 1 | 0 | new |", report)
 
     def test_build_failure_notes_other_signatures_of_the_same_job(self):
-        window = flakes.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, [])])])
+        window = ci_failures.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, [])])])
         analysed = entry(20, "2026-10-22T00:00:00Z", [(LINUX, 1, [])])
         for run, raw in ((window.runs[0], "build process killed (SIGKILL)"), (analysed, "fatal: x")):
             run.entries[0][1].update(outcome="build failed", build={"step": "Build CLI", "raw": raw, "signature": raw})
-        report = flakes.run_report("CI failures", analysed, window, None).text
+        report = ci_failures.run_report("CI failures", analysed, window, None).text
         self.assertIn("master, same job, other signature: build process killed (SIGKILL), 1 run, 2026-10-21", report)
 
     def test_timeout_label_compares_the_last_reported_item_with_the_window(self):
-        window = flakes.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, [])])])
+        window = ci_failures.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, [])])])
         analysed = entry(20, "2026-10-22T00:00:00Z", [(LINUX, 1, [])])
         hang = record(CHAT, job(LINUX, "failure", "failure"), "hspec-2.11-timeout.log")["hang"]
         for run in (window.runs[0], analysed):
             run.entries[0][1].update(outcome="timeout", hang=hang)
-        report = flakes.run_report("CI failures", analysed, window, None).text
+        report = ci_failures.run_report("CI failures", analysed, window, None).text
         self.assertIn("| silent 120 min, next item: unknown | 1 of 1 | 0 | on master |", report)
 
     def test_branch_summary_counts_outcomes_and_tests(self):
-        window = flakes.Window(CHAT, "master", [
+        window = ci_failures.Window(CHAT, "master", [
             entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, ["/a/"]), (LINUX_GHC8, 1, ["/a/"])]),
             entry(11, "2026-10-20T00:00:00Z", [(LINUX, 1, []), (LINUX_GHC8, 1, [])]),
         ])
-        report = flakes.branch_report(window).text
+        report = ci_failures.branch_report(window).text
         self.assertIn("simplex-chat/simplex-chat master: 2 runs, 2026-10-20 to 2026-10-21", report)
         self.assertIn("| 1 | ubuntu-22.04-x86_64 GHC 8.10.7 | 2 | 1 | 1 |", report)
         self.assertIn("| 1 | /a/ | 2 | 1 | 1 | 2026-10-21 |", report)
 
     def test_branch_summary_orders_job_keys_and_tests_by_failures(self):
-        window = flakes.Window(CHAT, "master", [
+        window = ci_failures.Window(CHAT, "master", [
             entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, ["/c/", "/b/"]), (LINUX_GHC8, 1, ["/c/"])]),
             entry(11, "2026-10-20T00:00:00Z", [(LINUX, 1, ["/c/", "/b/", "/a/"]), (LINUX_GHC8, 1, [])]),
         ])
-        report = flakes.branch_report(window).text
+        report = ci_failures.branch_report(window).text
         self.assertIn("| 1 | ubuntu-22.04-x86_64 GHC 9.6.3 | 2 | 0 | 2 |", report)
         self.assertIn("| 2 | ubuntu-22.04-x86_64 GHC 8.10.7 | 2 | 1 | 1 |", report)
         self.assertIn("| 1 | /c/ | 3 | 2 | 1 | 2026-10-21 |", report)
@@ -596,32 +602,32 @@ class ReportTest(unittest.TestCase):
         runs = [entry(run_id, "2026-10-21T00:00:00Z", [(LINUX, 1, [])]) for run_id in (10, 11)]
         runs[0].entries[0][1]["retries"] = [{"label": "a", "signature": "s1"}, {"label": None, "signature": "s2"}]
         runs[1].entries[0][1]["retries"] = [{"label": "a", "signature": "s3"}, {"label": None, "signature": "s4"}]
-        report = flakes.branch_report(flakes.Window(CHAT, "master", runs)).text
+        report = ci_failures.branch_report(ci_failures.Window(CHAT, "master", runs)).text
         self.assertIn("Retries: 4", report)
         self.assertIn("| 1 | a | 2 | s1; s3 |", report)
         self.assertIn("| 2 | unknown | 1 | s2 |", report)
         self.assertIn("| 3 | unknown | 1 | s4 |", report)
 
     def test_branch_summary_leaves_out_job_keys_that_were_not_tested(self):
-        window = flakes.Window(CHAT, "master", [
+        window = ci_failures.Window(CHAT, "master", [
             entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, []), (LINUX_GHC8, 1, [])]),
         ])
         window.runs[0].entries[1][1]["outcome"] = "not tested"
-        report = flakes.branch_report(window).text
+        report = ci_failures.branch_report(window).text
         self.assertIn("| 1 | ubuntu-22.04-x86_64 GHC 9.6.3 | 1 | 1 |", report)
         self.assertNotIn("GHC 8.10.7", report)
 
     def test_pr_runs_exclude_runs_without_selected_tests(self):
-        window = flakes.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, [])])])
+        window = ci_failures.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, [])])])
         analysed = entry(20, "2026-10-22T00:00:00Z", [(LINUX, 1, ["/a/"])])
         untested = entry(19, "2026-10-21T12:00:00Z", [(LINUX, 1, [])])
         untested.entries[0][1]["outcome"] = "not tested"
-        report = flakes.run_report("CI failures", analysed, window, [analysed, untested]).text
+        report = ci_failures.run_report("CI failures", analysed, window, [analysed, untested]).text
         self.assertIn("| /a/ | s | 1 of 1 | 0 of 1 | 0 | new |", report)
 
     def test_test_report_includes_the_parser_check(self):
-        window = flakes.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, ["/a/"])])])
-        report = flakes.test_report(window, "/a/").text
+        window = ci_failures.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, ["/a/"])])])
+        report = ci_failures.test_report(window, "/a/").text
         self.assertIn("Parser check: 1 of 1 logs with summaries match their failure counts", report)
 
     def test_base_of_a_run(self):
@@ -630,7 +636,7 @@ class ReportTest(unittest.TestCase):
 
         def base(event, pulls):
             run = {"event": event, "head_branch": "master", "repository": {"id": 1}, "pull_requests": pulls}
-            return flakes.run_base(run, "release")
+            return ci_failures.run_base(run, "release")
 
         self.assertEqual(base("push", [other]), "master")
         self.assertEqual(base("pull_request", [other, own]), "stable")
@@ -639,9 +645,9 @@ class ReportTest(unittest.TestCase):
     def test_urls(self):
         pull = "https://github.com/simplex-chat/simplex-chat/pull/7703"
         job_url = "https://github.com/simplex-chat/simplexmq/actions/runs/5/job/6"
-        self.assertEqual(flakes.parse_url(pull, "pull"), (CHAT, 7703))
-        self.assertEqual(flakes.parse_url(job_url, "actions/runs"), (SMP, 5))
-        self.assertEqual(flakes.parse_url("https://github.com/simplex-chat/simplexmq", None), (SMP, None))
+        self.assertEqual(ci_failures.parse_url(pull, "pull"), (CHAT, 7703))
+        self.assertEqual(ci_failures.parse_url(job_url, "actions/runs"), (SMP, 5))
+        self.assertEqual(ci_failures.parse_url("https://github.com/simplex-chat/simplexmq", None), (SMP, None))
 
 
 if __name__ == "__main__":

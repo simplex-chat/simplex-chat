@@ -93,7 +93,7 @@ For some complex features we create feature branches that will be merged once re
 4. Reviewers approve the draft. A draft cannot be merged.
 5. After the approval, mark the pull request ready for review. CI then runs the full matrix, and the pull request is merged by squash once it passes.
 6. A change to a scope without CI tests adds its build and tests to CI in the same pull request.
-7. After a CI failure, run `python3 scripts/flakes/flakes.py pr <pull request URL>` and include its table in the report of the failure (CI guide, "Failed tests").
+7. After a CI failure, run `python3 scripts/ci-failures/ci_failures.py pr <pull request URL>` and include its table in the report of the failure (CI guide, "Failed tests").
 
 ## Differences between GHC 8.10.7 and GHC 9.6.3
 

@@ -21,7 +21,7 @@ from email.message import Message
 from pathlib import Path
 
 API = "https://api.github.com"
-USER_AGENT = "simplex-ci-flakes"
+USER_AGENT = "simplex-ci-failures"
 WORKFLOW = "build.yml"
 MAIN_OWNER = "simplex-chat"
 TEST_STEPS = {"simplex-chat": "Run tests", "simplexmq": "Test"}
@@ -36,7 +36,7 @@ TRANSIENT_STATUSES = {500, 502, 503, 504}
 SIGNATURE_LENGTH = 100
 REASON_LINES = 3
 REASON_INDENT = " " * 7
-DEFAULT_CACHE = "~/.cache/simplex-ci-flakes"
+DEFAULT_CACHE = "~/.cache/simplex-ci-failures"
 OUTCOMES = [
     "passed",
     "failed",
