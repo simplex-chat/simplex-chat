@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 
 module Simplex.Chat.Image
@@ -22,13 +23,14 @@ import Codec.Picture.JPEGTurbo (DecodeOptions (DecodeOptions), JpegHeader (..), 
 import qualified Codec.Picture.STBIR as STBIR
 import qualified Codec.Picture.Spng as Spng
 import Codec.Picture.Types (pixelFoldMap)
-import Control.Monad (forM_, guard, mfilter, when)
+import Control.Monad (forM_, guard, mfilter, when, (<=<))
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64.Lazy as LB64
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Int (Int64)
+import Data.FileEmbed (embedFile)
+import Data.Int (Int32, Int64)
 import Data.List (maximumBy, minimumBy, sortOn)
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Monoid (All (..))
@@ -54,10 +56,14 @@ imageFormat = \case
       | otherwise = IFPng
 
 decodeResizable :: ByteString -> IO (Either String (DynamicImage, Maybe ByteString))
-decodeResizable s
-  | "\xFF\xD8" `B.isPrefixOf` s = runExceptT $ (,jpegIccProfile s) <$> decodeDisplayJpeg s
-  | "\x89PNG\r\n\x1a\n" `B.isPrefixOf` s = Spng.decodePng (Spng.DecodeOptions $ maxDecodeMemoryMB `div` 2) s
-  | otherwise = pure $ Left "unsupported image format"
+decodeResizable s = runExceptT $ do
+  (img, profile) <- decode
+  pure (img, displayP3Profile =<< profile)
+  where
+    decode
+      | "\xFF\xD8" `B.isPrefixOf` s = (,jpegIccProfile s) <$> decodeDisplayJpeg s
+      | "\x89PNG\r\n\x1a\n" `B.isPrefixOf` s = ExceptT $ Spng.decodePng (Spng.DecodeOptions $ maxDecodeMemoryMB `div` 2) s
+      | otherwise = throwError "unsupported image format"
 
 decodeDisplayJpeg :: ByteString -> ExceptT String IO DynamicImage
 decodeDisplayJpeg s = do
@@ -145,6 +151,39 @@ orientImage orientation = dynamicPixelMap orient
       7 -> generateImage (\x y -> pixelAt img (w - 1 - y) (h - 1 - x)) h w
       8 -> generateImage (\x y -> pixelAt img (w - 1 - y) x) h w
       _ -> img
+
+displayP3Profile :: ByteString -> Maybe ByteString
+displayP3Profile profile = do
+  primaries <- iccPrimaries profile
+  p3Primaries <- iccPrimaries displayP3
+  displayP3 <$ guard (and $ zipWith (\v v' -> abs (v - v') <= 2) primaries p3Primaries)
+
+iccPrimaries :: ByteString -> Maybe [Integer]
+iccPrimaries profile = do
+  guard $ slice 16 4 == Just "RGB " && slice 20 4 == Just "XYZ "
+  count <- unsigned <$> slice 128 4
+  table <- slice 132 (12 * count)
+  concat <$> mapM (colorant <=< tagEntry table) ["rXYZ", "gXYZ", "bXYZ"]
+  where
+    tagEntry entries sig
+      | B.null entries = Nothing
+      | B.take 4 entries == sig = Just $ B.take 12 entries
+      | otherwise = tagEntry (B.drop 12 entries) sig
+    colorant entry = do
+      let offset = unsigned $ B.take 4 $ B.drop 4 entry
+          size = unsigned $ B.drop 8 entry
+      guard $ size >= 20
+      tag <- slice offset size
+      guard $ "XYZ " `B.isPrefixOf` tag
+      pure [s15Fixed16 $ B.take 4 $ B.drop i tag | i <- [8, 12, 16]]
+    slice i n
+      | i + n > toInteger (B.length profile) = Nothing
+      | otherwise = Just $ B.take (fromInteger n) $ B.drop (fromInteger i) profile
+    unsigned = B.foldl' (\a b -> a * 256 + toInteger b) 0
+    s15Fixed16 = toInteger . (fromInteger :: Integer -> Int32) . unsigned
+
+displayP3 :: ByteString
+displayP3 = $(embedFile "src/Simplex/Chat/Image/DisplayP3-v4.icc")
 
 data ImageOutput = ImageBytes | ImageDataUri
 

@@ -60,9 +60,10 @@ imageTests = do
     it "should keep an image of the same size" testScaleSameSize
     it "should scale transparency in premultiplied alpha" testScaleTransparency
   describe "colour profiles" $ do
-    it "should keep the colour profile of JPEG" testJpegProfile
-    it "should keep the colour profile of PNG" testPngProfile
-    it "should drop a colour profile above a tenth of the limit" testProfileAboveLimit
+    it "should write the Display P3 profile for Display P3 JPEG" testJpegProfile
+    it "should write the Display P3 profile for Display P3 PNG" testPngProfile
+    it "should drop colour profiles other than Display P3" testProfileDropped
+    it "should drop the Display P3 profile above a tenth of the limit" testProfileAboveLimit
     it "should ignore inconsistent JPEG colour profiles" testJpegProfileInconsistent
 
 testDataUri :: FilePath -> LB.ByteString -> IO ()
@@ -346,19 +347,24 @@ testScaleTransparency = do
 
 testJpegProfile :: IO ()
 testJpegProfile = do
+  displayP3 <- B.readFile displayP3File
   jpeg <- encodeRGB 90 Nothing gradient
-  let (start, rest) = B.splitAt 600 $ profileBytes 1000
+  let (start, rest) = B.splitAt 100 p3Profile
   Right (img, profile) <- decodeResizable $ withIccProfile [iccChunk 2 2 rest, iccChunk 1 2 start] jpeg
-  profile `shouldBe` Just (profileBytes 1000)
-  forM_ [IFJpeg, IFPng] $ \format -> do
-    Right resized <- resizeImage format 261120 img profile
-    resizedProfile resized `shouldReturn` profile
+  profile `shouldBe` Just displayP3
+  Right (_, profile') <- decodeResizable $ withIccProfile [iccChunk 1 1 $ iccProfile "RGB " $ 33759 + 2 : drop 1 p3Primaries] jpeg
+  profile' `shouldBe` Just displayP3
+  Right jpegData <- resizeImage IFJpeg 261120 img profile
+  LB.toStrict jpegData `shouldSatisfy` (displayP3 `B.isInfixOf`)
+  Right pngData <- resizeImage IFPng 261120 img profile
+  forM_ [jpegData, pngData] $ \resized -> resizedProfile resized `shouldReturn` profile
 
 testPngProfile :: IO ()
 testPngProfile = do
-  let png = pngWithIccProfile (profileBytes 1000) $ LB.toStrict $ encodePng transparentGradient
+  displayP3 <- B.readFile displayP3File
+  let png = pngWithIccProfile p3Profile $ LB.toStrict $ encodePng transparentGradient
   Right (img, profile) <- decodeResizable png
-  profile `shouldBe` Just (profileBytes 1000)
+  profile `shouldBe` Just displayP3
   forM_ [IFJpeg, IFPng] $ \format -> do
     Right resized <- resizeImage format 261120 img profile
     resizedProfile resized `shouldReturn` profile
@@ -366,23 +372,44 @@ testPngProfile = do
   uri `shouldSatisfy` ("data:image/png;base64," `LB.isPrefixOf`)
   uriProfile uri `shouldReturn` profile
 
+testProfileDropped :: IO ()
+testProfileDropped = do
+  jpeg <- encodeRGB 90 Nothing gradient
+  Right (img, Nothing) <- decodeResizable jpeg
+  Right without <- resizeImage IFJpeg 261120 img Nothing
+  forM_ profiles $ \profile -> do
+    Right (img', profile') <- decodeResizable $ withIccProfile [iccChunk 1 1 profile] jpeg
+    profile' `shouldBe` Nothing
+    resizeImage IFJpeg 261120 img' profile' `shouldReturn` Right without
+  where
+    profiles =
+      [ iccProfile "RGB " srgbPrimaries,
+        iccProfile "RGB " $ 33759 + 3 : drop 1 p3Primaries,
+        iccProfile "GRAY" p3Primaries,
+        patch 128 (bigEndian 4 9) p3Profile,
+        patch 160 (bigEndian 4 209) p3Profile
+      ]
+    srgbPrimaries = [28576, 14581, 912, 25239, 46983, 6361, 9375, 3972, 46787]
+    patch i bytes profile = B.take i profile <> bytes <> B.drop (i + B.length bytes) profile
+
 testProfileAboveLimit :: IO ()
 testProfileAboveLimit = do
+  displayP3 <- B.readFile displayP3File
   let img = ImageRGB8 gradient
   forM_ [IFJpeg, IFPng] $ \format -> do
-    Right without <- resizeImage format 20000 img Nothing
-    resizeImage format 20000 img (Just $ profileBytes 2001) `shouldReturn` Right without
-    Right kept <- resizeImage format 20000 img $ Just $ profileBytes 2000
-    resizedProfile kept `shouldReturn` Just (profileBytes 2000)
-  Right uriWithout <- resizeImageDataUri 14000 img Nothing
-  resizeImageDataUri 14000 img (Just $ profileBytes 1051) `shouldReturn` Right uriWithout
-  Right uri <- resizeImageDataUri 14000 img $ Just $ profileBytes 1050
-  uriProfile uri `shouldReturn` Just (profileBytes 1050)
+    Right without <- resizeImage format 4799 img Nothing
+    resizeImage format 4799 img (Just displayP3) `shouldReturn` Right without
+    Right kept <- resizeImage format 4800 img $ Just displayP3
+    resizedProfile kept `shouldReturn` Just displayP3
+  Right uriWithout <- resizeImageDataUri 6399 img Nothing
+  resizeImageDataUri 6399 img (Just displayP3) `shouldReturn` Right uriWithout
+  Right uri <- resizeImageDataUri 6400 img $ Just displayP3
+  uriProfile uri `shouldReturn` Just displayP3
 
 testJpegProfileInconsistent :: IO ()
 testJpegProfileInconsistent = do
   jpeg <- encodeRGB 90 Nothing gradient
-  let (start, rest) = B.splitAt 600 $ profileBytes 1000
+  let (start, rest) = B.splitAt 100 p3Profile
   forM_
     [ [iccChunk 1 2 start],
       [iccChunk 1 2 start, iccChunk 1 2 rest],
@@ -401,8 +428,21 @@ gradient = generateImage (\x y -> PixelRGB8 (fromIntegral $ x * 4) (fromIntegral
 transparentGradient :: Image PixelRGBA8
 transparentGradient = generateImage (\x y -> PixelRGBA8 (fromIntegral $ x * 4) (fromIntegral $ y * 5) 128 (fromIntegral $ 255 - x)) 64 48
 
-profileBytes :: Int -> B.ByteString
-profileBytes n = B.pack [fromIntegral $ i * 7 + 3 | i <- [1 .. n]]
+displayP3File :: FilePath
+displayP3File = "src/Simplex/Chat/Image/DisplayP3-v4.icc"
+
+p3Profile :: B.ByteString
+p3Profile = iccProfile "RGB " p3Primaries
+
+p3Primaries :: [Int]
+p3Primaries = [33759, 15807, -69, 19135, 45367, 2745, 10296, 4363, 51385]
+
+iccProfile :: B.ByteString -> [Int] -> B.ByteString
+iccProfile colourSpace primaries = header <> bigEndian 4 3 <> B.concat entries <> B.concat tags
+  where
+    header = bigEndian 4 228 <> B.replicate 12 0 <> colourSpace <> "XYZ " <> B.replicate 104 0
+    entries = [sig <> bigEndian 4 (168 + 20 * k) <> bigEndian 4 20 | (k, sig) <- zip [0 ..] ["rXYZ", "gXYZ", "bXYZ"]]
+    tags = ["XYZ \0\0\0\0" <> B.concat (map (bigEndian 4) $ take 3 $ drop (3 * k) primaries) | k <- [0 .. 2]]
 
 resizedProfile :: LB.ByteString -> IO (Maybe B.ByteString)
 resizedProfile = fmap (either (const Nothing) snd) . decodeResizable . LB.toStrict

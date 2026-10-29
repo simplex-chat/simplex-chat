@@ -18,6 +18,7 @@ extra-source-files:
     README.md
     PRIVACY.md
     cabal.project
+    src/Simplex/Chat/Image/DisplayP3-v4.icc
 
 flag swift
   description: Enable swift JSON format
