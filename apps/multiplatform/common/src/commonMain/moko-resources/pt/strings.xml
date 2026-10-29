@@ -3032,4 +3032,14 @@
     <string name="badges_error_already_owned">Esta conta do Google Play já tem esta compra, noutro perfil ou dispositivo. Para adicionar a este perfil, use a recuperação de compras.</string>
     <string name="badges_error_transfer_limited">Esta compra foi movida recentemente para outro dispositivo, ou perfil.</string>
     <string name="badges_renewal_failed_unknown">Não foi possível renovar o seu dístico.</string>
+    <string name="badges_subscription_renewing_footer">O seu dístico será renovado assim que a Google Play cobre a sua subscrição. Até lá não pode reivindicar outro dístico.</string>
+    <string name="badges_subscription_renewing_footer_store">O seu dístico será renovado assim que a loja cobre a sua subscrição. Até lá não pode comprar ou reinvindicar outro dístico.</string>
+    <string name="badges_renews_soon">O seu dístico renova em breve</string>
+    <string name="badges_stays_until">O seu dístico ficará até %1$s.</string>
+    <string name="badges_subscription_ended_on">A subscrição do seu dístico terminou em %1$s.</string>
+    <string name="badges_subscription_ended_title">A sua subscrição terminou</string>
+    <string name="badges_subscription_ended_footer">A sua subscrição terminou. O dístico será removido do seu perfil.</string>
+    <string name="badges_subscription_cancelled_footer">A sua subscrição foi cancelada. O dístico permanecerá até %1$s.</string>
+    <string name="badges_subscription_renews_footer">A sua subscrição renova automaticamente. Pode cancelar na Google Play.</string>
+    <string name="badges_subscription_renews_footer_store">A sua subscrição renova automaticamente. Pode cancelar na loja.</string>
 </resources>
