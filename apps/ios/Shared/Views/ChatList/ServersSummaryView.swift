@@ -11,14 +11,56 @@ import SimpleXChat
 
 struct ServersSummaryView: View {
     @EnvironmentObject var m: ChatModel
-    @EnvironmentObject var theme: AppTheme
     @State private var serversSummary: PresentedServersSummary? = nil
-    @State private var selectedUserCategory: PresentedUserCategory = .allUsers
+    @State private var selectedUserCategory: ServersSummaryLayout.PresentedUserCategory = .allUsers
+    @State private var timer: Timer? = nil
+
+    var body: some View {
+        ServersSummaryLayout(serversSummary: serversSummary, selectedUserCategory: $selectedUserCategory, getServersSummary: getServersSummary)
+            .onAppear {
+                if m.users.filter({ u in u.user.activeUser || !u.user.hidden }).count == 1 {
+                    selectedUserCategory = .currentUser
+                }
+                getServersSummary()
+                startTimer()
+            }
+            .onDisappear {
+                stopTimer()
+            }
+    }
+
+    private func startTimer() {
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            if AppChatState.shared.value == .active {
+                getServersSummary()
+            }
+        }
+    }
+
+    private func getServersSummary() {
+        do {
+            serversSummary = try getAgentServersSummary()
+        } catch let error {
+            logger.error("getAgentServersSummary error: \(responseError(error))")
+        }
+    }
+
+    private func stopTimer() {
+        timer?.invalidate()
+        timer = nil
+    }
+}
+
+struct ServersSummaryLayout: View {
+    @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
+    let serversSummary: PresentedServersSummary?
+    @Binding var selectedUserCategory: PresentedUserCategory
     @State private var selectedServerType: PresentedServerType = .smp
     @State private var selectedSMPServer: String? = nil
     @State private var selectedXFTPServer: String? = nil
-    @State private var timer: Timer? = nil
     @State private var alert: SomeAlert?
+    let getServersSummary: () -> Void
 
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
 
@@ -44,38 +86,7 @@ struct ServersSummaryView: View {
                     }
                 }
         }
-        .onAppear {
-            if m.users.filter({ u in u.user.activeUser || !u.user.hidden }).count == 1 {
-                selectedUserCategory = .currentUser
-            }
-            getServersSummary()
-            startTimer()
-        }
-        .onDisappear {
-            stopTimer()
-        }
         .alert(item: $alert) { $0.alert }
-    }
-
-    private func startTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            if AppChatState.shared.value == .active {
-                getServersSummary()
-            } 
-        }
-    }
-
-    private func getServersSummary() {
-        do {
-            serversSummary = try getAgentServersSummary()
-        } catch let error {
-            logger.error("getAgentServersSummary error: \(responseError(error))")
-        }
-    }
-
-    private func stopTimer() {
-        timer?.invalidate()
-        timer = nil
     }
 
     private func shareButton() -> some View {
@@ -739,6 +750,77 @@ struct DetailedXFTPStatsView: View {
 
 struct ServersSummaryView_Previews: PreviewProvider {
     static var previews: some View {
-        ServersSummaryView()
+        let sessions = ServerSessions(ssConnected: 1, ssErrors: 0, ssConnecting: 0)
+        let subs = SMPServerSubs(ssActive: 11, ssPending: 1)
+        let smpStats = AgentSMPServerStatsData(
+            _sentDirect: 120,
+            _sentViaProxy: 35,
+            _sentProxied: 0,
+            _sentDirectAttempts: 121,
+            _sentViaProxyAttempts: 36,
+            _sentProxiedAttempts: 0,
+            _sentAuthErrs: 0,
+            _sentQuotaErrs: 0,
+            _sentExpiredErrs: 0,
+            _sentOtherErrs: 1,
+            _recvMsgs: 140,
+            _recvDuplicates: 2,
+            _recvCryptoErrs: 0,
+            _recvErrs: 0,
+            _ackMsgs: 140,
+            _ackAttempts: 141,
+            _ackNoMsgErrs: 0,
+            _ackOtherErrs: 0,
+            _connCreated: 12,
+            _connSecured: 12,
+            _connCompleted: 11,
+            _connDeleted: 1,
+            _connDelAttempts: 1,
+            _connDelErrs: 0,
+            _connSubscribed: 11,
+            _connSubAttempts: 11,
+            _connSubIgnored: 0,
+            _connSubErrs: 0,
+            _ntfKey: 11,
+            _ntfKeyAttempts: 11,
+            _ntfKeyDeleted: 0,
+            _ntfKeyDeleteAttempts: 0
+        )
+        let xftpStats = AgentXFTPServerStatsData(
+            _uploads: 4,
+            _uploadsSize: 2048,
+            _uploadAttempts: 4,
+            _uploadErrs: 0,
+            _downloads: 6,
+            _downloadsSize: 4096,
+            _downloadAttempts: 6,
+            _downloadAuthErrs: 0,
+            _downloadErrs: 0,
+            _deletions: 0,
+            _deleteAttempts: 0,
+            _deleteErrs: 0
+        )
+        let smp = SMPServersSummary(
+            smpTotals: SMPTotals(sessions: sessions, subs: subs, stats: smpStats),
+            currentlyUsedSMPServers: [SMPServerSummary(smpServer: "smp://abcd@smp8.simplex.im", known: true, sessions: sessions, subs: subs, stats: smpStats)],
+            previouslyUsedSMPServers: [],
+            onlyProxiedSMPServers: []
+        )
+        let xftp = XFTPServersSummary(
+            xftpTotals: XFTPTotals(sessions: sessions, stats: xftpStats),
+            currentlyUsedXFTPServers: [],
+            previouslyUsedXFTPServers: []
+        )
+        return ServersSummaryLayout(
+            serversSummary: PresentedServersSummary(
+                statsStartedAt: previewDate,
+                allUsersSMP: smp,
+                allUsersXFTP: xftp,
+                currentUserSMP: smp,
+                currentUserXFTP: xftp
+            ),
+            selectedUserCategory: .constant(.currentUser),
+            getServersSummary: {}
+        )
     }
 }

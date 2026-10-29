@@ -778,9 +778,3 @@ private class MigrationChatReceiver {
         try? FileManager.default.removeItem(atPath: "\(databaseUrl.path)_agent.db")
     }
 }
-
-struct MigrateFromDevice_Previews: PreviewProvider {
-    static var previews: some View {
-        MigrateFromDevice(showProgressOnSettings: Binding.constant(false))
-    }
-}

@@ -1249,9 +1249,3 @@ func getUserInterfaceStyleDefault() -> UIUserInterfaceStyle {
     default: return .unspecified
     }
 }
-
-struct AppearanceSettings_Previews: PreviewProvider {
-    static var previews: some View {
-        AppearanceSettings()
-    }
-}

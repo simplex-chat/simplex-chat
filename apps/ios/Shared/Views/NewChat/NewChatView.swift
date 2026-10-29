@@ -1807,7 +1807,7 @@ struct NewChatView_Previews: PreviewProvider {
         @State var contactConnection: PendingContactConnection? = nil
 
         NewChatView(
-            selection: .invite
+            selection: .connect
         )
     }
 }

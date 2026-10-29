@@ -44,7 +44,9 @@ fun GroupProfileView(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
           close.invoke()
         }
       }
-    }
+    },
+    isValidName = ::isValidDisplayName,
+    bioFits = ::bioFitsLimit
   )
 }
 
@@ -54,6 +56,8 @@ fun GroupProfileLayout(
   groupInfo: GroupInfo,
   groupProfile: GroupProfile,
   saveProfile: (GroupProfile) -> Unit,
+  isValidName: (String) -> Boolean,
+  bioFits: (String) -> Boolean,
 ) {
   val isChannel = groupInfo.useRelays
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
@@ -71,7 +75,7 @@ fun GroupProfileLayout(
         shortDescr.value.trim() == (groupProfile.shortDescr ?: "") &&
         groupProfile.image == profileImage.value
   val closeWithAlert = {
-    if (dataUnchanged || !canUpdateProfile(displayName.value, shortDescr.value, groupProfile)) {
+    if (dataUnchanged || !canUpdateProfile(displayName.value, shortDescr.value, groupProfile, isValidName, bioFits)) {
       close()
     } else {
       showUnsavedChangesAlert(isChannel, {
@@ -132,14 +136,14 @@ fun GroupProfileLayout(
                 stringResource(if (isChannel) MR.strings.channel_display_name_field else MR.strings.group_display_name_field),
                 fontSize = 16.sp
               )
-              if (!isValidNewProfileName(displayName.value, groupProfile)) {
+              if (!isValidNewProfileName(displayName.value, groupProfile, isValidName)) {
                 Spacer(Modifier.size(DEFAULT_PADDING_HALF))
                 IconButton({ showInvalidNameAlert(mkValidName(displayName.value), displayName) }, Modifier.size(20.dp)) {
                   Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
                 }
               }
             }
-            ProfileNameField(displayName, "", { isValidNewProfileName(it, groupProfile) }, focusRequester)
+            ProfileNameField(displayName, "", { isValidNewProfileName(it, groupProfile, isValidName) }, focusRequester)
             if (groupProfile.fullName.trim().isNotEmpty() && groupProfile.fullName.trim() != groupProfile.displayName.trim()) {
               Spacer(Modifier.height(DEFAULT_PADDING))
               Text(
@@ -157,7 +161,7 @@ fun GroupProfileLayout(
                 stringResource(MR.strings.group_short_descr_field),
                 fontSize = 16.sp,
               )
-              if (!bioFitsLimit(shortDescr.value)) {
+              if (!bioFits(shortDescr.value)) {
                 Spacer(Modifier.size(DEFAULT_PADDING_HALF))
                 IconButton(
                   onClick = { AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.group_descr_too_large)) },
@@ -167,10 +171,10 @@ fun GroupProfileLayout(
                 }
               }
             }
-            ProfileNameField(shortDescr, "", isValid = { bioFitsLimit(it) })
+            ProfileNameField(shortDescr, "", isValid = { bioFits(it) })
 
             Spacer(Modifier.height(DEFAULT_PADDING))
-            val enabled = !dataUnchanged && canUpdateProfile(displayName.value, shortDescr.value, groupProfile)
+            val enabled = !dataUnchanged && canUpdateProfile(displayName.value, shortDescr.value, groupProfile, isValidName, bioFits)
             val saveProfileLabel = if (isChannel) MR.strings.save_channel_profile else MR.strings.save_group_profile
             if (enabled) {
               Text(
@@ -206,11 +210,11 @@ fun GroupProfileLayout(
     }
 }
 
-private fun canUpdateProfile(displayName: String, shortDescr: String, groupProfile: GroupProfile): Boolean =
-  displayName.trim().isNotEmpty() && isValidNewProfileName(displayName, groupProfile) && bioFitsLimit(shortDescr)
+private fun canUpdateProfile(displayName: String, shortDescr: String, groupProfile: GroupProfile, isValidName: (String) -> Boolean, bioFits: (String) -> Boolean): Boolean =
+  displayName.trim().isNotEmpty() && isValidNewProfileName(displayName, groupProfile, isValidName) && bioFits(shortDescr)
 
-private fun isValidNewProfileName(displayName: String, groupProfile: GroupProfile): Boolean =
-  displayName == groupProfile.displayName || isValidDisplayName(displayName.trim())
+private fun isValidNewProfileName(displayName: String, groupProfile: GroupProfile, isValidName: (String) -> Boolean): Boolean =
+  displayName == groupProfile.displayName || isValidName(displayName.trim())
 
 private fun showUnsavedChangesAlert(isChannel: Boolean, save: () -> Unit, revert: () -> Unit) {
   AlertManager.shared.showAlertDialogStacked(
@@ -234,7 +238,9 @@ fun PreviewGroupProfileLayout() {
       close = {},
       groupInfo = GroupInfo.sampleData,
       groupProfile = GroupProfile.sampleData,
-      saveProfile = { _ -> }
+      saveProfile = { _ -> },
+      isValidName = { true },
+      bioFits = { true }
     )
   }
 }
