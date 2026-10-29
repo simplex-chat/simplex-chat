@@ -659,6 +659,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "keeps the RPC URL and the service key out of errors and the shown config" testNamesSecretsHidden
   it "names a [names] or [chain] setting nothing reads, and still boots" testNamesUnknownKeys
   it "reads codes_only on and off as a known setting, off when absent, and refuses any other value" testNamesCodesOnly
+  it "reads record_edits_per_year as a known setting, 3 when absent, and refuses a value outside 1-100" testNamesRecordEdits
   it "accepts [issuer] dev_keys on chain 31337 only, with [names] on" testDevKeysLocalChain
   it "refuses a malformed dev_keys entry or an index named twice, quoting no secret" testDevKeysMalformed
   it "accepts [issuer] dev_keys beside Stripe test keys and a BTCPay on loopback" testDevKeysTestPayments
@@ -873,6 +874,21 @@ testNamesCodesOnly = do
     NamesConfig {nCodesOnly} <- parsedNames ns chainSection
     (value, nCodesOnly) `shouldBe` (value, expected)
   namesRefusal (namesSection <> ["codes_only = yes"]) chainSection `shouldReturn` "codes_only must be on or off, not yes"
+
+testNamesRecordEdits :: IO ()
+testNamesRecordEdits = do
+  NamesConfig {nRecordEditsPerYear = absent} <- parsedNames namesSection chainSection
+  absent `shouldBe` 3
+  forM_ [1, 100] $ \n -> do
+    let ns = namesSection <> ["record_edits_per_year = " <> T.pack (show n)]
+    withIni (namesIni ns chainSection) $ \p -> do
+      Right ini <- readIniFile p
+      unknownKeys ini `shouldBe` []
+    NamesConfig {nRecordEditsPerYear} <- parsedNames ns chainSection
+    (n, nRecordEditsPerYear) `shouldBe` (n, n)
+  forM_ ["0", "101", "-3"] $ \v ->
+    namesRefusal (namesSection <> ["record_edits_per_year = " <> v]) chainSection `shouldReturn` "names.record_edits_per_year must be between 1 and 100"
+  namesRefusal (namesSection <> ["record_edits_per_year = three"]) chainSection `shouldReturn` "record_edits_per_year must be a whole number"
 
 -- | Names on the local chain with no payment provider, as a run with dev keys has.
 localNamesIni :: [T.Text] -> T.Text

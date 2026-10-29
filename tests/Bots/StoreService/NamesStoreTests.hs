@@ -3,12 +3,12 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, insertInvoiceRow, invoiceStatus, issue, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, signature, t0, usable, write) where
+module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, insertInvoiceRow, invoiceStatus, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
 
 import Bots.StoreService.ConfigTests (termsVersion)
 import Bots.StoreService.WebTests (columnsOf, digestFixture, runMigrations, withServiceStore)
 import Control.Arrow ((&&&))
-import Control.Monad (forM_, void)
+import Control.Monad (forM, forM_, void)
 import Data.Int (Int64)
 import Data.List (sort)
 import Data.Maybe (fromJust, mapMaybe)
@@ -90,6 +90,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "settles a pending edit once, with its mined hash" testSettleEdit
     it "round-trips a clear edit" testClearEdit
     it "gives the times of a name's relayed edits in the window" testRelayedEditTimes
+    it "gives the times of a name's pending and mined edits in the window, leaving out reverted ones" testCountedEditTimes
 
 t0 :: UTCTime
 t0 = UTCTime (fromGregorian 2026 10 21) 0
@@ -949,3 +950,13 @@ testRelayedEditTimes = withServiceStore $ \st -> do
     withTransaction st $ \db -> void $ insertRecordEdit db (newEdit ownerA n setChannel) {nreNonce = fromIntegral n} (at m)
   withTransaction st (\db -> void $ insertRecordEdit db (newEdit ownerA 9 setChannel) {nreLabelHash = labelHash "bobsbakery", nreNonce = 9} (at 15))
   withTransaction st (\db -> relayedEditTimes db (labelHash "alicebakery") (at 5)) `shouldReturn` [at 10, at 20]
+
+testCountedEditTimes :: IO ()
+testCountedEditTimes = withServiceStore $ \st -> do
+  [_, Just minedId, Just revertedId, _] <- forM (zip [1 ..] [0, 10, 20, 30]) $ \(n, m) ->
+    withTransaction st $ \db -> insertRecordEdit db (newEdit ownerA n setChannel) {nreNonce = fromIntegral n} (at m)
+  withTransaction st $ \db -> do
+    settleRecordEdit db minedId (ESMined Nothing) `shouldReturn` True
+    settleRecordEdit db revertedId (ESReverted Nothing) `shouldReturn` True
+  withTransaction st (\db -> void $ insertRecordEdit db (newEdit ownerA 9 setChannel) {nreLabelHash = labelHash "bobsbakery", nreNonce = 9} (at 15))
+  withTransaction st (\db -> countedEditTimes db (labelHash "alicebakery") (at 5)) `shouldReturn` [at 10, at 30]

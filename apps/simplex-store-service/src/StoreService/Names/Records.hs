@@ -5,10 +5,12 @@
 
 -- | Record edits signed by a name's owner, relayed through the registrar key's sender and followed to their outcome.
 module StoreService.Names.Records
-  ( Records (rsPendingAfter),
+  ( Records (rsPendingAfter, rsEditsPerYear),
     EditRequest (..),
     EditAnswer (..),
+    EditsLeft (..),
     newRecords,
+    nameEditsLeft,
     relayEdit,
     runRecordEdits,
     recordsRound,
@@ -23,6 +25,7 @@ import Control.Monad.Except (ExceptT (..), runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
+import Data.Maybe (listToMaybe)
 import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Text (Text)
@@ -54,6 +57,7 @@ data Records = Records
     rsChain :: ChainClient,
     rsSender :: Sender,
     rsTLD :: SimplexTLD,
+    rsEditsPerYear :: Int,
     rsNow :: IO UTCTime,
     -- | microseconds a request waits for its edit's outcome
     rsPendingAfter :: Int,
@@ -87,6 +91,12 @@ data EditAnswer
     EAUnavailable
   | -- | the per-name cap, with the seconds until another edit fits
     EACapped Int
+  | -- | the name's yearly limit is used up until this time
+    EALimited UTCTime
+  deriving (Eq, Show)
+
+-- | The edits a name has left in its window, and when the next one returns; Nothing while none counts.
+data EditsLeft = EditsLeft {elLeft :: Int, elNextAt :: Maybe UTCTime}
   deriving (Eq, Show)
 
 -- | What the chain shows of an edit none of whose transactions mined.
@@ -108,27 +118,46 @@ editCap = 10
 editCapWindow :: NominalDiffTime
 editCapWindow = 3600
 
+-- | The window of the yearly limit, in 365-day years as the names' terms count them.
+editLimitWindow :: NominalDiffTime
+editLimitWindow = 365 * 86400
+
 recordsInterval :: Int
 recordsInterval = 4000000
 
-newRecords :: DBStore -> Turns -> Contracts -> ChainClient -> Sender -> SimplexTLD -> IO UTCTime -> IO Records
-newRecords rsStore rsTurns rsContracts rsChain rsSender rsTLD rsNow = do
+newRecords :: DBStore -> Turns -> Contracts -> ChainClient -> Sender -> SimplexTLD -> Int -> IO UTCTime -> IO Records
+newRecords rsStore rsTurns rsContracts rsChain rsSender rsTLD rsEditsPerYear rsNow = do
   rsClaimed <- newTVarIO S.empty
   rsStalled <- newTVarIO S.empty
   rsChanges <- newTVarIO 0
-  pure Records {rsStore, rsTurns, rsContracts, rsChain, rsSender, rsTLD, rsNow, rsPendingAfter = editPendingAfter, rsClaimed, rsStalled, rsChanges}
+  pure Records {rsStore, rsTurns, rsContracts, rsChain, rsSender, rsTLD, rsEditsPerYear, rsNow, rsPendingAfter = editPendingAfter, rsClaimed, rsStalled, rsChanges}
 
--- | An identical repeat of a sent edit is answered from it, before any chain read.
+-- | A pending or mined edit counts. One refused, never sent, or reverted on chain does not.
+nameEditsLeft :: DB.Connection -> Int -> LabelHash -> UTCTime -> IO EditsLeft
+nameEditsLeft db perYear lh now = do
+  times <- countedEditTimes db lh $ addUTCTime (negate editLimitWindow) now
+  let counted = length times
+  -- the oldest edit returns one, unless a lowered limit is overrun and later ones must go too
+  pure EditsLeft {elLeft = max 0 $ perYear - counted, elNextAt = addUTCTime editLimitWindow <$> listToMaybe (drop (counted - perYear) times)}
+
+-- | When the name's yearly limit is used up, the time the next edit fits.
+usedUpUntil :: EditsLeft -> Maybe UTCTime
+usedUpUntil EditsLeft {elLeft, elNextAt} = if elLeft == 0 then elNextAt else Nothing
+
+-- | An identical repeat of a sent edit is answered from it, and the yearly limit is checked, before any chain read.
 -- The wait for an outcome is bounded from the request's arrival, so the checks and the send count toward it.
 relayEdit :: Records -> EditRequest -> IO EditAnswer
-relayEdit rs@Records {rsPendingAfter} req@EditRequest {erSignature} = do
+relayEdit rs@Records {rsPendingAfter, rsEditsPerYear, rsNow} req@EditRequest {erLabelHash, erSignature} = do
   timer <- registerDelay rsPendingAfter
   recoverAddress erSignature digest >>= \case
     Left _ -> pure EARefused
     Right signer ->
       withStore rs (`getRecordEditByBody` bodyHash) >>= \case
         Just RecordEdit {reId} -> awaitEdit rs timer reId
-        Nothing -> newEdit rs timer req signer bodyHash
+        Nothing -> do
+          now <- rsNow
+          withStore rs (\db -> usedUpUntil <$> nameEditsLeft db rsEditsPerYear erLabelHash now)
+            >>= maybe (newEdit rs timer req signer bodyHash) (pure . EALimited)
   where
     digest = editDigest rs req
     bodyHash = sha256Hash $ digest <> serializeSignature erSignature
@@ -140,7 +169,7 @@ newEdit rs timer req signer bodyHash =
     Right False -> pure EARefused
     Right True ->
       insertEdit rs req signer bodyHash >>= \case
-        Left wait -> pure $ EACapped wait
+        Left answer -> pure answer
         Right (Just editId) -> sendNew rs timer editId
         -- a pending or mined edit holds the nonce: the identical twin is waited for, any other body refused
         Right Nothing -> withStore rs (`getRecordEditByBody` bodyHash) >>= maybe (pure EARefused) (awaitEdit rs timer . reId)
@@ -157,17 +186,21 @@ chainAccepts Records {rsChain, rsContracts} EditRequest {erLabelHash, erNonce, e
           | rnOwner == signer && rnResolver == cResolver (ccConfig rsChain) -> (== erNonce) <$> ExceptT (resolverNonce rsContracts signer)
         _ -> pure False
 
--- | Left with the seconds to wait when the name's cap is used up; Right Nothing when a pending or mined edit holds the nonce.
-insertEdit :: Records -> EditRequest -> Address -> ByteString -> IO (Either Int (Maybe Int64))
-insertEdit Records {rsStore, rsTurns, rsNow} EditRequest {erLabelHash, erChange, erNonce, erDeadline, erSignature} signer bodyHash =
+-- | Left when the name's yearly limit or hourly cap is used up, checked again under the name's turn against a concurrent edit.
+-- Right Nothing when a pending or mined edit holds the nonce.
+insertEdit :: Records -> EditRequest -> Address -> ByteString -> IO (Either EditAnswer (Maybe Int64))
+insertEdit Records {rsStore, rsTurns, rsEditsPerYear, rsNow} EditRequest {erLabelHash, erChange, erNonce, erDeadline, erSignature} signer bodyHash =
   withLabelTurn rsTurns erLabelHash $ do
     now <- rsNow
     withTransaction rsStore $ \db -> do
+      limited <- usedUpUntil <$> nameEditsLeft db rsEditsPerYear erLabelHash now
       times <- relayedEditTimes db erLabelHash (addUTCTime (negate editCapWindow) now)
       let relayed = length times
-      if relayed >= editCap
-        then pure $ Left $ max 1 $ ceiling $ diffUTCTime (addUTCTime editCapWindow $ times !! (relayed - editCap)) now
-        else Right <$> insertRecordEdit db edit now
+      case limited of
+        Just nextAt -> pure $ Left $ EALimited nextAt
+        Nothing
+          | relayed >= editCap -> pure $ Left $ EACapped $ max 1 $ ceiling $ diffUTCTime (addUTCTime editCapWindow $ times !! (relayed - editCap)) now
+          | otherwise -> Right <$> insertRecordEdit db edit now
   where
     edit = NewRecordEdit {nreLabelHash = erLabelHash, nreOwner = signer, nreNonce = erNonce, nreChange = erChange, nreDeadline = erDeadline, nreSignature = erSignature, nreBodyHash = bodyHash}
 

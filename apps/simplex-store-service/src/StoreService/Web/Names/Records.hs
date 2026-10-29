@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module StoreService.Web.Names.Records (EditInvalid (..), recordsHandler, editRequest) where
+module StoreService.Web.Names.Records (EditInvalid (..), recordsHandler, editRequest, editsLeftJSON) where
 
 import Control.Monad (unless)
 import Data.Aeson ((.:), (.:?), (.=))
@@ -10,13 +10,15 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
-import Network.HTTP.Types (status200, status409, status504)
+import Data.Time.Clock (UTCTime)
+import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
+import Network.HTTP.Types (status200, status409, status429, status504)
 import Network.Wai (Request, Response, ResponseReceived)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import StoreService.Names.Abi (bytes32FromHex, hex)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
-import StoreService.Names.Records (EditAnswer (..), EditRequest (..), Records, relayEdit)
+import StoreService.Names.Records (EditAnswer (..), EditRequest (..), EditsLeft (..), Records, relayEdit)
 import StoreService.Names.Registration (channelRecordKey, contactRecordKey)
 import StoreService.Names.Signatures (parseSignature)
 import StoreService.Names.Store (RecordChange (..))
@@ -64,3 +66,11 @@ editResponse = \case
   EARefused -> badRequest
   EAUnavailable -> providerUnavailable
   EACapped seconds -> rateLimited seconds
+  EALimited nextAt -> jsonResponse status429 $ J.object ["error" .= ("edit_limit" :: Text), "nextAt" .= unixSeconds nextAt]
+
+-- | The search answer's recordEdits.
+editsLeftJSON :: EditsLeft -> J.Value
+editsLeftJSON EditsLeft {elLeft, elNextAt} = J.object ["left" .= elLeft, "nextAt" .= (unixSeconds <$> elNextAt)]
+
+unixSeconds :: UTCTime -> Integer
+unixSeconds = floor . utcTimeToPOSIXSeconds

@@ -11,7 +11,7 @@ import Bots.StoreService.WebTests (withServiceStore)
 import Bots.StoreService.WebUIMock (EphemeralWallet (..), newEphemeralWallet, walletFromCode)
 import Control.Concurrent.Async (Async, async, concurrently, wait)
 import Control.Concurrent.STM
-import Control.Monad (forM_)
+import Control.Monad (forM, forM_, when)
 import Crypto.Number.Serialize (i2ospOf_, os2ip)
 import qualified Crypto.PubKey.ECC.Types as ECC
 import Crypto.Random (ChaChaDRG)
@@ -26,6 +26,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
+import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, requestHeaders, responseBody, responseHeaders, responseStatus)
 import Network.HTTP.Types (hContentType, statusCode)
@@ -99,9 +100,15 @@ namesRecordsTests = describe "StoreService names: records" $ do
     it "answers an identical repeat after a restart from the stored edit, with no chain read" $ testRepeatAfterRestart g
     it "finds an edit that expired across a restart applied, and makes it mined" $ testRestartExpiredApplied g
     it "frees an edit past its deadline while its transaction is still rebroadcast" $ testExpiryFreesNonce g
+  describe "yearly limit" $ do
+    it "refuses a name's fourth edit within 365 days with when the first leaves, before any chain read, row or gas" $ testYearLimit g
+    it "takes an edit again once the oldest counted one is 365 days old" $ testYearWindow g
+    it "answers an accepted edit's resend as before once the limit is used up, counting it once" $ testYearResend g
+    it "counts a pending edit, and no edit refused, never sent, or reverted on chain" $ testYearFailedRelays g
   describe "http" $ do
     it "answers the contract's statuses and bodies" $ testHttp g
     it "answers 503, 504, and 429 with the real wait in Retry-After" $ testHttpUnsettled g
+    it "answers 429 edit_limit with nextAt in unix seconds and no Retry-After" $ testHttpEditLimit g
 
 data Setup = Setup
   { node :: FakeEthNode,
@@ -130,7 +137,7 @@ start store clock chain random = do
   sender <- newSender random chain store (readTVarIO clock)
   contracts <- newContracts TLDSimplex chain
   turns <- newTurns
-  rs <- newRecords store turns contracts chain sender TLDSimplex (readTVarIO clock)
+  rs <- newRecords store turns contracts chain sender TLDSimplex editsPerYear (readTVarIO clock)
   pure (sender, rs {rsPendingAfter = longWait})
 
 -- | A new sender and lane over the same store and node, as after the service restarts.
@@ -323,8 +330,9 @@ testRefusedRepeat g = withSetup g $ \s@Setup {owner} -> do
   answerOf r `shouldReturn` EAApplied (Just h)
 
 testCap :: TVar ChaChaDRG -> IO ()
-testCap g = withSetup g $ \s@Setup {owner} -> do
-  let quick = s {records = (records s) {rsPendingAfter = shortWait}}
+testCap g = withSetup g $ \s0@Setup {owner} -> do
+  let s = roomy s0
+      quick = s {records = (records s) {rsPendingAfter = shortWait}}
   forM_ [0 .. 9] $ \n -> do
     setNonce s n
     (relayEdit (records quick) =<< signEdit s owner (channel viemChannelLink) n deadline) `shouldReturn` EAPending
@@ -642,6 +650,105 @@ testExpiryFreesNonce g = withSetup g $ \s@Setup {node, records, sender} -> do
   followTransactions sender
   sentTransactions node `shouldReturn` [raw, raw]
 
+-- yearly limit
+
+testYearLimit :: TVar ChaChaDRG -> IO ()
+testYearLimit g = withSetup g $ \s@Setup {node, records, owner} -> do
+  _ <- appliedEdits s 3
+  setNonce s 3
+  fourth <- signEdit s owner (channel viemChannelLink) 3 deadline
+  -- any chain read would answer provider_unavailable
+  setFault node "eth_call" HttpFailure
+  setFault node "eth_getBlockByNumber" HttpFailure
+  relayEdit records fourth `shouldReturn` EALimited (addUTCTime year t0)
+  editRows s `shouldReturn` 3
+  length <$> sentTransactions node `shouldReturn` 3
+
+testYearWindow :: TVar ChaChaDRG -> IO ()
+testYearWindow g = withSetup g $ \s@Setup {records, owner} -> do
+  -- at t0, a day later and two days later
+  _ <- appliedEdits s 3
+  setNonce s 3
+  fourth <- signEdit s owner (channel viemChannelLink) 3 deadline
+  passTime s $ year - 2 * day - 1
+  relayEdit records fourth `shouldReturn` EALimited (addUTCTime year t0)
+  passTime s 1
+  r <- relay s fourth
+  h <- mineSent s 4 True
+  answerOf r `shouldReturn` EAApplied (Just h)
+  setNonce s 4
+  fifth <- signEdit s owner (channel "https://smp9.simplex.im/c#fifth") 4 deadline
+  relayEdit records fifth `shouldReturn` EALimited (addUTCTime (year + day) t0)
+  editRows s `shouldReturn` 4
+
+testYearResend :: TVar ChaChaDRG -> IO ()
+testYearResend g = withSetup g $ \s@Setup {node, records} -> do
+  sent <- appliedEdits s 3
+  forM_ sent $ \(req, h) -> relayEdit records req `shouldReturn` EAApplied (Just h)
+  editRows s `shouldReturn` 3
+  length <$> sentTransactions node `shouldReturn` 3
+
+testYearFailedRelays :: TVar ChaChaDRG -> IO ()
+testYearFailedRelays g = withSetup g $ \s@Setup {node, records, owner} -> do
+  -- reverted on chain, its nonce unused
+  r <- relay s =<< ownerEdit s viemChannelLink
+  _ <- mineSent s 1 False
+  answerOf r `shouldReturn` EAReverted Nothing
+  -- refused: another signer, then a passed deadline
+  other <- newEphemeralWallet g
+  (relayEdit records =<< signEdit s other (channel viemChannelLink) 0 deadline) `shouldReturn` EARefused
+  (relayEdit records =<< signEdit s owner (channel viemChannelLink) 0 (genesis - 1)) `shouldReturn` EARefused
+  -- never sent: the dry run reverted, then the fee read failed
+  setFault node "eth_estimateGas" $ revertFault $ selector "InvalidSignature()"
+  (relayEdit records =<< signEdit s owner (channel "https://smp9.simplex.im/c#dry") 0 deadline) `shouldReturn` EAReverted (Just "InvalidSignature")
+  clearFault node "eth_estimateGas"
+  setFault node "eth_maxPriorityFeePerGas" HttpFailure
+  (relayEdit records =<< signEdit s owner (channel "https://smp9.simplex.im/c#fee") 0 deadline) `shouldReturn` EAUnavailable
+  clearFault node "eth_maxPriorityFeePerGas"
+  -- two mined and one pending use the limit up
+  _ <- appliedEditsFrom s 0 1 2
+  setNonce s 2
+  unsettled <- signEdit s owner (channel "https://smp9.simplex.im/c#pending") 2 deadline
+  relayEdit records {rsPendingAfter = shortWait} unsettled `shouldReturn` EAPending
+  setNonce s 3
+  fourth <- signEdit s owner (channel "https://smp9.simplex.im/c#fourth") 3 deadline
+  relayEdit records fourth `shouldReturn` EALimited (addUTCTime year t0)
+  -- the pending edit reverts, which gives its edit back
+  _ <- mineSent s 4 False
+  stateOf s unsettled >>= (`shouldSatisfy` \case Just (ESReverted _) -> True; _ -> False)
+  r' <- relay s fourth
+  h <- mineSent s 5 True
+  answerOf r' `shouldReturn` EAApplied (Just h)
+
+-- | The owner's channel edits from nonce 0, each relayed, mined and answered, a day apart from t0; their requests and hashes.
+appliedEdits :: Setup -> Int -> IO [(EditRequest, TxHash)]
+appliedEdits s = appliedEditsFrom s 0 0
+
+-- | As 'appliedEdits', from a nonce, after this many transactions were sent.
+appliedEditsFrom :: Setup -> Word64 -> Int -> Int -> IO [(EditRequest, TxHash)]
+appliedEditsFrom s@Setup {owner} from sentBefore n =
+  forM [0 .. n - 1] $ \i -> do
+    let nonce = from + fromIntegral i
+    when (i > 0) $ passTime s day
+    setNonce s nonce
+    req <- signEdit s owner (channel $ "https://smp9.simplex.im/c#e" <> T.pack (show nonce)) nonce deadline
+    r <- relay s req
+    h <- mineSent s (sentBefore + i + 1) True
+    answerOf r `shouldReturn` EAApplied (Just h)
+    pure (req, h)
+
+-- | Room in the yearly limit for the tests of the hourly cap.
+roomy :: Setup -> Setup
+roomy s = s {records = (records s) {rsEditsPerYear = 100}}
+
+day, year :: NominalDiffTime
+day = 86400
+year = 365 * day
+
+yearSeconds, t0Seconds :: Int
+yearSeconds = 365 * 86400
+t0Seconds = floor $ utcTimeToPOSIXSeconds t0
+
 -- http
 
 testHttp :: TVar ChaChaDRG -> IO ()
@@ -658,8 +765,8 @@ testHttp g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post 
   within (wait next) `shouldReturn` (409, Just $ J.object ["error" .= ("record_reverted" :: Text), "revert" .= J.Null], Nothing)
 
 testHttpUnsettled :: TVar ChaChaDRG -> IO ()
-testHttpUnsettled g = withSetup g $ \s@Setup {node, records, owner} -> do
-  let quick = records {rsPendingAfter = shortWait}
+testHttpUnsettled g = withSetup g $ \s@Setup {node, owner} -> do
+  let quick = (records $ roomy s) {rsPendingAfter = shortWait}
       edit n = signEdit s owner (channel viemChannelLink) n deadline
   withRecordsApp quick $ \post -> do
     setFault node "eth_call" HttpFailure
@@ -671,6 +778,14 @@ testHttpUnsettled g = withSetup g $ \s@Setup {node, records, owner} -> do
       (relayEdit quick =<< edit n) `shouldReturn` EAPending
     setNonce s 10
     (post . J.encode . editJson =<< edit 10) `shouldReturn` (429, Just $ errorJson "rate_limited", Just "3600")
+
+testHttpEditLimit :: TVar ChaChaDRG -> IO ()
+testHttpEditLimit g = withSetup g $ \s@Setup {records, owner} -> do
+  _ <- appliedEdits s 3
+  setNonce s 3
+  withRecordsApp records $ \post ->
+    (post . J.encode . editJson =<< signEdit s owner (channel viemChannelLink) 3 deadline)
+      `shouldReturn` (429, Just $ J.object ["error" .= ("edit_limit" :: Text), "nextAt" .= (t0Seconds + yearSeconds)], Nothing)
 
 -- | Posts a body to the records handler, answering the status, the JSON body and Retry-After.
 withRecordsApp :: Records -> ((LB.ByteString -> IO (Int, Maybe J.Value, Maybe ByteString)) -> IO a) -> IO a
@@ -697,6 +812,10 @@ editJson EditRequest {erChange, erNonce, erDeadline, erSignature} =
       <> case erChange of
         RCSetText key value -> [("key", J.String key), ("value", J.String value)]
         RCClear -> [("clear", J.Bool True)]
+
+-- | The service's default.
+editsPerYear :: Int
+editsPerYear = 3
 
 longWait, shortWait :: Int
 longWait = 4000000

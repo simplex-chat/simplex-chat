@@ -908,6 +908,26 @@ ini and a restart, with the same build. Codes for investors come from the group 
 [From the group](#from-the-group)) or from `//issue name` in `--run-cli` (see
 [From the command line](#from-the-command-line)).
 
+### Link edits
+
+Each "Edit links" save is relayed by the service as `setTextWithSig` (or `clearRecordsWithSig`), a
+transaction whose gas it pays (see [The gas key](#the-gas-key)). `[names] record_edits_per_year`
+(default 3, from 1 to 100, read at startup) bounds them per name in any 365 days:
+
+- each accepted request counts once, from when it is stored to be sent: one changed link, or a clear
+  of both. The page sends one request per changed link, so saving both links takes two;
+- links set at registration ride on the register transaction and count nothing;
+- a request refused before any transaction, a dry run that reverts, a send the chain fails, and an
+  edit that reverts on chain (or expires) count nothing, the last once it settles. A pending edit
+  counts until then;
+- an exact resend of an accepted edit is answered as before and counts nothing more.
+
+When a name has none left, `POST /api/name/records` answers
+`429 {"error": "edit_limit", "nextAt": <unix seconds>}` before any chain read, and the search answer
+for the name carries `recordEdits: {"left": 0, "nextAt": …}`, from which the page shows when the
+owner can edit again. Lowering the setting keeps the edits already counted. The hourly cap of 10
+relayed edits per name still applies, and still counts reverted edits.
+
 ### The gas key
 
 `[chain] service_key` is the registrar key: an Ethereum account (EOA) that sends every names
@@ -1053,7 +1073,8 @@ The gas below was measured on a local anvil deployment of the contracts (the nam
   used × the block's base fee plus tip, usually far less.
 - An order is one commit and one register: 0.6850 ETH at the cap with two links, 0.0627 ETH with
   none. The expected orders × 0.6850 ETH, plus 0.3026 ETH per expected link edit, pays for all of
-  them even at the cap. The figures scale with `max_fee_per_gas`.
+  them even at the cap. A name's link edits are at most `record_edits_per_year` (3) a year, see
+  [Link edits](#link-edits). The figures scale with `max_fee_per_gas`.
 - `gas_limit_cap` (default 8,000,000) must stay above 6,791,417: a transaction whose estimate is
   above it is not sent.
 
