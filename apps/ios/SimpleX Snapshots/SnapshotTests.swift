@@ -5,6 +5,12 @@ import UIKit
 @testable import SimpleXChat
 
 final class SnapshotTests: XCTestCase {
+    private var fixedQRCode: UIImage?
+
+    override func setUp() async throws {
+        fixedQRCode = await generateImage(previewQRLink, tintColor: UIColor(red: 0.023, green: 0.176, blue: 0.337, alpha: 1), errorLevel: "M")
+    }
+
     @MainActor
     func testPreviews() throws {
         NSTimeZone.default = try XCTUnwrap(TimeZone(identifier: "UTC"))
@@ -21,7 +27,7 @@ final class SnapshotTests: XCTestCase {
             for scene in previewScenes() where scene.allSizes || size == "large" {
                 let themeName = dark ? "dark" : "light"
                 let file = "\(scene.name)-\(themeName)-\(size).png"
-                let image = try renderScene(scene, theme.toAppTheme(), dark: dark, in: windowScene)
+                let image = try renderScene(scene, theme.toAppTheme(), dark: dark, fixedQRCode: fixedQRCode, in: windowScene)
                 try XCTUnwrap(image.pngData()).write(to: dir.appendingPathComponent(file))
                 index.append([
                     "scene": scene.name,
@@ -310,10 +316,10 @@ private func snapshotTheme(_ dark: Bool) -> ThemeManager.ActiveTheme {
     )
 }
 
-private let fixedQRCode = UIImage(named: "preview-qr-code", in: Bundle(for: SnapshotTests.self), compatibleWith: nil)
+private let previewQRLink = "https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw"
 
 @MainActor
-private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, in windowScene: UIWindowScene) throws -> UIImage {
+private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, fixedQRCode: UIImage?, in windowScene: UIWindowScene) throws -> UIImage {
     let screen = windowScene.screen
     let width = screen.bounds.width
     let root = VStack(spacing: 0) { scene.view }

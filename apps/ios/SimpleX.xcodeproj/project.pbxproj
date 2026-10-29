@@ -271,7 +271,6 @@
 		E5AEC0B22F9C000100270665 /* TerminalItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0B12F9C000100270665 /* TerminalItemView.swift */; };
 		E5AEC0C22F9C000100270665 /* SnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0C12F9C000100270665 /* SnapshotTests.swift */; };
 		E5AEC0AF2F91A73500270665 /* ComposeChatLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0AE2F91A73500270665 /* ComposeChatLinkView.swift */; };
-		E5AEC0D22F9D000100270665 /* preview-qr-code.png in Resources */ = {isa = PBXBuildFile; fileRef = E5AEC0D12F9D000100270665 /* preview-qr-code.png */; };
 		E5C0BBE82F82B45500EA7527 /* SimpleXAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */; };
 		E5C0BBE92F82B45500EA7527 /* SimpleXAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */; };
 		E5C0BBEB2F82B45500EA7527 /* SharedAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E5C0BBEA2F82B45500EA7527 /* SharedAssets.xcassets */; };
@@ -676,7 +675,6 @@
 		E5AEC0C12F9C000100270665 /* SnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotTests.swift; sourceTree = "<group>"; };
 		E5AEC0C32F9C000100270665 /* SimpleX Snapshots.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SimpleX Snapshots.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E5AEC0AE2F91A73500270665 /* ComposeChatLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeChatLinkView.swift; sourceTree = "<group>"; };
-		E5AEC0D12F9D000100270665 /* preview-qr-code.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "preview-qr-code.png"; sourceTree = "<group>"; };
 		E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = SimpleXAssets.xcassets; sourceTree = "<group>"; };
 		E5C0BBEA2F82B45500EA7527 /* SharedAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = SharedAssets.xcassets; sourceTree = "<group>"; };
 		E5C0BBFD2F82BBC000EA7527 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
@@ -1011,7 +1009,6 @@
 			isa = PBXGroup;
 			children = (
 				E5AEC0C12F9C000100270665 /* SnapshotTests.swift */,
-				E5AEC0D12F9D000100270665 /* preview-qr-code.png */,
 			);
 			path = "SimpleX Snapshots";
 			sourceTree = "<group>";
@@ -1581,7 +1578,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E5AEC0D22F9D000100270665 /* preview-qr-code.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

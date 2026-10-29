@@ -318,11 +318,27 @@ changed   (fixedQRCode ?: qrCodeBitmap(connReq, 1024, errorLevel)).replaceColor(
 Snapshot tests:
 
 ```
-iOS       renderScene root: .environment(\.fixedQRCode, UIImage(named: "preview-qr-code", in: Bundle(for: SnapshotTests.self), compatibleWith: nil))
-iOS       apps/ios/SimpleX Snapshots/preview-qr-code.png, a resource of the SimpleX Snapshots target
-Kotlin    renderSnapshot root: LocalFixedQRCode provides loadFixedQRCode()
-Kotlin    loadFixedQRCode(): preview-qr-code-light.png or preview-qr-code-dark.png of desktopTest/resources, by the theme of the pass
+link      https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw, the address of tests/MarkdownTests.hs:324
+iOS       setUp: fixedQRCode = await generateImage(link, tintColor: QRCode's default tint, errorLevel: "M")
+iOS       renderScene root: .environment(\.fixedQRCode, fixedQRCode)
+iOS       QRCode.swift: generateImage is internal, so the test calls it
+Kotlin    renderSnapshot root: LocalFixedQRCode provides qrCodeBitmap(link, 1024, QrCode.ErrorLevel.M), in the theme of the render
 ```
+
+The views add the logo, and on desktop the tint, to the picture, as to a generated one. `small` short links use error level M in both apps.
+
+Previews with links pass the short form, as the core returns it for a preset server (shortenShortLink): host only, no key hash.
+
+```
+iOS       GroupLinkView_Previews     connShortLink https://smp6.simplex.im/g#cL3iklYlt_Tws1B_1aGylbT_3HowPMQhuCFoBiCjZ1M; shortLinkDataSet, shortLinkLargeDataSet true
+iOS       UserAddressView_Previews   connShortLink https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw
+iOS       QRCode_Previews            QRCode(uri: the address link, small: true)
+Kotlin    PreviewUserAddressLayoutAddressCreated   connShortLink the address link; shortLinkDataSet, shortLinkLargeDataSet true
+Kotlin    PreviewContactConnectionInfoView         connShortLink https://smp6.simplex.im/i#Wu_NH3_F5YphQrIMSCSfWhvqz7tjpZsu/A2dCDGGVkh0-doRPIZVTM-TflHes2uYMVRgA_tK_uCs
+Kotlin    PreviewQRCode                            QRCode(connReq = the address link, small = true)
+```
+
+Each link decodes as AConnShortLink, encodes back to the same text, and markdown reads it as a SimpleX link of its type (contact, group, invitation).
 
 ## 6. Other branch changes
 
@@ -330,11 +346,9 @@ Kotlin    loadFixedQRCode(): preview-qr-code-light.png or preview-qr-code-dark.p
 ActiveCallView.swift, ActiveCallOverlay_Previews                    master
 DesktopApp.kt, AppPreview deleted                                   keep
 SnapshotTests.swift, ActiveCallOverlay scene                        master
-SnapshotTests.swift, SnapshotFixtures markdown table                keep, values built with initializers
+SnapshotTests.swift, SnapshotFixtures markdown table                keep, values built with initializers, equal to the output of master's parser at f2dd8b623
 SnapshotTest.kt, setting pins and appBarMaxHeightPx                 keep
 SnapshotTest.kt, AppPreview scene removed                           keep
-desktopTest/resources/preview-qr-code-light.png                     keep
-desktopTest/resources/preview-qr-code-dark.png                      keep
 check-previews.py, EXCLUDED                                         removed; fails on any unlisted PreviewProvider
 SnapshotTest.kt, previewsCallingCore                                removed; everyPreviewIsRendered compares previewScenes only
 SnapshotTests.swift, previewScenes                                  BadgesChooseBadgeView, NewChatView, ServersSummaryView, TerminalView, UserProfilesView added
@@ -351,18 +365,22 @@ Full lines by `git diff -w --word-diff`, blank lines aside:
 iOS      Views/Badges/BadgesCheckOrderView.swift            10 added, 1 removed, 1 changed
 iOS      Views/Badges/BadgesChooseBadgeView.swift           6 added, 1 removed, 1 changed
 iOS      Views/Badges/BadgesHowLongView.swift               9 added, 1 removed, 1 changed
+iOS      Views/Chat/Group/GroupLinkView.swift               3 changed: preview
 iOS      Views/ChatList/ServersSummaryView.swift            105 added, 24 removed, 3 changed
 iOS      Views/Migration/MigrateFromDevice.swift            5 removed: preview
 iOS      Views/NewChat/NewChatView.swift                    1 changed: preview
-iOS      Views/NewChat/QRCode.swift                         10 added, 2 changed
+iOS      Views/NewChat/QRCode.swift                         10 added, 4 changed: 1 of them the preview
 iOS      Views/TerminalView.swift                           20 added, 14 removed, 2 changed
 iOS      Views/UserSettings/AppearanceSettings.swift        5 removed: preview
+iOS      Views/UserSettings/UserAddressView.swift           1 changed: preview
 iOS      Views/UserSettings/UserProfilesView.swift          3 added, 1 changed: preview
 iOS      Views/UserSettings/VersionView.swift               16 added, 8 removed, 1 changed
 Kotlin   views/chat/group/GroupProfileView.kt               5 added, 13 changed
 Kotlin   views/newchat/AddChannelView.kt                    13 added, 5 removed, 9 changed
 Kotlin   views/newchat/AddGroupView.kt                      3 added, 6 changed
-Kotlin   views/newchat/QRCode.kt                            2 added, 1 changed
+Kotlin   views/newchat/ContactConnectionInfoView.kt         1 changed: preview
+Kotlin   views/newchat/QRCode.kt                            2 added, 2 changed: 1 of them the preview
+Kotlin   views/usersettings/UserAddressView.kt              3 changed: preview
 Kotlin   views/usersettings/UserProfileView.kt              4 added, 11 removed, 16 changed
 Kotlin   desktopMain DesktopApp.kt                          6 removed: preview and its import
 ```

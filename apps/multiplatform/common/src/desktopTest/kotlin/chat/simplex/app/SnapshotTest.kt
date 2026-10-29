@@ -7,15 +7,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowState
+import boofcv.alg.fiducial.qrcode.QrCode
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
-import chat.simplex.common.platform.loadImageBitmap
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.PreviewTerminalLayout
@@ -45,6 +44,7 @@ import kotlin.test.assertEquals
 
 private const val SCENE_WIDTH = 402
 private const val SCENE_MAX_HEIGHT = 874
+private const val PREVIEW_QR_LINK = "https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw"
 
 private val chatItemFontScales = listOf(1f, 1.4f, 1.5f)
 
@@ -201,7 +201,7 @@ class SnapshotTest {
 
 private fun renderSnapshot(content: @Composable () -> Unit): Image {
   var height = 0
-  val fixedQRCode = loadFixedQRCode()
+  val fixedQRCode = qrCodeBitmap(PREVIEW_QR_LINK, 1024, QrCode.ErrorLevel.M)
   val frame = renderScene(width = SCENE_WIDTH, height = SCENE_MAX_HEIGHT, frames = 4) {
     AppBarHandler.appBarMaxHeightPx = with(LocalDensity.current) { AppBarHeight.roundToPx() }
     Box(Modifier.width(SCENE_WIDTH.dp).background(CurrentColors.collectAsState().value.colors.background).onSizeChanged { height = it.height }) {
@@ -213,11 +213,6 @@ private fun renderSnapshot(content: @Composable () -> Unit): Image {
     makeImageSnapshot()
   }
 }
-
-private fun loadFixedQRCode(): ImageBitmap? =
-  Thread.currentThread().contextClassLoader
-    ?.getResourceAsStream(if (CurrentColors.value.colors.isLight) "preview-qr-code-light.png" else "preview-qr-code-dark.png")
-    ?.use { loadImageBitmap(it) }
 
 private fun previewsInSources(): List<String> =
   listOf("src/commonMain/kotlin", "src/desktopMain/kotlin")
