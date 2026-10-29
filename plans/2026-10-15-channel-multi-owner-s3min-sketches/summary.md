@@ -1,6 +1,6 @@
 # Channels with several owners: summary
 
-The plan lets a channel have up to six equal owners (five while its creator is one): the server that holds the channel's link takes their changes one at a time, so concurrent changes are never lost or undone. Every design question is decided and nothing needs your decision now; nothing is built yet, and the server part and the first chat part can start side by side.
+The plan lets a channel have up to six equal owners (five while its creator is one): the server that holds the channel's link takes their changes one at a time, so concurrent changes are never lost or undone. The [server part](https://github.com/simplex-chat/simplexmq/pull/2005) and the [first chat part](https://github.com/spaced4ndy/simplex-chat/pull/4) are built; the rest waits for your review of the design.
 
 The published page, with the pictures one at a time: https://claude.ai/artifact/25Z9m6xPzLMkiGNJ6TeKgy
 
