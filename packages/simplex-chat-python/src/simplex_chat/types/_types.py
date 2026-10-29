@@ -1565,10 +1565,12 @@ class ConnectionPlan_invitationLink(TypedDict):
 class ConnectionPlan_contactAddress(TypedDict):
     type: Literal["contactAddress"]
     contactAddressPlan: "ContactAddressPlan"
+    nameChange: NotRequired["NameChange"]
 
 class ConnectionPlan_groupLink(TypedDict):
     type: Literal["groupLink"]
     groupLinkPlan: "GroupLinkPlan"
+    nameChange: NotRequired["NameChange"]
 
 class ConnectionPlan_error(TypedDict):
     type: Literal["error"]
@@ -1701,6 +1703,8 @@ class CtrlAppInfo(TypedDict):
     appVersionRange: "AppVersionRange"
     deviceName: str
     compression: bool
+
+DomainVerification = Literal["failed", "verified", "moved"]
 
 class DroppedMsg(TypedDict):
     brokerTs: str  # ISO-8601 timestamp
@@ -2053,7 +2057,7 @@ class GroupInfo(TypedDict):
     rosterVersion: NotRequired[int]  # int64
     membersRequireAttention: int  # int
     viaGroupLinkUri: NotRequired[str]
-    groupDomainVerified: NotRequired[bool]
+    groupDomainVerified: NotRequired["DomainVerification"]
 
 class GroupLink(TypedDict):
     userContactLinkId: int  # int64
@@ -2308,7 +2312,7 @@ class LocalProfile(TypedDict):
     localBadge: NotRequired["LocalBadge"]
     localAlias: str
     contactDomain: NotRequired["SimplexDomainClaim"]
-    contactDomainVerified: NotRequired[bool]
+    contactDomainVerified: NotRequired["DomainVerification"]
 
 class MarkdownBlock_paragraph(TypedDict):
     type: Literal["paragraph"]
@@ -2496,6 +2500,18 @@ MsgVerified = MsgVerified_signed | MsgVerified_sigMissing
 
 MsgVerified_Tag = Literal["signed", "sigMissing"]
 
+class NameChange_lapsed(TypedDict):
+    type: Literal["lapsed"]
+    nameWarning: "NameWarning"
+
+class NameChange_moved(TypedDict):
+    type: Literal["moved"]
+    knownChat: "ChatInfo"
+
+NameChange = NameChange_lapsed | NameChange_moved
+
+NameChange_Tag = Literal["lapsed", "moved"]
+
 class NameErrorType_NO_RESOLVER(TypedDict):
     type: Literal["NO_RESOLVER"]
 
@@ -2509,6 +2525,34 @@ class NameErrorType_RESOLVER(TypedDict):
 NameErrorType = NameErrorType_NO_RESOLVER | NameErrorType_NOT_FOUND | NameErrorType_RESOLVER
 
 NameErrorType_Tag = Literal["NO_RESOLVER", "NOT_FOUND", "RESOLVER"]
+
+class NamePrice(TypedDict):
+    amount: int  # int64
+    years: int  # int
+
+class NameWarning_expired(TypedDict):
+    type: Literal["expired"]
+    expiredAt: str  # ISO-8601 timestamp
+    graceUntil: NotRequired[str]  # ISO-8601 timestamp
+
+class NameWarning_available(TypedDict):
+    type: Literal["available"]
+    price: "NamePrice"
+
+class NameWarning_reservedForCommunity(TypedDict):
+    type: Literal["reservedForCommunity"]
+
+class NameWarning_notRegistered(TypedDict):
+    type: Literal["notRegistered"]
+
+NameWarning = (
+    NameWarning_expired
+    | NameWarning_available
+    | NameWarning_reservedForCommunity
+    | NameWarning_notRegistered
+)
+
+NameWarning_Tag = Literal["expired", "available", "reservedForCommunity", "notRegistered"]
 
 class NetworkError_connectError(TypedDict):
     type: Literal["connectError"]
@@ -3104,9 +3148,17 @@ class SimplexDomainError_noValidLink(TypedDict):
 class SimplexDomainError_unknownDomain(TypedDict):
     type: Literal["unknownDomain"]
 
-SimplexDomainError = SimplexDomainError_noValidLink | SimplexDomainError_unknownDomain
+class SimplexDomainError_nameWarning(TypedDict):
+    type: Literal["nameWarning"]
+    nameWarning: "NameWarning"
 
-SimplexDomainError_Tag = Literal["noValidLink", "unknownDomain"]
+SimplexDomainError = (
+    SimplexDomainError_noValidLink
+    | SimplexDomainError_unknownDomain
+    | SimplexDomainError_nameWarning
+)
+
+SimplexDomainError_Tag = Literal["noValidLink", "unknownDomain", "nameWarning"]
 
 class SimplexDomainProof(TypedDict):
     linkOwnerId: NotRequired[str]
@@ -3597,6 +3649,12 @@ class StoreError_deliveryJobNotFound(TypedDict):
     type: Literal["deliveryJobNotFound"]
     jobId: int  # int64
 
+class StoreError_walletNotFound(TypedDict):
+    type: Literal["walletNotFound"]
+
+class StoreError_duplicateWallet(TypedDict):
+    type: Literal["duplicateWallet"]
+
 class StoreError_workItemError(TypedDict):
     type: Literal["workItemError"]
     errContext: str
@@ -3690,10 +3748,12 @@ StoreError = (
     | StoreError_deliveryTaskNotFound
     | StoreError_invalidDeliveryJob
     | StoreError_deliveryJobNotFound
+    | StoreError_walletNotFound
+    | StoreError_duplicateWallet
     | StoreError_workItemError
 )
 
-StoreError_Tag = Literal["duplicateName", "userNotFound", "relayUserNotFound", "userNotFoundByName", "userNotFoundByContactId", "userNotFoundByGroupId", "userNotFoundByFileId", "userNotFoundByContactRequestId", "contactNotFound", "contactNotFoundByName", "contactNotFoundByMemberId", "contactNotReady", "duplicateContactLink", "userContactLinkNotFound", "contactRequestNotFound", "contactRequestNotFoundByName", "invalidContactRequestEntity", "invalidBusinessChatContactRequest", "groupNotFound", "groupNotFoundByName", "groupMemberNameNotFound", "groupMemberNotFound", "groupMemberNotFoundByIndex", "memberRelationsVectorNotFound", "groupHostMemberNotFound", "groupMemberNotFoundByMemberId", "memberContactGroupMemberNotFound", "invalidMemberRelationUpdate", "groupWithoutUser", "duplicateGroupMember", "duplicateMemberId", "groupAlreadyJoined", "groupInvitationNotFound", "noteFolderAlreadyExists", "noteFolderNotFound", "userNoteFolderNotFound", "sndFileNotFound", "sndFileInvalid", "rcvFileNotFound", "rcvFileDescrNotFound", "fileNotFound", "rcvFileInvalid", "rcvFileInvalidDescrPart", "localFileNoTransfer", "sharedMsgIdNotFoundByFileId", "fileIdNotFoundBySharedMsgId", "sndFileNotFoundXFTP", "rcvFileNotFoundXFTP", "connectionNotFound", "connectionNotFoundById", "connectionNotFoundByMemberId", "pendingConnectionNotFound", "uniqueID", "largeMsg", "internalError", "dBException", "dBBusyError", "badChatItem", "chatItemNotFound", "chatItemNotFoundByText", "chatItemSharedMsgIdNotFound", "chatItemNotFoundByFileId", "chatItemNotFoundByContactId", "chatItemNotFoundByGroupId", "profileNotFound", "duplicateGroupLink", "groupLinkNotFound", "hostMemberIdNotFound", "contactNotFoundByFileId", "noGroupSndStatus", "duplicateGroupMessage", "remoteHostNotFound", "remoteHostUnknown", "remoteHostDuplicateCA", "remoteCtrlNotFound", "remoteCtrlDuplicateCA", "prohibitedDeleteUser", "operatorNotFound", "usageConditionsNotFound", "userChatRelayNotFound", "groupRelayNotFound", "groupRelayNotFoundByMemberId", "invalidQuote", "invalidMention", "invalidDeliveryTask", "deliveryTaskNotFound", "invalidDeliveryJob", "deliveryJobNotFound", "workItemError"]
+StoreError_Tag = Literal["duplicateName", "userNotFound", "relayUserNotFound", "userNotFoundByName", "userNotFoundByContactId", "userNotFoundByGroupId", "userNotFoundByFileId", "userNotFoundByContactRequestId", "contactNotFound", "contactNotFoundByName", "contactNotFoundByMemberId", "contactNotReady", "duplicateContactLink", "userContactLinkNotFound", "contactRequestNotFound", "contactRequestNotFoundByName", "invalidContactRequestEntity", "invalidBusinessChatContactRequest", "groupNotFound", "groupNotFoundByName", "groupMemberNameNotFound", "groupMemberNotFound", "groupMemberNotFoundByIndex", "memberRelationsVectorNotFound", "groupHostMemberNotFound", "groupMemberNotFoundByMemberId", "memberContactGroupMemberNotFound", "invalidMemberRelationUpdate", "groupWithoutUser", "duplicateGroupMember", "duplicateMemberId", "groupAlreadyJoined", "groupInvitationNotFound", "noteFolderAlreadyExists", "noteFolderNotFound", "userNoteFolderNotFound", "sndFileNotFound", "sndFileInvalid", "rcvFileNotFound", "rcvFileDescrNotFound", "fileNotFound", "rcvFileInvalid", "rcvFileInvalidDescrPart", "localFileNoTransfer", "sharedMsgIdNotFoundByFileId", "fileIdNotFoundBySharedMsgId", "sndFileNotFoundXFTP", "rcvFileNotFoundXFTP", "connectionNotFound", "connectionNotFoundById", "connectionNotFoundByMemberId", "pendingConnectionNotFound", "uniqueID", "largeMsg", "internalError", "dBException", "dBBusyError", "badChatItem", "chatItemNotFound", "chatItemNotFoundByText", "chatItemSharedMsgIdNotFound", "chatItemNotFoundByFileId", "chatItemNotFoundByContactId", "chatItemNotFoundByGroupId", "profileNotFound", "duplicateGroupLink", "groupLinkNotFound", "hostMemberIdNotFound", "contactNotFoundByFileId", "noGroupSndStatus", "duplicateGroupMessage", "remoteHostNotFound", "remoteHostUnknown", "remoteHostDuplicateCA", "remoteCtrlNotFound", "remoteCtrlDuplicateCA", "prohibitedDeleteUser", "operatorNotFound", "usageConditionsNotFound", "userChatRelayNotFound", "groupRelayNotFound", "groupRelayNotFoundByMemberId", "invalidQuote", "invalidMention", "invalidDeliveryTask", "deliveryTaskNotFound", "invalidDeliveryJob", "deliveryJobNotFound", "walletNotFound", "duplicateWallet", "workItemError"]
 
 class SubscriptionStatus_active(TypedDict):
     type: Literal["active"]

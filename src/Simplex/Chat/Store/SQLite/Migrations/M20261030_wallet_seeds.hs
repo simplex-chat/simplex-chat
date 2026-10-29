@@ -1,0 +1,39 @@
+{-# LANGUAGE QuasiQuotes #-}
+
+module Simplex.Chat.Store.SQLite.Migrations.M20261030_wallet_seeds where
+
+import Database.SQLite.Simple (Query)
+import Database.SQLite.Simple.QQ (sql)
+
+m20261030_wallet_seeds :: Query
+m20261030_wallet_seeds =
+  [sql|
+CREATE TABLE wallet_seeds (
+  wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  entropy BLOB NOT NULL CHECK (length(entropy) IN (16, 20, 24, 28, 32)),
+  next_account_index INTEGER NOT NULL CHECK (next_account_index BETWEEN 0 AND 2147483648),
+  single_seed INTEGER NOT NULL DEFAULT 1
+) STRICT;
+
+CREATE TABLE wallet_accounts (
+  wallet_account_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  wallet_seed_id INTEGER NOT NULL REFERENCES wallet_seeds ON DELETE CASCADE,
+  account_index INTEGER NOT NULL CHECK (account_index BETWEEN 0 AND 2147483647),
+  user_id INTEGER REFERENCES users ON DELETE SET NULL
+) STRICT;
+
+CREATE UNIQUE INDEX idx_wallet_seeds_single_seed ON wallet_seeds(single_seed);
+CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON wallet_accounts(wallet_seed_id, account_index);
+CREATE INDEX idx_wallet_accounts_user_id ON wallet_accounts(user_id);
+|]
+
+down_m20261030_wallet_seeds :: Query
+down_m20261030_wallet_seeds =
+  [sql|
+DROP INDEX idx_wallet_accounts_user_id;
+DROP INDEX idx_wallet_accounts_wallet_seed_id_account_index;
+DROP INDEX idx_wallet_seeds_single_seed;
+
+DROP TABLE wallet_accounts;
+DROP TABLE wallet_seeds;
+|]
