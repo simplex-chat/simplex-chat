@@ -551,15 +551,93 @@ private final class SnapshotFixtures {
     let news: GroupInfo
     let contact: Contact
     private let markdown: [String: ParsedMarkdown] = [
-        "https://simplex.chat": ###"{"formattedText":[{"format":{"type":"uri"},"text":"https://simplex.chat"}]}"###,
-        "---": ###"{"formattedText":[{"format":{"type":"markup","token":{"type":"ruleMark"}},"text":"---"}],"markdownBlocks":[{"type":"rule","mark":{"from":0,"to":1}}]}"###,
-        "Hi! Did you see the **new release**?": ###"{"formattedText":[{"text":"Hi! Did you see the "},{"format":{"type":"bold","singleStar":false},"text":"new release"},{"text":"?"}]}"###,
-        "Yes, *great* changes 🎉": ###"{"formattedText":[{"text":"Yes, "},{"format":{"type":"bold","singleStar":true},"text":"great"},{"text":" changes 🎉"}]}"###,
-        "# Release notes\n- terminal layout\n- `code` blocks\n\n> quoted line": ###"{"formattedText":[{"format":{"type":"markup","token":{"type":"headingMark","level":1}},"text":"# "},{"text":"Release notes"},{"format":{"type":"markup","token":{"type":"lineBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"listMark"}},"text":"- "},{"text":"terminal layout"},{"format":{"type":"markup","token":{"type":"lineBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"listMark"}},"text":"- "},{"format":{"type":"snippet"},"text":"code"},{"text":" blocks"},{"format":{"type":"markup","token":{"type":"paragraphBreak","lineBreaks":2}},"text":"\n\n"},{"format":{"type":"markup","token":{"type":"quoteMark"}},"text":"> "},{"text":"quoted line"}],"markdownBlocks":[{"type":"heading","level":1,"content":{"from":1,"to":2}},{"type":"list","items":[{"content":{"from":4,"to":5},"items":[]},{"content":{"from":7,"to":9},"items":[]}]},{"type":"quote","content":{"from":11,"to":12}}]}"###,
-        "Plan for today:\n1. review\n2. **release**": ###"{"formattedText":[{"text":"Plan for today:"},{"format":{"type":"markup","token":{"type":"lineBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"listMark","number":"1."}},"text":"1. "},{"text":"review"},{"format":{"type":"markup","token":{"type":"lineBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"listMark","number":"2."}},"text":"2. "},{"format":{"type":"bold","singleStar":false},"text":"release"}],"markdownBlocks":[{"type":"paragraph","content":{"from":0,"to":1}},{"type":"list","items":[{"number":"1.","content":{"from":3,"to":4},"items":[]},{"number":"2.","content":{"from":6,"to":7},"items":[]}]}]}"###,
-        "**Version 7.1** is out": ###"{"formattedText":[{"format":{"type":"bold","singleStar":false},"text":"Version 7.1"},{"text":" is out"}]}"###,
-        "## What's new\n- terminal layout\n- faster sync": ###"{"formattedText":[{"format":{"type":"markup","token":{"type":"headingMark","level":2}},"text":"## "},{"text":"What's new"},{"format":{"type":"markup","token":{"type":"lineBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"listMark"}},"text":"- "},{"text":"terminal layout"},{"format":{"type":"markup","token":{"type":"lineBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"listMark"}},"text":"- "},{"text":"faster sync"}],"markdownBlocks":[{"type":"heading","level":2,"content":{"from":1,"to":2}},{"type":"list","items":[{"content":{"from":4,"to":5},"items":[]},{"content":{"from":7,"to":8},"items":[]}]}]}"###
-    ].mapValues { try! jsonDecoder.decode(ParsedMarkdown.self, from: Data($0.utf8)) }
+        "https://simplex.chat": ParsedMarkdown(formattedText: [
+            FormattedText(text: "https://simplex.chat", format: .uri)
+        ]),
+        "---": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "---", format: .markup(token: .ruleMark))
+            ],
+            markdownBlocks: [
+                .rule(mark: SegmentRange(from: 0, to: 1))
+            ]
+        ),
+        "Hi! Did you see the **new release**?": ParsedMarkdown(formattedText: [
+            FormattedText(text: "Hi! Did you see the "),
+            FormattedText(text: "new release", format: .bold(singleStar: false)),
+            FormattedText(text: "?")
+        ]),
+        "Yes, *great* changes 🎉": ParsedMarkdown(formattedText: [
+            FormattedText(text: "Yes, "),
+            FormattedText(text: "great", format: .bold(singleStar: true)),
+            FormattedText(text: " changes 🎉")
+        ]),
+        "# Release notes\n- terminal layout\n- `code` blocks\n\n> quoted line": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "# ", format: .markup(token: .headingMark(level: 1))),
+                FormattedText(text: "Release notes"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "- ", format: .markup(token: .listMark(number: nil))),
+                FormattedText(text: "terminal layout"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "- ", format: .markup(token: .listMark(number: nil))),
+                FormattedText(text: "code", format: .snippet),
+                FormattedText(text: " blocks"),
+                FormattedText(text: "\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 2))),
+                FormattedText(text: "> ", format: .markup(token: .quoteMark)),
+                FormattedText(text: "quoted line")
+            ],
+            markdownBlocks: [
+                .heading(level: 1, content: SegmentRange(from: 1, to: 2)),
+                .list(items: [
+                    ListEntry(number: nil, content: SegmentRange(from: 4, to: 5), items: []),
+                    ListEntry(number: nil, content: SegmentRange(from: 7, to: 9), items: [])
+                ]),
+                .quote(content: SegmentRange(from: 11, to: 12))
+            ]
+        ),
+        "Plan for today:\n1. review\n2. **release**": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "Plan for today:"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "1. ", format: .markup(token: .listMark(number: "1."))),
+                FormattedText(text: "review"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "2. ", format: .markup(token: .listMark(number: "2."))),
+                FormattedText(text: "release", format: .bold(singleStar: false))
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 0, to: 1)),
+                .list(items: [
+                    ListEntry(number: "1.", content: SegmentRange(from: 3, to: 4), items: []),
+                    ListEntry(number: "2.", content: SegmentRange(from: 6, to: 7), items: [])
+                ])
+            ]
+        ),
+        "**Version 7.1** is out": ParsedMarkdown(formattedText: [
+            FormattedText(text: "Version 7.1", format: .bold(singleStar: false)),
+            FormattedText(text: " is out")
+        ]),
+        "## What's new\n- terminal layout\n- faster sync": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "## ", format: .markup(token: .headingMark(level: 2))),
+                FormattedText(text: "What's new"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "- ", format: .markup(token: .listMark(number: nil))),
+                FormattedText(text: "terminal layout"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "- ", format: .markup(token: .listMark(number: nil))),
+                FormattedText(text: "faster sync")
+            ],
+            markdownBlocks: [
+                .heading(level: 2, content: SegmentRange(from: 1, to: 2)),
+                .list(items: [
+                    ListEntry(number: nil, content: SegmentRange(from: 4, to: 5), items: []),
+                    ListEntry(number: nil, content: SegmentRange(from: 7, to: 8), items: [])
+                ])
+            ]
+        )
+    ]
 
     init() {
         alice = Self.member(2, "alice", .admin, image: imageBase64(UIColor(red: 0.85, green: 0.45, blue: 0.3, alpha: 1), CGSize(width: 64, height: 64)))
