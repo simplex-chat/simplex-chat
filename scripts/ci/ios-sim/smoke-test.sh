@@ -2,7 +2,8 @@
 
 # Installs the app in a new iPhone simulator and runs the scripted UI cases with the ui helper: onboarding to the
 # chat list with the one-hand UI (the default), then the chat list again with the top bar. It leaves the app in the one-hand UI.
-# With "images" it then creates a group and sends tests/fixtures/test.jpg and logo-large-rgba.png picked in the photo library.
+# With "images" it then turns off the encryption of local files, creates a group and sends tests/fixtures/test.jpg and
+# logo-large-rgba.png picked in the photo library, and checks the pixel sizes of the sent files.
 # Usage: scripts/ci/ios-sim/smoke-test.sh <path to SimpleX.app> <output dir> [images]
 # Each step saves a screenshot and an accessibility tree to the output dir and prints the tree to the log.
 # Later steps of the job get SIM_UDID and UI_OUT, with the simulator still running.
@@ -113,6 +114,18 @@ sent_file() {
   done
 }
 
+sent_size() {
+  local file
+  file=$(find "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" group.chat.simplex.app)" "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" data)" -name "IMG_*.$1" -exec ls -t {} + 2> /dev/null | sed -n 1p)
+  sips -g pixelWidth -g pixelHeight "$file" | awk '/pixelWidth/ {w = $2} /pixelHeight/ {h = $2} END {print w "x" h}'
+}
+
+disable_file_encryption() {
+  xcrun simctl terminate "$SIM_UDID" "$bundle_id"
+  xcrun simctl spawn "$SIM_UDID" defaults write "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" group.chat.simplex.app)/Library/Preferences/group.chat.simplex.app" privacyEncryptLocalFiles -bool false
+  "$ui" relaunch
+}
+
 fail() {
   echo "error: $*"
   exit 1
@@ -134,7 +147,7 @@ app_resized_images() {
 }
 
 send_image() {
-  local ext=$1 photo_x=$2 sent resized
+  local ext=$1 photo_x=$2 size=$3 sent resized
   sent=$(sent_files "$ext")
   resized=$(app_resized_images)
   tap_element Button "Attachements" || fail "no attachment button"
@@ -150,8 +163,9 @@ send_image() {
   tap_element Button "[^\"]*arrow[^\"]*" || fail "no send button"
   sent_file "$ext" "$sent" || fail "$ext: no .$ext file sent"
   "$ui" shot "sent-$ext"
+  [ "$(sent_size "$ext")" = "$size" ] || fail "$ext: the sent image is $(sent_size "$ext"), not $size"
   [ "$(app_resized_images)" -eq "$resized" ] || fail "$ext: the app resized the image in place of the core"
-  echo "$ext: the picked image was previewed and sent as a .$ext file"
+  echo "$ext: the picked image was previewed and sent as a $size .$ext file"
 }
 
 xcrun simctl install "$SIM_UDID" "$app"
@@ -193,9 +207,10 @@ expect_chat_list top
 echo "smoke test passed: onboarding reaches the chat list, which shows its onboarding pages and toolbar with the one-hand UI and with the top bar"
 
 if [ "$cases" = images ]; then
+  disable_file_encryption
   xcrun simctl addmedia "$SIM_UDID" "$fixtures/test.jpg" "$fixtures/logo-large-rgba.png"
   create_group
-  send_image jpg "$test_card_x"
-  send_image png "$logo_x"
+  send_image jpg "$test_card_x" 1280x720
+  send_image png "$logo_x" 1630x466
   echo "smoke test passed: images"
 fi
