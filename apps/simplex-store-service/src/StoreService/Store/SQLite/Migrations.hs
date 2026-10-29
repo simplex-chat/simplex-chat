@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-module StoreService.Store.SQLite.Migrations (storeServiceSchemaMigrations, servicePrefix, withPrefix) where
+module StoreService.Store.SQLite.Migrations (storeServiceSchemaMigrations, schemaMigrations, servicePrefix, withPrefix) where
 
 import Data.List (sortOn)
 import Data.Text (Text)
@@ -22,7 +22,7 @@ schemaMigrations =
     ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
     ("20260925_badge_store_receipts", m20260925_badge_store_receipts, Just down_m20260925_badge_store_receipts),
     ("20261012_badge_subscriptions", m20261012_badge_subscriptions, Just down_m20261012_badge_subscriptions),
-    ("20261010_names", m20261010_names, Just down_m20261010_names),
+    ("20261013_names", m20261013_names, Just down_m20261013_names),
     ("20261022_drop_taken_codes", m20261022_drop_taken_codes, Just down_m20261022_drop_taken_codes),
     ("20261022_name_balances", m20261022_name_balances, Just down_m20261022_name_balances),
     ("20261022_name_late_wait", m20261022_name_late_wait, Just down_m20261022_name_late_wait),
@@ -281,8 +281,8 @@ DROP TABLE @subscription_charges;
 
 -- A registration is live as Names.Store's orderLive decides.
 -- reserved_by is added after the registrations table, which references the codes table.
-m20261010_names :: Query
-m20261010_names =
+m20261013_names :: Query
+m20261013_names =
   withPrefix
     servicePrefix
     [sql|
@@ -419,8 +419,8 @@ CREATE INDEX @idx_name_transactions_status ON @name_transactions(status, registr
 -- SQLite refuses to drop a column in a foreign key, and dropping a table deletes its rows first,
 -- so the codes' references to registrations are cleared before the registrations go.
 -- The name orders' invoices go with them, except those with a payment, which stay for the accounts.
-down_m20261010_names :: Query
-down_m20261010_names =
+down_m20261013_names :: Query
+down_m20261013_names =
   withPrefix
     servicePrefix
     [sql|

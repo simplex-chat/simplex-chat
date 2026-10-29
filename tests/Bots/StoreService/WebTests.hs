@@ -116,12 +116,12 @@ import Text.Read (readMaybe)
 import UnliftIO.Temporary (withTempDirectory)
 
 #if defined(dbPostgres)
-import StoreService.Store.Postgres.Migrations (storeServiceSchemaMigrations)
+import StoreService.Store.Postgres.Migrations (schemaMigrations, storeServiceSchemaMigrations)
 import ChatClient (testDBConnstr)
 import Database.PostgreSQL.Simple (Only (..))
 import qualified Simplex.Messaging.Agent.Store.Postgres.Migrations as Migrations
 #else
-import StoreService.Store.SQLite.Migrations (storeServiceSchemaMigrations)
+import StoreService.Store.SQLite.Migrations (schemaMigrations, storeServiceSchemaMigrations)
 import Data.String (fromString)
 import Database.SQLite.Simple (Only (..))
 import qualified Database.SQLite.Simple as SQL
@@ -182,6 +182,7 @@ badgeWebTests = do
     it "refuses a duplicate provider_ref" testProviderRefUnique
     it "M20260918 adds the multi-use columns and the group table" testGroupOpsColumns
     it "M20260918 defaults a fresh code to one use with none spent" testGroupOpsRedeemCounts
+    it "declares its migrations in name order, master's badge migrations before the names ones" testMigrationOrder
     it "migrates all the way down and up again" testSchemaDownUpCycle
     it "rolls back only the group migration and re-applies it, keeping a code redeemed twice spent" testGroupOpsDownUp
     it "rolls back only the subscription migration, restoring the columns it dropped, and re-applies it" testSubscriptionsDownUp
@@ -404,6 +405,18 @@ runMigrations st = Migrations.run st Nothing
 #else
 runMigrations st = Migrations.run st Nothing True
 #endif
+
+-- | Applied migrations must be a prefix of this list by name, so a migration of ours dated
+-- before one of master's breaks upgrading a badge-service database.
+testMigrationOrder :: IO ()
+testMigrationOrder = do
+  let declared = map (\(n, _, _) -> n) schemaMigrations
+  [(a, b) | (a, b) <- zip declared (drop 1 declared), a >= b] `shouldBe` []
+  let (badges, ours) = span (`elem` badgeMigrations) (map name storeServiceSchemaMigrations)
+  badges `shouldBe` badgeMigrations
+  ours `shouldBe` ["20261013_names", "20261022_drop_taken_codes", "20261022_name_balances", "20261022_name_late_wait", "20261023_name_terms", "20261027_name_invoiced_units"]
+  where
+    badgeMigrations = ["20260915_badge_service_schema", "20260918_badge_group_ops", "20260925_badge_store_receipts", "20261012_badge_subscriptions"]
 
 testSchemaDownUpCycle :: IO ()
 testSchemaDownUpCycle = withServiceStore $ \st -> do
