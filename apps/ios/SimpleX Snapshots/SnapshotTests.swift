@@ -277,6 +277,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(SmallLinkPreview_Previews.self),
         SnapshotScene(SupportSimpleXBanner_Previews.self),
         SnapshotScene(TerminalAvatars_Previews.self, allSizes: true),
+        SnapshotScene(TerminalMedia_Previews.self),
         SnapshotScene(TerminalNames_Previews.self, allSizes: true),
         SnapshotScene(TerminalOverviewChannel_Previews.self),
         SnapshotScene(TerminalOverviewDirect_Previews.self),
@@ -365,6 +366,12 @@ struct TerminalQuoteThumbnail_Previews: PreviewProvider {
     }
 }
 
+struct TerminalMedia_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().media()
+    }
+}
+
 struct TerminalRuleOnly_Previews: PreviewProvider {
     static var previews: some View {
         SnapshotFixtures().ruleOnly()
@@ -425,6 +432,7 @@ private struct ChatRows: View {
     let im: ItemsModel
     let mergedItems: MergedItems
     let terminal: Bool
+    var selected: Set<Int64>? = nil
 
     private var width: CGFloat {
         UIScreen.main.bounds.width
@@ -469,12 +477,13 @@ private struct ChatRows: View {
             scrollToItemId: .constant(nil),
             merged: mergedItem,
             olderRow: mergedItems.items.indices.contains(index + 1) ? mergedItems.items[index + 1] : nil,
+            listWidth: width,
             maxWidth: rowMaxWidth(ci, mergedItem, chat.chatInfo, width),
             composeState: .constant(ComposeState()),
             selectedMember: .constant(nil),
             showChatInfoSheet: .constant(false),
             revealedItems: .constant([]),
-            selectedChatItems: .constant(nil),
+            selectedChatItems: .constant(selected),
             forwardedChatItems: .constant([]),
             searchText: .constant(""),
             contentFilter: .constant(nil),
@@ -623,11 +632,11 @@ private final class SnapshotFixtures {
         CIFile.getSample(fileId: id(), fileName: name, fileSize: 184_320, filePath: nil, fileStatus: .rcvInvitation)
     }
 
-    private func chatRows(_ chatInfo: ChatInfo, _ items: [ChatItem], terminal: Bool) -> ChatRows {
+    private func chatRows(_ chatInfo: ChatInfo, _ items: [ChatItem], terminal: Bool, selected: Set<Int64>? = nil) -> ChatRows {
         let im = ItemsModel(secondaryIMFilter: nil)
         im.reversedChatItems = items.reversed()
         let merged = MergedItems.create(im, [])
-        return ChatRows(chat: Chat(chatInfo: chatInfo), im: im, mergedItems: merged, terminal: terminal)
+        return ChatRows(chat: Chat(chatInfo: chatInfo), im: im, mergedItems: merged, terminal: terminal, selected: selected)
     }
 
     private var direct: ChatInfo { .direct(contact: contact) }
@@ -651,6 +660,23 @@ private final class SnapshotFixtures {
             msg(.directRcv, "a reply wider than the quote above it, so that the quote is narrower than the item", -7, quote: quote(.directSnd, "photo", image: photo)),
             msg(.directRcv, "a reply a bit wider than its quote", -6, quote: quote(.directSnd, "photo", image: photo))
         ], terminal: true)
+    }
+
+    func media() -> some View {
+        let link = MsgContent.link(text: "https://simplex.chat", preview: LinkPreview(uri: "https://simplex.chat", title: "SimpleX Chat: private and secure messenger without any user IDs", image: landscape))
+        return VStack(spacing: 0) {
+            chatRows(direct, [
+                msg(.directRcv, "https://simplex.chat", -20, content: link)
+            ], terminal: true)
+            chatRows(newsChat, [
+                msg(.channelRcv, "Links and videos", -12),
+                msg(.channelRcv, "https://simplex.chat", -11, content: link),
+                msg(.channelRcv, "", -10, content: .video(text: "", image: landscape, duration: 42), file: CIFile.getSample(fileId: id(), fileName: "video.mp4", fileSize: 1_048_576, filePath: nil, fileStatus: .rcvInvitation))
+            ], terminal: true)
+            chatRows(newsChat, [
+                msg(.channelRcv, "Selected post", -5, content: .image(text: "Selected post", image: landscape), file: imageFile("post.jpg"))
+            ], terminal: true, selected: [])
+        }
     }
 
     func ruleOnly() -> some View {

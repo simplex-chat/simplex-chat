@@ -220,7 +220,7 @@ struct FramedItemView: View {
                 ciMsgContentView(chatItem, txtPrefix: reason.attrString)
             case let .link(_, preview):
                 CILinkView(linkPreview: preview, maxWidth: maxWidth)
-                    .if(terminal) { terminalBlock($0.padding(.bottom, 8), chatItemFrameContextColor(chatItem, theme)) }
+                    .if(terminal) { terminalBlock($0.frame(maxWidth: maxWidth).padding(.bottom, 8), chatItemFrameContextColor(chatItem, theme)) }
                 ciMsgContentView(chatItem, terminalTop: terminalBlockBottomGap)
             case let .chat(text, chatLink, ownerSig):
                 let hasText = text != chatLink.connLinkStr
@@ -290,26 +290,26 @@ struct FramedItemView: View {
             case let .image(_, image):
                 if let uiImage = imageFromBase64(image) {
                     quotedMsgOrGap(qi)
-                        .padding(.trailing, terminal ? 68 : 70).frame(minWidth: quoteMinWidth, alignment: .leading)
+                        .padding(.trailing, terminal ? 68 + chatItemTextPadding : 70).frame(minWidth: quoteMinWidth, alignment: .leading)
                     Image(uiImage: uiImage)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 68, height: 68)
                         .clipped()
-                        .if(terminal) { $0.clipShape(RoundedRectangle(cornerRadius: msgRectMaxRadius * roundness)) }
+                        .if(terminal) { $0.clipShape(RoundedRectangle(cornerRadius: msgRectMaxRadius * roundness)).padding(.trailing, chatItemTextPadding) }
                 } else {
                     ciQuotedMsgView(qi)
                 }
             case let .video(_, image, _):
                 if let uiImage = imageFromBase64(image) {
                     quotedMsgOrGap(qi)
-                    .padding(.trailing, terminal ? 68 : 70).frame(minWidth: quoteMinWidth, alignment: .leading)
+                    .padding(.trailing, terminal ? 68 + chatItemTextPadding : 70).frame(minWidth: quoteMinWidth, alignment: .leading)
                     Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(width: 68, height: 68)
                     .clipped()
-                    .if(terminal) { $0.clipShape(RoundedRectangle(cornerRadius: msgRectMaxRadius * roundness)) }
+                    .if(terminal) { $0.clipShape(RoundedRectangle(cornerRadius: msgRectMaxRadius * roundness)).padding(.trailing, chatItemTextPadding) }
                 } else {
                     ciQuotedMsgView(qi)
                 }

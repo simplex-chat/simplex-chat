@@ -953,6 +953,7 @@ struct ChatView: View {
                             scrollToItemId: $scrollToItemId,
                             merged: mergedItem,
                             olderRow: mergedItems.boxedValue.items.indices.contains(index + 1) ? mergedItems.boxedValue.items[index + 1] : nil,
+                            listWidth: g.size.width,
                             maxWidth: maxWidth,
                             composeState: $composeState,
                             selectedMember: $selectedMember,
@@ -1724,6 +1725,7 @@ struct ChatView: View {
         @Binding var scrollToItemId: ChatItem.ID?
         let merged: MergedItem
         let olderRow: MergedItem?
+        let listWidth: CGFloat
         let maxWidth: CGFloat
         @Binding var composeState: ComposeState
         @Binding var selectedMember: GMember?
@@ -2146,6 +2148,8 @@ struct ChatView: View {
 
         private func terminalItemRow(_ range: ClosedRange<Int>?, _ showSender: Bool, _ ci: ChatItem, _ itemSeparation: ItemSeparation) -> some View {
             let selecting = selectedChatItems != nil && ci.canBeDeletedForSelf
+            let leading: CGFloat = selecting ? 4 + 24 : 0
+            let gutter = chat.chatInfo.chatType == .group ? memberImageSize + chatItemTextPadding : 0
             let older = merged.oldest().nextItem
             let topGap = terminalRowGap(
                 ci,
@@ -2161,12 +2165,12 @@ struct ChatView: View {
                 }
                 TerminalChatItemRow(
                     sender: showSender ? chatItemSender(ci, range) : nil,
-                    gutter: chat.chatInfo.chatType == .group ? memberImageSize + chatItemTextPadding : 0,
+                    gutter: gutter,
                     topGap: topGap
                 ) {
-                    chatItemWithMenu(ci, range, maxWidth, itemSeparation)
+                    chatItemWithMenu(ci, range, min(maxWidth, listWidth - leading - gutter - 2 * chatItemTextPadding), itemSeparation)
                 }
-                .padding(.leading, selecting ? 4 + 24 : 0)
+                .padding(.leading, leading)
             }
             .padding(.bottom, index == 0 && itemSeparation.largeGap ? 8 : itemSeparation.date == nil ? 0 : terminalLevelStep)
             .background(selectedChatItems?.contains(ci.id) == true ? theme.colors.primary.opacity(0.1) : Color.clear)

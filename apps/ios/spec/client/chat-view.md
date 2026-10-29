@@ -352,7 +352,7 @@ unknown values                              skipped
 
 ### Rows
 
-[`ChatItemWithMenu.terminalItemRow`](../../Shared/Views/Chat/ChatView.swift#L2147) wraps `chatItemWithMenu` in [`TerminalChatItemRow`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L346):
+[`ChatItemWithMenu.terminalItemRow`](../../Shared/Views/Chat/ChatView.swift#L2149) wraps `chatItemWithMenu` in [`TerminalChatItemRow`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L346):
 
 ```
 row padding        top: topGap, plus terminalSenderTopGap with a sender row
@@ -364,6 +364,7 @@ avatar             memberImageSize: scaledMemberImageSize, 34pt × chat list pro
 sender row         name and badge at terminalNameSize, 13.5 × 17/16 pt (primary for own items, secondary otherwise); role label 15pt after the name
                    start padding chatItemTextPadding; terminalSenderBottomGap below
 selection          SelectedChatItem 8pt from the start; row moved by 28pt; selected row tint primary 10%
+media width        classic maxWidth, at most listWidth less the selection offset, the gutter and two text edges: media end at the time's end padding
 bottom padding     newest row: 8pt; above a date separator: terminalLevelStep; otherwise 0
 ```
 
@@ -372,8 +373,8 @@ bottom padding     newest row: 8pt; above a date separator: terminalLevelStep; o
 | [`terminalItemShowsSender(item, older)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L125) | Item with a sender (`hasTerminalSender`), and the older item is absent, has no sender or has another sender. Same sender: channel as sender on both items, or `CIDirection.sameDirection` when neither item has it |
 | [`terminalRowGap(item, older, separated, largeGap, hasSenderRow)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L137) | `terminalLevelStep` when the older item exists, the rows are not separated, and one holds: large gap, sender row, either item without a sender, text at the item top starting with a heading. Otherwise 0 |
 | [`terminalHeadingGap(item)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L144) | `terminalLevelStep` above a heading that starts the text below a quote, header or block |
-| [`terminalRowsSeparated(olderRow)`](../../Shared/Views/Chat/ChatView.swift#L2175) | The newest item of the older row is the chat banner, or its `getItemSeparation` has a date (against its newer item only for single and revealed rows) |
-| [`chatItemSender(ci, range)`](../../Shared/Views/Chat/ChatView.swift#L2182) | Channel as sender: group name, role "channel", group image. Received direct: contact name and badge. Group member: `memberNames`, badge and role of a single member, member image (tap: member info). Own group items: membership name, badge, role, image. Other own items: user name and badge, or "Incognito" |
+| [`terminalRowsSeparated(olderRow)`](../../Shared/Views/Chat/ChatView.swift#L2179) | The newest item of the older row is the chat banner, or its `getItemSeparation` has a date (against its newer item only for single and revealed rows) |
+| [`chatItemSender(ci, range)`](../../Shared/Views/Chat/ChatView.swift#L2186) | Channel as sender: group name, role "channel", group image. Received direct: contact name and badge. Group member: `memberNames`, badge and role of a single member, member image (tap: member info). Own group items: membership name, badge, role, image. Other own items: user name and badge, or "Incognito" |
 | `CIContent.hasTerminalSender` | Sent messages, deleted and moderated items, calls and group invitations; received content with `showMemberName` |
 
 `ChatView` passes `olderRow`, the next merged item. `MergedItem.revealed`: true for `.single`, the flag of `.grouped`.
@@ -398,8 +399,10 @@ FramedItemView        background, quote background and header backgrounds omitte
                       quote: quoteBar(), text onSurface 70%, terminalBlockTopGap above, terminalBlockBottomGap below
                       quote sender: terminalNameSize (13.5 × 17/16 pt, Dynamic Type), no spacing above the text
                       quote thumbnail: 12pt after the quote text; a quote without text and sender: 12pt after the bar (quotedMsgOrGap)
+                      quote thumbnail end padding: chatItemTextPadding, as the time's
                       quote thumbnails and media: message corner clip (msgRectMaxRadius × roundness)
                       link preview and chat link cards: quote colour, message corner clip (terminalBlock)
+                      link preview card: at most maxWidth wide
                       media width limit for captionless media only (mediaLimit)
                       captionless media, chat link without text: terminalBlockBottomGap below (metaPlacement)
 MsgContentView        line box terminalLineBox; meta line for live messages only
