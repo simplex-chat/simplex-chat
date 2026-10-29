@@ -16,7 +16,9 @@ A tap applies the remembered chat's next mode to the open chat. In a group opene
 
 ## Fix
 
-`nextNtfMode = enableNtfs.nextMode(chatInfo.hasMentions)`, computed from the open chat on every composition. `ntfMode` stays as the argument of `changeNtfsState`.
+`nextNtfMode = enableNtfs.nextMode(chatInfo.hasMentions)`, computed from the open chat on every composition.
+
+`ntfMode` is removed, with the second parameter of `changeNtfsState` and the `currentState` parameter of `toggleNotifications` and `updateChatSettings` (`ChatListNavLinkView.kt`), which only set it.
 
 ## Scope
 

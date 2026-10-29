@@ -802,7 +802,7 @@ fun ChatView(
                 }
               }
             },
-            changeNtfsState = { enabled, currentValue -> toggleNotifications(chatRh, chatInfo, enabled, chatModel, currentValue) },
+            changeNtfsState = { enabled -> toggleNotifications(chatRh, chatInfo, enabled, chatModel) },
             onSearchValueChanged = onSearchValueChanged,
             closeSearch = {
               if (chatModel.openAroundItemId.value == null) {
@@ -966,7 +966,7 @@ fun ChatLayout(
   openGroupLink: (GroupInfo) -> Unit,
   markItemsRead: (List<Long>) -> Unit,
   markChatRead: () -> Unit,
-  changeNtfsState: (MsgFilter, currentValue: MutableState<MsgFilter>) -> Unit,
+  changeNtfsState: (MsgFilter) -> Unit,
   onSearchValueChanged: (String) -> Unit,
   closeSearch: () -> Unit,
   onComposed: suspend (chatId: String) -> Unit,
@@ -1207,7 +1207,7 @@ fun BoxScope.ChatInfoToolbar(
   endCall: () -> Unit,
   addMembers: (GroupInfo) -> Unit,
   openGroupLink: (GroupInfo) -> Unit,
-  changeNtfsState: (MsgFilter, currentValue: MutableState<MsgFilter>) -> Unit,
+  changeNtfsState: (MsgFilter) -> Unit,
   onSearchValueChanged: (String) -> Unit,
   showSearch: MutableState<Boolean>,
   contentFilter: MutableState<ContentFilter?>,
@@ -1362,7 +1362,6 @@ fun BoxScope.ChatInfoToolbar(
 
   val enableNtfs = chatInfo.chatSettings?.enableNtfs
   if (((chatInfo is ChatInfo.Direct && chatInfo.contact.ready && chatInfo.contact.active) || chatInfo is ChatInfo.Group) && enableNtfs != null) {
-    val ntfMode = remember { mutableStateOf(enableNtfs) }
     val nextNtfMode = enableNtfs.nextMode(chatInfo.hasMentions)
     menuItems.add {
       ItemAction(
@@ -1373,7 +1372,7 @@ fun BoxScope.ChatInfoToolbar(
           // Just to make a delay before changing state of ntfsEnabled, otherwise it will redraw menu item with new value before closing the menu
           scope.launch {
             delay(200)
-            changeNtfsState(nextNtfMode, ntfMode)
+            changeNtfsState(nextNtfMode)
           }
         }
       )
@@ -3920,7 +3919,7 @@ fun PreviewChatLayout() {
       openGroupLink = {},
       markItemsRead = { _ -> },
       markChatRead = {},
-      changeNtfsState = { _, _ -> },
+      changeNtfsState = { _ -> },
       onSearchValueChanged = {},
       closeSearch = {},
       onComposed = {},
@@ -4003,7 +4002,7 @@ fun PreviewGroupChatLayout() {
       openGroupLink = {},
       markItemsRead = { _ -> },
       markChatRead = {},
-      changeNtfsState = { _, _ -> },
+      changeNtfsState = { _ -> },
       onSearchValueChanged = {},
       closeSearch = {},
       onComposed = {},
