@@ -679,9 +679,9 @@ CI, scripted app smoke tests, in every app workflow run:
 
   | app | steps | images | log line of the app's own resizing |
   |---|---|---|---|
-  | Android | `scripts/ci/android/smoke-test.sh:263-314`, from `:352` | `/sdcard/Pictures/test-card.jpg` and `simplex-logo.png`, with a media scan broadcast (`add_images`, `:263-269`) | `core returned no image` (`core_returned_no_image`, `:283-285`), a check at `:305` |
+  | Android | `scripts/ci/android/smoke-test.sh:263-317`, from `:355` | `/sdcard/Pictures/test-card/test-card.jpg` and `/sdcard/Pictures/simplex-logo/simplex-logo.png`, one folder each, with a media scan broadcast (`add_images`, `:263-269`); in Google Photos' "Select photos": the folder by its name, its photo ("Photo taken on …"), then "Done" (or "Add") | `core returned no image` (`core_returned_no_image`, `:283-285`), a check at `:308` |
   | desktop | `scripts/ci/desktop-linux/smoke-test.sh:320-379`, from `:438` | the fixture paths typed in the file dialog | `core returned no image` (`core_returned_no_image`, `:346-348`), a check at `:370` |
-  | iOS | `scripts/ci/ios-sim/smoke-test.sh:99-151`, from `:191-196` with `images` | the photo library, with `xcrun simctl addmedia` | `resizeImageToStrSize final` and `resizeImageToDataSize final` (`app_resized_images`, `:127-129`), `fail` at `:149` |
+  | iOS | `scripts/ci/ios-sim/smoke-test.sh:104-155`, from `:195-201` with `images` | both images added to the photo library with one `xcrun simctl addmedia`, which lists the test card first and the logo second; the attachment button by its label "Attachements", "Choose from library"; the photo picker, absent from the accessibility tree, by position (`:18-22`): the test card or the logo, then the ✓ button | `resizeImageToStrSize final` and `resizeImageToDataSize final` (`app_resized_images`, `:132-134`), `fail` at `:153` |
 
 - `.github/workflows/ios-sim.yml:269`: the app job's smoke test with `images`.
 - `scripts/ci/android/README.md:32`, `scripts/ci/desktop-linux/README.md:27`, `scripts/ci/ios-sim/README.md:3`: the image steps.

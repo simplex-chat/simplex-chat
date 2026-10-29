@@ -15,8 +15,9 @@ cases=${3:-}
 bundle_id=chat.simplex.app
 ui=$(dirname "$0")/ui
 fixtures=$(cd "$(dirname "$0")/../../../tests/fixtures" && pwd)
-first_photo_x=66
-first_photo_y=412
+test_card_x=66
+logo_x=200
+photo_y=412
 picker_done_x=363
 picker_done_y=144
 mkdir -p "$UI_OUT"
@@ -133,15 +134,14 @@ app_resized_images() {
 }
 
 send_image() {
-  local file=$1 ext=$2 sent resized
+  local ext=$1 photo_x=$2 sent resized
   sent=$(sent_files "$ext")
   resized=$(app_resized_images)
-  xcrun simctl addmedia "$SIM_UDID" "$fixtures/$file"
   tap_element Button "Attachements" || fail "no attachment button"
   "$ui" tap "Choose from library"
   sleep 3
   "$ui" shot "picker-$ext"
-  "$ui" tap-xy "$first_photo_x" "$first_photo_y"
+  "$ui" tap-xy "$photo_x" "$photo_y"
   "$ui" shot "picker-selected-$ext"
   "$ui" tap-xy "$picker_done_x" "$picker_done_y"
   sleep 3
@@ -193,8 +193,9 @@ expect_chat_list top
 echo "smoke test passed: onboarding reaches the chat list, which shows its onboarding pages and toolbar with the one-hand UI and with the top bar"
 
 if [ "$cases" = images ]; then
+  xcrun simctl addmedia "$SIM_UDID" "$fixtures/test.jpg" "$fixtures/logo-large-rgba.png"
   create_group
-  send_image test.jpg jpg
-  send_image logo-large-rgba.png png
+  send_image jpg "$test_card_x"
+  send_image png "$logo_x"
   echo "smoke test passed: images"
 fi
