@@ -969,20 +969,36 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       ),
     )
   ),
-  // TODO [badges] restore when badges ship, with final copy and the Read more link.
-  /*
   VersionDescription(
     version = "v7.1",
-    post = null,
+    post = "https://simplex.chat/blog/20260919-simplex-supporter-badges.html",
     features = listOf(
       VersionFeature.FeatureView(
         icon = null,
         titleId = MR.strings.v7_1_supporter_badge_title,
         view = { SupporterBadgeWhatsNew() }
-      )
+      ),
+      VersionFeature.FeatureDescription(
+        icon = null,
+        titleId = MR.strings.v7_1_channels,
+        descrId = null,
+        subfeatures = listOf(
+          MR.images.ic_shield to MR.strings.v7_1_channels_moderators,
+          MR.images.ic_verified to MR.strings.v7_1_channels_signed_messages,
+        )
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_outline_terminal,
+        titleId = MR.strings.v7_1_terminal_layout,
+        descrId = MR.strings.v7_1_terminal_layout_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_article,
+        titleId = MR.strings.v7_1_markdown,
+        descrId = MR.strings.v7_1_markdown_descr
+      ),
     )
   ),
-  */
 )
 
 @Composable

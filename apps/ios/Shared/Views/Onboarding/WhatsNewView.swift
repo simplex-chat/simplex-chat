@@ -698,20 +698,36 @@ private let versionDescriptions: [VersionDescription] = [
             ))
         ]
     ),
-    // TODO [badges] restore when badges ship, with final copy and the Read more link.
-    /*
     VersionDescription(
         version: "v7.1",
-        post: nil,
+        post: URL(string: "https://simplex.chat/blog/20260919-simplex-supporter-badges.html"),
         features: [
             .view(FeatureView(
                 icon: nil,
                 title: "Supporter badge",
                 view: { SupporterBadgeWhatsNew() }
-            ))
+            )),
+            .feature(Description(
+                icon: nil,
+                title: "Safer channels 📢",
+                description: nil,
+                subfeatures: [
+                    ("person.badge.shield.checkmark", "Make subscribers moderators."),
+                    ("checkmark.seal", "Sign messages so relays can't alter them."),
+                ]
+            )),
+            .feature(Description(
+                icon: "terminal",
+                title: "Terminal chat layout",
+                description: "For chats with AI agents and bots, or any chat."
+            )),
+            .feature(Description(
+                icon: "text.alignleft",
+                title: "Markdown",
+                description: "Headings, lists, tables and code, in messages and files."
+            )),
         ]
     ),
-    */
 ]
 
 private let lastVersion = versionDescriptions.last!.version
