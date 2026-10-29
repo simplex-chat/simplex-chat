@@ -8,6 +8,7 @@
 
 module Simplex.Chat.Image
   ( ImageFormat (..),
+    ColourProfile (..),
     imageFormat,
     decodeResizable,
     resizeImage,
@@ -23,7 +24,7 @@ import Codec.Picture.JPEGTurbo (DecodeOptions (DecodeOptions), JpegHeader (..), 
 import qualified Codec.Picture.STBIR as STBIR
 import qualified Codec.Picture.Spng as Spng
 import Codec.Picture.Types (pixelFoldMap)
-import Control.Monad (forM_, guard, mfilter, when, (<=<))
+import Control.Monad (forM_, guard, when, (<=<))
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
@@ -42,6 +43,9 @@ import GHC.Float (double2Float, float2Double)
 
 data ImageFormat = IFJpeg | IFPng
 
+data ColourProfile = CPNone | CPDisplayP3
+  deriving (Eq, Show)
+
 imageFormat :: DynamicImage -> ImageFormat
 imageFormat = \case
   ImageYA8 img -> alphaFormat img
@@ -55,10 +59,10 @@ imageFormat = \case
       | getAll $ pixelFoldMap (All . (maxBound ==) . pixelOpacity) img = IFJpeg
       | otherwise = IFPng
 
-decodeResizable :: ByteString -> IO (Either String (DynamicImage, Maybe ByteString))
+decodeResizable :: ByteString -> IO (Either String (DynamicImage, ColourProfile))
 decodeResizable s = runExceptT $ do
   (img, profile) <- decode
-  pure . (img,) $! displayP3Profile =<< profile
+  pure . (img,) $! maybe CPNone colourProfile profile
   where
     decode
       | "\xFF\xD8" `B.isPrefixOf` s = decodeDisplayJpeg s
@@ -154,11 +158,11 @@ orientImage orientation = dynamicPixelMap orient
       8 -> generateImage (\x y -> pixelAt img (w - 1 - y) x) h w
       _ -> img
 
-displayP3Profile :: ByteString -> Maybe ByteString
-displayP3Profile profile = do
+colourProfile :: ByteString -> ColourProfile
+colourProfile profile = fromMaybe CPNone $ do
   primaries <- iccPrimaries profile
   p3Primaries <- iccPrimaries displayP3
-  displayP3 <$ guard (and $ zipWith (\v v' -> abs (v - v') <= 2) primaries p3Primaries)
+  CPDisplayP3 <$ guard (and $ zipWith (\v v' -> abs (v - v') <= 2) primaries p3Primaries)
 
 iccPrimaries :: ByteString -> Maybe [Integer]
 iccPrimaries profile = do
@@ -189,13 +193,13 @@ displayP3 = $(embedFile "src/Simplex/Chat/Image/DisplayP3-v4.icc")
 
 data ImageOutput = ImageBytes | ImageDataUri
 
-resizeImage :: ImageFormat -> Int64 -> DynamicImage -> Maybe ByteString -> IO (Either String LB.ByteString)
+resizeImage :: ImageFormat -> Int64 -> DynamicImage -> ColourProfile -> IO (Either String LB.ByteString)
 resizeImage = fitImage ImageBytes
 
-resizeImageDataUri :: Int64 -> DynamicImage -> Maybe ByteString -> IO (Either String LB.ByteString)
+resizeImageDataUri :: Int64 -> DynamicImage -> ColourProfile -> IO (Either String LB.ByteString)
 resizeImageDataUri maxSize img = fitImage ImageDataUri (imageFormat img) maxSize img
 
-fitImage :: ImageOutput -> ImageFormat -> Int64 -> DynamicImage -> Maybe ByteString -> IO (Either String LB.ByteString)
+fitImage :: ImageOutput -> ImageFormat -> Int64 -> DynamicImage -> ColourProfile -> IO (Either String LB.ByteString)
 fitImage output format maxSize img profile
   | dynamicMap (hasSideAbove maxImageSide) img = pure imageDoesNotFit
   | otherwise = maybe (pure imageDoesNotFit) (fitLargest . snd) $ dynamicMap (\i -> displaySize (imageWidth i) (imageHeight i)) img
@@ -203,7 +207,7 @@ fitImage output format maxSize img profile
     (out, quality, bitsPerPixel, jpegBytes, outputLength) = case output of
       ImageBytes -> (id, 65, 0.9, id, id)
       ImageDataUri -> (toDataUri format, 20, 0.35, \target -> 0.75 * max 0 (target - fromIntegral (LB.length $ toDataUri format "")), \n -> 4 * ((n + 2) `div` 3))
-    keptProfile = mfilter (\p -> not (B.null p) && fromIntegral (outputLength $ B.length p) <= maxSize `div` 10) profile
+    keptProfile = displayP3 <$ guard (profile == CPDisplayP3 && fromIntegral (outputLength $ B.length displayP3) <= maxSize `div` 10)
     fitLargest largest = case format of
       IFJpeg -> do
         let rgb = convertRGB8 img

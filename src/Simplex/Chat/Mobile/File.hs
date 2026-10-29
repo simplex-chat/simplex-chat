@@ -44,7 +44,7 @@ import Foreign.StablePtr
 import Foreign.Storable (poke, pokeByteOff)
 import GHC.IO.Handle.FD (fdToHandle)
 import Simplex.Chat.Controller (ChatController (..))
-import Simplex.Chat.Image (ImageFormat (..), decodeResizable, imageFormat, maxDecodeMemoryMB, resizeImage, resizeImageDataUri)
+import Simplex.Chat.Image (ColourProfile, ImageFormat (..), decodeResizable, imageFormat, maxDecodeMemoryMB, resizeImage, resizeImageDataUri)
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Util (chunkSize, encryptFile)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..), CryptoFileHandle, FTCryptoError (..))
@@ -201,7 +201,7 @@ cResizeImageData input maxSize png = cResizeImage LB64.encode resize input
       EQ -> IFJpeg
       GT -> IFPng
 
-cResizeImage :: (LB.ByteString -> LB.ByteString) -> (DynamicImage -> Maybe ByteString -> IO (Either String LB.ByteString)) -> IO ByteString -> IO CString
+cResizeImage :: (LB.ByteString -> LB.ByteString) -> (DynamicImage -> ColourProfile -> IO (Either String LB.ByteString)) -> IO ByteString -> IO CString
 cResizeImage encode resize input = do
   r <- runCatchExceptT $ ExceptT . uncurry resize =<< ExceptT (decodeResizable =<< input)
   newCStringFromLazyBS $ either (const "") encode r

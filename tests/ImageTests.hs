@@ -69,7 +69,7 @@ imageTests = do
 testDataUri :: FilePath -> LB.ByteString -> IO ()
 testDataUri path prefix = do
   Right img <- decodeImage <$> B.readFile path
-  Right uri <- resizeImageDataUri 14000 img Nothing
+  Right uri <- resizeImageDataUri 14000 img CPNone
   LB.length uri `shouldSatisfy` (<= 14000)
   let (uriPrefix, body) = LB.splitAt (LB.length prefix) uri
   uriPrefix `shouldBe` prefix
@@ -80,9 +80,9 @@ testDataUri16Bit :: IO ()
 testDataUri16Bit = do
   let rgb = ImageRGB16 $ generateImage (\x y -> PixelRGB16 (fromIntegral x * 512) (fromIntegral y * 512) 0) 128 128
       rgba = ImageRGBA16 $ generateImage (\x y -> PixelRGBA16 (fromIntegral x * 512) (fromIntegral y * 512) 0 32768) 128 128
-  Right jpegUri <- resizeImageDataUri 14000 rgb Nothing
+  Right jpegUri <- resizeImageDataUri 14000 rgb CPNone
   jpegUri `shouldSatisfy` ("data:image/jpg;base64," `LB.isPrefixOf`)
-  Right pngUri <- resizeImageDataUri 14000 rgba Nothing
+  Right pngUri <- resizeImageDataUri 14000 rgba CPNone
   Just body <- pure $ LB.stripPrefix "data:image/png;base64," pngUri
   Right (ImageRGBA8 _) <- pure $ decodeImage . LB.toStrict =<< LB64.decode body
   pure ()
@@ -90,7 +90,7 @@ testDataUri16Bit = do
 testResizeJpeg :: IO ()
 testResizeJpeg = do
   Right img <- decodeImage <$> B.readFile "tests/fixtures/test.jpg"
-  Right jpeg <- resizeImage IFJpeg 10000 img Nothing
+  Right jpeg <- resizeImage IFJpeg 10000 img CPNone
   LB.length jpeg `shouldSatisfy` (<= 10000)
   LB.take 2 jpeg `shouldBe` "\xFF\xD8"
   Right resized <- pure $ decodeImage $ LB.toStrict jpeg
@@ -100,7 +100,7 @@ testResizeJpeg = do
 testResizePng :: IO ()
 testResizePng = do
   Right img <- decodeImage <$> B.readFile "tests/fixtures/logo-large-rgba.png"
-  Right png <- resizeImage IFPng 10000 img Nothing
+  Right png <- resizeImage IFPng 10000 img CPNone
   LB.length png `shouldSatisfy` (<= 10000)
   Right resized@(ImageRGBA8 _) <- pure $ decodeImage $ LB.toStrict png
   fst (imageSize resized) `shouldSatisfy` (< 1630)
@@ -109,13 +109,13 @@ testResizePng = do
 testImageTooLarge :: IO ()
 testImageTooLarge = do
   let img = ImageRGBA8 $ generateImage (\_ _ -> PixelRGBA8 0 0 0 0) 1 1
-  resizeImage IFPng 10 img Nothing >>= (`shouldSatisfy` isLeft)
-  resizeImage IFJpeg 10 img Nothing >>= (`shouldSatisfy` isLeft)
+  resizeImage IFPng 10 img CPNone >>= (`shouldSatisfy` isLeft)
+  resizeImage IFJpeg 10 img CPNone >>= (`shouldSatisfy` isLeft)
 
 testImageSideLimit :: IO ()
 testImageSideLimit = do
   let blank w h = ImageRGBA8 $ generateImage (\_ _ -> PixelRGBA8 0 0 0 0) w h
-      resizeAll img = sequence [resizeImage IFPng 100000 img Nothing, resizeImage IFJpeg 100000 img Nothing, resizeImageDataUri 100000 img Nothing]
+      resizeAll img = sequence [resizeImage IFPng 100000 img CPNone, resizeImage IFJpeg 100000 img CPNone, resizeImageDataUri 100000 img CPNone]
   forM_ [blank 16384 4, blank 4 16384] $ \img ->
     resizeAll img >>= (`shouldSatisfy` all isRight)
   forM_ [blank 16385 4, blank 4 16385] $ \img ->
@@ -127,10 +127,10 @@ testDisplaySide =
     let opaque = ImageRGB8 $ generateImage (\_ _ -> PixelRGB8 0 0 0) w h
         transparent = ImageRGBA8 $ generateImage (\_ _ -> PixelRGBA8 0 0 0 0) w h
     forM_ [opaque, transparent] $ \img -> do
-      Right image <- resizeImage (imageFormat img) 261120 img Nothing
+      Right image <- resizeImage (imageFormat img) 261120 img CPNone
       decodedSize image `shouldBe` Right size
       forM_ [12500, 14000] $ \limit -> do
-        Right uri <- resizeImageDataUri limit img Nothing
+        Right uri <- resizeImageDataUri limit img CPNone
         (decodedSize =<< LB64.decode (LB.drop 1 $ LB.dropWhile (/= ',') uri)) `shouldBe` Right size
   where
     decodedSize = fmap imageSize . decodeImage . LB.toStrict
@@ -139,9 +139,9 @@ testFill :: IO ()
 testFill = do
   forM_ ["tests/fixtures/test.jpg", "tests/fixtures/preview-issue1.png"] $ \path -> do
     Right img <- decodeImage <$> B.readFile path
-    Right uri <- resizeImageDataUri 14000 img Nothing
+    Right uri <- resizeImageDataUri 14000 img CPNone
     LB.length uri `shouldSatisfy` filled 14000
-    Right image <- resizeImage IFJpeg 20000 img Nothing
+    Right image <- resizeImage IFJpeg 20000 img CPNone
     LB.length image `shouldSatisfy` filled 20000
   where
     filled limit n = n <= limit && fromIntegral n >= 0.97 * (fromIntegral limit :: Double)
@@ -152,7 +152,7 @@ testFullSizeQuality = do
   q65 <- encodeRGB 65 Nothing rgb
   q95 <- encodeRGB 95 Nothing rgb
   let limit = fromIntegral $ (B.length q65 + B.length q95) `div` 2
-  Right jpeg <- resizeImage IFJpeg limit (ImageRGB8 rgb) Nothing
+  Right jpeg <- resizeImage IFJpeg limit (ImageRGB8 rgb) CPNone
   LB.length jpeg `shouldSatisfy` (\n -> n > fromIntegral (B.length q65) && n <= limit)
   imageSize <$> decodeImage (LB.toStrict jpeg) `shouldBe` Right (64, 48)
 
@@ -182,7 +182,7 @@ testJpegDisplaySize =
   where
     sizes = [(4320, (4320, 16)), (4321, (2160, 8)), (8640, (4320, 8)), (8641, (4320, 8)), (17280, (4320, 4)), (17281, (4320, 4)), (17282, (4320, 4)), (34561, (4320, 2)), (65500, (4094, 1))]
     resizedSize img = do
-      Right image <- resizeImage IFJpeg 261120 img Nothing
+      Right image <- resizeImage IFJpeg 261120 img CPNone
       either fail (pure . imageSize) $ decodeImage $ LB.toStrict image
 
 testJpegColourSpaces :: IO ()
@@ -219,7 +219,7 @@ testJpegOrientation = do
     Right (img, _) <- decodeResizable $ withExif (odd orientation) 8 orientation jpeg
     imageSize img `shouldBe` size
     quadrants img `shouldBe` colours
-    Right resized <- resizeImage IFJpeg 261120 img Nothing
+    Right resized <- resizeImage IFJpeg 261120 img CPNone
     "Exif" `B.isInfixOf` LB.toStrict resized `shouldBe` False
   Right (img, _) <- decodeResizable $ withExif True 1000 6 jpeg
   quadrants img `shouldBe` [red, green, blue, white]
@@ -259,12 +259,12 @@ testJpegOrientation = do
 testPngDecoding :: IO ()
 testPngDecoding = do
   transparent <- B.readFile "tests/fixtures/logo-large-rgba.png"
-  Right (img@(ImageRGBA8 rgba), Nothing) <- decodeResizable transparent
+  Right (img@(ImageRGBA8 rgba), CPNone) <- decodeResizable transparent
   Right reference <- pure $ decodeImage transparent
   imageData rgba `shouldBe` imageData (convertRGBA8 reference)
   IFPng <- pure $ imageFormat img
   opaque <- B.readFile "tests/fixtures/preview-issue1.png"
-  Right (ImageRGB8 rgb, Nothing) <- decodeResizable opaque
+  Right (ImageRGB8 rgb, CPNone) <- decodeResizable opaque
   Right reference' <- pure $ decodeImage opaque
   imageData rgb `shouldBe` imageData (convertRGB8 reference')
 
@@ -351,9 +351,9 @@ testJpegProfile = do
   jpeg <- encodeRGB 90 Nothing gradient
   let (start, rest) = B.splitAt 100 p3Profile
   Right (img, profile) <- decodeResizable $ withIccProfile [iccChunk 2 2 rest, iccChunk 1 2 start] jpeg
-  profile `shouldBe` Just displayP3
+  profile `shouldBe` CPDisplayP3
   Right (_, profile') <- decodeResizable $ withIccProfile [iccChunk 1 1 $ iccProfile "RGB " $ 33759 + 2 : drop 1 p3Primaries] jpeg
-  profile' `shouldBe` Just displayP3
+  profile' `shouldBe` CPDisplayP3
   Right jpegData <- resizeImage IFJpeg 261120 img profile
   LB.toStrict jpegData `shouldSatisfy` (displayP3 `B.isInfixOf`)
   Right pngData <- resizeImage IFPng 261120 img profile
@@ -361,10 +361,9 @@ testJpegProfile = do
 
 testPngProfile :: IO ()
 testPngProfile = do
-  displayP3 <- B.readFile displayP3File
   let png = pngWithIccProfile p3Profile $ LB.toStrict $ encodePng transparentGradient
   Right (img, profile) <- decodeResizable png
-  profile `shouldBe` Just displayP3
+  profile `shouldBe` CPDisplayP3
   forM_ [IFJpeg, IFPng] $ \format -> do
     Right resized <- resizeImage format 261120 img profile
     resizedProfile resized `shouldReturn` profile
@@ -375,11 +374,11 @@ testPngProfile = do
 testProfileDropped :: IO ()
 testProfileDropped = do
   jpeg <- encodeRGB 90 Nothing gradient
-  Right (img, Nothing) <- decodeResizable jpeg
-  Right without <- resizeImage IFJpeg 261120 img Nothing
+  Right (img, CPNone) <- decodeResizable jpeg
+  Right without <- resizeImage IFJpeg 261120 img CPNone
   forM_ profiles $ \profile -> do
     Right (img', profile') <- decodeResizable $ withIccProfile [iccChunk 1 1 profile] jpeg
-    profile' `shouldBe` Nothing
+    profile' `shouldBe` CPNone
     resizeImage IFJpeg 261120 img' profile' `shouldReturn` Right without
   where
     profiles =
@@ -394,17 +393,16 @@ testProfileDropped = do
 
 testProfileAboveLimit :: IO ()
 testProfileAboveLimit = do
-  displayP3 <- B.readFile displayP3File
   let img = ImageRGB8 gradient
   forM_ [IFJpeg, IFPng] $ \format -> do
-    Right without <- resizeImage format 4799 img Nothing
-    resizeImage format 4799 img (Just displayP3) `shouldReturn` Right without
-    Right kept <- resizeImage format 4800 img $ Just displayP3
-    resizedProfile kept `shouldReturn` Just displayP3
-  Right uriWithout <- resizeImageDataUri 6399 img Nothing
-  resizeImageDataUri 6399 img (Just displayP3) `shouldReturn` Right uriWithout
-  Right uri <- resizeImageDataUri 6400 img $ Just displayP3
-  uriProfile uri `shouldReturn` Just displayP3
+    Right without <- resizeImage format 4799 img CPNone
+    resizeImage format 4799 img CPDisplayP3 `shouldReturn` Right without
+    Right kept <- resizeImage format 4800 img CPDisplayP3
+    resizedProfile kept `shouldReturn` CPDisplayP3
+  Right uriWithout <- resizeImageDataUri 6399 img CPNone
+  resizeImageDataUri 6399 img CPDisplayP3 `shouldReturn` Right uriWithout
+  Right uri <- resizeImageDataUri 6400 img CPDisplayP3
+  uriProfile uri `shouldReturn` CPDisplayP3
 
 testJpegProfileInconsistent :: IO ()
 testJpegProfileInconsistent = do
@@ -420,7 +418,7 @@ testJpegProfileInconsistent = do
     ]
     $ \chunks -> do
       Right (_, profile) <- decodeResizable $ withIccProfile chunks jpeg
-      profile `shouldBe` Nothing
+      profile `shouldBe` CPNone
 
 gradient :: Image PixelRGB8
 gradient = generateImage (\x y -> PixelRGB8 (fromIntegral $ x * 4) (fromIntegral $ y * 5) 128) 64 48
@@ -444,11 +442,11 @@ iccProfile colourSpace primaries = header <> bigEndian 4 3 <> B.concat entries <
     entries = [sig <> bigEndian 4 (168 + 20 * k) <> bigEndian 4 20 | (k, sig) <- zip [0 ..] ["rXYZ", "gXYZ", "bXYZ"]]
     tags = ["XYZ \0\0\0\0" <> B.concat (map (bigEndian 4) $ take 3 $ drop (3 * k) primaries) | k <- [0 .. 2]]
 
-resizedProfile :: LB.ByteString -> IO (Maybe B.ByteString)
-resizedProfile = fmap (either (const Nothing) snd) . decodeResizable . LB.toStrict
+resizedProfile :: LB.ByteString -> IO ColourProfile
+resizedProfile = fmap (either (const CPNone) snd) . decodeResizable . LB.toStrict
 
-uriProfile :: LB.ByteString -> IO (Maybe B.ByteString)
-uriProfile = either (const $ pure Nothing) resizedProfile . LB64.decode . LB.drop 1 . LB.dropWhile (/= ',')
+uriProfile :: LB.ByteString -> IO ColourProfile
+uriProfile = either (const $ pure CPNone) resizedProfile . LB64.decode . LB.drop 1 . LB.dropWhile (/= ',')
 
 baselineJpeg :: Image PixelRGB8 -> B.ByteString
 baselineJpeg = LB.toStrict . encodeJpegAtQuality 90 . convertImage

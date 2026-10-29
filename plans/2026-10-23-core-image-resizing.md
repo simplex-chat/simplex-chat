@@ -6,7 +6,7 @@ JPEG input is decoded by mozjpeg at the smallest scale that covers the display s
 The output has one fixed Display P3 colour profile when the input profile describes Display P3 and the fixed profile is at most a tenth of the size limit, and no profile otherwise.
 The core functions are called by the apps in place of platform code, wrapped in both bot libraries and used for `/img` and `/imgf` previews; mozjpeg and libspng are compiled by cabal in every build.
 
-References are to branch `ab/resize-image` at `fc18c0912`, based on master `ec8884f46`. Haskell paths without a directory are in `src/Simplex/Chat/`.
+References are to branch `ab/resize-image` at the commit of this plan, based on master `ec8884f46`. Haskell paths without a directory are in `src/Simplex/Chat/`.
 
 ## Image processing decisions
 
@@ -53,13 +53,13 @@ Decisions of 27 Oct, after the second review:
 ## Decisions
 
 Decoding, `Image.hs`:
-- `decodeResizable bytes`: the image for resizing and the output colour profile of D25, `Nothing` when it has none; the image at the display size for JPEG, at full size for PNG; `Left` for other formats.
+- `decodeResizable bytes`: the image for resizing and its `ColourProfile` of D25, `CPDisplayP3` or `CPNone`; the image at the display size for JPEG, at full size for PNG; `Left` for other formats.
 - JPEG, input starting `FF D8`, decoded by mozjpeg:
   1. `readJpegHeader`; `Left` for:
      - a side above 65500
      - a precision other than 8
      - a lossless JPEG
-  2. target size: both sides halved, each rounded by `scaledSide` (`:394-395`), while a side exceeds 4320; `Left` when a side is below 2 before a halving
+  2. target size: both sides halved, each rounded by `scaledSide` (`:398-399`), while a side exceeds 4320; `Left` when a side is below 2 before a halving
   3. scale: the smallest of `Full`, `Half`, `Quarter` and `Eighth` whose rounded-up sides are at least the target
   4. `decodeJpeg` with:
      - `maxPixels`: 2^28; `Left` above it, before the output is allocated
@@ -119,19 +119,19 @@ Decoding, `Image.hs`:
 
   - output: upright pixels without EXIF
 
-- Output colour profile (D25), `displayP3Profile` of the input ICC profile of either format, forced with `$!` in `decodeResizable`, so that it holds no reference to the input:
+- `ColourProfile` (D25), `colourProfile` of the input ICC profile of either format, `CPNone` without one, forced with `$!` in `decodeResizable`, so that it holds no reference to the input:
   - header: data colour space `RGB ` at offset 16, PCS `XYZ ` at offset 20
   - tag table at offset 128: a big-endian count, then entries of signature, offset and size; the table inside the profile
   - `rXYZ`, `gXYZ` and `bXYZ`: the first entry of each signature; a size of at least 20, the tag inside the profile, type `XYZ `, 4 reserved bytes, 3 s15Fixed16 values
-  - Display P3: all 9 values within 2/65536 of those of `displayP3`; the result is `displayP3`
-  - anything malformed, missing or different: `Nothing`
+  - Display P3: all 9 values within 2/65536 of those of `displayP3`; the result is `CPDisplayP3`
+  - anything malformed, missing or different: `CPNone`
   - `displayP3`: `profiles/DisplayP3-v4.icc` of Compact-ICC-Profiles at `bdd84663`, 480 bytes, CC0 1.0; its primaries are those of Display P3 (D65 white, Bradford-adapted to D50) within 1/65536
 
 Resizing, `Image.hs`:
-- `resizeImage format maxSize image profile`: a JPEG or PNG encoding of at most `maxSize` bytes.
+- `resizeImage format maxSize image profile`: a JPEG or PNG encoding of at most `maxSize` bytes; `profile` a `ColourProfile`.
 - `resizeImageDataUri maxSize image profile`: a data URI of at most `maxSize` characters.
 - Colour profile (D25), `keptProfile`:
-  - written by the encoder when it is not empty and its length in output units is at most `maxSize div 10`
+  - `displayP3`, written by the encoder for `CPDisplayP3` when its length in output units is at most `maxSize div 10`
   - output units: bytes for image data; base64 characters, `4·⌈n/3⌉` for n bytes, for a data URI
   - JPEG: `encodeRGB`, APP2 segments after APP0
   - PNG: `encodeSmallerPng`, an iCCP chunk named "ICC Profile", in both encodings
@@ -459,8 +459,9 @@ Branch `ep/stb-submodule` at `3e53b11`, on the Hackage release 0.1.0.0 (`917cd53
 
 Core:
 - `Image.hs`, new:
-  - exports (`:9-19`):
+  - exports (`:9-20`):
     - `ImageFormat (IFJpeg, IFPng)`
+    - `ColourProfile (CPNone, CPDisplayP3)`
     - `imageFormat`
     - `decodeResizable`
     - `resizeImage`
@@ -468,49 +469,50 @@ Core:
     - `maxDecodeMemoryMB`, also used by `Mobile/File.hs` and `MobileTests`
     - `scaleRGB8`
     - `scaleRGBA8`
-  - `imageFormat` (`:45-56`)
-  - `decodeResizable` (`:58-66`): `decodeDisplayJpeg` for input starting `FF D8`; `Spng.decodePng` with ``maxDecodeMemoryMB `div` 2`` for input starting with the PNG signature; otherwise `Left`; then `displayP3Profile` of the input profile, forced with `$!` (`:61`)
-  - `decodeDisplayJpeg` (`:68-74`): `readJpegHeader`, `displaySize`, `jpegScale`, `decodeJpeg`, `resizeToSize`, `orientImage` with `exifOrientation`, and `jpegIccProfile`; the image and the input profile, as from `Spng.decodePng`; `segments` (`:74`), the one walk of `jpegSegments`, for `exifOrientation` and `jpegIccProfile`
-  - `displaySize` (`:76-82`): the target size and the number of halvings, rounded by `scaledSide`
-  - `jpegScale` (`:84-89`): `Full`, `Half`, `Quarter`, `Eighth` for 0, 1, 2, and 3 or more halvings
-  - `resizeToSize` (`:91-94`): `convertRGB8` and `STBIR.resize` when the decoded size differs from the target
-  - `exifOrientation` (`:96-118`): the orientation value of IFD0 from the segments, 1 when absent or malformed
-  - `exifTiff` (`:120-121`): the TIFF data of the first APP1 `Exif` segment
-  - `jpegIccProfile` (`:123-133`): the APP2 `ICC_PROFILE` segments (`iccSegments`), checked, ordered and concatenated
-  - `jpegSegments` (`:135-141`): the marker and the data of each segment after SOI and before the first SOS; the list ends at a byte other than `FF`, at fewer than 4 bytes or at SOS
-  - `orientImage` (`:143-155`): the 8 transforms with `generateImage`, applied with `dynamicPixelMap`
-  - `displayP3Profile` (`:157-161`): `displayP3` when the 9 primaries from `iccPrimaries` are within 2 of those of `displayP3`
-  - `iccPrimaries` (`:163-185`): the header check; the tag table as one `slice`; `tagEntry`, the first entry of a signature, walked without a list; `colorant`, the size, the tag `slice`, the type and the 3 `s15Fixed16` values; numbers as `Integer`, `slice` bounds checked against the profile length
-  - `displayP3` (`:187-188`): `embedFile "src/Simplex/Chat/Image/DisplayP3-v4.icc"`, as `Operators.hs:70` embeds `PRIVACY.md`
-  - `ImageOutput` (`:190`): `ImageBytes`, `ImageDataUri`
-  - `resizeImage` (`:192-193`)
-  - `resizeImageDataUri` (`:195-196`)
-  - `fitImage` (`:198-218`): the size bound; the largest size from `displaySize`; the output, the quality, bpp0 and `outputLength` by `ImageOutput`; `keptProfile` (`:206`); `fitSize`; the quality bisection at the largest size below `minFill`; JPEG with `encodeRGB`, the trial at the largest size from `largestRGB` (`scale`, `:211`), shared with the bisection; PNG with `encodeSmallerPng` of `scaleRGBA8` applied once to the image
-  - `fitSize` (`:220-258`): the size search of D4
-  - `minFill = 0.97` (`:260-261`)
-  - `imageDoesNotFit` (`:263-264`)
-  - `bisect` (`:266-277`): the JPEG quality bisection, over `Int`
-  - `encodeSmallerPng` (`:279-282`): `Spng.encodePng` at level 9 without and with row filters, with the profile, the shorter output; `Left` raised as an exception, as `encodeRGB` raises its errors
-  - `maxImageSide = 16384` (`:284-285`)
-  - `maxDisplaySide = 4320` (`:287-288`)
-  - `maxJpegPixels = 2 ^ 28` (`:290-291`)
-  - `maxDecodeMemoryMB` (`:293-298`), 512 or 1024 by `mobileBuild`
-  - `hasSideAbove` (`:300-301`)
-  - `hasSize` (`:303-304`)
-  - `scaleRGB8` (`:306-311`)
-  - `scaleRGBA8` (`:313-321`): the premultiplied image bound once, shared by the returned function
-  - `catmullRom` (`:323-326`): `STBIR.resize` with Catmull-Rom and the given flags
-  - `premultiply` (`:328-331`)
-  - `unpremultiply` (`:333-338`)
-  - `sharpen` (`:340-365`): the ring `rows` of 5 rows of `Float`; `blurRow`, the horizontal pass of one row into its slot `rowStart`; rows 0 and 1 first, then row y + 2 before output row y; the vertical pass from the ring and `unsharp` into the output
-  - `convolve` (`:367-373`): the sum of the weighted samples at the 5 offsets, in `Double`, in order; monadic, for the samples and for the ring
-  - `sharpenOffsets` (`:375-378`)
-  - `sharpenWeights` (`:380-383`)
-  - `sharpenRadius` (`:385-386`)
-  - `sharpenAmount = 0.5` (`:388-389`)
-  - `sharpenSigma = 0.6` (`:391-392`)
-  - `scaledSide` (`:394-395`)
-  - `toDataUri` (`:397-403`), with the approved comment at `:401`
+  - `ColourProfile` (`:46-47`): `CPNone`, `CPDisplayP3`; `Eq`, `Show`
+  - `imageFormat` (`:49-60`)
+  - `decodeResizable` (`:62-70`): `decodeDisplayJpeg` for input starting `FF D8`; `Spng.decodePng` with ``maxDecodeMemoryMB `div` 2`` for input starting with the PNG signature; otherwise `Left`; then `colourProfile` of the input profile, `CPNone` without one, forced with `$!` (`:65`)
+  - `decodeDisplayJpeg` (`:72-78`): `readJpegHeader`, `displaySize`, `jpegScale`, `decodeJpeg`, `resizeToSize`, `orientImage` with `exifOrientation`, and `jpegIccProfile`; the image and the input profile, as from `Spng.decodePng`; `segments` (`:78`), the one walk of `jpegSegments`, for `exifOrientation` and `jpegIccProfile`
+  - `displaySize` (`:80-86`): the target size and the number of halvings, rounded by `scaledSide`
+  - `jpegScale` (`:88-93`): `Full`, `Half`, `Quarter`, `Eighth` for 0, 1, 2, and 3 or more halvings
+  - `resizeToSize` (`:95-98`): `convertRGB8` and `STBIR.resize` when the decoded size differs from the target
+  - `exifOrientation` (`:100-122`): the orientation value of IFD0 from the segments, 1 when absent or malformed
+  - `exifTiff` (`:124-125`): the TIFF data of the first APP1 `Exif` segment
+  - `jpegIccProfile` (`:127-137`): the APP2 `ICC_PROFILE` segments (`iccSegments`), checked, ordered and concatenated
+  - `jpegSegments` (`:139-145`): the marker and the data of each segment after SOI and before the first SOS; the list ends at a byte other than `FF`, at fewer than 4 bytes or at SOS
+  - `orientImage` (`:147-159`): the 8 transforms with `generateImage`, applied with `dynamicPixelMap`
+  - `colourProfile` (`:161-165`): `CPDisplayP3` when the 9 primaries from `iccPrimaries` are within 2 of those of `displayP3`, otherwise `CPNone`
+  - `iccPrimaries` (`:167-189`): the header check; the tag table as one `slice`; `tagEntry`, the first entry of a signature, walked without a list; `colorant`, the size, the tag `slice`, the type and the 3 `s15Fixed16` values; numbers as `Integer`, `slice` bounds checked against the profile length
+  - `displayP3` (`:191-192`): `embedFile "src/Simplex/Chat/Image/DisplayP3-v4.icc"`, as `Operators.hs:70` embeds `PRIVACY.md`
+  - `ImageOutput` (`:194`): `ImageBytes`, `ImageDataUri`
+  - `resizeImage` (`:196-197`)
+  - `resizeImageDataUri` (`:199-200`)
+  - `fitImage` (`:202-222`): the size bound; the largest size from `displaySize`; the output, the quality, bpp0 and `outputLength` by `ImageOutput`; `keptProfile` (`:210`), `displayP3` for `CPDisplayP3` within a tenth of the limit; `fitSize`; the quality bisection at the largest size below `minFill`; JPEG with `encodeRGB`, the trial at the largest size from `largestRGB` (`scale`, `:215`), shared with the bisection; PNG with `encodeSmallerPng` of `scaleRGBA8` applied once to the image
+  - `fitSize` (`:224-262`): the size search of D4
+  - `minFill = 0.97` (`:264-265`)
+  - `imageDoesNotFit` (`:267-268`)
+  - `bisect` (`:270-281`): the JPEG quality bisection, over `Int`
+  - `encodeSmallerPng` (`:283-286`): `Spng.encodePng` at level 9 without and with row filters, with `keptProfile`, the shorter output; `Left` raised as an exception, as `encodeRGB` raises its errors
+  - `maxImageSide = 16384` (`:288-289`)
+  - `maxDisplaySide = 4320` (`:291-292`)
+  - `maxJpegPixels = 2 ^ 28` (`:294-295`)
+  - `maxDecodeMemoryMB` (`:297-302`), 512 or 1024 by `mobileBuild`
+  - `hasSideAbove` (`:304-305`)
+  - `hasSize` (`:307-308`)
+  - `scaleRGB8` (`:310-315`)
+  - `scaleRGBA8` (`:317-325`): the premultiplied image bound once, shared by the returned function
+  - `catmullRom` (`:327-330`): `STBIR.resize` with Catmull-Rom and the given flags
+  - `premultiply` (`:332-335`)
+  - `unpremultiply` (`:337-342`)
+  - `sharpen` (`:344-369`): the ring `rows` of 5 rows of `Float`; `blurRow`, the horizontal pass of one row into its slot `rowStart`; rows 0 and 1 first, then row y + 2 before output row y; the vertical pass from the ring and `unsharp` into the output
+  - `convolve` (`:371-377`): the sum of the weighted samples at the 5 offsets, in `Double`, in order; monadic, for the samples and for the ring
+  - `sharpenOffsets` (`:379-382`)
+  - `sharpenWeights` (`:384-387`)
+  - `sharpenRadius` (`:389-390`)
+  - `sharpenAmount = 0.5` (`:392-393`)
+  - `sharpenSigma = 0.6` (`:395-396`)
+  - `scaledSide` (`:398-399`)
+  - `toDataUri` (`:401-407`), with the approved comment at `:405`
 - `src/Simplex/Chat/Image/DisplayP3-v4.icc`, new: the profile of D25, the upstream file unchanged (git blob `4ee40fb5`)
 - `Mobile/File.hs`:
   - exported at `:13-18`:
@@ -528,7 +530,7 @@ Core:
   - `cResizeImage` (`:204-207`):
     - the read action
     - `decodeResizable`, in place of `decodeImage`
-    - the resize function applied to the image and its profile
+    - the resize function applied to the image and its `ColourProfile`
     - `runCatchExceptT`
     - `newCStringFromLazyBS`
 - `Mobile.hs:167-177`: `foreign export ccall` of the six functions.
@@ -753,8 +755,8 @@ License notices, `docs/dependencies/`:
 ## Tests
 
 `tests/ImageTests.hs`, group "Image resize" (`tests/Test.hs:98`):
-- Same aspect ratio, in every comparison below: `|w·h' − h·w'| ≤ w' + h'` (`:459-460`).
-- Without a colour profile, `Nothing`, in every `resizeImage` and `resizeImageDataUri` call below.
+- Same aspect ratio, in every comparison below: `|w·h' − h·w'| ≤ w' + h'` (`:457-458`).
+- Without a colour profile, `CPNone`, in every `resizeImage` and `resizeImageDataUri` call below.
 - data URI (`:32-35`), limit 14000; each result is decoded and compared by aspect ratio with the input:
   - `test.jpg` (1280×720): `data:image/jpg;base64,`
   - `logo-large-rgba.png` (1630×466, transparent pixels): `data:image/png;base64,`
@@ -830,23 +832,23 @@ License notices, `docs/dependencies/`:
   - research code (`:321-327`): `scaleRGB8` of `preview-issue1.png` to 400×200 equals `preview-issue1-400x200-sharpened.png` pixel for pixel; the fixture is the output of the research code (`pvsf`, resize `catmullrom/g/0.5@0.6/single`) for the same decoded pixels
   - the same size (`:329-334`): `scaleRGB8` and `scaleRGBA8` of 64×48 images to 64×48 return the input samples
   - transparency (`:336-346`): a 64×64 opaque red disc on transparent pixels alternately green and blue, `scaleRGBA8` to 40×40: every pixel with alpha above 0 is red; some pixels have alpha below 255
-- colour profiles (`:62-67`, `:348-451`), the 64×48 `gradient` and `transparentGradient`; `displayP3`, the bytes of `src/Simplex/Chat/Image/DisplayP3-v4.icc` read by the test (`displayP3File`); the profile of an output read back by `decodeResizable`:
+- colour profiles (`:62-67`, `:348-449`), the 64×48 `gradient` and `transparentGradient`; the `ColourProfile` of an output read back by `decodeResizable` (`resizedProfile`, `uriProfile`):
   - fixtures built in the test:
-    - ICC (`:434-445`): `iccProfile`, a 228-byte profile with a given colour space, PCS `XYZ ` and the tags `rXYZ`, `gXYZ` and `bXYZ` of given primaries; `p3Profile`, with the values of Apple's Display P3 profile (`p3Primaries`), bY 1/65536 from `displayP3`
+    - ICC (`:432-443`): `iccProfile`, a 228-byte profile with a given colour space, PCS `XYZ ` and the tags `rXYZ`, `gXYZ` and `bXYZ` of given primaries; `p3Profile`, with the values of Apple's Display P3 profile (`p3Primaries`), bY 1/65536 from `displayP3`
     - JPEG (`:312-316`): APP2 segments inserted after SOI by `withIccProfile`, each `ICC_PROFILE\0`, the sequence number, the segment count and the chunk (`iccChunk`)
     - PNG (`:295-310`): an iCCP chunk named `test` inserted after IHDR by `pngWithIccProfile`, the profile in a stored zlib block with its Adler-32 (`zlibStored`), the chunk CRC by `crc32` (`pngChunk`)
-  - Display P3 JPEG (`:348-360`): `p3Profile` in two segments, the second first: decoded as `displayP3`; with rX 2/65536 above: `displayP3`; the JPEG image data with limit 261120 contains `displayP3`; the JPEG and PNG image data with limit 261120 have the profile `displayP3`
-  - Display P3 PNG (`:362-373`): decoded as `displayP3`; the JPEG and PNG image data with limit 261120 and the PNG data URI with limit 14000 have the profile `displayP3`
-  - other profiles (`:375-393`), in one JPEG segment: decoded without a profile; the JPEG data with limit 261120 equal to that of the JPEG without a profile, which is also decoded without one:
+  - Display P3 JPEG (`:348-360`): `p3Profile` in two segments, the second first: decoded as `CPDisplayP3`; with rX 2/65536 above: `CPDisplayP3`; the JPEG image data with limit 261120 contains the bytes of `src/Simplex/Chat/Image/DisplayP3-v4.icc`, read by the test (`displayP3File`); the JPEG and PNG image data with limit 261120 read back as `CPDisplayP3`
+  - Display P3 PNG (`:362-372`): decoded as `CPDisplayP3`; the JPEG and PNG image data with limit 261120 and the PNG data URI with limit 14000 read back as `CPDisplayP3`
+  - other profiles (`:374-392`), in one JPEG segment: decoded as `CPNone`; the JPEG data with limit 261120 equal to that of the JPEG without a profile, which is also decoded as `CPNone`:
     - sRGB primaries
     - rX 3/65536 above Display P3
     - colour space `GRAY` with the Display P3 tags
     - tag count 9: the table ends past the profile
     - `bXYZ` offset 209: the tag ends past the profile
-  - above a tenth of the limit (`:395-407`), `displayP3` of 480 bytes:
-    - image data, JPEG and PNG: limit 4799 gives the output without a profile, byte for byte; limit 4800 keeps it
-    - data URI: limit 6399 gives the data URI without a profile (640 base64 characters); limit 6400 keeps it
-  - inconsistent JPEG profiles (`:409-423`), `p3Profile` split after 100 bytes: one of two segments; a repeated sequence number; segment counts 2 and 3; sequence number 0; an empty chunk; a 13-byte segment: decoded without a profile
+  - above a tenth of the limit (`:394-405`), `CPDisplayP3`, whose `displayP3` has 480 bytes:
+    - image data, JPEG and PNG: limit 4799 gives the output of `CPNone`, byte for byte; limit 4800 keeps the profile
+    - data URI: limit 6399 gives the data URI of `CPNone` (640 base64 characters); limit 6400 keeps the profile
+  - inconsistent JPEG profiles (`:407-421`), `p3Profile` split after 100 bytes: one of two segments; a repeated sequence number; segment counts 2 and 3; sequence number 0; an empty chunk; a 13-byte segment: decoded as `CPNone`
 
 `tests/MobileTests.hs`, "Images" (`:103-110`), with buffers from `mallocBytes`:
 - `cChatResizeImageUri` on `test.jpg`, limit 14000 (`:368-375`): `data:image/jpg;base64,`, at most 14000 characters; on `"not an image"`: `""`.
