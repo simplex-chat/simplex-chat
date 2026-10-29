@@ -10,7 +10,7 @@ import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, setRates,
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (reservedNamesCall)
 import Bots.StoreService.ConfigTests (termsVersion)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, bumpedTerms, commitmentOf, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyA, keyB, listName, listOnChain, malformedTerms, olderTerms, orderTime, otherCommunityTerms, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, termsChanged, withOrdersOn, yearsDuration)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, bumpedTerms, commitmentOf, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyA, keyB, listName, listOnChain, malformedTerms, olderTerms, orderTime, otherCommunityTerms, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, termsChanged, threeYears, withOrdersOn, yearsDuration)
 import Bots.StoreService.NamesOwnerTests (findBody, postFind)
 import Bots.StoreService.NamesStoreTests (at, order, ownerA, placePaid, reg, t0, write)
 import Bots.StoreService.WebTests (StubCall (..), capturingStderr, StubState (..), jsonObject, rcv, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores)
@@ -44,7 +44,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (signRecoverable)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
-import StoreService.Config (BTCPayConfig (..), NamesConfig (..), ServiceConfig (..))
+import StoreService.Config (BTCPayConfig (..), ServiceConfig (..))
 import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Balances (RefundRefusal (..), recordRefund)
 import StoreService.Names.Orders (OrdersEnv (..))
@@ -444,7 +444,7 @@ testSpendTermsChanged = withSpend $ \ctx0 -> serveSpend (configured (listName "d
     nrAgreedTerms <$> invoiceRegistration listing (invoiceIdOf v) `shouldReturn` communityTerms termsVersion
 
 testSpendCommunityYears :: IO ()
-testSpendCommunityYears = withSpend $ \ctx0 -> serveSpend (configured ((\c -> c {nYears = 3}) . listName "dynamis") ctx0) $ \ctx -> do
+testSpendCommunityYears = withSpend $ \ctx0 -> serveSpend (configured (threeYears . listName "dynamis") ctx0) $ \ctx -> do
   listOnChain ctx "dynamis"
   src <- sourceOf ctx "src" 30000
   let community = dynamisOrder {oTerms = communityTerms termsVersion}

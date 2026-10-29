@@ -27,7 +27,7 @@ import Bots.StoreService.NamesContractsTests
     withContracts,
     year,
   )
-import Bots.StoreService.NamesOrdersTests (communityEntry, communityEntryOf)
+import Bots.StoreService.NamesOrdersTests (communityEntry, communityEntryOf, threeYears)
 import Bots.StoreService.NamesProfilesTests (bakeryLink, jpeg, newsLink)
 import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, t0, usable)
 import Bots.StoreService.WebTests (withServiceStore)
@@ -430,7 +430,7 @@ testCommunityWithoutText g = withSearch g id id $ \s@Search {node} -> do
   (snd answer >>= JT.parseMaybe (J.withObject "answer" (J..: "community"))) `shouldBe` Just (communityEntry J.Null)
 
 testCommunityYears :: TVar ChaChaDRG -> IO ()
-testCommunityYears g = withSearch g (\c -> c {nYears = 3}) id $ \s@Search {node} -> do
+testCommunityYears g = withSearch g threeYears id $ \s@Search {node} -> do
   listCommunityName node alice
   available node
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000

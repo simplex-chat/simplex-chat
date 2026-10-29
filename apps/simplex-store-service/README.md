@@ -731,7 +731,7 @@ does not register: the page signs again until the order lapses, and only the fir
 
 A community name is registered for 2 paid years, plus the free days before `[names] term_start`,
 whatever years `[names] years` or its prepaid code gives, since the controller holds a community name
-to 1095 days. A code for more years still registers it for 2.
+to 1095 days.
 
 The name policy keeps the community terms' text on chain, and `termsHash` is its keccak256, so the
 two always match. The service reads the text with `termsText()` and serves it, as plain text, at

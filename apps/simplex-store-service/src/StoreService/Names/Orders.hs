@@ -272,8 +272,8 @@ checkDuration NamesConfig {nTermStart, nTermSlackSeconds} now years duration = d
       expected = max 0 (unixSeconds nTermStart - unixSeconds now)
   when (free < 0 || abs (free - expected) > toInteger nTermSlackSeconds) $ Left ORBadRequest
 
--- | The paid years of an order whose payment covers these years, communityYears when it signed community terms, which
--- 'checkTerms' checks are its name's.
+-- | The years the payment covers, or communityYears for an order signing community terms; 'checkTerms' refuses those terms
+-- for any other name.
 orderYears :: OrderFields -> Int -> Int
 orderYears OrderFields {ofAgreedTerms} = yearsFor (agreedTermsHash ofAgreedTerms)
 

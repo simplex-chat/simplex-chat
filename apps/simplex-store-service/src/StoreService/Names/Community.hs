@@ -49,7 +49,7 @@ communityTermsSuffix = "/community/"
 communityJSON :: NamesConfig -> LabelHash -> Maybe ByteString -> J.Value
 communityJSON cfg lh = maybe J.Null (\h -> J.object ["for" .= communityFor cfg lh, "years" .= communityYears, "terms" .= J.object ["url" .= ("/api/community-terms/" <> hex h), "hash" .= hex h]])
 
--- | A community name is registered for this many paid years, whatever years its code or the configuration gives other names.
+-- | The paid years of a community name, whatever years its code or [names] years gives.
 communityYears :: Int
 communityYears = 2
 

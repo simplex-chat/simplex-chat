@@ -525,7 +525,7 @@ testMoveCommunityYears = withOwnerAs (listName "alicebakers") $ \ctx -> do
   (nrYears &&& nrDuration) <$> stored ctx r `shouldReturn` (5, yearsDuration 5 orderTime)
 
 testMoveCommunityPaidYears :: IO ()
-testMoveCommunityPaidYears = withOwnerAs ((\c -> c {nYears = 3}) . listName "alicebakers") $ \ctx -> do
+testMoveCommunityPaidYears = withOwnerAs (threeYears . listName "alicebakers") $ \ctx -> do
   listOnChain ctx "alicebakers"
   answerFree ctx "alicebakers"
   answerCall (cNode ctx) fakeController threeYearsOf11 $ Returns $ rentPriceAnswer 15000

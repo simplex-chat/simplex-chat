@@ -38,6 +38,7 @@ module Bots.StoreService.NamesOrdersTests
     refusedWith,
     malformedTerms,
     listName,
+    threeYears,
     bakers,
     bumpedTerms,
     newerTerms,
@@ -769,6 +770,9 @@ listName label cfg = cfg {nCommunity = M.insert lh bakers (nCommunity cfg)}
   where
     LabelHash lh = labelHash label
 
+threeYears :: NamesConfig -> NamesConfig
+threeYears cfg = cfg {nYears = 3}
+
 bakers :: Text
 bakers = "bakers and bakeries in Portugal"
 
@@ -982,7 +986,7 @@ testCodeTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis") c
   pcReservedBy <$> readCode ctx issued `shouldReturn` Just rid
 
 testCommunityInvoiceYears :: IO ()
-testCommunityInvoiceYears = withOrders $ \ctx0 -> withSettings ((\c -> c {nYears = 3}) . listName "dynamis") ctx0 $ \ctx -> do
+testCommunityInvoiceYears = withOrders $ \ctx0 -> withSettings (threeYears . listName "dynamis") ctx0 $ \ctx -> do
   listOnChain ctx "dynamis"
   let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000, oTerms = communityTerms termsVersion}
   placeOrder ctx dynamis {oDuration = yearsDuration 3 orderTime} `shouldReturn` refusedWith 400 "bad_request"
