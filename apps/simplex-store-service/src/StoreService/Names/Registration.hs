@@ -83,7 +83,7 @@ resolverDomain edChainId edVerifyingContract = Eip712Domain {edName = "SimplexRe
 policyDomain :: Word64 -> Address -> Eip712Domain
 policyDomain edChainId edVerifyingContract = Eip712Domain {edName = "SimplexNamePolicy", edVersion = "1", edChainId, edVerifyingContract}
 
--- | The owner's acceptance of the community terms for a commitment, relayed to the name policy before the register.
+-- | The owner's acceptance of the terms of the name's kind for a commitment, relayed to the name policy before the register.
 -- Its deadline is the reveal's.
 data TermsAcceptance = TermsAcceptance
   { taTermsHash :: ByteString,
@@ -129,21 +129,28 @@ verifyRegisterIntent domain now RegisterIntent {riRegistration = r@Registration 
   signer <- ExceptT $ recoverAddress riSignature $ registerIntentDigest domain r riNonce riDeadline
   unless (signer == rOwner) $ throwError "intent is not signed by the owner"
 
-acceptanceDigest :: Eip712Domain -> ByteString -> ByteString -> Word64 -> Word64 -> ByteString
-acceptanceDigest domain commitment termsHash nonce deadline =
+acceptanceDigest :: Eip712Domain -> Bool -> ByteString -> ByteString -> Word64 -> Word64 -> ByteString
+acceptanceDigest domain community commitment termsHash nonce deadline =
   hashTypedData
     domain
-    "AcceptBonaFideTerms(bytes32 commitment,bytes32 termsHash,uint256 nonce,uint256 deadline)"
+    ( if community
+        then "AcceptCommunityNameTerms(bytes32 commitment,bytes32 termsHash,uint256 nonce,uint256 deadline)"
+        else "AcceptNameTerms(bytes32 commitment,bytes32 termsHash,uint256 nonce,uint256 deadline)"
+    )
     [bytes32 commitment, bytes32 termsHash, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
 
-verifyAcceptance :: Eip712Domain -> Address -> ByteString -> Word64 -> TermsAcceptance -> IO (Either String ())
-verifyAcceptance domain owner commitment deadline TermsAcceptance {taTermsHash, taNonce, taSignature} = runExceptT $ do
-  signer <- ExceptT $ recoverAddress taSignature $ acceptanceDigest domain commitment taTermsHash taNonce deadline
+verifyAcceptance :: Eip712Domain -> Bool -> Address -> ByteString -> Word64 -> TermsAcceptance -> IO (Either String ())
+verifyAcceptance domain community owner commitment deadline TermsAcceptance {taTermsHash, taNonce, taSignature} = runExceptT $ do
+  signer <- ExceptT $ recoverAddress taSignature $ acceptanceDigest domain community commitment taTermsHash taNonce deadline
   unless (signer == owner) $ throwError "acceptance is not signed by the owner"
 
-acceptCalldata :: ByteString -> Address -> Word64 -> TermsAcceptance -> ByteString
-acceptCalldata commitment owner deadline TermsAcceptance {taTermsHash, taNonce, taSignature} =
-  selector "commitUnderBonaFideCommunityTermsWithSig(bytes32,bytes32,address,uint256,uint256,bytes)"
+acceptCalldata :: Bool -> ByteString -> Address -> Word64 -> TermsAcceptance -> ByteString
+acceptCalldata community commitment owner deadline TermsAcceptance {taTermsHash, taNonce, taSignature} =
+  selector
+    ( if community
+        then "commitUnderCommunityNameTermsWithSig(bytes32,bytes32,address,uint256,uint256,bytes)"
+        else "commitUnderNameTermsWithSig(bytes32,bytes32,address,uint256,uint256,bytes)"
+    )
     <> abiTuple
       [ Static commitment,
         Static taTermsHash,

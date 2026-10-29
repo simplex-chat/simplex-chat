@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Each registration from queued to registered, taken or failed: its commit, the wait for the page's reveal, a community name's acceptance relay, and its register;
+-- | Each registration from queued to registered, taken or failed: its commit, the wait for the page's reveal, its acceptance relay, and its register;
 -- and Try again, which queues a failed one again. A step starts from the stored registration, the sender's transactions in flight
 -- and the chain, so a restart resumes any phase.
 module StoreService.Names.Worker
@@ -41,7 +41,7 @@ import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Log (logError, logInfo, logWarn, safely, safelyWith)
 import StoreService.Names.Chain (Block (..), ChainClient, ChainError (..), TxHash, blockAt)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, releaseCode, reserveCode)
-import StoreService.Names.Contracts (CommitmentAges (..), acceptedTerms, commitmentAges, commitmentTime, controllerAvailable, namePolicy, sponsorNonce)
+import StoreService.Names.Contracts (CommitmentAges (..), acceptedTerms, bonaFideName, commitmentAges, commitmentTime, controllerAvailable, namePolicy, sponsorNonce)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), WriteRefusal (..), confirmLanded, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, verifyAcceptance, verifyRegisterIntent)
@@ -278,29 +278,34 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAf
     unlapsed = all ((now <=) . secondsTime . toInteger) nrRevealBefore
 
 -- | The relay of the reveal's acceptance to the name policy, sent without waiting for revealAfter; Nothing once the policy
--- stores that acceptance. One signed for another policy, before a setNamePolicy, clears the reveal for the page to sign
--- again; the relay's dry run's revert is judged as a register's is.
+-- stores that acceptance. One signed for another policy, before a setNamePolicy, or for the other kind of terms, clears the
+-- reveal for the page to sign again; the relay's dry run's revert is judged as a register's is, unless the policy holds the
+-- acceptance, which another sent first.
 relayAcceptance :: Worker -> UTCTime -> NameRegistration -> Word64 -> TermsAcceptance -> IO (Maybe Next)
-relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesConfig {nChain = ChainConfig {cChainId}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment} deadline a@TermsAcceptance {taTermsHash} =
+relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesConfig {nChain = ChainConfig {cChainId}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment, nrLabelHash} deadline a@TermsAcceptance {taTermsHash} =
   inFlightTransaction wkSender (TxAccept regId) >>= \case
     Just p -> pure $ Just $ Await p
     Nothing ->
-      runExceptT ((,) <$> ExceptT (namePolicy oeContracts) <*> ExceptT (acceptedTerms oeContracts nrCommitment nrOwner)) >>= \case
+      runExceptT ((,,) <$> ExceptT (namePolicy oeContracts) <*> ExceptT (bonaFideName oeContracts nrLabelHash) <*> ExceptT held) >>= \case
         Left e -> pure $ Just $ failure r e
-        Right (policy, held)
-          | held == taTermsHash -> pure Nothing
-          | otherwise -> Just <$> relay policy
+        Right (policy, listed, accepted)
+          | accepted == taTermsHash -> pure Nothing
+          | otherwise -> Just <$> relay policy listed
   where
-    relay policy =
-      verifyAcceptance (policyDomain cChainId policy) nrOwner nrCommitment deadline a >>= \case
+    held = acceptedTerms oeContracts nrCommitment nrOwner
+    relay policy listed =
+      verifyAcceptance (policyDomain cChainId policy) listed nrOwner nrCommitment deadline a >>= \case
         Left refusal -> do
           logWarn $ "names worker: registration " <> rid <> ": its stored acceptance is refused, " <> T.pack refusal
           save w now r {nrReveal = Nothing}
         Right () ->
-          submitTransaction wkSender (TxAccept regId) policy (acceptCalldata nrCommitment nrOwner deadline a) >>= \case
+          submitTransaction wkSender (TxAccept regId) policy (acceptCalldata listed nrCommitment nrOwner deadline a) >>= \case
             Right p -> pure $ Await p
             Left SEInFlight -> pure Again
-            Left (SEChain (ChainReverted reason)) -> judge w now r reason
+            Left (SEChain (ChainReverted reason)) ->
+              held >>= \case
+                Right accepted | accepted == taTermsHash -> pure Again
+                _ -> judge w now r reason
             Left e -> pure $ failure r e
 
 -- | The stored intent is checked before its dry run, whose revert decides at once; no label turn is held across the send.

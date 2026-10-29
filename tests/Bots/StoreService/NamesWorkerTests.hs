@@ -5,7 +5,6 @@
 
 module Bots.StoreService.NamesWorkerTests (namesWorkerTests) where
 
-import Bots.StoreService.ConfigTests (termsVersion)
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, noncesCall, registrarOf, unhex)
 import Bots.StoreService.NamesOrdersTests
@@ -21,7 +20,7 @@ import Control.Concurrent.Async (wait, withAsync)
 import qualified Control.Exception as E
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
-import Control.Monad (forM_, replicateM, replicateM_, void)
+import Control.Monad (forM_, replicateM, replicateM_, void, when)
 import Data.ByteString (ByteString)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
@@ -95,11 +94,12 @@ workerTests = describe "StoreService names: worker" $ do
     it "ends a register mined with status 0 taken while the name is not available, releasing a code" testMinedRevertTaken
     it "writes failed only once no register can still be mined, and registered when the owner holds the name" testFailedOnlySettled
   describe "terms acceptance" $ do
-    it "relays the reveal's acceptance to the name policy as soon as it is stored, and registers once the policy holds it" testAcceptanceRelayed
+    it "relays the reveal's acceptance of the terms of the name's kind to the name policy as soon as it is stored, and registers once the policy holds it" testAcceptanceRelayed
     it "relays the acceptance before the wait for revealAfter, then waits for it" testAcceptanceBeforeWait
     it "clears the reveal when the relay's dry run refuses the acceptance for new terms or a used nonce, staying committed" testAcceptanceRefused
+    it "registers, keeping the reveal, when the relay's dry run reverts while the policy holds the acceptance another sent first" testAcceptanceSentFirst
     it "retries the relay while the policy's acceptance for the commitment cannot be read, sending nothing" testAcceptanceUnread
-    it "clears the reveal of an acceptance signed for another policy, sending nothing, for the page to sign again" testAcceptanceOtherPolicy
+    it "clears the reveal of an acceptance signed for another policy or for the other kind of terms, sending nothing, for the page to sign again" testAcceptanceOtherPolicy
     it "judges a relay past the acceptance's deadline as a register past it, failing the order" testAcceptanceExpired
     it "relays no acceptance once the commitment lapsed, so the policy commits nothing again" testAcceptanceLapsed
   describe "lapse" $ do
@@ -515,7 +515,7 @@ testTwoWallets = withWorker $ \w@W {wCtx = ctx} -> do
 
 -- | The order of alicebakery, by owner A, with this commitment.
 aliceFields :: Int -> OrderFields
-aliceFields n = OrderFields {ofLabelHash = labelHash "alicebakery", ofLength = 11, ofDuration = yearsDuration 2 orderTime, ofCommitment = commitmentOf n, ofSealed = "sealed-alicebakery-" <> tshow n, ofAgreedTerms = termsVersion}
+aliceFields n = OrderFields {ofLabelHash = labelHash "alicebakery", ofLength = 11, ofDuration = yearsDuration 2 orderTime, ofCommitment = commitmentOf n, ofSealed = "sealed-alicebakery-" <> tshow n, ofAgreedTerms = plainTerms}
 
 aliceRegistration :: Text -> Int -> NewRegistration
 aliceRegistration rid n = NewRegistration {nrgId = RegistrationId rid, nrgOwner = ownerA, nrgOrder = aliceFields n, nrgYears = 2}
@@ -638,16 +638,16 @@ testInvalidNonce = forM_ ["InvalidNonce()", "TermsNotAccepted(string)"] $ \rever
   (nrPhase x, nrReveal x, nrVersion x, nrRevealBefore x) `shouldBe` (PCommitted, Nothing, nrVersion r + 1, nrRevealBefore r)
   sent w `shouldReturn` []
 
--- | The page's reveal with its acceptance of the policy's terms.
+-- | The page's reveal with its acceptance of the policy's name terms.
 acceptedReveal :: Ctx -> NameRegistration -> IO NameRegistration
-acceptedReveal = acceptedRevealFor fakeNamePolicy
+acceptedReveal = acceptedRevealFor fakeNamePolicy False fakeNameTerms
 
--- | The page's reveal with its acceptance signed for the given policy.
-acceptedRevealFor :: Address -> Ctx -> NameRegistration -> IO NameRegistration
-acceptedRevealFor policy ctx@Ctx {cRandom} r = do
+-- | The page's reveal with its acceptance of these terms signed for the given policy, as community name terms or name terms.
+acceptedRevealFor :: Address -> Bool -> ByteString -> Ctx -> NameRegistration -> IO NameRegistration
+acceptedRevealFor policy community terms ctx@Ctx {cRandom} r = do
   rv <- signedReveal ctx keyA reveal {rvLabel = "alicebakery"} r
-  sig <- either (error . show) id <$> signRecoverable cRandom keyA (acceptanceDigest (policyDomain fakeChainId policy) (nrCommitment r) fakeCommunityTerms 0 (rvDeadline rv))
-  rewrite ctx r (\o -> o {nrReveal = Just rv {rvAcceptance = Just TermsAcceptance {taTermsHash = fakeCommunityTerms, taNonce = 0, taSignature = sig}}})
+  sig <- either (error . show) id <$> signRecoverable cRandom keyA (acceptanceDigest (policyDomain fakeChainId policy) community (nrCommitment r) terms 0 (rvDeadline rv))
+  rewrite ctx r (\o -> o {nrReveal = Just rv {rvAcceptance = Just TermsAcceptance {taTermsHash = terms, taNonce = 0, taSignature = sig}}})
 
 -- | The terms hash the policy holds as accepted for the registration's commitment by its owner.
 answerAccepted :: W -> NameRegistration -> CallAnswer -> IO ()
@@ -655,16 +655,17 @@ answerAccepted W {wCtx = Ctx {cNode}} NameRegistration {nrCommitment, nrOwner} =
   answerCall cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> nrCommitment <> addressWord nrOwner)
 
 testAcceptanceRelayed :: IO ()
-testAcceptanceRelayed = withWorker $ \w@W {wCtx = ctx} -> do
-  r@NameRegistration {nrReveal = Just NameReveal {rvDeadline, rvAcceptance = Just acceptance}} <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
+testAcceptanceRelayed = forM_ [(False, fakeNameTerms, plainTerms), (True, fakeCommunityTerms, communityTerms)] $ \(community, terms, signed) -> withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
+  when community $ listCommunityName cNode $ labelHash "alicebakery"
+  r@NameRegistration {nrReveal = Just NameReveal {rvDeadline, rvAcceptance = Just acceptance}} <- paidIn ctx aliceOrder {oTerms = signed} openPhase >>= acceptedRevealFor fakeNamePolicy community terms ctx
   relay <- steps w r >>= awaiting
   [acceptRaw] <- sent w
-  ((trTo &&& trData) <$> decodeSignedTx acceptRaw) `shouldBe` Right (fakeNamePolicy, acceptCalldata (nrCommitment r) (nrOwner r) rvDeadline acceptance)
+  ((trTo &&& trData) <$> decodeSignedTx acceptRaw) `shouldBe` Right (fakeNamePolicy, acceptCalldata community (nrCommitment r) (nrOwner r) rvDeadline acceptance)
   -- in flight, it is waited for, and nothing else is sent
   steps w r >>= awaiting >>= (`shouldBe` ptHash relay) . ptHash
   stored ctx r `shouldReturn` r
   void $ mineNewest w True
-  answerAccepted w r $ Returns fakeCommunityTerms
+  answerAccepted w r $ Returns terms
   void $ published w r $ steps w r >>= awaiting
   [_, registerRaw] <- sent w
   (trTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor
@@ -677,7 +678,7 @@ testAcceptanceBeforeWait = withWorker $ \w@W {wCtx = ctx} -> do
   [acceptRaw] <- sent w
   (trTo <$> decodeSignedTx acceptRaw) `shouldBe` Right fakeNamePolicy
   void $ mineNewest w True
-  answerAccepted w r $ Returns fakeCommunityTerms
+  answerAccepted w r $ Returns fakeNameTerms
   steps w r >>= waitingUntil >>= (`shouldBe` at (orderSeconds + 60))
   length <$> sent w `shouldReturn` 1
 
@@ -690,6 +691,18 @@ testAcceptanceRefused = forM_ ["TermsMismatch(bytes32,bytes32)", "InvalidNonce()
   (nrPhase x, nrReveal x) `shouldBe` (PCommitted, Nothing)
   sent w `shouldReturn` []
 
+testAcceptanceSentFirst :: IO ()
+testAcceptanceSentFirst = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
+  r@NameRegistration {nrReveal = Just NameReveal {rvDeadline, rvAcceptance = Just acceptance}} <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
+  answerAccepted w r $ Returns fakeNameTerms
+  answerCallOnce cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> nrCommitment r <> addressWord (nrOwner r)) $ Returns $ uint256 (0 :: Int)
+  revertDryRun cNode (acceptCalldata False (nrCommitment r) (nrOwner r) rvDeadline acceptance) $ Just $ selector "InvalidNonce()"
+  void $ steps w r >>= awaiting
+  [registerRaw] <- sent w
+  (trTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor
+  x <- stored ctx r
+  (nrPhase x, nrReveal x) `shouldBe` (PRegistering, nrReveal r)
+
 testAcceptanceUnread :: IO ()
 testAcceptanceUnread = withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
@@ -699,8 +712,8 @@ testAcceptanceUnread = withWorker $ \w@W {wCtx = ctx} -> do
   sent w `shouldReturn` []
 
 testAcceptanceOtherPolicy :: IO ()
-testAcceptanceOtherPolicy = withWorker $ \w@W {wCtx = ctx} -> do
-  r <- paidIn ctx aliceOrder openPhase >>= acceptedRevealFor fakeSponsor ctx
+testAcceptanceOtherPolicy = forM_ [acceptedRevealFor fakeSponsor False fakeNameTerms, acceptedRevealFor fakeNamePolicy True fakeNameTerms] $ \accepted -> withWorker $ \w@W {wCtx = ctx} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= accepted ctx
   published w r (steps w r >>= waitingUntil) `shouldReturn` at (orderSeconds - minAge + maxAge + 1)
   x <- stored ctx r
   (nrPhase x, nrReveal x) `shouldBe` (PCommitted, Nothing)

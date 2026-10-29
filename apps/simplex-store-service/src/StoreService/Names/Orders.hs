@@ -50,6 +50,7 @@ import qualified Data.Aeson.KeyMap as KM
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
+import Data.Functor ((<&>))
 import Data.Int (Int64)
 import Data.Maybe (catMaybes, isJust)
 import Data.Scientific (toBoundedInteger)
@@ -68,8 +69,8 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Log (logError, logWarn)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
-import StoreService.Names.Community (agreedTermsHash, communityJSON, nameCommunityTerms, termsFor, termsJSON, yearsFor)
-import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, confirmedTag, nameExpires, nameStatus, noCommunityTerms, ownerOfToken, secondsPerYear)
+import StoreService.Names.Community (agreedTermsHash, communityJSON, nameTerms, readableTerms, termsFor, termsJSON, yearsFor)
+import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Abi (bytes32FromHex, hex)
@@ -110,6 +111,7 @@ data OrderRefusal
   | ORBalanceChanged (Maybe Balance)
   | -- | the current terms and the name's community entry, as the answer carries them
     ORTermsChanged J.Value J.Value
+  | ORTermsUnavailable (Maybe Int)
   deriving (Eq, Show)
 
 newtype OrderRefused = OrderRefused OrderRefusal
@@ -135,10 +137,9 @@ data Landing = LNotLanded | LRegistered Int64 | LChanged | LUnread
 maxSealedChars :: Int
 maxSealedChars = 11095
 
--- | The terms version, of up to 32 characters, and for a community name /community/ and the 64 hex digits of its terms' hash,
--- with a margin.
+-- | The 64 hex digits of the terms' hash, after community/ for a community name.
 maxAgreedTermsChars :: Int
-maxAgreedTermsChars = 112
+maxAgreedTermsChars = 74
 
 -- | How far a signed request's timestamp may be from the service's clock.
 signedRequestSeconds :: Integer
@@ -275,15 +276,18 @@ checkDuration NamesConfig {nTermStart, nTermSlackSeconds} now years duration = d
 -- | The years the payment covers, or communityYears for an order signing community terms; 'checkTerms' refuses those terms
 -- for any other name.
 orderYears :: OrderFields -> Int -> Int
-orderYears OrderFields {ofAgreedTerms} = yearsFor (agreedTermsHash ofAgreedTerms)
+orderYears OrderFields {ofAgreedTerms} = yearsFor (isJust $ agreedTermsHash ofAgreedTerms)
 
--- | The terms the order signed must be the current ones for its name, with the community terms' hash for a name the policy lists,
--- which cannot be ordered before the owner sets those terms.
+-- | The terms the order signed must be the current ones for its name, the community terms for a name the policy lists,
+-- which cannot be ordered while a buyer cannot read them.
 checkTerms :: NamesConfig -> Contracts -> OrderFields -> IO (Either OrderRefusal ())
 checkTerms cfg ct OrderFields {ofLabelHash, ofAgreedTerms} =
-  nameCommunityTerms ct ofLabelHash >>= \case
-    Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: an order's community check failed: " <> tshow e)
-    Right h -> pure $ unless (h /= Just noCommunityTerms && ofAgreedTerms == termsFor cfg h) $ Left $ ORTermsChanged (termsJSON cfg) (communityJSON cfg ofLabelHash h)
+  nameTerms ct ofLabelHash >>= \case
+    Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: an order's terms check failed: " <> tshow e)
+    Right (listed, terms) ->
+      readableTerms ct terms <&> \case
+        Left wait -> Left $ ORTermsUnavailable wait
+        Right t -> unless (ofAgreedTerms == termsFor listed t) $ Left $ ORTermsChanged (termsJSON $ Just t) (communityJSON cfg ofLabelHash listed)
 
 -- | A name being registered here searches as available, so it is checked here too.
 checkNameFree :: Contracts -> DBStore -> LabelHash -> IO (Either OrderRefusal ())

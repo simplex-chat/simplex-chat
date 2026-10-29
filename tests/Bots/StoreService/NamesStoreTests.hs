@@ -5,7 +5,7 @@
 
 module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, insertInvoiceRow, invoiceStatus, issue, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, signature, t0, usable, write) where
 
-import Bots.StoreService.ConfigTests (termsVersion)
+import Bots.StoreService.FakeEthNode (plainTerms)
 import Bots.StoreService.WebTests (columnsOf, digestFixture, runMigrations, withServiceStore)
 import Control.Arrow ((&&&))
 import Control.Monad (forM_, void)
@@ -124,7 +124,7 @@ order label n =
       ofDuration = 69292800,
       ofCommitment = digestFixture n,
       ofSealed = "sealed-" <> label <> "-" <> T.pack (show n),
-      ofAgreedTerms = termsVersion
+      ofAgreedTerms = plainTerms
     }
 
 newReg :: Text -> Address -> OrderFields -> NewRegistration
@@ -410,7 +410,7 @@ testCreatePaid = withServiceStore $ \st -> do
         nrOwner = ownerA,
         nrCommitment = ofCommitment o,
         nrSealed = ofSealed o,
-        nrAgreedTerms = termsVersion,
+        nrAgreedTerms = plainTerms,
         nrPhase = PUnpaid,
         nrYears = twoYears,
         nrPrice = price,
@@ -577,7 +577,7 @@ testRoundTrip = withServiceStore $ \st -> do
             nrError = Just "The name was not signed in time",
             nrLinksRefusedAt = Just (at 4),
             nrMoves = 2,
-            nrAgreedTerms = termsVersion <> "/community"
+            nrAgreedTerms = "community/" <> plainTerms
           }
   write st changed `shouldReturn` Written 2
   reg st "r1" `shouldReturn` changed {nrVersion = 2, nrLive = False, nrUpdatedAt = at 1}
@@ -663,7 +663,7 @@ testWriteMeetsLiveOrder = withServiceStore $ \st -> do
 testRetarget :: IO ()
 testRetarget = withServiceStore $ \st -> do
   let o = order "alicebakery" 1
-      o' = (order "alicebakers" 2) {ofAgreedTerms = termsVersion <> "/community"}
+      o' = (order "alicebakers" 2) {ofAgreedTerms = "community/" <> plainTerms}
   placePaid st "r1" ownerA o (at 60) `shouldReturn` Right ()
   r <- reg st "r1"
   let failed =

@@ -48,7 +48,7 @@ import StoreService.Names.Abi (hex)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (newChainClient, nodeChainId)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
-import StoreService.Names.Contracts (Contracts, bonaFideName, communityTermsHash, namePolicy, noCommunityTerms)
+import StoreService.Names.Contracts (Contracts, Terms (..), TermsRefusal (..), bonaFideName, namePolicy, termsLinks, termsOf, termsText)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
@@ -319,11 +319,19 @@ logNamePolicy NamesConfig {nCommunity} ct =
           Right False -> logWarn $ "names: [community] lists a name the name policy does not list, so it is sold as a plain name: " <> text
           Right True -> pure ()
           Left e -> logWarn $ "names: a [community] name's listing could not be read: " <> text <> ": " <> tshow e
-      communityTermsHash ct >>= \case
-        Right h
-          | h == noCommunityTerms -> logWarn "names: the name policy has no community terms yet, so community names cannot be ordered until the owner sets them"
-          | otherwise -> logInfo $ "names: community terms " <> hex h
-        Left e -> logWarn $ "names: the name policy's community terms could not be read: " <> tshow e
+      termsLinks ct >>= \case
+        Right (nameLink, communityLink) -> do
+          logTerms "name terms" "plain names" nameLink
+          logTerms "community name terms" "community names" communityLink
+        Left e -> logWarn $ "names: the name policy's terms could not be read: " <> tshow e
+  where
+    logTerms what sold link = case termsOf link of
+      Nothing -> logWarn $ "names: the name policy has no " <> what <> " yet, so " <> sold <> " cannot be ordered until the owner sets them"
+      Just t@Terms {tmHash} ->
+        termsText ct t >>= \case
+          Right _ -> logInfo $ "names: " <> what <> " " <> link <> ", accepted as " <> hex tmHash
+          Left TRLink -> logWarn $ "names: the name policy's " <> what <> " are not a link the service takes, so " <> sold <> " cannot be ordered: " <> link
+          Left (TRWait _) -> logWarn $ "names: the text of the " <> what <> " could not be fetched, so " <> sold <> " cannot be ordered until it is: " <> link
 
 -- | The workers resume every registration in their phases, and the code sweep runs at the start and then daily.
 namesLanes :: NamesEnv -> IO [IO ()]

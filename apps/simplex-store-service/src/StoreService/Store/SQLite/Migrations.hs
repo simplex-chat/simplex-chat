@@ -623,7 +623,7 @@ DROP INDEX @idx_payments_overpaid;
 ALTER TABLE @payments DROP COLUMN invoiced_units;
 |]
 
--- The owner's acceptance of the community terms, stored with a community name's reveal.
+-- The owner's acceptance of the terms of the name's kind, stored with its reveal.
 m20261028_name_terms_acceptance :: Query
 m20261028_name_terms_acceptance =
   withPrefix

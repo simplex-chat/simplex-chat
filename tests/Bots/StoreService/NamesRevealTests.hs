@@ -76,9 +76,9 @@ namesRevealTests = describe "StoreService names: reveal" $ do
   describe "links refusal" $ do
     it "records invalid_link for a committed link one byte over the bound, waking a held poll, once" testLinksRefused
     it "records no refusal for links that do not rebuild the commitment, or for another signer" testNoRefusalRecorded
-  describe "community terms" $ do
-    it "stores the owner's acceptance of the policy's current terms, at the intent's deadline, with a listed name's reveal" testAcceptanceStored
-    it "refuses a listed name's reveal without an acceptance, or by another signer, for other terms, at another nonce or another deadline, and an unlisted name's with one" testAcceptanceRefusals
+  describe "terms acceptance" $ do
+    it "stores the owner's acceptance of the policy's current community terms, at the intent's deadline, with a listed name's reveal" testAcceptanceStored
+    it "refuses a reveal without an acceptance, or by another signer, for other terms, of the other kind, at another nonce or another deadline, a listed name's and a plain one's" testAcceptanceRefusals
     it "refuses a listed name's reveal whose acceptance is not an object or has a malformed field, storing nothing" testAcceptanceMalformed
     it "answers 503 for a listed name's reveal while its listing or the owner's policy nonce cannot be read, or before the policy has community terms, storing nothing" testAcceptanceUnavailable
   describe "races" $ do
@@ -179,9 +179,13 @@ bodyOf sig Registration {rLabel, rSecret, rContactLink, rChannelLink} nonce dead
       ("signature", J.String $ hex $ serializeSignature sig)
     ]
 
--- | As the page sends it: the owner's intent for the chain's nonce 0, until the commitment's revealBefore.
+-- | As the page sends it: the owner's intent for the chain's nonce 0, until the commitment's revealBefore, and the owner's
+-- acceptance of the name terms.
 ownerBody :: Ctx -> Registration -> IO J.Object
-ownerBody ctx r = (\sig -> bodyOf sig r 0 revealBefore) <$> signIntent ctx keyA r 0 revealBefore
+ownerBody ctx r = do
+  sig <- signIntent ctx keyA r 0 revealBefore
+  acceptance <- acceptanceOf ctx keyA r False fakeNameTerms 0 revealBefore
+  pure $ withAcceptance acceptance $ bodyOf sig r 0 revealBefore
 
 withRecords :: [Text] -> [Text] -> J.Object -> J.Object
 withRecords contact channel = KM.insert "records" $ J.object ["contact" .= contact, "channel" .= channel]
@@ -216,15 +220,15 @@ withListedReveals action = withReveals $ \fx@Fx {fCtx = Ctx {cNode}} -> do
 
 -- | Alice's order under the community terms, as the page orders a listed name.
 listedOrder :: Order
-listedOrder = (orderOf alice) {oTerms = communityTerms (oTerms aliceOrder)}
+listedOrder = (orderOf alice) {oTerms = communityTerms}
 
-signAcceptance :: Ctx -> Secp256k1PrivateKey -> B.ByteString -> Word64 -> IO TermsAcceptance
-signAcceptance ctx key terms nonce = signAcceptanceAt ctx key terms nonce revealBefore
+signAcceptance :: Ctx -> Secp256k1PrivateKey -> Bool -> B.ByteString -> Word64 -> IO TermsAcceptance
+signAcceptance ctx key community terms nonce = acceptanceOf ctx key alice community terms nonce revealBefore
 
 -- | The acceptance signed with the given deadline, which must be the intent's.
-signAcceptanceAt :: Ctx -> Secp256k1PrivateKey -> B.ByteString -> Word64 -> Word64 -> IO TermsAcceptance
-signAcceptanceAt Ctx {cRandom} key terms nonce deadline = do
-  sig <- either error id <$> signRecoverable cRandom key (acceptanceDigest (policyDomain fakeChainId fakeNamePolicy) (makeCommitment alice) terms nonce deadline)
+acceptanceOf :: Ctx -> Secp256k1PrivateKey -> Registration -> Bool -> B.ByteString -> Word64 -> Word64 -> IO TermsAcceptance
+acceptanceOf Ctx {cRandom} key r community terms nonce deadline = do
+  sig <- either error id <$> signRecoverable cRandom key (acceptanceDigest (policyDomain fakeChainId fakeNamePolicy) community (makeCommitment r) terms nonce deadline)
   pure TermsAcceptance {taTermsHash = terms, taNonce = nonce, taSignature = sig}
 
 withAcceptance :: TermsAcceptance -> J.Object -> J.Object
@@ -237,7 +241,7 @@ testAcceptanceStored = withListedReveals $ \Fx {fCtx = ctx} -> do
   -- past revealBefore, as checkIntent allows: the acceptance is checked with the intent's deadline
   let deadline = revealBefore + 3600
   sig <- signIntent ctx keyA alice 0 deadline
-  acceptance <- signAcceptanceAt ctx keyA fakeCommunityTerms 2 deadline
+  acceptance <- acceptanceOf ctx keyA alice True fakeCommunityTerms 2 deadline
   reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 deadline) `shouldReturn` accepted
   (rvAcceptance =<<) . nrReveal <$> stored ctx rid `shouldReturn` Just acceptance
 
@@ -249,23 +253,28 @@ testAcceptanceRefusals = do
     let body = bodyOf sig alice 0 revealBefore
         refusedWith acceptance = reveal ctx rid (maybe id withAcceptance acceptance body) `shouldReturn` badRequest
     refusedWith Nothing
-    refusedWith . Just =<< signAcceptance ctx fakeRegistrarKey fakeCommunityTerms 2
-    refusedWith . Just =<< signAcceptance ctx keyA (C.keccak256 "bona fide community terms v0") 2
-    refusedWith . Just =<< signAcceptance ctx keyA fakeCommunityTerms 1
-    refusedWith . Just =<< signAcceptanceAt ctx keyA fakeCommunityTerms 2 (revealBefore + 3600)
+    refusedWith . Just =<< signAcceptance ctx fakeRegistrarKey True fakeCommunityTerms 2
+    refusedWith . Just =<< signAcceptance ctx keyA True (C.keccak256 "bona fide community terms v0") 2
+    refusedWith . Just =<< signAcceptance ctx keyA False fakeCommunityTerms 2
+    refusedWith . Just =<< signAcceptance ctx keyA True fakeCommunityTerms 1
+    refusedWith . Just =<< acceptanceOf ctx keyA alice True fakeCommunityTerms 2 (revealBefore + 3600)
     nrReveal <$> stored ctx rid `shouldReturn` Nothing
   withReveals $ \Fx {fCtx = ctx} -> do
     rid <- committed ctx (orderOf alice)
     sig <- signIntent ctx keyA alice 0 revealBefore
-    acceptance <- signAcceptance ctx keyA fakeCommunityTerms 0
-    reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` badRequest
+    let body = bodyOf sig alice 0 revealBefore
+        refusedWith acceptance = reveal ctx rid (maybe id withAcceptance acceptance body) `shouldReturn` badRequest
+    refusedWith Nothing
+    refusedWith . Just =<< signAcceptance ctx keyA True fakeNameTerms 0
+    refusedWith . Just =<< signAcceptance ctx keyA False fakeCommunityTerms 0
+    refusedWith . Just =<< signAcceptance ctx keyA False fakeNameTerms 1
     nrReveal <$> stored ctx rid `shouldReturn` Nothing
 
 testAcceptanceMalformed :: IO ()
 testAcceptanceMalformed = withListedReveals $ \Fx {fCtx = ctx} -> do
   rid <- committed ctx listedOrder
   sig <- signIntent ctx keyA alice 0 revealBefore
-  TermsAcceptance {taSignature} <- signAcceptance ctx keyA fakeCommunityTerms 2
+  TermsAcceptance {taSignature} <- signAcceptance ctx keyA True fakeCommunityTerms 2
   let fields = KM.fromList ["termsHash" .= hex fakeCommunityTerms, "nonce" .= (2 :: Int), "signature" .= hex (serializeSignature taSignature)]
       replaced k v = J.Object $ KM.insert k v fields
   forM_
@@ -282,7 +291,7 @@ testAcceptanceUnavailable :: IO ()
 testAcceptanceUnavailable = withListedReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> do
   rid <- committed ctx listedOrder
   sig <- signIntent ctx keyA alice 0 revealBefore
-  acceptance <- signAcceptance ctx keyA fakeCommunityTerms 2
+  acceptance <- signAcceptance ctx keyA True fakeCommunityTerms 2
   let body = withAcceptance acceptance $ bodyOf sig alice 0 revealBefore
       unavailable = do
         reveal ctx rid body `shouldReturn` refused 503 "provider_unavailable"
@@ -325,11 +334,12 @@ testWithLinks = bounded "with links" $ withReveals $ \Fx {fCtx = ctx} -> do
   NameRegistration {nrVersion = v} <- stored ctx rid
   poll <- held ctx (0, 1) $ registrationPath rid <> seenVersion v
   sig <- signIntent ctx keyA alice 0 revealBefore
-  reveal ctx rid (bodyOf sig alice 0 revealBefore) `shouldReturn` accepted
+  acceptance <- acceptanceOf ctx keyA alice False fakeNameTerms 0 revealBefore
+  reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` accepted
   NameRegistration {nrVersion, nrPhase, nrReveal, nrLinksRefusedAt} <- stored ctx rid
   (nrVersion, nrPhase, nrLinksRefusedAt) `shouldBe` (v + 1, PCommitted, Nothing)
   nrReveal
-    `shouldBe` Just NameReveal {rvLabel = "alicebakery", rvSecret = rSecret alice, rvContactLink = Just contactLink, rvChannelLink = Just channelLink, rvNonce = 0, rvDeadline = revealBefore, rvSignature = sig, rvAcceptance = Nothing}
+    `shouldBe` Just NameReveal {rvLabel = "alicebakery", rvSecret = rSecret alice, rvContactLink = Just contactLink, rvChannelLink = Just channelLink, rvNonce = 0, rvDeadline = revealBefore, rvSignature = sig, rvAcceptance = Just acceptance}
   (status, view) <- woken "registration poll" poll
   (status, field "version" view, field "label" view) `shouldBe` (200, Just (J.toJSON $ v + 1), Just "alicebakery")
 
@@ -346,6 +356,7 @@ testViemReveal :: IO ()
 testViemReveal = withReveals $ \Fx {fCtx = ctx} -> do
   let page = dynamis {rSecret = B.replicate 32 0x11, rContactLink = Just "https://smp8.simplex.im/a#contact", rChannelLink = Nothing}
       viemSignature = "0xed92eb1e37a191cb270651b57fd132eb652357a90aa602e8c29ed1dfabe0a14738f0bfe38fc2d9687ad5e0820cad2f5af386f00087cb91b4eb6577c2ec2869641c"
+      viemAcceptance = "0x595d61af294d2efd1721e90eb4cdc8cad8d97a5e0cb93cd91d3dc939aaa1fe714e0c60fc2f2d5ad2363199e20ea5a279a4213388489a7fe747d25699df041f961b"
       body =
         KM.fromList
           [ ("label", "dynamis"),
@@ -353,10 +364,11 @@ testViemReveal = withReveals $ \Fx {fCtx = ctx} -> do
             ("records", J.object ["contact" .= ["https://smp8.simplex.im/a#contact" :: Text], "channel" .= ([] :: [Text])]),
             ("nonce", J.Number 0),
             ("deadline", J.Number 1792660500),
-            ("signature", J.String viemSignature)
+            ("signature", J.String viemSignature),
+            ("acceptance", J.object ["termsHash" .= hex fakeNameTerms, "nonce" .= (0 :: Int), "signature" .= (viemAcceptance :: Text)])
           ]
   hex (makeCommitment page) `shouldBe` "0x9cf04ddef2eedfb02e6e7ba58f879c0636c584b6acc67ffe9f97a06bfb016ac1"
-  (\sig -> bodyOf sig page 0 revealBefore) <$> signIntent ctx keyA page 0 revealBefore `shouldReturn` body
+  ownerBody ctx page `shouldReturn` body
   rid <- committed ctx (orderOf page)
   reveal ctx rid body `shouldReturn` accepted
 
@@ -412,10 +424,11 @@ testIntentRefusals = withReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> do
     ]
     $ \(what, body) -> (what,) <$> reveal ctx rid body `shouldReturn` (what :: String, badRequest)
   answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (1 :: Int)
-  reveal ctx rid (bodyOf sig alice 0 revealBefore) `shouldReturn` badRequest
+  acceptance <- acceptanceOf ctx keyA alice False fakeNameTerms 0 revealBefore
+  reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` badRequest
   unwritten <$> stored ctx rid `shouldReturn` unchanged
   answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (0 :: Int)
-  reveal ctx rid (bodyOf sig alice 0 revealBefore) `shouldReturn` accepted
+  reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` accepted
 
 testCommitmentRefusals :: IO ()
 testCommitmentRefusals = withReveals $ \Fx {fCtx = ctx} -> do
@@ -479,7 +492,8 @@ testStateAndFormat = withReveals $ \Fx {fCtx = ctx@Ctx {cClock}} -> do
   unwritten <$> stored ctx rid `shouldReturn` unchanged
   -- signed past revealBefore, so only the lapse refuses it
   let deadline = revealBefore + 3600
-  late <- (\sig -> bodyOf sig alice 0 deadline) <$> signIntent ctx keyA alice 0 deadline
+  acceptance <- acceptanceOf ctx keyA alice False fakeNameTerms 0 deadline
+  late <- (\sig -> withAcceptance acceptance $ bodyOf sig alice 0 deadline) <$> signIntent ctx keyA alice 0 deadline
   writeIORef cClock $ posixSecondsToUTCTime $ fromIntegral revealBefore + 1
   reveal ctx rid late `shouldReturn` badRequest
   unwritten <$> stored ctx rid `shouldReturn` unchanged

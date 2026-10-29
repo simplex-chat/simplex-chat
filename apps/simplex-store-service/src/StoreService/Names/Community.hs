@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -9,16 +8,17 @@ module StoreService.Names.Community
     communityJSON,
     yearsFor,
     termsJSON,
-    nameCommunityTerms,
+    nameTerms,
+    readableTerms,
     AcceptanceAsked (..),
     currentAcceptance,
   )
 where
 
-import Control.Monad (when)
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
+import Data.Bifunctor (bimap)
 import Data.ByteString (ByteString)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
@@ -26,56 +26,61 @@ import qualified Data.Text as T
 import Data.Word (Word64)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash (..))
-import StoreService.Config (NamesConfig (..), TermsConfig (..))
+import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Abi (bytes32FromHex, hex)
 import StoreService.Names.Chain (ChainError (..))
-import StoreService.Names.Contracts (Contracts, bonaFideName, communityTermsHash, namePolicy, noCommunityTerms, policyNonce)
+import StoreService.Names.Contracts (Contracts, Terms (..), TermsRefusal (..), bonaFideName, concurrent, namePolicy, policyNonce, termsLinks, termsOf, termsText, together)
 
 communityFor :: NamesConfig -> LabelHash -> Maybe Text
 communityFor NamesConfig {nCommunity} (LabelHash h) = M.lookup h nCommunity
 
--- | The suffix records that the buyer agreed to the community terms whose hash it ends with, under the same version.
-termsFor :: NamesConfig -> Maybe ByteString -> Text
-termsFor NamesConfig {nTerms = TermsConfig {tVersion}} = maybe tVersion (\h -> tVersion <> communityTermsSuffix <> T.drop 2 (hex h))
+-- | The prefix records that the buyer agreed to the community name terms, whose hash follows it.
+termsFor :: Bool -> Terms -> Text
+termsFor listed Terms {tmHash} = (if listed then communityTermsPrefix else "") <> T.drop 2 (hex tmHash)
 
 -- | The community terms hash an order signed, Nothing for plain terms.
 agreedTermsHash :: Text -> Maybe ByteString
-agreedTermsHash terms = T.stripPrefix communityTermsSuffix (snd $ T.breakOn communityTermsSuffix terms) >>= bytes32FromHex . ("0x" <>)
+agreedTermsHash terms = T.stripPrefix communityTermsPrefix terms >>= bytes32FromHex . ("0x" <>)
 
-communityTermsSuffix :: Text
-communityTermsSuffix = "/community/"
+communityTermsPrefix :: Text
+communityTermsPrefix = "community/"
 
--- | Null for plain terms. The page links the text the service serves from the name policy.
-communityJSON :: NamesConfig -> LabelHash -> Maybe ByteString -> J.Value
-communityJSON cfg lh = maybe J.Null (\h -> J.object ["for" .= communityFor cfg lh, "years" .= communityYears, "terms" .= J.object ["url" .= ("/api/community-terms/" <> hex h), "hash" .= hex h]])
+-- | Null for plain terms.
+communityJSON :: NamesConfig -> LabelHash -> Bool -> J.Value
+communityJSON cfg lh listed = if listed then J.object ["for" .= communityFor cfg lh, "years" .= communityYears] else J.Null
 
 -- | The paid years of a community name, whatever years its code or [names] years gives.
 communityYears :: Int
 communityYears = 2
 
-yearsFor :: Maybe ByteString -> Int -> Int
-yearsFor h years = maybe years (const communityYears) h
+yearsFor :: Bool -> Int -> Int
+yearsFor listed years = if listed then communityYears else years
 
-termsJSON :: NamesConfig -> J.Value
-termsJSON NamesConfig {nTerms = TermsConfig {tVersion, tUrl}} = J.object ["version" .= tVersion, "url" .= tUrl]
+termsJSON :: Maybe Terms -> J.Value
+termsJSON = maybe J.Null $ \Terms {tmLink, tmHash} -> J.object ["hash" .= hex tmHash, "link" .= tmLink]
 
--- | Nothing for a name the policy does not list; else the community terms it is sold under.
-nameCommunityTerms :: Contracts -> LabelHash -> IO (Either ChainError (Maybe ByteString))
-nameCommunityTerms ct lh = runExceptT $
-  ExceptT (bonaFideName ct lh) >>= \case
-    False -> pure Nothing
-    True -> Just <$> ExceptT (communityTermsHash ct)
+-- | Whether the policy lists the name, and the terms it is sold under: the community name terms for a listed name, else the
+-- name terms; Nothing until the owner sets them.
+nameTerms :: Contracts -> LabelHash -> IO (Either ChainError (Bool, Maybe Terms))
+nameTerms ct lh = together $ kindTerms <$> concurrent (bonaFideName ct lh) <*> concurrent (termsLinks ct)
+  where
+    kindTerms listed (nameLink, communityLink) = (listed, termsOf $ if listed then communityLink else nameLink)
 
--- | What the page signs to accept the community terms of a name the policy lists.
-data AcceptanceAsked = AcceptanceAsked {acPolicy :: Address, acTermsHash :: ByteString, acNonce :: Word64}
+readableTerms :: Contracts -> Maybe Terms -> IO (Either (Maybe Int) Terms)
+readableTerms ct = maybe (pure $ Left Nothing) $ \t -> bimap waitOf (const t) <$> termsText ct t
+  where
+    waitOf (TRWait seconds) = Just seconds
+    waitOf TRLink = Nothing
+
+-- | What the page signs to accept the terms of the name's kind.
+data AcceptanceAsked = AcceptanceAsked {acCommunity :: Bool, acPolicy :: Address, acTermsHash :: ByteString, acNonce :: Word64}
   deriving (Eq, Show)
 
--- | Nothing for a name the policy does not list.
-currentAcceptance :: Contracts -> LabelHash -> Address -> IO (Either ChainError (Maybe AcceptanceAsked))
-currentAcceptance ct lh owner = runExceptT $ ExceptT (nameCommunityTerms ct lh) >>= traverse acceptance
-  where
-    acceptance acTermsHash = do
-      when (acTermsHash == noCommunityTerms) $ throwError $ ChainUnavailable "the name policy has no community terms yet"
-      acPolicy <- ExceptT $ namePolicy ct
-      acNonce <- ExceptT $ policyNonce ct owner
-      pure AcceptanceAsked {acPolicy, acTermsHash, acNonce}
+-- | Fails while the terms of the name's kind are not set.
+currentAcceptance :: Contracts -> LabelHash -> Address -> IO (Either ChainError AcceptanceAsked)
+currentAcceptance ct lh owner = runExceptT $ do
+  (acCommunity, terms) <- ExceptT $ nameTerms ct lh
+  Terms {tmHash = acTermsHash} <- maybe (throwError $ ChainUnavailable "the name policy has not set these terms yet") pure terms
+  acPolicy <- ExceptT $ namePolicy ct
+  acNonce <- ExceptT $ policyNonce ct owner
+  pure AcceptanceAsked {acCommunity, acPolicy, acTermsHash, acNonce}

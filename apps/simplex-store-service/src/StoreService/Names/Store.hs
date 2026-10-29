@@ -184,7 +184,7 @@ data NameReveal = NameReveal
     rvNonce :: Word64,
     rvDeadline :: Word64,
     rvSignature :: RecoverableSignature,
-    -- | the owner's acceptance of the community terms, for a name the policy lists
+    -- | the owner's acceptance of the terms of the name's kind
     rvAcceptance :: Maybe TermsAcceptance
   }
   deriving (Eq, Show)

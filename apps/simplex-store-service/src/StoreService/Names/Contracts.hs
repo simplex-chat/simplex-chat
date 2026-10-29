@@ -1,13 +1,16 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module StoreService.Names.Contracts
-  ( Contracts (ctDeadline),
+  ( Contracts (ctDeadline, ctTermsBackoff),
     NameStatus (..),
     RegisteredName (..),
     NameRecords (..),
     CommitmentAges (..),
+    Terms (..),
+    TermsRefusal (..),
     newContracts,
     secondsPerYear,
     nameStatus,
@@ -18,9 +21,9 @@ module StoreService.Names.Contracts
     resolverNonce,
     namePolicy,
     bonaFideName,
-    communityTermsHash,
-    noCommunityTerms,
-    communityTermsText,
+    termsLinks,
+    termsOf,
+    termsText,
     policyNonce,
     acceptedTerms,
     confirmedTag,
@@ -34,27 +37,38 @@ module StoreService.Names.Contracts
   )
 where
 
+import Control.Applicative ((<|>))
 import Control.Concurrent.Async (Concurrently (..))
+import Control.Concurrent.MVar (MVar, newMVar, withMVar)
+import Control.Monad (guard)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
+import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
+import Data.Functor ((<&>))
 import Data.Functor.Compose (Compose (..))
-import Data.IORef (IORef, atomicWriteIORef, newIORef, readIORef)
+import Data.IORef (IORef, atomicWriteIORef, modifyIORef', newIORef, readIORef, writeIORef)
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
-import Data.Text.Encoding (decodeLatin1, encodeUtf8)
+import qualified Data.Text as T
+import Data.Text.Encoding (decodeLatin1, decodeUtf8', encodeUtf8)
+import Data.Time.Clock (UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word64)
-import Simplex.Messaging.Crypto (keccak256)
+import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import Simplex.Messaging.Util (tshow)
-import StoreService.Config (ChainConfig (..))
+import StoreService.Config (ChainConfig (..), localChainId)
+import StoreService.Log (logWarn)
 import StoreService.Names.Abi
-import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), confirmedNumber, ethCallAt, latestBlock)
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), confirmedNumber, ethCallAt, fetchText, latestBlock, nodeChainId)
 import StoreService.Names.Registration (channelRecordKey, contactRecordKey, labelNode, nodeBytes)
 import StoreService.Names.Revert (RevertName (..))
 import System.Timeout (timeout)
+import Text.Read (readMaybe)
 
 data Contracts = Contracts
   { ctChain :: ChainClient,
@@ -62,8 +76,12 @@ data Contracts = Contracts
     ctRegistrar :: IORef (Maybe RegistrarConstants),
     ctCommitmentAges :: IORef (Maybe CommitmentAges),
     ctNamePolicy :: IORef (Maybe Address),
+    ctTermsTexts :: IORef (Map ByteString Text),
+    ctFetchAfter :: IORef UTCTime,
+    ctFetching :: MVar (),
     -- | microseconds for all the reads of one name status or of one name's records
-    ctDeadline :: Int
+    ctDeadline :: Int,
+    ctTermsBackoff :: Int
   }
 
 data RegistrarConstants = RegistrarConstants {rcRegistry :: Address, rcGracePeriod :: Integer}
@@ -86,6 +104,12 @@ data NameRecords = NameRecords {rdContact :: Text, rdChannel :: Text, rdNonce ::
 data CommitmentAges = CommitmentAges {caMin :: Integer, caMax :: Integer}
   deriving (Eq, Show)
 
+data Terms = Terms {tmLink :: Text, tmHash :: ByteString}
+  deriving (Eq, Show)
+
+data TermsRefusal = TRLink | TRWait Int
+  deriving (Eq, Show)
+
 secondsPerYear :: Integer
 secondsPerYear = 31536000
 
@@ -96,13 +120,22 @@ attoUsdPerCent = 10 ^ (16 :: Int)
 nameReadsDeadline :: Int
 nameReadsDeadline = 10000000
 
+termsBackoffSeconds :: Int
+termsBackoffSeconds = 30
+
+maxTermsBytes :: Int
+maxTermsBytes = 256 * 1024
+
 -- | Reads nothing: the registrar's constants, the commitment ages and the name policy are read on first use and kept once read.
 newContracts :: SimplexTLD -> ChainClient -> IO Contracts
 newContracts ctTLD ctChain = do
   ctRegistrar <- newIORef Nothing
   ctCommitmentAges <- newIORef Nothing
   ctNamePolicy <- newIORef Nothing
-  pure Contracts {ctChain, ctTLD, ctRegistrar, ctCommitmentAges, ctNamePolicy, ctDeadline = nameReadsDeadline}
+  ctTermsTexts <- newIORef M.empty
+  ctFetchAfter <- newIORef =<< getCurrentTime
+  ctFetching <- newMVar ()
+  pure Contracts {ctChain, ctTLD, ctRegistrar, ctCommitmentAges, ctNamePolicy, ctTermsTexts, ctFetchAfter, ctFetching, ctDeadline = nameReadsDeadline, ctTermsBackoff = termsBackoffSeconds}
 
 -- | Registered while @nameExpires + GRACE_PERIOD@ is not before the latest block's time.
 nameStatus :: Contracts -> LabelHash -> IO (Either ChainError NameStatus)
@@ -160,18 +193,80 @@ namePolicy ct@Contracts {ctNamePolicy} = readOnce ctNamePolicy $ (>>= nonZero) <
 bonaFideName :: Contracts -> LabelHash -> IO (Either ChainError Bool)
 bonaFideName ct lh = policyCall ct ("bonaFideNames(bytes32)", labelHashArg lh) decodeBool
 
--- | The keccak256 of the community terms text, 'noCommunityTerms' before the terms are set.
-communityTermsHash :: Contracts -> IO (Either ChainError ByteString)
-communityTermsHash ct = policyCall ct ("termsHash()", "") decodeBytes32
+termsLinks :: Contracts -> IO (Either ChainError (Text, Text))
+termsLinks ct@Contracts {ctChain} = runExceptT $ do
+  policy <- ExceptT $ namePolicy ct
+  Block {blockNumber} <- ExceptT $ latestBlock ctChain
+  let link signature = concurrent $ callAt ct (AtBlock blockNumber) policy (signature, "") decodeString
+  ExceptT $ together $ (,) <$> link "nameTermsLink()" <*> link "communityNameTermsLink()"
 
-noCommunityTerms :: ByteString
-noCommunityTerms = B.replicate 32 '\NUL'
+termsOf :: Text -> Maybe Terms
+termsOf link
+  | T.null link = Nothing
+  | otherwise = Just Terms {tmLink = link, tmHash = keccak256 $ encodeUtf8 link}
 
--- | The text the policy keeps for its community terms when it hashes to this hash, else Nothing.
-communityTermsText :: Contracts -> ByteString -> IO (Either ChainError (Maybe ByteString))
-communityTermsText ct h = fmap matching <$> policyCall ct ("termsText()", "") decodeBytes
+termsText :: Contracts -> Terms -> IO (Either TermsRefusal Text)
+termsText ct@Contracts {ctTermsTexts, ctFetching} t@Terms {tmHash} =
+  kept >>= \case
+    Just text -> pure $ Right text
+    Nothing -> withMVar ctFetching $ \_ -> kept >>= maybe (fetchTerms ct t) (pure . Right)
   where
-    matching text = if not (B.null text) && keccak256 text == h then Just text else Nothing
+    kept = M.lookup tmHash <$> readIORef ctTermsTexts
+
+fetchTerms :: Contracts -> Terms -> IO (Either TermsRefusal Text)
+fetchTerms Contracts {ctChain, ctTermsTexts, ctFetchAfter, ctTermsBackoff} Terms {tmLink, tmHash} =
+  allowedLink ctChain tmLink >>= \case
+    Nothing -> pure $ Left TRLink
+    Just (url, digest) -> do
+      after <- readIORef ctFetchAfter
+      now <- getCurrentTime
+      if now < after
+        then pure $ Left $ TRWait $ ceiling $ diffUTCTime after now
+        else
+          (>>= checked digest) <$> fetchText ctChain maxTermsBytes url >>= \case
+            Right text -> Right text <$ modifyIORef' ctTermsTexts (M.insert tmHash text)
+            Left (reason, retryAfter) -> do
+              let wait = max ctTermsBackoff $ fromMaybe 0 retryAfter
+              failedAt <- getCurrentTime
+              writeIORef ctFetchAfter $ addUTCTime (fromIntegral wait) failedAt
+              logWarn $ "names: the terms text of " <> tmLink <> " could not be fetched, " <> reason <> "; none is fetched for " <> tshow wait <> " seconds"
+              pure $ Left $ TRWait wait
+  where
+    checked digest body
+      | sha256Hash body /= digest = Left ("its SHA-256 is not the link's", Nothing)
+      | otherwise = first (const ("not UTF-8", Nothing)) $ decodeUtf8' body
+
+allowedLink :: ChainClient -> Text -> IO (Maybe (String, ByteString))
+allowedLink c@ChainClient {ccConfig = ChainConfig {cChainId}} link = case termsLinkParts link of
+  Just (False, parts) -> pure $ Just parts
+  Just (True, parts)
+    | cChainId == localChainId ->
+        nodeChainId c <&> \case
+          Right chainId | chainId == localChainId -> Just parts
+          _ -> Nothing
+  _ -> pure Nothing
+
+termsLinkParts :: Text -> Maybe (Bool, (String, ByteString))
+termsLinkParts link = do
+  digest <- bytes32FromHex . ("0x" <>) =<< T.stripPrefix "#sha256=" fragment
+  (loopback, path) <- (False,) <$> forgejoPath <|> (True,) <$> loopbackPath
+  guard $ maybe False (not . T.null) (T.stripSuffix ".md" path) && all segment (T.splitOn "/" path)
+  pure (loopback, (T.unpack url, digest))
+  where
+    (url, fragment) = T.breakOn "#" link
+    forgejoPath = do
+      (commit, path) <- T.splitAt commitChars <$> T.stripPrefix "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/" url
+      guard $ T.length commit == commitChars && T.all lowerHex commit
+      T.stripPrefix "/" path
+    loopbackPath = do
+      (port, path) <- T.breakOn "/" <$> T.stripPrefix "http://127.0.0.1:" url
+      guard $ maybe False (\n -> n >= 1 && n <= maxPort && tshow n == port) (readMaybe $ T.unpack port)
+      T.stripPrefix "/" path
+    segment s = not (T.null s) && s `notElem` [".", ".."] && T.all pathChar s
+    pathChar c = isAsciiUpper c || isAsciiLower c || isDigit c || c `elem` ("_.-" :: String)
+    lowerHex c = isDigit c || (c >= 'a' && c <= 'f')
+    commitChars = 40
+    maxPort = 65535 :: Int
 
 policyNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 policyNonce ct owner = policyCall ct ("nonces(address)", addressWord owner) decodeWord64

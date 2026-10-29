@@ -37,48 +37,48 @@ namesSignatureTests = describe "StoreService names: signatures" $ do
       clearRecordsDigest (resolverDomain chainId resolver) (namehash TLDSimplex "dynamis") 4 99 `shouldBe` hx "0xca4bd243288f27f38e3b45384ba36ce685ff155352cf8125f031e6fb189a46dd"
   describe "EIP-191 messages" $ do
     -- the contract's Appendix C, which the webapp computed with viem and pins in test/terms-vectors.test.ts
-    it "signs an order with the terms version" $
+    it "signs an order with the name terms' hash" $
       testMessage
         (orderMessage termsOrder termsTimestamp)
-        "simplex.domains order 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 2026-10-23 1792828800"
-        "0x50dfb031e558f78b83fa07c7ea0207c02a98d73751e43bc754dd26b7bc92b840"
-        "0x17107b11494e25098efc348aca64a2469ffb832bcc79dc57377a1b26a4004b6701ad73648f50af8b39d4079820a3de7e681ddf15f8cf15b5cff02b4a48cf1fe61c"
-    it "signs an order with the community terms" $
+        "simplex.domains order 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 213536f106608428de763fe26b1e9e31f27244152e9a853614ad73c67002ee6f 1792828800"
+        "0x0ba979ab2c6935848734b7d7ff5fa66800b1bd6814e34ee0ad4f5d62d226401b"
+        "0xedd5071a12ad686a493bd8d9522cc95a292aea0e1970aaa3a4ea268696ed4f773b9dbfbf12d9aa79fd48bc1ea3825a720d8a09077bb4f35332480e1be1154fdf1c"
+    it "signs an order with the community name terms' hash" $
       testMessage
         (orderMessage communityOrder termsTimestamp)
-        "simplex.domains order 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 2026-10-23/community 1792828800"
-        "0xf8521525761939c4cef8979cb54217e9e32b1a57999fc2f03e486f4eb1903802"
-        "0x03eccb591b79ab4e3e6f22ccbeb77a6ac32c6dad8cb318557836258c390bc31d78852a3279c6c8cc2ef8d1025641d45ba4101f54dfd84c264deb2ab391c1cbc61c"
+        "simplex.domains order 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 community/3d2141022b4e322767cb6c8dcac2daf21b9d2c9a2b93af726099a8bd4cc15bff 1792828800"
+        "0x6d16887e061a31baedb6509fb0d01d7adc353c9496884b3af3d120b6aa850966"
+        "0x866ffd975972fe6a668eed758e8a69b57900d5e0898aa2872d344216fb5dd5ff45e380b07792c5b0220ad9564a24c3513ad1d39ac30ff888168bbd1c8e17aa011b"
     it "signs find with the owner in lowercase" $
       testMessage
         (findMessage owner timestamp)
         "simplex.domains find 0x014f9c09cceedef1b713110d04d3a07d5b5d9b73 1792574100"
         "0x08a989fbf0457984c062b44d7237be9c7948f2cf23d48410609777a09b515646"
         "0xfa0908260c3f21c8e47bd37e2c3cf3bd6bc62966591ab1a2c4e31695646548f47d2e79b34413be27b4b07330682de642f48a8f5e641449d7d79728eeb4ab14da1c"
-    it "signs another name for an order with the terms version" $
+    it "signs another name for an order with the name terms' hash" $
       testMessage
         (retargetMessage registrationId termsOrder termsTimestamp)
-        "simplex.domains name t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 2026-10-23 1792828800"
-        "0x01eda78f875428396a940b658b910b6eb6dc0bce82860c17d59f8f16e7767d25"
-        "0x1d29abf2489da963d59d0982074b5af770efbaf96be3c756afbd6a7fea672b507e756944da0901724e2a5d7cfe2419ccb7573310ae65e65f4fd35d7c6fe494b51c"
-    it "signs another name for an order with the community terms" $
+        "simplex.domains name t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 213536f106608428de763fe26b1e9e31f27244152e9a853614ad73c67002ee6f 1792828800"
+        "0x1f5cb2957192c0189be04450d1c1a39330e3e485b7d55bf07cfd2ad517d473b3"
+        "0x8dbac86c2eb96cac72b0284c7221adf85816da3d9de83c1dc576f11531ba5d472dd6cd33d7ddaca7b3b8413746df8eda57eadfd29b14b52741a4079c0877a1061b"
+    it "signs another name for an order with the community name terms' hash" $
       testMessage
         (retargetMessage registrationId communityOrder termsTimestamp)
-        "simplex.domains name t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 2026-10-23/community 1792828800"
-        "0x4f1af02904f9f8863e92169f6e1a1d6733a3a25c5d22ffde7ac00f09a660c022"
-        "0x30d027224b85cd9ac638edec1266748f21f46279eda72e68448f97b8fce73ca06c401035ad5416fc1e48f39646d0637fcaad1588ec74562ff842821b33e299361b"
-    it "signs a spend from an order's balance with the terms version" $
+        "simplex.domains name t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 community/3d2141022b4e322767cb6c8dcac2daf21b9d2c9a2b93af726099a8bd4cc15bff 1792828800"
+        "0xbfe0f6e93445ebcee3b7c081c03c9cb6dcbeb9832b4917bd59ffbf3b87c94cc8"
+        "0xd989c2fe071690005e34c8a42cd61fc4be2c1b7899259c08210ecf234808ed792cfc8ac7071d994ab3029983294e2060c01bdd8608dd8b16ab98763f99927aa11c"
+    it "signs a spend from an order's balance with the name terms' hash" $
       testMessage
         (spendMessage registrationId termsOrder termsTimestamp)
-        "simplex.domains spend t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 2026-10-23 1792828800"
-        "0x109f0bd4f5eb1aa054f17c82a0b04dbd5d1e7b23c5ee91cf69464fb1435eb034"
-        "0x20e930097b35350861332afa4b0b5dcff746aa879875269cc784575e6bb871711d3f6b1e11437d0a616a37a8b5b1ebbdd4c98aee04e09405ac3fa55a6af6ff831b"
-    it "signs a spend from an order's balance with the community terms" $
+        "simplex.domains spend t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 213536f106608428de763fe26b1e9e31f27244152e9a853614ad73c67002ee6f 1792828800"
+        "0x88a513cf0aaeaa0d9e3de39eb45e2d5cf5d99add5c8f11a0b96b7e1a6931eea4"
+        "0x888338b834c3f9f0eafb50366a0f436361fcb86813e8feda57501bfce6c00ace417a73b3956b6fbaebb29ee3983c6cdae52ba5dbff5b76d7bc7ed30c6006f1331b"
+    it "signs a spend from an order's balance with the community name terms' hash" $
       testMessage
         (spendMessage registrationId communityOrder termsTimestamp)
-        "simplex.domains spend t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 2026-10-23/community 1792828800"
-        "0xd114398466a7a6d7d9a183feb4624e06c41d1dcdfb6b69e896ff9d74c70845c3"
-        "0x90d2ab549b2cf5fd51442ac3f410b934e7fa45bd12853cfbfa2f8ab4876ed5600b9fe3a90459140f180949353e7dc3f56cd1447de31ae5c05e12f7bf6a113f061c"
+        "simplex.domains spend t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 community/3d2141022b4e322767cb6c8dcac2daf21b9d2c9a2b93af726099a8bd4cc15bff 1792828800"
+        "0x971b7bde57f40f45c075c4f83b882fe61e792783fbec5916e216be966e026650"
+        "0x1bdb0d8d1f332cd8435d4d052f84060da55c8010a957e73fd38eb383925a5ba6606ebf04c09bce1697776670e4a7ad07d7cc2a18b4de3a7ea631e84f5cf77c6e1b"
   describe "signature format" $ do
     it "refuses a high s, though recovery accepts it" testHighS
     it "refuses v other than 27 or 28" $
@@ -135,7 +135,7 @@ testHighS = do
     `shouldReturn` Right owner
   where
     -- the order vector's signature with s replaced by n - s and v flipped
-    highS = "0x17107b11494e25098efc348aca64a2469ffb832bcc79dc57377a1b26a4004b67fe528c9b70af5074c62bf867df5c21805290fdd0b6798a85efe233428767215b1b"
+    highS = "0xedd5071a12ad686a493bd8d9522cc95a292aea0e1970aaa3a4ea268696ed4f77c4624040ed26558602b743e15c7da58cad24d3df3393ace88d8a5070ef20f1621b"
 
 -- fixtures
 
@@ -161,11 +161,11 @@ termsOrder =
       ofDuration = 69292800,
       ofCommitment = hx "0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5",
       ofSealed = "AAAAAAAAAAAAAAAACWgxqMk-UKfpra_Zh6vc4KNBR6SX1WYpGb4COoWCCbM0bisYCH14WLzghp8hqi_-KyXSi4qf_DAdP_M4bFetD0s",
-      ofAgreedTerms = "2026-10-23"
+      ofAgreedTerms = "213536f106608428de763fe26b1e9e31f27244152e9a853614ad73c67002ee6f"
     }
 
 communityOrder :: OrderFields
-communityOrder = termsOrder {ofAgreedTerms = "2026-10-23/community"}
+communityOrder = termsOrder {ofAgreedTerms = "community/3d2141022b4e322767cb6c8dcac2daf21b9d2c9a2b93af726099a8bd4cc15bff"}
 
 commitment :: ByteString
 commitment = hx "0x9cf04ddef2eedfb02e6e7ba58f879c0636c584b6acc67ffe9f97a06bfb016ac1"
@@ -189,7 +189,7 @@ registrationId :: RegistrationId
 registrationId = RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"
 
 orderSignature :: Text
-orderSignature = "0x17107b11494e25098efc348aca64a2469ffb832bcc79dc57377a1b26a4004b6701ad73648f50af8b39d4079820a3de7e681ddf15f8cf15b5cff02b4a48cf1fe61c"
+orderSignature = "0xedd5071a12ad686a493bd8d9522cc95a292aea0e1970aaa3a4ea268696ed4f773b9dbfbf12d9aa79fd48bc1ea3825a720d8a09077bb4f35332480e1be1154fdf1c"
 
 retString :: ByteString
 retString = hx "0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002168747470733a2f2f736d70382e73696d706c65782e696d2f6123636f6e7461637400000000000000000000000000000000000000000000000000000000000000"

@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | The reveal's checks, in the contract's order: the signed label, the order's own label and links,
--- the commitment, the owner's intent, the community terms acceptance, and the links' kinds last.
+-- the commitment, the owner's intent, the terms acceptance, and the links' kinds last.
 module StoreService.Names.Reveal
   ( RevealRefusal (..),
     SignedLabel (..),
@@ -128,16 +128,15 @@ checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now revea
             Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's nonce read failed: " <> tshow e)
             Right nonce -> pure $ if nonce == riNonce then Right () else Left RVBadRequest
 
--- | After the intent, so only a signed request reads the policy. A name the policy lists needs its owner's signature of
--- the acceptance its view returns, with the intent's deadline; another name takes none.
+-- | After the intent, so only a signed request reads the policy. Every name needs its owner's signature of the acceptance
+-- its view returns, with the intent's deadline.
 checkAcceptance :: NamesConfig -> Contracts -> NameRegistration -> Word64 -> Maybe TermsAcceptance -> IO (Either RevealRefusal ())
 checkAcceptance NamesConfig {nChain = ChainConfig {cChainId}} ct NameRegistration {nrLabelHash, nrOwner, nrCommitment} deadline acceptance =
   currentAcceptance ct nrLabelHash nrOwner >>= \case
-    Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's community terms acceptance could not be read: " <> tshow e)
-    Right asked -> case (asked, acceptance) of
-      (Nothing, Nothing) -> pure $ Right ()
-      (Just AcceptanceAsked {acPolicy, acTermsHash, acNonce}, Just a@TermsAcceptance {taTermsHash, taNonce})
-        | taTermsHash == acTermsHash && taNonce == acNonce -> first (const RVBadRequest) <$> verifyAcceptance (policyDomain cChainId acPolicy) nrOwner nrCommitment deadline a
+    Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's terms acceptance could not be read: " <> tshow e)
+    Right AcceptanceAsked {acCommunity, acPolicy, acTermsHash, acNonce} -> case acceptance of
+      Just a@TermsAcceptance {taTermsHash, taNonce}
+        | taTermsHash == acTermsHash && taNonce == acNonce -> first (const RVBadRequest) <$> verifyAcceptance (policyDomain cChainId acPolicy) acCommunity nrOwner nrCommitment deadline a
       _ -> pure $ Left RVBadRequest
 
 linksValid :: Registration -> Bool

@@ -16,7 +16,6 @@ module StoreService.Config
     BadgeIssuerKey (..),
     GroupConfig (..),
     NamesConfig (..),
-    TermsConfig (..),
     ChainConfig (..),
     ServiceConfig (..),
     defaultExpiryMinutes,
@@ -40,7 +39,7 @@ import qualified Data.ByteArray as BA
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Char (GeneralCategory (..), generalCategory, isAsciiLower, isAsciiUpper, isControl, isDigit, isSpace)
+import Data.Char (GeneralCategory (..), generalCategory, isControl)
 import Data.Ini (Ini, iniGlobals, iniParser, keyValueParser, keys, lookupValue, sectionParser, sections)
 import Data.List (nub, (\\))
 import Data.List.NonEmpty (NonEmpty)
@@ -174,15 +173,10 @@ data NamesConfig = NamesConfig
     nTermSlackSeconds :: Int,
     nRevealMarginSeconds :: Int,
     nMaxOrderMoves :: Int,
-    nTerms :: TermsConfig,
     -- | What each community name is for, keyed by the label hash's bytes, as search receives a name.
     nCommunity :: Map ByteString Text,
     nChain :: ChainConfig
   }
-  deriving (Eq, Show)
-
--- | The name terms buyers agree to, and the page the order's checkbox links to.
-data TermsConfig = TermsConfig {tVersion :: Text, tUrl :: Text}
   deriving (Eq, Show)
 
 data ChainConfig = ChainConfig
@@ -269,9 +263,6 @@ requireHttps :: Text -> Either String Text
 requireHttps u
   | "https://" `T.isPrefixOf` u = Right u
   | otherwise = Left "btcpay.host must be an absolute https URL"
-
-maxTermsVersionLength :: Int
-maxTermsVersionLength = 32
 
 maxCommunityTextLength :: Int
 maxCommunityTextLength = 200
@@ -376,7 +367,7 @@ knownSettings =
     ("group", ["display_name", "description"]),
     ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage", "credit_test_purchases"]),
     ("issuer", ["index", "private_key", "dev_keys"]),
-    ("names", ["tld", "terms_version", "terms_url", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves"]),
+    ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves"]),
     ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap", "max_fee_per_gas"])
   ]
 
@@ -602,10 +593,9 @@ parseConfig ini = do
           nTermSlackSeconds <- atLeast 0 "names" "term_slack_seconds" 3600
           nRevealMarginSeconds <- atLeast 0 "names" "reveal_margin_seconds" 900
           nMaxOrderMoves <- atLeast 0 "names" "max_order_moves" 3
-          nTerms <- termsSetting
           nCommunity <- communityList nTLD
           nChain <- chainSection
-          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nTerms, nCommunity, nChain})
+          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nCommunity, nChain})
     tldSetting =
       required "names" "tld" >>= \case
         "simplex" -> Right TLDSimplex
@@ -614,17 +604,6 @@ parseConfig ini = do
     termStart =
       maybe (Left ("names.term_start must be an ISO 8601 UTC time such as " <> defaultTermStart)) Right $
         iso8601ParseM (maybe defaultTermStart T.unpack (present "names" "term_start"))
-    termsSetting = do
-      tVersion <- required "names" "terms_version"
-      unless (T.length tVersion <= maxTermsVersionLength && T.all versionChar tVersion) $
-        Left ("names.terms_version must be 1 to " <> show maxTermsVersionLength <> " letters, digits, dots, underscores or hyphens")
-      tUrl <- required "names" "terms_url"
-      unless (httpsUrl tUrl) $ Left "names.terms_url must be an https URL"
-      pure TermsConfig {tVersion, tUrl}
-    versionChar c = isAsciiUpper c || isAsciiLower c || isDigit c || c `elem` ("._-" :: String)
-    httpsUrl u = case T.stripPrefix "https://" u of
-      Just rest -> not (T.null rest) && T.all (\c -> not (isSpace c || isControl c)) rest
-      Nothing -> False
     communityList tld = M.fromList <$> mapM (communityEntry tld) (either (const []) id (keys "community" ini))
     communityEntry tld label = do
       let k = "community." <> T.unpack label

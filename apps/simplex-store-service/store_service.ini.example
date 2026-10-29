@@ -102,10 +102,6 @@ idle_seconds = 60
 ;[names]
 ; testing until the .simplex TLD is deployed
 ;tld = testing
-; the version of the name terms buyers agree to (1 to 32 letters, digits, dots, underscores or
-; hyphens), and the page the order's checkbox links to; both required, read only at startup
-;terms_version = 2026-10-23
-;terms_url = https://simplex.chat/
 ; the paid years of a name; at least 2, the controller's minimum
 ;years = 2
 ; a name's term starts here; the days until then are free

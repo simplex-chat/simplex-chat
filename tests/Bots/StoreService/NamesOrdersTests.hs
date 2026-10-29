@@ -40,19 +40,18 @@ module Bots.StoreService.NamesOrdersTests
     listName,
     threeYears,
     bakers,
-    bumpedTerms,
     newerTerms,
     olderTerms,
     communityTerms,
+    communityTermsOf,
     termsChanged,
     communityEntry,
-    communityEntryOf,
+    termsEntry,
     otherCommunityTerms,
     listOnChain,
   )
 where
 
-import Bots.StoreService.ConfigTests (termsUrl, termsVersion)
 import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall, unhex)
@@ -83,8 +82,8 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
-import Network.HTTP.Client (defaultManagerSettings, newManager, responseBody)
-import Network.HTTP.Types (hContentType)
+import Network.HTTP.Client (defaultManagerSettings, newManager, responseBody, responseHeaders)
+import Network.HTTP.Types (hContentType, status404)
 import Network.Wai (Application, requestHeaders)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges.Code (NameCode (..), formatNameCode, namePrepaidCodeHash, randomNamePrepaidCode)
@@ -99,10 +98,9 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
-import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..), TermsConfig (..))
-import StoreService.Names.Abi (hex, uint256)
-import StoreService.Names.Chain (newChainClient)
-import StoreService.Names.Contracts (newContracts, noCommunityTerms)
+import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..))
+import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, hex, selector, uint256)
+import StoreService.Names.Contracts (newContracts)
 import StoreService.Names.Codes (CodeRefusal (..))
 import StoreService.Names.Community (AcceptanceAsked (..))
 import StoreService.Names.Orders (OrdersEnv (..))
@@ -169,14 +167,14 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "answers the code's refusal when its reservation fails in the insert, writing nothing" testCodeNotReservable
     it "counts code orders and code checks against one code limit" testCodeLimitShared
   describe "terms" $ do
-    it "answers terms_changed with the current terms and community for an old version or the wrong variant, listed or not, creating nothing, and takes an ini-only name under plain terms" testTermsChanged
+    it "answers terms_changed with the current terms and community for an old version, other terms or the other kind, listed or not, creating nothing, and takes an ini-only name under the name terms" testTermsChanged
     it "accepts the community terms for a listed name as viem signs them, storing them" testCommunityTerms
-    it "answers terms_changed for a listed name before the policy has community terms, with their zero hash, creating nothing" testNoCommunityTerms
-    it "answers an exact resend after the version changed, and takes the same fields under the new terms as another order" testResendAfterBump
-    it "checks the terms after the existing orders, the timestamp and the duration, with the community listing's read, before the name check and the price" testTermsCheckOrder
+    it "answers terms_unavailable, before any payment, while the terms of the name's kind are not set, of a link the service does not take, or of a text not fetched now, with Retry-After, creating nothing" testTermsUnavailable
+    it "answers an exact resend after the terms changed on chain, and takes the same fields under the new terms as another order" testResendAfterBump
+    it "checks the terms after the existing orders, the timestamp and the duration, with the listing's read, before the name check and the price" testTermsCheckOrder
     it "answers terms_changed for a code order under old terms, listed or not, leaving the code unreserved, and accepts the community terms" testCodeTermsChanged
-    it "answers a code order's exact resend after the version changed" testCodeResendAfterBump
-    it "checks a code order's terms after the timestamp, with the community listing's read, before the name check and the code's state" testCodeTermsCheckOrder
+    it "answers a code order's exact resend after the terms changed on chain" testCodeResendAfterBump
+    it "checks a code order's terms after the timestamp, with the listing's read, before the name check and the code's state" testCodeTermsCheckOrder
     it "checks a community name's order for 2 years at their price, whatever years the configuration gives, storing those years" testCommunityInvoiceYears
   describe "closed orders" $ do
     it "accepts a new order of the same wallet and name after a cancel" testOrderAfterCancel
@@ -204,7 +202,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "has the contract's fields" testViewFields
     it "has the community entry of the terms the order signed, with its text, null for plain terms" testViewCommunity
     it "has the terms the order signed, null for an order stored before orders signed them" testViewTerms
-    it "reads the intent nonce in committed, the acceptance for a listed name before its reveal, and nothing in taken" testViewReads
+    it "reads the intent nonce in committed, the acceptance of the terms of the name's kind before its reveal, and nothing in taken" testViewReads
     it "leaves a failed intentNonce or acceptance read null and named in unread, reading nothing in taken" testViewUnread
     it "reads the order's balance, held until its holder's invoice expires and free past it, and the cents its order took from another's" testViewBalance
 
@@ -269,7 +267,7 @@ aliceOrder =
       oDuration = durationAt orderTime,
       oMethod = "btc",
       oPrice = alicePrice,
-      oTerms = termsVersion,
+      oTerms = plainTerms,
       oTimestamp = seconds orderTime
     }
 
@@ -333,7 +331,6 @@ testNamesConfig node =
       nTermSlackSeconds = slackSeconds,
       nRevealMarginSeconds = 900,
       nMaxOrderMoves = 3,
-      nTerms = TermsConfig {tVersion = termsVersion, tUrl = termsUrl},
       nCommunity = M.empty,
       nChain = fakeChainConfig node
     }
@@ -360,7 +357,7 @@ withOrdersVia via action = withServiceStores $ \open -> withOrdersOn open via ac
 withOrdersOn :: IO DBStore -> (Provider -> Provider) -> (Ctx -> IO a) -> IO a
 withOrdersOn cOpenStore via action = cOpenStore >>= \cStore -> withFakeEthNode $ \cNode -> do
   cRandom <- C.newRandom
-  ct <- newContracts TLDSimplex =<< newChainClient cRandom (fakeChainConfig cNode)
+  ct <- newContracts TLDSimplex =<< fakeChainClient cRandom cNode
   turns <- newTurns
   phases <- newPhases
   cClock <- newIORef orderTime
@@ -504,15 +501,15 @@ testPaidOrder = withOrders $ \ctx -> do
   field "labelHash" r `shouldBe` Just (J.String $ hex $ (\(LabelHash h) -> h) alice)
   field "price" r `shouldBe` Just (J.Number 10000)
   field "duration" r `shouldBe` Just (J.toJSON $ durationAt orderTime)
-  field "terms" r `shouldBe` Just (J.String termsVersion)
+  field "terms" r `shouldBe` Just (J.String plainTerms)
   let reference = "name:" <> hex (orderHash ownerA (fieldsOf aliceOrder) (OTInvoice (SPMCrypto CCBtc) 10000))
   stubCalls (cStub ctx) `shouldReturn` [StubCreate (SPMCrypto CCBtc) OrderDraft {odAmount = CurrencyAmount 10000, odCurrency = "usd", odReference = reference}]
   reg <- invoiceRegistration ctx invId
   (nrPhase reg, nrLive reg, nrVersion reg, nrYears reg, nrPrice reg, nrPayment reg) `shouldBe` (PUnpaid, True, 1, 2, 10000, RPInvoice (SPMCrypto CCBtc) invId)
   nrOrderHash reg `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTInvoice (SPMCrypto CCBtc) 10000)
-  nrAgreedTerms reg `shouldBe` termsVersion
+  nrAgreedTerms reg `shouldBe` plainTerms
 
--- | The body of the contract's Appendix C order vector, with viem's signature over it (NamesSignatureTests).
+-- | The body of the contract's Appendix C order vector under the fake node's name terms, with viem's signature over it (NamesSignatureTests).
 testViemOrder :: IO ()
 testViemOrder = withOrders $ \ctx0 -> withSettings vectorTermStart ctx0 $ \ctx -> do
   writeIORef (cClock ctx) (posixSecondsToUTCTime $ fromIntegral $ oTimestamp vectorOrder)
@@ -521,7 +518,7 @@ testViemOrder = withOrders $ \ctx0 -> withSettings vectorTermStart ctx0 $ \ctx -
   status `shouldBe` 200
   (field "phase" . registrationOf =<< v) `shouldBe` Just "unpaid"
 
--- | Appendix C's order: alicebakery with no links, signed with the terms version.
+-- | Appendix C's order: alicebakery with no links, signed with the name terms' hash.
 vectorOrder :: Order
 vectorOrder =
   aliceOrder
@@ -532,7 +529,7 @@ vectorOrder =
     }
 
 vectorSignature :: Text
-vectorSignature = "0x17107b11494e25098efc348aca64a2469ffb832bcc79dc57377a1b26a4004b6701ad73648f50af8b39d4079820a3de7e681ddf15f8cf15b5cff02b4a48cf1fe61c"
+vectorSignature = "0xedd5071a12ad686a493bd8d9522cc95a292aea0e1970aaa3a4ea268696ed4f773b9dbfbf12d9aa79fd48bc1ea3825a720d8a09077bb4f35332480e1be1154fdf1c"
 
 -- | Appendix C's duration is the page's at 21 October 2026 00:00 UTC, before its timestamp,
 -- so the term starts later by as much for the vector to pass the duration check at its timestamp.
@@ -604,7 +601,7 @@ testOneFieldDiffers = withOrders $ \ctx -> do
           aliceOrder {oMethod = "xmr"},
           aliceOrder {oMethod = "card"},
           aliceOrder {oPrice = alicePrice + 1},
-          aliceOrder {oTerms = termsVersion <> "/community"}
+          aliceOrder {oTerms = communityTerms}
         ]
   forM_ variants $ \o -> placeOrder ctx o `shouldReturn` refusedWith 409 "order_exists"
   length <$> stubCalls (cStub ctx) `shouldReturn` 1
@@ -776,43 +773,39 @@ threeYears cfg = cfg {nYears = 3}
 bakers :: Text
 bakers = "bakers and bakeries in Portugal"
 
--- | The operator's next terms version, after a restart.
-bumpedTerms :: NamesConfig -> NamesConfig
-bumpedTerms cfg@NamesConfig {nTerms} = cfg {nTerms = nTerms {tVersion = newerTerms}}
-
 newerTerms, olderTerms :: Text
-newerTerms = "2026-11-01"
+newerTerms = T.drop 2 $ hex fakeNewNameTerms
 olderTerms = "2026-10-01"
 
 -- | The terms a listed name's order signs, with the hash of the policy's community terms.
-communityTerms :: Text -> Text
+communityTerms :: Text
 communityTerms = communityTermsOf fakeCommunityTerms
 
-communityTermsOf :: ByteString -> Text -> Text
-communityTermsOf h version = version <> "/community/" <> T.drop 2 (hex h)
+communityTermsOf :: ByteString -> Text
+communityTermsOf h = "community/" <> T.drop 2 (hex h)
 
--- | terms_changed with the current version, the terms' URL and the name's community entry.
-termsChanged :: Text -> Maybe Text -> (Int, Maybe J.Object)
-termsChanged version community =
+-- | terms_changed with the current terms of the name's kind and its community entry.
+termsChanged :: ByteString -> Maybe Text -> (Int, Maybe J.Object)
+termsChanged text community =
   ( 409,
     Just $
       KM.fromList
         [ ("error", "terms_changed"),
-          ("terms", J.object ["version" .= version, "url" .= termsUrl]),
+          ("terms", termsEntry text),
           ("community", maybe J.Null communityEntry community)
         ]
   )
 
--- | The current version with community terms other than the policy's.
+-- | Community terms other than the policy's.
 otherCommunityTerms :: Text
-otherCommunityTerms = communityTermsOf fakeNewCommunityTerms termsVersion
+otherCommunityTerms = communityTermsOf fakeNewCommunityTerms
 
--- | A listed name's community entry: the ini's text, and the policy's terms, linked where the service serves them.
+-- | A listed name's community entry: the ini's text and its years.
 communityEntry :: J.ToJSON a => a -> J.Value
-communityEntry = communityEntryOf fakeCommunityTerms
+communityEntry for = J.object ["for" .= for, "years" .= (2 :: Int)]
 
-communityEntryOf :: J.ToJSON a => ByteString -> a -> J.Value
-communityEntryOf h for = J.object ["for" .= for, "years" .= (2 :: Int), "terms" .= J.object ["url" .= ("/api/community-terms/" <> hex h), "hash" .= hex h]]
+termsEntry :: ByteString -> J.Value
+termsEntry text = J.object ["hash" .= hex (fakeTermsHash text), "link" .= fakeTermsLink text]
 
 -- | The policy lists the name as a community name.
 listOnChain :: Ctx -> Text -> IO ()
@@ -820,7 +813,7 @@ listOnChain Ctx {cNode} label = listCommunityName cNode $ labelHash label
 
 -- | Signed as sent, so only their format refuses them.
 malformedTerms :: [Text]
-malformedTerms = ["", T.replicate 113 "a", "2026-10-23 community", "2026-10-23+community", "2026-10-23/communit\233"]
+malformedTerms = ["", T.replicate 75 "a", "community " <> plainTerms, "community+" <> plainTerms, "communit\233/" <> plainTerms]
 
 testTwoWallets :: IO ()
 testTwoWallets = withOrders $ \ctx -> do
@@ -833,57 +826,70 @@ testTermsChanged :: IO ()
 testTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis" . listName "alicebakery") ctx0 $ \ctx -> do
   listOnChain ctx "dynamis"
   let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000}
-  -- 112 characters pass the format and meet the terms check; alicebakery's ini line without the policy's listing is a plain name
-  forM_ [olderTerms, communityTerms termsVersion, communityTerms olderTerms, T.replicate 112 "a"] $ \t ->
-    placeOrder ctx aliceOrder {oTerms = t} `shouldReturn` termsChanged termsVersion Nothing
-  forM_ [termsVersion, olderTerms, communityTerms olderTerms, otherCommunityTerms] $ \t ->
-    placeOrder ctx dynamis {oTerms = t} `shouldReturn` termsChanged termsVersion (Just bakers)
+  -- 74 characters pass the format and meet the terms check; alicebakery's ini line without the policy's listing is a plain name
+  forM_ [olderTerms, communityTerms, newerTerms, T.replicate 74 "a"] $ \t ->
+    placeOrder ctx aliceOrder {oTerms = t} `shouldReturn` termsChanged fakeNameTermsText Nothing
+  forM_ [plainTerms, olderTerms, otherCommunityTerms, "community/" <> newerTerms] $ \t ->
+    placeOrder ctx dynamis {oTerms = t} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
   stubCalls (cStub ctx) `shouldReturn` []
   registrationsOf ctx ownerA `shouldReturn` []
-  (invId, v) <- placed ctx dynamis {oTerms = communityTerms termsVersion}
-  field "terms" (registrationOf v) `shouldBe` Just (J.String $ communityTerms termsVersion)
-  nrAgreedTerms <$> invoiceRegistration ctx invId `shouldReturn` communityTerms termsVersion
+  (invId, v) <- placed ctx dynamis {oTerms = communityTerms}
+  field "terms" (registrationOf v) `shouldBe` Just (J.String communityTerms)
+  nrAgreedTerms <$> invoiceRegistration ctx invId `shouldReturn` communityTerms
   void $ placed ctx aliceOrder
 
-testNoCommunityTerms :: IO ()
-testNoCommunityTerms = withOrders $ \ctx0 -> withSettings (listName "dynamis") ctx0 $ \ctx -> do
+testTermsUnavailable :: IO ()
+testTermsUnavailable = withOrders $ \ctx0 -> withSettings (listName "dynamis") ctx0 $ \ctx@Ctx {cNode = node} -> do
   listOnChain ctx "dynamis"
-  setCommunityTerms (cNode ctx) ""
-  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000}
-  placeOrder ctx dynamis {oTerms = communityTermsOf noCommunityTerms termsVersion}
-    `shouldReturn` (fmap (KM.insert "community" (communityEntryOf noCommunityTerms bakers)) <$> termsChanged termsVersion Nothing)
+  (code, issued) <- issueCode ctx 8 2 id
+  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000, oTerms = communityTerms}
+      unavailable = refusedWith 503 "terms_unavailable"
+  setCommunityTerms node ""
+  placeOrder ctx dynamis `shouldReturn` unavailable
+  setNameTerms node ""
+  placeOrder ctx aliceOrder `shouldReturn` unavailable
+  register ctx code aliceOrder `shouldReturn` unavailable
+  answerCall node fakeNamePolicy (selector "nameTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes "https://example.org/terms.md"]
+  placeOrder ctx aliceOrder `shouldReturn` unavailable
+  setNameTerms node fakeNewNameTermsText
+  answerText node (fakeTermsPath fakeNewNameTermsText) $ TextAnswer status404 [] ""
+  placeOrder ctx aliceOrder {oTerms = newerTerms} `shouldReturn` unavailable
+  r <- signedBody (cRandom ctx) aliceOrder {oTerms = newerTerms} >>= webRequestBody (cClient ctx) "POST" "/api/invoice" [(hContentType, "application/json")] . J.encode
+  (statusOf r, lookup "Retry-After" $ responseHeaders r) `shouldSatisfy` \(status, retryAfter) -> status == 503 && maybe False (> "0") retryAfter
+  stubCalls (cStub ctx) `shouldReturn` []
+  pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
   registrationsOf ctx ownerA `shouldReturn` []
 
 testCommunityTerms :: IO ()
 testCommunityTerms = withOrders $ \ctx0 -> withSettings (listName "alicebakery" . vectorTermStart) ctx0 $ \ctx -> do
   listOnChain ctx "alicebakery"
   writeIORef (cClock ctx) (posixSecondsToUTCTime $ fromIntegral $ oTimestamp vectorOrder)
-  postOrder ctx (withSignature vectorSignature $ unsignedBody vectorOrder) `shouldReturn` termsChanged termsVersion (Just bakers)
-  let community = vectorOrder {oTerms = communityTerms termsVersion}
-      communitySignature = "0xaaae43ae111b0411c50cc0c09acb6bac1bdf3d338539341046189f84e785efe331c5bb7b43ad36fa84e0ce8bcaa6d7e5e42cf21c61eb172a0e4dc704ebcdf1001c"
+  postOrder ctx (withSignature vectorSignature $ unsignedBody vectorOrder) `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
+  let community = vectorOrder {oTerms = communityTerms}
+      communitySignature = "0x866ffd975972fe6a668eed758e8a69b57900d5e0898aa2872d344216fb5dd5ff45e380b07792c5b0220ad9564a24c3513ad1d39ac30ff888168bbd1c8e17aa011b"
   signedBody (cRandom ctx) community >>= (`shouldBe` withSignature communitySignature (unsignedBody community))
   (status, v) <- postOrder ctx $ withSignature communitySignature (unsignedBody community)
   (status, field "terms" . registrationOf =<< v, field "community" . registrationOf =<< v)
-    `shouldBe` (200, Just (J.String $ communityTerms termsVersion), Just (communityEntry bakers))
+    `shouldBe` (200, Just (J.String communityTerms), Just (communityEntry bakers))
 
 testResendAfterBump :: IO ()
-testResendAfterBump = withOrders $ \ctx0 -> do
-  body <- signedBody (cRandom ctx0) aliceOrder
-  (invId@(InvoiceId invText), view) <- placed ctx0 aliceOrder
-  withSettings bumpedTerms ctx0 $ \ctx -> do
-    advance ctx 60
-    let later = aliceOrder {oTimestamp = seconds orderTime + 60}
-    postOrder ctx body `shouldReturn` (200, Just view)
-    placed ctx later `shouldReturn` (invId, view)
-    placeOrder ctx later {oTerms = newerTerms} `shouldReturn` refusedWith 409 "order_exists"
-    fst <$> post ctx ("/api/invoice/" <> T.unpack invText <> "/cancel") "" `shouldReturn` 200
-    (newer, _) <- placed ctx later {oTerms = newerTerms}
-    newer `shouldNotBe` invId
-    [n, o] <- mapM (invoiceRegistration ctx) [newer, invId]
-    (nrAgreedTerms n, nrAgreedTerms o) `shouldBe` (newerTerms, termsVersion)
-    nrOrderHash n `shouldNotBe` nrOrderHash o
-    (status, v) <- postOrder ctx body
-    (status, field "invoiceId" =<< v, field "status" =<< v) `shouldBe` (200, Just (J.String invText), Just "expired")
+testResendAfterBump = withOrders $ \ctx -> do
+  body <- signedBody (cRandom ctx) aliceOrder
+  (invId@(InvoiceId invText), view) <- placed ctx aliceOrder
+  setNameTerms (cNode ctx) fakeNewNameTermsText
+  advance ctx 60
+  let later = aliceOrder {oTimestamp = seconds orderTime + 60}
+  postOrder ctx body `shouldReturn` (200, Just view)
+  placed ctx later `shouldReturn` (invId, view)
+  placeOrder ctx later {oTerms = newerTerms} `shouldReturn` refusedWith 409 "order_exists"
+  fst <$> post ctx ("/api/invoice/" <> T.unpack invText <> "/cancel") "" `shouldReturn` 200
+  (newer, _) <- placed ctx later {oTerms = newerTerms}
+  newer `shouldNotBe` invId
+  [n, o] <- mapM (invoiceRegistration ctx) [newer, invId]
+  (nrAgreedTerms n, nrAgreedTerms o) `shouldBe` (newerTerms, plainTerms)
+  nrOrderHash n `shouldNotBe` nrOrderHash o
+  (status, v) <- postOrder ctx body
+  (status, field "invoiceId" =<< v, field "status" =<< v) `shouldBe` (200, Just (J.String invText), Just "expired")
 
 testTermsCheckOrder :: IO ()
 testTermsCheckOrder = withOrders $ \ctx@Ctx {cNode = node} -> do
@@ -892,9 +898,9 @@ testTermsCheckOrder = withOrders $ \ctx@Ctx {cNode = node} -> do
   placeOrder ctx old {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 6} `shouldReturn` refusedWith 409 "order_exists"
   placeOrder ctx old {oTimestamp = seconds orderTime + 601} `shouldReturn` refusedWith 400 "bad_request"
   placeOrder ctx old {oDuration = oDuration old + fromIntegral slackSeconds + 1} `shouldReturn` refusedWith 400 "bad_request"
-  placeOrder ctx old {oPrice = 9000} `shouldReturn` termsChanged termsVersion Nothing
+  placeOrder ctx old {oPrice = 9000} `shouldReturn` termsChanged fakeNameTermsText Nothing
   answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (1 :: Int)
-  placeOrder ctx old `shouldReturn` termsChanged termsVersion Nothing
+  placeOrder ctx old `shouldReturn` termsChanged fakeNameTermsText Nothing
   setFault node "eth_call" HttpFailure
   placeOrder ctx old `shouldReturn` refusedWith 503 "name_check_unavailable"
   length <$> stubCalls (cStub ctx) `shouldReturn` 1
@@ -947,7 +953,7 @@ testCodeOrder = withOrders $ \ctx -> do
   rid <- registered ctx code aliceOrder
   r <- registrationById ctx rid
   (nrPhase r, nrLive r, nrVersion r, nrYears r, nrPrice r, nrPayment r) `shouldBe` (PQueued, True, 1, 2, 0, RPCode pcId)
-  (nrOwner r, nrDuration r, nrCommitment r, nrSealed r, nrAgreedTerms r) `shouldBe` (ownerA, durationAt orderTime, oCommitment aliceOrder, oSealed aliceOrder, termsVersion)
+  (nrOwner r, nrDuration r, nrCommitment r, nrSealed r, nrAgreedTerms r) `shouldBe` (ownerA, durationAt orderTime, oCommitment aliceOrder, oSealed aliceOrder, plainTerms)
   nrOrderHash r `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTCode pcCodeHash)
   held <- readCode ctx issued
   (pcReservedBy held, pcReservedAt held, pcSpentAt held) `shouldBe` (Just rid, Just orderTime, Nothing)
@@ -976,32 +982,32 @@ testCodeTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis") c
   listOnChain ctx "dynamis"
   (code, issued) <- issueCode ctx 7 2 id
   let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2}
-  forM_ [olderTerms, communityTerms termsVersion] $ \t ->
-    register ctx code aliceOrder {oTerms = t} `shouldReturn` termsChanged termsVersion Nothing
-  forM_ [termsVersion, communityTerms olderTerms, otherCommunityTerms] $ \t ->
-    register ctx code dynamis {oTerms = t} `shouldReturn` termsChanged termsVersion (Just bakers)
+  forM_ [olderTerms, communityTerms] $ \t ->
+    register ctx code aliceOrder {oTerms = t} `shouldReturn` termsChanged fakeNameTermsText Nothing
+  forM_ [plainTerms, olderTerms, otherCommunityTerms] $ \t ->
+    register ctx code dynamis {oTerms = t} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
   pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
-  rid <- registered ctx code dynamis {oTerms = communityTerms termsVersion}
-  nrAgreedTerms <$> registrationById ctx rid `shouldReturn` communityTerms termsVersion
+  rid <- registered ctx code dynamis {oTerms = communityTerms}
+  nrAgreedTerms <$> registrationById ctx rid `shouldReturn` communityTerms
   pcReservedBy <$> readCode ctx issued `shouldReturn` Just rid
 
 testCommunityInvoiceYears :: IO ()
 testCommunityInvoiceYears = withOrders $ \ctx0 -> withSettings (threeYears . listName "dynamis") ctx0 $ \ctx -> do
   listOnChain ctx "dynamis"
-  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000, oTerms = communityTerms termsVersion}
+  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000, oTerms = communityTerms}
   placeOrder ctx dynamis {oDuration = yearsDuration 3 orderTime} `shouldReturn` refusedWith 400 "bad_request"
   fst <$> placeOrder ctx dynamis `shouldReturn` 200
   map nrYears <$> registrationsOf ctx ownerA `shouldReturn` [3]
 
 testCodeResendAfterBump :: IO ()
-testCodeResendAfterBump = withOrders $ \ctx0 -> do
-  (code, _) <- issueCode ctx0 8 2 id
-  rid <- registered ctx0 code aliceOrder
-  withSettings bumpedTerms ctx0 $ \ctx -> do
-    advance ctx 60
-    register ctx code aliceOrder `shouldReturn` registrationAnswer rid
-    register ctx code aliceOrder {oTimestamp = seconds orderTime + 60} `shouldReturn` registrationAnswer rid
-    register ctx code aliceOrder {oTerms = newerTerms, oTimestamp = seconds orderTime + 60} `shouldReturn` refusedWith 409 "order_exists"
+testCodeResendAfterBump = withOrders $ \ctx -> do
+  (code, _) <- issueCode ctx 8 2 id
+  rid <- registered ctx code aliceOrder
+  setNameTerms (cNode ctx) fakeNewNameTermsText
+  advance ctx 60
+  register ctx code aliceOrder `shouldReturn` registrationAnswer rid
+  register ctx code aliceOrder {oTimestamp = seconds orderTime + 60} `shouldReturn` registrationAnswer rid
+  register ctx code aliceOrder {oTerms = newerTerms, oTimestamp = seconds orderTime + 60} `shouldReturn` refusedWith 409 "order_exists"
 
 testCodeTermsCheckOrder :: IO ()
 testCodeTermsCheckOrder = withOrders $ \ctx@Ctx {cStore, cNode = node} -> do
@@ -1013,9 +1019,9 @@ testCodeTermsCheckOrder = withOrders $ \ctx@Ctx {cStore, cNode = node} -> do
   placeCode cStore "holder" ownerB (order "holderone" 1) reservedCode `shouldReturn` Right ()
   (long, _) <- issueCode ctx 12 2 id
   (unpaid, _) <- issueCode ctx 8 2 $ \c -> c {npcPaymentStatus = CPSUnpaid}
-  forM_ [reserved, long, unpaid] $ \c -> register ctx c old `shouldReturn` termsChanged termsVersion Nothing
+  forM_ [reserved, long, unpaid] $ \c -> register ctx c old `shouldReturn` termsChanged fakeNameTermsText Nothing
   answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (1 :: Int)
-  register ctx code old `shouldReturn` termsChanged termsVersion Nothing
+  register ctx code old `shouldReturn` termsChanged fakeNameTermsText Nothing
   setFault node "eth_call" HttpFailure
   register ctx code old `shouldReturn` refusedWith 503 "name_check_unavailable"
   length <$> registrationsOf ctx ownerA `shouldReturn` 0
@@ -1030,7 +1036,7 @@ testCodeOneFieldDiffers = withOrders $ \ctx -> do
           (code, aliceOrder {oCommitment = commitmentOf 2}),
           (code, aliceOrder {oSealed = "sealed-alicebakery-2"}),
           (code, aliceOrder {oDuration = oDuration aliceOrder + 1}),
-          (code, aliceOrder {oTerms = termsVersion <> "/community"}),
+          (code, aliceOrder {oTerms = communityTerms}),
           (other, aliceOrder)
         ]
   forM_ variants $ \(c, o) -> register ctx c o `shouldReturn` refusedWith 409 "order_exists"
@@ -1129,7 +1135,7 @@ testCommunityCodeYears :: IO ()
 testCommunityCodeYears = withOrders $ \ctx0 -> withSettings (listName "dynamis") ctx0 $ \ctx -> do
   listOnChain ctx "dynamis"
   (code, _) <- issueCode ctx 7 5 id
-  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oTerms = communityTerms termsVersion}
+  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oTerms = communityTerms}
   register ctx code dynamis {oDuration = yearsDuration 5 orderTime} `shouldReturn` refusedWith 400 "bad_request"
   rid <- registered ctx code dynamis
   (nrYears &&& nrDuration) <$> registrationById ctx rid `shouldReturn` (5, yearsDuration 2 orderTime)
@@ -1630,9 +1636,12 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   field "latePayment" v `shouldBe` Just J.Null
   let waiting w = field "latePayment" $ objectOf $ viewJSON (testNamesConfig node) r Nothing (Just w) ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing}
   map waiting [LWConfirming, LWCrediting, LWSupport] `shouldBe` map (\t -> Just $ J.object ["waiting" .= (t :: Text)]) ["confirming", "crediting", "support"]
-  let acceptance = AcceptanceAsked {acPolicy = fakeNamePolicy, acTermsHash = fakeCommunityTerms, acNonce = 2}
-  field "acceptance" (objectOf $ viewJSON (testNamesConfig node) r Nothing Nothing ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Just acceptance})
-    `shouldBe` Just (J.object ["policy" .= safeDecodeUtf8 (strEncode fakeNamePolicy), "termsHash" .= hex fakeCommunityTerms, "nonce" .= (2 :: Int)])
+  let acceptance community h = AcceptanceAsked {acCommunity = community, acPolicy = fakeNamePolicy, acTermsHash = h, acNonce = 2}
+      acceptanceOf a = field "acceptance" (objectOf $ viewJSON (testNamesConfig node) r Nothing Nothing ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Just a})
+      acceptanceJSON :: Text -> ByteString -> Maybe J.Value
+      acceptanceJSON kind h = Just (J.object ["kind" .= kind, "policy" .= safeDecodeUtf8 (strEncode fakeNamePolicy), "termsHash" .= hex h, "nonce" .= (2 :: Int)])
+  acceptanceOf (acceptance False fakeNameTerms) `shouldBe` acceptanceJSON "name" fakeNameTerms
+  acceptanceOf (acceptance True fakeCommunityTerms) `shouldBe` acceptanceJSON "community" fakeCommunityTerms
   map (`field` v) ["id", "phase", "owner", "tld", "chainId", "linksRefused", "label", "unread", "sponsor", "fromBalance", "balance", "community", "terms"]
     `shouldBe` map
       Just
@@ -1648,12 +1657,12 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         J.Number 0,
         J.Null,
         J.Null,
-        J.String termsVersion
+        J.String plainTerms
       ]
 
 testViewCommunity :: IO ()
 testViewCommunity = withServiceStore $ \st -> withFakeEthNode $ \node -> do
-  Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) {ofAgreedTerms = communityTerms termsVersion} (addUTCTime 3600 t0)
+  Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) {ofAgreedTerms = communityTerms} (addUTCTime 3600 t0)
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "r1")
   let LabelHash aliceHash = labelHash "alicebakery"
       listing :: [(ByteString, Text)] -> NameRegistration -> Maybe J.Value
@@ -1662,7 +1671,7 @@ testViewCommunity = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   listing [(aliceHash, "bakers and bakeries in Lisbon")] r `shouldBe` entry (Just ("bakers and bakeries in Lisbon" :: Text))
   -- the community terms the order signed, without a text in the ini
   listing [] r `shouldBe` entry (Nothing :: Maybe Text)
-  listing [(aliceHash, "bakers and bakeries in Lisbon")] r {nrAgreedTerms = termsVersion} `shouldBe` Just J.Null
+  listing [(aliceHash, "bakers and bakeries in Lisbon")] r {nrAgreedTerms = plainTerms} `shouldBe` Just J.Null
 
 testViewTerms :: IO ()
 testViewTerms = withServiceStore $ \st -> withFakeEthNode $ \node -> do
@@ -1676,7 +1685,7 @@ testViewTerms = withServiceStore $ \st -> withFakeEthNode $ \node -> do
 testViewReads :: IO ()
 testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   g <- C.newRandom
-  ct <- newContracts TLDSimplex =<< newChainClient g (fakeChainConfig node)
+  ct <- newContracts TLDSimplex =<< fakeChainClient g node
   answerCall node fakeSponsor noncesCall $ Returns $ uint256 (4 :: Int)
   Right () <- placePaid st "paid" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
   let inPhase phase = do
@@ -1684,12 +1693,12 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         Written _ <- withTransaction st $ \db -> updateRegistration db r {nrPhase = phase} t0
         withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
   committed <- inPhase PCommitted
-  readViewChain ct committed `shouldReturn` ViewReads (Just 4) [] Nothing
-  -- the policy lists the name: the page signs the acceptance with the policy's nonce, until a reveal is stored
-  listCommunityName node $ labelHash "alicebakery"
   answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
-  readViewChain ct committed `shouldReturn` ViewReads (Just 4) [] (Just AcceptanceAsked {acPolicy = fakeNamePolicy, acTermsHash = fakeCommunityTerms, acNonce = 2})
-  -- before the policy has community terms there are none to sign, so the page waits
+  readViewChain ct committed `shouldReturn` ViewReads (Just 4) [] (Just AcceptanceAsked {acCommunity = False, acPolicy = fakeNamePolicy, acTermsHash = fakeNameTerms, acNonce = 2})
+  -- the policy lists the name: the page signs the community terms' acceptance with the policy's nonce, until a reveal is stored
+  listCommunityName node $ labelHash "alicebakery"
+  readViewChain ct committed `shouldReturn` ViewReads (Just 4) [] (Just AcceptanceAsked {acCommunity = True, acPolicy = fakeNamePolicy, acTermsHash = fakeCommunityTerms, acNonce = 2})
+  -- before the policy has terms of the name's kind there are none to sign, so the page waits
   setCommunityTerms node ""
   readViewChain ct committed `shouldReturn` ViewReads (Just 4) ["acceptance"] Nothing
   setCommunityTerms node fakeCommunityTermsText
@@ -1700,7 +1709,7 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
 testViewUnread :: IO ()
 testViewUnread = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   g <- C.newRandom
-  ct <- newContracts TLDSimplex =<< newChainClient g (fakeChainConfig node)
+  ct <- newContracts TLDSimplex =<< fakeChainClient g node
   setFault node "eth_call" HttpFailure
   Right () <- placePaid st "paid" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
@@ -1712,7 +1721,7 @@ testViewUnread = withServiceStore $ \st -> withFakeEthNode $ \node -> do
 testViewBalance :: IO ()
 testViewBalance = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   g <- C.newRandom
-  ct <- newContracts TLDSimplex =<< newChainClient g (fakeChainConfig node)
+  ct <- newContracts TLDSimplex =<< fakeChainClient g node
   let holderExpiry = addUTCTime 3600 t0
       viewOf :: Text -> UTCTime -> IO J.Object
       viewOf rid now = do

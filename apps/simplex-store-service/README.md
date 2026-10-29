@@ -129,9 +129,8 @@ section (omitting it disables card payments), an optional `[group]` section (omi
 turns off the group's commands, though a group created earlier still has its code messages updated),
 the poll cadence, optional `[apple]` and `[google]` sections that verify store purchases (see
 [Store purchases](#store-purchases-app-store-and-google-play)), and optional `[names]` and `[chain]` sections for the names store (omitting both
-turns it off), whose `[chain] service_key` is [the gas key](#the-gas-key). `[names]` requires
-`terms_version` and `terms_url`, and an optional `[community]` section gives what each community name is for
-(see [Terms and community names](#terms-and-community-names)). Write every setting as
+turns it off), whose `[chain] service_key` is [the gas key](#the-gas-key). An optional `[community]` section gives
+what each community name is for (see [Terms and community names](#terms-and-community-names)). Write every setting as
 `key = value`: the parser also reads `key: value`, but drops the first character of its value. A
 key written twice in one section, or a section header written twice, stops the service at startup.
 `store_service.ini.example` is the committed template; `store_service.ini` itself is
@@ -852,19 +851,17 @@ changes nothing, and `--check` then reports the chain absent.
 
 ### Terms and community names
 
-`[names]` needs two settings, with no default:
-
-- `terms_version`: the version of the name terms buyers agree to, 1 to 32 letters, digits, dots,
-  underscores or hyphens, such as `2026-10-23`. Change it whenever the terms change.
-- `terms_url`: the `https://` page of those terms, which the order's checkbox links to.
-
-**Upgrading:** an ini written before these settings existed stops the service at startup until both
-are added under `[names]`.
-
 The controller's name policy (`SimplexNamePolicy`, read from `namePolicy()` once at startup and
-logged, or on first use when that read fails or finds none) lists the community names: its bona fide
-list, which the contracts' owner edits on chain and the guardian can add to. A listed name can be registered
-only after its owner accepts the policy's current community terms on chain, identified by `termsHash`.
+logged, or on first use when that read fails or finds none) holds the links of two sets of terms:
+`nameTermsLink()`, the name terms, and `communityNameTermsLink()`, the community name terms. It lists
+the community names: its bona fide list, which the contracts' owner edits on chain and the guardian
+can add to. A listed name is sold under the community name terms, which include the name terms that
+apply to it, and any other name under the name terms. A name is registered only after its owner
+accepts the current terms of its kind on chain, once.
+
+**Upgrading:** `[names] terms_version` and `terms_url` are no longer read: the service warns at
+startup that nothing reads them, and ignores them.
+
 A later `setNamePolicy` takes effect for the service after a restart, so restart it
 at once: until then the service reads the reservations, the list, the terms and the nonces from the
 old policy, so an order of a name the new policy reserves ends taken, and one of a name it lists
@@ -874,14 +871,35 @@ A community name is registered for 2 paid years, plus the free days before `[nam
 whatever years `[names] years` or its prepaid code gives, since the controller registers a community
 name for at most 1095 days.
 
-The name policy keeps the community terms' text on chain, and `termsHash` is its keccak256, so the
-two always match. The service reads the text with `termsText()` and serves it, as plain text, at
-`GET /api/community-terms/<hash>`, which the order's checkbox links to beside the name terms; it
-answers `404` for any other hash.
-To change the terms, the contracts' owner calls `setTerms(text)`: an order signed under the old
-terms is asked to agree again before its reveal, and the old text stays in the calldata of its
-`setTerms` transaction. Until the owner first sets terms there is no text to agree to, so community
-names cannot be ordered, and the service warns at startup.
+Each link names one file at one commit of simplex-chat/simplex-chat on git.simplex.chat, with the
+sha256 of the file's bytes:
+
+```
+https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/<40 lower-case hex>/<path>#sha256=<64 lower-case hex>
+```
+
+The path is one or more segments of letters, digits, `_`, `-` and `.`, separated by `/`, with no empty,
+`.` or `..` segment, and ends in `.md`. The terms' hash, which orders sign and the policy records with
+each acceptance, is the keccak256 of the link. With `[chain] chain_id = 31337` and a node of that chain
+id, the service also takes a link of a file on this machine, `http://127.0.0.1:<port>/<path>#sha256=<64
+lower-case hex>`, as the dev scripts set.
+
+The service reads both links at one block for each request that needs them, so a change on chain
+applies at once. It fetches each text once, without the link's fragment, following no redirect, within
+10 seconds: a `200` answer with `Content-Type` `text/plain` or `text/markdown`, of charset `utf-8` or
+none, of at most 256 KB, valid UTF-8, whose sha256 is the link's. It keeps each text by its hash, and
+fetches one at a time. After a failed fetch it fetches no text for 30 seconds, or for longer when the
+answer's `Retry-After` asks, and logs why. `GET /api/terms/<hash>` answers `{"link", "text"}` for the
+hash of either current link, `404` for any other hash or a link the service does not take, and
+meanwhile `503 terms_unavailable` with `Retry-After` for a text not fetched yet.
+
+The terms of a name's kind are unavailable while their link is not set, is not a link the service
+takes, or has a text the service cannot fetch now. An available name's search answer then carries
+`"terms": null`, and an order, a code order, a move or a spend of such a name answers
+`503 terms_unavailable` before any payment, with `Retry-After` while the fetch waits. The service
+logs both links at startup, and warns for each that leaves names unavailable. To change the terms,
+the contracts' owner calls `setNameTerms(link)` or `setCommunityNameTerms(link)`; an order signed
+under the old terms is asked to agree again before its reveal.
 
 `[community]` gives what each community name is for, one line per name: the label, as it is searched,
 then `=` and the text:
@@ -901,30 +919,35 @@ entry, on `[community]` without `[names]`, on a key written twice in a section (
 be read) and on a section header written twice in the file (only the last would be read). It logs
 how many community names it loaded.
 
-The terms settings and the `[community]` texts are read only at startup, so an edit applies after a
-restart; the policy's list and its community terms apply as soon as they change on chain. After a
-restart, search each listed name on the names site and check that it shows as a community name.
+The `[community]` texts are read only at startup, so an edit applies after a restart; the policy's
+list and its terms apply as soon as they change on chain. After a restart, search each listed name on
+the names site and check that it shows as a community name.
 
-Every order signs the terms the buyer agreed to: `terms_version`, followed by `/community/` and the 64 lower-case hex digits
-of the community terms' hash, without `0x`, for a listed name. The service stores them with the order, so an open order keeps the terms it signed
-after an edit, and every move signs the current terms for the name it moves to, and stores them. An
-order or a move signed with any other value answers `409 terms_changed` with the current terms and
-the name's community entry, and the page asks again. An exact resend is still answered after the version changed.
+Every order signs the terms the buyer agreed to: the 64 lower-case hex digits of the hash of the
+terms of the name's kind, without `0x`, after `community/` for a listed name. The service stores them
+with the order, so an open order keeps the terms it signed after a change, and every move signs the
+current terms for the name it moves to, and stores them. An order or a move signed with any other
+value answers `409 terms_changed` with the current terms of the name's kind, `{"hash", "link"}`, and
+the name's community entry, and the page asks again; an order signed with a terms version, as pages
+before signed, meets it once. An exact resend is still answered after the terms changed.
 
 **Upgrading:** a page that sends no `terms` gets `bad_request` on every order, spend and move, so the
 page and the service are deployed together.
 
 On chain the order is the same for every name: the service commits, the page signs the reveal, the
-service registers. For a listed name the page also signs `AcceptBonaFideTerms` for the commitment
-with the reveal, at the policy's nonce and the reveal's deadline, and the service relays it with
-`commitUnderBonaFideCommunityTermsWithSig` as soon as the reveal is stored, then registers. A
-relay or a register refused for the acceptance (new terms, a used nonce), or an acceptance signed for
-the name policy before a `setNamePolicy`, clears the reveal, and the page signs again.
+service registers. With the reveal the page signs the acceptance of the terms of the name's kind for
+the commitment, `AcceptNameTerms` or `AcceptCommunityNameTerms`, at the policy's nonce and the
+reveal's deadline, and the service relays it with `commitUnderNameTermsWithSig` or
+`commitUnderCommunityNameTermsWithSig` as soon as the reveal is stored, then registers. A relay or a
+register refused for the acceptance (new terms, a used nonce), an acceptance of the other kind of
+terms, or one signed for the name policy before a `setNamePolicy`, clears the reveal, and the page
+signs again. A relay that reverts while the policy holds that acceptance for the commitment, as when
+another sent it first, is followed by the register.
 
 ### The gas key
 
 `[chain] service_key` is the registrar key: an Ethereum account (EOA) that sends every names
-transaction, `commit` to the controller, a community name's terms acceptance (`commitUnderBonaFideCommunityTermsWithSig`) to the name policy, `registerWithCredit` to the sponsor, and the owners' record
+transaction, `commit` to the controller, each name's terms acceptance (`commitUnderNameTermsWithSig` or `commitUnderCommunityNameTermsWithSig`) to the name policy, `registerWithCredit` to the sponsor, and the owners' record
 edits (`setTextWithSig`, `clearRecordsWithSig`) to the resolver. It pays only their gas, in ETH. The
 names' rent is spent from its allowance on the sponsor, in USD, which the guardian sets. It holds no
 names.
@@ -1047,12 +1070,15 @@ cast send $REGISTRAR --value 1ether --interactive
 ```
 
 The gas below was measured on a local anvil deployment of the contracts (the names webapp's
-`dev/deploy.ts`), with a 63-letter label and links of 4096 bytes, the most the service accepts:
+`dev/deploy.ts`), with a 63-letter label and links of 4096 bytes, the most the service accepts,
+before the terms became links accepted for every name. The acceptance's figures are those of the
+community names' acceptance then, whose work its two functions repeat; a plain name's register now also
+reads, clears and logs its acceptance, as a community name's did:
 
 | Transaction | Gas limit | Gas used | Limit × 100 gwei |
 |---|---|---|---|
 | `commit` | 58,983 | 53,521 | 0.0059 ETH |
-| `commitUnderBonaFideCommunityTermsWithSig`, a community name's acceptance | 95,795 | 94,791 | 0.0096 ETH |
+| `commitUnderNameTermsWithSig` or `commitUnderCommunityNameTermsWithSig`, the acceptance | 95,795 | 94,791 | 0.0096 ETH |
 | `registerWithCredit`, no links | 568,116 | 504,408 | 0.0568 ETH |
 | `registerWithCredit`, one link | 3,673,412 | 3,489,551 | 0.3673 ETH |
 | `registerWithCredit`, two links | 6,791,417 | 6,467,815 | 0.6791 ETH |
@@ -1065,8 +1091,8 @@ The gas below was measured on a local anvil deployment of the contracts (the nam
   `max_fee_per_gas` (default 100 gwei). The node accepts a transaction only while the balance covers
   its limit × max fee, so the last column is what each one needs held. What it is charged is gas
   used × the block's base fee plus tip, usually far less.
-- An order is one commit and one register, and for a community name one acceptance relay before the register: 0.6850 ETH at the cap with two links, 0.0627 ETH with
-  none, and 0.0096 ETH more for a community name. The expected orders × 0.6946 ETH, plus 0.3026 ETH per expected link edit, pays for all of
+- An order is one commit, one acceptance relay and one register: 0.6946 ETH at the cap with two links, 0.0723 ETH with
+  none. The expected orders × 0.6946 ETH, plus 0.3026 ETH per expected link edit, pays for all of
   them even at the cap. The figures scale with `max_fee_per_gas`.
 - `gas_limit_cap` (default 8,000,000) must stay above 6,791,417: a transaction whose estimate is
   above it is not sent.
