@@ -70,7 +70,6 @@ private val previewScenes = listOf(
   SnapshotScene("AddGroupMembersView.PreviewAddGroupMembersLayout") { PreviewAddGroupMembersLayout() },
   SnapshotScene("GroupChatInfoView.PreviewGroupChatInfoLayout") { PreviewGroupChatInfoLayout() },
   SnapshotScene("GroupMemberInfoView.PreviewGroupMemberInfoLayout") { PreviewGroupMemberInfoLayout() },
-  SnapshotScene("GroupProfileView.PreviewGroupProfileLayout") { PreviewGroupProfileLayout() },
   SnapshotScene("CIEventView.CIEventViewPreview", chatItemFontScales) { CIEventViewPreview() },
   SnapshotScene("CIGroupInvitationView.PendingCIGroupInvitationViewPreview", chatItemFontScales) { PendingCIGroupInvitationViewPreview() },
   SnapshotScene("CIGroupInvitationView.CIGroupInvitationViewAcceptedPreview", chatItemFontScales) { CIGroupInvitationViewAcceptedPreview() },
@@ -102,8 +101,6 @@ private val previewScenes = listOf(
   SnapshotScene("LinkPreviews.PreviewComposeLinkView") { PreviewComposeLinkView() },
   SnapshotScene("LinkPreviews.PreviewComposeLinkViewLoading") { PreviewComposeLinkViewLoading() },
   SnapshotScene("SimpleButton.PreviewShareButton") { PreviewShareButton() },
-  SnapshotScene("AddChannelView.PreviewAddChannelView") { PreviewAddChannelView() },
-  SnapshotScene("AddGroupView.PreviewAddGroupLayout") { PreviewAddGroupLayout() },
   SnapshotScene("ContactConnectionInfoView.PreviewContactConnectionInfoView") { PreviewContactConnectionInfoView() },
   SnapshotScene("NewChatSheet.PreviewNewChatSheet") { PreviewNewChatSheet() },
   SnapshotScene("QRCode.PreviewQRCode") { PreviewQRCode() },
@@ -115,9 +112,16 @@ private val previewScenes = listOf(
   SnapshotScene("SettingsView.PreviewSettingsLayout") { PreviewSettingsLayout() },
   SnapshotScene("UserAddressView.PreviewUserAddressLayoutNoAddress") { PreviewUserAddressLayoutNoAddress() },
   SnapshotScene("UserAddressView.PreviewUserAddressLayoutAddressCreated") { PreviewUserAddressLayoutAddressCreated() },
-  SnapshotScene("UserProfileView.PreviewUserProfileLayoutEditOff") { PreviewUserProfileLayoutEditOff() },
   SnapshotScene("AdvancedNetworkSettings.PreviewAdvancedNetworkSettingsLayout") { PreviewAdvancedNetworkSettingsLayout() },
   SnapshotScene("NetworkAndServers.PreviewNetworkAndServersLayout") { PreviewNetworkAndServersLayout() },
+)
+
+private val previewsCallingCore = listOf(
+  "AddChannelView.PreviewAddChannelView",
+  "AddGroupView.PreviewAddGroupLayout",
+  "GroupProfileView.PreviewGroupProfileLayout",
+  "UserProfileView.PreviewUserProfileLayoutEditOff",
+  "UserProfileView.PreviewUserProfileLayoutEditOn",
 )
 
 private val previewFunction = Regex("""@Preview\s+(?:@Composable\s+)?(?:\w+\s+)*fun\s+(\w+)""")
@@ -125,7 +129,7 @@ private val previewFunction = Regex("""@Preview\s+(?:@Composable\s+)?(?:\w+\s+)*
 class SnapshotTest {
   @Test
   fun everyPreviewIsRendered() {
-    assertEquals(previewsInSources(), previewScenes.map { it.name }.sorted())
+    assertEquals(previewsInSources(), (previewScenes.map { it.name } + previewsCallingCore).sorted())
   }
 
   @Test

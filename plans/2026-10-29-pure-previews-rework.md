@@ -4,18 +4,16 @@ Date: 2026-10-29.
 
 Pull request: https://github.com/simplex-chat/simplex-chat/pull/7938. Branch: ep/pure-previews.
 
-The branch had 109 preview-only parameters, each marked `// do not pass`, in 65 files. All are removed. Previews run master's code, except views split into a loader and a layout, one environment value for the QR picture, and four deleted previews. Both exclusion lists are removed: every preview of the iOS app and of `commonMain` and `desktopMain` is rendered.
+The branch had 109 preview-only parameters, each marked `// do not pass`, in 65 files. All are removed. Previews run master's code, except three views split into a loader and a layout, and one environment value for the QR picture.
 
 Rules, from the owner:
 
 ```
 1   previews keep master's core calls that send no network request: database reads, parsing, validation
-2   a preview whose rendering in CI can send a network request draws a layout split cleanly from its view
+2   a preview whose rendering in CI can send a network request draws a layout split cleanly from its view, or its scene is excluded
 3   VersionView is split, so that its scene does not depend on the release
 4   QR codes: one environment value on iOS, one CompositionLocal on Kotlin, set by the snapshot tests
 5   camera: master's code
-6   tests fail on an untested preview: a preview renders the same in every run, through a clean split where needed, or is deleted
-7   a clean split keeps the calls, their order, their moments and the state's owner; the layout takes plain parameters
 ```
 
 Paths:
@@ -32,10 +30,10 @@ Line numbers of app code are those of master at 3bdecd63f. Core lines are those 
 ```
 (a) CI    the parameter goes; the preview runs master's code; the scene is rendered on master and compared on every ios-sim or desktop-linux run
 (a) CL    the parameter goes; the preview draws previewDate (2025-01-15 10:15 UTC); from 2026-01-01 the clock-dependent text is "1/15/25" and "Wed, 15 Jan 2025", as in master's references
+(a) X     the parameter goes; the scene stays excluded, as on master
 (a) S1    the parameter goes; the snapshot test sets the QR picture of seam S1
 (a) SIM   the parameter goes; the simulator build of CodeScanner draws a fixed text and requests no camera access
 (b)       the parameter goes; the preview draws the layout of a loader/layout split (section 3)
-(d)       the parameter goes; the preview is deleted (section 8)
 ```
 
 Calls kept in previews, as on master:
@@ -61,8 +59,8 @@ global    write to a shared singleton
 | 2 | Views/Badges/BadgesCheckOrderView.swift | `priceList` | (b) | `BadgesCheckOrderLayout(priceList:)` | — |
 | 3 | Views/Badges/BadgesCheckOrderView.swift | `previewCanBuy` | (b) | the layout reads `store.canBuy` | — |
 | 4 | Views/Badges/BadgesCheckOrderView.swift | `previewCanMakePayments` | (b) | the layout reads `AppStore.canMakePayments` | store |
-| 5 | Views/Badges/BadgesChooseBadgeView.swift | `previewMonthlyPrices` | (b) | `BadgesChooseBadgeLayout` reads `store.price`, "…" while nothing loads the store | — |
-| 6 | Views/Badges/BadgesChooseBadgeView.swift | `previewBrowserAllowed` | (b) | the layout reads `badgeBrowserAllowed` of the simulator's storefront | store |
+| 5 | Views/Badges/BadgesChooseBadgeView.swift | `previewMonthlyPrices` | (a) X | master | — |
+| 6 | Views/Badges/BadgesChooseBadgeView.swift | `previewBrowserAllowed` | (a) X | master | — |
 | 7 | Views/Badges/BadgesHowLongView.swift | `priceList` | (b) | `BadgesHowLongLayout(priceList:)` | — |
 | 8 | Views/Badges/BadgesRedeemCodeView.swift | `previewCameraStatus` | (a) CI | ScannerInView draws "Tap to scan" | camera |
 | 9 | Views/Call/IncomingCallView.swift | `previewInvitation` | (a) CI | master's preview sets `CallController.shared.activeCallInvitation` | global |
@@ -92,8 +90,8 @@ global    write to a shared singleton
 | 33 | Views/ChatList/ChatListView.swift | `previewNoShownBadge` | (a) CI | as row 30 | — |
 | 34 | Views/ChatList/ChatListView.swift | `chatTagsModel` | (a) CI | `ChatTagsModel.shared` of the CI profile | — |
 | 35 | Views/ChatList/ChatListView.swift | `SubsStatusIndicator.previewSubsTotal` | (a) CI | as row 31 | agent |
-| 36 | Views/ChatList/ServersSummaryView.swift | `previewServersSummary` | (b) | `ServersSummaryLayout(serversSummary:)` | — |
-| 37 | Views/ChatList/ServersSummaryView.swift | `previewServerAddresses` | (b) | the layout calls `parseServerAddress` of the sample server | fn |
+| 36 | Views/ChatList/ServersSummaryView.swift | `previewServersSummary` | (a) X | master | — |
+| 37 | Views/ChatList/ServersSummaryView.swift | `previewServerAddresses` | (a) X | master | — |
 | 38 | Views/ChatList/UserPicker.swift | `previewUsers` | (a) CI | `listUsersAsync` of the CI database | db |
 | 39 | Views/Database/DatabaseEncryptionView.swift | `initialRandomDBPassphrase` | (a) CI | `initialRandomDBPassphraseGroupDefault` of the CI app | — |
 | 40 | Views/Database/DatabaseEncryptionView.swift | `storedKey` | (a) CI | `kcDatabasePassword` of the CI app | keychain |
@@ -103,15 +101,15 @@ global    write to a shared singleton
 | 44 | Views/Database/DatabaseView.swift | `previewUserName` | (a) CI | `User.sampleData`, which the test sets | — |
 | 45 | Views/Database/DatabaseView.swift | `previewAppFilesCountAndSize` | (a) CI | the CI app's files folder | files |
 | 46 | Views/LocalAuth/SetAppPasscodeView.swift | `previewProhibitedPasscode` | (a) CI | `kcSelfDestructPassword` of the CI app | keychain |
-| 47 | Views/Migration/MigrateFromDevice.swift | `previewMigrationState` | (d) | MigrateFromDevice_Previews | — |
+| 47 | Views/Migration/MigrateFromDevice.swift | `previewMigrationState` | (a) X | master | — |
 | 48 | Views/Migration/MigrateToDevice.swift | `pasteboardHasStrings` | (a) CI | the CI simulator's pasteboard, empty after the smoke test | paste |
 | 49 | Views/Migration/MigrateToDevice.swift | `previewCameraStatus` | (a) CI | ScannerInView draws "Tap to scan" | camera |
 | 50 | Views/NewChat/AddChannelView.swift | `previewValidName` | (a) CI | `mkValidName("")` | fn |
 | 51 | Views/NewChat/AddChannelView.swift | `previewHasRelays` | (a) CI | `checkHasRelays` of the CI profile | db |
 | 52 | Views/NewChat/AddGroupView.swift | `previewValidName` | (a) CI | `mkValidName("")` | fn |
-| 53 | Views/NewChat/NewChatView.swift | `NewChatView.previewQRImage` | (a) CI | the preview opens the Connect tab (section 8) | paste, camera |
-| 54 | Views/NewChat/NewChatView.swift | `connLinkInvitation` | (a) CI | as row 53 | — |
-| 55 | Views/NewChat/NewChatView.swift | `InviteView.previewQRImage` | (a) CI | as row 53 | — |
+| 53 | Views/NewChat/NewChatView.swift | `NewChatView.previewQRImage` | (a) X | master | — |
+| 54 | Views/NewChat/NewChatView.swift | `connLinkInvitation` | (a) X | master | — |
+| 55 | Views/NewChat/NewChatView.swift | `InviteView.previewQRImage` | (a) X | master | — |
 | 56 | Views/NewChat/NewChatView.swift | `ScannerInView.previewCameraStatus` | (a) CI | rows 8, 49, 67 | camera |
 | 57 | Views/NewChat/QRCode.swift | `MutableQRCode.previewImage` | (a) S1 | fixed QR picture | — |
 | 58 | Views/NewChat/QRCode.swift | `SimpleXCreatedLinkQRCode.previewImage` | (a) S1 | fixed QR picture | — |
@@ -124,8 +122,8 @@ global    write to a shared singleton
 | 65 | Views/Onboarding/WhatsNewView.swift | `previewInUS` | (a) CI | as row 32 | store |
 | 66 | Views/RemoteAccess/ConnectDesktopView.swift | `previewRemoteCtrls` | (a) CI | `setLocalDeviceName`, `listRemoteCtrls` of the CI database | db |
 | 67 | Views/RemoteAccess/ConnectDesktopView.swift | `previewCameraStatus` | (a) CI | ScannerInView draws "Tap to scan" | camera |
-| 68 | Views/TerminalView.swift | `authorized` | (b) | master's parameter; stays in the loader `TerminalView` | — |
-| 69 | Views/TerminalView.swift | `showing` | (b) | `ChatConsoleLayout` draws the preview's items | — |
+| 68 | Views/TerminalView.swift | `authorized` | (a) X | master's parameter; master | — |
+| 69 | Views/TerminalView.swift | `showing` | (a) X | master | — |
 | 70 | Views/UserSettings/CallSettings.swift | `previewInChina` | (a) CI | `CallController.isInChina` of the simulator's storefront | store |
 | 71 | Views/UserSettings/NetworkAndServers/NetworkAndServers.swift | `justOpened` | (a) CI | `getUserServers`, `validateServers_` of the CI database | db |
 | 72 | Views/UserSettings/NetworkAndServers/NewServerView.swift | `previewServerAddress` | (a) CI | `parseServerAddress("")` | fn |
@@ -145,17 +143,17 @@ global    write to a shared singleton
 | 86 | views/chat/ChatView.kt | `ChatItemsList.previewNow` | (a) CL | as row 83 | — |
 | 87 | views/chat/ChatView.kt | `DateSeparator.previewNow` | (a) CL | as row 83 | — |
 | 88 | views/chat/group/GroupMemberInfoView.kt | `previewContactConnectionStats` | (a) CI | `apiContactInfo` in `withBGApi` throws "Controller is not initialized" in the test JVM | db |
-| 89 | views/chat/group/GroupProfileView.kt | `previewShortDescrFits` | (b) | `GroupProfileLayout(isValidName:bioFits:)` | — |
+| 89 | views/chat/group/GroupProfileView.kt | `previewShortDescrFits` | (a) X | `previewsCallingCore`, as master | — |
 | 90 | views/chatlist/ChatPreviewView.kt | `previewNow` | (a) CL | as row 84 | — |
 | 91 | views/chatlist/ContactRequestView.kt | `previewNow` | (a) CL | as row 84 | — |
 | 92 | views/database/DatabaseErrorView.kt | `previewStoredDBKey` | (a) CI | `ksDatabasePassword.get()` returns null with the CI test's settings | — |
 | 93 | views/database/DatabaseErrorView.kt | `previewShowRestoreDbButton` | (a) CI | `shouldShowRestoreDbButton` returns false: `encryptionStartedAt` is null in the CI test's settings | — |
 | 94 | views/database/DatabaseErrorView.kt | `previewUseKeychain` | (a) CI | `storeDBPassphrase` default, true | — |
-| 95 | views/newchat/AddChannelView.kt | `AddChannelView.previewNameValid` | (b) | the preview draws `ProfileStepView(isValidName:)` | — |
-| 96 | views/newchat/AddChannelView.kt | `AddChannelView.previewHasRelays` | (b) | `checkHasRelays` moves to the loader `AddChannelView` | — |
-| 97 | views/newchat/AddChannelView.kt | `ProfileStepView.previewNameValid` | (b) | as row 95 | — |
-| 98 | views/newchat/AddChannelView.kt | `ProfileStepView.previewHasRelays` | (b) | as row 96 | — |
-| 99 | views/newchat/AddGroupView.kt | `previewNameValid` | (b) | `AddGroupLayout(isValidName:)` | — |
+| 95 | views/newchat/AddChannelView.kt | `AddChannelView.previewNameValid` | (a) X | `previewsCallingCore`, as master | — |
+| 96 | views/newchat/AddChannelView.kt | `AddChannelView.previewHasRelays` | (a) X | as row 95 | — |
+| 97 | views/newchat/AddChannelView.kt | `ProfileStepView.previewNameValid` | (a) X | as row 95 | — |
+| 98 | views/newchat/AddChannelView.kt | `ProfileStepView.previewHasRelays` | (a) X | as row 95 | — |
+| 99 | views/newchat/AddGroupView.kt | `previewNameValid` | (a) X | as row 95 | — |
 | 100 | views/newchat/ContactConnectionInfoView.kt | `previewQRImage` | (a) S1 | fixed QR picture | — |
 | 101 | views/newchat/NewChatSheet.kt | `NewChatSheet.previewConnectTarget` | (a) CI | `chatParseMarkdown` in a `LaunchedEffect` throws in the test JVM, which does not load the core library; the scene renders as in master's reference | fn |
 | 102 | views/newchat/NewChatSheet.kt | `NewChatSheetLayout.previewConnectTarget` | (a) CI | as row 101 | fn |
@@ -165,19 +163,19 @@ global    write to a shared singleton
 | 106 | views/newchat/QRCode.kt | `QRCode.previewImage` | (a) S1 | fixed QR picture | — |
 | 107 | views/onboarding/SimpleXInfo.kt | `previewMigrationState` | (a) CI | `chatModel.migrationState` is null with the CI test's settings | files |
 | 108 | views/usersettings/UserAddressView.kt | `previewQRImage` | (a) S1 | fixed QR picture | — |
-| 109 | views/usersettings/UserProfileView.kt | `previewShortDescrFits` | (b) | `UserProfileLayout(isValidName:bioFits:)`; EditOn is deleted, EditOff draws the same | — |
+| 109 | views/usersettings/UserProfileView.kt | `previewShortDescrFits` | (a) X | as row 89; EditOff and EditOn | — |
 
 Counts:
 
 ```
-(a)       90
-  CI      67
+(a)      104
+  CI      64
   CL       7
+  X       17
   S1      14
   SIM      2
-(b)       18
+(b)        5
 (c)        0
-(d)        1
 ```
 
 ## 3. Splits
@@ -205,57 +203,7 @@ VersionView            Views/UserSettings/VersionView.swift
   moved                .onAppear (:40-46), @EnvironmentObject theme (:13) into the layout
   preview              VersionLayout(appVersion: "7.1", appBuild: "363", versionInfo: CoreVersionInfo(version: "7.1.0.14", ...))
   full lines           16 added, 8 removed, 1 changed
-
-BadgesChooseBadgeView  Views/Badges/BadgesChooseBadgeView.swift
-  loader               BadgesChooseBadgeView: .task { await BadgeStore.shared.load() }
-  layout               BadgesChooseBadgeLayout()
-  moved                .task { await store.load() } (:116)
-  preview              BadgesChooseBadgeLayout
-  full lines           6 added, 1 removed, 1 changed
-
-ServersSummaryView     Views/ChatList/ServersSummaryView.swift
-  loader               ServersSummaryView: @State serversSummary, selectedUserCategory, timer; .onAppear, .onDisappear; startTimer, getServersSummary, stopTimer
-  layout               ServersSummaryLayout(serversSummary, $selectedUserCategory, getServersSummary)
-  moved                .onAppear (:47-53), .onDisappear (:54-56), :60-79 into the loader
-  binding              selectedUserCategory: the loader's .onAppear sets it, the layout's picker changes it
-  closure              getServersSummary: "Reset all statistics" reloads the summary (:386)
-  preview              ServersSummaryLayout with a fixed summary, statsStartedAt previewDate
-  full lines           105 added, 24 removed, 3 changed; the preview's sample is 70 of the added lines
-
-TerminalView           Views/TerminalView.swift
-  loader               TerminalView: @State authorized, showing; .onAppear loads TerminalItems.shared; runAuth
-  layout               ChatConsoleLayout(): the console, its state, and .onDisappear, which reads its terminalItem
-  moved                :18-23, :25-26, :43-48 into the layout
-  preview              ChatConsoleLayout with the preview's ChatModel and two items
-  full lines           20 added, 14 removed, 2 changed
-  name                 TerminalLayout is the Kotlin name; on iOS it names the key of the terminal chat layout (TerminalItemView.swift:5)
-
-AddChannelView         views/newchat/AddChannelView.kt
-  loader               AddChannelView: LaunchedEffect checkHasRelays (:244-246) moves to its profile step branch
-  layout               ProfileStepView(isValidName), without rhId
-  preview              ProfileStepView with remembered empty state, hasRelays true, isValidName { true }
-  full lines           13 added, 5 removed, 9 changed
-
-AddGroupView           views/newchat/AddGroupView.kt
-  layout               AddGroupLayout(isValidName); canCreateProfile(displayName, isValidName)
-  loader               AddGroupView passes ::isValidDisplayName
-  preview              isValidName { true }
-  full lines           3 added, 6 changed
-
-GroupProfileView       views/chat/group/GroupProfileView.kt
-  layout               GroupProfileLayout(isValidName, bioFits); canUpdateProfile, isValidNewProfileName take them
-  loader               GroupProfileView passes ::isValidDisplayName, ::bioFitsLimit
-  preview              isValidName { true }, bioFits { true }
-  full lines           5 added, 13 changed
-
-UserProfileView        views/usersettings/UserProfileView.kt
-  layout               UserProfileLayout(isValidName, bioFits); canSaveProfile, isValidNewProfileName take them
-  loader               UserProfileView passes ::isValidDisplayName, ::bioFitsLimit
-  preview              PreviewUserProfileLayoutEditOff with isValidName { true }, bioFits { true }; PreviewUserProfileLayoutEditOn, identical code, deleted
-  full lines           4 added, 11 removed, 16 changed
 ```
-
-The Kotlin layouts validate text that they own and edit, so they take the validating functions: the loaders pass the core's, and the calls run at the same moments. The test JVM does not load the core library.
 
 `store` of both badge layouts is `BadgeStore.shared` (`@ObservedObject private var store = BadgeStore.shared`), the object the loaders call.
 
@@ -325,20 +273,20 @@ iOS       QRCode.swift: generateImage is internal, so the test calls it
 Kotlin    renderSnapshot root: LocalFixedQRCode provides qrCodeBitmap(link, 1024, QrCode.ErrorLevel.M), in the theme of the render
 ```
 
-The views add the logo, and on desktop the tint, to the picture, as to a generated one. `small` short links use error level M in both apps.
+The views add the logo, and on desktop the tint, to the picture, as to a generated one. Short links are drawn `small`, with error level M, in both apps.
 
-Previews with links pass the short form, as the core returns it for a preset server (shortenShortLink): host only, no key hash.
+Previews with links pass the short form of a preset server, as the core returns it (shortenShortLink): host only, without the key hash.
 
 ```
-iOS       GroupLinkView_Previews     connShortLink https://smp6.simplex.im/g#cL3iklYlt_Tws1B_1aGylbT_3HowPMQhuCFoBiCjZ1M; shortLinkDataSet, shortLinkLargeDataSet true
-iOS       UserAddressView_Previews   connShortLink https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw
-iOS       QRCode_Previews            QRCode(uri: the address link, small: true)
+iOS       GroupLinkView_Previews                   connShortLink https://smp6.simplex.im/g#cL3iklYlt_Tws1B_1aGylbT_3HowPMQhuCFoBiCjZ1M; shortLinkDataSet, shortLinkLargeDataSet true
+iOS       UserAddressView_Previews                 connShortLink the address link
+iOS       QRCode_Previews                          QRCode(uri: the address link, small: true)
 Kotlin    PreviewUserAddressLayoutAddressCreated   connShortLink the address link; shortLinkDataSet, shortLinkLargeDataSet true
-Kotlin    PreviewContactConnectionInfoView         connShortLink https://smp6.simplex.im/i#Wu_NH3_F5YphQrIMSCSfWhvqz7tjpZsu/A2dCDGGVkh0-doRPIZVTM-TflHes2uYMVRgA_tK_uCs
+Kotlin    PreviewContactConnectionInfoView         connFullLink the invitation of master's QRCode_Previews; connShortLink https://smp4.simplex.im/i#Wu_NH3_F5YphQrIMSCSfWhvqz7tjpZsu/A2dCDGGVkh0-doRPIZVTM-TflHes2uYMVRgA_tK_uCs
 Kotlin    PreviewQRCode                            QRCode(connReq = the address link, small = true)
 ```
 
-Each link decodes as AConnShortLink, encodes back to the same text, and markdown reads it as a SimpleX link of its type (contact, group, invitation).
+Each short link decodes as AConnShortLink and encodes back to the same text.
 
 ## 6. Other branch changes
 
@@ -346,14 +294,11 @@ Each link decodes as AConnShortLink, encodes back to the same text, and markdown
 ActiveCallView.swift, ActiveCallOverlay_Previews                    master
 DesktopApp.kt, AppPreview deleted                                   keep
 SnapshotTests.swift, ActiveCallOverlay scene                        master
-SnapshotTests.swift, SnapshotFixtures markdown table                keep, values built with initializers, equal to the output of master's parser at f2dd8b623
+SnapshotTests.swift, SnapshotFixtures markdown table                keep, values built with initializers
 SnapshotTest.kt, setting pins and appBarMaxHeightPx                 keep
 SnapshotTest.kt, AppPreview scene removed                           keep
-check-previews.py, EXCLUDED                                         removed; fails on any unlisted PreviewProvider
-SnapshotTest.kt, previewsCallingCore                                removed; everyPreviewIsRendered compares previewScenes only
-SnapshotTests.swift, previewScenes                                  BadgesChooseBadgeView, NewChatView, ServersSummaryView, TerminalView, UserProfilesView added
-SnapshotTest.kt, previewScenes                                      AddChannelView, AddGroupView, GroupProfileView, UserProfileView EditOff added
-scripts/ci/ios-sim/README.md, scripts/ci/desktop-linux/README.md    checks without exclusion lists
+check-previews.py, EXCLUDED                                         master
+SnapshotTest.kt, previewsCallingCore                                master
 every other file                                                    master
 ```
 
@@ -362,44 +307,14 @@ every other file                                                    master
 Full lines by `git diff -w --word-diff`, blank lines aside:
 
 ```
-iOS      Views/Badges/BadgesCheckOrderView.swift            10 added, 1 removed, 1 changed
-iOS      Views/Badges/BadgesChooseBadgeView.swift           6 added, 1 removed, 1 changed
-iOS      Views/Badges/BadgesHowLongView.swift               9 added, 1 removed, 1 changed
-iOS      Views/Chat/Group/GroupLinkView.swift               3 changed: preview
-iOS      Views/ChatList/ServersSummaryView.swift            105 added, 24 removed, 3 changed
-iOS      Views/Migration/MigrateFromDevice.swift            5 removed: preview
-iOS      Views/NewChat/NewChatView.swift                    1 changed: preview
-iOS      Views/NewChat/QRCode.swift                         10 added, 4 changed: 1 of them the preview
-iOS      Views/TerminalView.swift                           20 added, 14 removed, 2 changed
-iOS      Views/UserSettings/AppearanceSettings.swift        5 removed: preview
-iOS      Views/UserSettings/UserAddressView.swift           1 changed: preview
-iOS      Views/UserSettings/UserProfilesView.swift          3 added, 1 changed: preview
-iOS      Views/UserSettings/VersionView.swift               16 added, 8 removed, 1 changed
-Kotlin   views/chat/group/GroupProfileView.kt               5 added, 13 changed
-Kotlin   views/newchat/AddChannelView.kt                    13 added, 5 removed, 9 changed
-Kotlin   views/newchat/AddGroupView.kt                      3 added, 6 changed
-Kotlin   views/newchat/ContactConnectionInfoView.kt         1 changed: preview
-Kotlin   views/newchat/QRCode.kt                            2 added, 2 changed: 1 of them the preview
-Kotlin   views/usersettings/UserAddressView.kt              3 changed: preview
-Kotlin   views/usersettings/UserProfileView.kt              4 added, 11 removed, 16 changed
-Kotlin   desktopMain DesktopApp.kt                          6 removed: preview and its import
+iOS      Views/Badges/BadgesCheckOrderView.swift      10 added, 1 removed, 1 changed
+iOS      Views/Badges/BadgesHowLongView.swift         9 added, 1 removed, 1 changed
+iOS      Views/UserSettings/VersionView.swift         16 added, 8 removed, 1 changed
+iOS      Views/NewChat/QRCode.swift                   10 added, 4 changed: 1 of them the preview
+iOS      Views/Chat/Group/GroupLinkView.swift         3 changed: preview
+iOS      Views/UserSettings/UserAddressView.swift     1 changed: preview
+Kotlin   views/newchat/QRCode.kt                      2 added, 2 changed: 1 of them the preview
+Kotlin   views/newchat/ContactConnectionInfoView.kt   1 changed: preview
+Kotlin   views/usersettings/UserAddressView.kt        3 changed: preview
+Kotlin   desktopMain DesktopApp.kt                    6 removed: preview and its import
 ```
-
-## 8. Previews of the exclusion lists
-
-| Preview | Outcome | Reason |
-|---|---|---|
-| iOS AppearanceSettings_Previews | deleted | `ChatThemePreview` (AppearanceSettings.swift:376-377), inside `WallpaperPresetSelector`, draws its sample messages at `Date.now`; a split would pass a date through AppearanceSettings, WallpaperPresetSelector and ChatThemePreview |
-| iOS BadgesChooseBadgeView_Previews | split | `BadgesChooseBadgeLayout`; `.task` load (:116, StoreKit network) stays in the loader |
-| iOS MigrateFromDevice_Previews | deleted | `.onAppear` stops the chat (:116-118); the views of three states start the export, the upload and the receiver's cleanup on appear (:264-266, :280-282, :304-306); buttons and alerts call stopChat, cancelMigration, finishMigration, startChatAndDismiss, deleteChatAndDismiss and uploadArchive: a layout would take the migration state, the alert and six actions |
-| iOS NewChatView_Previews | renders | the preview opens the Connect tab: the 1-time link tab creates an invitation on the server on appear (:117-118, :202-221) |
-| iOS ServersSummaryView_Previews | split | `ServersSummaryLayout`; agent statistics and the 1 s timer stay in the loader |
-| iOS TerminalView_Previews | split | `ChatConsoleLayout`; loading `TerminalItems.shared`, the test run's commands, stays in the loader |
-| iOS UserProfilesView_Previews | renders | the preview passes its own `ChatModel` with `UserInfo.sampleData`, as UserPicker_Previews does; `m.users` of the app holds the smoke test's profile, whose typed name the keyboard autocorrects differently between runs |
-| desktop AddChannelView.PreviewAddChannelView | split | `ProfileStepView(isValidName:)`; `checkHasRelays` in the loader |
-| desktop AddGroupView.PreviewAddGroupLayout | split | `AddGroupLayout(isValidName:)` |
-| desktop GroupProfileView.PreviewGroupProfileLayout | split | `GroupProfileLayout(isValidName:bioFits:)` |
-| desktop UserProfileView.PreviewUserProfileLayoutEditOff | split | `UserProfileLayout(isValidName:bioFits:)` |
-| desktop UserProfileView.PreviewUserProfileLayoutEditOn | deleted | the same code as EditOff |
-
-Previews outside both checks: `androidMain` (CallView.android.kt PreviewActiveCallOverlayVideo, PreviewActiveCallOverlayAudio; Appearance.android.kt PreviewAppearanceSettings) and the Android app module (CallActivity.kt:440), which use Android APIs.

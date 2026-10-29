@@ -15,12 +15,20 @@ private let maxItemSize: Int = 50000
 
 struct TerminalView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+    @State var composeState: ComposeState = ComposeState()
+    @State var selectedRange = NSRange()
+    @State private var keyboardVisible = false
+    @State private var keyboardHiddenDate = Date.now
     @State var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
+    @State private var terminalItem: TerminalItem?
+    @State private var scrolled = false
     @State private var showing = false
 
     var body: some View {
         if authorized {
-            ChatConsoleLayout()
+            terminalView()
                 .onAppear {
                     if showing { return }
                     showing = true
@@ -32,6 +40,12 @@ struct TerminalView: View {
                         }
                     }
                 }
+                .onDisappear {
+                    if terminalItem == nil {
+                        chatModel.showingTerminal = false
+                        chatModel.terminalItems = []
+                    }
+                }
         } else {
             Button(action: runAuth) { Label("Unlock", systemImage: "lock") }
             .onAppear(perform: runAuth)
@@ -39,28 +53,6 @@ struct TerminalView: View {
     }
 
     private func runAuth() { authorize(NSLocalizedString("Open chat console", comment: "authentication reason"), $authorized) }
-}
-
-struct ChatConsoleLayout: View {
-    @EnvironmentObject var chatModel: ChatModel
-    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
-    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
-    @State var composeState: ComposeState = ComposeState()
-    @State var selectedRange = NSRange()
-    @State private var keyboardVisible = false
-    @State private var keyboardHiddenDate = Date.now
-    @State private var terminalItem: TerminalItem?
-    @State private var scrolled = false
-
-    var body: some View {
-        terminalView()
-            .onDisappear {
-                if terminalItem == nil {
-                    chatModel.showingTerminal = false
-                    chatModel.terminalItems = []
-                }
-            }
-    }
 
     private func terminalView() -> some View {
         VStack {
@@ -206,7 +198,7 @@ struct TerminalView_Previews: PreviewProvider {
             .err(previewDate + 1, APIResult<ChatResponse2>.invalid(type: "newChatItems", json: "{}".data(using: .utf8)!).unexpected)
         ]
         return NavigationView {
-            ChatConsoleLayout()
+            TerminalView()
                 .environmentObject(chatModel)
         }
 

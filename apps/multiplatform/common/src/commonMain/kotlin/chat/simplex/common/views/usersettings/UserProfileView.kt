@@ -52,9 +52,7 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
             close()
           }
         }
-      },
-      isValidName = ::isValidDisplayName,
-      bioFits = ::bioFitsLimit
+      }
     )
   }
 }
@@ -64,8 +62,6 @@ fun UserProfileLayout(
   profile: Profile,
   close: () -> Unit,
   saveProfile: (String, String, String, String, String?) -> Unit,
-  isValidName: (String) -> Boolean,
-  bioFits: (String) -> Boolean,
 ) {
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val displayName = remember { mutableStateOf(profile.displayName) }
@@ -100,7 +96,7 @@ fun UserProfileLayout(
             shortDescr.value.trim() == (profile.shortDescr ?: "") &&
             description.value.trim() == (profile.description ?: "") &&
             profile.image == profileImage.value
-      fun onClose(close: () -> Unit): Boolean = if (dataUnchanged() || !canSaveProfile(displayName.value, shortDescr.value, profile, isValidName, bioFits)) {
+      fun onClose(close: () -> Unit): Boolean = if (dataUnchanged() || !canSaveProfile(displayName.value, shortDescr.value, profile)) {
         chatModel.centerPanelBackgroundClickHandler = null
         close()
         false
@@ -194,14 +190,14 @@ fun UserProfileLayout(
                 stringResource(MR.strings.display_name__field),
                 fontSize = 16.sp
               )
-              if (!isValidNewProfileName(displayName.value, profile, isValidName)) {
+              if (!isValidNewProfileName(displayName.value, profile)) {
                 Spacer(Modifier.width(DEFAULT_PADDING_HALF))
                 IconButton({ showInvalidNameAlert(mkValidName(displayName.value), displayName) }, Modifier.size(20.dp)) {
                   Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
                 }
               }
             }
-            ProfileNameField(displayName, "", { isValidNewProfileName(it, profile, isValidName) }, focusRequester)
+            ProfileNameField(displayName, "", { isValidNewProfileName(it, profile) }, focusRequester)
             if (showFullName(profile)) {
               Spacer(Modifier.height(DEFAULT_PADDING))
               Text(
@@ -219,7 +215,7 @@ fun UserProfileLayout(
                 stringResource(MR.strings.short_descr__field),
                 fontSize = 16.sp,
               )
-              if (!bioFits(shortDescr.value)) {
+              if (!bioFitsLimit(shortDescr.value)) {
                 Spacer(Modifier.size(DEFAULT_PADDING_HALF))
                 IconButton(
                   onClick = { AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.bio_too_large)) },
@@ -239,7 +235,7 @@ fun UserProfileLayout(
             )
 
             Spacer(Modifier.height(DEFAULT_PADDING))
-            val enabled = !dataUnchanged() && canSaveProfile(displayName.value, shortDescr.value, profile, isValidName, bioFits)
+            val enabled = !dataUnchanged() && canSaveProfile(displayName.value, shortDescr.value, profile)
             val saveModifier: Modifier = Modifier.clickable(enabled) { saveProfile(displayName.value, fullName.value, shortDescr.value, description.value, profileImage.value) }
             val saveColor: Color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
             Text(
@@ -299,14 +295,14 @@ private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
   )
 }
 
-private fun isValidNewProfileName(displayName: String, profile: Profile, isValidName: (String) -> Boolean): Boolean =
-  displayName == profile.displayName || isValidName(displayName.trim())
+private fun isValidNewProfileName(displayName: String, profile: Profile): Boolean =
+  displayName == profile.displayName || isValidDisplayName(displayName.trim())
 
 private fun showFullName(profile: Profile): Boolean =
   profile.fullName.trim().isNotEmpty() && profile.fullName.trim() != profile.displayName.trim()
 
-private fun canSaveProfile(displayName: String, shortDescr: String, profile: Profile, isValidName: (String) -> Boolean, bioFits: (String) -> Boolean): Boolean =
-  displayName.trim().isNotEmpty() && isValidNewProfileName(displayName, profile, isValidName) && bioFits(shortDescr)
+private fun canSaveProfile(displayName: String, shortDescr: String, profile: Profile): Boolean =
+  displayName.trim().isNotEmpty() && isValidNewProfileName(displayName, profile) && bioFitsLimit(shortDescr)
 
 @Preview/*(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
@@ -319,9 +315,23 @@ fun PreviewUserProfileLayoutEditOff() {
     UserProfileLayout(
       profile = Profile.sampleData,
       close = {},
-      saveProfile = { _, _, _, _, _ -> },
-      isValidName = { true },
-      bioFits = { true }
+      saveProfile = { _, _, _, _, _ -> }
+    )
+  }
+}
+
+@Preview/*(
+  uiMode = Configuration.UI_MODE_NIGHT_YES,
+  showBackground = true,
+  name = "Dark Mode"
+)*/
+@Composable
+fun PreviewUserProfileLayoutEditOn() {
+  SimpleXTheme {
+    UserProfileLayout(
+      profile = Profile.sampleData,
+      close = {},
+      saveProfile = { _, _, _, _, _ -> }
     )
   }
 }

@@ -71,8 +71,7 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, c
     },
     incognitoPref = chatModel.controller.appPrefs.incognito,
     rhId,
-    close,
-    isValidName = ::isValidDisplayName
+    close
   )
 }
 
@@ -81,8 +80,7 @@ fun AddGroupLayout(
   createGroup: (Boolean, GroupProfile) -> Unit,
   incognitoPref: SharedPreference<Boolean>,
   rhId: Long?,
-  close: () -> Unit,
-  isValidName: (String) -> Boolean
+  close: () -> Unit
 ) {
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
@@ -145,7 +143,7 @@ fun AddGroupLayout(
               stringResource(MR.strings.group_display_name_field),
               fontSize = 16.sp
             )
-            if (!isValidName(displayName.value.trim())) {
+            if (!isValidDisplayName(displayName.value.trim())) {
               Spacer(Modifier.size(DEFAULT_PADDING_HALF))
               IconButton({ showInvalidNameAlert(mkValidName(displayName.value.trim()), displayName) }, Modifier.size(20.dp)) {
                 Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
@@ -153,7 +151,7 @@ fun AddGroupLayout(
             }
           }
           Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-            ProfileNameField(displayName, "", { isValidName(it.trim()) }, focusRequester)
+            ProfileNameField(displayName, "", { isValidDisplayName(it.trim()) }, focusRequester)
           }
           Spacer(Modifier.height(8.dp))
 
@@ -171,7 +169,7 @@ fun AddGroupLayout(
             },
             textColor = MaterialTheme.colors.primary,
             iconColor = MaterialTheme.colors.primary,
-            disabled = !canCreateProfile(displayName.value, isValidName)
+            disabled = !canCreateProfile(displayName.value)
           )
 
           IncognitoToggle(incognitoPref, incognito) { ModalManager.start.showModal { IncognitoView() } }
@@ -193,7 +191,7 @@ fun AddGroupLayout(
     }
 }
 
-fun canCreateProfile(displayName: String, isValidName: (String) -> Boolean): Boolean = displayName.trim().isNotEmpty() && isValidName(displayName.trim())
+fun canCreateProfile(displayName: String): Boolean = displayName.trim().isNotEmpty() && isValidDisplayName(displayName.trim())
 
 @Preview
 @Composable
@@ -204,7 +202,6 @@ fun PreviewAddGroupLayout() {
       incognitoPref = SharedPreference({ false }, {}),
       close = {},
       rhId = null,
-      isValidName = { true },
     )
   }
 }

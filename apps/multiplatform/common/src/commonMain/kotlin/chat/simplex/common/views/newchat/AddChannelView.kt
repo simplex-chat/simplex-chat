@@ -92,11 +92,9 @@ fun AddChannelView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit,
       }
     )
   } else {
-    LaunchedEffect(Unit) {
-      hasRelays.value = checkHasRelays(rhId)
-    }
     ProfileStepView(
       chatModel = chatModel,
+      rhId = rhId,
       displayName = displayName,
       profileImage = profileImage,
       chosenImage = chosenImage,
@@ -107,7 +105,6 @@ fun AddChannelView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit,
       scope = scope,
       view = view,
       close = close,
-      isValidName = ::isValidDisplayName,
       createChannel = {
         hideKeyboard(view)
         val trimmedName = displayName.value.trim()
@@ -231,6 +228,7 @@ private suspend fun checkHasRelays(rhId: Long?): Boolean {
 @Composable
 private fun ProfileStepView(
   chatModel: ChatModel,
+  rhId: Long?,
   displayName: MutableState<String>,
   profileImage: MutableState<String?>,
   chosenImage: MutableState<URI?>,
@@ -241,9 +239,12 @@ private fun ProfileStepView(
   scope: CoroutineScope,
   view: Any?,
   close: () -> Unit,
-  isValidName: (String) -> Boolean,
   createChannel: () -> Unit
 ) {
+  LaunchedEffect(Unit) {
+    hasRelays.value = checkHasRelays(rhId)
+  }
+
   ModalBottomSheetLayout(
     scrimColor = Color.Black.copy(alpha = 0.12F),
     modifier = Modifier.imePadding(),
@@ -301,7 +302,7 @@ private fun ProfileStepView(
             generalGetString(MR.strings.channel_display_name_field),
             fontSize = 16.sp
           )
-          if (!isValidName(displayName.value.trim())) {
+          if (!isValidDisplayName(displayName.value.trim())) {
             Spacer(Modifier.size(DEFAULT_PADDING_HALF))
             IconButton({ showInvalidNameAlert(mkValidName(displayName.value.trim()), displayName) }, Modifier.size(20.dp)) {
               Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
@@ -309,7 +310,7 @@ private fun ProfileStepView(
           }
         }
         Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-          ProfileNameField(displayName, "", { isValidName(it.trim()) }, focusRequester)
+          ProfileNameField(displayName, "", { isValidDisplayName(it.trim()) }, focusRequester)
         }
         Spacer(Modifier.height(8.dp))
 
@@ -325,7 +326,7 @@ private fun ProfileStepView(
           iconColor = if (hasRelays.value) MaterialTheme.colors.primary else WarningOrange
         )
 
-        val canCreate = canCreateProfile(displayName.value, isValidName) && hasRelays.value && !creationInProgress.value
+        val canCreate = canCreateProfile(displayName.value) && hasRelays.value && !creationInProgress.value
         SettingsActionItem(
           painterResource(MR.images.ic_check),
           generalGetString(MR.strings.create_channel_button),
@@ -663,20 +664,6 @@ fun RelayProgressIndicator(active: Int, total: Int) {
 @Composable
 fun PreviewAddChannelView() {
   SimpleXTheme {
-    ProfileStepView(
-      chatModel = ChatModel,
-      displayName = remember { mutableStateOf("") },
-      profileImage = remember { mutableStateOf<String?>(null) },
-      chosenImage = remember { mutableStateOf<URI?>(null) },
-      focusRequester = remember { FocusRequester() },
-      hasRelays = remember { mutableStateOf(true) },
-      creationInProgress = remember { mutableStateOf(false) },
-      bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
-      scope = rememberCoroutineScope(),
-      view = null,
-      close = {},
-      isValidName = { true },
-      createChannel = {}
-    )
+    AddChannelView(chatModel = ChatModel, rh = null, close = {}, closeAll = {})
   }
 }

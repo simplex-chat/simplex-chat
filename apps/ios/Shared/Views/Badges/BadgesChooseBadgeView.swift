@@ -53,13 +53,6 @@ enum BadgeLevel: String, CaseIterable, Identifiable {
 }
 
 struct BadgesChooseBadgeView: View {
-    var body: some View {
-        BadgesChooseBadgeLayout()
-            .task { await BadgeStore.shared.load() }
-    }
-}
-
-struct BadgesChooseBadgeLayout: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var store = BadgeStore.shared
     @State private var selectedLevel: BadgeLevel = .supporter
@@ -120,6 +113,7 @@ struct BadgesChooseBadgeLayout: View {
         }
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
+        .task { await store.load() }
     }
 
     private func levelCard(_ level: BadgeLevel) -> some View {
@@ -183,7 +177,7 @@ struct BadgesChooseBadgeLayout: View {
 struct BadgesChooseBadgeView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesChooseBadgeLayout()
+            BadgesChooseBadgeView()
         }
     }
 }
