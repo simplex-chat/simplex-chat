@@ -312,6 +312,8 @@ textWithUri = describe "text with Uri" do
     ".com" <==> ".com"
     "example.academytoolong" <==> "example.academytoolong"
     "simplex:/example" <==> "simplex:/example"
+    "end of sentence.Next sentence" <==> "end of sentence.Next sentence"
+    "Visit Example.Com today" <==> "Visit Example.Com today"
   it "SimpleX links" do
     let inv = "/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D"
     ("https://simplex.chat" <> inv) <==> simplexLink XLInvitation ("simplex:" <> inv) ["smp.simplex.im"] ("https://simplex.chat" <> inv)
@@ -406,6 +408,12 @@ textWithPhone = describe "text with Phone" do
   it "ignored as markdown (double spaces)" $ do
     "test 07777  777  777 test" <==> "test 07777  777  777 test"
     "*test* 07777  777  777 test" <==> bold "test" <> " 07777  777  777 test"
+  it "ignored as markdown (not starting with + or 0)" $ do
+    "order 12345678 shipped" <==> "order 12345678 shipped"
+    "on 2024-10-29" <==> "on 2024-10-29"
+    "server 192.168.1.1" <==> "server 192.168.1.1"
+    "version 7.1.0.14" <==> "version 7.1.0.14"
+    "total 1 000 000" <==> "total 1 000 000"
 
 mention :: Text -> Text -> Markdown
 mention = Markdown . Just . Mention
@@ -480,7 +488,6 @@ textWithSimplexNames = describe "text with SimpleX names" do
     "#my-channel.simplex" <==> sname NTPublicGroup TLDSimplex "my-channel" [] "my-channel.simplex"
     "hello #privacy!" <==> "hello " <> sname NTPublicGroup TLDSimplex "privacy" [] "privacy" <> "!"
     "see #privacy.simplex now" <==> "see " <> sname NTPublicGroup TLDSimplex "privacy" [] "privacy.simplex" <> " now"
-    "#123" <==> sname NTPublicGroup TLDSimplex "123" [] "123"
   it "channel names - subdomains" do
     "#support.acme.simplex" <==> sname NTPublicGroup TLDSimplex "acme" ["support"] "support.acme.simplex"
     "#a.b.acme.simplex" <==> sname NTPublicGroup TLDSimplex "acme" ["b", "a"] "a.b.acme.simplex"
@@ -496,6 +503,9 @@ textWithSimplexNames = describe "text with SimpleX names" do
     "@my-name.simplex" <==> sname NTContact TLDSimplex "my-name" [] "my-name.simplex"
     "@alice.example.com" <==> sname NTContact TLDWeb "alice.example.com" [] "alice.example.com"
   it "not parsed as names" do
+    "#123" <==> "#123"
+    "issue #42 is fixed" <==> "issue #42 is fixed"
+    "I'm #1!" <==> "I'm #1!"
     "#secret#" <==> markdown Secret "secret"
     "##double secret##" <==> markdown Secret "#double secret#"
     "#" <==> "#"
@@ -532,6 +542,20 @@ inlineMarkdownGFM = describe "inline markdown of GFM" do
     "a__b__" ==> "a__b__"
     markdownText (fmt boldF "a") `shouldBe` "*a*"
     markdownText (fmt bold2F "a") `shouldBe` "**a**"
+  it "underscores inside words, as CommonMark" do
+    "_private_var = 1" <==> "_private_var = 1"
+    "use _snake_case_ here" <==> "use " <> markdown Italic "snake_case" <> " here"
+    "_foo_bar_baz_" <==> markdown Italic "foo_bar_baz"
+    "__foo__bar" <==> "__foo__bar"
+    "__init__.py" ==> bold2 "init" <> ".py"
+  it "a closing delimiter followed by the same character is text" do
+    "*a**b*" <==> bold "a**b"
+    "*foo**bar**baz*" <==> bold "foo**bar**baz"
+    "**a****b**" <==> "**a****b**"
+    "*a**" <==> "*a**"
+  it "code spans inside a format" do
+    "*a `*`*" <==> bold "a `*`"
+    "**a `**` b**" <==> bold2 "a `**` b"
   it "code spans" do
     "`` x ` y ``" ==> markdown Snippet "x ` y"
     "``x ` y``" <== markdown Snippet "x ` y"
@@ -754,6 +778,7 @@ headings = describe "headings" do
     "#\n- b" <===> (["#", lineBr, bullet "- ", "b"], [Paragraph (rng 0 1), List [entry 3 4 []]])
   it "indentation and inline content" do
     "  # a" <===> ([mk (HeadingMark 1) "  # ", "a"], [Heading 1 (rng 1 2)])
+    "#   a" <===> ([mk (HeadingMark 1) "#   ", "a"], [Heading 1 (rng 1 2)])
     "# *a* b" <===> ([heading1, fmt boldF "a", " b"], [Heading 1 (rng 1 3)])
   it "closing sequences" do
     "# a #" <===> ([heading1, "a", mk HeadingClose " #"], [Heading 1 (rng 1 2)])
@@ -766,12 +791,13 @@ headings = describe "headings" do
     "# a\n# b" <===> ([heading1, "a", lineBr, heading1, "b"], [Heading 1 (rng 1 2), Heading 1 (rng 4 5)])
   it "setext headings" do
     "a\n===" <===> (["a", hardBr, mk (HeadingUnderline 1) "==="], [Heading 1 (rng 0 1)])
-    "a\n---" <===> (["a", hardBr, mk (HeadingUnderline 2) "---"], [Heading 2 (rng 0 1)])
-    "a\n-" <===> (["a", hardBr, mk (HeadingUnderline 2) "-"], [Heading 2 (rng 0 1)])
     "a\nb\n=" <===> (["a", hardBr, "b", hardBr, mk (HeadingUnderline 1) "="], [Heading 1 (rng 0 3)])
-    "a\nb\n---" <===> (["a", hardBr, "b", hardBr, mk (HeadingUnderline 2) "---"], [Heading 2 (rng 0 3)])
     "a\n  ===  " <===> (["a", hardBr, mk (HeadingUnderline 1) "  ===  "], [Heading 1 (rng 0 1)])
-    "a\n---\nb" <===> (["a", hardBr, mk (HeadingUnderline 2) "---", lineBr, "b"], [Heading 2 (rng 0 1), Paragraph (rng 4 5)])
+  it "dashes under text are a rule, not an underline" do
+    "a\n---" <===> (["a", lineBr, mk RuleMark "---"], [Paragraph (rng 0 1), Rule (rng 2 3)])
+    "a\nb\n---" <===> (["a", hardBr, "b", lineBr, mk RuleMark "---"], [Paragraph (rng 0 3), Rule (rng 4 5)])
+    "a\n---\nb" <===> (["a", lineBr, mk RuleMark "---", lineBr, "b"], [Paragraph (rng 0 1), Rule (rng 2 3), Paragraph (rng 4 5)])
+    noBlocks "a\n-"
   it "underlines only under paragraphs" do
     "a\n- - -" <===> (["a", lineBr, mk RuleMark "- - -"], [Paragraph (rng 0 1), Rule (rng 2 3)])
     "a\n***" <===> (["a", lineBr, mk RuleMark "***"], [Paragraph (rng 0 1), Rule (rng 2 3)])
@@ -813,6 +839,11 @@ lists = describe "lists" do
     noBlocks "1. "
     noBlocks "1234567890. a"
     noBlocks "a. b"
+  it "after a paragraph line, only a list numbered 1 starts" do
+    "a\n1. b" <===> (["a", lineBr, numbered "1.", "b"], [Paragraph (rng 0 1), List [ListEntry (Just "1.") (rng 3 4) []]])
+    "a\n1) b" <===> (["a", lineBr, numbered "1)", "b"], [Paragraph (rng 0 1), List [ListEntry (Just "1)") (rng 3 4) []]])
+    noBlocks "a\n14. b"
+    "a\n14. b\n- c" <===> (["a", hardBr, "14. b", lineBr, bullet "- ", "c"], [Paragraph (rng 0 3), List [entry 5 6 []]])
   it "nesting by the column of the marker" do
     "- a\n  - b" <===> ([bullet "- ", "a", lineBr, bullet "  - ", "b"], [List [entry 1 2 [entry 4 5 []]]])
     "1. a\n   - b" <===> ([numbered "1.", "a", lineBr, bullet "   - ", "b"], [List [ListEntry (Just "1.") (rng 1 2) [entry 4 5 []]]])
@@ -859,11 +890,13 @@ quotes :: Spec
 quotes = describe "quotes" do
   it "quote marks" do
     "> a" <===> ([quoteMark "> ", "a"], [Quote (rng 1 2)])
-    ">a" <===> ([quoteMark ">", "a"], [Quote (rng 1 2)])
     ">\ta" <===> ([quoteMark ">\t", "a"], [Quote (rng 1 2)])
     ">  a" <===> ([quoteMark "> ", " a"], [Quote (rng 1 2)])
     "  > a" <===> ([quoteMark "  > ", "a"], [Quote (rng 1 2)])
-    ">a\n> b" <===> ([quoteMark ">", "a", hardBr, quoteMark "> ", "b"], [Quote (rng 1 5)])
+  it "a quote mark without a space or a tab after it is text" do
+    noBlocks ">a"
+    noBlocks ">_< sorry"
+    ">a\n> b" <===> ([">a", lineBr, quoteMark "> ", "b"], [Paragraph (rng 0 1), Quote (rng 3 4)])
   it "quote marks without text are text" do
     noBlocks ">"
     noBlocks "> "
@@ -1048,7 +1081,7 @@ liveMessages = describe "incomplete syntax of live messages" do
 linearTimeParsing :: Spec
 linearTimeParsing = describe "bounded scans for linear-time parsing" do
   it "phone numbers: at most 22 characters, as on master" do
-    "1 1 1 1 1 1 1 1 1 1 1 1" <==> "1 " <> phone "1 1 1 1 1 1 1 1 1 1 1"
+    "0 0 0 0 0 0 0 0 0 0 0 0" <==> "0 " <> phone "0 0 0 0 0 0 0 0 0 0 0"
   it "link texts stop at \"[\", link targets and autolinks at white space" do
     "[a [b](https://simplex.chat)" <==> "[a " <> web "b" "https://simplex.chat" "[b](https://simplex.chat)"
     "[a](https://simplex.chat x)" <==> "[a](" <> uri "https://simplex.chat" <> " x)"

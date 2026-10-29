@@ -663,10 +663,10 @@ func messageText(
                     t = viaHost(smpHosts)
                 }
             case let .command(cmdStr):
-                snippet = snippet ?? UIFont.monospacedSystemFont(ofSize: descr.pointSize, weight: .regular)
-                attrs[.font] = snippet
-                t = "/" + cmdStr
                 if !preview && commands {
+                    snippet = snippet ?? UIFont.monospacedSystemFont(ofSize: descr.pointSize, weight: .regular)
+                    attrs[.font] = snippet
+                    t = "/" + cmdStr
                     attrs[.foregroundColor] = uiLinkColor
                     attrs[commandAttrKey] = t
                     handleTaps = true
