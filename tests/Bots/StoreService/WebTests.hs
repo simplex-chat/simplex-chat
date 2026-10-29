@@ -31,11 +31,16 @@ module Bots.StoreService.WebTests
     fieldOf,
     rcv,
     bounded,
+    seedCheckoutCatalog,
+    createBody,
+    supporterPriceId,
+    codeHashText,
+    sampleCode,
   )
 where
 
 import StoreService.Catalog (catalogCurrency, defaultCatalog)
-import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..))
+import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), NamesConfig, PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..))
 import StoreService.Log (logInfo)
 import StoreService.Names.Abi (hex)
 import StoreService.Orders (cancelOpenInvoice, codeLifetime, expireOverdue, settleOrder)
@@ -51,6 +56,7 @@ import StoreService.Web.Http
 import StoreService.Web.Server
 import Bots.StoreService.BotTests (codeCounts, newPurchaseKeys)
 import Bots.StoreService.CatalogTests (WebOffer (..), WebPrice (..), parseCatalogSource)
+import Bots.StoreService.ConfigTests (chainSection, namesSection, parsedNames)
 import Bots.StoreService.FakeBTCPay
 import Bots.StoreService.FakeStripe (FakeStripe (..), fakeIntentStatus, setIntentState, stripeEvent, stripeSigHeader, withFakeStripe)
 import Control.Concurrent (forkIO, threadDelay)
@@ -258,6 +264,9 @@ badgeWebTests = do
     it "logs a handler exception as one service log record, never a bare line" testHandlerExceptionIsLogged
   describe "StoreService names: sites" $ do
     it "exports both sites, each with the publishable key" testExportsBothSites
+    it "serves the names shell in codes mode with codes_only on, with or without a publishable key, and the badges shell without it" testServesCodesMode
+    it "serves the names shell as built with codes_only off" testServesOpenMode
+    it "exports the names shell in codes mode only with codes_only on, and the badges shell as built" testExportsCodesMode
     it "serves each site on its own port only, whatever the Host, and the API on both" testEachPortServesItsSite
     it "listens on the badges port alone without the names site" testOneListenerWithoutTheNamesSite
     it "serves a names asset with its type" testServesANamesAsset
@@ -1260,17 +1269,28 @@ testExportWebapp = do
     let outDir = root </> "out"
         lc = ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = staticDir, lServeWebapp = False, lBadgesExportDir = Just outDir, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesPort = Nothing}
         stripeCfg = Just StripeConfig {sSecretKey = "rk_test_x", sPublishableKey = "pk_test_injected", sWebhookSecret = "whsec_x", sSessionMinutes = 60, sHost = "https://api.stripe.com"}
-    exportWebapp lc stripeCfg
+    exportWebapp (testServiceConfig staticDir False) {listener = lc, stripe = stripeCfg}
     idx <- LB.readFile (outDir </> "index.html")
     LB.toStrict idx `shouldSatisfy` BC.isInfixOf "content=\"pk_test_injected\""
     LB.readFile (outDir </> "sw.js") >>= (`shouldBe` workerJs)
     LB.readFile (outDir </> "assets" </> buildHash </> "main.js") >>= (`shouldBe` assetJs)
 
+-- | The names shell with its publishable key and its mode.
+namesShellAs :: LB.ByteString -> LB.ByteString -> LB.ByteString
+namesShellAs key mode = "<!doctype html><title>simplex.domains</title><meta name=\"stripe-publishable-key\" content=\"" <> key <> "\">" <> namesModeMeta mode
+
+namesModeMeta :: LB.ByteString -> LB.ByteString
+namesModeMeta mode = "<meta name=\"simplex-names-mode\" content=\"" <> mode <> "\">"
+
 namesShellHtml :: LB.ByteString
-namesShellHtml = "<!doctype html><title>simplex.domains</title><meta name=\"stripe-publishable-key\" content=\"\">"
+namesShellHtml = namesShellAs "" "open"
 
 namesShellWithKey :: LB.ByteString
-namesShellWithKey = "<!doctype html><title>simplex.domains</title><meta name=\"stripe-publishable-key\" content=\"pk_test_injected\">"
+namesShellWithKey = namesShellAs "pk_test_injected" "open"
+
+-- | A badges shell carrying the names mode too, so a fill meant only for the names shell shows on it.
+badgesShellWithMode :: LB.ByteString -> LB.ByteString
+badgesShellWithMode key = "<!doctype html><title>SimpleX badges</title><meta id=\"stripe-publishable-key\" name=\"stripe-publishable-key\" content=\"" <> key <> "\">" <> namesModeMeta "open"
 
 namesFont :: LB.ByteString
 namesFont = "wOF2 Manrope Bold"
@@ -1298,8 +1318,9 @@ testExportsBothSites = do
     namesDir <- prepareNamesDir root
     let badgesOut = root </> "badges-out"
         namesOut = root </> "names-out"
-        lc = (listener (testServiceConfig staticDir False)) {lServeWebapp = False, lBadgesExportDir = Just badgesOut, lNamesStaticDir = Just namesDir, lNamesExportDir = Just namesOut}
-    exportWebapp lc (Just publishTestStripe)
+        base = testServiceConfig staticDir False
+        lc = (listener base) {lServeWebapp = False, lBadgesExportDir = Just badgesOut, lNamesStaticDir = Just namesDir, lNamesExportDir = Just namesOut}
+    exportWebapp base {listener = lc, stripe = Just publishTestStripe}
     badgesShell <- LB.readFile (badgesOut </> "index.html")
     LB.toStrict badgesShell `shouldSatisfy` BC.isInfixOf "content=\"pk_test_injected\""
     LB.readFile (badgesOut </> "assets" </> buildHash </> "main.js") >>= (`shouldBe` assetJs)
@@ -1311,19 +1332,67 @@ testExportsBothSites = do
 
 -- | The badges site's client and the names site's, each on the port the env listens on for it.
 withBothSites :: (WebClient -> WebClient -> IO a) -> IO a
-withBothSites action =
+withBothSites = withBothSitesAs (\cfg -> cfg {stripe = Just publishTestStripe})
+
+-- | With the settings changed, the badges shell carrying the names mode.
+withBothSitesAs :: (ServiceConfig -> ServiceConfig) -> (WebClient -> WebClient -> IO a) -> IO a
+withBothSitesAs settings action =
   withServiceStore $ \st -> do
     createDirectoryIfMissing True "tests/tmp"
     withTempDirectory "tests/tmp" "names-static" $ \root -> do
       staticDir <- prepareStaticDir root
+      LB.writeFile (staticDir </> "index.html") (badgesShellWithMode "")
       namesDir <- prepareNamesDir root
       let base = testServiceConfig staticDir True
-          cfg = base {listener = (listener base) {lBadgesPort = 8080, lNamesStaticDir = Just namesDir, lNamesPort = Just 8081}, stripe = Just publishTestStripe}
+          cfg = settings base {listener = (listener base) {lBadgesPort = 8080, lNamesStaticDir = Just namesDir, lNamesPort = Just 8081}}
       withListener [] True holdMicros st cfg $ \env badges@(mgr, _) -> do
         map fst (webListeners env) `shouldBe` [8080, 8081]
         [_, (_, namesSite)] <- pure (webListeners env)
         Warp.testWithApplicationSettings (webSettings (listener cfg)) (pure namesSite) $ \prt ->
           action badges (mgr, "http://127.0.0.1:" <> show prt)
+
+-- | The [names] settings read from the ini, with codes_only on or off.
+namesWithCodesOnly :: Bool -> IO NamesConfig
+namesWithCodesOnly on = parsedNames (namesSection <> ["codes_only = " <> if on then "on" else "off"]) chainSection
+
+shells :: WebClient -> WebClient -> IO ((Int, LB.ByteString), (Int, LB.ByteString))
+shells badges namesSite = (,) <$> shellOf badges <*> shellOf namesSite
+  where
+    shellOf client = (\r -> (statusOf r, responseBody r)) <$> webGet client "/"
+
+testServesCodesMode :: IO ()
+testServesCodesMode = bounded "codes mode served" $ do
+  codesOnly <- namesWithCodesOnly True
+  withBothSitesAs (\cfg -> cfg {names = Just codesOnly}) $ \badges namesSite ->
+    shells badges namesSite `shouldReturn` ((200, badgesShellWithMode ""), (200, namesShellAs "" "codes"))
+  withBothSitesAs (\cfg -> cfg {names = Just codesOnly, stripe = Just publishTestStripe}) $ \badges namesSite ->
+    shells badges namesSite `shouldReturn` ((200, badgesShellWithMode "pk_test_injected"), (200, namesShellAs "pk_test_injected" "codes"))
+
+testServesOpenMode :: IO ()
+testServesOpenMode = bounded "open mode served" $ do
+  open <- namesWithCodesOnly False
+  withBothSitesAs (\cfg -> cfg {names = Just open}) $ \badges namesSite ->
+    shells badges namesSite `shouldReturn` ((200, badgesShellWithMode ""), (200, namesShellHtml))
+
+testExportsCodesMode :: IO ()
+testExportsCodesMode = do
+  codesOnly <- namesWithCodesOnly True
+  open <- namesWithCodesOnly False
+  createDirectoryIfMissing True "tests/tmp"
+  withTempDirectory "tests/tmp" "names-export" $ \root -> do
+    staticDir <- prepareStaticDir root
+    LB.writeFile (staticDir </> "index.html") (badgesShellWithMode "")
+    namesDir <- prepareNamesDir root
+    let badgesOut = root </> "badges-out"
+        namesOut = root </> "names-out"
+        base = testServiceConfig staticDir False
+        lc = (listener base) {lServeWebapp = False, lBadgesExportDir = Just badgesOut, lNamesStaticDir = Just namesDir, lNamesExportDir = Just namesOut}
+        exported namesCfg = do
+          exportWebapp base {listener = lc, names = namesCfg}
+          (,) <$> LB.readFile (badgesOut </> "index.html") <*> LB.readFile (namesOut </> "index.html")
+    exported (Just codesOnly) `shouldReturn` (badgesShellWithMode "", namesShellAs "" "codes")
+    exported (Just open) `shouldReturn` (badgesShellWithMode "", namesShellHtml)
+    exported Nothing `shouldReturn` (badgesShellWithMode "", namesShellHtml)
 
 webGetAt :: WebClient -> ByteString -> String -> IO (Response LB.ByteString)
 webGetAt client host target = webRequest client "GET" target [("Host", host)]
