@@ -58,7 +58,7 @@ imageFormat = \case
 decodeResizable :: ByteString -> IO (Either String (DynamicImage, Maybe ByteString))
 decodeResizable s = runExceptT $ do
   (img, profile) <- decode
-  pure (img, displayP3Profile =<< profile)
+  pure . (img,) $! displayP3Profile =<< profile
   where
     decode
       | "\xFF\xD8" `B.isPrefixOf` s = (,jpegIccProfile s) <$> decodeDisplayJpeg s
