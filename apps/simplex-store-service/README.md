@@ -353,8 +353,9 @@ they refuse what it signs — never turn it on where the key is one those apps t
 
 `scripts/store-service/` holds the production deployment: the image (`Dockerfile`, built from
 the repository root), `compose.yml`, the ini template `store_service.ini.example` and the egress
-rule `egress.sh`. The service runs with `+client_postgres` and host networking; one Caddy serves
-both sites from the folders the service exports at boot and proxies the API to it.
+rule `ops/egress.sh`; `dev/` holds the scripts of the dev setup and the webapp's cases. The service
+runs with `+client_postgres` and host networking; one Caddy serves both sites from the folders the
+service exports at boot and proxies the API to it.
 
 `compose.yml` mounts the folder `scripts/store-service/config/` read-only at
 `/etc/simplex-store-service`. It holds `store_service.ini`, and the App Store root and the Play
@@ -441,34 +442,62 @@ each domain to its own port, as the all-in-one example in [Caddy](#caddy) does. 
   on its first start. Its state is kept in `./data/chain`, so restarts keep the contracts, balances
   and registered names. Its keys are anvil's public test keys, so never use it beside a real chain.
 - `postgres`: PostgreSQL 17 on `127.0.0.1:5433`, user `simplex`, database `store_service`, without a
-  password, kept in `./data/postgres`.
+  password, kept in `./data/postgres`. The service uses it in place of `BADGE_DB_CONN`.
 
-From `scripts/store-service/`:
+From a fresh clone:
 
 ```
-echo "COMPOSE_FILE=compose.yml:compose.dev.yml" >> .env
-echo "BADGE_DB_CONN=postgresql://simplex@127.0.0.1:5433/store_service" >> .env
+git clone https://github.com/simplex-chat/simplex-chat && cd simplex-chat
+git checkout sh/store-service && git submodule update --init apps/simplex-domains
+cd scripts/store-service
+echo "COMPOSE_FILE=compose.yml:compose.dev.yml" > .env
 docker compose up -d --build
-docker compose logs chain
 ```
 
-The service starts once the chain is up. The chain's log prints its `[chain]` section; put it in
-`config/store_service.ini` with a `[names]` section and, under `[listener]`,
-`names_export_dir = /srv/names-export` (the names build is the image's `/srv/names`, the default),
-then `docker compose restart store-service`. With `serve_webapp = on`, the names site is on
-`names_port`, by default 8081.
+The names site is then on `http://127.0.0.1:8081` and the badges site on `http://127.0.0.1:8080`.
+
+On its first start, the chain writes `config/store_service.ini` for its deployment, unless the file
+exists; it never rewrites it, so edits there are kept. The file serves both sites all in one, with
+`[names]` on the `.simplex` TLD, `[chain]` at the local chain with 1 confirmation, and `[issuer]`
+signing with a public test key at index 999, which no client trusts, through `dev_keys`. That key is
+in `dev/chain.sh`, as public as anvil's: never use it elsewhere. The service starts once the chain
+and the database are healthy. `USER_UID` and `USER_GID` in `.env` (by default 1000) own the file,
+mode 600, and its folder, mode 700.
+
+Names are paid for with prepaid codes, so no payment provider is needed. To issue one, stop the
+service and run its console against the dev database:
+
+```
+docker compose stop store-service
+docker compose run --rm store-service -d postgresql://simplex@127.0.0.1:5433/store_service --run-cli --service-config /etc/simplex-store-service/store_service.ini
+```
+
+There, `//issue name 6` prints a code for one name of 6 letters or more (see
+[From the command line](#from-the-command-line)). Leave with `/quit`, then
+`docker compose start store-service`.
 
 The service key's account starts with 10,000 ETH and a sponsor allowance. To top it up, or set any
 account's balance:
 
 ```
-docker compose exec chain dev-chain.sh topup [address] [eth]
+docker compose exec chain chain.sh topup [address] [eth]
 ```
 
-Registrations wait 10 seconds after their commit (`MIN_COMMITMENT_AGE` in `compose.dev.yml`), and
-prepaid codes need no payment provider. To start over, run `docker compose down` and delete
-`./data/chain` and `./data/postgres` together; deleting only the chain leaves orders that point at
-names that no longer exist.
+Registrations wait 10 seconds after their commit (`MIN_COMMITMENT_AGE` in `compose.dev.yml`).
+
+Card payments in Stripe's test mode: uncomment `[stripe]` in `config/store_service.ini` (as the
+`USER_UID` user, or with `sudo`), put in the test keys and the webhook secret, which
+`stripe listen --forward-to 127.0.0.1:8080/webhooks/stripe` prints, and run
+`docker compose restart store-service`. With `dev_keys`, the service refuses live keys, and a
+BTCPay that is not on loopback.
+
+To start over, delete the containers and every dev state together, since orders in the database
+point at names on the chain. `./data` belongs to root and to Postgres's user, so:
+
+```
+docker compose down
+sudo rm -rf data config
+```
 
 ### Caddy
 
@@ -520,7 +549,7 @@ simplex.domains {
 		match status 2xx
 	}
 	header {
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-i5ar+ITNdQiucbmin4/AN6DAY5LbAWeq3at+RiFoUoY=' 'sha256-Jhsw0wf9pI4icAxqab9mIjf34YdecDZeLVN+/KVZW+4=' 'sha256-djvAKNENifE9sLU9+NrLdzdGftMgCwpvCvH/MAbkElY=' https://js.stripe.com https://*.js.stripe.com; frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com; connect-src 'self' https://api.stripe.com; img-src 'self' data: https://*.stripe.com; style-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-i5ar+ITNdQiucbmin4/AN6DAY5LbAWeq3at+RiFoUoY=' 'sha256-lxURZtAGLIPkeIfIfFjl4UIJp4ElJWSbFqE1ktKB8hk=' 'sha256-djvAKNENifE9sLU9+NrLdzdGftMgCwpvCvH/MAbkElY=' https://js.stripe.com https://*.js.stripe.com; frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com; connect-src 'self' https://api.stripe.com; img-src 'self' data: https://*.stripe.com; style-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
 		Strict-Transport-Security "max-age=63072000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
@@ -580,7 +609,7 @@ BTCPay (`[btcpay] host`), the database and the DNS resolvers in `/etc/resolv.con
 connections already open, such as Caddy's requests, pass, and so does IPv6 neighbour discovery on
 the link.
 
-`egress.sh` writes this as the chain `STORE_SERVICE_EGRESS` in `iptables` and `ip6tables`, and
+`ops/egress.sh` writes this as the chain `STORE_SERVICE_EGRESS` in `iptables` and `ip6tables`, and
 rebuilds it on every run. With compose's host networking it matches the service's user in
 `OUTPUT` (`-m owner --uid-owner`). That rule covers every process of that user on the host, so
 the service must run as a dedicated user. `--uid` is required, and the script refuses a uid whose
@@ -618,9 +647,9 @@ the environment's `BADGE_DB_CONN`, else to compose's default
 when compose runs with another value:
 
 ```
-sudo ./egress.sh --dry-run --uid 998
-sudo ./egress.sh --uid 998
-sudo ./egress.sh --check --uid 998
+sudo ops/egress.sh --dry-run --uid 998
+sudo ops/egress.sh --uid 998
+sudo ops/egress.sh --check --uid 998
 ```
 
 - `--dry-run` prints the `iptables-restore` input an install would commit, read against the
@@ -676,7 +705,7 @@ docker compose exec store-service bash -c ': </dev/tcp/<gateway>/443'
 - `allowed` is printed for the database. With the RPC node on this host, the same command with its
   port (`8545` for a local reth) prints it too.
 
-`sudo ./egress.sh --remove --uid 998` (or `--bridge <interface>`) deletes the jumps an install
+`sudo ops/egress.sh --remove --uid 998` (or `--bridge <interface>`) deletes the jumps an install
 adds for that user or network, then the chain, in `iptables` and `ip6tables`. Running it again
 changes nothing, and `--check` then reports the chain absent.
 
@@ -1190,7 +1219,7 @@ Your names; a later late payment credits it again, and a second refund adds to `
 
 ## Running the webapp's cases against the service
 
-`scripts/store-service/names-contract-run.sh` runs the names webapp's end-to-end cases that need no
+`scripts/store-service/dev/contract-run.sh` runs the names webapp's end-to-end cases that need no
 payment against this service in Chromium, as they run against the webapp's mock. It:
 
 1. starts anvil on 8545 and deploys the contracts with the webapp's `dev/deploy.ts`, with a commitment
@@ -1227,7 +1256,7 @@ the service or the code server exits before it answers.
 
 ```
 cabal build exe:simplex-store-service
-ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/names-contract-run.sh
+ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/dev/contract-run.sh
 ```
 
 - `WEBAPP_DIR`: the names webapp (default: the `apps/simplex-domains` submodule's `webapp/`).

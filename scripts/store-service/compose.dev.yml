@@ -1,4 +1,5 @@
-# Development: compose.yml plus a local chain with the names contracts, kept in ./data/chain across restarts.
+# Development: compose.yml plus a local chain with the names contracts, kept in ./data/chain across restarts, which
+# writes ./config/store_service.ini for them on its first start, and a local database.
 # Enable it with COMPOSE_FILE=compose.yml:compose.dev.yml in .env; unlike a compose.override.yml, it is never
 # picked up on its own.
 services:
@@ -14,10 +15,14 @@ services:
     environment:
       # seconds a registration waits after its commit; the contracts' production value is 60
       MIN_COMMITMENT_AGE: "10"
+      # the owner of the config it writes, the store service's user
+      USER_UID: ${USER_UID:-1000}
+      USER_GID: ${USER_GID:-1000}
     volumes:
       - ./data/chain:/chain
-      - ./dev-chain.sh:/usr/local/bin/dev-chain.sh:ro
-    command: dev-chain.sh
+      - ./config:/config
+      - ./dev/chain.sh:/usr/local/bin/chain.sh:ro
+    command: chain.sh
     healthcheck:
       test: ["CMD", "test", "-f", "/chain/ready"]
       interval: 5s
@@ -43,7 +48,19 @@ services:
       retries: 30
       start_period: 10s
 
+  # compose replaces a command whole, so this is compose.yml's with the dev database in place of BADGE_DB_CONN
   store-service:
+    command:
+      - "-d"
+      - "postgresql://simplex@127.0.0.1:5433/store_service"
+      - "--create-schema"
+      - "--yes-migrate"
+      - "--service-config"
+      - "/etc/simplex-store-service/store_service.ini"
+    volumes:
+      # compose creates every container before it starts any, so compose.yml's create_host_path: false would refuse a
+      # first start before the chain writes ./config; this entry replaces that one by its target
+      - ./config:/etc/simplex-store-service:ro
     depends_on:
       chain: { condition: service_healthy }
       postgres: { condition: service_healthy }
