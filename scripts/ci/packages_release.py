@@ -82,6 +82,7 @@ BUILD_CHANGES = {
 SCOPE_CHANGES = {
     "badge-web": ["apps/simplex-badge-service/web/**"],
     "ci-scripts": ["scripts/ci/packages_release.py", "scripts/ci/test_packages_release.py"],
+    "ci-failures": ["scripts/ci-failures/**"],
 }
 CABAL_FILE = "simplex-chat.cabal"
 CABAL_VERSION = re.compile(r"^(version:\s*)(\S+)", re.M)

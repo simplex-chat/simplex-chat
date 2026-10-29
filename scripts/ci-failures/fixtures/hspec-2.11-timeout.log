@@ -1,0 +1,69 @@
+﻿2026-10-19T21:36:34.1153987Z Current runner version: '2.337.0'
+2026-10-19T21:36:34.1180047Z ##[group]Runner Image Provisioner
+2026-10-19T21:36:34.1180960Z Hosted Compute Agent
+2026-10-19T21:36:37.5233710Z Complete job name: ubuntu-24.04-x86_64 (CLI,Desktop), GHC: 9.6.3
+2026-10-19T21:41:43.3677128Z ##[group]Run i=1
+2026-10-19T21:41:43.3677414Z [36;1mi=1[0m
+2026-10-19T21:41:43.3677637Z [36;1mattempts=1[0m
+2026-10-19T21:41:43.3677882Z [36;1mfalse && attempts=3[0m
+2026-10-19T21:41:43.3678176Z [36;1mwhile [ "$i" -le "$attempts" ]; do[0m
+2026-10-19T21:41:43.3678558Z [36;1m  if ./simplex-chat-test; then[0m
+2026-10-19T21:41:43.3678844Z [36;1m    break[0m
+2026-10-19T21:41:43.3679068Z [36;1m  else[0m
+2026-10-19T21:41:43.3679331Z [36;1m    echo "Attempt $i failed, retrying..."[0m
+2026-10-19T21:41:43.3679662Z [36;1m    i=$((i + 1))[0m
+2026-10-19T21:41:43.3679901Z [36;1m    sleep 1[0m
+2026-10-19T21:41:43.3680126Z [36;1m  fi[0m
+2026-10-19T21:41:43.3680336Z [36;1mdone[0m
+2026-10-19T21:41:43.3680572Z [36;1mif [ "$i" -gt "$attempts" ]; then[0m
+2026-10-19T21:41:43.3680898Z [36;1m  echo "All "$attempts" attempts failed."[0m
+2026-10-19T21:41:43.3681204Z [36;1m  exit 1[0m
+2026-10-19T21:41:43.3681420Z [36;1mfi[0m
+2026-10-19T21:41:43.3738706Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T21:41:43.3739087Z env:
+2026-10-19T21:41:43.3739294Z   opt: O2
+2026-10-19T21:41:43.3739503Z   ghc_options: 
+2026-10-19T21:41:43.3739729Z   release: false
+2026-10-19T21:41:43.3739951Z   branch: master
+2026-10-19T21:41:43.3740169Z   cache_o0: true
+2026-10-19T21:41:43.3740394Z   release_branch: master
+2026-10-19T21:41:43.3740647Z   ZSTD_CLEVEL: 9
+2026-10-19T21:41:43.3741027Z   image_cache: ghcr.io/simplex-chat/simplex-chat-build-cache:24.04-x86_64-ghc9.6.3
+2026-10-19T21:41:43.3741710Z   source_hashes: dist-newstyle/sources.sha256
+2026-10-19T21:41:43.3742039Z ##[endgroup]
+2026-10-19T21:41:43.4240578Z 
+2026-10-19T21:41:43.4240946Z Schema dump
+2026-10-19T21:41:44.2213359Z   verify and overwrite schema dump [[32m✔[0m]
+2026-10-19T21:41:44.2321328Z [ERROR 2026-10-19 21:41:44 +0000 apps/simplex-badge-service/src/BadgeService/Service.hs:312] badge service: a request failed; the next one will be handled
+2026-10-19T21:41:44.2373156Z [WARN 2026-10-19 21:41:44 +0000 apps/simplex-badge-service/src/BadgeService/Config.hs:180] tests/tmp/badge-ini4573/badge_service.ini: nothing reads [legacy], so it was ignored
+2026-10-19T21:41:44.2438951Z [WARN 2026-10-19 21:41:44 +0000 apps/simplex-badge-service/src/BadgeService/Config.hs:180] tests/tmp/badge-ini4573/badge_service.ini: nothing reads issuer.default, so it was ignored
+2026-10-19T21:41:44.2453967Z [WARN 2026-10-19 21:41:44 +0000 apps/simplex-badge-service/src/BadgeService/Config.hs:180] tests/tmp/badge-ini4573/badge_service.ini: nothing reads issuer.key_1, so it was ignored
+2026-10-19T21:41:44.3437876Z [INFO 2026-10-19 21:41:44 +0000 apps/simplex-badge-service/src/BadgeService/Web/Server.hs:539] POST /api/invoice refused: no provider configured for SPMCard {provider = CPStripe}
+2026-10-19T21:41:44.3604082Z [INFO 2026-10-19 21:41:44 +0000 apps/simplex-ba[dIgNeF-Os e2r0v2i6c-e1/0s-r1c9/ B2a1d:g4e1S:e4r4v i+c0e0/0W0e ba/pSpesr/vseirm.phlse:x3-3b9a]d gbea-dsgeer vsiecrev/iscrec:/ BeaxdpgoerSteerdv itchee/ Wweebb/aSpepr vteor .thess:t5s3/9t]m pP/ObSaTd g/ea-peix/pionrvto4i5c7e3 /roeuftu
+2026-10-19T21:41:44.3617174Z sed: malformed body
+2026-10-19T21:41:44.4176930Z [WARN 2026-10-19 21:41:44 +0000 apps/simplex-badge-service/src/BadgeService/Web/Server.hs:677] POST /webhooks/btcpay: no PPCrypto adapter is configured, so every delivery is refused
+2026-10-19T21:41:44.5837424Z SQLite3 returned ErrorError while attempting to perform prepare "SELECT i.invoice_id, i.provider, ci.provider_ref, bc.badge_type, bc.months, i.price, i.amount, i.currency, i.payment_url, i.payment_address, i.payment_crypto_currency, i.payment_crypto_amount, i.expires_at, i.status, i.created_at, p.amount, p.crypto_paid, p.crypto_due, p.paid_in_full, p.status, p.updated_at FROM sx_badge_service_invoices i JOIN sx_badge_service_badge_code_invoices ci ON ci.invoice_id = i.invoice_id JOIN sx_badge_service_badge_codes bc ON bc.badge_code_id = ci.badge_code_id LEFT JOIN sx_badge_service_payments p ON p.invoice_id = i.invoice_id WHERE i.invoice_id = ?": no such table: sx_badge_service_badge_code_invoices
+2026-10-19T21:41:44.7623490Z   verify .lint fkey-indexes [[32m✔[0m]
+2026-10-19T21:41:44.7815251Z [ERROR 2026-10-19 2[1I:N4F1O: 4240 2+60-01000- 1a9p p2s1/:s4i1m:p4l4e x+-0b0a0d0g ea-pspesr/vsiicmep/lserxc-/bBaaddggee-Sseerrvviiccee//Psorlcl/eBra.dhgse:S1e5r3v]i cbea/dPgoel lpeorl.lhesr::2 1i0n]v obiacdeg ep -pnoolnlee-r1:  noarmdeesr  ppr-o1v iIdSeOrp ecnr y-p>t oI,S Pwahiidc
+2026-10-19T21:41:44.7822331Z h this build has none of
+2026-10-19T21:41:44.7826318Z [INFO 2026-10-19 21:41:44 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:210] badge poller: order p-2 ISOpen -> ISPaid
+2026-10-19T21:41:44.7828766Z [INFO 2026-10-19 21:41:44 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:210] badge poller: order p-3 ISOpen -> ISPaid
+2026-10-19T21:41:44.7873071Z [INFO 2026-10-19 21:41:44 +0000 apps/simplex-badge-service/src/BadgeService/Providers/BTCPay.hs:242] btcpay: store BqZKtkeSN9JgLLdCJRJfXQjLwCLDNCVLdxLTTdMzTHnT has enabled BTC-CHAIN, XMR-CHAIN
+2026-10-19T21:41:44.7971790Z [INFO 2026-10-19 21:41:44 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:210] badge poller: order FakeInvoiceRef0001 ISOpen -> ISPaid
+2026-10-19T21:41:44.8035339Z [INFO 2026-10-19 21:41:44 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:210] badge poller: order p-1 ISOpen -> ISPaid
+2026-10-19T21:41:44.8168552Z [WARN 2026-10-19 21:41:44 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:169] badge poller: PPCrypto reads are failing; every invoice waits for the next pass: connection refused
+2026-10-19T21:41:44.8172123Z [WARN 2026-10-19 21:41:44 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:181] badge poller: PPCrypto list failed; every invoice waits for the next pass: connection refused
+2026-10-19T21:41:44.8187166Z [INFO 2026-10-19 21:41:44 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:210] badge poller: order p-1 ISOpen -> ISPaid
+2026-10-19T22:00:31.0769834Z [INFO 2026-10-19 22:00:31 +0000 apps/simplex-badge-service/src/BadgeService/Group.hs:218] badge group owner promoted: member 2
+2026-10-19T22:00:32.5381390Z [INFO 2026-10-19 22:00:32 +0000 apps/simplex-badge-service/src/BadgeService/Service.hs:210] badge catalog: 2 prices and 4 offers compiled in, 0 prices and 0 offers inserted
+2026-10-19T22:00:32.5393252Z [INFO 2026-10-19 22:00:32 +0000 apps/simplex-badge-service/src/BadgeService/Group.hs:95] badge group ready
+2026-10-19T22:00:32.5416383Z [WARN 2026-10-19 22:00:32 +0000 apps/simplex-badge-service/src/BadgeService/Group.hs:341] badge group tracker left uncorrected, code 1 can no longer be edited
+2026-10-19T22:00:37.8859040Z TLS error: HandshakeFailed (Error_Protocol "certificate has unknown CA" UnknownCa)
+2026-10-19T22:00:37.8862592Z [1;31m[ERROR 2026-10-19 22:00:37 +0000 src/Simplex/Chat/Remote.hs:672] waitForCtrlSession remote ctrl error: ChatErrorAgent {agentError = RCP {rcpErr = RCEIdentity}, agentConnId = AgentConnId "", connectionEntity_ = Nothing}
+2026-10-19T22:00:58.1028438Z [0;0m[1;31m[ERROR 2026-10-19 22:00:58 +0000 src/Simplex/Chat/Remote.hs:672] waitForCtrlSession remote ctrl error: ChatErrorRemoteCtrl {remoteCtrlError = RCETimeout}
+2026-10-19T22:01:03.4121457Z TLS error: thread killed
+2026-10-19T23:41:55.8774458Z ##[error]The action 'Run tests' has timed out after 120 minutes.
+2026-10-19T23:41:55.8868528Z ##[group]Run find dist-newstyle -mindepth 1 -maxdepth 1 ! -name src -exec rm -rf {} +
+2026-10-19T23:41:55.8869199Z [36;1mfind dist-newstyle -mindepth 1 -maxdepth 1 ! -name src -exec rm -rf {} +[0m
+2026-10-19T23:41:55.8918837Z shell: /usr/bin/docker exec -t builder sh -eu {0}
+2026-10-19T23:41:55.8919173Z env:

@@ -1,0 +1,93 @@
+﻿2026-10-21T09:47:31.5685088Z Current runner version: '2.337.0'
+2026-10-21T09:47:31.5712313Z ##[group]Runner Image Provisioner
+2026-10-21T09:47:31.5713254Z Hosted Compute Agent
+2026-10-21T09:47:34.0332786Z Complete job name: ubuntu-22.04-x86-64, GHC: 8.10.7
+2026-10-21T09:51:57.5345077Z ##[group]Run i=1
+2026-10-21T09:51:57.5345365Z [36;1mi=1[0m
+2026-10-21T09:51:57.5345580Z [36;1mattempts=1[0m
+2026-10-21T09:51:57.5345818Z [36;1mfalse && attempts=3[0m
+2026-10-21T09:51:57.5346103Z [36;1mwhile [ "$i" -le "$attempts" ]; do[0m
+2026-10-21T09:51:57.5346424Z [36;1m  if ./simplexmq-test; then[0m
+2026-10-21T09:51:57.5346697Z [36;1m    break[0m
+2026-10-21T09:51:57.5346915Z [36;1m  else[0m
+2026-10-21T09:51:57.5347167Z [36;1m    echo "Attempt $i failed, retrying..."[0m
+2026-10-21T09:51:57.5347484Z [36;1m    i=$((i + 1))[0m
+2026-10-21T09:51:57.5347746Z [36;1m    sleep 1[0m
+2026-10-21T09:51:57.5347964Z [36;1m  fi[0m
+2026-10-21T09:51:57.5348470Z [36;1mdone[0m
+2026-10-21T09:51:57.5348872Z [36;1mif [ "$i" -gt "$attempts" ]; then[0m
+2026-10-21T09:51:57.5349304Z [36;1m  echo "All "$attempts" attempts failed."[0m
+2026-10-21T09:51:57.5349614Z [36;1m  exit 1[0m
+2026-10-21T09:51:57.5349820Z [36;1mfi[0m
+2026-10-21T09:51:57.5418430Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-21T09:51:57.5418816Z env:
+2026-10-21T09:51:57.5419074Z   apps: smp-server xftp-server ntf-server xftp
+2026-10-21T09:51:57.5419377Z   opt: O0
+2026-10-21T09:51:57.5419595Z   ghc_options: --ghc-options=-O0
+2026-10-21T09:51:57.5419871Z   release: false
+2026-10-21T09:51:57.5420111Z   postgres_dist: dist-postgres
+2026-10-21T09:51:57.5420367Z   branch: master
+2026-10-21T09:51:57.5420592Z   cache_o0: false
+2026-10-21T09:51:57.5420963Z   image_cache: ghcr.io/simplex-chat/simplexmq-build-cache:22.04-x86-64-ghc8.10.7
+2026-10-21T09:51:57.5421429Z   source_hashes: dist-newstyle/sources.sha256
+2026-10-21T09:51:57.5421759Z   PGHOST: localhost
+2026-10-21T09:51:57.5421984Z ##[endgroup]
+2026-10-21T09:51:57.5833216Z 
+2026-10-21T09:51:57.5836856Z Core tests
+2026-10-21T09:55:32.3757214Z SMP {serverAddress = "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:16051", smpErr = AUTH}
+2026-10-21T09:55:33.0851434Z SMP {serverAddress = "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:16081", smpErr = AUTH}
+2026-10-21T09:55:33.4119391Z TLS error: HandshakeFailed (Error_Packet_unexpected "Alert13 [(AlertLevel_Fatal,UnknownCa)]" " expected: handshake 13")
+2026-10-21T09:55:36.1975376Z [0;0m[1;31m[ERROR 2026-10-21 09:55:36 +0000 src/Simplex/Messaging/Notifications/Server.hs:795] unauthorized client request
+2026-10-21T09:55:38.8096130Z Test exception: user error (Pattern match failure in do expression at tests/AgentTests/NotificationTests.hs:335:7-33)
+2026-10-21T09:55:38.8097836Z Retrying with more logs...
+2026-10-21T09:55:38.8117811Z [0;0m[1;32m[NOTE 2026-10-21 09:55:38 +0000 src/Simplex/Messaging/Transport/Server.hs:246] binding to [::]:16255
+2026-10-21T09:55:39.1002300Z [0;0m[0;34m[INFO 2026-10-21 09:55:38 +0000 src/Simplex/Messaging/Agent/Client.hs:1936] A (1) <-- localhost:16151 : BlcI OK
+2026-10-21T09:56:14.2863415Z       should resume subscriptions after SMP server is restarted [[32m✔[0m]
+2026-10-21T09:56:14.2864476Z     Notifications after SMP server restart (batched)
+2026-10-21T09:56:14.4115524Z [0;0m[1;31m[ERROR 2026-10-21 09:56:14 +0000 src/Simplex/Messaging/Agent/NtfSubSupervisor.hs:515] notifyErrs: ("FdKCzvXdL7NkI8ZC",INTERNAL {internalErr = "SQLite3 returned ErrorConstraint while attempting to perform step: UNIQUE constraint failed: rcv_queues.host, rcv_queues.port, rcv_queues.ntf_id"}) :| []
+2026-10-21T09:56:20.1296925Z Test exception: no notification
+2026-10-21T09:56:20.1321862Z CallStack (from HasCallStack):
+2026-10-21T09:56:20.1322964Z   error, called at tests/AgentTests/NotificationTests.hs:1044:16 in main:AgentTests.NotificationTests
+2026-10-21T09:56:20.1327918Z [0;0m[0;34m[INFO 2026-10-21 09:56:20 +0000 src/Simplex/Messaging/Agent/Client.hs:1936] A (1) --> localhost:16623 : wcM7 TVFY
+2026-10-21T09:56:20.1330538Z   messageNotification, called at tests/AgentTests/NotificationTests.hs:1054:23 in main:AgentTests.NotificationTests
+2026-10-21T09:56:20.1332580Z   messageNotificationData, called at tests/AgentTests/NotificationTests.hs:895:18 in main:AgentTests.NotificationTests
+2026-10-21T09:56:20.1334453Z   runTest, called at tests/AgentTests/FunctionalAPITests.hs:752:7 in main:AgentTests.FunctionalAPITests
+2026-10-21T09:56:20.1336206Z   withAgent, called at tests/AgentTests/FunctionalAPITests.hs:751:5 in main:AgentTests.FunctionalAPITests
+2026-10-21T09:56:20.1337708Z   withAgent, called at tests/AgentTests/FunctionalAPITests.hs:750:3 in main:AgentTests.FunctionalAPITests
+2026-10-21T09:56:20.1339660Z   withAgentClientsCfgServers2, called at tests/AgentTests/NotificationTests.hs:887:3 in main:AgentTests.NotificationTests
+2026-10-21T09:56:20.1340895Z Retrying with more logs...
+2026-10-21T09:56:21.0978900Z [0;0m[0;34m[INFO 2026-10-21 09:56:20 +0000 src/Simplex/Messaging/Agent/Client.hs:1936] A (1) --> localhost:16581 :  NEW
+2026-10-21T09:56:21.0980884Z [0;0m[0;34m[INFO 2026-10-21 09:56:20 +0000 src/Simplex/Messaging/Agent/Client.hs:1936] A (1) <-- localhost:16581 :  IDS iOjB NsdL
+2026-10-21T09:59:22.9450243Z       should allow repeated registration with the same credentials [[32m✔[0m]
+2026-10-21T09:59:22.9452029Z       should allow the second registration with different credentials and delete the first after verification [[32m✔[0m]
+2026-10-21T09:59:22.9453703Z       should verify token after notification server is restarted [[32m✔[0m]
+2026-10-21T09:59:25.4908098Z Test exception: user error (Pattern match failure in do expression at tests/AgentTests/NotificationTests.hs:335:7-33)
+2026-10-21T09:59:25.4909112Z Retrying with more logs...
+2026-10-21T09:59:25.4913642Z [0;0m[1;32m[NOTE 2026-10-21 09:59:25 +0000 src/Simplex/Messaging/Transport/Server.hs:246] binding to [::]:10115
+2026-10-21T09:59:25.8049021Z TLS error: HandshakeFailed (Error_Packet_unexpected "Alert13 [(AlertLevel_Fatal,UnknownCa)]" " expected: handshake 13")
+2026-10-21T10:03:07.4239987Z down migration m20261008_rcv_switch_status
+2026-10-21T10:03:07.4511203Z down migration m20261018_xftp_autoincrement
+2026-10-21T10:03:07.4837064Z   verify schema down migrations [[32m✔[0m]
+2026-10-21T10:03:07.5407903Z   verify strict tables [[32m✔[0m]
+2026-10-21T10:03:07.5977322Z   should NOT create user record for new database [[32m✔[0m]
+2026-10-21T10:03:07.6867267Z   should create user record for old database [[32m✔[0m]
+2026-10-21T10:03:07.7530007Z   should remove duplicate ratchet key hashes before adding unique index [[32m✔[0m]
+2026-10-21T10:03:07.9693462Z   should clear received_qend switch status on downgrade [[32m✔[0m]
+2026-10-21T10:03:07.9694825Z 
+2026-10-21T10:03:07.9695006Z Failures:
+2026-10-21T10:03:07.9695217Z 
+2026-10-21T10:03:07.9695819Z [36m  tests/AgentTests/NotificationTests.hs:335:7: [0m
+2026-10-21T10:03:07.9697299Z   1) SMP client agent, server memory message store, Notification tests, Managing notification tokens, should re-verify token after notification server is restarted
+2026-10-21T10:03:07.9699430Z [31m       uncaught exception: IOException of type UserError[0m
+2026-10-21T10:03:07.9700756Z [31m       user error (Pattern match failure in do expression at tests/AgentTests/NotificationTests.hs:335:7-33)[0m
+2026-10-21T10:03:07.9701617Z 
+2026-10-21T10:03:07.9703116Z   To rerun use: --match "/SMP client agent, server memory message store/Notification tests/Managing notification tokens/should re-verify token after notification server is restarted/" --seed 956814606
+2026-10-21T10:03:07.9704411Z 
+2026-10-21T10:03:07.9704601Z Randomized with seed 956814606
+2026-10-21T10:03:07.9704909Z 
+2026-10-21T10:03:07.9705087Z Finished in 670.4011 seconds
+2026-10-21T10:03:07.9705674Z [31m1412 examples, 1 failure, 63 pending[0m
+2026-10-21T10:03:08.1791510Z Attempt 1 failed, retrying...
+2026-10-21T10:03:09.1820115Z All 1 attempts failed.
+2026-10-21T10:03:09.1835997Z ##[error]Process completed with exit code 1.
+2026-10-21T10:03:09.2007466Z Post job cleanup.

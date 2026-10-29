@@ -1,0 +1,70 @@
+﻿2026-10-23T09:07:36.0886610Z Current runner version: '2.338.0'
+2026-10-23T09:07:36.0912703Z ##[group]Runner Image Provisioner
+2026-10-23T09:07:36.0913591Z Hosted Compute Agent
+2026-10-23T09:07:40.3956447Z Complete job name: ubuntu-22.04-x86_64 (CLI,Desktop), GHC: 8.10.7
+2026-10-23T09:12:12.0996277Z ##[group]Run i=1
+2026-10-23T09:12:12.0996575Z [36;1mi=1[0m
+2026-10-23T09:12:12.0996801Z [36;1mattempts=1[0m
+2026-10-23T09:12:12.0997057Z [36;1mfalse && attempts=3[0m
+2026-10-23T09:12:12.0997362Z [36;1mwhile [ "$i" -le "$attempts" ]; do[0m
+2026-10-23T09:12:12.0997698Z [36;1m  if ./simplex-chat-test; then[0m
+2026-10-23T09:12:12.0998225Z [36;1m    break[0m
+2026-10-23T09:12:12.0998450Z [36;1m  else[0m
+2026-10-23T09:12:12.0998766Z [36;1m    echo "Attempt $i failed, retrying..."[0m
+2026-10-23T09:12:12.0999374Z [36;1m    i=$((i + 1))[0m
+2026-10-23T09:12:12.1010378Z [36;1m    sleep 1[0m
+2026-10-23T09:12:12.1010674Z [36;1m  fi[0m
+2026-10-23T09:12:12.1010911Z [36;1mdone[0m
+2026-10-23T09:12:12.1011175Z [36;1mif [ "$i" -gt "$attempts" ]; then[0m
+2026-10-23T09:12:12.1011538Z [36;1m  echo "All "$attempts" attempts failed."[0m
+2026-10-23T09:12:12.1011855Z [36;1m  exit 1[0m
+2026-10-23T09:12:12.1012078Z [36;1mfi[0m
+2026-10-23T09:12:12.1077051Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-23T09:12:12.1077420Z env:
+2026-10-23T09:12:12.1077622Z   opt: O2
+2026-10-23T09:12:12.1077826Z   ghc_options: 
+2026-10-23T09:12:12.1078052Z   release: false
+2026-10-23T09:12:12.1078268Z   branch: master
+2026-10-23T09:12:12.1078477Z   cache_o0: true
+2026-10-23T09:12:12.1078693Z   release_branch: master
+2026-10-23T09:12:12.1078936Z   ZSTD_CLEVEL: 9
+2026-10-23T09:12:12.1079314Z   image_cache: ghcr.io/simplex-chat/simplex-chat-build-cache:22.04-x86_64-ghc8.10.7
+2026-10-23T09:12:12.1079794Z   source_hashes: dist-newstyle/sources.sha256
+2026-10-23T09:12:12.1080106Z ##[endgroup]
+2026-10-23T09:12:13.0079135Z [ERROR 2026-10-23 09:12:13 +0000 apps/simplex-badge-service/src/BadgeService/Service.hs:312] badge service: a request failed; the next one will be handled
+2026-10-23T09:12:13.0208260Z [WARN 2026-10-23 09:12:13 +0000 apps/simplex-badge-service/src/BadgeService/Config.hs:180] tests/tmp/badge-ini614[5W/AbRaNd g2e0_2s6e-r1v0i-c2e3. i0n9i::1 2n:o1t3h i+n0g0 0r0e aadpsp s[/lseigmapclye]x,- bsaod giet- was ignoreds
+2026-10-23T09:12:13.0255912Z ervice/src/BadgeService/Config.hs:180] tests/tmp/badge-ini6146/badge_service.ini: nothing reads issuer.default, so it was ignored
+2026-10-23T09:12:13.0286076Z [WARN 2026-10-23 09:12:13 +0000 apps/simplex-badge-service/src/BadgeService/Config.hs:180] tests/tmp/badge-ini6146/badge_service.ini: nothing reads issuer.key_1, so it was ignored
+2026-10-23T09:12:13.1387072Z [INFO 2026-10-23 09:12:13 +0000 apps/simplex-badge-service/src/BadgeService/Web/Server.hs:539] POST /api/invoice refused: no provider configured for SPMCard {provider = CPStripe}
+2026-10-23T09:12:13.1573910Z [INFO 2026-10-23 09:12:13 +0000 apps/simplex-badge-service/src/BadgeService/Web/Server.hs:339] badge service: exported the webapp to tests/tmp/badge-export6145/out
+2026-10-23T09:12:13.1921528Z [INFO 2026-10-23 09:12:13 +0000 apps/simplex-badge-service/src/BadgeService/Web/Server.hs:539] POST /api/invoice refused: malformed body
+2026-10-23T09:12:13.2741181Z [WARN 2026-10-23 09:12:13 +0000 apps/simplex-badge-service/src/BadgeService/Web/Server.hs:677] POST /webhooks/btcpay: no PPCrypto adapter is configured, so every delivery is refused
+2026-10-23T09:12:13.7284222Z [INFO 2026-10-23 09:12:13 +0000 apps/simplex-badge-service/src/BadgeService/Providers/BTCPay.hs:242] btcpay: store BqZKtkeSN9JgLLdCJRJfXQjLwCLDNCVLdxLTTdMzTHnT has enabled BTC-CHAIN, XMR-CHAIN
+2026-10-23T09:12:13.7337279Z [INFO 2026-10-23 09:12:13 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:210] badge poller: order FakeInvoiceRef0001 ISOpen -> ISPaid
+2026-10-23T09:12:13.7438821Z [INFO 2026-10-23 09:12:13 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:210] badge poller: order p-1 ISOpen -> ISPaid
+2026-10-23T09:12:13.7456047Z [INFO 2026-10-23 09:12:13 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:210] badge poller: order p-2 ISOpen -> ISPaid
+2026-10-23T09:12:16.3820052Z e BqZKtkeSN9JgLLdCJRJfXQjLwCLDNCVLdxLTTdMzTHnT has enabled BTC-CHAIN, XMR-CHAIN
+2026-10-23T09:12:16.3863130Z XQjLwCLDNCVLdxLTTdMzTHnT has enabled BTC-CHAIN, XMR-CHAIN
+2026-10-23T09:12:17.1906476Z [INFO 2026-10-23 09:12:17 +0000 apps/simplex-badge-service/src/BadgeService/Service.hs:148] verifying Play purchases for chat.simplex.app
+2026-10-23T09:12:18.5559674Z SQLite3 returned ErrorError while attempting to perform prepare "SELECT i.invoice_id, i.provider, ci.provider_ref, bc.badge_type, bc.months, i.price, i.amount, i.currency, i.payment_url, i.payment_address, i.payment_crypto_currency, i.payment_crypto_amount, i.expires_at, i.status, i.created_at, p.amount, p.crypto_paid, p.crypto_due, p.paid_in_full, p.status, p.updated_at FROM sx_badge_service_invoices i JOIN sx_badge_service_badge_code_invoices ci ON ci.invoice_id = i.invoice_id JOIN sx_badge_service_badge_codes bc ON bc.badge_code_id = ci.badge_code_id LEFT JOIN sx_badge_service_payments p ON p.invoice_id = i.invoice_id WHERE i.invoice_id = ?": no such table: sx_badge_service_badge_code_invoices
+2026-10-23T09:12:19.3695689Z [1;31m[ERROR 2026-10-23 09:12:19 +0000 src/Simplex/Chat/Library/Internal.hs:1721] Error decompressing link data: "compressed size not specified or exceeds 65536"
+2026-10-23T09:13:27.3488073Z 
+2026-10-23T09:13:27.3488869Z Schema dump
+2026-10-23T09:13:27.3489675Z   verify and overwrite schema dump
+2026-10-23T09:13:27.3490571Z   verify .lint fkey-indexes
+2026-10-23T09:13:27.3491356Z down migration 20230317_hidden_profiles
+2026-10-23T09:13:27.3492171Z down migration 20230318_file_description
+2026-10-23T09:13:27.3493032Z down migration 20230321_agent_file_deleted
+2026-10-23T09:13:27.3493869Z down migration 20230328_files_protocol
+2026-10-23T09:13:27.3494899Z down migration 20230402_protocol_servers
+2026-10-23T09:13:27.3495757Z down migration 20230411_extra_xftp_file_descriptions
+2026-10-23T09:13:27.3496588Z down migration 20230420_rcv_files_to_receive
+2026-10-23T09:34:39.7902991Z [INFO 2026-10-23 09:34:39 +0000 apps/simplex-badge-service/src/BadgeService/Group.hs:218] badge group owner promoted: member 2
+2026-10-23T09:34:40.1743305Z [INFO 2026-10-23 09:34:40 +0000 apps/simplex-badge-service/src/BadgeService/Service.hs:210] badge catalog: 2 prices and 4 offers compiled in, 0 prices and 0 offers inserted
+2026-10-23T09:34:40.1754362Z [INFO 2026-10-23 09:34:40 +0000 apps/simplex-badge-service/src/BadgeService/Group.hs:95] badge group ready
+2026-10-23T09:34:41.2565264Z [INFO 2026-10-23 09:34:41 +0000 apps/simplex-badge-service/src/BadgeService/Service.hs:210] badge catalog: 2 prices and 4 offers compiled in, 0 prices and 0 offers inserted
+2026-10-23T09:34:41.2581908Z [INFO 2026-10-23 09:34:41 +0000 apps/simplex-badge-service/src/BadgeService/Group.hs:95] badge group ready
+2026-10-23T09:34:45.9708984Z [1;31m[ERROR 2026-10-23 09:34:45 +0000 src/Simplex/Chat/Remote.hs:672] waitForCtrlSession remote ctrl error: ChatErrorAgent {agentError = RCP {rcpErr = RCEIdentity}, agentConnId = AgentConnId "", connectionEntity_ = Nothing}
+2026-10-23T11:12:24.6084521Z ##[error]The action 'Run tests' has timed out after 120 minutes.
+2026-10-23T11:12:24.6196796Z ##[group]Run find dist-newstyle -mindepth 1 -maxdepth 1 ! -name src -exec rm -rf {} +
+2026-10-23T11:12:24.6197497Z [36;1mfind dist-newstyle -mindepth 1 -maxdepth 1 ! -name src -exec rm -rf {} +[0m

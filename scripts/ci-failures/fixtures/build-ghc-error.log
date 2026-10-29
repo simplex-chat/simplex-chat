@@ -1,0 +1,65 @@
+﻿2026-10-26T14:44:15.6702744Z Current runner version: '2.338.0'
+2026-10-26T14:44:15.6729456Z ##[group]Runner Image Provisioner
+2026-10-26T14:44:15.6730398Z Hosted Compute Agent
+2026-10-26T14:44:19.4596205Z Complete job name: ubuntu-22.04-x86_64 (CLI,Desktop), GHC: 8.10.7
+2026-10-26T14:48:32.2842132Z ##[group]Run scripts/ci/prune-old-builds.sh dist-newstyle
+2026-10-26T14:48:32.2842613Z [36;1mscripts/ci/prune-old-builds.sh dist-newstyle[0m
+2026-10-26T14:48:32.2842958Z [36;1mcabal update[0m
+2026-10-26T14:48:32.2843266Z [36;1mcabal build -j --enable-tests --ghc-options=-O0[0m
+2026-10-26T14:48:32.2843620Z [36;1mmkdir -p /out[0m
+2026-10-26T14:48:32.2843912Z [36;1mfor i in simplex-chat simplex-chat-test; do[0m
+2026-10-26T14:48:32.2844356Z [36;1m  bin=$(find /project/dist-newstyle -name "$i" -type f -executable)[0m
+2026-10-26T14:48:32.2845096Z [36;1m  chmod +x "$bin"[0m
+2026-10-26T14:48:32.2845351Z [36;1m  cp "$bin" /out/[0m
+2026-10-26T14:48:32.2845599Z [36;1mdone[0m
+2026-10-26T14:48:32.2845844Z [36;1mstrip /out/simplex-chat[0m
+2026-10-26T14:48:32.2907316Z shell: /usr/bin/docker exec -t builder sh -eu {0}
+2026-10-26T14:48:32.2907659Z env:
+2026-10-26T14:48:32.2907887Z   opt: O0
+2026-10-26T14:48:32.2908110Z   ghc_options: --ghc-options=-O0
+2026-10-26T14:48:32.2908426Z   release: false
+2026-10-26T14:48:32.2908651Z   branch: master
+2026-10-26T14:48:32.2908866Z   cache_o0: false
+2026-10-26T14:48:32.2909081Z   release_branch: 
+2026-10-26T14:48:32.2909300Z   ZSTD_CLEVEL: 9
+2026-10-26T14:48:32.2909675Z   image_cache: ghcr.io/simplex-chat/simplex-chat-build-cache:22.04-x86_64-ghc8.10.7
+2026-10-26T14:48:32.2910159Z   source_hashes: dist-newstyle/sources.sha256
+2026-10-26T14:48:32.2910472Z ##[endgroup]
+2026-10-26T14:48:32.3540549Z Config file path source is default config file.
+2026-10-26T14:48:32.3541289Z Config file not found: /home/builder/.cabal/config
+2026-10-26T14:48:32.3542140Z Writing default configuration to /home/builder/.cabal/config
+2026-10-26T14:48:32.7915742Z remote: Enumerating objects: 249, done.[K
+2026-10-26T14:48:32.7916513Z remote: Counting objects:   0% (1/205)[K
+2026-10-26T14:48:32.7917248Z remote: Counting objects:   1% (3/205)[K
+2026-10-26T14:48:32.7918563Z remote: Counting objects:   2% (5/205)[K
+2026-10-26T14:48:32.7919329Z remote: Counting objects:   3% (7/205)[K
+2026-10-26T14:48:32.7920053Z remote: Counting objects:   4% (9/205)[K
+2026-10-26T14:48:32.7920801Z remote: Counting objects:   5% (11/205)[K
+2026-10-26T14:48:32.7921637Z remote: Counting objects:   6% (13/205)[K
+2026-10-26T14:48:32.7922380Z remote: Counting objects:   7% (15/205)[K
+2026-10-26T15:21:48.2119990Z                              UserProtocol p =>
+2026-10-26T15:21:48.2124211Z                              SProtocolType p
+2026-10-26T15:21:48.2128225Z                              -> [AUserServer p]
+2026-10-26T15:21:48.2132474Z                              -> UserOperatorServers
+2026-10-26T15:21:48.2136656Z                              -> UpdatedUserOperatorServers[0m[0m
+2026-10-26T15:21:48.2140501Z [;1m[34m     |[0m[0m
+2026-10-26T15:21:48.2142321Z [;1m[34m5363 |[0m[0m [;1m[35mupdatedServers :: forall p. UserProtocol p => SProtocolType p -> [AUserServer p] -> UserOperatorServers -> UpdatedUserOperatorServers[0m[0m
+2026-10-26T15:21:48.2148398Z [;1m[34m     |[0m[0m[;1m[35m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+2026-10-26T15:22:01.1811061Z [0m[0m[0m[253 of 262] Compiling Simplex.Chat.View ( src/Simplex/Chat/View.hs, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/View.o, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/View.dyn_o )
+2026-10-26T15:22:07.1683729Z 
+2026-10-26T15:22:07.1689554Z [;1msrc/Simplex/Chat/View.hs:2873:20: [;1m[31merror:[0m[0m[;1m [[;1m[31m-Wincomplete-patterns, -Werror=incomplete-patterns[0m[0m[;1m][0m[0m[;1m
+2026-10-26T15:22:07.1699651Z     Pattern match(es) are non-exhaustive
+2026-10-26T15:22:07.1703670Z     In a case alternative: Patterns not matched: SDENameWarning _[0m[0m
+2026-10-26T15:22:07.1709816Z [;1m[34m     |[0m[0m
+2026-10-26T15:22:07.1713908Z [;1m[34m2873 |[0m[0m       let reason = [;1m[31mcase domainErr of[0m[0m
+2026-10-26T15:22:07.1718683Z [;1m[34m     |[0m[0m[;1m[31m                    ^^^^^^^^^^^^^^^^^...[0m[0m
+2026-10-26T15:22:07.4238034Z [0m[0m[0mError: cabal: Failed to build simplex-chat-7.1.0.14 (which is required by
+2026-10-26T15:22:07.4241826Z exe:simplex-directory-service from simplex-chat-7.1.0.14,
+2026-10-26T15:22:07.4245582Z test:simplex-chat-test from simplex-chat-7.1.0.14 and others).
+2026-10-26T15:22:07.4246341Z 
+2026-10-26T15:22:07.6365098Z ##[error]Process completed with exit code 1.
+2026-10-26T15:22:07.9458096Z Post job cleanup.
+2026-10-26T15:22:08.3940021Z ##[group]Generating build summary
+2026-10-26T15:22:08.3959017Z (node:8530) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-26T15:22:08.3960549Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-26T15:22:08.7755793Z exporting build record to /home/runner/work/_temp/docker-actions-toolkit-4YjNag/export

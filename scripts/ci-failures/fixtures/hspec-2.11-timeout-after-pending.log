@@ -1,0 +1,50 @@
+﻿2026-10-18T07:51:55.4400663Z Current runner version: '2.337.0'
+2026-10-18T07:52:00.5430191Z Complete job name: ubuntu-24.04-x86_64 (CLI,Desktop), GHC: 9.6.3
+2026-10-18T08:07:30.9867243Z ##[group]Run i=1
+2026-10-18T08:07:30.9867487Z [36;1mi=1[0m
+2026-10-18T08:07:30.9867673Z [36;1mattempts=1[0m
+2026-10-18T08:07:30.9867880Z [36;1mfalse && attempts=3[0m
+2026-10-18T08:07:30.9868133Z [36;1mwhile [ "$i" -le "$attempts" ]; do[0m
+2026-10-18T08:07:30.9868400Z [36;1m  if ./simplex-chat-test; then[0m
+2026-10-18T08:07:30.9868672Z [36;1m    break[0m
+2026-10-18T08:07:30.9868864Z [36;1m  else[0m
+2026-10-18T08:07:30.9869079Z [36;1m    echo "Attempt $i failed, retrying..."[0m
+2026-10-18T08:07:30.9869344Z [36;1m    i=$((i + 1))[0m
+2026-10-18T08:07:30.9869553Z [36;1m    sleep 1[0m
+2026-10-18T08:07:30.9869746Z [36;1m  fi[0m
+2026-10-18T08:07:30.9869919Z [36;1mdone[0m
+2026-10-18T08:07:30.9870117Z [36;1mif [ "$i" -gt "$attempts" ]; then[0m
+2026-10-18T08:07:30.9870394Z [36;1m  echo "All "$attempts" attempts failed."[0m
+2026-10-18T08:07:30.9870646Z [36;1m  exit 1[0m
+2026-10-18T08:07:30.9870828Z [36;1mfi[0m
+2026-10-18T08:07:30.9921631Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-18T08:07:30.9921927Z env:
+2026-10-18T08:07:30.9922101Z   opt: O2
+2026-10-18T08:07:30.9922279Z   ghc_options: 
+2026-10-18T08:07:30.9922474Z   release: false
+2026-10-18T08:07:30.9922665Z   branch: master
+2026-10-18T08:07:30.9922859Z   cache_o0: true
+2026-10-18T08:07:30.9923043Z   ZSTD_CLEVEL: 9
+2026-10-18T08:07:30.9923356Z   image_cache: ghcr.io/simplex-chat/simplex-chat-build-cache:24.04-x86_64-ghc9.6.3
+2026-10-18T08:07:30.9923725Z   source_hashes: dist-newstyle/sources.sha256
+2026-10-18T08:07:30.9923977Z ##[endgroup]
+2026-10-18T08:23:00.2503883Z SimpleX Broadcast bot
+2026-10-18T08:23:00.2504390Z   should broadcast message [[33m‐[0m]
+2026-10-18T08:23:00.2504950Z [33m    # PENDING: No reason given[0m
+2026-10-18T08:23:00.2505579Z SimpleX Directory service bot
+2026-10-18T08:23:00.2515599Z   should register group [[32m✔[0m]
+2026-10-18T08:23:00.2554278Z   list and promote groups
+2026-10-18T08:23:00.2554855Z     should list and promote user's groups [[32m✔[0m]
+2026-10-18T08:23:00.2555528Z   member admission
+2026-10-18T08:23:00.2556140Z     should require captcha by default for new groups [[32m✔[0m]
+2026-10-18T08:23:00.2557006Z     should require captcha in all groups with --always-captcha [[32m✔[0m]
+2026-10-18T08:23:00.2557998Z     should make joining members observers in all groups with --always-observer [[32m✔[0m]
+2026-10-18T08:23:00.3006196Z [INFO 2026-10-18 08:23:00 +0000 apps/simplex-badge-service/src/BadgeService/Service.hs:332] badge service request cmhEX0VNNFJVYnNqUWhZeg==
+2026-10-18T08:23:00.3018047Z [ERROR 2026-10-18 08:23:00 +0000 apps/simplex-badge-service/src/BadgeService/Service.hs:511] store receipt not verified: fake verifier bug
+2026-10-18T08:23:00.6602786Z [INFO 2026-10-18 08:23:00 +0000 apps/simplex-badge-service/src/BadgeService/Service.hs:332] badge service request ZGFaVmduVjZBZ2Q2WUNuMw==
+2026-10-18T08:26:03.5201978Z [INFO 2026-10-18 08:26:03 +0000 apps/simplex-badge-service/src/BadgeService/Service.hs:332] badge service request S0V5REh2blc2VUlCNERTaA==
+2026-10-18T10:07:43.4943933Z ##[error]The action 'Run tests' has timed out after 120 minutes.
+2026-10-18T10:07:43.4987797Z ##[group]Run find dist-newstyle -mindepth 1 -maxdepth 1 ! -name src -exec rm -rf {} +
+2026-10-18T10:07:43.4988307Z [36;1mfind dist-newstyle -mindepth 1 -maxdepth 1 ! -name src -exec rm -rf {} +[0m
+2026-10-18T10:07:43.5020186Z shell: /usr/bin/docker exec -t builder sh -eu {0}
+2026-10-18T10:07:43.5020457Z env:
