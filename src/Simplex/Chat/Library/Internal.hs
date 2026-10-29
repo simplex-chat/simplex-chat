@@ -1675,7 +1675,7 @@ groupLinkData (GIK gInfo@GroupInfo {groupProfile, groupSummary = GroupSummary {p
   let direct = not $ useRelays' gInfo
       relays = mapMaybe (\GroupRelay {relayLink} -> relayLink) groupRelays
       publicGroupData_ = PublicGroupData <$> publicMemberCount
-      userData = encodeShortLinkData $ GroupShortLinkData {groupProfile, publicGroupData = publicGroupData_}
+      userData = encodeShortLinkData $ singleOwnerLinkData groupProfile publicGroupData_
       owners = case gks of
         GKPublicGroup {groupRootKey = GRKPrivate rootPrivKey, memberPrivKey} ->
           let ownerId = unMemberId memberId

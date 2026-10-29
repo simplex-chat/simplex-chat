@@ -271,6 +271,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRMemberSupportChatRead u g m -> ttyUser u $ viewSupportChatRead g m
   CRMemberSupportChatDeleted u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " support chat deleted"]
   CRMembersRoleUser u g members r' signed -> ttyUser u $ viewMemberRoleUserChanged g members r' signed
+  CROwnerInvitationSent u g m -> ttyUser u [ttyGroup' g <> ": invitation to become owner sent to " <> ttyMember m]
   CRMembersBlockedForAllUser u g members blocked signed -> ttyUser u $ viewMembersBlockedForAllUser g members blocked signed
   CRGroupUpdated u g g' m signed -> ttyUser u $ viewGroupUpdated g g' m (if signed then Just MSSVerified else Nothing)
   CRGroupProfile u g -> ttyUser u $ viewGroupProfile g
@@ -1280,18 +1281,17 @@ viewGroupRelays g relays =
   [ttyFullGroup g <> ": group relays:"]
     <> map showRelay relays
 
-viewGroupLinkRelaysUpdated :: GroupInfo -> GroupLink -> [GroupRelay] -> [StyledString]
-viewGroupLinkRelaysUpdated g groupLink relays =
+viewGroupLinkRelaysUpdated :: GroupInfo -> Maybe GroupLink -> [GroupRelay] -> [StyledString]
+viewGroupLinkRelaysUpdated g gLink_ relays =
   [ttyFullGroup g <> ": group link relays updated, current relays:"]
     <> map showRelay relays
-    <>
-      [ "group link:",
-        plain $ maybe cReqStr strEncode shortLink
-      ]
+    <> foldMap viewLink gLink_
     <> [plain ("SimpleX name: " <>  shortNameInfoStr (SimplexNameInfo NTPublicGroup d)) | Just d <- [groupSimplexDomain g]]
   where
-    GroupLink {connLinkContact = CCLink cReq shortLink} = groupLink
-    cReqStr = strEncode $ simplexChatContact cReq
+    viewLink GroupLink {connLinkContact = CCLink cReq shortLink} =
+      [ "group link:",
+        plain $ maybe (strEncode $ simplexChatContact cReq) strEncode shortLink
+      ]
 
 viewGroupCreated :: GroupInfo -> Bool -> [StyledString]
 viewGroupCreated g testView =
@@ -2894,6 +2894,22 @@ viewChatError isCmd logLevel testView = \case
     CEConnectionUserChangeProhibited -> ["incognito mode change prohibited for user"]
     CEPeerChatVRangeIncompatible -> ["peer chat protocol version range incompatible"]
     CERelayTestError e -> ["relay test error: " <> plain e]
+    CEChannelLink e ->
+      [ plain $ case e of
+          CLENotVerified -> "verify the member's security code first"
+          CLERelayVersion -> "a channel relay does not support multiple owners, remove or upgrade it"
+          CLELinkServerVersion -> "the channel link server does not support multiple owners yet, try again after it is upgraded"
+          CLEDirectConnection host True -> "accepting needs a direct connection to " <> B.unpack (strEncode host) <> ", which your private routing settings prohibit; allow it in the network settings to accept"
+          CLEDirectConnection host False -> "accepting connects directly to " <> B.unpack (strEncode host) <> ", which reveals your IP address to it; to accept, repeat with direct=on"
+          CLEChangedByOwner -> "changed by another owner, open the channel and try again"
+          CLERosterSyncing -> "member roles are being updated from another owner's change, try again later"
+          CLELastOwner -> "the channel must have another owner, add one first"
+          CLENotOwner -> "you are not a channel owner"
+          CLEOwnerLimit -> "the channel has the most owners it can have, remove an owner first"
+          CLELinkDataTooLarge -> "the channel link data is too large, shorten the channel profile"
+          CLELinkBusy -> "other owners are changing the channel, try again later"
+          CLERelaysUnreachable -> "channel relays are not reachable, try again later"
+      ]
     CEInternalError e -> ["internal chat error: " <> plain e]
     CEException e -> ["exception: " <> plain e]
   -- e -> ["chat error: " <> sShow e]

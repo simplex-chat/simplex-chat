@@ -329,6 +329,37 @@ export namespace APIMembersRole {
   }
 }
 
+// Invite a member to become a channel owner. Requires the Owner role in a channel; the member's security code must be verified.
+// Network usage: interactive.
+export interface APIInviteGroupOwner {
+  groupId: number // int64
+  groupMemberId: number // int64
+}
+
+export namespace APIInviteGroupOwner {
+  export type Response = CR.OwnerInvitationSent | CR.ChatCmdError
+
+  export function cmdString(self: APIInviteGroupOwner): string {
+    return '/_owner invite #' + self.groupId + ' ' + self.groupMemberId
+  }
+}
+
+// Accept an invitation to become a channel owner.
+// Network usage: interactive.
+export interface APIAcceptGroupOwnerInvitation {
+  groupId: number // int64
+  chatItemId: number // int64
+  allowDirect: T.AllowDirect
+}
+
+export namespace APIAcceptGroupOwnerInvitation {
+  export type Response = CR.ChatItemUpdated | CR.ChatCmdError
+
+  export function cmdString(self: APIAcceptGroupOwnerInvitation): string {
+    return '/_owner accept #' + self.groupId + ' ' + self.chatItemId + T.AllowDirect.cmdString(self.allowDirect)
+  }
+}
+
 // Block members. Requires Moderator role.
 // Network usage: background.
 export interface APIBlockMembersForAll {

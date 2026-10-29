@@ -182,7 +182,7 @@ checkProfileSize p@Profile {contactDomain} = checkInfoSize "Profile" (XInfo p' N
     p' = (p :: Profile) {badge = Nothing, contactDomain = (\d -> d {proof = Nothing} :: SimplexDomainClaim) <$> contactDomain}
 
 checkGroupProfileSize :: GroupProfile -> CM ()
-checkGroupProfileSize p = checkInfoSize "Group profile" (XGrpInfo p)
+checkGroupProfileSize p = checkInfoSize "Group profile" (XGrpInfo p Nothing)
 
 -- validates that the profile update event fits into the connection info sent to peers
 checkInfoSize :: String -> ChatMsgEvent 'Json -> CM ()
@@ -2767,7 +2767,7 @@ processChatCommand cxt nm = \case
         (memberPrivKey, ownerAuth) <- liftIO $ SL.newOwnerAuth gVar (unMemberId memberId) rootPrivKey
         -- TODO [channel web] pass publicGroupAccess from owner's profile
         let groupProfile' = (groupProfile :: GroupProfile) {publicGroup = Just PublicGroupProfile {groupType = GTChannel, groupLink = sLnk, publicGroupId = B64UrlByteString entityId, publicGroupAccess = Nothing}}
-            userData = encodeShortLinkData $ GroupShortLinkData {groupProfile = groupProfile', publicGroupData = Just (PublicGroupData 1)}
+            userData = encodeShortLinkData $ singleOwnerLinkData groupProfile' (Just (PublicGroupData 1))
             userLinkData = UserContactLinkData UserContactData {direct = False, owners = [ownerAuth], relays = [], userData, ratchetKeys = Nothing}
         -- create connection with prepared link (single network call)
         connId <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData subMode
@@ -3080,6 +3080,8 @@ processChatCommand cxt nm = \case
             updMember db m = do
               updateGroupMemberRole db user m newRole
               pure (m :: GroupMember) {memberRole = newRole}
+  APIInviteGroupOwner {} -> throwCmdError "not supported"
+  APIAcceptGroupOwnerInvitation {} -> throwCmdError "not supported"
   APIBlockMembersForAll groupId memberIds blockFlag -> withUser $ \user ->
     withGroupLock "blockForAll" groupId $ do
       -- TODO [relays] possible optimization is to read only required members + relays
@@ -3302,6 +3304,7 @@ processChatCommand cxt nm = \case
     processChatCommand cxt nm $ APIJoinGroup groupId enableNtfs
   AcceptMember gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIAcceptMember gId gMemberId memRole
   MemberRole gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIMembersRole gId [gMemberId] memRole
+  InviteGroupOwner gName gMemberName -> withMemberName gName gMemberName APIInviteGroupOwner
   BlockForAll gName gMemberName blocked -> withMemberName gName gMemberName $ \gId gMemberId -> APIBlockMembersForAll gId [gMemberId] blocked
   RemoveMembers gName gMemberNames withMessages -> withUser $ \user -> do
     (gId, gMemberIds) <- withStore $ \db -> do
@@ -3362,7 +3365,7 @@ processChatCommand cxt nm = \case
     when (mRole > GRMember) $ throwChatError $ CEGroupMemberInitialRole gInfo mRole
     groupLinkId <- GroupLinkId <$> drgRandomBytes 16
     subMode <- chatReadVar subscriptionMode
-    let userData = encodeShortLinkData $ GroupShortLinkData {groupProfile, publicGroupData = Nothing}
+    let userData = encodeShortLinkData $ singleOwnerLinkData groupProfile Nothing
         userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData, ratchetKeys = Nothing}
         crClientData = encodeJSON $ CRDataGroup groupLinkId
     (connId, ccLink) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userLinkData) (Just crClientData) IKPQOff False subMode
@@ -4201,14 +4204,14 @@ processChatCommand cxt nm = \case
               withStore $ \db -> getGroupMemberByMemberId db cxt user gInfo' businessId
             let p'' = p' {displayName, fullName, shortDescr, image} :: GroupProfile
                 recipients = filter memberCurrentOrPending oldMs
-            void $ sendGroupMessage user (GIK gInfo' gks) Nothing recipients False (XGrpInfo p'')
+            void $ sendGroupMessage user (GIK gInfo' gks) Nothing recipients False (XGrpInfo p'' Nothing)
           let ps' = fromMaybe defaultBusinessGroupPrefs $ groupPreferences p'
               recipients = filter memberCurrentOrPending newMs
           sendGroupMessage user (GIK gInfo' gks) Nothing recipients False $ XGrpPrefs ps'
         Nothing -> do
           void $ setGroupLinkData' nm user (GIK gInfo' gks)
           recipients <- getRecipients
-          sendGroupMessage user (GIK gInfo' gks) Nothing recipients False (XGrpInfo p')
+          sendGroupMessage user (GIK gInfo' gks) Nothing recipients False (XGrpInfo p' Nothing)
           where
             getRecipients
               | useRelays' gInfo' = withFastStore' $ \db -> getGroupRelayMembers db cxt user gInfo'
@@ -6419,6 +6422,8 @@ chatCommandP =
       "/_accept member #" *> (APIAcceptMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_delete member chat #" *> (APIDeleteMemberSupportChat <$> A.decimal <* A.space <*> A.decimal),
       "/_member role #" *> (APIMembersRole <$> A.decimal <*> _strP <*> memberRole),
+      "/_owner invite #" *> (APIInviteGroupOwner <$> A.decimal <* A.space <*> A.decimal),
+      "/_owner accept #" *> (APIAcceptGroupOwnerInvitation <$> A.decimal <* A.space <*> A.decimal <*> (" direct=on" $> ADYes <|> pure ADAsk)),
       "/_block #" *> (APIBlockMembersForAll <$> A.decimal <*> _strP <* " blocked=" <*> onOffP),
       "/_remove #" *> (APIRemoveMembers <$> A.decimal <*> _strP <*> (" messages=" *> onOffP <|> pure False)),
       "/_leave #" *> (APILeaveGroup <$> A.decimal),
@@ -6518,6 +6523,7 @@ chatCommandP =
       ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayNameP <*> (" mute" $> MFNone <|> pure MFAll)),
       "/accept member " *> char_ '#' *> (AcceptMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> (memberRole <|> pure GRMember)),
       ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> memberRole),
+      "/owner invite #" *> (InviteGroupOwner <$> displayNameP <* A.space <* char_ '@' <*> displayNameP),
       "/block for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure True),
       "/unblock for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure False),
       ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMembers <$> displayNameP <* A.space <*> (L.fromList <$> (char_ '@' *> displayNameP) `A.sepBy1'` A.char ',') <*> (" messages=" *> onOffP <|> pure False)),

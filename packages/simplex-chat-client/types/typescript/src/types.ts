@@ -223,6 +223,17 @@ export namespace AgentServiceError {
     type: "badSignature"
   }
 }
+
+export enum AllowDirect {
+  Ask = "ask",
+  Yes = "yes",
+}
+
+export namespace AllowDirect {
+  export function cmdString(self: AllowDirect): string {
+    return self == 'yes' ? ' direct=on' : ''
+  }
+}
 // Remote controller app version range (min and max as version strings).
 
 export interface AppVersionRange {
@@ -1195,6 +1206,90 @@ export interface CITimed {
   deleteAt?: string // ISO-8601 timestamp
 }
 
+export type ChannelLinkError = 
+  | ChannelLinkError.NotVerified
+  | ChannelLinkError.RelayVersion
+  | ChannelLinkError.LinkServerVersion
+  | ChannelLinkError.DirectConnection
+  | ChannelLinkError.ChangedByOwner
+  | ChannelLinkError.RosterSyncing
+  | ChannelLinkError.LastOwner
+  | ChannelLinkError.NotOwner
+  | ChannelLinkError.OwnerLimit
+  | ChannelLinkError.LinkDataTooLarge
+  | ChannelLinkError.LinkBusy
+  | ChannelLinkError.RelaysUnreachable
+
+export namespace ChannelLinkError {
+  export type Tag = 
+    | "notVerified"
+    | "relayVersion"
+    | "linkServerVersion"
+    | "directConnection"
+    | "changedByOwner"
+    | "rosterSyncing"
+    | "lastOwner"
+    | "notOwner"
+    | "ownerLimit"
+    | "linkDataTooLarge"
+    | "linkBusy"
+    | "relaysUnreachable"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface NotVerified extends Interface {
+    type: "notVerified"
+  }
+
+  export interface RelayVersion extends Interface {
+    type: "relayVersion"
+  }
+
+  export interface LinkServerVersion extends Interface {
+    type: "linkServerVersion"
+  }
+
+  export interface DirectConnection extends Interface {
+    type: "directConnection"
+    host: string
+    prohibited: boolean
+  }
+
+  export interface ChangedByOwner extends Interface {
+    type: "changedByOwner"
+  }
+
+  export interface RosterSyncing extends Interface {
+    type: "rosterSyncing"
+  }
+
+  export interface LastOwner extends Interface {
+    type: "lastOwner"
+  }
+
+  export interface NotOwner extends Interface {
+    type: "notOwner"
+  }
+
+  export interface OwnerLimit extends Interface {
+    type: "ownerLimit"
+  }
+
+  export interface LinkDataTooLarge extends Interface {
+    type: "linkDataTooLarge"
+  }
+
+  export interface LinkBusy extends Interface {
+    type: "linkBusy"
+  }
+
+  export interface RelaysUnreachable extends Interface {
+    type: "relaysUnreachable"
+  }
+}
+
 export type ChatBotCommand = ChatBotCommand.Command | ChatBotCommand.Menu
 
 export namespace ChatBotCommand {
@@ -1349,6 +1444,7 @@ export type ChatErrorType =
   | ChatErrorType.ConnectionUserChangeProhibited
   | ChatErrorType.PeerChatVRangeIncompatible
   | ChatErrorType.RelayTestError
+  | ChatErrorType.ChannelLink
   | ChatErrorType.InternalError
   | ChatErrorType.Exception
 
@@ -1429,6 +1525,7 @@ export namespace ChatErrorType {
     | "connectionUserChangeProhibited"
     | "peerChatVRangeIncompatible"
     | "relayTestError"
+    | "channelLink"
     | "internalError"
     | "exception"
 
@@ -1797,6 +1894,11 @@ export namespace ChatErrorType {
   export interface RelayTestError extends Interface {
     type: "relayTestError"
     message: string
+  }
+
+  export interface ChannelLink extends Interface {
+    type: "channelLink"
+    channelLinkError: ChannelLinkError
   }
 
   export interface InternalError extends Interface {
@@ -2404,6 +2506,11 @@ export namespace CreatedConnLink {
   export function cmdString(self: CreatedConnLink): string {
     return self.connFullLink + (self.connShortLink ? ' ' + self.connShortLink : '')
   }
+}
+
+export interface CreatorQueueKey {
+  memberId: string
+  key: string
 }
 
 export interface CryptoFile {
@@ -3127,6 +3234,11 @@ export interface GroupRelay {
 export interface GroupShortLinkData {
   groupProfile: GroupProfile
   publicGroupData?: PublicGroupData
+  linkVersion?: number // int64
+  revokedOwners?: string[]
+  creatorQueueKey?: CreatorQueueKey
+  linkRcvId?: string
+  roster?: LinkRoster
 }
 
 export interface GroupShortLinkInfo {
@@ -3263,6 +3375,11 @@ export interface LinkPreview {
   description: string
   image: string
   content?: LinkContent
+}
+
+export interface LinkRoster {
+  version: number // int64
+  author: string
 }
 
 export interface ListEntry {

@@ -2174,6 +2174,8 @@ data CommandFunction
   | CFSetShortLink
   | CFGetRelayDataJoin
   | CFGetRelayDataAccept
+  | CFChannelLinkSync
+  | CFChannelLinkResign
   deriving (Eq, Show)
 
 instance FromField CommandFunction where fromField = fromTextField_ textDecode
@@ -2194,6 +2196,8 @@ instance TextEncoding CommandFunction where
     "set_short_link" -> Just CFSetShortLink
     "get_relay_data_join" -> Just CFGetRelayDataJoin
     "get_relay_data_accept" -> Just CFGetRelayDataAccept
+    "channel_link_sync" -> Just CFChannelLinkSync
+    "channel_link_resign" -> Just CFChannelLinkResign
     _ -> Nothing
   textEncode = \case
     CFCreateConnGrpMemInv -> "create_conn"
@@ -2208,6 +2212,8 @@ instance TextEncoding CommandFunction where
     CFSetShortLink -> "set_short_link"
     CFGetRelayDataJoin -> "get_relay_data_join"
     CFGetRelayDataAccept -> "get_relay_data_accept"
+    CFChannelLinkSync -> "channel_link_sync"
+    CFChannelLinkResign -> "channel_link_resign"
 
 commandExpectedResponse :: CommandFunction -> AEvtTag
 commandExpectedResponse = \case
@@ -2223,6 +2229,8 @@ commandExpectedResponse = \case
   CFSetShortLink -> t LINK_
   CFGetRelayDataJoin -> t LDATA_
   CFGetRelayDataAccept -> t LDATA_
+  CFChannelLinkSync -> t LDATA_
+  CFChannelLinkResign -> t LDATA_
   where
     t = AEvtTag SAEConn
 

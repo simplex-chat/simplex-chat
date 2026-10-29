@@ -217,6 +217,7 @@ chatTypesDocsData =
     (sti @AgentCryptoError, STUnion, "", ["RATCHET_EARLIER", "RATCHET_SKIPPED"], "", ""), -- TODO add fields to types
     (sti @AgentErrorType, STUnion, "", [], "", ""),
     (sti @AgentServiceError, STUnion, "ASE", [], "", ""),
+    (sti @AllowDirect, STEnum, "AD", [], Choice "self" [("yes", " direct=on")] "", ""),
     (STI "AppVersionRange" [RecordTypeInfo "AppVersionRange" [FieldInfo "minVersion" (TIType (ST TString [])), FieldInfo "maxVersion" (TIType (ST TString []))]], STRecord, "", [], "", "Remote controller app version range (min and max as version strings)."),
     (sti @AutoAccept, STRecord, "", [], "", ""),
     (sti @BadgeProof, STRecord, "", [], "", ""),
@@ -228,6 +229,7 @@ chatTypesDocsData =
     (sti @BrokerErrorType, STUnion, "", [], "", ""),
     (sti @BusinessChatInfo, STRecord, "", [], "", ""),
     (sti @BusinessChatType, STEnum, "BC", [], "", ""),
+    (sti @ChannelLinkError, STUnion, "CLE", [], "", ""),
     (sti @ChatBotCommand, STUnion, "CBC", [], "", ""),
     (sti @ChatDeleteMode, STUnion, "CDM", [], Param "type" <> Choice "self" [("messages", "")] (OnOffParam "notify" "notify" (Just True)), ""),
     (sti @ChatError, STUnion, "Chat", ["ChatErrorDatabase", "ChatErrorRemoteHost", "ChatErrorRemoteCtrl"], "", ""),
@@ -271,6 +273,7 @@ chatTypesDocsData =
     (sti @ContactShortLinkData, STRecord, "", [], "", ""),
     (sti @ContactStatus, STEnum, "CS", [], "", ""),
     (sti @ContactUserPreferences, STRecord, "", [], "", ""),
+    (sti @CreatorQueueKey, STRecord, "", [], "", ""),
     (sti @CryptoFile, STRecord, "", [], "", ""),
     (sti @CryptoFileArgs, STRecord, "", [], "", ""),
     (sti @DroppedMsg, STRecord, "", [], "", ""),
@@ -322,6 +325,7 @@ chatTypesDocsData =
     (sti @LinkContent, STUnion, "LC", [], "", ""),
     (sti @LinkOwnerSig, STRecord, "", [], "", ""),
     (sti @LinkPreview, STRecord, "", [], "", ""),
+    (sti @LinkRoster, STRecord, "", [], "", ""),
     (sti @ListEntry, STRecord, "", [], "", ""),
     (sti @BadgeInfo, STRecord, "", [], "", ""),
     (sti @LocalProfile, STRecord, "", [], "", ""),
@@ -456,6 +460,7 @@ deriving instance Generic AddressSettings
 deriving instance Generic AgentCryptoError
 deriving instance Generic AgentErrorType
 deriving instance Generic AgentServiceError
+deriving instance Generic AllowDirect
 deriving instance Generic AutoAccept
 deriving instance Generic BadgeProof
 deriving instance Generic BadgeRedeemError
@@ -468,6 +473,7 @@ deriving instance Generic BusinessChatInfo
 deriving instance Generic BusinessChatType
 deriving instance Generic BadgeStatus
 deriving instance Generic BadgeType
+deriving instance Generic ChannelLinkError
 deriving instance Generic ChatBotCommand
 deriving instance Generic ChatDeleteMode
 deriving instance Generic ChatError
@@ -509,6 +515,7 @@ deriving instance Generic ContactAddressPlan
 deriving instance Generic ContactShortLinkData
 deriving instance Generic ContactStatus
 deriving instance Generic ContactUserPreferences
+deriving instance Generic CreatorQueueKey
 deriving instance Generic CryptoFile
 deriving instance Generic CryptoFileArgs
 deriving instance Generic DroppedMsg
@@ -567,6 +574,7 @@ deriving instance Generic JSONCIStatus
 deriving instance Generic LinkContent
 deriving instance Generic LinkOwnerSig
 deriving instance Generic LinkPreview
+deriving instance Generic LinkRoster
 deriving instance Generic ListEntry
 deriving instance Generic BadgeInfo
 deriving instance Generic LocalProfile

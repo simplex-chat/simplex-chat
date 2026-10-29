@@ -188,7 +188,7 @@ class GroupLinkDataUpdated(TypedDict):
     type: Literal["groupLinkDataUpdated"]
     user: "T.User"
     groupInfo: "T.GroupInfo"
-    groupLink: "T.GroupLink"
+    groupLink: NotRequired["T.GroupLink"]
     groupRelays: list["T.GroupRelay"]
     relaysChanged: bool
 

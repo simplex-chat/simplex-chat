@@ -136,6 +136,12 @@ defaultChatConfig =
       relayInactiveTTL = nominalDay,
       relayRequestRetryInterval = RetryInterval {initialInterval = 5_000000, increaseAfter = 0, maxInterval = 600_000000},
       relayRequestExpiry = (10, nominalDay),
+      channelLinkWriteAttempts = 5,
+      channelCountPublishInterval = 60,
+      rosterAbandonTTL = nominalDay,
+      rosterRequestTimeout = 5 * 60,
+      memberCatchupTimeout = 60,
+      channelOwnerWaitTimeout = 30,
       deviceNameForRemote = "",
       remoteCompression = True,
       updateGroupLinksFromApp = False,
@@ -204,6 +210,12 @@ newChatController
         relayGroupLinkChecksAsync <- newTVarIO Nothing
         webPreviewState <- forM webPreviewConfig $ \_ -> newWebPreviewState
         chatRelayTests <- TM.emptyIO
+        linkWriters <- TM.emptyIO
+        linkSyncSwaps <- TM.emptyIO
+        countPublishPending <- TM.emptyIO
+        memberCatchups <- TM.emptyIO
+        rosterRequests <- TM.emptyIO
+        mainApp <- newTVarIO False
         expireCIThreads <- TM.emptyIO
         expireCIFlags <- TM.emptyIO
         cleanupManagerAsync <- newTVarIO Nothing
@@ -253,6 +265,12 @@ newChatController
               relayGroupLinkChecksAsync,
               webPreviewState,
               chatRelayTests,
+              linkWriters,
+              linkSyncSwaps,
+              countPublishPending,
+              memberCatchups,
+              rosterRequests,
+              mainApp,
               expireCIThreads,
               expireCIFlags,
               cleanupManagerAsync,

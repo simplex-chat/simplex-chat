@@ -165,6 +165,12 @@ AgentServiceError = (
 
 AgentServiceError_Tag = Literal["rejected", "timeout", "noPendingRequest", "notDRAddress", "badSignature"]
 
+AllowDirect = Literal["ask", "yes"]
+
+
+def AllowDirect_cmd_string(self: AllowDirect) -> str:
+    return ' direct=on' if str(self) == 'yes' else ''
+
 # Remote controller app version range (min and max as version strings).
 
 class AppVersionRange(TypedDict):
@@ -827,6 +833,61 @@ class CITimed(TypedDict):
     ttl: int  # int
     deleteAt: NotRequired[str]  # ISO-8601 timestamp
 
+class ChannelLinkError_notVerified(TypedDict):
+    type: Literal["notVerified"]
+
+class ChannelLinkError_relayVersion(TypedDict):
+    type: Literal["relayVersion"]
+
+class ChannelLinkError_linkServerVersion(TypedDict):
+    type: Literal["linkServerVersion"]
+
+class ChannelLinkError_directConnection(TypedDict):
+    type: Literal["directConnection"]
+    host: str
+    prohibited: bool
+
+class ChannelLinkError_changedByOwner(TypedDict):
+    type: Literal["changedByOwner"]
+
+class ChannelLinkError_rosterSyncing(TypedDict):
+    type: Literal["rosterSyncing"]
+
+class ChannelLinkError_lastOwner(TypedDict):
+    type: Literal["lastOwner"]
+
+class ChannelLinkError_notOwner(TypedDict):
+    type: Literal["notOwner"]
+
+class ChannelLinkError_ownerLimit(TypedDict):
+    type: Literal["ownerLimit"]
+
+class ChannelLinkError_linkDataTooLarge(TypedDict):
+    type: Literal["linkDataTooLarge"]
+
+class ChannelLinkError_linkBusy(TypedDict):
+    type: Literal["linkBusy"]
+
+class ChannelLinkError_relaysUnreachable(TypedDict):
+    type: Literal["relaysUnreachable"]
+
+ChannelLinkError = (
+    ChannelLinkError_notVerified
+    | ChannelLinkError_relayVersion
+    | ChannelLinkError_linkServerVersion
+    | ChannelLinkError_directConnection
+    | ChannelLinkError_changedByOwner
+    | ChannelLinkError_rosterSyncing
+    | ChannelLinkError_lastOwner
+    | ChannelLinkError_notOwner
+    | ChannelLinkError_ownerLimit
+    | ChannelLinkError_linkDataTooLarge
+    | ChannelLinkError_linkBusy
+    | ChannelLinkError_relaysUnreachable
+)
+
+ChannelLinkError_Tag = Literal["notVerified", "relayVersion", "linkServerVersion", "directConnection", "changedByOwner", "rosterSyncing", "lastOwner", "notOwner", "ownerLimit", "linkDataTooLarge", "linkBusy", "relaysUnreachable"]
+
 class ChatBotCommand_command(TypedDict):
     type: Literal["command"]
     keyword: str
@@ -1167,6 +1228,10 @@ class ChatErrorType_relayTestError(TypedDict):
     type: Literal["relayTestError"]
     message: str
 
+class ChatErrorType_channelLink(TypedDict):
+    type: Literal["channelLink"]
+    channelLinkError: "ChannelLinkError"
+
 class ChatErrorType_internalError(TypedDict):
     type: Literal["internalError"]
     message: str
@@ -1251,11 +1316,12 @@ ChatErrorType = (
     | ChatErrorType_connectionUserChangeProhibited
     | ChatErrorType_peerChatVRangeIncompatible
     | ChatErrorType_relayTestError
+    | ChatErrorType_channelLink
     | ChatErrorType_internalError
     | ChatErrorType_exception
 )
 
-ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "simplexDomainNotReady", "notResolvedLocally", "unsupportedConnReq", "connReqMessageProhibited", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "badgeRedeemError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
+ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "simplexDomainNotReady", "notResolvedLocally", "unsupportedConnReq", "connReqMessageProhibited", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "badgeRedeemError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "channelLink", "internalError", "exception"]
 
 ChatFeature = Literal["timedMessages", "fullDelete", "reactions", "voice", "files", "calls", "sessions"]
 
@@ -1677,6 +1743,10 @@ class CreatedConnLink(TypedDict):
 
 def CreatedConnLink_cmd_string(self: CreatedConnLink) -> str:
     return self['connFullLink'] + ((' ' + self.get('connShortLink')) if self.get('connShortLink') is not None else '')
+
+class CreatorQueueKey(TypedDict):
+    memberId: str
+    key: str
 
 class CryptoFile(TypedDict):
     filePath: str
@@ -2183,6 +2253,11 @@ class GroupRelay(TypedDict):
 class GroupShortLinkData(TypedDict):
     groupProfile: "GroupProfile"
     publicGroupData: NotRequired["PublicGroupData"]
+    linkVersion: NotRequired[int]  # int64
+    revokedOwners: NotRequired[list[str]]
+    creatorQueueKey: NotRequired["CreatorQueueKey"]
+    linkRcvId: NotRequired[str]
+    roster: NotRequired["LinkRoster"]
 
 class GroupShortLinkInfo(TypedDict):
     direct: bool
@@ -2275,6 +2350,10 @@ class LinkPreview(TypedDict):
     description: str
     image: str
     content: NotRequired["LinkContent"]
+
+class LinkRoster(TypedDict):
+    version: int  # int64
+    author: str
 
 class ListEntry(TypedDict):
     number: NotRequired[str]

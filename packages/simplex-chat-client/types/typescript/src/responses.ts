@@ -44,6 +44,7 @@ export type ChatResponse =
   | CR.MembersBlockedForAllUser
   | CR.MembersRoleUser
   | CR.NewChatItems
+  | CR.OwnerInvitationSent
   | CR.RcvFileAccepted
   | CR.RcvFileAcceptedSndCancelled
   | CR.RcvFileCancelled
@@ -111,6 +112,7 @@ export namespace CR {
     | "membersBlockedForAllUser"
     | "membersRoleUser"
     | "newChatItems"
+    | "ownerInvitationSent"
     | "rcvFileAccepted"
     | "rcvFileAcceptedSndCancelled"
     | "rcvFileCancelled"
@@ -398,6 +400,13 @@ export namespace CR {
     type: "newChatItems"
     user: T.User
     chatItems: T.AChatItem[]
+  }
+
+  export interface OwnerInvitationSent extends Interface {
+    type: "ownerInvitationSent"
+    user: T.User
+    groupInfo: T.GroupInfo
+    member: T.GroupMember
   }
 
   export interface RcvFileAccepted extends Interface {

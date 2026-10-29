@@ -85,6 +85,7 @@ chatResponsesDocsData =
     ("CRMembersBlockedForAllUser", "Members blocked for all by admin"),
     ("CRMembersRoleUser", "Members role changed by user"),
     ("CRNewChatItems", "New messages"),
+    ("CROwnerInvitationSent", "Invitation to become a channel owner sent"),
     ("CRRcvFileAccepted", "File accepted to be received"),
     ("CRRcvFileAcceptedSndCancelled", "File accepted, but no longer sent"),
     ("CRRcvFileCancelled", "Cancelled receiving file"),

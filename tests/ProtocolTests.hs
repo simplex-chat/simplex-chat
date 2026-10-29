@@ -26,6 +26,7 @@ import Simplex.Messaging.Compression (compress1)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet
 import Simplex.Messaging.Encoding (smpEncode)
+import Simplex.Messaging.Encoding.String (StrJSON (..))
 import Simplex.Messaging.Protocol (EntityId (..), supportedSMPClientVRange)
 import Simplex.Messaging.ServiceScheme
 import Simplex.Messaging.Version
@@ -127,6 +128,9 @@ connReqData =
 testDhPubKey :: C.PublicKeyX448
 testDhPubKey = "MEIwBQYDK2VvAzkAmKuSYeQ/m0SixPDS8Wq8VBaTS1cW+Lp0n0h4Diu+kUpR+qXx4SDJ32YGEFoGFGSbGPry5Ychr6U="
 
+testSignPubKey :: C.PublicKeyEd25519
+testSignPubKey = "MCowBQYDK2VwAyEAeBFquGBINC+t/v8+eW3yx1kHg4JVQunamvDZ1gbiUoA="
+
 testE2ERatchetParams :: RcvE2ERatchetParamsUri 'C.X448
 testE2ERatchetParams = E2ERatchetParamsUri supportedE2EEncryptVRange testDhPubKey testDhPubKey Nothing
 
@@ -204,7 +208,15 @@ shortLinkDataTests = describe "Short link data encoding/decoding" $ do
   it "rejects compressed short-link user data above the decompressed size limit" $ do
     let value = replicate (maxDecompressedMsgLength + 1) 'a'
     decodeLinkUserData (linkData value) `shouldReturn` (Nothing :: Maybe String)
+  it "encodes and decodes group link data with multi-owner fields" $ do
+    J.decodeStrict' multiOwnerJSON `shouldBe` Just (J.toJSON multiOwnerLinkData)
+    (fmap multiOwnerFields <$> decodeLinkUserData (linkData multiOwnerLinkData)) `shouldReturn` Just (multiOwnerFields multiOwnerLinkData)
+  it "decodes group link data without multi-owner fields" $
+    (multiOwnerFields <$> J.decodeStrict' singleOwnerJSON) `shouldBe` Just (Nothing, Nothing, Nothing, Nothing, Nothing)
+  it "encodes single-owner group link data without multi-owner fields" $
+    J.decodeStrict' singleOwnerJSON `shouldBe` Just (J.toJSON $ singleOwnerLinkData testGroupProfile (Just $ PublicGroupData 2))
   where
+    linkData :: J.ToJSON a => a -> ConnLinkData 'CMContact
     linkData value =
       ContactLinkData
         supportedSMPAgentVRange
@@ -212,9 +224,24 @@ shortLinkDataTests = describe "Short link data encoding/decoding" $ do
           { direct = True,
             owners = [],
             relays = [],
-            userData = encodeShortLinkData (value :: String),
+            userData = encodeShortLinkData value,
             ratchetKeys = Nothing
           }
+    multiOwnerLinkData =
+      GroupShortLinkData
+        { groupProfile = testGroupProfile,
+          publicGroupData = Just $ PublicGroupData 2,
+          linkVersion = Just 3,
+          revokedOwners = Just [MemberId "\5\6\7\8"],
+          creatorQueueKey = Just CreatorQueueKey {memberId = MemberId "\1\2\3\4", key = StrJSON $ C.APublicAuthKey C.SEd25519 testSignPubKey},
+          linkRcvId = Just $ StrJSON $ EntityId "\1\2\3\4",
+          roster = Just LinkRoster {version = VersionRoster 4, author = MemberId "\1\2\3\4"}
+        }
+    multiOwnerFields d = (linkVersion d, revokedOwners d, creatorQueueKey d, linkRcvId d, roster d)
+    multiOwnerJSON :: ByteString
+    multiOwnerJSON = "{\"groupProfile\":{\"fullName\":\"Team\",\"displayName\":\"team\",\"groupPreferences\":{\"reactions\":{\"enable\":\"on\"},\"voice\":{\"enable\":\"on\"}}},\"publicGroupData\":{\"publicMemberCount\":2},\"linkVersion\":3,\"revokedOwners\":[\"BQYHCA==\"],\"creatorQueueKey\":{\"memberId\":\"AQIDBA==\",\"key\":\"MCowBQYDK2VwAyEAeBFquGBINC-t_v8-eW3yx1kHg4JVQunamvDZ1gbiUoA=\"},\"linkRcvId\":\"AQIDBA==\",\"roster\":{\"version\":4,\"author\":\"AQIDBA==\"}}"
+    singleOwnerJSON :: ByteString
+    singleOwnerJSON = "{\"groupProfile\":{\"fullName\":\"Team\",\"displayName\":\"team\",\"groupPreferences\":{\"reactions\":{\"enable\":\"on\"},\"voice\":{\"enable\":\"on\"}}},\"publicGroupData\":{\"publicMemberCount\":2}}"
 
 decodeChatMessageTest :: Spec
 decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
@@ -240,7 +267,7 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
     "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
       ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (mcSimple (MCText "hello")))
   it "x.msg.new chat message with chat version range" $
-    "{\"v\":\"9-22\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
+    "{\"v\":\"9-23\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
       ##==## ChatMessage supportedChatVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (mcSimple (MCText "hello")))
   it "x.msg.new quote" $
     "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}}}}"
@@ -363,13 +390,13 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
     "{\"v\":\"9\",\"event\":\"x.grp.mem.new\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemNew MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} Nothing
   it "x.grp.mem.new with member chat version range" $
-    "{\"v\":\"9\",\"event\":\"x.grp.mem.new\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"9-22\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.new\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"9-23\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemNew MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Just $ ChatVersionRange supportedChatVRange, profile = testProfile, memberKey = Nothing} Nothing
   it "x.grp.mem.intro" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemIntro MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} Nothing
   it "x.grp.mem.intro with member chat version range" $
-    "{\"v\":\"9\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"9-22\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"9-23\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemIntro MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Just $ ChatVersionRange supportedChatVRange, profile = testProfile, memberKey = Nothing} Nothing
   it "x.grp.mem.intro with member restrictions" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberRestrictions\":{\"restriction\":\"blocked\"},\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
@@ -378,7 +405,7 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
     "{\"v\":\"9\",\"event\":\"x.grp.mem.inv\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberIntro\":{\"groupConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"}}}"
       #==# XGrpMemInv (MemberId "\1\2\3\4") IntroInvitation {groupConnReq = testConnReq}
   it "x.grp.mem.fwd with member chat version range" $
-    "{\"v\":\"9\",\"event\":\"x.grp.mem.fwd\",\"params\":{\"memberIntro\":{\"groupConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"},\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"9-22\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.fwd\",\"params\":{\"memberIntro\":{\"groupConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"},\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"9-23\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemFwd MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Just $ ChatVersionRange supportedChatVRange, profile = testProfile, memberKey = Nothing} IntroInvitation {groupConnReq = testConnReq}
   it "x.grp.mem.info" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.info\",\"params\":{\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
@@ -404,6 +431,37 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.grp.direct.inv without content" $
     "{\"v\":\"9\",\"event\":\"x.grp.direct.inv\",\"params\":{\"connReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"}}"
       #==# XGrpDirectInv testConnReq Nothing Nothing
+  it "x.grp.info" $
+    "{\"v\":\"9\",\"event\":\"x.grp.info\",\"params\":{\"groupProfile\":{\"fullName\":\"Team\",\"displayName\":\"team\",\"groupPreferences\":{\"reactions\":{\"enable\":\"on\"},\"voice\":{\"enable\":\"on\"}}}}}"
+      #==# XGrpInfo testGroupProfile Nothing
+  it "x.grp.info with link version" $
+    "{\"v\":\"9\",\"event\":\"x.grp.info\",\"params\":{\"groupProfile\":{\"fullName\":\"Team\",\"displayName\":\"team\",\"groupPreferences\":{\"reactions\":{\"enable\":\"on\"},\"voice\":{\"enable\":\"on\"}}},\"linkVersion\":5}}"
+      #==# XGrpInfo testGroupProfile (Just 5)
+  it "x.grp.owner.inv" $
+    "{\"v\":\"9\",\"event\":\"x.grp.owner.inv\",\"params\":{\"memberId\":\"AQIDBA==\"}}"
+      #==# XGrpOwnerInv (MemberId "\1\2\3\4")
+  it "x.grp.owner.acpt" $
+    "{\"v\":\"9\",\"event\":\"x.grp.owner.acpt\",\"params\":{\"invId\":\"AQIDBA==\"}}"
+      #==# XGrpOwnerAcpt (SharedMsgId "\1\2\3\4")
+  it "x.grp.owner.add" $
+    "{\"v\":\"9\",\"event\":\"x.grp.owner.add\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberKey\":\"MCowBQYDK2VwAyEAeBFquGBINC-t_v8-eW3yx1kHg4JVQunamvDZ1gbiUoA=\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
+      #==# XGrpOwnerAdd (MemberId "\1\2\3\4") (MemberKey testSignPubKey) testProfile
+  it "x.grp.members.req" $
+    "{\"v\":\"9\",\"event\":\"x.grp.members.req\",\"params\":{}}"
+      #==# XGrpMembersReq Nothing
+  it "x.grp.members.req with cursor" $
+    "{\"v\":\"9\",\"event\":\"x.grp.members.req\",\"params\":{\"cursor\":\"AQIDBA==\"}}"
+      #==# XGrpMembersReq (Just $ MemberId "\1\2\3\4")
+  it "x.grp.members.page with cursor" $
+    "{\"v\":\"9\",\"event\":\"x.grp.members.page\",\"params\":{\"members\":[{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}},\"memberRestrictions\":{\"restriction\":\"blocked\"}},{\"memberInfo\":{\"memberRole\":\"member\",\"memberId\":\"BQYHCA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}],\"cursor\":\"BQYHCA==\"}}"
+      #==# XGrpMembersPage
+        [ MemberPageEntry MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} (Just MemberRestrictions {restriction = MRSBlocked}),
+          MemberPageEntry MemberInfo {memberId = MemberId "\5\6\7\8", memberRole = GRMember, v = Nothing, profile = testProfile, memberKey = Nothing} Nothing
+        ]
+        (Just $ MemberId "\5\6\7\8")
+  it "x.grp.members.page without cursor" $
+    "{\"v\":\"9\",\"event\":\"x.grp.members.page\",\"params\":{\"members\":[{\"memberInfo\":{\"memberRole\":\"member\",\"memberId\":\"BQYHCA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}]}}"
+      #==# XGrpMembersPage [MemberPageEntry MemberInfo {memberId = MemberId "\5\6\7\8", memberRole = GRMember, v = Nothing, profile = testProfile, memberKey = Nothing} Nothing] Nothing
   it "x.grp.msg.forward" $
     "{\"v\":\"9\",\"event\":\"x.grp.msg.forward\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberName\":\"alice\",\"msg\":{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}},\"msgTs\":\"1970-01-01T00:00:01.000000001Z\"}}"
       #==# XGrpMsgForward

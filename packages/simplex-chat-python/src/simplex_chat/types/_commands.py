@@ -290,6 +290,33 @@ def APIMembersRole_cmd_string(self: APIMembersRole) -> str:
 APIMembersRole_Response = CR.MembersRoleUser | CR.ChatCmdError
 
 
+# Invite a member to become a channel owner. Requires the Owner role in a channel; the member's security code must be verified.
+# Network usage: interactive.
+class APIInviteGroupOwner(TypedDict):
+    groupId: int  # int64
+    groupMemberId: int  # int64
+
+
+def APIInviteGroupOwner_cmd_string(self: APIInviteGroupOwner) -> str:
+    return '/_owner invite #' + str(self['groupId']) + ' ' + str(self['groupMemberId'])
+
+APIInviteGroupOwner_Response = CR.OwnerInvitationSent | CR.ChatCmdError
+
+
+# Accept an invitation to become a channel owner.
+# Network usage: interactive.
+class APIAcceptGroupOwnerInvitation(TypedDict):
+    groupId: int  # int64
+    chatItemId: int  # int64
+    allowDirect: "T.AllowDirect"
+
+
+def APIAcceptGroupOwnerInvitation_cmd_string(self: APIAcceptGroupOwnerInvitation) -> str:
+    return '/_owner accept #' + str(self['groupId']) + ' ' + str(self['chatItemId']) + T.AllowDirect_cmd_string(self['allowDirect'])
+
+APIAcceptGroupOwnerInvitation_Response = CR.ChatItemUpdated | CR.ChatCmdError
+
+
 # Block members. Requires Moderator role.
 # Network usage: background.
 class APIBlockMembersForAll(TypedDict):

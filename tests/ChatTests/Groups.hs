@@ -5613,7 +5613,7 @@ testInviteMemberViaGroupProhibited =
 testInviteMemberViaGroupPrevVersion :: HasCallStack => TestParams -> IO ()
 testInviteMemberViaGroupPrevVersion ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatCfg ps testCfgVPrev "bob" bobProfile $ \bob -> do
+    withNewTestChatCfg ps testCfg {chatVRange = mkVersionRange (VersionChat 9) (VersionChat 21)} "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
       createClub alice
       GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"

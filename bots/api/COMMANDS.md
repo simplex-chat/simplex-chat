@@ -29,6 +29,8 @@ This file is generated automatically.
 - [APIJoinGroup](#apijoingroup)
 - [APIAcceptMember](#apiacceptmember)
 - [APIMembersRole](#apimembersrole)
+- [APIInviteGroupOwner](#apiinvitegroupowner)
+- [APIAcceptGroupOwnerInvitation](#apiacceptgroupownerinvitation)
 - [APIBlockMembersForAll](#apiblockmembersforall)
 - [APIRemoveMembers](#apiremovemembers)
 - [APILeaveGroup](#apileavegroup)
@@ -927,6 +929,90 @@ MembersRoleUser: Members role changed by user.
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIInviteGroupOwner
+
+Invite a member to become a channel owner. Requires the Owner role in a channel; the member's security code must be verified.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- groupId: int64
+- groupMemberId: int64
+
+**Syntax**:
+
+```
+/_owner invite #<groupId> <groupMemberId>
+```
+
+```javascript
+'/_owner invite #' + groupId + ' ' + groupMemberId // JavaScript
+```
+
+```python
+'/_owner invite #' + str(groupId) + ' ' + str(groupMemberId) # Python
+```
+
+**Responses**:
+
+OwnerInvitationSent: Invitation to become a channel owner sent.
+- type: "ownerInvitationSent"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- member: [GroupMember](./TYPES.md#groupmember)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+**Errors**:
+- ChannelLink: The invitation cannot be sent.
+
+---
+
+
+### APIAcceptGroupOwnerInvitation
+
+Accept an invitation to become a channel owner.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- groupId: int64
+- chatItemId: int64
+- allowDirect: [AllowDirect](./TYPES.md#allowdirect)
+
+**Syntax**:
+
+```
+/_owner accept #<groupId> <chatItemId><str(allowDirect)>
+```
+
+```javascript
+'/_owner accept #' + groupId + ' ' + chatItemId + AllowDirect.cmdString(allowDirect) // JavaScript
+```
+
+```python
+'/_owner accept #' + str(groupId) + ' ' + str(chatItemId) + AllowDirect_cmd_string(allowDirect) # Python
+```
+
+**Responses**:
+
+ChatItemUpdated: Message updated.
+- type: "chatItemUpdated"
+- user: [User](./TYPES.md#user)
+- chatItem: [AChatItem](./TYPES.md#achatitem)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+**Errors**:
+- ChannelLink: The invitation cannot be accepted.
 
 ---
 

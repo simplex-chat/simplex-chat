@@ -329,7 +329,7 @@ export namespace CEvt {
     type: "groupLinkDataUpdated"
     user: T.User
     groupInfo: T.GroupInfo
-    groupLink: T.GroupLink
+    groupLink?: T.GroupLink
     groupRelays: T.GroupRelay[]
     relaysChanged: boolean
   }

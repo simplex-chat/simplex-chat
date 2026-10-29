@@ -187,6 +187,12 @@ data ChatConfig = ChatConfig
     relayInactiveTTL :: NominalDiffTime,
     relayRequestRetryInterval :: RetryInterval,
     relayRequestExpiry :: (Int, NominalDiffTime),
+    channelLinkWriteAttempts :: Int,
+    channelCountPublishInterval :: NominalDiffTime,
+    rosterAbandonTTL :: NominalDiffTime,
+    rosterRequestTimeout :: NominalDiffTime,
+    memberCatchupTimeout :: NominalDiffTime,
+    channelOwnerWaitTimeout :: NominalDiffTime,
     highlyAvailable :: Bool,
     deviceNameForRemote :: Text,
     remoteCompression :: Bool,
@@ -259,11 +265,12 @@ data ChatHooks = ChatHooks
     -- it is called before the event is sent to the user (or to the UI).
     eventHook :: Maybe (ChatController -> Either ChatError ChatEvent -> IO (Either ChatError ChatEvent)),
     -- acceptMember hook can be used to accept or reject member connecting via group link without API calls
-    acceptMember :: Maybe (GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole)))
+    acceptMember :: Maybe (GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole))),
+    channelLinkWriteHook :: Maybe (GroupInfo -> IO ())
   }
 
 defaultChatHooks :: ChatHooks
-defaultChatHooks = ChatHooks Nothing Nothing Nothing Nothing Nothing
+defaultChatHooks = ChatHooks Nothing Nothing Nothing Nothing Nothing Nothing
 
 data PresetServers = PresetServers
   { operators :: NonEmpty PresetOperator,
@@ -337,6 +344,12 @@ data ChatController = ChatController
     relayGroupLinkChecksAsync :: TVar (Maybe (Async ())),
     webPreviewState :: Maybe WebPreviewState,
     chatRelayTests :: TMap ConnId RelayTest,
+    linkWriters :: TMap GroupId Lock,
+    linkSyncSwaps :: TMap GroupId Int,
+    countPublishPending :: TMap GroupId (),
+    memberCatchups :: TMap GroupId (Int, Maybe MemberId),
+    rosterRequests :: TMap GroupId UTCTime,
+    mainApp :: TVar Bool,
     expireCIThreads :: TMap UserId (Maybe (Async ())),
     expireCIFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
@@ -474,6 +487,8 @@ data ChatCommand
   | APIAcceptMember {groupId :: GroupId, groupMemberId :: GroupMemberId, memberRole :: GroupMemberRole}
   | APIDeleteMemberSupportChat GroupId GroupMemberId
   | APIMembersRole {groupId :: GroupId, groupMemberIds :: NonEmpty GroupMemberId, memberRole :: GroupMemberRole}
+  | APIInviteGroupOwner {groupId :: GroupId, groupMemberId :: GroupMemberId}
+  | APIAcceptGroupOwnerInvitation {groupId :: GroupId, chatItemId :: ChatItemId, allowDirect :: AllowDirect}
   | APIBlockMembersForAll {groupId :: GroupId, groupMemberIds :: NonEmpty GroupMemberId, blocked :: Bool}
   | APIRemoveMembers {groupId :: GroupId, groupMemberIds :: NonEmpty GroupMemberId, withMessages :: Bool}
   | APILeaveGroup {groupId :: GroupId}
@@ -623,6 +638,7 @@ data ChatCommand
   | JoinGroup {groupName :: GroupName, enableNtfs :: MsgFilter}
   | AcceptMember GroupName ContactName GroupMemberRole
   | MemberRole GroupName ContactName GroupMemberRole
+  | InviteGroupOwner GroupName ContactName
   | BlockForAll GroupName ContactName Bool
   | RemoveMembers {groupName :: GroupName, members :: NonEmpty ContactName, withMessages :: Bool}
   | LeaveGroup GroupName
@@ -732,6 +748,9 @@ planResolveModeP =
     "off" -> pure PRMUnknown
     "never" -> pure PRMNever
     _ -> fail "bad PlanResolveMode"
+
+data AllowDirect = ADAsk | ADYes
+  deriving (Eq, Show)
 
 data CommandSource
   = CSLocal -- entered on this device
@@ -934,6 +953,7 @@ data ChatResponse
   | CRMemberSupportChatRead {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMemberSupportChatDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMembersRoleUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], toRole :: GroupMemberRole, msgSigned :: Bool}
+  | CROwnerInvitationSent {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMembersBlockedForAllUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], blocked :: Bool, msgSigned :: Bool}
   | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember, msgSigned :: Bool}
   | CRGroupProfile {user :: User, groupInfo :: GroupInfo}
@@ -1041,7 +1061,7 @@ data ChatEvent
   | CEvtReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | CEvtReceivedGroupInvitationViaGroup {user :: User, groupInfo :: GroupInfo, viaGroupInfo :: GroupInfo, viaMember :: GroupMember, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | CEvtUserJoinedGroup {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
-  | CEvtGroupLinkDataUpdated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay], relaysChanged :: Bool}
+  | CEvtGroupLinkDataUpdated {user :: User, groupInfo :: GroupInfo, groupLink :: Maybe GroupLink, groupRelays :: [GroupRelay], relaysChanged :: Bool}
   | CEvtGroupRelayUpdated {user :: User, groupInfo :: GroupInfo, member :: GroupMember, groupRelay :: GroupRelay}
   | CEvtJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember} -- there is the same command response
   | CEvtJoinedGroupMemberConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
@@ -1506,6 +1526,21 @@ data BadgeRedeemError
   | BRECredentialNotVerified
   deriving (Eq, Show)
 
+data ChannelLinkError
+  = CLENotVerified
+  | CLERelayVersion
+  | CLELinkServerVersion
+  | CLEDirectConnection {host :: TransportHost, prohibited :: Bool}
+  | CLEChangedByOwner
+  | CLERosterSyncing
+  | CLELastOwner
+  | CLENotOwner
+  | CLEOwnerLimit
+  | CLELinkDataTooLarge
+  | CLELinkBusy
+  | CLERelaysUnreachable
+  deriving (Eq, Show)
+
 data ChatErrorType
   = CENoActiveUser
   | CENoConnectionUser {agentConnId :: AgentConnId}
@@ -1586,6 +1621,7 @@ data ChatErrorType
   | CEConnectionUserChangeProhibited
   | CEPeerChatVRangeIncompatible
   | CERelayTestError {message :: String}
+  | CEChannelLink {channelLinkError :: ChannelLinkError}
   | CEInternalError {message :: String}
   | CEException {message :: String}
   deriving (Show, Exception)
@@ -1864,6 +1900,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FC") ''ForwardConfirmation)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SDE") ''SimplexDomainError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "BRE") ''BadgeRedeemError)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CLE") ''ChannelLinkError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CE") ''ChatErrorType)
 

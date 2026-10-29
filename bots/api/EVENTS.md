@@ -486,7 +486,7 @@ Group link data updated.
 - type: "groupLinkDataUpdated"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
-- groupLink: [GroupLink](./TYPES.md#grouplink)
+- groupLink: [GroupLink](./TYPES.md#grouplink)?
 - groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
 - relaysChanged: bool
 

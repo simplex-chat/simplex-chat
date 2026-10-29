@@ -1116,7 +1116,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 SBinary -> pure Nothing
               XGrpLeave -> fmap ctx <$> xGrpLeave (GIK gInfo' gks) m'' msg brokerTs
               XGrpDel -> Just (DeliveryTaskContext (DJSGroup {jobSpec = DJRelayRemoved}) False) <$ xGrpDel gInfo' m'' msg brokerTs
-              XGrpInfo p' -> fmap ctx <$> xGrpInfo (GIK gInfo' gks) m'' p' msg brokerTs
+              XGrpInfo p' _ -> fmap ctx <$> xGrpInfo (GIK gInfo' gks) m'' p' msg brokerTs
               XGrpPrefs ps' -> fmap ctx <$> xGrpPrefs gInfo' m'' ps' msg
               XGrpRoster gr -> fmap ctx <$> xGrpRoster gInfo' m'' m'' gr verifiedMsg sharedMsgId_ brokerTs
               XGrpRosterAck ackVer ackErr -> Nothing <$ xGrpRosterAck (GIK gInfo' gks) m'' ackVer ackErr
@@ -1138,7 +1138,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 XMsgUpdate {} -> contentChanged
                 XMsgDel {} -> contentChanged
                 XMsgReact {} -> contentChanged
-                XGrpInfo p' -> atomically $ channelProfileUpdated cc groupId p'
+                XGrpInfo p' _ -> atomically $ channelProfileUpdated cc groupId p'
                 XGrpDel {} -> atomically $ channelRemoved cc groupId
                 _ -> pure ()
               pure $ NewMessageDeliveryTask {messageId = msgId, taskContext}
@@ -1441,7 +1441,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     (relays', changed, newlyActiveLinks) <- liftIO $ foldrM (updateRelay db) ([], False, []) relays
                     liftIO $ setGroupInProgressDone db gInfo
                     pure (g, gLink, relays', changed, newlyActiveLinks)
-                  toView $ CEvtGroupLinkDataUpdated user gInfo gLink relays relaysChanged
+                  toView $ CEvtGroupLinkDataUpdated user gInfo (Just gLink) relays relaysChanged
                   let GroupSummary {publicMemberCount} = groupSummary gInfo
                   -- Owner is counted in publicMemberCount; > 1 means at least one subscriber.
                   -- TODO [relays] multi-owner: with N owners, threshold should be > N (or use a
@@ -4058,7 +4058,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             XGrpMemDel memId withMessages rosterVer -> withAuthor XGrpMemDel_ $ \author -> void $ xGrpMemDel g (Just m) author memId withMessages rosterVer verifiedMsg rcvMsg msgTs True
             XGrpLeave -> withAuthor XGrpLeave_ $ \author -> void $ xGrpLeave g author rcvMsg msgTs
             XGrpDel -> withAuthor XGrpDel_ $ \author -> void $ xGrpDel gInfo author rcvMsg msgTs
-            XGrpInfo p' -> withAuthor XGrpInfo_ $ \author -> void $ xGrpInfo g author p' rcvMsg msgTs
+            XGrpInfo p' _ -> withAuthor XGrpInfo_ $ \author -> void $ xGrpInfo g author p' rcvMsg msgTs
             XGrpPrefs ps' -> withAuthor XGrpPrefs_ $ \author -> void $ xGrpPrefs gInfo author ps' rcvMsg
             XGrpRoster gr -> withAuthor XGrpRoster_ $ \author -> void $ xGrpRoster gInfo m author gr verifiedMsg sharedMsgId_ msgTs
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)

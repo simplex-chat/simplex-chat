@@ -10,6 +10,7 @@ This file is generated automatically.
 - [AgentCryptoError](#agentcryptoerror)
 - [AgentErrorType](#agenterrortype)
 - [AgentServiceError](#agentserviceerror)
+- [AllowDirect](#allowdirect)
 - [AppVersionRange](#appversionrange)
 - [AutoAccept](#autoaccept)
 - [BadgeInfo](#badgeinfo)
@@ -42,6 +43,7 @@ This file is generated automatically.
 - [CIReactionCount](#cireactioncount)
 - [CIStatus](#cistatus)
 - [CITimed](#citimed)
+- [ChannelLinkError](#channellinkerror)
 - [ChatBotCommand](#chatbotcommand)
 - [ChatDeleteMode](#chatdeletemode)
 - [ChatError](#chaterror)
@@ -79,6 +81,7 @@ This file is generated automatically.
 - [ContactUserPreference](#contactuserpreference)
 - [ContactUserPreferences](#contactuserpreferences)
 - [CreatedConnLink](#createdconnlink)
+- [CreatorQueueKey](#creatorqueuekey)
 - [CryptoFile](#cryptofile)
 - [CryptoFileArgs](#cryptofileargs)
 - [CtrlAppInfo](#ctrlappinfo)
@@ -132,6 +135,7 @@ This file is generated automatically.
 - [LinkContent](#linkcontent)
 - [LinkOwnerSig](#linkownersig)
 - [LinkPreview](#linkpreview)
+- [LinkRoster](#linkroster)
 - [ListEntry](#listentry)
 - [LocalBadge](#localbadge)
 - [LocalProfile](#localprofile)
@@ -395,6 +399,29 @@ NotDRAddress:
 
 BadSignature:
 - type: "badSignature"
+
+
+---
+
+## AllowDirect
+
+**Enum type**:
+- "ask"
+- "yes"
+
+**Syntax**:
+
+```
+ direct=on|
+```
+
+```javascript
+self == 'yes' ? ' direct=on' : '' // JavaScript
+```
+
+```python
+' direct=on' if str(self) == 'yes' else '' # Python
+```
 
 
 ---
@@ -1145,6 +1172,51 @@ Invalid:
 
 ---
 
+## ChannelLinkError
+
+**Discriminated union type**:
+
+NotVerified:
+- type: "notVerified"
+
+RelayVersion:
+- type: "relayVersion"
+
+LinkServerVersion:
+- type: "linkServerVersion"
+
+DirectConnection:
+- type: "directConnection"
+- host: string
+- prohibited: bool
+
+ChangedByOwner:
+- type: "changedByOwner"
+
+RosterSyncing:
+- type: "rosterSyncing"
+
+LastOwner:
+- type: "lastOwner"
+
+NotOwner:
+- type: "notOwner"
+
+OwnerLimit:
+- type: "ownerLimit"
+
+LinkDataTooLarge:
+- type: "linkDataTooLarge"
+
+LinkBusy:
+- type: "linkBusy"
+
+RelaysUnreachable:
+- type: "relaysUnreachable"
+
+
+---
+
 ## ChatBotCommand
 
 **Discriminated union type**:
@@ -1507,6 +1579,10 @@ PeerChatVRangeIncompatible:
 RelayTestError:
 - type: "relayTestError"
 - message: string
+
+ChannelLink:
+- type: "channelLink"
+- channelLinkError: [ChannelLinkError](#channellinkerror)
 
 InternalError:
 - type: "internalError"
@@ -2094,6 +2170,15 @@ connFullLink + (connShortLink ? ' ' + connShortLink : '') // JavaScript
 ```python
 connFullLink + ((' ' + connShortLink) if connShortLink is not None else '') # Python
 ```
+
+
+---
+
+## CreatorQueueKey
+
+**Record type**:
+- memberId: string
+- key: string
 
 
 ---
@@ -2806,6 +2891,11 @@ UpdateRequired:
 **Record type**:
 - groupProfile: [GroupProfile](#groupprofile)
 - publicGroupData: [PublicGroupData](#publicgroupdata)?
+- linkVersion: int64?
+- revokedOwners: [string]?
+- creatorQueueKey: [CreatorQueueKey](#creatorqueuekey)?
+- linkRcvId: string?
+- roster: [LinkRoster](#linkroster)?
 
 
 ---
@@ -2950,6 +3040,15 @@ Unknown:
 - description: string
 - image: string
 - content: [LinkContent](#linkcontent)?
+
+
+---
+
+## LinkRoster
+
+**Record type**:
+- version: int64
+- author: string
 
 
 ---

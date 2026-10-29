@@ -64,6 +64,7 @@ import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (MsgBody)
+import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Util (decodeJSON, eitherToMaybe, encodeJSON, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
 
@@ -89,12 +90,13 @@ import Simplex.Messaging.Version hiding (version)
 -- 20 - p2p group member keys for signing (2026-07-26)
 -- 21 - command keywords with any characters (2026-09-27)
 -- 22 - owner-signed relay invitations, group invitations via member connections (2026-10-10)
+-- 23 - multiple channel owners (2026-10-28)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 22
+currentChatVersion = VersionChat 23
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -147,6 +149,9 @@ anyTextCommandsVersion = VersionChat 21
 
 groupInvVersion :: VersionChat
 groupInvVersion = VersionChat 22
+
+multiOwnerVersion :: VersionChat
+multiOwnerVersion = VersionChat 23
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
@@ -387,6 +392,19 @@ instance Encoding RosterMember where
   smpEncode RosterMember {memberId, key, role, privileges} = smpEncode (memberId, key, role, privileges)
   smpP = RosterMember <$> smpP <*> smpP <*> smpP <*> smpP
 
+data MemberPageEntry = MemberPageEntry MemberInfo (Maybe MemberRestrictions)
+  deriving (Eq, Show)
+
+instance FromJSON MemberPageEntry where
+  parseJSON = J.withObject "MemberPageEntry" $ \o ->
+    MemberPageEntry <$> o .: "memberInfo" <*> o .:? "memberRestrictions"
+
+instance ToJSON MemberPageEntry where
+  toJSON (MemberPageEntry mInfo mRestrictions) =
+    J.object $ "memberInfo" .= mInfo : maybe [] (\r -> ["memberRestrictions" .= r]) mRestrictions
+  toEncoding (MemberPageEntry mInfo mRestrictions) =
+    J.pairs $ "memberInfo" .= mInfo <> maybe mempty ("memberRestrictions" .=) mRestrictions
+
 instance Encoding FwdSender where
   smpEncode = \case
     FwdMember memberId memberName -> smpEncode ('M', memberId, memberName)
@@ -496,12 +514,17 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpMemDel :: MemberId -> Bool -> Maybe VersionRoster -> ChatMsgEvent 'Json
   XGrpLeave :: ChatMsgEvent 'Json
   XGrpDel :: ChatMsgEvent 'Json
-  XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
+  XGrpInfo :: GroupProfile -> Maybe Int64 -> ChatMsgEvent 'Json
   XGrpPrefs :: GroupPreferences -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> Maybe MsgScope -> ChatMsgEvent 'Json
   XGrpRoster :: GroupRoster -> ChatMsgEvent 'Json
   XGrpRosterAck :: VersionRoster -> Maybe Text -> ChatMsgEvent 'Json
   XGrpRosterRequest :: Maybe VersionRoster -> ChatMsgEvent 'Json
+  XGrpOwnerInv :: MemberId -> ChatMsgEvent 'Json
+  XGrpOwnerAcpt :: SharedMsgId -> ChatMsgEvent 'Json
+  XGrpOwnerAdd :: MemberId -> MemberKey -> Profile -> ChatMsgEvent 'Json
+  XGrpMembersReq :: Maybe MemberId -> ChatMsgEvent 'Json
+  XGrpMembersPage :: [MemberPageEntry] -> Maybe MemberId -> ChatMsgEvent 'Json
   XGrpMsgForward :: GrpMsgForward -> ChatMessage 'Json -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
   XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
@@ -543,9 +566,12 @@ isForwardedGroupMsg ev = case ev of
   XGrpMemDel {} -> True
   XGrpLeave -> True
   XGrpDel -> True
-  XGrpInfo _ -> True
+  XGrpInfo _ _ -> True
   XGrpPrefs _ -> True
   XGrpRoster _ -> True
+  XGrpOwnerInv _ -> True
+  XGrpOwnerAcpt _ -> True
+  XGrpOwnerAdd {} -> True
   _ -> False
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
@@ -1119,6 +1145,11 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpRoster_ :: CMEventTag 'Json
   XGrpRosterAck_ :: CMEventTag 'Json
   XGrpRosterRequest_ :: CMEventTag 'Json
+  XGrpOwnerInv_ :: CMEventTag 'Json
+  XGrpOwnerAcpt_ :: CMEventTag 'Json
+  XGrpOwnerAdd_ :: CMEventTag 'Json
+  XGrpMembersReq_ :: CMEventTag 'Json
+  XGrpMembersPage_ :: CMEventTag 'Json
   XGrpMsgForward_ :: CMEventTag 'Json
   XInfoProbe_ :: CMEventTag 'Json
   XInfoProbeCheck_ :: CMEventTag 'Json
@@ -1182,6 +1213,11 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpRoster_ -> "x.grp.roster"
     XGrpRosterAck_ -> "x.grp.roster.ack"
     XGrpRosterRequest_ -> "x.grp.roster.request"
+    XGrpOwnerInv_ -> "x.grp.owner.inv"
+    XGrpOwnerAcpt_ -> "x.grp.owner.acpt"
+    XGrpOwnerAdd_ -> "x.grp.owner.add"
+    XGrpMembersReq_ -> "x.grp.members.req"
+    XGrpMembersPage_ -> "x.grp.members.page"
     XGrpMsgForward_ -> "x.grp.msg.forward"
     XInfoProbe_ -> "x.info.probe"
     XInfoProbeCheck_ -> "x.info.probe.check"
@@ -1246,6 +1282,11 @@ instance StrEncoding ACMEventTag where
         "x.grp.roster" -> XGrpRoster_
         "x.grp.roster.ack" -> XGrpRosterAck_
         "x.grp.roster.request" -> XGrpRosterRequest_
+        "x.grp.owner.inv" -> XGrpOwnerInv_
+        "x.grp.owner.acpt" -> XGrpOwnerAcpt_
+        "x.grp.owner.add" -> XGrpOwnerAdd_
+        "x.grp.members.req" -> XGrpMembersReq_
+        "x.grp.members.page" -> XGrpMembersPage_
         "x.grp.msg.forward" -> XGrpMsgForward_
         "x.info.probe" -> XInfoProbe_
         "x.info.probe.check" -> XInfoProbeCheck_
@@ -1300,12 +1341,17 @@ toCMEventTag msg = case msg of
   XGrpMemDel {} -> XGrpMemDel_
   XGrpLeave -> XGrpLeave_
   XGrpDel -> XGrpDel_
-  XGrpInfo _ -> XGrpInfo_
+  XGrpInfo _ _ -> XGrpInfo_
   XGrpPrefs _ -> XGrpPrefs_
   XGrpDirectInv {} -> XGrpDirectInv_
   XGrpRoster _ -> XGrpRoster_
   XGrpRosterAck {} -> XGrpRosterAck_
   XGrpRosterRequest _ -> XGrpRosterRequest_
+  XGrpOwnerInv _ -> XGrpOwnerInv_
+  XGrpOwnerAcpt _ -> XGrpOwnerAcpt_
+  XGrpOwnerAdd {} -> XGrpOwnerAdd_
+  XGrpMembersReq _ -> XGrpMembersReq_
+  XGrpMembersPage _ _ -> XGrpMembersPage_
   XGrpMsgForward {} -> XGrpMsgForward_
   XInfoProbe _ -> XInfoProbe_
   XInfoProbeCheck _ -> XInfoProbeCheck_
@@ -1373,6 +1419,9 @@ requiresSignature = \case
   XInfo_ -> True
   XGrpLinkMem_ -> True
   XGrpRelayInv_ -> True
+  XGrpOwnerInv_ -> True
+  XGrpOwnerAcpt_ -> True
+  XGrpOwnerAdd_ -> True
   _ -> False
 
 -- | Content events a member may sign (XMsgNew opt-in; XMsgUpdate/XMsgDel when the target was signed).
@@ -1478,12 +1527,17 @@ appJsonToCM fwdDepth AppMessageJson {v, msgId, event, params} = do
       XGrpMemDel_ -> XGrpMemDel <$> p "memberId" <*> Right (fromRight False $ p "messages") <*> opt "rosterVersion"
       XGrpLeave_ -> pure XGrpLeave
       XGrpDel_ -> pure XGrpDel
-      XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
+      XGrpInfo_ -> XGrpInfo <$> p "groupProfile" <*> opt "linkVersion"
       XGrpPrefs_ -> XGrpPrefs <$> p "groupPreferences"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content" <*> opt "scope"
       XGrpRoster_ -> XGrpRoster <$> (GroupRoster <$> p "version" <*> p "fileInv")
       XGrpRosterAck_ -> XGrpRosterAck <$> p "version" <*> opt "error"
       XGrpRosterRequest_ -> XGrpRosterRequest <$> opt "version"
+      XGrpOwnerInv_ -> XGrpOwnerInv <$> p "memberId"
+      XGrpOwnerAcpt_ -> XGrpOwnerAcpt <$> p "invId"
+      XGrpOwnerAdd_ -> XGrpOwnerAdd <$> p "memberId" <*> p "memberKey" <*> p "profile"
+      XGrpMembersReq_ -> XGrpMembersReq <$> opt "cursor"
+      XGrpMembersPage_ -> XGrpMembersPage <$> p "members" <*> opt "cursor"
       XGrpMsgForward_ -> do
         when (fwdDepth >= maxFwdDepth) $ Left "forward depth exceeds limit"
         fwdSender <- opt "memberId" >>= \case
@@ -1554,12 +1608,17 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpMemDel memId messages rosterVersion -> o $ ("rosterVersion" .=? rosterVersion) $ ("messages" .=? if messages then Just True else Nothing) ["memberId" .= memId]
       XGrpLeave -> JM.empty
       XGrpDel -> JM.empty
-      XGrpInfo p -> o ["groupProfile" .= p]
+      XGrpInfo p linkVersion -> o $ ("linkVersion" .=? linkVersion) ["groupProfile" .= p]
       XGrpPrefs p -> o ["groupPreferences" .= p]
       XGrpDirectInv connReq content scope -> o $ ("content" .=? content) $ ("scope" .=? scope) ["connReq" .= connReq]
       XGrpRoster GroupRoster {version, fileInv} -> o ["version" .= version, "fileInv" .= fileInv]
       XGrpRosterAck version err -> o $ ("error" .=? err) ["version" .= version]
       XGrpRosterRequest version -> o $ ("version" .=? version) []
+      XGrpOwnerInv memId -> o ["memberId" .= memId]
+      XGrpOwnerAcpt invId -> o ["invId" .= invId]
+      XGrpOwnerAdd memId memberKey profile -> o ["memberId" .= memId, "memberKey" .= memberKey, "profile" .= profile]
+      XGrpMembersReq cursor -> o $ ("cursor" .=? cursor) []
+      XGrpMembersPage members cursor -> o $ ("cursor" .=? cursor) ["members" .= members]
       XGrpMsgForward GrpMsgForward {fwdSender, fwdBrokerTs} msg -> o $ encodeFwdSender fwdSender ["msg" .= msg, "msgTs" .= fwdBrokerTs]
         where
           encodeFwdSender = \case
@@ -1623,15 +1682,48 @@ data PublicGroupData = PublicGroupData
   }
   deriving (Eq, Show)
 
+data CreatorQueueKey = CreatorQueueKey
+  { memberId :: MemberId,
+    key :: StrJSON "RcvPublicAuthKey" SMP.RcvPublicAuthKey
+  }
+  deriving (Eq, Show)
+
+data LinkRoster = LinkRoster
+  { version :: VersionRoster,
+    author :: MemberId
+  }
+  deriving (Eq, Show)
+
 data GroupShortLinkData = GroupShortLinkData
   { groupProfile :: GroupProfile,
-    publicGroupData :: Maybe PublicGroupData
+    publicGroupData :: Maybe PublicGroupData,
+    linkVersion :: Maybe Int64,
+    revokedOwners :: Maybe [MemberId],
+    creatorQueueKey :: Maybe CreatorQueueKey,
+    linkRcvId :: Maybe (StrJSON "RecipientId" SMP.RecipientId),
+    roster :: Maybe LinkRoster
   }
   deriving (Show)
+
+singleOwnerLinkData :: GroupProfile -> Maybe PublicGroupData -> GroupShortLinkData
+singleOwnerLinkData groupProfile publicGroupData =
+  GroupShortLinkData
+    { groupProfile,
+      publicGroupData,
+      linkVersion = Nothing,
+      revokedOwners = Nothing,
+      creatorQueueKey = Nothing,
+      linkRcvId = Nothing,
+      roster = Nothing
+    }
 
 $(JQ.deriveJSON defaultJSON ''ContactShortLinkData)
 
 $(JQ.deriveJSON defaultJSON ''PublicGroupData)
+
+$(JQ.deriveJSON defaultJSON ''CreatorQueueKey)
+
+$(JQ.deriveJSON defaultJSON ''LinkRoster)
 
 $(JQ.deriveJSON defaultJSON ''GroupShortLinkData)
 
