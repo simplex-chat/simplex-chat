@@ -43,12 +43,36 @@ if [ "${1:-}" = topup ]; then
   exit
 fi
 
+STATE="$CHAIN_DIR/state.json"
+# anvil rewrites its dump in place, so a kill during a write leaves it cut short. The good copy, taken at each start and
+# clean stop, replaces it; with no good copy the chain starts over, and the contracts deploy again at the same addresses.
+GOOD_STATE="$STATE.good"
+parses() {
+  node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "$1" 2> /dev/null
+}
+
 rm -f "$READY"
+if [ -e "$STATE" ] && ! parses "$STATE"; then
+  mv "$STATE" "$STATE.broken"
+  if [ -e "$GOOD_STATE" ] && parses "$GOOD_STATE"; then
+    cp "$GOOD_STATE" "$STATE"
+    echo "the chain's state was cut short; restored its last good copy (cut file: $STATE.broken)"
+  else
+    echo "the chain's state was cut short and there is no good copy; starting a fresh chain (cut file: $STATE.broken)"
+  fi
+fi
+if [ -e "$STATE" ]; then cp "$STATE" "$GOOD_STATE"; fi
 "$ANVIL" --chain-id 31337 --host 127.0.0.1 --port "$RPC_PORT" --block-time 1 --prune-history "$MEMORY_STATES" \
-  --state "$CHAIN_DIR/state.json" --state-interval "$STATE_INTERVAL_SECONDS" --silent &
+  --state "$STATE" --state-interval "$STATE_INTERVAL_SECONDS" --silent &
 anvil_pid=$!
-# anvil writes its last dump when it stops, so a stop or a failed deploy stops it and waits for it
-trap 'kill "$anvil_pid" 2>/dev/null; wait "$anvil_pid"' EXIT INT TERM
+# anvil writes its last dump when it stops, so a stop or a failed deploy stops it, waits for it, and keeps the dump as
+# the good copy once it parses
+stop() {
+  kill "$anvil_pid" 2> /dev/null
+  wait "$anvil_pid" || true
+  if [ -e "$STATE" ] && parses "$STATE"; then cp "$STATE" "$GOOD_STATE"; fi
+}
+trap stop EXIT INT TERM
 until rpc eth_chainId '[]' > /dev/null; do sleep 0.2; done
 
 deployed() {
