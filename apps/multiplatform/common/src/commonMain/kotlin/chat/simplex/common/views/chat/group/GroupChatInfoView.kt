@@ -541,6 +541,7 @@ fun ModalData.GroupChatInfoLayout(
 ) {
   val listState = remember { appBarHandler.listState }
   val scope = rememberCoroutineScope()
+  val showMemberSearch = activeSortedMembers.size > 8
   KeyChangeEffect(chat.id) {
     scope.launch { listState.scrollToItem(0) }
   }
@@ -548,7 +549,7 @@ fun ModalData.GroupChatInfoLayout(
   val filteredMembers = remember(activeSortedMembers, searchText) {
     derivedStateOf {
       val s = searchText.value.text.trim().lowercase()
-      if (s.isEmpty()) activeSortedMembers else activeSortedMembers.filter { m -> m.anyNameContains(s) }
+      if (!showMemberSearch || s.isEmpty()) activeSortedMembers else activeSortedMembers.filter { m -> m.anyNameContains(s) }
     }
   }
   Box {
@@ -762,7 +763,7 @@ fun ModalData.GroupChatInfoLayout(
             }
             AddMembersButton(addMembersTitleId, tint, onAddMembersClick)
           }
-          if (activeSortedMembers.size > 8) {
+          if (showMemberSearch) {
             SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
               MemberListSearchRowView(searchText)
             }
