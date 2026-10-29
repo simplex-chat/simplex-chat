@@ -3357,4 +3357,5 @@
   <string name="v7_1_terminal_layout_descr">Easier to read replies from AI agents and bots.</string>
   <string name="v7_1_markdown">Markdown formatting</string>
   <string name="v7_1_markdown_descr">Headings, lists, tables and code.\nView Markdown files.</string>
+  <string name="v7_1_better_calls_descr">Reconnect when the connection drops.\nConfirm calls without end-to-end encryption.</string>
 </resources>

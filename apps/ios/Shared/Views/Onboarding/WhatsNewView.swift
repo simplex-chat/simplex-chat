@@ -726,6 +726,11 @@ private let versionDescriptions: [VersionDescription] = [
                 title: "Markdown formatting",
                 description: "Headings, lists, tables and code.\nView Markdown files."
             )),
+            .feature(Description(
+                icon: "video",
+                title: "Better calls",
+                description: "Reconnect when the connection drops.\nConfirm calls without end-to-end encryption."
+            )),
         ]
     ),
 ]
