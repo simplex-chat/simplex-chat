@@ -53,12 +53,12 @@ captions          laid out as the text of a close follow-up message: full row wi
 rule-only message rules as wide as the copy of the time; the time beside them unless a wider quote or header widens the rule (D31)
 item clip         none, so headings and emoji are drawn whole
 cards             link preview and chat link in the quote colour, message corner radius
-message text      onSurface at 87% in dark themes, both layouts
+message text      onSurface at 95% in dark themes, both layouts (user, 2026-10-29)
 line height       font size × 22/16 × f(w): message text, captions, quotes, code, headings, sender row, headers, event text, time (D1)
                   cards, files, voice and calls: classic until their redesign
                   f(w) = 1 − 0.1515 × (1 − w); w: L* contrast of the text colour divided by that of the message text, 0…1; names and the white time: f = 1
                   full line height for every line, one-line texts included (D7); extra space split by ascent and descent (Proportional, Trim.None)
-                  slope of f(w) set by the quote (D2); light theme: message 22sp, quote 19.6sp, event text and time 15.1sp; dark theme: quote 20.1sp
+                  slope of f(w) set by the quote (D2); light theme: message 22sp, quote 19.6sp, event text and time 15.1sp; dark theme: quote 19.9sp
 spacing level 1   lines of a quote
 spacing level 2   lines of a message; messages of one sender within 60 s; blocks of a message against the text next to them
 spacing level 3   messages of one sender 60 s or more apart; sender name → message or header; paragraph break; above a heading, also at the start of a message (D9b)
