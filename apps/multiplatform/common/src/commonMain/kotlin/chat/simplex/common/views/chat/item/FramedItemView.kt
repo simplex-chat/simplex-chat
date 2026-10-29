@@ -111,6 +111,17 @@ fun FramedItemView(
   }
 
   @Composable
+  fun RowScope.QuotedMsgOrGap(qi: CIQuote) {
+    if (terminal && qi.text.isEmpty() && qi.sender(membership()) == null) {
+      Spacer(Modifier.width(CHAT_ITEM_TEXT_PADDING - QUOTE_BAR_GAP))
+    } else {
+      Box(if (terminal) Modifier.weight(1f, fill = false) else Modifier.fillMaxWidth().weight(1f)) {
+        ciQuotedMsgView(qi)
+      }
+    }
+  }
+
+  @Composable
   fun HeaderText(caption: String, italic: Boolean, fontSize: TextUnit = 12.sp, modifier: Modifier = Modifier) {
     Text(
       modifier = modifier,
@@ -171,9 +182,7 @@ fun FramedItemView(
     ) {
       when (qi.content) {
         is MsgContent.MCImage -> {
-          Box(Modifier.fillMaxWidth().weight(1f)) {
-            ciQuotedMsgView(qi)
-          }
+          QuotedMsgOrGap(qi)
           val imageBitmap = remember(qi.content.image) { base64ToBitmap(qi.content.image) }
           Image(
             imageBitmap,
@@ -183,9 +192,7 @@ fun FramedItemView(
           )
         }
         is MsgContent.MCVideo -> {
-          Box(Modifier.fillMaxWidth().weight(1f)) {
-            ciQuotedMsgView(qi)
-          }
+          QuotedMsgOrGap(qi)
           val imageBitmap = remember(qi.content.image) { base64ToBitmap(qi.content.image) }
           Image(
             imageBitmap,
