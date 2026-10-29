@@ -457,6 +457,9 @@ ServiceNotConfigured:
 BadgeActive:
 - type: "badgeActive"
 
+StorePurchaseOpen:
+- type: "storePurchaseOpen"
+
 ServiceError:
 - type: "serviceError"
 - serviceError: [BadgeServiceErrorCode](#badgeserviceerrorcode)
@@ -494,6 +497,7 @@ CredentialNotVerified:
 - "code_expired"
 - "receipt_invalid"
 - "receipt_used"
+- "transfer_limited"
 - "test_purchase"
 - "internal"
 

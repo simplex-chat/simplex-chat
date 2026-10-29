@@ -14,6 +14,7 @@ struct BadgesYourBadgeView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) private var dismiss
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+    @ObservedObject private var store = BadgeStore.shared
     let badgeState: BadgeState
     var showsAsSheet: Bool = false
 
@@ -34,14 +35,42 @@ struct BadgesYourBadgeView: View {
                 Section {
                     BadgeSummary(badgeState: badgeState)
                 }
-                Section {
-                    Text(badgeState.paidThroughText)
-                } header: {
-                    Text("Ends")
-                        .foregroundColor(theme.colors.secondary)
-                } footer: {
-                    Text("Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out.")
-                        .foregroundColor(theme.colors.secondary)
+                if let subscription = badgeState.subscription {
+                    let ended = badgeState.paidThrough <= Date.now
+                    let date = badgeState.paidThroughText
+                    switch subscription.status {
+                    case .billingRetry:
+                        subscriptionSection(
+                            HStack(spacing: 6) {
+                                Image(systemName: "exclamationmark.triangle")
+                                    .foregroundColor(.red)
+                                Text("Payment problem")
+                            },
+                            footer: "The App Store could not charge your payment method and is retrying. Update it to keep your badge. Until the payment goes through, you cannot buy or redeem another badge."
+                        )
+                    case .cancelled where !ended:
+                        subscriptionSection(Text("Ends \(date)"), footer: "Your subscription is cancelled. The badge stays until \(date).")
+                    case .ended, .cancelled:
+                        subscriptionSection(Text("Ended"), footer: "Your subscription has ended. The badge will be removed from your profile.")
+                    case .renewing, .unknown, nil:
+                        if ended {
+                            subscriptionSection(Text("Renewing"), footer: "Your badge is renewed once the App Store charges your subscription. Until then you cannot buy or redeem another badge.")
+                        } else if let price = store.subscriptionPrice(badgeState.badgeType, planMonths: subscription.planMonths) {
+                            subscriptionSection(Text("Renews \(date) · \(price)"), footer: "Your subscription renews automatically. You can cancel it in the App Store.")
+                        } else {
+                            subscriptionSection(Text("Renews \(date)"), footer: "Your subscription renews automatically. You can cancel it in the App Store.")
+                        }
+                    }
+                } else {
+                    Section {
+                        Text(badgeState.paidThroughText)
+                    } header: {
+                        Text("Ends")
+                            .foregroundColor(theme.colors.secondary)
+                    } footer: {
+                        Text("Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out.")
+                            .foregroundColor(theme.colors.secondary)
+                    }
                 }
                 Section {
                     NavigationLink {
@@ -108,6 +137,23 @@ struct BadgesYourBadgeView: View {
         .navigationTitle(showsAsSheet ? "" : "Your badge")
         .navigationBarTitleDisplayMode(showsAsSheet ? .inline : .large)
         .modifier(ThemedBackground(grouped: true))
+    }
+
+    private func subscriptionSection(_ status: some View, footer: LocalizedStringKey) -> some View {
+        Section {
+            status
+            settingsRow("creditcard", color: theme.colors.secondary) {
+                Button("Manage subscription") {
+                    Task { await BadgeStore.shared.manageSubscriptions() }
+                }
+            }
+        } header: {
+            Text("Subscription")
+                .foregroundColor(theme.colors.secondary)
+        } footer: {
+            Text(footer)
+                .foregroundColor(theme.colors.secondary)
+        }
     }
 
     private func badgeTimestamp(_ date: Date) -> String {
