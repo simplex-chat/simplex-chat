@@ -3015,4 +3015,21 @@
     <string name="badges_privacy_policy">Política de privacidade</string>
     <string name="badges_subscription_renewing">A renovar</string>
     <string name="badges_subscription_renews">Renova %1$s</string>
+    <string name="badges_restore_purchases_footnote">Adiciona um dístico pelo qual pagou. A subscrição comprada com esta conta do Google Play move-se para este perfil e o outro perfil, ou dispositivo que o detinham perde-a.</string>
+    <string name="sign_messages_alert_desc">As mensagens enviadas antes vão mostrar que falta a assinatura aos subscritores que se juntem mais tarde.</string>
+    <string name="badges_subscription_renews_price">Renova %1$s · %2$s</string>
+    <string name="badges_renews_on">Renova em %1$s.</string>
+    <string name="badges_renews_on_for">Renova em %1$s por %2$s.</string>
+    <string name="badges_restore_failed">Restauro falhado</string>
+    <string name="badges_restore_purchases">Restaurar compras</string>
+    <string name="sign_messages_question">Assinar mensagens?</string>
+    <string name="badges_subscription">Subscrição</string>
+    <string name="badges_subscription_cancelled_title">Susbcrição cancelada</string>
+    <string name="badges_error_store_unreachable">Não foi possível contactar a loja.</string>
+    <string name="badges_payment_problem_subtitle">A loja não conseguiu cobrar o seu método de pagamento.</string>
+    <string name="badges_payment_problem_footer_store">A loja não conseguiu cobrar o seu método de pagamento e está a tentar novamente. Actualize-a para mandar o seu dístico. Enquanto o pagamento não for processado, não poderá comprar ou reivindicar um novo dístico.</string>
+    <string name="badges_error_not_on_sale">Este dístico não está à venda.</string>
+    <string name="badges_error_already_owned">Esta conta do Google Play já tem esta compra, noutro perfil ou dispositivo. Para adicionar a este perfil, use a recuperação de compras.</string>
+    <string name="badges_error_transfer_limited">Esta compra foi movida recentemente para outro dispositivo, ou perfil.</string>
+    <string name="badges_renewal_failed_unknown">Não foi possível renovar o seu dístico.</string>
 </resources>
