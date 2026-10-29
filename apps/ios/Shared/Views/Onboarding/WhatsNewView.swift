@@ -712,19 +712,19 @@ private let versionDescriptions: [VersionDescription] = [
                 title: "Safer channels 📢",
                 description: nil,
                 subfeatures: [
-                    ("person.badge.shield.checkmark", "Make subscribers moderators."),
-                    ("checkmark.seal", "Sign messages so relays can't alter them."),
+                    ("flag", "Make subscribers moderators."),
+                    ("checkmark.seal", "Sign messages so subscribers see if relays change them."),
                 ]
             )),
             .feature(Description(
                 icon: "terminal",
                 title: "Terminal chat layout",
-                description: "For chats with AI agents and bots, or any chat."
+                description: "Easier to read replies from AI agents and bots."
             )),
             .feature(Description(
                 icon: "text.alignleft",
-                title: "Markdown",
-                description: "Headings, lists, tables and code, in messages and files."
+                title: "Markdown formatting",
+                description: "Headings, lists, tables and code.\nView Markdown files."
             )),
         ]
     ),

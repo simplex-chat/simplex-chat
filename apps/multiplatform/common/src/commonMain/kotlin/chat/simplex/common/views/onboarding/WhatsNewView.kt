@@ -983,7 +983,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         titleId = MR.strings.v7_1_channels,
         descrId = null,
         subfeatures = listOf(
-          MR.images.ic_shield to MR.strings.v7_1_channels_moderators,
+          MR.images.ic_flag to MR.strings.v7_1_channels_moderators,
           MR.images.ic_verified to MR.strings.v7_1_channels_signed_messages,
         )
       ),
@@ -1003,16 +1003,16 @@ private val versionDescriptions: List<VersionDescription> = listOf(
 
 @Composable
 private fun SupporterBadgeWhatsNew() {
-  Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+  Row(Modifier.padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
       Text(
         stringResource(MR.strings.v7_1_supporter_badge_title),
-        style = MaterialTheme.typography.h3,
-        fontWeight = FontWeight.Bold
+        style = MaterialTheme.typography.h4,
+        fontWeight = FontWeight.Medium
       )
       Text(
         stringResource(MR.strings.v7_1_supporter_badge_body),
-        style = MaterialTheme.typography.body1,
+        fontSize = 15.sp,
         maxLines = 10
       )
     }
