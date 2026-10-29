@@ -28,6 +28,7 @@ schemaMigrations =
     ("20261022_name_late_wait", m20261022_name_late_wait, Just down_m20261022_name_late_wait),
     ("20261023_name_terms", m20261023_name_terms, Just down_m20261023_name_terms),
     ("20261027_name_invoiced_units", m20261027_name_invoiced_units, Just down_m20261027_name_invoiced_units),
+    ("20261028_name_terms_acceptance", m20261028_name_terms_acceptance, Just down_m20261028_name_terms_acceptance),
     ("20261029_name_record_changes", m20261029_name_record_changes, Just down_m20261029_name_record_changes)
   ]
 
@@ -621,6 +622,28 @@ down_m20261027_name_invoiced_units =
 DROP INDEX @idx_payments_overpaid;
 
 ALTER TABLE @payments DROP COLUMN invoiced_units;
+|]
+
+-- The owner's acceptance of the terms of the name's kind, stored with its reveal.
+m20261028_name_terms_acceptance :: Query
+m20261028_name_terms_acceptance =
+  withPrefix
+    servicePrefix
+    [sql|
+ALTER TABLE @name_registrations ADD COLUMN accept_terms BLOB;
+ALTER TABLE @name_registrations ADD COLUMN accept_nonce INTEGER;
+ALTER TABLE @name_registrations ADD COLUMN accept_signature BLOB;
+|]
+
+down_m20261028_name_terms_acceptance :: Query
+down_m20261028_name_terms_acceptance =
+  withPrefix
+    servicePrefix
+    [sql|
+DELETE FROM @name_transactions WHERE kind = 'accept';
+ALTER TABLE @name_registrations DROP COLUMN accept_signature;
+ALTER TABLE @name_registrations DROP COLUMN accept_nonce;
+ALTER TABLE @name_registrations DROP COLUMN accept_terms;
 |]
 
 -- An edit is one request of the page, relayed as one transaction; its signed changes are its rows here, one per nonce.

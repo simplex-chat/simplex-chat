@@ -5,10 +5,12 @@
 module Bots.StoreService.FakeEthNode
   ( FakeEthNode (..),
     CallAnswer (..),
+    TextAnswer (..),
     Fault (..),
     Gate,
     withFakeEthNode,
     fakeChainConfig,
+    fakeChainClient,
     answerCall,
     answerCallOnce,
     answerCallFrom,
@@ -29,6 +31,26 @@ module Bots.StoreService.FakeEthNode
     revertFault,
     fakeChainId,
     fakeController,
+    fakeNamePolicy,
+    listCommunityName,
+    answerListing,
+    setGeneralTerms,
+    setCommunityTerms,
+    answerText,
+    servedText,
+    fetchedTexts,
+    fakeTermsLink,
+    fakeTermsPath,
+    fakeTermsHash,
+    plainTerms,
+    fakeGeneralTerms,
+    fakeGeneralTermsText,
+    fakeNewGeneralTermsText,
+    fakeNewGeneralTerms,
+    fakeCommunityTerms,
+    fakeCommunityTermsText,
+    fakeNewCommunityTermsText,
+    fakeNewCommunityTerms,
     fakeSponsor,
     fakeBaseRegistrar,
     fakeResolver,
@@ -40,42 +62,51 @@ module Bots.StoreService.FakeEthNode
   )
 where
 
+import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async, async, cancel)
 import Control.Concurrent.STM
 import Control.Exception (finally)
+import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
 import qualified Data.ByteArray as BA
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as LB
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Word (Word64)
-import Network.HTTP.Types (badGateway502, badRequest400, hContentType, ok200)
-import Network.Wai (Application, responseLBS, strictRequestBody)
+import qualified Network.HTTP.Client as HTTP
+import Network.HTTP.Types (ResponseHeaders, Status, badGateway502, badRequest400, hContentType, methodGet, notFound404, ok200)
+import Network.Wai (Application, rawPathInfo, requestMethod, responseLBS, strictRequestBody)
 import qualified Network.Wai.Handler.Warp as Warp
 import Numeric (readHex, showHex)
-import Simplex.Messaging.Crypto (keccak256)
+import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
+import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 import StoreService.Config (ChainConfig (..))
-import StoreService.Names.Abi (hex)
-import StoreService.Names.Chain (TxRequest (..), decodeSignedTx)
+import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, addressWord, hex, selector, uint256)
+import StoreService.Names.Chain (ChainClient (..), TxRequest (..), decodeSignedTx, newChainClient)
 import System.Timeout (timeout)
 
 data FakeEthNode = FakeEthNode
   { fnUrl :: String,
+    fnPort :: Int,
     fnState :: TVar FakeState
   }
 
 data CallAnswer = Returns ByteString | Reverts ByteString
+
+data TextAnswer = TextAnswer Status ResponseHeaders LB.ByteString
 
 data Fault
   = RpcError Int Text (Maybe ByteString)
@@ -113,6 +144,8 @@ data FakeState = FakeState
     fsBlockTimes :: Map Word64 Word64,
     -- | the suggested tip and the base fee
     fsFees :: (Word64, Word64),
+    fsTexts :: Map Text TextAnswer,
+    fsFetched :: [Text],
     fsClosed :: Bool
   }
 
@@ -130,6 +163,74 @@ fakeController = address "0x0165878a594ca255338adfa4d48449f69242eb8f"
 fakeSponsor = address "0x9a676e781a523b5d0c0e43731313a708cb607508"
 fakeBaseRegistrar = address "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512"
 fakeResolver = address "0x2279b7a0a67db372996a5fab50d91eaa73d2ebe6"
+
+-- | The controller's name policy; it lists no community name unless a test answers otherwise, and links the terms texts the node serves.
+fakeNamePolicy :: Address
+fakeNamePolicy = address "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707"
+
+fakeGeneralTermsText, fakeNewGeneralTermsText, fakeCommunityTermsText, fakeNewCommunityTermsText :: ByteString
+fakeGeneralTermsText = "SimpleX general terms v1"
+fakeNewGeneralTermsText = "SimpleX general terms v2"
+fakeCommunityTermsText = "SimpleX community terms v1"
+fakeNewCommunityTermsText = "SimpleX community terms v2"
+
+fakeGeneralTerms, fakeNewGeneralTerms, fakeCommunityTerms, fakeNewCommunityTerms :: ByteString
+fakeGeneralTerms = fakeTermsHash fakeGeneralTermsText
+fakeNewGeneralTerms = fakeTermsHash fakeNewGeneralTermsText
+fakeCommunityTerms = fakeTermsHash fakeCommunityTermsText
+fakeNewCommunityTerms = fakeTermsHash fakeNewCommunityTermsText
+
+fakeTermsLink :: ByteString -> Text
+fakeTermsLink text = "https://git.simplex.chat" <> fakeTermsPath text <> "#sha256=" <> T.drop 2 (hex $ sha256Hash text)
+
+fakeTermsPath :: ByteString -> Text
+fakeTermsPath text = "/simplex-chat/simplex-chat/raw/commit/" <> T.take 40 (T.drop 2 $ hex $ keccak256 text) <> "/docs/terms.md"
+
+fakeTermsHash :: ByteString -> ByteString
+fakeTermsHash = keccak256 . encodeUtf8 . fakeTermsLink
+
+plainTerms :: Text
+plainTerms = T.drop 2 $ hex fakeGeneralTerms
+
+-- | The policy lists the name as a community name.
+listCommunityName :: FakeEthNode -> LabelHash -> IO ()
+listCommunityName node lh = answerListing node lh $ Returns $ uint256 (1 :: Int)
+
+-- | The policy's answer to whether the name is a community name.
+answerListing :: FakeEthNode -> LabelHash -> CallAnswer -> IO ()
+answerListing node (LabelHash lh) = answerCall node fakeNamePolicy (selector "communityNames(bytes32)" <> lh)
+
+-- | The policy links this text, which the node serves; an empty text is a link not set.
+setGeneralTerms, setCommunityTerms :: FakeEthNode -> ByteString -> IO ()
+setGeneralTerms node = setTerms node "generalTermsLink()"
+setCommunityTerms node = setTerms node "communityTermsLink()"
+
+setTerms :: FakeEthNode -> ByteString -> ByteString -> IO ()
+setTerms node getter text = do
+  answerText node (fakeTermsPath text) (servedText text)
+  answerCall node fakeNamePolicy (selector getter) $ Returns $ linkAnswer $ if B.null text then "" else fakeTermsLink text
+
+servedText :: ByteString -> TextAnswer
+servedText text = TextAnswer ok200 [(hContentType, "text/markdown; charset=utf-8")] (LB.fromStrict text)
+
+answerText :: FakeEthNode -> Text -> TextAnswer -> IO ()
+answerText FakeEthNode {fnState} path a = atomically $ modifyTVar' fnState $ \s -> s {fsTexts = M.insert path a $ fsTexts s}
+
+fetchedTexts :: FakeEthNode -> IO [Text]
+fetchedTexts FakeEthNode {fnState} = fsFetched <$> readTVarIO fnState
+
+linkAnswer :: Text -> ByteString
+linkAnswer link = abiTuple [Dynamic $ abiBytes $ encodeUtf8 link]
+
+defaultCall :: (ByteString, ByteString) -> Maybe CallAnswer
+defaultCall (to, calldata)
+  | to == unAddress fakeController && calldata == selector "namePolicy()" = Just $ Returns $ addressWord fakeNamePolicy
+  | to == unAddress fakeNamePolicy && selector "communityNames(bytes32)" `B.isPrefixOf` calldata = Just $ Returns $ uint256 (0 :: Int)
+  | to == unAddress fakeNamePolicy && calldata == selector "generalTermsLink()" = Just $ Returns $ linkAnswer $ fakeTermsLink fakeGeneralTermsText
+  | to == unAddress fakeNamePolicy && calldata == selector "communityTermsLink()" = Just $ Returns $ linkAnswer $ fakeTermsLink fakeCommunityTermsText
+  | to == unAddress fakeNamePolicy && selector "acceptedTerms(bytes32,address)" `B.isPrefixOf` calldata = Just $ Returns $ B.replicate 32 0
+  | to == unAddress fakeNamePolicy && selector "nonces(address)" `B.isPrefixOf` calldata = Just $ Returns $ uint256 (0 :: Int)
+  | otherwise = Nothing
 
 fakeRegistrarKey :: S.Secp256k1PrivateKey
 fakeRegistrarKey = either error id $ S.mkPrivateKey $ BA.replicate 32 0x46
@@ -156,10 +257,12 @@ withFakeEthNode action = do
           fsBlock = (1, genesisTime),
           fsBlockTimes = M.fromList [(0, genesisTime - blockSeconds), (1, genesisTime)],
           fsFees = (fakeTip, fakeBaseFee),
+          fsTexts = M.fromList [(fakeTermsPath t, servedText t) | t <- [fakeGeneralTermsText, fakeNewGeneralTermsText, fakeCommunityTermsText, fakeNewCommunityTermsText]],
+          fsFetched = [],
           fsClosed = False
         }
-  Warp.testWithApplication (pure $ fakeApp fnState) $ \port ->
-    action FakeEthNode {fnUrl = "http://127.0.0.1:" <> show port, fnState}
+  Warp.testWithApplication (pure $ fakeApp fnState) $ \fnPort ->
+    action FakeEthNode {fnUrl = "http://127.0.0.1:" <> show fnPort, fnPort, fnState}
       `finally` atomically (modifyTVar' fnState $ \s -> s {fsClosed = True})
 
 fakeChainConfig :: FakeEthNode -> ChainConfig
@@ -176,6 +279,14 @@ fakeChainConfig FakeEthNode {fnUrl} =
       cGasLimitCap = 8000000,
       cMaxFeePerGas = fakeMaxFeePerGas
     }
+
+fakeChainClient :: TVar ChaChaDRG -> FakeEthNode -> IO ChainClient
+fakeChainClient g node@FakeEthNode {fnPort} = do
+  c <- newChainClient g $ fakeChainConfig node
+  connect <- HTTP.managerRawConnection HTTP.defaultManagerSettings
+  let toNode hostAddress _ _ = connect hostAddress "127.0.0.1" fnPort
+  ccManager <- HTTP.newManager HTTP.defaultManagerSettings {HTTP.managerRawConnection = pure toNode, HTTP.managerTlsConnection = pure toNode}
+  pure c {ccManager}
 
 answerCall :: FakeEthNode -> Address -> ByteString -> CallAnswer -> IO ()
 answerCall FakeEthNode {fnState} to calldata a = atomically $ modifyTVar' fnState $ \s -> s {fsCalls = M.insert (unAddress to, calldata) a $ fsCalls s}
@@ -290,8 +401,22 @@ fakeApp st req respond = do
           atomically $ takeTMVar gRelease `orElse` (readTVar st >>= check . fsClosed)
           answered method params
         Nothing -> answered method params
-    Nothing -> respond $ responseLBS badRequest400 [] "not a JSON-RPC request"
+    Nothing
+      | requestMethod req == methodGet ->
+          fault "GET" >>= \case
+            Just (Slow delay) -> threadDelay delay >> text
+            _ -> text
+      | otherwise -> respond $ responseLBS badRequest400 [] "not a JSON-RPC request"
   where
+    text = do
+      let path = decodeUtf8 $ rawPathInfo req
+      answer_ <- atomically $ do
+        s@FakeState {fsTexts, fsFetched} <- readTVar st
+        writeTVar st s {fsFetched = path : fsFetched}
+        pure $ M.lookup path fsTexts
+      respond $ case answer_ of
+        Just (TextAnswer status headers body) -> responseLBS status headers body
+        Nothing -> responseLBS notFound404 [] ""
     request = J.withObject "request" $ \o -> (,) <$> o .: "method" <*> o .: "params"
     -- a gate holds one request only
     fault method = atomically $ do
@@ -318,7 +443,7 @@ answer st method params = do
                 Just a -> callAnswer (Just a) <$ writeTVar st s {fsCallsOnce = M.delete key fsCallsOnce}
                 Nothing -> pure $ callAnswer $ case M.lookup key fsCallsFrom of
                   Just (from, a) | at >= from -> Just a
-                  _ -> M.lookup key fsCalls
+                  _ -> M.lookup key fsCalls <|> defaultCall key
     ("eth_estimateGas", call : _)
       | Just (_, calldata) <- JT.parseMaybe callTarget call,
         Just revertData <- M.lookup calldata fsDryRuns ->

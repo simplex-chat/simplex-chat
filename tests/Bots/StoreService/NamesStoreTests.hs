@@ -5,7 +5,7 @@
 
 module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, insertInvoiceRow, invoiceStatus, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
 
-import Bots.StoreService.ConfigTests (termsVersion)
+import Bots.StoreService.FakeEthNode (plainTerms)
 import Bots.StoreService.WebTests (columnsOf, digestFixture, runMigrations, withServiceStore)
 import Control.Arrow ((&&&))
 import Control.Monad (forM, forM_, void)
@@ -29,6 +29,7 @@ import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Registration (TermsAcceptance (..))
 import StoreService.Names.Signatures (OrderFields (..), parseAnyCaseAddress, parseSignature)
 import StoreService.Names.Store
 import StoreService.Store (RevokeResult (..))
@@ -52,6 +53,8 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "makes taken orders not live and gives a taken paid order a balance of its price, none to a code order or a price of 0, and rolls back the balance tables and columns" testNameBalancesMigration
     it "gives the orders stored before it empty agreed terms, and rolls the column back keeping them" testNameTermsMigration
     it "adds the payments' invoiced units with the index of overpaid payments, and rolls both back keeping the payments" testInvoicedUnitsMigration
+    it "refuses a stored reveal whose acceptance columns are set only in part" testPartialAcceptance
+    it "rolls the acceptance columns back with the acceptance relays, which the code before them cannot read" testNameTermsAcceptanceMigration
     it "moves each stored edit's change to a row of its own, and rolls back keeping each edit's first change" testRecordChangesMigration
   describe "order hash" $ do
     it "is equal for the same order fields, and differs when any one field differs" testOrderHashFields
@@ -127,7 +130,7 @@ order label n =
       ofDuration = 69292800,
       ofCommitment = digestFixture n,
       ofSealed = "sealed-" <> label <> "-" <> T.pack (show n),
-      ofAgreedTerms = termsVersion
+      ofAgreedTerms = plainTerms
     }
 
 newReg :: Text -> Address -> OrderFields -> NewRegistration
@@ -191,7 +194,8 @@ testNamesColumns = withServiceStore $ \st -> do
     [ "registration_id", "label_hash", "length", "label", "secret", "contact_link", "channel_link", "intent_nonce", "intent_deadline", "intent_signature",
       "sealed", "owner", "commitment", "phase", "commit_tx", "commit_block", "register_tx", "register_block", "reveal_after", "reveal_before",
       "years", "duration", "expires_at", "price", "name_prepaid_code_id", "registered_at", "failed_at", "error", "created_at",
-      "updated_at", "version", "live", "order_hash", "method", "moves", "links_refused_at", "balance_source", "balance_used", "agreed_terms"
+      "updated_at", "version", "live", "order_hash", "method", "moves", "links_refused_at", "balance_source", "balance_used", "agreed_terms",
+      "accept_terms", "accept_nonce", "accept_signature"
     ]
   has "sx_badge_service_name_invoices" ["invoice_id", "registration_id", "provider_ref", "late_alerted_at", "late_alerted_units", "late_support"]
   has "sx_badge_service_name_balances" ["registration_id", "amount", "credited", "refunded", "reserved_by", "refunded_at", "created_at", "updated_at"]
@@ -205,7 +209,7 @@ testNamesDownUp :: IO ()
 testNamesDownUp = withServiceStore $ \st -> do
   let names = dropWhile ((/= "20261013_names") . name) storeServiceSchemaMigrations
       badgeColumns = mapM (fmap sort . columnsOf st) badgeTables
-  map name names `shouldBe` ["20261013_names", "20261022_drop_taken_codes", "20261022_name_balances", "20261022_name_late_wait", "20261023_name_terms", "20261027_name_invoiced_units", "20261029_name_record_changes"]
+  map name names `shouldBe` ["20261013_names", "20261022_drop_taken_codes", "20261022_name_balances", "20261022_name_late_wait", "20261023_name_terms", "20261027_name_invoiced_units", "20261028_name_terms_acceptance", "20261029_name_record_changes"]
   badgeBefore <- badgeColumns
   code <- issue st 1 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
@@ -328,6 +332,34 @@ testInvoicedUnitsMigration = withServiceStore $ \st -> do
   applied `shouldReturn` (False, False)
   payments `shouldReturn` stored
 
+testPartialAcceptance :: IO ()
+testPartialAcceptance = withServiceStore $ \st -> do
+  placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
+  r <- reg st "r1"
+  write st r {nrReveal = Just reveal} `shouldReturn` Written 2
+  withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET accept_terms = ? WHERE registration_id = 'r1'" (Only $ DB.Binary $ digestFixture 1)
+  reg st "r1" `shouldThrow` anyException
+
+testNameTermsAcceptanceMigration :: IO ()
+testNameTermsAcceptanceMigration = withServiceStore $ \st -> do
+  let acceptance = [m | m@Migration {name = "20261028_name_terms_acceptance"} <- storeServiceSchemaMigrations]
+      applied :: IO Bool
+      applied = elem "accept_terms" <$> columnsOf st "sx_badge_service_name_registrations"
+      kinds :: IO [Text]
+      kinds = withTransaction st $ \db -> map fromOnly <$> DB.query_ db "SELECT kind FROM sx_badge_service_name_transactions ORDER BY kind"
+      r1 = RegistrationId "r1"
+      tx :: Word8 -> NewTransaction
+      tx n = NewTransaction {ntxRaw = digestFixture (n + 100), ntxHash = TxHash $ digestFixture n, ntxNonce = fromIntegral n}
+  length acceptance `shouldBe` 1
+  placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
+  void $ withTransaction st $ \db -> sequence [insertTransaction db (TxCommit r1) (tx 1) (at 1), insertTransaction db (TxAccept r1) (tx 2) (at 2)]
+  kinds `shouldReturn` ["accept", "commit"]
+  runMigrations st $ MTRDown (mapMaybe toDownMigration acceptance)
+  applied `shouldReturn` False
+  kinds `shouldReturn` ["commit"]
+  runMigrations st $ MTRUp acceptance
+  applied `shouldReturn` True
+
 testRecordChangesMigration :: IO ()
 testRecordChangesMigration = withServiceStore $ \st -> do
   let changesMigration = [m | m@Migration {name = "20261029_name_record_changes"} <- storeServiceSchemaMigrations]
@@ -414,7 +446,7 @@ testCreatePaid = withServiceStore $ \st -> do
         nrOwner = ownerA,
         nrCommitment = ofCommitment o,
         nrSealed = ofSealed o,
-        nrAgreedTerms = termsVersion,
+        nrAgreedTerms = plainTerms,
         nrPhase = PUnpaid,
         nrYears = twoYears,
         nrPrice = price,
@@ -541,7 +573,8 @@ reveal =
       rvChannelLink = Nothing,
       rvNonce = 3,
       rvDeadline = 1792915140,
-      rvSignature = signature
+      rvSignature = signature,
+      rvAcceptance = Nothing
     }
 
 testVersionBumps :: IO ()
@@ -567,7 +600,7 @@ testRoundTrip = withServiceStore $ \st -> do
   let changed =
         r
           { nrPhase = PRegistered,
-            nrReveal = Just reveal {rvChannelLink = Just "simplex:/c#xyz"},
+            nrReveal = Just reveal {rvChannelLink = Just "simplex:/c#xyz", rvAcceptance = Just TermsAcceptance {taTermsHash = digestFixture 10, taNonce = 4, taSignature = signature}},
             nrCommitTx = Just (TxHash $ digestFixture 8),
             nrCommitBlock = Just 100,
             nrRegisterTx = Just (TxHash $ digestFixture 9),
@@ -580,7 +613,7 @@ testRoundTrip = withServiceStore $ \st -> do
             nrError = Just "The name was not signed in time",
             nrLinksRefusedAt = Just (at 4),
             nrMoves = 2,
-            nrAgreedTerms = termsVersion <> "/community"
+            nrAgreedTerms = "community/" <> plainTerms
           }
   write st changed `shouldReturn` Written 2
   reg st "r1" `shouldReturn` changed {nrVersion = 2, nrLive = False, nrUpdatedAt = at 1}
@@ -666,7 +699,7 @@ testWriteMeetsLiveOrder = withServiceStore $ \st -> do
 testRetarget :: IO ()
 testRetarget = withServiceStore $ \st -> do
   let o = order "alicebakery" 1
-      o' = (order "alicebakers" 2) {ofAgreedTerms = termsVersion <> "/community"}
+      o' = (order "alicebakers" 2) {ofAgreedTerms = "community/" <> plainTerms}
   placePaid st "r1" ownerA o (at 60) `shouldReturn` Right ()
   r <- reg st "r1"
   let failed =
@@ -930,6 +963,8 @@ testTransactions = withServiceStore $ \st -> do
   map (\NameTransaction {ntId, ntFor, ntMinedBlock, ntStatus, ntSentAt} -> (ntId, ntFor, ntMinedBlock, ntStatus, ntSentAt)) ofRegistration
     `shouldBe` [(commitId, TxCommit r1, Just 77, TSMined, at 1), (registerId, TxRegister r1, Nothing, TSPending, at 3)]
   map ntStatus <$> withTransaction st (\db -> editTransactions db editId) `shouldReturn` [TSReverted]
+  _ <- withTransaction st $ \db -> insertTransaction db (TxAccept r1) (tx 4) (at 4)
+  map ntFor <$> withTransaction st pendingTransactions `shouldReturn` [TxRegister r1, TxAccept r1]
 
 testTransactionFromStatus :: IO ()
 testTransactionFromStatus = withServiceStore $ \st -> do

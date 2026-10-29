@@ -28,6 +28,7 @@ module StoreService.Names.Orders
     codeOrderInsert,
     checkTimestamp,
     checkDuration,
+    orderYears,
     checkTerms,
     checkNameFree,
     checkPrice,
@@ -49,6 +50,7 @@ import qualified Data.Aeson.KeyMap as KM
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
+import Data.Functor ((<&>))
 import Data.Int (Int64)
 import Data.Maybe (catMaybes, isJust)
 import Data.Scientific (toBoundedInteger)
@@ -67,7 +69,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Log (logError, logWarn)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
-import StoreService.Names.Community (communityJSON, termsFor, termsJSON)
+import StoreService.Names.Community (agreedTermsHash, communityJSON, nameTerms, readableTerms, termsFor, termsJSON, yearsFor)
 import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
@@ -109,6 +111,7 @@ data OrderRefusal
   | ORBalanceChanged (Maybe Balance)
   | -- | the current terms and the name's community entry, as the answer carries them
     ORTermsChanged J.Value J.Value
+  | ORTermsUnavailable (Maybe Int)
   | ORCodesOnly
   deriving (Eq, Show)
 
@@ -135,9 +138,10 @@ data Landing = LNotLanded | LRegistered Int64 | LChanged | LUnread
 maxSealedChars :: Int
 maxSealedChars = 11095
 
--- | The terms version, of up to 32 characters, and a suffix such as /community.
+-- | The terms version pages signed before, of up to 32 characters, and for a community name /community/ and the 64 hex digits
+-- of its terms' hash, with a margin; the terms' hash signed now is shorter.
 maxAgreedTermsChars :: Int
-maxAgreedTermsChars = 48
+maxAgreedTermsChars = 112
 
 -- | How far a signed request's timestamp may be from the service's clock.
 signedRequestSeconds :: Integer
@@ -271,10 +275,21 @@ checkDuration NamesConfig {nTermStart, nTermSlackSeconds} now years duration = d
       expected = max 0 (unixSeconds nTermStart - unixSeconds now)
   when (free < 0 || abs (free - expected) > toInteger nTermSlackSeconds) $ Left ORBadRequest
 
--- | The terms the order signed must be the current ones for its name, the community variant for a listed name.
-checkTerms :: NamesConfig -> OrderFields -> Either OrderRefusal ()
-checkTerms cfg OrderFields {ofLabelHash, ofAgreedTerms} =
-  unless (ofAgreedTerms == termsFor cfg ofLabelHash) $ Left $ ORTermsChanged (termsJSON cfg) (communityJSON cfg ofLabelHash)
+-- | The years the payment covers, or communityYears for an order signing community terms; 'checkTerms' refuses those terms
+-- for any other name.
+orderYears :: OrderFields -> Int -> Int
+orderYears OrderFields {ofAgreedTerms} = yearsFor (isJust $ agreedTermsHash ofAgreedTerms)
+
+-- | The terms the order signed must be the current ones for its name, the community terms for a name the policy lists,
+-- which cannot be ordered while a buyer cannot read them.
+checkTerms :: NamesConfig -> Contracts -> OrderFields -> IO (Either OrderRefusal ())
+checkTerms cfg ct OrderFields {ofLabelHash, ofAgreedTerms} =
+  nameTerms ct ofLabelHash >>= \case
+    Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: an order's terms check failed: " <> tshow e)
+    Right (listed, terms) ->
+      readableTerms ct terms <&> \case
+        Left wait -> Left $ ORTermsUnavailable wait
+        Right t -> unless (ofAgreedTerms == termsFor listed t) $ Left $ ORTermsChanged (termsJSON $ Just t) (communityJSON cfg ofLabelHash listed)
 
 -- | A name being registered here searches as available, so it is checked here too.
 checkNameFree :: Contracts -> DBStore -> LabelHash -> IO (Either OrderRefusal ())
@@ -315,10 +330,10 @@ checkMoveMeets st NameRegistration {nrId = rid, nrOwner} OrderFields {ofLabelHas
   orders <- withTransaction st $ \db -> getLiveOrders db ofCommitment nrOwner ofLabelHash now
   pure $ if any ((/= rid) . nrId . loRegistration) orders then Left OROrderExists else Right ()
 
--- | The new name's chain price for the order's years, at most what the order is worth, becomes its price.
-checkMovePrice :: Contracts -> NameRegistration -> Int -> IO (Either OrderRefusal Int)
-checkMovePrice ct NameRegistration {nrPrice, nrYears} len =
-  chainPriceCents ct len nrYears >>= \case
+-- | The new name's chain price for its years, at most what the order is worth, becomes its price.
+checkMovePrice :: Contracts -> NameRegistration -> Int -> Int -> IO (Either OrderRefusal Int)
+checkMovePrice ct NameRegistration {nrPrice} len years =
+  chainPriceCents ct len years >>= \case
     Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: a move's price read failed: " <> tshow e)
     Right price
       | price > nrPrice -> pure $ Left $ ORPriceTooHigh price

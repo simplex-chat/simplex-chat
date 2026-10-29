@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Each registration from queued to registered, taken or failed: its commit, the wait for the page's reveal, and its register;
+-- | Each registration from queued to registered, taken or failed: its commit, the wait for the page's reveal, its acceptance relay, and its register;
 -- and Try again, which queues a failed one again. A step starts from the stored registration, the sender's transactions in flight
 -- and the chain, so a restart resumes any phase.
 module StoreService.Names.Worker
@@ -36,15 +36,15 @@ import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Util (tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Log (logError, logInfo, logWarn, safely, safelyWith)
 import StoreService.Names.Chain (Block (..), ChainClient, ChainError (..), TxHash, blockAt)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, releaseCode, reserveCode)
-import StoreService.Names.Contracts (CommitmentAges (..), commitmentAges, commitmentTime, controllerAvailable, sponsorNonce)
+import StoreService.Names.Contracts (CommitmentAges (..), acceptedTerms, commitmentAges, commitmentTime, communityName, controllerAvailable, namePolicy, sponsorNonce)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), WriteRefusal (..), confirmLanded, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
-import StoreService.Names.Registration (commitCalldata, registerWithCreditCalldata, sponsorDomain, verifyRegisterIntent)
+import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcome, inFlightTransaction, ptHash, submitTransaction)
@@ -257,18 +257,56 @@ commitSent w now r@NameRegistration {nrPhase, nrCommitTx} p
   | nrPhase == PCommitting && nrCommitTx == Just (ptHash p) = pure $ Await p
   | otherwise = save w now r {nrPhase = PCommitting, nrCommitTx = Just $ ptHash p, nrCommitBlock = Nothing}
 
--- | Waits for the page's reveal until the lapse, and for revealAfter, then registers.
+-- | Waits for the page's reveal until the lapse, has its acceptance held by the name policy, waits for revealAfter, then registers.
 committed :: Worker -> UTCTime -> NameRegistration -> IO Next
-committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAfter} =
+committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAfter, nrRevealBefore} =
   inFlightTransaction wkSender (TxRegister nrId) >>= \case
     Just p -> registerSent w now r p
     Nothing -> case nrReveal of
       Nothing -> case lapseMoment r of
         Just lapse | now <= lapse -> pure $ waitUntil r $ addUTCTime chainSecond lapse
         _ -> save w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notSignedInTime}
-      Just rv -> case secondsTime . toInteger <$> nrRevealAfter of
-        Just revealAfter | now < revealAfter -> pure $ waitUntil r revealAfter
-        _ -> sendRegister w now r rv
+      Just rv@NameReveal {rvAcceptance, rvDeadline} ->
+        (pure (if unlapsed then rvAcceptance else Nothing) $>>= relayAcceptance w now r rvDeadline) >>= \case
+          Just next -> pure next
+          Nothing -> case secondsTime . toInteger <$> nrRevealAfter of
+            Just revealAfter | now < revealAfter -> pure $ waitUntil r revealAfter
+            _ -> sendRegister w now r rv
+  where
+    -- past the commitment's lapse no acceptance is relayed, as the policy would commit again; the register's dry run then
+    -- fails the order as it does a plain name's
+    unlapsed = all ((now <=) . secondsTime . toInteger) nrRevealBefore
+
+-- | The relay of the reveal's acceptance to the name policy, sent without waiting for revealAfter; Nothing once the policy
+-- stores that acceptance. One signed for another policy, before a setNamePolicy, or for the other kind of terms, clears the
+-- reveal for the page to sign again; the relay's dry run's revert is judged as a register's is, unless the policy holds the
+-- acceptance, which another sent first.
+relayAcceptance :: Worker -> UTCTime -> NameRegistration -> Word64 -> TermsAcceptance -> IO (Maybe Next)
+relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesConfig {nChain = ChainConfig {cChainId}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment, nrLabelHash} deadline a@TermsAcceptance {taTermsHash} =
+  inFlightTransaction wkSender (TxAccept regId) >>= \case
+    Just p -> pure $ Just $ Await p
+    Nothing ->
+      runExceptT ((,,) <$> ExceptT (namePolicy oeContracts) <*> ExceptT (communityName oeContracts nrLabelHash) <*> ExceptT held) >>= \case
+        Left e -> pure $ Just $ failure r e
+        Right (policy, listed, accepted)
+          | accepted == taTermsHash -> pure Nothing
+          | otherwise -> Just <$> relay policy (termsKind listed)
+  where
+    held = acceptedTerms oeContracts nrCommitment nrOwner
+    relay policy kind =
+      verifyAcceptance (policyDomain cChainId policy) kind nrOwner nrCommitment deadline a >>= \case
+        Left refusal -> do
+          logWarn $ "names worker: registration " <> rid <> ": its stored acceptance is refused, " <> T.pack refusal
+          save w now r {nrReveal = Nothing}
+        Right () ->
+          submitTransaction wkSender (TxAccept regId) policy (acceptCalldata kind nrCommitment nrOwner deadline a) >>= \case
+            Right p -> pure $ Await p
+            Left SEInFlight -> pure Again
+            Left (SEChain (ChainReverted reason)) ->
+              held >>= \case
+                Right accepted | accepted == taTermsHash -> pure Again
+                _ -> judge w now r reason
+            Left e -> pure $ failure r e
 
 -- | The stored intent is checked before its dry run, whose revert decides at once; no label turn is held across the send.
 sendRegister :: Worker -> UTCTime -> NameRegistration -> NameReveal -> IO Next
@@ -300,7 +338,7 @@ registering w@Worker {wkSender} now r@NameRegistration {nrId} =
     Nothing -> judge w now r Nothing
 
 -- | A register that did not go through, by its dry run's revert or once every transaction settled: registered when one mined
--- with status 1 or the owner holds the name; committed again on InvalidNonce, for the page to sign again; taken on any revert
+-- with status 1 or the owner holds the name; committed again on InvalidNonce or a refused terms acceptance, for the page to sign again; taken on any revert
 -- while the name is not available at the latest block; failed otherwise, unless the dry run named the name as gone.
 judge :: Worker -> UTCTime -> NameRegistration -> Maybe RevertName -> IO Next
 judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {nrReveal} reason =
@@ -310,7 +348,7 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
       LChanged -> pure (Nothing, Again)
       LUnread -> pure (Nothing, Retry (nrVersion r) "the register check's chain read failed")
       LNotLanded -> case reason of
-        Just RNInvalidNonce -> store w now r {nrReveal = Nothing}
+        Just e | e `elem` [RNInvalidNonce, RNTermsNotAccepted, RNTermsMismatch] -> store w now r {nrReveal = Nothing}
         Just RNCommitmentTooNew -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
         _ -> case nrReveal of
           Just NameReveal {rvLabel} ->

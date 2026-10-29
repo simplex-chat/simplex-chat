@@ -132,6 +132,7 @@ import Simplex.Messaging.Util (maybeFirstRow, tshow)
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Registration (TermsAcceptance (..))
 import StoreService.Names.Signatures (OrderFields (..), parseSignature)
 import StoreService.Store (RevokeResult (..))
 import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, newInvoiceId, textToCryptoCurrency, truncateToSecond, unfundedQuery)
@@ -186,7 +187,9 @@ data NameReveal = NameReveal
     rvChannelLink :: Maybe Text,
     rvNonce :: Word64,
     rvDeadline :: Word64,
-    rvSignature :: RecoverableSignature
+    rvSignature :: RecoverableSignature,
+    -- | the owner's acceptance of the terms of the name's kind
+    rvAcceptance :: Maybe TermsAcceptance
   }
   deriving (Eq, Show)
 
@@ -405,7 +408,7 @@ data NewPrepaidCode = NewPrepaidCode
 data CodeHashTaken = CodeHashTaken
   deriving (Eq, Show)
 
-data TxFor = TxCommit RegistrationId | TxRegister RegistrationId | TxEdit Int64
+data TxFor = TxCommit RegistrationId | TxAccept RegistrationId | TxRegister RegistrationId | TxEdit Int64
   deriving (Eq, Show)
 
 -- | A dropped transaction has no receipt and its registrar nonce is used.
@@ -587,7 +590,7 @@ registrationColumns =
       r.price, r.method, ni.invoice_id, r.name_prepaid_code_id, r.label, r.secret, r.contact_link, r.channel_link, r.intent_nonce, r.intent_deadline,
       r.intent_signature, r.commit_tx, r.commit_block, r.register_tx, r.register_block, r.reveal_after, r.reveal_before, r.expires_at, r.registered_at,
       r.failed_at, r.error, r.live, r.order_hash, r.moves, r.links_refused_at, r.created_at, r.updated_at, r.balance_source, r.balance_used,
-      r.agreed_terms
+      r.agreed_terms, r.accept_terms, r.accept_nonce, r.accept_signature
   |]
 
 registrationFrom :: Query
@@ -606,7 +609,7 @@ type RegistrationRow =
     :. (Int, Maybe Text, Maybe Text, Maybe Int64, Maybe Text, Maybe (Binary ByteString), Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
     :. (Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe Int64, Maybe (Binary ByteString), Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
     :. (Maybe UTCTime, Maybe Text, BoolInt, Binary ByteString, Int, Maybe UTCTime, UTCTime, UTCTime, Maybe Text, Int)
-    :. Only Text
+    :. (Text, Maybe (Binary ByteString), Maybe Int64, Maybe (Binary ByteString))
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
 toRegistration
@@ -614,7 +617,7 @@ toRegistration
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
       :. (signature_, commitTx, commitBlock, registerTx, registerBlock, revealAfter, revealBefore, expiresAt, nrRegisteredAt)
       :. (nrFailedAt, nrError, BI nrLive, Binary nrOrderHash, nrMoves, nrLinksRefusedAt, nrCreatedAt, nrUpdatedAt, source_, nrBalanceUsed)
-      :. Only nrAgreedTerms
+      :. (nrAgreedTerms, acceptTerms_, acceptNonce_, acceptSignature_)
     ) = do
     nrOwner <- decodeAddress owner
     nrPayment <- case (method_, invoiceId_, codeId_) of
@@ -626,7 +629,11 @@ toRegistration
       (Nothing, Nothing, Nothing, Nothing, Nothing) -> Right Nothing
       (Just rvLabel, Just (Binary rvSecret), Just nonce, Just deadline, Just (Binary sig)) -> do
         rvSignature <- decodeSignature sig
-        Right $ Just NameReveal {rvLabel, rvSecret, rvContactLink = nrContactLink, rvChannelLink = nrChannelLink, rvNonce = word64 nonce, rvDeadline = word64 deadline, rvSignature}
+        rvAcceptance <- case (acceptTerms_, acceptNonce_, acceptSignature_) of
+          (Nothing, Nothing, Nothing) -> Right Nothing
+          (Just (Binary taTermsHash), Just n, Just (Binary s)) -> (\taSignature -> Just TermsAcceptance {taTermsHash, taNonce = word64 n, taSignature}) <$> decodeSignature s
+          _ -> Left $ "name_registrations acceptance: " <> rid
+        Right $ Just NameReveal {rvLabel, rvSecret, rvContactLink = nrContactLink, rvChannelLink = nrChannelLink, rvNonce = word64 nonce, rvDeadline = word64 deadline, rvSignature, rvAcceptance}
       _ -> Left $ "name_registrations reveal: " <> rid
     pure
       NameRegistration
@@ -753,7 +760,7 @@ updateRegistration db r now = do
         UPDATE sx_badge_service_name_registrations
         SET version = version + 1, label_hash = ?, length = ?, duration = ?, commitment = ?, sealed = ?, agreed_terms = ?, phase = ?, price = ?,
           label = ?, secret = ?, contact_link = ?, channel_link = ?, intent_nonce = ?, intent_deadline = ?, intent_signature = ?,
-          commit_tx = ?, commit_block = ?, register_tx = ?, register_block = ?, reveal_after = ?, reveal_before = ?, expires_at = ?,
+          accept_terms = ?, accept_nonce = ?, accept_signature = ?, commit_tx = ?, commit_block = ?, register_tx = ?, register_block = ?, reveal_after = ?, reveal_before = ?, expires_at = ?,
           registered_at = ?, failed_at = ?, error = ?, live = ?, moves = ?, links_refused_at = ?, updated_at = ?
         WHERE registration_id = ? AND version = ?
           AND (? = 0 OR (live = 1 AND NOT EXISTS (
@@ -763,6 +770,7 @@ updateRegistration db r now = do
       |]
       ( (Binary lh, nrLength, int64 nrDuration, Binary nrCommitment, nrSealed, nrAgreedTerms, nrPhase, nrPrice)
           :. (rvLabel <$> nrReveal, Binary . rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, Binary . serializeSignature . rvSignature <$> nrReveal)
+          :. (Binary . taTermsHash <$> acceptance, int64 . taNonce <$> acceptance, Binary . serializeSignature . taSignature <$> acceptance)
           :. (txHashField <$> nrCommitTx, int64 <$> nrCommitBlock, txHashField <$> nrRegisterTx, int64 <$> nrRegisterBlock, int64 <$> nrRevealAfter, int64 <$> nrRevealBefore, int64 <$> nrExpiresAt)
           :. (truncateToSecond <$> nrRegisteredAt, truncateToSecond <$> nrFailedAt, nrError, BI live, nrMoves, truncateToSecond <$> nrLinksRefusedAt, truncateToSecond now)
           :. (rid, nrVersion, BI live, rid, Binary nrCommitment, Binary $ unAddress nrOwner, Binary lh)
@@ -772,6 +780,7 @@ updateRegistration db r now = do
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash = LabelHash lh, nrLength, nrDuration, nrOwner, nrCommitment, nrSealed, nrAgreedTerms, nrPhase, nrPrice, nrReveal} = r
     NameRegistration {nrCommitTx, nrCommitBlock, nrRegisterTx, nrRegisterBlock, nrRevealAfter, nrRevealBefore, nrExpiresAt} = r
     NameRegistration {nrRegisteredAt, nrFailedAt, nrError, nrMoves, nrLinksRefusedAt} = r
+    acceptance = rvAcceptance =<< nrReveal
     live = orderLive r
     refusal =
       DB.query db "SELECT version, live FROM sx_badge_service_name_registrations WHERE registration_id = ?" (Only rid) >>= \case
@@ -1353,6 +1362,7 @@ revokePrepaidCode db codeHash now = do
 txKind :: TxFor -> (Text, Maybe Text, Maybe Int64)
 txKind = \case
   TxCommit (RegistrationId rid) -> ("commit", Just rid, Nothing)
+  TxAccept (RegistrationId rid) -> ("accept", Just rid, Nothing)
   TxRegister (RegistrationId rid) -> ("register", Just rid, Nothing)
   TxEdit editId -> ("edit", Nothing, Just editId)
 
@@ -1392,6 +1402,7 @@ toTransaction :: TransactionRow -> Either Text NameTransaction
 toTransaction (ntId, kind, rid_, editId_, Binary ntRaw, hash, nonce, ntSentAt, block, ntStatus) = do
   ntFor <- case (kind, rid_, editId_) of
     ("commit", Just rid, Nothing) -> Right $ TxCommit $ RegistrationId rid
+    ("accept", Just rid, Nothing) -> Right $ TxAccept $ RegistrationId rid
     ("register", Just rid, Nothing) -> Right $ TxRegister $ RegistrationId rid
     ("edit", Nothing, Just editId) -> Right $ TxEdit editId
     _ -> Left $ "name_transactions.kind: " <> kind

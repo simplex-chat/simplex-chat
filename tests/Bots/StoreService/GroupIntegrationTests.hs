@@ -24,8 +24,8 @@ import StoreService.Service (ServiceState (..), checkDevChain, newServiceState, 
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Waiters (newWaiters)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
-import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, termsVersion)
-import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), answerCall, awaitSent, setFault, withFakeEthNode)
+import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection)
+import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), answerCall, awaitSent, plainTerms, setFault, withFakeEthNode)
 import Bots.StoreService.WebTests (capturingStderr, digestFixture)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import qualified Bots.StoreService.NamesBalancesTests as Balances
@@ -148,7 +148,7 @@ namesBootTests = do
   it "warns naming the indexes of trusted dev_keys, and says nothing without them" testDevKeysWarned
   it "refuses dev_keys unless the node's own chain id is 31337" testDevKeysNodeChain
   it "boots codes-only, refusing paid name orders 403 codes_only and answering code orders and code checks, the badges shell as built" testNamesBootCodesOnly
-  it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, code checks and orders under one limit, and another name and retries under another" testNamesBoot
+  it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, the community terms and registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, code checks and orders under one limit, and another name and retries under another" testNamesBoot
 
 testDevKeysWarned :: HasCallStack => TestParams -> IO ()
 testDevKeysWarned _ = do
@@ -196,6 +196,10 @@ testNamesBoot ps = do
     answer register {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refused "bad_request"
     search <- request $ "/api/name/" <> T.unpack aliceHex <> "?length=5"
     answer search `shouldReturn` refused "invalid_name"
+    terms <- request "/api/terms/0x12"
+    answer terms `shouldReturn` refused "bad_request"
+    termsPosted <- httpLbs terms {method = "POST"} mgr
+    (statusCode $ responseStatus termsPosted, lookup "Allow" $ responseHeaders termsPosted) `shouldBe` (405, Just "GET")
     registration <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g"
     answer registration `shouldReturn` (404, Just $ J.object ["error" J..= ("not_found" :: Text)])
     posted <- httpLbs registration {method = "POST"} mgr
@@ -223,7 +227,7 @@ testNamesBoot ps = do
               "sealed" J..= ("sealed" :: Text),
               "price" J..= (10000 :: Int),
               "balance" J..= (10000 :: Int),
-              "terms" J..= termsVersion,
+              "terms" J..= plainTerms,
               "timestamp" J..= (1792574100 :: Int),
               "signature" J..= ("0x" <> T.replicate 32 "11" <> T.replicate 32 "22" <> "1b")
             ]
