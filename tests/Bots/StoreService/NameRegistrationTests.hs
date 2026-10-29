@@ -38,7 +38,7 @@ badgeNameRegistrationTests = describe "StoreService names: registration" $ do
     it "rejects an intent signed by another wallet" $ testVerifyOtherSigner g
     it "rejects an intent past its deadline" $ testVerifyExpired g
     it "rejects a secret that is not 32 bytes" $ testVerifyShortSecret g
-  -- viem's hashTypedData and encodeFunctionData against the SimplexNamePolicy ABI of ens-contracts 23bc1b3
+  -- viem's hashTypedData and encodeFunctionData against the SimplexNamePolicy ABI of ens-contracts 6ccb5c5
   describe "terms acceptance" $ do
     it "hashes AcceptGeneralTerms and AcceptCommunityTerms as the policy does" testAcceptanceDigest
     it "encodes commitUnderGeneralTermsWithSig and commitUnderCommunityTermsWithSig" testAcceptCalldata
