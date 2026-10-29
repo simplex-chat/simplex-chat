@@ -998,7 +998,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         descrId = MR.strings.v7_1_markdown_descr
       ),
       VersionFeature.FeatureDescription(
-        icon = MR.images.ic_videocam,
+        icon = MR.images.ic_call,
         titleId = MR.strings.v6_1_better_calls,
         descrId = MR.strings.v7_1_better_calls_descr
       ),
