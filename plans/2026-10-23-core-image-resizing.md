@@ -313,6 +313,8 @@ Bot libraries:
 - The explicit functions stay public, for other sizes.
 - Doc comments:
   - `resizeImage` and `resize_image`: "Resize image to the app size limit: JPEG or PNG for an image, a data URI for a preview", with a final period in Python
+  - Node `chatResizeImageUri`: "Resize image to a data URI of at most maxSize characters"
+  - Node `chatResizeImage`: "Resize image to JPEG or PNG of at most maxSize bytes"
   - Node `ImageSize`: "App image size limit"
   - Python `ImageSize`: none
 - The core module texts name image resizing; in Python, with `resize_image`, `chat_resize_image` and `chat_resize_image_uri`.
@@ -360,7 +362,7 @@ Native code:
 - In Windows builds, `dist-newstyle/src/hs-jpeg-t*` and `dist-newstyle/src/JuicyPixe*` are removed beside `direct-sq*` and `simplexmq*`.
 
 License notices, in `docs/dependencies`:
-- `README.md`: mozjpeg, with the IJG sentence, and stb_image_resize
+- `README.md`: Compact ICC Profiles, libspng, miniz, mozjpeg with the IJG sentence, and stb_image_resize
 - `HASKELL.md`: JuicyPixels, JuicyPixels-jpeg-turbo, JuicyPixels-spng and JuicyPixels-stbir as direct dependencies, jpeg-turbo as an indirect one; the five are added to the "Also depended upon by" and "Depended upon by" cells of the packages they depend on
 - `licences/`: the license files of each, copied from the pinned commits; libspng's BSD-2-Clause `LICENSE` and the libpng-2.0 notice of `spng.c`, and miniz's MIT `LICENSE`; Compact-ICC-Profiles' CC0 1.0 `license`, for the profile of D25
 
@@ -726,8 +728,14 @@ CI, Claude-driven app tests (run with `claude=true`, which needs the `app-sim-cl
 
 License notices, `docs/dependencies/`:
 - `README.md:3`:
-  `[mozjpeg](https://github.com/mozilla/mozjpeg): JPEG decoding and encoding of resized images ([IJG and BSD-3-clause](./licences/apps/mozjpeg/LICENSE.md)). This software is based in part on the work of the Independent JPEG Group.`
+  `[Compact ICC Profiles](https://github.com/saucecontrol/Compact-ICC-Profiles): Display P3 colour profile of resized images ([CC0 1.0](./licences/apps/compact-icc-profiles/license))`
+- `README.md:5`:
+  `[libspng](https://github.com/randy408/libspng): PNG decoding and encoding of resized images ([BSD-2-clause](./licences/apps/libspng/LICENSE) and [libpng-2.0](./licences/apps/libspng/LICENSE-libpng))`
 - `README.md:7`:
+  `[miniz](https://github.com/richgel999/miniz): zlib compression and decompression for libspng ([MIT](./licences/apps/miniz/LICENSE))`
+- `README.md:9`:
+  `[mozjpeg](https://github.com/mozilla/mozjpeg): JPEG decoding and encoding of resized images ([IJG and BSD-3-clause](./licences/apps/mozjpeg/LICENSE.md)). This software is based in part on the work of the Independent JPEG Group.`
+- `README.md:13`:
   `[stb_image_resize](https://github.com/nothings/stb): image scaling ([MIT or public domain](./licences/apps/stb_image_resize/LICENSE))`
 - `licences/apps/mozjpeg/LICENSE.md` and `README.ijg`: copies from mozjpeg `08265790`, the submodule of the hs-jpeg-turbo fork.
 - `licences/apps/stb_image_resize/LICENSE`: `cbits/stb/stb_image_resize.h:2596-2632` of the JuicyPixels-stbir fork at `3e53b11`.
@@ -738,7 +746,7 @@ License notices, `docs/dependencies/`:
   - direct dependencies (`:25-28`):
     - `JuicyPixels` 3.3.8, Hackage
     - `JuicyPixels-jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `94209f7`
-    - `JuicyPixels-spng` 0.1.0.0, hs-jpeg-turbo fork at `94209f7`, `BSD-3-Clause AND BSD-2-Clause AND libpng-2.0 AND MIT`
+    - `JuicyPixels-spng` 0.1.0.0, hs-jpeg-turbo fork at `94209f7`, `BSD-3-Clause AND BSD-2-Clause AND libpng-2.0 AND MIT`, "JuicyPixels wrappers for libspng": the description column holds each package's synopsis
     - `JuicyPixels-stbir` 0.1.0.0, JuicyPixels-stbir fork at `3e53b11`, `BSD-3-Clause AND (MIT OR Unlicense)`
   - direct dependency (`:55`): `vector` 0.13.1.0, moved from the indirect dependencies
   - indirect dependency (`:145`): `jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `94209f7`, `BSD-3-Clause AND IJG AND Zlib`
