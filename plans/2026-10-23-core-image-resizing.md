@@ -3,10 +3,10 @@
 The CLI sends a fixed placeholder as the preview of every image sent with `/img` or `/imgf`, and bots on the Node and Python libraries need their own image resizing code.
 Images are resized by the core in one Catmull-Rom pass with sharpening, at a fixed JPEG quality, to the size whose encoding fills 97–100% of the size limit; an image that fits at its largest size is encoded at the highest quality that fits.
 JPEG input is decoded by mozjpeg at the smallest scale that covers the display size, and its EXIF orientation is applied; PNG input is decoded by libspng; other formats are refused.
-The ICC colour profile of the input is kept in the output when it is at most a tenth of the size limit.
+The output has one fixed Display P3 colour profile when the input profile describes Display P3 and the fixed profile is at most a tenth of the size limit, and no profile otherwise.
 The core functions are called by the apps in place of platform code, wrapped in both bot libraries and used for `/img` and `/imgf` previews; mozjpeg and libspng are compiled by cabal in every build.
 
-References are to branch `ab/resize-image` at `358221691`, based on master `ec8884f46`. Haskell paths without a directory are in `src/Simplex/Chat/`.
+References are to branch `ab/resize-image` at `fc18c0912`, based on master `ec8884f46`. Haskell paths without a directory are in `src/Simplex/Chat/`.
 
 ## Image processing decisions
 
@@ -48,36 +48,36 @@ Decisions of 27 Oct, after the second review:
 | D22 | **iOS removes the copy of a sent image.** The copy of a picked image in the temporary directory is removed after the image is saved for sending, and taken out of `filesToDelete`; the copy of an image that is not sent is removed at app termination, as before. |
 | D23 | **File input within the memory limit.** The file and file descriptor functions read at most `maxDecodeMemoryMB` MiB + 1 byte and return `""` for a larger input, also from a pipe; the descriptor is closed on every path. |
 | D24 | **Decoding and sharpening memory within the limit.** PNG is decoded with half of `maxDecodeMemoryMB`, which leaves room for the premultiplied copy. Sharpening keeps 5 horizontally blurred rows in place of two whole-image `Float` buffers, with the same arithmetic. Maximum RSS for a 4320×4320 RGBA PNG: 323 MB before and 223 MB after for the image data, 163 MB and 162 MB for the preview. |
-| D25 | **Colour profiles kept.** The ICC profile of JPEG input (APP2 `ICC_PROFILE` segments) and of PNG input (iCCP) is written into the JPEG or PNG output when it is not empty and its length in output units is at most a tenth of the size limit: bytes for image data, base64 characters for a data URI. Otherwise, and for an inconsistent JPEG profile, the output has no profile, byte for byte as for an input without one. |
+| D25 | **One fixed Display P3 profile.** No input profile bytes are copied. When the ICC profile of JPEG input (APP2 `ICC_PROFILE` segments) or of PNG input (iCCP) describes Display P3, the JPEG or PNG output has the fixed Display P3 v4 profile of Compact-ICC-Profiles (CC0, 480 bytes), when its length in output units is at most a tenth of the size limit: bytes for image data, base64 characters for a data URI. Otherwise, and for an inconsistent, malformed or other profile, the output has no profile, byte for byte as for an input without one. |
 
 ## Decisions
 
 Decoding, `Image.hs`:
-- `decodeResizable bytes`: the image for resizing and its ICC colour profile, `Nothing` when it has none; the image at the display size for JPEG, at full size for PNG; `Left` for other formats.
+- `decodeResizable bytes`: the image for resizing and the output colour profile of D25, `Nothing` when it has none; the image at the display size for JPEG, at full size for PNG; `Left` for other formats.
 - JPEG, input starting `FF D8`, decoded by mozjpeg:
   1. `readJpegHeader`; `Left` for:
      - a side above 65500
      - a precision other than 8
      - a lossless JPEG
-  2. target size: both sides halved, each rounded by `scaledSide` (`:353-354`), while a side exceeds 4320; `Left` when a side is below 2 before a halving
+  2. target size: both sides halved, each rounded by `scaledSide` (`:394-395`), while a side exceeds 4320; `Left` when a side is below 2 before a halving
   3. scale: the smallest of `Full`, `Half`, `Quarter` and `Eighth` whose rounded-up sides are at least the target
   4. `decodeJpeg` with:
      - `maxPixels`: 2^28; `Left` above it, before the output is allocated
      - `maxMemoryMB`: `maxDecodeMemoryMB`
   5. a decode larger than the target: `convertRGB8`, then `STBIR.resize` to the target
   6. the EXIF orientation applied
-  7. the ICC profile, `jpegIccProfile`:
-     - source: the APP2 segments with the `ICC_PROFILE\0` header before the first SOS, read as `exifTiff` reads APP1
+  7. the input ICC profile, `jpegIccProfile`:
+     - source: the APP2 segments with the `ICC_PROFILE\0` header before the first SOS, from the segment list that `exifTiff` reads, walked once by `jpegSegments`
      - each segment: the sequence number, the segment count, the profile chunk
      - profile: the chunks ordered by sequence number and concatenated
      - `Nothing` for missing or duplicate sequence numbers, a segment count different from the number of segments, a segment shorter than 14 bytes or an empty profile; the image is decoded as without a profile
 - PNG, input starting with the signature `89 50 4E 47 0D 0A 1A 0A`, decoded by libspng with `Spng.decodePng`:
   1. the header (IHDR) first; `Left` for a side above 16384
   2. `maxMemoryMB`: half of `maxDecodeMemoryMB`, so that the decoded pixels and their premultiplied copy fit `maxDecodeMemoryMB`; `Left` when the decoded pixels exceed it, before they are allocated
-  3. `Left` for any libspng error, including short image data, a chunk with a wrong CRC, the last chunk among them, and a missing IEND
+  3. `Left` for any libspng error, including short image data, a chunk with a wrong CRC, the last chunk among them, a missing IEND and any other truncation; a PNG cut within the IEND CRC decodes (libspng)
   4. constructor: `ImageRGBA8` for a colour type with alpha or a `tRNS` chunk, otherwise `ImageRGB8`; 16-bit samples converted to 8 bits
   5. the full image, halved to the display size by `fitImage`
-  6. the ICC profile: the decompressed iCCP profile from `Spng.decodePng`; `Left` for a profile above the 64 MiB chunk limit
+  6. the input ICC profile: the decompressed iCCP profile from `Spng.decodePng`; `Left` for a profile above the 64 MiB chunk limit
 - Other formats: `Left "unsupported image format"`.
 - Constructors of a decoded JPEG:
 
@@ -119,6 +119,14 @@ Decoding, `Image.hs`:
 
   - output: upright pixels without EXIF
 
+- Output colour profile (D25), `displayP3Profile` of the input ICC profile of either format, forced with `$!` in `decodeResizable`, so that it holds no reference to the input:
+  - header: data colour space `RGB ` at offset 16, PCS `XYZ ` at offset 20
+  - tag table at offset 128: a big-endian count, then entries of signature, offset and size; the table inside the profile
+  - `rXYZ`, `gXYZ` and `bXYZ`: the first entry of each signature; a size of at least 20, the tag inside the profile, type `XYZ `, 4 reserved bytes, 3 s15Fixed16 values
+  - Display P3: all 9 values within 2/65536 of those of `displayP3`; the result is `displayP3`
+  - anything malformed, missing or different: `Nothing`
+  - `displayP3`: `profiles/DisplayP3-v4.icc` of Compact-ICC-Profiles at `bdd84663`, 480 bytes, CC0 1.0; its primaries are those of Display P3 (D65 white, Bradford-adapted to D50) within 1/65536
+
 Resizing, `Image.hs`:
 - `resizeImage format maxSize image profile`: a JPEG or PNG encoding of at most `maxSize` bytes.
 - `resizeImageDataUri maxSize image profile`: a data URI of at most `maxSize` characters.
@@ -158,7 +166,7 @@ Resizing, `Image.hs`:
 
 - The largest size applies to the image data and to the data URIs: the Android and desktop apps display images and previews only up to 4320 pixels per side (`CIImageView.kt:128`, `base64ToBitmap` in `Images.android.kt:35` and `Images.desktop.kt:42`).
 - The quality bisection is ended by an encoding of exactly `maxSize`.
-- Metadata of the input is dropped, except the colour profile.
+- Metadata of the input is dropped; the colour profile is set by D25.
 
 Scaling (D3), `Image.hs`:
 - `scaleRGB8 image size` and `scaleRGBA8 image size`: the image at `size`.
@@ -188,7 +196,7 @@ chat_resize_image(data, len, maxSize, png)    base64 of at most maxSize bytes of
   - an exception is raised.
 - The result is allocated with `malloc` and freed by the caller.
 - A chat controller is not required.
-- The colour profile of the input is kept by D25.
+- The colour profile is set by D25.
 - `png`: 0 or 1 from the apps and the explicit library functions; −1 from the library functions with `ImageSize`.
 
 C API, file reference (D7):
@@ -207,7 +215,9 @@ chat_resize_image_fd(fd, maxSize, png)        as chat_resize_image, from the fil
   ```
 - `path`: a null-terminated path, decoded as `chat_write_file` decodes its path.
 - `fd`: a readable file descriptor; the core reads it and closes it, on success and on failure.
-- Input from a file or a file descriptor: at most `maxDecodeMemoryMB` MiB + 1 byte is read; `""` when that byte is read.
+- Input from a file or a file descriptor:
+  - with a file size: `""` for a size above `maxDecodeMemoryMB` MiB, before reading; otherwise the file is read into one buffer of its size
+  - without a file size (a pipe): at most `maxDecodeMemoryMB` MiB + 1 byte is read; `""` when that byte is read
 - `""` is also returned when the file cannot be read.
 - Callers:
 
@@ -234,7 +244,9 @@ chat_resize_image_fd(fd, maxSize, png)        as chat_resize_image, from the fil
   ```
   - path: `readFilePath`, `peekCString`, then `hGetImage` in `withBinaryFile`
   - descriptor: `readFd`, `fdToHandle`, then `hGetImage` in `bracket` with `hClose`, by which the handle is closed, also on an exception; the descriptor is closed with `c_close` when `fdToHandle` raises
-  - `hGetImage`: `LB.hGet` of `maxDecodeMemoryMB` MiB + 1 byte, read in chunks of about 32 KB until that size or the end; above `maxDecodeMemoryMB` MiB, `fail`, which `runCatchExceptT` turns into `Left`; otherwise `LB.toStrict`
+  - `hGetImage`, with the size from `tryIO (hFileSize h)`:
+    - a size: above `maxDecodeMemoryMB` MiB, `fail`, which `runCatchExceptT` turns into `Left`; otherwise `B.hGet` of exactly that size
+    - `hFileSize` failed (a pipe): `LB.hGet` of `maxDecodeMemoryMB` MiB + 1 byte, read in chunks of about 32 KB until that size or the end; above `maxDecodeMemoryMB` MiB, `fail`; otherwise `LB.toStrict`
   - `cResizeImageUri` and `cResizeImageData`: the data URI and the image data from a read action, for the buffer, path and descriptor functions
   - `cResizeImage` takes the read action in place of the buffer; the input is read inside `runCatchExceptT`.
 - Exports:
@@ -323,7 +335,7 @@ Bot libraries:
   - The core and the add-on are pinned together by `prepare` (`packages_release.py:360-363`); for nodejs an error is raised by `prepare` until the add-on release of the current sources is published (`:779-780`).
 
 `/img` and `/imgf`:
-- The preview is generated from the file: read with `CF.readFile` (encrypted files included), decoded, and resized to a data URI of at most 14000 characters, with the colour profile of the file by D25.
+- The preview is generated from the file: read with `CF.readFile` (encrypted files included), decoded, and resized to a data URI of at most 14000 characters, with the colour profile by D25.
 - On any failure the fixed placeholder is sent, as before; a GIF, which `/img` accepts by its extension (`Library/Commands.hs:202`), gets the fixed placeholder.
 
 Native code:
@@ -350,7 +362,7 @@ Native code:
 License notices, in `docs/dependencies`:
 - `README.md`: mozjpeg, with the IJG sentence, and stb_image_resize
 - `HASKELL.md`: JuicyPixels, JuicyPixels-jpeg-turbo, JuicyPixels-spng and JuicyPixels-stbir as direct dependencies, jpeg-turbo as an indirect one; the five are added to the "Also depended upon by" and "Depended upon by" cells of the packages they depend on
-- `licences/`: the license files of each, copied from the pinned commits; libspng's BSD-2-Clause `LICENSE` and the libpng-2.0 notice of `spng.c`, and miniz's MIT `LICENSE`
+- `licences/`: the license files of each, copied from the pinned commits; libspng's BSD-2-Clause `LICENSE` and the libpng-2.0 notice of `spng.c`, and miniz's MIT `LICENSE`; Compact-ICC-Profiles' CC0 1.0 `license`, for the profile of D25
 
 Out of scope: WebP, a separate PR after this one.
 
@@ -447,7 +459,7 @@ Branch `ep/stb-submodule` at `3e53b11`, on the Hackage release 0.1.0.0 (`917cd53
 
 Core:
 - `Image.hs`, new:
-  - exports (`:8-18`):
+  - exports (`:9-19`):
     - `ImageFormat (IFJpeg, IFPng)`
     - `imageFormat`
     - `decodeResizable`
@@ -456,46 +468,50 @@ Core:
     - `maxDecodeMemoryMB`, also used by `Mobile/File.hs` and `MobileTests`
     - `scaleRGB8`
     - `scaleRGBA8`
-  - `imageFormat` (`:43-54`)
-  - `decodeResizable` (`:56-60`): `decodeDisplayJpeg` with `jpegIccProfile` for input starting `FF D8`; `Spng.decodePng` with ``maxDecodeMemoryMB `div` 2`` for input starting with the PNG signature; otherwise `Left`
-  - `decodeDisplayJpeg` (`:62-66`): `readJpegHeader`, `displaySize`, `jpegScale`, `decodeJpeg`, `resizeToSize`, `orientImage` with `exifOrientation`
-  - `displaySize` (`:68-74`): the target size and the number of halvings, rounded by `scaledSide`
-  - `jpegScale` (`:76-81`): `Full`, `Half`, `Quarter`, `Eighth` for 0, 1, 2, and 3 or more halvings
-  - `resizeToSize` (`:83-86`): `convertRGB8` and `STBIR.resize` when the decoded size differs from the target
-  - `exifOrientation` (`:88-110`): the orientation value of IFD0, 1 when absent or malformed
-  - `exifTiff` (`:112-113`): the TIFF data of the first APP1 `Exif` segment of `jpegSegments`
-  - `jpegIccProfile` (`:115-125`): the APP2 `ICC_PROFILE` segments of `jpegSegments`, checked, ordered and concatenated
-  - `jpegSegments` (`:127-133`): the marker and the data of each segment after SOI and before the first SOS; the list ends at a byte other than `FF`, at fewer than 4 bytes or at SOS
-  - `orientImage` (`:135-147`): the 8 transforms with `generateImage`, applied with `dynamicPixelMap`
-  - `ImageOutput` (`:149`): `ImageBytes`, `ImageDataUri`
-  - `resizeImage` (`:151-152`)
-  - `resizeImageDataUri` (`:154-155`)
-  - `fitImage` (`:157-177`): the size bound; the largest size from `displaySize`; the output, the quality, bpp0 and `outputLength` by `ImageOutput`; `keptProfile` (`:165`); `fitSize`; the quality bisection at the largest size below `minFill`; JPEG with `encodeRGB`, the trial at the largest size from `largestRGB` (`scale`, `:170`), shared with the bisection; PNG with `encodeSmallerPng` of `scaleRGBA8` applied once to the image
-  - `fitSize` (`:179-217`): the size search of D4
-  - `minFill = 0.97` (`:219-220`)
-  - `imageDoesNotFit` (`:222-223`)
-  - `bisect` (`:225-236`): the JPEG quality bisection, over `Int`
-  - `encodeSmallerPng` (`:238-241`): `Spng.encodePng` at level 9 without and with row filters, with the profile, the shorter output; `Left` raised as an exception, as `encodeRGB` raises its errors
-  - `maxImageSide = 16384` (`:243-244`)
-  - `maxDisplaySide = 4320` (`:246-247`)
-  - `maxJpegPixels = 2 ^ 28` (`:249-250`)
-  - `maxDecodeMemoryMB` (`:252-257`), 512 or 1024 by `mobileBuild`
-  - `hasSideAbove` (`:259-260`)
-  - `hasSize` (`:262-263`)
-  - `scaleRGB8` (`:265-270`)
-  - `scaleRGBA8` (`:272-280`): the premultiplied image bound once, shared by the returned function
-  - `catmullRom` (`:282-285`): `STBIR.resize` with Catmull-Rom and the given flags
-  - `premultiply` (`:287-290`)
-  - `unpremultiply` (`:292-297`)
-  - `sharpen` (`:299-324`): the ring `rows` of 5 rows of `Float`; `blurRow`, the horizontal pass of one row into its slot `rowStart`; rows 0 and 1 first, then row y + 2 before output row y; the vertical pass from the ring and `unsharp` into the output
-  - `convolve` (`:326-332`): the sum of the weighted samples at the 5 offsets, in `Double`, in order; monadic, for the samples and for the ring
-  - `sharpenOffsets` (`:334-337`)
-  - `sharpenWeights` (`:339-342`)
-  - `sharpenRadius` (`:344-345`)
-  - `sharpenAmount = 0.5` (`:347-348`)
-  - `sharpenSigma = 0.6` (`:350-351`)
-  - `scaledSide` (`:353-354`)
-  - `toDataUri` (`:356-362`), with the approved comment at `:360`
+  - `imageFormat` (`:45-56`)
+  - `decodeResizable` (`:58-66`): `decodeDisplayJpeg` for input starting `FF D8`; `Spng.decodePng` with ``maxDecodeMemoryMB `div` 2`` for input starting with the PNG signature; otherwise `Left`; then `displayP3Profile` of the input profile, forced with `$!` (`:61`)
+  - `decodeDisplayJpeg` (`:68-74`): `readJpegHeader`, `displaySize`, `jpegScale`, `decodeJpeg`, `resizeToSize`, `orientImage` with `exifOrientation`, and `jpegIccProfile`; the image and the input profile, as from `Spng.decodePng`; `segments` (`:74`), the one walk of `jpegSegments`, for `exifOrientation` and `jpegIccProfile`
+  - `displaySize` (`:76-82`): the target size and the number of halvings, rounded by `scaledSide`
+  - `jpegScale` (`:84-89`): `Full`, `Half`, `Quarter`, `Eighth` for 0, 1, 2, and 3 or more halvings
+  - `resizeToSize` (`:91-94`): `convertRGB8` and `STBIR.resize` when the decoded size differs from the target
+  - `exifOrientation` (`:96-118`): the orientation value of IFD0 from the segments, 1 when absent or malformed
+  - `exifTiff` (`:120-121`): the TIFF data of the first APP1 `Exif` segment
+  - `jpegIccProfile` (`:123-133`): the APP2 `ICC_PROFILE` segments (`iccSegments`), checked, ordered and concatenated
+  - `jpegSegments` (`:135-141`): the marker and the data of each segment after SOI and before the first SOS; the list ends at a byte other than `FF`, at fewer than 4 bytes or at SOS
+  - `orientImage` (`:143-155`): the 8 transforms with `generateImage`, applied with `dynamicPixelMap`
+  - `displayP3Profile` (`:157-161`): `displayP3` when the 9 primaries from `iccPrimaries` are within 2 of those of `displayP3`
+  - `iccPrimaries` (`:163-185`): the header check; the tag table as one `slice`; `tagEntry`, the first entry of a signature, walked without a list; `colorant`, the size, the tag `slice`, the type and the 3 `s15Fixed16` values; numbers as `Integer`, `slice` bounds checked against the profile length
+  - `displayP3` (`:187-188`): `embedFile "src/Simplex/Chat/Image/DisplayP3-v4.icc"`, as `Operators.hs:70` embeds `PRIVACY.md`
+  - `ImageOutput` (`:190`): `ImageBytes`, `ImageDataUri`
+  - `resizeImage` (`:192-193`)
+  - `resizeImageDataUri` (`:195-196`)
+  - `fitImage` (`:198-218`): the size bound; the largest size from `displaySize`; the output, the quality, bpp0 and `outputLength` by `ImageOutput`; `keptProfile` (`:206`); `fitSize`; the quality bisection at the largest size below `minFill`; JPEG with `encodeRGB`, the trial at the largest size from `largestRGB` (`scale`, `:211`), shared with the bisection; PNG with `encodeSmallerPng` of `scaleRGBA8` applied once to the image
+  - `fitSize` (`:220-258`): the size search of D4
+  - `minFill = 0.97` (`:260-261`)
+  - `imageDoesNotFit` (`:263-264`)
+  - `bisect` (`:266-277`): the JPEG quality bisection, over `Int`
+  - `encodeSmallerPng` (`:279-282`): `Spng.encodePng` at level 9 without and with row filters, with the profile, the shorter output; `Left` raised as an exception, as `encodeRGB` raises its errors
+  - `maxImageSide = 16384` (`:284-285`)
+  - `maxDisplaySide = 4320` (`:287-288`)
+  - `maxJpegPixels = 2 ^ 28` (`:290-291`)
+  - `maxDecodeMemoryMB` (`:293-298`), 512 or 1024 by `mobileBuild`
+  - `hasSideAbove` (`:300-301`)
+  - `hasSize` (`:303-304`)
+  - `scaleRGB8` (`:306-311`)
+  - `scaleRGBA8` (`:313-321`): the premultiplied image bound once, shared by the returned function
+  - `catmullRom` (`:323-326`): `STBIR.resize` with Catmull-Rom and the given flags
+  - `premultiply` (`:328-331`)
+  - `unpremultiply` (`:333-338`)
+  - `sharpen` (`:340-365`): the ring `rows` of 5 rows of `Float`; `blurRow`, the horizontal pass of one row into its slot `rowStart`; rows 0 and 1 first, then row y + 2 before output row y; the vertical pass from the ring and `unsharp` into the output
+  - `convolve` (`:367-373`): the sum of the weighted samples at the 5 offsets, in `Double`, in order; monadic, for the samples and for the ring
+  - `sharpenOffsets` (`:375-378`)
+  - `sharpenWeights` (`:380-383`)
+  - `sharpenRadius` (`:385-386`)
+  - `sharpenAmount = 0.5` (`:388-389`)
+  - `sharpenSigma = 0.6` (`:391-392`)
+  - `scaledSide` (`:394-395`)
+  - `toDataUri` (`:397-403`), with the approved comment at `:401`
+- `src/Simplex/Chat/Image/DisplayP3-v4.icc`, new: the profile of D25, the upstream file unchanged (git blob `4ee40fb5`)
 - `Mobile/File.hs`:
   - exported at `:13-18`:
     - `cChatResizeImageUri` (`:153-154`)
@@ -506,10 +522,10 @@ Core:
     - `cChatResizeImageFd` (`:168-169`)
   - `readFilePath` (`:171-174`): `withBinaryFile`, then `hGetImage`
   - `readFd` (`:176-177`): `c_close` (`:55`) of the descriptor when `fdToHandle` raises; `hGetImage` in `bracket` with `hClose`
-  - `hGetImage` (`:179-184`): at most `maxDecodeMemoryMB * 1048576 + 1` bytes with `LB.hGet`; `fail` above `maxDecodeMemoryMB * 1048576`
-  - `cResizeImageUri` (`:186-187`)
-  - `cResizeImageData` (`:189-196`): the format by `compare png 0`, `imageFormat` for `LT`
-  - `cResizeImage` (`:198-201`):
+  - `hGetImage` (`:179-190`): with `tryIO (hFileSize h)`, `fail` for a size above `maxDecodeMemoryMB * 1048576`, otherwise `B.hGet` of the size; when `hFileSize` fails, at most `maxDecodeMemoryMB * 1048576 + 1` bytes with `LB.hGet` and `fail` above `maxDecodeMemoryMB * 1048576`; `tooLarge`, the one `fail`
+  - `cResizeImageUri` (`:192-193`)
+  - `cResizeImageData` (`:195-202`): the format by `compare png 0`, `imageFormat` for `LT`
+  - `cResizeImage` (`:204-207`):
     - the read action
     - `decodeResizable`, in place of `decodeImage`
     - the resize function applied to the image and its profile
@@ -521,17 +537,18 @@ Core:
   - `imagePreview :: CryptoFile -> IO ImageData` (`:229-235`): `decodeResizable`, in place of `decodeImage` (`:234`), and `resizeImageDataUri` with the profile (`:235`)
   - `SendImage` (`:3553`): the preview from `imagePreview` (`:3560`)
 - `simplex-chat.cabal`:
-  - library: `if flag(swift) || os(android)`, `cpp-options: -DmobileBuild` (`:415-416`)
-  - module `Simplex.Chat.Image` (`:52`)
+  - `extra-source-files`: `src/Simplex/Chat/Image/DisplayP3-v4.icc` (`:21`), as `PRIVACY.md`
+  - library: `if flag(swift) || os(android)`, `cpp-options: -DmobileBuild` (`:416-417`)
+  - module `Simplex.Chat.Image` (`:53`)
   - library dependencies:
-    - `JuicyPixels` (`:387`)
-    - `JuicyPixels-jpeg-turbo` (`:388`)
-    - `JuicyPixels-spng` (`:389`)
-    - `JuicyPixels-stbir` (`:390`)
-    - `vector` (`:409`)
+    - `JuicyPixels` (`:388`)
+    - `JuicyPixels-jpeg-turbo` (`:389`)
+    - `JuicyPixels-spng` (`:390`)
+    - `JuicyPixels-stbir` (`:391`)
+    - `vector` (`:410`)
   - test suite:
-    - module `ImageTests` (`:726`)
-    - dependencies `JuicyPixels` and `JuicyPixels-jpeg-turbo` (`:818-819`)
+    - module `ImageTests` (`:727`)
+    - dependencies `JuicyPixels` and `JuicyPixels-jpeg-turbo` (`:819-820`)
 - `libsimplex.dll.def:30-35`, `flake.nix:491-496`: the export names.
 - `flake.nix:73-75`: the nix licence of JuicyPixels-spng (D21).
 
@@ -711,6 +728,7 @@ License notices, `docs/dependencies/`:
 - `licences/apps/stb_image_resize/LICENSE`: `cbits/stb/stb_image_resize.h:2596-2632` of the JuicyPixels-stbir fork at `3e53b11`.
 - `licences/apps/libspng/LICENSE`: libspng's `LICENSE` (BSD-2-Clause); `licences/apps/libspng/LICENSE-libpng`: `spng/spng.c:6149-6180` (libpng-2.0), without the comment markers; from libspng `fb768002`, the submodule of the hs-jpeg-turbo fork at `4db152c`.
 - `licences/apps/miniz/LICENSE`: miniz's `LICENSE` (MIT), from miniz 3.1.2 (`77d0dce8`), the submodule of the hs-jpeg-turbo fork at `4db152c`.
+- `licences/apps/compact-icc-profiles/license`: the `license` (CC0 1.0) of saucecontrol/Compact-ICC-Profiles at `bdd84663`, the source of `DisplayP3-v4.icc`.
 - `HASKELL.md`:
   - direct dependencies (`:25-28`):
     - `JuicyPixels` 3.3.8, Hackage
@@ -735,7 +753,7 @@ License notices, `docs/dependencies/`:
 ## Tests
 
 `tests/ImageTests.hs`, group "Image resize" (`tests/Test.hs:98`):
-- Same aspect ratio, in every comparison below: `|w·h' − h·w'| ≤ w' + h'` (`:419-420`).
+- Same aspect ratio, in every comparison below: `|w·h' − h·w'| ≤ w' + h'` (`:459-460`).
 - Without a colour profile, `Nothing`, in every `resizeImage` and `resizeImageDataUri` call below.
 - data URI (`:32-35`), limit 14000; each result is decoded and compared by aspect ratio with the input:
   - `test.jpg` (1280×720): `data:image/jpg;base64,`
@@ -757,13 +775,13 @@ License notices, `docs/dependencies/`:
   | 8×8640 | 4×4320 |
   | 4320×4 | 4320×4 |
 
-- fill (`:43`, `:137-146`): `test.jpg` and `preview-issue1.png`, the data URI with limit 14000 and the JPEG data with limit 20000: 97–100% of the limit
-- quality at the image size (`:44`, `:148-156`): a 64×48 gradient with a limit midway between its quality-65 and quality-95 encodings: at most the limit, larger than the quality-65 encoding, 64×48
+- fill (`:43`, `:138-147`): `test.jpg` and `preview-issue1.png`, the data URI with limit 14000 and the JPEG data with limit 20000: 97–100% of the limit
+- quality at the image size (`:44`, `:149-157`): a 64×48 gradient with a limit midway between its quality-65 and quality-95 encodings: at most the limit, larger than the quality-65 encoding, 64×48
 - image preview (`:45-49`):
   - `test.jpg`: JPEG data URI of at most 14000 characters
   - an encrypted copy of `test.jpg`: the same
   - `test.pdf`: `fixedImagePreview`
-- JPEG display size (`:51`, `:171-185`), blank W×16 JPEGs from `encodeRGB` and the same with the sides swapped, `decodeResizable`, then the image data with limit 261120, decoded:
+- JPEG display size (`:51`, `:172-186`), blank W×16 JPEGs from `encodeRGB` and the same with the sides swapped, `decodeResizable`, then the image data with limit 261120, decoded:
   - 4320, 4321, 8640, 8641: the size of the full-decode path, JuicyPixels `decodeImage` then `resizeImage`
   - expected sizes:
 
@@ -779,7 +797,7 @@ License notices, `docs/dependencies/`:
     | 34561 | 4320×2 |
     | 65500 | 4094×1 |
 
-- JPEG colour spaces (`:52`, `:187-195`), 64×48, `decodeResizable`:
+- JPEG colour spaces (`:52`, `:188-196`), 64×48, `decodeResizable`:
 
   | input | result |
   |---|---|
@@ -788,19 +806,19 @@ License notices, `docs/dependencies/`:
   | grayscale, JuicyPixels `Pixel8` encoding | `ImageY8` |
   | YCCK, JuicyPixels `PixelCMYK8` encoding | `ImageCMYK8` |
 
-- JPEG refusals (`:53`, `:197-212`), a baseline 64×48 JPEG changed as below, `decodeResizable`, `Left`:
+- JPEG refusals (`:53`, `:198-213`), a baseline 64×48 JPEG changed as below, `decodeResizable`, `Left`:
   - precision 12 written into the SOF
   - SOF marker `FF C3` (lossless)
   - a side of 65501 written into the SOF
   - 16385×16384 written into the SOF
   - the input shortened by one byte
   - a byte inserted before the SOF marker
-- EXIF orientation (`:54`, `:214-256`): a 64×32 JPEG with four solid quadrants and an APP1 Exif segment, little-endian for odd and big-endian for even values; `decodeResizable`:
+- EXIF orientation (`:54`, `:215-257`): a 64×32 JPEG with four solid quadrants and an APP1 Exif segment, little-endian for odd and big-endian for even values; `decodeResizable`:
   - values 1–8: the sides swapped for 5–8; the quadrant colours placed by the transform; the resized JPEG without `Exif`
   - an IFD0 offset beyond the segment: as value 1
 - PNG decoding (`:55-57`), `decodeResizable`:
-  - `logo-large-rgba.png` (`:258-268`): `ImageRGBA8` with the samples of JuicyPixels `decodeImage`, and `imageFormat` PNG; `preview-issue1.png`: `ImageRGB8` with the samples of JuicyPixels `decodeImage`; both without a colour profile
-  - refusals (`:270-303`):
+  - `logo-large-rgba.png` (`:259-269`): `ImageRGBA8` with the samples of JuicyPixels `decodeImage`, and `imageFormat` PNG; `preview-issue1.png`: `ImageRGB8` with the samples of JuicyPixels `decodeImage`; both without a colour profile
+  - refusals (`:271-304`):
 
     | input | `Left` |
     |---|---|
@@ -809,38 +827,46 @@ License notices, `docs/dependencies/`:
     | a 16×16 GIF and a 16×16 BMP from JuicyPixels | `unsupported image format` |
 
 - scaling (`:58-61`):
-  - research code (`:320-326`): `scaleRGB8` of `preview-issue1.png` to 400×200 equals `preview-issue1-400x200-sharpened.png` pixel for pixel; the fixture is the output of the research code (`pvsf`, resize `catmullrom/g/0.5@0.6/single`) for the same decoded pixels
-  - the same size (`:328-333`): `scaleRGB8` and `scaleRGBA8` of 64×48 images to 64×48 return the input samples
-  - transparency (`:335-345`): a 64×64 opaque red disc on transparent pixels alternately green and blue, `scaleRGBA8` to 40×40: every pixel with alpha above 0 is red; some pixels have alpha below 255
-- colour profiles (`:62-66`, `:347-411`), a 1000-byte profile `profileBytes 1000`, the 64×48 `gradient` and `transparentGradient`; the profile of an output read back by `decodeResizable`:
-  - fixtures built in the test (`:294-318`):
-    - JPEG: APP2 segments inserted after SOI by `withIccProfile`, each `ICC_PROFILE\0`, the sequence number, the segment count and the chunk (`iccChunk`)
-    - PNG: an iCCP chunk named `test` inserted after IHDR by `pngWithIccProfile`, the profile in a stored zlib block with its Adler-32 (`zlibStored`), the chunk CRC by `crc32` (`pngChunk`)
-  - JPEG (`:347-355`): the profile in two segments, the second first: decoded as the profile; the JPEG and PNG image data with limit 261120 have the same profile
-  - PNG (`:357-367`): decoded as the profile; the JPEG and PNG image data with limit 261120 and the PNG data URI with limit 14000 have the same profile
-  - above a tenth of the limit (`:369-380`):
-    - image data, limit 20000, JPEG and PNG: a 2001-byte profile gives the output without a profile, byte for byte; a 2000-byte profile is kept
-    - data URI, limit 14000: a 1051-byte profile (1404 base64 characters) gives the data URI without a profile; a 1050-byte profile (1400 characters) is kept
-  - inconsistent JPEG profiles (`:382-396`): one of two segments; a repeated sequence number; segment counts 2 and 3; sequence number 0; an empty chunk; a 13-byte segment: decoded without a profile
+  - research code (`:321-327`): `scaleRGB8` of `preview-issue1.png` to 400×200 equals `preview-issue1-400x200-sharpened.png` pixel for pixel; the fixture is the output of the research code (`pvsf`, resize `catmullrom/g/0.5@0.6/single`) for the same decoded pixels
+  - the same size (`:329-334`): `scaleRGB8` and `scaleRGBA8` of 64×48 images to 64×48 return the input samples
+  - transparency (`:336-346`): a 64×64 opaque red disc on transparent pixels alternately green and blue, `scaleRGBA8` to 40×40: every pixel with alpha above 0 is red; some pixels have alpha below 255
+- colour profiles (`:62-67`, `:348-451`), the 64×48 `gradient` and `transparentGradient`; `displayP3`, the bytes of `src/Simplex/Chat/Image/DisplayP3-v4.icc` read by the test (`displayP3File`); the profile of an output read back by `decodeResizable`:
+  - fixtures built in the test:
+    - ICC (`:434-445`): `iccProfile`, a 228-byte profile with a given colour space, PCS `XYZ ` and the tags `rXYZ`, `gXYZ` and `bXYZ` of given primaries; `p3Profile`, with the values of Apple's Display P3 profile (`p3Primaries`), bY 1/65536 from `displayP3`
+    - JPEG (`:312-316`): APP2 segments inserted after SOI by `withIccProfile`, each `ICC_PROFILE\0`, the sequence number, the segment count and the chunk (`iccChunk`)
+    - PNG (`:295-310`): an iCCP chunk named `test` inserted after IHDR by `pngWithIccProfile`, the profile in a stored zlib block with its Adler-32 (`zlibStored`), the chunk CRC by `crc32` (`pngChunk`)
+  - Display P3 JPEG (`:348-360`): `p3Profile` in two segments, the second first: decoded as `displayP3`; with rX 2/65536 above: `displayP3`; the JPEG image data with limit 261120 contains `displayP3`; the JPEG and PNG image data with limit 261120 have the profile `displayP3`
+  - Display P3 PNG (`:362-373`): decoded as `displayP3`; the JPEG and PNG image data with limit 261120 and the PNG data URI with limit 14000 have the profile `displayP3`
+  - other profiles (`:375-393`), in one JPEG segment: decoded without a profile; the JPEG data with limit 261120 equal to that of the JPEG without a profile, which is also decoded without one:
+    - sRGB primaries
+    - rX 3/65536 above Display P3
+    - colour space `GRAY` with the Display P3 tags
+    - tag count 9: the table ends past the profile
+    - `bXYZ` offset 209: the tag ends past the profile
+  - above a tenth of the limit (`:395-407`), `displayP3` of 480 bytes:
+    - image data, JPEG and PNG: limit 4799 gives the output without a profile, byte for byte; limit 4800 keeps it
+    - data URI: limit 6399 gives the data URI without a profile (640 base64 characters); limit 6400 keeps it
+  - inconsistent JPEG profiles (`:409-423`), `p3Profile` split after 100 bytes: one of two segments; a repeated sequence number; segment counts 2 and 3; sequence number 0; an empty chunk; a 13-byte segment: decoded without a profile
 
-`tests/MobileTests.hs`, "Images" (`:100-107`), with buffers from `mallocBytes`:
-- `cChatResizeImageUri` on `test.jpg`, limit 14000 (`:365-372`): `data:image/jpg;base64,`, at most 14000 characters; on `"not an image"`: `""`.
-- `cChatResizeImage` on `test.jpg`, limit 100000 (`:374-382`): base64 decoded to at most 100000 bytes, starting `FF D8` for `png = 0` and with the PNG signature for `png = 1`.
-- `cChatResizeImage` with `png = -1`, limit 100000 (`:384-392`): `FF D8` for `test.jpg`; the PNG signature for `logo-large-rgba.png`.
-- `cChatResizeImage` with `png = -1`, limit 261120, on a blank 20000×16 JPEG from `encodeRGB` (`:394-398`): `FF D8`.
-- an input above the limit (`oversizedJpegFile`, `:437-442`): `test.jpg` extended with zeros to `maxDecodeMemoryMB` MiB + 1 byte by `hSetFileSize`, a sparse file; resized as `test.jpg` is when no limit applies
-- file path (`:400-409`):
+`tests/MobileTests.hs`, "Images" (`:103-110`), with buffers from `mallocBytes`:
+- `cChatResizeImageUri` on `test.jpg`, limit 14000 (`:368-375`): `data:image/jpg;base64,`, at most 14000 characters; on `"not an image"`: `""`.
+- `cChatResizeImage` on `test.jpg`, limit 100000 (`:377-385`): base64 decoded to at most 100000 bytes, starting `FF D8` for `png = 0` and with the PNG signature for `png = 1`.
+- `cChatResizeImage` with `png = -1`, limit 100000 (`:387-395`): `FF D8` for `test.jpg`; the PNG signature for `logo-large-rgba.png`.
+- `cChatResizeImage` with `png = -1`, limit 261120, on a blank 20000×16 JPEG from `encodeRGB` (`:397-401`): `FF D8`.
+- an input above the limit (`oversizedJpegFile`, `:450-455`): `test.jpg` extended with zeros to `maxDecodeMemoryMB` MiB + 1 byte by `hSetFileSize`, a sparse file; resized as `test.jpg` is when no limit applies
+- file path (`:403-412`):
   - `cChatResizeImageFileUri` on `test.jpg`, limit 14000: `data:image/jpg;base64,`, at most 14000 characters
   - `cChatResizeImageFile` with `png = -1`, limit 100000, on `logo-large-rgba.png`: the PNG signature
   - a missing file: `""`
   - `cChatResizeImageFileUri` on the input above the limit: `""`
-- file descriptor (`:411-435`), opened with `GHC.IO.FD.openFile`; closed afterwards: `fdStat` fails or names another file
+- file descriptor (`:414-448`), opened with `GHC.IO.FD.openFile`; closed afterwards: `fdStat` fails or names another file
   - `cChatResizeImageFdUri` on `test.jpg`, limit 14000: `data:image/jpg;base64,`, at most 14000 characters; closed afterwards
+  - `cChatResizeImageFdUri` on the read end of a pipe (`pipeFd`, `createPipeFd`), with `test.jpg` written by another thread, limit 14000: `data:image/jpg;base64,`; closed afterwards
   - `cChatResizeImageFd` on `test.pdf`: `""`; closed afterwards
   - `cChatResizeImageFdUri` on the `tests/fixtures` directory, opened with `c_open`: `""`; closed afterwards
   - descriptors 1000000 and −1, not open: `""`
   - `cChatResizeImageFdUri` on the input above the limit: `""`; closed afterwards
-- malformed PNG (`:444-452`): `pngShortImageData` and `pngSideAbove16384` from `ImageTests`: `""` from `cChatResizeImageUri` with limit 14000 and from `cChatResizeImage` with `png = -1` and limit 261120
+- malformed PNG (`:457-465`): `pngShortImageData` and `pngSideAbove16384` from `ImageTests`: `""` from `cChatResizeImageUri` with limit 14000 and from `cChatResizeImage` with `png = -1` and limit 261120
 
 `tests/ChatTests/Files.hs`, "send image with generated preview" (`:47`, `:179-192`):
 - `/img @bob ./tests/fixtures/test.jpg`: the received item has a JPEG data URI preview of at most 14000 characters, read with `APIGetChat` (`lastImagePreview`, `:194-200`).
