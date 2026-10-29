@@ -889,6 +889,25 @@ the name's community entry, and the page asks again. An exact resend is still an
 **Upgrading:** a page that sends no `terms` gets `bad_request` on every order, spend and move, so the
 page and the service are deployed together.
 
+### Codes-only launch
+
+`[names] codes_only = on` lets only prepaid codes register names, as for the launch to the investors
+who hold them before anyone can pay. It is `off` by default. While it is on:
+
+- the names site's shell is served and exported with `<meta name="simplex-names-mode" content="codes">`
+  in place of the build's `content="open"`, and the page then offers only codes. The badges site's
+  shell is unchanged;
+- `POST /api/invoice` for a name and `POST /api/registration/:id/spend` answer
+  `403 {"error": "codes_only"}`, before they read the order, so no order takes money for a name;
+- search, link previews, code checks, code orders (`POST /api/name/register`), the registration
+  view, `find`, the reveal, Try again, another name and record edits work as before. Webhooks and the
+  poller still settle the invoices already open, and badges sell as before.
+
+The setting is read at startup, and the export is written then, so switching it is an edit of the
+ini and a restart, with the same build. Codes for investors come from the group (needs `[group]`, see
+[From the group](#from-the-group)) or from `//issue name` in `--run-cli` (see
+[From the command line](#from-the-command-line)).
+
 ### The gas key
 
 `[chain] service_key` is the registrar key: an Ethereum account (EOA) that sends every names
