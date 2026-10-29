@@ -7,6 +7,8 @@ module StoreService.Web.Http
     newHttpEnv,
     Respond,
     Limit (..),
+    Bucket (..),
+    takeFrom,
     takeToken,
     limited,
     only,
@@ -136,6 +138,13 @@ reclaim now buckets
 fresh :: UTCTime -> Bucket -> Bool
 fresh now Bucket {bkStarted} = diffUTCTime now bkStarted < limitWindow
 
+-- | A request against a minute's limit: the bucket after it, or how long until the minute ends.
+takeFrom :: Int -> UTCTime -> Maybe Bucket -> Either NominalDiffTime Bucket
+takeFrom limit now = \case
+  Just b@Bucket {bkCount, bkStarted}
+    | fresh now b -> if bkCount < limit then Right b {bkCount = bkCount + 1} else Left (limitWindow - diffUTCTime now bkStarted)
+  _ -> Right Bucket {bkCount = 1, bkStarted = now}
+
 takeToken :: HttpEnv -> Limit -> Text -> IO (Maybe Int)
 takeToken HttpEnv {heBuckets} Limit {lmName, lmPerMinute} client = do
   now <- getCurrentTime
@@ -145,16 +154,7 @@ takeToken HttpEnv {heBuckets} Limit {lmName, lmPerMinute} client = do
         count bucket = writeTVar heBuckets (Map.insert key bucket buckets) >> pure Nothing
         -- write the reclaimed map back here too, or a refused request redoes the filtering every time and the map stays at the limit
         refuse seconds = writeTVar heBuckets buckets >> pure (Just seconds)
-    case Map.lookup key buckets of
-      Just bucket@Bucket {bkCount, bkStarted}
-        | fresh now bucket ->
-            if bkCount < lmPerMinute
-              then count bucket {bkCount = bkCount + 1}
-              else refuse (secondsLeft now bkStarted)
-      _ -> count Bucket {bkCount = 1, bkStarted = now}
-  where
-    secondsLeft :: UTCTime -> UTCTime -> Int
-    secondsLeft now started = max 1 (ceiling (limitWindow - diffUTCTime now started))
+    either (refuse . max 1 . ceiling) count (takeFrom lmPerMinute now (Map.lookup key buckets))
 
 limited :: HttpEnv -> Limit -> Request -> Respond -> IO ResponseReceived -> IO ResponseReceived
 limited env limit req respond action =

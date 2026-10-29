@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="918" viewBox="0 0 980 918" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Buying a subscription on iOS: the app creates the record in core, buys with StoreKit, hands the signed transaction to core, core's worker sends purchaseBadge, the service verifies the JWS offline and asks the App Store Server API by original transaction id, then credits the charge; the app finishes the transaction when core reports it credited.">
+  <defs>
+    <marker id="i-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5b6577"/></marker>
+  </defs>
+  <rect width="980" height="918" fill="#f7f8fb"/>
+
+  <text x="24" y="36" font-size="18" font-weight="600" fill="#1a2030">Buying a subscription on iOS</text>
+  <text x="24" y="57" font-size="12.5" fill="#5b6577">The app sends Apple's signed transaction; the service checks it offline, then asks the App Store Server API. Nothing is acknowledged.</text>
+
+  <!-- lifelines -->
+  <line x1="130" y1="108" x2="130" y2="790" stroke="#c9cfdb" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <line x1="390" y1="108" x2="390" y2="790" stroke="#c9cfdb" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <line x1="650" y1="108" x2="650" y2="790" stroke="#c9cfdb" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <line x1="890" y1="108" x2="890" y2="790" stroke="#c9cfdb" stroke-width="1.2" stroke-dasharray="4 4"/>
+
+  <rect x="40" y="72" width="180" height="36" rx="8" fill="#eef1f5" stroke="#c9cfdb"/>
+  <text x="130" y="95" font-size="12.5" font-weight="600" fill="#334155" text-anchor="middle">iOS app · StoreKit 2</text>
+  <rect x="300" y="72" width="180" height="36" rx="8" fill="#e3f1f3" stroke="#b5dadd"/>
+  <text x="390" y="95" font-size="12.5" font-weight="600" fill="#0f5f69" text-anchor="middle">Chat core</text>
+  <rect x="560" y="72" width="180" height="36" rx="8" fill="#eceefe" stroke="#c5c8f0"/>
+  <text x="650" y="95" font-size="12.5" font-weight="600" fill="#3a3fa6" text-anchor="middle">Badge service</text>
+  <rect x="800" y="72" width="170" height="36" rx="8" fill="#e9f1fc" stroke="#8db4e8"/>
+  <text x="885" y="95" font-size="12.5" font-weight="600" fill="#0b5cbf" text-anchor="middle">App Store Server API</text>
+
+  <!-- step numbers -->
+  <g font-size="11" font-weight="600" fill="#8a93a6" text-anchor="middle">
+    <text x="14" y="144">1</text>
+    <text x="14" y="188">2</text>
+    <text x="14" y="252">3</text>
+    <text x="14" y="304">4</text>
+    <text x="14" y="408">5</text>
+    <text x="14" y="474">6</text>
+    <text x="14" y="538">7</text>
+    <text x="14" y="626">8</text>
+    <text x="14" y="688">9</text>
+    <text x="14" y="734">10</text>
+  </g>
+
+  <!-- 1 -->
+  <rect x="30" y="122" width="200" height="38" rx="6" fill="#f3f5f8" stroke="#cfd5df"/>
+  <text x="40" y="137" font-size="11.5" fill="#1a2030">Transaction.all: subscribed</text>
+  <text x="40" y="152" font-size="11.5" fill="#1a2030">before? Sold only to resume.</text>
+
+  <!-- 2 -->
+  <line x1="130" y1="184" x2="388" y2="184" stroke="#5b6577" stroke-width="1.4" marker-end="url(#i-arr)"/>
+  <text x="260" y="178" font-size="11" fill="#334155" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/_badge invoice</text>
+  <line x1="390" y1="208" x2="132" y2="208" stroke="#5b6577" stroke-width="1.2" stroke-dasharray="5 3" marker-end="url(#i-arr)"/>
+  <text x="260" y="202" font-size="11.5" fill="#1a2030" text-anchor="middle">invoiceId</text>
+
+  <!-- 3 -->
+  <rect x="30" y="222" width="200" height="54" rx="6" fill="#f3f5f8" stroke="#cfd5df"/>
+  <text x="40" y="237" font-size="11.5" fill="#1a2030">Product.purchase with</text>
+  <text x="40" y="252" font-size="11.5" fill="#1a2030">appAccountToken = invoiceId</text>
+  <text x="40" y="267" font-size="11.5" fill="#1a2030">→ signed transaction (JWS)</text>
+
+  <!-- 4 -->
+  <line x1="130" y1="300" x2="388" y2="300" stroke="#5b6577" stroke-width="1.4" marker-end="url(#i-arr)"/>
+  <text x="260" y="294" font-size="11" fill="#334155" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/_badge purchase {apple: jws}</text>
+  <line x1="390" y1="324" x2="132" y2="324" stroke="#5b6577" stroke-width="1.2" stroke-dasharray="5 3" marker-end="url(#i-arr)"/>
+  <text x="260" y="318" font-size="11.5" fill="#1a2030" text-anchor="middle">held; transaction stays unfinished</text>
+  <rect x="290" y="338" width="200" height="38" rx="6" fill="#eef7f8" stroke="#b5dadd"/>
+  <text x="300" y="353" font-size="11.5" fill="#1a2030">held under the Buy record's</text>
+  <text x="300" y="368" font-size="11.5" fill="#1a2030">keys, claimed by original id</text>
+
+  <!-- 5 -->
+  <line x1="390" y1="404" x2="648" y2="404" stroke="#5b6577" stroke-width="1.4" marker-end="url(#i-arr)"/>
+  <text x="520" y="398" font-size="11" fill="#334155" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">purchaseBadge {apple: jws}</text>
+  <text x="520" y="419" font-size="11" fill="#5b6577" text-anchor="middle">signed by the purchase key</text>
+
+  <!-- 6 -->
+  <rect x="540" y="436" width="230" height="70" rx="6" fill="#f3f4ff" stroke="#c5c8f0"/>
+  <text x="550" y="451" font-size="11.5" fill="#1a2030">purchase lane (auto-renewable)</text>
+  <text x="550" y="466" font-size="11.5" fill="#1a2030">JWS verified offline, pinned root</text>
+  <text x="550" y="481" font-size="11.5" fill="#1a2030">Sandbox → test_purchase</text>
+  <text x="550" y="496" font-size="11.5" fill="#1a2030">asked &lt; 1 h ago → payment_pending</text>
+
+  <!-- 7 -->
+  <line x1="650" y1="534" x2="888" y2="534" stroke="#5b6577" stroke-width="1.4" marker-end="url(#i-arr)"/>
+  <text x="770" y="528" font-size="11.5" fill="#1a2030" text-anchor="middle">Get All Subscription Statuses</text>
+  <text x="770" y="549" font-size="11" fill="#5b6577" text-anchor="middle">original id, ES256 token</text>
+  <line x1="890" y1="572" x2="652" y2="572" stroke="#5b6577" stroke-width="1.2" stroke-dasharray="5 3" marker-end="url(#i-arr)"/>
+  <text x="770" y="566" font-size="11.5" fill="#1a2030" text-anchor="middle">signed transaction + renewal info</text>
+
+  <!-- 8 -->
+  <rect x="540" y="590" width="230" height="70" rx="6" fill="#f3f4ff" stroke="#c5c8f0"/>
+  <text x="550" y="605" font-size="11.5" fill="#1a2030">both verified to the root;</text>
+  <text x="550" y="620" font-size="11.5" fill="#1a2030">grantable charge → one transaction:</text>
+  <text x="550" y="635" font-size="11.5" fill="#1a2030">payment, purchase, charge, ledger</text>
+  <text x="550" y="650" font-size="11.5" fill="#1a2030">(grant at purchaseDate), issuance</text>
+
+  <!-- 9 -->
+  <line x1="650" y1="684" x2="392" y2="684" stroke="#5b6577" stroke-width="1.4" marker-end="url(#i-arr)"/>
+  <text x="520" y="678" font-size="11.5" fill="#1a2030" text-anchor="middle">badgeCredential, subscription: renewing</text>
+  <text x="520" y="699" font-size="11" fill="#5b6577" text-anchor="middle">stored with the state; badge shown</text>
+
+  <!-- 10 -->
+  <line x1="390" y1="730" x2="132" y2="730" stroke="#5b6577" stroke-width="1.4" marker-end="url(#i-arr)"/>
+  <text x="260" y="724" font-size="11.5" fill="#1a2030" text-anchor="middle">event: storePurchaseCredited</text>
+  <rect x="30" y="744" width="200" height="26" rx="6" fill="#f3f5f8" stroke="#cfd5df"/>
+  <text x="40" y="761" font-size="11" fill="#334155" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">transaction.finish()</text>
+
+  <!-- footer -->
+  <rect x="24" y="802" width="932" height="96" rx="8" fill="#eef1f5"/>
+  <text x="40" y="822" font-size="12" fill="#1a2030">Renewals: StoreKit lists each renewal's transaction, which the app hands over as listed. It names the same original id,</text>
+  <text x="40" y="839" font-size="12" fill="#1a2030">so it joins the credited record and is finished. The service learns of a new charge only from its own renewal check.</text>
+  <text x="40" y="856" font-size="12" fill="#1a2030">A higher tier newer than the last charge credited is held and sent as upgradeBadgeSubscription (see Changing tier), and a new</text>
+  <text x="40" y="873" font-size="12" fill="#1a2030">charge of the profile's retired purchase resumes it. A revoked subscription transaction is finished without being handed</text>
+  <text x="40" y="890" font-size="12" fill="#1a2030">over. Apple has no acknowledgement step.</text>
+</svg>

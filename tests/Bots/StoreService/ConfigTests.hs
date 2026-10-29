@@ -62,10 +62,22 @@ badgeConfigTests = describe "store service config" $ do
   it "reads accept_unverified_store_receipts = on" testDevUnverifiedReceiptsOn
   it "reads accept_unverified_store_receipts = off" testDevUnverifiedReceiptsOff
   it "refuses an accept_unverified_store_receipts that is not on or off" testDevUnverifiedReceiptsNotBoolean
+  it "defaults check_store_during_coverage to off" testDevStoreChecksDefault
+  it "reads check_store_during_coverage = on and off beside accept_unverified_store_receipts = on" testDevStoreChecksOnOff
+  it "refuses check_store_during_coverage = on without accept_unverified_store_receipts or credit_test_purchases on" testDevStoreChecksWithoutMock
+  it "defaults credit_test_purchases to off" testDevCreditTestPurchasesDefault
+  it "reads credit_test_purchases = on and off" testDevCreditTestPurchasesOnOff
+  it "refuses a credit_test_purchases that is not on or off" testDevCreditTestPurchasesNotBoolean
+  it "reads credit_test_purchases = on beside [google] and beside the App Store Sandbox, however its host is spelled" testDevCreditTestPurchasesBesideStores
+  it "refuses credit_test_purchases = on beside [apple] without the App Store Sandbox's server API, however production is spelled" testDevCreditTestPurchasesBesideApple
+  it "reads check_store_during_coverage = on beside credit_test_purchases = on, with no store, beside the App Store Sandbox or [google]" testDevStoreChecksWithCredit
   it "configures no store verifier when [apple] and [google] are absent" testStoresAbsent
   it "reads [apple] and [google], defaulting Google's endpoints" testStoresRead
   it "refuses an incomplete [apple] or [google], naming the key" testStoresIncomplete
-  it "refuses accept_unverified_store_receipts beside a real store verifier" testDevUnverifiedBesideVerifier
+  it "reads the App Store Server API key, defaulting to the production host, and a host in any case with a trailing slash" testAppleServerApi
+  it "refuses an App Store Server API key missing a setting, or an http host" testAppleServerApiIncomplete
+  it "refuses the App Store Sandbox or any other host but production with credit_test_purchases off" testAppleHostWithoutCredit
+  it "refuses accept_unverified_store_receipts beside a real store verifier, also with credit_test_purchases = on" testDevUnverifiedBesideVerifier
   groupConfigTests
 
 fullIni :: T.Text
@@ -417,8 +429,71 @@ testDevUnverifiedReceiptsNotBoolean = withDev "accept_unverified_store_receipts 
   Left e -> e `shouldContain` "accept_unverified_store_receipts"
   Right _ -> expectationFailure "only on and off are accepted, so a typo cannot silently arm the mock"
 
+testDevStoreChecksDefault :: IO ()
+testDevStoreChecksDefault = do
+  withIni fullIni $ \p -> do
+    Right cfg <- readServiceConfig p
+    devCheckStoreDuringCoverage cfg `shouldBe` False
+  withDev "accept_unverified_store_receipts = on\n" $ \r -> devCheckStoreDuringCoverage <$> r `shouldBe` Right False
+
+testDevStoreChecksOnOff :: IO ()
+testDevStoreChecksOnOff =
+  forM_ [("on", True), ("off", False)] $ \(v, expected) ->
+    withDev ("accept_unverified_store_receipts = on\ncheck_store_during_coverage = " <> v <> "\n") $ \r ->
+      devCheckStoreDuringCoverage <$> r `shouldBe` Right expected
+
+testDevStoreChecksWithoutMock :: IO ()
+testDevStoreChecksWithoutMock =
+  forM_ ["", "accept_unverified_store_receipts = off\n", "accept_unverified_store_receipts = off\ncredit_test_purchases = off\n"] $ \devFlags ->
+    withDev (devFlags <> "check_store_during_coverage = on\n") $ \case
+      Left e -> e `shouldBe` "[dev] check_store_during_coverage needs accept_unverified_store_receipts or credit_test_purchases = on, as only a dev deployment may ask a store while coverage runs"
+      Right _ -> expectationFailure "only a dev deployment may ask a store while coverage runs"
+
+testDevCreditTestPurchasesDefault :: IO ()
+testDevCreditTestPurchasesDefault = do
+  withIni fullIni $ \p -> do
+    Right cfg <- readServiceConfig p
+    devCreditTestPurchases cfg `shouldBe` False
+  withDev "accept_unverified_store_receipts = on\n" $ \r -> devCreditTestPurchases <$> r `shouldBe` Right False
+
+testDevCreditTestPurchasesOnOff :: IO ()
+testDevCreditTestPurchasesOnOff =
+  forM_ [("on", True), ("off", False)] $ \(v, expected) ->
+    withDev ("credit_test_purchases = " <> v <> "\n") $ \r ->
+      devCreditTestPurchases <$> r `shouldBe` Right expected
+
+testDevCreditTestPurchasesNotBoolean :: IO ()
+testDevCreditTestPurchasesNotBoolean = withDev "credit_test_purchases = yes\n" $ \case
+  Left e -> e `shouldContain` "credit_test_purchases"
+  Right _ -> expectationFailure "only on and off are accepted, so a typo cannot silently credit test purchases"
+
+testDevCreditTestPurchasesBesideStores :: IO ()
+testDevCreditTestPurchasesBesideStores =
+  forM_ [googleIni, appleSandboxIni, appleApiHostIni "HTTPS://API.STOREKIT-SANDBOX.ITUNES.APPLE.COM/"] $ \stores ->
+    withDevBeside stores "credit_test_purchases = on\n" $ \r ->
+      devCreditTestPurchases <$> r `shouldBe` Right True
+
+testDevCreditTestPurchasesBesideApple :: IO ()
+testDevCreditTestPurchasesBesideApple =
+  forM_ (appleIni : appleIni <> appleApiIni : map appleApiHostIni notSandbox) $ \stores ->
+    forM_ ["", "check_store_during_coverage = on\n"] $ \storeChecks ->
+      withDevBeside stores ("credit_test_purchases = on\n" <> storeChecks) $ \case
+        Left e -> e `shouldContain` "[dev] credit_test_purchases = on needs [apple]'s server API key with api_host = https://api.storekit-sandbox.itunes.apple.com"
+        Right _ -> expectationFailure "test purchases must be credited only beside the App Store Sandbox"
+  where
+    notSandbox = ["https://api.storekit.itunes.apple.com", "HTTPS://API.STOREKIT.ITUNES.APPLE.COM", "https://api.storekit.itunes.apple.com/", "https://example.com"]
+
+testDevStoreChecksWithCredit :: IO ()
+testDevStoreChecksWithCredit =
+  forM_ ["", appleSandboxIni, googleIni] $ \stores ->
+    withDevBeside stores "credit_test_purchases = on\ncheck_store_during_coverage = on\n" $ \r ->
+      (\cfg -> (devCheckStoreDuringCoverage cfg, devCreditTestPurchases cfg)) <$> r `shouldBe` Right (True, True)
+
 withDev :: T.Text -> (Either String ServiceConfig -> IO a) -> IO a
-withDev keys act = withIni (fullIni <> "[dev]\n" <> keys) $ \p -> readServiceConfig p >>= act
+withDev = withDevBeside ""
+
+withDevBeside :: T.Text -> T.Text -> (Either String ServiceConfig -> IO a) -> IO a
+withDevBeside stores keys act = withIni (fullIni <> stores <> "[dev]\n" <> keys) $ \p -> readServiceConfig p >>= act
 
 appleIni, googleIni :: T.Text
 appleIni = "[apple]\nbundle_id = chat.simplex.app\nroot_certificates = /etc/badges/AppleRootCA-G3.cer ,/etc/badges/AppleRootCA-G4.cer,\n"
@@ -433,7 +508,7 @@ testStoresAbsent = withIni fullIni $ \p -> do
 testStoresRead :: IO ()
 testStoresRead = withIni (fullIni <> appleIni <> googleIni) $ \p -> do
   Right cfg <- readServiceConfig p
-  appleStore cfg `shouldBe` Just AppleStoreConfig {aBundleId = "chat.simplex.app", aRootCertificates = "/etc/badges/AppleRootCA-G3.cer" :| ["/etc/badges/AppleRootCA-G4.cer"]}
+  appleStore cfg `shouldBe` Just AppleStoreConfig {aBundleId = "chat.simplex.app", aRootCertificates = "/etc/badges/AppleRootCA-G3.cer" :| ["/etc/badges/AppleRootCA-G4.cer"], aServerApi = Nothing}
   playStore cfg
     `shouldBe` Just
       PlayStoreConfig
@@ -455,15 +530,61 @@ testStoresIncomplete = do
         Left e -> e `shouldContain` key
         Right _ -> expectationFailure ("an incomplete section must fail at boot, naming " <> key)
 
+appleApiIni :: T.Text
+appleApiIni = "api_key_id = 2X9R4HXF34\napi_issuer_id = 57246542-96fe-1a63-e053-0824d011072a\napi_private_key_file = /etc/badges/AuthKey_2X9R4HXF34.p8\n"
+
+appleApiHostIni :: T.Text -> T.Text
+appleApiHostIni host = appleIni <> appleApiIni <> "api_host = " <> host <> "\n"
+
+appleSandboxIni :: T.Text
+appleSandboxIni = appleApiHostIni "https://api.storekit-sandbox.itunes.apple.com"
+
+testAppleServerApi :: IO ()
+testAppleServerApi = do
+  withIni (fullIni <> appleIni <> appleApiIni) $ \p -> do
+    Right cfg <- readServiceConfig p
+    (appleStore cfg >>= aServerApi)
+      `shouldBe` Just
+        AppleServerApi
+          { aKeyId = "2X9R4HXF34",
+            aIssuerId = "57246542-96fe-1a63-e053-0824d011072a",
+            aPrivateKeyFile = "/etc/badges/AuthKey_2X9R4HXF34.p8",
+            aApiHost = "https://api.storekit.itunes.apple.com"
+          }
+  withIni (fullIni <> appleApiHostIni "HTTPS://API.STOREKIT.ITUNES.APPLE.COM//") $ \p -> do
+    Right cfg <- readServiceConfig p
+    (aApiHost <$> (appleStore cfg >>= aServerApi)) `shouldBe` Just "https://api.storekit.itunes.apple.com"
+  forM_ [appleSandboxIni, appleApiHostIni "https://api.storekit-sandbox.itunes.apple.com/"] $ \stores ->
+    withDevBeside stores "credit_test_purchases = on\n" $ \r ->
+      (\cfg -> aApiHost <$> (appleStore cfg >>= aServerApi)) <$> r `shouldBe` Right (Just "https://api.storekit-sandbox.itunes.apple.com")
+
+-- | One or two of the key's settings would leave subscriptions unverified without a word, so they are refused.
+testAppleServerApiIncomplete :: IO ()
+testAppleServerApiIncomplete = do
+  forM_ ["api_key_id", "api_issuer_id", "api_private_key_file"] $ \key ->
+    refused (T.unlines $ filter (not . (key `T.isPrefixOf`)) $ T.lines appleApiIni) "apple.api_key_id, apple.api_issuer_id and apple.api_private_key_file"
+  refused (appleApiIni <> "api_host = http://api.storekit.itunes.apple.com\n") "apple.api_host"
+  where
+    refused keys message =
+      withIni (fullIni <> appleIni <> keys) readServiceConfig >>= \case
+        Left e -> e `shouldContain` message
+        Right _ -> expectationFailure ("an incomplete API key must fail at boot, naming " <> message)
+
+testAppleHostWithoutCredit :: IO ()
+testAppleHostWithoutCredit =
+  forM_ ["https://api.storekit-sandbox.itunes.apple.com", "HTTPS://API.STOREKIT-SANDBOX.ITUNES.APPLE.COM/", "https://api.storekit.itunes.apple.com/inApps", "https://example.com"] $ \host ->
+    forM_ ["", "[dev]\ncredit_test_purchases = off\n"] $ \dev ->
+      withIni (fullIni <> appleApiHostIni host <> dev) readServiceConfig >>= \case
+        Left e -> e `shouldContain` "apple.api_host must be https://api.storekit.itunes.apple.com unless [dev] credit_test_purchases = on"
+        Right _ -> expectationFailure "a deployment that credits no test purchases must ask the production App Store"
+
 testDevUnverifiedBesideVerifier :: IO ()
 testDevUnverifiedBesideVerifier =
-  mapM_
-    ( \stores ->
-        withIni (fullIni <> stores <> "[dev]\naccept_unverified_store_receipts = on\n") readServiceConfig >>= \case
-          Left e -> e `shouldContain` "accept_unverified_store_receipts"
-          Right _ -> expectationFailure "a service that verifies store receipts must not also accept unverified ones"
-    )
-    [appleIni, googleIni]
+  forM_ [appleIni, googleIni] $ \stores ->
+    forM_ ["", "credit_test_purchases = on\n"] $ \credit ->
+      withDevBeside stores ("accept_unverified_store_receipts = on\n" <> credit) $ \case
+        Left e -> e `shouldContain` "accept_unverified_store_receipts"
+        Right _ -> expectationFailure "a service that verifies store receipts must not also accept unverified ones"
 
 parseIni :: T.Text -> IO (Either String ServiceConfig)
 parseIni t = withIni t readServiceConfig

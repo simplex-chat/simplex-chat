@@ -26,13 +26,13 @@ attempts=${ATTEMPTS:-1}
 while [ "$i" -le "$attempts" ]; do
   if "$@" "${args[@]}"; then
     break
-  else
+  elif [ "$i" -lt "$attempts" ]; then
     echo "Attempt $i failed, retrying..."
-    i=$((i + 1))
     sleep 1
   fi
+  i=$((i + 1))
 done
 if [ "$i" -gt "$attempts" ]; then
-  echo "All $attempts attempts failed."
+  echo "Attempt $attempts failed."
   exit 1
 fi

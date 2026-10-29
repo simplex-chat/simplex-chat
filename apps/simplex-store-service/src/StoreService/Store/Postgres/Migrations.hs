@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-module StoreService.Store.Postgres.Migrations (storeServiceSchemaMigrations, servicePrefix, withPrefix) where
+module StoreService.Store.Postgres.Migrations (storeServiceSchemaMigrations, schemaMigrations, servicePrefix, withPrefix) where
 
 import Data.List (sortOn)
 import Data.Text (Text)
@@ -20,7 +20,8 @@ schemaMigrations =
   [ ("20260915_badge_service_schema", m20260915_badge_service_schema, Just down_m20260915_badge_service_schema),
     ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
     ("20260925_badge_store_receipts", m20260925_badge_store_receipts, Just down_m20260925_badge_store_receipts),
-    ("20261010_names", m20261010_names, Just down_m20261010_names),
+    ("20261012_badge_subscriptions", m20261012_badge_subscriptions, Just down_m20261012_badge_subscriptions),
+    ("20261013_names", m20261013_names, Just down_m20261013_names),
     ("20261022_drop_taken_codes", m20261022_drop_taken_codes, Just down_m20261022_drop_taken_codes),
     ("20261022_name_balances", m20261022_name_balances, Just down_m20261022_name_balances),
     ("20261022_name_late_wait", m20261022_name_late_wait, Just down_m20261022_name_late_wait),
@@ -198,10 +199,90 @@ DROP INDEX @idx_payments_provider_ref;
 CREATE INDEX @idx_payments_provider_ref ON @payments(provider, provider_ref);
 |]
 
+m20261012_badge_subscriptions :: Text
+m20261012_badge_subscriptions =
+  withPrefix
+    servicePrefix
+    -- provider_token is a Play purchase token, a bearer secret: it is kept only for a subscription, which Play is asked about again.
+    [r|
+CREATE TABLE @subscription_charges(
+  charge_id TEXT NOT NULL PRIMARY KEY,
+  payment_id TEXT NOT NULL REFERENCES @payments ON DELETE CASCADE,
+  provider_charge_ref TEXT NOT NULL,
+  plan_id TEXT NOT NULL,
+  period_start TIMESTAMPTZ NOT NULL,
+  period_end TIMESTAMPTZ NOT NULL,
+  amount BIGINT,
+  currency TEXT,
+  created_at TIMESTAMPTZ NOT NULL,
+  UNIQUE(payment_id, provider_charge_ref)
+);
+
+ALTER TABLE @badge_ledger ADD COLUMN charge_id TEXT REFERENCES @subscription_charges;
+
+CREATE UNIQUE INDEX @idx_badge_ledger_charge ON @badge_ledger(charge_id, badge_purchase_id);
+
+ALTER TABLE @badge_ledger ADD COLUMN from_purchase_id BIGINT REFERENCES @badge_purchases;
+
+ALTER TABLE @badge_ledger ADD COLUMN to_purchase_id BIGINT REFERENCES @badge_purchases;
+
+CREATE INDEX @idx_badge_ledger_from_purchase ON @badge_ledger(from_purchase_id);
+
+CREATE INDEX @idx_badge_ledger_to_purchase ON @badge_ledger(to_purchase_id);
+
+ALTER TABLE @payments ADD COLUMN subscription_state TEXT;
+
+ALTER TABLE @payments ADD COLUMN subscription_checked_at TIMESTAMPTZ;
+
+ALTER TABLE @payments ADD COLUMN provider_token TEXT;
+
+ALTER TABLE @payments ADD COLUMN rebound_at TIMESTAMPTZ;
+
+ALTER TABLE @payments DROP COLUMN subscription_renews_at;
+
+ALTER TABLE @payments DROP COLUMN grace_until;
+
+ALTER TABLE @payments DROP COLUMN cancelled;
+|]
+
+down_m20261012_badge_subscriptions :: Text
+down_m20261012_badge_subscriptions =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @payments ADD COLUMN subscription_renews_at TIMESTAMPTZ;
+
+ALTER TABLE @payments ADD COLUMN grace_until TIMESTAMPTZ;
+
+ALTER TABLE @payments ADD COLUMN cancelled SMALLINT NOT NULL DEFAULT 0;
+
+ALTER TABLE @payments DROP COLUMN rebound_at;
+
+ALTER TABLE @payments DROP COLUMN provider_token;
+
+ALTER TABLE @payments DROP COLUMN subscription_checked_at;
+
+ALTER TABLE @payments DROP COLUMN subscription_state;
+
+DROP INDEX @idx_badge_ledger_to_purchase;
+
+DROP INDEX @idx_badge_ledger_from_purchase;
+
+ALTER TABLE @badge_ledger DROP COLUMN to_purchase_id;
+
+ALTER TABLE @badge_ledger DROP COLUMN from_purchase_id;
+
+DROP INDEX @idx_badge_ledger_charge;
+
+ALTER TABLE @badge_ledger DROP COLUMN charge_id;
+
+DROP TABLE @subscription_charges;
+|]
+
 -- A registration is live as Names.Store's orderLive decides.
 -- reserved_by is added after the registrations table, which references the codes table.
-m20261010_names :: Text
-m20261010_names =
+m20261013_names :: Text
+m20261013_names =
   withPrefix
     servicePrefix
     [r|
@@ -337,8 +418,8 @@ CREATE INDEX @idx_name_transactions_status ON @name_transactions(status, registr
 
 -- A table another table's foreign key references cannot be dropped, so reserved_by goes first.
 -- The name orders' invoices go with them, except those with a payment, which stay for the accounts.
-down_m20261010_names :: Text
-down_m20261010_names =
+down_m20261013_names :: Text
+down_m20261013_names =
   withPrefix
     servicePrefix
     [r|

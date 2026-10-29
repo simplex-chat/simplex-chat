@@ -200,9 +200,9 @@ testNamesColumns = withServiceStore $ \st -> do
 
 testNamesDownUp :: IO ()
 testNamesDownUp = withServiceStore $ \st -> do
-  let names = dropWhile ((/= "20261010_names") . name) storeServiceSchemaMigrations
+  let names = dropWhile ((/= "20261013_names") . name) storeServiceSchemaMigrations
       badgeColumns = mapM (fmap sort . columnsOf st) badgeTables
-  map name names `shouldBe` ["20261010_names", "20261022_drop_taken_codes", "20261022_name_balances", "20261022_name_late_wait", "20261023_name_terms", "20261027_name_invoiced_units", "20261028_name_terms_acceptance"]
+  map name names `shouldBe` ["20261013_names", "20261022_drop_taken_codes", "20261022_name_balances", "20261022_name_late_wait", "20261023_name_terms", "20261027_name_invoiced_units", "20261028_name_terms_acceptance"]
   badgeBefore <- badgeColumns
   code <- issue st 1 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()

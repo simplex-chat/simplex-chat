@@ -42,6 +42,7 @@ library
       Simplex.Chat.Badges.CLI
       Simplex.Chat.Badges.Code
       Simplex.Chat.Badges.Ledger
+      Simplex.Chat.Badges.StorePlan
       Simplex.Chat.Badges.Types
       Simplex.Chat.Names
       Simplex.Chat.Call
@@ -175,6 +176,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20261012_delivery_job_notification
           Simplex.Chat.Store.Postgres.Migrations.M20261016_badge_store_receipts
           Simplex.Chat.Store.Postgres.Migrations.M20261019_chat_layout
+          Simplex.Chat.Store.Postgres.Migrations.M20261021_badge_subscriptions
           Simplex.Chat.Store.Postgres.Migrations.M20261030_wallet_seeds
   else
       exposed-modules:
@@ -359,6 +361,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20261016_badge_store_receipts
           Simplex.Chat.Store.SQLite.Migrations.M20261018_autoincrement_ids
           Simplex.Chat.Store.SQLite.Migrations.M20261019_chat_layout
+          Simplex.Chat.Store.SQLite.Migrations.M20261021_badge_subscriptions
           Simplex.Chat.Store.SQLite.Migrations.M20261030_wallet_seeds
   other-modules:
       Paths_simplex_chat
@@ -778,6 +781,7 @@ test-suite simplex-chat-test
       Bots.StoreService.BotTests
       Bots.StoreService.CatalogTests
       Bots.StoreService.ConfigTests
+      Bots.StoreService.FakeAppStore
       Bots.StoreService.FakeBTCPay
       Bots.StoreService.FakeEthNode
       Bots.StoreService.FakePlay
