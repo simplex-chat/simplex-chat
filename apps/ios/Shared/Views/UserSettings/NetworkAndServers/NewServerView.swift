@@ -16,8 +16,6 @@ struct NewServerView: View {
     @Binding var userServers: [UserOperatorServers]
     @Binding var serverErrors: [UserServersError]
     @Binding var serverWarnings: [UserServersWarning]
-    // do not pass
-    var previewServerAddress: ServerAddress? = nil
     @State private var serverToEdit: UserServer = .empty
     @State private var showTestFailure = false
     @State private var testing = false
@@ -44,7 +42,7 @@ struct NewServerView: View {
     // TODO Possibly refactor - similar functions in ProtocolServerView
     private func customServer() -> some View {
         VStack {
-            let serverAddress = previewServerAddress ?? parseServerAddress(serverToEdit.server)
+            let serverAddress = parseServerAddress(serverToEdit.server)
             let valid = serverAddress?.valid == true
             List {
                 Section {
@@ -100,8 +98,8 @@ struct NewServerView: View {
     }
 }
 
-func serverProtocolAndOperator(_ server: UserServer, _ userServers: [UserOperatorServers], _ serverAddress: ServerAddress? = nil) -> (ServerProtocol, ServerOperator?)? {
-    if let serverAddress = serverAddress ?? parseServerAddress(server.server) {
+func serverProtocolAndOperator(_ server: UserServer, _ userServers: [UserOperatorServers]) -> (ServerProtocol, ServerOperator?)? {
+    if let serverAddress = parseServerAddress(server.server) {
         let serverProtocol = serverAddress.serverProtocol
         let hostnames = serverAddress.hostnames
         let matchingOperator = userServers.compactMap { $0.operator }.first { op in
@@ -158,8 +156,7 @@ struct NewServerView_Previews: PreviewProvider {
         NewServerView(
             userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator]),
             serverErrors: Binding.constant([]),
-            serverWarnings: Binding.constant([]),
-            previewServerAddress: ServerAddress(serverProtocol: .smp, hostnames: [], port: "", keyHash: "")
+            serverWarnings: Binding.constant([])
         )
     }
 }

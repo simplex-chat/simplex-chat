@@ -15,8 +15,6 @@ struct UserPicker: View {
     @Environment(\.colorScheme) private var colorScheme: ColorScheme
     @Binding var userPickerShown: Bool
     @Binding var activeSheet: UserPickerSheet?
-    // do not pass
-    var previewUsers: [UserInfo]? = nil
     @State private var currentUser: Int64?
     @State private var switchingProfile = false
     @State private var frameWidth: CGFloat = 0
@@ -31,7 +29,7 @@ struct UserPicker: View {
     private let sectionShape = RoundedRectangle(cornerRadius: 10, style: .continuous)
 
     var body: some View {
-        let otherUsers: [UserInfo] = (previewUsers ?? m.users)
+        let otherUsers: [UserInfo] = m.users
             .filter { u in !u.user.hidden && u.user.userId != m.currentUser?.userId }
             .sorted(using: KeyPathComparator<UserInfo>(\.user.activeOrder, order: .reverse))
         let sectionWidth = max(frameWidth - sectionHorizontalPadding * 2, 0)
@@ -100,7 +98,6 @@ struct UserPicker: View {
             .padding(.bottom, sectionSpacing)
         }
         .onAppear {
-            if previewUsers != nil { return }
             // This check prevents the call of listUsers after the app is suspended, and the database is closed.
             if case .active = scenePhase, hasChatCtrl() {
                 currentUser = m.currentUser?.userId
@@ -292,11 +289,12 @@ struct UserPicker_Previews: PreviewProvider {
     static var previews: some View {
         @State var activeSheet: UserPickerSheet?
 
+        let m = ChatModel()
+        m.users = [UserInfo.sampleData, UserInfo.sampleData]
         return UserPicker(
             userPickerShown: .constant(true),
-            activeSheet: $activeSheet,
-            previewUsers: [UserInfo.sampleData, UserInfo.sampleData]
+            activeSheet: $activeSheet
         )
-        .environmentObject(ChatModel(migrationState: nil))
+        .environmentObject(m)
     }
 }

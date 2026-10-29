@@ -1066,8 +1066,7 @@ fun PreviewChatListNavLinkDirect() {
           linkMode = SimplexLinkMode.DESCRIPTION,
           inProgress = false,
           progressByTimeout = false,
-          {},
-          previewNow = previewDate
+          {}
         )
       },
       click = {},
@@ -1112,8 +1111,7 @@ fun PreviewChatListNavLinkGroup() {
           linkMode = SimplexLinkMode.DESCRIPTION,
           inProgress = false,
           progressByTimeout = false,
-          {},
-          previewNow = previewDate
+          {}
         )
       },
       click = {},
@@ -1136,7 +1134,7 @@ fun PreviewChatListNavLinkContactRequest() {
   SimpleXTheme {
     ChatListNavLinkLayout(
       chatLinkPreview = {
-        ContactRequestView(ChatInfo.ContactRequest(UserContactRequest.sampleData.run { UserContactRequest(contactRequestId, cReqChatVRange, localDisplayName, profile, createdAt = previewDate, updatedAt = previewDate) }), previewNow = previewDate)
+        ContactRequestView(ChatInfo.ContactRequest(UserContactRequest.sampleData.run { UserContactRequest(contactRequestId, cReqChatVRange, localDisplayName, profile, createdAt = previewDate, updatedAt = previewDate) }))
       },
       click = {},
       dropdownMenuItems = null,

@@ -2,9 +2,19 @@
 
 Date: 2026-10-29.
 
-Pull request: https://github.com/simplex-chat/simplex-chat/pull/7938. Branch: ep/pure-previews at c91d90cf3.
+Pull request: https://github.com/simplex-chat/simplex-chat/pull/7938. Branch: ep/pure-previews.
 
-The branch has 109 preview-only parameters, each marked `// do not pass`, in 65 files. All 109 take outcome (a): each parameter goes, and the tests or one of two new environment values, S1 and S2, take its place.
+The branch had 109 preview-only parameters, each marked `// do not pass`, in 65 files. All are removed. Previews run master's code, except three views split into a loader and a layout, and one environment value for the QR picture.
+
+Rules, from the owner:
+
+```
+1   previews keep master's core calls that send no network request: database reads, parsing, validation
+2   a preview whose rendering in CI can send a network request draws a layout split cleanly from its view, or its scene is excluded
+3   VersionView is split, so that its scene does not depend on the release
+4   QR codes: one environment value on iOS, one CompositionLocal on Kotlin, set by the snapshot tests
+5   camera: master's code
+```
 
 Paths:
 
@@ -13,119 +23,46 @@ iOS      apps/ios/Shared/
 Kotlin   apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/
 ```
 
+Line numbers of app code are those of master at 3bdecd63f. Core lines are those of `src/Simplex/Chat/Library/Commands.hs` and `src/Simplex/Chat/Remote.hs` at the same commit; agent lines are those of simplexmq c0c416daf, the commit `cabal.project` pins.
+
 ## 1. Outcomes
 
 ```
 (a) CI    the parameter goes; the preview runs master's code; the scene is rendered on master and compared on every ios-sim or desktop-linux run
 (a) CL    the parameter goes; the preview draws previewDate (2025-01-15 10:15 UTC); from 2026-01-01 the clock-dependent text is "1/15/25" and "Wed, 15 Jan 2025", as in master's references
-(a) M     the parameter is master's; the comment and the `.task` guard added by the branch go
-(a) X     the parameter goes; the scene is excluded as on master
-(a) XV    the parameter goes; VersionView_Previews joins EXCLUDED
-(a) S1    the parameter goes; the snapshot test sets seam S1
-(a) S2    the parameter goes; the snapshot test sets seam S2
+(a) X     the parameter goes; the scene stays excluded, as on master
+(a) S1    the parameter goes; the snapshot test sets the QR picture of seam S1
 (a) SIM   the parameter goes; the simulator build of CodeScanner draws a fixed text and requests no camera access
+(b)       the parameter goes; the preview draws the layout of a loader/layout split (section 3)
 ```
 
 Calls kept in previews, as on master:
 
 ```
-db        core API reading or writing the CI database
-srv       core API that contacts a server when its object exists
-agent     agent API
+db        core API reading or writing the CI database, without network (section 4)
 fn        pure core function: markdown parse, name validation, JSON length, server address parse
-store     StoreKit
+agent     agent API reading agent memory
+store     StoreKit read without network: canMakePayments, storefront country code
 keychain  keychain read
 files     file read or delete
 defaults  UserDefaults write
 paste     pasteboard read
+camera    camera authorization status, and the permission request of ScannerInView
 global    write to a shared singleton
 ```
 
-## 2. Seams
-
-### S1: QR picture
-
-iOS, `Views/NewChat/QRCode.swift`:
-
-```swift
-extension EnvironmentValues {
-    struct QRCodeImage: EnvironmentKey {
-        static let defaultValue: UIImage? = nil
-    }
-
-    var qrCodeImage: UIImage? {
-        get { self[QRCodeImage.self] }
-        set { self[QRCodeImage.self] = newValue }
-    }
-}
-```
-
-`QRCode`:
-
-```
-added     @Environment(\.qrCodeImage) private var qrCodeImage
-changed   if let image = qrCodeImage ?? image {
-changed   .task { if qrCodeImage == nil { image = await generateImage(uri, tintColor: tintColor, errorLevel: small ? "M" : "L") } }
-```
-
-Kotlin, `views/newchat/QRCode.kt`:
-
-```
-added     val LocalQRCodeImage = staticCompositionLocalOf<ImageBitmap?> { null }
-added     val qrCodeImage = LocalQRCodeImage.current                                  (QRCode, before remember)
-changed   (qrCodeImage ?: qrCodeBitmap(connReq, 1024, errorLevel)).replaceColor(...)   (QRCode, in remember)
-```
-
-Full lines by `git diff -w --word-diff`, blank lines aside: iOS 10 added and 2 changed; Kotlin 2 added and 1 changed.
-
-### S2: camera status
-
-iOS, `Views/NewChat/NewChatView.swift`, beside `ScannerInView`:
-
-```swift
-extension EnvironmentValues {
-    struct CameraAuthorization: EnvironmentKey {
-        static let defaultValue: AVAuthorizationStatus? = nil
-    }
-
-    var cameraAuthorization: AVAuthorizationStatus? {
-        get { self[CameraAuthorization.self] }
-        set { self[CameraAuthorization.self] = newValue }
-    }
-}
-```
-
-`ScannerInView`:
-
-```
-added     @Environment(\.cameraAuthorization) private var cameraAuthorization
-changed   let status = cameraAuthorization ?? AVCaptureDevice.authorizationStatus(for: .video)   (.task)
-```
-
-Full lines by `git diff -w --word-diff`, blank lines aside: 10 added and 1 changed.
-
-### Snapshot tests
-
-```
-iOS       renderScene root: .environment(\.qrCodeImage, UIImage(named: "preview-qr-code", in: Bundle(for: SnapshotTests.self), compatibleWith: nil))
-iOS       renderScene root: .environment(\.cameraAuthorization, .denied)
-iOS       preview-qr-code.png moves to apps/ios/SimpleX Snapshots/, a resource of the SimpleX Snapshots target
-Kotlin    renderSnapshot root: LocalQRCodeImage provides previewQRCodeImage()
-Kotlin    previewQRCodeImage() moves to SnapshotTest.kt; it reads preview-qr-code-light.png or preview-qr-code-dark.png by the theme of the pass
-```
-
-## 3. Parameters
+## 2. Parameters
 
 | # | File | Parameter | Outcome | Measure | Calls kept |
 |---|---|---|---|---|---|
 | 1 | Model/ChatModel.swift | `ChatModel.init(migrationState:)` | (a) CI | previews call `ChatModel()`, as master's 12 preview sites | files |
-| 2 | Views/Badges/BadgesCheckOrderView.swift | `priceList` | (a) M | master's preview passes it | store |
-| 3 | Views/Badges/BadgesCheckOrderView.swift | `previewCanBuy` | (a) CI | `store.canBuy` after the launch sweep `presentUnfinished` of the CI app | — |
-| 4 | Views/Badges/BadgesCheckOrderView.swift | `previewCanMakePayments` | (a) CI | `AppStore.canMakePayments` of the simulator | store |
-| 5 | Views/Badges/BadgesChooseBadgeView.swift | `previewMonthlyPrices` | (a) X | the price text is "loading" or "unavailable" by when StoreKit answers | — |
-| 6 | Views/Badges/BadgesChooseBadgeView.swift | `previewBrowserAllowed` | (a) X | as row 5 | — |
-| 7 | Views/Badges/BadgesHowLongView.swift | `priceList` | (a) M | master's preview passes it | store |
-| 8 | Views/Badges/BadgesRedeemCodeView.swift | `previewCameraStatus` | (a) S2 | "Enable camera access" placeholder | — |
+| 2 | Views/Badges/BadgesCheckOrderView.swift | `priceList` | (b) | `BadgesCheckOrderLayout(priceList:)` | — |
+| 3 | Views/Badges/BadgesCheckOrderView.swift | `previewCanBuy` | (b) | the layout reads `store.canBuy` | — |
+| 4 | Views/Badges/BadgesCheckOrderView.swift | `previewCanMakePayments` | (b) | the layout reads `AppStore.canMakePayments` | store |
+| 5 | Views/Badges/BadgesChooseBadgeView.swift | `previewMonthlyPrices` | (a) X | master | — |
+| 6 | Views/Badges/BadgesChooseBadgeView.swift | `previewBrowserAllowed` | (a) X | master | — |
+| 7 | Views/Badges/BadgesHowLongView.swift | `priceList` | (b) | `BadgesHowLongLayout(priceList:)` | — |
+| 8 | Views/Badges/BadgesRedeemCodeView.swift | `previewCameraStatus` | (a) CI | ScannerInView draws "Tap to scan" | camera |
 | 9 | Views/Call/IncomingCallView.swift | `previewInvitation` | (a) CI | master's preview sets `CallController.shared.activeCallInvitation` | global |
 | 10 | Views/Chat/ChatInfoView.swift | `ChatInfoView.previewContactInfo` | (a) CI | `apiContactInfo`, `apiGetContactCode` for the sample contact | db |
 | 11 | Views/Chat/ChatInfoView.swift | `ChatInfoView.previewChatItemTTL` | (a) CI | `ChatModel.shared.chatItemTTL` of the CI database | — |
@@ -135,13 +72,13 @@ Kotlin    previewQRCodeImage() moves to SnapshotTest.kt; it reads preview-qr-cod
 | 15 | Views/Chat/ChatView.swift | `previewAvailableContent` | (a) CI | `initChatView` for the sample contact | db |
 | 16 | Views/Chat/Group/AddGroupMembersView.swift | `AddGroupMembersView.previewContacts` | (a) CI | `filterMembersToAdd`: contacts of `ChatModel.shared.chats` | — |
 | 17 | Views/Chat/Group/AddGroupMembersView.swift | `AddGroupMembersViewCommon.previewContacts` | (a) CI | as row 16 | — |
-| 18 | Views/Chat/Group/ChannelRelaysView.swift | `previewMembers` | (a) CI | `loadGroupMembers` for the sample group | db |
+| 18 | Views/Chat/Group/ChannelRelaysView.swift | `previewMembers` | (a) CI | `loadGroupMembers`, `apiGetGroupRelays` for the sample group | db |
 | 19 | Views/Chat/Group/GroupChatInfoView.swift | `previewGroupLink` | (a) CI | `apiGetGroupLink` for the sample group | db |
 | 20 | Views/Chat/Group/GroupChatInfoView.swift | `previewChatItemTTL` | (a) CI | as row 11 | — |
 | 21 | Views/Chat/Group/GroupChatInfoView.swift | `sendReceiptsUserDefault` | (a) CI | `onAppear` reads `User.sampleData`, which the test sets as `ChatModel.shared.currentUser` | — |
 | 22 | Views/Chat/Group/GroupLinkView.swift | `previewQRImage` | (a) S1 | fixed QR picture | — |
-| 23 | Views/Chat/Group/GroupLinkView.swift | `shouldCreate` | (a) CI | `apiCreateGroupLink` for group 1 fails on the CI database | srv |
-| 24 | Views/Chat/Group/GroupMemberInfoView.swift | `previewMemberInfo` | (a) CI | `apiGroupMemberInfo`, `apiGetGroupMemberCode` for the sample member | db |
+| 23 | Views/Chat/Group/GroupLinkView.swift | `shouldCreate` | (a) CI | `apiCreateGroupLink` for group 1 fails on the CI database | db |
+| 24 | Views/Chat/Group/GroupMemberInfoView.swift | `previewMemberInfo` | (a) CI | `apiGroupMemberInfo`, `apiGetGroupMemberCode`, `apiContactInfo` for the sample member | db |
 | 25 | Views/Chat/Group/GroupProfileView.swift | `previewShortDescrLength` | (a) CI | `chatJsonLength` of the sample group's short description; GroupWelcomeView_Previews as well | fn |
 | 26 | Views/Chat/Group/MemberSupportView.swift | `previewMembers` | (a) CI | `loadGroupMembers` for the sample group | db |
 | 27 | Views/Chat/Group/SecondaryChatView.swift | `previewAvailableContent` | (a) CI | `initChatView` of ChatView for the sample group scope | db |
@@ -153,8 +90,8 @@ Kotlin    previewQRCodeImage() moves to SnapshotTest.kt; it reads preview-qr-cod
 | 33 | Views/ChatList/ChatListView.swift | `previewNoShownBadge` | (a) CI | as row 30 | — |
 | 34 | Views/ChatList/ChatListView.swift | `chatTagsModel` | (a) CI | `ChatTagsModel.shared` of the CI profile | — |
 | 35 | Views/ChatList/ChatListView.swift | `SubsStatusIndicator.previewSubsTotal` | (a) CI | as row 31 | agent |
-| 36 | Views/ChatList/ServersSummaryView.swift | `previewServersSummary` | (a) X | `onAppear` loads the agent's statistics of the run and starts a timer | — |
-| 37 | Views/ChatList/ServersSummaryView.swift | `previewServerAddresses` | (a) X | as row 36 | — |
+| 36 | Views/ChatList/ServersSummaryView.swift | `previewServersSummary` | (a) X | master | — |
+| 37 | Views/ChatList/ServersSummaryView.swift | `previewServerAddresses` | (a) X | master | — |
 | 38 | Views/ChatList/UserPicker.swift | `previewUsers` | (a) CI | `listUsersAsync` of the CI database | db |
 | 39 | Views/Database/DatabaseEncryptionView.swift | `initialRandomDBPassphrase` | (a) CI | `initialRandomDBPassphraseGroupDefault` of the CI app | — |
 | 40 | Views/Database/DatabaseEncryptionView.swift | `storedKey` | (a) CI | `kcDatabasePassword` of the CI app | keychain |
@@ -164,16 +101,16 @@ Kotlin    previewQRCodeImage() moves to SnapshotTest.kt; it reads preview-qr-cod
 | 44 | Views/Database/DatabaseView.swift | `previewUserName` | (a) CI | `User.sampleData`, which the test sets | — |
 | 45 | Views/Database/DatabaseView.swift | `previewAppFilesCountAndSize` | (a) CI | the CI app's files folder | files |
 | 46 | Views/LocalAuth/SetAppPasscodeView.swift | `previewProhibitedPasscode` | (a) CI | `kcSelfDestructPassword` of the CI app | keychain |
-| 47 | Views/Migration/MigrateFromDevice.swift | `previewMigrationState` | (a) X | `onAppear` stops the chat | — |
+| 47 | Views/Migration/MigrateFromDevice.swift | `previewMigrationState` | (a) X | master | — |
 | 48 | Views/Migration/MigrateToDevice.swift | `pasteboardHasStrings` | (a) CI | the CI simulator's pasteboard, empty after the smoke test | paste |
-| 49 | Views/Migration/MigrateToDevice.swift | `previewCameraStatus` | (a) S2 | "Enable camera access" placeholder | — |
+| 49 | Views/Migration/MigrateToDevice.swift | `previewCameraStatus` | (a) CI | ScannerInView draws "Tap to scan" | camera |
 | 50 | Views/NewChat/AddChannelView.swift | `previewValidName` | (a) CI | `mkValidName("")` | fn |
 | 51 | Views/NewChat/AddChannelView.swift | `previewHasRelays` | (a) CI | `checkHasRelays` of the CI profile | db |
 | 52 | Views/NewChat/AddGroupView.swift | `previewValidName` | (a) CI | `mkValidName("")` | fn |
-| 53 | Views/NewChat/NewChatView.swift | `NewChatView.previewQRImage` | (a) X | `onAppear` creates a one-time link | — |
-| 54 | Views/NewChat/NewChatView.swift | `connLinkInvitation` | (a) X | as row 53 | — |
-| 55 | Views/NewChat/NewChatView.swift | `InviteView.previewQRImage` | (a) X | as row 53 | — |
-| 56 | Views/NewChat/NewChatView.swift | `ScannerInView.previewCameraStatus` | (a) S2 | "Enable camera access" placeholder | — |
+| 53 | Views/NewChat/NewChatView.swift | `NewChatView.previewQRImage` | (a) X | master | — |
+| 54 | Views/NewChat/NewChatView.swift | `connLinkInvitation` | (a) X | master | — |
+| 55 | Views/NewChat/NewChatView.swift | `InviteView.previewQRImage` | (a) X | master | — |
+| 56 | Views/NewChat/NewChatView.swift | `ScannerInView.previewCameraStatus` | (a) CI | rows 8, 49, 67 | camera |
 | 57 | Views/NewChat/QRCode.swift | `MutableQRCode.previewImage` | (a) S1 | fixed QR picture | — |
 | 58 | Views/NewChat/QRCode.swift | `SimpleXCreatedLinkQRCode.previewImage` | (a) S1 | fixed QR picture | — |
 | 59 | Views/NewChat/QRCode.swift | `SimpleXLinkQRCode.previewImage` | (a) S1 | fixed QR picture | — |
@@ -183,12 +120,12 @@ Kotlin    previewQRCodeImage() moves to SnapshotTest.kt; it reads preview-qr-cod
 | 63 | Views/Onboarding/OnboardingView.swift | `previewVersionSaved` | (a) CI | `setLastVersionDefault` | defaults |
 | 64 | Views/Onboarding/SimpleXInfo.swift | `previewVersionSaved` | (a) CI | as row 63 | defaults |
 | 65 | Views/Onboarding/WhatsNewView.swift | `previewInUS` | (a) CI | as row 32 | store |
-| 66 | Views/RemoteAccess/ConnectDesktopView.swift | `previewRemoteCtrls` | (a) CI | `setDeviceName`, `listRemoteCtrls` of the CI database | db |
-| 67 | Views/RemoteAccess/ConnectDesktopView.swift | `previewCameraStatus` | (a) S2 | "Enable camera access" placeholder | — |
-| 68 | Views/TerminalView.swift | `authorized` | (a) X | master's parameter; `onAppear` loads `TerminalItems.shared`, the commands of the test run | — |
-| 69 | Views/TerminalView.swift | `showing` | (a) X | as row 68 | — |
+| 66 | Views/RemoteAccess/ConnectDesktopView.swift | `previewRemoteCtrls` | (a) CI | `setLocalDeviceName`, `listRemoteCtrls` of the CI database | db |
+| 67 | Views/RemoteAccess/ConnectDesktopView.swift | `previewCameraStatus` | (a) CI | ScannerInView draws "Tap to scan" | camera |
+| 68 | Views/TerminalView.swift | `authorized` | (a) X | master's parameter; master | — |
+| 69 | Views/TerminalView.swift | `showing` | (a) X | master | — |
 | 70 | Views/UserSettings/CallSettings.swift | `previewInChina` | (a) CI | `CallController.isInChina` of the simulator's storefront | store |
-| 71 | Views/UserSettings/NetworkAndServers/NetworkAndServers.swift | `justOpened` | (a) CI | `getUserServers` of the CI database | db |
+| 71 | Views/UserSettings/NetworkAndServers/NetworkAndServers.swift | `justOpened` | (a) CI | `getUserServers`, `validateServers_` of the CI database | db |
 | 72 | Views/UserSettings/NetworkAndServers/NewServerView.swift | `previewServerAddress` | (a) CI | `parseServerAddress("")` | fn |
 | 73 | Views/UserSettings/NetworkAndServers/ProtocolServerView.swift | `previewServerAddress` | (a) CI | `parseServerAddress` of the sample server | fn |
 | 74 | Views/UserSettings/NetworkAndServers/ProtocolServerView.swift | `previewQRImage` | (a) S1 | fixed QR picture | — |
@@ -199,20 +136,20 @@ Kotlin    previewQRCodeImage() moves to SnapshotTest.kt; it reads preview-qr-cod
 | 79 | Views/UserSettings/PrivacySettings.swift | `previewUserName` | (a) CI | as row 44 | — |
 | 80 | Views/UserSettings/SettingsView.swift | `previewInUS` | (a) CI | as row 32 | store |
 | 81 | Views/UserSettings/UserAddressView.swift | `previewQRImage` | (a) S1 | fixed QR picture | — |
-| 82 | Views/UserSettings/VersionView.swift | `previewVersionInfo` | (a) XV | the app build number and the core version change with each release | — |
+| 82 | Views/UserSettings/VersionView.swift | `previewVersionInfo` | (b) | `VersionLayout(appVersion:appBuild:versionInfo:)` | — |
 | 83 | model/ChatModel.kt | `getTimestampDateText.previewNow` | (a) CL | DateSeparator text | — |
 | 84 | model/ChatModel.kt | `getTimestampText.previewNow` | (a) CL | chat list time | — |
 | 85 | views/chat/ChatView.kt | `ChatLayout.previewNow` | (a) CL | as row 83 | — |
 | 86 | views/chat/ChatView.kt | `ChatItemsList.previewNow` | (a) CL | as row 83 | — |
 | 87 | views/chat/ChatView.kt | `DateSeparator.previewNow` | (a) CL | as row 83 | — |
 | 88 | views/chat/group/GroupMemberInfoView.kt | `previewContactConnectionStats` | (a) CI | `apiContactInfo` in `withBGApi` throws "Controller is not initialized" in the test JVM | db |
-| 89 | views/chat/group/GroupProfileView.kt | `previewShortDescrFits` | (a) X | `previewsCallingCore`: `chatJsonLength` from composition; the test JVM does not load the core library | — |
+| 89 | views/chat/group/GroupProfileView.kt | `previewShortDescrFits` | (a) X | `previewsCallingCore`, as master | — |
 | 90 | views/chatlist/ChatPreviewView.kt | `previewNow` | (a) CL | as row 84 | — |
 | 91 | views/chatlist/ContactRequestView.kt | `previewNow` | (a) CL | as row 84 | — |
 | 92 | views/database/DatabaseErrorView.kt | `previewStoredDBKey` | (a) CI | `ksDatabasePassword.get()` returns null with the CI test's settings | — |
 | 93 | views/database/DatabaseErrorView.kt | `previewShowRestoreDbButton` | (a) CI | `shouldShowRestoreDbButton` returns false: `encryptionStartedAt` is null in the CI test's settings | — |
 | 94 | views/database/DatabaseErrorView.kt | `previewUseKeychain` | (a) CI | `storeDBPassphrase` default, true | — |
-| 95 | views/newchat/AddChannelView.kt | `AddChannelView.previewNameValid` | (a) X | `previewsCallingCore`: `chatValidName` from composition | — |
+| 95 | views/newchat/AddChannelView.kt | `AddChannelView.previewNameValid` | (a) X | `previewsCallingCore`, as master | — |
 | 96 | views/newchat/AddChannelView.kt | `AddChannelView.previewHasRelays` | (a) X | as row 95 | — |
 | 97 | views/newchat/AddChannelView.kt | `ProfileStepView.previewNameValid` | (a) X | as row 95 | — |
 | 98 | views/newchat/AddChannelView.kt | `ProfileStepView.previewHasRelays` | (a) X | as row 95 | — |
@@ -228,97 +165,138 @@ Kotlin    previewQRCodeImage() moves to SnapshotTest.kt; it reads preview-qr-cod
 | 108 | views/usersettings/UserAddressView.kt | `previewQRImage` | (a) S1 | fixed QR picture | — |
 | 109 | views/usersettings/UserProfileView.kt | `previewShortDescrFits` | (a) X | as row 89; EditOff and EditOn | — |
 
-## 4. Counts
+Counts:
 
 ```
-(a)      109
-  CI      62
+(a)      104
+  CI      64
   CL       7
-  M        2
   X       17
-  XV       1
   S1      14
-  S2       4
   SIM      2
-(b)        0
+(b)        5
 (c)        0
 ```
 
-Rows keeping calls to the CI database, a server, the agent or StoreKit, by scene:
+## 3. Splits
+
+Each loader keeps its view's name and parameters, so its callers are unchanged. The loader runs the call it ran before, at the same moment: the view's `.task` or `.onAppear` moves from the end of the layout's modifiers to the layout in the loader's body. State stays where it was: the loader owns the loaded value, the layout owns its UI state. The preview draws the layout with fixed values.
 
 ```
-BadgesCheckOrderView      2       store
-BadgesHowLongView         7       store
-ChatInfoView              10      db
-ChatView                  15      db
-ChannelRelaysView         18      db
-GroupChatInfoView         19      db
-GroupLinkView             23      srv
-GroupMemberInfoView       24      db
-MemberSupportView         26      db
-SecondaryChatView         27      db
-ChatListView              31 35   agent
-UserPicker                38      db
-AddChannelView            51      db
-ConnectDesktopView        66      db
-NetworkServersView        71      db
-NotificationsView         78      db
-GroupMemberInfoView.kt    88      db, throws
+BadgesCheckOrderView   Views/Badges/BadgesCheckOrderView.swift
+  loader               BadgesCheckOrderView(level, period, startDate, priceList): .task { await BadgeStore.shared.load() }
+  layout               BadgesCheckOrderLayout(level, period, startDate, priceList)
+  moved                .task { await store.load() } (:107)
+  preview              BadgesCheckOrderLayout
+  full lines           10 added, 1 removed, 1 changed
+
+BadgesHowLongView      Views/Badges/BadgesHowLongView.swift
+  loader               BadgesHowLongView(level, startDate, priceList): .task { await BadgeStore.shared.load() }
+  layout               BadgesHowLongLayout(level, startDate, priceList)
+  moved                .task { await store.load() } (:145)
+  preview              BadgesHowLongLayout
+  full lines           9 added, 1 removed, 1 changed
+
+VersionView            Views/UserSettings/VersionView.swift
+  loader               VersionView: @State versionInfo, .onAppear { versionInfo = try apiGetVersion() }
+  layout               VersionLayout(appVersion, appBuild, versionInfo)
+  moved                .onAppear (:40-46), @EnvironmentObject theme (:13) into the layout
+  preview              VersionLayout(appVersion: "7.1", appBuild: "363", versionInfo: CoreVersionInfo(version: "7.1.0.14", ...))
+  full lines           16 added, 8 removed, 1 changed
 ```
 
-## 5. Other branch changes
+`store` of both badge layouts is `BadgeStore.shared` (`@ObservedObject private var store = BadgeStore.shared`), the object the loaders call.
 
-iOS:
+## 4. Network evidence
 
-```
-ChatModel.init                                   revert
-Preview Content asset catalog                    revert; the PNG moves to the test target
-project.pbxproj, app target                      revert
-project.pbxproj, test target                     preview-qr-code.png in the SimpleX Snapshots resources
-SimpleXChat/APITypes.swift, ConnectionStats.sampleData   revert
-MigrateFromDevice.swift, MigrationFromState visibility    revert
-NewServerView.swift, serverProtocolAndOperator parameter  revert
-WhatsNewView.swift, makeVersionDescriptions      revert
-ScanCodeView.swift, scanner branch              revert
-ScanProtocolServer.swift, scanner branch         revert
-preview bodies                                   revert to master
-ActiveCallView.swift, ActiveCallOverlay_Previews deleted   keep
-SnapshotTests.swift, 5 added scenes              revert
-SnapshotTests.swift, ActiveCallOverlay scene     removed: keep
-SnapshotTests.swift, VersionView scene           remove
-SnapshotTests.swift, SnapshotFixtures markdown table       keep
-SnapshotTests.swift, renderScene environment     add S1, S2
-check-previews.py, EXCLUDED                      master's 7 and VersionView_Previews
-scripts/ci/ios-sim/README.md                     QR picture and camera status sentences; VersionView reason
-```
+Rows whose preview kept a database, server, agent or StoreKit call:
 
-Kotlin:
+| Rows | Scene | Code path | Network in CI |
+|---|---|---|---|
+| 2, 3, 4 | BadgesCheckOrderView | BadgesCheckOrderView.swift:107 `store.load()` → BadgeStore.swift:219 `Product.products(for:)`, :228 `subscriptionOriginalIds()` | StoreKit: yes; split |
+| 7 | BadgesHowLongView | BadgesHowLongView.swift:145 `store.load()` → BadgeStore.swift:219 | StoreKit: yes; split |
+| 10 | ChatInfoView | ChatInfoView.swift:305-326: :313 `apiContactInfo` → Commands.hs:1956-1964 (`getContact` :1958, agent `getConnectionServers` :1963 → Agent.hs:3128-3131 store read, :3141-3180 agent memory); :314 `apiGetContactCode` → Commands.hs:2040-2053, :3838-3839 → Agent.hs:3133-3138 store read | no |
+| 15 | ChatView | ChatView.swift:333-338 → `initChatView` :743-803: :750 `apiContactInfo` (row 10) for the sample contact; :791 → :805-818 `apiGetChatContentTypes` → Commands.hs:738-739 store read; :772-790, with :783 `apiGetUpdatedGroupLinkData`, needs a group with `useRelays`; :797-801 needs an unread chat | no |
+| 18 | ChannelRelaysView | ChannelRelaysView.swift:45-55: `loadGroupMembers` → ChatModel.swift:592-602 `apiListMembers` → Commands.hs:3293-3294 store read; :49 `apiGetGroupRelays` → Commands.hs:2790-2795 store read | no |
+| 19 | GroupChatInfoView | GroupChatInfoView.swift:298-312: :305 `apiGetGroupLink` → Commands.hs:3392-3395 store read | no |
+| 23 | GroupLinkView | GroupLinkView.swift:164-169 → :179-196 `apiCreateGroupLink(1)` → Commands.hs:3364-3377: `getGroupInfo` :3365 fails before `createConnection` :3373; the CI database has no group: smoke-test.sh:93-126 creates only the profile | no |
+| 24 | GroupMemberInfoView | GroupMemberInfoView.swift:293-328: :301 `apiGroupMemberInfo` → Commands.hs:1986-1989 store read and agent memory; :303 `apiGetGroupMemberCode` → Commands.hs:2054-2078 store read; :320 `apiContactInfo` (row 10) | no |
+| 26 | MemberSupportView | MemberSupportView.swift:22-26 `loadGroupMembers` (row 18) | no |
+| 27 | SecondaryChatView | ChatView `initChatView` for a group: `GroupInfo.sampleData.useRelays` is false (SimpleXChat/ChatTypes.swift:3103), so :772-790 is skipped; :791 (row 15) | no |
+| 31, 35 | ChatListView | ChatListView.swift:736-760 `startTask` :753 `getAgentSubsTotal` → Commands.hs:3760-3764 → Agent/Client.hs:2627-2645 agent memory | no |
+| 38 | UserPicker | UserPicker.swift:100-116: :106 `listUsersAsync` → Commands.hs:517 store read | no |
+| 51 | AddChannelView | AddChannelView.swift:112-113 → `checkHasRelays` :272-278: :273 `getUserServers` → Commands.hs:1816-1817 store read | no |
+| 66 | ConnectDesktopView | ConnectDesktopView.swift:87-104: :88 `setLocalDeviceName` → Commands.hs:3704 variable write; :89 `listRemoteCtrls` → Commands.hs:3723 → Remote.hs:606-611 store read; :92 `disconnectDesktop` needs a desktop session; :94 `findKnownDesktop` needs `useMulticast` (:29-31), which needs a linked desktop | no |
+| 71 | NetworkServersView | NetworkAndServers.swift:136-155: :140 `getUserServers` (row 51); :144 `validateServers_` → Commands.hs:1833-1834, :4322-4326 store read | no |
+| 78 | NotificationsView | NotificationsView.swift:83-85 `apiGetNtfToken` → Commands.hs:1681 → Agent.hs:3332-3336 store read | no |
+| 88 | GroupMemberInfoView.kt | GroupMemberInfoView.kt:502-509 `withBGApi { apiContactInfo }` → model/SimpleXAPI.kt:989 throws "Controller is not initialized" | no |
 
-```
-ChatModel.kt, clock parameters                  revert
-ChatView.kt, clock parameters                    revert
-ChatPreviewView.kt, clock parameter              revert
-ContactRequestView.kt, clock parameter           revert
-QRCode.kt, previewQRCodeImage                    moves to SnapshotTest.kt
-desktopTest/resources/preview-qr-code-light.png  keep
-desktopTest/resources/preview-qr-code-dark.png   keep
-NetworkAndServers.kt preview servers             revert
-preview bodies                                   revert to master
-DesktopApp.kt, AppPreview deleted                keep
-SnapshotTest.kt, setting pins and appBarMaxHeightPx         keep
-SnapshotTest.kt, previewsCallingCore             restore master's 5
-SnapshotTest.kt, 5 added scenes                  revert
-SnapshotTest.kt, AppPreview scene removed        keep
-SnapshotTest.kt, renderSnapshot                  provide LocalQRCodeImage
-scripts/ci/desktop-linux/README.md               restore the previewsCallingCore paragraph; QR picture sentence names LocalQRCodeImage
+## 5. QR picture (S1)
+
+iOS, `Views/NewChat/QRCode.swift`:
+
+```swift
+extension EnvironmentValues {
+    struct FixedQRCode: EnvironmentKey {
+        static let defaultValue: UIImage? = nil
+    }
+
+    var fixedQRCode: UIImage? {
+        get { self[FixedQRCode.self] }
+        set { self[FixedQRCode.self] = newValue }
+    }
+}
 ```
 
-## 6. App code after the rework
+```
+QRCode   added     @Environment(\.fixedQRCode) private var fixedQRCode
+QRCode   changed   if let image = fixedQRCode ?? image {
+QRCode   changed   .task { if fixedQRCode == nil { image = await generateImage(...) } }
+```
+
+Kotlin, `views/newchat/QRCode.kt`:
 
 ```
-iOS      Views/NewChat/QRCode.swift          S1: 10 lines added, 2 changed
-iOS      Views/NewChat/NewChatView.swift     S2: 10 lines added, 1 changed
-iOS      Views/Call/ActiveCallView.swift     preview deleted
-Kotlin   views/newchat/QRCode.kt             S1: 2 lines added, 1 changed
-Kotlin   desktopMain DesktopApp.kt           preview deleted
+added     val LocalFixedQRCode = staticCompositionLocalOf<ImageBitmap?> { null }
+added     val fixedQRCode = LocalFixedQRCode.current                                  (QRCode, before remember)
+changed   (fixedQRCode ?: qrCodeBitmap(connReq, 1024, errorLevel)).replaceColor(...)   (QRCode, in remember)
+```
+
+Snapshot tests:
+
+```
+iOS       renderScene root: .environment(\.fixedQRCode, UIImage(named: "preview-qr-code", in: Bundle(for: SnapshotTests.self), compatibleWith: nil))
+iOS       apps/ios/SimpleX Snapshots/preview-qr-code.png, a resource of the SimpleX Snapshots target
+Kotlin    renderSnapshot root: LocalFixedQRCode provides loadFixedQRCode()
+Kotlin    loadFixedQRCode(): preview-qr-code-light.png or preview-qr-code-dark.png of desktopTest/resources, by the theme of the pass
+```
+
+## 6. Other branch changes
+
+```
+ActiveCallView.swift, ActiveCallOverlay_Previews deleted            keep
+DesktopApp.kt, AppPreview deleted                                   keep
+SnapshotTests.swift, ActiveCallOverlay scene removed                keep
+SnapshotTests.swift, SnapshotFixtures markdown table                keep
+SnapshotTest.kt, setting pins and appBarMaxHeightPx                 keep
+SnapshotTest.kt, AppPreview scene removed                           keep
+desktopTest/resources/preview-qr-code-light.png                     keep
+desktopTest/resources/preview-qr-code-dark.png                      keep
+check-previews.py, EXCLUDED                                         master
+SnapshotTest.kt, previewsCallingCore                                master
+every other file                                                    master
+```
+
+## 7. App code
+
+Full lines by `git diff -w --word-diff`, blank lines aside:
+
+```
+iOS      Views/Badges/BadgesCheckOrderView.swift   10 added, 1 removed, 1 changed
+iOS      Views/Badges/BadgesHowLongView.swift      9 added, 1 removed, 1 changed
+iOS      Views/UserSettings/VersionView.swift      16 added, 8 removed, 1 changed
+iOS      Views/NewChat/QRCode.swift                10 added, 2 changed
+iOS      Views/Call/ActiveCallView.swift           10 removed: preview
+Kotlin   views/newchat/QRCode.kt                   2 added, 1 changed
+Kotlin   desktopMain DesktopApp.kt                 6 removed: preview and its import
 ```

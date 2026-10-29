@@ -100,10 +100,6 @@ struct ChatInfoView: View {
     @State var featuresAllowed: ContactFeaturesAllowed
     @State var currentFeaturesAllowed: ContactFeaturesAllowed
     var onSearch: () -> Void
-    // do not pass
-    var previewContactInfo: (ConnectionStats?, Profile?, String?)? = nil
-    // do not pass
-    var previewChatItemTTL: ChatItemTTL? = nil
     @State private var connectionStats: ConnectionStats? = nil
     @State private var customUserProfile: Profile? = nil
     @State private var connectionCode: String? = nil
@@ -210,7 +206,7 @@ struct ChatInfoView: View {
                     .disabled(!contact.ready || !contact.active)
 
                     Section {
-                        ChatTTLOption(chat: chat, progressIndicator: $progressIndicator, previewChatItemTTL: previewChatItemTTL)
+                        ChatTTLOption(chat: chat, progressIndicator: $progressIndicator)
                     } footer: {
                         Text("Delete chat messages from your device.")
                     }
@@ -312,10 +308,6 @@ struct ChatInfoView: View {
             }
             sendReceipts = SendReceipts.fromBool(contact.chatSettings.sendRcpts, userDefault: sendReceiptsUserDefault)
 
-            if let previewContactInfo {
-                (connectionStats, customUserProfile, connectionCode) = previewContactInfo
-                return
-            }
             Task {
                 do {
                     let (stats, profile) = try await apiContactInfo(chat.chatInfo.apiId)
@@ -670,8 +662,6 @@ struct SubStatusRow: View {
 struct ChatTTLOption: View {
     @ObservedObject var chat: Chat
     @Binding var progressIndicator: Bool
-    // do not pass
-    var previewChatItemTTL: ChatItemTTL? = nil
     @State private var currentChatItemTTL: ChatTTL = ChatTTL.userDefault(.seconds(0))
     @State private var chatItemTTL: ChatTTL = ChatTTL.chat(.seconds(0))
 
@@ -680,7 +670,7 @@ struct ChatTTLOption: View {
             ForEach(ChatItemTTL.values) { ttl in
                 Text(ttl.deleteAfterText).tag(ChatTTL.chat(ttl))
             }
-            let defaultTTL = ChatTTL.userDefault(previewChatItemTTL ?? ChatModel.shared.chatItemTTL)
+            let defaultTTL = ChatTTL.userDefault(ChatModel.shared.chatItemTTL)
             Text(defaultTTL.text).tag(defaultTTL)
 
             if case .chat(let ttl) = chatItemTTL, case .seconds = ttl {
@@ -724,7 +714,7 @@ struct ChatTTLOption: View {
         }
         .onAppear {
             let sm = ChatModel.shared
-            let ttl = chat.chatInfo.ttl(previewChatItemTTL ?? sm.chatItemTTL)
+            let ttl = chat.chatInfo.ttl(sm.chatItemTTL)
             chatItemTTL = ttl
             currentChatItemTTL = ttl
         }
@@ -1529,19 +1519,13 @@ struct SimplexNameView: View {
 
 struct ChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        let chatModel = ChatModel(migrationState: nil)
-        chatModel.chatSubStatus = .active
-
-        return ChatInfoView(
+        ChatInfoView(
             chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
             contact: Contact.sampleData,
             localAlias: "",
             featuresAllowed: contactUserPrefsToFeaturesAllowed(Contact.sampleData.mergedPreferences),
             currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(Contact.sampleData.mergedPreferences),
-             onSearch: {},
-            previewContactInfo: (ConnectionStats.sampleData, nil, "12345 67890 12345 67890"),
-            previewChatItemTTL: ChatItemTTL.none
+             onSearch: {}
         )
-        .environmentObject(chatModel)
     }
 }

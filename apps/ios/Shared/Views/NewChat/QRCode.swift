@@ -16,11 +16,9 @@ struct MutableQRCode: View {
     var small: Bool = false
     var withLogo: Bool = true
     var tintColor = UIColor(red: 0.023, green: 0.176, blue: 0.337, alpha: 1)
-    // do not pass
-    var previewImage: UIImage? = nil
 
     var body: some View {
-        QRCode(uri: uri, small: small, withLogo: withLogo, tintColor: tintColor, previewImage: previewImage)
+        QRCode(uri: uri, small: small, withLogo: withLogo, tintColor: tintColor)
             .id("simplex-qrcode-view-for-\(uri)")
     }
 }
@@ -29,11 +27,9 @@ struct SimpleXCreatedLinkQRCode: View {
     let link: CreatedConnLink
     @Binding var short: Bool
     var onShare: (() -> Void)? = nil
-    // do not pass
-    var previewImage: UIImage? = nil
 
     var body: some View {
-        QRCode(uri: link.simplexChatUri(short: short), small: short && link.connShortLink != nil, onShare: onShare, previewImage: previewImage)
+        QRCode(uri: link.simplexChatUri(short: short), small: short && link.connShortLink != nil, onShare: onShare)
     }
 }
 
@@ -42,15 +38,24 @@ struct SimpleXLinkQRCode: View {
     var withLogo: Bool = true
     var tintColor = UIColor(red: 0.023, green: 0.176, blue: 0.337, alpha: 1)
     var onShare: (() -> Void)? = nil
-    // do not pass
-    var previewImage: UIImage? = nil
 
     var body: some View {
-        QRCode(uri: simplexChatLink(uri), small: uri.count < 200, withLogo: withLogo, tintColor: tintColor, onShare: onShare, previewImage: previewImage)
+        QRCode(uri: simplexChatLink(uri), small: uri.count < 200, withLogo: withLogo, tintColor: tintColor, onShare: onShare)
     }
 }
 
 private let smallQRRatio: CGFloat = 0.63
+
+extension EnvironmentValues {
+    struct FixedQRCode: EnvironmentKey {
+        static let defaultValue: UIImage? = nil
+    }
+
+    var fixedQRCode: UIImage? {
+        get { self[FixedQRCode.self] }
+        set { self[FixedQRCode.self] = newValue }
+    }
+}
 
 struct QRCode: View {
     let uri: String
@@ -58,15 +63,14 @@ struct QRCode: View {
     var withLogo: Bool = true
     var tintColor = UIColor(red: 0.023, green: 0.176, blue: 0.337, alpha: 1)
     var onShare: (() -> Void)? = nil
-    // do not pass
-    var previewImage: UIImage? = nil
+    @Environment(\.fixedQRCode) private var fixedQRCode
     @State private var image: UIImage? = nil
     @State private var makeScreenshotFunc: () -> Void = {}
     @State private var width: CGFloat = .infinity
 
     var body: some View {
         ZStack {
-            if let image = previewImage ?? image {
+            if let image = fixedQRCode ?? image {
                 qrCodeImage(image).frame(width: width, height: width)
                 GeometryReader { g in
                     let w = g.size.width * (small ? smallQRRatio : 1)
@@ -98,7 +102,7 @@ struct QRCode: View {
             }
         }
         .onTapGesture(perform: makeScreenshotFunc)
-        .task { if previewImage == nil { image = await generateImage(uri, tintColor: tintColor, errorLevel: small ? "M" : "L") } }
+        .task { if fixedQRCode == nil { image = await generateImage(uri, tintColor: tintColor, errorLevel: small ? "M" : "L") } }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -139,6 +143,6 @@ extension View {
 
 struct QRCode_Previews: PreviewProvider {
     static var previews: some View {
-        QRCode(uri: "https://simplex.chat/invitation#/?v=1&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FFe5ICmvrm4wkrr6X1LTMii-lhBqLeB76%23MCowBQYDK2VuAyEAdhZZsHpuaAk3Hh1q0uNb_6hGTpuwBIrsp2z9U2T0oC0%3D&e2e=v%3D1%26x3dh%3DMEIwBQYDK2VvAzkAcz6jJk71InuxA0bOX7OUhddfB8Ov7xwQIlIDeXBRZaOntUU4brU5Y3rBzroZBdQJi0FKdtt_D7I%3D%2CMEIwBQYDK2VvAzkA-hDvk1duBi1hlOr08VWSI-Ou4JNNSQjseY69QyKm7Kgg1zZjbpGfyBqSZ2eqys6xtoV4ZtoQUXQ%3D", previewImage: UIImage(named: "preview-qr-code"))
+        QRCode(uri: "https://simplex.chat/invitation#/?v=1&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FFe5ICmvrm4wkrr6X1LTMii-lhBqLeB76%23MCowBQYDK2VuAyEAdhZZsHpuaAk3Hh1q0uNb_6hGTpuwBIrsp2z9U2T0oC0%3D&e2e=v%3D1%26x3dh%3DMEIwBQYDK2VvAzkAcz6jJk71InuxA0bOX7OUhddfB8Ov7xwQIlIDeXBRZaOntUU4brU5Y3rBzroZBdQJi0FKdtt_D7I%3D%2CMEIwBQYDK2VvAzkA-hDvk1duBi1hlOr08VWSI-Ou4JNNSQjseY69QyKm7Kgg1zZjbpGfyBqSZ2eqys6xtoV4ZtoQUXQ%3D")
     }
 }

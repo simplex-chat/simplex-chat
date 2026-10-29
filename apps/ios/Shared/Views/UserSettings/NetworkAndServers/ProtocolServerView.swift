@@ -19,10 +19,6 @@ struct ProtocolServerView: View {
     @Binding var server: UserServer
     @State var serverToEdit: UserServer
     var backLabel: LocalizedStringKey
-    // do not pass
-    var previewServerAddress: ServerAddress? = nil
-    // do not pass
-    var previewQRImage: UIImage? = nil
     @State private var showTestFailure = false
     @State private var testing = false
     @State private var testFailure: ProtocolTestFailure?
@@ -94,7 +90,7 @@ struct ProtocolServerView: View {
 
     private func customServer() -> some View {
         VStack {
-            let serverAddress = previewServerAddress ?? parseServerAddress(serverToEdit.server)
+            let serverAddress = parseServerAddress(serverToEdit.server)
             let valid = serverAddress?.valid == true
             List {
                 Section {
@@ -122,7 +118,7 @@ struct ProtocolServerView: View {
                 }
                 if valid {
                     Section(header: Text("Add to another device").foregroundColor(theme.colors.secondary)) {
-                        MutableQRCode(uri: $serverToEdit.server, small: true, previewImage: previewQRImage)
+                        MutableQRCode(uri: $serverToEdit.server, small: true)
                             .listRowInsets(EdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12))
                     }
                 }
@@ -132,7 +128,7 @@ struct ProtocolServerView: View {
 
     // inherited SMP roles for the per-server roles section, nil when the section should not be shown
     private var serverRolesInherited: ServerRoles? {
-        guard let (serverProtocol, serverOperator) = serverProtocolAndOperator(serverToEdit, userServers, previewServerAddress),
+        guard let (serverProtocol, serverOperator) = serverProtocolAndOperator(serverToEdit, userServers),
               serverProtocol == .smp && serverToEdit.enabled, !serverToEdit.preset || serverToEdit.roles != ServerRolesOverride()
         else { return nil }
         return serverOperator?.smpRoles ?? ServerRoles.noOperatorDefault
@@ -243,9 +239,7 @@ struct ProtocolServerView_Previews: PreviewProvider {
             serverWarnings: Binding.constant([]),
             server: Binding.constant(UserServer.sampleData.custom),
             serverToEdit: UserServer.sampleData.custom,
-            backLabel: "Your SMP servers",
-            previewServerAddress: ServerAddress(serverProtocol: .smp, hostnames: ["smp9.simplex.im"], port: "", keyHash: "abcd"),
-            previewQRImage: UIImage(named: "preview-qr-code")
+            backLabel: "Your SMP servers"
         )
     }
 }

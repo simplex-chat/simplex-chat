@@ -168,7 +168,6 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(AddGroupView_Previews.self),
         SnapshotScene(AdvancedNetworkSettings_Previews.self),
         SnapshotScene(BadgesCheckOrderView_Previews.self),
-        SnapshotScene(BadgesChooseBadgeView_Previews.self),
         SnapshotScene(BadgesHowItWorksView_Previews.self),
         SnapshotScene(BadgesHowLongView_Previews.self),
         SnapshotScene(BadgesRedeemCodeView_Previews.self),
@@ -243,14 +242,12 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(MemberAdmissionView_Previews.self),
         SnapshotScene(MemberSupportChatToolbar_Previews.self),
         SnapshotScene(MemberSupportView_Previews.self),
-        SnapshotScene(MigrateFromDevice_Previews.self),
         SnapshotScene(MigrateToDevice_Previews.self),
         SnapshotScene(MigrateToGroupView_Previews.self),
         SnapshotScene(MsgContentView_Previews.self, allSizes: true),
         SnapshotScene(NativeTextEditor_Previews.self),
         SnapshotScene(NetworkServersView_Previews.self),
         SnapshotScene(NewChatMenuButton_Previews.self),
-        SnapshotScene(NewChatView_Previews.self),
         SnapshotScene(NewFeaturesView_Previews.self),
         SnapshotScene(NewServerView_Previews.self),
         SnapshotScene(NotificationsModeView_Previews.self),
@@ -272,7 +269,6 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ScanProtocolServer_Previews.self),
         SnapshotScene(SecondaryChatView_Previews.self),
         SnapshotScene(SendMessageView_Previews.self),
-        SnapshotScene(ServersSummaryView_Previews.self),
         SnapshotScene(SetAppPasscodeView_Previews.self),
         SnapshotScene(SetDeliveryReceiptsView_Previews.self),
         SnapshotScene(SettingsView_Previews.self),
@@ -287,7 +283,6 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(TerminalOverviewGroup_Previews.self),
         SnapshotScene(TerminalQuoteThumbnail_Previews.self, allSizes: true),
         SnapshotScene(TerminalRuleOnly_Previews.self, allSizes: true),
-        SnapshotScene(TerminalView_Previews.self),
         SnapshotScene(UserAddressLearnMore_Previews.self),
         SnapshotScene(UserAddressView_Previews.self),
         SnapshotScene(UserPicker_Previews.self),
@@ -309,6 +304,8 @@ private func snapshotTheme(_ dark: Bool) -> ThemeManager.ActiveTheme {
     )
 }
 
+private let fixedQRCode = UIImage(named: "preview-qr-code", in: Bundle(for: SnapshotTests.self), compatibleWith: nil)
+
 @MainActor
 private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, in windowScene: UIWindowScene) throws -> UIImage {
     let screen = windowScene.screen
@@ -316,6 +313,7 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
     let root = VStack(spacing: 0) { scene.view }
         .environmentObject(ChatModel.shared)
         .environmentObject(theme)
+        .environment(\.fixedQRCode, fixedQRCode)
         .frame(width: width, height: scene.height)
     let host = UIHostingController(rootView: AnyView(root))
     if #available(iOS 16.4, *) {

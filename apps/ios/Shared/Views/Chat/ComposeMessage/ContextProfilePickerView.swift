@@ -302,13 +302,9 @@ struct ContextProfilePickerView: View {
 
 struct ContextProfilePickerView_Previews: PreviewProvider {
     static var previews: some View {
-        let chatModel = ChatModel(migrationState: nil)
-        chatModel.users = [UserInfo.sampleData]
-
-        return ContextProfilePickerView(
+        ContextProfilePickerView(
             chat: Chat.sampleData,
             selectedUser: User.sampleData
         )
-        .environmentObject(chatModel)
     }
 }

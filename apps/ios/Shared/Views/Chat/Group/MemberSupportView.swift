@@ -16,13 +16,10 @@ struct MemberSupportView: View {
     @FocusState private var searchFocussed
     var groupInfo: GroupInfo
     @Binding var scrollToItemId: ChatItem.ID?
-    // do not pass
-    var previewMembers: [GMember]? = nil
 
     var body: some View {
         viewBody()
             .onAppear {
-                if previewMembers != nil { return }
                 Task {
                     await chatModel.loadGroupMembers(groupInfo)
                 }
@@ -126,7 +123,7 @@ struct MemberSupportView: View {
     }
 
     func sortedMembersWithChats() -> [GMember] {
-        (previewMembers ?? chatModel.groupMembers)
+        chatModel.groupMembers
             .filter {
                 $0.wrapped.supportChat != nil &&
                 $0.wrapped.memberStatus != .memLeft &&
@@ -298,8 +295,7 @@ struct MemberSupportView_Previews: PreviewProvider {
     static var previews: some View {
         MemberSupportView(
             groupInfo: GroupInfo.sampleData,
-            scrollToItemId: Binding.constant(nil),
-            previewMembers: []
+            scrollToItemId: Binding.constant(nil)
         )
     }
 }

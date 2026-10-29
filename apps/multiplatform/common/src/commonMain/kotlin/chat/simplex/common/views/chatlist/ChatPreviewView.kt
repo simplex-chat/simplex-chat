@@ -35,7 +35,6 @@ import chat.simplex.common.views.newchat.planAndConnect
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
-import kotlinx.datetime.Instant
 
 // Spec: spec/client/chat-list.md#ChatPreviewView
 @Composable
@@ -49,9 +48,7 @@ fun ChatPreviewView(
   linkMode: SimplexLinkMode,
   inProgress: Boolean,
   progressByTimeout: Boolean,
-  defaultClickAction: () -> Unit,
-  // do not pass
-  previewNow: Instant? = null
+  defaultClickAction: () -> Unit
 ) {
   val cInfo = chat.chatInfo
 
@@ -418,7 +415,7 @@ fun ChatPreviewView(
             chatPreviewTitle()
           }
           Spacer(Modifier.width(8.sp.toDp()))
-          val ts = getTimestampText(chat.chatItems.lastOrNull()?.meta?.itemTs ?: chat.chatInfo.chatTs, previewNow = previewNow)
+          val ts = getTimestampText(chat.chatItems.lastOrNull()?.meta?.itemTs ?: chat.chatInfo.chatTs)
           ChatListTimestampView(ts)
         }
         Row(Modifier.heightIn(min = 46.sp.toDp()).fillMaxWidth()) {
@@ -647,6 +644,6 @@ private data class ActiveVoicePreview(
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData.copy(chatItems = Chat.sampleData.chatItems.map(::previewDated)), true, null, null, "", disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {}, previewNow = previewDate)
+    ChatPreviewView(Chat.sampleData.copy(chatItems = Chat.sampleData.chatItems.map(::previewDated)), true, null, null, "", disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
   }
 }

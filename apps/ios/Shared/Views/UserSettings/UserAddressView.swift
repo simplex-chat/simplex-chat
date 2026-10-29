@@ -18,8 +18,6 @@ struct UserAddressView: View {
     @State var shareViaProfile = false
     @State var autoCreate = false
     var onboarding: Bool = false
-    // do not pass
-    var previewQRImage: UIImage? = nil
     @State private var showShortLink = true
     @State private var settings = AddressSettingsState()
     @State private var savedSettings = AddressSettingsState()
@@ -153,7 +151,7 @@ struct UserAddressView: View {
 
     @ViewBuilder private func existingAddressView(_ userAddress: UserContactLink) -> some View {
         Section {
-            SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: $showShortLink, previewImage: previewQRImage)
+            SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: $showShortLink)
                 .id("simplex-contact-address-qrcode-\(userAddress.connLinkContact.simplexChatUri(short: showShortLink))")
             if userAddress.shouldBeUpgraded {
                 upgradeAddressButton()
@@ -278,7 +276,7 @@ struct UserAddressView: View {
         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10))
 
         Section {
-            SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: $showShortLink, previewImage: previewQRImage)
+            SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: $showShortLink)
                 .id("simplex-contact-address-qrcode-\(userAddress.connLinkContact.simplexChatUri(short: showShortLink))")
                 .padding()
                 .background(
@@ -1028,14 +1026,14 @@ struct SetSimplexDomainView: View {
 
 struct UserAddressView_Previews: PreviewProvider {
     static var previews: some View {
-        let chatModel = ChatModel(migrationState: nil)
+        let chatModel = ChatModel()
         chatModel.userAddress = UserContactLink(CreatedConnLink(connFullLink: "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", connShortLink: nil))
 
         return Group {
-            UserAddressView(previewQRImage: UIImage(named: "preview-qr-code"))
+            UserAddressView()
                 .environmentObject(chatModel)
             UserAddressView()
-                .environmentObject(ChatModel(migrationState: nil))
+                .environmentObject(ChatModel())
         }
     }
 }

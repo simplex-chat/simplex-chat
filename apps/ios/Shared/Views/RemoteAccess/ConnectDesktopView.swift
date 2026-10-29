@@ -9,7 +9,6 @@
 import SwiftUI
 import SimpleXChat
 import CodeScanner
-import AVFoundation
 
 struct ConnectDesktopView: View {
     @EnvironmentObject var m: ChatModel
@@ -20,10 +19,6 @@ struct ConnectDesktopView: View {
     @AppStorage(DEFAULT_CONNECT_REMOTE_VIA_MULTICAST) private var connectRemoteViaMulticast = true
     @AppStorage(DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO) private var connectRemoteViaMulticastAuto = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
-    // do not pass
-    var previewRemoteCtrls: [RemoteCtrlInfo]? = nil
-    // do not pass
-    var previewCameraStatus: AVAuthorizationStatus? = nil
     @State private var sessionAddress: String = ""
     @State private var remoteCtrls: [RemoteCtrlInfo] = []
     @State private var alert: ConnectDesktopAlert?
@@ -90,10 +85,6 @@ struct ConnectDesktopView: View {
             }
         }
         .onAppear {
-            if let previewRemoteCtrls {
-                remoteCtrls = previewRemoteCtrls
-                return
-            }
             setDeviceName(deviceName)
             updateRemoteCtrls()
             showConnectScreen = !useMulticast
@@ -335,7 +326,7 @@ struct ConnectDesktopView: View {
 
     private func scanDesctopAddressView() -> some View {
         Section(header: Text("Scan QR code from desktop").foregroundColor(theme.colors.secondary)) {
-            ScannerInView(showQRCodeScanner: $showQRCodeScanner,  processQRCode: processDesktopQRCode, scanMode: .oncePerCode, previewCameraStatus: previewCameraStatus)
+            ScannerInView(showQRCodeScanner: $showQRCodeScanner,  processQRCode: processDesktopQRCode, scanMode: .oncePerCode)
         }
     }
 
@@ -550,6 +541,6 @@ struct ConnectDesktopView: View {
 
 struct ConnectDesktopView_Previews: PreviewProvider {
     static var previews: some View {
-        ConnectDesktopView(previewRemoteCtrls: [RemoteCtrlInfo(remoteCtrlId: 1, ctrlDeviceName: "MacBook Pro")], previewCameraStatus: .denied)
+        ConnectDesktopView()
     }
 }

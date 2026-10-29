@@ -15,8 +15,6 @@ struct SetAppPasscodeView: View {
     var prohibitedPasscodeKeychain: KeyChainItem = kcSelfDestructPassword
     var title: LocalizedStringKey = "New Passcode"
     var reason: String?
-    // do not pass
-    var previewProhibitedPasscode: String? = nil
     var submit: () -> Void
     var cancel: () -> Void
     @Environment(\.dismiss) var dismiss: DismissAction
@@ -48,7 +46,7 @@ struct SetAppPasscodeView: View {
                 setPasswordView(title: title,
                                 submitLabel: "Save",
                                 // Do not allow to set app passcode == selfDestruct passcode
-                                submitEnabled: { pwd in pwd != (previewProhibitedPasscode ?? prohibitedPasscodeKeychain.get()) }) {
+                                submitEnabled: { pwd in pwd != prohibitedPasscodeKeychain.get() }) {
                     enteredPassword = passcode
                     passcode = ""
                     confirming = true
@@ -70,6 +68,6 @@ struct SetAppPasscodeView: View {
 
 struct SetAppPasscodeView_Previews: PreviewProvider {
     static var previews: some View {
-        SetAppPasscodeView(previewProhibitedPasscode: "1234", submit: {}, cancel: {})
+        SetAppPasscodeView(submit: {}, cancel: {})
     }
 }

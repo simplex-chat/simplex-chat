@@ -4109,29 +4109,20 @@ data class CITimed(
   val deleteAt: Instant?
 )
 
-fun getTimestampDateText(
-  t: Instant,
-  // do not pass
-  previewNow: Instant? = null
-): String {
+fun getTimestampDateText(t: Instant): String {
   val tz = TimeZone.currentSystemDefault()
   val time = t.toLocalDateTime(tz).toJavaLocalDateTime()
   val weekday = time.format(DateTimeFormatter.ofPattern("EEE"))
   val dayMonthYear = time.format(DateTimeFormatter.ofPattern(
-    if ((previewNow ?: Clock.System.now()).toLocalDateTime(tz).year == time.year) "d MMM" else "d MMM yyyy")
+    if (Clock.System.now().toLocalDateTime(tz).year == time.year) "d MMM" else "d MMM yyyy")
   )
 
   return "$weekday, $dayMonthYear"
 }
 
-fun getTimestampText(
-  t: Instant,
-  shortFormat: Boolean = false,
-  // do not pass
-  previewNow: Instant? = null
-): String {
+fun getTimestampText(t: Instant, shortFormat: Boolean = false): String {
   val tz = TimeZone.currentSystemDefault()
-  val now: LocalDateTime = (previewNow ?: Clock.System.now()).toLocalDateTime(tz)
+  val now: LocalDateTime = Clock.System.now().toLocalDateTime(tz)
   val time: LocalDateTime = t.toLocalDateTime(tz)
   val period = now.date.minus(time.date)
   val recent = now.date == time.date ||

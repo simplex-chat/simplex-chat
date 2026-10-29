@@ -64,10 +64,6 @@ struct DatabaseView: View {
 
     @State var chatItemTTL: ChatItemTTL
     @State private var currentChatItemTTL: ChatItemTTL = .none
-    // do not pass
-    var previewUserName: String? = nil
-    // do not pass
-    var previewAppFilesCountAndSize: (Int, Int)? = nil
 
     var body: some View {
         ZStack {
@@ -109,7 +105,7 @@ struct DatabaseView: View {
                 Text("Messages")
                     .foregroundColor(theme.colors.secondary)
             } footer: {
-                Text("This setting applies to messages in your current chat profile **\(previewUserName ?? m.currentUser?.displayName ?? "")**.")
+                Text("This setting applies to messages in your current chat profile **\(m.currentUser?.displayName ?? "")**.")
                     .foregroundColor(theme.colors.secondary)
             }
 
@@ -139,7 +135,7 @@ struct DatabaseView: View {
         }
         .onAppear {
             runChat = m.chatRunning ?? true
-            appFilesCountAndSize = previewAppFilesCountAndSize ?? directoryFileCountAndSize(getAppFilesDirectory())
+            appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
             currentChatItemTTL = chatItemTTL
         }
         .onChange(of: chatItemTTL) { ttl in
@@ -675,7 +671,6 @@ struct DatabaseView_Previews: PreviewProvider {
     @Environment(\.dismiss) static var mockDismiss
 
     static var previews: some View {
-        DatabaseView(dismissSettingsSheet: mockDismiss, chatItemTTL: .none, previewUserName: "alice", previewAppFilesCountAndSize: (0, 0))
-            .environmentObject(ChatModel(migrationState: nil))
+        DatabaseView(dismissSettingsSheet: mockDismiss, chatItemTTL: .none)
     }
 }

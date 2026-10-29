@@ -10,7 +10,7 @@
 import SwiftUI
 import SimpleXChat
 
-enum MigrationFromState: Equatable {
+private enum MigrationFromState: Equatable {
     case chatStopInProgress
     case chatStopFailed(reason: String)
     case passphraseNotSet
@@ -60,8 +60,6 @@ struct MigrateFromDevice: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Binding var showProgressOnSettings: Bool
-    // do not pass
-    var previewMigrationState: MigrationFromState? = nil
     @State private var migrationState: MigrationFromState = .chatStopInProgress
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @AppStorage(GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE, store: groupDefaults) private var initialRandomDBPassphrase: Bool = false
@@ -116,14 +114,9 @@ struct MigrateFromDevice: View {
             }
         }
         .onAppear {
-            if let previewMigrationState {
-                migrationState = previewMigrationState
-                return
-            }
             stopChat()
         }
         .onDisappear {
-            if previewMigrationState != nil { return }
             Task {
                 if !backDisabled {
                     await MainActor.run {
@@ -788,6 +781,6 @@ private class MigrationChatReceiver {
 
 struct MigrateFromDevice_Previews: PreviewProvider {
     static var previews: some View {
-        MigrateFromDevice(showProgressOnSettings: Binding.constant(false), previewMigrationState: .uploadConfirmation)
+        MigrateFromDevice(showProgressOnSettings: Binding.constant(false))
     }
 }

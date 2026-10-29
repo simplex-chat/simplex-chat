@@ -28,8 +28,6 @@ fun SimpleXCreatedLinkQRCode(
   tintColor: Color = Color(0xff062d56),
   withLogo: Boolean = true,
   onShare: (() -> Unit)? = null,
-  // do not pass
-  previewImage: ImageBitmap? = null,
 ) {
   QRCode(
     connLink.simplexChatUri(short),
@@ -39,7 +37,6 @@ fun SimpleXCreatedLinkQRCode(
     tintColor,
     withLogo,
     onShare,
-    previewImage,
   )
 }
 
@@ -51,8 +48,6 @@ fun SimpleXLinkQRCode(
   tintColor: Color = Color(0xff062d56),
   withLogo: Boolean = true,
   onShare: (() -> Unit)? = null,
-  // do not pass
-  previewImage: ImageBitmap? = null,
 ) {
   QRCode(
     simplexChatLink(connReq),
@@ -62,9 +57,10 @@ fun SimpleXLinkQRCode(
     tintColor,
     withLogo,
     onShare,
-    previewImage,
   )
 }
+
+val LocalFixedQRCode = staticCompositionLocalOf<ImageBitmap?> { null }
 
 @Composable
 fun QRCode(
@@ -75,14 +71,13 @@ fun QRCode(
   tintColor: Color = Color(0xff062d56),
   withLogo: Boolean = true,
   onShare: (() -> Unit)? = null,
-  // do not pass
-  previewImage: ImageBitmap? = null,
 ) {
   val scope = rememberCoroutineScope()
   val logoSize = if (small) 0.21f else 0.16f
   val errorLevel = if (small) QrCode.ErrorLevel.M else QrCode.ErrorLevel.L
+  val fixedQRCode = LocalFixedQRCode.current
   val qr = remember(connReq, tintColor, withLogo) {
-    (previewImage ?: qrCodeBitmap(connReq, 1024, errorLevel)).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
+    (fixedQRCode ?: qrCodeBitmap(connReq, 1024, errorLevel)).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
       .let { if (withLogo) it.addLogo(logoSize) else it }
   }
   Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -131,18 +126,10 @@ fun qrCodeBitmap(content: String, size: Int = 1024, errorLevel: QrCode.ErrorLeve
 
 expect fun ImageBitmap.replaceColor(from: Int, to: Int): ImageBitmap
 
-fun previewQRCodeImage(): ImageBitmap? =
-  Thread.currentThread().contextClassLoader
-    ?.getResourceAsStream(if (CurrentColors.value.colors.isLight) "preview-qr-code-light.png" else "preview-qr-code-dark.png")
-    ?.use { loadImageBitmap(it) }
-
 @Preview
 @Composable
 fun PreviewQRCode() {
   SimpleXTheme {
-    QRCode(
-      connReq = "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D",
-      previewImage = previewQRCodeImage()
-    )
+    QRCode(connReq = "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D")
   }
 }

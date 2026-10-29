@@ -32,8 +32,6 @@ struct CreateProfile: View {
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: AppTheme
-    // do not pass
-    var previewValidName: String? = nil
     @State private var displayName: String = ""
     @State private var profileBio: String = ""
     @FocusState private var focusDisplayName
@@ -85,7 +83,7 @@ struct CreateProfile: View {
             Section {
                 ZStack(alignment: .leading) {
                     let name = displayName.trimmingCharacters(in: .whitespaces)
-                    if name != (previewValidName ?? mkValidName(name)) {
+                    if name != mkValidName(name) {
                         Button {
                             alert = .invalidNameError(validName: mkValidName(name))
                         } label: {
@@ -475,6 +473,6 @@ func mkValidName(_ s: String) -> String {
 
 struct CreateProfile_Previews: PreviewProvider {
     static var previews: some View {
-        CreateProfile(previewValidName: "")
+        CreateProfile()
     }
 }

@@ -16,8 +16,6 @@ struct VerifyCodeView: View {
     @State var connectionVerified: Bool
     var verify: (String?) -> (Bool, String)?
     var verificationText: LocalizedStringKey? = nil
-    // do not pass
-    var previewQRImage: UIImage? = nil
     @State private var showCodeError = false
 
     var body: some View {
@@ -30,7 +28,7 @@ struct VerifyCodeView: View {
         let splitCode = splitToParts(code, length: 24)
         return List {
             Section {
-                QRCode(uri: code, small: true, previewImage: previewQRImage)
+                QRCode(uri: code, small: true)
 
                 Text(splitCode)
                     .multilineTextAlignment(.leading)
@@ -111,7 +109,7 @@ struct VerifyCodeView: View {
 
 struct VerifyCodeView_Previews: PreviewProvider {
     static var previews: some View {
-        VerifyCodeView(displayName: "alice", connectionCode: "12345 67890 12345 67890", connectionVerified: false, verify: {_ in nil}, previewQRImage: UIImage(named: "preview-qr-code"))
+        VerifyCodeView(displayName: "alice", connectionCode: "12345 67890 12345 67890", connectionVerified: false, verify: {_ in nil})
             .environmentObject(CurrentColors.toAppTheme())
     }
 }

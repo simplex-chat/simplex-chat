@@ -57,8 +57,6 @@ struct ChatView: View {
     @State var mergedItems: BoxedValue<MergedItems>
     @State var floatingButtonModel: FloatingButtonModel
     @Binding var scrollToItemId: ChatItem.ID?
-    // do not pass
-    var previewAvailableContent: [ContentFilter]? = nil
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -744,10 +742,8 @@ struct ChatView: View {
     // Spec: spec/client/chat-view.md#initChatView
     private func initChatView() {
         let cInfo = chat.chatInfo
-        if let previewAvailableContent {
-            availableContent = previewAvailableContent
         // This check prevents the call to apiContactInfo after the app is suspended, and the database is closed.
-        } else if case .active = scenePhase {
+        if case .active = scenePhase {
             if case let .direct(contact) = cInfo {
                 Task {
                     do {
@@ -3455,9 +3451,9 @@ enum ContentFilter: CaseIterable {
 
 struct ChatView_Previews: PreviewProvider {
     static var previews: some View {
-        let chatModel = ChatModel(migrationState: nil)
+        let chatModel = ChatModel()
         chatModel.chatId = "@1"
-        let im = ItemsModel()
+        let im = ItemsModel.shared
         im.reversedChatItems = [
             ChatItem.getSample(1, .directSnd, previewDate, "hello"),
             ChatItem.getSample(2, .directRcv, previewDate, "hi"),
@@ -3475,8 +3471,7 @@ struct ChatView_Previews: PreviewProvider {
             im: im,
             mergedItems: BoxedValue(MergedItems.create(im, [])),
             floatingButtonModel: FloatingButtonModel(im: im),
-            scrollToItemId: Binding.constant(nil),
-            previewAvailableContent: [.images, .links]
+            scrollToItemId: Binding.constant(nil)
         )
         .environmentObject(chatModel)
     }

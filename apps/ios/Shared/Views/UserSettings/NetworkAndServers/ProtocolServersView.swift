@@ -21,8 +21,6 @@ struct YourServersView: View {
     @Binding var serverErrors: [UserServersError]
     @Binding var serverWarnings: [UserServersWarning]
     var operatorIndex: Int
-    // do not pass
-    var previewServerAddresses: [String: ServerAddress]? = nil
     @State private var selectedServer: String? = nil
     @State private var showAddServer = false
     @State private var newServerNavLinkActive = false
@@ -85,8 +83,7 @@ struct YourServersView: View {
                                 server: srv,
                                 serverProtocol: .smp,
                                 backLabel: "Your servers",
-                                selectedServer: $selectedServer,
-                                previewServerAddress: previewServerAddresses?[srv.wrappedValue.server]
+                                selectedServer: $selectedServer
                             )
                         } else {
                             EmptyView()
@@ -122,8 +119,7 @@ struct YourServersView: View {
                                 server: srv,
                                 serverProtocol: .xftp,
                                 backLabel: "Your servers",
-                                selectedServer: $selectedServer,
-                                previewServerAddress: previewServerAddresses?[srv.wrappedValue.server]
+                                selectedServer: $selectedServer
                             )
                         } else {
                             EmptyView()
@@ -253,8 +249,6 @@ struct ProtocolServerViewLink: View {
     var serverProtocol: ServerProtocol
     var backLabel: LocalizedStringKey
     @Binding var selectedServer: String?
-    // do not pass
-    var previewServerAddress: ServerAddress? = nil
 
     var body: some View {
         let proto = serverProtocol.rawValue.uppercased()
@@ -272,7 +266,7 @@ struct ProtocolServerViewLink: View {
             .modifier(ThemedBackground(grouped: true))
             .navigationBarTitleDisplayMode(.large)
         } label: {
-            let address = previewServerAddress ?? parseServerAddress(server.server)
+            let address = parseServerAddress(server.server)
             HStack {
                 Group {
                     if let address = address {
@@ -457,11 +451,7 @@ struct YourServersView_Previews: PreviewProvider {
             userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator]),
             serverErrors: Binding.constant([]),
             serverWarnings: Binding.constant([]),
-            operatorIndex: 0,
-            previewServerAddresses: [
-                "smp://abcd@smp8.simplex.im": ServerAddress(serverProtocol: .smp, hostnames: ["smp8.simplex.im"], port: "", keyHash: "abcd"),
-                "xftp://abcd@xftp8.simplex.im": ServerAddress(serverProtocol: .xftp, hostnames: ["xftp8.simplex.im"], port: "", keyHash: "abcd")
-            ]
+            operatorIndex: 0
         )
     }
 }

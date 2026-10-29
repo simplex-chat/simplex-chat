@@ -260,7 +260,7 @@ func deleteOldChatArchive() {
 
 struct MigrateToGroupView_Previews: PreviewProvider {
     static var previews: some View {
-        let chatModel = ChatModel(migrationState: nil)
+        let chatModel = ChatModel()
         chatModel.v3DBMigration = .migrated
         return MigrateToAppGroupView()
             .environmentObject(chatModel)

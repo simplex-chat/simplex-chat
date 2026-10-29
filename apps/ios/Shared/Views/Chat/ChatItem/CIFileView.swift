@@ -314,7 +314,7 @@ func showFileErrorAlert(_ err: FileError, _ file: CIFile? = nil, temporary: Bool
 
 struct CIFileView_Previews: PreviewProvider {
     static var previews: some View {
-        let im = ItemsModel()
+        let im = ItemsModel.shared
         let sentFile: ChatItem = ChatItem(
             chatDir: .directSnd,
             meta: CIMeta.getSample(1, previewDate, "", .sndSent(sndProgress: .complete), itemEdited: true),

@@ -392,9 +392,7 @@ fun GroupMemberInfoLayout(
   syncMemberConnection: () -> Unit,
   syncMemberConnectionForce: () -> Unit,
   verifyClicked: () -> Unit,
-  openedFromSupportChat: Boolean,
-  // do not pass
-  previewContactConnectionStats: ConnectionStats? = null
+  openedFromSupportChat: Boolean
 ) {
   val cStats = connStats.value
   fun knownDirectChat(contactId: Long): Pair<Chat, Contact>? {
@@ -499,10 +497,9 @@ fun GroupMemberInfoLayout(
           val knownChat = if (contactId != null) knownDirectChat(contactId) else null
           if (knownChat != null) {
             val (chat, contact) = knownChat
-            val knownContactConnectionStats: MutableState<ConnectionStats?> = remember { mutableStateOf(previewContactConnectionStats) }
+            val knownContactConnectionStats: MutableState<ConnectionStats?> = remember { mutableStateOf(null) }
 
             LaunchedEffect(contact.contactId) {
-              if (previewContactConnectionStats != null) return@LaunchedEffect
               withBGApi {
                 val contactInfo = chatModel.controller.apiContactInfo(chat.remoteHostId, chat.chatInfo.apiId)
                 if (contactInfo != null) {
@@ -1162,14 +1159,6 @@ fun PreviewGroupMemberInfoLayout() {
       syncMemberConnectionForce = {},
       verifyClicked = {},
       openedFromSupportChat = false,
-      previewContactConnectionStats = ConnectionStats(
-        connAgentVersion = 7,
-        rcvQueuesInfo = listOf(),
-        sndQueuesInfo = listOf(),
-        ratchetSyncState = RatchetSyncState.Ok,
-        ratchetSyncSupported = true,
-        subStatus = null
-      ),
     )
   }
 }

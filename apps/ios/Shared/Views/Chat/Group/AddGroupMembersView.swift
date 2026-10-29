@@ -14,11 +14,9 @@ struct AddGroupMembersView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     var chat: Chat
     var groupInfo: GroupInfo
-    // do not pass
-    var previewContacts: [Contact]? = nil
 
     var body: some View {
-        AddGroupMembersViewCommon(chat: chat, groupInfo: groupInfo, previewContacts: previewContacts, addedMembersCb: { _ in dismiss() })
+        AddGroupMembersViewCommon(chat: chat, groupInfo: groupInfo, addedMembersCb: { _ in dismiss() })
     }
 }
 
@@ -29,8 +27,6 @@ struct AddGroupMembersViewCommon: View {
     @State var groupInfo: GroupInfo
     var creatingGroup: Bool = false
     var showFooterCounter: Bool = true
-    // do not pass
-    var previewContacts: [Contact]? = nil
     var addedMembersCb: ((Set<Int64>) -> Void)
     @State private var selectedContacts = Set<Int64>()
     @State private var selectedRole: GroupMemberRole = .member
@@ -66,7 +62,7 @@ struct AddGroupMembersViewCommon: View {
 
     private func addGroupMembersView() -> some View {
         VStack {
-            let membersToAdd = previewContacts ?? filterMembersToAdd(chatModel.groupMembers)
+            let membersToAdd = filterMembersToAdd(chatModel.groupMembers)
             List {
                 ChatInfoToolbar(chat: chat, imageSize: 48)
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -267,6 +263,6 @@ func searchFieldView(text: Binding<String>, focussed: FocusState<Bool>.Binding, 
 
 struct AddGroupMembersView_Previews: PreviewProvider {
     static var previews: some View {
-        AddGroupMembersView(chat: Chat(chatInfo: ChatInfo.sampleData.group), groupInfo: GroupInfo.sampleData, previewContacts: [Contact.sampleData])
+        AddGroupMembersView(chat: Chat(chatInfo: ChatInfo.sampleData.group), groupInfo: GroupInfo.sampleData)
     }
 }

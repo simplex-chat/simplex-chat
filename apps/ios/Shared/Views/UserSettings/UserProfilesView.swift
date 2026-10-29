@@ -462,9 +462,6 @@ public func correctPassword(_ user: User, _ pwd: String) -> Bool {
 
 struct UserProfilesView_Previews: PreviewProvider {
     static var previews: some View {
-        let m = ChatModel(migrationState: nil)
-        m.users = [UserInfo.sampleData]
-        return UserProfilesView()
-            .environmentObject(m)
+        UserProfilesView()
     }
 }

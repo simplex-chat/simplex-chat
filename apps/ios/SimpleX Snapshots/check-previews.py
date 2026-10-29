@@ -6,6 +6,11 @@ from pathlib import Path
 
 EXCLUDED = {
     "AppearanceSettings_Previews",
+    "BadgesChooseBadgeView_Previews",
+    "MigrateFromDevice_Previews",
+    "NewChatView_Previews",
+    "ServersSummaryView_Previews",
+    "TerminalView_Previews",
     "UserProfilesView_Previews",
 }
 

@@ -21,8 +21,6 @@ struct GroupMemberInfoView: View {
     var navigation: Bool = false
     var openedFromSupportChat: Bool = false
     var groupRelay: GroupRelay? = nil
-    // do not pass
-    var previewMemberInfo: (ConnectionStats?, String?)? = nil
     @State private var connectionStats: ConnectionStats? = nil
     @State private var connectionCode: String? = nil
     @State private var connectionLoaded: Bool = false
@@ -299,11 +297,6 @@ struct GroupMemberInfoView: View {
                 }
                 justOpened = false
                 newRole = member.memberRole
-                if let previewMemberInfo {
-                    (connectionStats, connectionCode) = previewMemberInfo
-                    connectionLoaded = true
-                    return
-                }
                 do {
                     let (_, stats) = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
                     let getCode = (member.memberActive || (groupInfo.useRelays && member.memberCurrent)) && member.memberRole != .relay
@@ -931,8 +924,7 @@ struct GroupMemberInfoView_Previews: PreviewProvider {
             groupInfo: GroupInfo.sampleData,
             chat: Chat.sampleData,
             groupMember: GMember.sampleData,
-            scrollToItemId: Binding.constant(nil),
-            previewMemberInfo: (ConnectionStats.sampleData, "12345 67890 12345 67890")
+            scrollToItemId: Binding.constant(nil)
         )
     }
 }

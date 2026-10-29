@@ -9,7 +9,6 @@
 import SwiftUI
 import SimpleXChat
 import CodeScanner
-import AVFoundation
 
 private let badgeCodePrefix = "SB"
 private let badgeCodeBodyLength = 20
@@ -81,8 +80,6 @@ struct BadgesRedeemCodeView: View {
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
-    // do not pass
-    var previewCameraStatus: AVAuthorizationStatus? = nil
     @State private var code = ""
     @State private var canonicalCode: String? = nil
     @State private var submitting = false
@@ -139,8 +136,7 @@ struct BadgesRedeemCodeView: View {
             scannerPaused: $submitting,
             processQRCode: processQRCode,
             scanMode: .oncePerCode,
-            placeholderBackground: Color(.tertiarySystemFill),
-            previewCameraStatus: previewCameraStatus
+            placeholderBackground: Color(.tertiarySystemFill)
         )
         .fixedSize(horizontal: false, vertical: true)
         .padding(.top, 12)
@@ -444,7 +440,7 @@ struct BadgesRedeemLinkView: View {
 struct BadgesRedeemCodeView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesRedeemCodeView(previewCameraStatus: .denied)
+            BadgesRedeemCodeView()
         }
     }
 }

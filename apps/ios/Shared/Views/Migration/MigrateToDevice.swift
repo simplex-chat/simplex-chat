@@ -9,7 +9,6 @@
 
 import SwiftUI
 import SimpleXChat
-import AVFoundation
 
 enum MigrationToDeviceState: Codable, Equatable {
     case downloadProgress(link: String, archiveName: String)
@@ -104,10 +103,7 @@ struct MigrateToDevice: View {
     // Prevent from hiding the view until migration is finished or app deleted
     @State private var backDisabled: Bool = false
     @State private var showQRCodeScanner: Bool = true
-    // do not pass
-    @State var pasteboardHasStrings = UIPasteboard.general.hasStrings
-    // do not pass
-    var previewCameraStatus: AVAuthorizationStatus? = nil
+    @State private var pasteboardHasStrings = UIPasteboard.general.hasStrings
 
     @State private var importingArchiveFromFileProgressIndicator = false
     @State private var showFileImporter = false
@@ -205,7 +201,7 @@ struct MigrateToDevice: View {
         ZStack {
             List {
                 Section(header: Text("Scan QR code").foregroundColor(theme.colors.secondary)) {
-                    ScannerInView(showQRCodeScanner: $showQRCodeScanner, processQRCode: { resp in
+                    ScannerInView(showQRCodeScanner: $showQRCodeScanner) { resp in
                         switch resp {
                         case let .success(r):
                             let link = r.string
@@ -218,7 +214,7 @@ struct MigrateToDevice: View {
                             logger.error("processQRCode QR code error: \(e.localizedDescription)")
                             alert = .error(title: "Invalid link", error: "The text you pasted is not a SimpleX link.")
                         }
-                    }, previewCameraStatus: previewCameraStatus)
+                    }
                 }
                 Section(header: Text("Or paste archive link").foregroundColor(theme.colors.secondary)) {
                     pasteLinkView()
@@ -805,6 +801,6 @@ private class MigrationChatReceiver {
 
 struct MigrateToDevice_Previews: PreviewProvider {
     static var previews: some View {
-        MigrateToDevice(migrationState: Binding.constant(.pasteOrScanLink), pasteboardHasStrings: false, previewCameraStatus: .denied)
+        MigrateToDevice(migrationState: Binding.constant(.pasteOrScanLink))
     }
 }

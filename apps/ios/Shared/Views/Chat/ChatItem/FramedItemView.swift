@@ -542,7 +542,7 @@ func chatItemFrameContextColor(_ ci: ChatItem, _ theme: AppTheme) -> Color {
 
 struct FramedItemView_Previews: PreviewProvider {
     static var previews: some View {
-        let im = ItemsModel()
+        let im = ItemsModel.shared
         Group{
             let ci1 = ChatItem.getSample(1, .directSnd, previewDate, "hello")
             FramedItemView(chat: Chat.sampleData, im: im, chatItem: ci1, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: Binding.constant(true)).modifier(ChatItemClipped(ci1, tailVisible: true))
@@ -567,7 +567,7 @@ struct FramedItemView_Previews: PreviewProvider {
 
 struct FramedItemView_Edited_Previews: PreviewProvider {
     static var previews: some View {
-        let im = ItemsModel()
+        let im = ItemsModel.shared
         Group {
             let ci1 = ChatItem.getSample(1, .directSnd, previewDate, "hello", .sndSent(sndProgress: .complete), itemEdited: true)
             FramedItemView(chat: Chat.sampleData, im: im, chatItem: ci1, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: Binding.constant(true)).modifier(ChatItemClipped(ci1, tailVisible: true))
@@ -597,7 +597,7 @@ struct FramedItemView_Edited_Previews: PreviewProvider {
 
 struct FramedItemView_Deleted_Previews: PreviewProvider {
     static var previews: some View {
-        let im = ItemsModel()
+        let im = ItemsModel.shared
         Group {
             let ci1 = ChatItem.getSample(1, .directSnd, previewDate, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: previewDate))
             FramedItemView(chat: Chat.sampleData, im: im, chatItem: ci1, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: Binding.constant(true)).modifier(ChatItemClipped(ci1, tailVisible: true))

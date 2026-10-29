@@ -13,13 +13,11 @@ struct IncomingCallView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var cc = CallController.shared
-    // do not pass
-    var previewInvitation: RcvCallInvitation? = nil
 
     var body: some View {
         let sp = SoundPlayer.shared
-        if let invitation = previewInvitation ?? cc.activeCallInvitation {
-            if m.showCallView || previewInvitation != nil {
+        if let invitation = cc.activeCallInvitation {
+            if m.showCallView {
                 incomingCall(invitation)
             } else {
                 incomingCall(invitation)
@@ -89,8 +87,9 @@ struct IncomingCallView: View {
 
 struct IncomingCallView_Previews: PreviewProvider {
     static var previews: some View {
-        let m = ChatModel(migrationState: nil)
+        CallController.shared.activeCallInvitation = RcvCallInvitation.sampleData
+        let m = ChatModel()
         m.users = [UserInfo.sampleData, UserInfo.sampleData]
-        return IncomingCallView(previewInvitation: RcvCallInvitation.sampleData).environmentObject(m)
+        return IncomingCallView().environmentObject(m)
     }
 }

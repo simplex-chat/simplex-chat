@@ -38,16 +38,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*
 
 @Composable
-fun AddChannelView(
-  chatModel: ChatModel,
-  rh: RemoteHostInfo?,
-  close: () -> Unit,
-  closeAll: () -> Unit,
-  // do not pass
-  previewNameValid: Boolean? = null,
-  // do not pass
-  previewHasRelays: Boolean? = null
-) {
+fun AddChannelView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, closeAll: () -> Unit) {
   val rhId = rh?.remoteHostId
   val view = LocalMultiplatformView()
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
@@ -114,8 +105,6 @@ fun AddChannelView(
       scope = scope,
       view = view,
       close = close,
-      previewNameValid = previewNameValid,
-      previewHasRelays = previewHasRelays,
       createChannel = {
         hideKeyboard(view)
         val trimmedName = displayName.value.trim()
@@ -250,14 +239,10 @@ private fun ProfileStepView(
   scope: CoroutineScope,
   view: Any?,
   close: () -> Unit,
-  // do not pass
-  previewNameValid: Boolean? = null,
-  // do not pass
-  previewHasRelays: Boolean? = null,
   createChannel: () -> Unit
 ) {
   LaunchedEffect(Unit) {
-    hasRelays.value = previewHasRelays ?: checkHasRelays(rhId)
+    hasRelays.value = checkHasRelays(rhId)
   }
 
   ModalBottomSheetLayout(
@@ -317,7 +302,7 @@ private fun ProfileStepView(
             generalGetString(MR.strings.channel_display_name_field),
             fontSize = 16.sp
           )
-          if (!(previewNameValid ?: isValidDisplayName(displayName.value.trim()))) {
+          if (!isValidDisplayName(displayName.value.trim())) {
             Spacer(Modifier.size(DEFAULT_PADDING_HALF))
             IconButton({ showInvalidNameAlert(mkValidName(displayName.value.trim()), displayName) }, Modifier.size(20.dp)) {
               Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
@@ -325,7 +310,7 @@ private fun ProfileStepView(
           }
         }
         Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-          ProfileNameField(displayName, "", { previewNameValid ?: isValidDisplayName(it.trim()) }, focusRequester)
+          ProfileNameField(displayName, "", { isValidDisplayName(it.trim()) }, focusRequester)
         }
         Spacer(Modifier.height(8.dp))
 
@@ -679,6 +664,6 @@ fun RelayProgressIndicator(active: Int, total: Int) {
 @Composable
 fun PreviewAddChannelView() {
   SimpleXTheme {
-    AddChannelView(chatModel = ChatModel, rh = null, close = {}, closeAll = {}, previewNameValid = true, previewHasRelays = true)
+    AddChannelView(chatModel = ChatModel, rh = null, close = {}, closeAll = {})
   }
 }

@@ -21,12 +21,10 @@ struct TerminalView: View {
     @State var selectedRange = NSRange()
     @State private var keyboardVisible = false
     @State private var keyboardHiddenDate = Date.now
-    // do not pass
     @State var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var terminalItem: TerminalItem?
     @State private var scrolled = false
-    // do not pass
-    @State var showing = false
+    @State private var showing = false
 
     var body: some View {
         if authorized {
@@ -194,13 +192,13 @@ func sendTerminalCmd(_ cmd: String) async {
 
 struct TerminalView_Previews: PreviewProvider {
     static var previews: some View {
-        let chatModel = ChatModel(migrationState: nil)
+        let chatModel = ChatModel()
         chatModel.terminalItems = [
             .err(previewDate, APIResult<ChatResponse2>.invalid(type: "contactSubscribed", json: "{}".data(using: .utf8)!).unexpected),
             .err(previewDate + 1, APIResult<ChatResponse2>.invalid(type: "newChatItems", json: "{}".data(using: .utf8)!).unexpected)
         ]
         return NavigationView {
-            TerminalView(authorized: true, showing: true)
+            TerminalView()
                 .environmentObject(chatModel)
         }
 

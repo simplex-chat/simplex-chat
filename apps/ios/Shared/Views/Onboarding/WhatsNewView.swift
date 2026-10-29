@@ -47,7 +47,7 @@ let isInUS = {
     return code == "USA" || code == ""
 }()
 
-private func makeVersionDescriptions(inUS: Bool) -> [VersionDescription] { [
+private let versionDescriptions: [VersionDescription] = [
     VersionDescription(
         version: "v4.2",
         post: URL(string: "https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html"),
@@ -671,9 +671,9 @@ private func makeVersionDescriptions(inUS: Bool) -> [VersionDescription] { [
         ]
     ),
     VersionDescription(
-        version: inUS ? "v7.0.1" : "v7.0",
+        version: isInUS ? "v7.0.1" : "v7.0",
         post: URL(string: "https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html"),
-        features: (inUS ? [
+        features: (isInUS ? [
             .view(FeatureView(
                 icon: nil,
                 title: "You can now invest in SimpleX Chat",
@@ -712,9 +712,7 @@ private func makeVersionDescriptions(inUS: Bool) -> [VersionDescription] { [
         ]
     ),
     */
-] }
-
-private let versionDescriptions = makeVersionDescriptions(inUS: isInUS)
+]
 
 private let lastVersion = versionDescriptions.last!.version
 
@@ -972,11 +970,7 @@ struct WhatsNewView: View {
     @State var currentVersionNav = versionDescriptions.count - 1
     var viaSettings = false
     var updatedConditions: Bool
-    // do not pass
-    var previewInUS: Bool? = nil
     @State private var sheetItem: WhatsNewViewSheet? = nil
-
-    private var descriptions: [VersionDescription] { previewInUS.map { makeVersionDescriptions(inUS: $0) } ?? versionDescriptions }
 
     var body: some View {
         whatsNewView()
@@ -995,7 +989,7 @@ struct WhatsNewView: View {
     private func whatsNewView() -> some View {
         VStack {
             TabView(selection: $currentVersion) {
-                ForEach(Array(descriptions.enumerated()), id: \.0) { (i, v) in
+                ForEach(Array(versionDescriptions.enumerated()), id: \.0) { (i, v) in
                     ScrollView {
                         VStack(alignment: .leading, spacing: 16) {
                             Text("New in \(v.version)")
@@ -1097,19 +1091,19 @@ struct WhatsNewView: View {
                 } label: {
                     HStack {
                         Image(systemName: "chevron.left")
-                        Text(descriptions[prev].version)
+                        Text(versionDescriptions[prev].version)
                     }
                 }
             }
             Spacer()
-            if currentVersionNav < descriptions.count - 1 {
+            if currentVersionNav < versionDescriptions.count - 1 {
                 let next = currentVersionNav + 1
                 Button {
                     currentVersionNav = next
                     withAnimation { currentVersion = next }
                 } label: {
                     HStack {
-                        Text(descriptions[next].version)
+                        Text(versionDescriptions[next].version)
                         Image(systemName: "chevron.right")
                     }
                 }
@@ -1120,7 +1114,6 @@ struct WhatsNewView: View {
 
 struct NewFeaturesView_Previews: PreviewProvider {
     static var previews: some View {
-        let last = makeVersionDescriptions(inUS: true).count - 1
-        return WhatsNewView(currentVersion: last, currentVersionNav: last, updatedConditions: false, previewInUS: true)
+        WhatsNewView(updatedConditions: false)
     }
 }

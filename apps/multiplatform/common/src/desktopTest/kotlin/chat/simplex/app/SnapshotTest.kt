@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.DpSize
@@ -14,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowState
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.platform.loadImageBitmap
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.PreviewTerminalLayout
@@ -68,7 +70,6 @@ private val previewScenes = listOf(
   SnapshotScene("AddGroupMembersView.PreviewAddGroupMembersLayout") { PreviewAddGroupMembersLayout() },
   SnapshotScene("GroupChatInfoView.PreviewGroupChatInfoLayout") { PreviewGroupChatInfoLayout() },
   SnapshotScene("GroupMemberInfoView.PreviewGroupMemberInfoLayout") { PreviewGroupMemberInfoLayout() },
-  SnapshotScene("GroupProfileView.PreviewGroupProfileLayout") { PreviewGroupProfileLayout() },
   SnapshotScene("CIEventView.CIEventViewPreview", chatItemFontScales) { CIEventViewPreview() },
   SnapshotScene("CIGroupInvitationView.PendingCIGroupInvitationViewPreview", chatItemFontScales) { PendingCIGroupInvitationViewPreview() },
   SnapshotScene("CIGroupInvitationView.CIGroupInvitationViewAcceptedPreview", chatItemFontScales) { CIGroupInvitationViewAcceptedPreview() },
@@ -100,8 +101,6 @@ private val previewScenes = listOf(
   SnapshotScene("LinkPreviews.PreviewComposeLinkView") { PreviewComposeLinkView() },
   SnapshotScene("LinkPreviews.PreviewComposeLinkViewLoading") { PreviewComposeLinkViewLoading() },
   SnapshotScene("SimpleButton.PreviewShareButton") { PreviewShareButton() },
-  SnapshotScene("AddChannelView.PreviewAddChannelView") { PreviewAddChannelView() },
-  SnapshotScene("AddGroupView.PreviewAddGroupLayout") { PreviewAddGroupLayout() },
   SnapshotScene("ContactConnectionInfoView.PreviewContactConnectionInfoView") { PreviewContactConnectionInfoView() },
   SnapshotScene("NewChatSheet.PreviewNewChatSheet") { PreviewNewChatSheet() },
   SnapshotScene("QRCode.PreviewQRCode") { PreviewQRCode() },
@@ -113,10 +112,16 @@ private val previewScenes = listOf(
   SnapshotScene("SettingsView.PreviewSettingsLayout") { PreviewSettingsLayout() },
   SnapshotScene("UserAddressView.PreviewUserAddressLayoutNoAddress") { PreviewUserAddressLayoutNoAddress() },
   SnapshotScene("UserAddressView.PreviewUserAddressLayoutAddressCreated") { PreviewUserAddressLayoutAddressCreated() },
-  SnapshotScene("UserProfileView.PreviewUserProfileLayoutEditOff") { PreviewUserProfileLayoutEditOff() },
-  SnapshotScene("UserProfileView.PreviewUserProfileLayoutEditOn") { PreviewUserProfileLayoutEditOn() },
   SnapshotScene("AdvancedNetworkSettings.PreviewAdvancedNetworkSettingsLayout") { PreviewAdvancedNetworkSettingsLayout() },
   SnapshotScene("NetworkAndServers.PreviewNetworkAndServersLayout") { PreviewNetworkAndServersLayout() },
+)
+
+private val previewsCallingCore = listOf(
+  "AddChannelView.PreviewAddChannelView",
+  "AddGroupView.PreviewAddGroupLayout",
+  "GroupProfileView.PreviewGroupProfileLayout",
+  "UserProfileView.PreviewUserProfileLayoutEditOff",
+  "UserProfileView.PreviewUserProfileLayoutEditOn",
 )
 
 private val previewFunction = Regex("""@Preview\s+(?:@Composable\s+)?(?:\w+\s+)*fun\s+(\w+)""")
@@ -124,7 +129,7 @@ private val previewFunction = Regex("""@Preview\s+(?:@Composable\s+)?(?:\w+\s+)*
 class SnapshotTest {
   @Test
   fun everyPreviewIsRendered() {
-    assertEquals(previewsInSources(), previewScenes.map { it.name }.sorted())
+    assertEquals(previewsInSources(), (previewScenes.map { it.name } + previewsCallingCore).sorted())
   }
 
   @Test
@@ -200,10 +205,11 @@ class SnapshotTest {
 
 private fun renderSnapshot(content: @Composable () -> Unit): Image {
   var height = 0
+  val fixedQRCode = loadFixedQRCode()
   val frame = renderScene(width = SCENE_WIDTH, height = SCENE_MAX_HEIGHT, frames = 4) {
     AppBarHandler.appBarMaxHeightPx = with(LocalDensity.current) { AppBarHeight.roundToPx() }
     Box(Modifier.width(SCENE_WIDTH.dp).background(CurrentColors.collectAsState().value.colors.background).onSizeChanged { height = it.height }) {
-      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler(), content = content)
+      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler(), LocalFixedQRCode provides fixedQRCode, content = content)
     }
   }
   return Surface.makeRasterN32Premul(SCENE_WIDTH, height).run {
@@ -211,6 +217,11 @@ private fun renderSnapshot(content: @Composable () -> Unit): Image {
     makeImageSnapshot()
   }
 }
+
+private fun loadFixedQRCode(): ImageBitmap? =
+  Thread.currentThread().contextClassLoader
+    ?.getResourceAsStream(if (CurrentColors.value.colors.isLight) "preview-qr-code-light.png" else "preview-qr-code-dark.png")
+    ?.use { loadImageBitmap(it) }
 
 private fun previewsInSources(): List<String> =
   listOf("src/commonMain/kotlin", "src/desktopMain/kotlin")

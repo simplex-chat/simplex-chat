@@ -94,7 +94,7 @@ struct MarkedDeletedItemView_Previews: PreviewProvider {
             let ci = ChatItem.getSample(1, .directSnd, previewDate, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: previewDate))
             MarkedDeletedItemView(
                 chat: Chat.sampleData,
-                im: ItemsModel(),
+                im: ItemsModel.shared,
                 chatItem: ci
             ).environment(\.revealed, true).modifier(ChatItemClipped(ci, tailVisible: true))
         }

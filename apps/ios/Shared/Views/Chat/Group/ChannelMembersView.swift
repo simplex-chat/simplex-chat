@@ -110,6 +110,5 @@ struct ChannelMembersView_Previews: PreviewProvider {
             chat: Chat.sampleData,
             groupInfo: GroupInfo.sampleData
         )
-        .environmentObject(ChatModel(migrationState: nil))
     }
 }

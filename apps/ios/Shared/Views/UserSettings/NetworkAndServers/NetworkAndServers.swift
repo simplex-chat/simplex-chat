@@ -37,8 +37,7 @@ struct NetworkAndServers: View {
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var ss: SaveableSettings
     @State private var sheetItem: NetworkAndServersSheet? = nil
-    // do not pass
-    @State var justOpened = true
+    @State private var justOpened = true
     @State private var showSaveDialog = false
 
     var body: some View {
@@ -514,19 +513,7 @@ func updateOperatorsConditionsAcceptance(_ usvs: Binding<[UserOperatorServers]>,
 
 struct NetworkServersView_Previews: PreviewProvider {
     static var previews: some View {
-        let chatModel = ChatModel(migrationState: nil)
-        chatModel.conditions = ServerOperatorConditions(
-            serverOperators: [ServerOperator.sampleData1],
-            currentConditions: UsageConditions.sampleData,
-            conditionsAction: .accepted(operators: [ServerOperator.sampleData1])
-        )
-        chatModel.networkInfo = UserNetworkInfo(networkType: .wifi, online: true)
-        let ss = SaveableSettings()
-        let servers = [UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]
-        ss.servers = ServerSettings(currUserServers: servers, userServers: servers, serverErrors: [], serverWarnings: [])
-
-        return NetworkAndServers(justOpened: false)
-            .environmentObject(chatModel)
-            .environmentObject(ss)
+        NetworkAndServers()
+            .environmentObject(SaveableSettings())
     }
 }

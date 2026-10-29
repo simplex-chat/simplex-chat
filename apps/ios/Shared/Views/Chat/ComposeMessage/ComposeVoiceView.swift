@@ -207,6 +207,6 @@ struct ComposeVoiceView_Previews: PreviewProvider {
             cancelEnabled: true,
             stopPlayback: Binding.constant(false)
         )
-        .environmentObject(ChatModel(migrationState: nil))
+        .environmentObject(ChatModel())
     }
 }

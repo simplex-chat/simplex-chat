@@ -11,6 +11,18 @@ import StoreKit
 import SimpleXChat
 
 struct BadgesCheckOrderView: View {
+    let level: BadgeLevel
+    let period: BadgePeriod
+    var startDate = Date()
+    var priceList: BadgePriceList? = nil
+
+    var body: some View {
+        BadgesCheckOrderLayout(level: level, period: period, startDate: startDate, priceList: priceList)
+            .task { await BadgeStore.shared.load() }
+    }
+}
+
+struct BadgesCheckOrderLayout: View {
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject private var store = BadgeStore.shared
@@ -19,12 +31,7 @@ struct BadgesCheckOrderView: View {
     let level: BadgeLevel
     let period: BadgePeriod
     var startDate = Date()
-    // do not pass
     var priceList: BadgePriceList? = nil
-    // do not pass
-    var previewCanBuy: Bool? = nil
-    // do not pass
-    var previewCanMakePayments: Bool? = nil
     @State private var purchasing = false
     @State private var privacyPolicyActive = false
     // presented from this view, not AlertManager: its host is behind the sheet these views open in
@@ -71,7 +78,7 @@ struct BadgesCheckOrderView: View {
                         footnote("This Apple ID already has a badge subscription. Only the profile that bought it can continue it.")
                     }
 
-                    if !(previewCanMakePayments ?? AppStore.canMakePayments) {
+                    if !AppStore.canMakePayments {
                         footnote("In-app purchases are not allowed on this device.")
                     }
 
@@ -109,7 +116,6 @@ struct BadgesCheckOrderView: View {
         }
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
-        .task { if priceList == nil { await store.load() } }
         .alert(item: $alert) { $0.alert }
     }
 
@@ -135,7 +141,7 @@ struct BadgesCheckOrderView: View {
 
     private func payButton() -> some View {
         let price = prices.price(period)
-        let disabled = !price.canPurchase || purchasing || !(previewCanBuy ?? store.canBuy(chatModel.currentUser?.userId)) || !prices.forSale(period) || !(previewCanMakePayments ?? AppStore.canMakePayments)
+        let disabled = !price.canPurchase || purchasing || !store.canBuy(chatModel.currentUser?.userId) || !prices.forSale(period) || !AppStore.canMakePayments
         return Button {
             purchase()
         } label: {
@@ -222,13 +228,11 @@ struct RestorePurchasesButton: View {
 struct BadgesCheckOrderView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesCheckOrderView(
+            BadgesCheckOrderLayout(
                 level: .supporter,
                 period: .oneMonth,
                 startDate: previewDate,
-                priceList: BadgePriceList(oneMonth: .price("$7.00"), monthly: .price("$7.00"), annual: .price("$42.00"), monthlyAmount: 7, annualAmount: 42, subscriptionsForSale: true, subscribedBefore: false),
-                previewCanBuy: true,
-                previewCanMakePayments: true
+                priceList: BadgePriceList(oneMonth: .price("$7.00"), monthly: .price("$7.00"), annual: .price("$42.00"), monthlyAmount: 7, annualAmount: 42, subscriptionsForSale: true, subscribedBefore: false)
             )
         }
     }

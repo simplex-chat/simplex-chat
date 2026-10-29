@@ -798,6 +798,5 @@ struct ChatListNavLink_Previews: PreviewProvider {
             ), parentSheet: .constant(nil))
         }
         .previewLayout(.fixed(width: 360, height: 82))
-        .environmentObject(ChatModel(migrationState: nil))
     }
 }

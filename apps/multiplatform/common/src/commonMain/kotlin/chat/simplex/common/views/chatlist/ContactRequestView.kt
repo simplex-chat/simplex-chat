@@ -17,14 +17,9 @@ import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.model.getTimestampText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
-import kotlinx.datetime.Instant
 
 @Composable
-fun ContactRequestView(
-  contactRequest: ChatInfo.ContactRequest,
-  // do not pass
-  previewNow: Instant? = null
-) {
+fun ContactRequestView(contactRequest: ChatInfo.ContactRequest) {
   Row {
     ChatInfoImage(contactRequest, size = 72.dp * fontSizeSqrtMultiplier)
     Column(
@@ -53,7 +48,7 @@ fun ContactRequestView(
         )
       )
     }
-    val ts = getTimestampText(contactRequest.contactRequest.updatedAt, previewNow = previewNow)
+    val ts = getTimestampText(contactRequest.contactRequest.updatedAt)
     ChatListTimestampView(ts)
   }
 }

@@ -40,12 +40,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 
 @Composable
-fun ModalData.NewChatSheet(
-  rh: RemoteHostInfo?,
-  close: () -> Unit,
-  // do not pass
-  previewConnectTarget: ((String) -> ConnectTarget?)? = null
-) {
+fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
   DisposableEffect(Unit) {
     onDispose {
       connectProgressManager.cancelConnectProgress()
@@ -72,8 +67,7 @@ fun ModalData.NewChatSheet(
           ModalManager.start.showCustomModal { close -> AddChannelView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
         },
         rh = rh,
-        close = close,
-        previewConnectTarget = previewConnectTarget
+        close = close
       )
     }
     if (oneHandUI.value) {
@@ -121,8 +115,6 @@ private fun ModalData.NewChatSheetLayout(
   createGroup: () -> Unit,
   createChannel: () -> Unit,
   close: () -> Unit,
-  // do not pass
-  previewConnectTarget: ((String) -> ConnectTarget?)? = null,
 ) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val listState = remember { appBarHandler.listState }
@@ -324,7 +316,6 @@ private fun ModalData.NewChatSheetLayout(
               searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
               connectNameCandidate = connectNameCandidate,
               close = close,
-              previewConnectTarget = previewConnectTarget,
             )
             connectNameCandidate.value?.let { candidate ->
               Divider()
@@ -416,7 +407,6 @@ private fun ModalData.NewChatSheetLayout(
             searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
             connectNameCandidate = connectNameCandidate,
             close = close,
-            previewConnectTarget = previewConnectTarget,
           )
           connectNameCandidate.value?.let { candidate ->
             Divider()
@@ -490,8 +480,6 @@ private fun ContactsSearchBar(
   searchChatFilteredBySimplexLink: MutableState<Set<String>>,
   connectNameCandidate: MutableState<String?>,
   close: () -> Unit,
-  // do not pass
-  previewConnectTarget: ((String) -> ConnectTarget?)? = null,
 ) {
   var focused by remember { mutableStateOf(false) }
 
@@ -549,7 +537,7 @@ private fun ContactsSearchBar(
       snapshotFlow { searchText.value.text }
         .distinctUntilChanged()
         .collect {
-          val target = (previewConnectTarget ?: ::strConnectTarget)(it.trim())
+          val target = strConnectTarget(it.trim())
           if (target is ConnectTarget.Link) {
             hideKeyboard(view)
             searchText.value = searchText.value.copy(target.linkText, selection = TextRange.Zero)
@@ -886,6 +874,6 @@ fun ActionButton(
 @Composable
 internal fun PreviewNewChatSheet() {
   SimpleXTheme {
-    ModalData().NewChatSheet(rh = null, close = {}, previewConnectTarget = { null })
+    ModalData().NewChatSheet(rh = null, close = {})
   }
 }

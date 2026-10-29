@@ -37,18 +37,12 @@ import kotlin.io.path.Path
 fun DatabaseErrorView(
   chatDbStatus: State<DBMigrationResult?>,
   appPreferences: AppPreferences,
-  // do not pass
-  previewStoredDBKey: String? = null,
-  // do not pass
-  previewShowRestoreDbButton: Boolean? = null,
-  // do not pass
-  previewUseKeychain: Boolean? = null,
 ) {
   val progressIndicator = remember { mutableStateOf(false) }
   val dbKey = remember { mutableStateOf("") }
-  var storedDBKey by remember { mutableStateOf(previewStoredDBKey ?: DatabaseUtils.ksDatabasePassword.get()) }
-  var useKeychain by remember { mutableStateOf(previewUseKeychain ?: appPreferences.storeDBPassphrase.get()) }
-  val restoreDbFromBackup = remember { mutableStateOf(previewShowRestoreDbButton ?: shouldShowRestoreDbButton(appPreferences)) }
+  var storedDBKey by remember { mutableStateOf(DatabaseUtils.ksDatabasePassword.get()) }
+  var useKeychain by remember { mutableStateOf(appPreferences.storeDBPassphrase.get()) }
+  val restoreDbFromBackup = remember { mutableStateOf(shouldShowRestoreDbButton(appPreferences)) }
 
   fun callRunChat(confirmMigrations: MigrationConfirmation? = null) {
     val useKey = if (useKeychain) null else dbKey.value
@@ -358,10 +352,7 @@ fun PreviewChatInfoLayout() {
   SimpleXTheme {
     DatabaseErrorView(
       remember { mutableStateOf(DBMigrationResult.ErrorNotADatabase("simplex_v1_chat.db")) },
-      AppPreferences(),
-      previewStoredDBKey = "",
-      previewShowRestoreDbButton = false,
-      previewUseKeychain = true
+      AppPreferences()
     )
   }
 }

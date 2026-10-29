@@ -21,14 +21,11 @@ struct GroupLinkView: View {
     var groupInfo: GroupInfo? = nil
     var composeState: Binding<ComposeState>? = nil
     var linkCreatedCb: (() -> Void)? = nil
-    // do not pass
-    var previewQRImage: UIImage? = nil
     @State private var showSharePicker = false
     @State private var showShortLink = true
     @State private var creatingLink = false
     @State private var alert: GroupLinkAlert?
-    // do not pass
-    @State var shouldCreate = true
+    @State private var shouldCreate = true
 
     private enum GroupLinkAlert: Identifiable {
         case deleteLink
@@ -92,7 +89,7 @@ struct GroupLinkView: View {
                         }
                         .frame(height: 36)
                     }
-                    SimpleXCreatedLinkQRCode(link: groupLink.connLinkContact, short: $showShortLink, previewImage: previewQRImage)
+                    SimpleXCreatedLinkQRCode(link: groupLink.connLinkContact, short: $showShortLink)
                         .id("simplex-qrcode-view-for-\(groupLink.connLinkContact.simplexChatUri(short: showShortLink))")
                     if !isChannel && groupLink.shouldBeUpgraded {
                         Button {
@@ -253,8 +250,8 @@ struct GroupLinkView_Previews: PreviewProvider {
         @State var noGroupLink: GroupLink? = nil
 
         return Group {
-            GroupLinkView(groupId: 1, groupLink: $groupLink, groupLinkMemberRole: Binding.constant(.member), previewQRImage: UIImage(named: "preview-qr-code"))
-            GroupLinkView(groupId: 1, groupLink: $noGroupLink, groupLinkMemberRole: Binding.constant(.member), shouldCreate: false)
+            GroupLinkView(groupId: 1, groupLink: $groupLink, groupLinkMemberRole: Binding.constant(.member))
+            GroupLinkView(groupId: 1, groupLink: $noGroupLink, groupLinkMemberRole: Binding.constant(.member))
         }
     }
 }

@@ -10,15 +10,12 @@
 import SwiftUI
 import SimpleXChat
 import CodeScanner
-import AVFoundation
 
 struct ScanProtocolServer: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var userServers: [UserOperatorServers]
     @Binding var serverErrors: [UserServersError]
     @Binding var serverWarnings: [UserServersWarning]
-    // do not pass
-    var previewCameraStatus: AVAuthorizationStatus? = nil
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -26,16 +23,10 @@ struct ScanProtocolServer: View {
                 .font(.largeTitle)
                 .bold()
                 .padding(.vertical)
-            Group {
-                if let previewCameraStatus {
-                    ScannerInView(showQRCodeScanner: .constant(false), processQRCode: processQRCode, previewCameraStatus: previewCameraStatus)
-                } else {
-                    CodeScannerView(codeTypes: [.qr], scanMode: .oncePerCode, completion: processQRCode)
-                }
-            }
-            .aspectRatio(1, contentMode: .fit)
-            .cornerRadius(12)
-            .padding(.top)
+            CodeScannerView(codeTypes: [.qr], scanMode: .oncePerCode, completion: processQRCode)
+                .aspectRatio(1, contentMode: .fit)
+                .cornerRadius(12)
+                .padding(.top)
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -59,8 +50,7 @@ struct ScanProtocolServer_Previews: PreviewProvider {
         ScanProtocolServer(
             userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator]),
             serverErrors: Binding.constant([]),
-            serverWarnings: Binding.constant([]),
-            previewCameraStatus: .denied
+            serverWarnings: Binding.constant([])
         )
     }
 }

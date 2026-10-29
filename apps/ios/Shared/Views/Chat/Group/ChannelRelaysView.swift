@@ -12,8 +12,6 @@ import SimpleXChat
 struct ChannelRelaysView: View {
     @ObservedObject var chat: Chat
     var groupInfo: GroupInfo
-    // do not pass
-    var previewMembers: [GMember]? = nil
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var channelRelaysModel = ChannelRelaysModel.shared
@@ -45,7 +43,6 @@ struct ChannelRelaysView: View {
             }
         }
         .onAppear {
-            if previewMembers != nil { return }
             Task {
                 await chatModel.loadGroupMembers(groupInfo)
                 if groupInfo.isOwner {
@@ -59,7 +56,7 @@ struct ChannelRelaysView: View {
     }
 
     @ViewBuilder private func relaysList() -> some View {
-        let relayMembers = (previewMembers ?? chatModel.groupMembers).filter { $0.wrapped.memberRole == .relay && $0.wrapped.memberStatus != .memRemoved && $0.wrapped.memberStatus != .memGroupDeleted }
+        let relayMembers = chatModel.groupMembers.filter { $0.wrapped.memberRole == .relay && $0.wrapped.memberStatus != .memRemoved && $0.wrapped.memberStatus != .memGroupDeleted }
         if relayMembers.isEmpty {
             Section {
                 Text("No chat relays")
@@ -175,6 +172,6 @@ func hostFromRelayLink(_ link: String) -> String {
 
 struct ChannelRelaysView_Previews: PreviewProvider {
     static var previews: some View {
-        ChannelRelaysView(chat: Chat.sampleData, groupInfo: GroupInfo.sampleData, previewMembers: [])
+        ChannelRelaysView(chat: Chat.sampleData, groupInfo: GroupInfo.sampleData)
     }
 }

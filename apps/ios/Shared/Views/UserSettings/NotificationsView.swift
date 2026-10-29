@@ -12,8 +12,6 @@ import SimpleXChat
 struct NotificationsView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
-    // do not pass
-    var previewNtfToken: (DeviceToken?, NtfTknStatus?, NotificationsMode, String?)? = nil
     @State private var notificationMode: NotificationsMode = ChatModel.shared.notificationMode
     @State private var ntfAlert: NotificationAlert?
     @State private var legacyDatabase = dbContainerGroupDefault.get() == .documents
@@ -83,7 +81,7 @@ struct NotificationsView: View {
         }
         .disabled(legacyDatabase)
         .onAppear {
-            (m.savedToken, m.tokenStatus, m.notificationMode, m.notificationServer) = previewNtfToken ?? apiGetNtfToken()
+            (m.savedToken, m.tokenStatus, m.notificationMode, m.notificationServer) = apiGetNtfToken()
         }
     }
 
@@ -310,7 +308,6 @@ enum NotificationAlert: Identifiable {
 
 struct NotificationsView_Previews: PreviewProvider {
     static var previews: some View {
-        NotificationsView(previewNtfToken: (nil, .active, .instant, "ntf://abcd@ntf2.simplex.im"))
-            .environmentObject(ChatModel(migrationState: nil))
+        NotificationsView()
     }
 }

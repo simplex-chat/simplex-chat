@@ -14,8 +14,6 @@ struct SecondaryChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var chat: Chat
     @Binding var scrollToItemId: ChatItem.ID?
-    // do not pass
-    var previewAvailableContent: [ContentFilter]? = nil
 
     var body: some View {
         if let im = chatModel.secondaryIM {
@@ -24,8 +22,7 @@ struct SecondaryChatView: View {
                 im: im,
                 mergedItems: BoxedValue(MergedItems.create(im, [])),
                 floatingButtonModel: FloatingButtonModel(im: im),
-                scrollToItemId: $scrollToItemId,
-                previewAvailableContent: previewAvailableContent
+                scrollToItemId: $scrollToItemId
             )
             .modifier(BackButton(disabled: Binding.constant(false)) {
                 chatModel.secondaryIM = nil
@@ -37,7 +34,7 @@ struct SecondaryChatView: View {
 
 struct SecondaryChatView_Previews: PreviewProvider {
     static var previews: some View {
-        let chatModel = ChatModel(migrationState: nil)
+        let chatModel = ChatModel()
         chatModel.secondaryIM = ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: .memberSupport(groupMember_: GroupMember.sampleData)))
         return SecondaryChatView(
             chat: Chat(
@@ -45,8 +42,7 @@ struct SecondaryChatView_Previews: PreviewProvider {
                 chatItems: [],
                 chatStats: ChatStats()
             ),
-            scrollToItemId: Binding.constant(nil),
-            previewAvailableContent: [.images, .links]
+            scrollToItemId: Binding.constant(nil)
         )
         .environmentObject(chatModel)
     }
