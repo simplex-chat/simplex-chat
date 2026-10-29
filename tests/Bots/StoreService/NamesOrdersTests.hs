@@ -168,14 +168,13 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "counts code orders and code checks against one code limit" testCodeLimitShared
   describe "terms" $ do
     it "answers terms_changed with the current terms and community for an old version, other terms or the other kind, listed or not, creating nothing, and takes an ini-only name under the name terms" testTermsChanged
-    it "accepts the community terms for a listed name as viem signs them, storing them" testCommunityTerms
-    it "answers terms_unavailable, before any payment, while the terms of the name's kind are not set, of a link the service does not take, or of a text not fetched now, with Retry-After, creating nothing" testTermsUnavailable
+    it "accepts the community terms for a listed name as viem signs them, storing them" testCommunityTerms    it "answers terms_unavailable, before any payment, while the terms of the name's kind are not set, of a link the service does not take, or of a text not fetched now, with Retry-After, creating nothing" testTermsUnavailable
     it "answers an exact resend after the terms changed on chain, and takes the same fields under the new terms as another order" testResendAfterBump
     it "checks the terms after the existing orders, the timestamp and the duration, with the listing's read, before the name check and the price" testTermsCheckOrder
     it "answers terms_changed for a code order under old terms, listed or not, leaving the code unreserved, and accepts the community terms" testCodeTermsChanged
     it "answers a code order's exact resend after the terms changed on chain" testCodeResendAfterBump
     it "checks a code order's terms after the timestamp, with the listing's read, before the name check and the code's state" testCodeTermsCheckOrder
-    it "checks a community name's order for 2 years at their price, whatever years the configuration gives, storing those years" testCommunityInvoiceYears
+    it "checks a community name's order for 2 years at their price, whatever years the configuration gives, also one signed under a terms version, storing those years" testCommunityInvoiceYears
   describe "closed orders" $ do
     it "accepts a new order of the same wallet and name after a cancel" testOrderAfterCancel
     it "closes an overdue order of the same wallet and name before the poller marks it, cancelling its invoice after" testOverdueClosed
@@ -200,7 +199,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "agrees between the sweep and the overdue close on which invoices hold money" testFundedAgreement
   describe "registration view" $ do
     it "has the contract's fields" testViewFields
-    it "has the community entry of the terms the order signed, with its text, null for plain terms" testViewCommunity
+    it "has the community entry of the terms the order signed, also under a terms version, with its text, null for plain terms" testViewCommunity
     it "has the terms the order signed, null for an order stored before orders signed them" testViewTerms
     it "reads the intent nonce in committed, the acceptance of the terms of the name's kind before its reveal, and nothing in taken" testViewReads
     it "leaves a failed intentNonce or acceptance read null and named in unread, reading nothing in taken" testViewUnread
@@ -773,9 +772,10 @@ threeYears cfg = cfg {nYears = 3}
 bakers :: Text
 bakers = "bakers and bakeries in Portugal"
 
-newerTerms, olderTerms :: Text
+newerTerms, olderTerms, olderCommunityTerms :: Text
 newerTerms = T.drop 2 $ hex fakeNewNameTerms
 olderTerms = "2026-10-01"
+olderCommunityTerms = olderTerms <> "/community/" <> T.drop 2 (hex fakeCommunityTerms)
 
 -- | The terms a listed name's order signs, with the hash of the policy's community terms.
 communityTerms :: Text
@@ -813,7 +813,7 @@ listOnChain Ctx {cNode} label = listCommunityName cNode $ labelHash label
 
 -- | Signed as sent, so only their format refuses them.
 malformedTerms :: [Text]
-malformedTerms = ["", T.replicate 75 "a", "community " <> plainTerms, "community+" <> plainTerms, "communit\233/" <> plainTerms]
+malformedTerms = ["", T.replicate 113 "a", "community " <> plainTerms, "community+" <> plainTerms, "communit\233/" <> plainTerms]
 
 testTwoWallets :: IO ()
 testTwoWallets = withOrders $ \ctx -> do
@@ -826,10 +826,10 @@ testTermsChanged :: IO ()
 testTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis" . listName "alicebakery") ctx0 $ \ctx -> do
   listOnChain ctx "dynamis"
   let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000}
-  -- 74 characters pass the format and meet the terms check; alicebakery's ini line without the policy's listing is a plain name
-  forM_ [olderTerms, communityTerms, newerTerms, T.replicate 74 "a"] $ \t ->
+  -- 112 characters pass the format and meet the terms check; alicebakery's ini line without the policy's listing is a plain name
+  forM_ [olderTerms, olderCommunityTerms, communityTerms, newerTerms, T.replicate 112 "a"] $ \t ->
     placeOrder ctx aliceOrder {oTerms = t} `shouldReturn` termsChanged fakeNameTermsText Nothing
-  forM_ [plainTerms, olderTerms, otherCommunityTerms, "community/" <> newerTerms] $ \t ->
+  forM_ [plainTerms, olderTerms, olderCommunityTerms, otherCommunityTerms, "community/" <> newerTerms] $ \t ->
     placeOrder ctx dynamis {oTerms = t} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
   stubCalls (cStub ctx) `shouldReturn` []
   registrationsOf ctx ownerA `shouldReturn` []
@@ -996,6 +996,7 @@ testCommunityInvoiceYears = withOrders $ \ctx0 -> withSettings (threeYears . lis
   listOnChain ctx "dynamis"
   let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000, oTerms = communityTerms}
   placeOrder ctx dynamis {oDuration = yearsDuration 3 orderTime} `shouldReturn` refusedWith 400 "bad_request"
+  placeOrder ctx dynamis {oTerms = olderCommunityTerms} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
   fst <$> placeOrder ctx dynamis `shouldReturn` 200
   map nrYears <$> registrationsOf ctx ownerA `shouldReturn` [3]
 
@@ -1671,7 +1672,9 @@ testViewCommunity = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   listing [(aliceHash, "bakers and bakeries in Lisbon")] r `shouldBe` entry (Just ("bakers and bakeries in Lisbon" :: Text))
   -- the community terms the order signed, without a text in the ini
   listing [] r `shouldBe` entry (Nothing :: Maybe Text)
+  listing [(aliceHash, "bakers and bakeries in Lisbon")] r {nrAgreedTerms = olderCommunityTerms} `shouldBe` entry (Just ("bakers and bakeries in Lisbon" :: Text))
   listing [(aliceHash, "bakers and bakeries in Lisbon")] r {nrAgreedTerms = plainTerms} `shouldBe` Just J.Null
+  listing [(aliceHash, "bakers and bakeries in Lisbon")] r {nrAgreedTerms = olderTerms} `shouldBe` Just J.Null
 
 testViewTerms :: IO ()
 testViewTerms = withServiceStore $ \st -> withFakeEthNode $ \node -> do

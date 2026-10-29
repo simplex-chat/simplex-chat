@@ -39,7 +39,7 @@ namesCommunityTests = describe "StoreService names: community" $ do
   it "refuses an empty or over-long text, or one with a control, format or line separator character" testBadText
   it "names no community label as a setting nothing reads" testNoUnknownKeys
   it "logs how many community names it loaded" testLoadedCount
-  it "gives the terms' hash for an unlisted name and community/ with it for a listed one, and reads a community hash back, not a version's" testTermsFor
+  it "gives the terms' hash for an unlisted name and community/ with it for a listed one, and reads a community hash back, also after the version an older page signed" testTermsFor
   it "logs the name policy and both terms links at startup, and checks the [community] lines" $ testStartupCheck g
   it "checks no [community] line when the policy cannot be read at startup" $ testStartupUnread g
   it "warns at startup on terms not set, unread, of a link the service does not take, or whose text cannot be fetched" $ testStartupWarnings g
@@ -132,9 +132,11 @@ testTermsFor = do
   termsFor True terms `shouldBe` listed
   agreedTermsHash listed `shouldBe` Just h
   agreedTermsHash hexDigits `shouldBe` Nothing
+  agreedTermsHash ("2026-10-23/community/" <> hexDigits) `shouldBe` Just h
   agreedTermsHash "community" `shouldBe` Nothing
-  agreedTermsHash ("2026-10-23/community/" <> hexDigits) `shouldBe` Nothing
+  agreedTermsHash "2026-10-23" `shouldBe` Nothing
   agreedTermsHash ("community/" <> T.toUpper hexDigits) `shouldBe` Nothing
+  agreedTermsHash ("2026-10-23/community/" <> hexDigits <> "/community/" <> hexDigits) `shouldBe` Nothing
 
 testStartupCheck :: TVar ChaChaDRG -> IO ()
 testStartupCheck g = withContracts g $ \node ct -> do

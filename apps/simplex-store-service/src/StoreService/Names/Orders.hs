@@ -137,9 +137,10 @@ data Landing = LNotLanded | LRegistered Int64 | LChanged | LUnread
 maxSealedChars :: Int
 maxSealedChars = 11095
 
--- | The 64 hex digits of the terms' hash, after community/ for a community name.
+-- | The terms version pages signed before, of up to 32 characters, and for a community name /community/ and the 64 hex digits
+-- of its terms' hash, with a margin; the terms' hash signed now is shorter.
 maxAgreedTermsChars :: Int
-maxAgreedTermsChars = 74
+maxAgreedTermsChars = 112
 
 -- | How far a signed request's timestamp may be from the service's clock.
 signedRequestSeconds :: Integer
