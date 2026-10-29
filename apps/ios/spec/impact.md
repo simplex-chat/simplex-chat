@@ -41,7 +41,8 @@
 | PC29 | User Address |
 | PC30 | Member Support Chat |
 | PC31 | Channels (Relays) |
-| PC32 | Online Search (SimpleX Directory) |
+| PC32 | Terminal Chat Layout |
+| PC33 | Online Search (SimpleX Directory) |
 
 ---
 
@@ -50,12 +51,12 @@
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
 | Shared/ContentView.swift | PC1, PC2, PC3 | High | Root navigation — affects all chat access |
-| Shared/SimpleXApp.swift | PC1 through PC32 | High | App entry point — initialization affects everything |
+| Shared/SimpleXApp.swift | PC1 through PC33 | High | App entry point — initialization affects everything |
 | Shared/AppDelegate.swift | PC18 | Medium | Push notification registration |
-| Shared/Views/ChatList/ChatListView.swift | PC1, PC28, PC32 | High | Main screen rendering and filtering; online search triggers and result rows |
+| Shared/Views/ChatList/ChatListView.swift | PC1, PC28, PC33 | High | Main screen rendering and filtering; online search triggers and result rows |
 | Shared/Views/ChatList/GetStakeBanner.swift | PC1 | Low | Crowdfunding banner and shared banner card chrome |
-| Shared/Views/ChatList/DirectorySearchView.swift | PC1, PC32 | Medium | Online search model (generation, spinner, result states, de-duplication), result rows, load row, long-press menu, Open, consent alert |
-| Shared/Views/Chat/ChatView.swift | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC11, PC31, PC32 | High | Core conversation UI — most messaging features, channel message rendering; the prepared channel's banner count that Open leads to |
+| Shared/Views/ChatList/DirectorySearchView.swift | PC1, PC33 | Medium | Online search model (generation, spinner, result states, de-duplication), result rows, load row, long-press menu, Open, consent alert |
+| Shared/Views/Chat/ChatView.swift | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC11, PC31, PC33 | High | Core conversation UI — most messaging features, channel message rendering; the prepared channel's banner count that Open leads to |
 | Shared/Views/Chat/ComposeMessage/ComposeView.swift | PC4, PC6, PC9, PC11, PC31 | High | Message composition — send path for all messages, channel sendAsGroup |
 | Shared/Views/Chat/ChatItem/ | PC2, PC3, PC5, PC7, PC8, PC9, PC10, PC11 | Medium | Individual message rendering components |
 | Shared/Views/Chat/ChatInfoView.swift | PC2, PC13, PC20 | Medium | Contact details and verification |
@@ -65,13 +66,13 @@
 | Shared/Views/Chat/Group/AddGroupMembersView.swift | PC14, PC16 | Medium | Member invitation flow |
 | Shared/Views/Chat/Group/GroupLinkView.swift | PC15 | Low | Group link creation/sharing |
 | Shared/Views/Chat/Group/GroupMemberInfoView.swift | PC3, PC14, PC16, PC30, PC31 | Medium | Member details and role management; rejected-by-operator status row for relay members |
-| Shared/Views/NewChat/NewChatView.swift | PC12, PC31, PC32 | High | New connection creation — onramp for all contacts and channels; `planAndConnect`'s `prepareGroup` mode, which the online search's Open uses |
+| Shared/Views/NewChat/NewChatView.swift | PC12, PC31, PC33 | High | New connection creation — onramp for all contacts and channels; `planAndConnect`'s `prepareGroup` mode, which the online search's Open uses |
 | Shared/Views/NewChat/QRCode.swift | PC12 | Low | QR code display/scanning utility |
-| Shared/Views/NewChat/NewChatMenuButton.swift | PC12, PC14, PC31, PC32 | Medium | New chat sheet: actions, contacts list, online search results card; contacts list shared with archived contacts |
+| Shared/Views/NewChat/NewChatMenuButton.swift | PC12, PC14, PC31, PC33 | Medium | New chat sheet: actions, contacts list, online search results card; contacts list shared with archived contacts |
 | Shared/Views/Call/ActiveCallView.swift | PC17 | Medium | Call UI rendering |
 | Shared/Views/Call/CallController.swift | PC17 | High | CallKit integration — call lifecycle |
 | Shared/Views/Call/WebRTCClient.swift | PC17 | High | WebRTC session management |
-| Shared/Views/UserSettings/SettingsView.swift | PC18, PC22, PC23, PC24, PC25, PC29, PC32 | Medium | Settings navigation hub; app defaults (incl. the Directory search switch) and hint defaults |
+| Shared/Views/UserSettings/SettingsView.swift | PC18, PC22, PC23, PC24, PC25, PC29, PC33 | Medium | Settings navigation hub; app defaults (incl. the Directory search switch) and hint defaults |
 | Shared/Views/UserSettings/AppearanceSettings.swift | PC24 | Low | Theme customization UI |
 | Shared/Views/UserSettings/NetworkAndServers/ | PC25, PC31 | High | Server configuration — affects connectivity and relay validation |
 | Shared/Views/UserSettings/UserProfilesView.swift | PC19, PC21 | Medium | Profile management |
@@ -79,15 +80,15 @@
 | Shared/Views/LocalAuth/ | PC22 | Medium | App lock functionality |
 | Shared/Views/Database/ | PC23, PC26 | High | Database encryption and export |
 | Shared/Views/Migration/ | PC26 | High | Device migration — data portability |
-| Shared/Model/ChatModel.swift | PC1 through PC32 | High | Central state — all features depend on it |
-| Shared/Model/SimpleXAPI.swift | PC1 through PC32 | High | FFI bridge — all commands flow through here |
-| Shared/Model/AppAPITypes.swift | PC1 through PC32 | High | Command/response types — all API communication |
-| Shared/Model/DirectorySearch.swift | PC32 | High | Directory response parsing (entries, lenient `moreCount`) and link-type validation of untrusted entries; result states and rows |
+| Shared/Model/ChatModel.swift | PC1 through PC33 | High | Central state — all features depend on it |
+| Shared/Model/SimpleXAPI.swift | PC1 through PC33 | High | FFI bridge — all commands flow through here |
+| Shared/Model/AppAPITypes.swift | PC1 through PC33 | High | Command/response types — all API communication |
+| Shared/Model/DirectorySearch.swift | PC33 | High | Directory response parsing (entries, lenient `moreCount`) and link-type validation of untrusted entries; result states and rows |
 | Shared/Model/NtfManager.swift | PC18 | High | Notification delivery |
 | Shared/Model/BGManager.swift | PC18 | Medium | Background fetch scheduling |
 | Shared/Theme/ThemeManager.swift | PC24 | Medium | Theme resolution engine |
-| SimpleXChat/ChatTypes.swift | PC1 through PC32 | High | Core data types — all features use them |
-| SimpleXChat/APITypes.swift | PC1 through PC32 | High | API result types and error handling |
+| SimpleXChat/ChatTypes.swift | PC1 through PC33 | High | Core data types — all features use them |
+| SimpleXChat/APITypes.swift | PC1 through PC33 | High | API result types and error handling |
 | SimpleXChat/CallTypes.swift | PC17 | Medium | Call-specific data types |
 | SimpleXChat/FileUtils.swift | PC10, PC23, PC26 | Medium | File paths and encryption utilities |
 | SimpleXChat/Notifications.swift | PC18 | Medium | Notification type definitions |
@@ -101,9 +102,9 @@
 
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
-| src/Simplex/Chat/Controller.hs | PC1 through PC32 | High | Command processor — all API commands |
-| src/Simplex/Chat/Types.hs | PC1 through PC32 | High | Core data types shared across all features |
-| src/Simplex/Chat/Core.hs | PC1 through PC32 | High | Chat engine lifecycle |
+| src/Simplex/Chat/Controller.hs | PC1 through PC33 | High | Command processor — all API commands |
+| src/Simplex/Chat/Types.hs | PC1 through PC33 | High | Core data types shared across all features |
+| src/Simplex/Chat/Core.hs | PC1 through PC33 | High | Chat engine lifecycle |
 | src/Simplex/Chat/Protocol.hs | PC2, PC3, PC4, PC5, PC6, PC7 | High | Chat-level message protocol (x-events) |
 | src/Simplex/Chat/Messages.hs | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9 | High | Message types and content |
 | src/Simplex/Chat/Messages/CIContent.hs | PC4, PC5, PC6, PC7, PC8, PC9, PC11 | Medium | Chat item content variants |
