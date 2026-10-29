@@ -341,7 +341,7 @@ Native code:
   | package | during review | before the final pull request |
   |---|---|---|
   | hs-jpeg-turbo (`jpeg-turbo`, `JuicyPixels-jpeg-turbo`, `JuicyPixels-spng`) | evgeny-simplex/hs-jpeg-turbo, branch `ep/jpeg-decode` at `4db152c` | a simplex-chat/hs-jpeg-turbo commit |
-  | JuicyPixels-stbir, with nothings/stb as a submodule | evgeny-simplex/JuicyPixels-stbir, branch `ep/stb-submodule` at `234dde8` | a simplex-chat/JuicyPixels-stbir commit |
+  | JuicyPixels-stbir, with nothings/stb as a submodule | evgeny-simplex/JuicyPixels-stbir, branch `ep/stb-submodule` at `3e53b11` | a simplex-chat/JuicyPixels-stbir commit |
   | JuicyPixels 3.3.8 | Hackage | Hackage |
 
 - The hashes of both forks in `scripts/nix/sha256map.nix` are computed with submodules, as for simplexmq.
@@ -432,10 +432,11 @@ Branch `ep/jpeg-decode` at `4db152c`:
 
 ## JuicyPixels-stbir fork
 
-Branch `ep/stb-submodule` at `234dde8`, on the Hackage release 0.1.0.0 (`917cd53`):
+Branch `ep/stb-submodule` at `3e53b11`, on the Hackage release 0.1.0.0 (`917cd53`):
 - `cbits/stb`: nothings/stb at `1ee679ca` as a submodule, `stb_image_resize.h` v0.97, replacing the bundled v0.95 copy.
 - `cbits/stb_image_resize.c`: `STBIR_ASSERT` defined empty.
 - `cc-options: -ffp-contract=off` (D16).
+- cabal `license`: `BSD-3-Clause AND (MIT OR Unlicense)`, with `cabal-version: 2.2`.
 - `LICENSE` and the cabal `copyright` field: "2026 SimpleX Chat Ltd" added.
 - Test suite `scale-test` (`test/ScaleTest.hs`):
   - a solid colour, RGB8 and RGBA8 with alpha 128, kept in every output pixel, for repeated halvings and for scales k/64, k in 65..127
@@ -653,7 +654,7 @@ Python, `packages/simplex-chat-python/src/simplex_chat/`:
 Build:
 - `cabal.project`, `source-repository-package`:
   - hs-jpeg-turbo (`:76-80`): evgeny-simplex/hs-jpeg-turbo at `4db152c`, subdirectories `JuicyPixels-jpeg-turbo`, `JuicyPixels-spng` and `jpeg-turbo`
-  - JuicyPixels-stbir (`:82-85`): evgeny-simplex/JuicyPixels-stbir at `234dde8`
+  - JuicyPixels-stbir (`:82-85`): evgeny-simplex/JuicyPixels-stbir at `3e53b11`
 - `scripts/nix/sha256map.nix:12-13`: the hashes of both forks, computed with submodules.
 - `dist-newstyle/src/hs-jpeg-t*` and `dist-newstyle/src/JuicyPixe*` in the Windows removals:
   - `.github/workflows/build.yml:1512, 1515, 1638, 1680, 1682`, with the comment `:1495-1496`
@@ -707,7 +708,7 @@ License notices, `docs/dependencies/`:
 - `README.md:7`:
   `[stb_image_resize](https://github.com/nothings/stb): image scaling ([MIT or public domain](./licences/apps/stb_image_resize/LICENSE))`
 - `licences/apps/mozjpeg/LICENSE.md` and `README.ijg`: copies from mozjpeg `08265790`, the submodule of the hs-jpeg-turbo fork.
-- `licences/apps/stb_image_resize/LICENSE`: `cbits/stb/stb_image_resize.h:2596-2632` of the JuicyPixels-stbir fork at `234dde8`.
+- `licences/apps/stb_image_resize/LICENSE`: `cbits/stb/stb_image_resize.h:2596-2632` of the JuicyPixels-stbir fork at `3e53b11`.
 - `licences/apps/libspng/LICENSE`: libspng's `LICENSE` (BSD-2-Clause); `licences/apps/libspng/LICENSE-libpng`: `spng/spng.c:6149-6180` (libpng-2.0), without the comment markers; from libspng `fb768002`, the submodule of the hs-jpeg-turbo fork at `4db152c`.
 - `licences/apps/miniz/LICENSE`: miniz's `LICENSE` (MIT), from miniz 3.1.2 (`77d0dce8`), the submodule of the hs-jpeg-turbo fork at `4db152c`.
 - `HASKELL.md`:
@@ -715,7 +716,7 @@ License notices, `docs/dependencies/`:
     - `JuicyPixels` 3.3.8, Hackage
     - `JuicyPixels-jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `4db152c`
     - `JuicyPixels-spng` 0.1.0.0, hs-jpeg-turbo fork at `4db152c`, `BSD-3-Clause AND BSD-2-Clause AND libpng-2.0 AND MIT`
-    - `JuicyPixels-stbir` 0.1.0.0, JuicyPixels-stbir fork at `234dde8`
+    - `JuicyPixels-stbir` 0.1.0.0, JuicyPixels-stbir fork at `3e53b11`, `BSD-3-Clause AND (MIT OR Unlicense)`
   - direct dependency (`:55`): `vector` 0.13.1.0, moved from the indirect dependencies
   - indirect dependency (`:145`): `jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `4db152c`, `BSD-3-Clause AND IJG AND Zlib`
   - each of the five added to the dependents of the packages it depends on, among:
