@@ -1363,7 +1363,7 @@ fun BoxScope.ChatInfoToolbar(
   val enableNtfs = chatInfo.chatSettings?.enableNtfs
   if (((chatInfo is ChatInfo.Direct && chatInfo.contact.ready && chatInfo.contact.active) || chatInfo is ChatInfo.Group) && enableNtfs != null) {
     val ntfMode = remember { mutableStateOf(enableNtfs) }
-    val nextNtfMode by remember { derivedStateOf { ntfMode.value.nextMode(chatInfo.hasMentions) } }
+    val nextNtfMode = enableNtfs.nextMode(chatInfo.hasMentions)
     menuItems.add {
       ItemAction(
         stringResource(nextNtfMode.text(chatInfo.hasMentions)),
