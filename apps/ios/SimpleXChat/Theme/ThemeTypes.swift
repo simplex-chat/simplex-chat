@@ -585,6 +585,12 @@ public struct ThemeModeOverrides: Codable, Hashable {
     public func layoutOnly() -> ThemeModeOverrides? {
         chatLayout.map { ThemeModeOverrides(chatLayout: $0) }
     }
+
+    public func withChatLayout(_ chatLayout: ChatLayout?) -> ThemeModeOverrides? {
+        var themes = self
+        themes.chatLayout = chatLayout
+        return themes == ThemeModeOverrides() ? nil : themes
+    }
 }
 
 // Spec: spec/services/theme.md#ThemeModeOverride

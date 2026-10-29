@@ -262,8 +262,9 @@ private fun PlayPauseButton(
   longClick: () -> Unit,
   icon: ImageResource = MR.images.ic_play_arrow_filled,
 ) {
-  val sentColor = MaterialTheme.appColors.sentMessage
-  val receivedColor = MaterialTheme.appColors.receivedMessage
+  val terminal = LocalTerminalLayout.current
+  val sentColor = if (terminal) MaterialTheme.appColors.sentQuote else MaterialTheme.appColors.sentMessage
+  val receivedColor = if (terminal) MaterialTheme.appColors.receivedQuote else MaterialTheme.appColors.receivedMessage
   Surface(
     Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
     color = if (sent) sentColor else receivedColor,
@@ -347,8 +348,9 @@ private fun FileStatusIcon(
   longClick: () -> Unit,
   onClick: () -> Unit,
 ) {
-  val sentColor = MaterialTheme.appColors.sentMessage
-  val receivedColor = MaterialTheme.appColors.receivedMessage
+  val terminal = LocalTerminalLayout.current
+  val sentColor = if (terminal) MaterialTheme.appColors.sentQuote else MaterialTheme.appColors.sentMessage
+  val receivedColor = if (terminal) MaterialTheme.appColors.receivedQuote else MaterialTheme.appColors.receivedMessage
   Surface(
     color = if (sent) sentColor else receivedColor,
     shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
