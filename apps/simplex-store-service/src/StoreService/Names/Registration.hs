@@ -21,6 +21,7 @@ module StoreService.Names.Registration
     clearRecordsDigest,
     setTextWithSigCalldata,
     clearRecordsWithSigCalldata,
+    multicallCalldata,
   )
 where
 
@@ -142,6 +143,10 @@ clearRecordsWithSigCalldata :: Node -> Word64 -> Word64 -> RecoverableSignature 
 clearRecordsWithSigCalldata (Node node) nonce deadline sig =
   selector "clearRecordsWithSig(bytes32,uint256,uint256,bytes)"
     <> abiTuple [Static node, Static $ uint256 nonce, Static $ uint256 deadline, Dynamic $ abiBytes $ serializeSignature sig]
+
+-- | The resolver runs each call on itself in order, and reverts all of them when one fails.
+multicallCalldata :: [ByteString] -> ByteString
+multicallCalldata calls = selector "multicall(bytes[])" <> abiTuple [Dynamic $ abiArray $ map abiBytes calls]
 
 bytes32 :: Node -> Eip712Value
 bytes32 (Node node) = VUint $ fromInteger $ os2ip node

@@ -3,7 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, insertInvoiceRow, invoiceStatus, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
+module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, insertInvoiceRow, invoiceStatus, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
 
 import Bots.StoreService.ConfigTests (termsVersion)
 import Bots.StoreService.WebTests (columnsOf, digestFixture, runMigrations, withServiceStore)
@@ -16,7 +16,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), addUTCTime)
-import Data.Word (Word8)
+import Data.List.NonEmpty (NonEmpty (..))
+import Data.Word (Word64, Word8)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency (..), InvoiceId (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -24,6 +25,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationsToRun (..), toDownMigration)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
+import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
@@ -50,6 +52,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "makes taken orders not live and gives a taken paid order a balance of its price, none to a code order or a price of 0, and rolls back the balance tables and columns" testNameBalancesMigration
     it "gives the orders stored before it empty agreed terms, and rolls the column back keeping them" testNameTermsMigration
     it "adds the payments' invoiced units with the index of overpaid payments, and rolls both back keeping the payments" testInvoicedUnitsMigration
+    it "moves each stored edit's change to a row of its own, and rolls back keeping each edit's first change" testRecordChangesMigration
   describe "order hash" $ do
     it "is equal for the same order fields, and differs when any one field differs" testOrderHashFields
     it "keeps field boundaries, so moving a byte between two fields changes it" testOrderHashBoundaries
@@ -89,6 +92,8 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "holds one pending or mined edit per owner and nonce, freed by a revert" testEditNonceUnique
     it "settles a pending edit once, with its mined hash" testSettleEdit
     it "round-trips a clear edit" testClearEdit
+    it "stores an edit's two changes and reads them back in nonce order, found by either nonce" testTwoChangeEdit
+    it "deletes an unsent edit with its changes" testDeleteUnsentChanges
     it "gives the times of a name's relayed edits in the window" testRelayedEditTimes
     it "gives the times of a name's pending and mined edits in the window, leaving out reverted ones" testCountedEditTimes
 
@@ -168,7 +173,7 @@ write :: DBStore -> NameRegistration -> IO VersionWrite
 write st r = withTransaction st $ \db -> updateRegistration db r (at 1)
 
 namesTables :: [Text]
-namesTables = map ("sx_badge_service_name_" <>) ["prepaid_codes", "registrations", "invoices", "record_edits", "transactions", "balances", "late_credits"]
+namesTables = map ("sx_badge_service_name_" <>) ["prepaid_codes", "registrations", "invoices", "record_edits", "record_changes", "transactions", "balances", "late_credits"]
 
 -- | Added to the badge tables' payments by the names migrations.
 balancePaymentColumns :: [Text]
@@ -192,14 +197,15 @@ testNamesColumns = withServiceStore $ \st -> do
   has "sx_badge_service_name_balances" ["registration_id", "amount", "credited", "refunded", "reserved_by", "refunded_at", "created_at", "updated_at"]
   has "sx_badge_service_name_late_credits" ["invoice_id", "credit_no", "registration_id", "units", "invoice_rate", "current_rate", "rate_used", "cents", "created_at"]
   has "sx_badge_service_payments" balancePaymentColumns
-  has "sx_badge_service_name_record_edits" ["label_hash", "owner", "nonce", "record_key", "record_value", "deadline", "signature", "body_hash", "state", "revert", "mined_tx", "created_at"]
+  has "sx_badge_service_name_record_edits" ["label_hash", "owner", "nonce", "body_hash", "state", "revert", "mined_tx", "created_at"]
+  has "sx_badge_service_name_record_changes" ["name_record_edit_id", "nonce", "record_key", "record_value", "deadline", "signature"]
   has "sx_badge_service_name_transactions" ["registration_id", "name_record_edit_id", "kind", "raw", "tx_hash", "registrar_nonce", "sent_at", "mined_block", "status"]
 
 testNamesDownUp :: IO ()
 testNamesDownUp = withServiceStore $ \st -> do
   let names = dropWhile ((/= "20261013_names") . name) storeServiceSchemaMigrations
       badgeColumns = mapM (fmap sort . columnsOf st) badgeTables
-  map name names `shouldBe` ["20261013_names", "20261022_drop_taken_codes", "20261022_name_balances", "20261022_name_late_wait", "20261023_name_terms", "20261027_name_invoiced_units"]
+  map name names `shouldBe` ["20261013_names", "20261022_drop_taken_codes", "20261022_name_balances", "20261022_name_late_wait", "20261023_name_terms", "20261027_name_invoiced_units", "20261029_name_record_changes"]
   badgeBefore <- badgeColumns
   code <- issue st 1 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
@@ -321,6 +327,35 @@ testInvoicedUnitsMigration = withServiceStore $ \st -> do
   runMigrations st $ MTRDown (mapMaybe toDownMigration invoiced)
   applied `shouldReturn` (False, False)
   payments `shouldReturn` stored
+
+testRecordChangesMigration :: IO ()
+testRecordChangesMigration = withServiceStore $ \st -> do
+  let changesMigration = [m | m@Migration {name = "20261029_name_record_changes"} <- storeServiceSchemaMigrations]
+      editColumns = sort <$> columnsOf st "sx_badge_service_name_record_edits"
+      oldEdits :: IO [(Int64, Maybe Text, Maybe Text, Int64)]
+      oldEdits = withTransaction st $ \db -> DB.query_ db "SELECT nonce, record_key, record_value, deadline FROM sx_badge_service_name_record_edits ORDER BY nonce"
+  length changesMigration `shouldBe` 1
+  runMigrations st $ MTRDown (mapMaybe toDownMigration changesMigration)
+  columnsOf st "sx_badge_service_name_record_changes" `shouldReturn` []
+  oldColumns <- editColumns
+  withTransaction st $ \db ->
+    forM_ [(4 :: Int64, Just ("simplex.channel" :: Text), Just ("https://smp9.simplex.im/c#abc" :: Text), 1 :: Word8), (7, Nothing, Nothing, 2)] $ \(nonce, key, value, n) ->
+      DB.execute
+        db
+        "INSERT INTO sx_badge_service_name_record_edits (label_hash, owner, nonce, record_key, record_value, deadline, signature, body_hash, state, created_at) VALUES (?,?,?,?,?,1792832400,?,?,'pending',?)"
+        ((DB.Binary $ unLabelHash $ labelHash "alicebakery", DB.Binary $ unAddress ownerA, nonce, key, value) :. (DB.Binary $ serializeSignature signature, DB.Binary $ digestFixture n, t0))
+  stored <- oldEdits
+  runMigrations st $ MTRUp changesMigration
+  editColumns `shouldReturn` sort (filter (`notElem` ["record_key", "record_value", "deadline", "signature"]) oldColumns)
+  Just setEdit <- withTransaction st $ \db -> getRecordEditByBody db (digestFixture 1)
+  reChanges setEdit `shouldBe` signedAt 4 setChannel :| []
+  Just clearEdit <- withTransaction st $ \db -> getRecordEditByBody db (digestFixture 2)
+  reChanges clearEdit `shouldBe` signedAt 7 RCClear :| []
+  runMigrations st $ MTRDown (mapMaybe toDownMigration changesMigration)
+  editColumns `shouldReturn` oldColumns
+  oldEdits `shouldReturn` stored
+  where
+    unLabelHash (LabelHash h) = h
 
 -- | A registration row as the code before the balances wrote it, paid by the invoice or the code given.
 insertOldRegistration :: DB.Connection -> Text -> Word8 -> Text -> Int -> Maybe Int64 -> Maybe Text -> IO ()
@@ -850,20 +885,26 @@ testRevoke = withServiceStore $ \st -> do
   held <- withTransaction st $ \db -> getPrepaidCodeById db (pcId reserved)
   (pcReservedBy =<< held, pcRevokedAt =<< held) `shouldBe` (Just (RegistrationId "r1"), Just (at 1))
 
+-- | An edit of one change at nonce 4.
 newEdit :: Address -> Word8 -> RecordChange -> NewRecordEdit
 newEdit owner n change =
   NewRecordEdit
     { nreLabelHash = labelHash "alicebakery",
       nreOwner = owner,
-      nreNonce = 4,
-      nreChange = change,
-      nreDeadline = 1792832400,
-      nreSignature = signature,
+      nreChanges = signedAt 4 change :| [],
       nreBodyHash = digestFixture n
     }
 
-setChannel :: RecordChange
+-- | The edit with its one change at this nonce.
+atNonce :: Word64 -> NewRecordEdit -> NewRecordEdit
+atNonce nonce edit@NewRecordEdit {nreChanges = change :| _} = edit {nreChanges = change {scNonce = nonce} :| []}
+
+signedAt :: Word64 -> RecordChange -> SignedChange
+signedAt scNonce scChange = SignedChange {scChange, scNonce, scDeadline = 1792832400, scSignature = signature}
+
+setChannel, setContact :: RecordChange
 setChannel = RCSetText "simplex.channel" "https://smp9.simplex.im/c#abc"
+setContact = RCSetText "simplex.contact" "https://smp8.simplex.im/a#abc"
 
 testTransactions :: IO ()
 testTransactions = withServiceStore $ \st -> do
@@ -929,10 +970,7 @@ testSettleEdit = withServiceStore $ \st -> do
         { reId = editId,
           reLabelHash = labelHash "alicebakery",
           reOwner = ownerA,
-          reNonce = 4,
-          reChange = setChannel,
-          reDeadline = 1792832400,
-          reSignature = signature,
+          reChanges = signedAt 4 setChannel :| [],
           reBodyHash = digestFixture 1,
           reState = ESMined (Just $ TxHash $ digestFixture 9),
           reCreatedAt = t0
@@ -941,22 +979,48 @@ testSettleEdit = withServiceStore $ \st -> do
 testClearEdit :: IO ()
 testClearEdit = withServiceStore $ \st -> do
   Just editId <- withTransaction st $ \db -> insertRecordEdit db (newEdit ownerA 1 RCClear) t0
-  fmap (\RecordEdit {reChange, reState} -> (reChange, reState)) <$> withTransaction st (\db -> getRecordEdit db editId)
-    `shouldReturn` Just (RCClear, ESPending)
+  fmap (\RecordEdit {reChanges, reState} -> (reChanges, reState)) <$> withTransaction st (\db -> getRecordEdit db editId)
+    `shouldReturn` Just (signedAt 4 RCClear :| [], ESPending)
+
+testTwoChangeEdit :: IO ()
+testTwoChangeEdit = withServiceStore $ \st -> do
+  let run action = withTransaction st action
+      changes = signedAt 4 setContact :| [(signedAt 5 setChannel) {scDeadline = 1792832460}]
+  Just editId <- run $ \db -> insertRecordEdit db (newEdit ownerA 1 setContact) {nreChanges = changes} t0
+  fmap reChanges <$> run (\db -> getRecordEdit db editId) `shouldReturn` Just changes
+  fmap reId <$> run (\db -> getRecordEditByNonce db ownerA 4) `shouldReturn` Just editId
+  fmap reId <$> run (\db -> getRecordEditByNonce db ownerA 5) `shouldReturn` Just editId
+  fmap reChanges <$> run (\db -> getRecordEditByBody db (digestFixture 1)) `shouldReturn` Just changes
+  -- the first nonce is the edit's: another edit starting there waits for it to settle
+  run (\db -> insertRecordEdit db (newEdit ownerA 2 setChannel) t0) `shouldReturn` Nothing
+  changeRows st `shouldReturn` 2
+
+testDeleteUnsentChanges :: IO ()
+testDeleteUnsentChanges = withServiceStore $ \st -> do
+  let changes = signedAt 4 setContact :| [signedAt 5 setChannel]
+  Just editId <- withTransaction st $ \db -> insertRecordEdit db (newEdit ownerA 1 setContact) {nreChanges = changes} t0
+  withTransaction st $ \db -> deleteUnsentEdit db editId
+  withTransaction st (\db -> getRecordEdit db editId) `shouldReturn` Nothing
+  changeRows st `shouldReturn` 0
+
+changeRows :: DBStore -> IO Int
+changeRows st = withTransaction st $ \db -> do
+  [Only n] <- DB.query_ db "SELECT count(*) FROM sx_badge_service_name_record_changes"
+  pure n
 
 testRelayedEditTimes :: IO ()
 testRelayedEditTimes = withServiceStore $ \st -> do
   forM_ (zip [1 ..] [0, 10, 20]) $ \(n, m) ->
-    withTransaction st $ \db -> void $ insertRecordEdit db (newEdit ownerA n setChannel) {nreNonce = fromIntegral n} (at m)
-  withTransaction st (\db -> void $ insertRecordEdit db (newEdit ownerA 9 setChannel) {nreLabelHash = labelHash "bobsbakery", nreNonce = 9} (at 15))
+    withTransaction st $ \db -> void $ insertRecordEdit db (atNonce (fromIntegral n) $ newEdit ownerA n setChannel) (at m)
+  withTransaction st (\db -> void $ insertRecordEdit db (atNonce 9 $ newEdit ownerA 9 setChannel) {nreLabelHash = labelHash "bobsbakery"} (at 15))
   withTransaction st (\db -> relayedEditTimes db (labelHash "alicebakery") (at 5)) `shouldReturn` [at 10, at 20]
 
 testCountedEditTimes :: IO ()
 testCountedEditTimes = withServiceStore $ \st -> do
   [_, Just minedId, Just revertedId, _] <- forM (zip [1 ..] [0, 10, 20, 30]) $ \(n, m) ->
-    withTransaction st $ \db -> insertRecordEdit db (newEdit ownerA n setChannel) {nreNonce = fromIntegral n} (at m)
+    withTransaction st $ \db -> insertRecordEdit db (atNonce (fromIntegral n) $ newEdit ownerA n setChannel) (at m)
   withTransaction st $ \db -> do
     settleRecordEdit db minedId (ESMined Nothing) `shouldReturn` True
     settleRecordEdit db revertedId (ESReverted Nothing) `shouldReturn` True
-  withTransaction st (\db -> void $ insertRecordEdit db (newEdit ownerA 9 setChannel) {nreLabelHash = labelHash "bobsbakery", nreNonce = 9} (at 15))
+  withTransaction st (\db -> void $ insertRecordEdit db (atNonce 9 $ newEdit ownerA 9 setChannel) {nreLabelHash = labelHash "bobsbakery"} (at 15))
   withTransaction st (\db -> countedEditTimes db (labelHash "alicebakery") (at 5)) `shouldReturn` [at 10, at 30]

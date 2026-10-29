@@ -21,6 +21,8 @@ import qualified Data.Aeson.KeyMap as KM
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import Data.List.NonEmpty (NonEmpty (..))
+import qualified Data.List.NonEmpty as L
 import qualified Data.ByteString.Lazy as LB
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -45,10 +47,10 @@ import StoreService.Names.Abi
 import StoreService.Names.Chain
 import StoreService.Names.Contracts (newContracts)
 import StoreService.Names.Records
-import StoreService.Names.Registration (Node, clearRecordsDigest, clearRecordsWithSigCalldata, labelNode, nodeBytes, resolverDomain, setTextDigest, setTextWithSigCalldata)
+import StoreService.Names.Registration (Node, clearRecordsDigest, clearRecordsWithSigCalldata, labelNode, multicallCalldata, nodeBytes, resolverDomain, setTextDigest, setTextWithSigCalldata)
 import StoreService.Names.Sender (Sender, followTransactions, newSender)
 import StoreService.Names.Signatures (parseSignature)
-import StoreService.Names.Store (EditState (..), NewRecordEdit (..), RecordChange (..), RecordEdit (..), getRecordEditByBody, insertRecordEdit)
+import StoreService.Names.Store (EditState (..), NewRecordEdit (..), RecordChange (..), RecordEdit (..), SignedChange (..), getRecordEditByBody, insertRecordEdit)
 import StoreService.Names.Turns (newTurns)
 import StoreService.Web.Names.Records (EditInvalid (..), editRequest, recordsHandler)
 import System.Timeout (timeout)
@@ -66,7 +68,9 @@ namesRecordsTests = describe "StoreService names: records" $ do
   g <- runIO C.newRandom
   describe "requests" $ do
     it "signs and encodes SetText and ClearRecords edits as viem does" $ testViemVectors g
+    it "encodes two edits as one multicall as viem does" $ testViemMulticall g
     it "reads a request's formats, then its link, then its signature" testRequestOrder
+    it "takes one or two edits of distinct keys with consecutive nonces, and a clear only alone" testRequestEdits
     it "bounds a link at 4096 bytes and takes only a link of the key's kind" testLinkBound
     it "refuses a high s, though recovery accepts it" testHighS
   describe "relay" $ do
@@ -84,6 +88,17 @@ namesRecordsTests = describe "StoreService names: records" $ do
     it "answers edit_pending after the wait, and its repeat with the hash once mined" $ testPendingThenMined g
     it "answers edit_pending at once when the chain stops answering after the send" $ testChainStopsAfterSend g
     it "bounds the wait for edit_pending from the request's arrival, counting the checks and the send" $ testPendingFromArrival g
+  describe "two edits" $ do
+    it "relays two edits as one multicall transaction with one row, and answers its hash once mined" $ testTwoMined g
+    it "refuses two edits when the second is signed by another key, or its nonce is not the owner's next, before any row or gas" $ testTwoRefused g
+    it "answers an exact resend of two edits from the stored request, and checks either edit alone anew" $ testTwoResend g
+    it "counts two edits as one edit of the yearly limit, taking the last one left" $ testTwoYearLimit g
+    it "counts two edits as one request of the hourly cap" $ testTwoCap g
+    it "answers a mined revert of two edits record_reverted with no name, giving its edit back" $ testTwoReverted g
+    it "stores nothing when the dry run of two edits reverts, answering it with no name" $ testTwoDryRunReverted g
+    it "settles two edits SignatureExpired once the earliest deadline is passed at depth" $ testTwoExpired g
+    it "answers two edits applied with no hash only when the nonce passed both and both records hold their values" $ testTwoAppliedByAnother g
+    it "answers two edits record_reverted InvalidNonce when another body took only the first nonce" $ testTwoFirstNonceTaken g
   describe "outcomes" $ do
     it "answers an InvalidNonce revert of an edit another relayer applied as mined with no hash, and its repeat too" $ testAppliedByAnother g
     it "answers a dry run's InvalidNonce revert of an edit another relayer applied as applied with no hash, storing nothing" $ testDryRunAppliedByAnother g
@@ -109,6 +124,7 @@ namesRecordsTests = describe "StoreService names: records" $ do
     it "answers the contract's statuses and bodies" $ testHttp g
     it "answers 503, 504, and 429 with the real wait in Retry-After" $ testHttpUnsettled g
     it "answers 429 edit_limit with nextAt in unix seconds and no Retry-After" $ testHttpEditLimit g
+    it "relays a body of two edits with links of 4096 bytes, above the 8192-byte cap of other endpoints" $ testHttpTwoLongLinks g
 
 data Setup = Setup
   { node :: FakeEthNode,
@@ -168,10 +184,27 @@ setRecord Setup {node} key value =
   answerCall node fakeResolver (selector "text(bytes32,string)" <> abiTuple [Static $ nodeBytes aliceNode, Dynamic $ abiBytes $ encodeUtf8 key]) $
     Returns $ abiTuple [Dynamic $ abiBytes $ encodeUtf8 value]
 
+signChange :: Setup -> EphemeralWallet -> RecordChange -> Word64 -> Word64 -> IO SignedChange
+signChange Setup {random} EphemeralWallet {ewKey} scChange scNonce scDeadline = do
+  scSignature <- signRecoverable random ewKey (digestOf scChange scNonce scDeadline) >>= either fail pure
+  pure SignedChange {scChange, scNonce, scDeadline, scSignature}
+
+-- | A request of one edit.
 signEdit :: Setup -> EphemeralWallet -> RecordChange -> Word64 -> Word64 -> IO EditRequest
-signEdit Setup {random} EphemeralWallet {ewKey} change nonce erDeadline = do
-  sig <- signRecoverable random ewKey (digestOf change nonce erDeadline) >>= either fail pure
-  pure EditRequest {erLabelHash = alice, erChange = change, erNonce = nonce, erDeadline, erSignature = sig}
+signEdit s w change nonce dl = editOf . (:| []) <$> signChange s w change nonce dl
+
+editOf :: NonEmpty SignedChange -> EditRequest
+editOf erChanges = EditRequest {erLabelHash = alice, erChanges}
+
+-- | The owner's contact and channel edits, at this nonce and the next, in one request.
+ownerTwo :: Setup -> Word64 -> Text -> Text -> IO EditRequest
+ownerTwo s@Setup {owner} nonce contactValue channelValue = do
+  first <- signChange s owner (contact contactValue) nonce deadline
+  second <- signChange s owner (channel channelValue) (nonce + 1) deadline
+  pure $ editOf $ first :| [second]
+
+contact :: Text -> RecordChange
+contact = RCSetText contactKey
 
 channel :: Text -> RecordChange
 channel = RCSetText channelKey
@@ -208,16 +241,17 @@ editRows Setup {store} = withTransaction store $ \db -> do
   [Only n] <- DB.query_ db "SELECT count(*) FROM sx_badge_service_name_record_edits"
   pure n
 
--- | As the relay keys a sent edit: the signed digest and the signature.
+-- | As the relay keys a sent request: each signed digest and its signature, in order.
 bodyHashOf :: EditRequest -> ByteString
-bodyHashOf EditRequest {erChange, erNonce, erDeadline, erSignature} = C.sha256Hash $ digestOf erChange erNonce erDeadline <> serializeSignature erSignature
+bodyHashOf EditRequest {erChanges} =
+  C.sha256Hash $ B.concat [digestOf scChange scNonce scDeadline <> serializeSignature scSignature | SignedChange {scChange, scNonce, scDeadline, scSignature} <- L.toList erChanges]
 
 -- | Saves an edit as a request does before it joins the sender, as if the service stopped right after.
 saveUnsent :: Setup -> EditRequest -> IO ()
-saveUnsent Setup {store, clock, owner = EphemeralWallet {ewAddress}} req@EditRequest {erChange, erNonce, erDeadline, erSignature} = do
+saveUnsent Setup {store, clock, owner = EphemeralWallet {ewAddress}} req@EditRequest {erChanges} = do
   now <- readTVarIO clock
   Just _ <- withTransaction store $ \db ->
-    insertRecordEdit db NewRecordEdit {nreLabelHash = alice, nreOwner = ewAddress, nreNonce = erNonce, nreChange = erChange, nreDeadline = erDeadline, nreSignature = erSignature, nreBodyHash = bodyHashOf req} now
+    insertRecordEdit db NewRecordEdit {nreLabelHash = alice, nreOwner = ewAddress, nreChanges = erChanges, nreBodyHash = bodyHashOf req} now
   pure ()
 
 passTime :: Setup -> NominalDiffTime -> IO ()
@@ -228,38 +262,79 @@ passTime Setup {clock} t = atomically $ modifyTVar' clock (addUTCTime t)
 testViemVectors :: TVar ChaChaDRG -> IO ()
 testViemVectors g = withSetup g $ \s@Setup {owner = EphemeralWallet {ewAddress}} -> do
   ewAddress `shouldBe` viemAddress
-  EditRequest {erSignature = setSig} <- ownerEdit s viemChannelLink
+  SignedChange {scSignature = setSig} <- signChange s (owner s) (channel viemChannelLink) 0 deadline
   setSig `shouldBe` viemSetSignature
   recoverAddress setSig (digestOf (channel viemChannelLink) 0 deadline) `shouldReturn` Right viemAddress
   setTextWithSigCalldata aliceNode channelKey viemChannelLink 0 deadline setSig `shouldBe` viemSetCall
-  EditRequest {erSignature = clearSig} <- signEdit s (owner s) RCClear 1 deadline
+  SignedChange {scSignature = clearSig} <- signChange s (owner s) RCClear 1 deadline
   clearSig `shouldBe` viemClearSignature
   clearRecordsWithSigCalldata aliceNode 1 deadline clearSig `shouldBe` viemClearCall
 
+testViemMulticall :: TVar ChaChaDRG -> IO ()
+testViemMulticall g = withSetup g $ \s -> do
+  EditRequest {erChanges = first :| rest} <- ownerTwo s 0 viemContactLink viemChannelLink
+  [second] <- pure rest
+  (scSignature first, scSignature second) `shouldBe` (viemContactSignature, viemChannelSignature)
+  multicallCalldata
+    [ setTextWithSigCalldata aliceNode contactKey viemContactLink 0 deadline (scSignature first),
+      setTextWithSigCalldata aliceNode channelKey viemChannelLink 1 deadline (scSignature second)
+    ]
+    `shouldBe` viemMulticall
+
 testRequestOrder :: IO ()
 testRequestOrder = do
-  let valid = requestJson [("key", J.String channelKey), ("value", J.String viemChannelLink)]
-  fmap erChange (editRequest valid) `shouldBe` Right (channel viemChannelLink)
-  fmap erChange (editRequest $ requestJson [("clear", J.Bool True)]) `shouldBe` Right RCClear
-  fmap erChange (editRequest $ requestJson [("key", J.String contactKey), ("value", "")]) `shouldBe` Right (RCSetText contactKey "")
+  let valid = editFields [("key", J.String channelKey), ("value", J.String viemChannelLink)]
+      request = editRequest . requestOf . (: [])
+  changesOf (request valid) `shouldBe` Right [channel viemChannelLink]
+  changesOf (request $ editFields [("clear", J.Bool True)]) `shouldBe` Right [RCClear]
+  changesOf (request $ editFields [("key", J.String contactKey), ("value", "")]) `shouldBe` Right [RCSetText contactKey ""]
   -- formats first: a bad label hash or key is bad_request even with a bad link
-  editRequest (KM.insert "labelHash" (J.String $ "0x" <> T.toUpper (T.drop 2 aliceHashText)) $ withLink "https://x/a") `shouldBe` Left EIBadRequest
-  editRequest (requestJson [("key", "simplex.other"), ("value", J.String viemChannelLink)]) `shouldBe` Left EIBadRequest
-  editRequest (KM.insert "nonce" (J.Number (-1)) valid) `shouldBe` Left EIBadRequest
-  editRequest (KM.insert "deadline" (J.String "1767229200") valid) `shouldBe` Left EIBadRequest
-  editRequest (KM.delete "value" valid) `shouldBe` Left EIBadRequest
+  editRequest (KM.insert "labelHash" (J.String $ "0x" <> T.toUpper (T.drop 2 aliceHashText)) $ requestOf [withLink "https://x/a"]) `shouldBe` Left EIBadRequest
+  request (editFields [("key", "simplex.other"), ("value", J.String viemChannelLink)]) `shouldBe` Left EIBadRequest
+  request (KM.insert "nonce" (J.Number (-1)) valid) `shouldBe` Left EIBadRequest
+  request (KM.insert "deadline" (J.String "1767229200") valid) `shouldBe` Left EIBadRequest
+  request (KM.delete "value" valid) `shouldBe` Left EIBadRequest
+  -- the old body of one edit, with no list
+  editRequest (KM.insert "labelHash" (J.String aliceHashText) valid) `shouldBe` Left EIBadRequest
   -- the link before the signature
-  editRequest (KM.insert "signature" "0x00" $ withLink "https://x/a") `shouldBe` Left EIInvalidLink
-  editRequest (KM.insert "signature" "0x00" valid) `shouldBe` Left EIBadRequest
+  request (KM.insert "signature" "0x00" $ withLink "https://x/a") `shouldBe` Left EIInvalidLink
+  request (KM.insert "signature" "0x00" valid) `shouldBe` Left EIBadRequest
   where
-    withLink link = requestJson [("key", J.String channelKey), ("value", J.String link)]
+    withLink link = editFields [("key", J.String channelKey), ("value", J.String link)]
+
+testRequestEdits :: IO ()
+testRequestEdits = do
+  let edit key value nonce = editFields [("key", J.String key), ("value", J.String value), ("nonce", J.toJSON (nonce :: Int))]
+      clearAt nonce = editFields [("clear", J.Bool True), ("nonce", J.toJSON (nonce :: Int))]
+      request = editRequest . requestOf
+      contactAt = edit contactKey "https://smp8.simplex.im/a#Y8m3"
+      channelAt = edit channelKey viemChannelLink
+  changesOf (request [contactAt 4, channelAt 5]) `shouldBe` Right [contact "https://smp8.simplex.im/a#Y8m3", channel viemChannelLink]
+  fmap (map scNonce . L.toList . erChanges) (request [channelAt 4, contactAt 5]) `shouldBe` Right [4, 5]
+  forM_
+    [ ("no edit", []),
+      ("three edits", [contactAt 4, channelAt 5, edit channelKey "" 6]),
+      ("one key twice", [channelAt 4, edit channelKey "" 5]),
+      ("a clear after a set", [contactAt 4, clearAt 5]),
+      ("a clear before a set", [clearAt 4, contactAt 5]),
+      ("a nonce skipped", [contactAt 4, channelAt 6]),
+      ("nonces reversed", [contactAt 5, channelAt 4]),
+      ("one nonce twice", [contactAt 4, channelAt 4])
+    ]
+    $ \(what, edits) -> (what :: String, request edits) `shouldBe` (what, Left EIBadRequest)
+  -- every edit's format before any link, and every link before any signature
+  request [edit contactKey "https://x/a" 4, edit "simplex.other" viemChannelLink 5] `shouldBe` Left EIBadRequest
+  request [KM.insert "signature" "0x00" $ contactAt 4, edit channelKey "https://x/c" 5] `shouldBe` Left EIInvalidLink
+
+changesOf :: Either EditInvalid EditRequest -> Either EditInvalid [RecordChange]
+changesOf = fmap (map scChange . L.toList . erChanges)
 
 testLinkBound :: IO ()
 testLinkBound = do
   let prefix = "https://smp8.simplex.im/c#"
       linkOf n = prefix <> T.replicate (n - T.length prefix) "a"
-      edit key value = editRequest $ requestJson [("key", J.String key), ("value", J.String value)]
-  fmap erChange (edit channelKey $ linkOf 4096) `shouldBe` Right (channel $ linkOf 4096)
+      edit key value = editRequest $ requestOf [editFields [("key", J.String key), ("value", J.String value)]]
+  fmap (L.head . L.map scChange . erChanges) (edit channelKey $ linkOf 4096) `shouldBe` Right (channel $ linkOf 4096)
   edit channelKey (linkOf 4097) `shouldBe` Left EIInvalidLink
   edit contactKey viemChannelLink `shouldBe` Left EIInvalidLink
   edit channelKey "https://smp8.simplex.im/c#Y8m3;https://smp9.simplex.im/c#Z1" `shouldBe` Left EIInvalidLink
@@ -270,7 +345,7 @@ testHighS = do
       highS = i2ospOf_ 32 $ curveOrder - os2ip rsS
       flipped = RecoverableSignature {rsR, rsS = highS, rsRecId = 1 - rsRecId}
   recoverAddress flipped (digestOf (channel viemChannelLink) 0 deadline) `shouldReturn` Right viemAddress
-  editRequest (KM.insert "signature" (J.String $ hex $ serializeSignature flipped) $ requestJson [("key", J.String channelKey), ("value", J.String viemChannelLink)])
+  editRequest (requestOf [KM.insert "signature" (J.String $ hex $ serializeSignature flipped) $ editFields [("key", J.String channelKey), ("value", J.String viemChannelLink)]])
     `shouldBe` Left EIBadRequest
   where
     curveOrder = ECC.ecc_n $ ECC.common_curve $ ECC.getCurveByName ECC.SEC_p256k1
@@ -443,6 +518,143 @@ testChainStopsAfterSend g = withSetup g $ \s@Setup {node, records} -> do
   h <- mineSent s 1 True
   relayEdit records req `shouldReturn` EAApplied (Just h)
 
+-- two edits
+
+testTwoMined :: TVar ChaChaDRG -> IO ()
+testTwoMined g = withSetup g $ \s@Setup {node} -> do
+  req <- ownerTwo s 0 viemContactLink viemChannelLink
+  r <- relay s req
+  [raw] <- within $ awaitSent node 1
+  fmap (\TxRequest {trTo, trData} -> (trTo, trData)) (decodeSignedTx raw) `shouldBe` Right (fakeResolver, viemMulticall)
+  h <- mineSent s 1 True
+  answerOf r `shouldReturn` EAApplied (Just h)
+  stateOf s req `shouldReturn` Just (ESMined $ Just h)
+  editRows s `shouldReturn` 1
+  length <$> sentTransactions node `shouldReturn` 1
+
+testTwoRefused :: TVar ChaChaDRG -> IO ()
+testTwoRefused g = withSetup g $ \s@Setup {node, records, owner} -> do
+  other <- newEphemeralWallet g
+  first <- signChange s owner (contact viemContactLink) 0 deadline
+  stranger <- signChange s other (channel viemChannelLink) 1 deadline
+  relayEdit records (editOf $ first :| [stranger]) `shouldReturn` EARefused
+  passed <- signChange s owner (channel viemChannelLink) 1 (genesis - 1)
+  relayEdit records (editOf $ first :| [passed]) `shouldReturn` EARefused
+  setNonce s 1
+  (relayEdit records =<< ownerTwo s 0 viemContactLink viemChannelLink) `shouldReturn` EARefused
+  editRows s `shouldReturn` 0
+  sentTransactions node `shouldReturn` []
+
+testTwoResend :: TVar ChaChaDRG -> IO ()
+testTwoResend g = withSetup g $ \s@Setup {node, records} -> do
+  req@EditRequest {erChanges = first :| rest} <- ownerTwo s 0 viemContactLink viemChannelLink
+  r <- relay s req
+  h <- mineSent s 1 True
+  answerOf r `shouldReturn` EAApplied (Just h)
+  relayEdit records req `shouldReturn` EAApplied (Just h)
+  editsLeftNow s `shouldReturn` EditsLeft (editsPerYear - 1) (Just $ addUTCTime year t0)
+  -- either edit alone is another body, checked anew against the nonce both moved
+  setNonce s 2
+  relayEdit records (editOf $ first :| []) `shouldReturn` EARefused
+  relayEdit records (editOf $ L.fromList rest) `shouldReturn` EARefused
+  editRows s `shouldReturn` 1
+  length <$> sentTransactions node `shouldReturn` 1
+
+testTwoYearLimit :: TVar ChaChaDRG -> IO ()
+testTwoYearLimit g = withSetup g $ \s@Setup {records} -> do
+  _ <- appliedEdits s 2
+  setNonce s 2
+  editsLeftNow s `shouldReturn` EditsLeft 1 (Just $ addUTCTime year t0)
+  r <- relay s =<< ownerTwo s 2 viemContactLink viemChannelLink
+  h <- mineSent s 3 True
+  answerOf r `shouldReturn` EAApplied (Just h)
+  setNonce s 4
+  editsLeftNow s `shouldReturn` EditsLeft 0 (Just $ addUTCTime year t0)
+  (relayEdit records =<< ownerTwo s 4 "https://smp8.simplex.im/a#next" "https://smp9.simplex.im/c#next") `shouldReturn` EALimited (addUTCTime year t0)
+  editRows s `shouldReturn` 3
+
+testTwoCap :: TVar ChaChaDRG -> IO ()
+testTwoCap g = withSetup g $ \s0 -> do
+  let s = roomy s0
+      quick = (records s) {rsPendingAfter = shortWait}
+      twoAt n = ownerTwo s n viemContactLink ("https://smp9.simplex.im/c#n" <> T.pack (show n))
+  forM_ [0, 2 .. 18] $ \n -> do
+    setNonce s n
+    (relayEdit quick =<< twoAt n) `shouldReturn` EAPending
+  setNonce s 20
+  (relayEdit (records s) =<< twoAt 20) `shouldReturn` EACapped 3600
+  editRows s `shouldReturn` 10
+
+testTwoReverted :: TVar ChaChaDRG -> IO ()
+testTwoReverted g = withSetup g $ \s@Setup {records} -> do
+  req <- ownerTwo s 0 viemContactLink viemChannelLink
+  r <- relay s req
+  -- reverted before the deadlines with the nonce unused: multicall drops the inner error
+  _ <- mineSent s 1 False
+  answerOf r `shouldReturn` EAReverted Nothing
+  stateOf s req `shouldReturn` Just (ESReverted Nothing)
+  editsLeftNow s `shouldReturn` EditsLeft editsPerYear Nothing
+  relayEdit records req `shouldReturn` EAReverted Nothing
+
+testTwoDryRunReverted :: TVar ChaChaDRG -> IO ()
+testTwoDryRunReverted g = withSetup g $ \s@Setup {node, records} -> do
+  req <- ownerTwo s 0 viemContactLink viemChannelLink
+  revertDryRun node viemMulticall $ Just ""
+  relayEdit records req `shouldReturn` EAReverted Nothing
+  editRows s `shouldReturn` 0
+  sentTransactions node `shouldReturn` []
+  revertDryRun node viemMulticall Nothing
+  r <- relay s req
+  h <- mineSent s 1 True
+  answerOf r `shouldReturn` EAApplied (Just h)
+
+testTwoExpired :: TVar ChaChaDRG -> IO ()
+testTwoExpired g = withSetup g $ \s@Setup {node, records, owner} -> do
+  first <- signChange s owner (contact viemContactLink) 0 (deadline + 600)
+  second <- signChange s owner (channel viemChannelLink) 1 deadline
+  let req = editOf $ first :| [second]
+  relayEdit records {rsPendingAfter = shortWait} req `shouldReturn` EAPending
+  _ <- within $ awaitSent node 1
+  -- the second edit's deadline, the earlier one, is passed at the latest block but not yet two confirmations deep
+  setBlock node 300 deadline
+  setBlock node 301 $ deadline + 1
+  recordsRound records
+  stateOf s req `shouldReturn` Just ESPending
+  setBlock node 302 $ deadline + 2
+  recordsRound records
+  stateOf s req `shouldReturn` Just (ESReverted $ Just "SignatureExpired")
+  editsLeftNow s `shouldReturn` EditsLeft editsPerYear Nothing
+
+testTwoAppliedByAnother :: TVar ChaChaDRG -> IO ()
+testTwoAppliedByAnother g =
+  forM_ [(viemChannelLink, EAApplied Nothing), ("https://smp9.simplex.im/c#other", EAReverted $ Just "InvalidNonce")] $ \(held, answer) -> withSetup g $ \s@Setup {node} -> do
+    req <- ownerTwo s 0 viemContactLink viemChannelLink
+    r <- relay s req
+    _ <- within $ awaitSent node 1
+    -- another relayer's transaction used both nonces first
+    setNonce s 2
+    setRecord s contactKey viemContactLink
+    setRecord s channelKey held
+    _ <- mineSent s 1 False
+    answerOf r `shouldReturn` answer
+
+testTwoFirstNonceTaken :: TVar ChaChaDRG -> IO ()
+testTwoFirstNonceTaken g = withSetup g $ \s@Setup {node} -> do
+  req <- ownerTwo s 0 viemContactLink viemChannelLink
+  r <- relay s req
+  _ <- within $ awaitSent node 1
+  -- the records happen to hold both values, but only the first nonce moved, so the request cannot land
+  setNonce s 1
+  setRecord s contactKey viemContactLink
+  setRecord s channelKey viemChannelLink
+  _ <- mineSent s 1 False
+  answerOf r `shouldReturn` EAReverted (Just "InvalidNonce")
+  stateOf s req `shouldReturn` Just (ESReverted $ Just "InvalidNonce")
+
+-- | The name's yearly edits left now, by the relay's clock.
+editsLeftNow :: Setup -> IO EditsLeft
+editsLeftNow Setup {store, clock} = readTVarIO clock >>= \now -> withTransaction store $ \db -> nameEditsLeft db editsPerYear alice now
+
 -- outcomes
 
 testAppliedByAnother :: TVar ChaChaDRG -> IO ()
@@ -577,11 +789,15 @@ testBadRowSkipped :: TVar ChaChaDRG -> IO ()
 testBadRowSkipped g = withSetup g $ \s@Setup {store, clock} -> do
   now <- readTVarIO clock
   -- a text record with a key and no value, which no edit can be
-  withTransaction store $ \db ->
+  withTransaction store $ \db -> do
     DB.execute
       db
-      "INSERT INTO sx_badge_service_name_record_edits (label_hash, owner, nonce, record_key, record_value, deadline, signature, body_hash, state, created_at) VALUES (?,?,5,'simplex.channel',NULL,?,?,?,'pending',?)"
-      (Binary $ unLabel alice, Binary $ unAddress viemAddress, deadline, Binary $ serializeSignature viemSetSignature, Binary $ B.replicate 32 0, now)
+      "INSERT INTO sx_badge_service_name_record_edits (label_hash, owner, nonce, body_hash, state, created_at) VALUES (?,?,5,?,'pending',?)"
+      (Binary $ unLabel alice, Binary $ unAddress viemAddress, Binary $ B.replicate 32 0, now)
+    DB.execute
+      db
+      "INSERT INTO sx_badge_service_name_record_changes (name_record_edit_id, nonce, record_key, record_value, deadline, signature) SELECT name_record_edit_id, 5, 'simplex.channel', NULL, ?, ? FROM sx_badge_service_name_record_edits WHERE nonce = 5"
+      (deadline, Binary $ serializeSignature viemSetSignature)
   req <- ownerEdit s viemChannelLink
   saveUnsent s req
   s' <- restart s
@@ -753,7 +969,7 @@ t0Seconds = floor $ utcTimeToPOSIXSeconds t0
 
 testHttp :: TVar ChaChaDRG -> IO ()
 testHttp g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post -> do
-  let editBody value = J.encode $ KM.insert "value" (J.String value) $ requestJson [("key", J.String channelKey)]
+  let editBody value = J.encode $ requestOf [editFields [("key", J.String channelKey), ("value", J.String value)]]
   post "[]" `shouldReturn` (400, Just $ errorJson "bad_request", Nothing)
   post (editBody "https://x/a") `shouldReturn` (400, Just $ errorJson "invalid_link", Nothing)
   answer <- async $ post $ editBody viemChannelLink
@@ -787,6 +1003,15 @@ testHttpEditLimit g = withSetup g $ \s@Setup {records, owner} -> do
     (post . J.encode . editJson =<< signEdit s owner (channel viemChannelLink) 3 deadline)
       `shouldReturn` (429, Just $ J.object ["error" .= ("edit_limit" :: Text), "nextAt" .= (t0Seconds + yearSeconds)], Nothing)
 
+testHttpTwoLongLinks :: TVar ChaChaDRG -> IO ()
+testHttpTwoLongLinks g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post -> do
+  let longLink prefix = prefix <> T.replicate (4096 - T.length prefix) "a"
+  body <- J.encode . editJson <$> ownerTwo s 0 (longLink "https://smp8.simplex.im/a#") (longLink "https://smp8.simplex.im/c#")
+  LB.length body `shouldSatisfy` (> 8192)
+  answer <- async $ post body
+  TxHash h <- mineSent s 1 True
+  within (wait answer) `shouldReturn` (200, Just $ J.object ["tx" .= hex h], Nothing)
+
 -- | Posts a body to the records handler, answering the status, the JSON body and Retry-After.
 withRecordsApp :: Records -> ((LB.ByteString -> IO (Int, Maybe J.Value, Maybe ByteString)) -> IO a) -> IO a
 withRecordsApp rs action = Warp.testWithApplication (pure $ recordsHandler rs) $ \port -> do
@@ -802,16 +1027,22 @@ errorJson tag = J.object ["error" .= tag]
 -- fixtures
 
 editJson :: EditRequest -> J.Object
-editJson EditRequest {erChange, erNonce, erDeadline, erSignature} =
+editJson EditRequest {erChanges} = requestOf $ map changeJson $ L.toList erChanges
+
+changeJson :: SignedChange -> J.Object
+changeJson SignedChange {scChange, scNonce, scDeadline, scSignature} =
   KM.fromList $
-    [ ("labelHash", J.String aliceHashText),
-      ("nonce", J.toJSON erNonce),
-      ("deadline", J.toJSON erDeadline),
-      ("signature", J.String $ hex $ serializeSignature erSignature)
+    [ ("nonce", J.toJSON scNonce),
+      ("deadline", J.toJSON scDeadline),
+      ("signature", J.String $ hex $ serializeSignature scSignature)
     ]
-      <> case erChange of
+      <> case scChange of
         RCSetText key value -> [("key", J.String key), ("value", J.String value)]
         RCClear -> [("clear", J.Bool True)]
+
+-- | The body of a request with these edits for alicebakery.
+requestOf :: [J.Object] -> J.Object
+requestOf edits = KM.fromList [("labelHash", J.String aliceHashText), ("edits", J.toJSON edits)]
 
 -- | The service's default.
 editsPerYear :: Int
@@ -822,11 +1053,11 @@ longWait = 4000000
 shortWait = 200000
 
 -- | The fields of viem's SetText edit but its key and value, with these added or replaced.
-requestJson :: [(J.Key, J.Value)] -> J.Object
-requestJson extra = KM.union (KM.fromList extra) $ KM.delete "key" $ KM.delete "value" $ editJson viemEdit
+editFields :: [(J.Key, J.Value)] -> J.Object
+editFields extra = KM.union (KM.fromList extra) $ KM.delete "key" $ KM.delete "value" $ changeJson viemChange
 
-viemEdit :: EditRequest
-viemEdit = EditRequest {erLabelHash = alice, erChange = channel viemChannelLink, erNonce = 0, erDeadline = deadline, erSignature = viemSetSignature}
+viemChange :: SignedChange
+viemChange = SignedChange {scChange = channel viemChannelLink, scNonce = 0, scDeadline = deadline, scSignature = viemSetSignature}
 
 digestOf :: RecordChange -> Word64 -> Word64 -> ByteString
 digestOf change nonce dl = case change of
@@ -885,6 +1116,21 @@ viemSetSignature = either (error . show) id $ parseSignature "0xfce4c6865591609c
 -- | viem: ClearRecords(alicebakery.simplex, 1, deadline)
 viemClearSignature :: RecoverableSignature
 viemClearSignature = either (error . show) id $ parseSignature "0x0565f7e5a591c200fcc358c1d9e9293721d0b99f0285b589211203e311e8e6167ee822d664048870bdd8552263d25bbf45e7f4985fd3b8c3a19cfced44ef9d561c"
+
+viemContactLink :: Text
+viemContactLink = "https://smp8.simplex.im/a#Y8m3"
+
+-- | viem: SetText(alicebakery.simplex, simplex.contact, viemContactLink, 0, deadline)
+viemContactSignature :: RecoverableSignature
+viemContactSignature = either (error . show) id $ parseSignature "0x2154ef3fbd7244fe34a2c9b2850d44eda1181d1e234900e8419518cab458848f08b5033fd3cd37e7be2346d81266684b4ced6275e84d22829fd0aaa836fae8261c"
+
+-- | viem: SetText(alicebakery.simplex, simplex.channel, viemChannelLink, 1, deadline)
+viemChannelSignature :: RecoverableSignature
+viemChannelSignature = either (error . show) id $ parseSignature "0xaecc4fa43c1387e50594ceb43365fe9028a546c63f2ebc3d9d266f992d0b493808009060f7b6831a97b81453ccfb71413e608d48d8eddc7be3c086887b0b46481b"
+
+-- | viem: multicall([setTextWithSig of the contact edit, setTextWithSig of the channel edit])
+viemMulticall :: ByteString
+viemMulticall = unhex "ac9650d8000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000001c471a218a70f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54ec1a00000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006955c7100000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000f73696d706c65782e636f6e746163740000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001e68747470733a2f2f736d70382e73696d706c65782e696d2f612359386d33000000000000000000000000000000000000000000000000000000000000000000412154ef3fbd7244fe34a2c9b2850d44eda1181d1e234900e8419518cab458848f08b5033fd3cd37e7be2346d81266684b4ced6275e84d22829fd0aaa836fae8261c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001c471a218a70f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54ec1a00000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000006955c7100000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000f73696d706c65782e6368616e6e656c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001e68747470733a2f2f736d70382e73696d706c65782e696d2f632359386d3300000000000000000000000000000000000000000000000000000000000000000041aecc4fa43c1387e50594ceb43365fe9028a546c63f2ebc3d9d266f992d0b493808009060f7b6831a97b81453ccfb71413e608d48d8eddc7be3c086887b0b46481b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 
 viemSetCall, viemClearCall :: ByteString
 viemSetCall = unhex "71a218a70f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54ec1a00000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006955c7100000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000f73696d706c65782e6368616e6e656c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001e68747470733a2f2f736d70382e73696d706c65782e696d2f632359386d3300000000000000000000000000000000000000000000000000000000000000000041fce4c6865591609c07ef3d94f376187d8a20cd9d94b4affcb60b55e999038fbd4e45c42b5fafe66a8d4f756e99398602eacef777b4dce4afd0a767cddadf3ca91c00000000000000000000000000000000000000000000000000000000000000"

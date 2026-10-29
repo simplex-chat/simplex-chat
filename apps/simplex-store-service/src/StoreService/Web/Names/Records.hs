@@ -1,17 +1,22 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module StoreService.Web.Names.Records (EditInvalid (..), recordsHandler, editRequest, editsLeftJSON) where
 
-import Control.Monad (unless)
+import Control.Monad (forM_, unless)
 import Data.Aeson ((.:), (.:?), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
+import Data.List (nub)
+import qualified Data.List.NonEmpty as L
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
+import Data.Word (Word64)
 import Network.HTTP.Types (status200, status409, status429, status504)
 import Network.Wai (Request, Response, ResponseReceived)
 import Simplex.Messaging.SimplexName (LabelHash (..))
@@ -21,39 +26,52 @@ import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Records (EditAnswer (..), EditRequest (..), EditsLeft (..), Records, relayEdit)
 import StoreService.Names.Registration (channelRecordKey, contactRecordKey)
 import StoreService.Names.Signatures (parseSignature)
-import StoreService.Names.Store (RecordChange (..))
-import StoreService.Web.Http (Respond, badRequest, invalidLink, jsonError, jsonResponse, maxBodyBytes, providerUnavailable, rateLimited, readBoundedBody)
+import StoreService.Names.Store (RecordChange (..), SignedChange (..))
+import StoreService.Web.Http (Respond, badRequest, invalidLink, jsonError, jsonResponse, nameBodyBytes, providerUnavailable, rateLimited, readBoundedBody)
 
 data EditInvalid = EIBadRequest | EIInvalidLink
   deriving (Eq, Show)
 
 recordsHandler :: Records -> Request -> Respond -> IO ResponseReceived
 recordsHandler rs req respond =
-  readBoundedBody maxBodyBytes req >>= \case
+  readBoundedBody nameBodyBytes req >>= \case
     Just body | Just o <- J.decode body -> case editRequest o of
       Right edit -> relayEdit rs edit >>= respond . editResponse
       Left EIInvalidLink -> respond invalidLink
       Left EIBadRequest -> respond badRequest
     _ -> respond badRequest
 
--- | The formats and the key, then the link, then the signature's format and low s, as the page's checks run.
+-- | An edit as sent, before its key, link and signature are checked.
+data SentEdit = SentEdit {seChange :: Maybe (Text, Text), seNonce :: Word64, seDeadline :: Word64, seSignature :: Text}
+
+-- | One link of each kind, so a Save of both links is the most one request carries.
+maxEdits :: Int
+maxEdits = 2
+
+-- | Every edit's format and key, then every link, then every signature's format and low s, as the page's checks run.
 editRequest :: J.Object -> Either EditInvalid EditRequest
 editRequest o = do
-  (labelHash, change, erNonce, erDeadline, signature) <- maybe (Left EIBadRequest) Right $ JT.parseMaybe fields o
+  (labelHash, edits) <- maybe (Left EIBadRequest) Right $ JT.parseMaybe fields o
   erLabelHash <- maybe (Left EIBadRequest) (Right . LabelHash) $ bytes32FromHex labelHash
-  erChange <- case change of
-    Nothing -> Right RCClear
-    Just (key, value) -> do
-      kind <- maybe (Left EIBadRequest) Right $ lookup key recordKinds
-      unless (value == "" || linkKindOf value == Just kind) $ Left EIInvalidLink
-      Right $ RCSetText key value
-  erSignature <- either (const $ Left EIBadRequest) Right $ parseSignature signature
-  pure EditRequest {erLabelHash, erChange, erNonce, erDeadline, erSignature}
+  sent <- maybe (Left EIBadRequest) Right $ L.nonEmpty edits
+  unless (length edits <= maxEdits && keysOnce edits && clearAlone edits && consecutive edits) $ Left EIBadRequest
+  links <- mapM (\SentEdit {seChange} -> mapM linkOf seChange) sent
+  forM_ links $ mapM_ $ \(kind, value) -> unless (value == "" || linkKindOf value == Just kind) $ Left EIInvalidLink
+  erChanges <- mapM signedChange sent
+  pure EditRequest {erLabelHash, erChanges}
   where
-    fields v = do
+    fields v = (,) <$> v .: "labelHash" <*> (v .: "edits" >>= mapM (J.withObject "edit" sentEdit))
+    sentEdit v = do
       clear <- v .:? "clear"
-      change <- if clear == Just True then pure Nothing else Just <$> ((,) <$> v .: "key" <*> v .: "value")
-      (,,,,) <$> v .: "labelHash" <*> pure change <*> v .: "nonce" <*> v .: "deadline" <*> v .: "signature"
+      seChange <- if clear == Just True then pure Nothing else Just <$> ((,) <$> v .: "key" <*> v .: "value")
+      SentEdit seChange <$> v .: "nonce" <*> v .: "deadline" <*> v .: "signature"
+    keysOnce edits = let keys = [k | SentEdit {seChange = Just (k, _)} <- edits] in length keys == length (nub keys)
+    clearAlone edits = length edits == 1 || all (isJust . seChange) edits
+    consecutive edits = and $ zipWith (\a b -> seNonce b == seNonce a + 1) edits (drop 1 edits)
+    linkOf (key, value) = maybe (Left EIBadRequest) (Right . (,value)) $ lookup key recordKinds
+    signedChange SentEdit {seChange, seNonce, seDeadline, seSignature} = do
+      scSignature <- either (const $ Left EIBadRequest) Right $ parseSignature seSignature
+      pure SignedChange {scChange = maybe RCClear (uncurry RCSetText) seChange, scNonce = seNonce, scDeadline = seDeadline, scSignature}
 
 recordKinds :: [(Text, LinkKind)]
 recordKinds = [(decodeLatin1 contactRecordKey, LKContact), (decodeLatin1 channelRecordKey, LKChannel)]

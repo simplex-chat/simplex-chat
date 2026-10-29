@@ -27,7 +27,7 @@ import Bots.StoreService.NamesContractsTests
     year,
   )
 import Bots.StoreService.NamesProfilesTests (bakeryLink, jpeg, newsLink)
-import Bots.StoreService.NamesStoreTests (issue, newEdit, order, ownerA, placeCode, setChannel, t0, usable)
+import Bots.StoreService.NamesStoreTests (atNonce, issue, newEdit, order, ownerA, placeCode, setChannel, t0, usable)
 import Bots.StoreService.WebTests (withServiceStore)
 import Control.Concurrent.STM
 import Control.Monad (forM_, replicateM_)
@@ -60,7 +60,7 @@ import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex
 import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (ChatKind (..), HostResolver, LinkProfile (..), ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
-import StoreService.Names.Store (EditState (..), NamePhase (..), NameRegistration (..), NewRecordEdit (..), VersionWrite (..), getRegistration, insertRecordEdit, settleRecordEdit, updateRegistration)
+import StoreService.Names.Store (EditState (..), NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, insertRecordEdit, settleRecordEdit, updateRegistration)
 import StoreService.Web.Http (newHttpEnv, notFound, previewLimit, searchLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Search (previewHandler, searchHandler)
@@ -420,7 +420,7 @@ testRecordEdits g = forM_ [(3, 1), (2, 0)] $ \(perYear, left) -> withSearch g (\
   registeredWith node fullLink ""
   let daysAgo :: Int -> UTCTime
       daysAgo d = addUTCTime (fromIntegral $ negate d * 86400) t0
-      inserted n d = withTransaction store $ \db -> insertRecordEdit db (newEdit ownerA n setChannel) {nreNonce = fromIntegral n} (daysAgo d)
+      inserted n d = withTransaction store $ \db -> insertRecordEdit db (atNonce (fromIntegral n) $ newEdit ownerA n setChannel) (daysAgo d)
   Just _ <- inserted 1 366
   Just minedId <- inserted 2 10
   Just revertedId <- inserted 3 5
