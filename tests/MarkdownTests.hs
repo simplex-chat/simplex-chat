@@ -1014,7 +1014,7 @@ formatsAcrossLines = describe "formats across line breaks" do
     parseMaybeMarkdownList "**a\n**" `shouldBe` Nothing
     "5 * 3\n*b*" ==>> ["5 * 3\n", fmt boldF "b"]
   it "links, mentions and names within one line" do
-    parseMaybeMarkdownList "[a\nb](https://simplex.chat)" `shouldBe` Nothing
+    "[a\nb](https://simplex.chat)" ==>> ["[a\nb](", uri' "https://simplex.chat", ")"]
     parseMaybeMarkdownList "@'a\nb'" `shouldBe` Nothing
     "https://simplex.chat\nb" ==>> [uri' "https://simplex.chat", "\nb"]
     "@alice\nb" ==>> [fmt (Mention "alice") "@alice", "\nb"]
