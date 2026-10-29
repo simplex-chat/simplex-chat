@@ -2490,7 +2490,7 @@
     <string name="show_signature">Afficher la signature</string>
     <string name="show_encryption">Afficher le chiffrement</string>
     <string name="signature_missing_alert_title">Signature manquante</string>
-    <string name="signature_missing_alert_desc">Le canal exigeait que ce message soit signé, mais la signature est manquante.</string>
+    <string name="signature_missing_alert_desc">Le message a été envoyé avant que le canal ne commence à signer les messages, ou il est frauduleux.</string>
     <string name="accept_contact_request">Accepter la demande de contact</string>
     <string name="member_is_deleted_cant_accept_request">Le membre a été supprimé : impossible d\'accepter la demande.</string>
     <string name="verify_simplex_name_action">Vérifier le nom</string>
@@ -2935,4 +2935,13 @@
     <string name="sign_messages_question">Signer les messages ?</string>
     <string name="sign_messages_alert_desc">Les messages envoyés auparavant apparaîtront sans signature aux abonnés qui rejoignent plus tard.</string>
     <string name="sign_messages_enable">Activer</string>
+    <string name="member_info_section_title_moderator">Modérateur</string>
+    <string name="member_info_section_title_contributor">Contributeur</string>
+    <string name="badges_choose_your_badge_lede">Des fichiers plus volumineux disponibles plus longtemps.</string>
+    <string name="badges_how_long_title">Combien de temps ?</string>
+    <string name="badges_how_it_works_read_more_with_link"><![CDATA[En savoir plus sur <font color="#0088ff">notre blog</font>.]]></string>
+    <string name="badges_larger_files_longer">Soutenez SimpleX pour envoyer des fichiers plus volumineux disponibles plus longtemps</string>
+    <string name="badges_check_your_order_title">Vérifier votre commande</string>
+    <string name="badges_order_duration">Durée</string>
+    <string name="badges_order_total">Total</string>
 </resources>
