@@ -947,6 +947,10 @@ if [ "$cases" = search ]; then
   # the chat list always shows the chat open in the right pane, and only a restart closes it
   "$ui" stop
   "$ui" start "$app_dir"
+  # a second start offers the update check over the chat list
+  if "$ui" wait "Check for updates" 60; then
+    "$ui" click-text "Disable"
+  fi
   "$ui" wait "Search or paste SimpleX link" 120 || fail "no chat list after restarting the app"
   no_match_search bottom
   new_chat_no_match_search
