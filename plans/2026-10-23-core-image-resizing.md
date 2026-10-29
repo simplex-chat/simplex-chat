@@ -334,11 +334,11 @@ Bot libraries:
 - Pinned releases:
   - Until a core release built with this change is pinned by `scripts/ci/packages_release.py prepare`, `core-7.1.0.14` is loaded (`packages/simplex-chat-nodejs/src/release.ts:3`, `packages/simplex-chat-python/src/simplex_chat/_version.py:8`), and the export error is raised by the Python wrappers.
   - The Node add-on is pinned to `nodejs-addon-308c0960c707` (`release.ts:5`), built without either function: the promises of the Node wrappers are rejected with `TypeError: addon[name] is not a function` (`src/simplex.js:20`). The export error is raised with an add-on built from this branch, as in the tests (`jest.config.js:4`).
-  - The core and the add-on are pinned together by `prepare` (`packages_release.py:360-363`); for nodejs an error is raised by `prepare` until the add-on release of the current sources is published (`:779-780`).
+  - The core and the add-on are pinned together by `prepare` (`packages_release.py:362-365`); for nodejs an error is raised by `prepare` until the add-on release of the current sources is published (`:781-782`).
 
 `/img` and `/imgf`:
 - The preview is generated from the file: read with `CF.readFile` (encrypted files included), decoded, and resized to a data URI of at most 14000 characters, with the colour profile by D25.
-- On any failure the fixed placeholder is sent, as before; a GIF, which `/img` accepts by its extension (`Library/Commands.hs:202`), gets the fixed placeholder.
+- On any failure the fixed placeholder is sent, as before; a GIF, which `/img` accepts by its extension (`Library/Commands.hs:204`), gets the fixed placeholder.
 
 Native code:
 - mozjpeg master `08265790` (libjpeg-turbo 3.0.5 base) is the submodule `jpeg-turbo/cbits/mozjpeg` of the hs-jpeg-turbo fork; cabal compiles it in the `jpeg-turbo` package of every build:
@@ -540,22 +540,22 @@ Core:
     - `newCStringFromLazyBS`
 - `Mobile.hs:167-177`: `foreign export ccall` of the six functions.
 - `Library/Commands.hs`:
-  - `maxImagePreviewSize = 14000` (`:176-177`)
-  - `imagePreview :: CryptoFile -> IO ImageData` (`:229-235`): `decodeResizable`, in place of `decodeImage` (`:234`), and `resizeImageDataUri` with the profile (`:235`)
-  - `SendImage` (`:3553`): the preview from `imagePreview` (`:3560`)
+  - `maxImagePreviewSize = 14000` (`:178-179`)
+  - `imagePreview :: CryptoFile -> IO ImageData` (`:231-237`): `decodeResizable`, in place of `decodeImage` (`:236`), and `resizeImageDataUri` with the profile (`:237`)
+  - `SendImage` (`:3555`): the preview from `imagePreview` (`:3562`)
 - `simplex-chat.cabal`:
   - `extra-source-files`: `src/Simplex/Chat/Image/DisplayP3-v4.icc` (`:21`), as `PRIVACY.md`
-  - library: `if flag(swift) || os(android)`, `cpp-options: -DmobileBuild` (`:416-417`)
-  - module `Simplex.Chat.Image` (`:53`)
+  - library: `if flag(swift) || os(android)`, `cpp-options: -DmobileBuild` (`:419-420`)
+  - module `Simplex.Chat.Image` (`:54`)
   - library dependencies:
-    - `JuicyPixels` (`:388`)
-    - `JuicyPixels-jpeg-turbo` (`:389`)
-    - `JuicyPixels-spng` (`:390`)
-    - `JuicyPixels-stbir` (`:391`)
-    - `vector` (`:410`)
+    - `JuicyPixels` (`:391`)
+    - `JuicyPixels-jpeg-turbo` (`:392`)
+    - `JuicyPixels-spng` (`:393`)
+    - `JuicyPixels-stbir` (`:394`)
+    - `vector` (`:413`)
   - test suite:
-    - module `ImageTests` (`:727`)
-    - dependencies `JuicyPixels` and `JuicyPixels-jpeg-turbo` (`:819-820`)
+    - module `ImageTests` (`:730`)
+    - dependencies `JuicyPixels` and `JuicyPixels-jpeg-turbo` (`:823-824`)
 - `libsimplex.dll.def:30-35`, `flake.nix:491-496`: the export names.
 - `flake.nix:73-75`: the nix licence of JuicyPixels-spng (D21).
 
@@ -681,7 +681,7 @@ Build:
   - JuicyPixels-stbir (`:82-85`): evgeny-simplex/JuicyPixels-stbir at `3e53b11`
 - `scripts/nix/sha256map.nix:12-13`: the hashes of both forks, computed with submodules.
 - `dist-newstyle/src/hs-jpeg-t*` and `dist-newstyle/src/JuicyPixe*` in the Windows removals:
-  - `.github/workflows/build.yml:1512, 1515, 1638, 1680, 1682`, with the comment `:1495-1496`
+  - `.github/workflows/build.yml:1519, 1522, 1645, 1687, 1689`, with the comment `:1502-1503`
   - `scripts/desktop/build-lib-windows.sh:43`, with the comment `:41-42`
 - `scripts/simplex-chat-reproduce-builds-android.sh:103`: submodules are updated after checkout.
 
@@ -694,7 +694,7 @@ CI, the armv7a Android core library, on request (D9):
   - input `armv7a` (`:18-21`), passed by the `plan` job as `run-armv7a` (`:48`, `:61`, `:66`)
   - job `core-armv7a` (`:183-204`): `build-core.sh ~/core/android-core-armeabi-v7a.tar.gz armv7a` on `ubuntu-24.04`, built only
 - `scripts/ci/android/build-core.sh:13-14`: the architecture argument, `aarch64` by default or `armv7a`, in the Hydra job names `<arch>-android:lib:simplex-chat` and `<arch>-android:lib:support`
-- `scripts/ci/README.md:157`, `scripts/ci/android/README.md:7`, `:21`: the input and the job.
+- `scripts/ci/README.md:158`, `scripts/ci/android/README.md:7`, `:21`: the input and the job.
 
 CI, scripted app smoke tests, in every app workflow run:
 - `tests/fixtures/test.jpg` and `logo-large-rgba.png` picked, previewed and sent in a local group; for each image:
@@ -706,7 +706,7 @@ CI, scripted app smoke tests, in every app workflow run:
   |---|---|---|---|
   | Android | `scripts/ci/android/smoke-test.sh:263-317`, from `:355` | `/sdcard/Pictures/test-card/test-card.jpg` and `/sdcard/Pictures/simplex-logo/simplex-logo.png`, one folder each, with a media scan broadcast (`add_images`, `:263-269`); in Google Photos' "Select photos": the folder by its name, its photo ("Photo taken on …"), then "Done" (or "Add") | `core returned no image` (`core_returned_no_image`, `:283-285`), a check at `:308` |
   | desktop | `scripts/ci/desktop-linux/smoke-test.sh:320-379`, from `:438` | the fixture paths typed in the file dialog | `core returned no image` (`core_returned_no_image`, `:346-348`), a check at `:370` |
-  | iOS | `scripts/ci/ios-sim/smoke-test.sh:105-169`, from `:209-216` with `images` | local file encryption off for the images case (`disable_file_encryption`, `:123-127`): `privacyEncryptLocalFiles` false in the app-group defaults while the app is stopped, as `ui layout` sets `oneHandUI`, because the app stores sent images encrypted by default and `sips` reads only plain files; both images added to the photo library with one `xcrun simctl addmedia`, which lists the test card first and the logo second; the attachment button by its label "Attachements", "Choose from library"; the photo picker, absent from the accessibility tree, by position (`:19-23`): the test card or the logo, then the ✓ button; the pixel size of the newest sent file by `sips` (`sent_size`, `:117-121`, checked at `:166`): 1280x720 for the test card and 1630x466 for the logo, the sizes the core keeps at the 261120-byte limit | `resizeImageToStrSize final` and `resizeImageToDataSize final` (`app_resized_images`, `:145-147`), `fail` at `:167` |
+  | iOS | `scripts/ci/ios-sim/smoke-test.sh:107-171`, from `:211-218` with `images` | local file encryption off for the images case (`disable_file_encryption`, `:125-129`): `privacyEncryptLocalFiles` false in the app-group defaults while the app is stopped, as `ui layout` sets `oneHandUI`, because the app stores sent images encrypted by default and `sips` reads only plain files; both images added to the photo library with one `xcrun simctl addmedia`, which lists the test card first and the logo second; the attachment button by its label "Attachements", "Choose from library"; the photo picker, absent from the accessibility tree, by position (`:21-25`): the test card or the logo, then the ✓ button; the pixel size of the newest sent file by `sips` (`sent_size`, `:119-123`, checked at `:168`): 1280x720 for the test card and 1630x466 for the logo, the sizes the core keeps at the 261120-byte limit | `resizeImageToStrSize final` and `resizeImageToDataSize final` (`app_resized_images`, `:147-149`), `fail` at `:169` |
 
 - `.github/workflows/ios-sim.yml:269`: the app job's smoke test with `images`.
 - `scripts/ci/android/README.md:32`, `scripts/ci/desktop-linux/README.md:27`, `scripts/ci/ios-sim/README.md:3`: the image steps.
@@ -722,9 +722,9 @@ CI, Claude-driven app tests (run with `claude=true`, which needs the `app-sim-cl
 
 - steps: pick the JPEG, then the PNG with transparency (and on iOS the HEIC); check the compose preview; send; open the sent image
   - Android: `scripts/ci/android/claude-test.md`, part D
-  - desktop: `scripts/ci/desktop-linux/claude-test.md`, part D
-  - iOS: `scripts/ci/ios-sim/device-test-plan.md`, cases I1-I4, named in `claude-scope` with `max-turns: 100`; the photo picker in `claude-prompt.md`
-- `scripts/ci/desktop-linux/claude-test.sh`: `--max-turns 90`, for Android and desktop
+  - desktop: `scripts/ci/desktop-linux/claude-test.md`, part I, after the channel parts, in a new group
+  - iOS: `scripts/ci/ios-sim/device-test-plan.md`, cases I1-I4, after the channel cases, named in `claude-scope` with `max-turns: 390`; the photo picker in `claude-prompt.md`
+- `scripts/ci/desktop-linux/claude-scope`: `max-turns: 330`, read by `claude-test.sh` for Android and desktop
 
 License notices, `docs/dependencies/`:
 - `README.md:3`:
