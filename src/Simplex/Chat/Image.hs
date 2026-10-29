@@ -61,15 +61,17 @@ decodeResizable s = runExceptT $ do
   pure . (img,) $! displayP3Profile =<< profile
   where
     decode
-      | "\xFF\xD8" `B.isPrefixOf` s = (,jpegIccProfile s) <$> decodeDisplayJpeg s
+      | "\xFF\xD8" `B.isPrefixOf` s = decodeDisplayJpeg s
       | "\x89PNG\r\n\x1a\n" `B.isPrefixOf` s = ExceptT $ Spng.decodePng (Spng.DecodeOptions $ maxDecodeMemoryMB `div` 2) s
       | otherwise = throwError "unsupported image format"
 
-decodeDisplayJpeg :: ByteString -> ExceptT String IO DynamicImage
+decodeDisplayJpeg :: ByteString -> ExceptT String IO (DynamicImage, Maybe ByteString)
 decodeDisplayJpeg s = do
   JpegHeader {jpegWidth, jpegHeight} <- ExceptT $ readJpegHeader s
   (halvings, size) <- maybe (throwError "image does not fit") pure $ displaySize jpegWidth jpegHeight
-  orientImage (exifOrientation s) . resizeToSize size <$> ExceptT (decodeJpeg (DecodeOptions (jpegScale halvings) maxJpegPixels maxDecodeMemoryMB) s)
+  (,jpegIccProfile segments) . orientImage (exifOrientation segments) . resizeToSize size <$> ExceptT (decodeJpeg (DecodeOptions (jpegScale halvings) maxJpegPixels maxDecodeMemoryMB) s)
+  where
+    segments = jpegSegments $ B.drop 2 s
 
 displaySize :: Int -> Int -> Maybe (Int, (Int, Int))
 displaySize = go 0
@@ -91,9 +93,9 @@ resizeToSize size@(w, h) img
   | dynamicMap (hasSize size) img = img
   | otherwise = ImageRGB8 $ STBIR.resize STBIR.defaultOptions w h $ convertRGB8 img
 
-exifOrientation :: ByteString -> Int
-exifOrientation s = fromMaybe 1 $ do
-  tiff <- exifTiff $ B.drop 2 s
+exifOrientation :: [(Word8, ByteString)] -> Int
+exifOrientation segments = fromMaybe 1 $ do
+  tiff <- exifTiff segments
   order <- case B.take 2 tiff of
     "II" -> Just B.reverse
     "MM" -> Just id
@@ -115,17 +117,17 @@ exifOrientation s = fromMaybe 1 $ do
         v >= 1 && v <= 8
     ]
 
-exifTiff :: ByteString -> Maybe ByteString
-exifTiff s = listToMaybe [B.drop 6 segment | (0xE1, segment) <- jpegSegments s, "Exif\0\0" `B.isPrefixOf` segment]
+exifTiff :: [(Word8, ByteString)] -> Maybe ByteString
+exifTiff segments = listToMaybe [B.drop 6 segment | (0xE1, segment) <- segments, "Exif\0\0" `B.isPrefixOf` segment]
 
-jpegIccProfile :: ByteString -> Maybe ByteString
-jpegIccProfile s = do
-  chunks <- sortOn (\(n, _, _) -> n) <$> mapM iccChunk segments
+jpegIccProfile :: [(Word8, ByteString)] -> Maybe ByteString
+jpegIccProfile segments = do
+  chunks <- sortOn (\(n, _, _) -> n) <$> mapM iccChunk iccSegments
   let profile = B.concat [chunk | (_, _, chunk) <- chunks]
   guard $ [n | (n, _, _) <- chunks] == [1 .. length chunks] && all (\(_, count, _) -> count == length chunks) chunks && not (B.null profile)
   pure profile
   where
-    segments = [segment | (0xE2, segment) <- jpegSegments $ B.drop 2 s, "ICC_PROFILE\0" `B.isPrefixOf` segment]
+    iccSegments = [segment | (0xE2, segment) <- segments, "ICC_PROFILE\0" `B.isPrefixOf` segment]
     iccChunk segment
       | B.length segment < 14 = Nothing
       | otherwise = Just (fromIntegral $ B.index segment 12, fromIntegral $ B.index segment 13, B.drop 14 segment)
