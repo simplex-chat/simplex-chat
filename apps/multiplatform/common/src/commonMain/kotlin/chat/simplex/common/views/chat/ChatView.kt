@@ -3875,7 +3875,7 @@ fun PreviewChatLayout() = BubblePreview {
       ),
       ChatItem.getSampleData(
         2, CIDirection.DirectRcv(), previewDate, "hello"
-      ),
+      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello"))),
       ChatItem.getDeletedContentSampleData(3, ts = previewDate),
       ChatItem.getSampleData(
         4, CIDirection.DirectSnd(), previewDate, "hello"
@@ -3885,7 +3885,7 @@ fun PreviewChatLayout() = BubblePreview {
       ),
       ChatItem.getSampleData(
         6, CIDirection.DirectRcv(), previewDate, "hello"
-      )
+      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello")))
     )
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
     val searchValue = remember { mutableStateOf("") }
@@ -3959,17 +3959,17 @@ fun PreviewGroupChatLayout() = BubblePreview {
       ),
       ChatItem.getSampleData(
         2, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
-      ),
+      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello"))),
       ChatItem.getDeletedContentSampleData(3, CIDirection.GroupRcv(GroupMember.sampleData), previewDate),
       ChatItem.getSampleData(
         4, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
-      ),
+      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello"))),
       ChatItem.getSampleData(
         5, CIDirection.GroupSnd(), previewDate, "hello"
       ),
       ChatItem.getSampleData(
         6, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
-      )
+      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello")))
     )
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
     val searchValue = remember { mutableStateOf("") }
