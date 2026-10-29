@@ -531,6 +531,8 @@ struct RelayProgressIndicator: View {
     }
 }
 
-#Preview {
-    AddChannelView()
+struct AddChannelView_Previews: PreviewProvider {
+    static var previews: some View {
+        AddChannelView()
+    }
 }

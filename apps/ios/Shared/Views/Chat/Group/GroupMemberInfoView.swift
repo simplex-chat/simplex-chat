@@ -38,6 +38,8 @@ struct GroupMemberInfoView: View {
             switch groupMember.wrapped.memberRole {
             case .relay: "Relay"
             case .owner: "Owner"
+            case .moderator: "Moderator"
+            case .member: "Contributor"
             default: "Subscriber"
             }
         } else {

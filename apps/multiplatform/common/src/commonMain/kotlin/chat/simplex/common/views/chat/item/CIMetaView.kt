@@ -8,15 +8,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.appPreferences
 import chat.simplex.common.ui.theme.isInDarkTheme
 import chat.simplex.res.*
-import kotlinx.datetime.Clock
 
 @Composable
 fun CIMetaView(
@@ -38,14 +48,17 @@ fun CIMetaView(
   showEdited: Boolean = true,
   showTimestamp: Boolean,
   showViaProxy: Boolean,
+  lineHeightColor: Color = metaColor,
 ) {
+  val timeStyle = LocalTextStyle.current.merge(terminalTextStyle(12.sp, lineHeightColor))
   Row(Modifier.padding(start = 3.dp), verticalAlignment = Alignment.CenterVertically) {
     if (chatItem.isDeletedContent) {
       Text(
         chatItem.timestampText,
         color = metaColor,
         fontSize = 12.sp,
-        modifier = Modifier.padding(start = 3.dp)
+        modifier = Modifier.padding(start = 3.dp),
+        style = timeStyle
       )
     } else {
       CIMetaText(
@@ -54,6 +67,7 @@ fun CIMetaView(
         encrypted = chatItem.encryptedFile,
         metaColor,
         paleMetaColor,
+        timeStyle,
         showStatus = showStatus,
         showEdited = showEdited,
         showViaProxy = showViaProxy,
@@ -72,6 +86,7 @@ private fun CIMetaText(
   encrypted: Boolean?,
   color: Color,
   paleColor: Color,
+  timeStyle: TextStyle,
   showStatus: Boolean = true,
   showEdited: Boolean = true,
   showTimestamp: Boolean,
@@ -87,7 +102,7 @@ private fun CIMetaText(
     StatusIconText(painterResource(MR.images.ic_timer), color)
     val ttl = meta.itemTimed?.ttl
     if (ttl != chatTTL) {
-      Text(shortTimeText(ttl), color = color, fontSize = 12.sp)
+      Text(shortTimeText(ttl), color = color, fontSize = 12.sp, style = timeStyle)
     }
   }
   if (showViaProxy && meta.sentViaProxy == true) {
@@ -99,7 +114,7 @@ private fun CIMetaText(
     val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color, paleColor)
     if (statusIcon != null) {
       val (icon, statusColor) = statusIcon
-      if (meta.itemStatus is CIStatus.SndSent || meta.itemStatus is CIStatus.SndRcvd) {
+      if (meta.tallStatusIcon) {
         Icon(painterResource(icon), null, Modifier.height(17.dp), tint = statusColor)
       } else {
         StatusIconText(painterResource(icon), statusColor)
@@ -122,11 +137,10 @@ private fun CIMetaText(
 
   if (showTimestamp) {
     Spacer(Modifier.width(4.dp))
-    Text(meta.timestampText, color = color, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Text(meta.timestampText, color = color, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = timeStyle)
   }
 }
 
-// the conditions in this function should match CIMetaText
 fun reserveSpaceForMeta(
   meta: CIMeta,
   chatTTL: Int?,
@@ -137,62 +151,125 @@ fun reserveSpaceForMeta(
   showViaProxy: Boolean = false,
   showTimestamp: Boolean,
   signedFileVerified: Boolean? = null
-): String {
+): String = buildString {
+  reserveSpaceForMeta(meta, chatTTL, encrypted, secondaryColor, showStatus, showEdited, showViaProxy, showTimestamp, signedFileVerified, tallIconSpace = "", spaces = { append(it) }, text = { append(it) })
+}
+
+// the conditions in this function should match CIMetaText
+private fun reserveSpaceForMeta(
+  meta: CIMeta,
+  chatTTL: Int?,
+  encrypted: Boolean?,
+  secondaryColor: Color,
+  showStatus: Boolean,
+  showEdited: Boolean,
+  showViaProxy: Boolean,
+  showTimestamp: Boolean,
+  signedFileVerified: Boolean?,
+  tallIconSpace: String,
+  spaces: (String) -> Unit,
+  text: (String) -> Unit
+) {
   val showSignature = appPreferences.privacyShowSignature.state.value
   val showEncryption = appPreferences.privacyShowEncryption.state.value
   val iconSpace = " \u00A0\u00A0\u00A0"
   val whiteSpace = "\u00A0"
-  var res = if (showTimestamp) "" else iconSpace
+  if (!showTimestamp) spaces(iconSpace)
   var space: String? = null
 
   fun appendSpace() {
-    if (space != null) {
-      res += space
-      space = null
-    }
+    space?.let(spaces)
+    space = null
   }
 
   if (showEdited && meta.itemEdited) {
-    res += iconSpace
+    spaces(iconSpace)
   }
   if (meta.itemTimed != null) {
-    res += iconSpace
+    spaces(iconSpace)
     val ttl = meta.itemTimed.ttl
     if (ttl != chatTTL) {
-      res += shortTimeText(ttl)
+      text(shortTimeText(ttl))
     }
     space = whiteSpace
   }
   if (showViaProxy && meta.sentViaProxy == true) {
     appendSpace()
-    res += iconSpace
+    spaces(iconSpace + tallIconSpace)
   }
   if (showStatus) {
     appendSpace()
     if (meta.statusIcon(secondaryColor) != null) {
-      res += iconSpace
+      spaces(if (meta.tallStatusIcon) iconSpace + tallIconSpace else iconSpace)
     } else if (!meta.disappearing) {
-      res += iconSpace
+      spaces(iconSpace)
     }
     space = whiteSpace
   }
 
   if (encrypted != null && showEncryption) {
     appendSpace()
-    res += iconSpace
+    spaces(iconSpace)
     space = whiteSpace
   }
   if ((showSignature && meta.msgVerified?.verified == true && signedFileVerified != false) || meta.msgVerified is MsgVerified.SigMissing) {
     appendSpace()
-    res += iconSpace
+    spaces(iconSpace)
     space = whiteSpace
   }
   if (showTimestamp) {
     appendSpace()
-    res += meta.timestampText
+    text(meta.timestampText)
   }
-  return res
 }
+
+@Composable
+fun terminalReserveSpaceForMeta(
+  meta: CIMeta,
+  chatTTL: Int?,
+  encrypted: Boolean?,
+  signedFileVerified: Boolean?,
+  secondaryColor: Color,
+  showStatus: Boolean = true,
+  showEdited: Boolean = true,
+  showViaProxy: Boolean,
+  showTimestamp: Boolean
+): AnnotatedString =
+  terminalReserveSpaceForMeta(
+    meta, chatTTL, encrypted, signedFileVerified, secondaryColor, showStatus, showEdited, showViaProxy, showTimestamp,
+    density = LocalDensity.current,
+    bodyFontSize = MaterialTheme.typography.body1.fontSize,
+    direction = LocalLayoutDirection.current
+  )
+
+fun terminalReserveSpaceForMeta(
+  meta: CIMeta,
+  chatTTL: Int?,
+  encrypted: Boolean?,
+  signedFileVerified: Boolean?,
+  secondaryColor: Color,
+  showStatus: Boolean,
+  showEdited: Boolean,
+  showViaProxy: Boolean,
+  showTimestamp: Boolean,
+  density: Density,
+  bodyFontSize: TextUnit,
+  direction: LayoutDirection
+): AnnotatedString {
+  val spaceStyle = SpanStyle(fontSize = with(density) { bodyFontSize.value.dp.toSp() }, fontWeight = FontWeight.Normal)
+  val textStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Normal)
+  return buildAnnotatedString {
+    append(if (direction == LayoutDirection.Ltr) "\u2060\u200E" else "\u2060\u200F")
+    reserveSpaceForMeta(
+      meta, chatTTL, encrypted, secondaryColor, showStatus, showEdited, showViaProxy, showTimestamp, signedFileVerified, tallIconSpace = "\u00A0",
+      spaces = { withStyle(spaceStyle) { append(it.replace(' ', '\u00A0')) } },
+      text = { withStyle(textStyle) { append(it.replace(' ', '\u00A0')) } }
+    )
+  }
+}
+
+private val CIMeta.tallStatusIcon: Boolean get() =
+  itemStatus is CIStatus.SndSent || itemStatus is CIStatus.SndRcvd
 
 @Composable
 private fun StatusIconText(icon: Painter, color: Color) {
@@ -204,7 +281,7 @@ private fun StatusIconText(icon: Painter, color: Color) {
 fun PreviewCIMetaView() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
+      1, CIDirection.DirectSnd(), previewDate, "hello"
     ),
     null,
     showViaProxy = false,
@@ -217,7 +294,7 @@ fun PreviewCIMetaView() {
 fun PreviewCIMetaViewUnread() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
+      1, CIDirection.DirectSnd(), previewDate, "hello",
       status = CIStatus.RcvNew()
     ),
     null,
@@ -231,7 +308,7 @@ fun PreviewCIMetaViewUnread() {
 fun PreviewCIMetaViewSendFailed() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
+      1, CIDirection.DirectSnd(), previewDate, "hello",
       status = CIStatus.CISSndError(SndError.Other("CMD SYNTAX"))
     ),
     null,
@@ -245,7 +322,7 @@ fun PreviewCIMetaViewSendFailed() {
 fun PreviewCIMetaViewSendNoAuth() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndErrorAuth()
+      1, CIDirection.DirectSnd(), previewDate, "hello", status = CIStatus.SndErrorAuth()
     ),
     null,
     showViaProxy = false,
@@ -258,7 +335,7 @@ fun PreviewCIMetaViewSendNoAuth() {
 fun PreviewCIMetaViewSendSent() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndSent(SndCIStatusProgress.Complete)
+      1, CIDirection.DirectSnd(), previewDate, "hello", status = CIStatus.SndSent(SndCIStatusProgress.Complete)
     ),
     null,
     showViaProxy = false,
@@ -271,7 +348,7 @@ fun PreviewCIMetaViewSendSent() {
 fun PreviewCIMetaViewEdited() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
+      1, CIDirection.DirectSnd(), previewDate, "hello",
       itemEdited = true
     ),
     null,
@@ -285,7 +362,7 @@ fun PreviewCIMetaViewEdited() {
 fun PreviewCIMetaViewEditedUnread() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectRcv(), Clock.System.now(), "hello",
+      1, CIDirection.DirectRcv(), previewDate, "hello",
       itemEdited = true,
       status= CIStatus.RcvNew()
     ),
@@ -300,7 +377,7 @@ fun PreviewCIMetaViewEditedUnread() {
 fun PreviewCIMetaViewEditedSent() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
+      1, CIDirection.DirectSnd(), previewDate, "hello",
       itemEdited = true,
       status= CIStatus.SndSent(SndCIStatusProgress.Complete)
     ),
@@ -314,7 +391,7 @@ fun PreviewCIMetaViewEditedSent() {
 @Composable
 fun PreviewCIMetaViewDeletedContent() {
   CIMetaView(
-    chatItem = ChatItem.getDeletedContentSampleData(),
+    chatItem = ChatItem.getDeletedContentSampleData(ts = previewDate),
     null,
     showViaProxy = false,
     showTimestamp = true

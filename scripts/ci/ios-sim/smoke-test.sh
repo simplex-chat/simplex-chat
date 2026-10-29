@@ -2,6 +2,8 @@
 
 # Installs the app in a new iPhone simulator and runs the scripted UI cases with the ui helper: onboarding to the
 # chat list with the one-hand UI (the default), then the chat list again with the top bar. It leaves the app in the one-hand UI.
+# For an app in the derived data of a build, it then renders the previews of the SimpleX Snapshots tests to the snapshots
+# folder of the output dir (snapshots.sh).
 # Usage: scripts/ci/ios-sim/smoke-test.sh <path to SimpleX.app> <output dir>
 # Each step saves a screenshot and an accessibility tree to the output dir and prints the tree to the log.
 # Later steps of the job get SIM_UDID and UI_OUT, with the simulator still running.
@@ -122,3 +124,8 @@ expect_chat_list reachable
 expect_chat_list top
 "$ui" layout reachable
 echo "smoke test passed: onboarding reaches the chat list, which shows its onboarding pages and toolbar with the one-hand UI and with the top bar"
+
+products=$(dirname "$app")
+if [[ "$products" == */Build/Products/Debug-iphonesimulator ]]; then
+  "$(dirname "$0")/snapshots.sh" "${products%/Build/Products/Debug-iphonesimulator}" "$UI_OUT/snapshots"
+fi

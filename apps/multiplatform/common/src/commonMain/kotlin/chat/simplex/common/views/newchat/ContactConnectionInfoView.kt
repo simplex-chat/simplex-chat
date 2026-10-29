@@ -208,7 +208,7 @@ private fun setContactAlias(rhId: Long?, contactConnection: PendingContactConnec
   name = "Dark Mode"
 )*/
 @Composable
-private fun PreviewContactConnectionInfoView() {
+internal fun PreviewContactConnectionInfoView() {
   SimpleXTheme {
     ContactConnectionInfoLayout(
       chatModel = ChatModel,

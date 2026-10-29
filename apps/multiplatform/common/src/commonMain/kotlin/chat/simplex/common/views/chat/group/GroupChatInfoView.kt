@@ -655,7 +655,7 @@ fun ModalData.GroupChatInfoLayout(
               ModalManager.closeAllModalsEverywhere()
             }
           }
-          if (groupInfo.isOwner || activeSortedMembers.any { it.memberRole >= GroupMemberRole.Owner }) {
+          if (groupInfo.canModerate || activeSortedMembers.any { it.memberRole >= GroupMemberRole.Owner }) {
             anyTopSectionRowShow = true
             ChannelMembersButton(chat.remoteHostId, groupInfo, showMemberInfo)
           }
@@ -1299,7 +1299,7 @@ private fun ShareViaChatButton(onClick: () -> Unit) {
 
 @Composable
 private fun ChannelMembersButton(rhId: Long?, groupInfo: GroupInfo, showMemberInfo: (GroupMember, GroupRelay?) -> Unit) {
-  val title = if (groupInfo.isOwner) {
+  val title = if (groupInfo.canModerate) {
     stringResource(MR.strings.channel_members_title_subscribers)
   } else {
     stringResource(MR.strings.channel_members_section_owners)

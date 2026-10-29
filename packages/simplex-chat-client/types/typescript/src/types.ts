@@ -25,6 +25,7 @@ export interface AddRelayResult {
 export interface AddressSettings {
   businessAddress: boolean
   autoAccept?: AutoAccept
+  chatLayout?: ChatLayout
   autoReply?: MsgContent
 }
 
@@ -252,6 +253,7 @@ export type BadgeRedeemError =
   | BadgeRedeemError.InvalidReceipt
   | BadgeRedeemError.ServiceNotConfigured
   | BadgeRedeemError.BadgeActive
+  | BadgeRedeemError.StorePurchaseOpen
   | BadgeRedeemError.ServiceError
   | BadgeRedeemError.InvalidResponse
   | BadgeRedeemError.UnknownKeyIndex
@@ -263,6 +265,7 @@ export namespace BadgeRedeemError {
     | "invalidReceipt"
     | "serviceNotConfigured"
     | "badgeActive"
+    | "storePurchaseOpen"
     | "serviceError"
     | "invalidResponse"
     | "unknownKeyIndex"
@@ -286,6 +289,10 @@ export namespace BadgeRedeemError {
 
   export interface BadgeActive extends Interface {
     type: "badgeActive"
+  }
+
+  export interface StorePurchaseOpen extends Interface {
+    type: "storePurchaseOpen"
   }
 
   export interface ServiceError extends Interface {
@@ -325,6 +332,7 @@ export enum BadgeServiceErrorCode {
   Code_expired = "code_expired",
   Receipt_invalid = "receipt_invalid",
   Receipt_used = "receipt_used",
+  Transfer_limited = "transfer_limited",
   Test_purchase = "test_purchase",
   Internal = "internal",
 }
@@ -1879,6 +1887,11 @@ export interface ChatItemDeletion {
   toChatItem?: AChatItem
 }
 
+export enum ChatLayout {
+  Classic = "classic",
+  Terminal = "terminal",
+}
+
 export type ChatListQuery = ChatListQuery.Filters | ChatListQuery.Search
 
 export namespace ChatListQuery {
@@ -2289,6 +2302,7 @@ export interface Contact {
   chatTags: number[] // int64
   chatItemTTL?: number // int64
   uiThemes?: UIThemeEntityOverrides
+  chatLayout?: ChatLayout
   chatDeleted: boolean
   customData?: object
 }
@@ -2348,6 +2362,7 @@ export interface ContactShortLinkData {
   profile: Profile
   message?: MsgContent
   business: boolean
+  chatLayout?: ChatLayout
   localBadge?: LocalBadge
 }
 
@@ -3113,6 +3128,7 @@ export interface GroupProfile {
   publicGroup?: PublicGroupProfile
   groupPreferences?: GroupPreferences
   memberAdmission?: GroupMemberAdmission
+  chatLayout?: ChatLayout
 }
 
 export interface GroupRelay {
@@ -5408,6 +5424,7 @@ export interface UIThemeEntityOverride {
 export interface UIThemeEntityOverrides {
   light?: UIThemeEntityOverride
   dark?: UIThemeEntityOverride
+  chatLayout?: ChatLayout
 }
 
 export interface UpdatedMessage {

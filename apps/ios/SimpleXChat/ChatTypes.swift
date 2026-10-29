@@ -23,6 +23,8 @@ public let CALL_RECONNECT_VERSION = 22
 
 public let contentModerationPostLink = URL(string: "https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.html#preventing-server-abuse-without-compromising-e2e-encryption")!
 
+public let previewDate = Date(timeIntervalSince1970: 1_736_936_100)
+
 public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var userId: Int64
     public var agentUserId: String
@@ -261,6 +263,41 @@ extension ChatPeerType: Codable {
     }
 }
 
+public enum ChatLayout: Hashable {
+    case classic
+    case terminal
+    case unknown(String)
+}
+
+extension ChatLayout: RawRepresentable {
+    public init(rawValue: String) {
+        switch rawValue {
+        case "classic": self = .classic
+        case "terminal": self = .terminal
+        default: self = .unknown(rawValue)
+        }
+    }
+
+    public var rawValue: String {
+        switch self {
+        case .classic: "classic"
+        case .terminal: "terminal"
+        case let .unknown(s): s
+        }
+    }
+}
+
+extension ChatLayout: Codable {
+    public init(from decoder: Decoder) throws {
+        self.init(rawValue: try decoder.singleValueContainer().decode(String.self))
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+    }
+}
+
 public func peerTypeIcon(_ peerType: ChatPeerType?) -> Image {
     switch peerType {
     case .bot: Image(systemName: "cube.fill")
@@ -351,8 +388,47 @@ public struct BadgeState: Decodable, Hashable {
     public var alert: BadgeAlert?
     public var issueError: BadgeIssueError?
     public var nextWakeAt: Date?
+    public var subscription: BadgeSubscription?
 
     public var paidThroughText: String { badgeDateText(paidThrough) }
+}
+
+public struct BadgeSubscription: Decodable, Hashable {
+    public var planMonths: Int
+    // nil until the service or the device's store has been asked
+    public var status: BadgeSubscriptionState?
+    // the store's reference: Apple's original transaction id, or a hash of Play's token
+    public var transactionRef: String?
+}
+
+// the store's state as last observed; a newer core may know a state this version does not
+public enum BadgeSubscriptionState: Decodable, Hashable {
+    case renewing
+    case cancelled
+    case billingRetry
+    case ended
+    case unknown
+
+    // as /_badge subscription takes it, which accepts only the four known states
+    public var text: String {
+        switch self {
+        case .renewing: "renewing"
+        case .cancelled: "cancelled"
+        case .billingRetry: "billingRetry"
+        case .ended: "ended"
+        case .unknown: "unknown"
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        switch try decoder.singleValueContainer().decode(String.self) {
+        case "renewing": self = .renewing
+        case "cancelled": self = .cancelled
+        case "billingRetry": self = .billingRetry
+        case "ended": self = .ended
+        default: self = .unknown
+        }
+    }
 }
 
 public struct BadgeIssueError: Decodable, Hashable {
@@ -587,13 +663,47 @@ public struct BadgeAlertPrice: Codable, Hashable {
     public var currency: String
 }
 
-public enum BadgeAlertKind: String, Codable, Hashable {
+// a kind added by a newer core decodes, so the badge state still does, and shows no banner
+public enum BadgeAlertKind: Codable, Hashable {
     case renewalApproaching
     case paymentIssue
+    case subscriptionCancelled
     case subscriptionEnded
     case prepaidEnding
     case supportEnded
     case issueFailed
+    case unknown(String)
+
+    public var text: String {
+        switch self {
+        case .renewalApproaching: "renewalApproaching"
+        case .paymentIssue: "paymentIssue"
+        case .subscriptionCancelled: "subscriptionCancelled"
+        case .subscriptionEnded: "subscriptionEnded"
+        case .prepaidEnding: "prepaidEnding"
+        case .supportEnded: "supportEnded"
+        case .issueFailed: "issueFailed"
+        case let .unknown(s): s
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        switch try decoder.singleValueContainer().decode(String.self) {
+        case "renewalApproaching": self = .renewalApproaching
+        case "paymentIssue": self = .paymentIssue
+        case "subscriptionCancelled": self = .subscriptionCancelled
+        case "subscriptionEnded": self = .subscriptionEnded
+        case "prepaidEnding": self = .prepaidEnding
+        case "supportEnded": self = .supportEnded
+        case "issueFailed": self = .issueFailed
+        case let s: self = .unknown(s)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(text)
+    }
 }
 
 // the wire proof carried on a profile - opaque to the UI, only round-tripped back to the core (apiPrepareContact)
@@ -1783,6 +1893,7 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
         simplexLinks: fullPreferences.simplexLinks,
         reports: fullPreferences.reports,
         history: fullPreferences.history,
+        support: fullPreferences.support,
         signMessages: fullPreferences.signMessages,
         commands: fullPreferences.commands
     )
@@ -2582,8 +2693,8 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         chatSettings: ChatSettings.defaults,
         userPreferences: Preferences.sampleData,
         mergedPreferences: ContactUserPreferences.sampleData,
-        createdAt: .now,
-        updatedAt: .now,
+        createdAt: previewDate,
+        updatedAt: previewDate,
         contactGrpInvSent: false,
         chatTags: [],
         chatDeleted: false
@@ -3072,6 +3183,7 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
     public var publicGroup: PublicGroupProfile?
     public var groupPreferences: GroupPreferences?
     public var memberAdmission: GroupMemberAdmission?
+    public var chatLayout: ChatLayout?
     public var localAlias: String { "" }
 
     public var memberAdmission_: GroupMemberAdmission {
@@ -3119,6 +3231,7 @@ public struct ContactShortLinkData: Codable, Hashable {
     public var profile: Profile
     public var message: MsgContent?
     public var business: Bool
+    public var chatLayout: ChatLayout?
     // set by the core when building the connection plan: the link profile's badge, verified and crypto-free
     public var localBadge: LocalBadge?
 }
@@ -3160,7 +3273,7 @@ public enum MsgVerified: Decodable, Equatable, Hashable {
         switch self {
         case .sigMissing: return (
                 NSLocalizedString("Signature missing", comment: "alert title"),
-                NSLocalizedString("The channel required this message to be signed, but the signature is missing.", comment: "alert message")
+                NSLocalizedString("The message was sent before the channel started signing messages, or it is fake.", comment: "alert message")
             )
         default: return nil
         }
@@ -3416,10 +3529,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         if groupInfo.useRelays && !groupInfo.isOwner { return nil }
         let userRole = groupInfo.membership.memberRole
         if groupInfo.useRelays {
-            // TODO [relays]: for now owners can only set observer/member in channels.
-            //   Restore the full Owner-excluded picker when moderator/admin promotion is supported:
-            // return GroupMemberRole.supportedRoles.filter { $0 <= userRole && $0 != .owner }
-            return [.observer, .member]
+            return [.observer, .member, .moderator]
         } else {
             return GroupMemberRole.supportedRoles.filter { $0 <= userRole }
         }

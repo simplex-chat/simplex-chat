@@ -21,13 +21,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.AlignmentLine
+import androidx.compose.ui.layout.FirstBaseline
+import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
@@ -35,6 +40,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.takeOrElse
@@ -44,6 +52,8 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import kotlin.math.pow
+import kotlin.math.roundToInt
 
 @Composable
 fun MarkdownBlocks(
@@ -53,7 +63,8 @@ fun MarkdownBlocks(
   modifier: Modifier,
   cardColor: Color,
   blockText: @Composable (index: Int, range: SegmentRange, style: TextStyle, modifier: Modifier, softWrap: Boolean, last: Boolean) -> Unit,
-  metaLine: @Composable () -> Unit
+  metaLine: (@Composable () -> Unit)?,
+  ruleMinWidth: Dp
 ) {
   val roundness = remember { appPreferences.chatItemRoundness.state }.value.coerceIn(0f, 1f)
   val cardShape = RoundedCornerShape(12.dp * roundness)
@@ -61,6 +72,7 @@ fun MarkdownBlocks(
   val textColor = style.color.takeOrElse { MaterialTheme.colors.onSurface }
   val fontSize = style.fontSize.takeOrElse { 16.sp }
   val lineHeight = style.lineHeight.takeOrElse { 22.sp }
+  val terminal = LocalTerminalLayout.current
   val starts = remember(blocks) { blocks.runningFold(0) { n, b -> n + b.textRanges.size } }
   val lastIsText = when (blocks.lastOrNull()) {
     is MarkdownBlock.Paragraph, is MarkdownBlock.Heading, is MarkdownBlock.Quote, is MarkdownBlock.ItemList -> true
@@ -72,25 +84,31 @@ fun MarkdownBlocks(
   }
   Column(modifier) {
     blocks.forEachIndexed { k, block ->
-      if (k > 0 && paragraphBreak(formattedText, blocks[k - 1].end, block.start)) {
-        Spacer(Modifier.height(with(LocalDensity.current) { (lineHeight.toPx() / 2).toDp() }))
+      if (k > 0 && terminal && blocks[k - 1] is MarkdownBlock.Heading && block !is MarkdownBlock.Heading) {
+        Spacer(Modifier.height(TERMINAL_HEADING_BOTTOM_GAP.toDp()))
+      } else if (k > 0 && (paragraphBreak(formattedText, blocks[k - 1].end, block.start) || terminal && block is MarkdownBlock.Heading)) {
+        Spacer(Modifier.height(if (terminal) TERMINAL_LEVEL_STEP.toDp() else with(LocalDensity.current) { (lineHeight.toPx() / 2).toDp() }))
       }
       val start = starts[k]
+      val marksLastBlock = k == blocks.lastIndex && metaLine == null
+      val cardMargins = if (!terminal) Modifier else if (marksLastBlock) Modifier.padding(top = TERMINAL_BLOCK_TOP_GAP.toDp()).messageLastBlock() else Modifier.padding(top = TERMINAL_BLOCK_TOP_GAP.toDp(), bottom = TERMINAL_BLOCK_BOTTOM_GAP.toDp())
       when (block) {
         is MarkdownBlock.Paragraph -> BlockText(start, block.content, style)
         is MarkdownBlock.Heading -> {
-          val scale = when (block.level) {
+          val scale = if (terminal) TERMINAL_HEADING_RATIO.pow((3 - block.level).coerceAtLeast(0)) else when (block.level) {
             1 -> 1.5f
             2 -> 1.3f
             3 -> 1.15f
             else -> 1f
           }
-          BlockText(start, block.content, style.copy(fontSize = fontSize * scale, lineHeight = lineHeight * scale, fontWeight = FontWeight.Bold))
+          BlockText(
+            start, block.content, style.copy(fontSize = fontSize * scale, lineHeight = lineHeight * scale, fontWeight = FontWeight.Bold),
+            if (terminal) Modifier.headingBox(scale, fontSize) else Modifier
+          )
         }
-        is MarkdownBlock.Quote -> Row(Modifier.height(IntrinsicSize.Min)) {
-          Box(Modifier.width(4.dp).fillMaxHeight().clip(RoundedCornerShape(2.dp)).background(textColor.copy(alpha = if (MaterialTheme.colors.isLight) 0.16f else 0.22f)))
-          Spacer(Modifier.width(10.dp))
-          BlockText(start, block.content, style.copy(color = textColor.copy(alpha = 0.7f)))
+        is MarkdownBlock.Quote -> Box(Modifier.quoteBar(textColor)) {
+          val quoteColor = textColor.copy(alpha = 0.7f)
+          BlockText(start, block.content, style.copy(color = quoteColor).merge(terminalTextStyle(fontSize, quoteColor)))
         }
         is MarkdownBlock.ItemList -> listEntries(block.items, 0).forEachIndexed { j, (entry, level) ->
           Row(Modifier.padding(start = 20.dp * level)) {
@@ -99,13 +117,14 @@ fun MarkdownBlocks(
             BlockText(start + j, entry.content, style, Modifier.weight(1f, fill = false))
           }
         }
-        is MarkdownBlock.CodeBlock -> CodeBlockCard(cardShape, cardColor, roundness, codeText(formattedText, block.content)) { m ->
-          BlockText(start, block.content, style.copy(fontFamily = FontFamily.Monospace, fontSize = fontSize * 0.875f, lineHeight = lineHeight * 0.9f), m, softWrap = false)
+        is MarkdownBlock.CodeBlock -> CodeBlockCard(cardShape, cardColor, roundness, codeText(formattedText, block.content), cardMargins) { m ->
+          val codeFontSize = fontSize * 0.875f
+          BlockText(start, block.content, style.copy(fontFamily = FontFamily.Monospace, fontSize = codeFontSize, lineHeight = lineHeight * 0.9f).merge(terminalTextStyle(codeFontSize)), m, softWrap = false)
         }
         is MarkdownBlock.Table -> {
           val tableRows = listOf(block.header) + block.rows
           val rowStarts = tableRows.runningFold(start) { n, row -> n + row.size }
-          Box(Modifier.horizontalScroll(rememberScrollState())) {
+          Box(cardMargins.horizontalScroll(rememberScrollState())) {
             TableGrid(
               block.columns, tableRows.map { it.size }, cardColor, MaterialTheme.colors.secondary.copy(alpha = 0.1f), lineColor,
               Modifier.clip(cardShape).border(1.dp, lineColor, cardShape)
@@ -121,12 +140,37 @@ fun MarkdownBlocks(
             }
           }
         }
-        is MarkdownBlock.Rule -> Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(1.dp).background(lineColor))
+        is MarkdownBlock.Rule -> Box((if (terminal) cardMargins.widthIn(min = ruleMinWidth) else Modifier.padding(vertical = 6.dp)).fillMaxWidth().height(1.dp).background(lineColor))
       }
     }
-    if (!lastIsText) metaLine()
+    if (!lastIsText) metaLine?.invoke()
   }
 }
+
+@Composable
+fun Modifier.quoteBar(textColor: Color): Modifier {
+  val color = textColor.copy(alpha = if (MaterialTheme.colors.isLight) 0.16f else 0.22f)
+  val barWidth = 4.dp
+  return drawBehind {
+    val width = barWidth.roundToPx().toFloat()
+    drawRoundRect(color, Offset(if (layoutDirection == LayoutDirection.Ltr) 0f else size.width - width, 0f), Size(width, size.height), CornerRadius(2.dp.toPx()))
+  }.padding(start = barWidth + 10.dp)
+}
+
+private fun Modifier.headingBox(scale: Float, bodyFontSize: TextUnit): Modifier =
+  layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    val firstBaseline = placeable[FirstBaseline]
+    val lastBaseline = placeable[LastBaseline]
+    if (firstBaseline == AlignmentLine.Unspecified || lastBaseline == AlignmentLine.Unspecified) {
+      layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
+    } else {
+      val bodyRatio = bodyFontSize.toPx() / (bodyFontSize * scale).toPx()
+      val top = (firstBaseline * (1 - bodyRatio) - INTER_CAP_HEIGHT * ((bodyFontSize * scale).toPx() - bodyFontSize.toPx())).roundToInt()
+      val bottom = ((placeable.height - lastBaseline) * (1 - bodyRatio)).roundToInt()
+      layout(placeable.width, placeable.height - top - bottom) { placeable.placeRelative(0, -top) }
+    }
+  }
 
 private val MarkdownBlock.start: Int get() = when (this) {
   is MarkdownBlock.Rule -> mark.from
@@ -151,13 +195,13 @@ private fun codeText(fts: List<FormattedText>, r: SegmentRange): String =
   }
 
 @Composable
-private fun CodeBlockCard(shape: Shape, color: Color, roundness: Float, copyText: String, content: @Composable (Modifier) -> Unit) {
+private fun CodeBlockCard(shape: Shape, color: Color, roundness: Float, copyText: String, modifier: Modifier, content: @Composable (Modifier) -> Unit) {
   var tapped by remember { mutableStateOf(false) }
   val interactionSource = remember { MutableInteractionSource() }
   val hovered by interactionSource.collectIsHoveredAsState()
   val clipboard = LocalClipboardManager.current
   Box(
-    Modifier
+    modifier
       .fillMaxWidth()
       .clip(shape)
       .background(color)
