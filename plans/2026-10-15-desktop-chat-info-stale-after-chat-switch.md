@@ -39,5 +39,5 @@ The first open and Back for the same chat do not reload, as before, unless the g
 
 - `ChatView.kt`: the info pane in `ChatView`.
 - `GroupChatInfoView.kt`: the `groupLinkLoaded` parameter of `GroupChatInfoView`, `GroupChatInfoLayout` and `ChannelLinkActionButton`.
-- Desktop. On Android a chat change normally closes the full-screen info, so only rare paths change.
-- iOS is unchanged: its info views load their own chat's data when they appear.
+- Desktop. Android runs the same code, but its info is a full-screen modal that covers the chat list, and a notification tap closes it.
+- iOS is unchanged: its info views load the contact info, security code and group link when they appear, and its `ChatView` loads the group members before it shows the group info.
