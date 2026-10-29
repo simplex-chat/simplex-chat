@@ -209,7 +209,7 @@ VersionView            Views/UserSettings/VersionView.swift
 
 ## 4. Network evidence
 
-Rows whose preview kept a database, server, agent or StoreKit call:
+Previews that kept a core, agent or StoreKit call:
 
 | Rows | Scene | Code path | Network in CI |
 |---|---|---|---|
@@ -230,6 +230,7 @@ Rows whose preview kept a database, server, agent or StoreKit call:
 | 71 | NetworkServersView | NetworkAndServers.swift:136-155: :140 `getUserServers` (row 51); :144 `validateServers_` → Commands.hs:1833-1834, :4322-4326 store read | no |
 | 78 | NotificationsView | NotificationsView.swift:83-85 `apiGetNtfToken` → Commands.hs:1681 → Agent.hs:3332-3336 store read | no |
 | 88 | GroupMemberInfoView.kt | GroupMemberInfoView.kt:502-509 `withBGApi { apiContactInfo }` → model/SimpleXAPI.kt:989 throws "Controller is not initialized" | no |
+| — | ActiveCallOverlay | `WebRTCClient` of the preview: WebRTCClient.swift:25 `getChatCtrl()` → SimpleXChat/API.swift:19-22 reads the controller pointer; :82-89 sets two flags of `RTCAudioSession.sharedInstance()` | no |
 
 ## 5. QR picture (S1)
 
@@ -274,10 +275,10 @@ Kotlin    loadFixedQRCode(): preview-qr-code-light.png or preview-qr-code-dark.p
 ## 6. Other branch changes
 
 ```
-ActiveCallView.swift, ActiveCallOverlay_Previews deleted            keep
+ActiveCallView.swift, ActiveCallOverlay_Previews                    master
 DesktopApp.kt, AppPreview deleted                                   keep
-SnapshotTests.swift, ActiveCallOverlay scene removed                keep
-SnapshotTests.swift, SnapshotFixtures markdown table                keep
+SnapshotTests.swift, ActiveCallOverlay scene                        master
+SnapshotTests.swift, SnapshotFixtures markdown table                keep, values built with initializers
 SnapshotTest.kt, setting pins and appBarMaxHeightPx                 keep
 SnapshotTest.kt, AppPreview scene removed                           keep
 desktopTest/resources/preview-qr-code-light.png                     keep
@@ -296,7 +297,6 @@ iOS      Views/Badges/BadgesCheckOrderView.swift   10 added, 1 removed, 1 change
 iOS      Views/Badges/BadgesHowLongView.swift      9 added, 1 removed, 1 changed
 iOS      Views/UserSettings/VersionView.swift      16 added, 8 removed, 1 changed
 iOS      Views/NewChat/QRCode.swift                10 added, 2 changed
-iOS      Views/Call/ActiveCallView.swift           10 removed: preview
 Kotlin   views/newchat/QRCode.kt                   2 added, 1 changed
 Kotlin   desktopMain DesktopApp.kt                 6 removed: preview and its import
 ```

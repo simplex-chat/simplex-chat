@@ -162,6 +162,7 @@ private struct SnapshotScene {
 
 private func previewScenes() -> [SnapshotScene] {
     [
+        SnapshotScene(ActiveCallOverlay_Previews.self),
         SnapshotScene(AddChannelView_Previews.self),
         SnapshotScene(AddContactLearnMore_Previews.self),
         SnapshotScene(AddGroupMembersView_Previews.self),
