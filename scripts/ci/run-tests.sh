@@ -26,7 +26,10 @@ attempts=${ATTEMPTS:-1}
 while [ "$i" -le "$attempts" ]; do
   if "$@" "${args[@]}"; then
     break
-  elif [ "$i" -lt "$attempts" ]; then
+  elif [ "$?" -eq 124 ]; then
+    echo "Attempt $i timed out."
+  fi
+  if [ "$i" -lt "$attempts" ]; then
     echo "Attempt $i failed, retrying..."
     sleep 1
   fi
