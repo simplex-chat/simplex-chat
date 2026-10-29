@@ -53,7 +53,7 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Util (catchAll)
 import System.Posix.Internals (c_close)
-import UnliftIO (Handle, IOMode (..), atomically, bracket, hClose, onException, withBinaryFile, withFile)
+import UnliftIO (Handle, IOMode (..), atomically, bracket, hClose, hFileSize, onException, tryIO, withBinaryFile, withFile)
 
 data WriteFileResult
   = WFResult {cryptoArgs :: CryptoFileArgs}
@@ -177,11 +177,17 @@ readFd :: CInt -> IO ByteString
 readFd fd = bracket (fdToHandle fd `onException` c_close fd) hClose hGetImage
 
 hGetImage :: Handle -> IO ByteString
-hGetImage h = do
-  s <- LB.hGet h $ maxSize + 1
-  if LB.length s > fromIntegral maxSize then fail "image file is too large" else pure $ LB.toStrict s
+hGetImage h =
+  tryIO (hFileSize h) >>= \case
+    Right size
+      | size > fromIntegral maxSize -> tooLarge
+      | otherwise -> B.hGet h $ fromIntegral size
+    Left _ -> do
+      s <- LB.hGet h $ maxSize + 1
+      if LB.length s > fromIntegral maxSize then tooLarge else pure $ LB.toStrict s
   where
     maxSize = maxDecodeMemoryMB * 1048576
+    tooLarge = fail "image file is too large"
 
 cResizeImageUri :: IO ByteString -> CInt -> IO CString
 cResizeImageUri input maxSize = cResizeImage id (resizeImageDataUri $ fromIntegral maxSize) input

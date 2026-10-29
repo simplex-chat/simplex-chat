@@ -14,6 +14,7 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Codec.Picture (PixelRGB8 (..), generateImage)
 import Codec.Picture.JPEGTurbo (encodeRGB)
+import Control.Concurrent (forkIO)
 import Control.Concurrent.STM
 import Control.Monad.Except
 import Data.Aeson (FromJSON)
@@ -35,6 +36,7 @@ import Foreign.StablePtr
 import Foreign.Storable (peek)
 import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
 import qualified GHC.IO.FD as FD
+import GHC.IO.Handle.FD (fdToHandle)
 import ImageTests (pngShortImageData, pngSideAbove16384)
 import JSONFixtures
 import Simplex.Chat
@@ -61,9 +63,10 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import System.Directory (copyFile)
 import System.FilePath ((</>))
-import System.IO (IOMode (..), hSetFileSize, utf8, withBinaryFile)
+import System.IO (IOMode (..), hClose, hSetFileSize, utf8, withBinaryFile)
 import System.IO.Error (tryIOError)
 import System.Posix.Internals (c_open, fdStat, o_RDONLY, withFilePath)
+import System.Process (createPipeFd)
 import Test.Hspec hiding (it)
 
 mobileTests :: HasCallStack => SpecWith TestParams
@@ -416,6 +419,11 @@ testResizeImageFdCApi ps = do
   uri `shouldStartWith` "data:image/jpg;base64,"
   length uri `shouldSatisfy` (<= 14000)
   isOpen jpeg jpegFile `shouldReturn` False
+  piped <- pipeFd =<< B.readFile "./tests/fixtures/test.jpg"
+  pipedFile <- fdStat piped
+  pipedUri <- peekCAString =<< cChatResizeImageFdUri piped 14000
+  pipedUri `shouldStartWith` "data:image/jpg;base64,"
+  isOpen piped pipedFile `shouldReturn` False
   pdf <- openFd "./tests/fixtures/test.pdf"
   pdfFile <- fdStat pdf
   (peekCAString =<< cChatResizeImageFd pdf 100000 (-1)) `shouldReturn` ""
@@ -433,6 +441,11 @@ testResizeImageFdCApi ps = do
   where
     openFd path = FD.fdFD . fst <$> FD.openFile path ReadMode False
     isOpen fd file = either (const False) (== file) <$> tryIOError (fdStat fd)
+    pipeFd s = do
+      (r, w) <- createPipeFd
+      h <- fdToHandle w
+      _ <- forkIO $ B.hPut h s >> hClose h
+      pure r
 
 oversizedJpegFile :: TestParams -> IO FilePath
 oversizedJpegFile ps = do
