@@ -393,7 +393,7 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
     }
     // content and imagesPreview must stay index-aligned and equal-length: both consumers
     // (ComposeImageView and sendMessageAsync) cross-index one list by the other's index.
-    // Only pair them when a preview bitmap exists; otherwise skip the media entirely.
+    // Only pair them when a preview exists; otherwise skip the media entirely.
     if (preview != null && uploadContent != null) {
       content.add(uploadContent)
       imagesPreview.add(preview)
