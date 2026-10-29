@@ -280,7 +280,7 @@ textWithUri = describe "text with Uri" do
     "SimpleX on GitHub: https://github.com/simplex-chat/" <==> "SimpleX on GitHub: " <> uri "https://github.com/simplex-chat/"
     "SimpleX on GitHub: https://github.com/simplex-chat." <==> "SimpleX on GitHub: " <> uri "https://github.com/simplex-chat" <> "."
     "https://github.com/simplex-chat/ - SimpleX on GitHub" <==> uri "https://github.com/simplex-chat/" <> " - SimpleX on GitHub"
-    -- "SimpleX on GitHub (https://github.com/simplex-chat/)" <==> "SimpleX on GitHub (" <> uri "https://github.com/simplex-chat/" <> ")"
+    "SimpleX on GitHub (https://github.com/simplex-chat/)" <==> "SimpleX on GitHub (" <> uri "https://github.com/simplex-chat/" <> ")"
     "https://en.m.wikipedia.org/wiki/Servo_(software)" <==> uri "https://en.m.wikipedia.org/wiki/Servo_(software)"
     "https://simplex.chat/page_name_" <==> uri "https://simplex.chat/page_name_"
     "https://simplex.chat/page_name_, hello" <==> uri "https://simplex.chat/page_name_" <> ", hello"
@@ -293,6 +293,14 @@ textWithUri = describe "text with Uri" do
     "example.academy" <==> uri "example.academy"
     "this is example.com" <==> "this is " <> uri "example.com"
     "x.com" <==> uri "x.com"
+  it "links in parentheses" do
+    "(https://simplex.chat)" <==> "(" <> uri "https://simplex.chat" <> ")"
+    "see (https://simplex.chat)." <==> "see (" <> uri "https://simplex.chat" <> ")."
+    "(see https://simplex.chat)" <==> "(see " <> uri "https://simplex.chat" <> ")"
+    "(https://en.m.wikipedia.org/wiki/Servo_(software))" <==> "(" <> uri "https://en.m.wikipedia.org/wiki/Servo_(software)" <> ")"
+    "https://simplex.chat/page))" <==> uri "https://simplex.chat/page" <> "))"
+    "(example.com)" <==> "(" <> uri "example.com" <> ")"
+    "(chat@simplex.chat)" <==> "(" <> email "chat@simplex.chat" <> ")"
   it "ignored as markdown" do
     "_https://simplex.chat" <==> "_https://simplex.chat"
     "this is _https://simplex.chat" <==> "this is _https://simplex.chat"
@@ -330,12 +338,13 @@ textWithHyperlink = describe "text with HyperLink without link text" do
     "[example.com/page](https://example.com/page)" <==> web "example.com/page" "https://example.com/page" "[example.com/page](https://example.com/page)"
     ("[Connect to me](" <> addr <> ")") <==> Markdown (simplexLinkFormat XLContact addr' ["smp6.simplex.im"] (Just "Connect to me")) ("[Connect to me](" <> addr <> ")")
   it "potentially spoofed link" do
-    "[https://example.com](https://another.com)" <==> "[https://example.com](https://another.com)"
-    "[example.com/page](https://another.com/page)" <==> "[example.com/page](https://another.com/page)"
-    ("[Connect.to.me](" <> addr <> ")") <==> Markdown Nothing ("[Connect.to.me](" <> addr <> ")")
+    "[https://example.com](https://another.com)" <==> "[https://example.com](" <> uri "https://another.com" <> ")"
+    "[example.com/page](https://another.com/page)" <==> "[example.com/page](" <> uri "https://another.com/page" <> ")"
+    ("[Connect.to.me](" <> addr <> ")") <==> "[Connect.to.me](" <> Markdown (simplexLinkFormat XLContact addr' ["smp6.simplex.im"] Nothing) addr <> ")"
+    "[What's new](https://simplex.chat)" <==> "[What's new](" <> uri "https://simplex.chat" <> ")"
   it "ignored as markdown" do
-    "[click here](example.com)" <==> "[click here](example.com)"
-    "[click here](https://example.com )" <==> "[click here](https://example.com )"
+    "[click here](example.com)" <==> "[click here](" <> uri "example.com" <> ")"
+    "[click here](https://example.com )" <==> "[click here](" <> uri "https://example.com" <> " )"
 
 obfuscatedSimplexLinks :: Spec
 obfuscatedSimplexLinks = describe "SimpleX links obfuscated with whitespace" do
@@ -633,9 +642,6 @@ mk = markupText
 lineBr :: FormattedText
 lineBr = mk LineBreak "\n"
 
-softBr :: FormattedText
-softBr = mk SoftBreak "\n"
-
 hardBr :: FormattedText
 hardBr = mk HardBreak "\n"
 
@@ -670,7 +676,7 @@ blockMarkdown = describe "block markdown" do
                 mk (ListMark Nothing) "- ",
                 "buy ",
                 FormattedText (Just boldF) "milk",
-                mk SoftBreak "\n",
+                mk HardBreak "\n",
                 mk Indent "  ",
                 "and eggs",
                 mk LineBreak "\n",
@@ -679,7 +685,7 @@ blockMarkdown = describe "block markdown" do
                 mk (ParagraphBreak 2) "\n\n",
                 mk QuoteMark "> ",
                 "a",
-                mk SoftBreak "\n",
+                mk HardBreak "\n",
                 mk QuoteMark "> ",
                 "b"
               ],
@@ -688,11 +694,11 @@ blockMarkdown = describe "block markdown" do
 
 breaksInBlocks :: Spec
 breaksInBlocks = describe "line breaks in texts with blocks" do
-  it "soft breaks in paragraphs, list items and quotes" do
-    "a\nb\nc\n# d" <===> (["a", softBr, "b", softBr, "c", lineBr, heading1, "d"], [Paragraph (rng 0 5), Heading 1 (rng 7 8)])
-    "  a\n  b\n# c" <===> (["  a", softBr, "  b", lineBr, heading1, "c"], [Paragraph (rng 0 3), Heading 1 (rng 5 6)])
-    "- a\nb" <===> ([bullet "- ", "a", softBr, "b"], [List [entry 1 4 []]])
-    "> a\nb" <===> ([quoteMark "> ", "a", softBr, "b"], [Quote (rng 1 4)])
+  it "line breaks in paragraphs, list items and quotes" do
+    "a\nb\nc\n# d" <===> (["a", hardBr, "b", hardBr, "c", lineBr, heading1, "d"], [Paragraph (rng 0 5), Heading 1 (rng 7 8)])
+    "  a\n  b\n# c" <===> (["  a", hardBr, "  b", lineBr, heading1, "c"], [Paragraph (rng 0 3), Heading 1 (rng 5 6)])
+    "- a\n  b" <===> ([bullet "- ", "a", hardBr, mk Indent "  ", "b"], [List [entry 1 5 []]])
+    "> a\n> b" <===> ([quoteMark "> ", "a", hardBr, quoteMark "> ", "b"], [Quote (rng 1 5)])
   it "hard breaks by two or more spaces and by a backslash" do
     "a  \nb\n- c" <===> (["a", mk HardBreak "  \n", "b", lineBr, bullet "- ", "c"], [Paragraph (rng 0 3), List [entry 5 6 []]])
     "a   \nb\n- c" <===> (["a", mk HardBreak "   \n", "b", lineBr, bullet "- ", "c"], [Paragraph (rng 0 3), List [entry 5 6 []]])
@@ -703,8 +709,8 @@ breaksInBlocks = describe "line breaks in texts with blocks" do
     "> a  \n> b" <===> ([quoteMark "> ", "a", mk HardBreak "  \n", quoteMark "> ", "b"], [Quote (rng 1 5)])
     "> a\\\n> b" <===> ([quoteMark "> ", "a", mk HardBreak "\\\n", quoteMark "> ", "b"], [Quote (rng 1 5)])
   it "spaces and backslashes that are content" do
-    "a \nb\n- c" <===> (["a ", softBr, "b", lineBr, bullet "- ", "c"], [Paragraph (rng 0 3), List [entry 5 6 []]])
-    "a\\\\\nb\n- c" <===> (["a", fmt Escape "\\", "\\", softBr, "b", lineBr, bullet "- ", "c"], [Paragraph (rng 0 5), List [entry 7 8 []]])
+    "a \nb\n- c" <===> (["a ", hardBr, "b", lineBr, bullet "- ", "c"], [Paragraph (rng 0 3), List [entry 5 6 []]])
+    "a\\\\\nb\n- c" <===> (["a", fmt Escape "\\", "\\", hardBr, "b", lineBr, bullet "- ", "c"], [Paragraph (rng 0 5), List [entry 7 8 []]])
     "a  \n\n- c" <===> (["a  ", mk (ParagraphBreak 2) "\n\n", bullet "- ", "c"], [Paragraph (rng 0 1), List [entry 3 4 []]])
     "a\\\n\n- c" <===> (["a\\", mk (ParagraphBreak 2) "\n\n", bullet "- ", "c"], [Paragraph (rng 0 1), List [entry 3 4 []]])
     "a  \n- c" <===> (["a  ", lineBr, bullet "- ", "c"], [Paragraph (rng 0 1), List [entry 3 4 []]])
@@ -722,12 +728,12 @@ breaksInBlocks = describe "line breaks in texts with blocks" do
     "# a\n\n\n" <===> ([heading1, "a", mk (ParagraphBreak 2) "\n\n"], [Heading 1 (rng 1 2)])
     "# a\n  " <===> ([heading1, "a", mk (ParagraphBreak 1) "\n  "], [Heading 1 (rng 1 2)])
   it "CR before line breaks" do
-    "a\r\nb\r\n- c" <===> (["a", mk SoftBreak "\r\n", "b", mk LineBreak "\r\n", bullet "- ", "c"], [Paragraph (rng 0 3), List [entry 5 6 []]])
+    "a\r\nb\r\n- c" <===> (["a", mk HardBreak "\r\n", "b", mk LineBreak "\r\n", bullet "- ", "c"], [Paragraph (rng 0 3), List [entry 5 6 []]])
     "a  \r\nb\r\n- c" <===> (["a", mk HardBreak "  \r\n", "b", mk LineBreak "\r\n", bullet "- ", "c"], [Paragraph (rng 0 3), List [entry 5 6 []]])
     "# a\r\n- b" <===> ([heading1, "a", mk LineBreak "\r\n", bullet "- ", "b"], [Heading 1 (rng 1 2), List [entry 4 5 []]])
     "# a\r\n\r\nb" <===> ([heading1, "a", mk (ParagraphBreak 2) "\r\n\r\n", "b"], [Heading 1 (rng 1 2), Paragraph (rng 3 4)])
-    "- a\r\n  b" <===> ([bullet "- ", "a", mk SoftBreak "\r\n", mk Indent "  ", "b"], [List [entry 1 5 []]])
-    "> a\r\n> b" <===> ([quoteMark "> ", "a", mk SoftBreak "\r\n", quoteMark "> ", "b"], [Quote (rng 1 5)])
+    "- a\r\n  b" <===> ([bullet "- ", "a", mk HardBreak "\r\n", mk Indent "  ", "b"], [List [entry 1 5 []]])
+    "> a\r\n> b" <===> ([quoteMark "> ", "a", mk HardBreak "\r\n", quoteMark "> ", "b"], [Quote (rng 1 5)])
     "a\r\n===" <===> (["a", mk HardBreak "\r\n", mk (HeadingUnderline 1) "==="], [Heading 1 (rng 0 1)])
     "```\r\na\r\n```" <===> ([fence "```", mk HardBreak "\r\n", "a", mk HardBreak "\r\n", fence "```"], [CodeBlock Nothing (rng 2 3)])
     "|a|\r\n|-|\r\n|b|" <===> ([mk RowMark "|", "a", mk CellMark "|", mk HardBreak "\r\n", mk (DelimiterRow [TANone]) "|-|", mk HardBreak "\r\n", mk RowMark "|", "b", mk CellMark "|"], [Table [TANone] [rng 1 2] [[rng 7 8]]])
@@ -762,16 +768,16 @@ headings = describe "headings" do
     "a\n===" <===> (["a", hardBr, mk (HeadingUnderline 1) "==="], [Heading 1 (rng 0 1)])
     "a\n---" <===> (["a", hardBr, mk (HeadingUnderline 2) "---"], [Heading 2 (rng 0 1)])
     "a\n-" <===> (["a", hardBr, mk (HeadingUnderline 2) "-"], [Heading 2 (rng 0 1)])
-    "a\nb\n=" <===> (["a", softBr, "b", hardBr, mk (HeadingUnderline 1) "="], [Heading 1 (rng 0 3)])
-    "a\nb\n---" <===> (["a", softBr, "b", hardBr, mk (HeadingUnderline 2) "---"], [Heading 2 (rng 0 3)])
+    "a\nb\n=" <===> (["a", hardBr, "b", hardBr, mk (HeadingUnderline 1) "="], [Heading 1 (rng 0 3)])
+    "a\nb\n---" <===> (["a", hardBr, "b", hardBr, mk (HeadingUnderline 2) "---"], [Heading 2 (rng 0 3)])
     "a\n  ===  " <===> (["a", hardBr, mk (HeadingUnderline 1) "  ===  "], [Heading 1 (rng 0 1)])
     "a\n---\nb" <===> (["a", hardBr, mk (HeadingUnderline 2) "---", lineBr, "b"], [Heading 2 (rng 0 1), Paragraph (rng 4 5)])
   it "underlines only under paragraphs" do
     "a\n- - -" <===> (["a", lineBr, mk RuleMark "- - -"], [Paragraph (rng 0 1), Rule (rng 2 3)])
     "a\n***" <===> (["a", lineBr, mk RuleMark "***"], [Paragraph (rng 0 1), Rule (rng 2 3)])
     "# a\n===" <===> ([heading1, "a", lineBr, "==="], [Heading 1 (rng 1 2), Paragraph (rng 3 4)])
-    "> a\n===" <===> ([quoteMark "> ", "a", softBr, "==="], [Quote (rng 1 4)])
-    "- a\n===" <===> ([bullet "- ", "a", softBr, "==="], [List [entry 1 4 []]])
+    "> a\n===" <===> ([quoteMark "> ", "a", lineBr, "==="], [Quote (rng 1 2), Paragraph (rng 3 4)])
+    "- a\n===" <===> ([bullet "- ", "a", lineBr, "==="], [List [entry 1 2 []], Paragraph (rng 3 4)])
     noBlocks "a\n= ="
     noBlocks "a\n\n==="
     noBlocks "==="
@@ -824,12 +830,20 @@ lists = describe "lists" do
               [List [e 1 [e 2 [e 3 [e 4 [e 5 [e 6 [e 7 [], e 8 []]]]]]]]]
             )
   it "continuation lines" do
-    "- a\n  b" <===> ([bullet "- ", "a", softBr, mk Indent "  ", "b"], [List [entry 1 5 []]])
-    "- a\n    b" <===> ([bullet "- ", "a", softBr, mk Indent "    ", "b"], [List [entry 1 5 []]])
-    "- a\n\tb" <===> ([bullet "- ", "a", softBr, mk Indent "\t", "b"], [List [entry 1 5 []]])
-    "- a\nb" <===> ([bullet "- ", "a", softBr, "b"], [List [entry 1 4 []]])
-    "- a\n  b\n  - c" <===> ([bullet "- ", "a", softBr, mk Indent "  ", "b", lineBr, bullet "  - ", "c"], [List [entry 1 5 [entry 7 8 []]]])
+    "- a\n  b" <===> ([bullet "- ", "a", hardBr, mk Indent "  ", "b"], [List [entry 1 5 []]])
+    "- a\n    b" <===> ([bullet "- ", "a", hardBr, mk Indent "    ", "b"], [List [entry 1 5 []]])
+    "- a\n\tb" <===> ([bullet "- ", "a", hardBr, mk Indent "\t", "b"], [List [entry 1 5 []]])
+    "- a\n  b\n  - c" <===> ([bullet "- ", "a", hardBr, mk Indent "  ", "b", lineBr, bullet "  - ", "c"], [List [entry 1 5 [entry 7 8 []]]])
+  it "a line without indentation after a list item is a paragraph" do
+    "- a\nb" <===> ([bullet "- ", "a", lineBr, "b"], [List [entry 1 2 []], Paragraph (rng 3 4)])
+    "- a\nb\n- c" <===> ([bullet "- ", "a", lineBr, "b", lineBr, bullet "- ", "c"], [List [entry 1 2 []], Paragraph (rng 3 4), List [entry 6 7 []]])
     "- *a* b" <===> ([bullet "- ", fmt boldF "a", " b"], [List [entry 1 3 []]])
+  it "links and formats in list items" do
+    "- https://simplex.chat" <===> ([bullet "- ", uri' "https://simplex.chat"], [List [entry 1 2 []]])
+    "1. [click here](https://simplex.chat)" <===> ([numbered "1.", fmt (HyperLink (Just "click here") "https://simplex.chat") "[click here](https://simplex.chat)"], [List [ListEntry (Just "1.") (rng 1 2) []]])
+    "- *a* _b_ ~c~ `d` #e# @alice" <===> ([bullet "- ", fmt boldF "a", " ", fmt Italic "b", " ", fmt StrikeThrough "c", " ", fmt Snippet "d", " ", fmt Secret "e", " ", fmt (Mention "alice") "@alice"], [List [entry 1 12 []]])
+    "- SimpleX (https://simplex.chat)" <===> ([bullet "- ", "SimpleX (", uri' "https://simplex.chat", ")"], [List [entry 1 4 []]])
+    "- [What's new](https://simplex.chat)" <===> ([bullet "- ", "[What's new](", uri' "https://simplex.chat", ")"], [List [entry 1 4 []]])
   it "blank lines between items" do
     "- a\n\n- b" <===> ([bullet "- ", "a", mk (ParagraphBreak 2) "\n\n", bullet "- ", "b"], [List [entry 1 2 [], entry 4 5 []]])
     "- a\n\n\n- b" <===> ([bullet "- ", "a", mk (ParagraphBreak 3) "\n\n\n", bullet "- ", "b"], [List [entry 1 2 [], entry 4 5 []]])
@@ -849,13 +863,13 @@ quotes = describe "quotes" do
     ">\ta" <===> ([quoteMark ">\t", "a"], [Quote (rng 1 2)])
     ">  a" <===> ([quoteMark "> ", " a"], [Quote (rng 1 2)])
     "  > a" <===> ([quoteMark "  > ", "a"], [Quote (rng 1 2)])
-    ">a\n> b" <===> ([quoteMark ">", "a", softBr, quoteMark "> ", "b"], [Quote (rng 1 5)])
+    ">a\n> b" <===> ([quoteMark ">", "a", hardBr, quoteMark "> ", "b"], [Quote (rng 1 5)])
   it "quote marks without text are text" do
     noBlocks ">"
     noBlocks "> "
     noBlocks ">\n>"
   it "block syntax inside a quote is text" do
-    "> > b\nc" <===> ([quoteMark "> ", "> b", softBr, "c"], [Quote (rng 1 4)])
+    "> > b\nc" <===> ([quoteMark "> ", "> b", lineBr, "c"], [Quote (rng 1 2), Paragraph (rng 3 4)])
     "> # a" <===> ([quoteMark "> ", "# a"], [Quote (rng 1 2)])
     "> - a" <===> ([quoteMark "> ", "- a"], [Quote (rng 1 2)])
   it "blank quote lines" do
@@ -863,10 +877,10 @@ quotes = describe "quotes" do
     "> a\n>\n>\n> b" <===> ([quoteMark "> ", "a", hardBr, quoteMark ">", hardBr, quoteMark ">", hardBr, quoteMark "> ", "b"], [Quote (rng 1 9)])
     "> a\n>  \n> b" <===> ([quoteMark "> ", "a", hardBr, quoteMark ">  ", hardBr, quoteMark "> ", "b"], [Quote (rng 1 7)])
     ">\n> a\n>" <===> ([quoteMark ">", hardBr, quoteMark "> ", "a", hardBr, quoteMark ">"], [Quote (rng 3 4)])
-  it "lines without quote marks after a line with text" do
-    "> a\nb" <===> ([quoteMark "> ", "a", softBr, "b"], [Quote (rng 1 4)])
-    "> a\nb\n> c" <===> ([quoteMark "> ", "a", softBr, "b", softBr, quoteMark "> ", "c"], [Quote (rng 1 7)])
-    "> a\nb\n>\n> c" <===> ([quoteMark "> ", "a", softBr, "b", hardBr, quoteMark ">", hardBr, quoteMark "> ", "c"], [Quote (rng 1 9)])
+  it "a line without a quote mark after a quote line is a paragraph" do
+    "> a\nb" <===> ([quoteMark "> ", "a", lineBr, "b"], [Quote (rng 1 2), Paragraph (rng 3 4)])
+    "> a\nb\n> c" <===> ([quoteMark "> ", "a", lineBr, "b", lineBr, quoteMark "> ", "c"], [Quote (rng 1 2), Paragraph (rng 3 4), Quote (rng 6 7)])
+    "> a\nb\n>\n> c" <===> ([quoteMark "> ", "a", lineBr, "b", lineBr, quoteMark ">", hardBr, quoteMark "> ", "c"], [Quote (rng 1 2), Paragraph (rng 3 4), Quote (rng 8 9)])
     "> a\n>\nb" <===> ([quoteMark "> ", "a", hardBr, quoteMark ">", lineBr, "b"], [Quote (rng 1 2), Paragraph (rng 5 6)])
   it "quotes and other blocks" do
     "> a\n\nb" <===> ([quoteMark "> ", "a", mk (ParagraphBreak 2) "\n\n", "b"], [Quote (rng 1 2), Paragraph (rng 3 4)])
@@ -880,7 +894,7 @@ quotes = describe "quotes" do
   it "quotes after paragraph lines" do
     "a\n> b" <===> (["a", lineBr, quoteMark "> ", "b"], [Paragraph (rng 0 1), Quote (rng 3 4)])
     "a\n>\n> b" <===> (["a", lineBr, quoteMark ">", hardBr, quoteMark "> ", "b"], [Paragraph (rng 0 1), Quote (rng 5 6)])
-    "a\n>\n>\n> b" <===> (["a", softBr, ">", lineBr, quoteMark ">", hardBr, quoteMark "> ", "b"], [Paragraph (rng 0 3), Quote (rng 7 8)])
+    "a\n>\n>\n> b" <===> (["a", hardBr, ">", lineBr, quoteMark ">", hardBr, quoteMark "> ", "b"], [Paragraph (rng 0 3), Quote (rng 7 8)])
     parseMaybeMarkdownList (T.intercalate "\n" $ "a" : replicate 7000 ">") `shouldBe` Nothing
 
 codeBlocks :: Spec
@@ -973,22 +987,22 @@ formatsAcrossLines = describe "formats across line breaks" do
     "!- a\nb!" ==>> [fmt Small "a", "\n", fmt Small "b"]
     "*a\nb\nc*" ==>> [fmt boldF "a", "\n", fmt boldF "b", "\n", fmt boldF "c"]
     "*a  \nb*" ==>> [fmt boldF "a", "  \n", fmt boldF "b"]
-    "# h\n*a\nb*" ===> ([heading1, "h", lineBr, fmt boldF "a", softBr, fmt boldF "b"], [Heading 1 (rng 1 2), Paragraph (rng 3 6)])
+    "# h\n*a\nb*" ===> ([heading1, "h", lineBr, fmt boldF "a", hardBr, fmt boldF "b"], [Heading 1 (rng 1 2), Paragraph (rng 3 6)])
   it "in a list item and a quote" do
-    "- *a\n  b*" ===> ([bullet "- ", fmt boldF "a", softBr, mk Indent "  ", fmt boldF "b"], [List [entry 1 5 []]])
-    "- *a\nb*" ===> ([bullet "- ", fmt boldF "a", softBr, fmt boldF "b"], [List [entry 1 4 []]])
+    "- *a\n  b*" ===> ([bullet "- ", fmt boldF "a", hardBr, mk Indent "  ", fmt boldF "b"], [List [entry 1 5 []]])
     "> *a\n> b*" ===> (quoted, [Quote (rng 1 5)])
     "> *a*\n> *b*" <===> (quoted, [Quote (rng 1 5)])
-    "> *a\nb*" ===> ([quoteMark "> ", fmt boldF "a", softBr, fmt boldF "b"], [Quote (rng 1 4)])
   it "not across blocks, blank lines and cells" do
     parseMaybeMarkdownList "*a\n\nb*" `shouldBe` Nothing
     "# *a\nb*" <===> ([heading1, "*a", lineBr, "b*"], [Heading 1 (rng 1 2), Paragraph (rng 3 4)])
     "- *a\n- b*" <===> ([bullet "- ", "*a", lineBr, bullet "- ", "b*"], [List [entry 1 2 [], entry 4 5 []]])
+    "- *a\nb*" <===> ([bullet "- ", "*a", lineBr, "b*"], [List [entry 1 2 []], Paragraph (rng 3 4)])
+    "> *a\nb*" <===> ([quoteMark "> ", "*a", lineBr, "b*"], [Quote (rng 1 2), Paragraph (rng 3 4)])
     "> *a\n>\n> b*" <===> ([quoteMark "> ", "*a", hardBr, quoteMark ">", hardBr, quoteMark "> ", "b*"], [Quote (rng 1 7)])
     "| *a | b* |\n|---|---|" <===> ([mk RowMark "| ", "*a", mk CellMark " | ", "b*", mk CellMark " |", hardBr, mk (DelimiterRow [TANone, TANone]) "|---|---|"], [Table [TANone, TANone] [rng 1 2, rng 3 4] []])
   it "a format starting or ending at a line break keeps its empty part" do
-    "# h\n`\na`" ===> ([heading1, "h", lineBr, fmt Snippet "", softBr, fmt Snippet "a"], [Heading 1 (rng 1 2), Paragraph (rng 3 6)])
-    "# h\n``\n``" <===> ([heading1, "h", lineBr, fmt Snippet "", softBr, fmt Snippet ""], [Heading 1 (rng 1 2), Paragraph (rng 3 6)])
+    "# h\n`\na`" ===> ([heading1, "h", lineBr, fmt Snippet "", hardBr, fmt Snippet "a"], [Heading 1 (rng 1 2), Paragraph (rng 3 6)])
+    "# h\n``\n``" <===> ([heading1, "h", lineBr, fmt Snippet "", hardBr, fmt Snippet ""], [Heading 1 (rng 1 2), Paragraph (rng 3 6)])
     T.concat (map markdownText $ fromMaybe [] $ parseMaybeMarkdownList "# h\n`\na`") `shouldBe` "# h\n``\n`a`"
   it "an unclosed delimiter is text to the line end" do
     "*a\n_b_" ==>> ["*a\n", fmt Italic "b"]
@@ -1000,12 +1014,12 @@ formatsAcrossLines = describe "formats across line breaks" do
     parseMaybeMarkdownList "**a\n**" `shouldBe` Nothing
     "5 * 3\n*b*" ==>> ["5 * 3\n", fmt boldF "b"]
   it "links, mentions and names within one line" do
-    parseMaybeMarkdownList "[a\nb](https://simplex.chat)" `shouldBe` Nothing
+    "[a\nb](https://simplex.chat)" ==>> ["[a\nb](", uri' "https://simplex.chat", ")"]
     parseMaybeMarkdownList "@'a\nb'" `shouldBe` Nothing
     "https://simplex.chat\nb" ==>> [uri' "https://simplex.chat", "\nb"]
     "@alice\nb" ==>> [fmt (Mention "alice") "@alice", "\nb"]
   where
-    quoted = [quoteMark "> ", fmt boldF "a", softBr, quoteMark "> ", fmt boldF "b"]
+    quoted = [quoteMark "> ", fmt boldF "a", hardBr, quoteMark "> ", fmt boldF "b"]
 
 liveMessages :: Spec
 liveMessages = describe "incomplete syntax of live messages" do
@@ -1037,7 +1051,7 @@ linearTimeParsing = describe "bounded scans for linear-time parsing" do
     "1 1 1 1 1 1 1 1 1 1 1 1" <==> "1 " <> phone "1 1 1 1 1 1 1 1 1 1 1"
   it "link texts stop at \"[\", link targets and autolinks at white space" do
     "[a [b](https://simplex.chat)" <==> "[a " <> web "b" "https://simplex.chat" "[b](https://simplex.chat)"
-    "[a](https://simplex.chat x)" <==> "[a](https://simplex.chat x)"
+    "[a](https://simplex.chat x)" <==> "[a](" <> uri "https://simplex.chat" <> " x)"
     "<https://simplex.chat x>" <==> "<https://simplex.chat x>"
   it "a text with more than 2000 markup tokens has no blocks" do
     let ParsedMarkdown _ blocks = parsedMarkdown $ T.replicate 1000 "- a\n"

@@ -486,20 +486,35 @@ markdownP = joinMarkdown <$> A.many' fragmentP
     wordP :: Parser Markdown
     wordP = wordMD . T.concat <$> A.many' (A.takeWhile1 (\c -> c /= ' ' && c /= '\n' && c /= '\\') <|> (notP escapeP *> A.string "\\"))
     wordMD :: Text -> Markdown
-    wordMD s
-      | T.null s = unmarked s
-      | isUri s' = case strDecode $ encodeUtf8 s of
-          Right cLink -> res $ markdown (simplexUriFormat Nothing cLink) s'
-          Left _ -> case parseUri $ encodeUtf8 s' of
-            Right _ -> res $ markdown Uri s'
-            Left _ -> unmarked s
-      | isDomain s' = res $ markdown Uri s'
-      | isEmail s' = res $ markdown Email s'
-      | otherwise = unmarked s
+    wordMD s = fromMaybe (unmarked s) $ linkMD s <|> linkAfterParen
       where
-        punct = T.takeWhileEnd isPunctuation' s
-        s' = T.dropWhileEnd isPunctuation' s
+        linkAfterParen = case T.breakOn "(" s of
+          (before, after)
+            | not (T.null after) ->
+                let (parens, rest) = T.span (== '(') after
+                 in (unmarked (before <> parens) <>) <$> linkMD rest
+          _ -> Nothing
+    linkMD :: Text -> Maybe Markdown
+    linkMD s
+      | isUri s' = case strDecode $ encodeUtf8 s' of
+          Right cLink -> Just $ res $ markdown (simplexUriFormat Nothing cLink) s'
+          Left _ -> case parseUri $ encodeUtf8 s' of
+            Right _ -> Just $ res $ markdown Uri s'
+            Left _ -> Nothing
+      | isDomain s' = Just $ res $ markdown Uri s'
+      | isEmail s' = Just $ res $ markdown Email s'
+      | otherwise = Nothing
+      where
+        (s', punct) = T.splitAt (T.length s - linkEndLength s) s
         res md' = if T.null punct then md' else md' :|: unmarked punct
+    linkEndLength :: Text -> Int
+    linkEndLength s = go (T.count ")" s - T.count "(" s) s 0
+      where
+        go unmatched t n = case T.unsnoc t of
+          Just (t', c)
+            | isPunctuation' c -> go unmatched t' (n + 1)
+            | c == ')' && unmatched > 0 -> go (unmatched - 1) t' (n + 1)
+          _ -> n
     isPunctuation' = \case
       '/' -> False
       ')' -> False
@@ -654,7 +669,7 @@ listItemP :: Parser MarkdownList
 listItemP = do
   (num, syntax) <- listMarkP
   l <- lineTextP
-  ls <- A.many' $ (\br ind l' -> (br, [markupText Indent ind | not (T.null ind)], l')) <$> lineEndP <* paragraphLineP <*> A.takeWhile isIndentChar <*> lineTextP
+  ls <- A.many' $ (\br ind l' -> (br, [markupText Indent ind], l')) <$> lineEndP <* paragraphLineP <*> A.takeWhile1 isIndentChar <*> lineTextP
   pure $ markupText (ListMark num) syntax : inlineLines l ls
 
 listMarkP :: Parser (Maybe Text, Text)
@@ -675,17 +690,16 @@ quoteP :: Parser MarkdownList
 quoteP = do
   leading <- A.many' $ (\l br -> [markupText QuoteMark l, markupText HardBreak br]) <$> blankQuoteLineP <*> lineEndP
   (mark, l) <- quoteTextP
-  ls <- nextLinesP True
+  ls <- nextLinesP
   pure $ concat leading <> (markupText QuoteMark mark : inlineLines l ls)
   where
     quoteTextP = (,) <$> quoteMarkP <* hasTextP <*> lineTextP
-    nextLinesP afterText = A.option [] $ do
+    nextLinesP = A.option [] $ do
       br <- lineEndP
-      (syntax, l, isText) <- quoteLineP <|> blankLineP <|> (if afterText then lazyLineP else mzero)
-      ((br, syntax, l) :) <$> nextLinesP isText
-    quoteLineP = (\(m, l) -> ([markupText QuoteMark m], l, True)) <$> quoteTextP
-    blankLineP = (\l -> ([markupText QuoteMark l], "", False)) <$> blankQuoteLineP
-    lazyLineP = ([],,True) <$> (notP quoteMarkP *> paragraphLineP *> lineTextP)
+      (syntax, l) <- quoteLineP <|> blankLineP
+      ((br, syntax, l) :) <$> nextLinesP
+    quoteLineP = (\(m, l) -> ([markupText QuoteMark m], l)) <$> quoteTextP
+    blankLineP = (\l -> ([markupText QuoteMark l], "")) <$> blankQuoteLineP
 
 quoteMarkP :: Parser Text
 quoteMarkP = do
@@ -728,7 +742,7 @@ breakAfter :: Text -> Text -> (Text, FormattedText)
 breakAfter l br
   | T.length spaces >= 2 = (T.dropEnd (T.length spaces) l, markupText HardBreak (spaces <> br))
   | odd (T.length $ T.takeWhileEnd (== '\\') l) = (T.dropEnd 1 l, markupText HardBreak ("\\" <> br))
-  | otherwise = (l, markupText SoftBreak br)
+  | otherwise = (l, markupText HardBreak br)
   where
     spaces = T.takeWhileEnd (== ' ') l
 
