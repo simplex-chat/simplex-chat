@@ -293,7 +293,7 @@ storeService opts@StoreServiceOpts {serviceConfigFile} baseCfg env = do
       hints <- newReadHints
       namesEnv <- forM (names sc) (startNames cc turns ws providers)
       webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
-      exportWebapp (listener sc) (stripe sc)
+      exportWebapp sc
       pollerEnv <- newPollerEnv chatStore ws (nePhases <$> namesEnv) hints providers (poll sc)
       nameLanes <- maybe (pure []) namesLanes namesEnv
       pure $ [runWebListeners webEnv, runPoller pollerEnv] <> nameLanes

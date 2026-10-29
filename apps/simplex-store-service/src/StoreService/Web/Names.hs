@@ -5,6 +5,7 @@
 module StoreService.Web.Names (Route (..), namesRoutes, namesApp) where
 
 import Data.Text (Text)
+import Data.Time.Clock (getCurrentTime)
 import Network.HTTP.Types (Method)
 import Network.Wai (Request, ResponseReceived, pathInfo)
 import StoreService.Config (ServiceConfig)
@@ -32,7 +33,7 @@ namesRoutes cfg env@NamesEnv {neConfig, neStore, neContracts, neProfiles, neReco
   ["api", "link", "preview"] -> Just Route {rMethod = "POST", rLimit = previewLimit, rHandler = previewHandler neProfiles}
   ["api", "terms", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = termsHandler neContracts hash}
   -- below every fixed /api/name/<word> route, which it would otherwise match
-  ["api", "name", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = searchHandler neConfig neStore neContracts neProfiles hash}
+  ["api", "name", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = searchHandler neConfig neStore neContracts neProfiles getCurrentTime hash}
   -- above /api/registration/:id, which it would otherwise match
   ["api", "registration", "find"] -> Just Route {rMethod = "POST", rLimit = findLimit, rHandler = findHandler (ordersEnv env)}
   ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler (ordersEnv env) holdMicros rid}

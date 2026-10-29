@@ -28,7 +28,7 @@ import Bots.StoreService.NamesContractsTests
   )
 import Bots.StoreService.NamesOrdersTests (communityEntry, termsEntry, threeYears)
 import Bots.StoreService.NamesProfilesTests (bakeryLink, jpeg, newsLink)
-import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, t0, usable)
+import Bots.StoreService.NamesStoreTests (atNonce, issue, newEdit, order, ownerA, placeCode, setChannel, t0, usable)
 import Bots.StoreService.WebTests (withServiceStore)
 import Control.Concurrent.STM
 import Control.Monad (forM_, replicateM_)
@@ -45,7 +45,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Time.Calendar (fromGregorian)
-import Data.Time.Clock (NominalDiffTime, UTCTime (..), diffUTCTime, getCurrentTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime)
+import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Network.HTTP.Client (Manager, Request, RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, responseBody, responseHeaders, responseStatus)
 import qualified Network.HTTP.Client as HTTP
 import Network.HTTP.Types (status404, status429)
@@ -61,7 +62,7 @@ import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex
 import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (ChatKind (..), HostResolver, LinkProfile (..), ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, updateRegistration)
+import StoreService.Names.Store (EditState (..), NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, insertRecordEdit, settleRecordEdit, updateRegistration)
 import StoreService.Web.Http (newHttpEnv, notFound, previewLimit, searchLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Search (previewHandler, searchHandler, termsHandler)
@@ -82,6 +83,7 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "makes one entity per short link of its record's kind, splitting on ';', and none from other values" $ testRecordLinks g
     it "makes entities of the first 5 short links of a record only, fetching no other" $ testRecordLinksCap g
     it "reads no records from another resolver" $ testOtherResolver g
+    it "answers a registered name's record edits left and when the next one returns, counting pending and mined edits of 365 days" $ testRecordEdits g
     it "answers a link whose profile was not read unread, and a private host's unavailable without fetching it" $ testEntityProfiles g
     it "answers provider_unavailable to any failed chain read, records and price included" $ testFailedReads g
     it "fails a search whose reads together pass one deadline, though each read meets it" $ testOneDeadline g
@@ -112,7 +114,7 @@ withSearch g adjustConfig adjust action = withServiceStore $ \store -> withContr
       routes = \case
         ["api", "link", "preview"] -> Just Route {rMethod = "POST", rLimit = previewLimit, rHandler = previewHandler ps}
         ["api", "terms", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = termsHandler (adjust ct) hash}
-        ["api", "name", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = searchHandler cfg store (adjust ct) ps hash}
+        ["api", "name", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = searchHandler cfg store (adjust ct) ps (pure t0) hash}
         _ -> Nothing
       app req respond = fromMaybe (respond notFound) (namesApp http routes req respond)
   mgr <- newManager defaultManagerSettings
@@ -127,6 +129,8 @@ namesConfig node =
       nTermSlackSeconds = 3600,
       nRevealMarginSeconds = 900,
       nMaxOrderMoves = 3,
+      nCodesOnly = False,
+      nRecordEditsPerYear = 3,
       nCommunity = M.empty,
       nChain = fakeChainConfig node
     }
@@ -287,12 +291,16 @@ registeredAnswer entities records resolver nonce =
       "owner" .= ownerText,
       "resolver" .= resolver,
       "recordsNonce" .= nonce,
+      "recordEdits" .= if records == J.Null then J.Null else editsLeft 3 J.Null,
       "expiresAt" .= (now + year),
       "gracePeriod" .= gracePeriod,
       "chainId" .= fakeChainId,
       "tld" .= str "simplex",
       "community" .= J.Null
     ]
+
+editsLeft :: Int -> J.Value -> J.Value
+editsLeft left nextAt = J.object ["left" .= left, "nextAt" .= nextAt]
 
 reservedAnswer, registeringAnswer :: Answer
 reservedAnswer = ok ["status" .= str "reserved", "community" .= J.Null]
@@ -495,6 +503,23 @@ testOtherResolver g = withSearch g id id $ \s@Search {node} -> do
   nameState node (toInteger $ now + year) 0
   answerRegistered node otherResolver
   searchAlice s 12 `shouldReturn` registeredAnswer [] J.Null otherResolverText J.Null
+
+testRecordEdits :: TVar ChaChaDRG -> IO ()
+testRecordEdits g = forM_ [(3, 1), (2, 0)] $ \(perYear, left) -> withSearch g (\cfg -> cfg {nRecordEditsPerYear = perYear}) id $ \s@Search {node, store} -> do
+  registeredWith node fullLink ""
+  let daysAgo :: Int -> UTCTime
+      daysAgo d = addUTCTime (fromIntegral $ negate d * 86400) t0
+      inserted n d = withTransaction store $ \db -> insertRecordEdit db (atNonce (fromIntegral n) $ newEdit ownerA n setChannel) (daysAgo d)
+  Just _ <- inserted 1 366
+  Just minedId <- inserted 2 10
+  Just revertedId <- inserted 3 5
+  Just _ <- inserted 4 1
+  withTransaction store $ \db -> do
+    settleRecordEdit db minedId (ESMined Nothing) `shouldReturn` True
+    settleRecordEdit db revertedId (ESReverted Nothing) `shouldReturn` True
+  answer <- searchAlice s 12
+  (snd answer >>= JT.parseMaybe (J.withObject "answer" (J..: "recordEdits")))
+    `shouldBe` Just (editsLeft left $ J.toJSON (floor (utcTimeToPOSIXSeconds $ daysAgo 10) + 365 * 86400 :: Int))
 
 testEntityProfiles :: TVar ChaChaDRG -> IO ()
 testEntityProfiles g = withSearch g id id $ \s@Search {node} -> do

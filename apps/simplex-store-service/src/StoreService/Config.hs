@@ -173,6 +173,10 @@ data NamesConfig = NamesConfig
     nTermSlackSeconds :: Int,
     nRevealMarginSeconds :: Int,
     nMaxOrderMoves :: Int,
+    -- | Only prepaid codes pay for names: every order that would take money for one is refused.
+    nCodesOnly :: Bool,
+    -- | The owner record edits relayed for one name in any 365 days, each a transaction whose gas the service pays.
+    nRecordEditsPerYear :: Int,
     -- | What each community name is for, keyed by the label hash's bytes, as search receives a name.
     nCommunity :: Map ByteString Text,
     nChain :: ChainConfig
@@ -266,6 +270,11 @@ requireHttps u
 
 maxCommunityTextLength :: Int
 maxCommunityTextLength = 200
+
+defaultRecordEditsPerYear, minRecordEditsPerYear, maxRecordEditsPerYear :: Int
+defaultRecordEditsPerYear = 3
+minRecordEditsPerYear = 1
+maxRecordEditsPerYear = 100
 
 -- | The controller refuses a registration under 730 days.
 minNameYears :: Int
@@ -367,7 +376,7 @@ knownSettings =
     ("group", ["display_name", "description"]),
     ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage", "credit_test_purchases"]),
     ("issuer", ["index", "private_key", "dev_keys"]),
-    ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves"]),
+    ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves", "codes_only", "record_edits_per_year"]),
     ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap", "max_fee_per_gas"])
   ]
 
@@ -593,9 +602,11 @@ parseConfig ini = do
           nTermSlackSeconds <- atLeast 0 "names" "term_slack_seconds" 3600
           nRevealMarginSeconds <- atLeast 0 "names" "reveal_margin_seconds" 900
           nMaxOrderMoves <- atLeast 0 "names" "max_order_moves" 3
+          nCodesOnly <- bool "names" "codes_only" False
+          nRecordEditsPerYear <- recordEditsPerYear
           nCommunity <- communityList nTLD
           nChain <- chainSection
-          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nCommunity, nChain})
+          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nCodesOnly, nRecordEditsPerYear, nCommunity, nChain})
     tldSetting =
       required "names" "tld" >>= \case
         "simplex" -> Right TLDSimplex
@@ -652,6 +663,11 @@ parseConfig ini = do
       case T.stripPrefix "0x" v of
         Just h | T.length h == 2 * serviceKeyBytes, Right bytes <- convertFromBase Base16 (encodeUtf8 h) -> either (const bad) Right (mkPrivateKey (BA.convert (bytes :: B.ByteString)))
         _ -> bad
+    recordEditsPerYear = do
+      v <- num "names" "record_edits_per_year" defaultRecordEditsPerYear
+      if v >= minRecordEditsPerYear && v <= maxRecordEditsPerYear
+        then Right v
+        else Left ("names.record_edits_per_year must be between " <> show minRecordEditsPerYear <> " and " <> show maxRecordEditsPerYear)
     sessionMinutes = do
       v <- num "stripe" "session_minutes" defaultSessionMinutes
       if v >= minSessionMinutes && v <= maxSessionMinutes

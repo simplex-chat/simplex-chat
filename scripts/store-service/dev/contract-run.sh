@@ -37,7 +37,7 @@ DEV_ISSUER_SECRET=Ea5wG-J2mQjPBu9YfSJRKPnGnzoIdEE-8VaMh_wY2Bg=
 COMMUNITY_LABEL=bakers
 COMMUNITY_TEXT="bakers and bakeries in Portugal"
 
-# The cases at webapp 2032db4. Each case is its own client by X-Forwarded-For, which the service trusts
+# The cases at webapp 22eb95b. Each case is its own client by X-Forwarded-For, which the service trusts
 # here, as the mock does. Each takes its prepaid code from POST /control/code, which the code server
 # below answers from the codes issued here, so CODES holds one per case that asks for one. "search
 # answers every kind of name" is not among them: it sets /control/search.
@@ -54,15 +54,16 @@ CASES=(
   "Edit links keeps several links on chain as the contact address they hold, and emptying the field removes them"
   "a prepaid code registers a name with its links, which its records on chain then hold, its register recording the owner's acceptance of the general terms"
   "a code order's name code, entered in another browser before the reveal, lets that browser reveal and register the name"
-  "Edit links on a name registered with a code adds its links on chain, then changes one"
+  "Edit links on a name registered with a code adds both its links on chain in one transaction, then changes one"
   "a code check past the service's limit counts down its wait, then checks the code again by itself"
   "a name's link whose data cannot be read now shows as its kind's default picture, and opens by the chat core's form"
   "a community name shows its marker after the name, a button whose popup says what the name is for"
   "a community name's order shows its community terms on their own step before Check your order, Continue waiting for their tick, and its ⓘ says what the name is for"
   "a prepaid code registers a name the contracts' owner listed on chain, its register recording the owner's acceptance of the community terms"
   "a prepaid code for 5 years registers a community name for its 2 years and the free days, saying the code's other years are not used"
+  "a Save's two link edits are one request and one multicall transaction, counted as one edit, and its exact resend answers it again"
 )
-CODES=("name 8" "name 6" "name 6 years 5" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6 years 5")
+CODES=("name 8" "name 6" "name 6 years 5" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6 years 5")
 
 RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/names-contract-run.XXXXXX")"
 INI="$RUN_DIR/store_service.ini"

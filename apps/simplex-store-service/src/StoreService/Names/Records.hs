@@ -1,14 +1,17 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
--- | Record edits signed by a name's owner, relayed through the registrar key's sender and followed to their outcome.
+-- | Record edits signed by a name's owner, each request relayed as one transaction through the registrar key's sender and followed to its outcome.
 module StoreService.Names.Records
-  ( Records (rsPendingAfter),
+  ( Records (rsPendingAfter, rsEditsPerYear),
     EditRequest (..),
     EditAnswer (..),
+    EditsLeft (..),
     newRecords,
+    nameEditsLeft,
     relayEdit,
     runRecordEdits,
     recordsRound,
@@ -22,7 +25,11 @@ import Control.Monad (forM, forM_, forever, unless, void, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
 import Data.Int (Int64)
+import Data.List.NonEmpty (NonEmpty (..))
+import qualified Data.List.NonEmpty as L
+import Data.Maybe (listToMaybe)
 import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Text (Text)
@@ -32,7 +39,6 @@ import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (sha256Hash)
-import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain, serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD)
@@ -41,7 +47,7 @@ import StoreService.Config (ChainConfig (..))
 import StoreService.Log (logWarn, safely)
 import StoreService.Names.Chain
 import StoreService.Names.Contracts (Contracts, NameStatus (..), RegisteredName (..), nameStatus, resolverNonce, textRecord)
-import StoreService.Names.Registration (Node, channelRecordKey, clearRecordsDigest, clearRecordsWithSigCalldata, contactRecordKey, labelNode, resolverDomain, setTextDigest, setTextWithSigCalldata)
+import StoreService.Names.Registration (Node, channelRecordKey, clearRecordsDigest, clearRecordsWithSigCalldata, contactRecordKey, labelNode, multicallCalldata, resolverDomain, setTextDigest, setTextWithSigCalldata)
 import StoreService.Names.Revert (RevertName (..), revertText)
 import StoreService.Names.Sender (SendError (..), Sender, submitTransaction)
 import StoreService.Names.Store
@@ -54,6 +60,7 @@ data Records = Records
     rsChain :: ChainClient,
     rsSender :: Sender,
     rsTLD :: SimplexTLD,
+    rsEditsPerYear :: Int,
     rsNow :: IO UTCTime,
     -- | microseconds a request waits for its edit's outcome
     rsPendingAfter :: Int,
@@ -65,12 +72,10 @@ data Records = Records
     rsChanges :: TVar Int
   }
 
+-- | The changes of one Save, in nonce order, relayed together or not at all.
 data EditRequest = EditRequest
   { erLabelHash :: LabelHash,
-    erChange :: RecordChange,
-    erNonce :: Word64,
-    erDeadline :: Word64,
-    erSignature :: RecoverableSignature
+    erChanges :: NonEmpty SignedChange
   }
   deriving (Eq, Show)
 
@@ -81,12 +86,18 @@ data EditAnswer
     EAReverted (Maybe Text)
   | -- | not settled within the wait, or the chain stopped answering after the send; the edit goes on
     EAPending
-  | -- | the signer, the deadline, the owner or the nonce
+  | -- | the signers, the deadline, the owner or the nonce
     EARefused
   | -- | the chain failed before anything was sent, and nothing is stored
     EAUnavailable
   | -- | the per-name cap, with the seconds until another edit fits
     EACapped Int
+  | -- | the name's yearly limit is used up until this time
+    EALimited UTCTime
+  deriving (Eq, Show)
+
+-- | The edits a name has left in its window, and when the next one returns; Nothing while none counts.
+data EditsLeft = EditsLeft {elLeft :: Int, elNextAt :: Maybe UTCTime}
   deriving (Eq, Show)
 
 -- | What the chain shows of an edit none of whose transactions mined.
@@ -108,30 +119,50 @@ editCap = 10
 editCapWindow :: NominalDiffTime
 editCapWindow = 3600
 
+-- | The window of the yearly limit, in 365-day years as the names' terms count them.
+editLimitWindow :: NominalDiffTime
+editLimitWindow = 365 * 86400
+
 recordsInterval :: Int
 recordsInterval = 4000000
 
-newRecords :: DBStore -> Turns -> Contracts -> ChainClient -> Sender -> SimplexTLD -> IO UTCTime -> IO Records
-newRecords rsStore rsTurns rsContracts rsChain rsSender rsTLD rsNow = do
+newRecords :: DBStore -> Turns -> Contracts -> ChainClient -> Sender -> SimplexTLD -> Int -> IO UTCTime -> IO Records
+newRecords rsStore rsTurns rsContracts rsChain rsSender rsTLD rsEditsPerYear rsNow = do
   rsClaimed <- newTVarIO S.empty
   rsStalled <- newTVarIO S.empty
   rsChanges <- newTVarIO 0
-  pure Records {rsStore, rsTurns, rsContracts, rsChain, rsSender, rsTLD, rsNow, rsPendingAfter = editPendingAfter, rsClaimed, rsStalled, rsChanges}
+  pure Records {rsStore, rsTurns, rsContracts, rsChain, rsSender, rsTLD, rsEditsPerYear, rsNow, rsPendingAfter = editPendingAfter, rsClaimed, rsStalled, rsChanges}
 
--- | An identical repeat of a sent edit is answered from it, before any chain read.
+-- | A pending or mined edit counts. One refused, never sent, or reverted on chain does not.
+nameEditsLeft :: DB.Connection -> Int -> LabelHash -> UTCTime -> IO EditsLeft
+nameEditsLeft db perYear lh now = do
+  times <- countedEditTimes db lh $ addUTCTime (negate editLimitWindow) now
+  let counted = length times
+  -- the oldest edit returns one, unless a lowered limit is overrun and later ones must go too
+  pure EditsLeft {elLeft = max 0 $ perYear - counted, elNextAt = addUTCTime editLimitWindow <$> listToMaybe (drop (counted - perYear) times)}
+
+-- | When the name's yearly limit is used up, the time the next edit fits.
+usedUpUntil :: EditsLeft -> Maybe UTCTime
+usedUpUntil EditsLeft {elLeft, elNextAt} = if elLeft == 0 then elNextAt else Nothing
+
+-- | An identical repeat of a sent edit is answered from it, and the yearly limit is checked, before any chain read.
 -- The wait for an outcome is bounded from the request's arrival, so the checks and the send count toward it.
 relayEdit :: Records -> EditRequest -> IO EditAnswer
-relayEdit rs@Records {rsPendingAfter} req@EditRequest {erSignature} = do
+relayEdit rs@Records {rsPendingAfter, rsEditsPerYear, rsNow} req@EditRequest {erLabelHash, erChanges} = do
   timer <- registerDelay rsPendingAfter
-  recoverAddress erSignature digest >>= \case
-    Left _ -> pure EARefused
-    Right signer ->
+  sequence <$> mapM (\(digest, SignedChange {scSignature}) -> recoverAddress scSignature digest) signed >>= \case
+    Right (signer :| others) | all (== signer) others ->
       withStore rs (`getRecordEditByBody` bodyHash) >>= \case
         Just RecordEdit {reId} -> awaitEdit rs timer reId
-        Nothing -> newEdit rs timer req signer bodyHash
+        Nothing -> do
+          now <- rsNow
+          withStore rs (\db -> usedUpUntil <$> nameEditsLeft db rsEditsPerYear erLabelHash now)
+            >>= maybe (newEdit rs timer req signer bodyHash) (pure . EALimited)
+    _ -> pure EARefused
   where
-    digest = editDigest rs req
-    bodyHash = sha256Hash $ digest <> serializeSignature erSignature
+    signed = L.map (\change -> (changeDigest rs erLabelHash change, change)) erChanges
+    -- one change hashes as edits stored before requests took two, so their repeats still match
+    bodyHash = sha256Hash $ B.concat [digest <> serializeSignature scSignature | (digest, SignedChange {scSignature}) <- L.toList signed]
 
 newEdit :: Records -> TVar Bool -> EditRequest -> Address -> ByteString -> IO EditAnswer
 newEdit rs timer req signer bodyHash =
@@ -140,36 +171,40 @@ newEdit rs timer req signer bodyHash =
     Right False -> pure EARefused
     Right True ->
       insertEdit rs req signer bodyHash >>= \case
-        Left wait -> pure $ EACapped wait
+        Left answer -> pure answer
         Right (Just editId) -> sendNew rs timer editId
         -- a pending or mined edit holds the nonce: the identical twin is waited for, any other body refused
         Right Nothing -> withStore rs (`getRecordEditByBody` bodyHash) >>= maybe (pure EARefused) (awaitEdit rs timer . reId)
 
--- | The deadline after the latest block's time, the signer the registry's owner on the default resolver, the nonce the owner's next.
+-- | The earliest deadline after the latest block's time, the signer the registry's owner on the default resolver, the first nonce the owner's next.
 chainAccepts :: Records -> EditRequest -> Address -> IO (Either ChainError Bool)
-chainAccepts Records {rsChain, rsContracts} EditRequest {erLabelHash, erNonce, erDeadline} signer = runExceptT $ do
+chainAccepts Records {rsChain, rsContracts} EditRequest {erLabelHash, erChanges} signer = runExceptT $ do
   Block {blockTimestamp} <- ExceptT $ latestBlock rsChain
-  if erDeadline <= blockTimestamp
+  if earliestDeadline erChanges <= blockTimestamp
     then pure False
     else
       ExceptT (nameStatus rsContracts erLabelHash) >>= \case
         NSRegistered RegisteredName {rnOwner, rnResolver}
-          | rnOwner == signer && rnResolver == cResolver (ccConfig rsChain) -> (== erNonce) <$> ExceptT (resolverNonce rsContracts signer)
+          | rnOwner == signer && rnResolver == cResolver (ccConfig rsChain) -> (== firstNonce erChanges) <$> ExceptT (resolverNonce rsContracts signer)
         _ -> pure False
 
--- | Left with the seconds to wait when the name's cap is used up; Right Nothing when a pending or mined edit holds the nonce.
-insertEdit :: Records -> EditRequest -> Address -> ByteString -> IO (Either Int (Maybe Int64))
-insertEdit Records {rsStore, rsTurns, rsNow} EditRequest {erLabelHash, erChange, erNonce, erDeadline, erSignature} signer bodyHash =
+-- | Left when the name's yearly limit or hourly cap is used up, checked again under the name's turn against a concurrent edit.
+-- Right Nothing when a pending or mined edit holds the first nonce.
+insertEdit :: Records -> EditRequest -> Address -> ByteString -> IO (Either EditAnswer (Maybe Int64))
+insertEdit Records {rsStore, rsTurns, rsEditsPerYear, rsNow} EditRequest {erLabelHash, erChanges} signer bodyHash =
   withLabelTurn rsTurns erLabelHash $ do
     now <- rsNow
     withTransaction rsStore $ \db -> do
+      limited <- usedUpUntil <$> nameEditsLeft db rsEditsPerYear erLabelHash now
       times <- relayedEditTimes db erLabelHash (addUTCTime (negate editCapWindow) now)
       let relayed = length times
-      if relayed >= editCap
-        then pure $ Left $ max 1 $ ceiling $ diffUTCTime (addUTCTime editCapWindow $ times !! (relayed - editCap)) now
-        else Right <$> insertRecordEdit db edit now
+      case limited of
+        Just nextAt -> pure $ Left $ EALimited nextAt
+        Nothing
+          | relayed >= editCap -> pure $ Left $ EACapped $ max 1 $ ceiling $ diffUTCTime (addUTCTime editCapWindow $ times !! (relayed - editCap)) now
+          | otherwise -> Right <$> insertRecordEdit db edit now
   where
-    edit = NewRecordEdit {nreLabelHash = erLabelHash, nreOwner = signer, nreNonce = erNonce, nreChange = erChange, nreDeadline = erDeadline, nreSignature = erSignature, nreBodyHash = bodyHash}
+    edit = NewRecordEdit {nreLabelHash = erLabelHash, nreOwner = signer, nreChanges = erChanges, nreBodyHash = bodyHash}
 
 -- | An edit that was not sent is answered and deleted while still claimed, so the lane cannot send it after.
 sendNew :: Records -> TVar Bool -> Int64 -> IO EditAnswer
@@ -245,7 +280,7 @@ deepBlock c tip@Block {blockNumber}
 
 -- | One step for a pending edit, from its transactions' statuses as the sender settled them.
 follow :: Records -> Block -> Block -> RecordEdit -> IO ()
-follow rs@Records {rsChain} Block {blockTimestamp} Block {blockTimestamp = deepTime} edit@RecordEdit {reId, reDeadline} = do
+follow rs@Records {rsChain} Block {blockTimestamp} Block {blockTimestamp = deepTime} edit@RecordEdit {reId, reChanges} = do
   txs <- withStore rs (`editTransactions` reId)
   case txs of
     [] -> if ahead then sendUnsent else forget rs reId
@@ -260,6 +295,7 @@ follow rs@Records {rsChain} Block {blockTimestamp} Block {blockTimestamp = deepT
       -- every transaction dropped: its registrar nonce went to another one
       | otherwise -> judged rs edit $ if ahead then resend else expire
   where
+    reDeadline = earliestDeadline reChanges
     ahead = reDeadline > blockTimestamp
     expire = judged rs edit $ settle rs reId $ ESReverted signatureExpired
     sendUnsent =
@@ -281,23 +317,26 @@ judged rs edit@RecordEdit {reId} whenFree =
     Right NonceTaken -> settle rs reId $ ESReverted $ revertText RNInvalidNonce
     Right NonceFree -> whenFree
 
--- | Its own transactions first: a status-1 receipt answers its hash. Without one, the owner's nonce and the record.
+-- | Its own transactions first: a status-1 receipt answers its hash. Without one, the owner's nonce and the records.
+-- A nonce past the first change but not the last means another body took one of its nonces.
 judge :: Records -> RecordEdit -> IO (Either ChainError Judgment)
-judge rs@Records {rsChain, rsContracts} RecordEdit {reId, reLabelHash, reOwner, reNonce, reChange} = runExceptT $ do
+judge rs@Records {rsChain, rsContracts} RecordEdit {reId, reLabelHash, reOwner, reChanges} = runExceptT $ do
   txs <- liftIO $ withStore rs (`editTransactions` reId)
   receipts <- forM txs $ \NameTransaction {ntHash} -> (ntHash,) <$> ExceptT (transactionReceipt rsChain ntHash)
   case [h | (h, Just Receipt {receiptSuccess = True}) <- receipts] of
     h : _ -> pure $ Applied $ Just h
     [] -> do
       nonce <- ExceptT $ resolverNonce rsContracts reOwner
-      if nonce <= reNonce
-        then pure NonceFree
-        else do
-          holds <- case reChange of
-            RCSetText key value -> (== value) <$> record (encodeUtf8 key)
-            RCClear -> (&&) <$> (unset <$> record contactRecordKey) <*> (unset <$> record channelRecordKey)
-          pure $ if holds then Applied Nothing else NonceTaken
+      if
+        | nonce <= firstNonce reChanges -> pure NonceFree
+        | nonce <= lastNonce reChanges -> pure NonceTaken
+        | otherwise -> do
+            holds <- and <$> mapM (holdsChange . scChange) reChanges
+            pure $ if holds then Applied Nothing else NonceTaken
   where
+    holdsChange = \case
+      RCSetText key value -> (== value) <$> record (encodeUtf8 key)
+      RCClear -> (&&) <$> (unset <$> record contactRecordKey) <*> (unset <$> record channelRecordKey)
     record = ExceptT . textRecord rsContracts reLabelHash
     unset = (== "")
 
@@ -333,19 +372,31 @@ withClaim Records {rsClaimed} editId fallback action =
       if S.member editId held then pure False else True <$ writeTVar rsClaimed (S.insert editId held)
     release = atomically $ modifyTVar' rsClaimed $ S.delete editId
 
-editDigest :: Records -> EditRequest -> ByteString
-editDigest rs EditRequest {erLabelHash, erChange, erNonce, erDeadline} = case erChange of
-  RCSetText key value -> setTextDigest (domain rs) node key value erNonce erDeadline
-  RCClear -> clearRecordsDigest (domain rs) node erNonce erDeadline
+changeDigest :: Records -> LabelHash -> SignedChange -> ByteString
+changeDigest rs lh SignedChange {scChange, scNonce, scDeadline} = case scChange of
+  RCSetText key value -> setTextDigest (domain rs) node key value scNonce scDeadline
+  RCClear -> clearRecordsDigest (domain rs) node scNonce scDeadline
   where
-    node = nodeOf rs erLabelHash
+    node = nodeOf rs lh
 
+-- | One change is sent as its own call, which keeps the revert's name; two go in one multicall.
 editCalldata :: Records -> RecordEdit -> ByteString
-editCalldata rs RecordEdit {reLabelHash, reChange, reNonce, reDeadline, reSignature} = case reChange of
-  RCSetText key value -> setTextWithSigCalldata node key value reNonce reDeadline reSignature
-  RCClear -> clearRecordsWithSigCalldata node reNonce reDeadline reSignature
+editCalldata rs RecordEdit {reLabelHash, reChanges} = case reChanges of
+  change :| [] -> changeCalldata change
+  _ -> multicallCalldata $ map changeCalldata $ L.toList reChanges
   where
     node = nodeOf rs reLabelHash
+    changeCalldata SignedChange {scChange, scNonce, scDeadline, scSignature} = case scChange of
+      RCSetText key value -> setTextWithSigCalldata node key value scNonce scDeadline scSignature
+      RCClear -> clearRecordsWithSigCalldata node scNonce scDeadline scSignature
+
+firstNonce, lastNonce :: NonEmpty SignedChange -> Word64
+firstNonce = scNonce . L.head
+lastNonce = scNonce . L.last
+
+-- | Past it the edit cannot land whole, so it is SignatureExpired.
+earliestDeadline :: NonEmpty SignedChange -> Word64
+earliestDeadline = minimum . L.map scDeadline
 
 nodeOf :: Records -> LabelHash -> Node
 nodeOf Records {rsTLD} = labelNode rsTLD

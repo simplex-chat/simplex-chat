@@ -40,6 +40,8 @@ import Control.Concurrent.STM (TQueue, atomically, newTQueueIO, orElse, readTMVa
 import Control.Exception (IOException, bracket, catch, finally, throwIO, try)
 import Control.Monad (forM_, guard, mfilter, replicateM_, unless, void, when)
 import qualified Data.Aeson as J
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as LB
 import Data.Either (isLeft, isRight)
 import Data.Int (Int64)
 import Data.List (isInfixOf)
@@ -145,6 +147,7 @@ namesBootTests :: SpecWith TestParams
 namesBootTests = do
   it "warns naming the indexes of trusted dev_keys, and says nothing without them" testDevKeysWarned
   it "refuses dev_keys unless the node's own chain id is 31337" testDevKeysNodeChain
+  it "boots codes-only, refusing paid name orders 403 codes_only and answering code orders and code checks, the badges shell as built" testNamesBootCodesOnly
   it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, the community terms and registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, code checks and orders under one limit, and another name and retries under another" testNamesBoot
 
 testDevKeysWarned :: HasCallStack => TestParams -> IO ()
@@ -244,6 +247,32 @@ testNamesBoot ps = do
     forM_ ["/api/code/check", "/api/name/register"] $ \path -> (path,) <$> codeRequest path `shouldReturn` (path, 429)
     poll t >>= (`shouldSatisfy` isNothing)
 
+testNamesBootCodesOnly :: HasCallStack => TestParams -> IO ()
+testNamesBootCodesOnly ps = do
+  svc@GroupSvc {gsStaticDir} <- prepareGroupService ps
+  let shell = "<!doctype html><meta name=\"simplex-names-mode\" content=\"open\">"
+  B.writeFile (gsStaticDir </> "index.html") shell
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : codesOnlyNames <> chainSection} Nothing
+  flip finally (stopGroupService t cc) $ do
+    pollUntilTrue (listening port)
+    mgr <- newManager defaultManagerSettings
+    let posted path body = do
+          req <- parseRequest $ "http://127.0.0.1:" <> show port <> path
+          r <- httpLbs req {method = "POST", requestBody = RequestBodyLBS body} mgr
+          pure (statusCode $ responseStatus r, J.decode $ responseBody r :: Maybe J.Value)
+        answered tag status = (status, Just $ J.object ["error" J..= (tag :: Text)])
+    posted "/api/invoice" "{\"kind\":\"name\"}" `shouldReturn` answered "codes_only" 403
+    posted "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/spend" "{}" `shouldReturn` answered "codes_only" 403
+    posted "/api/name/register" "{}" `shouldReturn` answered "bad_request" 400
+    posted "/api/code/check" "{}" `shouldReturn` answered "bad_request" 400
+    badgesShell <- parseRequest ("http://127.0.0.1:" <> show port <> "/") >>= (`httpLbs` mgr)
+    (statusCode $ responseStatus badgesShell, responseBody badgesShell) `shouldBe` (200, LB.fromStrict shell)
+    poll t >>= (`shouldSatisfy` isNothing)
+
+-- | [names] with codes_only on, as an investors' launch runs.
+codesOnlyNames :: [Text]
+codesOnlyNames = namesSection <> ["codes_only = on"]
+
 namesWorkerBootTests :: SpecWith TestParams
 namesWorkerBootTests = it "starts the workers with the service, sending the commit of an order queued after the start" testWorkerBoot
 
@@ -272,8 +301,9 @@ namesCodesChatTests = describe "StoreService names: prepaid codes" $ do
   it "revokes a prepaid code in the code's turn, after a reservation holding it" testRevokeTakesCodeTurn
 
 testGroupNameCodes :: HasCallStack => TestParams -> IO ()
-testGroupNameCodes ps =
-  withGroupOwner ps $ \_ cc _ alice -> do
+testGroupNameCodes ps = do
+  svc <- prepareGroupService ps
+  runWithOwner svc {gsIniSections = "" : codesOnlyNames <> chainSection} $ \cc _ _ alice -> do
     one <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 8 years 5"
     namePrepaidCodeLength one `shouldBe` 8
     prepaidTerms cc one `shouldReturn` Just (8, 5, CPSFree)
@@ -286,7 +316,7 @@ testGroupNameCodes ps =
 testOperatorNameCodes :: HasCallStack => TestParams -> IO ()
 testOperatorNameCodes ps = do
   svc <- prepareGroupService ps
-  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> chainSection} Nothing
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : codesOnlyNames <> chainSection} Nothing
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
     forM_ ["name", "name 5", "name 64", "name 07", "name 7 years 1", "name 7 years 11", "name 7 gratis"] $ \args ->

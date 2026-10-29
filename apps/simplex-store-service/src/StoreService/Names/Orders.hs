@@ -112,6 +112,7 @@ data OrderRefusal
   | -- | the current terms and the name's community entry, as the answer carries them
     ORTermsChanged J.Value J.Value
   | ORTermsUnavailable (Maybe Int)
+  | ORCodesOnly
   deriving (Eq, Show)
 
 newtype OrderRefused = OrderRefused OrderRefusal

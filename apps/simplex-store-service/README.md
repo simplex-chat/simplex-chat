@@ -944,13 +944,54 @@ terms, or one signed for the name policy before a `setNamePolicy`, clears the re
 signs again. A relay that reverts while the policy holds that acceptance for the commitment, as when
 another sent it first, is followed by the register.
 
+### Codes-only launch
+
+`[names] codes_only = on` lets only prepaid codes register names, as for the launch to the investors
+who hold them before anyone can pay. It is `off` by default. While it is on:
+
+- the names site's shell is served and exported with `<meta name="simplex-names-mode" content="codes">`
+  in place of the build's `content="open"`, and the page then offers only codes. The badges site's
+  shell is unchanged;
+- `POST /api/invoice` for a name and `POST /api/registration/:id/spend` answer
+  `403 {"error": "codes_only"}`, before they read the order, so no order takes money for a name;
+- search, link previews, code checks, code orders (`POST /api/name/register`), the registration
+  view, `find`, the reveal, Try again, another name and record edits work as before. Webhooks and the
+  poller still settle the invoices already open, and badges sell as before.
+
+The setting is read at startup, and the export is written then, so switching it is an edit of the
+ini and a restart, with the same build. Codes for investors come from the group (needs `[group]`, see
+[From the group](#from-the-group)) or from `//issue name` in `--run-cli` (see
+[From the command line](#from-the-command-line)).
+
+### Link edits
+
+Each "Edit links" save is one request, relayed by the service as one transaction whose gas it pays
+(see [The gas key](#the-gas-key)): one changed link as `setTextWithSig` (or `clearRecordsWithSig`),
+both links as the resolver's `multicall` of two `setTextWithSig` calls, which lands both or neither.
+`[names] record_edits_per_year` (default 3, from 1 to 100, read at startup) bounds them per name in
+any 365 days:
+
+- each accepted request counts once, from when it is stored to be sent, whether it changes one link
+  or both, or clears them;
+- links set at registration ride on the register transaction and count nothing;
+- a request refused before any transaction, a dry run that reverts, a send the chain fails, and an
+  edit that reverts on chain (or expires) count nothing, the last once it settles. A pending edit
+  counts until then;
+- an exact resend of an accepted request is answered as before and counts nothing more.
+
+When a name has none left, `POST /api/name/records` answers
+`429 {"error": "edit_limit", "nextAt": <unix seconds>}` before any chain read, and the search answer
+for the name carries `recordEdits: {"left": 0, "nextAt": …}`, from which the page shows when the
+owner can edit again. Lowering the setting keeps the edits already counted. The hourly cap of 10
+relayed requests per name still applies, and still counts reverted ones.
+
 ### The gas key
 
 `[chain] service_key` is the registrar key: an Ethereum account (EOA) that sends every names
 transaction, `commit` to the controller, each name's terms acceptance (`commitUnderGeneralTermsWithSig` or `commitUnderCommunityTermsWithSig`) to the name policy, `registerWithCredit` to the sponsor, and the owners' record
-edits (`setTextWithSig`, `clearRecordsWithSig`) to the resolver. It pays only their gas, in ETH. The
-names' rent is spent from its allowance on the sponsor, in USD, which the guardian sets. It holds no
-names.
+edits (`setTextWithSig`, `clearRecordsWithSig`, or a `multicall` of two) to the resolver. It pays
+only their gas, in ETH. The names' rent is spent from its allowance on the sponsor, in USD, which the
+guardian sets. It holds no names.
 
 The commands run from `scripts/store-service/` on the service host, with Foundry's `cast`
 ([getfoundry.sh](https://getfoundry.sh), checked with 1.5.1) and `jq`. They read the ini through this
@@ -1086,14 +1127,19 @@ reads, clears and logs its acceptance, as a community name's did:
 | `setTextWithSig`, a link replacing one | 462,289 | 462,289 | 0.0462 ETH |
 | `setTextWithSig`, a link removed | 698,644 | 558,916 | 0.0699 ETH |
 | `clearRecordsWithSig` | 80,312 | 80,312 | 0.0080 ETH |
+| `multicall`, two new links | 6,054,042 | 6,008,868 | 0.6054 ETH |
 
 - The service sets each transaction's gas limit to its estimate and its max fee to at most
   `max_fee_per_gas` (default 100 gwei). The node accepts a transaction only while the balance covers
   its limit × max fee, so the last column is what each one needs held. What it is charged is gas
   used × the block's base fee plus tip, usually far less.
 - An order is one commit, one acceptance relay and one register: 0.6946 ETH at the cap with two links, 0.0723 ETH with
-  none. The expected orders × 0.6946 ETH, plus 0.3026 ETH per expected link edit, pays for all of
-  them even at the cap. The figures scale with `max_fee_per_gas`.
+  none. The expected orders × 0.6946 ETH, plus 0.6054 ETH per expected Save of both links (0.3026 ETH
+  for one), pays for all of them even at the cap. A name's link edits are at most
+  `record_edits_per_year` (3) a year, see [Link edits](#link-edits). The figures scale with
+  `max_fee_per_gas`.
+- A Save of both links in one `multicall` uses 26,906 gas less than the same two edits sent as two
+  transactions with links of 4096 bytes, and 28,082 less with short links.
 - `gas_limit_cap` (default 8,000,000) must stay above 6,791,417: a transaction whose estimate is
   above it is not sent.
 

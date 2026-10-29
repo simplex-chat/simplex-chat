@@ -28,7 +28,7 @@ import Data.Maybe (isJust, maybeToList)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, addUTCTime)
 import Data.Word (Word32, Word64)
-import Network.HTTP.Types (status200, status409, status503)
+import Network.HTTP.Types (status200, status403, status409, status503)
 import Network.Wai (Request, Response, ResponseReceived)
 import Simplex.Chat.Badges.Code (NameCode (..), parseNameCode)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod (..))
@@ -83,8 +83,9 @@ sendAnswer respond Answer {aResponse, aAfter} = aAfter >> respond aResponse
 
 -- | POST /api/invoice for a name, its body already read and its kind checked.
 nameInvoiceHandler :: OrdersEnv -> ServiceConfig -> [Provider] -> Waiters -> J.Object -> Respond -> IO ResponseReceived
-nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} cfg providers waiters body respond =
-  sendAnswer respond =<< case parseInvoiceOrder body of
+nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} cfg providers waiters body respond
+  | nCodesOnly (oeConfig env) = sendAnswer respond =<< refuse ORCodesOnly
+  | otherwise = sendAnswer respond =<< case parseInvoiceOrder body of
     Left refusal -> refuse refusal
     Right order@InvoiceOrder {ioRequest = req@OrderRequest {orOwner, orFields}, ioMethod, ioPrice} ->
       checkOrderSigner req >>= \case
@@ -234,8 +235,9 @@ parseCodeOrder o = do
 -- | POST /api/registration/:id/spend, another name paid from this order's balance, in the contract's order of checks,
 -- under the new name's turn and then the balance's.
 spendHandler :: OrdersEnv -> ServiceConfig -> [Provider] -> Waiters -> Text -> Request -> Respond -> IO ResponseReceived
-spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} cfg providers waiters ridText req respond =
-  readBoundedBody nameBodyBytes req >>= requested >>= sendAnswer respond
+spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} cfg providers waiters ridText req respond
+  | nCodesOnly oeConfig = sendAnswer respond =<< refuse ORCodesOnly
+  | otherwise = readBoundedBody nameBodyBytes req >>= requested >>= sendAnswer respond
   where
     source = RegistrationId ridText
     what = "POST /api/registration/:id/spend"
@@ -351,3 +353,4 @@ orderRefusalResponse = \case
   ORBalanceChanged balance -> jsonResponse status409 $ J.object ["error" .= ("balance_changed" :: Text), "balance" .= (balanceJSON <$> balance)]
   ORTermsChanged terms community -> jsonResponse status409 $ J.object ["error" .= ("terms_changed" :: Text), "terms" .= terms, "community" .= community]
   ORTermsUnavailable wait -> maybe (jsonError status503 "terms_unavailable") termsUnavailable wait
+  ORCodesOnly -> jsonError status403 "codes_only"

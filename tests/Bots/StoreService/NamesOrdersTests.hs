@@ -12,6 +12,7 @@ module Bots.StoreService.NamesOrdersTests
     withOrdersCancelling,
     withSettings,
     configured,
+    codesOnly,
     aliceOrder,
     commitmentOf,
     fieldsOf,
@@ -195,6 +196,9 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "cleans up unpaid orders after 30 days, reading the provider first" testCleanup
     it "reads at most a pass's share of the provider in a cleanup, carrying the rest to the next pass" testCleanupCapped
     it "answers 503 for a name invoice while names are off, cancelling nothing" testNamesOff
+  describe "codes only" $ do
+    it "answers a name invoice 403 codes_only before reading the order, reaching no provider and writing nothing" testInvoiceCodesOnly
+    it "sells a badge as before" testBadgeCodesOnly
   describe "invoice side" $ do
     it "finds an invoice by provider ref in either table, refusing a ref both hold" testProviderRefs
     it "reads and sweeps name invoices with the badge ones" testPollerQueries
@@ -332,6 +336,8 @@ testNamesConfig node =
       nTermSlackSeconds = slackSeconds,
       nRevealMarginSeconds = 900,
       nMaxOrderMoves = 3,
+      nCodesOnly = False,
+      nRecordEditsPerYear = 3,
       nCommunity = M.empty,
       nChain = fakeChainConfig node
     }
@@ -383,9 +389,13 @@ withOrdersOn cOpenStore via action = cOpenStore >>= \cStore -> withFakeEthNode $
 
 -- | The context's store, chain, providers and clock with its names settings changed, as after a restart.
 configured :: (NamesConfig -> NamesConfig) -> Ctx -> Ctx
-configured change ctx@Ctx {cOrders, cWeb} = ctx {cOrders = orders, cWeb = cWeb {weOrders = Just orders}}
+configured change ctx@Ctx {cOrders, cWeb} = ctx {cOrders = orders, cWeb = cWeb {weConfig = (weConfig cWeb) {names = Just namesCfg}, weOrders = Just orders}}
   where
-    orders = cOrders {oeConfig = change (oeConfig cOrders)}
+    namesCfg = change (oeConfig cOrders)
+    orders = cOrders {oeConfig = namesCfg}
+
+codesOnly :: NamesConfig -> NamesConfig
+codesOnly cfg = cfg {nCodesOnly = True}
 
 -- | Another server of the orders routes over the context with its names settings changed.
 withSettings :: (NamesConfig -> NamesConfig) -> Ctx -> (Ctx -> IO a) -> IO a
@@ -1444,6 +1454,24 @@ testNamesOff = withOrders $ \ctx -> do
   calls <- stubCalls (cStub ctx)
   [c | c@StubCancel {} <- calls] `shouldBe` []
   (irStatus <$>) <$> getInvoice (cStore ctx) invId `shouldReturn` Just ISOpen
+
+testInvoiceCodesOnly :: IO ()
+testInvoiceCodesOnly = withOrders $ \open -> withSettings codesOnly open $ \ctx -> do
+  placeOrder ctx aliceOrder `shouldReturn` refusedWith 403 "codes_only"
+  postOrder ctx (KM.fromList [("kind", "name")]) `shouldReturn` refusedWith 403 "codes_only"
+  stubCalls (cStub ctx) `shouldReturn` []
+  registrationsOf ctx ownerA `shouldReturn` []
+  -- nothing the refusals left meets the same order placed with codes_only off
+  void $ placed open aliceOrder
+
+testBadgeCodesOnly :: IO ()
+testBadgeCodesOnly = withOrders $ \open -> withSettings codesOnly open $ \ctx@Ctx {cStore} -> do
+  seedCheckoutCatalog cStore
+  (status, view) <- post ctx "/api/invoice" (createBody supporterPriceId Nothing "btc" (codeHashText sampleCode))
+  (status, field "badgeType" =<< view) `shouldBe` (200, Just "supporter")
+  stubCalls (cStub ctx) >>= \case
+    [StubCreate method OrderDraft {odReference}] -> (method, T.isPrefixOf "badge:" odReference) `shouldBe` (btc, True)
+    other -> expectationFailure ("provider calls: " <> show other)
 
 -- | The provider's cancel settles the invoice with the signal before it answers.
 withOrdersCancelling :: PaymentSignal -> (Ctx -> IO a) -> IO a

@@ -17,6 +17,7 @@ import Data.Char (isDigit)
 import Data.List (find)
 import Data.Maybe (mapMaybe)
 import Data.Text (Text)
+import Data.Time.Clock (UTCTime)
 import qualified Data.Text as T
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Network.HTTP.Types (status200)
@@ -32,9 +33,11 @@ import StoreService.Names.Community (communityJSON, nameTerms, readableTerms, te
 import StoreService.Names.Contracts
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
+import StoreService.Names.Records (nameEditsLeft)
 import StoreService.Names.Store (isLabelRegistering)
 import StoreService.Names.View (addressText, tldText)
 import StoreService.Web.Http (Respond, badRequest, invalidLink, invalidName, jsonResponse, maxBodyBytes, notFound, providerUnavailable, readBoundedBody, termsUnavailable)
+import StoreService.Web.Names.Records (editsLeftJSON)
 import System.Timeout (timeout)
 import Text.Read (readMaybe)
 
@@ -46,15 +49,15 @@ data Found
   | FRegistered RegisteredName (Maybe NameRecords)
 
 -- | The chain reads of one search share one deadline, so a node that answers slowly fails the search once.
-searchHandler :: NamesConfig -> DBStore -> Contracts -> Profiles -> Text -> Request -> Respond -> IO ResponseReceived
-searchHandler cfg@NamesConfig {nYears} st ct ps hashText req respond = case LabelHash <$> bytes32FromHex hashText of
+searchHandler :: NamesConfig -> DBStore -> Contracts -> Profiles -> IO UTCTime -> Text -> Request -> Respond -> IO ResponseReceived
+searchHandler cfg@NamesConfig {nYears} st ct ps clock hashText req respond = case LabelHash <$> bytes32FromHex hashText of
   Nothing -> respond badRequest
   Just lh -> case queryLength req of
     Nothing -> respond invalidName
     Just len -> do
       registering <- withTransaction st (`isLabelRegistering` lh)
       timeout (ctDeadline ct) (runExceptT $ found lh len registering) >>= \case
-        Just (Right (f, terms)) -> respond =<< searchAnswer cfg ct ps lh terms f
+        Just (Right (f, terms)) -> respond =<< searchAnswer cfg st ct ps clock lh terms f
         Just (Left e) -> unavailable $ tshow e
         Nothing -> unavailable "timed out"
   where
@@ -80,8 +83,8 @@ queryLength req = case join $ lookup "length" $ queryString req of
       | n >= toInteger minNameLength && n <= toInteger maxNameLength = Just $ fromInteger n
       | otherwise = Nothing
 
-searchAnswer :: NamesConfig -> Contracts -> Profiles -> LabelHash -> (Bool, Maybe Terms) -> Found -> IO Response
-searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nChain = ChainConfig {cChainId, cResolver, cSponsor}} ct ps lh (listed, terms) = \case
+searchAnswer :: NamesConfig -> DBStore -> Contracts -> Profiles -> IO UTCTime -> LabelHash -> (Bool, Maybe Terms) -> Found -> IO Response
+searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nChain = ChainConfig {cChainId, cResolver, cSponsor}} st ct ps clock lh (listed, terms) = \case
   FAvailable price -> do
     readable <- eitherToMaybe <$> readableTerms ct terms
     ok $
@@ -93,9 +96,11 @@ searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nChain = ChainConfig {cC
   FReserved -> ok ["status" .= ("reserved" :: Text)]
   FRegistered RegisteredName {rnOwner, rnResolver, rnExpiresAt, rnGracePeriod} records_ -> do
     entities <- maybe (pure []) (recordEntities ps) records_
+    -- only a name on the default resolver is edited here
+    edits <- mapM (const editsLeft) records_
     ok $
       ["status" .= ("registered" :: Text), "entities" .= entities, "records" .= (recordsJSON <$> records_)]
-        <> ["owner" .= addressText rnOwner, "resolver" .= addressText rnResolver, "recordsNonce" .= (rdNonce <$> records_)]
+        <> ["owner" .= addressText rnOwner, "resolver" .= addressText rnResolver, "recordsNonce" .= (rdNonce <$> records_), "recordEdits" .= (editsLeftJSON <$> edits)]
         <> ["expiresAt" .= rnExpiresAt, "gracePeriod" .= rnGracePeriod]
         <> chain
   where
@@ -104,6 +109,7 @@ searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nChain = ChainConfig {cC
     chain = ["chainId" .= cChainId, "tld" .= tldText nTLD]
     termStart = floor (utcTimeToPOSIXSeconds nTermStart) :: Integer
     recordsJSON NameRecords {rdContact, rdChannel} = J.object ["contact" .= rdContact, "channel" .= rdChannel]
+    editsLeft = clock >>= \now -> withTransaction st $ \db -> nameEditsLeft db nRecordEditsPerYear lh now
 
 -- | Contact entities first. A record may hold several links joined as the app joins them; a value that is not
 -- a short link of its record's kind makes no entity, and neither does a link past the first few of its kind.

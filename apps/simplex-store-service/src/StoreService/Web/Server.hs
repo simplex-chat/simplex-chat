@@ -17,7 +17,7 @@ module StoreService.Web.Server
 where
 
 import StoreService.Catalog (PricedOffer (..), priceOffer)
-import StoreService.Config (ListenerConfig (..), ServiceConfig (..), StripeConfig (..), isLoopbackHost)
+import StoreService.Config (ListenerConfig (..), NamesConfig (..), ServiceConfig (..), StripeConfig (..), isLoopbackHost)
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Env (NamesEnv)
 import StoreService.Names.Orders (OrdersEnv (..), ordersEnv)
@@ -86,19 +86,19 @@ data WebEnv = WebEnv
 -- | A built site, served when @serve_webapp@ is on.
 data Site = Site
   { siteDir :: FilePath,
-    -- | @Nothing@ when no Stripe key is configured, and the pristine shell is served instead.
+    -- | @Nothing@ when the shell has nothing to fill, and the pristine one is served instead.
     siteShell :: Maybe LB.ByteString
   }
 
 newWebEnv :: DBStore -> ServiceConfig -> Waiters -> ReadHints -> [Provider] -> Maybe NamesEnv -> IO WebEnv
 newWebEnv weStore weConfig weWaiters weHints weProviders weNames = do
   weHttp <- newHttpEnv lc
-  weBadgesSite <- if lServeWebapp then Just <$> loadSite lBadgesStaticDir else pure Nothing
-  weNamesSite <- mapM loadSite (lNamesPort *> lNamesStaticDir)
+  weBadgesSite <- if lServeWebapp then Just <$> loadSite (keyFills weConfig) lBadgesStaticDir else pure Nothing
+  weNamesSite <- mapM (loadSite (namesFills weConfig)) (lNamesPort *> lNamesStaticDir)
   pure WebEnv {weStore, weConfig, weWaiters, weProviders, weHoldMicros = holdMicros, weHints, weHttp, weBadgesSite, weNamesSite, weNames, weOrders = ordersEnv <$> weNames}
   where
     lc@ListenerConfig {lServeWebapp, lBadgesStaticDir, lNamesStaticDir, lNamesPort} = listener weConfig
-    loadSite dir = Site dir <$> prepareShell dir (stripe weConfig)
+    loadSite fills dir = Site dir <$> prepareShell dir fills
 
 listenerConfig :: WebEnv -> ListenerConfig
 listenerConfig WebEnv {weConfig} = listener weConfig
@@ -153,14 +153,30 @@ serveSite Site {siteDir, siteShell} path respond =
 shellFile :: FilePath
 shellFile = "index.html"
 
--- | The badges shell also has an @id@ before @name@, and the names shell has none.
-publishableKeyMeta :: Text
-publishableKeyMeta = "name=\"stripe-publishable-key\" content=\""
+-- | A meta tag of the shell by its name, the content the build ships it with, and the content served instead.
+type MetaFill = (Text, Text, Text)
 
--- | @Nothing@ (serve the pristine file) when no key is set, no shell is present, or it cannot be read.
-prepareShell :: FilePath -> Maybe StripeConfig -> IO (Maybe LB.ByteString)
-prepareShell _ Nothing = pure Nothing
-prepareShell dir (Just StripeConfig {sPublishableKey}) =
+-- | The badges shell also has an @id@ before @name@, and the names shell has none.
+fillMeta :: MetaFill -> Text -> Text
+fillMeta (name, shipped, served) = T.replace (meta shipped) (meta served)
+  where
+    meta content = "name=\"" <> name <> "\" content=\"" <> content <> "\""
+
+keyFills :: ServiceConfig -> [MetaFill]
+keyFills ServiceConfig {stripe} = [("stripe-publishable-key", "", sPublishableKey) | Just StripeConfig {sPublishableKey} <- [stripe]]
+
+-- | The badges site's shell never carries the names mode.
+namesFills :: ServiceConfig -> [MetaFill]
+namesFills cfg@ServiceConfig {names} = keyFills cfg <> [codesMode | Just NamesConfig {nCodesOnly = True} <- [names]]
+
+-- | The page offers only prepaid codes when it reads this mode.
+codesMode :: MetaFill
+codesMode = ("simplex-names-mode", "open", "codes")
+
+-- | @Nothing@ (serve the pristine file) when there is nothing to fill, no shell is present, or it cannot be read.
+prepareShell :: FilePath -> [MetaFill] -> IO (Maybe LB.ByteString)
+prepareShell _ [] = pure Nothing
+prepareShell dir fills =
   E.try attempt >>= \case
     Right out -> pure out
     Left (e :: E.IOException) -> do
@@ -180,17 +196,18 @@ prepareShell dir (Just StripeConfig {sPublishableKey}) =
             Left e -> do
               logWarn ("the shell in " <> T.pack dir <> " is not valid UTF-8, serving the pristine one: " <> tshow e)
               pure Nothing
-            Right html -> pure (Just (LB.fromStrict (encodeUtf8 (injectPublishableKey sPublishableKey html))))
+            Right html -> pure (Just (LB.fromStrict (encodeUtf8 (foldr fillMeta html fills))))
 
-exportWebapp :: ListenerConfig -> Maybe StripeConfig -> IO ()
-exportWebapp ListenerConfig {lBadgesStaticDir, lBadgesExportDir, lNamesStaticDir, lNamesExportDir} stripeCfg = do
-  forM_ lBadgesExportDir $ exportSite lBadgesStaticDir
-  forM_ ((,) <$> lNamesStaticDir <*> lNamesExportDir) $ uncurry exportSite
+exportWebapp :: ServiceConfig -> IO ()
+exportWebapp cfg = do
+  forM_ lBadgesExportDir $ exportSite (keyFills cfg) lBadgesStaticDir
+  forM_ ((,) <$> lNamesStaticDir <*> lNamesExportDir) $ uncurry (exportSite (namesFills cfg))
   where
-    exportSite dir out = do
+    ListenerConfig {lBadgesStaticDir, lBadgesExportDir, lNamesStaticDir, lNamesExportDir} = listener cfg
+    exportSite fills dir out = do
       emptyDir out
       copyTree dir out
-      prepareShell dir stripeCfg >>= mapM_ (LB.writeFile (out </> shellFile))
+      prepareShell dir fills >>= mapM_ (LB.writeFile (out </> shellFile))
       logInfo ("store service: exported " <> T.pack dir <> " to " <> T.pack out)
 
 -- | Contents only: the directory itself may be a bind or volume mount point that cannot be removed.
@@ -208,9 +225,6 @@ copyTree src dst = do
       createDirectoryIfMissing True dst
       listDirectory src >>= mapM_ (\e -> copyTree (src </> e) (dst </> e))
     else copyFile src dst
-
-injectPublishableKey :: Text -> Text -> Text
-injectPublishableKey key = T.replace (publishableKeyMeta <> "\"") (publishableKeyMeta <> key <> "\"")
 
 resolveInside :: FilePath -> [Text] -> IO (Maybe (FilePath, FilePath))
 resolveInside dir segments = either ioFailed id <$> E.try attempt
