@@ -72,7 +72,7 @@ fun MarkdownBlocks(
   val textColor = style.color.takeOrElse { MaterialTheme.colors.onSurface }
   val fontSize = style.fontSize.takeOrElse { 16.sp }
   val lineHeight = style.lineHeight.takeOrElse { 22.sp }
-  val terminal = LocalTerminalLayout.current
+  val chatTypography = usesChatTypography()
   val starts = remember(blocks) { blocks.runningFold(0) { n, b -> n + b.textRanges.size } }
   val lastIsText = when (blocks.lastOrNull()) {
     is MarkdownBlock.Paragraph, is MarkdownBlock.Heading, is MarkdownBlock.Quote, is MarkdownBlock.ItemList -> true
@@ -84,18 +84,18 @@ fun MarkdownBlocks(
   }
   Column(modifier) {
     blocks.forEachIndexed { k, block ->
-      if (k > 0 && terminal && blocks[k - 1] is MarkdownBlock.Heading && block !is MarkdownBlock.Heading) {
+      if (k > 0 && chatTypography && blocks[k - 1] is MarkdownBlock.Heading && block !is MarkdownBlock.Heading) {
         Spacer(Modifier.height(TERMINAL_HEADING_BOTTOM_GAP.toDp()))
-      } else if (k > 0 && (paragraphBreak(formattedText, blocks[k - 1].end, block.start) || terminal && block is MarkdownBlock.Heading)) {
-        Spacer(Modifier.height(if (terminal) TERMINAL_LEVEL_STEP.toDp() else with(LocalDensity.current) { (lineHeight.toPx() / 2).toDp() }))
+      } else if (k > 0 && (paragraphBreak(formattedText, blocks[k - 1].end, block.start) || chatTypography && block is MarkdownBlock.Heading)) {
+        Spacer(Modifier.height(if (chatTypography) TERMINAL_LEVEL_STEP.toDp() else with(LocalDensity.current) { (lineHeight.toPx() / 2).toDp() }))
       }
       val start = starts[k]
       val marksLastBlock = k == blocks.lastIndex && metaLine == null
-      val cardMargins = if (!terminal) Modifier else if (marksLastBlock) Modifier.padding(top = TERMINAL_BLOCK_TOP_GAP.toDp()).messageLastBlock() else Modifier.padding(top = TERMINAL_BLOCK_TOP_GAP.toDp(), bottom = TERMINAL_BLOCK_BOTTOM_GAP.toDp())
+      val cardMargins = if (!chatTypography) Modifier else if (marksLastBlock) Modifier.padding(top = TERMINAL_BLOCK_TOP_GAP.toDp()).messageLastBlock() else Modifier.padding(top = TERMINAL_BLOCK_TOP_GAP.toDp(), bottom = TERMINAL_BLOCK_BOTTOM_GAP.toDp())
       when (block) {
         is MarkdownBlock.Paragraph -> BlockText(start, block.content, style)
         is MarkdownBlock.Heading -> {
-          val scale = if (terminal) TERMINAL_HEADING_RATIO.pow((3 - block.level).coerceAtLeast(0)) else when (block.level) {
+          val scale = if (chatTypography) TERMINAL_HEADING_RATIO.pow((3 - block.level).coerceAtLeast(0)) else when (block.level) {
             1 -> 1.5f
             2 -> 1.3f
             3 -> 1.15f
@@ -103,12 +103,12 @@ fun MarkdownBlocks(
           }
           BlockText(
             start, block.content, style.copy(fontSize = fontSize * scale, lineHeight = lineHeight * scale, fontWeight = FontWeight.Bold),
-            if (terminal) Modifier.headingBox(scale, fontSize) else Modifier
+            if (chatTypography) Modifier.headingBox(scale, fontSize) else Modifier
           )
         }
         is MarkdownBlock.Quote -> Box(Modifier.quoteBar(textColor)) {
           val quoteColor = textColor.copy(alpha = 0.7f)
-          BlockText(start, block.content, style.copy(color = quoteColor).merge(terminalTextStyle(fontSize, quoteColor)))
+          BlockText(start, block.content, style.copy(color = quoteColor).merge(chatTextStyle(fontSize, quoteColor)))
         }
         is MarkdownBlock.ItemList -> listEntries(block.items, 0).forEachIndexed { j, (entry, level) ->
           Row(Modifier.padding(start = 20.dp * level)) {
@@ -119,7 +119,7 @@ fun MarkdownBlocks(
         }
         is MarkdownBlock.CodeBlock -> CodeBlockCard(cardShape, cardColor, roundness, codeText(formattedText, block.content), cardMargins) { m ->
           val codeFontSize = fontSize * 0.875f
-          BlockText(start, block.content, style.copy(fontFamily = FontFamily.Monospace, fontSize = codeFontSize, lineHeight = lineHeight * 0.9f).merge(terminalTextStyle(codeFontSize)), m, softWrap = false)
+          BlockText(start, block.content, style.copy(fontFamily = FontFamily.Monospace, fontSize = codeFontSize, lineHeight = lineHeight * 0.9f).merge(chatTextStyle(codeFontSize)), m, softWrap = false)
         }
         is MarkdownBlock.Table -> {
           val tableRows = listOf(block.header) + block.rows
@@ -140,7 +140,7 @@ fun MarkdownBlocks(
             }
           }
         }
-        is MarkdownBlock.Rule -> Box((if (terminal) cardMargins.widthIn(min = ruleMinWidth) else Modifier.padding(vertical = 6.dp)).fillMaxWidth().height(1.dp).background(lineColor))
+        is MarkdownBlock.Rule -> Box((if (chatTypography) cardMargins.widthIn(min = ruleMinWidth) else Modifier.padding(vertical = 6.dp)).fillMaxWidth().height(1.dp).background(lineColor))
       }
     }
     if (!lastIsText) metaLine?.invoke()
