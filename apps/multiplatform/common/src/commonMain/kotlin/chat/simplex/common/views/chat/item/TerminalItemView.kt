@@ -30,6 +30,7 @@ import androidx.compose.ui.layout.Measured
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.VerticalAlignmentLine
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
@@ -42,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.chat.*
@@ -76,6 +78,7 @@ const val TERMINAL_HEADING_RATIO = 1.25f
 private const val CHAT_LINE_HEIGHT_RATIO = 22f / 16f
 private const val CHAT_LINE_HEIGHT_CONTRAST_SLOPE = 0.1515f
 const val INTER_CAP_HEIGHT = 2048f / 2816f
+const val INTER_LINE_HEIGHT = 3408f / 2816f
 private val CHAT_LINE_HEIGHT_STYLE = LineHeightStyle(LineHeightStyle.Alignment.Proportional, LineHeightStyle.Trim.None)
 
 @Composable
@@ -84,7 +87,8 @@ fun usesChatTypography(): Boolean = LocalTerminalLayout.current || LocalBubbleLa
 @Composable
 fun chatTextStyle(fontSize: TextUnit, color: Color = messageTextColor()): TextStyle =
   if (usesChatTypography()) {
-    TextStyle(lineHeight = fontSize * (CHAT_LINE_HEIGHT_RATIO * contrastLineHeightFactor(color)), lineHeightStyle = CHAT_LINE_HEIGHT_STYLE)
+    val lineHeight = fontSize * (CHAT_LINE_HEIGHT_RATIO * contrastLineHeightFactor(color))
+    TextStyle(lineHeight = lineHeight, lineHeightStyle = CHAT_LINE_HEIGHT_STYLE).merge(bubbleLineHeight(lineHeight))
   } else {
     TextStyle.Default
   }
@@ -92,6 +96,14 @@ fun chatTextStyle(fontSize: TextUnit, color: Color = messageTextColor()): TextSt
 @Composable
 fun bubbleTextStyle(fontSize: TextUnit, color: Color): TextStyle =
   if (LocalBubbleLayout.current) chatTextStyle(fontSize, color) else TextStyle.Default
+
+@Composable
+fun bubbleLineHeight(lineHeight: TextUnit): TextStyle =
+  if (LocalBubbleLayout.current && appPlatform.isDesktop) {
+    TextStyle(lineHeight = with(LocalDensity.current) { lineHeight.toPx().roundToInt().toSp() }, lineHeightStyle = CHAT_LINE_HEIGHT_STYLE)
+  } else {
+    TextStyle.Default
+  }
 
 @Composable
 private fun contrastLineHeightFactor(color: Color): Float {

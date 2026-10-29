@@ -1,20 +1,34 @@
 package chat.simplex.app
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.ui.theme.HighOrLowlight
+import chat.simplex.common.ui.theme.Inter
 import chat.simplex.common.views.chat.item.*
+import org.jetbrains.skia.Bitmap
+import org.jetbrains.skia.Image
 import kotlin.math.roundToInt
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -121,6 +135,38 @@ class BubbleLayoutTest {
       }
     }
     assertEquals(Placed(220 - 60, 40 + 17 - 12, 60, 16), placed.getValue("meta").relativeTo(placed.getValue("card")))
+  }
+
+  @Test
+  fun timeDrawnOnTextBaseline() {
+    val texts = listOf<@Composable () -> TextStyle>(
+      { TextStyle(fontFamily = Inter, fontSize = 16.sp).merge(bubbleTextStyle(16.sp, HighOrLowlight)) },
+      { TextStyle(fontFamily = Inter, fontSize = 13.sp, lineHeight = 18.sp, lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None)).merge(bubbleLineHeight(18.sp)) },
+      { TextStyle(fontFamily = Inter, fontSize = 16.sp).merge(bubbleLineHeight(16.sp * INTER_LINE_HEIGHT)) },
+    )
+    for (fontScale in listOf(0.7f, 0.8f, 0.9f, 1f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f)) {
+      texts.forEachIndexed { i, textStyle ->
+        val image = renderScene {
+          CompositionLocalProvider(LocalBubbleLayout provides true, LocalDensity provides Density(1f, fontScale)) {
+            Row(Modifier.background(Color.White)) {
+              Text(
+                buildAnnotatedString { append("11"); withStyle(SpanStyle(fontSize = 12.sp)) { append("11") } },
+                Modifier.alignByBaseline().record(placed, "text"),
+                Color.Black,
+                style = textStyle()
+              )
+              Text("11", Modifier.alignByBaseline().record(placed, "time"), Color.Black, style = TextStyle(fontFamily = Inter, fontSize = 12.sp).merge(chatTextStyle(12.sp, HighOrLowlight)))
+            }
+          }
+        }
+        assertEquals(lastInkRow(image, placed.getValue("text")), lastInkRow(image, placed.getValue("time")), "text $i at font scale $fontScale")
+      }
+    }
+  }
+
+  private fun lastInkRow(image: Image, area: Placed): Int {
+    val bitmap = Bitmap.makeFromImage(image)
+    return (area.y until area.y + area.height).last { y -> (area.x until area.x + area.width).any { x -> Color(bitmap.getColor(x, y)).luminance() < 0.5f } }
   }
 
   @Test

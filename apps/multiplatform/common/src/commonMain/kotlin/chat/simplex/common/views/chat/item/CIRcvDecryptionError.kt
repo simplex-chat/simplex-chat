@@ -165,7 +165,8 @@ fun DecryptionErrorItemFixButton(
                 withStyle(reserveTimestampStyle) { append("    ") } // for icon
               }
             },
-            color = if (syncSupported) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+            color = if (syncSupported) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+            style = LocalTextStyle.current.merge(bubbleLineHeight(16.sp * INTER_LINE_HEIGHT))
           )
         }
       }

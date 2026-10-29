@@ -166,6 +166,10 @@ line height      every text of a chat item: font size × 22/16 × f(w), Proporti
                  except cards, files, voice and calls (D8) and the one-line text of marked deleted items (its insets are set by baselines)
                  principle: one line-height ratio with the contrast factor; full line height for every line (D1, D2, D7)
                  the same function as terminal rows (chatTextStyle): the relation is the same
+                 desktop: whole pixels, Proportional (bubbleLineHeight), also for the last text of a group invitation,
+                 "Fix connection" of decryption errors, the size line of files and the text of marked deleted items
+                 principle: a baseline is drawn where the layout places it; Skia draws a line's baseline at its top plus
+                 the rounded ascent and reports the rounded line height less the descent, one row only at whole pixels
 inset            BUBBLE_TEXT_INSET 11dp (user): from a bubble or band edge to the capitals of the text under it,
                  and from the last baseline to the edge under it; in dp, so it keeps its size at larger fonts (user)
                  principle: one inset for all parts; gaps measured from a baseline or an edge to the capitals or an edge
@@ -229,6 +233,7 @@ B17  tails only on items with message content: deleted, moderated, blocked, erro
      invalid JSON items, drawn without a fill, lose the tail offset: their text 9dp further from the screen edge
      (user, 2026-10-28)
 B18  vertical bubble insets in dp: they keep their size at larger fonts, as master's paddings (user, 2026-10-28)
+B19  the time on the drawn baseline of the text (owner, 2026-10-29): desktop bubble line heights in whole pixels
 ```
 
 ## 4. Kotlin
@@ -237,7 +242,8 @@ B18  vertical bubble insets in dp: they keep their size at larger fonts, as mast
 chat/item/TerminalItemView.kt     LocalBubbleLayout; usesChatTypography(); chatTextStyle (was terminalTextStyle) in both layouts;
                                   inlineIcon in both layouts; metaBaseline shared by TerminalMetaLayout and the bubbles;
                                   hasTerminalSender shared with the event runs of bubbles;
-                                  bubbleTextStyle: chatTextStyle in bubbles only, for the texts of deleted and error items
+                                  bubbleTextStyle: chatTextStyle in bubbles only, for the texts of deleted and error items;
+                                  bubbleLineHeight: whole-pixel line heights in desktop bubbles, in chatTextStyle; INTER_LINE_HEIGHT
 chat/item/FramedItemView.kt       BUBBLE_* constants, BUBBLE_SIDE_INSET among them; Modifier.bubbleTextPadding, bubbleTextBoxPadding(),
                                   Modifier.bubbleMeta(), RowScope.bubbleMetaOnBaseline(), MetaOnLastBaseline; header, quote, emoji,
                                   meta and text insets
@@ -248,14 +254,15 @@ chat/item/MarkdownBlocks.kt       spacing, heading sizes and headingBox of termi
                                   TERMINAL_HEADING_RATIO 1.25
 chat/item/CIEventView.kt          chatEventTextStyle in both layouts; chatEventPadding without the vertical parameter
 chat/item/CIChatFeatureView.kt    merged icons one event line high in both layouts
-chat/item/CIFileView.kt           bubble: size line baseline inset from the bottom edge; fileIconOnBaseline
+chat/item/CIFileView.kt           bubble: size line baseline inset from the bottom edge; fileIconOnBaseline; size line bubbleLineHeight
 chat/item/DeletedItemView.kt      ItemTextCard, one switch between the bubble and the terminal card: bubbleTextPadding, the time on
                                   the last text baseline, the fill shaped by the item clip
-chat/item/MarkedDeletedItemView.kt ItemTextCard
+chat/item/MarkedDeletedItemView.kt ItemTextCard; bubbleLineHeight
 chat/item/IntegrityErrorItemView.kt ItemTextCard (CIMsgError)
 chat/item/CIRcvDecryptionError.kt DecryptionErrorCard, one switch: bubbleTextPadding, bubbleMeta, the copy of the time,
-                                  the fill shaped by the item clip
-chat/item/CIGroupInvitationView.kt bubble: the copy of the time joined to the last word; the time placed by MetaOnLastBaseline
+                                  the fill shaped by the item clip; "Fix connection" bubbleLineHeight
+chat/item/CIGroupInvitationView.kt bubble: the copy of the time joined to the last word; the time placed by MetaOnLastBaseline;
+                                  the last text bubbleLineHeight
 chat/item/ChatItemView.kt         calls without LocalBubbleLayout; shapeStyleWithTail: no tail without message content;
                                   chatItemTailRendered, shared with FramedItemView, chatItemOffset and ChatView;
                                   BubblePreview for the chat item previews
@@ -277,6 +284,7 @@ usersettings/Appearance.kt        LocalBubbleLayout for the classic theme previe
 - time on the text baseline in a card row
 - time on the last baseline of a card, at its end
 - file icon ink bottom on the size-line baseline
+- the time drawn on the drawn text baseline at the desktop font scales 0.7 to 1.5
 
 `apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/TerminalMetaCopyTest.kt`:
 

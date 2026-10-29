@@ -72,7 +72,7 @@ private fun MergedMarkedDeletedText(chatsCtx: ChatModel.ChatsContext, chatItem: 
     buildAnnotatedString {
       withStyle(SpanStyle(fontSize = 12.sp, fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(text) }
     },
-    style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
+    style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleLineHeight(22.sp)),
     modifier = Modifier.padding(end = 8.dp),
     maxLines = 1,
     overflow = TextOverflow.Ellipsis,
