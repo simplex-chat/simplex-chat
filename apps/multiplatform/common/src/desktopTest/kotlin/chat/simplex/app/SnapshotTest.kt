@@ -8,6 +8,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowState
@@ -142,6 +143,7 @@ class SnapshotTest {
     val privacyMediaBlurRadius = appPrefs.privacyMediaBlurRadius.get()
     val appearanceBarsBlurRadius = appPrefs.appearanceBarsBlurRadius.get()
     val inAppBarsAlpha = appPrefs.inAppBarsAlpha.get()
+    val appBarMaxHeightPx = AppBarHandler.appBarMaxHeightPx
     val index = mutableListOf<Snapshot>()
     val failures = mutableListOf<String>()
     try {
@@ -189,6 +191,7 @@ class SnapshotTest {
       appPrefs.privacyMediaBlurRadius.set(privacyMediaBlurRadius)
       appPrefs.appearanceBarsBlurRadius.set(appearanceBarsBlurRadius)
       appPrefs.inAppBarsAlpha.set(inAppBarsAlpha)
+      AppBarHandler.appBarMaxHeightPx = appBarMaxHeightPx
       ThemeManager.applyTheme(theme)
     }
     assertEquals(emptyList(), failures)
@@ -198,6 +201,7 @@ class SnapshotTest {
 private fun renderSnapshot(content: @Composable () -> Unit): Image {
   var height = 0
   val frame = renderScene(width = SCENE_WIDTH, height = SCENE_MAX_HEIGHT, frames = 4) {
+    AppBarHandler.appBarMaxHeightPx = with(LocalDensity.current) { AppBarHeight.roundToPx() }
     Box(Modifier.width(SCENE_WIDTH.dp).background(CurrentColors.collectAsState().value.colors.background).onSizeChanged { height = it.height }) {
       CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler(), content = content)
     }
