@@ -168,7 +168,9 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "counts code orders and code checks against one code limit" testCodeLimitShared
   describe "terms" $ do
     it "answers terms_changed with the current terms and community for an old version, other terms or the other kind, listed or not, creating nothing, and takes an ini-only name under the name terms" testTermsChanged
-    it "accepts the community terms for a listed name as viem signs them, storing them" testCommunityTerms    it "answers terms_unavailable, before any payment, while the terms of the name's kind are not set, of a link the service does not take, or of a text not fetched now, with Retry-After, creating nothing" testTermsUnavailable
+    it "accepts the community terms for a listed name as viem signs them, storing them" testCommunityTerms
+    it "takes orders of one kind of name under their terms after the other kind's terms changed" testOtherKindTerms
+    it "answers terms_unavailable, before any payment, while the terms of the name's kind are not set, of a link the service does not take, or of a text not fetched now, with Retry-After, creating nothing" testTermsUnavailable
     it "answers an exact resend after the terms changed on chain, and takes the same fields under the new terms as another order" testResendAfterBump
     it "checks the terms after the existing orders, the timestamp and the duration, with the listing's read, before the name check and the price" testTermsCheckOrder
     it "answers terms_changed for a code order under old terms, listed or not, leaving the code unreserved, and accepts the community terms" testCodeTermsChanged
@@ -837,6 +839,16 @@ testTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis" . list
   field "terms" (registrationOf v) `shouldBe` Just (J.String communityTerms)
   nrAgreedTerms <$> invoiceRegistration ctx invId `shouldReturn` communityTerms
   void $ placed ctx aliceOrder
+
+testOtherKindTerms :: IO ()
+testOtherKindTerms = withOrders $ \ctx0 -> withSettings (listName "dynamis") ctx0 $ \ctx@Ctx {cNode = node} -> do
+  listOnChain ctx "dynamis"
+  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000, oTerms = communityTerms}
+  setNameTerms node fakeNewNameTermsText
+  (community, _) <- placed ctx dynamis
+  setCommunityTerms node fakeNewCommunityTermsText
+  (plain, _) <- placed ctx aliceOrder {oTerms = newerTerms}
+  mapM (fmap nrAgreedTerms . invoiceRegistration ctx) [community, plain] `shouldReturn` [communityTerms, newerTerms]
 
 testTermsUnavailable :: IO ()
 testTermsUnavailable = withOrders $ \ctx0 -> withSettings (listName "dynamis") ctx0 $ \ctx@Ctx {cNode = node} -> do

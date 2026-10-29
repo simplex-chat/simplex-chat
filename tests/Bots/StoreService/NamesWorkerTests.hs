@@ -97,7 +97,9 @@ workerTests = describe "StoreService names: worker" $ do
     it "relays the reveal's acceptance of the terms of the name's kind to the name policy as soon as it is stored, and registers once the policy holds it" testAcceptanceRelayed
     it "relays the acceptance before the wait for revealAfter, then waits for it" testAcceptanceBeforeWait
     it "clears the reveal when the relay's dry run refuses the acceptance for new terms or a used nonce, staying committed" testAcceptanceRefused
-    it "registers, keeping the reveal, when the relay's dry run reverts while the policy holds the acceptance another sent first" testAcceptanceSentFirst    it "retries the relay while the policy's acceptance for the commitment cannot be read, sending nothing" testAcceptanceUnread
+    it "registers, keeping the reveal, when the relay's dry run reverts while the policy holds the acceptance another sent first" testAcceptanceSentFirst
+    it "registers, keeping the reveal, when the relay is mined with status 0 while the policy holds the acceptance another sent first" testAcceptanceMinedFailed
+    it "retries the relay while the policy's acceptance for the commitment cannot be read, sending nothing" testAcceptanceUnread
     it "clears the reveal of an acceptance signed for another policy or for the other kind of terms, sending nothing, for the page to sign again" testAcceptanceOtherPolicy
     it "judges a relay past the acceptance's deadline as a register past it, failing the order" testAcceptanceExpired
     it "relays no acceptance once the commitment lapsed, so the policy commits nothing again" testAcceptanceLapsed
@@ -698,6 +700,18 @@ testAcceptanceSentFirst = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   revertDryRun cNode (acceptCalldata (termsKind False) (nrCommitment r) (nrOwner r) rvDeadline acceptance) $ Just $ selector "InvalidNonce()"
   void $ steps w r >>= awaiting
   [registerRaw] <- sent w
+  (trTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor
+  x <- stored ctx r
+  (nrPhase x, nrReveal x) `shouldBe` (PRegistering, nrReveal r)
+
+testAcceptanceMinedFailed :: IO ()
+testAcceptanceMinedFailed = withWorker $ \w@W {wCtx = ctx} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
+  void $ steps w r >>= awaiting
+  void $ mineNewest w False
+  answerAccepted w r $ Returns fakeNameTerms
+  void $ published w r $ steps w r >>= awaiting
+  [_, registerRaw] <- sent w
   (trTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor
   x <- stored ctx r
   (nrPhase x, nrReveal x) `shouldBe` (PRegistering, nrReveal r)
