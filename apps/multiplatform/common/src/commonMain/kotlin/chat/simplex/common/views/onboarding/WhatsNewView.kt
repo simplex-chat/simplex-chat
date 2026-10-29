@@ -1028,14 +1028,14 @@ private fun SupporterBadgeWhatsNew() {
         painterResource(if (isDark) MR.images.phone_supporter_light else MR.images.phone_supporter),
         contentDescription = null,
         contentScale = ContentScale.Fit,
-        modifier = Modifier.size(110.dp).overhangUp()
+        modifier = Modifier.overhangUp().size(110.dp)
       )
     } else {
       Image(
         painterResource(MR.images.badge_supporter),
         contentDescription = null,
         contentScale = ContentScale.Fit,
-        modifier = Modifier.size(72.dp).overhangUp()
+        modifier = Modifier.overhangUp().size(72.dp)
       )
     }
   }
