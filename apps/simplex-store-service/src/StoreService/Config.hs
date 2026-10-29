@@ -174,6 +174,8 @@ data NamesConfig = NamesConfig
     nTermSlackSeconds :: Int,
     nRevealMarginSeconds :: Int,
     nMaxOrderMoves :: Int,
+    -- | Only prepaid codes pay for names: every order that would take money for one is refused.
+    nCodesOnly :: Bool,
     nTerms :: TermsConfig,
     -- | The operator's community names, keyed by the label hash's bytes, as search receives a name.
     nCommunity :: Map ByteString Text,
@@ -376,7 +378,7 @@ knownSettings =
     ("group", ["display_name", "description"]),
     ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage", "credit_test_purchases"]),
     ("issuer", ["index", "private_key", "dev_keys"]),
-    ("names", ["tld", "terms_version", "terms_url", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves"]),
+    ("names", ["tld", "terms_version", "terms_url", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves", "codes_only"]),
     ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap", "max_fee_per_gas"])
   ]
 
@@ -602,10 +604,11 @@ parseConfig ini = do
           nTermSlackSeconds <- atLeast 0 "names" "term_slack_seconds" 3600
           nRevealMarginSeconds <- atLeast 0 "names" "reveal_margin_seconds" 900
           nMaxOrderMoves <- atLeast 0 "names" "max_order_moves" 3
+          nCodesOnly <- bool "names" "codes_only" False
           nTerms <- termsSetting
           nCommunity <- communityList nTLD
           nChain <- chainSection
-          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nTerms, nCommunity, nChain})
+          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nCodesOnly, nTerms, nCommunity, nChain})
     tldSetting =
       required "names" "tld" >>= \case
         "simplex" -> Right TLDSimplex

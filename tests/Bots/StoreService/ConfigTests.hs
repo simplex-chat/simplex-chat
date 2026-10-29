@@ -658,6 +658,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "refuses a bad service key without quoting it" testNamesBadServiceKey
   it "keeps the RPC URL and the service key out of errors and the shown config" testNamesSecretsHidden
   it "names a [names] or [chain] setting nothing reads, and still boots" testNamesUnknownKeys
+  it "reads codes_only on and off as a known setting, off when absent, and refuses any other value" testNamesCodesOnly
   it "accepts [issuer] dev_keys on chain 31337 only, with [names] on" testDevKeysLocalChain
   it "refuses a malformed dev_keys entry or an index named twice, quoting no secret" testDevKeysMalformed
   it "accepts [issuer] dev_keys beside Stripe test keys and a BTCPay on loopback" testDevKeysTestPayments
@@ -859,6 +860,19 @@ testNamesUnknownKeys = do
     unknownKeys ini `shouldMatchList` ["names.yeers", "chain.rpc"]
   NamesConfig {nYears} <- parsedNames (namesSection <> ["yeers = 3"]) (chainSection <> ["rpc = x"])
   nYears `shouldBe` 2
+
+testNamesCodesOnly :: IO ()
+testNamesCodesOnly = do
+  NamesConfig {nCodesOnly = absent} <- parsedNames namesSection chainSection
+  absent `shouldBe` False
+  forM_ [("on", True), ("off", False)] $ \(value, expected) -> do
+    let ns = namesSection <> ["codes_only = " <> value]
+    withIni (namesIni ns chainSection) $ \p -> do
+      Right ini <- readIniFile p
+      unknownKeys ini `shouldBe` []
+    NamesConfig {nCodesOnly} <- parsedNames ns chainSection
+    (value, nCodesOnly) `shouldBe` (value, expected)
+  namesRefusal (namesSection <> ["codes_only = yes"]) chainSection `shouldReturn` "codes_only must be on or off, not yes"
 
 -- | Names on the local chain with no payment provider, as a run with dev keys has.
 localNamesIni :: [T.Text] -> T.Text

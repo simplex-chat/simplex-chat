@@ -119,6 +119,7 @@ namesConfig node =
       nTermSlackSeconds = 3600,
       nRevealMarginSeconds = 900,
       nMaxOrderMoves = 3,
+      nCodesOnly = False,
       nTerms = TermsConfig {tVersion = termsVersion, tUrl = termsUrl},
       nCommunity = M.empty,
       nChain = fakeChainConfig node
