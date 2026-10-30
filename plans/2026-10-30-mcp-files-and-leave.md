@@ -29,6 +29,7 @@ Open choices:
 - C2, preview of a sent GIF or WebP, which the core does not decode (`Image.hs:62-70`):
   - (a) a fixed preview
   - (b) sent as a file
+- C4, the wait at stop: a core command for pending deliveries, or a final message whose sent status is awaited; see "Library methods"
 - C3, preview and duration of a sent video:
   - (a) from `ffmpeg` and `ffprobe` when installed, else a fixed preview and duration 0
   - (b) always a fixed preview and duration 0
@@ -51,10 +52,10 @@ tools.ts:702                /_get chats USER pcc=off count=N         apiGetChats
 tools.ts:771                /_info @N                                apiContactInfo
 ```
 
-Wait at stop:
-- each card post and edit of the session registers a promise keyed by the card's item ID
-- `chatItemsStatusesUpdated` with group status `sent` for the item resolves it
-- `stop` waits for the open promises, at most 10 s, as `deliveryTimeout` now (`serve.ts:16`)
+Wait at stop, C4:
+- An edit of a card already sent emits no status event: the SENT of the edit's message reaches `updateGroupItemsStatus` (`Library/Subscriber.hs:4152-4172`) through `insertChatItemMessage_` (`Store/Messages.hs:2818`), and `updateGroupMemSndStatus'` reports no change for a member already at `sent`.
+- (a) a core command for the pending deliveries of a group's connections, documented in the bot API; `stop` polls it, at most 10 s, as `deliveryTimeout` now (`serve.ts:16`)
+- (b) after the outcome edits, `stop` posts "The server stopped." in the agent control chat and waits for `chatItemsStatusesUpdated` with group status `sent` for every member, at most 10 s; the agent sends a queue's messages oldest first, one at a time (`getPendingQueueMsg`, simplexmq `Agent/Store/AgentStore.hs:1115-1131`), so the edits before it are sent
 
 ## /leave CHAT
 
