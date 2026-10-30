@@ -14,7 +14,7 @@ Impronta della chiave di firma (SHA-256):
 
 > 9F 35 8F F2 84 D1 F7 16 56 A2 BF AF 0E 00 5D EA E6 AA 14 14 37 20 E0 89 F1 1F F2 DD CF EB 01 BA
 
-Or download the APK directly: [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk), [armv7](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-armv7a.apk)
+O scarica l'APK direttamente: [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk), [armv7](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-armv7a.apk)
 
 ### Repo di F-Droid.org
 

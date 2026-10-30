@@ -1,16 +1,16 @@
-# Get SimpleX Chat
+# Scarica SimpleX Chat
 
-The only messaging network without any user identifiers.
-Free, open-source, decentralized.
-Your profile is only on your device.Your profile is only on your phone.
+L'unica rete di messaggistica senza alcun identificatore utente.
+Libera, open source, decentralizzata.
+Il tuo profilo è solo sul tuo dispositivo.Il tuo profilo è solo sul tuo telefono.
 
-[Download for macOS](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-macos-aarch64.dmg) [Download for Windows](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-windows-x86_64.msi) [Download for Linux](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-x86_64.AppImage)
+[Scarica per macOS](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-macos-aarch64.dmg) [Scarica per Windows](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-windows-x86_64.msi) [Scarica per Linux](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-x86_64.AppImage)
 
-Apple Silicon · [Intel](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-macos-x86_64.dmg) · [More](https://simplex.chat/it/downloads/#dl-all)
+Apple Silicon · [Intel](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-macos-x86_64.dmg) · [Altro](https://simplex.chat/it/downloads/#dl-all)
 
-x86_64 · [More](https://simplex.chat/it/downloads/#dl-all)
+x86_64 · [Altro](https://simplex.chat/it/downloads/#dl-all)
 
-AppImage x86_64 · [Flatpak](https://flathub.org/apps/chat.simplex.simplex) · [More](https://simplex.chat/it/downloads/#dl-all)
+AppImage x86_64 · [Flatpak](https://flathub.org/apps/chat.simplex.simplex) · [Altro](https://simplex.chat/it/downloads/#dl-all)
 
 [Download on the App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084)
 
@@ -20,7 +20,7 @@ Beta: [TestFlight](https://testflight.apple.com/join/DWuT2LQu)
 
 [F-Droid](https://simplex.chat/it/fdroid) · APK [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk) · [armv7](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-armv7a.apk)
 
-[Other devices](https://simplex.chat/it/downloads/#dl-all)
+[Altri dispositivi](https://simplex.chat/it/downloads/#dl-all)
 
 **3M** Download
 
@@ -31,7 +31,7 @@ Beta: [TestFlight](https://testflight.apple.com/join/DWuT2LQu)
 Analisi della
 sicurezza
 
-## All downloads
+## Tutti i download
 
 ### Desktop
 
@@ -42,23 +42,23 @@ sicurezza
 - Ubuntu 22.04, Debian: [x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-22_04-x86_64.deb) · [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-22_04-aarch64.deb)
 - Ubuntu 24.04: [x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-24_04-x86_64.deb) · [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-24_04-aarch64.deb)
 
-You can link your phone to the desktop app to use the same profile, when both are on the same local network.
+Puoi collegare il telefono all'app desktop per usare lo stesso profilo, quando entrambi sono sulla stessa rete locale.
 
-### Terminal
+### Terminale
 
 - Windows: [x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-chat-windows-x86-64)
 - macOS: [Apple Silicon](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-chat-macos-aarch64) · [Intel](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-chat-macos-x86-64)
 - Ubuntu 22.04: [x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-chat-ubuntu-22_04-x86_64) · [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-chat-ubuntu-22_04-aarch64)
 - Ubuntu 24.04: [x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-chat-ubuntu-24_04-x86_64) · [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-chat-ubuntu-24_04-aarch64)
 
-Command-line app for servers, bots and developers. [Using the terminal app](https://simplex.chat/docs/cli.html)
+App da riga di comando per server, bot e sviluppatori. [Utilizzo dell'app terminale](https://simplex.chat/docs/cli.html)
 
-### Phone
+### Telefono
 
 - iOS: [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) · [TestFlight](https://testflight.apple.com/join/DWuT2LQu)
 - Android: [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) · [F-Droid](https://simplex.chat/it/fdroid)
 - Android APK: [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk) · [armv7](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-armv7a.apk)
 
-## For advanced users
+## Per utenti avanzati
 
-[All releases on GitHub](https://github.com/simplex-chat/simplex-chat/releases) [Mirror: git.simplex.chat](https://git.simplex.chat/simplex-chat/simplex-chat/releases) [Verifica e riproduci le build](https://simplex.chat/reproduce/) [F-Droid repository](https://simplex.chat/it/fdroid)
+[Tutte le versioni su GitHub](https://github.com/simplex-chat/simplex-chat/releases) [Mirror: git.simplex.chat](https://git.simplex.chat/simplex-chat/simplex-chat/releases) [Verifica e riproduci le build](https://simplex.chat/reproduce/) [Repository F-Droid](https://simplex.chat/it/fdroid)

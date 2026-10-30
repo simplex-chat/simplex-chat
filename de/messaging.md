@@ -139,7 +139,7 @@ Die Wiederaufnahme von Verbindungen ist deaktiviert, um Sitzungs-Angriffe zu ver
 
 Um Ihre IP-Adresse zu schützen, können Sie per Tor oder irgendeinem anderen Transportschichten-Netzwerk auf Server zugreifen.
 
-Um SimpleX per Tor zu nutzen, installieren Sie unter Android bitte die [Orbot-App](https://guardianproject.info/apps/org.torproject.android/) und aktivieren Sie den SOCKS5-Proxy oder [unter iOS](https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone) per VPN.
+Um SimpleX per Tor zu nutzen, installieren Sie unter Android bitte die [Orbot-App](https://guardianproject.info/apps/org.torproject.android/) und aktivieren Sie den SOCKS5-Proxy oder per VPN [unter iOS](https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone).
 
 ### Unidirektionale Nachrichten-Warteschlangen
 

@@ -70,7 +70,7 @@ SimpleX Chat מאחסן את כל נתוני המשתמש רק במכשירי ה
 
 רשת SimpleX משתמשת ב[פרוטוקול פתוח](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md) ומספקת [SDK ליצירת צ'אט בוטים](https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript), המאפשר הטמעה של שירותים שמשתמשים יכולים לתקשר איתם באמצעות אפליקציות SimpleX Chat — אנחנו ממש מצפים לראות אילו שירותי SimpleX אתם יכולים לבנות.
 
-אם אתם שוקלים לפתח עבור רשת SimpleX, למשל, את הצ'אט בוט עבור משתמשי אפליקציית SimpleX, או שילוב של ספריית SimpleX Chat באפליקציות לנייד שלכם, אנא [צרו קשר](https://simplex.chat/contact#%20/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JB38MZG9NLUZ_8JB38t%2ADKeAyGeee%208mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D) לכל עצה ותמיכה.
+אם אתם שוקלים לפתח עבור רשת SimpleX, למשל, את הצ'אט בוט עבור משתמשי אפליקציית SimpleX, או שילוב של ספריית SimpleX Chat באפליקציות לנייד שלכם, אנא [צרו קשר](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D) לכל עצה ותמיכה.
 
 ## מאפיינים
 

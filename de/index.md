@@ -4,7 +4,7 @@
 
 ## In Deinem Netzwerk
 
-Das einzige Messaging-Netzwerk ohne jegliche Benutzerkennungen.
+Das einzige Messaging-Netzwerk  ohne Benutzerkennungen.
 Ihre Kontakte, Gruppen und Kanäle gehören Ihnen.
 
 Besitzen Sie einen Teil davon. [Investieren Sie in SimpleX Chat.](https://wefunder.com/simplex.chat?utm_source=home)
