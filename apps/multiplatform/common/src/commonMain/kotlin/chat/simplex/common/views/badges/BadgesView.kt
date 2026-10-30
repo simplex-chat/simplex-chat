@@ -19,7 +19,8 @@ fun BadgesView(modalManager: ModalManager, close: () -> Unit) {
 
   // the card look is a modal setting, so the modal is composed here to follow the screen shown
   ModalView(close, cardScreen = shownBadge != null) {
-    // not cross-faded: pages composed together share the app bar's copy of the content, and the leaving one can stay drawn
+    // one page at a time: each page draws itself through this modal's one app bar layer (copyViewToAppBar),
+    // so two pages composed together, as in a cross-fade, can leave the screen showing the page that left
     if (shownBadge != null) {
       BadgesYourBadgeView(shownBadge, modalManager)
     } else if (purchaseState != null) {
