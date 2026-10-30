@@ -1253,13 +1253,22 @@ console, is in [Refunding a name balance](#refunding-a-name-balance).
 ### From the group
 
 With `[group]` in `store_service.ini`, the service manages one group and serves three commands in
-it: `/issue` and `/bulk` for moderators and above, `/revoke <code>` for admins and owners. The name
-forms are `/issue name <length> [years <Y>]` and `/bulk name <length> [years <Y>] count <N>`, with
-the bounds of `//issue name`; a name code issued in the group is single-use and `free`. The badge
-forms are `/issue <badge> [months <M>] [uses <N>]` and `/bulk <badge> [months <M>] count <N>`, where
-`<badge>` is `supporter`, `legend` or `investor`. `months` is 1 to 255, `uses` 1 to 1000 and `count`
-1 to 100; a value outside these gets the usage reply, which lists both forms with an example. The
-group's command menu fills in the name form. `/revoke`
+it: `/issue` and `/bulk` for moderators and above, `/revoke <code>` for admins and owners. Both
+code commands take every kind of code in one form:
+
+```
+/issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]
+/bulk <kind> [<length>] [years <Y> | months <M>] count <N>
+```
+
+`/issue` makes one code and `/bulk` makes `<N>` single-use codes of the kind. `<kind>` is `name`
+with a length, or a badge type: `supporter`, `legend` or `investor`. A name takes `years`, with the
+bounds of `//issue name` (length 6 to 63, years 2 to 10, 2 by default); a name code issued in the
+group is single-use and `free`. A badge takes `months`, 1 to 255 and 1 by default, and in `/issue`
+also `uses`, 1 to 1000. `count` is 1 to 100. A value outside these bounds, a length for a badge, or
+the other kind's unit gets the usage reply, which lists the form, each kind's bounds and an example
+of each. The group's command menu shows every kind in each command's hint and fills the hint into
+the message box. `/revoke`
 takes badge codes only: withdraw a name code with `//revoke` in `--run-cli` mode. The group has no
 `/refund`. A member's role
 is checked as the service last saw it, so a command sent by a moderator just demoted or removed can still run if it

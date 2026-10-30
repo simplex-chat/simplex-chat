@@ -14,6 +14,7 @@ import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeText, randomBadgeCode)
 import Simplex.Chat.Controller (ChatCommand (DeleteGroup, MemberRole))
 import Simplex.Chat.Library.Commands (parseChatCommand)
 import Simplex.Chat.Types (GroupProfile (..))
+import Simplex.Chat.Types.Preferences (ChatBotCommand (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Util (tshow)
@@ -22,12 +23,26 @@ import Test.Hspec
 badgeGroupTests :: Spec
 badgeGroupTests = describe "badge group" $ do
   let p = groupCmdAction GROwner
-      issueUsage = ReplyText "Usage:\n/issue name <length> [years <Y>]  e.g. /issue name 6 years 5\n/issue <badge> [months <M>] [uses <N>]  e.g. /issue supporter months 12"
-      bulkUsage = ReplyText "Usage:\n/bulk name <length> [years <Y>] count <N>  e.g. /bulk name 6 count 100\n/bulk <badge> [months <M>] count <N>  e.g. /bulk supporter months 12 count 10"
+      issueUsage = ReplyText "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–255, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
+      bulkUsage = ReplyText "Usage: /bulk <kind> [<length>] [years <Y> | months <M>] count <N>\nname <length>: length 6–63, years 2–10, count 1–100\nsupporter, legend, investor: months 1–255, count 1–100\ne.g. /bulk name 6 count 100 · /bulk legend months 3 count 10"
       revokeUsage = ReplyText "Usage: /revoke <code>"
   it "issue defaults" $ p "/issue supporter" `shouldBe` RunCmd (GCIssue BTSupporter 1 1)
   it "issue with months and uses" $ p "/issue legend months 6 uses 50" `shouldBe` RunCmd (GCIssue BTLegend 6 50)
   it "bulk with count" $ p "/bulk supporter count 20" `shouldBe` RunCmd (GCBulk BTSupporter 1 20)
+  it "issue and bulk take every badge type" $ do
+    map p ["/issue supporter", "/issue legend", "/issue investor"]
+      `shouldBe` map (\bt -> RunCmd (GCIssue bt 1 1)) [BTSupporter, BTLegend, BTInvestor]
+    map p ["/bulk supporter count 2", "/bulk legend count 2", "/bulk investor count 2"]
+      `shouldBe` map (\bt -> RunCmd (GCBulk bt 1 2)) [BTSupporter, BTLegend, BTInvestor]
+  it "parses the examples in the usage replies" $ do
+    p "/issue supporter months 12" `shouldBe` RunCmd (GCIssue BTSupporter 12 1)
+    p "/issue investor uses 50" `shouldBe` RunCmd (GCIssue BTInvestor 1 50)
+    p "/bulk legend months 3 count 10" `shouldBe` RunCmd (GCBulk BTLegend 3 10)
+  it "rejects a length, the names unit or the other command's option for a badge" $ do
+    map p ["/issue supporter 6", "/issue supporter years 2", "/issue legend months 3 years 2", "/issue supporter count 2", "/issue supporter uses 2 months 3"]
+      `shouldBe` replicate 5 issueUsage
+    map p ["/bulk supporter 6 count 2", "/bulk supporter years 2 count 2", "/bulk supporter count 2 uses 2", "/bulk supporter uses 2 count 2", "/bulk supporter count 2 months 3"]
+      `shouldBe` replicate 5 bulkUsage
   it "rejects values past the upper bounds" $ do
     p "/issue supporter uses 1001" `shouldBe` issueUsage
     p "/bulk supporter count 101" `shouldBe` bulkUsage
@@ -67,6 +82,12 @@ badgeGroupTests = describe "badge group" $ do
                    (GRModerator, (True, True, False)),
                    (GRAdmin, (True, True, True)),
                    (GROwner, (True, True, True))
+                 ]
+  it "advertises every kind of code in the issue and bulk menu entries" $
+    groupCommands
+      `shouldBe` [ CBCCommand "issue" "Generate a code" (Just "<name <length>|supporter|legend|investor> [years|months <N>]"),
+                   CBCCommand "bulk" "Generate many codes" (Just "<name <length>|supporter|legend|investor> [years|months <N>] count <N>"),
+                   CBCCommand "revoke" "Revoke a code" (Just "<code>")
                  ]
   describe "log hints give commands --run-cli parses for a group name with a space" $ do
     let hintCommand = fst . T.breakOn " in --run-cli" . snd . T.breakOnEnd " with "

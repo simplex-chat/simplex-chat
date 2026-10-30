@@ -1573,13 +1573,13 @@ singleRow sql = \case
   _ -> error $ "more than one row from: " <> sql
 
 issueUsage :: Text
-issueUsage = "Usage:\n/issue name <length> [years <Y>]  e.g. /issue name 6 years 5\n/issue <badge> [months <M>] [uses <N>]  e.g. /issue supporter months 12"
+issueUsage = "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–255, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
 
 -- The list is spelled out rather than taken from the service, so a change there fails here.
 expectedCommands :: [ChatBotCommand]
 expectedCommands =
-  [ CBCCommand "issue" "Generate a name or badge code" (Just "name <length> [years <Y>]"),
-    CBCCommand "bulk" "Generate many single-use codes" (Just "name <length> [years <Y>] count <N>"),
+  [ CBCCommand "issue" "Generate a code" (Just "<name <length>|supporter|legend|investor> [years|months <N>]"),
+    CBCCommand "bulk" "Generate many codes" (Just "<name <length>|supporter|legend|investor> [years|months <N>] count <N>"),
     CBCCommand "revoke" "Revoke a code" (Just "<code>")
   ]
 
