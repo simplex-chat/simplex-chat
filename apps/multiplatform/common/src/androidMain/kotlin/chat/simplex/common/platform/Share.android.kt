@@ -48,6 +48,8 @@ actual fun ClipboardManager.shareText(text: String) {
   }
 }
 
+actual fun copyToPrimarySelection(text: String) {}
+
 fun openOrShareFile(text: String, fileSource: CryptoFile, justOpen: Boolean, useChooser: Boolean = true) {
   val uri = if (fileSource.cryptoArgs != null) {
     val tmpFile = File(tmpDir, fileSource.filePath)
