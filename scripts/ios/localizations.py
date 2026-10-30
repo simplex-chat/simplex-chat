@@ -6,6 +6,7 @@
   check         lint and check the iOS XLIFF and .strings files (any platform)
   check-kotlin  check the Android and desktop strings.xml files with the rules of
                 adjustFormatting in apps/multiplatform/common/build.gradle.kts (any platform)
+  update-kotlin rewrite the strings.xml files as adjustFormatting does, then check them (any platform)
 
 Run from the repository root. Exits with 1 when problems are found, 2 on errors.
 """
@@ -15,6 +16,7 @@ from __future__ import annotations
 import argparse
 import bisect
 import contextlib
+import functools
 import html
 import os
 import platform
@@ -61,6 +63,8 @@ LINK_TARGET = re.compile(r"\]\(([^)]*)\)")
 # Valid URLs are ASCII, so a bare URL ends before full-width punctuation such as "）".
 BARE_URL = re.compile(r"\b(?:https?|simplex):/(?:(?![)\]])[!-~])*")
 LINK_MASK = "<link>"
+# Every markdown link target contains "](" and every bare URL ":/".
+LINK_MARKERS = ("](", ":/")
 LINK_PREVIEW_LENGTH = 60
 STRINGS_ESCAPES = {"n": "\n", "t": "\t", "r": "\r", '"': '"', "\\": "\\", "'": "'", "0": "\0"}
 UNICODE_ESCAPE = re.compile(r"[uU]([0-9a-fA-F]{4})")
@@ -87,6 +91,15 @@ CORRECT_HTML = re.compile(
     r"[^>]*>.*<b>.*</b>.*</string>|[^>]*>.*<i>.*</i>.*</string>|[^>]*>.*<u>.*</u>.*</string>|[^>]*>.*<font[^>]*>.*</font>.*</string>"
 )
 KOTLIN_POSITIONS = ("1$", "2$", "3$", "4$")
+# The line handling of adjustFormatting: stringRegex, startStringRegex and endStringRegex.
+KOTLIN_STRING_LINE = re.compile(r".*<string .*</string>.*")
+KOTLIN_START_STRING = re.compile(r"<string [^>]*>")
+KOTLIN_END_STRING = re.compile(r"</string>[ ]*")
+# Kotlin's useLines splits lines like BufferedReader.readLine.
+KOTLIN_LINE_BREAK = re.compile(r"\r\n|\r|\n")
+KOTLIN_UNADJUSTED_LOCALES = {"lv"}
+KOTLIN_STRING_TAG_BRACKETS = 4
+KOTLIN_HTML_ERROR = "HTML other than balanced <b>, <i>, <u> or <font> tags, adjustFormatting fails the build"
 
 PLACEHOLDER = "placeholder"
 BLANK = "blank"
@@ -101,6 +114,7 @@ DUPLICATE = "duplicate"
 STALE = "stale"
 PROBLEM_KINDS = [PLACEHOLDER, LINK, HTML, BLANK, LOST, IN_CODE, UNKNOWN, CHANGED, SYNTAX, DUPLICATE, STALE]
 WARNING_KINDS = {DUPLICATE, STALE, IN_CODE}
+KOTLIN_BUILD_FAILURES = {PLACEHOLDER, HTML, UNKNOWN}
 GROUPED_KINDS = {BLANK, STALE}
 
 BOLD = "1"
@@ -345,9 +359,10 @@ def describe_arguments(arguments: dict[int, str]) -> str:
     return ", ".join(f"%{position}${spec}" for position, spec in sorted(arguments.items())) or "none"
 
 
-def links(text: str) -> tuple[list[str], list[str]]:
+@functools.cache
+def links(text: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """Markdown link targets, and bare URLs outside them."""
-    return LINK_TARGET.findall(text), BARE_URL.findall(LINK_TARGET.sub("", text))
+    return tuple(LINK_TARGET.findall(text)), tuple(BARE_URL.findall(LINK_TARGET.sub("", text)))
 
 
 def mask_links(text: str) -> str:
@@ -355,6 +370,8 @@ def mask_links(text: str) -> str:
 
 
 def link_problem(source: str, target: str) -> str | None:
+    if not any(marker in text for text in (source, target) for marker in LINK_MARKERS):
+        return None
     for kind, expected, found in zip(("markdown link", "URL"), links(source), links(target)):
         missing = [link for link in expected if link not in found]
         if missing:
@@ -662,21 +679,25 @@ def kotlin_formats(element: str, possible: list[str]) -> list[str]:
     return sorted(formats, key=lambda item: int(item.partition("$")[0]))
 
 
-def kotlin_html_problem(element: str) -> str | None:
-    """Port of the checks in addCDATA in adjustFormatting."""
-    line = remove_cdata(element)
+def kotlin_add_cdata(line: str) -> str:
+    """Port of addCDATA in adjustFormatting: wraps HTML strings in CDATA, raises for HTML it rejects."""
+    # ANY_HTML needs a "<", ">", "&lt;" or "&gt;" besides the two tags of the string itself.
+    if line.count("<") + line.count(">") <= KOTLIN_STRING_TAG_BRACKETS and "&lt;" not in line and "&gt;" not in line:
+        return line
     if not ANY_HTML.fullmatch(line):
-        return None
+        return line
     prepared = line
     if FONT_LT_GT.fullmatch(line) or UNBRACKETED_COLOR.search(line):
         prepared = line.replace("&lt;", "<").replace("&gt;", ">")
         prepared = UNBRACKETED_COLOR.sub(lambda m: m.group(0).replace("color=#", 'color="#') + '"', prepared)
     opening = prepared.count("<")
     if opening != prepared.count(">") or opening != prepared.count("</") * 2 or not CORRECT_HTML.fullmatch(prepared):
-        return "HTML other than balanced <b>, <i>, <u> or <font> tags, adjustFormatting fails the build"
-    return None
+        raise KotlinFormatError(KOTLIN_HTML_ERROR)
+    wrapped = KOTLIN_START_STRING.sub(lambda m: m.group(0) + "<![CDATA[", prepared)
+    return KOTLIN_END_STRING.sub(lambda m: "]]>" + m.group(0), wrapped)
 
 
+@functools.cache
 def kotlin_text(raw_value: str) -> str:
     """The text Android shows: CDATA unwrapped, XML entities and Android escapes resolved."""
     unwrapped = CDATA.sub(lambda m: m.group(1), raw_value)
@@ -704,12 +725,66 @@ def kotlin_string_files() -> list[Path]:
 @dataclass
 class KotlinString:
     name: str
-    element: str
+    # The string as formatting() in adjustFormatting sees it: after removeCDATA and addCDATA, lines joined.
+    line: str
     raw_value: str
+    html_error: str | None
 
 
-def parse_kotlin_strings(text: str) -> list[KotlinString]:
-    return [KotlinString(m["name"], m.group(0), m["value"]) for m in KOTLIN_STRING.finditer(text)]
+@dataclass
+class KotlinFile:
+    lines: list[str]
+    changed: bool
+    strings: list[KotlinString]
+    unclosed: str | None
+
+
+def kotlin_lines(text: str) -> list[str]:
+    lines = KOTLIN_LINE_BREAK.split(text)
+    if lines and lines[-1] == "":
+        lines.pop()
+    return lines
+
+
+def gradle_string_id(line: str) -> str:
+    return line.replace('<string name="', "").strip().partition('"')[0]
+
+
+def adjust_kotlin(text: str) -> KotlinFile:
+    """Port of the line loop of adjustFormatting: the adjusted lines and the strings it compares."""
+    initial = kotlin_lines(text)
+    final: list[str] = []
+    strings: list[KotlinString] = []
+    multiline: list[str] = []
+
+    def adjust(original: list[str]) -> list[str]:
+        joined = "\n".join(original)
+        error = None
+        try:
+            fixed = kotlin_add_cdata(remove_cdata(joined))
+        except KotlinFormatError as format_error:
+            fixed, error = joined, str(format_error)
+        fixed_lines = fixed.split("\n")
+        flat = "".join(fixed_lines)
+        match = KOTLIN_STRING.search(joined)
+        strings.append(KotlinString(gradle_string_id(flat), flat, match["value"] if match else "", error))
+        return fixed_lines
+
+    for line in initial:
+        if KOTLIN_STRING_LINE.fullmatch(line):
+            final += adjust([line])
+        elif not multiline and KOTLIN_START_STRING.search(line):
+            multiline.append(line)
+        elif multiline and KOTLIN_END_STRING.search(line):
+            multiline.append(line)
+            final += adjust(multiline)
+            multiline = []
+        elif multiline:
+            multiline.append(line)
+        else:
+            final.append(line)
+    unclosed = "\n".join(multiline) if multiline else None
+    return KotlinFile(final, final != initial, strings, unclosed)
 
 
 def kotlin_string_problems(
@@ -723,15 +798,14 @@ def kotlin_string_problems(
         return [Problem(BLANK, path, name, "empty string, shown blank in the app")]
     problems = []
     try:
-        formats = kotlin_formats(string.element, possible)
+        formats = kotlin_formats(string.line, possible)
         if base_formats is not None and formats != base_formats:
             detail = f"expected {describe_kotlin_formats(base_formats)}, found {describe_kotlin_formats(formats)}"
             problems.append(Problem(PLACEHOLDER, path, name, detail, text))
     except KotlinFormatError as error:
         problems.append(Problem(PLACEHOLDER, path, name, str(error), text))
-    html_problem = kotlin_html_problem(string.element)
-    if html_problem:
-        problems.append(Problem(HTML, path, name, html_problem, text))
+    if string.html_error:
+        problems.append(Problem(HTML, path, name, string.html_error, text))
     outside_cdata = CDATA.sub("", string.raw_value)
     if UNESCAPED_APOSTROPHE.search(outside_cdata) and not (outside_cdata.startswith('"') and outside_cdata.endswith('"')):
         problems.append(Problem(SYNTAX, path, name, "unescaped apostrophe, Android needs \\'", text))
@@ -742,48 +816,66 @@ def kotlin_string_problems(
 
 
 def check_kotlin_file(
-    path: Path, base: dict[str, KotlinString], base_formats: dict[str, list[str]], possible: list[str]
-) -> tuple[list[Problem], int]:
-    text = read_file(path)
-    try:
-        ET.fromstring(text)
-    except ET.ParseError as error:
-        return [Problem(SYNTAX, path, "", f"invalid XML: {error}")], 0
-    strings = parse_kotlin_strings(text)
+    path: Path, adjusted: KotlinFile, base: dict[str, KotlinString], base_formats: dict[str, list[str]], possible: list[str]
+) -> list[Problem]:
     problems = []
+    if adjusted.unclosed:
+        problems.append(Problem(SYNTAX, path, "", "unclosed string tag, adjustFormatting fails the build", adjusted.unclosed))
     seen: set[str] = set()
-    for string in strings:
+    for string in adjusted.strings:
         if string.name in seen:
             problems.append(Problem(DUPLICATE, path, string.name, "duplicate string name, the app uses only one of them"))
         seen.add(string.name)
         problems += kotlin_string_problems(path, string, base.get(string.name), base_formats.get(string.name), possible)
-    return problems, len(strings)
+    return problems
 
 
-def check_kotlin_files(stats: dict[str, LanguageStats]) -> list[Problem]:
+def invalid_xml(path: Path, text: str) -> Problem | None:
+    try:
+        ET.fromstring(text)
+    except ET.ParseError as error:
+        return Problem(SYNTAX, path, "", f"invalid XML: {error}")
+    return None
+
+
+def check_kotlin_files(stats: dict[str, LanguageStats], write: bool = False) -> tuple[list[Problem], list[Path]]:
+    """Problems of all strings.xml files and, when writing, the files rewritten as adjustFormatting does."""
     possible = kotlin_possible_formats()
     files = kotlin_string_files()
     base_path = next((path for path in files if path.parent.name == KOTLIN_BASE), None)
     if base_path is None:
         raise UpdateError(f"{KOTLIN_RESOURCES}/{KOTLIN_BASE}/strings.xml not found, run from the repository root")
+    texts = {path: read_file(path) for path in files}
+    adjusted = {path: adjust_kotlin(text) for path, text in texts.items()}
     problems: list[Problem] = []
-    base = {string.name: string for string in parse_kotlin_strings(read_file(base_path))}
+    base = {string.name: string for string in adjusted[base_path].strings}
     base_formats: dict[str, list[str]] = {}
     for string in base.values():
         try:
-            base_formats[string.name] = kotlin_formats(string.element, possible)
+            base_formats[string.name] = kotlin_formats(string.line, possible)
         except KotlinFormatError as error:
             problems.append(Problem(PLACEHOLDER, base_path, string.name, str(error), kotlin_text(string.raw_value)))
-        html_problem = kotlin_html_problem(string.element)
-        if html_problem:
-            problems.append(Problem(HTML, base_path, string.name, html_problem, kotlin_text(string.raw_value)))
+        if string.html_error:
+            problems.append(Problem(HTML, base_path, string.name, string.html_error, kotlin_text(string.raw_value)))
+    base_fails = bool(problems)
+    rewritten = []
     for path in files:
-        if path == base_path:
+        xml_problem = invalid_xml(path, texts[path])
+        if xml_problem:
+            problems.append(xml_problem)
+            if path != base_path:
+                stats.setdefault(path.parent.name, LanguageStats()).translated = 0
             continue
-        file_problems, translated = check_kotlin_file(path, base, base_formats, possible)
-        stats.setdefault(path.parent.name, LanguageStats()).translated = translated
+        file_problems = [] if path == base_path else check_kotlin_file(path, adjusted[path], base, base_formats, possible)
+        if path != base_path:
+            stats.setdefault(path.parent.name, LanguageStats()).translated = len(adjusted[path].strings)
         problems += file_problems
-    return problems
+        builds = not base_fails and not adjusted[path].unclosed and not any(p.kind in KOTLIN_BUILD_FAILURES for p in file_problems)
+        if write and builds and adjusted[path].changed and path.parent.name not in KOTLIN_UNADJUSTED_LOCALES:
+            # adjustFormatting writes the lines back without a final line break.
+            write_file(path, "\n".join(adjusted[path].lines))
+            rewritten.append(path)
+    return problems, rewritten
 
 
 class Steps:
@@ -1007,7 +1099,17 @@ def check_kotlin() -> int:
     stats: dict[str, LanguageStats] = {}
     steps = Steps(1)
     with steps.step("Checking Android and desktop strings.xml files"):
-        problems = check_kotlin_files(stats)
+        problems, _ = check_kotlin_files(stats)
+    return report(stats, problems, set(stats))
+
+
+def update_kotlin() -> int:
+    stats: dict[str, LanguageStats] = {}
+    steps = Steps(1)
+    with steps.step("Applying adjustFormatting to strings.xml files and checking them"):
+        problems, rewritten = check_kotlin_files(stats, write=True)
+        names = ", ".join(path.parent.name for path in rewritten) or "none"
+        print(paint(f"      rewrote {len(rewritten)} files as adjustFormatting does: {names}", DIM))
     return report(stats, problems, set(stats))
 
 
@@ -1017,8 +1119,11 @@ def main(argv: list[str] | None = None) -> int:
     commands.add_parser("update", help="import, export, lint and check (macOS with Xcode)")
     commands.add_parser("check", help="lint and check the iOS files only (any platform)")
     commands.add_parser("check-kotlin", help="check the Android and desktop strings.xml files (any platform)")
+    commands.add_parser(
+        "update-kotlin", help="rewrite the strings.xml files as adjustFormatting does, then check them (any platform)"
+    )
     arguments = parser.parse_args(argv)
-    run = {"update": update, "check": check, "check-kotlin": check_kotlin}[arguments.command]
+    run = {"update": update, "check": check, "check-kotlin": check_kotlin, "update-kotlin": update_kotlin}[arguments.command]
     try:
         return run()
     except UpdateError as error:

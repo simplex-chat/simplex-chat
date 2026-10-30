@@ -115,8 +115,8 @@ class LinkTest(unittest.TestCase):
     SOURCE = "Improved [directory bot](simplex:/contact#/?v=1-4%26dh%3DMCow) and https://simplex.chat/docs."
 
     def test_links_and_masking(self) -> None:
-        self.assertEqual(l10n.links(self.SOURCE), (["simplex:/contact#/?v=1-4%26dh%3DMCow"], ["https://simplex.chat/docs."]))
-        self.assertEqual(l10n.links("见 https://github.com/simplex-chat）！"), ([], ["https://github.com/simplex-chat"]))
+        self.assertEqual(l10n.links(self.SOURCE), (("simplex:/contact#/?v=1-4%26dh%3DMCow",), ("https://simplex.chat/docs.",)))
+        self.assertEqual(l10n.links("见 https://github.com/simplex-chat）！"), ((), ("https://github.com/simplex-chat",)))
         self.assertEqual(l10n.mask_links(self.SOURCE), "Improved [directory bot](<link>) and <link>")
 
     def test_link_problems(self) -> None:
@@ -444,26 +444,36 @@ class KotlinRulesTest(unittest.TestCase):
             with self.subTest(value=value), self.assertRaisesRegex(l10n.KotlinFormatError, re.escape(expected)):
                 self.formats(value)
 
-    def test_kotlin_html_problem(self) -> None:
-        valid = [
-            '<string name="x"><![CDATA[Protected by <b>encryption</b>.]]></string>',
-            '<string name="x">Plain text</string>',
-            '<string name="x"><![CDATA[<font color="#0088ff">Blue</font>]]></string>',
-        ]
-        for element in valid:
-            with self.subTest(element=element):
-                self.assertIsNone(l10n.kotlin_html_problem(element))
+    def test_kotlin_add_cdata(self) -> None:
+        cases = {
+            '<string name="x">Plain text</string>': '<string name="x">Plain text</string>',
+            '  <string name="x">Be <b>bold</b></string>': '  <string name="x"><![CDATA[Be <b>bold</b>]]></string>',
+            '<string name="x"><font color=#0088ff>Blue</font></string>': '<string name="x"><![CDATA[<font color="#0088ff">Blue</font>]]></string>',
+            '<string name="x">&lt;font color="#0088ff"&gt;Blue&lt;/font&gt;</string>': '<string name="x"><![CDATA[<font color="#0088ff">Blue</font>]]></string>',
+        }
+        for line, expected in cases.items():
+            with self.subTest(line=line):
+                self.assertEqual(l10n.kotlin_add_cdata(line), expected)
+
+    def test_kotlin_add_cdata_rejects_what_adjust_formatting_rejects(self) -> None:
         invalid = [
-            '<string name="x"><![CDATA[Open <a href="https://x.example">link</a>]]></string>',
-            '<string name="x"><![CDATA[Broken <b>bold]]></string>',
+            '<string name="x">Open <a href="https://x.example">link</a></string>',
+            '<string name="x">Broken <b>bold</string>',
             '<string name="x">1 &lt; 2</string>',
         ]
-        for element in invalid:
-            with self.subTest(element=element):
-                self.assertEqual(
-                    l10n.kotlin_html_problem(element),
-                    "HTML other than balanced <b>, <i>, <u> or <font> tags, adjustFormatting fails the build",
-                )
+        for line in invalid:
+            with self.subTest(line=line), self.assertRaisesRegex(l10n.KotlinFormatError, "adjustFormatting fails the build"):
+                l10n.kotlin_add_cdata(line)
+
+    def test_kotlin_add_cdata_fast_path_skips_only_lines_any_html_rejects(self) -> None:
+        repository = Path(__file__).resolve().parents[2]
+        lines = [line for path in (repository / l10n.KOTLIN_RESOURCES).glob("*/strings.xml") for line in path.read_text(encoding="utf-8").splitlines()]
+        lines += ['<string name="x">a</string>', '<string name="x">a > b</string>', '<string name="x">1 &gt; 0</string>']
+        self.assertGreater(len(lines), 1000)
+        for line in lines:
+            skipped = line.count("<") + line.count(">") <= l10n.KOTLIN_STRING_TAG_BRACKETS and "&lt;" not in line and "&gt;" not in line
+            if skipped:
+                self.assertIsNone(l10n.ANY_HTML.fullmatch(line), line)
 
     def test_kotlin_text(self) -> None:
         self.assertEqual(l10n.kotlin_text("<![CDATA[<b>Don\\'t</b>]]> &amp; \\\"x\\\" \\u00e9"), '<b>Don\'t</b> & "x" é')
@@ -516,7 +526,8 @@ class KotlinFilesTest(RepositoryTestCase):
         self.write(l10n.KOTLIN_RESOURCES / "fr/strings.xml", kotlin_xml(['<string name="sent">%1$s a envoyé % s</string>']))
         self.write(l10n.KOTLIN_RESOURCES / "uk/strings.xml", "<resources><string name='a'>\n")
         stats: dict[str, l10n.LanguageStats] = {}
-        problems = l10n.check_kotlin_files(stats)
+        problems, rewritten = l10n.check_kotlin_files(stats)
+        self.assertEqual(rewritten, [])
         self.assertEqual(
             [(p.language, p.kind, p.key) for p in problems],
             [
@@ -535,7 +546,7 @@ class KotlinFilesTest(RepositoryTestCase):
 
     def test_placeholder_mismatch_against_the_base(self) -> None:
         self.write(l10n.KOTLIN_RESOURCES / "de/strings.xml", kotlin_xml(['<string name="sent">%1$s gesendet</string>']))
-        problems = l10n.check_kotlin_files({})
+        problems, _ = l10n.check_kotlin_files({})
         self.assertEqual([(p.kind, p.detail) for p in problems], [(l10n.PLACEHOLDER, "expected %1$s, %2$s, found %1$s")])
 
     def test_missing_base_file(self) -> None:
@@ -545,6 +556,79 @@ class KotlinFilesTest(RepositoryTestCase):
 
     def test_language_of_strings_xml(self) -> None:
         self.assertEqual(l10n.language_of(l10n.KOTLIN_RESOURCES / "pt-rBR/strings.xml"), "pt-rBR")
+
+
+class KotlinAdjustTest(RepositoryTestCase):
+    def test_kotlin_lines_split_like_read_line(self) -> None:
+        self.assertEqual(l10n.kotlin_lines("a\nb\n"), ["a", "b"])
+        self.assertEqual(l10n.kotlin_lines("a\r\nb"), ["a", "b"])
+        self.assertEqual(l10n.kotlin_lines("a\n\n"), ["a", ""])
+        self.assertEqual(l10n.kotlin_lines("a\u2028b"), ["a\u2028b"])
+        self.assertEqual(l10n.kotlin_lines(""), [])
+
+    def test_gradle_string_id(self) -> None:
+        self.assertEqual(l10n.gradle_string_id('  <string name="send_file">Send</string>'), "send_file")
+
+    def test_adjust_kotlin_normalizes_cdata(self) -> None:
+        text = kotlin_xml(
+            [
+                '<string name="plain"><![CDATA[No HTML here]]></string>',
+                '<string name="bold">Be <b>bold</b></string>',
+                '<string name="kept">Kept</string>',
+            ]
+        )
+        adjusted = l10n.adjust_kotlin(text)
+        self.assertTrue(adjusted.changed)
+        self.assertEqual(
+            adjusted.lines,
+            [
+                "<resources>",
+                '  <string name="plain">No HTML here</string>',
+                '  <string name="bold"><![CDATA[Be <b>bold</b>]]></string>',
+                '  <string name="kept">Kept</string>',
+                "</resources>",
+            ],
+        )
+        self.assertEqual([string.name for string in adjusted.strings], ["plain", "bold", "kept"])
+        self.assertFalse(l10n.adjust_kotlin("\n".join(adjusted.lines)).changed)
+
+    def test_adjust_kotlin_multiline_strings(self) -> None:
+        text = '<resources>\n  <string name="two">First line\nsecond %s line</string>\n</resources>\n'
+        adjusted = l10n.adjust_kotlin(text)
+        self.assertFalse(adjusted.changed)
+        self.assertEqual(adjusted.strings[0].name, "two")
+        self.assertEqual(adjusted.strings[0].line, '  <string name="two">First linesecond %s line</string>')
+        self.assertEqual(adjusted.strings[0].raw_value, "First line\nsecond %s line")
+
+    def test_adjust_kotlin_unclosed_string(self) -> None:
+        adjusted = l10n.adjust_kotlin('<resources>\n  <string name="open">Never closed\n</resources>\n')
+        self.assertEqual(adjusted.unclosed, '  <string name="open">Never closed\n</resources>')
+
+    def test_update_writes_like_adjust_formatting(self) -> None:
+        self.write(l10n.KOTLIN_BUILD_SCRIPT, BUILD_SCRIPT)
+        self.write(l10n.KOTLIN_RESOURCES / "base/strings.xml", kotlin_xml(['<string name="a">%s</string>', '<string name="b">B</string>']))
+        unchanged = kotlin_xml(['<string name="a">%s</string>'])
+        normalized = kotlin_xml(['<string name="a"><![CDATA[%s]]></string>'])
+        self.write(l10n.KOTLIN_RESOURCES / "de/strings.xml", normalized)
+        self.write(l10n.KOTLIN_RESOURCES / "fr/strings.xml", unchanged)
+        self.write(l10n.KOTLIN_RESOURCES / "lv/strings.xml", normalized)
+        self.write(l10n.KOTLIN_RESOURCES / "uk/strings.xml", kotlin_xml(['<string name="a"><![CDATA[kein]]></string>']))
+        problems, rewritten = l10n.check_kotlin_files({}, write=True)
+        self.assertEqual([path.parent.name for path in rewritten], ["de"])
+        self.assertEqual(l10n.read_file(l10n.KOTLIN_RESOURCES / "de/strings.xml"), unchanged.rstrip("\n"))
+        self.assertEqual(l10n.read_file(l10n.KOTLIN_RESOURCES / "fr/strings.xml"), unchanged)
+        self.assertEqual(l10n.read_file(l10n.KOTLIN_RESOURCES / "lv/strings.xml"), normalized)
+        self.assertEqual(l10n.read_file(l10n.KOTLIN_RESOURCES / "uk/strings.xml"), kotlin_xml(['<string name="a"><![CDATA[kein]]></string>']))
+        self.assertEqual([(p.language, p.kind) for p in problems], [("uk", l10n.PLACEHOLDER)])
+
+    def test_update_kotlin_command(self) -> None:
+        self.write(l10n.KOTLIN_BUILD_SCRIPT, BUILD_SCRIPT)
+        self.write(l10n.KOTLIN_RESOURCES / "base/strings.xml", kotlin_xml(['<string name="a">A</string>']))
+        self.write(l10n.KOTLIN_RESOURCES / "de/strings.xml", kotlin_xml(['<string name="a"><![CDATA[Ä]]></string>']))
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            self.assertEqual(l10n.main(["update-kotlin"]), 0)
+        self.assertIn("rewrote 1 files as adjustFormatting does: de", output.getvalue())
 
 
 class SummaryTest(unittest.TestCase):
