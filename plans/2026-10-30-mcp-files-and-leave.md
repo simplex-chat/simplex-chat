@@ -441,7 +441,7 @@ Phase 2 tests:
 - `test/unit/messages.test.ts`: the `file` field from each `fileStatus`, and rejected; `download`: attach, a file already received, an item without a file, `performing` at wait, the path at done, a failure by event; `send` with `file`: the type and preview by extension, the fixed preview when the core can't resize, ffmpeg absent, refused paths with symbolic links, the copy deleted at `sndFileCompleteXFTP`.
 - `test/unit/commands.test.ts`: `/approve CHAT files` and `/revoke CHAT files`, with messages approval kept; `/receive`; `/list` with files approval; the download card forms; an image card fitted to 15000 bytes.
 - `test/unit/cards.test.ts`: download cards; the attaching line of send cards.
-- `test/e2e/xftpServer.ts`: a local xftp-server from `XFTP_SERVER`, configured as `smpServer.ts`; every profile gets `/xftp`.
+- `test/e2e/smpServer.ts`: `startXftpServer`, a local xftp-server from `XFTP_SERVER`, configured as the smp-server; every profile gets `/xftp`.
 - `test/e2e/scenarios.test.ts`: the end-to-end list above, except the stop wait.
 
 Phase 1 docs:
