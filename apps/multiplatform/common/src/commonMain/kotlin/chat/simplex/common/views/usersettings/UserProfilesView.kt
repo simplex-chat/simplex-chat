@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.UserProfilePickerItem
@@ -82,7 +84,7 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
               SectionItemView({
                 AlertManager.shared.hideAlert()
                 removeUser(m, user, users, true, searchTextOrPassword.value.trim())
-              }) {
+              }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "deleteWithConnections")) {
                 Text(stringResource(MR.strings.users_delete_with_connections), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
               }
               SectionItemView({
@@ -180,7 +182,7 @@ private fun UserProfilesLayout(
         Divider(Modifier.padding(horizontal = 8.dp))
       }
       if (searchTextOrPassword.value.trim().isEmpty()) {
-        SectionItemView(addUser, minHeight = 68.dp) {
+        SectionItemView(addUser, minHeight = 68.dp, uiKey = Ui.Profiles.Add) {
           Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.users_add), tint = MaterialTheme.colors.primary)
           Spacer(Modifier.padding(horizontal = 4.dp))
           Text(stringResource(MR.strings.users_add), color = MaterialTheme.colors.primary)
@@ -218,36 +220,36 @@ private fun UserView(
 ) {
   val showMenu = remember { mutableStateOf(false) }
   val user = userInfo.user
-  UserProfilePickerItem(user, onLongClick = { showMenu.value = true }, unreadCount = userInfo.unreadCount) {
+  UserProfilePickerItem(user, onLongClick = { showMenu.value = true }, unreadCount = userInfo.unreadCount, uiKey = Ui.Profiles.User(user.userId)) {
     activateUser(user)
   }
   Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
     DefaultDropdownMenu(showMenu) {
       if (user.hidden) {
-        ItemAction(stringResource(MR.strings.user_unhide), painterResource(MR.images.ic_lock_open_right), onClick = {
+        ItemAction(stringResource(MR.strings.user_unhide), painterResource(MR.images.ic_lock_open_right), uiKey = Ui.Profiles.UserMenu(user.userId, "unhide"), onClick = {
           showMenu.value = false
           unhideUser(user)
         })
       } else {
         if (visibleUsersCount > 1) {
-          ItemAction(stringResource(MR.strings.user_hide), painterResource(MR.images.ic_lock), onClick = {
+          ItemAction(stringResource(MR.strings.user_hide), painterResource(MR.images.ic_lock), uiKey = Ui.Profiles.UserMenu(user.userId, "hide"), onClick = {
             showMenu.value = false
             showHiddenProfile(user)
           })
         }
         if (user.showNtfs) {
-          ItemAction(stringResource(MR.strings.user_mute), painterResource(MR.images.ic_notifications_off), onClick = {
+          ItemAction(stringResource(MR.strings.user_mute), painterResource(MR.images.ic_notifications_off), uiKey = Ui.Profiles.UserMenu(user.userId, "mute"), onClick = {
             showMenu.value = false
             muteUser(user)
           })
         } else {
-          ItemAction(stringResource(MR.strings.user_unmute), painterResource(MR.images.ic_notifications), onClick = {
+          ItemAction(stringResource(MR.strings.user_unmute), painterResource(MR.images.ic_notifications), uiKey = Ui.Profiles.UserMenu(user.userId, "unmute"), onClick = {
             showMenu.value = false
             unmuteUser(user)
           })
         }
       }
-      ItemAction(stringResource(MR.strings.delete_verb), painterResource(MR.images.ic_delete), color = Color.Red, onClick = {
+      ItemAction(stringResource(MR.strings.delete_verb), painterResource(MR.images.ic_delete), color = Color.Red, uiKey = Ui.Profiles.UserMenu(user.userId, "delete"), onClick = {
         removeUser(user)
         showMenu.value = false
       })
@@ -278,9 +280,9 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
     @Composable fun PasswordAndAction(label: StringResource, color: Color = MaterialTheme.colors.primary) {
       SectionView() {
         SectionItemViewWithoutMinPadding {
-          PassphraseField(actionPassword, generalGetString(MR.strings.profile_password), isValid = { passwordValid }, showStrength = true, contentType = null)
+          PassphraseField(actionPassword, generalGetString(MR.strings.profile_password), modifier = Modifier.ui(Ui.ProfileAction.Password), isValid = { passwordValid }, showStrength = true, contentType = null)
         }
-        SectionItemViewSpaceBetween({ doAction(actionPassword.value) }, disabled = !actionEnabled, minHeight = TextFieldDefaults.MinHeight) {
+        SectionItemViewSpaceBetween({ doAction(actionPassword.value) }, disabled = !actionEnabled, minHeight = TextFieldDefaults.MinHeight, uiKey = Ui.ProfileAction.Submit) {
           Text(generalGetString(label), color = if (actionEnabled) color else MaterialTheme.colors.secondary)
         }
       }

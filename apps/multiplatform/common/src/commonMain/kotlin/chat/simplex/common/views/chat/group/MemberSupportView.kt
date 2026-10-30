@@ -22,6 +22,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
@@ -125,7 +126,7 @@ private fun ModalData.MemberSupportViewLayout(
     } else {
       item {
         SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
-          MemberListSearchRowView(searchText)
+          MemberListSearchRowView(searchText, uiKey = Ui.MemberSupport.Search)
         }
       }
       items(filteredmembersWithChats.value, key = { it.groupMemberId }) { member ->
@@ -146,7 +147,8 @@ private fun ModalData.MemberSupportViewLayout(
           },
           longClick = { showMenu.value = true },
           minHeight = 54.dp,
-          padding = PaddingValues(horizontal = DEFAULT_PADDING)
+          padding = PaddingValues(horizontal = DEFAULT_PADDING),
+          uiKey = Ui.MemberSupport.Row(member.groupMemberId)
         ) {
           Box(contentAlignment = Alignment.CenterStart) {
             DropDownMenuForSupportChat(chat.remoteHostId, member, groupInfo, showMenu)
@@ -270,18 +272,18 @@ fun SupportChatRow(member: GroupMember, isChannel: Boolean) {
 private fun DropDownMenuForSupportChat(rhId: Long?, member: GroupMember, groupInfo: GroupInfo, showMenu: MutableState<Boolean>) {
   DefaultDropdownMenu(showMenu) {
     if (member.memberPending) {
-      ItemAction(stringResource(MR.strings.accept_pending_member_button), painterResource(MR.images.ic_check), color = MaterialTheme.colors.primary, onClick = {
+      ItemAction(stringResource(MR.strings.accept_pending_member_button), painterResource(MR.images.ic_check), color = MaterialTheme.colors.primary, uiKey = Ui.MemberSupport.RowMenu(member.groupMemberId, "accept"), onClick = {
         acceptMemberDialog(rhId, groupInfo, member)
         showMenu.value = false
       })
     } else {
       if (member.supportChatNotRead) {
-        ItemAction(stringResource(MR.strings.mark_read), painterResource(MR.images.ic_check), color = MaterialTheme.colors.primary, onClick = {
+        ItemAction(stringResource(MR.strings.mark_read), painterResource(MR.images.ic_check), color = MaterialTheme.colors.primary, uiKey = Ui.MemberSupport.RowMenu(member.groupMemberId, "markRead"), onClick = {
           markSupportChatRead(rhId, groupInfo, member)
           showMenu.value = false
         })
       }
-      ItemAction(stringResource(MR.strings.delete_member_support_chat_button), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, onClick = {
+      ItemAction(stringResource(MR.strings.delete_member_support_chat_button), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, uiKey = Ui.MemberSupport.RowMenu(member.groupMemberId, "delete"), onClick = {
         deleteMemberSupportChatDialog(rhId, groupInfo, member)
         showMenu.value = false
       })

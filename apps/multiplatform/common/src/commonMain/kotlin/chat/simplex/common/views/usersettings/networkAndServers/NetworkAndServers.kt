@@ -38,6 +38,9 @@ import chat.simplex.common.model.ChatController.getUserServers
 import chat.simplex.common.model.ChatController.setUserServers
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingActionButton
@@ -243,7 +246,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
               rhId = currentRemoteHost?.remoteHostId
             )
           }
-        }) {
+        }, uiKey = Ui.Network.YourServers) {
           Icon(
             painterResource(MR.images.ic_dns),
             stringResource(MR.strings.your_servers),
@@ -261,8 +264,8 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
 
       if (currentRemoteHost == null) {
         UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
-        SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, appPrefs.networkProxy, onionHosts, sessionMode = appPrefs.networkSessionMode.get(), false, it) } })
-        SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), { ModalManager.start.showCustomModal { AdvancedNetworkSettingsView(showModal, it) } })
+        SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, appPrefs.networkProxy, onionHosts, sessionMode = appPrefs.networkSessionMode.get(), false, it) } }, uiKey = Ui.Network.SocksSettings)
+        SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), { ModalManager.start.showCustomModal { AdvancedNetworkSettingsView(showModal, it) } }, uiKey = Ui.Network.Advanced)
       }
     }
     if (currentRemoteHost == null && networkUseSocksProxy.value) {
@@ -275,6 +278,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
       SectionItemView(
         { scope.launch { saveServers(rhId = currentRemoteHost?.remoteHostId, currUserServers, userServers) } },
         disabled = saveDisabled,
+        uiKey = Ui.Network.SaveServers,
       ) {
         Text(stringResource(MR.strings.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       }
@@ -357,6 +361,7 @@ fun UseSocksProxySwitch(
     DefaultSwitch(
       checked = networkUseSocksProxy.value,
       onCheckedChange = toggleSocksProxy,
+      modifier = Modifier.ui(Ui.Network.UseSocks),
     )
   }
 }
@@ -477,7 +482,7 @@ fun SocksProxySettings(
           DefaultConfigurableTextField(
             hostUnsaved,
             stringResource(MR.strings.host_verb),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().ui(Ui.Socks.Host),
             isValid = ::validHost,
             keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
             keyboardType = KeyboardType.Text,
@@ -485,14 +490,14 @@ fun SocksProxySettings(
           DefaultConfigurableTextField(
             portUnsaved,
             stringResource(MR.strings.port_verb),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().ui(Ui.Socks.Port),
             isValid = ::validPort,
             keyboardActions = KeyboardActions(onDone = { defaultKeyboardAction(ImeAction.Done); save(false) }),
             keyboardType = KeyboardType.Number,
           )
         }
 
-        UseOnionHosts(onionHosts, rememberUpdatedState(networkUseSocksProxy && proxyAuthRandomUnsaved.value)) {
+        UseOnionHosts(onionHosts, rememberUpdatedState(networkUseSocksProxy && proxyAuthRandomUnsaved.value), Ui.Socks.OnionHosts) {
           onionHosts.value = it
         }
       }
@@ -539,12 +544,13 @@ fun SocksProxySettings(
           passwordUnsaved.value = TextFieldValue()
           proxyAuthRandomUnsaved.value = true
           onionHosts.value = NetCfg.defaults.onionHosts
-        }, disabled = resetDisabled) {
+        }, disabled = resetDisabled, uiKey = Ui.Socks.Reset) {
           Text(stringResource(MR.strings.network_options_reset_to_defaults), color = if (resetDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
         }
         SectionItemView(
           click = { if (networkUseSocksProxy && !migration) showUpdateNetworkSettingsDialog { save(false) } else save(false) },
-          disabled = saveDisabled
+          disabled = saveDisabled,
+          uiKey = Ui.Socks.Save
         ) {
           Text(stringResource(if (networkUseSocksProxy && !migration) MR.strings.network_options_save_and_reconnect else MR.strings.network_options_save), color = if (saveDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
         }
@@ -574,6 +580,7 @@ private fun showUnsavedSocksHostPortAlert(confirmText: String, save: () -> Unit,
 fun UseOnionHosts(
   onionHosts: MutableState<OnionHosts>,
   enabled: State<Boolean>,
+  uiKey: UiKey? = null,
   useOnion: (OnionHosts) -> Unit,
 ) {
   val values = remember {
@@ -594,6 +601,7 @@ fun UseOnionHosts(
         onionHosts,
         icon = painterResource(MR.images.ic_security),
         enabled = enabled,
+        uiKey = uiKey,
         onSelected = useOnion
       )
     } else {
@@ -604,6 +612,7 @@ fun UseOnionHosts(
         remember { mutableStateOf(OnionHosts.NEVER) },
         icon = painterResource(MR.images.ic_security),
         enabled = enabled,
+        uiKey = uiKey,
         onSelected = {}
       )
     }
@@ -640,11 +649,12 @@ fun SessionModePicker(
     sessionMode,
     values,
     icon = painterResource(MR.images.ic_safety_divider),
+    uiKey = Ui.AdvancedNetwork.SessionMode,
     onSelected = {
       showModal {
         ColumnWithScrollBar {
           AppBarTitle(stringResource(MR.strings.network_session_mode_transport_isolation))
-          SectionViewSelectable(null, sessionMode, values, updateSessionMode)
+          SectionViewSelectable(null, sessionMode, values, updateSessionMode, uiKey = Ui.AdvancedNetwork.SessionMode)
         }
       }
     }
@@ -692,7 +702,8 @@ private fun ServerOperatorRow(
           rhId
         )
       }
-    }
+    },
+    uiKey = Ui.Network.Operator(operator.operatorId)
   ) {
     Image(
       painterResource(operator.logo),
@@ -839,7 +850,7 @@ fun SimpleConditionsView(
     }
     Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).padding(bottom = DEFAULT_PADDING * 2).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
       OnboardingActionButton(
-        modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+        modifier = (if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp)).ui(Ui.Onboarding.ConditionsAccept),
         labelId = MR.strings.onboarding_conditions_accept,
         onboarding = null,
         onclick = onAccept

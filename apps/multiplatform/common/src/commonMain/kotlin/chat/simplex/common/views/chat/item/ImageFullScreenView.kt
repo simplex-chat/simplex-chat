@@ -14,7 +14,9 @@ import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.onGloballyPositioned
 import chat.simplex.common.model.CryptoFile
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.CurrentColors
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.chat.ProviderMedia
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -77,6 +79,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
     val index = index - firstValidPageBeforeScrollingToStart.value
     Column(
       Modifier
+        .ui(Ui.Chat.FullScreenMedia)
         .fillMaxSize()
         .background(Color.Black)
         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = goBack)

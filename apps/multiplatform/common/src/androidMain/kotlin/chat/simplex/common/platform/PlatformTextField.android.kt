@@ -36,6 +36,9 @@ import chat.simplex.common.R
 import chat.simplex.common.helpers.toURI
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
+import chat.simplex.common.ui.uiTestHooksEnabled
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
@@ -60,6 +63,7 @@ actual fun PlatformTextField(
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
   focusRequester: FocusRequester?,
+  uiKey: UiKey?,
   onDone: () -> Unit,
 ) {
   val cs = composeState.value
@@ -96,7 +100,7 @@ actual fun PlatformTextField(
   }
 
   val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-  AndroidView(modifier = Modifier, factory = { context ->
+  AndroidView(modifier = Modifier.ui(uiKey), factory = { context ->
     val editText = @SuppressLint("AppCompatCustomView") object: EditText(context) {
       override fun setOnReceiveContentListener(
         mimeTypes: Array<out String>?,
@@ -135,6 +139,7 @@ actual fun PlatformTextField(
     editText.background = ColorDrawable(Color.Transparent.toArgb())
     editText.textDirection = if (isRtl) EditText.TEXT_DIRECTION_LOCALE else EditText.TEXT_DIRECTION_ANY_RTL
     editText.setPaddingRelative(paddingStart, paddingTop, paddingEnd, paddingBottom)
+    if (uiTestHooksEnabled) editText.tag = uiKey?.tag
     editText.setText(cs.message.text)
     editText.setSelection(cs.message.selection.start, cs.message.selection.end)
     editText.hint = placeholder

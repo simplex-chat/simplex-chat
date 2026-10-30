@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chatlist
 
+import chat.simplex.common.ui.ui
 import SectionItemView
 import TextIconSpaced
 import androidx.compose.foundation.*
@@ -26,6 +27,8 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.model.ChatModel.controller
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
@@ -209,7 +212,7 @@ fun UserPicker(
           )
         }
       } else if (currentUser != null) {
-        SectionItemView({ onUserClicked(currentUser) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
+        SectionItemView({ onUserClicked(currentUser) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped, uiKey = Ui.UserPicker.User(currentUser.userId)) {
           ProfilePreview(currentUser.profile, iconColor = iconColor, stopped = stopped, badge = currentUser.profile.localBadge)
         }
       }
@@ -231,7 +234,8 @@ fun UserPicker(
                 if (ModalManager.start.isLastModal(modal)) close()
               }
             }
-          }, disabled = stopped
+          }, disabled = stopped,
+          uiKey = Ui.UserPicker.Address
         )
         UserPickerOptionRow(
           painterResource(MR.images.ic_toggle_on),
@@ -249,7 +253,8 @@ fun UserPicker(
               }
             }()
           }),
-          disabled = stopped
+          disabled = stopped,
+          uiKey = Ui.UserPicker.ChatPreferences
         )
       }
       if (appPlatform.isDesktop) {
@@ -304,6 +309,7 @@ fun UserPicker(
                 onSearchValueChanged = {
                   search.value = it
                 },
+                uiKey = Ui.Profiles.Bar,
                 content = {
                   UserProfilesView(chatModel, search, profileHidden) { block ->
                       if (authorized.value) {
@@ -321,7 +327,8 @@ fun UserPicker(
                 })
             }
           },
-          disabled = stopped
+          disabled = stopped,
+          uiKey = Ui.UserPicker.Profiles
         )
       }
     }
@@ -386,7 +393,8 @@ private fun GlobalSettingsSection(
           ConnectDesktopView(close)
         }
       },
-      disabled = stopped
+      disabled = stopped,
+      uiKey = Ui.UserPicker.UseFromDesktop
     )
   } else {
     UserPickerOptionRow(
@@ -398,7 +406,8 @@ private fun GlobalSettingsSection(
           ConnectMobileView()
         }
       },
-      disabled = stopped
+      disabled = stopped,
+      uiKey = Ui.UserPicker.LinkMobile
     )
   }
 
@@ -408,7 +417,8 @@ private fun GlobalSettingsSection(
         SettingsView(chatModel, setPerformLA, close)
       }
     },
-    padding = if (appPlatform.isDesktop) PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING + 2.dp) else PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)
+    padding = if (appPlatform.isDesktop) PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING + 2.dp) else PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF),
+    uiKey = Ui.UserPicker.Settings,
   ) {
     val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
     Icon(painterResource(MR.images.ic_settings), text, tint = MaterialTheme.colors.secondary)
@@ -426,10 +436,12 @@ fun UserProfilePickerItem(
   enabled: Boolean = remember { chatModel.chatRunning }.value == true || chatModel.connectedToRemote,
   onLongClick: () -> Unit = {},
   openSettings: () -> Unit = {},
+  uiKey: UiKey? = null,
   onClick: () -> Unit
 ) {
   Row(
     Modifier
+      .ui(uiKey)
       .fillMaxWidth()
       .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
       .combinedClickable(
@@ -504,8 +516,8 @@ fun UserProfileRow(u: User, enabled: Boolean = remember { chatModel.chatRunning 
 }
 
 @Composable
-fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)? = null, disabled: Boolean = false) {
-  SectionItemView(click, disabled = disabled, extraPadding = appPlatform.isDesktop) {
+fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)? = null, disabled: Boolean = false, uiKey: UiKey? = null) {
+  SectionItemView(click, disabled = disabled, extraPadding = appPlatform.isDesktop, uiKey = uiKey) {
     Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.secondary)
     TextIconSpaced()
     Text(text = text, color = if (disabled) MaterialTheme.colors.secondary else Color.Unspecified)
@@ -539,7 +551,8 @@ private fun DevicePickerRow(
         icon = painterResource(MR.images.ic_smartphone_300),
         text = activeHost.hostDeviceName,
         actionButtonVisible = activeHost.sessionState is RemoteHostSessionState.Connected,
-        onActionButtonClick = { onRemoteHostActionButtonClick(activeHost) }
+        onActionButtonClick = { onRemoteHostActionButtonClick(activeHost) },
+        uiKey = Ui.UserPicker.Device(activeHost.remoteHostId)
       ) {
         onRemoteHostClick(activeHost, connecting)
       }
@@ -549,7 +562,8 @@ private fun DevicePickerRow(
       active = localDeviceActive,
       icon = painterResource(MR.images.ic_desktop),
       text = stringResource(MR.strings.this_device),
-      actionButtonVisible = false
+      actionButtonVisible = false,
+      uiKey = Ui.UserPicker.Device(null)
     ) {
       onLocalDeviceClick()
     }
@@ -562,7 +576,8 @@ private fun DevicePickerRow(
         icon = painterResource(MR.images.ic_smartphone_300),
         text = h.hostDeviceName,
         actionButtonVisible = h.sessionState is RemoteHostSessionState.Connected,
-        onActionButtonClick = { onRemoteHostActionButtonClick(h) }
+        onActionButtonClick = { onRemoteHostActionButtonClick(h) },
+        uiKey = Ui.UserPicker.Device(h.remoteHostId)
       ) {
         onRemoteHostClick(h, connecting)
       }
@@ -592,9 +607,11 @@ fun DevicePill(
   text: String,
   actionButtonVisible: Boolean,
   onActionButtonClick: (() -> Unit)? = null,
+  uiKey: UiKey? = null,
   onClick: () -> Unit) {
   Row(
     Modifier
+      .ui(uiKey)
       .clip(RoundedCornerShape(8.dp))
       .border(
         BorderStroke(1.dp, MaterialTheme.colors.secondaryVariant),
@@ -632,7 +649,7 @@ fun DevicePill(
         val interactionSource = remember { MutableInteractionSource() }
         val hovered = interactionSource.collectIsHoveredAsState().value
         Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON * fontSizeSqrtMultiplier))
-        IconButton(onActionButtonClick, Modifier.requiredSize(16.dp * fontSizeSqrtMultiplier)) {
+        IconButton(onActionButtonClick, Modifier.ui(uiKey?.part("disconnect")).requiredSize(16.dp * fontSizeSqrtMultiplier)) {
           Icon(
             painterResource(if (hovered) MR.images.ic_wifi_off else MR.images.ic_wifi),
             null,

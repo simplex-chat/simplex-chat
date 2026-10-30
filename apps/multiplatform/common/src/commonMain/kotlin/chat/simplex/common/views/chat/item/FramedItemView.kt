@@ -1,5 +1,7 @@
 package chat.simplex.common.views.chat.item
 
+import chat.simplex.common.ui.ui
+import chat.simplex.common.ui.Ui
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -235,7 +237,7 @@ fun FramedItemView(
 
   @Composable
   fun ciFileView(ci: ChatItem, text: String) {
-    CIFileView(ci.file, ci.meta, chatTTL, showViaProxy, showTimestamp, showMenu, false, receiveFile)
+    CIFileView(ci.file, ci.meta, chatTTL, showViaProxy, showTimestamp, showMenu, false, Ui.Chat.ItemFile(ci.id), receiveFile)
     if (text != "" || ci.meta.isLive) {
       CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode = linkMode, uriHandler, showViaProxy = showViaProxy,  showTimestamp = showTimestamp, terminalTop = 0.dp)
     }
@@ -322,6 +324,7 @@ fun FramedItemView(
             if (ci.quotedItem != null) {
               Column(
                 Modifier
+                  .ui { Ui.Chat.Item(ci.id).part("quote") }
                   .combinedClickable(
                     onLongClick = { showMenu.value = true },
                     onClick = {
@@ -398,7 +401,7 @@ fun FramedItemView(
                 is MsgContent.MCImage -> {
                   val provider = imageProvider ?: return@PriorityLayout
                   Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).then(mediaModifier)) {
-                    CIImageView(image = mc.image, file = ci.file, provider, showMenu, false, receiveFile)
+                    CIImageView(image = mc.image, file = ci.file, provider, showMenu, false, Ui.Chat.ItemFile(ci.id), receiveFile)
                   }
                   if (mc.text == "" && !ci.meta.isLive) {
                     if (!terminal) metaColor = Color.White
@@ -441,7 +444,7 @@ fun FramedItemView(
                 is MsgContent.MCChat -> {
                   val hasText = mc.text != mc.chatLink.connLinkStr
                   Box(
-                    Modifier.then(if (terminal) cardModifier.width(IntrinsicSize.Max) else Modifier).combinedClickable(
+                    Modifier.ui { Ui.Chat.Item(ci.id).part("chatLink") }.then(if (terminal) cardModifier.width(IntrinsicSize.Max) else Modifier).combinedClickable(
                       onClick = {
                         withBGApi { planAndConnect(chat.remoteHostId, mc.chatLink.connLinkStr, linkOwnerSig = mc.ownerSig, close = null) }
                       },

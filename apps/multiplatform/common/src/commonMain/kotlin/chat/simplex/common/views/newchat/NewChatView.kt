@@ -36,6 +36,9 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.chat.topPaddingToContent
@@ -231,12 +234,14 @@ private fun ProfilePickerOption(
   onSelected: () -> Unit,
   image: @Composable () -> Unit,
   onInfo: (() -> Unit)? = null,
-  badge: LocalBadge? = null
+  badge: LocalBadge? = null,
+  uiKey: UiKey? = null
 ) {
   Row(
     Modifier
       .fillMaxWidth()
       .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
+      .ui(uiKey)
       .clickable(enabled = !disabled, onClick = onSelected)
       .padding(horizontal = DEFAULT_PADDING, vertical = 4.dp),
     horizontalArrangement = Arrangement.SpaceBetween,
@@ -367,7 +372,8 @@ fun ActiveProfilePicker(
         }
       },
         image = { ProfileImage(size = 42.dp, image = user.image) },
-        badge = user.profile.localBadge
+        badge = user.profile.localBadge,
+        uiKey = Ui.Link.Profile(user.userId)
     )
   }
 
@@ -401,6 +407,7 @@ fun ActiveProfilePicker(
         IncognitoOptionImage()
       },
       onInfo = { ModalManager.start.showModal { IncognitoView() } },
+      uiKey = Ui.Link.ProfileIncognito
     )
   }
 
@@ -529,6 +536,7 @@ private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contact
           start = 16.dp,
           end = 16.dp
         ),
+        uiKey = Ui.Link.ShareProfile,
         click = {
           ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
             val search = rememberSaveable { mutableStateOf("") }
@@ -537,6 +545,7 @@ private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contact
               showSearch = true,
               searchAlwaysVisible = true,
               onSearchValueChanged = { search.value = it },
+              uiKey = Ui.Link.ProfileBar,
               content = {
                 ActiveProfilePicker(
                   search = search,
@@ -586,7 +595,7 @@ fun ToggleShortLinkButton(short: MutableState<Boolean>) {
   if (appPrefs.developerTools.state.value) {
     Text(
       stringResource(if (short.value) MR.strings.full_link_button_text else MR.strings.short_link_button_text),
-      modifier = Modifier.clickable(
+      modifier = Modifier.ui(Ui.Link.ShortLinkToggle).clickable(
         interactionSource = remember { MutableInteractionSource() },
         indication = null
       ) { short.value = !short.value },
@@ -689,7 +698,7 @@ private fun PasteLinkView(rhId: Long?, pastedLink: MutableState<String>, showQRC
           text = generalGetString(MR.strings.the_text_you_pasted_is_not_a_link)
         )
       }
-    }) {
+    }, uiKey = Ui.Link.Paste) {
       Box(Modifier.weight(1f)) {
         Text(stringResource(MR.strings.tap_to_paste_link), color = MaterialTheme.colors.primary)
       }
@@ -716,7 +725,7 @@ private fun PasteLinkView(rhId: Long?, pastedLink: MutableState<String>, showQRC
 fun LinkTextView(link: String, share: Boolean) {
   val clipboard = LocalClipboardManager.current
   Row(Modifier.fillMaxWidth().heightIn(min = DEFAULT_MIN_SECTION_ITEM_HEIGHT).padding(horizontal = DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
-    Box(Modifier.weight(1f).clickable {
+    Box(Modifier.weight(1f).ui(Ui.Link.Text).clickable {
       chatModel.markShowingInvitationUsed()
       clipboard.shareText(link)
     }) {
@@ -851,6 +860,7 @@ fun strConnectTarget(str: String): ConnectTarget? {
 fun IncognitoToggle(
   incognitoPref: SharedPreference<Boolean>,
   incognito: MutableState<Boolean>,
+  uiKey: UiKey? = null,
   onClickInfo: () -> Unit
 ) {
   SettingsActionItemWithContent(
@@ -864,6 +874,7 @@ fun IncognitoToggle(
       stringResource(MR.strings.incognito),
       painterResource(MR.images.ic_info),
       stopped = false,
+      uiKey = uiKey,
       onClickInfo = onClickInfo,
       preference = incognitoPref,
       preferenceState = incognito

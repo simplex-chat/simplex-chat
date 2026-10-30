@@ -28,6 +28,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
@@ -314,13 +316,13 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
           SectionItemView({
             AlertManager.shared.hideAlert()
             removeMember(rhId, groupInfo, member, withMessages = false, chatModel, close)
-          }) {
+          }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "remove")) {
             Text(generalGetString(MR.strings.remove_member_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
           }
           SectionItemView({
             AlertManager.shared.hideAlert()
             removeMember(rhId, groupInfo, member, withMessages = true, chatModel, close)
-          }) {
+          }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "removeWithMessages")) {
             Text(generalGetString(MR.strings.remove_member_delete_messages_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
           }
           SectionItemView({
@@ -424,6 +426,7 @@ fun GroupMemberInfoLayout(
         }
       },
       iconColor = MaterialTheme.colors.secondary,
+      uiKey = Ui.MemberInfo.SupportChat,
     )
   }
 
@@ -508,7 +511,7 @@ fun GroupMemberInfoLayout(
               }
             }
 
-            OpenChatButton(modifier = Modifier.fillMaxWidth(0.33f), onClick = { openDirectChat(contact.contactId) })
+            OpenChatButton(modifier = Modifier.fillMaxWidth(0.33f), uiKey = Ui.MemberInfo.Message, onClick = { openDirectChat(contact.contactId) })
             AudioCallButton(modifier = Modifier.fillMaxWidth(0.5f), chat, contact, knownContactConnectionStats)
             VideoButton(modifier = Modifier.fillMaxWidth(1f), chat, contact, knownContactConnectionStats)
           } else if (groupInfo.fullGroupPreferences.directMessages.on(groupInfo.membership)) {
@@ -518,24 +521,25 @@ fun GroupMemberInfoLayout(
               OpenChatButton(
                 modifier = Modifier.fillMaxWidth(0.33f),
                 disabledLook = !(member.sendMsgEnabled || (member.activeConn?.connectionStats?.ratchetSyncAllowed ?: false)),
+                uiKey = Ui.MemberInfo.Message,
                 onClick = { createMemberContact() }
               )
             }
-            InfoViewActionButton(modifier = Modifier.fillMaxWidth(0.5f), painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = false, disabledLook = true, onClick = {
+            InfoViewActionButton(modifier = Modifier.fillMaxWidth(0.5f), painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = false, disabledLook = true, uiKey = Ui.MemberInfo.Call, onClick = {
               showSendMessageToEnableCallsAlert()
             })
-            InfoViewActionButton(modifier = Modifier.fillMaxWidth(1f), painterResource(MR.images.ic_videocam), generalGetString(MR.strings.info_view_video_button), disabled = false, disabledLook = true, onClick = {
+            InfoViewActionButton(modifier = Modifier.fillMaxWidth(1f), painterResource(MR.images.ic_videocam), generalGetString(MR.strings.info_view_video_button), disabled = false, disabledLook = true, uiKey = Ui.MemberInfo.Video, onClick = {
               showSendMessageToEnableCallsAlert()
             })
           } else { // no known contact chat && directMessages are off
             val messageId = if (groupInfo.businessChat == null) MR.strings.direct_messages_are_prohibited_in_group else MR.strings.direct_messages_are_prohibited_in_chat
-            InfoViewActionButton(modifier = Modifier.fillMaxWidth(0.33f), painterResource(MR.images.ic_chat_bubble), generalGetString(MR.strings.info_view_message_button), disabled = false, disabledLook = true, onClick = {
+            InfoViewActionButton(modifier = Modifier.fillMaxWidth(0.33f), painterResource(MR.images.ic_chat_bubble), generalGetString(MR.strings.info_view_message_button), disabled = false, disabledLook = true, uiKey = Ui.MemberInfo.Message, onClick = {
               showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_send_message_to_member_alert_title), messageId)
             })
-            InfoViewActionButton(modifier = Modifier.fillMaxWidth(0.5f), painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = false, disabledLook = true, onClick = {
+            InfoViewActionButton(modifier = Modifier.fillMaxWidth(0.5f), painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = false, disabledLook = true, uiKey = Ui.MemberInfo.Call, onClick = {
               showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_call_member_alert_title), messageId)
             })
-            InfoViewActionButton(modifier = Modifier.fillMaxWidth(1f), painterResource(MR.images.ic_videocam), generalGetString(MR.strings.info_view_video_button), disabled = false, disabledLook = true, onClick = {
+            InfoViewActionButton(modifier = Modifier.fillMaxWidth(1f), painterResource(MR.images.ic_videocam), generalGetString(MR.strings.info_view_video_button), disabled = false, disabledLook = true, uiKey = Ui.MemberInfo.Video, onClick = {
               showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_call_member_alert_title), messageId)
             })
           }
@@ -648,6 +652,7 @@ fun GroupMemberInfoLayout(
         }
         SwitchAddressButton(
           disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null } || !member.sendMsgEnabled,
+          uiKey = Ui.Info.SwitchAddress,
           switchAddress = switchMemberAddress
         )
         if (cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null }) {
@@ -658,11 +663,11 @@ fun GroupMemberInfoLayout(
         }
         val rcvServers = cStats.rcvQueuesInfo.map { it.rcvServer }
         if (rcvServers.isNotEmpty()) {
-          SimplexServers(stringResource(MR.strings.receiving_via), rcvServers)
+          SimplexServers(stringResource(MR.strings.receiving_via), rcvServers, Ui.Info.ReceivingVia)
         }
         val sndServers = cStats.sndQueuesInfo.map { it.sndServer }
         if (sndServers.isNotEmpty()) {
-          SimplexServers(stringResource(MR.strings.sending_via), sndServers)
+          SimplexServers(stringResource(MR.strings.sending_via), sndServers, Ui.Info.SendingVia)
         }
       }
     } else if (!connectionLoaded && memberConnected) {
@@ -809,6 +814,7 @@ fun BlockMemberButton(onClick: () -> Unit) {
     click = onClick,
     textColor = Color.Red,
     iconColor = Color.Red,
+    uiKey = Ui.MemberInfo.Block,
   )
 }
 
@@ -817,7 +823,8 @@ fun UnblockMemberButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_do_not_touch),
     stringResource(MR.strings.unblock_member_button),
-    click = onClick
+    click = onClick,
+    uiKey = Ui.MemberInfo.Unblock,
   )
 }
 
@@ -829,6 +836,7 @@ fun BlockForAllButton(onClick: () -> Unit) {
     click = onClick,
     textColor = Color.Red,
     iconColor = Color.Red,
+    uiKey = Ui.MemberInfo.BlockForAll,
   )
 }
 
@@ -837,7 +845,8 @@ fun UnblockForAllButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_do_not_touch),
     stringResource(MR.strings.unblock_for_all),
-    click = onClick
+    click = onClick,
+    uiKey = Ui.MemberInfo.UnblockForAll,
   )
 }
 
@@ -852,6 +861,7 @@ fun RemoveMemberButton(useRelays: Boolean = false, isRelay: Boolean = false, onC
     click = onClick,
     textColor = Color.Red,
     iconColor = Color.Red,
+    uiKey = Ui.MemberInfo.Remove,
   )
 }
 
@@ -863,6 +873,7 @@ fun DeleteMemberMessagesButton(onClick: () -> Unit) {
     click = onClick,
     textColor = Color.Red,
     iconColor = Color.Red,
+    uiKey = Ui.MemberInfo.DeleteMessages,
   )
 }
 
@@ -881,6 +892,7 @@ fun ShareRelayAddressButton(onClick: () -> Unit) {
 fun OpenChatButton(
   modifier: Modifier,
   disabledLook: Boolean = false,
+  uiKey: UiKey? = null,
   onClick: () -> Unit
 ) {
   InfoViewActionButton(
@@ -889,6 +901,7 @@ fun OpenChatButton(
     title = generalGetString(MR.strings.info_view_message_button),
     disabled = false,
     disabledLook = disabledLook,
+    uiKey = uiKey,
     onClick = onClick
   )
 }
@@ -923,6 +936,7 @@ private fun RoleSelectionRow(
       selectedRole,
       icon = null,
       enabled = remember { mutableStateOf(true) },
+      uiKey = Ui.MemberInfo.Role,
       onSelected = onSelected
     )
   }

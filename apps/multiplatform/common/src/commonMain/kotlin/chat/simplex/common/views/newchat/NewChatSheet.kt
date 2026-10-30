@@ -28,6 +28,9 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.chat.topPaddingToContent
@@ -220,6 +223,12 @@ private fun ModalData.NewChatSheetLayout(
               icon = it.first,
               text = it.second,
               click = it.third,
+              uiKey = when (it.third) {
+                addContact -> Ui.NewChat.CreateLink
+                scanPaste -> Ui.NewChat.PasteLink
+                createGroup -> Ui.NewChat.CreateGroup
+                else -> Ui.NewChat.CreateChannel
+              },
             )
           }
         }
@@ -242,7 +251,8 @@ private fun ModalData.NewChatSheetLayout(
                   })
                 }
               }
-            }
+            },
+            uiKey = Ui.NewChat.Archived
           ) {
             Icon(
               painterResource(MR.images.ic_inventory_2),
@@ -461,9 +471,10 @@ private fun NewChatButton(
   click: () -> Unit,
   textColor: Color = Color.Unspecified,
   iconColor: Color = MaterialTheme.colors.primary,
-  disabled: Boolean = false
+  disabled: Boolean = false,
+  uiKey: UiKey? = null,
 ) {
-  SectionItemView(click, disabled = disabled) {
+  SectionItemView(click, disabled = disabled, uiKey = uiKey) {
     Row {
       Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else iconColor)
       TextIconSpaced(false)
@@ -492,7 +503,7 @@ private fun ContactsSearchBar(
       tint = MaterialTheme.colors.secondary
     )
     SearchTextField(
-      Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
+      Modifier.ui(Ui.NewChat.Search).weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
       placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
       alwaysVisible = true,
       searchText = searchText,
@@ -577,7 +588,7 @@ private fun ContactsSearchBar(
 @Composable
 private fun ToggleFilterButton() {
   val pref = remember { appPrefs.showUnreadAndFavorites }
-  IconButton(onClick = { pref.set(!pref.get()) }) {
+  IconButton(onClick = { pref.set(!pref.get()) }, modifier = Modifier.ui(Ui.NewChat.Favorites)) {
     val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
     Icon(
       painterResource(MR.images.ic_filter_list),

@@ -9,6 +9,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.ui.Modifier
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
@@ -122,6 +123,7 @@ private fun FeatureSection(feature: ChatFeature, allowFeature: State<FeatureAllo
       FeatureAllowed.values().map { it to it.text },
       allowFeature,
       icon = feature.icon,
+      uiKey = Ui.UserPrefs.Allow(feature),
       onSelected = onSelected,
     )
   }
@@ -143,6 +145,7 @@ private fun TimedMessagesFeatureSection(
       MaterialTheme.colors.secondary,
       checked = allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES,
       extraPadding = false,
+      uiKey = Ui.UserPrefs.Timed,
       onChange = onSelected
     )
     if (allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES) {
@@ -167,10 +170,10 @@ private fun TimedMessagesFeatureSection(
 @Composable
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
   SectionView {
-    SectionItemView(reset, disabled = disabled) {
+    SectionItemView(reset, disabled = disabled, uiKey = Ui.UserPrefs.Reset) {
       Text(stringResource(MR.strings.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
-    SectionItemView(save, disabled = disabled) {
+    SectionItemView(save, disabled = disabled, uiKey = Ui.UserPrefs.Save) {
       Text(stringResource(MR.strings.save_and_notify_contacts), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
   }

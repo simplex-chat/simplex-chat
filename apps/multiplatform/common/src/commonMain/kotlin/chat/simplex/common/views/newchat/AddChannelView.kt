@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.getUserServers
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import androidx.compose.ui.layout.ContentScale
 import chat.simplex.common.BuildConfigCommon
@@ -310,7 +311,7 @@ private fun ProfileStepView(
           }
         }
         Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-          ProfileNameField(displayName, "", { isValidDisplayName(it.trim()) }, focusRequester)
+          ProfileNameField(displayName, "", { isValidDisplayName(it.trim()) }, focusRequester, uiKey = Ui.NewChannel.Name)
         }
         Spacer(Modifier.height(8.dp))
 
@@ -333,7 +334,8 @@ private fun ProfileStepView(
           click = createChannel,
           textColor = MaterialTheme.colors.primary,
           iconColor = MaterialTheme.colors.primary,
-          disabled = !canCreate
+          disabled = !canCreate,
+          uiKey = Ui.NewChannel.Create
         )
 
         SectionTextFooter(

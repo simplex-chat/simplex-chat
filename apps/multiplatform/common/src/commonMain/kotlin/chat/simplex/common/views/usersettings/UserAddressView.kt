@@ -25,6 +25,8 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
@@ -433,6 +435,7 @@ private fun CreateAddressButton(onClick: () -> Unit) {
     onClick,
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,
+    uiKey = Ui.Address.Create,
   )
 }
 
@@ -455,6 +458,7 @@ private fun ShareViaChatButton(onClick: () -> Unit) {
     onClick,
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,
+    uiKey = Ui.Address.ShareViaChat,
   )
 }
 
@@ -471,6 +475,7 @@ private fun CreateOneTimeLinkButton() {
     },
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,
+    uiKey = Ui.Address.CreateLink,
   )
 }
 
@@ -480,6 +485,7 @@ private fun LearnMoreButton(onClick: () -> Unit) {
     painterResource(MR.images.ic_info),
     stringResource(MR.strings.simplex_address_or_1_time_link),
     onClick,
+    uiKey = Ui.Address.LearnMore,
   )
 }
 
@@ -509,7 +515,8 @@ private fun AddressSettingsButton(
       ModalManager.start.showCustomModal { close ->
         UserAddressSettings(user, userAddress, shareViaProfile, setProfileAddress, saveAddressSettings, close = close)
       }
-    }
+    },
+    uiKey = Ui.Address.Settings,
   )
 }
 
@@ -587,6 +594,7 @@ fun ShareWithContactsButton(shareViaProfile: MutableState<Boolean>, setProfileAd
     stringResource(MR.strings.share_with_contacts),
     painterResource(MR.images.ic_person),
     checked = shareViaProfile.value,
+    uiKey = Ui.Address.ShareWithContacts,
   ) { on ->
     shareViaProfile.value = on
     if (on) {
@@ -627,6 +635,7 @@ private fun BusinessAddressToggle(addressSettingsState: MutableState<AddressSett
     stringResource(MR.strings.business_address),
     painterResource(MR.images.ic_work),
     checked = addressSettingsState.value.businessAddress,
+    uiKey = Ui.Address.Business,
   ) { businessToggle ->
     addressSettingsState.value = if (businessToggle)
       AddressSettingsState(
@@ -654,7 +663,8 @@ private fun AutoAcceptToggle(addressSettingsState: MutableState<AddressSettingsS
     stringResource(MR.strings.auto_accept_contact),
     painterResource(MR.images.ic_check),
     disabled = addressSettingsState.value.businessAddress,
-    checked = addressSettingsState.value.autoAccept
+    checked = addressSettingsState.value.autoAccept,
+    uiKey = Ui.Address.AutoAccept,
   ) { autoAcceptToggle ->
     addressSettingsState.value = if (autoAcceptToggle)
       AddressSettingsState(
@@ -684,6 +694,7 @@ private fun DeleteAddressButton(onClick: () -> Unit) {
     onClick,
     iconColor = MaterialTheme.colors.error,
     textColor = MaterialTheme.colors.error,
+    uiKey = Ui.Address.Delete,
   )
 }
 
@@ -769,7 +780,7 @@ private fun AutoReplyEditor(addressSettingsState: MutableState<AddressSettingsSt
   val autoReply = rememberSaveable { mutableStateOf(addressSettingsState.value.autoReply) }
   TextEditor(
     autoReply,
-    Modifier.height(100.dp),
+    Modifier.height(100.dp).ui(Ui.Address.WelcomeMessage),
     placeholder = stringResource(MR.strings.enter_welcome_message_optional),
     contentPadding = PaddingValues(),
     shape = SectionCardShape
@@ -789,7 +800,7 @@ private fun AutoReplyEditor(addressSettingsState: MutableState<AddressSettingsSt
 
 @Composable
 private fun saveAddressSettingsButton(disabled: Boolean, onClick: () -> Unit) {
-  SectionItemView(onClick, disabled = disabled) {
+  SectionItemView(onClick, disabled = disabled, uiKey = Ui.Address.SaveSettings) {
     Text(stringResource(MR.strings.save_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
   }
 }

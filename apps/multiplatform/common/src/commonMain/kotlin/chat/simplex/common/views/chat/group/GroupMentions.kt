@@ -1,5 +1,7 @@
 package chat.simplex.common.views.chat.group
 
+import chat.simplex.common.ui.ui
+import chat.simplex.common.ui.Ui
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -231,6 +233,7 @@ fun GroupMentions(
         val disabled = composeState.value.memberMentions.size >= MAX_NUMBER_OF_MENTIONS && !mentioned
         Row(
           Modifier
+            .ui(Ui.Chat.MentionMember(member.groupMemberId))
             .fillMaxWidth()
             .alpha(if (disabled) 0.6f else 1f)
             .clickable(enabled = !disabled) {

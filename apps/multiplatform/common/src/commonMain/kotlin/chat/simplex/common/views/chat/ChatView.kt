@@ -34,6 +34,8 @@ import chat.simplex.common.model.CIDirection.GroupRcv
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.activeCall
 import chat.simplex.common.model.ChatModel.controller
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.group.*
@@ -735,7 +737,7 @@ fun ChatView(
                   ModalManager.end.closeModal()
                 }
                 ModalManager.end.showModalCloseable(id = ModalViewId.CHAT_ITEM_INFO, endButtons = {
-                  ShareButton {
+                  ShareButton(uiKey = Ui.ItemInfo.Share) {
                     clipboard.shareText(itemInfoShareText(chatModel, initialCiInfo.first, initialCiInfo.second, chatModel.controller.appPrefs.developerTools.get()))
                   }
                 }) { close ->
@@ -1251,7 +1253,7 @@ fun BoxScope.ChatInfoToolbar(
           {
             showMenu.value = false
             showSearch.value = true
-          }, enabled = chatInfo.noteFolder.ready
+          }, Modifier.ui(Ui.Chat.SearchButton), enabled = chatInfo.noteFolder.ready
         ) {
           Icon(
             painterResource(MR.images.ic_search),
@@ -1302,7 +1304,7 @@ fun BoxScope.ChatInfoToolbar(
         }
       }
       menuItems.add {
-        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
+        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), uiKey = Ui.Chat.BarMenuItem("search"), onClick = {
           showMenu.value = false
           showSearch.value = true
         })
@@ -1313,7 +1315,7 @@ fun BoxScope.ChatInfoToolbar(
       if (chatInfo.groupInfo.canAddMembers) {
         if (!chatInfo.incognito && !chatInfo.groupInfo.useRelays) {
           menuItems.add {
-            ItemAction(stringResource(MR.strings.icon_descr_add_members), painterResource(MR.images.ic_person_add_500), onClick = {
+            ItemAction(stringResource(MR.strings.icon_descr_add_members), painterResource(MR.images.ic_person_add_500), uiKey = Ui.Chat.BarMenuItem("addMembers"), onClick = {
               showMenu.value = false
               addMembers(chatInfo.groupInfo)
             })
@@ -1332,7 +1334,7 @@ fun BoxScope.ChatInfoToolbar(
         }
       }
       menuItems.add {
-        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
+        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), uiKey = Ui.Chat.BarMenuItem("search"), onClick = {
           showMenu.value = false
           showSearch.value = true
         })
@@ -1350,6 +1352,7 @@ fun BoxScope.ChatInfoToolbar(
     barButtons.add {
       IconButton(
         { showContentFilterMenu.value = true },
+        Modifier.ui(Ui.Chat.ContentFilter),
         enabled = enabled
       ) {
         Icon(
@@ -1369,6 +1372,7 @@ fun BoxScope.ChatInfoToolbar(
       ItemAction(
         stringResource(nextNtfMode.text(chatInfo.hasMentions)),
         painterResource(nextNtfMode.icon),
+        uiKey = Ui.Chat.BarMenuItem("ntf"),
         onClick = {
           showMenu.value = false
           // Just to make a delay before changing state of ntfsEnabled, otherwise it will redraw menu item with new value before closing the menu
@@ -1430,7 +1434,7 @@ fun BoxScope.ChatInfoToolbar(
 
   if (menuItems.isNotEmpty()) {
     barButtons.add {
-      IconButton({ showMenu.value = true }) {
+      IconButton({ showMenu.value = true }, Modifier.ui(Ui.Chat.BarMenu)) {
         Icon(MoreVertFilled, stringResource(MR.strings.icon_descr_more_button), tint = MaterialTheme.colors.primary)
       }
     }
@@ -1438,7 +1442,7 @@ fun BoxScope.ChatInfoToolbar(
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val chatBottomBar = remember { appPrefs.chatBottomBar.state }
   val searchTrailingContent: @Composable (() -> Unit)? = if (showContentFilterButton) {{
-    IconButton({ showContentFilterMenu.value = true }) {
+    IconButton({ showContentFilterMenu.value = true }, Modifier.ui(Ui.Chat.ContentFilter)) {
       Icon(
         painterResource(if (contentFilter.value == null) MR.images.ic_photo_library else MR.images.ic_photo_library_filled),
         null,
@@ -1452,6 +1456,7 @@ fun BoxScope.ChatInfoToolbar(
     navigationButton = { if (appPlatform.isAndroid || showSearch.value) { NavigationButtonBack(onBackClicked) }  },
     title = { ChatInfoToolbarTitle(chatInfo) },
     onTitleClick = if (chatInfo is ChatInfo.Local) null else info,
+    uiKey = Ui.Chat.Bar,
     showSearch = showSearch.value,
     searchAlwaysVisible = contentFilter.value != null,
     onTop = !oneHandUI.value || !chatBottomBar.value,
@@ -1496,6 +1501,7 @@ fun BoxScope.ChatInfoToolbar(
               stringResource(filter.label),
               painterResource(if (isSelected) filter.iconFilled else filter.icon),
               color = if (isSelected) MaterialTheme.colors.primary else Color.Unspecified,
+              uiKey = Ui.Chat.ContentFilter.option(filter.name),
               onClick = {
                 showContentFilterMenu.value = false
                 if (contentFilter.value == filter) return@ItemAction
@@ -1516,6 +1522,7 @@ fun BoxScope.ChatInfoToolbar(
             ItemAction(
               stringResource(MR.strings.content_filter_all_messages),
               painterResource(MR.images.ic_forum),
+              uiKey = Ui.Chat.ContentFilter.option("all"),
               onClick = {
                 showContentFilterMenu.value = false
                 contentFilter.value = null
@@ -1690,6 +1697,7 @@ private fun SupportChatsCountToolbar(
       ) {
         Row(
           Modifier
+            .ui(Ui.Chat.Reports)
             .fillMaxWidth()
             .weight(1F)
             .height(AppBarHeight * fontSizeSqrtMultiplier + statusBarPadding)
@@ -1715,6 +1723,7 @@ private fun SupportChatsCountToolbar(
       if (supportUnreadCount > 0) {
         Row(
           Modifier
+            .ui(Ui.Chat.SupportChats)
             .fillMaxWidth()
             .weight(1F)
             .height(AppBarHeight * fontSizeSqrtMultiplier + statusBarPadding)
@@ -2068,7 +2077,7 @@ fun BoxScope.ChatItemsList(
                 ) {
                   @Composable
                   fun MemberNameAndRole(range: State<IntRange?>) {
-                    Row(Modifier.padding(bottom = 2.dp).graphicsLayer { translationX = selectionOffset.toPx() }, horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row(Modifier.ui { Ui.Chat.Item(cItem.id).part("member") }.padding(bottom = 2.dp).graphicsLayer { translationX = selectionOffset.toPx() }, horizontalArrangement = Arrangement.SpaceBetween) {
                       val member = cItem.chatDir.groupMember
                       val rangeValue = range.value
                       val (prevMember, memCount) =
@@ -2112,7 +2121,7 @@ fun BoxScope.ChatItemsList(
                       }
                       Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
                         val member = cItem.chatDir.groupMember
-                        Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
+                        Box(Modifier.ui { Ui.Chat.Item(cItem.id).part("avatar") }.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
                           MemberImage(member)
                         }
                         Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
@@ -2737,7 +2746,7 @@ fun BoxScope.FloatingButtons(
   val showDropDown = remember { mutableStateOf(false) }
 
   TopEndFloatingButton(
-    Modifier.padding(end = DEFAULT_PADDING, top = 24.dp + topPaddingToContent).align(Alignment.TopEnd),
+    Modifier.ui(Ui.Chat.UnreadAbove).padding(end = DEFAULT_PADDING, top = 24.dp + topPaddingToContent).align(Alignment.TopEnd),
     topUnreadCount,
     requestedTopScroll,
     animatedScrollingInProgress,
@@ -2763,6 +2772,7 @@ fun BoxScope.FloatingButtons(
       ItemAction(
         generalGetString(MR.strings.mark_read),
         painterResource(MR.images.ic_check),
+        uiKey = Ui.Chat.UnreadAbove.part("markRead"),
         onClick = {
           markChatRead()
           showDropDown.value = false
@@ -3046,7 +3056,7 @@ private fun DownloadFilesButton(
   if (user != null) {
     TextButton(
       contentPadding = contentPadding,
-      modifier = modifier,
+      modifier = modifier.ui(Ui.Alert.Option(Ui.AlertSource.Shared, "download")),
       onClick = {
         AlertManager.shared.hideAlert()
 
@@ -3076,7 +3086,7 @@ private fun ForwardButton(
       forwardContent(forwardPlan.chatItemIds, chatInfo)
       AlertManager.shared.hideAlert()
     },
-    modifier = modifier,
+    modifier = modifier.ui(Ui.Alert.Option(Ui.AlertSource.Shared, "forward")),
     contentPadding = contentPadding
   ) {
     Text(stringResource(MR.strings.forward_chat_item), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
@@ -3302,7 +3312,7 @@ private fun BoxScope.BottomEndFloatingButton(
       FloatingActionButton(
         onClick = onClick,
         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-        modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).size(48.dp),
+        modifier = Modifier.ui(Ui.Chat.ScrollToBottom).padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).size(48.dp),
         backgroundColor = MaterialTheme.colors.secondaryVariant,
       ) {
         if (requestedBottomScroll.value) {
@@ -3320,7 +3330,7 @@ private fun BoxScope.BottomEndFloatingButton(
       FloatingActionButton(
         onClick = onClick,
         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-        modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).size(48.dp),
+        modifier = Modifier.ui(Ui.Chat.ScrollToBottom).padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).size(48.dp),
         backgroundColor = MaterialTheme.colors.secondaryVariant,
       ) {
         if (requestedBottomScroll.value) {

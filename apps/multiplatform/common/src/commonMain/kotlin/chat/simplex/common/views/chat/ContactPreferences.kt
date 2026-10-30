@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.graphics.Color
 import dev.icerock.moko.resources.compose.stringResource
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.PreferenceToggle
@@ -147,6 +148,8 @@ private fun FeatureSection(
       ContactFeatureAllowed.values(userDefault).map { it to it.text },
       allowFeature,
       icon = null,
+      uiKey = Ui.ContactPrefs.Allow(feature),
+      optionKey = { if (it is ContactFeatureAllowed.UserDefault) "default" else it.allowed.name },
       onSelected = onSelected
     )
     InfoRow(
@@ -180,6 +183,7 @@ private fun TimedMessagesFeatureSection(
     PreferenceToggle(
       generalGetString(MR.strings.chat_preferences_you_allow),
       checked = allowFeature.value,
+      uiKey = Ui.ContactPrefs.Timed,
     ) { allow ->
       onSelected(allow, if (allow) featuresAllowed.timedMessagesTTL ?: 86400 else null)
     }
@@ -196,6 +200,7 @@ private fun TimedMessagesFeatureSection(
         dropdownValues = TimedMessagesPreference.ttlValues,
         customPickerTitle = generalGetString(MR.strings.delete_after),
         customPickerConfirmButtonText = generalGetString(MR.strings.custom_time_picker_select),
+        uiKey = Ui.ContactPrefs.Ttl,
         onSelected = onTTLUpdated
       )
     } else if (pref.contactPreference.allow == FeatureAllowed.YES || pref.contactPreference.allow == FeatureAllowed.ALWAYS) {
@@ -208,10 +213,10 @@ private fun TimedMessagesFeatureSection(
 @Composable
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
   SectionView {
-    SectionItemView(reset, disabled = disabled) {
+    SectionItemView(reset, disabled = disabled, uiKey = Ui.ContactPrefs.Reset) {
       Text(stringResource(MR.strings.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
-    SectionItemView(save, disabled = disabled) {
+    SectionItemView(save, disabled = disabled, uiKey = Ui.ContactPrefs.Save) {
       Text(stringResource(MR.strings.save_and_notify_contact), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
   }

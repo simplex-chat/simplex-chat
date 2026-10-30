@@ -10,6 +10,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
@@ -37,7 +39,8 @@ fun ShareListNavLinkView(
             scope.launch { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) }
           }
         },
-        stopped
+        stopped,
+        uiKey = Ui.Share.Row(chat.id)
       )
     }
     is ChatInfo.Group -> {
@@ -54,14 +57,16 @@ fun ShareListNavLinkView(
             scope.launch { groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel) }
           }
         },
-        stopped
+        stopped,
+        uiKey = Ui.Share.Row(chat.id)
       )
     }
     is ChatInfo.Local ->
       ShareListNavLinkLayout(
         chatLinkPreview = { SharePreviewView(chat, disabled = false) },
         click = { scope.launch { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) } },
-        stopped
+        stopped,
+        uiKey = Ui.Share.Row(chat.id)
       )
     is ChatInfo.ContactRequest, is ChatInfo.ContactConnection, is ChatInfo.InvalidJSON -> {}
   }
@@ -79,8 +84,9 @@ private fun ShareListNavLinkLayout(
   chatLinkPreview: @Composable () -> Unit,
   click: () -> Unit,
   stopped: Boolean,
+  uiKey: UiKey? = null,
 ) {
-  SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = 8.dp), click = click, disabled = stopped) {
+  SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = 8.dp), click = click, disabled = stopped, uiKey = uiKey) {
     chatLinkPreview()
   }
   Divider(Modifier.padding(horizontal = 8.dp))

@@ -14,6 +14,8 @@ import androidx.compose.ui.unit.max
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.WarningOrange
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
@@ -59,7 +61,7 @@ fun SelectedItemsMembersToolbar(
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically
     ) {
-      IconButton(delete, enabled = deleteEnabled.value) {
+      IconButton(delete, Modifier.ui(Ui.GroupInfo.MembersToolbar.part("remove")), enabled = deleteEnabled.value) {
         Icon(
           painterResource(MR.images.ic_delete),
           null,
@@ -68,7 +70,7 @@ fun SelectedItemsMembersToolbar(
         )
       }
 
-      IconButton({ blockForAll(blockForAllEnabled.value) }, enabled = blockForAllButtonEnabled.value) {
+      IconButton({ blockForAll(blockForAllEnabled.value) }, Modifier.ui(Ui.GroupInfo.MembersToolbar.part("block")), enabled = blockForAllButtonEnabled.value) {
         Icon(
           painterResource(if (unblockForAllEnabled.value && blockForAllButtonEnabled.value) MR.images.ic_do_not_touch else MR.images.ic_back_hand),
           null,
@@ -77,7 +79,7 @@ fun SelectedItemsMembersToolbar(
         )
       }
 
-      IconButton({ changeRole(if (roleToMemberEnabled.value) GroupMemberRole.Member else GroupMemberRole.Observer) }, enabled = roleButtonEnabled.value) {
+      IconButton({ changeRole(if (roleToMemberEnabled.value) GroupMemberRole.Member else GroupMemberRole.Observer) }, Modifier.ui(Ui.GroupInfo.MembersToolbar.part("role")), enabled = roleButtonEnabled.value) {
         Icon(
           painterResource(if (roleToObserverEnabled.value || !roleButtonEnabled.value) MR.images.ic_person else MR.images.ic_person_edit),
           null,

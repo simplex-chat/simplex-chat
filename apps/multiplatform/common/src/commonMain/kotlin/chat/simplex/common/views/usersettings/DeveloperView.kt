@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.platform.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -31,7 +32,7 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
       InstallTerminalAppItem(uriHandler)
       ChatConsoleItem { withAuth(generalGetString(MR.strings.auth_open_chat_console), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.start.showModalCloseable { TerminalView(false) } } }
       ResetHintsItem(unchangedHints)
-      SettingsPreferenceItem(painterResource(MR.images.ic_code), stringResource(MR.strings.show_developer_options), developerTools)
+      SettingsPreferenceItem(painterResource(MR.images.ic_code), stringResource(MR.strings.show_developer_options), developerTools, uiKey = Ui.DevTools.ShowOptions)
     }
     SectionTextFooter(
       generalGetString(if (devTools.value) MR.strings.show_dev_options else MR.strings.hide_dev_options) + " " +

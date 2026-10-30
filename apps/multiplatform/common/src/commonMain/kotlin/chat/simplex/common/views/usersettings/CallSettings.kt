@@ -18,6 +18,8 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.platform.appPlatform
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.res.*
 
 @Composable
@@ -86,8 +88,10 @@ fun SharedPreferenceToggle(
   preference: SharedPreference<Boolean>,
   enabled: Boolean = true,
   onChange: ((Boolean) -> Unit)? = null,
+  uiKey: UiKey? = null,
 ) {
   DefaultSwitch(
+    modifier = Modifier.ui(uiKey),
     enabled = enabled,
     checked = remember { preference.state }.value,
     onCheckedChange = {
@@ -104,7 +108,8 @@ fun SharedPreferenceToggleWithIcon(
   stopped: Boolean = false,
   onClickInfo: () -> Unit,
   preference: SharedPreference<Boolean>,
-  preferenceState: MutableState<Boolean>? = null
+  preferenceState: MutableState<Boolean>? = null,
+  uiKey: UiKey? = null
 ) {
   val prefState = preferenceState ?: remember { mutableStateOf(preference.get()) }
   Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -122,6 +127,7 @@ fun SharedPreferenceToggleWithIcon(
         preference.set(it)
         prefState.value = it
       },
+      modifier = Modifier.ui(uiKey),
       enabled = !stopped
     )
   }
@@ -133,6 +139,7 @@ fun SharedPreferenceToggleWithIcon(
   icon: Painter,
   onClickInfo: () -> Unit,
   checked: Boolean,
+  uiKey: UiKey? = null,
   onCheckedChange: (Boolean) -> Unit,
 ) {
   Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -147,6 +154,7 @@ fun SharedPreferenceToggleWithIcon(
     DefaultSwitch(
       checked = checked,
       onCheckedChange = onCheckedChange,
+      modifier = Modifier.ui(uiKey),
     )
   }
 }

@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.*
 import androidx.compose.ui.text.font.FontWeight
 import chat.simplex.common.platform.onRightClick
 import chat.simplex.common.platform.windowWidth
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.SelectableCard
@@ -157,11 +159,12 @@ fun <T> SectionViewSelectable(
   currentValue: State<T>,
   values: List<ValueTitleDesc<T>>,
   onSelected: (T) -> Unit,
+  uiKey: UiKey? = null,
 ) {
   SectionView(title) {
     Column {
       values.forEach { item ->
-        SectionItemViewSpaceBetween({ onSelected(item.value) }) {
+        SectionItemViewSpaceBetween({ onSelected(item.value) }, uiKey = uiKey?.let { k -> item.value?.let { k.option(it) } }) {
           Text(item.title)
           if (currentValue.value == item.value) {
             Icon(painterResource(MR.images.ic_check), item.title, tint = MaterialTheme.colors.primary)
@@ -180,6 +183,7 @@ fun <T> SectionViewSelectableCards(
   currentValue: State<T>,
   values: List<ValueTitleDesc<T>>,
   onSelected: (T) -> Unit,
+  uiKey: UiKey? = null,
 ) {
   SectionView(title) {
     Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
@@ -188,7 +192,7 @@ fun <T> SectionViewSelectableCards(
         Spacer(Modifier.height(DEFAULT_PADDING * 2f))
       }
       values.forEach { item ->
-        SelectableCard(currentValue, item.value, item.title, item.description, onSelected)
+        SelectableCard(currentValue, item.value, item.title, item.description, icon = null, uiKey = uiKey?.option(item.value ?: "null"), onSelected = onSelected)
       }
     }
   }
@@ -204,9 +208,11 @@ fun SectionItemView(
     PaddingValues(start = DEFAULT_PADDING * 1.7f, end = itemHPadding, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
   else
     PaddingValues(horizontal = itemHPadding, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
+  uiKey: UiKey? = null,
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
+    .ui(uiKey)
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
   Row(
@@ -227,9 +233,10 @@ fun SectionItemViewWithoutMinPadding(
     PaddingValues(start = DEFAULT_PADDING * 1.7f, end = itemHPadding)
   else
     PaddingValues(horizontal = itemHPadding),
+  uiKey: UiKey? = null,
   content: (@Composable RowScope.() -> Unit)
 ) {
-  SectionItemView(click, minHeight, disabled, extraPadding, padding, content)
+  SectionItemView(click, minHeight, disabled, extraPadding, padding, uiKey = uiKey, content = content)
 }
 
 @Composable
@@ -243,9 +250,11 @@ fun SectionItemViewLongClickable(
     PaddingValues(start = DEFAULT_PADDING * 1.7f, end = itemHPadding, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
   else
     PaddingValues(horizontal = itemHPadding, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
+  uiKey: UiKey? = null,
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
+    .ui(uiKey)
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
   Row(
@@ -267,9 +276,11 @@ fun SectionItemViewSpaceBetween(
   minHeight: Dp = DEFAULT_MIN_SECTION_ITEM_HEIGHT,
   padding: PaddingValues = PaddingValues(horizontal = itemHPadding),
   disabled: Boolean = false,
+  uiKey: UiKey? = null,
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
+    .ui(uiKey)
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
   Row(
@@ -292,9 +303,10 @@ fun <T> SectionItemWithValue(
   icon: Painter? = null,
   iconTint: Color = MaterialTheme.colors.secondary,
   enabled: State<Boolean> = mutableStateOf(true),
-  onSelected: () -> Unit
+  onSelected: () -> Unit,
+  uiKey: UiKey? = null
 ) {
-  SettingsActionItemWithContent(icon = icon, text = title, iconColor = iconTint, click = if (enabled.value) onSelected else null, disabled = !enabled.value) {
+  SettingsActionItemWithContent(icon = icon, text = title, iconColor = iconTint, click = if (enabled.value) onSelected else null, disabled = !enabled.value, uiKey = uiKey) {
     Row(
       Modifier.padding(start = 10.dp),
       verticalAlignment = Alignment.CenterVertically,
@@ -434,8 +446,8 @@ fun InfoRowTwoValues(
 
 
 @Composable
-fun InfoRowEllipsis(title: String, value: String, onClick: () -> Unit) {
-  SectionItemViewSpaceBetween(onClick) {
+fun InfoRowEllipsis(title: String, value: String, uiKey: UiKey? = null, onClick: () -> Unit) {
+  SectionItemViewSpaceBetween(onClick, uiKey = uiKey) {
     val screenWidthDp = windowWidth()
     Text(title)
     Text(

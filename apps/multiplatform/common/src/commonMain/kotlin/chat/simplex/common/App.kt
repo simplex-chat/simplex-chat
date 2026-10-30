@@ -22,6 +22,7 @@ import chat.simplex.common.views.usersettings.SetDeliveryReceiptsView
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.CreateFirstProfile
 import chat.simplex.common.views.helpers.SimpleButton
@@ -125,6 +126,7 @@ fun MainScreen() {
         SimpleButton(
           stringResource(MR.strings.auth_unlock),
           icon = painterResource(MR.images.ic_lock),
+          uiKey = Ui.Lock.Unlock,
           click = {
             AppLock.laFailed.value = false
             AppLock.runAuthenticate()
