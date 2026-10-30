@@ -6210,9 +6210,6 @@ server test failure */
 /* badge alert */
 "The badge is signed with a key that this version of the app does not recognize. Update the app to verify this badge." = "Этот значок подписан ключом, который неизвестен текущей версии приложения. Обновите приложение, чтобы проверить его подлинность.";
 
-/* alert message */
-"The channel required this message to be signed, but the signature is missing." = "Канал требует подпись сообщений, но у этого сообщения подпись отсутствует.";
-
 /* No comment provided by engineer. */
 "The code you scanned is not a SimpleX link QR code." = "Этот QR-код не является SimpleX-ccылкой.";
 

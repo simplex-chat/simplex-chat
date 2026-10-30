@@ -131,10 +131,10 @@
 "%@ is verified" = "%@ 已认证";
 
 /* No comment provided by engineer. */
-"%@ server" = "%@ 服务器";
+"%@ server" = "服务器";
 
 /* No comment provided by engineer. */
-"%@ servers" = "%@ 服务器";
+"%@ servers" = "服务器";
 
 /* badge alert */
 "%@ supports SimpleX Chat." = "%@ 是 SimpleX Chat 支持者。";
@@ -2785,7 +2785,7 @@ chat item action */
 conn error description
 file error text
 snd error text */
-"Error: %@" = "错误：%@";
+"Error: %@" = "错误： ％@";
 
 /* relay test error
 server test error */

@@ -164,13 +164,13 @@
 "%d days" = "%d днів";
 
 /* forward confirmation reason */
-"%d file(s) are still being downloaded." = "%d файл(ів) ще досі завантажуються.";
+"%d file(s) are still being downloaded." = "%их файл(ів) ще досі завантажуються.";
 
 /* forward confirmation reason */
-"%d file(s) failed to download." = "%d файлів не вийшло завантажити.";
+"%d file(s) failed to download." = "%их файлів не вийшло завантажити.";
 
 /* forward confirmation reason */
-"%d file(s) were deleted." = "%d файл(ів) було видалено.";
+"%d file(s) were deleted." = "%их файл(ів) було видалено.";
 
 /* forward confirmation reason */
 "%d file(s) were not downloaded." = "%d файл(и) не було завантажено.";
@@ -6037,7 +6037,7 @@ alert title */
 "You are already connecting to %@." = "Ви вже з'єднані з %@.";
 
 /* new chat sheet message */
-"You are already connecting via this one-time link!" = "Ви вже підключаєтеся за цим одноразовим посиланням!";
+"You are already connecting via this one-time link!" = "Ви вже підключаєтеся до %@.Ви вже підключаєтеся за цим одноразовим посиланням!";
 
 /* No comment provided by engineer. */
 "You are already in group %@." = "Ви вже перебуваєте в групі %@.";

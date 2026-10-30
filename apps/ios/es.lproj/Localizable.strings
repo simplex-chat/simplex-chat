@@ -1644,7 +1644,7 @@ server test step */
 "Connection with desktop stopped" = "La conexión con el escritorio (desktop) se ha parado";
 
 /* connection information */
-"connection:%@" = "conexión: %@";
+"connection:%@" = "conexión: % @";
 
 /* No comment provided by engineer. */
 "Connections" = "Conexiones";
@@ -2145,7 +2145,7 @@ alert button */
 "Desktop address" = "Dirección ordenador";
 
 /* No comment provided by engineer. */
-"Desktop app version %@ is not compatible with this app." = "La versión de aplicación del ordenador %@ no es compatible con esta aplicación.";
+"Desktop app version %@ is not compatible with this app." = "La versión de aplicación del ordenador %\" no es compatible con esta aplicación.";
 
 /* No comment provided by engineer. */
 "Desktop devices" = "Ordenadores";
@@ -6233,9 +6233,6 @@ server test failure */
 
 /* badge alert */
 "The badge is signed with a key that this version of the app does not recognize. Update the app to verify this badge." = "La insignia está firmada con una clave que esta versión de la app no reconoce. Actualiza la app para verificar la insignia.";
-
-/* alert message */
-"The channel required this message to be signed, but the signature is missing." = "El canal requiere que el mensaje esté firmado, pero falta la firma.";
 
 /* No comment provided by engineer. */
 "The code you scanned is not a SimpleX link QR code." = "El código QR escaneado no es un enlace de SimpleX.";

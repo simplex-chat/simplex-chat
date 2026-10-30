@@ -1392,7 +1392,7 @@ server test step */
 "Copy error" = "Kopieerfout";
 
 /* No comment provided by engineer. */
-"Core version: v%@" = "Core versie: v%@";
+"Core version: v%@" = "Core versie: v% @";
 
 /* No comment provided by engineer. */
 "Corner" = "Hoek";
@@ -2032,19 +2032,19 @@ chat item action */
 "encryption agreed" = "versleuteling overeengekomen";
 
 /* chat item text */
-"encryption agreed for %@" = "versleuteling overeengekomen voor %@";
+"encryption agreed for %@" = "versleuteling overeengekomen voor % @";
 
 /* chat item text */
 "encryption ok" = "versleuteling ok";
 
 /* chat item text */
-"encryption ok for %@" = "versleuteling ok voor %@";
+"encryption ok for %@" = "versleuteling ok voor % @";
 
 /* chat item text */
 "encryption re-negotiation allowed" = "versleuteling heronderhandeling toegestaan";
 
 /* chat item text */
-"encryption re-negotiation allowed for %@" = "versleuteling heronderhandeling toegestaan voor %@";
+"encryption re-negotiation allowed for %@" = "versleuteling heronderhandeling toegestaan voor % @";
 
 /* message decrypt error item */
 "Encryption re-negotiation error" = "Fout bij heronderhandeling van codering";
@@ -2056,7 +2056,7 @@ chat item action */
 "encryption re-negotiation required" = "heronderhandeling van versleuteling vereist";
 
 /* chat item text */
-"encryption re-negotiation required for %@" = "heronderhandeling van versleuteling vereist voor %@";
+"encryption re-negotiation required for %@" = "heronderhandeling van versleuteling vereist voor % @";
 
 /* No comment provided by engineer. */
 "Encryption renegotiation in progress." = "Er wordt opnieuw onderhandeld over de encryptie.";
@@ -4573,13 +4573,13 @@ chat item action */
 "Sending receipts is disabled for %lld contacts" = "Het verzenden van ontvangst bevestiging is uitgeschakeld voor %lld-contactpersonen";
 
 /* No comment provided by engineer. */
-"Sending receipts is disabled for %lld groups" = "Het verzenden van bevestigingen is uitgeschakeld voor %lld groepen";
+"Sending receipts is disabled for %lld groups" = "Het verzenden van bevestigingen is uitgeschakeld voor %LLD -groepen";
 
 /* No comment provided by engineer. */
 "Sending receipts is enabled for %lld contacts" = "Het verzenden van ontvangst bevestiging is ingeschakeld voor %lld-contactpersonen";
 
 /* No comment provided by engineer. */
-"Sending receipts is enabled for %lld groups" = "Het verzenden van bevestigingen is ingeschakeld voor %lld groepen";
+"Sending receipts is enabled for %lld groups" = "Het verzenden van bevestigingen is ingeschakeld voor %LLD -groepen";
 
 /* No comment provided by engineer. */
 "Sending via" = "Verzenden via";
