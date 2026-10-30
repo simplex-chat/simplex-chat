@@ -348,11 +348,13 @@ fun unchangedHintPreferences(): Boolean = appPreferences.hintPreferences.all { i
 
 @Composable
 fun AppVersionItem(showVersion: () -> Unit) {
-  SectionItemView(showVersion) { AppVersionText() }
+  SettingsActionItemWithContent(painterResource(MR.images.ic_info), stringResource(MR.strings.app_version_title), showVersion) {
+    AppVersionText(MaterialTheme.colors.secondary)
+  }
 }
 
-@Composable fun AppVersionText() {
-  Text(appVersionInfo.first + (if (appVersionInfo.second != null) " (" + appVersionInfo.second + ")" else ""))
+@Composable fun AppVersionText(color: Color = Color.Unspecified) {
+  Text(appVersionInfo.first + (if (appVersionInfo.second != null) " (" + appVersionInfo.second + ")" else ""), color = color)
 }
 
 @Composable fun ProfilePreview(profileOf: NamedChat, size: Dp = 60.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, textColor: Color = MaterialTheme.colors.onBackground, stopped: Boolean = false, badge: LocalBadge? = null) {

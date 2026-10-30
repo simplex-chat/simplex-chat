@@ -75,7 +75,7 @@ fun <T> SelectableCard(currentValue: State<T>, newValue: T, title: String, descr
   TextButton(
     onClick = { onSelected(newValue) },
     border = BorderStroke(1.dp, color = if (currentValue.value == newValue) MaterialTheme.colors.primary else MaterialTheme.colors.secondary.copy(alpha = 0.5f)),
-    shape = RoundedCornerShape(35.dp),
+    shape = RoundedCornerShape(18.dp),
   ) {
     Column(Modifier.padding(horizontal = 10.dp).padding(top = 4.dp, bottom = 8.dp).fillMaxWidth()) {
       Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp).align(Alignment.CenterHorizontally)) {

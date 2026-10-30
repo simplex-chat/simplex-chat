@@ -99,7 +99,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.padding(bottom = 4.dp)
       ) {
-        if (icon != null)  Icon(painterResource(icon), stringResource(titleId), tint = MaterialTheme.colors.secondary)
+        if (icon != null) Icon(painterResource(icon), stringResource(titleId), Modifier.size(22.dp), tint = MaterialTheme.colors.secondary) else Spacer(Modifier.width(22.dp))
         Text(
           generalGetString(titleId),
           maxLines = 2,
@@ -112,14 +112,14 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
           linkButton(link)
         }
       }
-      if (descrId != null) Text(generalGetString(descrId), fontSize = 15.sp)
+      if (descrId != null) Text(generalGetString(descrId), Modifier.padding(start = 30.dp), fontSize = 15.sp)
       for ((si, sd) in subfeatures) {
         Row(
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.spacedBy(8.dp),
           modifier = Modifier.padding(bottom = 6.dp)
         ) {
-          Icon(painterResource(si), stringResource(sd), tint = MaterialTheme.colors.secondary)
+          Icon(painterResource(si), stringResource(sd), Modifier.size(22.dp), tint = MaterialTheme.colors.secondary)
           Text(generalGetString(sd), fontSize = 15.sp)
         }
       }

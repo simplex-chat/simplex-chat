@@ -23,12 +23,11 @@ fun ComposeImageView(media: ComposePreview.MediaPreview, cancelImages: () -> Uni
   val sentColor = MaterialTheme.appColors.sentMessage
   Row(
     Modifier
-      .padding(top = 8.dp)
       .background(sentColor),
     verticalAlignment = Alignment.CenterVertically,
   ) {
     LazyRow(
-      Modifier.weight(1f).padding(start = DEFAULT_PADDING_HALF, end = if (cancelEnabled) 0.dp else DEFAULT_PADDING_HALF),
+      Modifier.weight(1f).padding(start = 12.dp, end = if (cancelEnabled) 0.dp else DEFAULT_PADDING_HALF),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF),
     ) {

@@ -19,12 +19,12 @@ import chat.simplex.common.ui.theme.*
 @Composable
 fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean, showTimestamp: Boolean) {
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
-    ItemTextCard(ci, 16.sp, inlineMeta) {
+    ItemTextCard(ci, 12.sp, inlineMeta) {
       Text(
         buildAnnotatedString {
-          withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(ci.content.text) }
+          withStyle(SpanStyle(fontSize = 12.sp, fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(ci.content.text) }
         },
-        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleTextStyle(16.sp, MaterialTheme.colors.secondary)),
+        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleLineHeight(22.sp)),
         modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp).alignBy(LastBaseline)
       )
     }

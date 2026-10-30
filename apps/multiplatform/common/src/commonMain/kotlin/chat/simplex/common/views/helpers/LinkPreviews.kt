@@ -150,12 +150,12 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
 fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancelEnabled: Boolean) {
   val sentColor = MaterialTheme.appColors.sentMessage
   Row(
-    Modifier.fillMaxWidth().padding(top = 8.dp).background(sentColor),
+    Modifier.fillMaxWidth().background(sentColor),
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (linkPreview == null) {
       Box(
-        Modifier.fillMaxWidth().weight(1f).height(60.dp).padding(start = 16.dp),
+        Modifier.fillMaxWidth().weight(1f).height(60.dp).padding(start = 12.dp),
         contentAlignment = Alignment.CenterStart
       ) {
         CircularProgressIndicator(
@@ -169,7 +169,7 @@ fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancel
       Image(
         imageBitmap,
         stringResource(MR.strings.image_descr_link_preview),
-        modifier = Modifier.width(80.dp).height(60.dp).padding(end = 8.dp)
+        modifier = Modifier.padding(start = 12.dp).width(80.dp).height(60.dp).padding(end = 8.dp)
       )
       Column(Modifier.fillMaxWidth().weight(1F)) {
         Text(linkPreview.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
