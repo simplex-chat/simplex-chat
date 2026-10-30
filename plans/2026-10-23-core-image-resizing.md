@@ -341,7 +341,7 @@ Bot libraries:
 - On any failure the fixed placeholder is sent, as before; a GIF, which `/img` accepts by its extension (`Library/Commands.hs:204`), gets the fixed placeholder.
 
 Native code:
-- mozjpeg master `08265790` (libjpeg-turbo 3.0.5 base) is the submodule `jpeg-turbo/cbits/mozjpeg` of the hs-jpeg-turbo fork; cabal compiles it in the `jpeg-turbo` package of every build:
+- mozjpeg master `08265790` (libjpeg-turbo 3.0.5 base) is the submodule `jpeg-turbo/cbits/mozjpeg` of simplex-chat/hs-jpeg-turbo; cabal compiles it in the `jpeg-turbo` package of every build:
   - 114 C sources on every target
   - aarch64: 15 Neon sources
   - armv7: `simd/arm/aarch32/jsimd.c`, and 14 Neon sources in the internal library `neon`, compiled with `-mfpu=neon`
@@ -349,16 +349,16 @@ Native code:
   - the C code paths on x86-64
   - built with cabal and the C compiler only
 - JPEG input is decoded by the TurboJPEG API of mozjpeg; JPEG output is encoded by `jpeg_turbo_encode` (`cbits/encode.c`) through the libjpeg API, with mozjpeg's default profile.
-- libspng 0.7.4 and miniz 3.1.2 are the submodules `JuicyPixels-spng/cbits/libspng` and `JuicyPixels-spng/cbits/miniz` of the hs-jpeg-turbo fork; cabal compiles `spng.c`, `miniz.c`, `miniz_tdef.c` and `miniz_tinfl.c` in the `JuicyPixels-spng` package of every build, with `SPNG_USE_MINIZ`. PNG input is decoded and PNG output encoded by libspng, with miniz's inflate and deflate.
+- libspng 0.7.4 and miniz 3.1.2 are the submodules `JuicyPixels-spng/cbits/libspng` and `JuicyPixels-spng/cbits/miniz` of simplex-chat/hs-jpeg-turbo; cabal compiles `spng.c`, `miniz.c`, `miniz_tdef.c` and `miniz_tinfl.c` in the `JuicyPixels-spng` package of every build, with `SPNG_USE_MINIZ`. PNG input is decoded and PNG output encoded by libspng, with miniz's inflate and deflate.
 - Package sources:
 
-  | package | during review | before the final pull request |
-  |---|---|---|
-  | hs-jpeg-turbo (`jpeg-turbo`, `JuicyPixels-jpeg-turbo`, `JuicyPixels-spng`) | evgeny-simplex/hs-jpeg-turbo, branch `ep/jpeg-decode` at `aee8a46` | a simplex-chat/hs-jpeg-turbo commit |
-  | JuicyPixels-stbir, with nothings/stb as a submodule | evgeny-simplex/JuicyPixels-stbir, branch `ep/stb-submodule` at `3e53b11` | a simplex-chat/JuicyPixels-stbir commit |
-  | JuicyPixels 3.3.8 | Hackage | Hackage |
+  | package | source |
+  |---|---|
+  | hs-jpeg-turbo (`jpeg-turbo`, `JuicyPixels-jpeg-turbo`, `JuicyPixels-spng`) | simplex-chat/hs-jpeg-turbo at `d0a4d95`, the squash merge of simplex-chat/hs-jpeg-turbo#1 |
+  | JuicyPixels-stbir, with nothings/stb as a submodule | simplex-chat/JuicyPixels-stbir at `2c93f04`, the squash merge of simplex-chat/JuicyPixels-stbir#1 |
+  | JuicyPixels 3.3.8 | Hackage |
 
-- The hashes of both forks in `scripts/nix/sha256map.nix` are computed with submodules, as for simplexmq.
+- The hashes of both repositories in `scripts/nix/sha256map.nix` are computed with submodules, as for simplexmq.
 - In Windows builds, `dist-newstyle/src/hs-jpeg-t*` and `dist-newstyle/src/JuicyPixe*` are removed beside `direct-sq*` and `simplexmq*`.
 
 License notices, in `docs/dependencies`:
@@ -370,7 +370,7 @@ Out of scope: WebP, a separate PR after this one.
 
 ## hs-jpeg-turbo fork
 
-Branch `ep/jpeg-decode` at `aee8a46`:
+simplex-chat/hs-jpeg-turbo at `d0a4d95`:
 - mozjpeg compiled by cabal, as in "Native code"; arithmetic-coded JPEGs are decoded, the arithmetic encoder is not compiled.
 - `encodeRGB :: EncodableRGB px => Int -> Maybe ByteString -> Image px -> IO ByteString`: `jpeg_turbo_encode` (`cbits/encode.c`, `MozJPEG.hsc`): `jpeg_set_defaults`, `jpeg_set_quality`, the output in a buffer grown by doubling, its size returned as `size_t`; libjpeg errors and warnings end the encoding with their text; the encoder state is kept in one allocation, and it and the output buffer are freed on every path, after an error too.
   - the ICC profile, when given: `jpeg_write_icc_profile`, APP2 segments after APP0; `error` for a length outside 1..16707345 (255 segments of 65519 bytes)
@@ -451,7 +451,7 @@ Branch `ep/jpeg-decode` at `aee8a46`:
 
 ## JuicyPixels-stbir fork
 
-Branch `ep/stb-submodule` at `3e53b11`, on the Hackage release 0.1.0.0 (`917cd53`):
+simplex-chat/JuicyPixels-stbir at `2c93f04`, on the Hackage release 0.1.0.0 (`917cd53`):
 - `cbits/stb`: nothings/stb at `1ee679ca` as a submodule, `stb_image_resize.h` v0.97, replacing the bundled v0.95 copy.
 - `cbits/stb_image_resize.c`: `STBIR_ASSERT` defined empty.
 - `cc-options: -ffp-contract=off` (D16).
@@ -679,9 +679,9 @@ Python, `packages/simplex-chat-python/src/simplex_chat/`:
 
 Build:
 - `cabal.project`, `source-repository-package`:
-  - hs-jpeg-turbo (`:76-80`): evgeny-simplex/hs-jpeg-turbo at `aee8a46`, subdirectories `JuicyPixels-jpeg-turbo`, `JuicyPixels-spng` and `jpeg-turbo`
-  - JuicyPixels-stbir (`:82-85`): evgeny-simplex/JuicyPixels-stbir at `3e53b11`
-- `scripts/nix/sha256map.nix:12-13`: the hashes of both forks, computed with submodules.
+  - hs-jpeg-turbo (`:76-80`): simplex-chat/hs-jpeg-turbo at `d0a4d95`, subdirectories `JuicyPixels-jpeg-turbo`, `JuicyPixels-spng` and `jpeg-turbo`
+  - JuicyPixels-stbir (`:82-85`): simplex-chat/JuicyPixels-stbir at `2c93f04`
+- `scripts/nix/sha256map.nix:12-13`: the hashes of both repositories, computed with submodules.
 - `dist-newstyle/src/hs-jpeg-t*` and `dist-newstyle/src/JuicyPixe*` in the Windows removals:
   - `.github/workflows/build.yml:1519, 1522, 1645, 1687, 1689`, with the comment `:1502-1503`
   - `scripts/desktop/build-lib-windows.sh:43`, with the comment `:41-42`
@@ -739,19 +739,19 @@ License notices, `docs/dependencies/`:
   `[mozjpeg](https://github.com/mozilla/mozjpeg): JPEG decoding and encoding of resized images ([IJG and BSD-3-clause](./licences/apps/mozjpeg/LICENSE.md)). This software is based in part on the work of the Independent JPEG Group.`
 - `README.md:13`:
   `[stb_image_resize](https://github.com/nothings/stb): image scaling ([MIT or public domain](./licences/apps/stb_image_resize/LICENSE))`
-- `licences/apps/mozjpeg/LICENSE.md` and `README.ijg`: copies from mozjpeg `08265790`, the submodule of the hs-jpeg-turbo fork.
-- `licences/apps/stb_image_resize/LICENSE`: `cbits/stb/stb_image_resize.h:2596-2632` of the JuicyPixels-stbir fork at `3e53b11`.
-- `licences/apps/libspng/LICENSE`: libspng's `LICENSE` (BSD-2-Clause); `licences/apps/libspng/LICENSE-libpng`: `spng/spng.c:6149-6180` (libpng-2.0), without the comment markers; from libspng `fb768002`, the submodule of the hs-jpeg-turbo fork at `aee8a46`.
-- `licences/apps/miniz/LICENSE`: miniz's `LICENSE` (MIT), from miniz 3.1.2 (`77d0dce8`), the submodule of the hs-jpeg-turbo fork at `aee8a46`.
+- `licences/apps/mozjpeg/LICENSE.md` and `README.ijg`: copies from mozjpeg `08265790`, the submodule of simplex-chat/hs-jpeg-turbo.
+- `licences/apps/stb_image_resize/LICENSE`: `cbits/stb/stb_image_resize.h:2596-2632` of simplex-chat/JuicyPixels-stbir at `2c93f04`.
+- `licences/apps/libspng/LICENSE`: libspng's `LICENSE` (BSD-2-Clause); `licences/apps/libspng/LICENSE-libpng`: `spng/spng.c:6149-6180` (libpng-2.0), without the comment markers; from libspng `fb768002`, the submodule of simplex-chat/hs-jpeg-turbo at `d0a4d95`.
+- `licences/apps/miniz/LICENSE`: miniz's `LICENSE` (MIT), from miniz 3.1.2 (`77d0dce8`), the submodule of simplex-chat/hs-jpeg-turbo at `d0a4d95`.
 - `licences/apps/compact-icc-profiles/license`: the `license` (CC0 1.0) of saucecontrol/Compact-ICC-Profiles at `bdd84663`, the source of `DisplayP3-v4.icc`.
 - `HASKELL.md`:
   - direct dependencies (`:25-28`):
     - `JuicyPixels` 3.3.8, Hackage
-    - `JuicyPixels-jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `aee8a46`
-    - `JuicyPixels-spng` 0.1.0.0, hs-jpeg-turbo fork at `aee8a46`, `BSD-3-Clause AND BSD-2-Clause AND libpng-2.0 AND MIT`, "JuicyPixels wrappers for libspng": the description column holds each package's synopsis
-    - `JuicyPixels-stbir` 0.1.0.0, JuicyPixels-stbir fork at `3e53b11`, `BSD-3-Clause AND (MIT OR Unlicense)`
+    - `JuicyPixels-jpeg-turbo` 0.1.0.0, simplex-chat/hs-jpeg-turbo at `d0a4d95`
+    - `JuicyPixels-spng` 0.1.0.0, simplex-chat/hs-jpeg-turbo at `d0a4d95`, `BSD-3-Clause AND BSD-2-Clause AND libpng-2.0 AND MIT`, "JuicyPixels wrappers for libspng": the description column holds each package's synopsis
+    - `JuicyPixels-stbir` 0.1.0.0, simplex-chat/JuicyPixels-stbir at `2c93f04`, `BSD-3-Clause AND (MIT OR Unlicense)`
   - direct dependency (`:55`): `vector` 0.13.1.0, moved from the indirect dependencies
-  - indirect dependency (`:145`): `jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `aee8a46`, `BSD-3-Clause AND IJG AND Zlib`
+  - indirect dependency (`:145`): `jpeg-turbo` 0.1.0.0, simplex-chat/hs-jpeg-turbo at `d0a4d95`, `BSD-3-Clause AND IJG AND Zlib`
   - each of the five added to the dependents of the packages it depends on, among:
     - `bytestring` (`:11`)
     - `containers` (`:14`)
@@ -763,7 +763,7 @@ License notices, `docs/dependencies/`:
     - `primitive` (`:138`)
     - `transformers` (`:167`)
     - `zlib` (`:180`)
-- `licences/haskell/<package>-<version>/LICENSE`: the `LICENSE` of each of the five packages, from Hackage and from the pinned fork commits; the JuicyPixels-spng and JuicyPixels-stbir copies with the line `Copyright 2026 SimpleX Chat Ltd`.
+- `licences/haskell/<package>-<version>/LICENSE`: the `LICENSE` of each of the five packages, from Hackage and from the pinned commits; the JuicyPixels-spng and JuicyPixels-stbir copies with the line `Copyright 2026 SimpleX Chat Ltd`.
 
 ## Tests
 
