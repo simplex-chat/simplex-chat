@@ -1644,7 +1644,7 @@ server test step */
 "Connection with desktop stopped" = "La conexión con el escritorio (desktop) se ha parado";
 
 /* connection information */
-"connection:%@" = "conexión: % @";
+"connection:%@" = "conexión: %@";
 
 /* No comment provided by engineer. */
 "Connections" = "Conexiones";
@@ -2145,7 +2145,7 @@ alert button */
 "Desktop address" = "Dirección ordenador";
 
 /* No comment provided by engineer. */
-"Desktop app version %@ is not compatible with this app." = "La versión de aplicación del ordenador %\" no es compatible con esta aplicación.";
+"Desktop app version %@ is not compatible with this app." = "La versión de aplicación del ordenador %@ no es compatible con esta aplicación.";
 
 /* No comment provided by engineer. */
 "Desktop devices" = "Ordenadores";

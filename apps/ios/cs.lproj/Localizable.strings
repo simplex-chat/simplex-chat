@@ -282,7 +282,7 @@ channel relay bar */
 "%lld minutes" = "%lld minut";
 
 /* No comment provided by engineer. */
-"%lld new interface languages" = "%d nové jazyky rozhraní";
+"%lld new interface languages" = "%lld nové jazyky rozhraní";
 
 /* No comment provided by engineer. */
 "%lld seconds" = "%lld vteřin";
@@ -934,7 +934,7 @@ set passcode view */
 "changed address for you" = "změnila se vaše adresa";
 
 /* rcv group event chat item */
-"changed role of %@ to %@" = "Role %1$@ byla změněna na %2$ @";
+"changed role of %@ to %@" = "Role %1$@ byla změněna na %2$@";
 
 /* rcv group event chat item */
 "changed your role to %@" = "změnil vaši roli na %@";
@@ -3031,7 +3031,7 @@ chat item action */
 "Sent at" = "Posláno v";
 
 /* copied message info */
-"Sent at: %@" = "Posláno v: % @";
+"Sent at: %@" = "Posláno v: %@";
 
 /* message info title */
 "Sent message" = "Poslaná zpráva";

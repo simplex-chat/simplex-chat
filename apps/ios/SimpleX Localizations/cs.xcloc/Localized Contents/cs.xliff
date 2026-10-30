@@ -393,7 +393,7 @@ channel relay bar</note>
       </trans-unit>
       <trans-unit id="%lld new interface languages" xml:space="preserve">
         <source>%lld new interface languages</source>
-        <target>%d nové jazyky rozhraní</target>
+        <target>%lld nové jazyky rozhraní</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld seconds" xml:space="preserve">
@@ -8022,7 +8022,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Sent at: %@" xml:space="preserve">
         <source>Sent at: %@</source>
-        <target>Posláno v: % @</target>
+        <target>Posláno v: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Sent directly" xml:space="preserve">
@@ -10911,7 +10911,7 @@ marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="changed role of %@ to %@" xml:space="preserve">
         <source>changed role of %1$@ to %2$@</source>
-        <target>Role %1$@ byla změněna na %2$ @</target>
+        <target>Role %1$@ byla změněna na %2$@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="changed your role to %@" xml:space="preserve">

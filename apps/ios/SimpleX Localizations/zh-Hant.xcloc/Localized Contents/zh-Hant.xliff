@@ -3349,7 +3349,7 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="Welcome %@!" xml:space="preserve" approved="no">
         <source>Welcome %@!</source>
-        <target state="translated">歡迎 ％@！</target>
+        <target state="translated">歡迎 %@！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Welcome message" xml:space="preserve" approved="no">
@@ -3763,7 +3763,7 @@ SimpleX 伺服器並不會看到你的個人檔案。</target>
       </trans-unit>
       <trans-unit id="changed your role to %@" xml:space="preserve" approved="no">
         <source>changed your role to %@</source>
-        <target state="translated">你修改了 %1$@ 你的身份為 %@</target>
+        <target state="translated">修改了你的身份為 %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="changing address for %@..." xml:space="preserve" approved="no">
@@ -6443,7 +6443,7 @@ It can happen because of some bug or when the connection is compromised.</source
       </trans-unit>
       <trans-unit id="%lld messages blocked" xml:space="preserve" approved="no">
         <source>%lld messages blocked</source>
-        <target state="translated">已封鎖 %d 則訊息</target>
+        <target state="translated">已封鎖 %lld 則訊息</target>
       </trans-unit>
       <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve" approved="no">
         <source>The same conditions will apply to operator **%@**.</source>

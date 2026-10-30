@@ -127,7 +127,7 @@
       </trans-unit>
       <trans-unit id="%lld file(s) with total size of %@" xml:space="preserve" approved="no">
         <source>%lld file(s) with total size of %@</source>
-        <target state="needs-translation">%lld datoteka ukupne veličine % @</target>
+        <target state="needs-translation">%lld datoteka ukupne veličine %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld members" xml:space="preserve" approved="no">

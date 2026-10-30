@@ -5849,7 +5849,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve" approved="no">
         <source>Error connecting to forwarding server %@. Please try later.</source>
-        <target state="needs-translation">خطأ في الإتصال بخادم التحويل @%. حاول مجددا بعد حين.</target>
+        <target state="needs-translation">خطأ في الإتصال بخادم التحويل %@. حاول مجددا بعد حين.</target>
       </trans-unit>
       <trans-unit id="encryption agreed for %@" xml:space="preserve">
         <source>encryption agreed for %@</source>

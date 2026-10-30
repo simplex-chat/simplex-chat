@@ -120,12 +120,12 @@
       </trans-unit>
       <trans-unit id="%@ server" xml:space="preserve">
         <source>%@ server</source>
-        <target>服务器</target>
+        <target>%@ 服务器</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ servers" xml:space="preserve">
         <source>%@ servers</source>
-        <target>服务器</target>
+        <target>%@ 服务器</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ supports SimpleX Chat." xml:space="preserve">
@@ -4414,7 +4414,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error: %@" xml:space="preserve">
         <source>Error: %@</source>
-        <target>错误： ％@</target>
+        <target>错误：%@</target>
         <note>alert message
 conn error description
 file error text

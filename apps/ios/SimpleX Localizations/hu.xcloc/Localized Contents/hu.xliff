@@ -387,7 +387,7 @@ channel relay bar</note>
       </trans-unit>
       <trans-unit id="%lld messages moderated by %@" xml:space="preserve">
         <source>%lld messages moderated by %@</source>
-        <target>%@ %lld üzenetet moderált</target>
+        <target>%2$@ %1$lld üzenetet moderált</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld minutes" xml:space="preserve">
