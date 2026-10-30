@@ -5,6 +5,12 @@ import UIKit
 @testable import SimpleXChat
 
 final class SnapshotTests: XCTestCase {
+    private var fixedQRCode: UIImage?
+
+    override func setUp() async throws {
+        fixedQRCode = await generateImage(previewQRLink, tintColor: UIColor(red: 0.023, green: 0.176, blue: 0.337, alpha: 1), errorLevel: "M")
+    }
+
     @MainActor
     func testPreviews() throws {
         NSTimeZone.default = try XCTUnwrap(TimeZone(identifier: "UTC"))
@@ -21,7 +27,7 @@ final class SnapshotTests: XCTestCase {
             for scene in previewScenes() where scene.allSizes || size == "large" {
                 let themeName = dark ? "dark" : "light"
                 let file = "\(scene.name)-\(themeName)-\(size).png"
-                let image = try renderScene(scene, theme.toAppTheme(), dark: dark, in: windowScene)
+                let image = try renderScene(scene, theme.toAppTheme(), dark: dark, fixedQRCode: fixedQRCode, in: windowScene)
                 try XCTUnwrap(image.pngData()).write(to: dir.appendingPathComponent(file))
                 index.append([
                     "scene": scene.name,
@@ -305,13 +311,16 @@ private func snapshotTheme(_ dark: Bool) -> ThemeManager.ActiveTheme {
     )
 }
 
+private let previewQRLink = "https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw"
+
 @MainActor
-private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, in windowScene: UIWindowScene) throws -> UIImage {
+private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, fixedQRCode: UIImage?, in windowScene: UIWindowScene) throws -> UIImage {
     let screen = windowScene.screen
     let width = screen.bounds.width
     let root = VStack(spacing: 0) { scene.view }
         .environmentObject(ChatModel.shared)
         .environmentObject(theme)
+        .environment(\.fixedQRCode, fixedQRCode)
         .frame(width: width, height: scene.height)
     let host = UIHostingController(rootView: AnyView(root))
     if #available(iOS 16.4, *) {
@@ -548,6 +557,94 @@ private final class SnapshotFixtures {
     let team: GroupInfo
     let news: GroupInfo
     let contact: Contact
+    private let markdown: [String: ParsedMarkdown] = [
+        "https://simplex.chat": ParsedMarkdown(formattedText: [
+            FormattedText(text: "https://simplex.chat", format: .uri)
+        ]),
+        "---": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "---", format: .markup(token: .ruleMark))
+            ],
+            markdownBlocks: [
+                .rule(mark: SegmentRange(from: 0, to: 1))
+            ]
+        ),
+        "Hi! Did you see the **new release**?": ParsedMarkdown(formattedText: [
+            FormattedText(text: "Hi! Did you see the "),
+            FormattedText(text: "new release", format: .bold(singleStar: false)),
+            FormattedText(text: "?")
+        ]),
+        "Yes, *great* changes 🎉": ParsedMarkdown(formattedText: [
+            FormattedText(text: "Yes, "),
+            FormattedText(text: "great", format: .bold(singleStar: true)),
+            FormattedText(text: " changes 🎉")
+        ]),
+        "# Release notes\n- terminal layout\n- `code` blocks\n\n> quoted line": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "# ", format: .markup(token: .headingMark(level: 1))),
+                FormattedText(text: "Release notes"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "- ", format: .markup(token: .listMark(number: nil))),
+                FormattedText(text: "terminal layout"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "- ", format: .markup(token: .listMark(number: nil))),
+                FormattedText(text: "code", format: .snippet),
+                FormattedText(text: " blocks"),
+                FormattedText(text: "\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 2))),
+                FormattedText(text: "> ", format: .markup(token: .quoteMark)),
+                FormattedText(text: "quoted line")
+            ],
+            markdownBlocks: [
+                .heading(level: 1, content: SegmentRange(from: 1, to: 2)),
+                .list(items: [
+                    ListEntry(number: nil, content: SegmentRange(from: 4, to: 5), items: []),
+                    ListEntry(number: nil, content: SegmentRange(from: 7, to: 9), items: [])
+                ]),
+                .quote(content: SegmentRange(from: 11, to: 12))
+            ]
+        ),
+        "Plan for today:\n1. review\n2. **release**": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "Plan for today:"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "1. ", format: .markup(token: .listMark(number: "1."))),
+                FormattedText(text: "review"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "2. ", format: .markup(token: .listMark(number: "2."))),
+                FormattedText(text: "release", format: .bold(singleStar: false))
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 0, to: 1)),
+                .list(items: [
+                    ListEntry(number: "1.", content: SegmentRange(from: 3, to: 4), items: []),
+                    ListEntry(number: "2.", content: SegmentRange(from: 6, to: 7), items: [])
+                ])
+            ]
+        ),
+        "**Version 7.1** is out": ParsedMarkdown(formattedText: [
+            FormattedText(text: "Version 7.1", format: .bold(singleStar: false)),
+            FormattedText(text: " is out")
+        ]),
+        "## What's new\n- terminal layout\n- faster sync": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "## ", format: .markup(token: .headingMark(level: 2))),
+                FormattedText(text: "What's new"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "- ", format: .markup(token: .listMark(number: nil))),
+                FormattedText(text: "terminal layout"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "- ", format: .markup(token: .listMark(number: nil))),
+                FormattedText(text: "faster sync")
+            ],
+            markdownBlocks: [
+                .heading(level: 2, content: SegmentRange(from: 1, to: 2)),
+                .list(items: [
+                    ListEntry(number: nil, content: SegmentRange(from: 4, to: 5), items: []),
+                    ListEntry(number: nil, content: SegmentRange(from: 7, to: 8), items: [])
+                ])
+            ]
+        )
+    ]
 
     init() {
         alice = Self.member(2, "alice", .admin, image: imageBase64(UIColor(red: 0.85, green: 0.45, blue: 0.3, alpha: 1), CGSize(width: 64, height: 64)))
@@ -594,7 +691,7 @@ private final class SnapshotFixtures {
     }
 
     private func msg(_ dir: CIDirection, _ text: String, _ minutes: Double, quote: CIQuote? = nil, reactions: [CIReactionCount] = [], content: MsgContent? = nil, file: CIFile? = nil) -> ChatItem {
-        let parsed = text.isEmpty ? nil : parseSimpleXMarkdownText(text)
+        let parsed = markdown[text]
         let mc = content ?? .text(text)
         return ChatItem(
             chatDir: dir,
@@ -613,7 +710,7 @@ private final class SnapshotFixtures {
     }
 
     private func quote(_ dir: CIDirection?, _ text: String, image: String? = nil) -> CIQuote {
-        let parsed = text.isEmpty ? nil : parseSimpleXMarkdownText(text)
+        let parsed = markdown[text]
         return CIQuote(
             chatDir: dir,
             itemId: 1,
