@@ -4495,7 +4495,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve" approved="no">
         <source>Create new profile in [desktop app](https://simplex.chat/downloads/). 💻</source>
-        <target state="translated">[데스크톱 앱]에 새로운 프로필 생성(https://simplex.chat/downloads/).💻</target>
+        <target state="translated">[데스크톱 앱](https://simplex.chat/downloads/)에 새로운 프로필 생성.💻</target>
       </trans-unit>
       <trans-unit id="Contact is deleted." xml:space="preserve" approved="no">
         <source>Contact is deleted.</source>

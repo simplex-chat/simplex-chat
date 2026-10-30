@@ -2807,7 +2807,7 @@ Das ist Ihr eigener Einmal-Link!</target>
       </trans-unit>
       <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve">
         <source>Create new profile in [desktop app](https://simplex.chat/downloads/). 💻</source>
-        <target>Neues Profil in der [Desktop-App] erstellen (https://simplex.chat/downloads/). 💻</target>
+        <target>Neues Profil in der [Desktop-App](https://simplex.chat/downloads/) erstellen. 💻</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create profile" xml:space="preserve">

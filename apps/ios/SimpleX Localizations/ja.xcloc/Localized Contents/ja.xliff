@@ -8907,7 +8907,7 @@ server test failure</note>
       </trans-unit>
       <trans-unit id="Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" xml:space="preserve">
         <source>Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</source>
-        <target>ユーザーに感謝します – [Weblate 経由で貢献してください](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translation-simplex-chat)！</target>
+        <target>ユーザーに感謝します – [Weblate 経由で貢献してください](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Thanks to the users – contribute via Weblate!" xml:space="preserve">

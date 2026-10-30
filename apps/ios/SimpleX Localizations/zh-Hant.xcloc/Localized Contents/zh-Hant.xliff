@@ -3678,7 +3678,7 @@ SimpleX 伺服器並不會看到你的個人檔案。</target>
       </trans-unit>
       <trans-unit id="[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve" approved="no">
         <source>[Star on GitHub](https://github.com/simplex-chat/simplex-chat)</source>
-        <target state="translated">［於 Github 給個星星］（https://github.com/simplex-chat/simplex-chat）</target>
+        <target state="translated">[於 Github 給個星星](https://github.com/simplex-chat/simplex-chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="_italic_" xml:space="preserve" approved="no">
@@ -4289,7 +4289,7 @@ SimpleX 伺服器並不會看到你的個人檔案。</target>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve" approved="no">
         <source>By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</source>
-        <target state="translated">使用個人檔案（預設值）或使用連接（測試版）（https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation）（BETA）。</target>
+        <target state="translated">使用個人檔案（預設值）或[使用連接（測試版）](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation)（BETA）。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database upgrade" xml:space="preserve" approved="no">
@@ -5357,7 +5357,7 @@ SimpleX Lock must be enabled.</source>
       </trans-unit>
       <trans-unit id="Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" xml:space="preserve" approved="no">
         <source>Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</source>
-        <target state="translated">感謝用戶 – [透過 Weblate 貢獻]（https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat）！</target>
+        <target state="translated">感謝用戶 – [透過 Weblate 貢獻](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="There should be at least one user profile." xml:space="preserve" approved="no">

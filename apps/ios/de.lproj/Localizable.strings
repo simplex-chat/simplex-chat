@@ -1863,7 +1863,7 @@ server test step */
 "Create list" = "Liste erstellen";
 
 /* No comment provided by engineer. */
-"Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" = "Neues Profil in der [Desktop-App] erstellen (https://simplex.chat/downloads/). 💻";
+"Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" = "Neues Profil in der [Desktop-App](https://simplex.chat/downloads/) erstellen. 💻";
 
 /* No comment provided by engineer. */
 "Create profile" = "Profil erstellen";

@@ -1047,7 +1047,7 @@ marked deleted chat item preview text */
 "Broadcast" = "Опубликовать";
 
 /* No comment provided by engineer. */
-"Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Болгарский, финский, тайский и украинский - благодаря пользователям и [Weblate] (https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
+"Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Болгарский, финский, тайский и украинский - благодаря пользователям и [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
 /* chat link info line */
 "Business address" = "Бизнес-адрес";
