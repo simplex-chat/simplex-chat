@@ -1,5 +1,6 @@
 import {T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
+import {fileStatusError} from "./log"
 
 const progressInterval = 60_000
 const maxTimer = 2_147_483_647
@@ -16,9 +17,21 @@ export interface Message {
   from_type?: string
   time: string
   text: string
+  file?: MessageFile
   new: boolean
   reply_to?: {chat: string; item: number}
   mentions_me: boolean
+}
+
+export type FileType = "image" | "video" | "voice" | "file"
+
+export interface MessageFile {
+  name: string
+  size: number
+  type: FileType
+  status: "offered" | "received" | "failed"
+  path?: string
+  error?: string
 }
 
 export interface Sender {
@@ -152,10 +165,23 @@ export function toMessage(chatInfo: T.ChatInfo, item: T.ChatItem, self: Sender):
     ...(sender.type === undefined ? {} : {from_type: sender.type}),
     time: meta.itemTs,
     text,
+    ...(content.type === "rcvMsgContent" && item.file !== undefined ? {file: messageFile(content.msgContent, item.file)} : {}),
     new: isNew(item),
     ...(quotedItem?.itemId === undefined ? {} : {reply_to: {chat, item: quotedItem.itemId}}),
     mentions_me: meta.userMention,
   }
+}
+
+function messageFile({type}: T.MsgContent, {fileName, fileSize, fileSource, fileStatus}: T.CIFile): MessageFile {
+  const file = {name: fileName, size: fileSize, type: fileType(type)}
+  const error = fileStatusError(fileStatus)
+  if (error !== undefined) return {...file, status: "failed", error}
+  if (fileStatus.type === "rcvComplete") return {...file, status: "received", ...(fileSource === undefined ? {} : {path: fileSource.filePath})}
+  return {...file, status: "offered"}
+}
+
+function fileType(type: T.MsgContent.Tag): FileType {
+  return type === "image" || type === "video" || type === "voice" ? type : "file"
 }
 
 function itemSender(chatInfo: T.ChatInfo, chatDir: T.CIDirection, self: Sender): Sender & {member?: number} {
@@ -259,9 +285,4 @@ export function validName(name: string): string {
 
 export function viewName(name: string): string {
   return /\s/u.test(name) || /\p{P}$/u.test(name) ? `'${name}'` : name
-}
-
-export function fullDomainName({nameTLD, domain, subDomain}: T.SimplexDomain): string {
-  const tld = nameTLD === T.SimplexTLD.Simplex ? ".simplex" : nameTLD === T.SimplexTLD.Testing ? ".testing" : ""
-  return `${[...subDomain].reverse().concat(domain).join(".")}${tld}`
 }

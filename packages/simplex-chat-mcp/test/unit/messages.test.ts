@@ -54,6 +54,28 @@ describe("message fields", () => {
     expect(channel).toMatchObject({chat: "#12", from: "Ridgeline News"})
     expect(channel).not.toHaveProperty("from_member")
   })
+
+  it("describes the file of a received message by its status", () => {
+    const chatInfo = direct(contact(4, "Ridgeline"))
+    const withFile = (chatItem: T.ChatItem, msgType: string, fileStatus: object, fileSource?: object): T.ChatItem =>
+      ({
+        ...chatItem,
+        content: {...chatItem.content, msgContent: {type: msgType, text: "report"}},
+        file: {fileId: 7, fileName: "report.pdf", fileSize: 2400000, fileStatus, fileProtocol: "xftp", ...(fileSource === undefined ? {} : {fileSource})},
+      }) as unknown as T.ChatItem
+    const fileOf = (msgType: string, fileStatus: object, fileSource?: object) => toMessage(chatInfo, withFile(item(30, "report"), msgType, fileStatus, fileSource), self).file
+    expect(fileOf("file", {type: "rcvInvitation"})).toEqual({name: "report.pdf", size: 2400000, type: "file", status: "offered"})
+    expect(fileOf("image", {type: "rcvTransfer", rcvProgress: 1, rcvTotal: 2})).toEqual({name: "report.pdf", size: 2400000, type: "image", status: "offered"})
+    expect(fileOf("video", {type: "rcvComplete"}, {filePath: "/data/files/@4/report.pdf"})).toEqual({name: "report.pdf", size: 2400000, type: "video", status: "received", path: "/data/files/@4/report.pdf"})
+    expect(fileOf("voice", {type: "rcvCancelled"})).toMatchObject({type: "voice", status: "failed", error: "The file was cancelled."})
+    expect(fileOf("text", {type: "rcvAborted"})).toMatchObject({type: "file", status: "failed", error: "The download was aborted."})
+    expect(fileOf("file", {type: "rcvError", rcvFileError: {type: "blocked", server: "xftp://k@xftp.example.com", blockInfo: {reason: "spam"}}})!.error).toBe("File is blocked by server operator: Spam.")
+    expect(fileOf("file", {type: "rcvError", rcvFileError: {type: "relay", srvError: {type: "host"}}})!.error).toBe("File server error: Server address is incompatible with network settings.")
+    expect(fileOf("file", {type: "rcvError", rcvFileError: {type: "other", fileError: "file digest"}})!.error).toBe("Error: file digest")
+    expect(fileOf("file", {type: "invalid", text: "bad\nstatus"})!.error).toBe("Invalid file: bad status")
+    expect(toMessage(chatInfo, withFile(item(31, "report", {type: "directSnd"}), "file", {type: "sndComplete"}, {filePath: "/home/alice/report.pdf"}), self)).not.toHaveProperty("file")
+    expect(toMessage(chatInfo, item(32, "no file"), self)).not.toHaveProperty("file")
+  })
 })
 
 describe("responses", () => {

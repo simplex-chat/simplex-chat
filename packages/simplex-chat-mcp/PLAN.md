@@ -483,12 +483,25 @@ from_member     number    groupRcv: chatDir.groupMember.groupMemberId
 from_type       string    the sender's peerType: human | bot | agent | business, when the profile has one
 time            string    meta.itemTs
 text            string    content.msgContent.text
+file            object    received messages with chatItem.file: {name, size, type, status, path, error}
 new             boolean   meta.itemStatus = rcvNew before this call
 reply_to        object    {chat, item: quotedItem.itemId}, when present
 mentions_me     boolean   meta.userMention
 ```
 
 - Results contain message items only: `content.type` `rcvMsgContent` or `sndMsgContent`. Feature, banner and event items are left out (spike V7, V8).
+
+`file`:
+
+```
+field    source
+name     fileName
+size     fileSize, bytes
+type     image | video | voice from content.msgContent.type; file otherwise
+status   fileStatus: offered (rcvInvitation, rcvAccepted, rcvTransfer, rcvWarning), received (rcvComplete), failed (rcvCancelled, rcvAborted, rcvError, invalid)
+path     received: fileSource.filePath
+error    failed: "The file was cancelled.", "The download was aborted.", the apps' words for the FileError of rcvError (fileErrorText, log.ts), "Invalid file: TEXT"
+```
 
 ### connect
 
