@@ -36,6 +36,7 @@ SOURCE_LANGUAGE = "en"
 XLIFF_NS = "{urn:oasis:names:tc:xliff:document:1.2}"
 LOG_TAIL_LINES = 40
 GROUP_EXAMPLES = 3
+KEY_PREVIEW_LENGTH = 100
 
 UnitKey = tuple[str, str]
 
@@ -451,14 +452,12 @@ def lint_with_plutil(paths: list[Path]) -> list[Problem]:
 
 
 def translation_problems(path: Path, key: str, source: str, target: str) -> list[Problem]:
-    problems = []
-    placeholder = placeholder_problem(source, target)
-    if placeholder:
-        problems.append(Problem(PLACEHOLDER, path, key, placeholder, target))
     link = link_problem(source, target)
     if link:
-        problems.append(Problem(LINK, path, key, link, target))
-    return problems
+        # A broken link leaves its percent-encoded URL unmasked, which would also read as placeholders.
+        return [Problem(LINK, path, key, link, target)]
+    placeholder = placeholder_problem(source, target)
+    return [Problem(PLACEHOLDER, path, key, placeholder, target)] if placeholder else []
 
 
 def check_xliff(path: Path, source_keys: set[UnitKey]) -> tuple[list[Problem], int]:
@@ -507,9 +506,11 @@ def check_files(stats: dict[str, LanguageStats]) -> list[Problem]:
         xliff_problems, translated = check_xliff(path, source_keys)
         stats.setdefault(path.stem, LanguageStats()).translated = translated
         problems += xliff_problems
+    reported = {(p.language, p.key, p.kind, p.detail) for p in problems}
     strings = translation_strings()
     for path in strings:
-        problems += check_strings(path)
+        # The import copies XLIFF translations into .strings, so only problems of their own are listed.
+        problems += [p for p in check_strings(path) if (p.language, p.key, p.kind, p.detail) not in reported]
     return problems + lint_with_plutil(strings)
 
 
@@ -581,6 +582,10 @@ def print_summary(stats: dict[str, LanguageStats], problems: list[Problem], in_a
         print("  " + "  ".join(paint(text, color) if text.strip() and color else text for text, color in padded))
 
 
+def preview(text: str) -> str:
+    return text if len(text) <= KEY_PREVIEW_LENGTH else text[:KEY_PREVIEW_LENGTH] + "…"
+
+
 def print_problems(problems: list[Problem]) -> None:
     by_path: dict[Path, list[Problem]] = {}
     for problem in sorted(problems, key=lambda p: (p.language, str(p.path))):
@@ -599,7 +604,7 @@ def print_problems(problems: list[Problem]) -> None:
             if problem.kind in GROUPED_KINDS:
                 continue
             kind = paint(f"{problem.kind:<11}", KIND_COLORS[problem.kind])
-            print(f"    {kind} {problem.key!r}" if problem.key else f"    {kind}")
+            print(f"    {kind} {preview(problem.key)!r}" if problem.key else f"    {kind}")
             print(f"                {problem.detail}")
             if problem.text:
                 print(paint(f"                -> {problem.text!r}", DIM))

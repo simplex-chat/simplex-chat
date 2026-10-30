@@ -237,6 +237,13 @@ class FilesTest(RepositoryTestCase):
         )
         self.assertEqual(stats["de"].translated, 1)
 
+    def test_strings_problems_already_in_the_xliff_are_listed_once(self) -> None:
+        self.write(l10n.xliff_path("de"), xliff_xml("de", [unit_xml("%@ server", "%@ server", "Server")]))
+        self.write(l10n.IOS_DIR / "de.lproj/Localizable.strings", '"%@ server" = "Server";\n"%@ file" = "Datei";\n')
+        with mock.patch.object(l10n.shutil, "which", return_value=None):
+            problems = l10n.check_files({})
+        self.assertEqual([(p.path.suffix, p.key) for p in problems], [(".xliff", "%@ server"), (".strings", "%@ file")])
+
     def test_check_xliff_reports_duplicates_and_stale_units(self) -> None:
         path = l10n.xliff_path("de")
         self.write(path, xliff_xml("de", [unit_xml("A", "A"), unit_xml("A", "A", "Ah"), unit_xml("Old", "Old", "Alt")]))
@@ -291,6 +298,10 @@ class ReportTest(unittest.TestCase):
         self.assertIn("'Old 0', 'Old 1', 'Old 2' and 1 more", text)
         self.assertIn("5 warning(s): 1 duplicate, 4 stale", text)
         self.assertIn("No problems found.", text)
+
+    def test_preview_shortens_long_keys(self) -> None:
+        self.assertEqual(l10n.preview("short"), "short")
+        self.assertEqual(l10n.preview("x" * 150), "x" * l10n.KEY_PREVIEW_LENGTH + "…")
 
     def test_format_duration(self) -> None:
         self.assertEqual(l10n.format_duration(4.4), "4s")
