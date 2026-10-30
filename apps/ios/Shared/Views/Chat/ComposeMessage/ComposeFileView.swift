@@ -38,3 +38,9 @@ struct ComposeFileView: View {
         .frame(maxWidth: .infinity)
     }
 }
+
+struct ComposeFileView_Previews: PreviewProvider {
+    static var previews: some View {
+        ComposeFileView(fileName: "test.txt", cancelFile: {}, cancelEnabled: true)
+    }
+}

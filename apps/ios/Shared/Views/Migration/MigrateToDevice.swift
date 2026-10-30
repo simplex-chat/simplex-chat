@@ -798,3 +798,15 @@ struct MigrateToDevice_Previews: PreviewProvider {
         MigrateToDevice(migrationState: Binding.constant(.pasteOrScanLink))
     }
 }
+
+struct MigrateToDevice_Confirmation_Previews: PreviewProvider {
+    static var previews: some View {
+        MigrateToDevice(migrationState: Binding.constant(.migrationConfirmation(status: .errorMigration(dbFile: "", migrationError: .downgrade(downMigrations: ["20260222_chat_relays"])), passphrase: "", useKeychain: true)))
+    }
+}
+
+struct MigrateToDevice_Onion_Previews: PreviewProvider {
+    static var previews: some View {
+        MigrateToDevice.OnionView(appSettings: AppSettings(), finishMigration: { _ in })
+    }
+}
