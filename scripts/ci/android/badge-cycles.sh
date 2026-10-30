@@ -3,7 +3,7 @@
 # Watches the badges screen while the core credits a prepaid badge and lets it lapse, over and over, and checks that the
 # screen always shows one of its two pages: "Your badge" or the Support SimpleX page. The core starts the cycles on the
 # chat console's /badge test_cycles <cycles> <seconds without a badge> <seconds with one> (test builds only); this script
-# clears the app's data, takes it through onboarding, sends that from the console and opens Settings > Supporter perks.
+# reinstalls the app, takes it through onboarding, sends that from the console and opens Settings > Supporter perks.
 # Every reading keeps its screenshot, accessibility tree and text in <output dir>/readings. A reading is blank when the
 # tree has neither page, or when the middle of the screenshot is nearly one colour (ink below MIN_INK): a page whose
 # drawing is lost stays in the tree. Blank that lasts BLANK_SECS is kept as a numbered screenshot with its tree, and the
@@ -25,9 +25,10 @@ ui=$here/ui
 readings=$out/readings
 mkdir -p "$readings"
 
+# uninstalled rather than cleared: a cleared app loses the permissions install granted, and onboarding then asks differently
 fresh_onboarding() {
   UI_OUT=$out "$ui" stop
-  adb shell pm clear "$package"
+  adb uninstall "$package"
   "$here/smoke-test.sh" "$apk" "$out/$1" onboarding
 }
 
