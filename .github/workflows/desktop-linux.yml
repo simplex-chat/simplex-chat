@@ -308,6 +308,19 @@ jobs:
           retention-days: 3
           if-no-files-found: warn
 
+      - name: Run badge screen cycles
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: scripts/ci/desktop-linux/badge-cycles.sh apps/multiplatform/release/main/app/simplex "$RUNNER_TEMP/badge-cycles"
+
+      - name: Upload badge screen cycles
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-badge-cycles
+          path: ${{ runner.temp }}/badge-cycles
+          retention-days: 7
+          if-no-files-found: warn
+
       - name: Upload desktop test report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
