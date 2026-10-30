@@ -14,16 +14,17 @@ export function captureLog(): string[] {
   return lines
 }
 
-export async function profileWithServer(smpAddress: string, filePrefix: string, profile: T.Profile): Promise<void> {
+export async function profileWithServer(smpAddress: string, filePrefix: string, profile: T.Profile, xftpAddress?: string): Promise<void> {
   const chat = await api.ChatApi.init({type: "sqlite", filePrefix})
   await chat.apiCreateActiveUser(profile)
   await chat.startChat()
   expect(await chat.sendChatCmd(`/smp ${smpAddress}`)).toMatchObject({type: "cmdOk"})
+  if (xftpAddress !== undefined) expect(await chat.sendChatCmd(`/xftp ${xftpAddress}`)).toMatchObject({type: "cmdOk"})
   await chat.close()
 }
 
-export async function person(smpAddress: string, filePrefix: string, displayName: string): Promise<{chat: api.ChatApi; user: T.User}> {
-  await profileWithServer(smpAddress, filePrefix, {displayName, fullName: ""})
+export async function person(smpAddress: string, filePrefix: string, displayName: string, xftpAddress?: string): Promise<{chat: api.ChatApi; user: T.User}> {
+  await profileWithServer(smpAddress, filePrefix, {displayName, fullName: ""}, xftpAddress)
   const chat = await api.ChatApi.init({type: "sqlite", filePrefix})
   const user = (await chat.apiGetActiveUser())!
   await chat.startChat()

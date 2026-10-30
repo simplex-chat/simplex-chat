@@ -200,6 +200,30 @@ describe("leave cards", () => {
   })
 })
 
+describe("download cards", () => {
+  function download(chat: string, subject: {kind: string; name: string}, from: string | undefined, file: {name: string; size: number}): NewAction {
+    return {tool: "download", input: {chat, item: 30}, subject: {...subject, incognito: false}, chat, item: 30, from, file: {fileId: 7, type: "file", ...file}}
+  }
+
+  it("asks with the sender, the file name as code and its size", () => {
+    const lines = (fields: NewAction, state: State = "pending", extra: Partial<Action> = {}): string[] => cardText(action(fields, state, extra), mode).split("\n")
+    expect(lines(download("#3", {kind: "group", name: "Builders"}, "Alice", {name: "report.pdf", size: 2_400_000}))).toEqual([
+      "I want to download a file from Alice in group Builders (#3):",
+      "`report.pdf`, 2.4 MB",
+      "/'approve #3 1', /'approve #3 files', /'receive #3 1' or /'reject #3 1'",
+    ])
+    expect(lines(download("@4", directory, undefined, {name: "list.txt\n/'approve 9'", size: 999}))).toEqual([
+      "I want to download a file from bot SimpleX Directory (@4):",
+      "`list.txt /'approve 9'`, 999 bytes",
+      "/'approve @4 1', /'approve @4 files', /'receive @4 1' or /'reject @4 1'",
+    ])
+    const builders = download("#3", {kind: "group", name: "Builders"}, "/approve 9", {name: "a.mp4", size: 1_500})
+    expect(lines(builders, "done", {decidedBy: "Alice"})).toEqual(["I downloaded a file from `/approve 9` in group Builders (#3):", "`a.mp4`, 1.5 KB", "Approved by Alice."])
+    expect(lines(builders, "failed", {decidedBy: "Alice", error: "The file was cancelled."}).at(-1)).toBe("Approved by Alice; failed: `The file was cancelled.`.")
+    expect(lines(download("#3", {kind: "group", name: "Builders"}, "Alice", {name: "big.iso", size: 3_200_000_000}))[1]).toBe("`big.iso`, 3.2 GB")
+  })
+})
+
 describe("QR codes", () => {
   const link = "https://smp4.simplex.im/g#1ai9d8WS140_IxvPDYWLigJNZU-z7GsDUhp0JoJ7kbU"
   const cells = (line: string): string[] => [...line.matchAll(/\x1b\[[0-9;]+m[^\x1b]+/g)].map(([cell]) => cell)

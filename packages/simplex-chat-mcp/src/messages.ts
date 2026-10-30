@@ -29,9 +29,18 @@ export interface MessageFile {
   name: string
   size: number
   type: FileType
-  status: "offered" | "received" | "failed"
+  status: "offered" | "received" | "rejected" | "failed"
   path?: string
   error?: string
+}
+
+export interface FileOffer {
+  fileId: number
+  name: string
+  size: number
+  type: FileType
+  preview?: string
+  duration?: number
 }
 
 export interface Sender {
@@ -152,7 +161,7 @@ export function isLive({meta}: T.ChatItem): boolean {
   return meta.itemLive === true
 }
 
-export function toMessage(chatInfo: T.ChatInfo, item: T.ChatItem, self: Sender): Message {
+export function toMessage(chatInfo: T.ChatInfo, item: T.ChatItem, self: Sender, rejectedFiles: ReadonlySet<number>): Message {
   const chat = chatRef(chatInfo) ?? ""
   const {meta, content, quotedItem} = item
   const text = content.type === "rcvMsgContent" || content.type === "sndMsgContent" ? content.msgContent.text : ""
@@ -165,23 +174,36 @@ export function toMessage(chatInfo: T.ChatInfo, item: T.ChatItem, self: Sender):
     ...(sender.type === undefined ? {} : {from_type: sender.type}),
     time: meta.itemTs,
     text,
-    ...(content.type === "rcvMsgContent" && item.file !== undefined ? {file: messageFile(content.msgContent, item.file)} : {}),
+    ...(content.type === "rcvMsgContent" && item.file !== undefined ? {file: messageFile(content.msgContent, item.file, rejectedFiles)} : {}),
     new: isNew(item),
     ...(quotedItem?.itemId === undefined ? {} : {reply_to: {chat, item: quotedItem.itemId}}),
     mentions_me: meta.userMention,
   }
 }
 
-function messageFile({type}: T.MsgContent, {fileName, fileSize, fileSource, fileStatus}: T.CIFile): MessageFile {
-  const file = {name: fileName, size: fileSize, type: fileType(type)}
+function messageFile(msgContent: T.MsgContent, ciFile: T.CIFile, rejectedFiles: ReadonlySet<number>): MessageFile {
+  const {name, size, type} = fileOffer(msgContent, ciFile)
+  const file = {name, size, type}
+  const {fileId, fileSource, fileStatus} = ciFile
   const error = fileStatusError(fileStatus)
+  if (rejectedFiles.has(fileId)) return {...file, status: "rejected"}
   if (error !== undefined) return {...file, status: "failed", error}
   if (fileStatus.type === "rcvComplete") return {...file, status: "received", ...(fileSource === undefined ? {} : {path: fileSource.filePath})}
   return {...file, status: "offered"}
 }
 
-function fileType(type: T.MsgContent.Tag): FileType {
-  return type === "image" || type === "video" || type === "voice" ? type : "file"
+export function fileOffer(msgContent: T.MsgContent, {fileId, fileName, fileSize}: T.CIFile): FileOffer {
+  const file = {fileId, name: fileName, size: fileSize}
+  switch (msgContent.type) {
+    case "image":
+      return {...file, type: "image", preview: msgContent.image}
+    case "video":
+      return {...file, type: "video", preview: msgContent.image, duration: msgContent.duration}
+    case "voice":
+      return {...file, type: "voice", duration: msgContent.duration}
+    default:
+      return {...file, type: "file"}
+  }
 }
 
 function itemSender(chatInfo: T.ChatInfo, chatDir: T.CIDirection, self: Sender): Sender & {member?: number} {

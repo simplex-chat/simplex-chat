@@ -1,11 +1,13 @@
+import {existsSync, rmSync} from "fs"
+import {join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
-import {Actions} from "../../src/actions"
+import {Actions, Standing} from "../../src/actions"
 import {cardText} from "../../src/control"
 import {ChatItemsWatch, Collected, awaitResponses, toMessage} from "../../src/messages"
 import {AgentTools, classifyPlan} from "../../src/tools"
-import {FakeChat, actionsWith, contact, direct, event, fakeHooks, group, groupChat, item, member, settled, signal, user} from "./fixtures"
+import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
 
 beforeEach(() => {
   jest.spyOn(process.stdout, "write").mockImplementation(() => true)
@@ -16,14 +18,17 @@ afterEach(() => {
   jest.useRealTimers()
 })
 
+afterAll(() => rmSync(data, {recursive: true, force: true}))
+
 describe("message fields", () => {
   const self = {name: "agent", type: "agent"}
+  const noRejections = new Set<number>()
 
   it("describes a group message", () => {
     const switchback = member(44, "Switchback")
     switchback.memberProfile.peerType = T.ChatPeerType.Bot
     const chatInfo = groupChat(group(15, "Trail"))
-    expect(toMessage(chatInfo, item(31, "Ridgecrest, $142", {type: "groupRcv", groupMember: switchback}, {quoted: 30, mention: true, ts: "2026-10-17T11:00:00Z"}), self)).toEqual({
+    expect(toMessage(chatInfo, item(31, "Ridgecrest, $142", {type: "groupRcv", groupMember: switchback}, {quoted: 30, mention: true, ts: "2026-10-17T11:00:00Z"}), self, noRejections)).toEqual({
       chat: "#15",
       item: 31,
       from: "Switchback",
@@ -39,8 +44,8 @@ describe("message fields", () => {
 
   it("describes direct, channel and sent messages", () => {
     const directory = direct(contact(4, "SimpleX Directory", {peerType: "bot"}))
-    expect(toMessage(directory, item(21, "found 3", {type: "directRcv"}, {status: "rcvRead"}), self)).toMatchObject({chat: "@4", from: "SimpleX Directory", from_type: "bot", new: false})
-    expect(toMessage(directory, item(20, "shoes", {type: "directSnd"}), self)).toEqual({
+    expect(toMessage(directory, item(21, "found 3", {type: "directRcv"}, {status: "rcvRead"}), self, noRejections)).toMatchObject({chat: "@4", from: "SimpleX Directory", from_type: "bot", new: false})
+    expect(toMessage(directory, item(20, "shoes", {type: "directSnd"}), self, noRejections)).toEqual({
       chat: "@4",
       item: 20,
       from: "agent",
@@ -50,21 +55,17 @@ describe("message fields", () => {
       new: false,
       mentions_me: false,
     })
-    const channel = toMessage(groupChat(group(12, "Ridgeline News")), item(40, "post", {type: "channelRcv"}), self)
+    const channel = toMessage(groupChat(group(12, "Ridgeline News")), item(40, "post", {type: "channelRcv"}), self, noRejections)
     expect(channel).toMatchObject({chat: "#12", from: "Ridgeline News"})
     expect(channel).not.toHaveProperty("from_member")
   })
 
   it("describes the file of a received message by its status", () => {
     const chatInfo = direct(contact(4, "Ridgeline"))
-    const withFile = (chatItem: T.ChatItem, msgType: string, fileStatus: object, fileSource?: object): T.ChatItem =>
-      ({
-        ...chatItem,
-        content: {...chatItem.content, msgContent: {type: msgType, text: "report"}},
-        file: {fileId: 7, fileName: "report.pdf", fileSize: 2400000, fileStatus, fileProtocol: "xftp", ...(fileSource === undefined ? {} : {fileSource})},
-      }) as unknown as T.ChatItem
-    const fileOf = (msgType: string, fileStatus: object, fileSource?: object) => toMessage(chatInfo, withFile(item(30, "report"), msgType, fileStatus, fileSource), self).file
+    const fileOf = (msgType: string, fileStatus: object, fileSource?: object, rejected: Set<number> = noRejections) =>
+      toMessage(chatInfo, fileItem(30, {type: msgType, text: "report"}, fileStatus, {fileSource}), self, rejected).file
     expect(fileOf("file", {type: "rcvInvitation"})).toEqual({name: "report.pdf", size: 2400000, type: "file", status: "offered"})
+    expect(fileOf("file", {type: "rcvComplete"}, {filePath: "/data/files/@4/report.pdf"}, new Set([7]))).toEqual({name: "report.pdf", size: 2400000, type: "file", status: "rejected"})
     expect(fileOf("image", {type: "rcvTransfer", rcvProgress: 1, rcvTotal: 2})).toEqual({name: "report.pdf", size: 2400000, type: "image", status: "offered"})
     expect(fileOf("video", {type: "rcvComplete"}, {filePath: "/data/files/@4/report.pdf"})).toEqual({name: "report.pdf", size: 2400000, type: "video", status: "received", path: "/data/files/@4/report.pdf"})
     expect(fileOf("voice", {type: "rcvCancelled"})).toMatchObject({type: "voice", status: "failed", error: "The file was cancelled."})
@@ -73,8 +74,8 @@ describe("message fields", () => {
     expect(fileOf("file", {type: "rcvError", rcvFileError: {type: "relay", srvError: {type: "host"}}})!.error).toBe("File server error: Server address is incompatible with network settings.")
     expect(fileOf("file", {type: "rcvError", rcvFileError: {type: "other", fileError: "file digest"}})!.error).toBe("Error: file digest")
     expect(fileOf("file", {type: "invalid", text: "bad\nstatus"})!.error).toBe("Invalid file: bad status")
-    expect(toMessage(chatInfo, withFile(item(31, "report", {type: "directSnd"}), "file", {type: "sndComplete"}, {filePath: "/home/alice/report.pdf"}), self)).not.toHaveProperty("file")
-    expect(toMessage(chatInfo, item(32, "no file"), self)).not.toHaveProperty("file")
+    expect(toMessage(chatInfo, fileItem(31, {type: "file", text: "report"}, {type: "sndComplete"}, {chatDir: {type: "directSnd"}, fileSource: {filePath: "/home/alice/report.pdf"}}), self, noRejections)).not.toHaveProperty("file")
+    expect(toMessage(chatInfo, item(32, "no file"), self, noRejections)).not.toHaveProperty("file")
   })
 })
 
@@ -166,9 +167,9 @@ function textOf(result: CallToolResult | undefined): string {
   return (result!.content[0] as {text: string}).text
 }
 
-function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo) => string | undefined = () => undefined): {tools: AgentTools; watch: ChatItemsWatch} {
+function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined): {tools: AgentTools; watch: ChatItemsWatch} {
   const watch = new ChatItemsWatch()
-  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover}, "requests"), watch}
+  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, data}, "requests"), watch}
 }
 
 describe("receive", () => {
@@ -775,6 +776,139 @@ describe("connect", () => {
     const result = (await connecting)!.structuredContent
     expect(result).toMatchObject({status: "done", chat: "@9", type: "contact", name: "SimpleX Directory", connected: true})
     expect(result).not.toHaveProperty("simplex_name")
+  })
+})
+
+describe("download", () => {
+  const preview = "data:image/jpg;base64,/9j/4AAQ"
+  const image = {type: "image", text: "trail map", image: preview}
+  const switchback = member(44, "Switchback")
+  const trail = groupChat(group(15, "Trail", member(1, "agent")))
+  const folder = join(data, "files", "#15")
+  const flushed = (): Promise<void> => new Promise(resolve => setImmediate(resolve))
+
+  function downloadTools(chat: FakeChat, standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined): {tools: AgentTools; actions: Actions} {
+    const fake = fakeHooks()
+    const actions = actionsWith("requests", fake)
+    const {tools} = agentTools(chat, actions, standingApprover)
+    fake.hooks.perform = (action, signal) => tools.perform(action, signal)
+    return {tools, actions}
+  }
+
+  function offeredIn(chat: FakeChat, fileStatus: object = {type: "rcvInvitation"}, fileSource?: object): T.ChatItem {
+    const offered = fileItem(30, image, fileStatus, {chatDir: {type: "groupRcv", groupMember: switchback}, fileSource})
+    chat.chats.set("#15", {chatInfo: trail, items: [offered]})
+    chat.responses.set(`/freceive 7 approved_relays=on ${folder}`, {type: "rcvFileAccepted", user, chatItem: event(trail, offered)})
+    return offered
+  }
+
+  const completed = (path: string): T.CIFile => fileItem(30, image, {type: "rcvComplete"}, {fileSource: {filePath: path}}).file!
+
+  it("downloads an offered file after the approval and returns its path", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    const action = actions.get(1)!
+    expect(action).toMatchObject({tool: "download", state: "pending", chat: "#15", item: 30, from: "Switchback", file: {fileId: 7, name: "report.pdf", size: 2400000, type: "image", preview}})
+    actions.approve(action, "Alice")
+    await flushed()
+    expect(existsSync(folder)).toBe(true)
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 approved_relays=on ${folder}`])
+    tools.onFile(completed(join(folder, "report.pdf")))
+    expect((await downloading)!.structuredContent).toEqual({action: 1, status: "done", chat: "#15", item: 30, path: join(folder, "report.pdf")})
+  })
+
+  it("returns performing when the download outlasts wait, and the path to the call that attaches again", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30, wait: 5}, signal().call)
+    await jest.advanceTimersByTimeAsync(0)
+    actions.approve(actions.get(1)!, "Alice")
+    await jest.advanceTimersByTimeAsync(4_999)
+    let finished = false
+    downloading.then(() => (finished = true))
+    await jest.advanceTimersByTimeAsync(0)
+    expect(finished).toBe(false)
+    await jest.advanceTimersByTimeAsync(1)
+    expect((await downloading)!.structuredContent).toEqual({action: 1, status: "performing"})
+    expect(actions.get(1)).toMatchObject({state: "performing", open: 0})
+    const attaching = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await jest.advanceTimersByTimeAsync(0)
+    tools.onFile(completed(join(folder, "report.pdf")))
+    expect((await attaching)!.structuredContent).toEqual({action: 1, status: "done", chat: "#15", item: 30, path: join(folder, "report.pdf")})
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toHaveLength(1)
+  })
+
+  it("returns the path of a file already downloaded, without downloading it again", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat, {type: "rcvComplete"}, {filePath: join(folder, "report.pdf")})
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    actions.approve(actions.get(1)!, "Alice")
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: join(folder, "report.pdf")})
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([])
+  })
+
+  it("fails when the file fails, the sender cancels it, or its item is gone", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const download = async (settle: () => void): Promise<object> => {
+      const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+      await flushed()
+      actions.approve(actions.pending()[0], "Alice")
+      await flushed()
+      settle()
+      return (await downloading)!.structuredContent!
+    }
+    expect(await download(() => tools.onFile(fileItem(30, image, {type: "rcvError", rcvFileError: {type: "noFile"}}).file))).toMatchObject({status: "failed", error: "File not found - most likely file was deleted or cancelled."})
+    expect(await download(() => tools.onFile(fileItem(30, image, {type: "rcvCancelled"}).file))).toMatchObject({status: "failed", error: "The file was cancelled."})
+    const gone = {type: "rcvFileError", user, agentError: {type: "FILE", fileErr: {type: "NO_FILE"}}, rcvFileTransfer: {fileId: 7}} as unknown as Parameters<AgentTools["onFileError"]>[0]
+    expect(await download(() => tools.onFileError(gone))).toMatchObject({status: "failed", error: "SimpleX error: errorAgent: FILE: NO_FILE"})
+  })
+
+  it("shows a rejected file in the messages that follow", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    actions.reject(actions.get(1)!, "Alice")
+    expect((await downloading)!.structuredContent).toEqual({action: 1, status: "rejected"})
+    const {messages} = (await tools.call("receive", {chat: "#15"}, signal().call))!.structuredContent as {messages: {file: object}[]}
+    expect(messages[0].file).toEqual({name: "report.pdf", size: 2400000, type: "image", status: "rejected"})
+  })
+
+  it("performs at once under the files approval of the chat", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat, (_, standing) => (standing === "files" ? "Alice" : undefined))
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    expect(actions.get(1)).toMatchObject({state: "performing", standing: true, decidedBy: "Alice"})
+    expect(actions.get(1)!.card).toBeUndefined()
+    tools.onFile(completed(join(folder, "report.pdf")))
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: join(folder, "report.pdf")})
+  })
+
+  it("refuses an unknown item, an item without a received file, and a failed file", async () => {
+    const chat = new FakeChat()
+    chat.chats.set("#15", {
+      chatInfo: trail,
+      items: [item(20, "hello", {type: "groupRcv", groupMember: switchback}), fileItem(30, image, {type: "rcvError", rcvFileError: {type: "auth"}}, {chatDir: {type: "groupRcv", groupMember: switchback}})],
+    })
+    const {tools, actions} = downloadTools(chat)
+    const text = async (args: object): Promise<string> => textOf(await tools.call("download", args, signal().call))
+    expect(await text({chat: "#15", item: 99})).toBe("item: #15 has no item 99.")
+    expect(await text({chat: "#15", item: 20})).toBe("item: item 20 in #15 has no received file.")
+    expect(await text({chat: "#15", item: 30})).toBe("item: the file of item 30 in #15 failed: Wrong key or unknown file chunk address - most likely file is deleted.")
+    expect(await text({chat: "#10", item: 1})).toBe("No chat #10. list shows the agent's chats.")
+    expect(actions.all()).toEqual([])
   })
 })
 

@@ -1,9 +1,9 @@
 import {ChatEvent, T} from "@simplex-chat/types"
 import * as qrcode from "qrcode"
-import {api} from "simplex-chat"
-import {Action, ActionHooks, Actions, ConnectAction, Subject, ToolError, leaveVerbs, subjectText, summary} from "./actions"
-import {ExitError, chatErrorOf, log, logError, oneLine, shellWord} from "./log"
-import {chatNumber, chatRef, isChatRef, utcMinutes, validName, viewName} from "./messages"
+import {api, core} from "simplex-chat"
+import {Action, ActionHooks, Actions, ConnectAction, DownloadAction, Standing, Subject, ToolError, leaveVerbs, subjectText, summary} from "./actions"
+import {ExitError, chatErrorOf, errorText, log, logError, oneLine, shellWord} from "./log"
+import {FileOffer, chatNumber, chatRef, isChatRef, utcMinutes, validName, viewName} from "./messages"
 import type {OwnerEntry, QrCodeSize} from "./serve"
 import {AgentTools, chatSubject, isActive, isConnected, memberCurrent} from "./tools"
 
@@ -12,8 +12,16 @@ const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "list", label: "Chats and approvals"},
 ]
 
-const commandsReply = "Commands: /approve, /reject, /revoke, /leave, /pending, /list. Each card shows its commands."
-const cardTooLong = {send: "text: too long for its approval card; shorten it.", connect: "message: too long for its approval card; shorten it."}
+const commandsReply = "Commands: /approve, /reject, /receive, /revoke, /leave, /pending, /list. Each card shows its commands."
+const cardTooLong = {
+  send: "text: too long for its approval card; shorten it.",
+  connect: "message: too long for its approval card; shorten it.",
+  download: "item: the names of its file and chat are too long for its approval card.",
+}
+const standings: {[standing in Standing]: {key: string; tool: Action["tool"]; approved: string; scope: string; revoke: string; listed: string}} = {
+  messages: {key: "simplexMcp", tool: "send", approved: "Approved for", scope: "Messages to", revoke: "", listed: "approved for this chat by"},
+  files: {key: "simplexMcpFiles", tool: "download", approved: "Files approved for", scope: "Files from", revoke: " files", listed: "files approved by"},
+}
 const maxCardLength = 15_000
 const listedChats = 100
 const maxLineLength = 100
@@ -55,8 +63,9 @@ interface ChatApproval {
 }
 
 type OwnerRequest =
-  | {type: "approve" | "reject"; action: number; chat?: string}
-  | {type: "approveChat" | "revoke" | "leave"; chat: string}
+  | {type: "approve" | "reject" | "receive"; action: number; chat?: string}
+  | {type: "approveChat" | "revoke"; chat: string; standing: Standing}
+  | {type: "leave"; chat: string}
   | {type: "pending" | "list"}
 
 interface Shown {
@@ -77,7 +86,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     private group: T.GroupInfo,
     private readonly options: ControlOptions,
     private readonly actions: Actions,
-    private readonly tools: Pick<AgentTools, "knownChat" | "agentChats" | "leaveChat">,
+    private readonly tools: Pick<AgentTools, "knownChat" | "agentChats" | "leaveChat" | "downloadFile">,
   ) {}
 
   get groupId(): number {
@@ -116,8 +125,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
       : "The agent has no approving owner. The person who runs it has to restart it with the --owners options it printed."
   }
 
-  standingApprover(chatInfo: T.ChatInfo): string | undefined {
-    const approval = approvalOf(customDataOf(chatInfo))
+  standingApprover(chatInfo: T.ChatInfo, standing: Standing): string | undefined {
+    const approval = approvalOf(customDataOf(chatInfo), standings[standing].key)
     return this.actions.mode === "requests" && approval !== undefined && this.approvers().some(({groupMemberId}) => groupMemberId === approval.approvedById) ? safeName(approval.approvedBy) : undefined
   }
 
@@ -128,13 +137,14 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   }
 
   async postCard(action: Action): Promise<number> {
-    return this.post(cardText(action, this.actions.mode))
+    return this.postMessage({msgContent: await this.cardContent(action), mentions: {}})
   }
 
   async outcome(action: Action): Promise<void> {
-    const text = cardText(action, this.actions.mode)
-    if (action.card === undefined) await this.post(text)
-    else await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, action.card, {type: "text", text}, false)
+    if (action.tool === "download" && action.card === undefined) return
+    const content = await this.cardContent(action)
+    if (action.card === undefined) await this.postMessage({msgContent: content, mentions: {}})
+    else await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, action.card, content, false)
   }
 
   onMessage(ci: T.AChatItem): void {
@@ -180,43 +190,58 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         return this.chatsText()
       case "approveChat":
         if (this.actions.mode === "host") return "Approvals apply in mode requests; this server runs in mode host."
-        return this.approveChat(sender, request.chat)
+        return this.approveChat(sender, request.chat, request.standing)
       case "revoke":
-        return this.revoke(request.chat)
+        return this.revoke(request.chat, request.standing)
       case "leave":
         return this.leave(sender, request.chat)
       case "approve":
-      case "reject": {
+      case "reject":
+      case "receive": {
         const action = this.actions.get(request.action)
         if (action === undefined || action.state !== "pending" || action.card === undefined) return `Action ${request.action} is not pending.`
         if (request.chat !== undefined && (action.tool === "connect" || action.chat !== request.chat)) return `Action ${request.action} is not for ${request.chat}.`
         const approver = safeName(sender.memberProfile.displayName)
         if (request.type === "approve") this.actions.approve(action, approver)
-        else this.actions.reject(action, approver)
+        else if (request.type === "reject") this.actions.reject(action, approver)
+        else if (action.tool === "download") this.receive(action)
+        else return `Action ${request.action} has no file.`
         return undefined
       }
     }
   }
 
-  private async approveChat(sender: T.GroupMember, chat: string): Promise<string> {
+  private async approveChat(sender: T.GroupMember, chat: string, standing: Standing): Promise<string> {
+    const {key, tool, approved, revoke} = standings[standing]
     const chatInfo = await this.agentChat(chat)
     if (chatInfo === undefined) return `No chat ${chat}. /list shows the agent's chats.`
     const approvedBy = sender.memberProfile.displayName
     const approval: ChatApproval = {approvedBy, approvedById: sender.groupMemberId, approvedAt: new Date().toISOString()}
-    await this.setCustomData(chat, {...customDataOf(chatInfo), simplexMcp: approval})
+    await this.setCustomData(chat, {...customDataOf(chatInfo), [key]: approval})
     const approver = safeName(approvedBy)
     for (const action of this.actions.pending()) {
-      if (action.tool === "send" && action.chat === chat && action.card !== undefined) this.actions.approve(action, approver)
+      if (action.tool === tool && action.chat === chat && action.card !== undefined) this.actions.approve(action, approver)
     }
-    return `Approved for ${chatName(chatSubject(chatInfo))} (${chat}) by ${approver}. /'revoke ${chat}'`
+    return `${approved} ${chatName(chatSubject(chatInfo))} (${chat}) by ${approver}. /'revoke ${chat}${revoke}'`
   }
 
-  private async revoke(chat: string): Promise<string> {
+  private async revoke(chat: string, standing: Standing): Promise<string> {
+    const {key, scope} = standings[standing]
     const chatInfo = await this.agentChat(chat)
-    if (chatInfo === undefined || approvalOf(customDataOf(chatInfo)) === undefined) return `Messages to ${chat} have no standing approval.`
-    const {simplexMcp, ...customData} = customDataOf(chatInfo) as {simplexMcp: unknown}
+    if (chatInfo === undefined || approvalOf(customDataOf(chatInfo), key) === undefined) return `${scope} ${chat} have no standing approval.`
+    const {[key]: _, ...customData} = customDataOf(chatInfo) as {[key: string]: unknown}
     await this.setCustomData(chat, customData)
-    return `Messages to ${chatName(chatSubject(chatInfo))} (${chat}) need approval again.`
+    return `${scope} ${chatName(chatSubject(chatInfo))} (${chat}) need approval again.`
+  }
+
+  private receive(action: DownloadAction): void {
+    this.tools
+      .downloadFile(action)
+      .then(
+        path => this.postMessage({fileSource: {filePath: path}, msgContent: fileContent(action.file, ""), quotedItemId: action.card, mentions: {}}),
+        error => this.post(`Action ${action.n}: the file was not received: ${codeSpan(oneLine(errorText(error)))}.`),
+      )
+      .catch(error => logError(`action ${action.n} file`, error))
   }
 
   private async leave(sender: T.GroupMember, chat: string): Promise<string> {
@@ -236,10 +261,12 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   private async chatsText(): Promise<string> {
     const chats = await this.tools.agentChats()
     const lines = chats.slice(0, listedChats).map(({chatInfo}) => {
-      const approvedBy = this.standingApprover(chatInfo)
-      const approval = approvedBy === undefined ? "" : `, approved for this chat by ${approvedBy}`
+      const approvals = (["messages", "files"] as const).map(standing => {
+        const approvedBy = this.standingApprover(chatInfo, standing)
+        return approvedBy === undefined ? "" : `, ${standings[standing].listed} ${approvedBy}`
+      })
       const connection = isConnected(chatInfo) ? "" : ", not connected"
-      return truncatedLine(`${chatRef(chatInfo)}  ${chatName(chatSubject(chatInfo))}${approval}${connection}`, maxLineLength)
+      return truncatedLine(`${chatRef(chatInfo)}  ${chatName(chatSubject(chatInfo))}${approvals.join("")}${connection}`, maxLineLength)
     })
     const rest = chats.length - lines.length
     if (rest > 0) lines.push(`${rest} older chat${rest === 1 ? " is" : "s are"} not shown.`)
@@ -351,8 +378,32 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   }
 
   private async post(text: string): Promise<number> {
-    const [item] = await this.chat.apiSendMessages([T.ChatType.Group, this.groupId], [{msgContent: {type: "text", text}, mentions: {}}])
+    return this.postMessage({msgContent: {type: "text", text}, mentions: {}})
+  }
+
+  private async postMessage(message: T.ComposedMessage): Promise<number> {
+    const [item] = await this.chat.apiSendMessages([T.ChatType.Group, this.groupId], [message])
     return item.chatItem.meta.itemId
+  }
+
+  private async cardContent(action: Action): Promise<T.MsgContent> {
+    const text = cardText(action, this.actions.mode)
+    const content = action.tool === "download" ? fileContent(action.file, text) : undefined
+    if (content?.type !== "image" && content?.type !== "video") return {type: "text", text}
+    action.cardImage ??= await this.fittedImage(action, content)
+    return action.cardImage === "" ? {type: "text", text} : {...content, image: action.cardImage}
+  }
+
+  private async fittedImage(action: Action, content: T.MsgContent.Image | T.MsgContent.Video): Promise<string> {
+    const {image} = content
+    const fields = JSON.stringify({...content, text: "", image: ""}).length - JSON.stringify({type: "text", text: ""}).length
+    const budget = maxCardLength - largestCard(action, this.actions.mode, this.longestApproverName()) - fields
+    if (encodedLength(image) <= budget) return image
+    try {
+      return await core.chatResizeImageUri(Buffer.from(image.slice(image.indexOf(",") + 1), "base64"), budget)
+    } catch {
+      return ""
+    }
   }
 
   private async refreshMembers(): Promise<void> {
@@ -481,6 +532,11 @@ function requestLines(action: Action): string[] {
       const {present, past} = leaveVerbs(action)
       return [`${done ? `I ${past}` : `I want to ${present}`} ${chatName(action.subject)} (${action.chat}).`]
     }
+    case "download": {
+      const {from, file} = action
+      const source = `${from === undefined ? "" : `${safeName(from)} in `}${chatName(action.subject)} (${action.chat})`
+      return [`${done ? "I downloaded" : "I want to download"} a file from ${source}:`, `${codeSpan(oneLine(file.name))}, ${sizeText(file.size)}`]
+    }
   }
 }
 
@@ -492,6 +548,8 @@ function commandsLine(action: Action): string {
       return `/'approve ${action.chat} ${action.n}', /'approve ${action.chat} all' or /'reject ${action.chat} ${action.n}'`
     case "leave":
       return `/'approve ${action.chat} ${action.n}' or /'reject ${action.chat} ${action.n}'`
+    case "download":
+      return `/'approve ${action.chat} ${action.n}', /'approve ${action.chat} files', /'receive ${action.chat} ${action.n}' or /'reject ${action.chat} ${action.n}'`
   }
 }
 
@@ -541,6 +599,24 @@ function chatName(subject: Subject, showName: (name: string) => string = safeNam
   return subjectText({...subject, simplexName: undefined}, showName)
 }
 
+function sizeText(bytes: number): string {
+  const exponent = Math.min(Math.floor(Math.log10(Math.max(bytes, 1)) / 3), 3)
+  return exponent === 0 ? `${bytes} bytes` : `${(bytes / 1000 ** exponent).toFixed(1)} ${["KB", "MB", "GB"][exponent - 1]}`
+}
+
+function fileContent({type, preview = "", duration = 0}: FileOffer, text: string): T.MsgContent {
+  switch (type) {
+    case "image":
+      return {type, text, image: preview}
+    case "video":
+      return {type, text, image: preview, duration}
+    case "voice":
+      return {type, text, duration}
+    case "file":
+      return {type, text}
+  }
+}
+
 function codeLines(text: string | undefined): string[] {
   return text === undefined ? [] : text.split("\n").map(line => (line.trim() === "" ? "" : codeSpan(line)))
 }
@@ -567,8 +643,8 @@ function customDataOf(chatInfo: T.ChatInfo): object | undefined {
   return chatInfo.type === "direct" ? chatInfo.contact.customData : (chatInfo as T.ChatInfo.Group).groupInfo.customData
 }
 
-function approvalOf(customData: object | undefined): {approvedBy: string; approvedById: number} | undefined {
-  const data = (customData as {simplexMcp?: Partial<ChatApproval>} | undefined)?.simplexMcp
+function approvalOf(customData: object | undefined, key: string): {approvedBy: string; approvedById: number} | undefined {
+  const data = (customData as {[key: string]: Partial<ChatApproval> | undefined} | undefined)?.[key]
   return typeof data?.approvedBy === "string" && typeof data.approvedById === "number" ? {approvedBy: data.approvedBy, approvedById: data.approvedById} : undefined
 }
 
@@ -576,9 +652,12 @@ function ownerRequest({keyword, params}: Command): OwnerRequest | undefined {
   const words = params === "" ? [] : params.split(/\s+/)
   const chat = words.length === 2 && isChatRef(words[0]) ? words[0] : undefined
   const value = words.length === 1 || chat !== undefined ? words.at(-1) : undefined
-  if ((keyword === "approve" || keyword === "reject") && value !== undefined && /^\d+$/.test(value)) return {type: keyword, action: Number(value), chat}
-  if (keyword === "approve" && chat !== undefined && value === "all") return {type: "approveChat", chat}
-  if ((keyword === "revoke" || keyword === "leave") && chat === undefined && value !== undefined && isChatRef(value)) return {type: keyword, chat: value}
+  if ((keyword === "approve" || keyword === "reject" || keyword === "receive") && value !== undefined && /^\d+$/.test(value)) return {type: keyword, action: Number(value), chat}
+  if (keyword === "approve" && chat !== undefined && value === "all") return {type: "approveChat", chat, standing: "messages"}
+  if (keyword === "approve" && chat !== undefined && value === "files") return {type: "approveChat", chat, standing: "files"}
+  if (keyword === "revoke" && chat !== undefined && value === "files") return {type: "revoke", chat, standing: "files"}
+  if (keyword === "revoke" && chat === undefined && value !== undefined && isChatRef(value)) return {type: keyword, chat: value, standing: "messages"}
+  if (keyword === "leave" && chat === undefined && value !== undefined && isChatRef(value)) return {type: keyword, chat: value}
   if ((keyword === "pending" || keyword === "list") && words.length === 0) return {type: keyword}
   return undefined
 }

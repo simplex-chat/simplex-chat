@@ -55,7 +55,7 @@ test("agent with an owner, a bot and the tools", async () => {
 
     expect(await client.initialize()).toMatchObject({protocolVersion: "2025-11-25", serverInfo: {name: "simplex-mcp"}})
     const {tools} = await client.request("tools/list")
-    expect(tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "list", "leave"])
+    expect(tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave"])
 
     const connectCard = received(alice, textStarts("I want to connect to bot Directory, as myself."))
     const connecting = client.tool("connect", {target: directoryLink, idle: 2})

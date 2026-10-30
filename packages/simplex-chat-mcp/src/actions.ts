@@ -1,9 +1,10 @@
 import {errorText, log, logError, oneLine} from "./log"
-import {Changes, Collected, ToolCall, nextChange, reportProgress, utcMinutes} from "./messages"
-import type {ConnectInput, LeaveInput, PlanSummary, SendInput} from "./tools"
+import {Changes, Collected, FileOffer, ToolCall, nextChange, reportProgress, utcMinutes} from "./messages"
+import type {ConnectInput, DownloadInput, LeaveInput, PlanSummary, SendInput} from "./tools"
 
 export type Mode = "requests" | "host"
 export type State = "pending" | "performing" | "done" | "failed" | "rejected" | "expired"
+export type Standing = "messages" | "files"
 
 const progressTick = 60_000
 const expiryTick = 60_000
@@ -44,6 +45,7 @@ interface ActionRecord {
   interrupted: boolean
   error?: string
   stopCollecting?: () => void
+  cardImage?: string
 }
 
 export interface ConnectAction extends ActionRecord {
@@ -81,9 +83,21 @@ export interface LeaveAction extends ActionRecord {
   readonly chat: string
 }
 
-export type Action = ConnectAction | SendAction | LeaveAction
+export interface DownloadAction extends ActionRecord {
+  readonly tool: "download"
+  readonly input: DownloadInput
+  readonly subject: Subject
+  readonly chat: string
+  readonly item: number
+  readonly from?: string
+  readonly file: FileOffer
+  startedAt?: number
+  path?: string
+}
 
-export type NewAction = Omit<ConnectAction, keyof ActionRecord> | Omit<SendAction, keyof ActionRecord> | Omit<LeaveAction, keyof ActionRecord>
+export type Action = ConnectAction | SendAction | LeaveAction | DownloadAction
+
+export type NewAction = Omit<ConnectAction, keyof ActionRecord> | Omit<SendAction, keyof ActionRecord> | Omit<LeaveAction, keyof ActionRecord> | Omit<DownloadAction, keyof ActionRecord>
 
 export interface ActionHooks {
   refusal(action: Action): string | undefined
@@ -175,12 +189,12 @@ export class Actions {
     }
   }
 
-  async decided(action: Action, call: ToolCall): Promise<boolean> {
+  async decided(action: Action, call: ToolCall, until: () => number = () => Infinity): Promise<boolean> {
     if (isDecided(action.state)) return true
     const stopProgress = reportProgress(call, () => progressText(action))
     try {
-      while (!isDecided(action.state)) {
-        if (!(await nextChange(action.changes, call.signal, progressTick))) return false
+      while (!isDecided(action.state) && Date.now() < until()) {
+        if (!(await nextChange(action.changes, call.signal, Math.min(progressTick, until() - Date.now())))) return false
       }
       return true
     } finally {
@@ -289,6 +303,8 @@ export function summary(action: Action, showName: (name: string) => string): {wh
       return {what: `send to ${target}`, detail: ` (${action.chat})`}
     case "leave":
       return {what: `${leaveVerbs(action).present} ${target}`, detail: ` (${action.chat})`}
+    case "download":
+      return {what: `download ${showName(action.file.name)} from ${target}`, detail: ` (${action.chat})`}
   }
 }
 
@@ -302,6 +318,7 @@ function performedText(action: Action, mode: Mode): string {
   if (failure !== "") return `failed: ${oneLine(action.error ?? "")}.`
   if (action.tool === "send") return "sent."
   if (action.tool === "leave") return `${leaveVerbs(action).past}.`
+  if (action.tool === "download") return "downloaded."
   return action.connected ? "connected." : "connection requested."
 }
 

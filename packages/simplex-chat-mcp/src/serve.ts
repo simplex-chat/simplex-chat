@@ -102,7 +102,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
     perform: (action, signal) => tools.perform(action, signal),
   })
   const watch = new ChatItemsWatch()
-  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: chatInfo => control.standingApprover(chatInfo)}, approve)
+  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), data}, approve)
   const control: Control = new Control(chat, group, {displayName, owners: options.owners, registerHint: registerHint(options), qrCode: options.qrCode}, actions, tools)
   await control.load()
   const factory = (): McpServer => {
@@ -133,6 +133,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
         watch.deliver(event.chatItems)
         return
       case "chatItemUpdated":
+        tools.onFile(event.chatItem.chatItem.file)
         return watch.update(event.chatItem)
       case "chatItemsDeleted":
         return watch.remove(event.chatItemDeletions.map(({deletedChatItem}) => deletedChatItem))
@@ -140,6 +141,11 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
         return tools.onContactConnected(event)
       case "userJoinedGroup":
         return tools.onUserJoinedGroup(event)
+      case "rcvFileComplete":
+      case "rcvFileSndCancelled":
+        return tools.onFile(event.chatItem.chatItem.file)
+      case "rcvFileError":
+        return tools.onFileError(event)
     }
     if (isControlEvent(event, control.groupId)) {
       controlEvents = controlEvents.then(() => control.onEvent(event)).catch(error => logError(`${event.type} in the agent control chat`, error))
