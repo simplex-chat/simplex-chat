@@ -1,7 +1,7 @@
 # Bot API: chat, connection, member contact and network commands
 
-Thirteen commands were undocumented, and their strings were built by hand: in bots, and in the Node and Python libraries for `APIGetChat`, `APICreateMemberContact` and `APISendMemberContactInvitation`.
-The commands are documented; in the core, six command constructors and `ChatPagination` are changed to record syntax, and `verifiedDomain` is typed as `StrJSON`.
+Fourteen commands were undocumented, and their strings were built by hand: in bots, and in the Node and Python libraries for `APIGetChat`, `APICreateMemberContact` and `APISendMemberContactInvitation`.
+The commands are documented; in the core, seven command constructors and `ChatPagination` are changed to record syntax, and `verifiedDomain` is typed as `StrJSON`.
 TypeScript and Python types are generated, with `cmdString` and `<Name>_cmd_string` functions; each command of the Node library is sent through its `cmdString`, and the methods of the Python library (`api.py`) are changed in a following pull request.
 
 References are to branch `ep/bot-api` at `d53829b0b`. Haskell paths without a directory are in `src/Simplex/Chat/`. `Library/` is `src/Simplex/Chat/Library/`. `API/` is `bots/src/API/`. `TS/` is `packages/simplex-chat-client/types/typescript/src/`. `node/` is `packages/simplex-chat-nodejs/`. `SMQ/` is simplexmq `src/Simplex/Messaging/` at `8bc4d3601` (`cabal.project:24`).
@@ -28,6 +28,7 @@ Chat commands
 Chat management
   APIGetNetworkConfig            no              :6461    /network
   APISetNetworkConfig            background      :6459    /_network <json(networkConfig)>
+  APIGetUserServers              no              :6445    /_servers <userId>
 ```
 Changed documented syntax:
 - `APIConnectPlan`: `/_connect plan <userId> <connectTarget><str(resolveMode)>[ sig=<json(linkOwnerSig)>]` (parser `Library/Commands.hs:6559`).
@@ -52,6 +53,7 @@ CRNewMemberContact          APICreateMemberContact
 CRNewMemberContactSentInv   APISendMemberContactInvitation
 CRNewPreparedChat           APIPrepareContact
                             APIPrepareGroup
+CRUserServers               APIGetUserServers
 ```
 
 Documented types:
@@ -69,12 +71,19 @@ records
   NetworkConfig
   NetworkTimeout
   RcvQueueInfo
+  ServerOperator
+  ServerRoles
+  ServerRolesOverride
   SndQueueInfo
+  UserOperatorServers
+  UserServer
 unions
+  ConditionsAcceptance
   GroupSndStatus
 enums
   HostMode
   MsgContentTag          MCUnknown_ excluded
+  OperatorTag
   QueueStatus
   RcvSwitchStatus
   SMPProxyFallback
@@ -88,13 +97,16 @@ Types generated as their JSON encoding, not as their Haskell type:
 ```
 type                 generated as        JSON
 AChatInfo            ChatInfo            JSON of ChatInfo (Messages.hs:254-256)
+ProtoServerWithAuth  string              strEncode (SMQ/Protocol.hs:1370-1372, :1381-1383)
+ServerOperator'      ServerOperator      JSON of ServerOperator (Operators.hs:603-605)
+UserServer'          UserServer          JSON of UserServer (Operators.hs:616-618)
 SocksProxyWithAuth   string              strEncode (SMQ/Transport/Client.hs:265-274)
 RcvSwitchStatus      strEncode values    strEncode (SMQ/Agent/Protocol.hs:617-623, :637-642)
 SndSwitchStatus      strEncode values    strEncode (SMQ/Agent/Protocol.hs:651-656, :669-674)
 ```
 
 Core:
-- Documented commands have named fields (`tests/APIDocs.hs:84-88`): six constructors are changed to record syntax.
+- Documented commands have named fields (`tests/APIDocs.hs:84-88`): seven constructors are changed to record syntax.
 - `ChatPagination` constructors have fields `count` and `chatItemId`, the fields of the generated union.
 - `verifiedDomain` of `APIPrepareContact` and `APIPrepareGroup` has type `Maybe (StrJSON "SimplexDomain" SimplexDomain)`, as `simplexDomain` of `APISetUserDomain` (`Controller.hs:455`); it is generated as a string.
 - Accepted command strings, handler results and responses are unchanged.
@@ -122,6 +134,7 @@ apiGetChatItemInfo            APIGetChatItemInfo            CR.ChatItemInfo
 apiContactInfo                APIContactInfo                CR.ContactInfo
 apiGetNetworkConfig           APIGetNetworkConfig           networkConfig
 apiSetNetworkConfig           APISetNetworkConfig           void, on CR.CmdOk
+apiGetUserServers             APIGetUserServers             userServers
 ```
 ```
 changed method                   change
@@ -187,6 +200,7 @@ ChatPagination :1139-1144
   CPAround {chatItemId :: ChatItemId, count :: Int}
   CPInitial {count :: Int}
 ```
+`APIGetUserServers`, added later: `{userId :: UserId}`.
 `Library/Commands.hs`:
 ```
 APIPrepareContact :2208     unStrJSON <$> verifiedDomain, passed to createPreparedGroup
@@ -207,6 +221,7 @@ removed
   the placeholder comments of APIChatItemsRead and APIGetChat
 ```
 `APIGetChatItemInfo`, added later: the entry after `APIContactInfo` in "Chat commands"; its name in `undocumentedCommands` and its placeholder comment removed.
+`APIGetUserServers`, added later: the entry after `APISetNetworkConfig` in "Chat management"; its name in `undocumentedCommands` removed.
 `API/Docs/Responses.hs` entries:
 ```
 CRApiChat                  :50
@@ -221,6 +236,7 @@ removed
   the placeholder comments of CRApiChat and CRItemsReadForChat
 ```
 `CRChatItemInfo`, added later: the entry after `CRApiChat`; its name in `undocumentedResponses` and its placeholder comment removed.
+`CRUserServers`, added later: the entry after `CRUserProfileNoChange`; its name in `undocumentedResponses` removed.
 `API/Docs/Types.hs`:
 - Imports: `isLower` (`:19`); `KeepAliveOpts (..)` (`:53`).
 - `consSnake` (`:164-165`), new: the constructor name without the prefix, in lowercase, with `_` after each lowercase letter followed by an uppercase one.
@@ -258,9 +274,20 @@ ChatItemVersion
 GroupSndStatus
 MemberDeliveryStatus
 ```
+Added later, entries and `deriving instance Generic`, new:
+```
+ConditionsAcceptance   STUnion "CA"
+OperatorTag            STEnum "OT"
+ServerOperator         sti @ServerOperator, typeName "ServerOperator"; Generic (ServerOperator' 'DBStored)
+ServerRoles            import of ServerRoles (..) from SMQ/Agent/Env/SQLite.hs
+ServerRolesOverride
+UserOperatorServers
+UserServer             sti @(UserServer 'PSMP), typeName "UserServer"; Generic (UserServer' 'DBStored p); import of ProtocolType (..)
+```
 `API/TypeInfo.hs`:
 - `AChatInfo` → `ChatInfo`: `:177`.
 - `SocksProxyWithAuth` in `stringTypes`: `:228`.
+- Added later: `ServerOperator'` → `ServerOperator` and `UserServer'` → `UserServer`, after `UserChatRelay'`; `ProtoServerWithAuth` in `stringTypes`.
 
 `node/src/api.ts`:
 ```
@@ -283,6 +310,7 @@ apiCreateMemberContact          :1088
 apiSendMemberContactInvitation  :1099
 ```
 `apiGetChatItemInfo`, added later, after `apiChatItemsRead`.
+`apiGetUserServers`, added later, after `apiSetNetworkConfig`.
 Generated by the "Bot API docs" tests (`tests/APIDocs.hs:32-50`):
 ```
 bots/api/COMMANDS.md
@@ -313,6 +341,7 @@ prepared chat connection :81    /_connect contact @2 incognito=on json <msg>; /_
 member contact :98              /_create member contact #1 2; /_invite member contact @2 with and without json <msg>
 network config :109             /network; /_network <json>
 APIGetChatItemInfo, added later /_get item info @2 5
+APIGetUserServers, added later  /_servers 1
 ```
 `node/tests/api.unit.test.ts`, `core.chatSendCmd` mocked.
 
@@ -348,6 +377,7 @@ added  apiGetChatItemInfo(Direct, 2, 5)                       /_get item info @2
 added  apiReceiveFile(3)                                      /freceive 3 approved_relays=on                               chatItem
        apiReceiveFile(3, undefined, false)                    /freceive 3                                                  chatItem
        apiReceiveFile(3, "./f.txt", false)                    /freceive 3 ./f.txt                                          chatItem
+added  apiGetUserServers(1)                                   /_servers 1                                                  userServers
 ```
 - Present test, unchanged: "stops the chat before closing the store" (`:191`): `send /_stop` is expected before `closeStore`.
 
@@ -362,6 +392,8 @@ added  apiReceiveFile(3)                                      /freceive 3 approv
          apiConnectPreparedLink with alice's invitation: sentConfirmation, then both connected
 :205   should get and set network config
          smpProxyFallback allowProtected and logTLSErrors true are set; the result of the next apiGetNetworkConfig is equal to the set configuration
+added  should get user servers
+         after /smp with the local SMP server: in the group without operator, smpServers is that server, enabled
 ```
 - Present test, unchanged: "should create member contact and send invitation" (`:81`): both member contact methods are called against the core, with a string message (`:149`).
 
@@ -375,6 +407,7 @@ test_api_connect_prepared_group_cmd_string                    contact=1 owner=ab
 test_member_contact_cmd_string                                /_create member contact #1 2; /_invite member contact @2
 test_api_get_network_config_cmd_string                        /network
 test_api_get_chat_item_info_cmd_string                        /_get item info @2 5
+test_api_get_user_servers_cmd_string                          /_servers 1
 ```
 
 `tests/ChatTests/Names.hs`, new test:
@@ -391,3 +424,4 @@ testConnectByName :34                     /c @alice.simplex: connectContactViaNa
 testConnectByChannelName :297             /c #team.simplex: joinChannelViaRelays, APIPrepareGroup with the name
 testConnectByNameBusinessAndChannel :412  /_prepare contact ... domain=biz.simplex (:431): business chat with the domain
 ```
+- `enableNamesRole` (`tests/ChatClient.hs:488`): `APIGetUserServers 1` is executed, and its SMP servers are set with the names role.
