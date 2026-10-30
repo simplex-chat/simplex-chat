@@ -543,8 +543,8 @@ export class ChatApi {
    * Receive file.
    * Network usage: no.
    */
-  async apiReceiveFile(fileId: number, filePath?: string): Promise<T.AChatItem> {
-    const r = await this.sendChatCmd(CC.ReceiveFile.cmdString({fileId, userApprovedRelays: true, filePath}))
+  async apiReceiveFile(fileId: number, filePath?: string, approvedRelays = true): Promise<T.AChatItem> {
+    const r = await this.sendChatCmd(CC.ReceiveFile.cmdString({fileId, userApprovedRelays: approvedRelays, filePath}))
     if (r.type === "rcvFileAccepted") return r.chatItem
     if (r.type === "rcvFileAcceptedSndCancelled") throw new ChatCommandError("file cancelled by sender", r)
     throw new ChatCommandError("error receiving file", r)

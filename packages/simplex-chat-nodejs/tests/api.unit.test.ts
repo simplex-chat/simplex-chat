@@ -69,6 +69,15 @@ describe("documented success responses", () => {
     expect(sentCommands()).toEqual(["/freceive 3 approved_relays=on ./f.txt"])
   })
 
+  it("apiReceiveFile approves relays by default", async () => {
+    const chatItem = {chatItem: {meta: {itemId: 2}}}
+    const chat = await chatWithResponse({type: "rcvFileAccepted", user, chatItem})
+    await expect(chat.apiReceiveFile(3)).resolves.toEqual(chatItem)
+    await expect(chat.apiReceiveFile(3, undefined, false)).resolves.toEqual(chatItem)
+    await expect(chat.apiReceiveFile(3, "./f.txt", false)).resolves.toEqual(chatItem)
+    expect(sentCommands()).toEqual(["/freceive 3 approved_relays=on", "/freceive 3", "/freceive 3 ./f.txt"])
+  })
+
   it("apiGetChat accepts a count or a pagination", async () => {
     const aChat = {chatInfo: {type: "direct"}, chatItems: [], chatStats: {}}
     const chat = await chatWithResponse({type: "apiChat", user, chat: aChat})
