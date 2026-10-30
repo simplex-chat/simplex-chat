@@ -50,6 +50,7 @@ This file is generated automatically.
 - [ChatInfo](#chatinfo)
 - [ChatItem](#chatitem)
 - [ChatItemDeletion](#chatitemdeletion)
+- [ChatLayout](#chatlayout)
 - [ChatListQuery](#chatlistquery)
 - [ChatPagination](#chatpagination)
 - [ChatPeerType](#chatpeertype)
@@ -292,6 +293,7 @@ This file is generated automatically.
 **Record type**:
 - businessAddress: bool
 - autoAccept: [AutoAccept](#autoaccept)?
+- chatLayout: [ChatLayout](#chatlayout)?
 - autoReply: [MsgContent](#msgcontent)?
 
 
@@ -474,6 +476,9 @@ ServiceNotConfigured:
 BadgeActive:
 - type: "badgeActive"
 
+StorePurchaseOpen:
+- type: "storePurchaseOpen"
+
 ServiceError:
 - type: "serviceError"
 - serviceError: [BadgeServiceErrorCode](#badgeserviceerrorcode)
@@ -511,6 +516,7 @@ CredentialNotVerified:
 - "code_expired"
 - "receipt_invalid"
 - "receipt_used"
+- "transfer_limited"
 - "test_purchase"
 - "internal"
 
@@ -1607,6 +1613,15 @@ Message deletion result.
 
 ---
 
+## ChatLayout
+
+**Enum type**:
+- "classic"
+- "terminal"
+
+
+---
+
 ## ChatListQuery
 
 **Discriminated union type**:
@@ -2053,6 +2068,7 @@ Error:
 - chatTags: [int64]
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
+- chatLayout: [ChatLayout](#chatlayout)?
 - chatDeleted: bool
 - customData: JSONObject?
 
@@ -2095,6 +2111,7 @@ ContactViaAddress:
 - profile: [Profile](#profile)
 - message: [MsgContent](#msgcontent)?
 - business: bool
+- chatLayout: [ChatLayout](#chatlayout)?
 - localBadge: [LocalBadge](#localbadge)?
 
 
@@ -2883,6 +2900,7 @@ contact=<contactId> owner=<memberId>
 - publicGroup: [PublicGroupProfile](#publicgroupprofile)?
 - groupPreferences: [GroupPreferences](#grouppreferences)?
 - memberAdmission: [GroupMemberAdmission](#groupmemberadmission)?
+- chatLayout: [ChatLayout](#chatlayout)?
 
 
 ---
@@ -4938,6 +4956,7 @@ Handshake:
 **Record type**:
 - light: [UIThemeEntityOverride](#uithemeentityoverride)?
 - dark: [UIThemeEntityOverride](#uithemeentityoverride)?
+- chatLayout: [ChatLayout](#chatlayout)?
 
 
 ---

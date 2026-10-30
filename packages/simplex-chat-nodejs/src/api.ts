@@ -39,12 +39,15 @@ export interface BotAddressSettings {
    * @default false
    */
   businessAddress?: boolean
+
+  chatLayout?: T.ChatLayout
 }
 
 export const defaultBotAddressSettings: BotAddressSettings = {
   autoAccept: true,
   welcomeMessage: undefined,
-  businessAddress: false
+  businessAddress: false,
+  chatLayout: undefined
 }
 
 export type EventSubscriberFunc<K extends CEvt.Tag> = (event: ChatEvent & {type: K}, chat: ChatApi) => void | Promise<void>
@@ -413,12 +416,13 @@ export class ChatApi {
    * Set bot address settings.
    * Network usage: interactive.
    */
-  async apiSetAddressSettings(userId: number, {autoAccept, welcomeMessage, businessAddress}: BotAddressSettings): Promise<void> {
+  async apiSetAddressSettings(userId: number, {autoAccept, welcomeMessage, businessAddress, chatLayout}: BotAddressSettings): Promise<void> {
     const autoReply = welcomeMessage || defaultBotAddressSettings.welcomeMessage
     const settings: T.AddressSettings = {
       autoAccept: (autoAccept === undefined ? defaultBotAddressSettings.autoAccept : autoAccept) ? {acceptIncognito: false} : undefined,
       autoReply: typeof autoReply === "string" ? {type: "text", text: autoReply} : autoReply,
-      businessAddress: businessAddress || defaultBotAddressSettings.businessAddress || false
+      businessAddress: businessAddress || defaultBotAddressSettings.businessAddress || false,
+      chatLayout
     }
     const r = await this.sendChatCmd(CC.APISetAddressSettings.cmdString({userId, settings}))
     if (r.type !== "userContactLinkUpdated") {

@@ -184,7 +184,7 @@ jobs:
     name: app in the iOS simulator
     needs: [plan, core, backend]
     # core and backend are skipped when an earlier run built them, and backend also when the run doesn't start it
-    if: ${{ !cancelled() && !failure() && needs.plan.result == 'success' }}
+    if: ${{ !cancelled() && !failure() && needs.plan.result == 'success' && needs.core.result != 'cancelled' && needs.backend.result != 'cancelled' }}
     runs-on: macos-26
     timeout-minutes: 120
     env:
@@ -249,26 +249,24 @@ jobs:
             DEVELOPMENT_TEAM= \
             PROVISIONING_PROFILE_SPECIFIER=
 
-      # for the Claude job; a tarball keeps the app's file modes, which an artifact drops
+      # a tarball keeps the app's file modes, which an artifact drops
       - name: Pack app
-        if: needs.plan.outputs.run-claude == 'true'
         run: tar -czf "$RUNNER_TEMP/SimpleX.app.tar.gz" -C "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator" SimpleX.app
 
       - name: Upload app
-        if: needs.plan.outputs.run-claude == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: ios-sim-app
           path: ${{ runner.temp }}/SimpleX.app.tar.gz
           compression-level: 0
-          retention-days: 1
+          retention-days: 14
           if-no-files-found: error
 
       - name: Install AXe
         run: scripts/ci/ios-sim/install-axe.sh
 
       - name: Run smoke test
-        run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app" "$RUNNER_TEMP/smoke-test"
+        run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app" "$RUNNER_TEMP/smoke-test" images
 
       - name: Stop test backend
         if: ${{ !cancelled() && env.START_BACKEND == 'true' }}
@@ -355,6 +353,14 @@ jobs:
 
       - name: Run smoke test
         run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/SimpleX.app" "$RUNNER_TEMP/claude-test/smoke-test"
+
+      - name: Add test images
+        run: |
+          images=(tests/fixtures/test.jpg tests/fixtures/logo-large-rgba.png)
+          if sips -r 90 -s format heic tests/fixtures/test.jpg --out "$RUNNER_TEMP/test-card-portrait.heic"; then
+            images+=("$RUNNER_TEMP/test-card-portrait.heic")
+          fi
+          xcrun simctl addmedia "$SIM_UDID" "${images[@]}"
 
       - name: Install Claude Code
         run: |
