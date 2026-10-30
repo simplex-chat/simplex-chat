@@ -72,7 +72,7 @@ Chat controller is started
 
 > **apiAcceptContactRequest**(`contactReqId`): `Promise`\<`Contact`\>
 
-Defined in: [src/api.ts:773](../api.ts#L773)
+Defined in: [src/api.ts:845](../api.ts#L845)
 
 Accept contact request.
 Network usage: interactive.
@@ -267,6 +267,35 @@ Network usage: background.
 
 ***
 
+### apiChatItemsRead()
+
+> **apiChatItemsRead**(`chatType`, `chatId`, `chatItemIds`): `Promise`\<`ChatInfo`\>
+
+Defined in: [src/api.ts:962](../api.ts#L962)
+
+Mark messages as read.
+Network usage: no.
+
+#### Parameters
+
+##### chatType
+
+`ChatType`
+
+##### chatId
+
+`number`
+
+##### chatItemIds
+
+`number`[]
+
+#### Returns
+
+`Promise`\<`ChatInfo`\>
+
+***
+
 ### apiConnect()
 
 > **apiConnect**(`userId`, `incognito`, `preparedLink`): `Promise`\<[`ConnReqType`](api.Enumeration.ConnReqType.md)\>
@@ -300,7 +329,7 @@ Network usage: interactive.
 
 > **apiConnectActiveUser**(`connLink`): `Promise`\<[`ConnReqType`](api.Enumeration.ConnReqType.md)\>
 
-Defined in: [src/api.ts:751](../api.ts#L751)
+Defined in: [src/api.ts:823](../api.ts#L823)
 
 Connect via SimpleX link as string in the active user profile.
 Network usage: interactive.
@@ -317,9 +346,38 @@ Network usage: interactive.
 
 ***
 
+### apiConnectContactViaAddress()
+
+> **apiConnectContactViaAddress**(`userId`, `incognito`, `contactId`): `Promise`\<`SentInvitationToContact`\>
+
+Defined in: [src/api.ts:813](../api.ts#L813)
+
+Connect to existing contact via address in its profile.
+Network usage: interactive.
+
+#### Parameters
+
+##### userId
+
+`number`
+
+##### incognito
+
+`boolean`
+
+##### contactId
+
+`number`
+
+#### Returns
+
+`Promise`\<`SentInvitationToContact`\>
+
+***
+
 ### apiConnectPlan()
 
-> **apiConnectPlan**(`userId`, `connectionLink`): `Promise`\<\[`ConnectionPlan`, `CreatedConnLink`\]\>
+> **apiConnectPlan**(`userId`, `connectionLink`): `Promise`\<\[`plan`: `ConnectionPlan`, `link`: `CreatedConnLink`, `planSimplexName?`: `SimplexNameInfo`, `otherSimplexName?`: `SimplexNameInfo`\]\>
 
 Defined in: [src/api.ts:732](../api.ts#L732)
 
@@ -338,7 +396,120 @@ Network usage: interactive.
 
 #### Returns
 
-`Promise`\<\[`ConnectionPlan`, `CreatedConnLink`\]\>
+`Promise`\<\[`plan`: `ConnectionPlan`, `link`: `CreatedConnLink`, `planSimplexName?`: `SimplexNameInfo`, `otherSimplexName?`: `SimplexNameInfo`\]\>
+
+***
+
+### apiConnectPreparedContact()
+
+> **apiConnectPreparedContact**(`contactId`, `incognito`, `msgContent?`): `Promise`\<`ContactAlreadyExists` \| `StartedConnectionToContact`\>
+
+Defined in: [src/api.ts:788](../api.ts#L788)
+
+Connect to prepared contact.
+Network usage: interactive.
+
+#### Parameters
+
+##### contactId
+
+`number`
+
+##### incognito
+
+`boolean`
+
+##### msgContent?
+
+`MsgContent`
+
+#### Returns
+
+`Promise`\<`ContactAlreadyExists` \| `StartedConnectionToContact`\>
+
+***
+
+### apiConnectPreparedGroup()
+
+> **apiConnectPreparedGroup**(`groupId`, `incognito`, `msgContent?`, `ownerContact?`): `Promise`\<`StartedConnectionToGroup`\>
+
+Defined in: [src/api.ts:803](../api.ts#L803)
+
+Connect to prepared group.
+Network usage: interactive.
+
+#### Parameters
+
+##### groupId
+
+`number`
+
+##### incognito
+
+`boolean`
+
+##### msgContent?
+
+`MsgContent`
+
+##### ownerContact?
+
+`GroupOwnerContact`
+
+#### Returns
+
+`Promise`\<`StartedConnectionToGroup`\>
+
+***
+
+### apiConnectPreparedLink()
+
+> **apiConnectPreparedLink**(`userId`, `incognito`, `preparedLink`): `Promise`\<`ContactAlreadyExists` \| `SentConfirmation` \| `SentInvitation`\>
+
+Defined in: [src/api.ts:752](../api.ts#L752)
+
+Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link.
+Returns the response with the pending connection, or with the contact when it already exists.
+Network usage: interactive.
+
+#### Parameters
+
+##### userId
+
+`number`
+
+##### incognito
+
+`boolean`
+
+##### preparedLink
+
+`CreatedConnLink`
+
+#### Returns
+
+`Promise`\<`ContactAlreadyExists` \| `SentConfirmation` \| `SentInvitation`\>
+
+***
+
+### apiContactInfo()
+
+> **apiContactInfo**(`contactId`): `Promise`\<`ContactInfo`\>
+
+Defined in: [src/api.ts:972](../api.ts#L972)
+
+Get contact information.
+Network usage: no.
+
+#### Parameters
+
+##### contactId
+
+`number`
+
+#### Returns
+
+`Promise`\<`ContactInfo`\>
 
 ***
 
@@ -346,7 +517,7 @@ Network usage: interactive.
 
 > **apiCreateActiveUser**(`profile?`): `Promise`\<`User`\>
 
-Defined in: [src/api.ts:910](../api.ts#L910)
+Defined in: [src/api.ts:1022](../api.ts#L1022)
 
 Create new user profile
 Network usage: no.
@@ -413,7 +584,7 @@ Network usage: interactive.
 
 > **apiCreateMemberContact**(`groupId`, `groupMemberId`): `Promise`\<`Contact`\>
 
-Defined in: [src/api.ts:976](../api.ts#L976)
+Defined in: [src/api.ts:1088](../api.ts#L1088)
 
 Create a direct message contact with a group member.
 Returns the created contact.
@@ -460,7 +631,7 @@ Network usage: interactive.
 
 > **apiDeleteChat**(`chatType`, `chatId`, `deleteMode?`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:832](../api.ts#L832)
+Defined in: [src/api.ts:904](../api.ts#L904)
 
 Delete chat.
 Network usage: background.
@@ -568,7 +739,7 @@ Network usage: background.
 
 > **apiDeleteUser**(`userId`, `delSMPQueues`, `viewPwd?`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:940](../api.ts#L940)
+Defined in: [src/api.ts:1052](../api.ts#L1052)
 
 Delete user profile.
 Network usage: background.
@@ -618,7 +789,7 @@ Network usage: background.
 
 > **apiGetActiveUser**(): `Promise`\<`User` \| `undefined`\>
 
-Defined in: [src/api.ts:890](../api.ts#L890)
+Defined in: [src/api.ts:1002](../api.ts#L1002)
 
 Get active user profile
 Network usage: no.
@@ -631,9 +802,9 @@ Network usage: no.
 
 ### apiGetChat()
 
-> **apiGetChat**(`chatType`, `chatId`, `count`): `Promise`\<`any`\>
+> **apiGetChat**(`chatType`, `chatId`, `pagination`): `Promise`\<`AChat`\>
 
-Defined in: [src/api.ts:880](../api.ts#L880)
+Defined in: [src/api.ts:951](../api.ts#L951)
 
 Get chat items.
 Network usage: no.
@@ -648,13 +819,13 @@ Network usage: no.
 
 `number`
 
-##### count
+##### pagination
 
-`number`
+`number` \| `ChatPagination`
 
 #### Returns
 
-`Promise`\<`any`\>
+`Promise`\<`AChat`\>
 
 ***
 
@@ -662,7 +833,7 @@ Network usage: no.
 
 > **apiGetChats**(`userId`, `pagination`, `query?`, `pendingConnections?`): `Promise`\<`AChat`[]\>
 
-Defined in: [src/api.ts:817](../api.ts#L817)
+Defined in: [src/api.ts:889](../api.ts#L889)
 
 Get chat previews (paginated).
 Network usage: no.
@@ -734,6 +905,21 @@ Defined in: [src/api.ts:710](../api.ts#L710)
 
 ***
 
+### apiGetNetworkConfig()
+
+> **apiGetNetworkConfig**(): `Promise`\<`NetworkConfig`\>
+
+Defined in: [src/api.ts:982](../api.ts#L982)
+
+Get network configuration.
+Network usage: no.
+
+#### Returns
+
+`Promise`\<`NetworkConfig`\>
+
+***
+
 ### apiGetUserAddress()
 
 > **apiGetUserAddress**(`userId`): `Promise`\<`UserContactLink` \| `undefined`\>
@@ -801,7 +987,7 @@ Network usage: background.
 
 > **apiListContacts**(`userId`): `Promise`\<`Contact`[]\>
 
-Defined in: [src/api.ts:793](../api.ts#L793)
+Defined in: [src/api.ts:865](../api.ts#L865)
 
 Get contacts.
 Network usage: no.
@@ -822,7 +1008,7 @@ Network usage: no.
 
 > **apiListGroups**(`userId`, `contactId?`, `search?`): `Promise`\<`GroupInfo`[]\>
 
-Defined in: [src/api.ts:803](../api.ts#L803)
+Defined in: [src/api.ts:875](../api.ts#L875)
 
 Get groups.
 Network usage: no.
@@ -872,7 +1058,7 @@ Network usage: no.
 
 > **apiListUsers**(): `Promise`\<`UserInfo`[]\>
 
-Defined in: [src/api.ts:920](../api.ts#L920)
+Defined in: [src/api.ts:1032](../api.ts#L1032)
 
 Get all user profiles
 Network usage: no.
@@ -908,9 +1094,79 @@ Network usage: no.
 
 ***
 
+### apiPrepareContact()
+
+> **apiPrepareContact**(`userId`, `connLink`, `contactSLinkData`, `verifiedDomain?`): `Promise`\<`AChat`\>
+
+Defined in: [src/api.ts:768](../api.ts#L768)
+
+Prepare contact chat from link data before connecting.
+Network usage: no.
+
+#### Parameters
+
+##### userId
+
+`number`
+
+##### connLink
+
+`CreatedConnLink`
+
+##### contactSLinkData
+
+`ContactShortLinkData`
+
+##### verifiedDomain?
+
+`string`
+
+#### Returns
+
+`Promise`\<`AChat`\>
+
+***
+
+### apiPrepareGroup()
+
+> **apiPrepareGroup**(`userId`, `connLinkContact`, `direct`, `groupSLinkData`, `verifiedDomain?`): `Promise`\<`AChat`\>
+
+Defined in: [src/api.ts:778](../api.ts#L778)
+
+Prepare group chat from link data before connecting.
+Network usage: no.
+
+#### Parameters
+
+##### userId
+
+`number`
+
+##### connLinkContact
+
+`CreatedConnLink`
+
+##### direct
+
+`boolean`
+
+##### groupSLinkData
+
+`GroupShortLinkData`
+
+##### verifiedDomain?
+
+`string`
+
+#### Returns
+
+`Promise`\<`AChat`\>
+
+***
+
 ### apiReceiveFile()
 
-> **apiReceiveFile**(`fileId`): `Promise`\<`AChatItem`\>
+> **apiReceiveFile**(`fileId`, `filePath?`): `Promise`\<`AChatItem`\>
 
 Defined in: [src/api.ts:542](../api.ts#L542)
 
@@ -923,6 +1179,10 @@ Network usage: no.
 
 `number`
 
+##### filePath?
+
+`string`
+
 #### Returns
 
 `Promise`\<`AChatItem`\>
@@ -933,7 +1193,7 @@ Network usage: no.
 
 > **apiRejectContactRequest**(`contactReqId`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:783](../api.ts#L783)
+Defined in: [src/api.ts:855](../api.ts#L855)
 
 Reject contact request. The user who sent the request is **not notified**.
 Network usage: no.
@@ -983,11 +1243,11 @@ Network usage: background.
 
 > **apiSendMemberContactInvitation**(`contactId`, `message?`): `Promise`\<`Contact`\>
 
-Defined in: [src/api.ts:987](../api.ts#L987)
+Defined in: [src/api.ts:1099](../api.ts#L1099)
 
 Send a direct message invitation to a group member contact.
 The contact must have been created with [apiCreateMemberContact](#apicreatemembercontact).
-Network usage: interactive.
+Network usage: background.
 
 #### Parameters
 
@@ -1092,7 +1352,7 @@ Network usage: background.
 
 > **apiSetActiveUser**(`userId`, `viewPwd?`): `Promise`\<`User`\>
 
-Defined in: [src/api.ts:930](../api.ts#L930)
+Defined in: [src/api.ts:1042](../api.ts#L1042)
 
 Set active user profile
 Network usage: no.
@@ -1142,7 +1402,7 @@ Network usage: interactive.
 
 > **apiSetAutoAcceptMemberContacts**(`userId`, `onOff`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:869](../api.ts#L869)
+Defined in: [src/api.ts:941](../api.ts#L941)
 
 Set auto-accept member contacts.
 Network usage: no.
@@ -1167,7 +1427,7 @@ Network usage: no.
 
 > **apiSetContactCustomData**(`contactId`, `customData?`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:859](../api.ts#L859)
+Defined in: [src/api.ts:931](../api.ts#L931)
 
 Set contact custom data.
 Network usage: no.
@@ -1192,7 +1452,7 @@ Network usage: no.
 
 > **apiSetContactPrefs**(`contactId`, `preferences`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:966](../api.ts#L966)
+Defined in: [src/api.ts:1078](../api.ts#L1078)
 
 Configure chat preference overrides for the contact.
 Network usage: background.
@@ -1217,7 +1477,7 @@ Network usage: background.
 
 > **apiSetGroupCustomData**(`groupId`, `customData?`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:849](../api.ts#L849)
+Defined in: [src/api.ts:921](../api.ts#L921)
 
 Set group custom data.
 Network usage: no.
@@ -1285,6 +1545,27 @@ Network usage: background.
 ##### memberRole
 
 `GroupMemberRole`
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
+### apiSetNetworkConfig()
+
+> **apiSetNetworkConfig**(`networkConfig`): `Promise`\<`void`\>
+
+Defined in: [src/api.ts:992](../api.ts#L992)
+
+Set network configuration.
+Network usage: background.
+
+#### Parameters
+
+##### networkConfig
+
+`NetworkConfig`
 
 #### Returns
 
@@ -1406,7 +1687,7 @@ Network usage: background.
 
 > **apiUpdateProfile**(`userId`, `profile`): `Promise`\<`UserProfileUpdateSummary` \| `undefined`\>
 
-Defined in: [src/api.ts:950](../api.ts#L950)
+Defined in: [src/api.ts:1062](../api.ts#L1062)
 
 Update user profile.
 Network usage: background.

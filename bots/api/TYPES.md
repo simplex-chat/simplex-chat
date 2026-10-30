@@ -52,6 +52,7 @@ This file is generated automatically.
 - [ChatItemDeletion](#chatitemdeletion)
 - [ChatLayout](#chatlayout)
 - [ChatListQuery](#chatlistquery)
+- [ChatPagination](#chatpagination)
 - [ChatPeerType](#chatpeertype)
 - [ChatRef](#chatref)
 - [ChatSettings](#chatsettings)
@@ -72,6 +73,7 @@ This file is generated automatically.
 - [ConnectionErrorType](#connectionerrortype)
 - [ConnectionMode](#connectionmode)
 - [ConnectionPlan](#connectionplan)
+- [ConnectionStats](#connectionstats)
 - [Contact](#contact)
 - [ContactAddressPlan](#contactaddressplan)
 - [ContactShortLinkData](#contactshortlinkdata)
@@ -117,6 +119,7 @@ This file is generated automatically.
 - [GroupMemberRole](#groupmemberrole)
 - [GroupMemberSettings](#groupmembersettings)
 - [GroupMemberStatus](#groupmemberstatus)
+- [GroupOwnerContact](#groupownercontact)
 - [GroupPreference](#grouppreference)
 - [GroupPreferences](#grouppreferences)
 - [GroupProfile](#groupprofile)
@@ -127,9 +130,11 @@ This file is generated automatically.
 - [GroupSupportChat](#groupsupportchat)
 - [GroupType](#grouptype)
 - [HandshakeError](#handshakeerror)
+- [HostMode](#hostmode)
 - [InlineFileMode](#inlinefilemode)
 - [InvitationLinkPlan](#invitationlinkplan)
 - [InvitedBy](#invitedby)
+- [KeepAliveOpts](#keepaliveopts)
 - [LinkContent](#linkcontent)
 - [LinkOwnerSig](#linkownersig)
 - [LinkPreview](#linkpreview)
@@ -140,6 +145,7 @@ This file is generated automatically.
 - [MemberCriteria](#membercriteria)
 - [MsgChatLink](#msgchatlink)
 - [MsgContent](#msgcontent)
+- [MsgContentTag](#msgcontenttag)
 - [MsgDecryptError](#msgdecrypterror)
 - [MsgDirection](#msgdirection)
 - [MsgErrorType](#msgerrortype)
@@ -149,7 +155,10 @@ This file is generated automatically.
 - [MsgSigStatus](#msgsigstatus)
 - [MsgVerified](#msgverified)
 - [NameErrorType](#nameerrortype)
+- [NavigationInfo](#navigationinfo)
+- [NetworkConfig](#networkconfig)
 - [NetworkError](#networkerror)
+- [NetworkTimeout](#networktimeout)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
 - [OwnerVerification](#ownerverification)
@@ -166,6 +175,7 @@ This file is generated automatically.
 - [PublicGroupAccess](#publicgroupaccess)
 - [PublicGroupData](#publicgroupdata)
 - [PublicGroupProfile](#publicgroupprofile)
+- [QueueStatus](#queuestatus)
 - [RCErrorType](#rcerrortype)
 - [RatchetSyncState](#ratchetsyncstate)
 - [RcvConnEvent](#rcvconnevent)
@@ -175,6 +185,8 @@ This file is generated automatically.
 - [RcvFileTransfer](#rcvfiletransfer)
 - [RcvGroupEvent](#rcvgroupevent)
 - [RcvMsgError](#rcvmsgerror)
+- [RcvQueueInfo](#rcvqueueinfo)
+- [RcvSwitchStatus](#rcvswitchstatus)
 - [RelayCapabilities](#relaycapabilities)
 - [RelayConnectionResult](#relayconnectionresult)
 - [RelayProfile](#relayprofile)
@@ -185,6 +197,9 @@ This file is generated automatically.
 - [ReportReason](#reportreason)
 - [RoleGroupPreference](#rolegrouppreference)
 - [SMPAgentError](#smpagenterror)
+- [SMPProxyFallback](#smpproxyfallback)
+- [SMPProxyMode](#smpproxymode)
+- [SMPWebPortServers](#smpwebportservers)
 - [SecurityCode](#securitycode)
 - [SegmentRange](#segmentrange)
 - [SimplePreference](#simplepreference)
@@ -201,6 +216,9 @@ This file is generated automatically.
 - [SndError](#snderror)
 - [SndFileTransfer](#sndfiletransfer)
 - [SndGroupEvent](#sndgroupevent)
+- [SndQueueInfo](#sndqueueinfo)
+- [SndSwitchStatus](#sndswitchstatus)
+- [SocksMode](#socksmode)
 - [SrvError](#srverror)
 - [StoreError](#storeerror)
 - [SubscriptionStatus](#subscriptionstatus)
@@ -210,6 +228,7 @@ This file is generated automatically.
 - [TimedMessagesGroupPreference](#timedmessagesgrouppreference)
 - [TimedMessagesPreference](#timedmessagespreference)
 - [TransportError](#transporterror)
+- [TransportSessionMode](#transportsessionmode)
 - [UIColorMode](#uicolormode)
 - [UIColors](#uicolors)
 - [UIThemeEntityOverride](#uithemeentityoverride)
@@ -1619,6 +1638,50 @@ Search:
 
 ---
 
+## ChatPagination
+
+**Discriminated union type**:
+
+Last:
+- type: "last"
+- count: int
+
+After:
+- type: "after"
+- chatItemId: int64
+- count: int
+
+Before:
+- type: "before"
+- chatItemId: int64
+- count: int
+
+Around:
+- type: "around"
+- chatItemId: int64
+- count: int
+
+Initial:
+- type: "initial"
+- count: int
+
+**Syntax**:
+
+```
+count=<count>|after=<chatItemId> count=<count>|before=<chatItemId> count=<count>|around=<chatItemId> count=<count>|initial=<count>
+```
+
+```javascript
+type == 'last' ? 'count=' + count : type == 'after' ? 'after=' + chatItemId + ' count=' + count : type == 'before' ? 'before=' + chatItemId + ' count=' + count : type == 'around' ? 'around=' + chatItemId + ' count=' + count : 'initial=' + count // JavaScript
+```
+
+```python
+'count=' + str(count) if str(type) == 'last' else 'after=' + str(chatItemId) + ' count=' + str(count) if str(type) == 'after' else 'before=' + str(chatItemId) + ' count=' + str(count) if str(type) == 'before' else 'around=' + str(chatItemId) + ' count=' + str(count) if str(type) == 'around' else 'initial=' + str(count) # Python
+```
+
+
+---
+
 ## ChatPeerType
 
 **Enum type**:
@@ -1964,6 +2027,19 @@ GroupLink:
 Error:
 - type: "error"
 - chatError: [ChatError](#chaterror)
+
+
+---
+
+## ConnectionStats
+
+**Record type**:
+- connAgentVersion: int
+- rcvQueuesInfo: [[RcvQueueInfo](#rcvqueueinfo)]
+- sndQueuesInfo: [[SndQueueInfo](#sndqueueinfo)]
+- ratchetSyncState: [RatchetSyncState](#ratchetsyncstate)
+- ratchetSyncSupported: bool
+- subStatus: [SubscriptionStatus](#subscriptionstatus)?
 
 
 ---
@@ -2761,6 +2837,29 @@ UpdateRequired:
 
 ---
 
+## GroupOwnerContact
+
+**Record type**:
+- contactId: int64
+- memberId: string
+
+**Syntax**:
+
+```
+contact=<contactId> owner=<memberId>
+```
+
+```javascript
+'contact=' + contactId + ' owner=' + memberId // JavaScript
+```
+
+```python
+'contact=' + str(contactId) + ' owner=' + memberId # Python
+```
+
+
+---
+
 ## GroupPreference
 
 **Record type**:
@@ -2879,6 +2978,16 @@ UpdateRequired:
 
 ---
 
+## HostMode
+
+**Enum type**:
+- "onionViaSocks"
+- "onion"
+- "public"
+
+
+---
+
 ## InlineFileMode
 
 **Enum type**:
@@ -2924,6 +3033,16 @@ User:
 
 Unknown:
 - type: "unknown"
+
+
+---
+
+## KeepAliveOpts
+
+**Record type**:
+- keepIdle: int
+- keepIntvl: int
+- keepCnt: int
 
 
 ---
@@ -3136,6 +3255,21 @@ Unknown:
 
 ---
 
+## MsgContentTag
+
+**Enum type**:
+- "text"
+- "link"
+- "image"
+- "video"
+- "voice"
+- "file"
+- "report"
+- "chat"
+
+
+---
+
 ## MsgDecryptError
 
 **Enum type**:
@@ -3254,6 +3388,38 @@ RESOLVER:
 
 ---
 
+## NavigationInfo
+
+**Record type**:
+- afterUnread: int
+- afterTotal: int
+
+
+---
+
+## NetworkConfig
+
+**Record type**:
+- socksProxy: string?
+- socksMode: [SocksMode](#socksmode)
+- hostMode: [HostMode](#hostmode)
+- requiredHostMode: bool
+- sessionMode: [TransportSessionMode](#transportsessionmode)
+- smpProxyMode: [SMPProxyMode](#smpproxymode)
+- smpProxyFallback: [SMPProxyFallback](#smpproxyfallback)
+- smpWebPortServers: [SMPWebPortServers](#smpwebportservers)
+- tcpConnectTimeout: [NetworkTimeout](#networktimeout)
+- tcpTimeout: [NetworkTimeout](#networktimeout)
+- tcpTimeoutPerKb: int64
+- rcvConcurrency: int
+- tcpKeepAlive: [KeepAliveOpts](#keepaliveopts)?
+- smpPingInterval: int64
+- smpPingCount: int
+- logTLSErrors: bool
+
+
+---
+
 ## NetworkError
 
 **Discriminated union type**:
@@ -3278,6 +3444,15 @@ TimeoutError:
 SubscribeError:
 - type: "subscribeError"
 - subscribeError: string
+
+
+---
+
+## NetworkTimeout
+
+**Record type**:
+- backgroundTimeout: int
+- interactiveTimeout: int
 
 
 ---
@@ -3370,6 +3545,20 @@ count=<count>
 - "allGroups"
 - "unknown"
 - "never"
+
+**Syntax**:
+
+```
+ resolve=allGroups| resolve=never|
+```
+
+```javascript
+self == 'allGroups' ? ' resolve=allGroups' : self == 'never' ? ' resolve=never' : '' // JavaScript
+```
+
+```python
+' resolve=allGroups' if str(self) == 'allGroups' else ' resolve=never' if str(self) == 'never' else '' # Python
+```
 
 
 ---
@@ -3504,6 +3693,18 @@ NO_SESSION:
 - groupLink: string
 - publicGroupId: string
 - publicGroupAccess: [PublicGroupAccess](#publicgroupaccess)?
+
+
+---
+
+## QueueStatus
+
+**Enum type**:
+- "new"
+- "confirmed"
+- "secured"
+- "active"
+- "disabled"
 
 
 ---
@@ -3765,6 +3966,30 @@ ParseError:
 
 ---
 
+## RcvQueueInfo
+
+**Record type**:
+- rcvServer: string
+- status: [QueueStatus](#queuestatus)
+- rcvSwitchStatus: [RcvSwitchStatus](#rcvswitchstatus)?
+- canAbortSwitch: bool
+- subStatus: [SubscriptionStatus](#subscriptionstatus)
+
+
+---
+
+## RcvSwitchStatus
+
+**Enum type**:
+- "switch_started"
+- "sending_qadd"
+- "sending_quse"
+- "received_message"
+- "received_qend"
+
+
+---
+
 ## RelayCapabilities
 
 **Record type**:
@@ -3918,6 +4143,37 @@ A_QUEUE:
 A_SERVICE:
 - type: "A_SERVICE"
 - serviceError: [AgentServiceError](#agentserviceerror)
+
+
+---
+
+## SMPProxyFallback
+
+**Enum type**:
+- "allow"
+- "allowProtected"
+- "prohibit"
+
+
+---
+
+## SMPProxyMode
+
+**Enum type**:
+- "always"
+- "unknown"
+- "unprotected"
+- "never"
+
+
+---
+
+## SMPWebPortServers
+
+**Enum type**:
+- "all"
+- "preset"
+- "off"
 
 
 ---
@@ -4152,6 +4408,36 @@ MemberAccepted:
 
 UserPendingReview:
 - type: "userPendingReview"
+
+
+---
+
+## SndQueueInfo
+
+**Record type**:
+- sndServer: string
+- status: [QueueStatus](#queuestatus)
+- sndSwitchStatus: [SndSwitchStatus](#sndswitchstatus)?
+
+
+---
+
+## SndSwitchStatus
+
+**Enum type**:
+- "sending_qkey"
+- "sending_qtest"
+- "securing_queue"
+- "sending_qend"
+
+
+---
+
+## SocksMode
+
+**Enum type**:
+- "always"
+- "onion"
 
 
 ---
@@ -4612,6 +4898,17 @@ NoServerAuth:
 Handshake:
 - type: "handshake"
 - handshakeErr: [HandshakeError](#handshakeerror)
+
+
+---
+
+## TransportSessionMode
+
+**Enum type**:
+- "user"
+- "session"
+- "server"
+- "entity"
 
 
 ---

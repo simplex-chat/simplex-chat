@@ -33,6 +33,8 @@ This file is generated automatically.
 - [APIRemoveMembers](#apiremovemembers)
 - [APILeaveGroup](#apileavegroup)
 - [APIListMembers](#apilistmembers)
+- [APICreateMemberContact](#apicreatemembercontact)
+- [APISendMemberContactInvitation](#apisendmembercontactinvitation)
 - [APINewGroup](#apinewgroup)
 - [APINewPublicGroup](#apinewpublicgroup)
 - [APIGetGroupRelays](#apigetgrouprelays)
@@ -52,6 +54,11 @@ This file is generated automatically.
 - [APIConnectPlan](#apiconnectplan)
 - [APIConnect](#apiconnect)
 - [Connect](#connect)
+- [APIPrepareContact](#apipreparecontact)
+- [APIPrepareGroup](#apipreparegroup)
+- [APIConnectPreparedContact](#apiconnectpreparedcontact)
+- [APIConnectPreparedGroup](#apiconnectpreparedgroup)
+- [APIConnectContactViaAddress](#apiconnectcontactviaaddress)
 - [APIAcceptContact](#apiacceptcontact)
 - [APIRejectContact](#apirejectcontact)
 
@@ -59,6 +66,9 @@ This file is generated automatically.
 - [APIListContacts](#apilistcontacts)
 - [APIListGroups](#apilistgroups)
 - [APIGetChats](#apigetchats)
+- [APIGetChat](#apigetchat)
+- [APIChatItemsRead](#apichatitemsread)
+- [APIContactInfo](#apicontactinfo)
 - [APIDeleteChat](#apideletechat)
 - [APISetGroupCustomData](#apisetgroupcustomdata)
 - [APISetContactCustomData](#apisetcontactcustomdata)
@@ -80,6 +90,8 @@ This file is generated automatically.
 [Chat management](#chat-management)
 - [StartChat](#startchat)
 - [APIStopChat](#apistopchat)
+- [APIGetNetworkConfig](#apigetnetworkconfig)
+- [APISetNetworkConfig](#apisetnetworkconfig)
 
 [Remote control commands](#remote-control-commands)
 - [ConnectRemoteCtrl](#connectremotectrl)
@@ -1092,6 +1104,93 @@ ChatCmdError: Command error (only used in WebSockets API).
 ---
 
 
+### APICreateMemberContact
+
+Create a direct message contact with a group member.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- groupId: int64
+- groupMemberId: int64
+
+**Syntax**:
+
+```
+/_create member contact #<groupId> <groupMemberId>
+```
+
+```javascript
+'/_create member contact #' + groupId + ' ' + groupMemberId // JavaScript
+```
+
+```python
+'/_create member contact #' + str(groupId) + ' ' + str(groupMemberId) # Python
+```
+
+**Responses**:
+
+NewMemberContact: Member contact created.
+- type: "newMemberContact"
+- user: [User](./TYPES.md#user)
+- contact: [Contact](./TYPES.md#contact)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- member: [GroupMember](./TYPES.md#groupmember)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+**Errors**:
+- GroupMemberNotActive: Member is not connected yet.
+- PeerChatVRangeIncompatible: Member's client version is older than required.
+
+---
+
+
+### APISendMemberContactInvitation
+
+Send a direct message invitation to a group member contact.
+
+*Network usage*: background.
+
+**Parameters**:
+- contactId: int64
+- msgContent_: [MsgContent](./TYPES.md#msgcontent)?
+
+**Syntax**:
+
+```
+/_invite member contact @<contactId>[ json <json(msgContent_)>]
+```
+
+```javascript
+'/_invite member contact @' + contactId + (msgContent_ ? ' json ' + JSON.stringify(msgContent_) : '') // JavaScript
+```
+
+```python
+'/_invite member contact @' + str(contactId) + ((' json ' + json.dumps(msgContent_)) if msgContent_ is not None else '') # Python
+```
+
+**Responses**:
+
+NewMemberContactSentInv: Member contact invitation sent.
+- type: "newMemberContactSentInv"
+- user: [User](./TYPES.md#user)
+- contact: [Contact](./TYPES.md#contact)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- member: [GroupMember](./TYPES.md#groupmember)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+**Errors**:
+- GroupMemberNotActive: Member is not connected yet.
+
+---
+
+
 ### APINewGroup
 
 Create group.
@@ -1590,15 +1689,15 @@ Determine SimpleX link type and if the bot is already connected via this link or
 **Syntax**:
 
 ```
-/_connect plan <userId> <connectTarget>
+/_connect plan <userId> <connectTarget><str(resolveMode)>[ sig=<json(linkOwnerSig)>]
 ```
 
 ```javascript
-'/_connect plan ' + userId + ' ' + connectTarget // JavaScript
+'/_connect plan ' + userId + ' ' + connectTarget + PlanResolveMode.cmdString(resolveMode) + (linkOwnerSig ? ' sig=' + JSON.stringify(linkOwnerSig) : '') // JavaScript
 ```
 
 ```python
-'/_connect plan ' + str(userId) + ' ' + connectTarget # Python
+'/_connect plan ' + str(userId) + ' ' + connectTarget + PlanResolveMode_cmd_string(resolveMode) + ((' sig=' + json.dumps(linkOwnerSig)) if linkOwnerSig is not None else '') # Python
 ```
 
 **Responses**:
@@ -1738,6 +1837,214 @@ StartedConnectionToGroup: Connection to channel started (when connecting via cha
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - customUserProfile: [Profile](./TYPES.md#profile)?
 - relayResults: [[RelayConnectionResult](./TYPES.md#relayconnectionresult)]
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIPrepareContact
+
+Prepare contact chat from link data before connecting.
+
+*Network usage*: no.
+
+**Parameters**:
+- userId: int64
+- connLink: [CreatedConnLink](./TYPES.md#createdconnlink)
+- verifiedDomain: string?
+- contactSLinkData: [ContactShortLinkData](./TYPES.md#contactshortlinkdata)
+
+**Syntax**:
+
+```
+/_prepare contact <userId> <str(connLink)>[ domain=<verifiedDomain>] <json(contactSLinkData)>
+```
+
+```javascript
+'/_prepare contact ' + userId + ' ' + CreatedConnLink.cmdString(connLink) + (verifiedDomain ? ' domain=' + verifiedDomain : '') + ' ' + JSON.stringify(contactSLinkData) // JavaScript
+```
+
+```python
+'/_prepare contact ' + str(userId) + ' ' + CreatedConnLink_cmd_string(connLink) + ((' domain=' + verifiedDomain) if verifiedDomain is not None else '') + ' ' + json.dumps(contactSLinkData) # Python
+```
+
+**Responses**:
+
+NewPreparedChat: Prepared chat.
+- type: "newPreparedChat"
+- user: [User](./TYPES.md#user)
+- chat: [AChat](./TYPES.md#achat)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIPrepareGroup
+
+Prepare group chat from link data before connecting.
+
+*Network usage*: no.
+
+**Parameters**:
+- userId: int64
+- connLinkContact: [CreatedConnLink](./TYPES.md#createdconnlink)
+- direct: bool
+- verifiedDomain: string?
+- groupSLinkData: [GroupShortLinkData](./TYPES.md#groupshortlinkdata)
+
+**Syntax**:
+
+```
+/_prepare group <userId> <str(connLinkContact)>[ direct=off][ domain=<verifiedDomain>] <json(groupSLinkData)>
+```
+
+```javascript
+'/_prepare group ' + userId + ' ' + CreatedConnLink.cmdString(connLinkContact) + (!direct ? ' direct=off' : '') + (verifiedDomain ? ' domain=' + verifiedDomain : '') + ' ' + JSON.stringify(groupSLinkData) // JavaScript
+```
+
+```python
+'/_prepare group ' + str(userId) + ' ' + CreatedConnLink_cmd_string(connLinkContact) + (' direct=off' if not direct else '') + ((' domain=' + verifiedDomain) if verifiedDomain is not None else '') + ' ' + json.dumps(groupSLinkData) # Python
+```
+
+**Responses**:
+
+NewPreparedChat: Prepared chat.
+- type: "newPreparedChat"
+- user: [User](./TYPES.md#user)
+- chat: [AChat](./TYPES.md#achat)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIConnectPreparedContact
+
+Connect to prepared contact.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- contactId: int64
+- incognito: bool
+- msgContent_: [MsgContent](./TYPES.md#msgcontent)?
+
+**Syntax**:
+
+```
+/_connect contact @<contactId>[ incognito=on][ json <json(msgContent_)>]
+```
+
+```javascript
+'/_connect contact @' + contactId + (incognito ? ' incognito=on' : '') + (msgContent_ ? ' json ' + JSON.stringify(msgContent_) : '') // JavaScript
+```
+
+```python
+'/_connect contact @' + str(contactId) + (' incognito=on' if incognito else '') + ((' json ' + json.dumps(msgContent_)) if msgContent_ is not None else '') # Python
+```
+
+**Responses**:
+
+StartedConnectionToContact: Connection to contact started (when connecting via prepared contact)..
+- type: "startedConnectionToContact"
+- user: [User](./TYPES.md#user)
+- contact: [Contact](./TYPES.md#contact)
+- customUserProfile: [Profile](./TYPES.md#profile)?
+
+ContactAlreadyExists: Contact already exists.
+- type: "contactAlreadyExists"
+- user: [User](./TYPES.md#user)
+- contact: [Contact](./TYPES.md#contact)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIConnectPreparedGroup
+
+Connect to prepared group.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- groupId: int64
+- incognito: bool
+- ownerContact: [GroupOwnerContact](./TYPES.md#groupownercontact)?
+- msgContent_: [MsgContent](./TYPES.md#msgcontent)?
+
+**Syntax**:
+
+```
+/_connect group #<groupId>[ incognito=on][ <str(ownerContact)>][ json <json(msgContent_)>]
+```
+
+```javascript
+'/_connect group #' + groupId + (incognito ? ' incognito=on' : '') + (ownerContact ? ' ' + GroupOwnerContact.cmdString(ownerContact) : '') + (msgContent_ ? ' json ' + JSON.stringify(msgContent_) : '') // JavaScript
+```
+
+```python
+'/_connect group #' + str(groupId) + (' incognito=on' if incognito else '') + ((' ' + GroupOwnerContact_cmd_string(ownerContact)) if ownerContact is not None else '') + ((' json ' + json.dumps(msgContent_)) if msgContent_ is not None else '') # Python
+```
+
+**Responses**:
+
+StartedConnectionToGroup: Connection to channel started (when connecting via channel link)..
+- type: "startedConnectionToGroup"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- customUserProfile: [Profile](./TYPES.md#profile)?
+- relayResults: [[RelayConnectionResult](./TYPES.md#relayconnectionresult)]
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIConnectContactViaAddress
+
+Connect to existing contact via address in its profile.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- userId: int64
+- incognito: bool
+- contactId: int64
+
+**Syntax**:
+
+```
+/_connect contact <userId>[ incognito=on] <contactId>
+```
+
+```javascript
+'/_connect contact ' + userId + (incognito ? ' incognito=on' : '') + ' ' + contactId // JavaScript
+```
+
+```python
+'/_connect contact ' + str(userId) + (' incognito=on' if incognito else '') + ' ' + str(contactId) # Python
+```
+
+**Responses**:
+
+SentInvitationToContact: Invitation sent to contact (when connecting via SimpleX name to a known contact address)..
+- type: "sentInvitationToContact"
+- user: [User](./TYPES.md#user)
+- contact: [Contact](./TYPES.md#contact)
+- customUserProfile: [Profile](./TYPES.md#profile)?
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
@@ -1935,6 +2242,124 @@ ApiChats: Chat previews (paginated). Use this instead of CRContactsList / CRGrou
 - type: "apiChats"
 - user: [User](./TYPES.md#user)
 - chats: [[AChat](./TYPES.md#achat)]
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIGetChat
+
+Get chat messages.
+
+*Network usage*: no.
+
+**Parameters**:
+- chatRef: [ChatRef](./TYPES.md#chatref)
+- contentTag: [MsgContentTag](./TYPES.md#msgcontenttag)?
+- chatPagination: [ChatPagination](./TYPES.md#chatpagination)
+- search: string?
+
+**Syntax**:
+
+```
+/_get chat <str(chatRef)>[ content=text|link|image|video|voice|file|report|chat] <str(chatPagination)>[ search=<search>]
+```
+
+```javascript
+'/_get chat ' + ChatRef.cmdString(chatRef) + (contentTag ? ' content=' + contentTag : '') + ' ' + ChatPagination.cmdString(chatPagination) + (search ? ' search=' + search : '') // JavaScript
+```
+
+```python
+'/_get chat ' + ChatRef_cmd_string(chatRef) + ((' content=' + str(contentTag)) if contentTag is not None else '') + ' ' + ChatPagination_cmd_string(chatPagination) + ((' search=' + search) if search is not None else '') # Python
+```
+
+**Responses**:
+
+ApiChat: Chat and messages.
+- type: "apiChat"
+- user: [User](./TYPES.md#user)
+- chat: [AChat](./TYPES.md#achat)
+- navInfo: [NavigationInfo](./TYPES.md#navigationinfo)?
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIChatItemsRead
+
+Mark messages as read.
+
+*Network usage*: no.
+
+**Parameters**:
+- chatRef: [ChatRef](./TYPES.md#chatref)
+- chatItemIds: [int64]
+
+**Syntax**:
+
+```
+/_read chat items <str(chatRef)> <chatItemIds[0]>[,<chatItemIds[1]>...]
+```
+
+```javascript
+'/_read chat items ' + ChatRef.cmdString(chatRef) + ' ' + chatItemIds.join(',') // JavaScript
+```
+
+```python
+'/_read chat items ' + ChatRef_cmd_string(chatRef) + ' ' + ','.join(map(str, chatItemIds)) # Python
+```
+
+**Responses**:
+
+ItemsReadForChat: Messages marked as read.
+- type: "itemsReadForChat"
+- user: [User](./TYPES.md#user)
+- chatInfo: [ChatInfo](./TYPES.md#chatinfo)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIContactInfo
+
+Get contact information.
+
+*Network usage*: no.
+
+**Parameters**:
+- contactId: int64
+
+**Syntax**:
+
+```
+/_info @<contactId>
+```
+
+```javascript
+'/_info @' + contactId // JavaScript
+```
+
+```python
+'/_info @' + str(contactId) # Python
+```
+
+**Responses**:
+
+ContactInfo: Contact information.
+- type: "contactInfo"
+- user: [User](./TYPES.md#user)
+- contact: [Contact](./TYPES.md#contact)
+- connectionStats_: [ConnectionStats](./TYPES.md#connectionstats)?
+- customUserProfile: [Profile](./TYPES.md#profile)?
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
@@ -2498,6 +2923,67 @@ Stop chat controller.
 
 ChatStopped: Chat stopped.
 - type: "chatStopped"
+
+---
+
+
+### APIGetNetworkConfig
+
+Get network configuration.
+
+*Network usage*: no.
+
+**Syntax**:
+
+```
+/network
+```
+
+**Responses**:
+
+NetworkConfig: Network configuration.
+- type: "networkConfig"
+- networkConfig: [NetworkConfig](./TYPES.md#networkconfig)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APISetNetworkConfig
+
+Set network configuration.
+
+*Network usage*: background.
+
+**Parameters**:
+- networkConfig: [NetworkConfig](./TYPES.md#networkconfig)
+
+**Syntax**:
+
+```
+/_network <json(networkConfig)>
+```
+
+```javascript
+'/_network ' + JSON.stringify(networkConfig) // JavaScript
+```
+
+```python
+'/_network ' + json.dumps(networkConfig) # Python
+```
+
+**Responses**:
+
+CmdOk: Ok.
+- type: "cmdOk"
+- user_: [User](./TYPES.md#user)?
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 

@@ -6,6 +6,7 @@ import * as T from "./types"
 export type ChatResponse = 
   | CR.AcceptingContactRequest
   | CR.ActiveUser
+  | CR.ApiChat
   | CR.ChatItemNotChanged
   | CR.ChatItemReaction
   | CR.ChatItemUpdated
@@ -20,6 +21,7 @@ export type ChatResponse =
   | CR.ContactAlreadyExists
   | CR.ContactConnectionDeleted
   | CR.ContactDeleted
+  | CR.ContactInfo
   | CR.ContactPrefsUpdated
   | CR.ContactRequestRejected
   | CR.ContactsList
@@ -39,11 +41,16 @@ export type ChatResponse =
   | CR.GroupsList
   | CR.GroupDomainVerified
   | CR.Invitation
+  | CR.ItemsReadForChat
   | CR.LeftMemberUser
   | CR.MemberAccepted
   | CR.MembersBlockedForAllUser
   | CR.MembersRoleUser
+  | CR.NetworkConfig
   | CR.NewChatItems
+  | CR.NewMemberContact
+  | CR.NewMemberContactSentInv
+  | CR.NewPreparedChat
   | CR.RcvFileAccepted
   | CR.RcvFileAcceptedSndCancelled
   | CR.RcvFileCancelled
@@ -73,6 +80,7 @@ export namespace CR {
   export type Tag = 
     | "acceptingContactRequest"
     | "activeUser"
+    | "apiChat"
     | "chatItemNotChanged"
     | "chatItemReaction"
     | "chatItemUpdated"
@@ -87,6 +95,7 @@ export namespace CR {
     | "contactAlreadyExists"
     | "contactConnectionDeleted"
     | "contactDeleted"
+    | "contactInfo"
     | "contactPrefsUpdated"
     | "contactRequestRejected"
     | "contactsList"
@@ -106,11 +115,16 @@ export namespace CR {
     | "groupsList"
     | "groupDomainVerified"
     | "invitation"
+    | "itemsReadForChat"
     | "leftMemberUser"
     | "memberAccepted"
     | "membersBlockedForAllUser"
     | "membersRoleUser"
+    | "networkConfig"
     | "newChatItems"
+    | "newMemberContact"
+    | "newMemberContactSentInv"
+    | "newPreparedChat"
     | "rcvFileAccepted"
     | "rcvFileAcceptedSndCancelled"
     | "rcvFileCancelled"
@@ -149,6 +163,13 @@ export namespace CR {
   export interface ActiveUser extends Interface {
     type: "activeUser"
     user: T.User
+  }
+
+  export interface ApiChat extends Interface {
+    type: "apiChat"
+    user: T.User
+    chat: T.AChat
+    navInfo?: T.NavigationInfo
   }
 
   export interface ChatItemNotChanged extends Interface {
@@ -231,6 +252,14 @@ export namespace CR {
     type: "contactDeleted"
     user: T.User
     contact: T.Contact
+  }
+
+  export interface ContactInfo extends Interface {
+    type: "contactInfo"
+    user: T.User
+    contact: T.Contact
+    connectionStats_?: T.ConnectionStats
+    customUserProfile?: T.Profile
   }
 
   export interface ContactPrefsUpdated extends Interface {
@@ -363,6 +392,12 @@ export namespace CR {
     connection: T.PendingContactConnection
   }
 
+  export interface ItemsReadForChat extends Interface {
+    type: "itemsReadForChat"
+    user: T.User
+    chatInfo: T.ChatInfo
+  }
+
   export interface LeftMemberUser extends Interface {
     type: "leftMemberUser"
     user: T.User
@@ -394,10 +429,37 @@ export namespace CR {
     msgSigned: boolean
   }
 
+  export interface NetworkConfig extends Interface {
+    type: "networkConfig"
+    networkConfig: T.NetworkConfig
+  }
+
   export interface NewChatItems extends Interface {
     type: "newChatItems"
     user: T.User
     chatItems: T.AChatItem[]
+  }
+
+  export interface NewMemberContact extends Interface {
+    type: "newMemberContact"
+    user: T.User
+    contact: T.Contact
+    groupInfo: T.GroupInfo
+    member: T.GroupMember
+  }
+
+  export interface NewMemberContactSentInv extends Interface {
+    type: "newMemberContactSentInv"
+    user: T.User
+    contact: T.Contact
+    groupInfo: T.GroupInfo
+    member: T.GroupMember
+  }
+
+  export interface NewPreparedChat extends Interface {
+    type: "newPreparedChat"
+    user: T.User
+    chat: T.AChat
   }
 
   export interface RcvFileAccepted extends Interface {
