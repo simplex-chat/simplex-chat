@@ -171,6 +171,10 @@ send_image() {
 }
 
 xcrun simctl install "$SIM_UDID" "$app"
+# private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP
+# server on localhost
+prefs=$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" group.chat.simplex.app)/Library/Preferences/group.chat.simplex.app
+xcrun simctl spawn "$SIM_UDID" defaults write "$prefs" networkSMPProxyMode -string unknown
 xcrun simctl launch "$SIM_UDID" "$bundle_id"
 
 # onboarding to the chat list
@@ -210,7 +214,10 @@ echo "smoke test passed: onboarding reaches the chat list, which shows its onboa
 
 products=$(dirname "$app")
 if [[ "$products" == */Build/Products/Debug-iphonesimulator ]]; then
+  # the previews read the app's settings, and their references have the default private routing
+  xcrun simctl spawn "$SIM_UDID" defaults delete "$prefs" networkSMPProxyMode
   "$(dirname "$0")/snapshots.sh" "${products%/Build/Products/Debug-iphonesimulator}" "$UI_OUT/snapshots"
+  xcrun simctl spawn "$SIM_UDID" defaults write "$prefs" networkSMPProxyMode -string unknown
 fi
 
 if [ "$cases" = images ]; then

@@ -304,6 +304,7 @@ jobs:
         run: scripts/ci/android/emulator.sh reverse 5223
 
       - name: Run smoke test
+        id: smoke
         if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.backend.outcome != 'failure' && steps.reach.outcome != 'failure' }}
         env:
           BACKEND: ${{ steps.reach.outcome }}
@@ -313,6 +314,20 @@ jobs:
             cases=backend
           fi
           scripts/ci/android/smoke-test.sh "$RUNNER_TEMP/apk/$APK" "$RUNNER_TEMP/smoke-test" ${cases:-}
+
+      - name: Emulator state after a failed smoke test
+        if: ${{ !cancelled() && steps.smoke.outcome == 'failure' }}
+        run: |
+          adb devices
+          pgrep -af qemu-system || echo "no emulator process"
+          sudo dmesg | tail -n 40
+          free -m
+          crashes=$(ls -d /tmp/android-"$USER"/emu-crash-* 2> /dev/null || true)
+          if [ -n "$crashes" ]; then
+            find $crashes -type f -exec ls -la {} +
+            mkdir -p "$RUNNER_TEMP/smoke-test/emulator-crashes"
+            cp -r $crashes "$RUNNER_TEMP/smoke-test/emulator-crashes/"
+          fi
 
       - name: Stop test backend
         if: ${{ !cancelled() && steps.backend.outcome != 'skipped' }}
