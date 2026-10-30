@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Round-trip the iOS translations between Weblate's XLIFF files and the app.
+"""Round-trip the iOS translations between Weblate's XLIFF files and the app, and check them.
 
-  update  import Weblate's XLIFF files into the app and export them back with Xcode,
-          then lint and check the result (macOS with Xcode)
-  check   lint the .strings files and report blank translations and placeholder errors
-          (any platform)
+  update        import Weblate's XLIFF files into the app and export them back with Xcode,
+                then lint and check the result (macOS with Xcode)
+  check         lint and check the iOS XLIFF and .strings files (any platform)
+  check-kotlin  check the Android and desktop strings.xml files with the rules of
+                adjustFormatting in apps/multiplatform/common/build.gradle.kts (any platform)
 
 Run from the repository root. Exits with 1 when problems are found, 2 on errors.
 """
@@ -12,7 +13,9 @@ Run from the repository root. Exits with 1 when problems are found, 2 on errors.
 from __future__ import annotations
 
 import argparse
+import bisect
 import contextlib
+import html
 import os
 import platform
 import re
@@ -37,6 +40,7 @@ XLIFF_NS = "{urn:oasis:names:tc:xliff:document:1.2}"
 LOG_TAIL_LINES = 40
 GROUP_EXAMPLES = 3
 KEY_PREVIEW_LENGTH = 100
+SUMMARY_FIXED_COLUMNS = ("language", "in app", "translated")
 
 UnitKey = tuple[str, str]
 
@@ -60,17 +64,43 @@ LINK_MASK = "<link>"
 LINK_PREVIEW_LENGTH = 60
 STRINGS_ESCAPES = {"n": "\n", "t": "\t", "r": "\r", '"': '"', "\\": "\\", "'": "'", "0": "\0"}
 UNICODE_ESCAPE = re.compile(r"[uU]([0-9a-fA-F]{4})")
+SWIFT_LITERAL = re.compile(r'"((?:[^"\\\n]|\\.)*)"')
+SWIFT_ESCAPE = re.compile(r"\\(u\{[0-9a-fA-F]{1,8}\}|.)")
+SWIFT_INTERPOLATION = "\\("
+NEWLINE = re.compile("\n")
+
+KOTLIN_RESOURCES = Path("apps/multiplatform/common/src/commonMain/moko-resources")
+KOTLIN_BASE = "base"
+KOTLIN_BUILD_SCRIPT = Path("apps/multiplatform/common/build.gradle.kts")
+# The fileRegex of adjustFormatting; lv/strings.xml, which adjustFormatting skips, is checked too.
+KOTLIN_LOCALE = re.compile(r"^(?:..|..-...|..-..)$")
+POSSIBLE_FORMAT = re.compile(r"val possibleFormat = listOf\(([^)]*)\)")
+KOTLIN_STRING = re.compile(r'<string\s+name="(?P<name>[^"]*)"[^>]*>(?P<value>.*?)</string>', re.S)
+KOTLIN_ESCAPE = re.compile(r"\\(u[0-9a-fA-F]{4}|.)")
+CDATA = re.compile(r"<!\[CDATA\[(.*?)\]\]>", re.S)
+UNESCAPED_APOSTROPHE = re.compile(r"(?<!\\)'")
+# The HTML rules of addCDATA in adjustFormatting; "." does not cross lines there either.
+ANY_HTML = re.compile(r"[^>]*>.*(<|>).*</string>|[^>]*>.*(&lt;|&gt;).*</string>")
+FONT_LT_GT = re.compile(r"[^>]*>.*&lt;font[^>]*&gt;.*&lt;/font&gt;.*</string>")
+UNBRACKETED_COLOR = re.compile(r"color=#[abcdefABCDEF0-9]{3,6}")
+CORRECT_HTML = re.compile(
+    r"[^>]*>.*<b>.*</b>.*</string>|[^>]*>.*<i>.*</i>.*</string>|[^>]*>.*<u>.*</u>.*</string>|[^>]*>.*<font[^>]*>.*</font>.*</string>"
+)
+KOTLIN_POSITIONS = ("1$", "2$", "3$", "4$")
 
 PLACEHOLDER = "placeholder"
 BLANK = "blank"
 LOST = "lost"
 LINK = "link"
+HTML = "html"
+IN_CODE = "in code"
+UNKNOWN = "unknown"
 CHANGED = "changed"
 SYNTAX = "syntax"
 DUPLICATE = "duplicate"
 STALE = "stale"
-PROBLEM_KINDS = [PLACEHOLDER, LINK, BLANK, LOST, CHANGED, SYNTAX, DUPLICATE, STALE]
-WARNING_KINDS = {DUPLICATE, STALE}
+PROBLEM_KINDS = [PLACEHOLDER, LINK, HTML, BLANK, LOST, IN_CODE, UNKNOWN, CHANGED, SYNTAX, DUPLICATE, STALE]
+WARNING_KINDS = {DUPLICATE, STALE, IN_CODE}
 GROUPED_KINDS = {BLANK, STALE}
 
 BOLD = "1"
@@ -82,7 +112,10 @@ CYAN = "36"
 KIND_COLORS = {
     PLACEHOLDER: RED,
     LINK: RED,
+    HTML: RED,
     BLANK: RED,
+    IN_CODE: YELLOW,
+    UNKNOWN: RED,
     LOST: RED,
     CHANGED: YELLOW,
     SYNTAX: RED,
@@ -102,6 +135,10 @@ class UpdateError(Exception):
 
 
 class StringsSyntaxError(ValueError):
+    pass
+
+
+class KotlinFormatError(ValueError):
     pass
 
 
@@ -411,7 +448,9 @@ def app_languages() -> list[str]:
 
 
 def language_of(path: Path) -> str:
-    return path.parent.name[: -len(".lproj")] if path.suffix == ".strings" else path.stem
+    if path.suffix == ".strings":
+        return path.parent.name[: -len(".lproj")]
+    return path.parent.name if path.suffix == ".xml" else path.stem
 
 
 def xcloc_path(language: str) -> Path:
@@ -460,7 +499,42 @@ def translation_problems(path: Path, key: str, source: str, target: str) -> list
     return [Problem(PLACEHOLDER, path, key, placeholder, target)] if placeholder else []
 
 
-def check_xliff(path: Path, source_keys: set[UnitKey]) -> tuple[list[Problem], int]:
+def unescape_swift(literal: str) -> str:
+    def replace(match: re.Match[str]) -> str:
+        escaped = match.group(1)
+        if escaped.startswith("u{"):
+            return chr(int(escaped[2:-1], 16))
+        return STRINGS_ESCAPES.get(escaped, escaped)
+
+    return SWIFT_ESCAPE.sub(replace, literal)
+
+
+def swift_string_literals() -> dict[str, str]:
+    """Text of every string literal in the app's Swift code, with the first place it appears."""
+    literals: dict[str, str] = {}
+    for path in sorted(IOS_DIR.rglob("*.swift")):
+        text = read_file(path)
+        line_starts = [match.start() for match in NEWLINE.finditer(text)]
+        for match in SWIFT_LITERAL.finditer(text):
+            if SWIFT_INTERPOLATION in match.group(1):
+                continue
+            literal = unescape_swift(match.group(1))
+            # Literals without letters, such as " (" or "\n", are punctuation rather than translatable text.
+            if not any(char.isalpha() for char in literal):
+                continue
+            line = bisect.bisect_left(line_starts, match.start()) + 1
+            literals.setdefault(literal, f"{path}:{line}")
+    return literals
+
+
+def removed_but_used(path: Path, key: str, literals: dict[str, str]) -> Problem | None:
+    location = literals.get(key)
+    if location is None:
+        return None
+    return Problem(IN_CODE, path, key, f"not in {SOURCE_LANGUAGE}.xliff, but the Swift code has this string at {location}")
+
+
+def check_xliff(path: Path, source_keys: set[UnitKey], literals: dict[str, str]) -> tuple[list[Problem], int]:
     try:
         units = parse_units(read_file(path))
     except ET.ParseError as error:
@@ -474,7 +548,8 @@ def check_xliff(path: Path, source_keys: set[UnitKey]) -> tuple[list[Problem], i
         if count > 1:
             problems.append(Problem(DUPLICATE, path, unit_key[1], f"{count} units with this id in {unit_key[0]}"))
         if source_keys and unit_key not in source_keys:
-            problems.append(Problem(STALE, path, unit_key[1], f"not in {SOURCE_LANGUAGE}.xliff, Xcode's export removes it"))
+            used = removed_but_used(path, unit_key[1], literals)
+            problems.append(used or Problem(STALE, path, unit_key[1], f"not in {SOURCE_LANGUAGE}.xliff, Xcode's export removes it"))
     for (_file, key), unit in units:
         if unit.target == "":
             problems.append(Problem(BLANK, path, key, "empty target, the import would show it blank"))
@@ -498,12 +573,12 @@ def check_strings(path: Path) -> list[Problem]:
     return problems
 
 
-def check_files(stats: dict[str, LanguageStats]) -> list[Problem]:
+def check_files(stats: dict[str, LanguageStats], literals: dict[str, str]) -> list[Problem]:
     problems = []
     source_xliff = xliff_path(SOURCE_LANGUAGE)
     source_keys = {key for key, _ in parse_units(read_file(source_xliff))} if source_xliff.is_file() else set()
     for path in translation_xliffs():
-        xliff_problems, translated = check_xliff(path, source_keys)
+        xliff_problems, translated = check_xliff(path, source_keys, literals)
         stats.setdefault(path.stem, LanguageStats()).translated = translated
         problems += xliff_problems
     reported = {(p.language, p.key, p.kind, p.detail) for p in problems}
@@ -515,7 +590,11 @@ def check_files(stats: dict[str, LanguageStats]) -> list[Problem]:
 
 
 def translation_changes(
-    path: Path, saved: dict[UnitKey, SavedTranslation], after: list[Segment], source_keys: set[UnitKey]
+    path: Path,
+    saved: dict[UnitKey, SavedTranslation],
+    after: list[Segment],
+    source_keys: set[UnitKey],
+    literals: dict[str, str],
 ) -> tuple[list[Problem], int]:
     """Translations lost or changed by the round trip, and the count removed together with their source."""
     translated_after: dict[UnitKey, Unit] = {}
@@ -531,9 +610,180 @@ def translation_changes(
                 problems.append(Problem(LOST, path, key[1], "translation lost", translation.target))
             else:
                 removed += 1
+                used = removed_but_used(path, key[1], literals)
+                if used:
+                    used.text = translation.target
+                    problems.append(used)
         elif result.target != translation.target:
             problems.append(Problem(CHANGED, path, key[1], f"was {translation.target!r}", result.target or ""))
     return problems, removed
+
+
+def kotlin_possible_formats() -> list[str]:
+    """The placeholders adjustFormatting accepts, read from the build script it is defined in."""
+    match = POSSIBLE_FORMAT.search(read_file(KOTLIN_BUILD_SCRIPT))
+    if match is None:
+        raise UpdateError(f"possibleFormat not found in {KOTLIN_BUILD_SCRIPT}")
+    return [item.replace("\\$", "$") for item in re.findall(r'"([^"]*)"', match.group(1))]
+
+
+def substring_after(text: str, delimiter: str) -> str:
+    """Kotlin's substringAfter: the whole text when the delimiter is missing."""
+    _, found, rest = text.partition(delimiter)
+    return rest if found else text
+
+
+def remove_cdata(element: str) -> str:
+    if "<![CDATA" not in element:
+        return element
+    return element.replace("<![CDATA[", "").replace("]]></string>", "</string>")
+
+
+def kotlin_formats(element: str, possible: list[str]) -> list[str]:
+    """Port of formatting() in adjustFormatting, so the result decides the build the same way."""
+    if "%" not in element:
+        return []
+    value = substring_after(element, '">').rpartition("</string>")[0]
+    formats = []
+    rest = substring_after(value, "%")
+    while True:
+        found = next((candidate for candidate in possible if rest.startswith(candidate)), None)
+        if found is None:
+            raise KotlinFormatError(f"unknown placeholder {'%' + rest[:3]!r}, adjustFormatting fails the build")
+        formats.append(found)
+        previous = rest
+        rest = substring_after(rest, "%")
+        if len(previous) == len(rest):
+            break
+    if not any(item.startswith(KOTLIN_POSITIONS) for item in formats):
+        return formats
+    if not all(item.partition("$")[0].isdigit() for item in formats):
+        raise KotlinFormatError("positional and non-positional placeholders mixed, adjustFormatting fails the build")
+    return sorted(formats, key=lambda item: int(item.partition("$")[0]))
+
+
+def kotlin_html_problem(element: str) -> str | None:
+    """Port of the checks in addCDATA in adjustFormatting."""
+    line = remove_cdata(element)
+    if not ANY_HTML.fullmatch(line):
+        return None
+    prepared = line
+    if FONT_LT_GT.fullmatch(line) or UNBRACKETED_COLOR.search(line):
+        prepared = line.replace("&lt;", "<").replace("&gt;", ">")
+        prepared = UNBRACKETED_COLOR.sub(lambda m: m.group(0).replace("color=#", 'color="#') + '"', prepared)
+    opening = prepared.count("<")
+    if opening != prepared.count(">") or opening != prepared.count("</") * 2 or not CORRECT_HTML.fullmatch(prepared):
+        return "HTML other than balanced <b>, <i>, <u> or <font> tags, adjustFormatting fails the build"
+    return None
+
+
+def kotlin_text(raw_value: str) -> str:
+    """The text Android shows: CDATA unwrapped, XML entities and Android escapes resolved."""
+    unwrapped = CDATA.sub(lambda m: m.group(1), raw_value)
+    text = html.unescape(unwrapped)
+
+    def replace(match: re.Match[str]) -> str:
+        escaped = match.group(1)
+        return chr(int(escaped[1:], 16)) if escaped.startswith("u") else STRINGS_ESCAPES.get(escaped, escaped)
+
+    return KOTLIN_ESCAPE.sub(replace, text)
+
+
+def describe_kotlin_formats(formats: list[str]) -> str:
+    return ", ".join(f"%{item}" for item in formats) or "none"
+
+
+def kotlin_string_files() -> list[Path]:
+    return [
+        path
+        for path in sorted(KOTLIN_RESOURCES.glob("*/strings.xml"))
+        if path.parent.name == KOTLIN_BASE or KOTLIN_LOCALE.match(path.parent.name)
+    ]
+
+
+@dataclass
+class KotlinString:
+    name: str
+    element: str
+    raw_value: str
+
+
+def parse_kotlin_strings(text: str) -> list[KotlinString]:
+    return [KotlinString(m["name"], m.group(0), m["value"]) for m in KOTLIN_STRING.finditer(text)]
+
+
+def kotlin_string_problems(
+    path: Path, string: KotlinString, base: KotlinString | None, base_formats: list[str] | None, possible: list[str]
+) -> list[Problem]:
+    name = string.name
+    text = kotlin_text(string.raw_value)
+    if base is None:
+        return [Problem(UNKNOWN, path, name, "not in base/strings.xml, adjustFormatting fails the build", text)]
+    if text == "":
+        return [Problem(BLANK, path, name, "empty string, shown blank in the app")]
+    problems = []
+    try:
+        formats = kotlin_formats(string.element, possible)
+        if base_formats is not None and formats != base_formats:
+            detail = f"expected {describe_kotlin_formats(base_formats)}, found {describe_kotlin_formats(formats)}"
+            problems.append(Problem(PLACEHOLDER, path, name, detail, text))
+    except KotlinFormatError as error:
+        problems.append(Problem(PLACEHOLDER, path, name, str(error), text))
+    html_problem = kotlin_html_problem(string.element)
+    if html_problem:
+        problems.append(Problem(HTML, path, name, html_problem, text))
+    outside_cdata = CDATA.sub("", string.raw_value)
+    if UNESCAPED_APOSTROPHE.search(outside_cdata) and not (outside_cdata.startswith('"') and outside_cdata.endswith('"')):
+        problems.append(Problem(SYNTAX, path, name, "unescaped apostrophe, Android needs \\'", text))
+    link = link_problem(kotlin_text(base.raw_value), text)
+    if link:
+        problems.append(Problem(LINK, path, name, link, text))
+    return problems
+
+
+def check_kotlin_file(
+    path: Path, base: dict[str, KotlinString], base_formats: dict[str, list[str]], possible: list[str]
+) -> tuple[list[Problem], int]:
+    text = read_file(path)
+    try:
+        ET.fromstring(text)
+    except ET.ParseError as error:
+        return [Problem(SYNTAX, path, "", f"invalid XML: {error}")], 0
+    strings = parse_kotlin_strings(text)
+    problems = []
+    seen: set[str] = set()
+    for string in strings:
+        if string.name in seen:
+            problems.append(Problem(DUPLICATE, path, string.name, "duplicate string name, the app uses only one of them"))
+        seen.add(string.name)
+        problems += kotlin_string_problems(path, string, base.get(string.name), base_formats.get(string.name), possible)
+    return problems, len(strings)
+
+
+def check_kotlin_files(stats: dict[str, LanguageStats]) -> list[Problem]:
+    possible = kotlin_possible_formats()
+    files = kotlin_string_files()
+    base_path = next((path for path in files if path.parent.name == KOTLIN_BASE), None)
+    if base_path is None:
+        raise UpdateError(f"{KOTLIN_RESOURCES}/{KOTLIN_BASE}/strings.xml not found, run from the repository root")
+    problems: list[Problem] = []
+    base = {string.name: string for string in parse_kotlin_strings(read_file(base_path))}
+    base_formats: dict[str, list[str]] = {}
+    for string in base.values():
+        try:
+            base_formats[string.name] = kotlin_formats(string.element, possible)
+        except KotlinFormatError as error:
+            problems.append(Problem(PLACEHOLDER, base_path, string.name, str(error), kotlin_text(string.raw_value)))
+        html_problem = kotlin_html_problem(string.element)
+        if html_problem:
+            problems.append(Problem(HTML, base_path, string.name, html_problem, kotlin_text(string.raw_value)))
+    for path in files:
+        if path == base_path:
+            continue
+        file_problems, translated = check_kotlin_file(path, base, base_formats, possible)
+        stats.setdefault(path.parent.name, LanguageStats()).translated = translated
+        problems += file_problems
+    return problems
 
 
 class Steps:
@@ -560,7 +810,7 @@ def print_summary(stats: dict[str, LanguageStats], problems: list[Problem], in_a
     for problem in problems:
         language_counts = counts.setdefault(problem.language, {})
         language_counts[problem.kind] = language_counts.get(problem.kind, 0) + 1
-    headers = ["language", "in app", "translated", "restored", "removed", *PROBLEM_KINDS]
+    headers = [*SUMMARY_FIXED_COLUMNS, "restored", "removed", *PROBLEM_KINDS]
     rows = []
     for language in sorted(set(stats) | set(counts)):
         entry = stats.get(language, LanguageStats())
@@ -574,6 +824,10 @@ def print_summary(stats: dict[str, LanguageStats], problems: list[Problem], in_a
         ]
         cells += [(str(language_counts.get(kind, "")), KIND_COLORS[kind]) for kind in PROBLEM_KINDS]
         rows.append(cells)
+    always_shown = range(len(SUMMARY_FIXED_COLUMNS))
+    shown = [i for i in range(len(headers)) if i in always_shown or any(row[i][0] for row in rows)]
+    headers = [headers[i] for i in shown]
+    rows = [[row[i] for i in shown] for row in rows]
     widths = [max([len(headers[i]), *(len(row[i][0]) for row in rows)]) for i in range(len(headers))]
     print()
     print("  " + "  ".join(paint(h.ljust(w) if i == 0 else h.rjust(w), DIM) for i, (h, w) in enumerate(zip(headers, widths))))
@@ -618,9 +872,9 @@ def count_line(label: str, problems: list[Problem]) -> str:
     return paint(f"{len(problems)} {label}: ", BOLD) + counts
 
 
-def report(stats: dict[str, LanguageStats], problems: list[Problem]) -> int:
+def report(stats: dict[str, LanguageStats], problems: list[Problem], in_app: set[str]) -> int:
     """Exit code 1 for problems; warnings are listed but do not fail."""
-    print_summary(stats, problems, set(app_languages()))
+    print_summary(stats, problems, in_app)
     print_problems(problems)
     errors = [p for p in problems if p.kind not in WARNING_KINDS]
     warnings = [p for p in problems if p.kind in WARNING_KINDS]
@@ -724,6 +978,7 @@ def update() -> int:
 
     problems: list[Problem] = []
     with steps.step("Restoring translations dropped by Xcode and removing untranslated units"):
+        literals = swift_string_literals()
         source_keys = {key for key, _ in parse_units(read_file(xliff_path(SOURCE_LANGUAGE)))}
         for language in translated:
             path = xliff_path(language)
@@ -731,31 +986,41 @@ def update() -> int:
             stats[language].restored = restore_translations(exported, weblate[language])
             result = drop_untranslated_units(exported)
             write_file(path, join_xliff(result))
-            changes, stats[language].removed = translation_changes(path, weblate[language], result, source_keys)
+            changes, stats[language].removed = translation_changes(path, weblate[language], result, source_keys, literals)
             problems += changes
 
     with steps.step("Linting .strings files and checking translations"):
-        problems += check_files(stats)
+        problems += check_files(stats, literals)
 
-    return report(stats, problems)
+    return report(stats, problems, set(languages))
 
 
 def check() -> int:
     stats: dict[str, LanguageStats] = {}
     steps = Steps(1)
     with steps.step("Linting .strings files and checking translations"):
-        problems = check_files(stats)
-    return report(stats, problems)
+        problems = check_files(stats, swift_string_literals())
+    return report(stats, problems, set(app_languages()))
+
+
+def check_kotlin() -> int:
+    stats: dict[str, LanguageStats] = {}
+    steps = Steps(1)
+    with steps.step("Checking Android and desktop strings.xml files"):
+        problems = check_kotlin_files(stats)
+    return report(stats, problems, set(stats))
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("update", help="import, export, lint and check (macOS with Xcode)")
-    commands.add_parser("check", help="lint and check the files only (any platform)")
+    commands.add_parser("check", help="lint and check the iOS files only (any platform)")
+    commands.add_parser("check-kotlin", help="check the Android and desktop strings.xml files (any platform)")
     arguments = parser.parse_args(argv)
+    run = {"update": update, "check": check, "check-kotlin": check_kotlin}[arguments.command]
     try:
-        return update() if arguments.command == "update" else check()
+        return run()
     except UpdateError as error:
         print(paint("error: ", BOLD, RED) + str(error), file=sys.stderr)
         return 2

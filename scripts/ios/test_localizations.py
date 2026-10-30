@@ -4,6 +4,7 @@ from __future__ import annotations
 import contextlib
 import io
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -200,7 +201,7 @@ class XliffTransformTest(unittest.TestCase):
         before = xliff_xml("de", [unit_xml("A", "A", "Ah"), unit_xml("B", "B", "Bee"), unit_xml("Gone", "Gone", "Weg"), unit_xml("U", "U")])
         after = l10n.split_xliff(xliff_xml("de", [unit_xml("B", "B", "Beh")]))
         source_keys = {(LOCALIZABLE, "A"), (LOCALIZABLE, "B"), (LOCALIZABLE, "U")}
-        problems, removed = l10n.translation_changes(path, l10n.saved_translations(l10n.split_xliff(before)), after, source_keys)
+        problems, removed = l10n.translation_changes(path, l10n.saved_translations(l10n.split_xliff(before)), after, source_keys, {})
         self.assertEqual(removed, 1)
         self.assertEqual([(p.kind, p.key, p.text) for p in problems], [(l10n.LOST, "A", "Ah"), (l10n.CHANGED, "B", "Beh")])
 
@@ -223,7 +224,7 @@ class FilesTest(RepositoryTestCase):
         self.write(l10n.xcloc_path("de") / "Source Contents/en.lproj/Localizable.strings", '"Ignored" = "";\n')
         stats: dict[str, l10n.LanguageStats] = {}
         with mock.patch.object(l10n.shutil, "which", return_value=None):
-            problems = l10n.check_files(stats)
+            problems = l10n.check_files(stats, {})
         self.assertEqual(
             [(p.kind, p.language, p.key) for p in problems],
             [
@@ -241,13 +242,13 @@ class FilesTest(RepositoryTestCase):
         self.write(l10n.xliff_path("de"), xliff_xml("de", [unit_xml("%@ server", "%@ server", "Server")]))
         self.write(l10n.IOS_DIR / "de.lproj/Localizable.strings", '"%@ server" = "Server";\n"%@ file" = "Datei";\n')
         with mock.patch.object(l10n.shutil, "which", return_value=None):
-            problems = l10n.check_files({})
+            problems = l10n.check_files({}, {})
         self.assertEqual([(p.path.suffix, p.key) for p in problems], [(".xliff", "%@ server"), (".strings", "%@ file")])
 
     def test_check_xliff_reports_duplicates_and_stale_units(self) -> None:
         path = l10n.xliff_path("de")
         self.write(path, xliff_xml("de", [unit_xml("A", "A"), unit_xml("A", "A", "Ah"), unit_xml("Old", "Old", "Alt")]))
-        problems, translated = l10n.check_xliff(path, {(LOCALIZABLE, "A")})
+        problems, translated = l10n.check_xliff(path, {(LOCALIZABLE, "A")}, {})
         self.assertEqual(translated, 2)
         self.assertEqual(
             [(p.kind, p.key, p.detail) for p in problems],
@@ -256,8 +257,8 @@ class FilesTest(RepositoryTestCase):
                 (l10n.STALE, "Old", "not in en.xliff, Xcode's export removes it"),
             ],
         )
-        self.assertEqual(l10n.check_xliff(path, set())[0][0].kind, l10n.DUPLICATE)
-        self.assertEqual(len(l10n.check_xliff(path, set())[0]), 1)
+        self.assertEqual(l10n.check_xliff(path, set(), {})[0][0].kind, l10n.DUPLICATE)
+        self.assertEqual(len(l10n.check_xliff(path, set(), {})[0]), 1)
 
     def test_lint_with_plutil_reports_failures(self) -> None:
         output = "a.strings: OK\nb.strings: Unexpected character \" at line 2\n"
@@ -277,14 +278,14 @@ class ReportTest(unittest.TestCase):
         problems.append(l10n.Problem(l10n.PLACEHOLDER, path, "%@ server", "expected %1 object, found none", "Server"))
         output = io.StringIO()
         with contextlib.redirect_stdout(output), mock.patch.object(l10n, "app_languages", return_value=["en", "de"]):
-            self.assertEqual(l10n.report({"de": l10n.LanguageStats(translated=7)}, problems), 1)
+            self.assertEqual(l10n.report({"de": l10n.LanguageStats(translated=7)}, problems, {"en", "de"}), 1)
         text = output.getvalue()
         self.assertIn("5 x empty target", text)
         self.assertIn("'Key 0', 'Key 1', 'Key 2' and 2 more", text)
         self.assertIn("'%@ server'", text)
         self.assertIn("6 problem(s): 1 placeholder, 5 blank", text)
         with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(l10n, "app_languages", return_value=["en"]):
-            self.assertEqual(l10n.report({}, []), 0)
+            self.assertEqual(l10n.report({}, [], {"en"}), 0)
 
     def test_warnings_do_not_fail(self) -> None:
         path = Path("apps/ios/SimpleX Localizations/ar.xcloc/Localized Contents/ar.xliff")
@@ -292,7 +293,7 @@ class ReportTest(unittest.TestCase):
         problems.append(l10n.Problem(l10n.DUPLICATE, path, "A", "2 units with this id"))
         output = io.StringIO()
         with contextlib.redirect_stdout(output), mock.patch.object(l10n, "app_languages", return_value=["en"]):
-            self.assertEqual(l10n.report({}, problems), 0)
+            self.assertEqual(l10n.report({}, problems, {"en"}), 0)
         text = output.getvalue()
         self.assertIn("4 x not in en.xliff", text)
         self.assertIn("'Old 0', 'Old 1', 'Old 2' and 1 more", text)
@@ -382,11 +383,195 @@ class UpdateTest(RepositoryTestCase):
                 l10n.require_update_environment()
 
 
+class SwiftUsageTest(RepositoryTestCase):
+    def test_swift_string_literals(self) -> None:
+        swift = 'let a = "\\n"\nText("Hello, \\"you\\"")\nlet b = "\\(count) items"\nalert("Error\\u{2026}")\n'
+        self.write(l10n.IOS_DIR / "Shared/View.swift", swift)
+        self.assertEqual(
+            l10n.swift_string_literals(),
+            {'Hello, "you"': "apps/ios/Shared/View.swift:2", "Error\u2026": "apps/ios/Shared/View.swift:4"},
+        )
+
+    def test_unescape_swift(self) -> None:
+        self.assertEqual(l10n.unescape_swift('a\\"b\\\\ \\u{1F600}\\t'), 'a"b\\ \U0001F600\t')
+
+    def test_stale_units_still_used_in_code(self) -> None:
+        path = l10n.xliff_path("de")
+        self.write(path, xliff_xml("de", [unit_xml("Gone", "Gone", "Weg"), unit_xml("Used", "Used", "Benutzt")]))
+        problems, _ = l10n.check_xliff(path, {(LOCALIZABLE, "Other")}, {"Used": "apps/ios/A.swift:3"})
+        self.assertEqual(
+            [(p.kind, p.key, p.detail) for p in problems],
+            [
+                (l10n.STALE, "Gone", "not in en.xliff, Xcode's export removes it"),
+                (l10n.IN_CODE, "Used", "not in en.xliff, but the Swift code has this string at apps/ios/A.swift:3"),
+            ],
+        )
+
+    def test_removed_translation_still_used_in_code(self) -> None:
+        saved = l10n.saved_translations(l10n.split_xliff(xliff_xml("de", [unit_xml("Used", "Used", "Benutzt"), unit_xml("Gone", "Gone", "Weg")])))
+        problems, removed = l10n.translation_changes(Path("de.xliff"), saved, [], set(), {"Used": "apps/ios/A.swift:3"})
+        self.assertEqual(removed, 2)
+        self.assertEqual([(p.kind, p.key, p.text) for p in problems], [(l10n.IN_CODE, "Used", "Benutzt")])
+
+
+BUILD_SCRIPT = """      val possibleFormat = listOf("s", "d", "1\\$s", "2\\$s", "1\\$d", "1\\$02d", "f")\n"""
+
+
+def kotlin_xml(strings: list[str]) -> str:
+    return "<resources>\n" + "".join(f"  {string}\n" for string in strings) + "</resources>\n"
+
+
+class KotlinRulesTest(unittest.TestCase):
+    POSSIBLE = ["s", "d", "1$s", "2$s", "3$s", "4$s", "1$d", "2$d", "3$d", "4$d", "1$02d", "2$02d", "3$02d", "2s", "f"]
+
+    def formats(self, value: str) -> list[str]:
+        return l10n.kotlin_formats(f'<string name="x">{value}</string>', self.POSSIBLE)
+
+    def test_kotlin_formats(self) -> None:
+        self.assertEqual(self.formats("No placeholders"), [])
+        self.assertEqual(self.formats("%s sent %d"), ["s", "d"])
+        self.assertEqual(self.formats("%2$s by %1$s"), ["1$s", "2$s"])
+        self.assertEqual(self.formats("%1$02d:%2$02d"), ["1$02d", "2$02d"])
+
+    def test_kotlin_formats_rejected_by_adjust_formatting(self) -> None:
+        cases = {
+            "% s": "unknown placeholder '% s', adjustFormatting fails the build",
+            "50%% off": "unknown placeholder '%% o', adjustFormatting fails the build",
+            "%1$s and %s": "positional and non-positional placeholders mixed, adjustFormatting fails the build",
+            "%5$s": "unknown placeholder '%5$s', adjustFormatting fails the build",
+        }
+        for value, expected in cases.items():
+            with self.subTest(value=value), self.assertRaisesRegex(l10n.KotlinFormatError, re.escape(expected)):
+                self.formats(value)
+
+    def test_kotlin_html_problem(self) -> None:
+        valid = [
+            '<string name="x"><![CDATA[Protected by <b>encryption</b>.]]></string>',
+            '<string name="x">Plain text</string>',
+            '<string name="x"><![CDATA[<font color="#0088ff">Blue</font>]]></string>',
+        ]
+        for element in valid:
+            with self.subTest(element=element):
+                self.assertIsNone(l10n.kotlin_html_problem(element))
+        invalid = [
+            '<string name="x"><![CDATA[Open <a href="https://x.example">link</a>]]></string>',
+            '<string name="x"><![CDATA[Broken <b>bold]]></string>',
+            '<string name="x">1 &lt; 2</string>',
+        ]
+        for element in invalid:
+            with self.subTest(element=element):
+                self.assertEqual(
+                    l10n.kotlin_html_problem(element),
+                    "HTML other than balanced <b>, <i>, <u> or <font> tags, adjustFormatting fails the build",
+                )
+
+    def test_kotlin_text(self) -> None:
+        self.assertEqual(l10n.kotlin_text("<![CDATA[<b>Don\\'t</b>]]> &amp; \\\"x\\\" \\u00e9"), '<b>Don\'t</b> & "x" é')
+
+    def test_substring_after(self) -> None:
+        self.assertEqual(l10n.substring_after("a%b%c", "%"), "b%c")
+        self.assertEqual(l10n.substring_after("abc", "%"), "abc")
+
+    def test_remove_cdata(self) -> None:
+        self.assertEqual(l10n.remove_cdata('<string name="x"><![CDATA[<b>a</b>]]></string>'), '<string name="x"><b>a</b></string>')
+        self.assertEqual(l10n.remove_cdata("<string>a</string>"), "<string>a</string>")
+
+
+class KotlinFilesTest(RepositoryTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.write(l10n.KOTLIN_BUILD_SCRIPT, BUILD_SCRIPT)
+        self.write(
+            l10n.KOTLIN_RESOURCES / "base/strings.xml",
+            kotlin_xml(
+                [
+                    '<string name="sent">%1$s sent %2$s</string>',
+                    '<string name="hello">Hello</string>',
+                    '<string name="docs">Read [docs](https://simplex.chat/docs)</string>',
+                    '<string name="bold"><![CDATA[Be <b>bold</b>]]></string>',
+                ]
+            ),
+        )
+
+    def test_possible_formats_come_from_the_build_script(self) -> None:
+        self.assertEqual(l10n.kotlin_possible_formats(), ["s", "d", "1$s", "2$s", "1$d", "1$02d", "f"])
+        self.write(l10n.KOTLIN_BUILD_SCRIPT, "// nothing\n")
+        with self.assertRaisesRegex(l10n.UpdateError, "possibleFormat not found"):
+            l10n.kotlin_possible_formats()
+
+    def test_check_kotlin_files_reports_each_kind(self) -> None:
+        self.write(
+            l10n.KOTLIN_RESOURCES / "de/strings.xml",
+            kotlin_xml(
+                [
+                    '<string name="sent">%2$s von %1$s gesendet</string>',
+                    '<string name="hello"></string>',
+                    '<string name="hello">Hallo</string>',
+                    '<string name="docs">Lies die [Doku] (https://simplex.chat/docs)</string>',
+                    "<string name=\"bold\"><![CDATA[Sei <b>mutig</b>]]> l'ami</string>",
+                    '<string name="removed">Weg</string>',
+                ]
+            ),
+        )
+        self.write(l10n.KOTLIN_RESOURCES / "fr/strings.xml", kotlin_xml(['<string name="sent">%1$s a envoyé % s</string>']))
+        self.write(l10n.KOTLIN_RESOURCES / "uk/strings.xml", "<resources><string name='a'>\n")
+        stats: dict[str, l10n.LanguageStats] = {}
+        problems = l10n.check_kotlin_files(stats)
+        self.assertEqual(
+            [(p.language, p.kind, p.key) for p in problems],
+            [
+                ("de", l10n.BLANK, "hello"),
+                ("de", l10n.DUPLICATE, "hello"),
+                ("de", l10n.LINK, "docs"),
+                ("de", l10n.HTML, "bold"),
+                ("de", l10n.SYNTAX, "bold"),
+                ("de", l10n.UNKNOWN, "removed"),
+                ("fr", l10n.PLACEHOLDER, "sent"),
+                ("uk", l10n.SYNTAX, ""),
+            ],
+        )
+        self.assertEqual(problems[6].detail, "unknown placeholder '% s', adjustFormatting fails the build")
+        self.assertEqual((stats["de"].translated, stats["fr"].translated, stats["uk"].translated), (6, 1, 0))
+
+    def test_placeholder_mismatch_against_the_base(self) -> None:
+        self.write(l10n.KOTLIN_RESOURCES / "de/strings.xml", kotlin_xml(['<string name="sent">%1$s gesendet</string>']))
+        problems = l10n.check_kotlin_files({})
+        self.assertEqual([(p.kind, p.detail) for p in problems], [(l10n.PLACEHOLDER, "expected %1$s, %2$s, found %1$s")])
+
+    def test_missing_base_file(self) -> None:
+        (l10n.KOTLIN_RESOURCES / "base/strings.xml").unlink()
+        with self.assertRaisesRegex(l10n.UpdateError, "base/strings.xml not found"):
+            l10n.check_kotlin_files({})
+
+    def test_language_of_strings_xml(self) -> None:
+        self.assertEqual(l10n.language_of(l10n.KOTLIN_RESOURCES / "pt-rBR/strings.xml"), "pt-rBR")
+
+
+class SummaryTest(unittest.TestCase):
+    def test_empty_columns_are_hidden(self) -> None:
+        path = Path("apps/ios/SimpleX Localizations/de.xcloc/Localized Contents/de.xliff")
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            l10n.print_summary({"de": l10n.LanguageStats(translated=3)}, [l10n.Problem(l10n.LINK, path, "k", "d")], {"de"})
+        header = output.getvalue().strip().splitlines()[0].split()
+        self.assertEqual(header, ["language", "in", "app", "translated", "link"])
+
+
 class MainTest(RepositoryTestCase):
     def test_check_command_exit_code(self) -> None:
         self.write(l10n.xliff_path("de"), xliff_xml("de", [unit_xml("%@ x", "%@ x", "y")]))
         with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(l10n.shutil, "which", return_value=None):
             self.assertEqual(l10n.main(["check"]), 1)
+
+    def test_check_kotlin_command_exit_code(self) -> None:
+        self.write(l10n.KOTLIN_BUILD_SCRIPT, BUILD_SCRIPT)
+        self.write(l10n.KOTLIN_RESOURCES / "base/strings.xml", kotlin_xml(['<string name="a">%s</string>']))
+        self.write(l10n.KOTLIN_RESOURCES / "de/strings.xml", kotlin_xml(['<string name="a">%s</string>']))
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(l10n.main(["check-kotlin"]), 0)
+        self.write(l10n.KOTLIN_RESOURCES / "de/strings.xml", kotlin_xml(['<string name="a">kein</string>']))
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(l10n.main(["check-kotlin"]), 1)
 
     def test_update_error_exit_code(self) -> None:
         stderr = io.StringIO()
