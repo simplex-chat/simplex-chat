@@ -1,6 +1,6 @@
 # SimpleX MCP server 0.2.0: files, /leave and library methods
 
-Status: draft for review. Design agreed on 2026-10-22; choices C1-C3 are open. Code references: master `d7d180a42`; library references: `ep/bot-api` (#7808).
+Status: draft for review. Design agreed on 2026-10-22; C1-C3 decided on 2026-10-30; C4 is open. Code references: master `d7d180a42`; library references: `ep/bot-api` (#7808).
 
 Prerequisites, in order:
 1. #7808 merged: bot API commands documented, the Node library typed (`packages/simplex-chat-nodejs/src/api.ts`).
@@ -9,8 +9,8 @@ Prerequisites, in order:
 
 Phases:
 1. Library methods, except the wait at stop, and `/leave CHAT`; `ep/bot-api` at `45c77f6aa` is merged into `ep/mcp-files`.
-2. The wait at stop, after C4.
-3. Files, after C1-C3.
+2. Files: received files, `download`, `send` with `file`.
+3. The wait at stop, after C4.
 
 ## Decisions
 
@@ -26,18 +26,12 @@ Phases:
 8. `send` takes `file`, an absolute path; `text` becomes the caption.
 9. Images are sent with a core-made preview and a core-resized copy; other files unchanged.
 10. Paths of private keys and of the server's own secrets are refused; the refusal is posted to the agent control chat.
+11. C1 (a): the download card names unknown servers before approval, from the item's `fileXftpServers` (`apiGetChatItemInfo`, `Messages.hs:1362`) and the user's XFTP servers (`APIGetUserServers`); both methods are added to #7808.
+12. C2 (a): a GIF or WebP, which the core does not decode (`Image.hs:62-70`), is sent as an image with a fixed preview, the file unchanged.
+13. C3 (a): a video's preview and duration come from `ffmpeg` and `ffprobe` when installed, otherwise a fixed preview and duration 0.
 
 Open choices:
-- C1, servers on the download card:
-  - (a) the bot API documents `APIGetChatItemInfo` (`fileXftpServers`, `Messages.hs:1362`) and the user's XFTP servers (`APIGetUserServers`); the card names unknown servers before approval
-  - (b) the card names no servers; an approved download from unknown servers fails with `CEFileNotApproved` (`Library/Internal.hs:890`), and its card asks again, naming them
-- C2, preview of a sent GIF or WebP, which the core does not decode (`Image.hs:62-70`):
-  - (a) a fixed preview
-  - (b) sent as a file
 - C4, the wait at stop: a core command for pending deliveries, or a final message whose sent status is awaited; see "Library methods"
-- C3, preview and duration of a sent video:
-  - (a) from `ffmpeg` and `ffprobe` when installed, else a fixed preview and duration 0
-  - (b) always a fixed preview and duration 0
 
 ## Library methods
 
@@ -193,7 +187,7 @@ Card in the agent control chat, mode requests:
   Servers: known.
   /'approve #3 7', /'approve #3 files', /'receive #3 7' or /'reject #3 7'
   ```
-- unknown servers, with C1 (a): `Servers: xftp.example.com, unknown: downloading shows it this computer's IP address.`
+- unknown servers: `Servers: xftp.example.com, unknown: downloading shows it this computer's IP address.`
 
 Owner commands:
 ```
@@ -210,7 +204,7 @@ command              effect
 - Mode host: the host confirms the call (`anthropic/requiresUserInteraction`, `tools.ts:361`); no card.
 
 Perform:
-- `apiReceiveFile(fileId, "DATA/files/<chat>/")`, which approves unknown servers (`api.ts:546-547` on `ep/bot-api`); with C1 (b), first with the servers not approved
+- `apiReceiveFile(fileId, "DATA/files/<chat>/")`, which approves unknown servers (`api.ts:546-547` on `ep/bot-api`)
 - `rcvFileComplete` for the file ends it with its path; `rcvFileError` or `rcvFileSndCancelled` fail it
 
 Restart: undecided cards show "Cancelled: the server stopped"; their files stay offered.
@@ -229,8 +223,8 @@ Message type, by extension, unless `as` is `file`:
 ```
 extension            type    preview                        file sent
 .jpg .jpeg .png      image   chatResizeImageUri, 14000      chatResizeImage, 261120 bytes, in DATA/files/sent/
-.gif .webp           C2
-.mp4 .mov            video   C3                             unchanged
+.gif .webp           image   fixed                          unchanged
+.mp4 .mov            video   ffmpeg, else fixed             unchanged
 other                file    none                           unchanged
 ```
 
