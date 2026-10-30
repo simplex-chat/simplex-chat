@@ -299,7 +299,10 @@ jobs:
 
       - name: Run badge screen cycles
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: scripts/ci/android/badge-cycles.sh "$RUNNER_TEMP/apk/$APK" "$RUNNER_TEMP/badge-cycles"
+        run: |
+          scripts/ci/android/badge-cycles.sh "$RUNNER_TEMP/apk/$APK" "$RUNNER_TEMP/badge-cycles/blur" 8 || status=1
+          BADGE_CYCLES_SETTINGS=AppearanceBarsBlurRadius=0 scripts/ci/android/badge-cycles.sh "$RUNNER_TEMP/apk/$APK" "$RUNNER_TEMP/badge-cycles/no-blur" 15 || status=1
+          exit ${status:-0}
 
       - name: Upload badge screen cycles
         if: ${{ !cancelled() }}
