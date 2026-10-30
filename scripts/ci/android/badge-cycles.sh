@@ -4,8 +4,10 @@
 # screen always shows one of its two pages: "Your badge" or the Support SimpleX page. The core starts the cycles on the
 # chat console's /badge test_cycles <cycles> <seconds without a badge> <seconds with one> (test builds only); this script
 # clears the app's data, takes it through onboarding, sends that from the console and opens Settings > Supporter perks.
-# Every reading keeps its accessibility tree in <output dir>/readings. A reading with neither page that lasts BLANK_SECS
-# is the blank screen: it is kept as a numbered screenshot with its tree, and the screen is closed and opened again.
+# Every reading keeps its screenshot, accessibility tree and text in <output dir>/readings. A reading is blank when the
+# tree has neither page, or when the middle of the screenshot is nearly one colour (ink below MIN_INK): a page whose
+# drawing is lost stays in the tree. Blank that lasts BLANK_SECS is kept as a numbered screenshot with its tree, and the
+# screen is closed and opened again.
 # Usage: scripts/ci/android/badge-cycles.sh <apk> <output dir> [cycles] [seconds without] [seconds with]
 
 set -euo pipefail
@@ -16,6 +18,7 @@ cycles=${3:-40}
 hidden_secs=${4:-10}
 shown_secs=${5:-10}
 blank_secs=${BLANK_SECS:-5}
+min_ink=${MIN_INK:-0.02}
 package=chat.simplex.app
 here=$(dirname "$0")
 ui=$here/ui
@@ -26,7 +29,6 @@ UI_OUT=$out "$ui" stop
 adb shell pm clear "$package"
 "$here/smoke-test.sh" "$apk" "$out/onboarding" onboarding
 export UI_OUT=$out
-state=${UI_STATE:-${RUNNER_TEMP:-/tmp}/ui}
 
 normalise() {
   tr -cd '[:alnum:]' <<< "$1" | tr '[:upper:]' '[:lower:]'
@@ -41,6 +43,13 @@ page_of() {
     *"$(normalise "Get a badge to send larger files")"*) echo support ;;
     *) echo blank ;;
   esac
+}
+
+# the spread of grey levels in the middle of the screen, between its bars: near 0 when nothing is drawn there
+ink_of() {
+  local w h
+  read -r w h < <(identify -format '%w %h' "$1")
+  convert "$1" -crop "${w}x$((h * 6 / 10))+0+$((h * 15 / 100))" +repage -colorspace Gray -format '%[fx:standard_deviation]' info:
 }
 
 open_settings() {
@@ -102,11 +111,14 @@ deadline=$((SECONDS + cycles * (hidden_secs + shown_secs) + 60))
 while [ "$SECONDS" -lt "$deadline" ]; do
   n=$((n + 1))
   reading=$readings/$(printf '%04d' "$n")
-  "$ui" text > "$reading.txt"
-  page=$(page_of "$reading.txt")
-  cp "$state/ui.xml" "$reading-$page.xml"
-  mv "$reading.txt" "$reading-$page.txt"
-  echo "$(date -u +%H:%M:%S) reading $n: $page" >> "$out/readings.log"
+  UI_OUT=$reading "$ui" shot reading > /dev/null
+  page=$(page_of "$reading/01-reading.txt")
+  ink=$(ink_of "$reading/01-reading.png")
+  if [ "$page" != blank ] && awk -v ink="$ink" -v min="$min_ink" 'BEGIN { exit !(ink < min) }'; then
+    page=blank
+  fi
+  mv "$reading" "$reading-$page"
+  echo "$(date -u +%H:%M:%S) reading $n: $page, ink $ink" >> "$out/readings.log"
   case "$last>$page" in
     support\>badge) credits=$((credits + 1)) ;;
     badge\>support) lapses=$((lapses + 1)) ;;

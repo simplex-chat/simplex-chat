@@ -79,7 +79,8 @@ while [ "$SECONDS" -lt "$deadline" ]; do
   page=$(page_of "$reading.txt")
   convert "$UI_STATE/ocr/screen.png" -crop 390x900+0+0 +repage "$reading-$page.png"
   mv "$reading.txt" "$reading-$page.txt"
-  echo "$(date -u +%H:%M:%S) reading $n: $page" >> "$out/readings.log"
+  ink=$(convert "$reading-$page.png" -crop 390x540+0+135 +repage -colorspace Gray -format '%[fx:standard_deviation]' info:)
+  echo "$(date -u +%H:%M:%S) reading $n: $page, ink $ink" >> "$out/readings.log"
   case "$last>$page" in
     support\>badge) credits=$((credits + 1)) ;;
     badge\>support) lapses=$((lapses + 1)) ;;
