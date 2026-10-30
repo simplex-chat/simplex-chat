@@ -126,7 +126,7 @@ apiSetNetworkConfig           APISetNetworkConfig           void, on CR.CmdOk
 ```
 changed method                   change
 stopChat                         APIStopChat; string unchanged, /_stop
-apiReceiveFile                   optional filePath, passed to ReceiveFile
+apiReceiveFile                   optional filePath, passed to ReceiveFile; third parameter approvedRelays = true, passed as userApprovedRelays
 apiConnectPlan                   result: [plan, link, planSimplexName?, otherSimplexName?]
 apiGetChat                       third parameter: a count or T.ChatPagination; a count is converted to {type: "last", count}, sent as count=<count>; result: T.AChat
 apiCreateMemberContact           APICreateMemberContact; signature unchanged
@@ -345,6 +345,9 @@ line   call                                                   sent string       
 :151   apiCreateMemberContact                                 /_create member contact #1 2                                 contact
        apiSendMemberContactInvitation(2, "hi")                /_invite member contact @2 json {"type":"text","text":"hi"}  contact
 added  apiGetChatItemInfo(Direct, 2, 5)                       /_get item info @2 5                                         response
+added  apiReceiveFile(3)                                      /freceive 3 approved_relays=on                               chatItem
+       apiReceiveFile(3, undefined, false)                    /freceive 3                                                  chatItem
+       apiReceiveFile(3, "./f.txt", false)                    /freceive 3 ./f.txt                                          chatItem
 ```
 - Present test, unchanged: "stops the chat before closing the store" (`:191`): `send /_stop` is expected before `closeStore`.
 
