@@ -107,6 +107,15 @@ scroll_up_to_click() {
   return 1
 }
 
+# the slowed app can drop typed characters (README, "Known limits"), so a field that lost some is cleared and typed again
+type_command() {
+  local keys=()
+  "$ui" type "$1" && return 0
+  for _ in $(seq ${#1}); do keys+=(DEL); done
+  "$ui" key MOVE_END "${keys[@]}"
+  "$ui" type "$1"
+}
+
 start_cycles() {
   local x y
   open_settings
@@ -115,7 +124,7 @@ start_cycles() {
   "$ui" click-text "Chat console" 10
   read -r x y < <("$ui" tree | sed -n -E 's/^EditText .* at ([0-9]+),([0-9]+) size ([0-9]+)x([0-9]+).*/\1 \2 \3 \4/p' | awk '{ print $1 + int($3 / 2), $2 + int($4 / 2); exit }')
   "$ui" click "$x" "$y"
-  "$ui" type "/badge test_cycles $cycles $hidden_secs $shown_secs"
+  type_command "/badge test_cycles $cycles $hidden_secs $shown_secs"
   "$ui" click-text "Send Message" 10
   "$ui" wait "test_cycles" 10
   "$ui" shot cycles-started
