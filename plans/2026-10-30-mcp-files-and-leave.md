@@ -157,6 +157,40 @@ rcvCancelled, rcvAborted, rcvError           failed
 - `rejected`: the last download action of the item was rejected or expired; kept in memory until a restart.
 - Instructions and the `send`, `receive` and `connect` descriptions: "When a message has a file with status offered, call download when your user's task needs it."
 
+Phase 2 changes:
+```
+file          function        change
+messages.ts   MessageFile     new: name, size, type, status, path, error
+              Message         file: received messages with a file
+              toMessage       file from chatItem.file and the server's rejected files
+log.ts        fileErrorText   new: the apps' words for FileError
+tools.ts      messageSchema   file
+              rejectedFiles   new: file IDs whose download call returned rejected or expired; a done download removes its ID
+```
+
+Status, completed:
+```
+fileStatus                         status
+rcvInvitation, rcvWarning          offered
+rcvAccepted, rcvTransfer           offered
+rcvComplete                        received
+rcvCancelled                       failed: "The file was cancelled."
+rcvAborted                         failed: "The download was aborted."
+rcvError                           failed: fileErrorText
+invalid                            failed: "Invalid file: TEXT"
+file ID in rejectedFiles           rejected, before the rows above
+```
+
+`fileErrorText`, from `FileError.errorInfo` (`apps/multiplatform/.../ChatModel.kt:4949-4966`) and the base strings:
+```
+FileError   text
+auth        Wrong key or unknown file chunk address - most likely file is deleted.
+blocked     File is blocked by server operator: REASON.
+noFile      File not found - most likely file was deleted or cancelled.
+relay       File server error: SRV, from SrvError: host, version as the apps word them; other: its text
+other       Error: TEXT
+```
+
 ## download
 
 Input:
@@ -209,6 +243,93 @@ Perform:
 
 Restart: undecided cards show "Cancelled: the server stopped"; their files stay offered.
 
+Phase 2 changes:
+```
+file          function            change
+actions.ts    DownloadAction      new: input, subject, chat, item, from, file, startedAt, path, cardImage
+              FileOffer           new: fileId, name, size, type, preview, duration
+              Action, NewAction   DownloadAction
+              decided             until: the latest time to wait, Infinity by default
+              summary             download: "download NAME from <chat>"
+              performedText       download: "downloaded."
+tools.ts      download            new: attach; knownChat; the item and its file; action
+              actionResult        until; an action still performing at until: {action, status: "performing"}, kept in memory
+              performDownload     new: startedAt; downloadFile; path
+              downloadFile        new, public: one download per file ID, a promise settled by onFile
+              onFile              new: settles the promise of the file's download
+serve.ts      startAgent          Agent.data: the data folder
+              events              rcvFileComplete, rcvFileError, rcvFileSndCancelled, chatItemUpdated: tools.onFile
+control.ts    ownerRequest        /receive [CHAT] N; /approve CHAT files; /revoke CHAT files
+              standings           new: messages and files, with the custom data key, the tool and the reply words
+              approveChat         standing kind
+              revoke              standing kind
+              standingApprover    standing kind
+              receive             new: downloadFile, then the file posted into the agent control chat, replying to the card
+              cardContent         new: image and video cards with the sender's preview, fitted to the card size
+              postCard, outcome   cardContent
+              outcome             no post for a download without a card
+              requestLines        download
+              commandsLine        download
+              chatsText           ", files approved by NAME"
+```
+
+Output status, completed:
+```
+status       meaning
+performing   wait passed after the approval; the download continues; the same call again attaches to the action
+```
+
+`downloadFile(chat, item, file)`:
+```
+a download of the file ID in memory: its promise
+otherwise a new promise in memory, then:
+  folder DATA/files/CHAT/, created with mode 0700
+  the item's file status:
+    rcvComplete              resolved with fileSource.filePath
+    rcvAccepted, rcvTransfer the events settle it
+    other                    apiReceiveFile(fileId, folder); the core makes the name unique (getRcvFilePath, Library/Internal.hs:946-970)
+```
+
+`onFile`:
+```
+event                                        promise of the file ID
+rcvFileComplete                              resolved with chatItem.file.fileSource.filePath
+rcvFileError                                 rejected: the item's file status, else the agent error (Library/Subscriber.hs:440-446)
+rcvFileSndCancelled                          rejected: "The file was cancelled."
+chatItemUpdated, file rcvError or rcvAborted rejected: file digest, relays not approved (Library/Subscriber.hs:415-439)
+```
+
+Card size: the image field of a card counts against 15000 bytes with its text:
+```
+image budget = 15000 - the largest card text, as aeson encodes it - the JSON of the image and duration fields
+preview within budget   used
+preview over budget     core.chatResizeImageUri(preview bytes, budget); an error: a text card
+```
+
+Card text:
+```
+form      lines
+pending   I want to download a file from Alice in group Builders (#3):     (direct chats and channels: from bot X (@4):)
+          `report.pdf`, 2.4 MB
+          /'approve #3 7', /'approve #3 files', /'receive #3 7' or /'reject #3 7'
+done      I downloaded a file from ... and the file line
+```
+- Sizes: bytes, KB, MB, GB by 1000, one decimal.
+- The servers line follows #7808's `apiGetChatItemInfo` and `APIGetUserServers`.
+
+Owner commands, completed:
+```
+command                 reply
+/approve CHAT files     Files approved for business Ridgeline (#9) by Alice. /'revoke #9 files'
+/revoke CHAT files      Files from business Ridgeline (#9) need approval again.
+                        Files from #9 have no standing approval.
+/receive [CHAT] N       none; the file arrives as a reply to the card
+                        Action N has no file.
+                        Action N: the file was not received: `<error>`.
+```
+- The files approval: custom data key `simplexMcpFiles`, `{approvedBy, approvedById, approvedAt}`; the approval of messages keeps `simplexMcp`.
+- The file posted by `/receive` has the item's type and the sender's preview, with no caption.
+
 ## Sending files
 
 Input of `send`:
@@ -242,6 +363,56 @@ the server's data folder, except DATA/files/
 
 - The refusal is posted to the agent control chat and returned to the agent as a tool error.
 
+Phase 2 changes:
+```
+file          function        change
+actions.ts    Attachment      new: path, name, size, type, preview, duration
+              SendAction      file: Attachment; cardImage
+tools.ts      sendSchema      file, as; text optional
+              send            attach check first; attachment before the action
+              attachment      new: the checks, type, preview and duration
+              performSend     the file to send; ComposedMessage with fileSource and the image, video or file content
+              onSentFile      new: the copy in DATA/files/sent/ deleted
+control.ts    refusedFile     new: the refusal posted and logged
+              requestLines    send: the attaching line
+serve.ts      events          sndFileCompleteXFTP, sndFileError: tools.onSentFile
+```
+
+`attachment(file, as)`, at the call, before the action:
+```
+check                                             tool error
+file not absolute                                 file: an absolute path is expected.
+realpath fails                                    file: no file at PATH.
+not a regular file                                file: PATH is not a file.
+not readable                                      file: PATH can't be read.
+refused path, on the real path                    file: PATH is refused: private keys and the server's own files are not sent.
+text and file both absent                         text: required without file.
+```
+- The refusal is posted: ``Refused to send `PATH` to bot SimpleX Directory (@4): private keys and the server's own files are not sent.``; the same line goes to the log.
+- The card and the message carry the real path.
+
+Previews:
+```
+type          preview                                                                   duration
+image JPEG    core.resizeImage(file, MessagePreview); an error: the fixed preview
+image PNG     as JPEG
+GIF, WebP     the fixed preview
+video         ffmpeg's first frame, then core.resizeImage(frame, MessagePreview);       ffprobe's format duration, rounded;
+              ffmpeg absent or failing: the fixed preview                               absent or failing: 0
+```
+- The fixed preview: a 16 × 9 mid-gray PNG data URI.
+- `ffmpeg -v error -i PATH -frames:v 1 -f image2pipe -vcodec mjpeg -` and `ffprobe -v error -show_entries format=duration -of csv=p=0 PATH`, 30 s each.
+
+`performSend` with a file:
+```
+the real path checked again; a change or a refusal: failed
+JPEG and PNG: core.resizeImage(file, Image) written to DATA/files/sent/send-XXXXXX/NAME, .jpg or .png by the result's format (Image.hs:47-57); an error: the file unchanged
+apiSendMessages with fileSource {filePath}, msgContent {type, text, image, duration}
+an error of the send: the copy deleted
+```
+- `onSentFile`: the copy's folder is deleted when `fileTransferMeta.filePath` is in `DATA/files/sent/` (Library/Subscriber.hs:312, :364).
+- The send card adds ``attaching image `/home/alice/trail.jpg`, 3.1 MB`` after the text; an image or video send card shows the preview, fitted as download cards.
+
 ## Tests
 
 - Unit: the `file` field from each `fileStatus`; type by extension; refused paths, symbolic links included; card texts.
@@ -266,6 +437,18 @@ Phase 1 tests:
 - `test/e2e/scenarios.test.ts`, `/leave #N` with a pending send for #N: the call returns rejected; the card ends with "Rejected by Alice."; the reply and the log line; the group's owner sees the agent leave; `list` leaves out the chat.
 - Development: `simplex-chat` and `@simplex-chat/types` built from this branch (`packages/simplex-chat-nodejs`, `packages/simplex-chat-client/types/typescript`) and installed in the MCP package with `npm install --no-save`.
 
+Phase 2 tests:
+- `test/unit/messages.test.ts`: the `file` field from each `fileStatus`, and rejected; `download`: attach, a file already received, an item without a file, `performing` at wait, the path at done, a failure by event; `send` with `file`: the type and preview by extension, the fixed preview when the core can't resize, ffmpeg absent, refused paths with symbolic links, the copy deleted at `sndFileCompleteXFTP`.
+- `test/unit/commands.test.ts`: `/approve CHAT files` and `/revoke CHAT files`, with messages approval kept; `/receive`; `/list` with files approval; the download card forms; an image card fitted to 15000 bytes.
+- `test/unit/cards.test.ts`: download cards; the attaching line of send cards.
+- `test/e2e/xftpServer.ts`: a local xftp-server from `XFTP_SERVER`, configured as `smpServer.ts`; every profile gets `/xftp`.
+- `test/e2e/scenarios.test.ts`: the end-to-end list above, except the stop wait.
+
 Phase 1 docs:
 - `PLAN.md`: the network configuration at start; the commands with `/leave`.
 - `REFERENCE.md`: the commands with `/leave`.
+
+Phase 2 docs:
+- `PLAN.md`: the `file` field, `download`, its cards and commands, `send` with `file`.
+- `REFERENCE.md`: files.
+- `TESTING.md`: `XFTP_SERVER`; files in the steps.
