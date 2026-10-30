@@ -24,7 +24,6 @@ import Codec.Picture (DynamicImage (..), Image (..), Pixel (..), PixelRGB8, Pixe
 import Codec.Picture.JPEGTurbo (DecodeOptions (DecodeOptions), JpegHeader (..), Scale (..), decodeJpeg, encodeRGB, readJpegHeader)
 import qualified Codec.Picture.STBIR as STBIR
 import qualified Codec.Picture.Spng as Spng
-import Codec.Picture.Types (pixelFoldMap)
 import Control.Monad (guard, when, (<=<))
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Data.ByteString (ByteString)
@@ -35,11 +34,11 @@ import Data.FileEmbed (embedFile)
 import Data.Int (Int32, Int64)
 import Data.List (maximumBy, minimumBy, sortOn)
 import Data.Maybe (fromMaybe, listToMaybe)
-import Data.Monoid (All (..))
 import Data.Ord (comparing)
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Storable.Mutable as VSM
 import Data.Word (Word8)
+import Foreign.Storable (Storable)
 import GHC.Float (double2Float, float2Double, int2Double, int2Float)
 import GHC.Float.RealFracMethods (floorDoubleInt)
 
@@ -50,16 +49,21 @@ data ColourProfile = CPNone | CPDisplayP3
 
 imageFormat :: DynamicImage -> ImageFormat
 imageFormat = \case
-  ImageYA8 img -> alphaFormat img
-  ImageYA16 img -> alphaFormat img
-  ImageRGBA8 img -> alphaFormat img
-  ImageRGBA16 img -> alphaFormat img
+  ImageYA8 img -> alphaFormat 2 img
+  ImageYA16 img -> alphaFormat 2 img
+  ImageRGBA8 img -> alphaFormat 4 img
+  ImageRGBA16 img -> alphaFormat 4 img
   _ -> IFJpeg
   where
-    alphaFormat :: (Pixel a, Eq (PixelBaseComponent a), Bounded (PixelBaseComponent a)) => Image a -> ImageFormat
-    alphaFormat img
-      | getAll $ pixelFoldMap (All . (maxBound ==) . pixelOpacity) img = IFJpeg
+    alphaFormat :: (Storable (PixelBaseComponent a), Eq (PixelBaseComponent a), Bounded (PixelBaseComponent a)) => Int -> Image a -> ImageFormat
+    alphaFormat components Image {imageData}
+      | opaqueFrom (components - 1) = IFJpeg
       | otherwise = IFPng
+      where
+        opaqueFrom !i
+          | i >= VS.length imageData = True
+          | VS.unsafeIndex imageData i /= maxBound = False
+          | otherwise = opaqueFrom (i + components)
 
 decodeResizable :: ByteString -> IO (Either String (DynamicImage, ColourProfile))
 decodeResizable s = runExceptT $ do
