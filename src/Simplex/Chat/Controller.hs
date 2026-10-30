@@ -670,7 +670,6 @@ data ChatCommand
   | UpdateProfileImage (Maybe ImageData) -- UserId (not used in UI)
   | UpdateProfileImageFromFile FilePath -- set profile image from a .png/.jpg/.jpeg file
   | AddBadge BadgeCredential -- attach an issued badge credential (testing; credential from `simplex-chat badge sign`)
-  | TestBadgeCycles Int Int Int -- test only: cycles, seconds without a badge, seconds with one
   | APIRedeemBadgeCode {userId :: UserId, code :: Text} -- redeem a badge code with the configured badge service
   | APIPurchaseBadge {userId :: UserId, echoedInvoiceId :: Maybe Text, origin :: StoreReceiptOrigin, payment :: ServicePayment} -- hand over an App Store or Google Play receipt, held until a worker credits it; answers from the record and sends nothing
   | APISetBadgeSubscriptionStatus {status :: SubscriptionState, payment :: ServicePayment} -- the device store's view of a credited subscription, which changes what is shown and alerted, and retires its badge once ended
