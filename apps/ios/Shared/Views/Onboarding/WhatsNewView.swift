@@ -699,37 +699,32 @@ private let versionDescriptions: [VersionDescription] = [
         ]
     ),
     VersionDescription(
-        version: "v7.1",
-        post: URL(string: "https://simplex.chat/blog/20260919-simplex-supporter-badges.html"),
+        version: "v7.1-beta.8",
+        post: nil,
         features: [
             .view(FeatureView(
                 icon: nil,
-                title: "Supporter badge",
+                title: "Supporter badges",
                 view: { SupporterBadgeWhatsNew() }
             )),
             .feature(Description(
                 icon: nil,
-                title: "Safer channels 📢",
+                title: "Safer channels",
                 description: nil,
                 subfeatures: [
                     ("flag", "Make subscribers moderators."),
-                    ("checkmark.seal", "Sign messages so subscribers see if relays change them."),
+                    ("checkmark.seal", "Opt in to sign all channel messages."),
                 ]
             )),
             .feature(Description(
                 icon: "terminal",
-                title: "Terminal chat layout",
-                description: "Easier to read replies from AI agents and bots."
-            )),
-            .feature(Description(
-                icon: "text.alignleft",
-                title: "Markdown formatting",
-                description: "Headings, lists, tables and code.\nView Markdown files."
+                title: "Flat (\"terminal\") chat layout",
+                description: "And full markdown support."
             )),
             .feature(Description(
                 icon: "phone",
                 title: "Better calls",
-                description: "Reconnect when the connection drops.\nConfirm calls without end-to-end encryption."
+                description: "Reconnect after dropped connection."
             )),
         ]
     ),
@@ -754,10 +749,10 @@ fileprivate struct SupporterBadgeWhatsNew: View {
     var body: some View {
         HStack(alignment: .bottom, spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Supporter badge ❤️")
+                Text("Supporter badges 🚀")
                     .font(.title3)
                     .bold()
-                Text("Help keep the network running — send files up to 2 GB.")
+                Text("Send larger files available for longer.")
                     .multilineTextAlignment(.leading)
                     .lineLimit(10)
             }

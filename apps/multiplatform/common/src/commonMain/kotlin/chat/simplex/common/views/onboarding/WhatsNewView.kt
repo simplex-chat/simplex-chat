@@ -971,8 +971,8 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     )
   ),
   VersionDescription(
-    version = "v7.1",
-    post = "https://simplex.chat/blog/20260919-simplex-supporter-badges.html",
+    version = "v7.1-beta.8",
+    post = null,
     features = listOf(
       VersionFeature.FeatureView(
         icon = null,
@@ -992,11 +992,6 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         icon = MR.images.ic_outline_terminal,
         titleId = MR.strings.v7_1_terminal_layout,
         descrId = MR.strings.v7_1_terminal_layout_descr
-      ),
-      VersionFeature.FeatureDescription(
-        icon = MR.images.ic_article,
-        titleId = MR.strings.v7_1_markdown,
-        descrId = MR.strings.v7_1_markdown_descr
       ),
       VersionFeature.FeatureDescription(
         icon = MR.images.ic_call,

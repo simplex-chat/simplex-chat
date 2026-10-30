@@ -3348,14 +3348,12 @@
   <string name="badges_renews_on_for">Renews on %1$s for %2$s.</string>
   <string name="badges_renews_on">Renews on %1$s.</string>
   <string name="supporter_perks">Supporter perks</string>
-  <string name="v7_1_supporter_badge_title">Supporter badge ❤️</string>
-  <string name="v7_1_supporter_badge_body">Help keep the network running — send files up to 2 GB.</string>
-  <string name="v7_1_channels">Safer channels 📢</string>
+  <string name="v7_1_supporter_badge_title">Supporter badges 🚀</string>
+  <string name="v7_1_supporter_badge_body">Send larger files available for longer.</string>
+  <string name="v7_1_channels">Safer channels</string>
   <string name="v7_1_channels_moderators">Make subscribers moderators.</string>
-  <string name="v7_1_channels_signed_messages">Sign messages so subscribers see if relays change them.</string>
-  <string name="v7_1_terminal_layout">Terminal chat layout</string>
-  <string name="v7_1_terminal_layout_descr">Easier to read replies from AI agents and bots.</string>
-  <string name="v7_1_markdown">Markdown formatting</string>
-  <string name="v7_1_markdown_descr">Headings, lists, tables and code.\nView Markdown files.</string>
-  <string name="v7_1_better_calls_descr">Reconnect when the connection drops.\nConfirm calls without end-to-end encryption.</string>
+  <string name="v7_1_channels_signed_messages">Opt in to sign all channel messages.</string>
+  <string name="v7_1_terminal_layout">Flat ("terminal") chat layout</string>
+  <string name="v7_1_terminal_layout_descr">And full markdown support.</string>
+  <string name="v7_1_better_calls_descr">Reconnect after dropped connection.</string>
 </resources>
