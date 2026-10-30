@@ -61,7 +61,7 @@ listed_page_of() {
 # there is none; blue is how much bluer than red the place of the Support page's button is.
 drawn_page_of() {
   local w h ink blue page=badge
-  read -r w h < <(identify -format '%w %h' "$1")
+  read -r w h < <(identify -format '%w %h\n' "$1")
   ink=$(convert "$1" -alpha off -crop "${w}x$((h * 6 / 10))+0+$((h * 15 / 100))" +repage -colorspace Gray -format '%[fx:standard_deviation]' info:)
   blue=$(convert "$1" -alpha off -crop "$((w * 55 / 100))x$((h * 4 / 100))+$((w * 22 / 100))+$((h * 78 / 100))" +repage -format '%[fx:mean.b-mean.r]' info:)
   case "$ink" in *nan*) ink=0 ;; esac
@@ -162,7 +162,7 @@ while [ "$SECONDS" -lt "$deadline" ]; do
   reading=$readings/$(printf '%04d' "$n")
   UI_OUT=$reading "$ui" shot reading > /dev/null
   listed=$(listed_page_of "$reading/01-reading.txt")
-  read -r drawn ink blue < <(drawn_page_of "$reading/01-reading.png")
+  read -r drawn ink blue <<< "$(drawn_page_of "$reading/01-reading.png")"
   mv "$reading" "$reading-$listed-$drawn"
   now=$(date -u +%H:%M:%S)
   echo "$now reading $n: listed $listed, drawn $drawn, ink $ink, blue $blue" >> "$out/readings.log"
