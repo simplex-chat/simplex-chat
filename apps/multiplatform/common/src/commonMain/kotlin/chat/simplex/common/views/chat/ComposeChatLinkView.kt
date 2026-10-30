@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chat
 
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -9,6 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.MsgChatLink
+import chat.simplex.common.model.Profile
+import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.ui.theme.appColors
 import chat.simplex.common.views.helpers.ProfileImage
 import dev.icerock.moko.resources.compose.painterResource
@@ -48,5 +51,17 @@ fun ComposeChatLinkView(
         Icon(painterResource(MR.images.ic_close), null, tint = MaterialTheme.colors.primary)
       }
     }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewComposeChatLinkView() {
+  SimpleXTheme {
+    ComposeChatLinkView(
+      chatLink = MsgChatLink.Contact(connLink = "https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw", profile = Profile.sampleData, business = false),
+      cancelEnabled = true,
+      cancelPreview = {}
+    )
   }
 }

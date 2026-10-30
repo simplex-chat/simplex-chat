@@ -1,5 +1,6 @@
 package chat.simplex.common.views.onboarding
 
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -125,5 +126,13 @@ fun prepareChatBeforeFinishingOnboarding() {
     val user = chatModel.controller.apiGetActiveUser(null) ?: return@withBGApi
     chatModel.currentUser.value = user
     chatModel.controller.startChat(user)
+  }
+}
+
+@Preview
+@Composable
+fun PreviewSetNotificationsMode() {
+  SimpleXTheme {
+    SetNotificationsMode(remember { mutableStateOf(NotificationsMode.SERVICE) }) {}
   }
 }

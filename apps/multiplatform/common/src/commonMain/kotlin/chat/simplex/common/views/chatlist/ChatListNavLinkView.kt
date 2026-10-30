@@ -1145,3 +1145,21 @@ fun PreviewChatListNavLinkContactRequest() {
     )
   }
 }
+
+@Preview
+@Composable
+fun PreviewChatListNavLinkContactConnection() {
+  SimpleXTheme {
+    ChatListNavLinkLayout(
+      chatLinkPreview = {
+        ContactConnectionView(PendingContactConnection.getSampleData().run { PendingContactConnection(pccConnId, pccAgentConnId, pccConnStatus, viaContactUri, localAlias = localAlias, createdAt = previewDate, updatedAt = previewDate) })
+      },
+      click = {},
+      dropdownMenuItems = null,
+      showMenu = remember { mutableStateOf(false) },
+      disabled = false,
+      selectedChat = remember { mutableStateOf(false) },
+      nextChatSelected = remember { mutableStateOf(false) },
+    )
+  }
+}

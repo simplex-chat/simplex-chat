@@ -1,5 +1,6 @@
 package chat.simplex.common.views.badges
 
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -211,4 +212,19 @@ private fun billingDate(period: BadgePeriod): String {
   val date = java.time.LocalDate.now().plusMonths(period.months.toLong())
   val formatter = java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.LONG)
   return date.format(formatter)
+}
+
+@Preview
+@Composable
+fun PreviewPeriodCards() {
+  SimpleXTheme {
+    Row(
+      Modifier.fillMaxWidth().height(IntrinsicSize.Max).padding(25.dp),
+      horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+      BadgePeriod.entries.forEach { period ->
+        PeriodCard(BadgeLevel.Supporter, period, BadgePeriod.Monthly, Modifier.weight(1f).fillMaxHeight()) {}
+      }
+    }
+  }
 }

@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chat
 
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -13,10 +14,12 @@ import androidx.compose.ui.graphics.Color
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.model.LinkPreview
 import chat.simplex.common.platform.base64ToBitmap
 import chat.simplex.res.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.UploadContent
+import java.net.URI
 
 @Composable
 fun ComposeImageView(media: ComposePreview.MediaPreview, cancelImages: () -> Unit, cancelEnabled: Boolean) {
@@ -68,5 +71,20 @@ fun ComposeImageView(media: ComposePreview.MediaPreview, cancelImages: () -> Uni
         )
       }
     }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewComposeImageView() {
+  SimpleXTheme {
+    ComposeImageView(
+      ComposePreview.MediaPreview(
+        images = listOf(LinkPreview.sampleData.image, LinkPreview.sampleData.image),
+        content = listOf(UploadContent.SimpleImage(URI("file:///image1.jpg")), UploadContent.SimpleImage(URI("file:///image2.jpg")))
+      ),
+      cancelImages = {},
+      cancelEnabled = true
+    )
   }
 }
