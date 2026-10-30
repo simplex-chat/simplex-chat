@@ -18,8 +18,8 @@
     <string name="enable_automatic_deletion_message">لا يمكن التراجع عن هذا الإجراء - سيتم حذف الرسائل المرسلة والمستلمة قبل التحديد. قد تأخذ عدة دقائق.</string>
     <string name="messages_section_description">ينطبق هذا الإعداد على الرسائل الموجودة في ملف تعريف الدردشة الحالي الخاص بك</string>
     <string name="profile_is_only_shared_with_your_contacts">يتم مشاركة ملف التعريف مع جهات اتصالك فقط.</string>
-    <string name="member_role_will_be_changed_with_notification">سيتم تغيير الدور إلى "%s". سيتم إبلاغ كل فرد في المجموعة.</string>
-    <string name="member_role_will_be_changed_with_invitation">سيتم تغيير الدور إلى "%s". سيستلم العضو دعوة جديدة.</string>
+    <string name="member_role_will_be_changed_with_notification">سيتم تغيير الدور إلى %s. سيتم إبلاغ كل فرد في المجموعة.</string>
+    <string name="member_role_will_be_changed_with_invitation">سيتم تغيير الدور إلى %s. سيستلم العضو دعوة جديدة.</string>
     <string name="smp_servers_per_user">خوادم الاتصالات الجديدة لملف تعريف الدردشة الحالي الخاص بك</string>
     <string name="switch_receiving_address_desc">سيتم تغيير عنوان الاستلام إلى خادم مختلف. سيتم إكمال تغيير العنوان بعد اتصال المرسل بالإنترنت.</string>
     <string name="allow_verb">اسمح</string>
@@ -402,8 +402,7 @@
     <string name="delete_group_for_all_members_cannot_undo_warning">سيتم حذف المجموعة لجميع الأعضاء - لا يمكن التراجع عن هذا!</string>
     <string name="group_members_can_send_dms">يمكن للأعضاء إرسال رسائل مباشرة.</string>
     <string name="failed_to_parse_chats_title">فشل تحميل الدردشات</string>
-    <string name="email_invite_body">أهلاً!
-\nتواصل معي عبر SimpleX Chat: %s</string>
+    <string name="email_invite_body">أهلاً! \nتواصل معي عبر SimpleX Chat: %s</string>
     <string name="icon_descr_hang_up">قطع المكالمة</string>
     <string name="files_and_media_prohibited">الملفات والوسائط ممنوعة!</string>
     <string name="icon_descr_file">الملف</string>
@@ -524,10 +523,7 @@
     <string name="thousand_abbreviation">ألف</string>
     <string name="group_invitation_item_description">دعوة للمجموعة %1$s</string>
     <string name="icon_descr_add_members">دعوة الأعضاء</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">يمكن أن يحدث عندما:
-\n1. انتهت صلاحية الرسائل في العميل المرسل بعد يومين أو على الخادم بعد 30 يومًا.
-\n2. فشل فك تعمية الرسالة، لأنك أو جهة اتصالك استخدمت نسخة احتياطية قديمة من قاعدة البيانات.
-\n3. اُخترق الاتصال.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">يمكن أن يحدث عندما: \n1. انتهت صلاحية الرسائل في العميل المرسل بعد يومين أو على الخادم بعد 30 يومًا. \n2. فشل فك تعمية الرسالة، لأنك أو جهة اتصالك استخدمت نسخة احتياطية قديمة من قاعدة البيانات. \n3. اُخترق الاتصال.</string>
     <string name="v5_1_japanese_portuguese_interface">واجهة أستخدام يابانية وبرتغالية</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">يمكن أن يحدث ذلك عندما تستخدم أنت أو اتصالك النُسخة الاحتياطية القديمة لقاعدة البيانات.</string>
     <string name="group_preview_join_as">انضم ك%s</string>
@@ -1025,7 +1021,7 @@
     <string name="stop_file__action">إيقاف الملف</string>
     <string name="stop_snd_file__title">التوقف عن إرسال الملف؟</string>
     <string name="icon_descr_address">عنوان SimpleX</string>
-    <string name="disable_onion_hosts_when_not_supported"><![CDATA[اضبط <i>استخدم مضيفي .onion</i> إلى "لا" إذا كان وسيط SOCKS لا يدعمها.]]></string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[اضبط <i>استخدم مضيفي .onion</i> إلى \"لا\" إذا كان وسيط SOCKS لا يدعمها.]]></string>
     <string name="share_with_contacts">شارك مع جهات اتصال SimpleX</string>
     <string name="shutdown_alert_question">إيقاف التشغيل؟</string>
     <string name="network_socks_proxy_settings">إعدادات وسيط SOCKS</string>
@@ -1085,8 +1081,7 @@
     <string name="thank_you_for_installing_simplex">شكرًا لك على تثبيت SimpleX Chat!</string>
     <string name="smp_servers_test_server">اختبر الخادم</string>
     <string name="alert_text_msg_bad_hash">تجزئة الرسالة السابقة مختلفة.</string>
-    <string name="alert_text_msg_bad_id">معرف الرسالة التالية غير صحيح (أقل أو يساوي السابق).
-\nيمكن أن يحدث ذلك بسبب بعض العلل أو عندما يُخترق الاتصال.</string>
+    <string name="alert_text_msg_bad_id">معرف الرسالة التالية غير صحيح (أقل أو يساوي السابق). \nيمكن أن يحدث ذلك بسبب بعض العلل أو عندما يُخترق الاتصال.</string>
     <string name="unfavorite_chat">أزل من المفضلة</string>
     <string name="trying_to_connect_to_server_to_receive_messages">محاولة الاتصال بالخادم المستخدم لاستلام الرسائل من هذا الاتصال.</string>
     <string name="choose_file_title">اختيار ملف</string>
@@ -1187,8 +1182,7 @@
     <string name="voice_message_with_duration">رسالة صوتية (%1$s)</string>
     <string name="your_settings">إعداداتك</string>
     <string name="your_profile_is_stored_on_your_device">يُخزن ملف التعريف وجهات الاتصال والرسائل التي سلُمت على جهازك.</string>
-    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">سيتم حذف قاعدة بيانات الدردشة الحالية واستبدالها بالقاعدة المستوردة.
-\nلا يمكن التراجع عن هذا الإجراء - سيتم فقد ملف التعريف وجهات الاتصال والرسائل والملفات الخاصة بك بشكل نهائي.</string>
+    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">سيتم حذف قاعدة بيانات الدردشة الحالية واستبدالها بالقاعدة المستوردة. \nلا يمكن التراجع عن هذا الإجراء - سيتم فقد ملف التعريف وجهات الاتصال والرسائل والملفات الخاصة بك بشكل نهائي.</string>
     <string name="update_database_passphrase">تحديث عبارة مرور قاعدة البيانات</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">ستتوقف عن تلقي الرسائل من هذه المجموعة. سيتم الاحتفاظ بسجل الدردشة.</string>
     <string name="custom_time_unit_weeks">أسابيع</string>
@@ -1206,8 +1200,7 @@
     <string name="unmute_chat">ألغِ الكتم</string>
     <string name="you_accepted_connection">لقد قبلت الاتصال</string>
     <string name="unhide_profile">إلغاء إخفاء ملف تعريف</string>
-    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">يجب أن تكون جهة الاتصال متصلة بالإنترنت حتى يكتمل الاتصال.
-\nيمكنك إلغاء هذا الاتصال وإزالة جهة الاتصال (والمحاولة لاحقًا باستخدام رابط جديد).</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">يجب أن تكون جهة الاتصال متصلة بالإنترنت حتى يكتمل الاتصال. \nيمكنك إلغاء هذا الاتصال وإزالة جهة الاتصال (والمحاولة لاحقًا باستخدام رابط جديد).</string>
     <string name="smp_servers_use_server_for_new_conn">استخدم للاتصالات الجديدة</string>
     <string name="smp_servers_use_server">استخدم الخادم</string>
     <string name="smp_servers_your_server_address">عنوان خادمك</string>
@@ -1331,7 +1324,7 @@
     <string name="connected_desktop">سطح المكتب متصل</string>
     <string name="multicast_connect_automatically">اتصل تلقائيًا</string>
     <string name="desktop_address">عنوان سطح المكتب</string>
-    <string name="marked_deleted_items_description">وضّع علامة "محذوفة" على %d من الرسائل</string>
+    <string name="marked_deleted_items_description">وضّع علامة محذوفة على %d من الرسائل</string>
     <string name="discover_on_network">اكتشف عبر الشبكة المحلية</string>
     <string name="connect_plan_connect_via_link">اتصل عبر الرابط؟</string>
     <string name="connect_plan_connect_to_yourself">اتصل بنفسك؟</string>
@@ -1543,8 +1536,7 @@
     <string name="member_blocked_by_admin">محظور من قبل المُدير</string>
     <string name="message_too_large">الرسالة كبيرة جدًا</string>
     <string name="welcome_message_is_too_long">رسالة الترحيب طويلة جدًا</string>
-    <string name="database_migration_in_progress">ترحيل قاعدة البيانات قيد التقدم.
-\nقد يستغرق بضع دقائق.</string>
+    <string name="database_migration_in_progress">ترحيل قاعدة البيانات قيد التقدم. \nقد يستغرق بضع دقائق.</string>
     <string name="call_service_notification_video_call">مكالمة فيديو</string>
     <string name="call_service_notification_audio_call">مكالمة صوتية</string>
     <string name="call_service_notification_end_call">أنهيّ المكالمة</string>
@@ -1714,8 +1706,7 @@
     <string name="network_smp_proxy_fallback_allow_protected_description">أرسل الرسائل مباشرة عندما يكون عنوان IP محميًا ولا يدعم الخادم الوجهة لديك التوجيه الخاص.</string>
     <string name="network_smp_proxy_mode_unknown">خوادم غير معروفة</string>
     <string name="file_not_approved_title">خوادم غير معروفة!</string>
-    <string name="file_not_approved_descr">بدون تور أو VPN، سيكون عنوان IP الخاص بك مرئيًا لمُرحلات XFTP هذه:
-\n%1$s.</string>
+    <string name="file_not_approved_descr">بدون تور أو VPN، سيكون عنوان IP الخاص بك مرئيًا لمُرحلات XFTP هذه: \n%1$s.</string>
     <string name="settings_section_title_chat_colors">ألوان الدردشة</string>
     <string name="settings_section_title_chat_theme">سمة الدردشة</string>
     <string name="color_received_quote">تلقيت رد</string>
@@ -2143,7 +2134,7 @@
     <string name="maximum_message_size_reached_non_text">يُرجى تقليل حجم الرسالة أو إزالة الوسائط ثم إرسالها مرة أخرى.</string>
     <string name="maximum_message_size_reached_forwarding">يمكنك نسخ الرسالة وتقليل حجمها لإرسالها.</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">عندما يتم تفعيل أكثر من مُشغل واحد، لن يكون لدى أي منهم بيانات تعريفية لمعرفة مَن يتواصل مع مَن.</string>
-    <string name="member_role_will_be_changed_with_notification_chat">سيتم تغيير الدور إلى "%s". وسيتم إشعار الجميع في الدردشة.</string>
+    <string name="member_role_will_be_changed_with_notification_chat">سيتم تغيير الدور إلى %s. وسيتم إشعار الجميع في الدردشة.</string>
     <string name="chat_main_profile_sent">سيتم إرسال ملف تعريفك للدردشة إلى أعضاء الدردشة</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">ستتوقف عن تلقي الرسائل من هذه الدردشة. سيتم حفظ سجل الدردشة.</string>
     <string name="onboarding_network_about_operators">عن المُشغلين</string>
@@ -2756,7 +2747,7 @@
     <string name="group_member_role_observer_channel">مشترك</string>
     <string name="settings_section_title_support_project">ادعم المشروع</string>
     <string name="badge_unknown_key_desc">الشارة موقّعة بمفتاح لا يتعرف عليه هذا الإصدار من التطبيق. حدِّث التطبيق للتحقق من هذه الشارة.</string>
-    <string name="member_role_will_be_changed_with_notification_channel">سيتم تغيير الدور إلى "%s". وسيتم إشعار جميع المشاركين في القناة بذلك.</string>
+    <string name="member_role_will_be_changed_with_notification_channel">سيتم تغيير الدور إلى %s. وسيتم إشعار جميع المشاركين في القناة بذلك.</string>
     <string name="badge_unverified_desc">تعذّر التحقق من صحة هذه الشارة، وقد لا تكون أصلية.</string>
     <string name="group_link_requires_newer_version">تتطلب هذه المجموعة إصدارًا أحدث من التطبيق. يُرجى تحديث التطبيق للانضمام إليها.</string>
     <string name="badge_unverified_title">شارة غير متحقق منها</string>
@@ -2826,4 +2817,16 @@
     <string name="large_file_incognito">لا يمكن إرسال الملفات التي يزيد حجمها عن %1$s في الدردشات الخفية.</string>
     <string name="info_row_file_expired">الملف كان متاح حتى</string>
     <string name="file_error_expired">كان الملف متاحًا حتى %1$s.</string>
+    <string name="countdown_hrs_min_sec">%1$02d ساعة %2$02d دقيقة %3$02d ثانية</string>
+    <string name="badges_price_monthly">%1$s/شهر</string>
+    <string name="call_not_encrypted_desc">قَبَل %s المكالمة دون تعمية بين الطرفين.</string>
+    <string name="keystore_key_storage_strongbox">عنصر الأمن</string>
+    <string name="server_has_too_many_hosts">يحتوي الخادم %1$s على أكثر من اسمين للمضيف.</string>
+    <string name="badges_shown_on_your_profile">تظهر في ملف تعريفك</string>
+    <string name="emoji_category_smileys">الرموز التعبيرية والعواطف</string>
+    <string name="keystore_key_storage_software">البرمجية</string>
+    <string name="badges_credential_status">الحالة</string>
+    <string name="storage">التخزين</string>
+    <string name="badges_level_legend_file_storage">يُخزن لمدة 21 يومًا</string>
+    <string name="badges_level_supporter_file_storage">يُخزن لمدة 7 أيام</string>
 </resources>
