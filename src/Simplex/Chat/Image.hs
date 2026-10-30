@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
@@ -5,7 +6,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
-{-# OPTIONS_GHC -O2 #-}
 
 module Simplex.Chat.Image
   ( ImageFormat (..),
@@ -25,7 +25,7 @@ import Codec.Picture.JPEGTurbo (DecodeOptions (DecodeOptions), JpegHeader (..), 
 import qualified Codec.Picture.STBIR as STBIR
 import qualified Codec.Picture.Spng as Spng
 import Codec.Picture.Types (pixelFoldMap)
-import Control.Monad (forM_, guard, when, (<=<))
+import Control.Monad (guard, when, (<=<))
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
@@ -40,7 +40,8 @@ import Data.Ord (comparing)
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Storable.Mutable as VSM
 import Data.Word (Word8)
-import GHC.Float (double2Float, float2Double)
+import GHC.Float (double2Float, float2Double, int2Double, int2Float)
+import GHC.Float.RealFracMethods (floorDoubleInt)
 
 data ImageFormat = IFJpeg | IFPng
 
@@ -344,38 +345,71 @@ unpremultiply (PixelRGBA8 r g b a) = PixelRGBA8 (divide r) (divide g) (divide b)
 
 sharpen :: Int -> (Int, Int) -> VS.Vector Word8 -> VS.Vector Word8
 sharpen channels (w, h) samples = VS.create $ do
-  rows <- VSM.unsafeNew $ VS.length sharpenOffsets * stride
+  rows <- VSM.unsafeNew $ sharpenTaps * stride
   out <- VSM.unsafeNew $ VS.length samples
-  let blurRow r = forM_ [0 .. w - 1] $ \p -> do
-        let offsets
-              | p >= sharpenRadius && p < w - sharpenRadius = interior
-              | otherwise = VS.map (\t -> (max 0 (min (w - 1) (p + t)) - p) * channels) sharpenOffsets
-        forM_ [0 .. channels - 1] $ \c -> do
-          let i = (r * w + p) * channels + c
-          v <- convolve (\o -> pure $ fromIntegral $ VS.unsafeIndex samples $ i + o) offsets
-          VSM.unsafeWrite rows (rowStart r + p * channels + c) $ double2Float v
-  forM_ [0 .. min h sharpenRadius - 1] blurRow
-  forM_ [0 .. h - 1] $ \y -> do
-    when (y + sharpenRadius < h) $ blurRow $ y + sharpenRadius
-    let offsets = VS.map (\t -> rowStart $ max 0 $ min (h - 1) $ y + t) sharpenOffsets
-    forM_ [0 .. stride - 1] $ \x -> do
-      b <- convolve (\o -> float2Double <$> VSM.unsafeRead rows (o + x)) offsets
-      let i = y * stride + x
-      VSM.unsafeWrite out i $ unsharp (VS.unsafeIndex samples i) $ double2Float b
+  let blurRows !r
+        | r == min h sharpenRadius = pure ()
+        | otherwise = blurRow r >> blurRows (r + 1)
+      blurRow !r = blurPixels 0
+        where
+          blurPixels !p
+            | p == w = pure ()
+            | otherwise = blurSamples 0
+            where
+              tap t = (r * w + clampIndex w (p + t)) * channels
+              !i0 = tap (-2)
+              !i1 = tap (-1)
+              !i2 = tap 0
+              !i3 = tap 1
+              !i4 = tap 2
+              blurSamples !c
+                | c == channels = blurPixels (p + 1)
+                | otherwise = do
+                    let sample i = int2Double $ fromEnum $ VS.unsafeIndex samples $ i + c
+                    VSM.unsafeWrite rows (rowStart r + p * channels + c) $ double2Float $ convolve (sample i0) (sample i1) (sample i2) (sample i3) (sample i4)
+                    blurSamples (c + 1)
+      sharpenRows !y
+        | y == h = pure ()
+        | otherwise = do
+            when (y + sharpenRadius < h) $ blurRow $ y + sharpenRadius
+            sharpenSamples 0
+        where
+          row t = rowStart $ clampIndex h $ y + t
+          !r0 = row (-2)
+          !r1 = row (-1)
+          !r2 = row 0
+          !r3 = row 1
+          !r4 = row 2
+          sharpenSamples !x
+            | x == stride = sharpenRows (y + 1)
+            | otherwise = do
+                let blurred r = float2Double <$> VSM.unsafeRead rows (r + x)
+                b <- convolve <$> blurred r0 <*> blurred r1 <*> blurred r2 <*> blurred r3 <*> blurred r4
+                let i = y * stride + x
+                VSM.unsafeWrite out i $ unsharp (VS.unsafeIndex samples i) $ double2Float b
+                sharpenSamples (x + 1)
+  blurRows 0
+  sharpenRows 0
   pure out
   where
     stride = channels * w
-    rowStart r = (r `mod` VS.length sharpenOffsets) * stride
-    interior = VS.map (* channels) sharpenOffsets
-    unsharp v b = fromIntegral (max 0 $ min 255 $ floor (fromIntegral v + sharpenAmount * float2Double (fromIntegral v - b) + 0.5) :: Int)
+    rowStart r = (r `mod` sharpenTaps) * stride
+    convolve a b c d e = k0 * a + k1 * b + k2 * c + k3 * d + k4 * e
+    (k0, k1, k2, k3, k4) = sharpenKernel
+    unsharp v b = toEnum $ max 0 $ min 255 $ floorDoubleInt (int2Double n + sharpenAmount * float2Double (int2Float n - b) + 0.5)
+      where
+        n = fromEnum v
 
-convolve :: Monad m => (Int -> m Double) -> VS.Vector Int -> m Double
-convolve sample offsets = go 0 0
-  where
-    go t s
-      | t == VS.length sharpenWeights = pure s
-      | otherwise = sample (VS.unsafeIndex offsets t) >>= \v -> go (t + 1) (s + VS.unsafeIndex sharpenWeights t * v)
-{-# INLINE convolve #-}
+clampIndex :: Int -> Int -> Int
+clampIndex n i = max 0 $ min (n - 1) i
+
+sharpenKernel :: (Double, Double, Double, Double, Double)
+sharpenKernel = case VS.toList sharpenWeights of
+  [k0, k1, k2, k3, k4] -> (k0, k1, k2, k3, k4)
+  weights -> error $ "sharpenKernel: 5 taps expected, " <> show (length weights) <> " computed"
+
+sharpenTaps :: Int
+sharpenTaps = VS.length sharpenOffsets
 
 sharpenOffsets :: VS.Vector Int
 sharpenOffsets = VS.enumFromTo (-radius) radius
