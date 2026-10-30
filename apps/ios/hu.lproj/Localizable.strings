@@ -983,7 +983,7 @@ swipe action */
 "Balance" = "Egyenleg";
 
 /* ledger entry field */
-"Balance start" = "Kezdő egyenleg";
+"Balance start" = "Egyenleg kezdete";
 
 /* No comment provided by engineer. */
 "Be free\nin your network" = "Váljon szabaddá\na saját hálózatában";
@@ -1914,7 +1914,7 @@ server test step */
 "creator" = "készítő";
 
 /* No comment provided by engineer. */
-"Credential" = "Hitelesítési adat";
+"Credential" = "Igazolás";
 
 /* No comment provided by engineer. */
 "Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)" = "A közösségi finanszírozásban részt vevő befektetők már az értékesítés megkezdése előtt lefoglalhatnak SimpleX-neveket: [simplex.domains](https://simplex.domains/)";
@@ -6611,7 +6611,7 @@ server test failure */
 "The badge will be added to this profile." = "A kitűző hozzá lesz adva ehhez a profilhoz.";
 
 /* alert message */
-"The code was accepted, but the badge it grants has already ended." = "A kód el lett fogadva, de az általa biztosított kitűző már nem érhető el.";
+"The code was accepted, but the badge it grants has already ended." = "A kód el lett fogadva, de az általa biztosított kitűző már lejárt.";
 
 /* alert message */
 "The code you scanned is not a badge code." = "A beolvasott kód nem egy kitűző kódja.";

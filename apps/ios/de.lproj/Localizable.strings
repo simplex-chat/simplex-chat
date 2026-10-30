@@ -313,7 +313,7 @@ channel relay bar */
 "%lld seconds" = "%lld Sekunden";
 
 /* No comment provided by engineer. */
-"%lld%% off" = "%lld%% aus";
+"%lld%% off" = "%lld%% Rabatt";
 
 /* No comment provided by engineer. */
 "%lldd" = "%lldT";
@@ -983,7 +983,7 @@ swipe action */
 "Balance" = "Guthaben";
 
 /* ledger entry field */
-"Balance start" = "Anfangs-Guthaben";
+"Balance start" = "Beginn des Guthabens";
 
 /* No comment provided by engineer. */
 "Be free\nin your network" = "Seien Sie frei\nin Ihrem Netzwerk";
@@ -1914,7 +1914,7 @@ server test step */
 "creator" = "Ersteller";
 
 /* No comment provided by engineer. */
-"Credential" = "Anmeldeinformation";
+"Credential" = "Credential";
 
 /* No comment provided by engineer. */
 "Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)" = "Crowdfunding-Investoren können vor Verkaufsbeginn Namen reservieren: [simplex.domains](https://simplex.domains/)";
@@ -6885,7 +6885,7 @@ alert subtitle */
 "To prove to a contact or a server that you have a badge, the app generates a new proof that reveals only the badge type and the expiry date, rounded to a week." = "Um einem Kontakt oder Server nachzuweisen, dass Sie einen Badge besitzen, erzeugt die App einen neuen Nachweis, der nur den Badge-Typ und das auf eine Woche gerundete Ablaufdatum offenlegt.";
 
 /* ledger entry field */
-"To purchase key" = "Um einen Schlüssel zu kaufen";
+"To purchase key" = "Zum Einkaufs-Schlüssel";
 
 /* No comment provided by engineer. */
 "To receive" = "Für den Empfang";

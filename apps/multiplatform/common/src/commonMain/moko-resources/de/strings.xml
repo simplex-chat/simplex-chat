@@ -2984,7 +2984,7 @@
     <string name="badges_error_provider_not_configured">Badges können noch nicht in der App gekauft werden.</string>
     <string name="badges_ledger_badge_type">Badge-Typ</string>
     <string name="badges_ledger_balance">Guthaben</string>
-    <string name="badges_ledger_balance_start">Anfangs-Guthaben</string>
+    <string name="badges_ledger_balance_start">Beginn des Guthabens</string>
     <string name="badges_buy_in_browser">Im Browser kaufen</string>
     <string name="call_not_encrypted_title">Der Anruf ist nicht verschlüsselt</string>
     <string name="badges_ledger_charge_id">Transaktions-ID</string>
@@ -2993,7 +2993,7 @@
     <string name="badges_choose_your_badge_title">Wählen Sie Ihren Badge aus</string>
     <string name="badges_contact_team">Kontakt mit dem SimpleX-Team aufnehmen</string>
     <string name="badges_copy_purchase_key">Einkaufs-Schlüssel kopieren</string>
-    <string name="badges_credential">Anmeldeinformation</string>
+    <string name="badges_credential">Credential</string>
     <string name="badges_ledger_date">Datum</string>
     <string name="badges_dismiss">Schließen</string>
     <string name="badges_order_duration">Dauer</string>
@@ -3047,7 +3047,7 @@
     <string name="badges_level_supporter_summary">Unterstützer: Dateien bis 2 GB sind 7 Tage lang verfügbar.</string>
     <string name="badges_larger_files_longer">Unterstützen Sie SimpleX, um größere Dateien zu senden, die länger verfügbar bleiben.</string>
     <string name="emoji_category_symbols">Symbole</string>
-    <string name="keystore_key_storage_tee">TPM</string>
+    <string name="keystore_key_storage_tee">TEE</string>
     <string name="chat_layout_terminal">Terminal</string>
     <string name="badges_error_test_purchase">Testkäufe werden nicht angerechnet. Badges können nur durch einen echten Kauf erworben werden.</string>
     <string name="markdown_text_view">Text-Ansicht</string>
@@ -3071,7 +3071,7 @@
     <string name="app_link_not_supported">Dieser Link wird von dieser App-Version nicht unterstützt. Bitte prüfen Sie, ob ein App-Update verfügbar ist.</string>
     <string name="badges_error_already_active_purchase">Dieses Profil hat bereits einen Badge.</string>
     <string name="badges_error_receipt_used">Dieser Kauf wurde bereits einem Badge auf einem anderen Gerät oder Profil gutgeschrieben.</string>
-    <string name="badges_ledger_to_purchase_key">Um einen Schlüssel zu kaufen</string>
+    <string name="badges_ledger_to_purchase_key">Zum Einkaufs-Schlüssel</string>
     <string name="storage_total">Gesamt</string>
     <string name="badges_order_total">Gesamt</string>
     <string name="emoji_category_travel">Reisen und Orte</string>
@@ -3090,7 +3090,7 @@
     <string name="badges_subscription_ends">Endet am %1$s</string>
     <string name="badges_payment_problem_footer">Google Play konnte Ihre Zahlungsmethode nicht belasten und versucht es erneut. Aktualisieren Sie Ihre Zahlungsmethode, um Ihren Badge zu behalten. Solange die Zahlung nicht erfolgreich abgeschlossen wird, können Sie weder einen weiteren Badge kaufen, noch einen Badge-Code einlösen.</string>
     <string name="badges_manage_subscription">Abonnement verwalten</string>
-    <string name="sign_messages_alert_desc">Vor dem Beitritt gesendete Nachrichten zeigen bei Abonnenten, die später hinzukommen, den Hinweis „Signatur fehlt“ an.</string>
+    <string name="sign_messages_alert_desc">Zuvor gesendete Nachrichten zeigen bei Abonnenten, die später beitreten, den Hinweis „Signatur fehlt“ an.</string>
     <string name="member_info_section_title_moderator">Moderator</string>
     <string name="badges_nothing_to_restore_desc">Es wurde kein ausstehender Google Play-Kauf gefunden, der hinzugefügt werden kann.</string>
     <string name="badges_nothing_to_restore">Nichts zum Wiederherstellen vorhanden</string>

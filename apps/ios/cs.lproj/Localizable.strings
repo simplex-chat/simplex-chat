@@ -158,7 +158,7 @@
 "%02d hrs %02d min %02d sec" = "%1$02d hod %2$02d min %3$02d sek";
 
 /* time interval */
-"%d day" = "%d dní";
+"%d day" = "%d den";
 
 /* time interval */
 "%d days" = "%d dní";

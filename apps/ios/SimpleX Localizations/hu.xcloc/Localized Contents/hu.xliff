@@ -1528,7 +1528,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Balance start" xml:space="preserve">
         <source>Balance start</source>
-        <target>Kezdő egyenleg</target>
+        <target>Egyenleg kezdete</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Be free&#10;in your network" xml:space="preserve">
@@ -2882,7 +2882,7 @@ Ez a saját egyszer használható meghívója!</target>
       </trans-unit>
       <trans-unit id="Credential" xml:space="preserve">
         <source>Credential</source>
-        <target>Hitelesítési adat</target>
+        <target>Igazolás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)" xml:space="preserve">
@@ -10103,7 +10103,7 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
       </trans-unit>
       <trans-unit id="The code was accepted, but the badge it grants has already ended." xml:space="preserve">
         <source>The code was accepted, but the badge it grants has already ended.</source>
-        <target>A kód el lett fogadva, de az általa biztosított kitűző már nem érhető el.</target>
+        <target>A kód el lett fogadva, de az általa biztosított kitűző már lejárt.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The code you scanned is not a SimpleX link QR code." xml:space="preserve">

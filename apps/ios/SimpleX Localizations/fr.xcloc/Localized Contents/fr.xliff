@@ -1528,7 +1528,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Balance start" xml:space="preserve">
         <source>Balance start</source>
-        <target>Solde initial</target>
+        <target>Début du solde</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Be free&#10;in your network" xml:space="preserve">
@@ -6838,7 +6838,7 @@ Le chiffrement le plus sûr.</target>
       </trans-unit>
       <trans-unit id="Nobody can link two different proofs to each other or to the purchase." xml:space="preserve">
         <source>Nobody can link two different proofs to each other or to the purchase.</source>
-        <target>Personne ne peut relier deux justificatifs différents entre eux ni les relier à l’achat.</target>
+        <target>Personne ne peut relier deux preuves différentes entre elles ou à l’achat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." xml:space="preserve">

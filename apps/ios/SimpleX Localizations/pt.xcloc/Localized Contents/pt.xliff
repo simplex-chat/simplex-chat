@@ -236,7 +236,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve" approved="no">
         <source>**Please note**: you will NOT be able to recover or change passphrase if you lose it.</source>
-        <target state="translated">**Atenção**: NÃO conseguirá recuperar ou alterar a palavra-passe se a perder.</target>
+        <target state="translated">**Atenção**: NÃO conseguirá recuperar ou alterar a frase-chave se a perder.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." xml:space="preserve" approved="no">
@@ -250,7 +250,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve" approved="no">
         <source>**Warning**: Instant push notifications require passphrase saved in Keychain.</source>
-        <target state="translated">**Aviso**: As notificações push instantâneas requerem que a palavra-passe seja guardada no Porta-chaves.</target>
+        <target state="translated">**Aviso**: As notificações push instantâneas requerem que a frase-chave seja guardada no Porta-chaves.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**e2e encrypted** audio call" xml:space="preserve" approved="no">
@@ -652,7 +652,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve" approved="no">
         <source>Change database passphrase?</source>
-        <target state="translated">Alterar a palavra-passe da base de dados?</target>
+        <target state="translated">Alterar a frase-chave da base de dados?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change lock mode" xml:space="preserve" approved="no">
@@ -806,7 +806,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="Confirm new passphrase…" xml:space="preserve" approved="no">
         <source>Confirm new passphrase…</source>
-        <target state="translated">Confirmar nova palavra-passe…</target>
+        <target state="translated">Confirmar nova frase-chave…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm password" xml:space="preserve">

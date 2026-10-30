@@ -174,7 +174,7 @@
       </trans-unit>
       <trans-unit id="%d day" xml:space="preserve">
         <source>%d day</source>
-        <target>%d dní</target>
+        <target>%d den</target>
         <note>time interval</note>
       </trans-unit>
       <trans-unit id="%d days" xml:space="preserve">
@@ -507,7 +507,7 @@ channel relay bar</note>
       </trans-unit>
       <trans-unit id="**Test relay** to retrieve its name." xml:space="preserve">
         <source>**Test relay** to retrieve its name.</source>
-        <target state="needs-translation">**Test relé** načíst své jméno.</target>
+        <target state="needs-translation">**Test relé** pro načtení jeho názvu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve">

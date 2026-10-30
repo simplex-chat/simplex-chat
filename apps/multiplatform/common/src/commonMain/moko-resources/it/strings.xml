@@ -3017,8 +3017,8 @@
     <string name="badges_payment_problem">Problema nel pagamento</string>
     <string name="badges_privacy_policy">Informativa sulla privacy</string>
     <string name="badges_subscription_renewing">Rinnovo in corso</string>
-    <string name="badges_subscription_renews">Rinnova %1$s</string>
-    <string name="badges_subscription_renews_price">Si rinnova a %1$s · %2$s</string>
+    <string name="badges_subscription_renews">Si rinnova il %1$s</string>
+    <string name="badges_subscription_renews_price">Si rinnova il %1$s · %2$s</string>
     <string name="badges_renews_on">Si rinnova il %1$s.</string>
     <string name="badges_renews_on_for">Si rinnova il %1$s a %2$s.</string>
     <string name="badges_restore_failed">Ripristino fallito</string>
@@ -3039,7 +3039,7 @@
     <string name="badges_subscription_ended_on">L\'abbonamento al tuo distintivo è scaduto il %1$s.</string>
     <string name="badges_subscription_ended_title">Il tuo abbonamento è scaduto</string>
     <string name="badges_subscription_ended_footer">Il tuo abbonamento è scaduto. Il distintivo verrà rimosso dal tuo profilo.</string>
-    <string name="badges_subscription_cancelled_footer">Il tuo abbonamento è stato annullato. I distintivo rimane fino al %1$s.</string>
+    <string name="badges_subscription_cancelled_footer">Il tuo abbonamento è stato annullato. Il distintivo rimane fino al %1$s.</string>
     <string name="badges_subscription_renews_footer">Il tuo abbonamento si rinnova automaticamente. Puoi annullarlo in Google Play.</string>
     <string name="badges_subscription_renews_footer_store">Il tuo abbonamento si rinnova automaticamente. Puoi annullarlo nello store.</string>
     <string name="badges_ledger_to_purchase_key">Alla chiave di acquisto</string>
