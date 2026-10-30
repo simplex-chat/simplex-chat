@@ -71,8 +71,10 @@ scroll_to_click() {
   return 1
 }
 
-# Settings lists the app's version at its end, and the version opens the screen with Developer tools
-app_version=$(sed -n 's/^android.version_name=//p' "$here/../../../apps/multiplatform/gradle.properties")
+# Settings lists the app's version and code at its end, which open the screen with Developer tools; that screen shows
+# the version too, but not followed by the code
+gradle_properties=$here/../../../apps/multiplatform/gradle.properties
+app_version="$(sed -n 's/^android.version_name=//p' "$gradle_properties") ($(sed -n 's/^android.version_code=//p' "$gradle_properties"))"
 
 back_to_settings() {
   for _ in 1 2 3 4 5 6; do
