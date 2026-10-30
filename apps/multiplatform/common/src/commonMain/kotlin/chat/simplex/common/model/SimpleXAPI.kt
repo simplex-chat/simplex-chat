@@ -3633,6 +3633,7 @@ object ChatController {
       is CR.BadgeChanged ->
         if (rhId == chatModel.remoteHostId()) {
           withContext(Dispatchers.Main) {
+            Log.d(TAG, "badges-test ${System.currentTimeMillis()} event badgeChanged badge=${r.badgeState?.badgePurchaseId} shown=${r.badgeState?.shown}")
             // read by core after retiring or presenting, so it carries the profile badge as changed
             chatModel.updateUser(r.user.updateRemoteHostId(rhId))
             if (active(r.user)) {
@@ -3643,6 +3644,7 @@ object ChatController {
       is CR.BadgeAlertR ->
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
+            Log.d(TAG, "badges-test ${System.currentTimeMillis()} event badgeAlert ${r.badgeAlert.kind}")
             BadgeModel.setAlert(rhId, r.user.userId, r.badgeAlert)
           }
         }
