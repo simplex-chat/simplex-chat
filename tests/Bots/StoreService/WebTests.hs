@@ -8,7 +8,7 @@
 module Bots.StoreService.WebTests (badgeWebTests) where
 
 import StoreService.Catalog (catalogCurrency, defaultCatalog)
-import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..))
+import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultLogLevel)
 import StoreService.Orders (codeLifetime, settleOrder)
 import StoreService.Poller
 import StoreService.Providers
@@ -1157,6 +1157,7 @@ testServiceConfig staticDir trustForwarded =
       playStore = Nothing,
       issuer = Nothing,
       group = Nothing,
+      serviceLogLevel = defaultLogLevel,
       devAcceptUnverifiedStoreReceipts = False,
       devCheckStoreDuringCoverage = False,
       devCreditTestPurchases = False
@@ -2861,8 +2862,11 @@ capturingStderr action = withMVar stderrCaptureLock $ \_ -> do
       fd <- handleToFd h
       hFlush stderr
       saved <- IODevice.dup FD.stderr
-      (IODevice.dup2 fd FD.stderr >> action) `E.finally` (hFlush stderr >> IODevice.dup2 saved FD.stderr >> IODevice.close saved)
+      (IODevice.dup2 fd FD.stderr >> action >> threadDelay fastLoggerFlushDelay) `E.finally` (hFlush stderr >> IODevice.dup2 saved FD.stderr >> IODevice.close saved)
     T.readFile path
+
+fastLoggerFlushDelay :: Int
+fastLoggerFlushDelay = 2000000
 
 loggedError :: Text -> Text -> Bool
 loggedError message = any (\l -> "[ERROR " `T.isInfixOf` l && message `T.isInfixOf` l) . T.lines
