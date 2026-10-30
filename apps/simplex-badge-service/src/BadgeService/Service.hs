@@ -10,6 +10,7 @@ module BadgeService.Service
     configureStoreVerifier,
     welcomeGetOpts,
     checkIssuerKey,
+    readConfigOrExit,
     badgeService,
     badgeServiceCLI,
     badgeServiceResponse,
@@ -40,7 +41,6 @@ import BadgeService.Codes (issueFailedText, issueOneCode, singleUse)
 import BadgeService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), PlayStoreConfig (..), ServiceConfig (..), readServiceConfig)
 import BadgeService.Group (GroupEvent, ensureManagedGroup, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
 import BadgeService.Group.Command (badgeTypeP, codeP, maxMonths, textTokenP)
-import BadgeService.Log (logError, logInfo, logWarn)
 import BadgeService.Options
 import BadgeService.Poller (newPollerEnv, newReadHints, runPoller)
 import BadgeService.Providers.BTCPay (btcpayProvider)
@@ -56,6 +56,7 @@ import BadgeService.Waiters (Waiters, newWaiters)
 import BadgeService.Web.Server (Bucket, exportWebapp, newWebEnv, runWebListener, takeFrom)
 import Control.Applicative (optional)
 import Control.Concurrent.STM
+import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Aeson as J
@@ -141,7 +142,7 @@ checkOne ChatConfig {badgePublicKeys} k@BadgeIssuerKey {keyIdx, secretKey} =
 
 requireIssuerKey :: BadgeServiceOpts -> Maybe ServiceConfig -> ChatConfig -> IO BadgeIssuerKey
 requireIssuerKey opts serviceCfg cfg =
-  checkIssuerKey opts serviceCfg cfg >>= either (\e -> putStrLn ("Error: " <> e) >> exitFailure) (\k@BadgeIssuerKey {keyIdx} -> logInfo ("signing badges with issuer key " <> tshow keyIdx) $> k)
+  checkIssuerKey opts serviceCfg cfg >>= either (\e -> putStrLn ("Error: " <> e) >> exitFailure) (\k@BadgeIssuerKey {keyIdx} -> logNote ("signing badges with issuer key " <> tshow keyIdx) $> k)
 
 readConfigOrExit :: FilePath -> IO ServiceConfig
 readConfigOrExit path =
@@ -167,8 +168,8 @@ configureStoreVerifier serviceCfg env@ServiceState {serviceCC, storeVerifier = v
       pure (verifyAppleTransaction roots aBundleId, appleSubscriptions)
     google <- forM playStore $ orExit . playStoreVerifier
     forM_ appleStore $ \AppleStoreConfig {aBundleId, aServerApi} ->
-      logInfo $ "verifying App Store receipts for " <> aBundleId <> maybe ", but not its subscriptions: [apple] sets no API key" (const "") aServerApi
-    forM_ playStore $ \PlayStoreConfig {gPackageName} -> logInfo $ "verifying Play purchases for " <> gPackageName
+      logNote $ "verifying App Store receipts for " <> aBundleId <> maybe ", but not its subscriptions: [apple] sets no API key" (const "") aServerApi
+    forM_ playStore $ \PlayStoreConfig {gPackageName} -> logNote $ "verifying Play purchases for " <> gPackageName
     pure
       env
         { storeVerifier =
@@ -191,9 +192,8 @@ configureStoreVerifier serviceCfg env@ServiceState {serviceCC, storeVerifier = v
     orExit = (>>= either (\e -> putStrLn ("Error: " <> e) >> exitFailure) pure)
     notConfigured = pure $ Left SRNotConfigured
 
-badgeService :: BadgeServiceOpts -> ChatConfig -> ServiceState -> IO ()
-badgeService opts@BadgeServiceOpts {serviceConfigFile} cfg env = do
-  serviceCfg <- traverse readConfigOrExit serviceConfigFile
+badgeService :: BadgeServiceOpts -> Maybe ServiceConfig -> ChatConfig -> ServiceState -> IO ()
+badgeService opts serviceCfg cfg env = do
   key <- requireIssuerKey opts serviceCfg cfg
   waiters <- newWaiters
   requestEnv <- configureStoreVerifier serviceCfg env
@@ -239,13 +239,12 @@ seedServiceCatalog st = do
   now <- truncateToSecond <$> getCurrentTime
   let (prices, offers) = defaultCatalog now
   (seededPrices, seededOffers) <- seedCatalog st prices offers
-  logInfo $
+  logNote $
     "badge catalog: " <> tshow (length prices) <> " prices and " <> tshow (length offers) <> " offers compiled in, "
       <> tshow seededPrices <> " prices and " <> tshow seededOffers <> " offers inserted"
 
-badgeServiceCLI :: BadgeServiceOpts -> IO ()
-badgeServiceCLI opts@BadgeServiceOpts {serviceConfigFile} = do
-  serviceCfg <- traverse readConfigOrExit serviceConfigFile
+badgeServiceCLI :: BadgeServiceOpts -> Maybe ServiceConfig -> IO ()
+badgeServiceCLI opts serviceCfg = do
   key <- requireIssuerKey opts serviceCfg terminalChatConfig
   env <- newServiceState >>= configureStoreVerifier serviceCfg
   let eventHook _cc = \case
@@ -396,11 +395,11 @@ badgePostStartHook BadgeServiceOpts {noAddress, testing} env cc = do
 handleServiceRequest :: BadgeIssuerKey -> StoreVerifier -> PurchaseChecks -> ChatController -> Maybe (TQueue GroupEvent) -> User -> AgentInvId -> Maybe C.PublicKeyEd25519 -> J.Object -> IO ()
 handleServiceRequest key verifier checks cc trackerQ_ User {userId} reqId sigKey reqData = do
   let reqIdT = safeDecodeUtf8 (strEncode reqId)
-  logInfo $ "badge service request " <> reqIdT
+  logNote $ "badge service request " <> reqIdT
   resp <-
     badgeServiceResponse key verifier checks cc trackerQ_ sigKey reqData `catchOwn'` \_ ->
       logError ("badge service request " <> reqIdT <> " failed") $> errorResponse BSEInternal
-  logInfo $ "badge answer: " <> responseName resp
+  logNote $ "badge answer: " <> responseName resp
   sendChatCmd cc (APISendServiceResponse userId reqId (responseObject resp)) >>= \case
     Right _ -> pure ()
     Left e -> logError $ "badge service response failed for " <> reqIdT <> ": " <> tshow e
@@ -428,7 +427,7 @@ badgeServiceResponse key verifier checks cc trackerQ_ sigKey reqData = case J.fr
   J.Success BadgeServiceRequest {version, purchaseKey, request}
     | not (version `isCompatible` supportedBadgeServiceVRange) -> pure $ errorResponse BSEUnsupportedVersion
     | purchaseKey /= sigKey -> pure $ errorResponse BSEBadRequest
-    | otherwise -> logInfo ("badge request: " <> commandName request) >> case request of
+    | otherwise -> logNote ("badge request: " <> commandName request) >> case request of
         BSCRedeemBadgeCode {masterKey, code} -> case purchaseKey of
           Just k -> redeemCode key cc trackerQ_ k masterKey code
           Nothing -> pure $ errorResponse BSEBadRequest
@@ -680,7 +679,7 @@ purchaseWithReceipt key cc verifier checks use purchaseKey masterKey StoreReceip
                         setSubscriptionState db paymentId subscriptionState now
                         Just <$> firstMonthResponse db purchaseId Nothing (Just subscriptionState) firstMonth
                   case r of
-                    Right (Just resp) -> logInfo "store subscription moved to another key" $> resp
+                    Right (Just resp) -> logNote "store subscription moved to another key" $> resp
                     Right Nothing -> logError "badge service: a subscription moved, or its ledger changed, while its transfer was signed" $> errorResponse BSEInternal
                     Left _ -> pure $ errorResponse BSEInternal
     providerToken = case subscriptionRef of
@@ -756,7 +755,7 @@ firstChargeNotGranted provider = \case
   NGEnded | PPGoogle <- provider -> storeRefusalResponse $ SRInvalid "the subscription ended"
   NGNotStarted -> storeRefusalResponse SRPending
   -- a later charge, or an Apple resubscription under the same original id, may yet be credited from this receipt
-  reason -> logInfo ("store subscription not credited yet: " <> tshow reason) $> BSPError {code = BSEPaymentPending, message = Nothing, retryAfter = Just 86400}
+  reason -> logNote ("store subscription not credited yet: " <> tshow reason) $> BSPError {code = BSEPaymentPending, message = Nothing, retryAfter = Just 86400}
 
 -- | What each request was answered, to pair with its command in a log. No payload: a credential,
 -- an invoice and a statement are the client's, and an error's message can quote what it refused.
@@ -792,10 +791,10 @@ commandName = \case
 -- forger could iterate on. A test purchase is named, since the device that made it already knows.
 storeRefusalResponse :: StoreRefusal -> IO BadgeServiceResponse
 storeRefusalResponse = \case
-  -- warn, not info: every one of these ends a purchase for good, and one of them (a store that no longer
+  -- warn, not note: every one of these ends a purchase for good, and one of them (a store that no longer
   -- knows a subscription it once sold) can do that to a purchase the user really paid for
   SRInvalid reason -> logWarn ("store receipt refused for good: " <> reason) $> errorResponse BSEReceiptInvalid
-  SRTestPurchase -> logInfo "store receipt refused: test purchase" $> errorResponse BSETestPurchase
+  SRTestPurchase -> logNote "store receipt refused: test purchase" $> errorResponse BSETestPurchase
   SRPending -> pure $ errorResponse BSEPaymentPending
   SRUnreachable reason -> logWarn ("store unreachable: " <> reason) $> errorResponse BSEProviderUnavailable
   SRVerifierFailed reason -> logError ("store receipt not verified: " <> reason) $> errorResponse BSEInternal
@@ -918,7 +917,7 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
                 Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> case grantableCharge provider now checked >>= fundsMonthNow purchaseKey now (Just tip) of
                   Left NGMalformedPeriod -> storeRefusalResponse $ SRVerifierFailed "a charge whose period does not end after its start"
                   Left reason -> do
-                    forM_ latestCharge $ \_ -> logInfo $ "store subscription charge not granted: " <> tshow reason
+                    forM_ latestCharge $ \_ -> logNote $ "store subscription charge not granted: " <> tshow reason
                     recordCheck latestCharge subscriptionState
                   Right (charge@StoreCharge {chargeRef, periodStart}, (badgeType, months)) ->
                     withDB' "getSubscriptionCharge" cc (\db -> getSubscriptionCharge db paymentId chargeRef) >>= \case
@@ -1032,14 +1031,14 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
             setSubscriptionState db paymentId SSEnded now
             Just . withoutCredential <$> issueResponse db badgePurchaseId now (Just SSEnded)
       case r of
-        Right (Just resp) -> resp <$ unless (refunded == 0) (logInfo $ "store subscription ended during coverage: " <> tshow (negate refunded) <> " months refunded")
+        Right (Just resp) -> resp <$ unless (refunded == 0) (logNote $ "store subscription ended during coverage: " <> tshow (negate refunded) <> " months refunded")
         Right Nothing -> logError "badge service: a subscription's ledger moved while its refund was written" $> errorResponse BSEInternal
         Left _ -> pure $ errorResponse BSEInternal
     answered what action = fromRight (errorResponse BSEInternal) <$> withDB' what cc action
     withoutCredential = \case
       BSPBadgeCredential {receipt, statement, subscription} -> BSPBadgeCredential {credential = Nothing, receipt, statement, subscription}
       resp -> resp
-    logBanked months = logInfo $ "store subscription charge banked: " <> tshow months <> " months"
+    logBanked months = logNote $ "store subscription charge banked: " <> tshow months <> " months"
     -- Only the asserted entry's identity is read, never the months it claims.
     issueResponse db purchaseId t subscription = do
       let StatementEntry {entryId = assertedUuid} = lastEntry

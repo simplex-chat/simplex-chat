@@ -30,7 +30,7 @@ import BadgeService.Providers
     WebhookError (..),
   )
 import Control.Exception (try)
-import BadgeService.Log (logError, logInfo, logWarn)
+import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (unless)
 import Crypto.Hash (Digest, SHA256)
 import Crypto.MAC.HMAC (HMAC, hmac, hmacGetDigest)
@@ -235,11 +235,11 @@ logStoreMethods env@BTCPayEnv {beCfg} = do
   case r >>= decodeGreenfield what of
     Left (ProviderError e) -> do
       logWarn ("btcpay: could not read the payment methods of store " <> bStoreId beCfg <> ": " <> e)
-      logInfo ("btcpay: this build offers " <> T.intercalate ", " knownMethodIds)
+      logNote ("btcpay: this build offers " <> T.intercalate ", " knownMethodIds)
     Right ms -> do
       let enabled = map gsmId ms
           missing = filter (`notElem` enabled) knownMethodIds
-      logInfo ("btcpay: store " <> bStoreId beCfg <> " has enabled " <> T.intercalate ", " enabled)
+      logNote ("btcpay: store " <> bStoreId beCfg <> " has enabled " <> T.intercalate ", " enabled)
       unless (null missing) $
         logError $
           "btcpay: this build offers "
@@ -373,7 +373,7 @@ invoiceIdOf v = case J.fromJSON v :: J.Result (KM.KeyMap J.Value) of
 
 logAdditionalStatus :: Text -> Maybe Text -> IO ()
 logAdditionalStatus ref = \case
-  Just s | s /= "None" -> logInfo ("btcpay: invoice " <> ref <> " additionalStatus " <> s)
+  Just s | s /= "None" -> logNote ("btcpay: invoice " <> ref <> " additionalStatus " <> s)
   _ -> pure ()
 
 paymentMethodsSignal :: UTCTime -> Text -> Text -> LB.ByteString -> Either ProviderError (Maybe PaymentSignal)

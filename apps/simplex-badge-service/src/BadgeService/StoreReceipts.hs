@@ -22,8 +22,8 @@ module BadgeService.StoreReceipts
   )
 where
 
-import BadgeService.Log (logInfo, logWarn)
 import Control.Exception (Exception, catch, evaluate, try)
+import Control.Logger.Simple (logNote, logWarn)
 import qualified Data.ByteString.Lazy as LB
 import Data.Char (isAlphaNum, isAscii, isAsciiLower, isAsciiUpper, isControl, isDigit, isPrint, isSpace)
 import Data.Functor (($>))
@@ -178,7 +178,7 @@ toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, ackn
       r <-
         (fromMaybe (Left $ SRVerifierFailed "apple verifier timed out") <$> timeout verifyTimeout (forced verdict))
           `catchOwn'` \_ -> pure $ Left $ SRVerifierFailed "apple verifier threw"
-      logInfo $ "apple receipt: " <> either refusalLabel (const "vouched") r
+      logNote $ "apple receipt: " <> either refusalLabel (const "vouched") r
       pure r
     online = askStore verifyTimeout
 
@@ -206,7 +206,7 @@ askStore limit what call = do
     (fromMaybe (Left $ SRUnreachable $ what <> " timed out") <$> timeout limit ((call >>= forced) `catch` verifierFailed))
       `catchOwn'` \_ -> pure $ Left $ SRUnreachable $ what <> " threw"
   -- that the store was asked and what came of it, since not every path answers with the refusal
-  logInfo $ what <> ": " <> either refusalLabel (const "vouched") r
+  logNote $ what <> ": " <> either refusalLabel (const "vouched") r
   pure r
   where
     verifierFailed (StoreVerifierFailure reason) = pure $ Left $ SRVerifierFailed reason

@@ -29,7 +29,7 @@ import BadgeService.Store.Invoices (CreateError (..), InvoicePayment (..), Invoi
 import BadgeService.Waiters (Seen, Waiters, awaitStatus, publish)
 import Control.Concurrent.STM
 import qualified Control.Exception as E
-import BadgeService.Log (logError, logInfo, logWarn)
+import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (forM_, when)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
@@ -336,7 +336,7 @@ exportWebapp lc@ListenerConfig {lStaticDir, lWebappExportDir} stripeCfg =
     emptyDir out
     copyTree lStaticDir out
     prepareShell lc stripeCfg >>= mapM_ (LB.writeFile (out </> "index.html"))
-    logInfo ("badge service: exported the webapp to " <> T.pack out)
+    logNote ("badge service: exported the webapp to " <> T.pack out)
 
 -- | Contents only: the directory itself may be a bind or volume mount point that cannot be removed.
 emptyDir :: FilePath -> IO ()
@@ -536,7 +536,7 @@ createInvoiceHandler env@WebEnv {weStore} req respond =
                 Just provider -> createAtProvider env provider cr priced respond
   where
     refuse :: Text -> Response -> IO ResponseReceived
-    refuse why response = logInfo ("POST /api/invoice refused: " <> why) >> respond response
+    refuse why response = logNote ("POST /api/invoice refused: " <> why) >> respond response
 
 -- | Once the provider call succeeds an invoice exists at BTCPay, and any path below that does not write our rows leaves it stranded.
 createAtProvider :: WebEnv -> Provider -> CreateRequest -> PricedOffer -> Respond -> IO ResponseReceived
@@ -569,7 +569,7 @@ createAtProvider WebEnv {weStore, weConfig} provider CreateRequest {crPriceId, c
                     niCreatedAt = now
                   }
           createInvoiceRows weStore ni >>= \case
-            Left CECodeConflict -> logInfo ("POST /api/invoice: code hash lost the race, invoice abandoned at the provider (" <> atProvider <> ")") >> respond codeConflict
+            Left CECodeConflict -> logNote ("POST /api/invoice: code hash lost the race, invoice abandoned at the provider (" <> atProvider <> ")") >> respond codeConflict
             Left e -> failed ("invoice rows not written, invoice abandoned at the provider (" <> atProvider <> "): " <> tshow e) internalError
             Right () -> respond (jsonResponse status200 (createdInvoice invId priced expiresAt piDestination))
   where
@@ -678,7 +678,7 @@ webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
         respond webhookRefused
       Just p ->
         readBoundedBody maxWebhookBytes req >>= \case
-          Nothing -> logInfo (route <> ": body over the " <> tshow maxWebhookBytes <> "-byte cap") >> respond webhookTooLarge
+          Nothing -> logNote (route <> ": body over the " <> tshow maxWebhookBytes <> "-byte cap") >> respond webhookTooLarge
           Just body -> do
             now <- getCurrentTime
             -- a provider signs the exact bytes it sent, so parsing and re-encoding here would fail the signature on every event
@@ -688,12 +688,12 @@ webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
               Right Nothing -> ignore body "nothing this service acts on"
               Right (Just ref) -> resolve body ref
     refuse :: Text -> IO ResponseReceived
-    refuse why = logInfo (route <> " refused: " <> why) >> respond webhookRefused
+    refuse why = logNote (route <> " refused: " <> why) >> respond webhookRefused
     ignore :: LB.ByteString -> Text -> IO ResponseReceived
     ignore body why = logEvent body why >> respond webhookOk
     logEvent :: LB.ByteString -> Text -> IO ()
     logEvent body what = case eventTypeOf body of
-      Just t -> logInfo (route <> ": " <> t <> ", " <> what)
+      Just t -> logNote (route <> ": " <> t <> ", " <> what)
       Nothing -> logWarn (route <> ": " <> noEventType <> ", " <> what)
     noEventType :: Text
     noEventType = "a verified payload with no readable \"type\""

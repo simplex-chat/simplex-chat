@@ -34,7 +34,7 @@ import BadgeService.Store.Invoices (InvoiceRow (..), OverdueInvoice (..), expire
 import BadgeService.Waiters (Waiters, publish, waitingCount, waitingCountSTM)
 import Control.Concurrent.STM
 import Control.Exception (SomeAsyncException, SomeException, fromException, throwIO, try)
-import BadgeService.Log (logError, logInfo, logWarn)
+import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (filterM, forever, unless, void, when)
 import Data.List (find, partition, sortOn)
 import Data.Map.Strict (Map)
@@ -207,7 +207,7 @@ settleMoved env@PollerEnv {peStore, peWaiters} provider now (ref, signal) =
           due <- dueToWarn env now alert
           when due $ logError alert
       | before == after = pure ()
-      | otherwise = logInfo ("badge poller: order " <> ref <> " " <> tshow before <> " -> " <> tshow after)
+      | otherwise = logNote ("badge poller: order " <> ref <> " " <> tshow before <> " -> " <> tshow after)
 
 serveHint :: PollerEnv -> Text -> IO ()
 serveHint env ref = do
@@ -238,7 +238,7 @@ sweepExpired env@PollerEnv {peStore, peWaiters, peCancelFailed} now = do
   -- publish only after the write commits, or a woken reader will not see it
   unless (null expired) $ do
     atomically $ mapM_ (\invId -> publish peWaiters invId ISExpired) expired
-    logInfo ("badge poller: expired " <> tshow (length expired) <> " invoice(s) past their window")
+    logNote ("badge poller: expired " <> tshow (length expired) <> " invoice(s) past their window")
 
 -- | Cancel the order at the provider first, so the buyer can no longer pay it.
 closedAtProvider :: PollerEnv -> UTCTime -> OverdueInvoice -> IO Bool
