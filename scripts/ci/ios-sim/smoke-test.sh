@@ -2,10 +2,10 @@
 
 # Installs the app in a new iPhone simulator and runs the scripted UI cases with the ui helper: onboarding to the
 # chat list with the one-hand UI (the default), then the chat list again with the top bar. It leaves the app in the one-hand UI.
-# With "images" it then turns off the encryption of local files, creates a group and sends tests/fixtures/test.jpg and
-# logo-large-rgba.png picked in the photo library, and checks the pixel sizes of the sent files.
 # For an app in the derived data of a build, it then renders the previews of the SimpleX Snapshots tests to the snapshots
 # folder of the output dir (snapshots.sh).
+# With "images" it then turns off the encryption of local files, creates a group and sends tests/fixtures/test.jpg and
+# logo-large-rgba.png picked in the photo library, and checks the pixel sizes of the sent files.
 # Usage: scripts/ci/ios-sim/smoke-test.sh <path to SimpleX.app> <output dir> [images]
 # Each step saves a screenshot and an accessibility tree to the output dir and prints the tree to the log.
 # Later steps of the job get SIM_UDID and UI_OUT, with the simulator still running.
@@ -123,7 +123,7 @@ sent_size() {
 }
 
 disable_file_encryption() {
-  xcrun simctl terminate "$SIM_UDID" "$bundle_id"
+  xcrun simctl terminate "$SIM_UDID" "$bundle_id" 2> /dev/null || true
   xcrun simctl spawn "$SIM_UDID" defaults write "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" group.chat.simplex.app)/Library/Preferences/group.chat.simplex.app" privacyEncryptLocalFiles -bool false
   "$ui" relaunch
 }
@@ -208,6 +208,11 @@ expect_chat_list top
 "$ui" layout reachable
 echo "smoke test passed: onboarding reaches the chat list, which shows its onboarding pages and toolbar with the one-hand UI and with the top bar"
 
+products=$(dirname "$app")
+if [[ "$products" == */Build/Products/Debug-iphonesimulator ]]; then
+  "$(dirname "$0")/snapshots.sh" "${products%/Build/Products/Debug-iphonesimulator}" "$UI_OUT/snapshots"
+fi
+
 if [ "$cases" = images ]; then
   disable_file_encryption
   xcrun simctl addmedia "$SIM_UDID" "$fixtures/test.jpg" "$fixtures/logo-large-rgba.png"
@@ -215,9 +220,4 @@ if [ "$cases" = images ]; then
   send_image jpg "$test_card_x" 1280x720
   send_image png "$logo_x" 1630x466
   echo "smoke test passed: images"
-fi
-
-products=$(dirname "$app")
-if [[ "$products" == */Build/Products/Debug-iphonesimulator ]]; then
-  "$(dirname "$0")/snapshots.sh" "${products%/Build/Products/Debug-iphonesimulator}" "$UI_OUT/snapshots"
 fi
