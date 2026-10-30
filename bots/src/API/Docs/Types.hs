@@ -432,14 +432,14 @@ chatTypesDocsData =
     (sti @XFTPRcvFile, STRecord, "", [], "", ""),
     (sti @XFTPSndFile, STRecord, "", [], "", ""),
     -- (sti @DatabaseError, STUnion, "DB", [], "", ""),
-    -- (sti @ChatItemInfo, STRecord, "", [], "", ""),
-    -- (sti @ChatItemVersion, STRecord, "", [], "", ""),
+    (sti @ChatItemInfo, STRecord, "", [], "", ""),
+    (sti @ChatItemVersion, STRecord, "", [], "", ""),
     (sti @ChatListQuery, STUnion, "CLQ", [], "", ""),
     -- (sti @ChatName, STRecord, "", [], "", ""),
     (sti @ChatPagination, STUnion, "CP", [], Choice "self" [("last", "count=" <> Param "count"), ("after", "after=" <> Param "chatItemId" <> " count=" <> Param "count"), ("before", "before=" <> Param "chatItemId" <> " count=" <> Param "count"), ("around", "around=" <> Param "chatItemId" <> " count=" <> Param "count")] ("initial=" <> Param "count"), ""),
     (sti @ConnectionStats, STRecord, "", [], "", ""),
-    -- (sti @GroupSndStatus, STUnion, "GSS", [], "", ""),
-    -- (sti @MemberDeliveryStatus, STRecord, "", [], "", ""),
+    (sti @GroupSndStatus, STUnion, "GSS", [], "", ""),
+    (sti @MemberDeliveryStatus, STRecord, "", [], "", ""),
     -- (sti @MemberReaction, STRecord, "", [], "", ""),
     (sti @MsgContentTag, STEnum' (dropPfxSfx "MC" "_"), "", ["MCUnknown_"], "", ""),
     (sti @NavigationInfo, STRecord, "", [], "", ""),
@@ -688,15 +688,15 @@ deriving instance Generic XFTPRcvFile
 deriving instance Generic XFTPSndFile
 
 -- deriving instance Generic DatabaseError
--- deriving instance Generic ChatItemInfo
--- deriving instance Generic ChatItemVersion
+deriving instance Generic ChatItemInfo
+deriving instance Generic ChatItemVersion
 deriving instance Generic ChatListQuery
 -- deriving instance Generic ChatName
 deriving instance Generic ChatPagination
 deriving instance Generic ConnectionStats
 -- deriving instance Generic Group
--- deriving instance Generic GroupSndStatus
--- deriving instance Generic MemberDeliveryStatus
+deriving instance Generic GroupSndStatus
+deriving instance Generic MemberDeliveryStatus
 -- deriving instance Generic MemberReaction
 deriving instance Generic MsgContentTag
 deriving instance Generic NavigationInfo

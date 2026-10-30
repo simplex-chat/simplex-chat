@@ -868,6 +868,21 @@ export namespace APIContactInfo {
   }
 }
 
+// Get message information.
+// Network usage: no.
+export interface APIGetChatItemInfo {
+  chatRef: T.ChatRef
+  chatItemId: number // int64
+}
+
+export namespace APIGetChatItemInfo {
+  export type Response = CR.ChatItemInfo | CR.ChatCmdError
+
+  export function cmdString(self: APIGetChatItemInfo): string {
+    return '/_get item info ' + T.ChatRef.cmdString(self.chatRef) + ' ' + self.chatItemId
+  }
+}
+
 // Delete chat.
 // Network usage: background.
 export interface APIDeleteChat {

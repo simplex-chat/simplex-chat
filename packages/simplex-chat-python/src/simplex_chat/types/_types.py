@@ -1312,6 +1312,20 @@ class ChatItemDeletion(TypedDict):
     deletedChatItem: "AChatItem"
     toChatItem: NotRequired["AChatItem"]
 
+class ChatItemInfo(TypedDict):
+    itemVersions: list["ChatItemVersion"]
+    memberDeliveryStatuses: NotRequired[list["MemberDeliveryStatus"]]  # non-empty
+    forwardedFromChatItem: NotRequired["AChatItem"]
+    fileXftpServers: list[str]
+
+class ChatItemVersion(TypedDict):
+    chatItemVersionId: int  # int64
+    msgContent: "MsgContent"
+    formattedText: NotRequired[list["FormattedText"]]
+    markdownBlocks: NotRequired[list["MarkdownBlock"]]  # non-empty
+    itemVersionTs: str  # ISO-8601 timestamp
+    createdAt: str  # ISO-8601 timestamp
+
 ChatLayout = Literal["classic", "terminal"]
 
 class ChatListQuery_filters(TypedDict):
@@ -2252,6 +2266,47 @@ class GroupShortLinkInfo(TypedDict):
     groupRelays: list[str]
     publicGroupId: NotRequired[str]
 
+class GroupSndStatus_new(TypedDict):
+    type: Literal["new"]
+
+class GroupSndStatus_forwarded(TypedDict):
+    type: Literal["forwarded"]
+
+class GroupSndStatus_inactive(TypedDict):
+    type: Literal["inactive"]
+
+class GroupSndStatus_sent(TypedDict):
+    type: Literal["sent"]
+
+class GroupSndStatus_rcvd(TypedDict):
+    type: Literal["rcvd"]
+    msgRcptStatus: "MsgReceiptStatus"
+
+class GroupSndStatus_error(TypedDict):
+    type: Literal["error"]
+    agentError: "SndError"
+
+class GroupSndStatus_warning(TypedDict):
+    type: Literal["warning"]
+    agentError: "SndError"
+
+class GroupSndStatus_invalid(TypedDict):
+    type: Literal["invalid"]
+    text: str
+
+GroupSndStatus = (
+    GroupSndStatus_new
+    | GroupSndStatus_forwarded
+    | GroupSndStatus_inactive
+    | GroupSndStatus_sent
+    | GroupSndStatus_rcvd
+    | GroupSndStatus_error
+    | GroupSndStatus_warning
+    | GroupSndStatus_invalid
+)
+
+GroupSndStatus_Tag = Literal["new", "forwarded", "inactive", "sent", "rcvd", "error", "warning", "invalid"]
+
 class GroupSummary(TypedDict):
     currentMembers: int  # int64
     publicMemberCount: NotRequired[int]  # int64
@@ -2415,6 +2470,11 @@ MarkdownBlock = (
 MarkdownBlock_Tag = Literal["paragraph", "heading", "codeBlock", "quote", "list", "table", "rule"]
 
 MemberCriteria = Literal["all"]
+
+class MemberDeliveryStatus(TypedDict):
+    groupMemberId: int  # int64
+    memberDeliveryStatus: "GroupSndStatus"
+    sentViaProxy: NotRequired[bool]
 
 # Connection link sent in a message - only short links are allowed.
 

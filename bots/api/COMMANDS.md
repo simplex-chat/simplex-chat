@@ -69,6 +69,7 @@ This file is generated automatically.
 - [APIGetChat](#apigetchat)
 - [APIChatItemsRead](#apichatitemsread)
 - [APIContactInfo](#apicontactinfo)
+- [APIGetChatItemInfo](#apigetchatiteminfo)
 - [APIDeleteChat](#apideletechat)
 - [APISetGroupCustomData](#apisetgroupcustomdata)
 - [APISetContactCustomData](#apisetcontactcustomdata)
@@ -2360,6 +2361,45 @@ ContactInfo: Contact information.
 - contact: [Contact](./TYPES.md#contact)
 - connectionStats_: [ConnectionStats](./TYPES.md#connectionstats)?
 - customUserProfile: [Profile](./TYPES.md#profile)?
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIGetChatItemInfo
+
+Get message information.
+
+*Network usage*: no.
+
+**Parameters**:
+- chatRef: [ChatRef](./TYPES.md#chatref)
+- chatItemId: int64
+
+**Syntax**:
+
+```
+/_get item info <str(chatRef)> <chatItemId>
+```
+
+```javascript
+'/_get item info ' + ChatRef.cmdString(chatRef) + ' ' + chatItemId // JavaScript
+```
+
+```python
+'/_get item info ' + ChatRef_cmd_string(chatRef) + ' ' + str(chatItemId) # Python
+```
+
+**Responses**:
+
+ChatItemInfo: Message information.
+- type: "chatItemInfo"
+- user: [User](./TYPES.md#user)
+- chatItem: [AChatItem](./TYPES.md#achatitem)
+- chatItemInfo: [ChatItemInfo](./TYPES.md#chatiteminfo)
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"

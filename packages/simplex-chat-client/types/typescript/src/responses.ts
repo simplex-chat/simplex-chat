@@ -7,6 +7,7 @@ export type ChatResponse =
   | CR.AcceptingContactRequest
   | CR.ActiveUser
   | CR.ApiChat
+  | CR.ChatItemInfo
   | CR.ChatItemNotChanged
   | CR.ChatItemReaction
   | CR.ChatItemUpdated
@@ -81,6 +82,7 @@ export namespace CR {
     | "acceptingContactRequest"
     | "activeUser"
     | "apiChat"
+    | "chatItemInfo"
     | "chatItemNotChanged"
     | "chatItemReaction"
     | "chatItemUpdated"
@@ -170,6 +172,13 @@ export namespace CR {
     user: T.User
     chat: T.AChat
     navInfo?: T.NavigationInfo
+  }
+
+  export interface ChatItemInfo extends Interface {
+    type: "chatItemInfo"
+    user: T.User
+    chatItem: T.AChatItem
+    chatItemInfo: T.ChatItemInfo
   }
 
   export interface ChatItemNotChanged extends Interface {

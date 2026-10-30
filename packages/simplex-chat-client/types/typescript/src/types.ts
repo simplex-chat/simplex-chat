@@ -1887,6 +1887,22 @@ export interface ChatItemDeletion {
   toChatItem?: AChatItem
 }
 
+export interface ChatItemInfo {
+  itemVersions: ChatItemVersion[]
+  memberDeliveryStatuses?: MemberDeliveryStatus[]
+  forwardedFromChatItem?: AChatItem
+  fileXftpServers: string[]
+}
+
+export interface ChatItemVersion {
+  chatItemVersionId: number // int64
+  msgContent: MsgContent
+  formattedText?: FormattedText[]
+  markdownBlocks?: MarkdownBlock[]
+  itemVersionTs: string // ISO-8601 timestamp
+  createdAt: string // ISO-8601 timestamp
+}
+
 export enum ChatLayout {
   Classic = "classic",
   Terminal = "terminal",
@@ -3218,6 +3234,68 @@ export interface GroupShortLinkInfo {
   publicGroupId?: string
 }
 
+export type GroupSndStatus = 
+  | GroupSndStatus.New
+  | GroupSndStatus.Forwarded
+  | GroupSndStatus.Inactive
+  | GroupSndStatus.Sent
+  | GroupSndStatus.Rcvd
+  | GroupSndStatus.Error
+  | GroupSndStatus.Warning
+  | GroupSndStatus.Invalid
+
+export namespace GroupSndStatus {
+  export type Tag = 
+    | "new"
+    | "forwarded"
+    | "inactive"
+    | "sent"
+    | "rcvd"
+    | "error"
+    | "warning"
+    | "invalid"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface New extends Interface {
+    type: "new"
+  }
+
+  export interface Forwarded extends Interface {
+    type: "forwarded"
+  }
+
+  export interface Inactive extends Interface {
+    type: "inactive"
+  }
+
+  export interface Sent extends Interface {
+    type: "sent"
+  }
+
+  export interface Rcvd extends Interface {
+    type: "rcvd"
+    msgRcptStatus: MsgReceiptStatus
+  }
+
+  export interface Error extends Interface {
+    type: "error"
+    agentError: SndError
+  }
+
+  export interface Warning extends Interface {
+    type: "warning"
+    agentError: SndError
+  }
+
+  export interface Invalid extends Interface {
+    type: "invalid"
+    text: string
+  }
+}
+
 export interface GroupSummary {
   currentMembers: number // int64
   publicMemberCount?: number // int64
@@ -3445,6 +3523,12 @@ export namespace MarkdownBlock {
 
 export enum MemberCriteria {
   All = "all",
+}
+
+export interface MemberDeliveryStatus {
+  groupMemberId: number // int64
+  memberDeliveryStatus: GroupSndStatus
+  sentViaProxy?: boolean
 }
 // Connection link sent in a message - only short links are allowed.
 

@@ -156,6 +156,13 @@ describe("documented success responses", () => {
     await expect(chat.apiSendMemberContactInvitation(2, "hi")).resolves.toEqual(contact)
     expect(sentCommands()).toEqual(["/_create member contact #1 2", '/_invite member contact @2 json {"type":"text","text":"hi"}'])
   })
+
+  it("apiGetChatItemInfo returns the response", async () => {
+    const info = {type: "chatItemInfo", user, chatItem: {chatItem: {meta: {itemId: 5}}}, chatItemInfo: {itemVersions: [], fileXftpServers: ["xftp://abc@localhost:7002"]}}
+    const chat = await chatWithResponse(info)
+    await expect(chat.apiGetChatItemInfo(T.ChatType.Direct, 2, 5)).resolves.toEqual(info)
+    expect(sentCommands()).toEqual(["/_get item info @2 5"])
+  })
 })
 
 describe("startChat lifecycle", () => {

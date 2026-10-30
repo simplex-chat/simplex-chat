@@ -113,3 +113,9 @@ describe("network config cmdString", () => {
     expect(CC.APISetNetworkConfig.cmdString({networkConfig})).toBe(`/_network ${JSON.stringify(networkConfig)}`)
   })
 })
+
+describe("APIGetChatItemInfo.cmdString", () => {
+  it("renders chat reference and item ID", () => {
+    expect(CC.APIGetChatItemInfo.cmdString({chatRef: {chatType: T.ChatType.Direct, chatId: 2}, chatItemId: 5})).toBe("/_get item info @2 5")
+  })
+})

@@ -132,3 +132,11 @@ def test_member_contact_cmd_string():
 
 def test_api_get_network_config_cmd_string():
     assert CC.APIGetNetworkConfig_cmd_string({}) == "/network"
+
+
+def test_api_get_chat_item_info_cmd_string():
+    ref = {"chatType": "direct", "chatId": 2}
+    assert (
+        CC.APIGetChatItemInfo_cmd_string({"chatRef": ref, "chatItemId": 5})
+        == "/_get item info @2 5"
+    )

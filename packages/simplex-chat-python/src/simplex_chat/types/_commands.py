@@ -762,6 +762,19 @@ def APIContactInfo_cmd_string(self: APIContactInfo) -> str:
 APIContactInfo_Response = CR.ContactInfo | CR.ChatCmdError
 
 
+# Get message information.
+# Network usage: no.
+class APIGetChatItemInfo(TypedDict):
+    chatRef: "T.ChatRef"
+    chatItemId: int  # int64
+
+
+def APIGetChatItemInfo_cmd_string(self: APIGetChatItemInfo) -> str:
+    return '/_get item info ' + T.ChatRef_cmd_string(self['chatRef']) + ' ' + str(self['chatItemId'])
+
+APIGetChatItemInfo_Response = CR.ChatItemInfo | CR.ChatCmdError
+
+
 # Delete chat.
 # Network usage: background.
 class APIDeleteChat(TypedDict):

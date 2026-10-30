@@ -50,6 +50,8 @@ This file is generated automatically.
 - [ChatInfo](#chatinfo)
 - [ChatItem](#chatitem)
 - [ChatItemDeletion](#chatitemdeletion)
+- [ChatItemInfo](#chatiteminfo)
+- [ChatItemVersion](#chatitemversion)
 - [ChatLayout](#chatlayout)
 - [ChatListQuery](#chatlistquery)
 - [ChatPagination](#chatpagination)
@@ -126,6 +128,7 @@ This file is generated automatically.
 - [GroupRelay](#grouprelay)
 - [GroupShortLinkData](#groupshortlinkdata)
 - [GroupShortLinkInfo](#groupshortlinkinfo)
+- [GroupSndStatus](#groupsndstatus)
 - [GroupSummary](#groupsummary)
 - [GroupSupportChat](#groupsupportchat)
 - [GroupType](#grouptype)
@@ -143,6 +146,7 @@ This file is generated automatically.
 - [LocalProfile](#localprofile)
 - [MarkdownBlock](#markdownblock)
 - [MemberCriteria](#membercriteria)
+- [MemberDeliveryStatus](#memberdeliverystatus)
 - [MsgChatLink](#msgchatlink)
 - [MsgContent](#msgcontent)
 - [MsgContentTag](#msgcontenttag)
@@ -1613,6 +1617,30 @@ Message deletion result.
 
 ---
 
+## ChatItemInfo
+
+**Record type**:
+- itemVersions: [[ChatItemVersion](#chatitemversion)]
+- memberDeliveryStatuses: [[MemberDeliveryStatus](#memberdeliverystatus)]?
+- forwardedFromChatItem: [AChatItem](#achatitem)?
+- fileXftpServers: [string]
+
+
+---
+
+## ChatItemVersion
+
+**Record type**:
+- chatItemVersionId: int64
+- msgContent: [MsgContent](#msgcontent)
+- formattedText: [[FormattedText](#formattedtext)]?
+- markdownBlocks: [[MarkdownBlock](#markdownblock)]?
+- itemVersionTs: UTCTime
+- createdAt: UTCTime
+
+
+---
+
 ## ChatLayout
 
 **Enum type**:
@@ -2937,6 +2965,41 @@ contact=<contactId> owner=<memberId>
 
 ---
 
+## GroupSndStatus
+
+**Discriminated union type**:
+
+New:
+- type: "new"
+
+Forwarded:
+- type: "forwarded"
+
+Inactive:
+- type: "inactive"
+
+Sent:
+- type: "sent"
+
+Rcvd:
+- type: "rcvd"
+- msgRcptStatus: [MsgReceiptStatus](#msgreceiptstatus)
+
+Error:
+- type: "error"
+- agentError: [SndError](#snderror)
+
+Warning:
+- type: "warning"
+- agentError: [SndError](#snderror)
+
+Invalid:
+- type: "invalid"
+- text: string
+
+
+---
+
 ## GroupSummary
 
 **Record type**:
@@ -3173,6 +3236,16 @@ Rule:
 
 **Enum type**:
 - "all"
+
+
+---
+
+## MemberDeliveryStatus
+
+**Record type**:
+- groupMemberId: int64
+- memberDeliveryStatus: [GroupSndStatus](#groupsndstatus)
+- sentViaProxy: bool?
 
 
 ---

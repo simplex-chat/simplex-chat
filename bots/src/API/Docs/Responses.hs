@@ -48,6 +48,7 @@ chatResponsesDocsData =
   [ ("CRAcceptingContactRequest", "Contact request accepted"),
     ("CRActiveUser", "Active user profile"),
     ("CRApiChat", "Chat and messages"),
+    ("CRChatItemInfo", "Message information"),
     ("CRChatItemNotChanged", "Message not changed"),
     ("CRChatItemReaction", "Message reaction"),
     ("CRChatItemUpdated", "Message updated"),
@@ -117,7 +118,6 @@ chatResponsesDocsData =
     ("CRUsersList", "Users"),
     ("CRApiChats", "Chat previews (paginated). Use this instead of CRContactsList / CRGroupsList when scanning at scale.")
     -- ("CRChatCleared", ""),
-    -- ("CRChatItemInfo", "Message information"),
     -- ("CRChatItems", "The most recent messages"),
     -- ("CRConnectionAliasUpdated", ""),
     -- ("CRContactAliasUpdated", ""),
@@ -149,7 +149,6 @@ undocumentedResponses =
     "CRChatContentTypes",
     "CRChatHelp",
     "CRChatItemId",
-    "CRChatItemInfo",
     "CRChatItems",
     "CRChatItemTTL",
     "CRChatRelayTestResult",
