@@ -67,7 +67,7 @@ db_query() {
   sqlite3 "$work/$1_chat.db" "$2"
 }
 
-# Prints a profile image data URI made as the apps make one: JPEG at quality 85, scaled down by the square root
+# Prints a profile image data URI: JPEG at quality 85, scaled down by the square root
 # of its excess, at most halved per step, until it is at most max_image_size characters. The picture fills the
 # whole square, a gradient between two shades of one colour with a large white letter; noise keeps JPEG from
 # compressing it much, so the image ends up near the limit.

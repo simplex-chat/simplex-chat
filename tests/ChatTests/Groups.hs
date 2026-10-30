@@ -10166,7 +10166,7 @@ testChannelLargeProfileFits ps =
 
           -- ~14000 chars: profile fits in a singleton batch AND packs
           -- inline with the forwarded body (exercises the in-body path).
-          let bigImage = T.pack ("data:image/png;base64," <> replicate 14000 'A')
+          let bigImage = T.pack ("data:image/png;base64," <> take 14000 ("iVBORw0KGgo" <> repeat 'A'))
           withCCTransaction bob $ \db ->
             DB.execute db "UPDATE contact_profiles SET image = ? WHERE display_name = ?" (bigImage, "cath" :: T.Text)
 
@@ -10193,7 +10193,7 @@ testChannelOverflowProfileNotification ps =
           dan <## "ok"
           danConnId <- relayConnIdToMember bob "dan"
 
-          let bigImage = T.pack ("data:image/png;base64," <> replicate 10000 'A')
+          let bigImage = T.pack ("data:image/png;base64," <> take 10000 ("iVBORw0KGgo" <> repeat 'A'))
               longText = replicate 7000 'x'
           withCCTransaction bob $ \db ->
             DB.execute db "UPDATE contact_profiles SET image = ? WHERE display_name = ?" (bigImage, "cath" :: T.Text)
@@ -10220,8 +10220,8 @@ testChannelMultipleLargeProfiles ps =
 
             -- ~14500 chars each: one rides inline with the body,
             -- the other spills into a standalone overflow batch.
-            let cathImage = T.pack ("data:image/png;base64," <> replicate 14500 'A')
-                danImage = T.pack ("data:image/png;base64," <> replicate 14500 'B')
+            let cathImage = T.pack ("data:image/png;base64," <> take 14500 ("iVBORw0KGgo" <> repeat 'A'))
+                danImage = T.pack ("data:image/png;base64," <> take 14500 ("iVBORw0KGgo" <> repeat 'B'))
             withCCTransaction bob $ \db -> do
               DB.execute db "UPDATE contact_profiles SET image = ? WHERE display_name = ?" (cathImage, "cath" :: T.Text)
               DB.execute db "UPDATE contact_profiles SET image = ? WHERE display_name = ?" (danImage, "dan" :: T.Text)
