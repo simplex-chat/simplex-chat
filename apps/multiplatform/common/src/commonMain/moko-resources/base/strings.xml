@@ -3349,7 +3349,7 @@
   <string name="badges_renews_on">Renews on %1$s.</string>
   <string name="supporter_perks">Supporter perks</string>
   <string name="v7_1_supporter_badge_title">Supporter badges 🚀</string>
-  <string name="v7_1_supporter_badge_body">Send larger files available for longer.</string>
+  <string name="v7_1_supporter_badge_body">Send larger files\navailable for longer.</string>
   <string name="v7_1_channels">Safer channels</string>
   <string name="v7_1_channels_moderators">Promote contributors to moderators.</string>
   <string name="v7_1_channels_signed_messages">Opt in to sign all channel messages.</string>

@@ -747,20 +747,17 @@ fileprivate struct SupporterBadgeWhatsNew: View {
     @EnvironmentObject var theme: AppTheme
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Supporter badges 🚀")
-                    .font(.title3)
-                    .bold()
-                Text("Send larger files available for longer.")
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(10)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            heroThumbnail()
-                .frame(height: 0, alignment: .bottom)
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Supporter badges 🚀")
+                .font(.title3)
+                .bold()
+            Text("Send larger files\navailable for longer.")
+                .multilineTextAlignment(.leading)
+                .lineLimit(10)
         }
+        .padding(.trailing, 96)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(alignment: .topTrailing) { heroThumbnail() }
     }
 
     @ViewBuilder
@@ -769,7 +766,8 @@ fileprivate struct SupporterBadgeWhatsNew: View {
         Image(colorScheme == .light ? "phone-supporter" : "phone-supporter-light")
             .resizable()
             .scaledToFit()
-            .frame(width: 110, height: 110)
+            .frame(width: 115, height: 144)
+            .offset(x: 23, y: -24)
         #else
         Image("badge-supporter")
             .resizable()

@@ -1004,8 +1004,8 @@ private val versionDescriptions: List<VersionDescription> = listOf(
 
 @Composable
 private fun SupporterBadgeWhatsNew() {
-  Row(Modifier.padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Bottom) {
-    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+  Box(Modifier.padding(bottom = 12.dp).fillMaxWidth()) {
+    Column(Modifier.padding(end = 96.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
       Text(
         stringResource(MR.strings.v7_1_supporter_badge_title),
         style = MaterialTheme.typography.h4,
@@ -1023,22 +1023,22 @@ private fun SupporterBadgeWhatsNew() {
         painterResource(if (isDark) MR.images.phone_supporter_light else MR.images.phone_supporter),
         contentDescription = null,
         contentScale = ContentScale.Fit,
-        modifier = Modifier.overhangUp().size(110.dp)
+        modifier = Modifier.align(Alignment.TopEnd).spill(x = 23.dp, y = (-24).dp).size(width = 115.dp, height = 144.dp)
       )
     } else {
       Image(
         painterResource(MR.images.badge_supporter),
         contentDescription = null,
         contentScale = ContentScale.Fit,
-        modifier = Modifier.overhangUp().size(72.dp)
+        modifier = Modifier.align(Alignment.TopEnd).size(72.dp)
       )
     }
   }
 }
 
-private fun Modifier.overhangUp(): Modifier = layout { measurable, constraints ->
+private fun Modifier.spill(x: Dp, y: Dp): Modifier = layout { measurable, constraints ->
   val placeable = measurable.measure(constraints)
-  layout(placeable.width, 0) { placeable.place(0, -placeable.height) }
+  layout(0, 0) { placeable.place(x.roundToPx() - placeable.width, y.roundToPx()) }
 }
 
 private val lastVersion = versionDescriptions.last().version
