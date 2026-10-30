@@ -712,7 +712,7 @@ private let versionDescriptions: [VersionDescription] = [
                 title: "Safer channels",
                 description: nil,
                 subfeatures: [
-                    ("flag", "Make subscribers moderators."),
+                    ("flag", "Promote contributors to moderators."),
                     ("checkmark.seal", "Opt in to sign all channel messages."),
                 ]
             )),

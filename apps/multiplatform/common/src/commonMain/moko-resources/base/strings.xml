@@ -3351,7 +3351,7 @@
   <string name="v7_1_supporter_badge_title">Supporter badges 🚀</string>
   <string name="v7_1_supporter_badge_body">Send larger files available for longer.</string>
   <string name="v7_1_channels">Safer channels</string>
-  <string name="v7_1_channels_moderators">Make subscribers moderators.</string>
+  <string name="v7_1_channels_moderators">Promote contributors to moderators.</string>
   <string name="v7_1_channels_signed_messages">Opt in to sign all channel messages.</string>
   <string name="v7_1_terminal_layout">Flat ("terminal") chat layout</string>
   <string name="v7_1_terminal_layout_descr">And full markdown support.</string>
