@@ -226,6 +226,7 @@ Search is available via pull-down gesture or search button in the navigation bar
 - Matching chats are displayed in the same list format
 - Results update as the user types (debounced)
 - Clearing search restores the full filtered list
+- Switching profile clears the search text
 
 ---
 
