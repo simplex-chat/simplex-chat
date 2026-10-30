@@ -2523,7 +2523,7 @@
     <string name="channel_subscriber_count_singular">%1$d подписчик</string>
     <string name="channel_subscriber_count_plural">%1$d подписчиков</string>
     <string name="cancel_creating_channel_question">Отменить создание канала?</string>
-    <string name="connect_plan_this_is_your_link_for_channel_vName"><![CDATA[Это ваша ссылка на канал %1$s!]]></string>
+    <string name="connect_plan_this_is_your_link_for_channel_vName">Это ваша ссылка на канал %1$s!</string>
     <string name="channel_role_label">канал</string>
     <string name="chat_banner_channel">Канал</string>
     <string name="info_row_channel">Канал</string>
