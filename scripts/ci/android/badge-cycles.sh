@@ -25,9 +25,14 @@ ui=$here/ui
 readings=$out/readings
 mkdir -p "$readings"
 
-UI_OUT=$out "$ui" stop
-adb shell pm clear "$package"
-"$here/smoke-test.sh" "$apk" "$out/onboarding" onboarding
+fresh_onboarding() {
+  UI_OUT=$out "$ui" stop
+  adb shell pm clear "$package"
+  "$here/smoke-test.sh" "$apk" "$out/$1" onboarding
+}
+
+# the ARM translation can crash the app at start (README, "Known limits"), so onboarding gets a second start
+fresh_onboarding onboarding || fresh_onboarding onboarding-again
 export UI_OUT=$out
 
 normalise() {
