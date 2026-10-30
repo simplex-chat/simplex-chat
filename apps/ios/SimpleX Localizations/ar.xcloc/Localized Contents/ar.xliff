@@ -555,7 +555,7 @@
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve" approved="no">
         <source>By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</source>
-        <target state="translated">حسب ملف تعريف الدردشة (افتراضي) أو [حسب الاتصال] (https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
+        <target state="translated">حسب ملف تعريف الدردشة (افتراضي) أو [حسب الاتصال](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve" approved="no">
@@ -3138,8 +3138,82 @@ To connect, please ask your contact to create another connection link and check 
         <source>You are connected to the server used to receive messages from this contact.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are invited to group" xml:space="preserve">
+      <trans-unit id="starting…" xml:space="preserve" approved="no">
+        <source>starting…</source>
+        <target state="translated">يبدأ…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="strike" xml:space="preserve" approved="no">
+        <source>strike</source>
+        <target state="translated">شطب</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="this contact" xml:space="preserve">
+        <source>this contact</source>
+        <note>notification title</note>
+      </trans-unit>
+      <trans-unit id="unknown" xml:space="preserve" approved="no">
+        <source>unknown</source>
+        <target state="translated">غير معروف</target>
+        <note>connection info</note>
+      </trans-unit>
+      <trans-unit id="updated group profile" xml:space="preserve" approved="no">
+        <source>updated group profile</source>
+        <target state="translated">حدثت ملف تعريف المجموعة</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="v%@ (%@)" xml:space="preserve">
+        <source>v%@ (%@)</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="via contact address link" xml:space="preserve" approved="no">
+        <source>via contact address link</source>
+        <target state="translated">عبر رابط عنوان الاتصال</target>
+        <note>chat list item description</note>
+      </trans-unit>
+      <trans-unit id="via group link" xml:space="preserve" approved="no">
+        <source>via group link</source>
+        <target state="translated">عبر رابط المجموعة</target>
+        <note>chat list item description</note>
+      </trans-unit>
+      <trans-unit id="via one-time link" xml:space="preserve" approved="no">
+        <source>via one-time link</source>
+        <target state="translated">عبر رابط لمرة واحدة</target>
+        <note>chat list item description</note>
+      </trans-unit>
+      <trans-unit id="via relay" xml:space="preserve" approved="no">
+        <source>via relay</source>
+        <target state="translated">عبر المُرحل</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="video call (not e2e encrypted)" xml:space="preserve" approved="no">
+        <source>video call (not e2e encrypted)</source>
+        <target state="translated">مكالمة الفيديو ليست مُعمّاة بين الطريفين</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="waiting for answer…" xml:space="preserve" approved="no">
+        <source>waiting for answer…</source>
+        <target state="translated">بانتظار الرد…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="waiting for confirmation…" xml:space="preserve" approved="no">
+        <source>waiting for confirmation…</source>
+        <target state="translated">في انتظار التأكيد…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="wants to connect to you!" xml:space="preserve" approved="no">
+        <source>wants to connect to you!</source>
+        <target state="translated">يريد الاتصال بك!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="yes" xml:space="preserve" approved="no">
+        <source>yes</source>
+        <target state="translated">نعم</target>
+        <note>pref value</note>
+      </trans-unit>
+      <trans-unit id="You are invited to group" xml:space="preserve" approved="no">
         <source>You are invited to group</source>
+        <target state="translated">أنت مدعو إلى المجموعة</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." xml:space="preserve">
@@ -3727,84 +3801,6 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="secret" xml:space="preserve">
         <source>secret</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="starting…" xml:space="preserve" approved="no">
-        <source>starting…</source>
-        <target state="translated">يبدأ…</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="strike" xml:space="preserve" approved="no">
-        <source>strike</source>
-        <target state="translated">شطب</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="this contact" xml:space="preserve">
-        <source>this contact</source>
-        <note>notification title</note>
-      </trans-unit>
-      <trans-unit id="unknown" xml:space="preserve" approved="no">
-        <source>unknown</source>
-        <target state="translated">غير معروف</target>
-        <note>connection info</note>
-      </trans-unit>
-      <trans-unit id="updated group profile" xml:space="preserve" approved="no">
-        <source>updated group profile</source>
-        <target state="translated">حدثت ملف تعريف المجموعة</target>
-        <note>rcv group event chat item</note>
-      </trans-unit>
-      <trans-unit id="v%@ (%@)" xml:space="preserve">
-        <source>v%@ (%@)</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="via contact address link" xml:space="preserve" approved="no">
-        <source>via contact address link</source>
-        <target state="translated">عبر رابط عنوان الاتصال</target>
-        <note>chat list item description</note>
-      </trans-unit>
-      <trans-unit id="via group link" xml:space="preserve" approved="no">
-        <source>via group link</source>
-        <target state="translated">عبر رابط المجموعة</target>
-        <note>chat list item description</note>
-      </trans-unit>
-      <trans-unit id="via one-time link" xml:space="preserve" approved="no">
-        <source>via one-time link</source>
-        <target state="translated">عبر رابط لمرة واحدة</target>
-        <note>chat list item description</note>
-      </trans-unit>
-      <trans-unit id="via relay" xml:space="preserve" approved="no">
-        <source>via relay</source>
-        <target state="translated">عبر المُرحل</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="video call (not e2e encrypted)" xml:space="preserve" approved="no">
-        <source>video call (not e2e encrypted)</source>
-        <target state="translated">مكالمة الفيديو ليست مُعمّاة بين الطريفين</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="waiting for answer…" xml:space="preserve" approved="no">
-        <source>waiting for answer…</source>
-        <target state="translated">بانتظار الرد…</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="waiting for confirmation…" xml:space="preserve" approved="no">
-        <source>waiting for confirmation…</source>
-        <target state="translated">في انتظار التأكيد…</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="wants to connect to you!" xml:space="preserve" approved="no">
-        <source>wants to connect to you!</source>
-        <target state="translated">يريد الاتصال بك!</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="yes" xml:space="preserve" approved="no">
-        <source>yes</source>
-        <target state="translated">نعم</target>
-        <note>pref value</note>
-      </trans-unit>
-      <trans-unit id="You are invited to group" xml:space="preserve" approved="no">
-        <source>You are invited to group</source>
-        <target state="translated">أنت مدعو إلى المجموعة</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you changed address" xml:space="preserve" approved="no">
@@ -5455,7 +5451,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" xml:space="preserve" approved="no">
         <source>Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</source>
-        <target state="translated">البلغارية والفنلندية والتايلاندية والأوكرانية - شكرًا للمستخدمين و[Weblate] (https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</target>
+        <target state="translated">البلغارية والفنلندية والتايلاندية والأوكرانية - شكرًا للمستخدمين و[Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</target>
       </trans-unit>
       <trans-unit id="Choose _Migrate from another device_ on the new device and scan QR code." xml:space="preserve" approved="no">
         <source>Choose _Migrate from another device_ on the new device and scan QR code.</source>
@@ -5853,7 +5849,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve" approved="no">
         <source>Error connecting to forwarding server %@. Please try later.</source>
-        <target state="needs-translation">خطأ في الإتصال بخادم التحويل @%. حاول مجددا بعد حين.</target>
+        <target state="needs-translation">خطأ في الإتصال بخادم التحويل %@. حاول مجددا بعد حين.</target>
       </trans-unit>
       <trans-unit id="encryption agreed for %@" xml:space="preserve">
         <source>encryption agreed for %@</source>

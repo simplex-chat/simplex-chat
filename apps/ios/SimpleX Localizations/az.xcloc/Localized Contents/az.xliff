@@ -327,7 +327,7 @@ channel relay bar</note>
       </trans-unit>
       <trans-unit id="%lld file(s) with total size of %@" xml:space="preserve" approved="no">
         <source>%lld file(s) with total size of %@</source>
-        <target state="translated">Ümumi həcmi %@ olan %lld fayl</target>
+        <target state="translated">Ümumi həcmi %2$@ olan %1$lld fayl</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld group events" xml:space="preserve" approved="no">
@@ -357,7 +357,7 @@ channel relay bar</note>
       </trans-unit>
       <trans-unit id="%lld messages moderated by %@" xml:space="preserve" approved="no">
         <source>%lld messages moderated by %@</source>
-        <target state="translated">%@ tərəfindən moderasiya edilmiş %lld mesaj</target>
+        <target state="translated">%2$@ tərəfindən moderasiya edilmiş %1$lld mesaj</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld minutes" xml:space="preserve" approved="no">

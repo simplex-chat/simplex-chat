@@ -5231,11 +5231,11 @@ Isso pode acontecer por causa de algum bug ou quando a conexão está comprometi
       </trans-unit>
       <trans-unit id="%@ downloaded" xml:space="preserve" approved="no">
         <source>%@ downloaded</source>
-        <target state="translated">baixado</target>
+        <target state="translated">%@ baixado</target>
       </trans-unit>
       <trans-unit id="%@ uploaded" xml:space="preserve" approved="no">
         <source>%@ uploaded</source>
-        <target state="translated">transferido</target>
+        <target state="translated">%@ transferido</target>
       </trans-unit>
       <trans-unit id="A new random profile will be shared." xml:space="preserve" approved="no">
         <source>A new random profile will be shared.</source>
@@ -5307,7 +5307,7 @@ Isso pode acontecer por causa de algum bug ou quando a conexão está comprometi
       </trans-unit>
       <trans-unit id="%lld messages marked deleted" xml:space="preserve" approved="no">
         <source>%lld messages marked deleted</source>
-        <target state="translated">mensagens deletadas</target>
+        <target state="translated">%lld mensagens deletadas</target>
       </trans-unit>
       <trans-unit id="0 sec" xml:space="preserve" approved="no">
         <source>0 sec</source>
@@ -5315,11 +5315,11 @@ Isso pode acontecer por causa de algum bug ou quando a conexão está comprometi
       </trans-unit>
       <trans-unit id="%lld messages blocked" xml:space="preserve" approved="no">
         <source>%lld messages blocked</source>
-        <target state="translated">mensagens bloqueadas</target>
+        <target state="translated">%lld mensagens bloqueadas</target>
       </trans-unit>
       <trans-unit id="%lld messages blocked by admin" xml:space="preserve" approved="no">
         <source>%lld messages blocked by admin</source>
-        <target state="translated">mensagens bloqueadas pelo administrador</target>
+        <target state="translated">%lld mensagens bloqueadas pelo administrador</target>
       </trans-unit>
       <trans-unit id="**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." xml:space="preserve" approved="no">
         <source>**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection.</source>
@@ -5471,7 +5471,7 @@ Isso pode acontecer por causa de algum bug ou quando a conexão está comprometi
       </trans-unit>
       <trans-unit id="(this device v%@)" xml:space="preserve" approved="no">
         <source>(this device v%@)</source>
-        <target state="translated">este dispositivo</target>
+        <target state="translated">(este dispositivo v%@)</target>
       </trans-unit>
       <trans-unit id="**Create 1-time link**: to create and share a new invitation link." xml:space="preserve" approved="no">
         <source>**Create 1-time link**: to create and share a new invitation link.</source>

@@ -126,7 +126,7 @@
       </trans-unit>
       <trans-unit id="%lld file(s) with total size of %@" xml:space="preserve" approved="no">
         <source>%lld file(s) with total size of %@</source>
-        <target state="translated">총 크기가 %@인 파일 %lld 개</target>
+        <target state="translated">총 크기가 %2$@인 파일 %1$lld 개</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld members" xml:space="preserve" approved="no">
@@ -4177,7 +4177,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="%lld messages moderated by %@" xml:space="preserve" approved="no">
         <source>%lld messages moderated by %@</source>
-        <target state="translated">%@ 에 의해 중재된 %lld 개의 메세지</target>
+        <target state="translated">%2$@ 에 의해 중재된 %1$lld 개의 메세지</target>
       </trans-unit>
       <trans-unit id="%lld new interface languages" xml:space="preserve" approved="no">
         <source>%lld new interface languages</source>
@@ -4495,7 +4495,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve" approved="no">
         <source>Create new profile in [desktop app](https://simplex.chat/downloads/). 💻</source>
-        <target state="translated">[데스크톱 앱]에 새로운 프로필 생성(https://simplex.chat/downloads/).💻</target>
+        <target state="translated">[데스크톱 앱](https://simplex.chat/downloads/)에 새로운 프로필 생성.💻</target>
       </trans-unit>
       <trans-unit id="Contact is deleted." xml:space="preserve" approved="no">
         <source>Contact is deleted.</source>
