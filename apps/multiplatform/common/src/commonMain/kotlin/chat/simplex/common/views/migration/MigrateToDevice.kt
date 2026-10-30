@@ -141,7 +141,7 @@ fun ModalData.MigrateToDeviceView(close: () -> Unit) {
       }
     }
   }
-  val chatReceiver = remember { mutableStateOf(null as MigrationToChatReceiver?) }
+  val chatReceiver = remember { stateGetOrPutNullable<MigrationToChatReceiver>("chatReceiver") { null } }
   ModalView(
     enableClose = !backDisabled.value,
     close = {
@@ -190,7 +190,7 @@ private fun ModalData.SectionByState(
     is MigrationToState.LinkDownloading -> migrationState.LinkDownloadingView(s.link, s.ctrl, s.user, s.archivePath, tempDatabaseFile, chatReceiver, s.netCfg, s.networkProxy)
     is MigrationToState.DownloadProgress -> DownloadProgressView(s.downloadedBytes, totalBytes = s.totalBytes)
     is MigrationToState.DownloadFailed -> migrationState.DownloadFailedView(s.link, chatReceiver.value, s.archivePath, s.netCfg, s.networkProxy)
-    is MigrationToState.ArchiveImport -> migrationState.ArchiveImportView(s.archivePath, s.netCfg, s.networkProxy)
+    is MigrationToState.ArchiveImport -> migrationState.ArchiveImportView(chatReceiver.value, s.archivePath, s.netCfg, s.networkProxy)
     is MigrationToState.ArchiveImportFailed -> migrationState.ArchiveImportFailedView(s.archivePath, s.netCfg, s.networkProxy)
     is MigrationToState.Passphrase -> migrationState.PassphraseEnteringView(currentKey = s.passphrase, s.netCfg, s.networkProxy)
     is MigrationToState.MigrationConfirmation -> migrationState.MigrationConfirmationView(s.status, s.passphrase, s.useKeychain, s.netCfg, s.networkProxy)
@@ -387,12 +387,13 @@ private fun MutableState<MigrationToState?>.DownloadFailedView(link: String, cha
 }
 
 @Composable
-private fun MutableState<MigrationToState?>.ArchiveImportView(archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
+private fun MutableState<MigrationToState?>.ArchiveImportView(chatReceiver: MigrationToChatReceiver?, archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
   Box {
     SectionView(stringResource(MR.strings.migrate_to_device_importing_archive)) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
+    chatReceiver?.stopAndCleanUp()
     importArchive(archivePath, netCfg, networkProxy)
   }
 }
@@ -440,7 +441,8 @@ private fun MutableState<MigrationToState?>.PassphraseEnteringView(currentKey: S
           verifyingPassphrase.value = true
           hideKeyboard(view)
           withBGApi {
-            val (status, _) = chatInitTemporaryDatabase(dbAbsolutePrefixPath, key = currentKey.value, confirmation = MigrationConfirmation.YesUp)
+            val (status, ctrl) = chatInitTemporaryDatabase(dbAbsolutePrefixPath, key = currentKey.value, confirmation = MigrationConfirmation.YesUp)
+            if (status == DBMigrationResult.OK && ctrl != null) controller.stopChatWithTemporaryDatabase(ctrl)
             val success = status == DBMigrationResult.OK || status == DBMigrationResult.InvalidConfirmation
             if (success) {
               state = MigrationToState.Migration(currentKey.value, MigrationConfirmation.YesUp, useKeychain.value, netCfg, networkProxy)
@@ -781,10 +783,10 @@ private class MigrationToChatReceiver(
     }
   }
 
-  fun stopAndCleanUp() {
+  suspend fun stopAndCleanUp() {
     Log.d(TAG, "MigrationChatReceiver.stop")
     receiveMessages = false
-    chatCloseStore(ctrl)
+    controller.stopChatWithTemporaryDatabase(ctrl)
     File(databaseUrl.absolutePath + "_chat.db").delete()
     File(databaseUrl.absolutePath + "_agent.db").delete()
   }

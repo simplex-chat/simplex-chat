@@ -355,8 +355,8 @@ func apiCheckChatRunning() throws -> Bool {
     }
 }
 
-func apiStopChat() async throws {
-    let r: ChatResponse0 = try await chatSendCmd(.apiStopChat)
+func apiStopChat(ctrl: chat_ctrl? = nil) async throws {
+    let r: ChatResponse0 = try await chatSendCmd(.apiStopChat, ctrl: ctrl)
     switch r {
     case .chatStopped: return
     default: throw r.unexpected
@@ -2440,6 +2440,15 @@ func startChatWithTemporaryDatabase(ctrl: chat_ctrl) throws -> User? {
     try apiSetAppFilePaths(filesFolder: getMigrationTempFilesDirectory().path, tempFolder: getMigrationTempFilesDirectory().path, assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path, ctrl: ctrl)
     _ = try apiStartChat(ctrl: ctrl)
     return migrationActiveUser
+}
+
+func stopChatWithTemporaryDatabase(ctrl: chat_ctrl) async {
+    do {
+        try await apiStopChat(ctrl: ctrl)
+    } catch let error {
+        logger.error("Error stopping chat in temporary database: \(responseError(error))")
+    }
+    chat_close_store(ctrl)
 }
 
 func changeActiveUser(_ userId: Int64, viewPwd: String?) {
