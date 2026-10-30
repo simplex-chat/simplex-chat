@@ -2858,7 +2858,7 @@
     <string name="badges_how_it_works_p2">Ahhoz, hogy egy partnernek vagy egy kiszolgálónak bizonyítsa, hogy van kitűzője, az alkalmazás egy új bizonyítékot hoz létre, amely csak a kitűző típusát és a hétre kerekített lejárati dátumot fedi fel.</string>
     <string name="badges_how_it_works_p3">Senki sem tud két különböző bizonyítékot összekapcsolni egymással vagy a vásárlással.</string>
     <string name="badges_preview_my_nickname">Saját becenév</string>
-    <string name="badges_banner_title">Támogassa a SimpkeXet</string>
+    <string name="badges_banner_title">Támogassa a SimpleXet</string>
     <string name="badges_banner_subtitle">Kitűző szerzése és jobb fájlküldés</string>
     <string name="badges_banner_dismiss_message">Később támogathatja a SimpleXet a beállításokban.</string>
     <string name="badges_purchase_error">Vásárlási hiba</string>
@@ -2876,7 +2876,7 @@
     <string name="badges_error_bad_service_response">A kitűzőszolgáltatás váratlan választ küldött: %1$s</string>
     <string name="badges_error_credential_not_verified">Az alkalmazás ezen verziója nem tudja ellenőrizni ezt a kitűzőt. Frissítse az alkalmazást.</string>
     <string name="badges_error_unsupported_version">Az alkalmazás ezen verziója túl régi a kitűzőszolgáltatáshoz. Frissítse az alkalmazást.</string>
-    <string name="badges_error_badge_ended">A kód el lett fogadva, de az általa biztosított kitűző már nem érhető el.</string>
+    <string name="badges_error_badge_ended">A kód el lett fogadva, de az általa biztosított kitűző már lejárt.</string>
     <string name="badges_error_unknown">Nem sikerült beváltani a kódot.</string>
     <string name="badges_code_you_scanned_is_not_badge_code">A beolvasott kód nem egy kitűző kódja.</string>
     <string name="badges_your_badge">Saját kitűző</string>
@@ -2962,7 +2962,7 @@
     <string name="badges_error_provider_not_configured">A kitűzők még nem vásárolhatók meg az alkalmazásban.</string>
     <string name="badges_error_product_unavailable">Ez a kitűző nem vásárolható meg.</string>
     <string name="badges_dismiss">Eltüntetés</string>
-    <string name="badges_credential">Hitelesítési adat</string>
+    <string name="badges_credential">Igazolás</string>
     <string name="badges_credential_status">Állapot</string>
     <string name="badges_credential_expires">Lejár</string>
     <string name="badges_credential_months_left">Hátralévő hónapok</string>
@@ -2972,7 +2972,7 @@
     <string name="badges_ledger_no_entries">Nincsenek bejegyzések</string>
     <string name="badges_ledger_date">Dátum</string>
     <string name="badges_ledger_balance">Egyenleg</string>
-    <string name="badges_ledger_balance_start">Kezdő egyenleg</string>
+    <string name="badges_ledger_balance_start">Egyenleg kezdete</string>
     <string name="badges_ledger_anchor">Horgony</string>
     <string name="badges_ledger_badge_type">Kitűző típusa</string>
     <string name="badges_ledger_paused_since">Szüneteltetve ekkortól</string>
@@ -2996,7 +2996,7 @@
     <string name="chat_layout_classic">Klasszikus</string>
     <string name="chat_layout_default_suffix">(alapértelmezett)</string>
     <string name="chat_layout_terminal">Terminál</string>
-    <string name="chat_layout_chat_suffix">(csevegő)</string>
+    <string name="chat_layout_chat_suffix">(csevegés)</string>
     <string name="file_already_exists_replace_question">A fájl már létezik. Lecseréli?</string>
     <string name="member_info_section_title_moderator">Moderátor</string>
     <string name="member_info_section_title_contributor">Közreműködő</string>

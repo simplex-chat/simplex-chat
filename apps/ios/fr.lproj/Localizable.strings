@@ -983,7 +983,7 @@ swipe action */
 "Balance" = "Solde";
 
 /* ledger entry field */
-"Balance start" = "Solde initial";
+"Balance start" = "Début du solde";
 
 /* No comment provided by engineer. */
 "Be free\nin your network" = "Soyez libre\nau sein de votre réseau";
@@ -4519,7 +4519,7 @@ servers warning */
 "No valid link" = "Aucun lien valide";
 
 /* No comment provided by engineer. */
-"Nobody can link two different proofs to each other or to the purchase." = "Personne ne peut relier deux justificatifs différents entre eux ni les relier à l’achat.";
+"Nobody can link two different proofs to each other or to the purchase." = "Personne ne peut relier deux preuves différentes entre elles ou à l’achat.";
 
 /* No comment provided by engineer. */
 "Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." = "Personne ne suivait vos conversations. Personne ne dessinait de carte d'où vous étiez. La vie privée n'était jamais une caractéristique – c'était le mode de vie.";

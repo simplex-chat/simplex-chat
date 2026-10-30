@@ -594,7 +594,7 @@
     <string name="message_delivery_error_desc">Provavelmente esse contato excluiu a conexão com você.</string>
     <string name="save_verb">Salvar</string>
     <string name="delete_message_cannot_be_undone_warning">A mensagem será apagada. Isso não pode ser desfeito!</string>
-    <string name="delete_message_mark_deleted_warning">A mensagem será apagada, mas o destinatário poderá visualizá-la.</string>
+    <string name="delete_message_mark_deleted_warning">A mensagem será marcada para exclusão. O(s) destinatário(s) poderá(ão) revelar esta mensagem.</string>
     <string name="moderate_verb">Moderar</string>
     <string name="images_limit_title">Excesso de imagens!</string>
     <string name="images_limit_desc">Apenas 10 imagens podem ser enviadas ao mesmo tempo</string>

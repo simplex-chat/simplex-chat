@@ -407,7 +407,7 @@ channel relay bar</note>
       </trans-unit>
       <trans-unit id="%lld%% off" xml:space="preserve">
         <source>%lld%% off</source>
-        <target>%lld%% aus</target>
+        <target>%lld%% Rabatt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldd" xml:space="preserve">
@@ -1528,7 +1528,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Balance start" xml:space="preserve">
         <source>Balance start</source>
-        <target>Anfangs-Guthaben</target>
+        <target>Beginn des Guthabens</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Be free&#10;in your network" xml:space="preserve">
@@ -2882,7 +2882,7 @@ Das ist Ihr eigener Einmal-Link!</target>
       </trans-unit>
       <trans-unit id="Credential" xml:space="preserve">
         <source>Credential</source>
-        <target>Anmeldeinformation</target>
+        <target>Credential</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)" xml:space="preserve">
@@ -10533,7 +10533,7 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
       </trans-unit>
       <trans-unit id="To purchase key" xml:space="preserve">
         <source>To purchase key</source>
-        <target>Um einen Schlüssel zu kaufen</target>
+        <target>Zum Einkaufs-Schlüssel</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="To receive" xml:space="preserve">

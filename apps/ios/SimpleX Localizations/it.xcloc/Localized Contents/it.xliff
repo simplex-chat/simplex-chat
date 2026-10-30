@@ -7372,17 +7372,17 @@ alert button</note>
       </trans-unit>
       <trans-unit id="Pay %@" xml:space="preserve">
         <source>Pay %@</source>
-        <target>Paghi %@</target>
+        <target>Paga %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Pay %@/month" xml:space="preserve">
         <source>Pay %@/month</source>
-        <target>Paghi %@/mese</target>
+        <target>Paga %@/mese</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Pay %@/year" xml:space="preserve">
         <source>Pay %@/year</source>
-        <target>Paghi %@/anno</target>
+        <target>Paga %@/anno</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Pending" xml:space="preserve">
