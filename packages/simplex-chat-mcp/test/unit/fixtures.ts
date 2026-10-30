@@ -108,7 +108,20 @@ interface FakeChatData {
   items: T.ChatItem[]
 }
 
+const library = api.ChatApi.prototype
+
 export class FakeChat {
+  apiGetChat = library.apiGetChat
+  apiChatItemsRead = library.apiChatItemsRead
+  apiGetChats = library.apiGetChats
+  apiContactInfo = library.apiContactInfo
+  apiConnectPlan = library.apiConnectPlan
+  apiPrepareContact = library.apiPrepareContact
+  apiPrepareGroup = library.apiPrepareGroup
+  apiConnectPreparedContact = library.apiConnectPreparedContact
+  apiConnectPreparedGroup = library.apiConnectPreparedGroup
+  apiConnectContactViaAddress = library.apiConnectContactViaAddress
+  apiConnectPreparedLink = library.apiConnectPreparedLink
   commands: string[] = []
   sent: {chat: [T.ChatType, number]; messages: T.ComposedMessage[]}[] = []
   updates: {chatId: number; itemId: number; text: string}[] = []
@@ -129,7 +142,7 @@ export class FakeChat {
     const getChat = /^\/_get chat ([@#]\d+) (.+)$/.exec(cmd)
     if (getChat) return this.getChat(getChat[1], getChat[2])
     if (cmd.startsWith("/_get chats ")) {
-      const [, before, count] = /(?: before=(\S+))? count=(\d+)$/.exec(cmd)!
+      const [, before, count] = /(?: before=(\S+))? count=(\d+) /.exec(cmd)!
       const chats = [...this.chats.values()]
         .filter(({chatInfo}) => before === undefined || chatTs(chatInfo) < before)
         .slice(0, Number(count))

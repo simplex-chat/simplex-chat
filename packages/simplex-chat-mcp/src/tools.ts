@@ -10,9 +10,9 @@ import {
   Sender,
   ToolCall,
   awaitResponses,
-  chatCommand,
   chatNumber,
   chatRef,
+  chatType,
   fullDomainName,
   getChat,
   isChatRef,
@@ -101,6 +101,8 @@ type JoinMethod =
   | {type: "viaAddress"; contactId: number}
   | {type: "prepareContact"; connLink: T.CreatedConnLink; domain?: string; linkData: T.ContactShortLinkData}
   | {type: "connect"; connLink: T.CreatedConnLink}
+
+type ConnectionPlan = Awaited<ReturnType<api.ChatApi["apiConnectPlan"]>>
 
 type Plan = {join: PlanSummary; method: JoinMethod} | {known: T.ChatInfo; summary: PlanSummary}
 
@@ -443,7 +445,7 @@ export class AgentTools {
 
   private async connectedChat(action: ConnectAction, input: ConnectInput, call: ToolCall): Promise<object | undefined> {
     const chat = action.chat!
-    const {chatInfo, chatItems} = await getChat(this.agent.chat, chat, `count=${messagesOnConnect}`)
+    const {chatInfo, chatItems} = await getChat(this.agent.chat, chat, messagesOnConnect)
     const fields = await this.chatFields(chatInfo, action.plan)
     const {startedAt} = action
     if (action.connected && startedAt !== undefined) {
@@ -466,9 +468,9 @@ export class AgentTools {
   private async plan(input: ConnectInput): Promise<Plan> {
     const {target} = input
     if (/\s/.test(target)) throw new ToolError(`Not a SimpleX link or name: ${target}`)
-    let r: CR.ConnectionPlan
+    let r: ConnectionPlan
     try {
-      r = await chatCommand<CR.ConnectionPlan>(this.agent.chat, `/_connect plan ${this.agent.user.userId} ${target}`, "connectionPlan")
+      r = await this.agent.chat.apiConnectPlan(this.agent.user.userId, target)
     } catch (error) {
       const chatError = chatErrorOf(error)
       if (chatError?.type === "error" && chatError.errorType.type === "invalidConnReq") throw new ToolError(`Not a SimpleX link or name: ${target}`)
@@ -500,7 +502,7 @@ export class AgentTools {
       this.markConnected(action, `@${response.contact.contactId}`)
       return
     }
-    if (!action.connected && action.chat !== undefined && isConnected((await getChat(this.agent.chat, action.chat, "count=0")).chatInfo)) {
+    if (!action.connected && action.chat !== undefined && isConnected((await getChat(this.agent.chat, action.chat, 0)).chatInfo)) {
       this.markConnected(action, action.chat)
       return
     }
@@ -512,45 +514,41 @@ export class AgentTools {
 
   private async join(method: JoinMethod, input: ConnectInput, action: ConnectAction): Promise<JoinResponse> {
     const {userId} = this.agent.user
-    const incognito = `incognito=${input.incognito ? "on" : "off"}`
-    const message = input.message === undefined ? "" : ` json ${JSON.stringify({type: "text", text: input.message})}`
+    const incognito = input.incognito ?? false
+    const message: T.MsgContent | undefined = input.message === undefined ? undefined : {type: "text", text: input.message}
     const connectPrepared = (prepared: ConnRef): Promise<JoinResponse> => {
       action.conn = prepared
       return prepared.contact !== undefined
-        ? this.connectPrepared(T.ChatType.Direct, prepared.contact, `/_connect contact @${prepared.contact} ${incognito}${message}`)
-        : this.connectPrepared(T.ChatType.Group, prepared.group!, `/_connect group #${prepared.group} ${incognito}${message}`)
+        ? this.connectPrepared(T.ChatType.Direct, prepared.contact, contactId => this.agent.chat.apiConnectPreparedContact(contactId, incognito, message))
+        : this.connectPrepared(T.ChatType.Group, prepared.group!, groupId => this.agent.chat.apiConnectPreparedGroup(groupId, incognito, message))
     }
     switch (method.type) {
       case "prepared":
         return connectPrepared(method.conn)
       case "prepareChannel": {
-        const prepared = await this.prepare(`/_prepare group ${userId} ${T.CreatedConnLink.cmdString(method.connLink)} direct=off${domainParam(method.domain)} ${JSON.stringify(method.linkData)}`)
+        const prepared = await this.agent.chat.apiPrepareGroup(userId, method.connLink, false, method.linkData, method.domain)
         const groupId = (prepared.chatInfo as T.ChatInfo.Group).groupInfo.groupId
         action.conn = {group: groupId}
-        return this.connectPrepared(T.ChatType.Group, groupId, `/_connect group #${groupId} ${incognito}`)
+        return this.connectPrepared(T.ChatType.Group, groupId, id => this.agent.chat.apiConnectPreparedGroup(id, incognito))
       }
       case "viaAddress":
-        return connectResponse(this.agent.chat, `/_connect contact ${userId} ${incognito} ${method.contactId}`)
+        return this.agent.chat.apiConnectContactViaAddress(userId, incognito, method.contactId)
       case "prepareContact": {
-        const {chatInfo} = await this.prepare(`/_prepare contact ${userId} ${T.CreatedConnLink.cmdString(method.connLink)}${domainParam(method.domain)} ${JSON.stringify(method.linkData)}`)
+        const {chatInfo} = await this.agent.chat.apiPrepareContact(userId, method.connLink, method.linkData, method.domain)
         return connectPrepared(chatInfo.type === "group" ? {group: chatInfo.groupInfo.groupId} : {contact: (chatInfo as T.ChatInfo.Direct).contact.contactId})
       }
       case "connect":
-        return connectResponse(this.agent.chat, `/_connect ${userId} ${incognito} ${T.CreatedConnLink.cmdString(method.connLink)}`)
+        return this.agent.chat.apiConnectPreparedLink(userId, incognito, method.connLink)
     }
   }
 
-  private async connectPrepared(chatType: T.ChatType, chatId: number, cmd: string): Promise<JoinResponse> {
+  private async connectPrepared(chatType: T.ChatType, chatId: number, connect: (chatId: number) => Promise<JoinResponse>): Promise<JoinResponse> {
     try {
-      return await connectResponse(this.agent.chat, cmd)
+      return await connect(chatId)
     } catch (error) {
       await this.agent.chat.apiDeleteChat(chatType, chatId, {type: "full", notify: false}).catch(() => undefined)
       throw error
     }
-  }
-
-  private async prepare(cmd: string): Promise<T.AChat> {
-    return (await chatCommand<{chat: T.AChat}>(this.agent.chat, cmd, "newPreparedChat")).chat
   }
 
   private completeConnect(matches: (conn: ConnRef) => boolean, chat: string): void {
@@ -613,8 +611,7 @@ export class AgentTools {
     try {
       const missing = mentions.filter(({name}) => !mentionedIn(input.text, name)).map(({name}) => `@${viewName(name)}`)
       const text = missing.length === 0 ? input.text : `${missing.join(" ")} ${input.text}`
-      const chatType = chat.startsWith("@") ? T.ChatType.Direct : T.ChatType.Group
-      const [sent] = await this.agent.chat.apiSendMessages([chatType, chatNumber(chat)], [
+      const [sent] = await this.agent.chat.apiSendMessages([chatType(chat), chatNumber(chat)], [
         {msgContent: {type: "text", text}, mentions: Object.fromEntries(mentions.map(({name, member}) => [name, member])), quotedItemId: input.reply_to},
       ])
       action.item = sent.chatItem.meta.itemId
@@ -645,7 +642,7 @@ export class AgentTools {
 
   private async performLeave({chat}: LeaveAction): Promise<void> {
     if (chat.startsWith("@")) return this.agent.chat.apiDeleteChat(T.ChatType.Direct, chatNumber(chat), {type: "full", notify: true})
-    const {groupInfo} = (await getChat(this.agent.chat, chat, "count=0")).chatInfo as T.ChatInfo.Group
+    const {groupInfo} = (await getChat(this.agent.chat, chat, 0)).chatInfo as T.ChatInfo.Group
     if (memberCurrentOrPending(groupInfo.membership)) await this.agent.chat.apiLeaveGroup(groupInfo.groupId)
     await this.agent.chat.apiDeleteChat(T.ChatType.Group, groupInfo.groupId, {type: "full", notify: true})
   }
@@ -656,7 +653,7 @@ export class AgentTools {
     const arrived = new Collected()
     const stop = this.agent.watch.collect(chat, arrived)
     try {
-      const initial = await getChat(this.agent.chat, chat, "initial=1").catch(error => {
+      const initial = await getChat(this.agent.chat, chat, {type: "initial", count: 1}).catch(error => {
         throw chatErrorOf(error)?.type === "errorStore" ? unknownChat(chat) : error
       })
       const {chatInfo, items, unreadRest} = await unreadItems(this.agent.chat, chat, initial, limit + 1)
@@ -699,7 +696,7 @@ export class AgentTools {
   async agentChats(): Promise<T.AChat[]> {
     const {userId} = this.agent.user
     const control = this.agent.controlChat()
-    const {chats} = await chatCommand<{chats: T.AChat[]}>(this.agent.chat, `/_get chats ${userId} pcc=off count=${maxChats}`, "apiChats")
+    const chats = await this.agent.chat.apiGetChats(userId, {type: "last", count: maxChats})
     return chats.filter(({chatInfo}) => {
       const ref = chatRef(chatInfo)
       return ref !== undefined && ref !== control
@@ -709,14 +706,14 @@ export class AgentTools {
   async knownChat(chat: string): Promise<T.AChat> {
     if (!isChatRef(chat) || chat === this.agent.controlChat()) throw unknownChat(chat)
     try {
-      return await getChat(this.agent.chat, chat, "count=0")
+      return await getChat(this.agent.chat, chat, 0)
     } catch (error) {
       throw chatErrorOf(error)?.type === "errorStore" ? unknownChat(chat) : error
     }
   }
 
   private async quotedItem(chat: string, item: number): Promise<{from: string; text: string}> {
-    const quoted = await getChat(this.agent.chat, chat, `around=${item} count=0`).catch(() => undefined)
+    const quoted = await getChat(this.agent.chat, chat, {type: "around", chatItemId: item, count: 0}).catch(() => undefined)
     const chatItem = quoted?.chatItems.find(({meta}) => meta.itemId === item)
     if (quoted === undefined || chatItem === undefined) throw new ToolError(`reply_to: ${chat} has no item ${item}.`)
     if (!isMessageItem(chatItem)) throw new ToolError(`reply_to: item ${item} in ${chat} is not a message.`)
@@ -768,7 +765,7 @@ export class AgentTools {
   }
 
   private async incognitoName(contactId: number): Promise<string | undefined> {
-    const info = await chatCommand<{customUserProfile?: T.Profile}>(this.agent.chat, `/_info @${contactId}`, "contactInfo")
+    const info = await this.agent.chat.apiContactInfo(contactId)
     return info.customUserProfile?.displayName
   }
 
@@ -778,21 +775,6 @@ export class AgentTools {
 }
 
 type JoinResponse = CR.SentConfirmation | CR.SentInvitation | CR.StartedConnectionToContact | CR.StartedConnectionToGroup | CR.SentInvitationToContact | CR.ContactAlreadyExists
-
-async function connectResponse(chat: api.ChatApi, cmd: string): Promise<JoinResponse> {
-  const r = await chat.sendChatCmd(cmd)
-  switch (r.type) {
-    case "sentConfirmation":
-    case "sentInvitation":
-    case "startedConnectionToContact":
-    case "startedConnectionToGroup":
-    case "sentInvitationToContact":
-    case "contactAlreadyExists":
-      return r
-    default:
-      throw new api.ChatCommandError(`unexpected response to ${cmd.split(" ")[0]}`, r)
-  }
-}
 
 function connRef(response: JoinResponse): ConnRef {
   switch (response.type) {
@@ -809,8 +791,8 @@ function connRef(response: JoinResponse): ConnRef {
   }
 }
 
-export function classifyPlan(r: CR.ConnectionPlan, {target, message}: ConnectInput): Plan {
-  const {connectionPlan: plan, connLink, planSimplexName} = r
+export function classifyPlan(r: ConnectionPlan, {target, message}: ConnectInput): Plan {
+  const [plan, connLink, planSimplexName] = r
   const named = target.startsWith("@") || target.startsWith("#") || target.startsWith("simplex:/name")
   const simplexName = named ? target : undefined
   const domain = planSimplexName === undefined ? undefined : fullDomainName(planSimplexName.nameDomain)
@@ -903,10 +885,6 @@ function planFields(plan: PlanSummary, knownAs: string | undefined): ChatFields 
     connected: false,
     ...defined({name: plan.name, peer_type: plan.peerType, description: plan.description, welcome: plan.welcome, commands: plan.commands, known_as: knownAs}),
   }
-}
-
-function domainParam(domain: string | undefined): string {
-  return domain === undefined ? "" : ` domain=${domain}`
 }
 
 export function chatSubject(chatInfo: T.ChatInfo): Subject {

@@ -1,4 +1,4 @@
-import {ChatResponse, T} from "@simplex-chat/types"
+import {T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 
 const progressInterval = 60_000
@@ -123,6 +123,10 @@ export function chatNumber(chat: string): number {
   return Number(chat.slice(1))
 }
 
+export function chatType(chat: string): T.ChatType {
+  return chat.startsWith("@") ? T.ChatType.Direct : T.ChatType.Group
+}
+
 export function isMessageItem({content}: T.ChatItem): boolean {
   return content.type === "rcvMsgContent" || content.type === "sndMsgContent"
 }
@@ -169,25 +173,19 @@ function itemSender(chatInfo: T.ChatInfo, chatDir: T.CIDirection, self: Sender):
   }
 }
 
-export async function chatCommand<R>(chat: api.ChatApi, cmd: string, type: string): Promise<R> {
-  const r: ChatResponse = await chat.sendChatCmd(cmd)
-  if ((r.type as string) !== type) throw new api.ChatCommandError(`unexpected response to ${cmd.split(" ")[0]}`, r)
-  return r as unknown as R
-}
-
-export async function getChat(chat: api.ChatApi, ref: string, pagination: string): Promise<T.AChat> {
-  return (await chatCommand<{chat: T.AChat}>(chat, `/_get chat ${ref} ${pagination}`, "apiChat")).chat
+export async function getChat(chat: api.ChatApi, ref: string, pagination: T.ChatPagination | number): Promise<T.AChat> {
+  return chat.apiGetChat(chatType(ref), chatNumber(ref), pagination)
 }
 
 export async function markRead(chat: api.ChatApi, ref: string, itemIds: number[]): Promise<void> {
-  if (itemIds.length > 0) await chatCommand(chat, `/_read chat items ${ref} ${itemIds.join(",")}`, "itemsReadForChat")
+  if (itemIds.length > 0) await chat.apiChatItemsRead(chatType(ref), chatNumber(ref), itemIds)
 }
 
 export async function unreadItems(chat: api.ChatApi, ref: string, {chatInfo, chatStats}: T.AChat, messages: number): Promise<{chatInfo: T.ChatInfo; items: T.ChatItem[]; unreadRest: number}> {
   if (chatStats.unreadCount === 0) return {chatInfo, items: [], unreadRest: 0}
-  const items = (await getChat(chat, ref, `around=${chatStats.minUnreadItemId} count=0`)).chatItems
+  const items = (await getChat(chat, ref, {type: "around", chatItemId: chatStats.minUnreadItemId, count: 0})).chatItems
   for (let last = items.at(-1); last !== undefined && items.filter(isNewMessage).length < messages;) {
-    const page = (await getChat(chat, ref, `after=${last.meta.itemId} count=${pageSize}`)).chatItems
+    const page = (await getChat(chat, ref, {type: "after", chatItemId: last.meta.itemId, count: pageSize})).chatItems
     items.push(...page)
     last = page.length === pageSize ? page.at(-1) : undefined
   }

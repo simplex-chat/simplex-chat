@@ -8,7 +8,7 @@ import {Control, controlDataOf, createControlChat, findControlGroup, isControlEv
 import {acquireLock, createDataFolder, releaseLock, serverToken, writeHeadersFile, writeServerFile} from "./files"
 import {startHttp, stopHttp} from "./http"
 import {ExitError, log, logError, shellPath} from "./log"
-import {ChatItemsWatch, chatCommand} from "./messages"
+import {ChatItemsWatch} from "./messages"
 import {AgentTools, instructions} from "./tools"
 
 export const version: string = require("../package.json").version
@@ -87,7 +87,8 @@ export async function startServer(options: ServeOptions): Promise<RunningServer>
 async function startAgent(chat: api.ChatApi, options: ServeOptions, token: string): Promise<RunningServer> {
   const {name, data, port, approve, expireHours} = options
   const created = (await chat.apiGetActiveUser()) ?? (await chat.apiCreateActiveUser({displayName: options.displayName ?? name, fullName: "", peerType: T.ChatPeerType.Agent}))
-  await chatCommand(chat, "/network socks=off smp-proxy=always smp-proxy-fallback=protected", "networkConfig")
+  const networkConfig = await chat.apiGetNetworkConfig()
+  await chat.apiSetNetworkConfig({...networkConfig, smpProxyMode: T.SMPProxyMode.Always, smpProxyFallback: T.SMPProxyFallback.AllowProtected})
   const events = bufferEvents(chat)
   await chat.startChat()
   const user = await updatedUser(chat, created, options.displayName)

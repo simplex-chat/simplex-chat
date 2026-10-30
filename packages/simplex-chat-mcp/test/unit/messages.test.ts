@@ -1,5 +1,5 @@
 import {CallToolResult} from "@modelcontextprotocol/server"
-import {CR, T} from "@simplex-chat/types"
+import {T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
 import {Actions} from "../../src/actions"
 import {cardText} from "../../src/control"
@@ -515,7 +515,7 @@ describe("connect", () => {
   it("joins a known prepared contact whose connection is unset or prepared", () => {
     const known = (activeConn: object | undefined): object => {
       const prepared = {...contact(7, "Ridgeline"), activeConn, preparedContact: {}}
-      return classifyPlan(plan({type: "contactAddress", contactAddressPlan: {type: "known", contact: prepared}}) as CR.ConnectionPlan, {target: link})
+      return classifyPlan([{type: "contactAddress", contactAddressPlan: {type: "known", contact: prepared}} as T.ConnectionPlan, {connFullLink: link}], {target: link})
     }
     expect(known(undefined)).toMatchObject({join: {takesMessage: true}, method: {type: "prepared", conn: {contact: 7}}})
     expect(known({connId: 207, connStatus: {type: "prepared"}})).toMatchObject({join: {takesMessage: true}, method: {type: "prepared", conn: {contact: 7}}})
@@ -545,7 +545,7 @@ describe("connect", () => {
     await settled()
     actions.approve(actions.get(1)!, "Alice")
     expect((await connecting)!.structuredContent).toEqual({action: 1, status: "failed", error: "SimpleX error: unexpected response cmdOk"})
-    expect(chat.commands).toContain(`/_connect contact @7 incognito=off json {"type":"text","text":"trail shoes?"}`)
+    expect(chat.commands).toContain(`/_connect contact @7 json {"type":"text","text":"trail shoes?"}`)
     expect(chat.deleted).toEqual([{chatType: T.ChatType.Direct, chatId: 7, mode: {type: "full", notify: false}}])
   })
 
@@ -559,7 +559,7 @@ describe("connect", () => {
     chat.chats.set("@12", {chatInfo: direct(connected), items: [item(40, "Welcome!")]})
     chat.responses.set(`/_connect plan 1 ${link}`, plan({type: "contactAddress", contactAddressPlan: {type: "ok", contactSLinkData_: linkData}}))
     chat.responses.set(`/_prepare contact 1 ${link} ${JSON.stringify(linkData)}`, {type: "newPreparedChat", chat: {chatInfo: direct(started), chatItems: []}})
-    chat.responses.set(`/_connect contact @8 incognito=off json {"type":"text","text":"hello"}`, {type: "startedConnectionToContact", contact: started})
+    chat.responses.set(`/_connect contact @8 json {"type":"text","text":"hello"}`, {type: "startedConnectionToContact", contact: started})
     const {tools, actions, watch} = connectTools(chat)
     const connecting = tools.call("connect", {target: link, message: "hello", wait: 120, idle: 10}, signal().call)
     let finished = false
@@ -590,7 +590,7 @@ describe("connect", () => {
     jest.useFakeTimers()
     const chat = new FakeChat()
     chat.responses.set(`/_connect plan 1 ${link}`, plan({type: "contactAddress", contactAddressPlan: {type: "ok"}}))
-    chat.responses.set(`/_connect 1 incognito=off ${link}`, {type: "sentInvitation", connection: {pccConnId: 300}})
+    chat.responses.set(`/_connect 1 ${link}`, {type: "sentInvitation", connection: {pccConnId: 300}})
     const {tools, actions} = connectTools(chat)
     const connecting = tools.call("connect", {target: link, wait: 86400}, signal().call)
     await jest.advanceTimersByTimeAsync(0)
@@ -611,7 +611,7 @@ describe("connect", () => {
     jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
     const chat = new FakeChat()
     chat.responses.set(`/_connect plan 1 ${link}`, plan({type: "contactAddress", contactAddressPlan: {type: "ok"}}))
-    chat.responses.set(`/_connect 1 incognito=off ${link}`, {type: "sentInvitation", connection: {pccConnId: 300}})
+    chat.responses.set(`/_connect 1 ${link}`, {type: "sentInvitation", connection: {pccConnId: 300}})
     const {tools, actions} = connectTools(chat)
     const {controller, call} = signal()
     const connecting = tools.call("connect", {target: link, wait: 3600}, call)
@@ -635,7 +635,7 @@ describe("connect", () => {
     const connected = {...contact(12, "Ridgeline"), activeConn: {connId: 300, connStatus: {type: "ready"}}} as unknown as T.Contact
     chat.chats.set("@12", {chatInfo: direct(connected), items: []})
     chat.responses.set(`/_connect plan 1 ${link}`, plan({type: "contactAddress", contactAddressPlan: {type: "ok"}}))
-    chat.responses.set(`/_connect 1 incognito=off ${link}`, {type: "sentInvitation", connection: {pccConnId: 300}})
+    chat.responses.set(`/_connect 1 ${link}`, {type: "sentInvitation", connection: {pccConnId: 300}})
     const {tools, actions} = connectTools(chat)
     const first = signal()
     const connecting = tools.call("connect", {target: link}, first.call)
@@ -660,7 +660,7 @@ describe("connect", () => {
     chat.chats.set("@8", {chatInfo: direct(started), items: []})
     chat.responses.set(`/_connect plan 1 ${link}`, plan({type: "contactAddress", contactAddressPlan: {type: "ok", contactSLinkData_: linkData}}))
     chat.responses.set(`/_prepare contact 1 ${link} ${JSON.stringify(linkData)}`, {type: "newPreparedChat", chat: {chatInfo: direct(started), chatItems: []}})
-    chat.responses.set(`/_connect contact @8 incognito=off json {"type":"text","text":"hello"}`, {type: "startedConnectionToContact", contact: started})
+    chat.responses.set(`/_connect contact @8 json {"type":"text","text":"hello"}`, {type: "startedConnectionToContact", contact: started})
     const {tools, actions} = connectTools(chat)
     const connecting = tools.call("connect", {target: link, message: "hello"}, signal().call)
     let finished = false
@@ -715,7 +715,7 @@ describe("connect", () => {
     const connected = {...contact(12, "Ridgeline"), activeConn: {connId: 300, connStatus: {type: "ready"}}} as unknown as T.Contact
     chat.chats.set("@12", {chatInfo: direct(connected), items: [item(40, "Welc", {type: "directRcv"}, {live: true}), item(41, "Find groups.")]})
     chat.responses.set(`/_connect plan 1 ${link}`, plan({type: "contactAddress", contactAddressPlan: {type: "ok"}}))
-    chat.responses.set(`/_connect 1 incognito=off ${link}`, {type: "sentInvitation", connection: {pccConnId: 300}})
+    chat.responses.set(`/_connect 1 ${link}`, {type: "sentInvitation", connection: {pccConnId: 300}})
     const {tools, actions} = connectTools(chat)
     const connecting = tools.call("connect", {target: link}, signal().call)
     await jest.advanceTimersByTimeAsync(0)
@@ -738,7 +738,7 @@ describe("connect", () => {
     chat.chats.set("@9", {chatInfo: direct(joining), items: []})
     chat.responses.set("/_connect plan 1 @directory.simplex", {...plan({type: "contactAddress", contactAddressPlan: {type: "ok", contactSLinkData_: linkData}}), planSimplexName: name})
     chat.responses.set(prepare, {type: "newPreparedChat", chat: {chatInfo: direct(joining), chatItems: []}})
-    chat.responses.set("/_connect contact @9 incognito=off", {type: "startedConnectionToContact", contact: joining})
+    chat.responses.set("/_connect contact @9", {type: "startedConnectionToContact", contact: joining})
     const {tools, actions} = connectTools(chat)
     const connecting = tools.call("connect", {target: "@directory.simplex"}, signal().call)
     await jest.advanceTimersByTimeAsync(0)
@@ -746,7 +746,7 @@ describe("connect", () => {
     expect(action.subject).toEqual({kind: "bot", name: "SimpleX Directory", simplexName: "@directory.simplex", incognito: false})
     actions.approve(action, "Alice")
     await jest.advanceTimersByTimeAsync(0)
-    expect(chat.commands.filter(cmd => /^\/_(prepare|connect contact)/.test(cmd))).toEqual([prepare, "/_connect contact @9 incognito=off"])
+    expect(chat.commands.filter(cmd => /^\/_(prepare|connect contact)/.test(cmd))).toEqual([prepare, "/_connect contact @9"])
     chat.chats.set("@9", {chatInfo: direct(ready), items: []})
     tools.onContactConnected({type: "contactConnected", user, contact: ready})
     await jest.advanceTimersByTimeAsync(30_000)
@@ -863,6 +863,6 @@ describe("list", () => {
     const {tools} = agentTools(chat)
     const {chats} = (await tools.call("list", {}, signal().call))!.structuredContent as {chats: {chat: string}[]}
     expect(chats.map(({chat: ref}) => ref)).toEqual(Array.from({length: 150}, (_, i) => `@${100 + i}`))
-    expect(chat.commands.filter(cmd => cmd.startsWith("/_get chats "))).toEqual(["/_get chats 1 pcc=off count=1000000"])
+    expect(chat.commands.filter(cmd => cmd.startsWith("/_get chats "))).toEqual(['/_get chats 1 count=1000000 {"type":"filters","favorite":false,"unread":false}'])
   })
 })

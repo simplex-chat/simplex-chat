@@ -272,4 +272,6 @@ Phase 1 tests:
 - `test/e2e/scenarios.test.ts`, `/leave #N` with a pending send for #N: the call returns rejected; the card ends with "Rejected by Alice."; the reply and the log line; the group's owner sees the agent leave; `list` leaves out the chat.
 - Development: `simplex-chat` and `@simplex-chat/types` built from this branch (`packages/simplex-chat-nodejs`, `packages/simplex-chat-client/types/typescript`) and installed in the MCP package with `npm install --no-save`.
 
-Phase 1 docs: the commands of `PLAN.md` and `REFERENCE.md` with `/leave`.
+Phase 1 docs:
+- `PLAN.md`: the network configuration at start; the commands with `/leave`.
+- `REFERENCE.md`: the commands with `/leave`.
