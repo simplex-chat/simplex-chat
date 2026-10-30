@@ -37,6 +37,9 @@ page_of() {
   text=$(normalise "$(awk -F'[, ]' '$1 < 390' "$1" | cut -d ' ' -f 2-)")
   case "$text" in
     *"$(normalise "Your badge")"* | *"$(normalise "shown on your profile")"*) echo badge ;;
+    *"$(normalise "Get a badge to send")"*) echo support ;;
+    # Settings has "Support SimpleX Chat", which must not pass for the page's title
+    *"$(normalise "Support SimpleX Chat")"*) echo blank ;;
     *"$(normalise "Support SimpleX")"*) echo support ;;
     *) echo blank ;;
   esac
@@ -106,7 +109,7 @@ if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
     echo "### Badge screen cycles"
     echo
     echo "$summary"
-    [ -s "$out/blanks.txt" ] && sed 's/^/- /' "$out/blanks.txt"
+    if [ -s "$out/blanks.txt" ]; then sed 's/^/- /' "$out/blanks.txt"; fi
   } >> "$GITHUB_STEP_SUMMARY"
 fi
 [ "$blanks" -eq 0 ]
