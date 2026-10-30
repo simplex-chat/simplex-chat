@@ -60,11 +60,11 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Crypto.Random (ChaChaDRG)
 import Simplex.Messaging.Session (SessionVar (..), withGetSessVar')
-import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType (..), LocalBadge (..), ProofPresHeader (..), badgeGraceInterval, badgeServerCredential, mkBadgeStatus, maxSndXFTPFileSize, verifyCredential)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeRequest (..), BadgeType (..), LocalBadge (..), ProofPresHeader (..), VerifiedBadgeRequest (..), badgeGraceInterval, badgeServerCredential, issueBadge, mkBadgeStatus, maxSndXFTPFileSize, verifyCredential)
 import qualified Simplex.Chat.Badges.Ledger as L
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeState (..), BadgeSubscription (..), OpenStorePurchase (..), StoreReceiptOrigin (..))
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
-import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), SubscriptionState (..), currentBadgeServiceVersion)
+import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementCreditType (SCCode), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), SubscriptionState (..), currentBadgeServiceVersion)
 import Simplex.Chat.Badges.StorePlan (storePlan)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Call
@@ -120,6 +120,7 @@ import Simplex.Messaging.Agent.Store.Interface (getCurrentMigrations)
 import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), SMPWebPortServers (..), SocksMode (SMAlways), pattern NRMInteractive, textToHostMode)
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.ShortLink as SL
+import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Crypto.Ratchet (E2ERatchetParamsUri (..), InitialKeys (..), PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern IKPQOn, pattern PQSupportOff, pattern PQSupportOn)
@@ -141,6 +142,8 @@ import System.IO (Handle, IOMode (..))
 import System.Mem.Weak (deRefWeak)
 import System.Random (randomRIO)
 import System.Timeout (timeout)
+import System.Environment (lookupEnv)
+import Text.Read (readMaybe)
 import UnliftIO.Async
 import UnliftIO.Concurrent (forkIO, killThread, threadDelay)
 import UnliftIO.Directory
@@ -273,8 +276,15 @@ startChatController mainApp enableSndFiles serviceRequests = do
           void $ forkIO $ mapM_ startExpireCIs users
           startRelayChecks users
           startWebPreview users
+          startTestBadgeCycles
         else when enableSndFiles $ startXFTP xftpStartSndWorkers
       pure a1
+    startTestBadgeCycles =
+      liftIO (lookupEnv "SIMPLEX_TEST_BADGE_CYCLES") >>= \case
+        Just cycleArgs | Just [cycleCount, hiddenSecs, shownSecs] <- mapM readMaybe (words cycleArgs) ->
+          void . async . void . runExceptT $ (activeUserId >>= \uId -> testBadgeCycles uId cycleCount hiddenSecs shownSecs) `catchAllErrors` eToView
+        _ -> pure ()
+    activeUserId = chatReadVar currentUser >>= maybe (threadDelay 1000000 >> activeUserId) (\User {userId} -> pure userId)
     startXFTP startWorkers = do
       tmp <- readTVarIO =<< asks tempDirectory
       runExceptT (withAgent $ \a -> startWorkers a tmp) >>= \case
@@ -3624,6 +3634,9 @@ processChatCommand cxt nm = \case
           pure $ CRFileTransferStatus user fileStatus
   ShowProfile -> withUser $ \user@User {profile} -> pure $ CRUserProfile user (fromLocalProfile profile)
   AddBadge cred -> withUser $ \user -> addUserBadge user cred >> ok user
+  TestBadgeCycles cycleCount hiddenSecs shownSecs -> withUser $ \user@User {userId} -> do
+    lift . void . async . void . runExceptT $ testBadgeCycles userId cycleCount hiddenSecs shownSecs `catchAllErrors` eToView
+    ok user
   APIRedeemBadgeCode userId codeText -> withUserId userId $ \user -> redeemBadgeCode nm user codeText
   APIPurchaseBadge userId echoedInvoiceId origin payment -> withUserId userId $ \user -> handOverStoreReceipt user echoedInvoiceId origin payment
   APISetBadgeSubscriptionStatus status payment -> recordStoreSubscriptionStatus status payment >> ok_
@@ -5634,6 +5647,37 @@ requestBadgeNow user@User {userId} = do
       badgeStateResponse user
     _ -> throwCmdError "no badge is shown"
 
+-- | Test only: each cycle stores a prepaid month as storeRedeemedBadge stores the service's answer, under a key made
+-- for the run, and announces it as a credited store receipt is; the month ends shownSecs later, when the worker retires it.
+testBadgeCycles :: UserId -> Int -> Int -> Int -> CM ()
+testBadgeCycles userId cycleCount hiddenSecs shownSecs = do
+  (issuerPk, issuerSk) <- liftIO bbsKeyGen >>= either (throwCmdError . ("test badge key: " <>)) pure
+  replicateM_ cycleCount $ do
+    threadDelay $ hiddenSecs * 1000000
+    user <- withStore (`getUser` userId)
+    g <- asks random
+    now <- badgeNow
+    let uuidText = UUID.toText <$> liftIO V4.nextRandom
+    redemptionCode <- uuidText
+    grantId <- uuidText
+    issueId <- uuidText
+    stash@BadgeStash {masterKey} <- withStore' $ \db -> createBadgeCodeRedemption db g user ("test-" <> redemptionCode) now
+    let paidUntil = fromIntegral shownSecs `addUTCTime` now
+        monthStart = L.addMonths (-1) paidUntil
+        granted = L.grantEntry monthStart grantId BTSupporter 1 SCCode (L.emptyEntry monthStart BTSupporter)
+        info = BadgeInfo {badgeType = BTSupporter, badgeExpiry = L.endOfMondayAfter paidUntil, badgeExtra = ""}
+    issued <- maybe (throwCmdError "test badge month was not issued") pure $ L.issueEntry monthStart issueId granted
+    cred <- liftIO (issueBadge testKeyIdx issuerSk $ VerifiedBadgeRequest BadgeRequest {masterKey, badgeInfo = info}) >>= either (throwCmdError . ("test badge: " <>)) pure
+    (present_, _) <- local (withTestKey issuerPk) $ storeRedeemedBadge user stash cred BadgeStatement {entries = [granted, issued], previousEntryId = Nothing} Nothing
+    user' <- withStore (`getUser` userId)
+    toView . CEvtBadgeChanged user' =<< getUserBadgeState user'
+    mapM_ presentUserBadgeToContacts present_
+    threadDelay $ shownSecs * 1000000
+  where
+    testKeyIdx = 65000
+    withTestKey pk cc@ChatController {config = cfg@ChatConfig {badgePublicKeys}} =
+      (cc :: ChatController) {config = (cfg :: ChatConfig) {badgePublicKeys = M.insert testKeyIdx pk badgePublicKeys}}
+
 -- | Exactly one caller starts the thread and the rest wait for it: the lookup and the create cannot
 -- be one transaction, because starting a thread is not STM.
 getBadgeWorker :: User -> CM' BadgeWorker
@@ -7024,6 +7068,7 @@ chatCommandP =
       ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> profileNameDescr),
       ("/profile" <|> "/p") $> ShowProfile,
       "/badge add " *> (AddBadge <$> jsonP),
+      "/badge test_cycles " *> (TestBadgeCycles <$> A.decimal <* A.space <*> A.decimal <* A.space <*> A.decimal),
       "/set bot commands " *> (SetBotCommands <$> botCommandsP),
       "/delete bot commands" $> SetBotCommands [],
       "/set voice #" *> (SetGroupFeatureRole (AGFR SGFVoice) <$> displayNameP <*> _strP <*> optional memberRole),
