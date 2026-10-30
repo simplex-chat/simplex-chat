@@ -4,12 +4,8 @@ import androidx.compose.animation.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onSizeChanged
 import chat.simplex.common.model.BadgeModel
 import chat.simplex.common.model.BadgeState
-import chat.simplex.common.platform.Log
-import chat.simplex.common.platform.TAG
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.views.helpers.ModalManager
 import chat.simplex.common.views.helpers.ModalView
@@ -21,17 +17,14 @@ import chat.simplex.res.*
 fun BadgesView(modalManager: ModalManager, close: () -> Unit) {
   val shownBadge = currentShownBadge()
   val unwindToDepth = remember { modalManager.openModalCount() }
-  Log.d(TAG, "badges-test ${System.currentTimeMillis()} view badge=${shownBadge?.badgePurchaseId} alert=${shownBadge?.alert?.kind} purchase=${BadgeStore.purchaseState(chatModel.currentUser.value?.userId)} checking=${BadgeStore.checkingPurchases}")
 
   // the card look is a modal setting, so the modal is composed here to follow the screen shown
   ModalView(close, cardScreen = shownBadge != null) {
     AnimatedContent(
       targetState = Triple(shownBadge, BadgeStore.purchaseState(chatModel.currentUser.value?.userId), BadgeStore.checkingPurchases),
-      modifier = Modifier.onSizeChanged { Log.d(TAG, "badges-test ${System.currentTimeMillis()} content size $it") },
       transitionSpec = { fadeIn() with fadeOut() },
       contentKey = { (badgeState, purchaseState, checkingPurchases) -> Triple(badgeState != null, purchaseState, checkingPurchases) }
     ) { (badgeState, purchaseState, checkingPurchases) ->
-      Log.d(TAG, "badges-test ${System.currentTimeMillis()} page badge=${badgeState?.badgePurchaseId} purchase=$purchaseState checking=$checkingPurchases enterExit=${transition.currentState}>${transition.targetState}")
       if (badgeState != null) {
         BadgesYourBadgeView(badgeState, modalManager)
       } else if (purchaseState != null) {
