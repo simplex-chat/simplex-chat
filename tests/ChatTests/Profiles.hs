@@ -107,6 +107,7 @@ chatProfileTests = do
     it "create address on specified server" testCreateAddressOnServer
     it "retry connecting via contact link" testRetryConnectingViaContactLink
     it "retry connecting via address in contact profile after address keys rotation" testRetryConnectingContactViaAddress
+    it "connections prepared for failed joins are shown in chat list" testFailedConnectViaLinksInChatList
     it "add contact link to profile" testProfileLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
     it "deduplicate contact requests" testDeduplicateContactRequests
@@ -1547,6 +1548,45 @@ testRetryConnectingContactViaAddress ps =
       alice <## "auto_accept off"
     serverCfg' = (smpServerCfg ps) {transports = [(smpTestPort2 ps, transport @TLS, False)]}
     cfg' = testCfg {agentConfig = testAgentCfg {persistErrorInterval = 0}}
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
+
+testFailedConnectViaLinksInChatList :: HasCallStack => TestParams -> IO ()
+testFailedConnectViaLinksInChatList ps =
+  withNewTestChatOpts ps opts' "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      links <- withSmpServer' serverCfg' $ do
+        alice ##> "/ad"
+        cLink <- getContactLink alice True
+        alice ##> "/_connect 1"
+        inv <- getInvitation alice
+        alice ##> "/g team"
+        alice <## "group #team is created"
+        alice <## "to add members use /a team <name> or /create link #team"
+        alice ##> "/create link #team"
+        gLink <- getGroupLink alice "team" GRMember True
+        pure [cLink, inv, gLink]
+      alice <## "disconnected 3 connections on server localhost"
+      forM_ links $ \link -> do
+        bob ##> ("/_connect 1 " <> link)
+        bob <##. "smp agent error: BROKER"
+      bob @@@! [(":1", "", Just ConnPrepared), (":2", "", Just ConnPrepared), (":3", "", Just ConnPrepared)]
+      rcvQueueCount bob `shouldReturn` 2
+      forM_ [1 :: Int, 2, 3] $ \i -> do
+        bob ##> ("/_delete :" <> show i)
+        bob <## ("connection :" <> show i <> " deleted")
+      bob @@@ []
+      rcvQueueCount bob `shouldEventuallyReturn` 0
+  where
+    rcvQueueCount cc = do
+      [Only n] <- withCCAgentTransaction cc $ \db -> DB.query_ db "SELECT count(1) FROM rcv_queues"
+      pure (n :: Int)
+    serverCfg' = (smpServerCfg ps) {transports = [(smpTestPort2 ps, transport @TLS, False)]}
     opts' =
       testOpts
         { coreOptions =
