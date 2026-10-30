@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1250" height="930" viewBox="0 0 1250 930" font-family="-apple-system, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#000000">
+  <title>The parent PIN on the existing PIN pad</title>
+  <defs>
+    <g id="pad" font-size="28" fill="#8a8a8e" text-anchor="middle">
+      <path d="M40,480 H350 M40,580 H350 M40,680 H350 M143.3,382 V778 M246.7,382 V778" stroke="#c6c6c8" stroke-width="0.6" fill="none"/>
+      <text x="91.7" y="440">1</text><text x="195" y="440">2</text><text x="298.3" y="440">3</text>
+      <text x="91.7" y="540">4</text><text x="195" y="540">5</text><text x="298.3" y="540">6</text>
+      <text x="91.7" y="640">7</text><text x="195" y="640">8</text><text x="298.3" y="640">9</text>
+      <path d="M84.7,723 L98.7,737 M98.7,723 L84.7,737" stroke="#8a8a8e" stroke-width="2" fill="none"/>
+      <text x="195" y="740">0</text>
+      <path d="M288,730 L294,723 H308 V737 H294 Z M298,726 L304,734 M304,726 L298,734" stroke="#8a8a8e" stroke-width="1.6" fill="none"/>
+    </g>
+  </defs>
+  <rect width="1250" height="930" fill="#ffffff"/>
+
+  <text x="0" y="22" font-size="15" font-weight="600" fill="#162120">1. Setting the PIN: Save waits for 6 digits</text>
+  <text x="430" y="22" font-size="15" font-weight="600" fill="#162120">2. The PIN prompt, here for "Allow once"</text>
+  <text x="860" y="22" font-size="15" font-weight="600" fill="#162120">3. A wrong PIN</text>
+
+  <g transform="translate(0,36)">
+    <rect width="390" height="844" rx="24" fill="#ffffff" stroke="#d0d5d4"/>
+    <text x="195" y="76" font-size="28" font-weight="700" text-anchor="middle">New parent PIN</text>
+    <text x="195" y="108" font-size="17" text-anchor="middle">At least 6 digits</text>
+    <rect x="30" y="50" width="330" height="70" rx="8" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+    <text x="195" y="358" font-size="17" text-anchor="middle">●●●●</text>
+    <use href="#pad"/>
+    <g font-size="17" fill="#0088ff"><path d="M97,808 L107,818 M107,808 L97,818" stroke="#0088ff" stroke-width="2"/><text x="114" y="819">Cancel</text></g>
+    <g font-size="17" fill="#c7c7cc"><path d="M226,814 L231,819 L240,808" stroke="#c7c7cc" stroke-width="2" fill="none"/><text x="246" y="819">Save</text></g>
+  </g>
+
+  <g transform="translate(430,36)">
+    <rect width="390" height="844" rx="24" fill="#ffffff" stroke="#d0d5d4"/>
+    <text x="195" y="76" font-size="28" font-weight="700" text-anchor="middle">Enter parent PIN</text>
+    <text x="195" y="108" font-size="17" text-anchor="middle">Allow once</text>
+    <rect x="30" y="50" width="330" height="70" rx="8" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+    <text x="195" y="358" font-size="17" text-anchor="middle">●●●●●●</text>
+    <use href="#pad"/>
+    <g font-size="17" fill="#0088ff"><path d="M97,808 L107,818 M107,808 L97,818" stroke="#0088ff" stroke-width="2"/><text x="114" y="819">Cancel</text></g>
+    <g font-size="17" fill="#0088ff"><path d="M216,814 L221,819 L230,808" stroke="#0088ff" stroke-width="2" fill="none"/><text x="236" y="819">Submit</text></g>
+  </g>
+
+  <g transform="translate(860,36)">
+    <rect width="390" height="844" rx="24" fill="#ffffff" stroke="#d0d5d4"/>
+    <text x="195" y="76" font-size="28" font-weight="700" text-anchor="middle">Enter parent PIN</text>
+    <text x="195" y="108" font-size="17" text-anchor="middle">Allow once</text>
+    <text x="195" y="358" font-size="17" text-anchor="middle">●●●●●●</text>
+    <use href="#pad"/>
+    <g font-size="17" fill="#0088ff"><path d="M97,808 L107,818 M107,808 L97,818" stroke="#0088ff" stroke-width="2"/><text x="114" y="819">Cancel</text></g>
+    <g font-size="17" fill="#0088ff"><path d="M216,814 L221,819 L230,808" stroke="#0088ff" stroke-width="2" fill="none"/><text x="236" y="819">Submit</text></g>
+    <rect width="390" height="844" rx="24" fill="#000000" opacity="0.2"/>
+    <rect x="60" y="342" width="270" height="140" rx="14" fill="#f2f2f2"/>
+    <text x="195" y="377" font-size="17" font-weight="600" text-anchor="middle">Incorrect PIN</text>
+    <text x="195" y="399" font-size="13" text-anchor="middle">The parent PIN didn't match.</text>
+    <text x="195" y="416" font-size="13" text-anchor="middle">Nothing was changed.</text>
+    <path d="M60,438 H330 M195,438 V482" stroke="#c6c6c8" stroke-width="0.6"/>
+    <text x="127" y="466" font-size="17" fill="#0088ff" text-anchor="middle">Cancel</text>
+    <text x="262" y="466" font-size="17" fill="#0088ff" text-anchor="middle" font-weight="600">Try again</text>
+    <rect x="66" y="348" width="258" height="128" rx="10" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+  </g>
+
+  <text x="0" y="918" font-size="12" fill="#56625f">From PasscodeView.swift and PasscodeEntry.swift at 85ba221d7; dashed: new words. Confirming a new PIN repeats panel 1 as "Confirm parent PIN" with "Confirm".</text>
+</svg>
