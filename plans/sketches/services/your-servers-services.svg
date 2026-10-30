@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 620" width="300" height="620" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+<title>Proposed: Your servers with a Services section</title>
+<style>.ph{fill:#f2f2f7;stroke:#c7c7cc}.g{fill:#fff}.t{font-size:14px;fill:#111}.s{font-size:11px;fill:#6e6e73}.h{font-size:22px;font-weight:700;fill:#111}.b{font-size:14px;fill:#0071e3}.sep{stroke:#e3e3e8}.ok{font-size:14px;fill:#248a3d;font-weight:700}.ch{font-size:14px;fill:#c4c4c7}.new{fill:none;stroke:#1e8a55;stroke-width:2.5}</style>
+<rect class="ph" x="1" y="1" width="298" height="618" rx="34"/>
+<text class="b" x="14" y="52">‹ Network &amp; servers</text>
+<text class="h" x="16" y="86">Your servers</text>
+<text class="s" x="28" y="118">CHAT RELAYS</text>
+<rect class="g" x="12" y="124" width="276" height="44" rx="10"/>
+<text class="ok" x="26" y="151">✓</text>
+<text class="t" x="46" y="151">[your relay]</text>
+<text class="ch" x="272" y="151">›</text>
+<text class="s" x="28" y="184">Chat relays forward messages in channels</text>
+<text class="s" x="28" y="198">you create.</text>
+<text class="s" x="28" y="228">SERVICES</text>
+<rect class="g" x="12" y="234" width="276" height="54" rx="10"/>
+<text class="t" x="26" y="258">[Your directory]</text>
+<text class="s" x="26" y="274">Search · [server]</text>
+<text class="ch" x="272" y="266">›</text>
+<text class="s" x="28" y="304">Services answer your app's requests, like</text>
+<text class="s" x="28" y="318">searches.</text>
+<rect class="new" x="8" y="216" width="284" height="110" rx="12"/>
+<text class="s" x="28" y="350">MESSAGE SERVERS</text>
+<rect class="g" x="12" y="356" width="276" height="44" rx="10"/>
+<text class="ok" x="26" y="383">✓</text>
+<text class="t" x="46" y="383">[your server]</text>
+<text class="ch" x="272" y="383">›</text>
+<text class="s" x="28" y="416">The servers for new connections of your</text>
+<text class="s" x="28" y="430">current chat profile [profile].</text>
+<rect class="g" x="12" y="450" width="276" height="44" rx="10"/>
+<text class="b" x="26" y="477">Add server</text>
+<rect class="g" x="12" y="510" width="276" height="88" rx="10"/>
+<text class="b" x="26" y="537">Test servers</text>
+<line class="sep" x1="26" y1="554" x2="288" y2="554"/>
+<text class="b" x="26" y="581">How to use your servers</text>
+</svg>
