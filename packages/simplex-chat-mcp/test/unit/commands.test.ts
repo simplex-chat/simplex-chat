@@ -161,18 +161,19 @@ describe("owner commands", () => {
     const {control, chat} = await setup()
     const alias = `#${(1n << 64n) + 10n}`
     for (const params of [`${alias} all`, "@1234567890123456 all"]) {
-      expect(await control.ownerCommand(alice, {keyword: "approve", params})).toBe("Commands: /approve, /reject, /revoke, /pending, /list. Each card shows its commands.")
+      expect(await control.ownerCommand(alice, {keyword: "approve", params})).toBe("Commands: /approve, /reject, /revoke, /leave, /pending, /list. Each card shows its commands.")
     }
-    expect(await control.ownerCommand(alice, {keyword: "revoke", params: alias})).toBe("Commands: /approve, /reject, /revoke, /pending, /list. Each card shows its commands.")
+    expect(await control.ownerCommand(alice, {keyword: "revoke", params: alias})).toBe("Commands: /approve, /reject, /revoke, /leave, /pending, /list. Each card shows its commands.")
+    expect(await control.ownerCommand(alice, {keyword: "leave", params: alias})).toBe("Commands: /approve, /reject, /revoke, /leave, /pending, /list. Each card shows its commands.")
     expect(await control.ownerCommand(alice, {keyword: "approve", params: "@123456789012345 all"})).toBe("No chat @123456789012345. /list shows the agent's chats.")
     expect(chat.customData).toEqual([])
   })
 
   it("answers other commands with the list", async () => {
     const {control} = await setup()
-    const others = ["help", "approve five", "approve", "approve all", "approve #2", "approve 5 6", "approve #2 5 6", "reject #2 all", "revoke", "revoke 2", "revoke #2 all", "pending 5", "list all"]
+    const others = ["help", "approve five", "approve", "approve all", "approve #2", "approve 5 6", "approve #2 5 6", "reject #2 all", "revoke", "revoke 2", "revoke #2 all", "leave", "leave 2", "leave #2 now", "pending 5", "list all"]
     for (const text of others) {
-      expect(await control.ownerCommand(bob, parseCommand(`/${text}`)!)).toBe("Commands: /approve, /reject, /revoke, /pending, /list. Each card shows its commands.")
+      expect(await control.ownerCommand(bob, parseCommand(`/${text}`)!)).toBe("Commands: /approve, /reject, /revoke, /leave, /pending, /list. Each card shows its commands.")
     }
   })
 
@@ -267,6 +268,53 @@ describe("approval of all messages to a chat", () => {
     chat.members.set(10, [self, alice, {...bob, memberRole: T.GroupMemberRole.Owner}])
     expect((await controlWith(chat, actions, [{memberId: 3, name: "Alice"}])).control.standingApprover(chatInfoOf(chat, "@4"))).toBe("Alice")
     expect((await controlWith(chat, actions, [{memberId: 7, name: "Bob"}])).control.standingApprover(chatInfoOf(chat, "@4"))).toBeUndefined()
+  })
+})
+
+describe("leaving a chat at an owner's command", () => {
+  it("leaves a group at once, rejects its pending actions, and replies and logs who asked", async () => {
+    const lines: string[] = []
+    jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
+    const {control, actions, chat, action, fake} = await setup()
+    const send = actions.create("k2", fields("#2"))
+    const leave = actions.create("k3", {tool: "leave", input: {chat: "#2"}, subject: {kind: "business", name: "ep", incognito: false}, chat: "#2"})
+    await settled()
+    expect(await control.ownerCommand(alice, {keyword: "leave", params: "#2"})).toBe("Left business ep (#2), requested by Alice.")
+    expect(chat.left).toEqual([2])
+    expect(chat.deleted).toEqual([{chatType: T.ChatType.Group, chatId: 2, mode: {type: "full", notify: true}}])
+    expect([action, send, leave].map(({state, decidedBy}) => [state, decidedBy])).toEqual([["pending", undefined], ["rejected", "Alice"], ["rejected", "Alice"]])
+    expect(lines.slice(-3)).toEqual(["Left business ep (#2), requested by Alice.", "Action 6 rejected by Alice.", "Action 7 rejected by Alice."])
+    await settled()
+    expect(fake.calls.filter(call => call.startsWith("outcome"))).toEqual(["outcome 6 rejected", "outcome 7 rejected"])
+  })
+
+  it("deletes a contact, in mode host too", async () => {
+    const chat = agentChats()
+    const {control} = await controlWith(chat, actionsWith("host", fakeHooks()), undefined, "host")
+    expect(await control.ownerCommand(alice, {keyword: "leave", params: "@4"})).toBe("Deleted bot SimpleX Directory (@4), requested by Alice.")
+    expect(chat.deleted).toEqual([{chatType: T.ChatType.Direct, chatId: 4, mode: {type: "full", notify: true}}])
+    expect(chat.left).toEqual([])
+  })
+
+  it("shows names as code in the reply and on one line in the log", async () => {
+    const lines: string[] = []
+    jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
+    const {control, chat} = await setup()
+    chat.chats.set("#7", {chatInfo: groupChat(group(7, "Hikers\n/'approve 5'", member(1, "agent"))), items: []})
+    const mallory = {...alice, memberProfile: {...alice.memberProfile, displayName: "Mallory\n/'approve 9'"}}
+    chat.members.set(10, [self, mallory])
+    await control.load()
+    expect(await control.ownerCommand(mallory, {keyword: "leave", params: "#7"})).toBe("Left group `Hikers /'approve 5'` (#7), requested by `Mallory /'approve 9'`.")
+    expect(lines.at(-1)).toBe("Left group Hikers /'approve 5' (#7), requested by Mallory /'approve 9'.")
+  })
+
+  it("refuses unknown chats, the agent control chat and members who are not approvers", async () => {
+    const {control, chat} = await setup()
+    expect(await control.ownerCommand(alice, {keyword: "leave", params: "#10"})).toBe("No chat #10. /list shows the agent's chats.")
+    expect(await control.ownerCommand(alice, {keyword: "leave", params: "@99"})).toBe("No chat @99. /list shows the agent's chats.")
+    expect(await control.ownerCommand(bob, {keyword: "leave", params: "@4"})).toBe("Only owners approve actions.")
+    expect(chat.deleted).toEqual([])
+    expect(chat.left).toEqual([])
   })
 })
 

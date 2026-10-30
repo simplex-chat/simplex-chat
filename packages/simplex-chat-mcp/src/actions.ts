@@ -292,7 +292,7 @@ export function summary(action: Action, showName: (name: string) => string): {wh
   }
 }
 
-export function leaveVerbs({chat}: LeaveAction): {present: string; past: string} {
+export function leaveVerbs({chat}: Pick<LeaveAction, "chat">): {present: string; past: string} {
   return chat.startsWith("@") ? {present: "delete", past: "deleted"} : {present: "leave", past: "left"}
 }
 

@@ -12,7 +12,7 @@ const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "list", label: "Chats and approvals"},
 ]
 
-const commandsReply = "Commands: /approve, /reject, /revoke, /pending, /list. Each card shows its commands."
+const commandsReply = "Commands: /approve, /reject, /revoke, /leave, /pending, /list. Each card shows its commands."
 const cardTooLong = {send: "text: too long for its approval card; shorten it.", connect: "message: too long for its approval card; shorten it."}
 const maxCardLength = 15_000
 const listedChats = 100
@@ -56,7 +56,7 @@ interface ChatApproval {
 
 type OwnerRequest =
   | {type: "approve" | "reject"; action: number; chat?: string}
-  | {type: "approveChat" | "revoke"; chat: string}
+  | {type: "approveChat" | "revoke" | "leave"; chat: string}
   | {type: "pending" | "list"}
 
 interface Shown {
@@ -77,7 +77,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     private group: T.GroupInfo,
     private readonly options: ControlOptions,
     private readonly actions: Actions,
-    private readonly tools: Pick<AgentTools, "knownChat" | "agentChats">,
+    private readonly tools: Pick<AgentTools, "knownChat" | "agentChats" | "leaveChat">,
   ) {}
 
   get groupId(): number {
@@ -183,6 +183,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         return this.approveChat(sender, request.chat)
       case "revoke":
         return this.revoke(request.chat)
+      case "leave":
+        return this.leave(sender, request.chat)
       case "approve":
       case "reject": {
         const action = this.actions.get(request.action)
@@ -215,6 +217,20 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const {simplexMcp, ...customData} = customDataOf(chatInfo) as {simplexMcp: unknown}
     await this.setCustomData(chat, customData)
     return `Messages to ${chatName(chatSubject(chatInfo))} (${chat}) need approval again.`
+  }
+
+  private async leave(sender: T.GroupMember, chat: string): Promise<string> {
+    const chatInfo = await this.agentChat(chat)
+    if (chatInfo === undefined) return `No chat ${chat}. /list shows the agent's chats.`
+    await this.tools.leaveChat(chat)
+    const {past} = leaveVerbs({chat})
+    const left = (shown: Shown): string => `${past[0].toUpperCase()}${past.slice(1)} ${chatName(chatSubject(chatInfo), shown.name)} (${chat}), requested by ${shown.name(sender.memberProfile.displayName)}.`
+    log(left(inLog))
+    const approver = safeName(sender.memberProfile.displayName)
+    for (const action of this.actions.pending()) {
+      if (action.chat === chat && action.card !== undefined) this.actions.reject(action, approver)
+    }
+    return left(inChat)
   }
 
   private async chatsText(): Promise<string> {
@@ -521,8 +537,8 @@ function linkLines({plan, linkTextBytes = Infinity}: ConnectAction): string[] {
   return lines
 }
 
-function chatName(subject: Subject): string {
-  return subjectText({...subject, simplexName: undefined}, safeName)
+function chatName(subject: Subject, showName: (name: string) => string = safeName): string {
+  return subjectText({...subject, simplexName: undefined}, showName)
 }
 
 function codeLines(text: string | undefined): string[] {
@@ -562,7 +578,7 @@ function ownerRequest({keyword, params}: Command): OwnerRequest | undefined {
   const value = words.length === 1 || chat !== undefined ? words.at(-1) : undefined
   if ((keyword === "approve" || keyword === "reject") && value !== undefined && /^\d+$/.test(value)) return {type: keyword, action: Number(value), chat}
   if (keyword === "approve" && chat !== undefined && value === "all") return {type: "approveChat", chat}
-  if (keyword === "revoke" && chat === undefined && value !== undefined && isChatRef(value)) return {type: "revoke", chat: value}
+  if ((keyword === "revoke" || keyword === "leave") && chat === undefined && value !== undefined && isChatRef(value)) return {type: keyword, chat: value}
   if ((keyword === "pending" || keyword === "list") && words.length === 0) return {type: keyword}
   return undefined
 }

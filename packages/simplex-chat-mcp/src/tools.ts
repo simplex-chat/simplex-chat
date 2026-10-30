@@ -382,7 +382,7 @@ export class AgentTools {
       case "send":
         return this.performSend(action)
       case "leave":
-        return this.performLeave(action)
+        return this.leaveChat(action.chat)
     }
   }
 
@@ -640,7 +640,7 @@ export class AgentTools {
     return this.actionResult(action, call, async () => ({chat: action.chat}))
   }
 
-  private async performLeave({chat}: LeaveAction): Promise<void> {
+  async leaveChat(chat: string): Promise<void> {
     if (chat.startsWith("@")) return this.agent.chat.apiDeleteChat(T.ChatType.Direct, chatNumber(chat), {type: "full", notify: true})
     const {groupInfo} = (await getChat(this.agent.chat, chat, 0)).chatInfo as T.ChatInfo.Group
     if (memberCurrentOrPending(groupInfo.membership)) await this.agent.chat.apiLeaveGroup(groupInfo.groupId)

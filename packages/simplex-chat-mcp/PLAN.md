@@ -287,6 +287,7 @@ action decided                  Action 2 approved by Alice: sent. | Action 1 app
 action decided                  Action 2 rejected by Alice. | Action 2 expired.
 mode host                       Action 2: performed without approval (mode host). | ...; failed: <error>.
 counter or card not written     Action 2: failed: <error>.
+owner's /leave CHAT             Left business Ridgeline (#9), requested by Alice. | Deleted bot SimpleX Directory (@4), requested by Alice.
 owner added, --owners LIST      Bob (member 7) is now an owner and can't approve actions yet. Restart the server with --owners 3:Alice,7:Bob
 owner gone, --owners LIST       Alice (member 3) is no longer an owner. Restart the server with --owners 7:Bob   (the human owners remaining)
 no human owner remains          Alice (member 3) is no longer an owner. No owners remain: restart the server with --reset-owners --owners
@@ -390,7 +391,7 @@ host, interrupted   the request's lines except the commands line + "Performed wi
 
 ### Commands
 
-The group's command menu has `/pending` and `/list`; the cards carry the others.
+The group's command menu has `/pending` and `/list`; `/leave` is typed; the cards carry the others.
 
 ```
 command             result
@@ -398,6 +399,7 @@ command             result
 /reject [CHAT] N    the card is edited
 /approve CHAT all   the standing approval of CHAT by the sender; its pending sends are approved
 /revoke CHAT        the standing approval of CHAT is removed
+/leave CHAT         at once, the agent leaves group CHAT or deletes contact CHAT, as the leave tool does; its pending actions for CHAT are rejected by the sender
 /pending            one line per pending action: "2  send to bot SimpleX Directory  expires 2026-10-18 09:15 UTC"; "No pending actions." when none
 /list               one line per chat of the agent, as list returns them: the 100 most recent chats, each line cut to 100 bytes as encoded in the message, "…" included; then "K older chats are not shown." ("1 older chat is not shown.") when more exist
 ```
@@ -422,11 +424,14 @@ CHAT not the action's chat                  Action 10 is not for #3.
 /approve CHAT all, mode host                Approvals apply in mode requests; this server runs in mode host.
 /revoke CHAT                                Messages to business Ridgeline (#9) need approval again.
 /revoke CHAT, no standing approval          Messages to #9 have no standing approval.
+/leave CHAT                                 Left business Ridgeline (#9), requested by Alice. (a contact: Deleted bot SimpleX Directory (@4), requested by Alice.)
+/leave CHAT, CHAT not the agent's           No chat #13. /list shows the agent's chats.
 /list, no chats                             No chats.
-other one-line text starting with "/"       Commands: /approve, /reject, /revoke, /pending, /list. Each card shows its commands.
+other one-line text starting with "/"       Commands: /approve, /reject, /revoke, /leave, /pending, /list. Each card shows its commands.
 ```
 
 - CHAT is optional in `/approve N` and `/reject N` as typed; the cards include it for sends and leaves.
+- `/leave CHAT` applies in both modes. Its reply is logged, with names on one line.
 - A standing approval covers sends only. It ends at `/revoke`, when the chat is deleted, or when member `approvedById` is no longer an approver. It applies in mode `requests` only: in mode `host`, `list` and `/list` show no approvals, and `/approve CHAT all` stores none.
 
 ### Membership messages
@@ -799,7 +804,7 @@ newChatItems, groupRcv, main scope       text starts with "/"                   
 
 ```
 command = parseCommand(text)                      # steward src/commands.ts; undefined: ignore
-not one of the commands below: reply "Commands: /approve, /reject, /revoke, /pending, /list. Each card shows its commands."
+not one of the commands below: reply "Commands: /approve, /reject, /revoke, /leave, /pending, /list. Each card shows its commands."
 sender not an approver: reply "Only owners approve actions." (--owners: "Only the owners listed in --owners approve actions.")
 approve [CHAT] N | reject [CHAT] N, action N not pending in memory, or its card unset: reply "Action N is not pending."
 approve CHAT N | reject CHAT N, action N a connect or for another chat: reply "Action N is not for CHAT."
@@ -808,6 +813,8 @@ reject [CHAT] N:  decidedBy = sender; state rejected; edit the card
 approve CHAT all: mode host: reply "Approvals apply in mode requests; this server runs in mode host."; CHAT not a chat of the agent: reply "No chat CHAT. ..."; otherwise set the chat's custom data simplexMcp = {approvedBy: sender name, approvedById: sender groupMemberId, approvedAt}, keeping its other keys
                   (/_set custom @C or #G); each pending send of CHAT: approve as above; reply "Approved for ... /'revoke CHAT'"
 revoke CHAT:      no approval in the chat's custom data: reply "Messages to CHAT have no standing approval."; otherwise remove simplexMcp from it; reply "Messages to ... need approval again."
+leave CHAT:       CHAT not a chat of the agent: reply "No chat CHAT. ..."; otherwise the steps of perform leave for CHAT; log "Left ... (CHAT), requested by NAME.";
+                  each pending action of CHAT with its card set: reject as above; reply with the logged line
 pending:          reply with the pending actions
 list:             reply with one line per chat of list(), the 100 most recent: CHAT, the type and name, ", approved for this chat by NAME" while the approval applies, ", not connected";
                   each line cut to 100 encoded bytes with "…"; then "K older chats are not shown." when more exist (worst case about 10.3 KB, below the 15602-byte message)
@@ -841,6 +848,7 @@ send call, mode requests, -           performing
 /approve CHAT all         pending     performing    (the sends of CHAT)
 perform(N) ends           performing  done | failed
 /reject N                 pending     rejected
+/leave CHAT               pending     rejected      (the actions of CHAT)
 --expire hours pass       pending     expired
 ```
 

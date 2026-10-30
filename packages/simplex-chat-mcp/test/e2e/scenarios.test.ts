@@ -23,6 +23,7 @@ import {
   textStarts,
   timeout,
   until,
+  updated,
 } from "./helpers"
 import {SmpServer, freePort, startSmpServer} from "./smpServer"
 
@@ -230,6 +231,35 @@ test("a group joined by its link: a mention, and the observer role", async () =>
   expect(joinedNews.result).toMatchObject({status: "done", type: "group", role: "observer"})
   const newsChat = joinedNews.result.chat as string
   expect(await agent.client.tool("send", {chat: newsChat, text: "hello"})).toMatchObject({isError: true, text: `The agent has role observer in ${newsChat} and can't post.`})
+}, 600_000)
+
+test("/leave: the owner makes the agent leave a group at once, and the pending send to it is rejected", async () => {
+  const alice = await personIn("leave", "Alice")
+  const agent = await agentIn("leave")
+  await agent.start()
+  const controlId = await joinAsOwner(alice)
+
+  const trail = await alice.chat.apiNewGroup(alice.user.userId, {displayName: "Trail", fullName: ""})
+  const trailLink = await alice.chat.apiCreateGroupLink(trail.groupId, T.GroupMemberRole.Member)
+  const joinCard = received(alice.chat, textStarts("I want to connect to group Trail, as myself."))
+  const joining = agent.client.tool("connect", {target: trailLink, idle: 2})
+  await approve(alice, controlId, joinCard)
+  const group = (await joining).result.chat as string
+
+  const sendCard = received(alice.chat, textStarts("I want to send a message to group Trail:"))
+  const sending = agent.client.tool("send", {chat: group, text: "any trail news?"})
+  const card = await sendCard
+  const rejectedCard = updated(alice.chat, ci => ci.chatItem.meta.itemId === card.chatItem.meta.itemId)
+  const reply = received(alice.chat, textStarts("Left group Trail"))
+  const agentLeft = alice.chat.wait("leftMember", ({groupInfo}) => groupInfo.groupId === trail.groupId, timeout)
+  await alice.chat.apiSendTextMessage([T.ChatType.Group, controlId], `/leave ${group}`)
+  const line = `Left group Trail (${group}), requested by Alice.`
+  expect((await reply).chatItem.meta.itemText).toBe(line)
+  expect(logLines).toContain(line)
+  expect((await sending).result).toEqual({action: cardNumber(card), status: "rejected"})
+  expect(lines(await rejectedCard).at(-1)).toBe("Rejected by Alice.")
+  expect(await agentLeft).toBeDefined()
+  expect((await agent.client.tool("list", {})).result.chats).not.toContainEqual(expect.objectContaining({chat: group}))
 }, 600_000)
 
 test("a business address, incognito, with a message", async () => {
