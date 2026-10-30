@@ -21,6 +21,7 @@ struct CIMetaView: View {
     var showStatus = true
     var showEdited = true
     var invertedMaterial = false
+    var timeCentred = false
 
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
     @AppStorage(DEFAULT_PRIVACY_SHOW_SIGNATURE) private var showSignature = true
@@ -30,31 +31,17 @@ struct CIMetaView: View {
         if chatItem.isDeletedContent {
             chatItem.timestampText.font(.caption).foregroundColor(metaColor)
         } else {
-            ZStack {
-                ciMetaText(
-                    chatItem.meta,
-                    chatTTL: chat.chatInfo.timedMessagesTTL,
-                    encrypted: chatItem.encryptedFile,
-                    color: metaColor,
-                    paleColor: paleMetaColor,
-                    colorMode: invertedMaterial
-                        ? .invertedMaterial
-                        : .normal,
-                    showStatus: showStatus,
-                    showEdited: showEdited,
-                    showViaProxy: showSentViaProxy,
-                    showTimesamp: showTimestamp,
-                    signedFileVerified: chatItem.file?.loaded,
-                    showSignature: showSignature,
-                    showFileEncryption: showFileEncryption
-                ).invertedForegroundStyle(enabled: invertedMaterial)
-                if invertedMaterial {
+            HStack(spacing: 0) {
+                ZStack {
                     ciMetaText(
                         chatItem.meta,
                         chatTTL: chat.chatInfo.timedMessagesTTL,
                         encrypted: chatItem.encryptedFile,
-                        colorMode: .normal,
-                        onlyOverrides: true,
+                        color: metaColor,
+                        paleColor: paleMetaColor,
+                        colorMode: invertedMaterial
+                            ? .invertedMaterial
+                            : .normal,
                         showStatus: showStatus,
                         showEdited: showEdited,
                         showViaProxy: showSentViaProxy,
@@ -62,7 +49,38 @@ struct CIMetaView: View {
                         signedFileVerified: chatItem.file?.loaded,
                         showSignature: showSignature,
                         showFileEncryption: showFileEncryption
-                    )
+                    ).invertedForegroundStyle(enabled: invertedMaterial)
+                    if invertedMaterial {
+                        ciMetaText(
+                            chatItem.meta,
+                            chatTTL: chat.chatInfo.timedMessagesTTL,
+                            encrypted: chatItem.encryptedFile,
+                            colorMode: .normal,
+                            onlyOverrides: true,
+                            showStatus: showStatus,
+                            showEdited: showEdited,
+                            showViaProxy: showSentViaProxy,
+                            showTimesamp: showTimestamp,
+                            signedFileVerified: chatItem.file?.loaded,
+                            showSignature: showSignature,
+                            showFileEncryption: showFileEncryption
+                        )
+                    }
+                }
+                if timeCentred && showTimestamp {
+                    (textSpace + ciMetaText(
+                        chatItem.meta,
+                        chatTTL: chat.chatInfo.timedMessagesTTL,
+                        encrypted: chatItem.encryptedFile,
+                        colorMode: .transparent,
+                        showStatus: showStatus,
+                        showEdited: showEdited,
+                        showViaProxy: showSentViaProxy,
+                        showTimesamp: false,
+                        signedFileVerified: chatItem.file?.loaded,
+                        showSignature: showSignature,
+                        showFileEncryption: showFileEncryption
+                    )).font(.caption)
                 }
             }
         }

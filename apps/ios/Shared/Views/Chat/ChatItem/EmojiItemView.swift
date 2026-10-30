@@ -14,11 +14,12 @@ import SimpleXChat
 struct EmojiItemView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.terminalLayout) private var terminal
     var chatItem: ChatItem
 
     var body: some View {
         ItemWithMeta(metaReserved: true) {
-            CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
+            CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary, timeCentred: !terminal && !chatItem.chatDir.sent)
         } content: { inlineMeta in
             if let inlineMeta {
                 VStack(spacing: 1) {

@@ -23,7 +23,12 @@ struct MarkedDeletedItemView: View {
         ItemWithMeta {
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
         } content: { inlineMeta in
-            (inlineMeta == nil ? Text(mergedMarkedDeletedText).italic() : Text(mergedMarkedDeletedText).italic() + textSpace + chatItem.timestampText)
+            HStack(alignment: .lastTextBaseline, spacing: 12) {
+                Text(mergedMarkedDeletedText).italic()
+                if inlineMeta != nil {
+                    chatItem.timestampText.fixedSize()
+                }
+            }
             .font(.caption)
             .foregroundColor(theme.colors.secondary)
             .padding(.horizontal, 12)

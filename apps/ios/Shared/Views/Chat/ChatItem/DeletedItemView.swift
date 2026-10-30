@@ -20,8 +20,9 @@ struct DeletedItemView: View {
         ItemWithMeta {
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
         } content: { inlineMeta in
-            HStack(alignment: .bottom, spacing: 0) {
+            HStack(alignment: .lastTextBaseline, spacing: 0) {
                 Text(chatItem.content.text)
+                    .font(.caption)
                     .foregroundColor(theme.colors.secondary)
                     .italic()
                 if let inlineMeta {

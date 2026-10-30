@@ -34,6 +34,7 @@ struct ComposeImageView: View {
                                 .frame(maxWidth: 80, minHeight: 40, maxHeight: 60)
                         }
                     }
+                    .padding(.leading, 12)
                 }
             }
             Spacer()
@@ -43,10 +44,9 @@ struct ComposeImageView: View {
                 }
             }
         }
-        .padding(.vertical, 1)
         .padding(.trailing, 12)
+        .frame(minHeight: 60)
         .background(theme.appColors.sentMessage)
-        .frame(minHeight: 54)
         .frame(maxWidth: .infinity)
     }
 }

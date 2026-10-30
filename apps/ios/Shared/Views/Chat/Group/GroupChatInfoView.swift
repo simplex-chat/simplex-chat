@@ -154,8 +154,6 @@ struct GroupChatInfoView: View {
                             if showUserSupportChat {
                                 UserSupportChatNavLink(chat: chat, groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
                             }
-                        } header: {
-                            Text("")
                         }
                     }
 
@@ -314,14 +312,13 @@ struct GroupChatInfoView: View {
     }
 
     private func groupInfoHeader() -> some View {
-        VStack {
+        VStack(spacing: 8) {
             let cInfo = chat.chatInfo
             // show actual display name, alias can be edited in this view
             let displayName = (cInfo.groupInfo?.groupProfile.displayName ?? cInfo.displayName).trimmingCharacters(in: .whitespacesAndNewlines)
             let fullName = cInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
             ChatInfoImage(chat: chat, size: 192, color: Color(uiColor: .tertiarySystemFill))
-                .padding(.top, 12)
-                .padding()
+                .padding(.vertical, 12)
             Text(displayName)
                 .font(.largeTitle)
                 .multilineTextAlignment(.center)

@@ -31,7 +31,6 @@ struct ComposeLinkView: View {
                 }
             }
         }
-        .padding(.vertical, 1)
         .padding(.trailing, 12)
         .background(theme.appColors.sentMessage)
         .frame(minHeight: 54)
@@ -46,7 +45,7 @@ struct ComposeLinkView: View {
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: 80, maxHeight: 60)
             }
-            VStack(alignment: .center, spacing: 4) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(linkPreview.title)
                     .lineLimit(1)
                 Text(linkPreview.uri)
@@ -55,8 +54,9 @@ struct ComposeLinkView: View {
                     .foregroundColor(theme.colors.secondary)
             }
             .padding(.vertical, 5)
-            .frame(maxWidth: .infinity, minHeight: 60)
+            .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
         }
+        .padding(.leading, 12)
     }
 }
 

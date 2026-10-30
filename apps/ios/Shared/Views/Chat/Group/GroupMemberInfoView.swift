@@ -515,10 +515,9 @@ struct GroupMemberInfoView: View {
     }
 
     private func groupMemberInfoHeader(_ mem: GroupMember) -> some View {
-        VStack {
+        VStack(spacing: 8) {
             MemberProfileImage(mem, size: 192, color: Color(uiColor: .tertiarySystemFill))
-                .padding(.top, 12)
-                .padding()
+                .padding(.vertical, 12)
             // show alias if set, alias cannot be edited in this view
             let displayName = mem.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
             let fullName = mem.fullName.trimmingCharacters(in: .whitespacesAndNewlines)

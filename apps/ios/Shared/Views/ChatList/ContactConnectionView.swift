@@ -43,8 +43,6 @@ struct ContactConnectionView: View {
                         .allowsTightening(false)
                         .foregroundColor(theme.colors.secondary)
                         .padding(.horizontal, 8)
-                        .padding(.top, 1)
-                        .padding(.bottom, 0.5)
                         .frame(alignment: .topLeading)
 
                     Spacer()
@@ -52,11 +50,11 @@ struct ContactConnectionView: View {
                     formatTimestampText(contactConnection.updatedAt)
                         .font(.subheadline)
                         .padding(.trailing, 8)
-                        .padding(.vertical, 4)
+                        .padding(.top, 4)
                         .frame(minWidth: 60, alignment: .trailing)
                         .foregroundColor(theme.colors.secondary)
                 }
-                .padding(.bottom, 2)
+                .padding(.bottom, 4)
 
                 ZStack(alignment: .topTrailing) {
                     Text(contactConnection.description)
@@ -71,6 +69,7 @@ struct ContactConnectionView: View {
             }
             .frame(maxHeight: .infinity)
         }
+        .padding(.bottom, -8)
     }
 }
 

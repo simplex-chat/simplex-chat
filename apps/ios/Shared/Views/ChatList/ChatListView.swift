@@ -801,7 +801,7 @@ struct ChatListSearchBar: View {
                     dismiss: false
                 )
             } else {
-                ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText) }
+                ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText).padding(.horizontal, 7) }
             }
             HStack(spacing: 12) {
                 HStack(spacing: 4) {

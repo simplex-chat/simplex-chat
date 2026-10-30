@@ -15,13 +15,13 @@ struct ComposeFileView: View {
     let cancelEnabled: Bool
 
     var body: some View {
-        HStack(alignment: .center, spacing: 4) {
+        HStack(alignment: .center, spacing: 8) {
             Image(systemName: "doc.fill")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 30, height: 30)
                 .foregroundColor(Color(uiColor: .tertiaryLabel))
-                .padding(.leading, 4)
+                .padding(.leading, 12)
             Text(fileName)
                 .lineLimit(1)
             Spacer()
@@ -33,7 +33,7 @@ struct ComposeFileView: View {
         }
         .padding(.vertical, 1)
         .padding(.trailing, 12)
-        .frame(height: 54)
+        .frame(height: 60)
         .background(theme.appColors.sentMessage)
         .frame(maxWidth: .infinity)
     }
