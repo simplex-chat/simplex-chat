@@ -23,6 +23,8 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isSpace)
+import Data.List.NonEmpty (NonEmpty (..))
+import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -70,7 +72,14 @@ cmdActionP = A.choice (map cmdP [minBound .. maxBound])
     fullArgsP tag = A.char ' ' *> cmdArgsP tag <* A.endOfInput
     -- Without the space check "/issued" would get a usage reply.
     usageEndP = void A.space <|> A.endOfInput
-    usage tag = "Usage: /" <> cmdName tag <> " " <> cmdParams tag
+    usage tag = case cmdForms tag of
+      form :| [] -> "Usage: " <> formLine tag form
+      forms -> T.intercalate "\n" ("Usage:" : map (formLine tag) (L.toList forms))
+
+formLine :: CmdTag -> (Text, Maybe Text) -> Text
+formLine tag (args, example) = cmd args <> maybe "" (("  e.g. " <>) . cmd) example
+  where
+    cmd ps = "/" <> cmdName tag <> " " <> ps
 
 cmdArgsP :: CmdTag -> A.Parser GroupCmd
 cmdArgsP = \case
@@ -102,7 +111,7 @@ nameLengthP =
 groupCommands :: [ChatBotCommand]
 groupCommands = map command [minBound .. maxBound]
   where
-    command tag = CBCCommand (cmdName tag) (cmdLabel tag) (Just (cmdParams tag))
+    command tag = CBCCommand (cmdName tag) (cmdLabel tag) (Just (fst (L.head (cmdForms tag))))
 
 codeP :: A.Parser BadgeCode
 codeP = A.takeWhile1 (not . isSpace) >>= maybe (fail "not a badge code") pure . parseBadgeCode . safeDecodeUtf8
@@ -139,16 +148,20 @@ cmdName = \case
 
 cmdLabel :: CmdTag -> Text
 cmdLabel = \case
-  CTIssue -> "Generate a badge or name code"
+  CTIssue -> "Generate a name or badge code"
   CTBulk -> "Generate many single-use codes"
   CTRevoke -> "Revoke a code"
 
--- | The parameters are quoted in the usage reply and advertised to the group, so the two cannot drift apart.
-cmdParams :: CmdTag -> Text
-cmdParams = \case
-  CTIssue -> "<type> [months <M>] [uses <N>], or name <length> [years <Y>]"
-  CTBulk -> "<type> [months <M>] count <B>, or name <length> [years <Y>] count <B>"
-  CTRevoke -> "<code>"
+-- | The usage reply quotes every form and the advertised menu inserts the first one, so the two cannot drift apart.
+cmdForms :: CmdTag -> NonEmpty (Text, Maybe Text)
+cmdForms = \case
+  CTIssue ->
+    ("name <length> [years <Y>]", Just "name 6 years 5")
+      :| [("<badge> [months <M>] [uses <N>]", Just "supporter months 12")]
+  CTBulk ->
+    ("name <length> [years <Y>] count <N>", Just "name 6 count 100")
+      :| [("<badge> [months <M>] count <N>", Just "supporter months 12 count 10")]
+  CTRevoke -> ("<code>", Nothing) :| []
 
 cmdMinRole :: CmdTag -> GroupMemberRole
 cmdMinRole = \case

@@ -1253,11 +1253,13 @@ console, is in [Refunding a name balance](#refunding-a-name-balance).
 ### From the group
 
 With `[group]` in `store_service.ini`, the service manages one group and serves three commands in
-it: `/issue <type> [months <M>] [uses <N>]` and `/bulk <type> [months <M>] count <B>` for moderators
-and above, `/revoke <code>` for admins and owners. `months` is 1 to 255, `uses` 1 to 1000 and
-`count` 1 to 100; a value outside these gets the usage reply. The name forms are
-`/issue name <length> [years <Y>]` and `/bulk name <length> [years <Y>] count <B>`, with the
-bounds of `//issue name`; a name code issued in the group is single-use and `free`. `/revoke`
+it: `/issue` and `/bulk` for moderators and above, `/revoke <code>` for admins and owners. The name
+forms are `/issue name <length> [years <Y>]` and `/bulk name <length> [years <Y>] count <N>`, with
+the bounds of `//issue name`; a name code issued in the group is single-use and `free`. The badge
+forms are `/issue <badge> [months <M>] [uses <N>]` and `/bulk <badge> [months <M>] count <N>`, where
+`<badge>` is `supporter`, `legend` or `investor`. `months` is 1 to 255, `uses` 1 to 1000 and `count`
+1 to 100; a value outside these gets the usage reply, which lists both forms with an example. The
+group's command menu fills in the name form. `/revoke`
 takes badge codes only: withdraw a name code with `//revoke` in `--run-cli` mode. The group has no
 `/refund`. A member's role
 is checked as the service last saw it, so a command sent by a moderator just demoted or removed can still run if it

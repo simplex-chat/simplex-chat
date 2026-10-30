@@ -364,8 +364,8 @@ testGroupNameCommands = do
 testGroupNameCommandsRefused :: IO ()
 testGroupNameCommandsRefused = do
   let p = groupCmdAction GRModerator
-      issueUsage = ReplyText "Usage: /issue <type> [months <M>] [uses <N>], or name <length> [years <Y>]"
-      bulkUsage = ReplyText "Usage: /bulk <type> [months <M>] count <B>, or name <length> [years <Y>] count <B>"
+      issueUsage = ReplyText "Usage:\n/issue name <length> [years <Y>]  e.g. /issue name 6 years 5\n/issue <badge> [months <M>] [uses <N>]  e.g. /issue supporter months 12"
+      bulkUsage = ReplyText "Usage:\n/bulk name <length> [years <Y>] count <N>  e.g. /bulk name 6 count 100\n/bulk <badge> [months <M>] count <N>  e.g. /bulk supporter months 12 count 10"
   forM_ ["name", "name 5", "name 64", "name 06", "name 8 years 1", "name 8 years 0", "name 8 years 11", "name 8 uses 2", "name 8 months 2", "name 8 paid", "name 8 years 18446744073709551618"] $ \args ->
     (args, p ("/issue " <> args)) `shouldBe` (args, issueUsage)
   forM_ ["name 8", "name 8 count 0", "name 8 count 101", "name 8 years 1 count 2", "name 5 count 2", "name 08 count 2"] $ \args ->

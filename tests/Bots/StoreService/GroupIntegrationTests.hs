@@ -306,7 +306,7 @@ testGroupNameCodes ps = do
     bulk <- mapM (prepaidIn . Just) . T.lines =<< replyTo cc alice "/bulk name 6 count 3"
     length bulk `shouldBe` 3
     forM_ bulk $ \code -> (namePrepaidCodeLength code,) <$> prepaidTerms cc code `shouldReturn` (6, Just (6, 2, CPSFree))
-    replyTo cc alice "/issue name 8 years 1" `shouldReturn` "Usage: /issue <type> [months <M>] [uses <N>], or name <length> [years <Y>]"
+    replyTo cc alice "/issue name 8 years 1" `shouldReturn` issueUsage
     countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 4
 
 testOperatorNameCodes :: HasCallStack => TestParams -> IO ()
@@ -924,7 +924,7 @@ testRoleGatedIssue ps = do
         let announced name = "#" <> groupName <> ": " <> botName <> " added " <> name
             preMember name = "#" <> groupName <> ": member " <> name
             newMember name = "#" <> groupName <> ": new member " <> name <> " is connected"
-            usageReply = "#" <> groupName <> " " <> botName <> "> Usage: /issue <type>"
+            usageReply = "#" <> groupName <> " " <> botName <> "> Usage:"
         joinGroup cc bob
         waitMemberRole cc gid "bob" "member"
         -- cath joins only after alice sees bob announced, or cath's console shows a different line.
@@ -945,7 +945,7 @@ testRoleGatedIssue ps = do
         waitStoredItem cc "/issue legend"
         ownerIssuesNext cc alice 2
         sendGroupCmd alice "/issue supporter uses 0"
-        waitStoredItem cc "Usage: /issue <type> [months <M>] [uses <N>], or name <length> [years <Y>]"
+        waitStoredItem cc issueUsage
         codeCount cc `shouldReturn` 2
         drainUntil alice [usageReply, newMember "bob", newMember "cath"]
         drainUntil bob [usageReply, preMember "alice", newMember "cath"]
@@ -1572,11 +1572,14 @@ singleRow sql = \case
   [r] -> Just r
   _ -> error $ "more than one row from: " <> sql
 
+issueUsage :: Text
+issueUsage = "Usage:\n/issue name <length> [years <Y>]  e.g. /issue name 6 years 5\n/issue <badge> [months <M>] [uses <N>]  e.g. /issue supporter months 12"
+
 -- The list is spelled out rather than taken from the service, so a change there fails here.
 expectedCommands :: [ChatBotCommand]
 expectedCommands =
-  [ CBCCommand "issue" "Generate a badge or name code" (Just "<type> [months <M>] [uses <N>], or name <length> [years <Y>]"),
-    CBCCommand "bulk" "Generate many single-use codes" (Just "<type> [months <M>] count <B>, or name <length> [years <Y>] count <B>"),
+  [ CBCCommand "issue" "Generate a name or badge code" (Just "name <length> [years <Y>]"),
+    CBCCommand "bulk" "Generate many single-use codes" (Just "name <length> [years <Y>] count <N>"),
     CBCCommand "revoke" "Revoke a code" (Just "<code>")
   ]
 
