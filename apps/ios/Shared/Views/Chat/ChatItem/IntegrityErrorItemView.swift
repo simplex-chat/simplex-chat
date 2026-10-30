@@ -62,18 +62,26 @@ struct CIMsgError: View {
     var onTap: () -> Void
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: 0) {
-            Text(chatItem.content.text)
-                .foregroundColor(.red)
-                .italic()
+        ItemWithMeta {
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
-                .padding(.horizontal, 12)
+        } content: { inlineMeta in
+            HStack(alignment: .bottom, spacing: 0) {
+                Text(chatItem.content.text)
+                    .foregroundColor(.red)
+                    .italic()
+                if let inlineMeta {
+                    inlineMeta
+                        .padding(.horizontal, 12)
+                }
+            }
+            .padding(.leading, 12)
+            .padding(.trailing, inlineMeta == nil ? 12 : 0)
+            .padding(.vertical, 6)
+            .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
+            .if(inlineMeta == nil) { $0.modifier(ChatItemClipped(chatItem, tailVisible: false)) }
+            .textSelection(.disabled)
+            .simultaneousGesture(TapGesture().onEnded(onTap))
         }
-        .padding(.leading, 12)
-        .padding(.vertical, 6)
-        .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
-        .textSelection(.disabled)
-        .simultaneousGesture(TapGesture().onEnded(onTap))
     }
 }
 
