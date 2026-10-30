@@ -297,19 +297,6 @@ jobs:
           retention-days: 3
           if-no-files-found: warn
 
-      - name: Run badge screen cycles
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: scripts/ci/android/badge-cycles.sh "$RUNNER_TEMP/apk/$APK" "$RUNNER_TEMP/badge-cycles" 31
-
-      - name: Upload badge screen cycles
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: android-badge-cycles
-          path: ${{ runner.temp }}/badge-cycles
-          retention-days: 7
-          if-no-files-found: warn
-
       - name: Upload backend logs
         if: ${{ !cancelled() && steps.backend.outcome != 'skipped' }}
         uses: actions/upload-artifact@v7

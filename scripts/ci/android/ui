@@ -6,7 +6,7 @@
 #
 #   ui start <apk> [<setting>=<value>...]
 #                                 install the app, give a debug build the settings (OneHandUI, NetworkSMPProxyMode,
-#                                 DeveloperTools, LogLevel, AppearanceBarsBlurRadius), and start it with logcat
+#                                 DeveloperTools, LogLevel), and start it with logcat
 #   ui shot <name>                save UI_OUT/NN-<name>.png, NN-<name>.xml (the tree) and NN-<name>.txt, and print the text on screen
 #   ui text                       print the text on screen, one element per line after its centre x,y
 #   ui tree                       print the elements that have a text or can be used: class, text, bounds and states
