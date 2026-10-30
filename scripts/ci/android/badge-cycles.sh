@@ -123,7 +123,6 @@ n=0
 credits=0
 lapses=0
 blanks=0
-last=""
 last_page=none
 blank_since=""
 deadline=$((SECONDS + cycles * (hidden_secs + shown_secs) + 60))
@@ -138,7 +137,7 @@ while [ "$SECONDS" -lt "$deadline" ]; do
   fi
   mv "$reading" "$reading-$page"
   echo "$(date -u +%H:%M:%S) reading $n: $page, ink $ink" >> "$out/readings.log"
-  case "$last>$page" in
+  case "$last_page>$page" in
     support\>badge) credits=$((credits + 1)) ;;
     badge\>support) lapses=$((lapses + 1)) ;;
   esac
@@ -154,7 +153,6 @@ while [ "$SECONDS" -lt "$deadline" ]; do
     fi
   else
     blank_since=""
-    last=$page
     last_page=$page
   fi
 done

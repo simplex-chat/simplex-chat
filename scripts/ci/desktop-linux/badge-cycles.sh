@@ -69,7 +69,7 @@ n=0
 credits=0
 lapses=0
 blanks=0
-last=""
+last_page=none
 blank_since=""
 deadline=$((SECONDS + cycles * (hidden_secs + shown_secs) + 60))
 while [ "$SECONDS" -lt "$deadline" ]; do
@@ -81,7 +81,7 @@ while [ "$SECONDS" -lt "$deadline" ]; do
   mv "$reading.txt" "$reading-$page.txt"
   ink=$(convert "$reading-$page.png" -crop 390x540+0+135 +repage -colorspace Gray -format '%[fx:standard_deviation]' info:)
   echo "$(date -u +%H:%M:%S) reading $n: $page, ink $ink" >> "$out/readings.log"
-  case "$last>$page" in
+  case "$last_page>$page" in
     support\>badge) credits=$((credits + 1)) ;;
     badge\>support) lapses=$((lapses + 1)) ;;
   esac
@@ -89,7 +89,7 @@ while [ "$SECONDS" -lt "$deadline" ]; do
     blank_since=${blank_since:-$SECONDS}
     if [ $((SECONDS - blank_since)) -ge "$blank_secs" ]; then
       blanks=$((blanks + 1))
-      echo "BLANK $blanks at reading $n, after $credits credits and $lapses lapses, the last page shown: ${last_page:-none}" | tee -a "$out/blanks.txt"
+      echo "BLANK $blanks at reading $n, after $credits credits and $lapses lapses, the last page shown: $last_page" | tee -a "$out/blanks.txt"
       "$ui" shot "blank-$blanks"
       close_badges
       open_badges || true
@@ -97,7 +97,6 @@ while [ "$SECONDS" -lt "$deadline" ]; do
     fi
   else
     blank_since=""
-    last=$page
     last_page=$page
   fi
 done
