@@ -71,18 +71,30 @@ scroll_to_click() {
   return 1
 }
 
-back_to_chat_list() {
-  for _ in 1 2 3 4 5; do
-    "$ui" find "Start new chat" > /dev/null 2>&1 && return 0
+# Settings lists the app's version at its end, and the version opens the screen with Developer tools
+app_version=$(sed -n 's/^android.version_name=//p' "$here/../../../apps/multiplatform/gradle.properties")
+
+back_to_settings() {
+  for _ in 1 2 3 4 5 6; do
+    "$ui" find "$app_version" > /dev/null 2>&1 && return 0
     "$ui" key BACK
   done
-  "$ui" find "Start new chat" > /dev/null
+  "$ui" find "$app_version" > /dev/null
+}
+
+scroll_up_to_click() {
+  for _ in 1 2 3 4 5 6 7 8; do
+    "$ui" click-text "$1" 3 && return 0
+    "$ui" scroll 540 1000 up 1
+  done
+  return 1
 }
 
 start_cycles() {
   local x y
   open_settings
-  scroll_to_click "Developer tools"
+  scroll_to_click "$app_version"
+  "$ui" click-text "Developer tools" 10
   "$ui" click-text "Chat console" 10
   read -r x y < <("$ui" tree | sed -n -E 's/^EditText .* at ([0-9]+),([0-9]+) size ([0-9]+)x([0-9]+).*/\1 \2 \3 \4/p' | awk '{ print $1 + int($3 / 2), $2 + int($4 / 2); exit }')
   "$ui" click "$x" "$y"
@@ -90,12 +102,11 @@ start_cycles() {
   "$ui" click-text "Send Message" 10
   "$ui" wait "test_cycles" 10
   "$ui" shot cycles-started
-  back_to_chat_list
+  back_to_settings
 }
 
 open_badges() {
-  open_settings
-  scroll_to_click "Supporter perks"
+  scroll_up_to_click "Supporter perks"
 }
 
 close_badges() {
@@ -136,7 +147,7 @@ while [ "$SECONDS" -lt "$deadline" ]; do
       echo "BLANK $blanks at reading $n, after $credits credits and $lapses lapses, the last page shown: $last_page" | tee -a "$out/blanks.txt"
       "$ui" shot "blank-$blanks"
       close_badges
-      scroll_to_click "Supporter perks" || open_badges || true
+      open_badges || true
       blank_since=""
     fi
   else
