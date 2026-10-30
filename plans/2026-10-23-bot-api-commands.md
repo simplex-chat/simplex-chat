@@ -341,6 +341,17 @@ line   call                                                   sent string       
 ```
 - Present test, unchanged: "should create member contact and send invitation" (`:81`): both member contact methods are called against the core, with a string message (`:149`).
 
+`packages/simplex-chat-python/tests/test_codegen.py`, new tests of generated `<Name>_cmd_string`:
+```
+test_chat_pagination_cmd_string                               count=0; initial=1; around=5 count=0; after=5 count=100; before=5 count=10
+test_api_get_chat_cmd_string                                  /_get chat @2 content=image count=10 search=k; /_get chat @2 initial=1
+test_api_chat_items_read_cmd_string                           /_read chat items @2 3,4
+test_api_connect_plan_cmd_string_omits_default_resolve_mode   PlanResolveMode: unknown: ""; allGroups and never: " resolve=<mode>"; /_connect plan 1 L; /_connect plan 1 L resolve=never
+test_api_connect_prepared_group_cmd_string                    contact=1 owner=abc; /_connect group #3 contact=1 owner=abc; /_connect group #3 incognito=on json <msg>
+test_member_contact_cmd_string                                /_create member contact #1 2; /_invite member contact @2
+test_api_get_network_config_cmd_string                        /network
+```
+
 `tests/ChatTests/Names.hs`, new test:
 ```
 testPrepareChannelWithName :328   /_prepare group ... direct=off domain=team.simplex (:343), parsed at Library/Commands.hs:6561
