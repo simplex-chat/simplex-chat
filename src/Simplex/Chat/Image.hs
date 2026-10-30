@@ -210,9 +210,10 @@ fitImage output format maxSize img profile
   | dynamicMap (hasSideAbove maxImageSide) img = pure imageDoesNotFit
   | otherwise = maybe (pure imageDoesNotFit) (fitLargest . snd) $ dynamicMap (\i -> displaySize (imageWidth i) (imageHeight i)) img
   where
-    (out, quality, bitsPerPixel, jpegBytes, outputLength) = case output of
-      ImageBytes -> (id, 65, 0.9, id, id)
-      ImageDataUri -> (toDataUri format, 20, 0.35, \target -> 0.75 * max 0 (target - fromIntegral (LB.length $ toDataUri format "")), \n -> 4 * ((n + 2) `div` 3))
+    (out, quality, jpegBitsPerPixel, pngBitsPerPixel, dataBytes, outputLength) = case output of
+      ImageBytes -> (id, 65, 0.9, Nothing, id, id)
+      ImageDataUri -> (toDataUri format, 20, 0.35, Just 8, \target -> 0.75 * max 0 (target - fromIntegral (LB.length $ toDataUri format "")), \n -> 4 * ((n + 2) `div` 3))
+    pixelsFor bitsPerPixel target = 8 * dataBytes target / bitsPerPixel
     keptProfile = displayP3 <$ guard (profile == CPDisplayP3 && fromIntegral (outputLength $ B.length displayP3) <= maxSize `div` 10)
     fitLargest largest = case format of
       IFJpeg -> do
@@ -220,12 +221,12 @@ fitImage output format maxSize img profile
             largestRGB = scaleRGB8 rgb largest
             scale size = if size == largest then largestRGB else scaleRGB8 rgb size
             jpeg q = fmap (out . LB.fromStrict) . encodeRGB q keptProfile
-        fitSize maxSize (Just $ \target -> 8 * jpegBytes target / bitsPerPixel) largest (jpeg quality . scale) >>= \case
+        fitSize maxSize (Just $ pixelsFor jpegBitsPerPixel) largest (jpeg quality . scale) >>= \case
           Right (size, r) | size == largest && fromIntegral (LB.length r) < minFill * fromIntegral maxSize -> Right <$> bisect maxSize (`jpeg` largestRGB) (quality, r) 96
           r -> pure $ snd <$> r
       IFPng -> do
         let png = fmap (out . LB.fromStrict) . encodeSmallerPng keptProfile
-        fmap snd <$> fitSize maxSize Nothing largest (png . scaleRGBA8 (convertRGBA8 img))
+        fmap snd <$> fitSize maxSize (pixelsFor <$> pngBitsPerPixel) largest (png . scaleRGBA8 (convertRGBA8 img))
 
 fitSize :: Int64 -> Maybe (Double -> Double) -> (Int, Int) -> ((Int, Int) -> IO LB.ByteString) -> IO (Either String ((Int, Int), LB.ByteString))
 fitSize maxSize firstPixels (lw, lh) encode = search [] $ maybe lw (widthFor . ($ target)) firstPixels
