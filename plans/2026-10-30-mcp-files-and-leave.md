@@ -7,6 +7,11 @@ Prerequisites, in order:
 2. `simplex-chat` and `@simplex-chat/types` published with those methods; `package.json` of the MCP server pins them.
 3. Image processing in the core: merged in #7941.
 
+Phases:
+1. Library methods, except the wait at stop, and `/leave CHAT`; `ep/bot-api` at `45c77f6aa` is merged into `ep/mcp-files`.
+2. The wait at stop, after C4.
+3. Files, after C1-C3.
+
 ## Decisions
 
 1. Library methods only:
@@ -52,6 +57,45 @@ tools.ts:702                /_get chats USER pcc=off count=N         apiGetChats
 tools.ts:771                /_info @N                                apiContactInfo
 ```
 
+Phase 1 changes:
+```
+file          function           change
+serve.ts      startAgent         apiGetNetworkConfig, then apiSetNetworkConfig with smpProxyMode always and smpProxyFallback allowProtected
+messages.ts   chatType           new: the chat type of a chat reference
+              getChat            apiGetChat; pagination a T.ChatPagination or a count
+              markRead           apiChatItemsRead
+              chatCommand        removed
+tools.ts      plan               apiConnectPlan
+              classifyPlan       input: the result of apiConnectPlan
+              join               apiPrepareGroup
+                                 apiPrepareContact
+                                 apiConnectPreparedContact
+                                 apiConnectPreparedGroup
+                                 apiConnectContactViaAddress
+                                 apiConnectPreparedLink: APIConnect, the whole response
+              connectPrepared    input: the connect call; the prepared chat is deleted when it fails, as now
+              prepare            removed
+              connectResponse    removed
+              domainParam        removed
+              performSend        chatType
+              agentChats         apiGetChats with {type: "last", count: 1000000}
+              incognitoName      apiContactInfo
+```
+
+Changed command strings:
+```
+now                                                                after
+/_connect contact @N incognito=off[ json MSG]                      /_connect contact @N[ json MSG]
+/_connect group #N incognito=off[ json MSG]                        /_connect group #N[ json MSG]
+/_connect contact USER incognito=off N                             /_connect contact USER N
+/_connect USER incognito=off LINK                                  /_connect USER LINK
+/_get chats USER pcc=off count=N                                   /_get chats USER count=N {"type":"filters","favorite":false,"unread":false}
+/network socks=off smp-proxy=always smp-proxy-fallback=protected   /network
+                                                                   /_network JSON
+```
+- `incognito=off` and `pcc=off` are the parser defaults (`Library/Commands.hs:7110`, `:6750`); the query is `clqNoFilters` (`Controller.hs:1169`), the default at `:6752`.
+- `/network socks=off …` sets every field of `SimpleNetCfg` except the timeout (`netCfgP`, `Library/Commands.hs:7324-7335`). The library starts the core with the same values (`defaultSimpleNetCfg`, `Controller.hs:1329-1340`; `Mobile.hs:292`; `Chat.hs:274`), except `hostMode`: onionViaSocks in place of public. Without a SOCKS proxy, both select the same hosts (simplexmq `8bc4d3601`, `Client.hs:531-543`, `Agent/Client.hs:1263-1265`).
+
 Wait at stop, C4:
 - An edit of a card already sent emits no status event: the SENT of the edit's message reaches `updateGroupItemsStatus` (`Library/Subscriber.hs:4152-4172`) through `insertChatItemMessage_` (`Store/Messages.hs:2818`), and `updateGroupMemSndStatus'` reports no change for a member already at `sent`.
 - (a) a core command for the pending deliveries of a group's connections, documented in the bot API; `stop` polls it, at most 10 s, as `deliveryTimeout` now (`serve.ts:16`)
@@ -69,6 +113,30 @@ command        who               effect
 - Reply: `Left group X (#3), requested by Alice.` or `Deleted contact X (@5), requested by Alice.`
 - The same line goes to the log.
 - Both modes.
+
+Phase 1 changes:
+```
+file         function        change
+control.ts   OwnerRequest    {type: "leave", chat}
+             ownerRequest    /leave CHAT, read as /revoke CHAT
+             ownerCommand    leave: Control.leave
+             leave           new
+             chatName        showName parameter, safeName by default
+             commandsReply   /leave added
+tools.ts     leaveChat       performLeave, public, by chat reference; perform calls it
+actions.ts   leaveVerbs      input: {chat}
+```
+
+`Control.leave(sender, CHAT)`:
+```
+CHAT not a chat of the agent: reply "No chat CHAT. /list shows the agent's chats."
+tools.leaveChat(CHAT)
+log the line, names on one line
+each pending action of CHAT with a card: reject, decidedBy the sender
+reply the line, names as in cards
+```
+- An error of `leaveChat` is logged to stderr, as the errors of other owner commands; no reply.
+- `Commands: /approve, /reject, /revoke, /leave, /pending, /list. Each card shows its commands.`
 
 ## Received files
 
@@ -192,3 +260,16 @@ the server's data folder, except DATA/files/
   - a refused path: the refusal in the control chat
   - `/leave #N` with a pending send for #N
   - stop with an unsent card edit: the edit is delivered before close
+
+Phase 1 tests:
+- `test/unit/fixtures.ts`: `FakeChat` takes the library methods of the server from `api.ChatApi.prototype`; they send through its `sendChatCmd`, so the tests check the command strings. `/_get chats` is read with its query.
+- `test/unit/messages.test.ts`: the changed strings; `classifyPlan` with the result of `apiConnectPlan`.
+- `test/unit/commands.test.ts`, `/leave`:
+  - `/leave #N` with a pending send and a pending leave for #N: the group is left and deleted; both actions are rejected by the sender; a send to another chat stays pending; the reply and the log line
+  - `/leave @N`: the contact is deleted
+  - names as code in the reply and on one line in the log
+  - an unknown chat, the agent control chat, a member who is not an approver, mode host
+- `test/e2e/scenarios.test.ts`, `/leave #N` with a pending send for #N: the call returns rejected; the card ends with "Rejected by Alice."; the reply and the log line; the group's owner sees the agent leave; `list` leaves out the chat.
+- Development: `simplex-chat` and `@simplex-chat/types` built from this branch (`packages/simplex-chat-nodejs`, `packages/simplex-chat-client/types/typescript`) and installed in the MCP package with `npm install --no-save`.
+
+Phase 1 docs: the commands of `PLAN.md` and `REFERENCE.md` with `/leave`.
