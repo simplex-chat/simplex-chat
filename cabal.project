@@ -82,4 +82,4 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/JuicyPixels-stbir.git
-    tag: 2c93f04d79272809c5518dbe39f86d5ed345a9f6
+    tag: e0090e14f6348a33b53c11b377cb69df766b02b4

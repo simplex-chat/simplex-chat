@@ -355,7 +355,7 @@ Native code:
   | package | source |
   |---|---|
   | hs-jpeg-turbo (`jpeg-turbo`, `JuicyPixels-jpeg-turbo`, `JuicyPixels-spng`) | simplex-chat/hs-jpeg-turbo at `d0a4d95`, the squash merge of simplex-chat/hs-jpeg-turbo#1 |
-  | JuicyPixels-stbir, with nothings/stb as a submodule | simplex-chat/JuicyPixels-stbir at `2c93f04`, the squash merge of simplex-chat/JuicyPixels-stbir#1 |
+  | JuicyPixels-stbir, with nothings/stb as a submodule | simplex-chat/JuicyPixels-stbir at `e0090e1`, the squash merge of simplex-chat/JuicyPixels-stbir#3 |
   | JuicyPixels 3.3.8 | Hackage |
 
 - The hashes of both repositories in `scripts/nix/sha256map.nix` are computed with submodules, as for simplexmq.
@@ -451,15 +451,17 @@ simplex-chat/hs-jpeg-turbo at `d0a4d95`:
 
 ## JuicyPixels-stbir fork
 
-simplex-chat/JuicyPixels-stbir at `2c93f04`, on the Hackage release 0.1.0.0 (`917cd53`):
+simplex-chat/JuicyPixels-stbir at `e0090e1`, on the Hackage release 0.1.0.0 (`917cd53`):
 - `cbits/stb`: nothings/stb at `1ee679ca` as a submodule, `stb_image_resize.h` v0.97, replacing the bundled v0.95 copy.
 - `cbits/stb_image_resize.c`: `STBIR_ASSERT` defined empty.
 - `cc-options: -ffp-contract=off` (D16).
 - cabal `license`: `BSD-3-Clause AND (MIT OR Unlicense)`, with `cabal-version: 2.2`.
 - `LICENSE` and the cabal `copyright` field: "2026 SimpleX Chat Ltd" added.
+- `resize`: `error` before calling stb_image_resize for a side below 1, an output or working buffers of 2 GiB or more, a `Region` outside the input, or a `Scale` that maps sample centres outside it (#3).
 - Test suite `scale-test` (`test/ScaleTest.hs`):
   - a solid colour, RGB8 and RGBA8 with alpha 128, kept in every output pixel, for repeated halvings and for scales k/64, k in 65..127
   - a 1001×999 RGB gradient resized to 320×240 with Catmull-Rom: a pinned FNV-1a hash of the samples
+  - a 46341×46341 RGBA8 output: refused; 16384×1 to 4320×1 and 1×16384 to 1×4320, RGB8 and RGBA8: accepted
 - CI (`.github/workflows/build.yml`): build and test on Linux x86-64 with GHC 9.6.3 and 8.10.7, Linux ARM64, macOS and Windows with GHC 9.6.3.
 
 ## Mechanics
@@ -680,7 +682,7 @@ Python, `packages/simplex-chat-python/src/simplex_chat/`:
 Build:
 - `cabal.project`, `source-repository-package`:
   - hs-jpeg-turbo (`:76-80`): simplex-chat/hs-jpeg-turbo at `d0a4d95`, subdirectories `JuicyPixels-jpeg-turbo`, `JuicyPixels-spng` and `jpeg-turbo`
-  - JuicyPixels-stbir (`:82-85`): simplex-chat/JuicyPixels-stbir at `2c93f04`
+  - JuicyPixels-stbir (`:82-85`): simplex-chat/JuicyPixels-stbir at `e0090e1`
 - `scripts/nix/sha256map.nix:12-13`: the hashes of both repositories, computed with submodules.
 - `dist-newstyle/src/hs-jpeg-t*` and `dist-newstyle/src/JuicyPixe*` in the Windows removals:
   - `.github/workflows/build.yml:1519, 1522, 1645, 1687, 1689`, with the comment `:1502-1503`
@@ -740,7 +742,7 @@ License notices, `docs/dependencies/`:
 - `README.md:13`:
   `[stb_image_resize](https://github.com/nothings/stb): image scaling ([MIT or public domain](./licences/apps/stb_image_resize/LICENSE))`
 - `licences/apps/mozjpeg/LICENSE.md` and `README.ijg`: copies from mozjpeg `08265790`, the submodule of simplex-chat/hs-jpeg-turbo.
-- `licences/apps/stb_image_resize/LICENSE`: `cbits/stb/stb_image_resize.h:2596-2632` of simplex-chat/JuicyPixels-stbir at `2c93f04`.
+- `licences/apps/stb_image_resize/LICENSE`: `cbits/stb/stb_image_resize.h:2596-2632` of simplex-chat/JuicyPixels-stbir at `e0090e1`.
 - `licences/apps/libspng/LICENSE`: libspng's `LICENSE` (BSD-2-Clause); `licences/apps/libspng/LICENSE-libpng`: `spng/spng.c:6149-6180` (libpng-2.0), without the comment markers; from libspng `fb768002`, the submodule of simplex-chat/hs-jpeg-turbo at `d0a4d95`.
 - `licences/apps/miniz/LICENSE`: miniz's `LICENSE` (MIT), from miniz 3.1.2 (`77d0dce8`), the submodule of simplex-chat/hs-jpeg-turbo at `d0a4d95`.
 - `licences/apps/compact-icc-profiles/license`: the `license` (CC0 1.0) of saucecontrol/Compact-ICC-Profiles at `bdd84663`, the source of `DisplayP3-v4.icc`.
@@ -749,7 +751,7 @@ License notices, `docs/dependencies/`:
     - `JuicyPixels` 3.3.8, Hackage
     - `JuicyPixels-jpeg-turbo` 0.1.0.0, simplex-chat/hs-jpeg-turbo at `d0a4d95`
     - `JuicyPixels-spng` 0.1.0.0, simplex-chat/hs-jpeg-turbo at `d0a4d95`, `BSD-3-Clause AND BSD-2-Clause AND libpng-2.0 AND MIT`, "JuicyPixels wrappers for libspng": the description column holds each package's synopsis
-    - `JuicyPixels-stbir` 0.1.0.0, simplex-chat/JuicyPixels-stbir at `2c93f04`, `BSD-3-Clause AND (MIT OR Unlicense)`
+    - `JuicyPixels-stbir` 0.1.0.0, simplex-chat/JuicyPixels-stbir at `e0090e1`, `BSD-3-Clause AND (MIT OR Unlicense)`
   - direct dependency (`:55`): `vector` 0.13.1.0, moved from the indirect dependencies
   - indirect dependency (`:145`): `jpeg-turbo` 0.1.0.0, simplex-chat/hs-jpeg-turbo at `d0a4d95`, `BSD-3-Clause AND IJG AND Zlib`
   - each of the five added to the dependents of the packages it depends on, among:
