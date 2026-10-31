@@ -42,7 +42,7 @@ import StoreService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
 import StoreService.Codes (issueFailedText, issueOneCode, singleUse)
 import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ChainConfig (..), NamesConfig (..), PlayStoreConfig (..), ServiceConfig (..), localChainId, minNameYears, readServiceConfig)
 import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
-import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, maxNameYears, nameCodeP, textTokenP)
+import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, maxNameYears, nameCodeP, prepaidCodeP, textTokenP)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (newChainClient, nodeChainId)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
@@ -267,7 +267,7 @@ storeService opts@StoreServiceOpts {serviceConfigFile} baseCfg env = do
       startLanes cc = do
         lanes <- maybe (pure []) (serviceLanes waiters turns cc) serviceCfg
         -- The group is resolved before the other lanes start, so a failed lookup exits at once rather than waiting for them to end.
-        groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc (groupEventQ env) <$> ensureManagedGroup cc gc
+        groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc turns (groupEventQ env) <$> ensureManagedGroup cc gc
         raceAny_ $ processQueuedRequests key trackerQ_ requestEnv : maybeToList groupLane_ <> lanes
       chatHooks =
         defaultChatHooks
@@ -382,11 +382,6 @@ revokeCmdP = "revoke " *> codeP <* (A.skipSpace *> A.endOfInput)
 
 revokeNameCmdP :: A.Parser NamePrepaidCode
 revokeNameCmdP = "revoke " *> prepaidCodeP <* (A.skipSpace *> A.endOfInput)
-  where
-    prepaidCodeP =
-      parseNameCode . safeDecodeUtf8 <$> A.takeWhile1 (not . isSpace) >>= \case
-        Just (NCPrepaid code) -> pure code
-        _ -> fail "not a prepaid name code"
 
 -- | The reference, and the cents of the balance to refund; without them the balance is shown.
 refundCmdP :: A.Parser (T.Text, Maybe Int)

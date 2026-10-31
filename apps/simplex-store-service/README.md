@@ -1268,9 +1268,7 @@ group is single-use and `free`. A badge takes `months`, 1 to 255 and 1 by defaul
 also `uses`, 1 to 1000. `count` is 1 to 100. A value outside these bounds, a length for a badge, or
 the other kind's unit gets the usage reply, which lists the form, each kind's bounds and an example
 of each. The group's command menu shows every kind in each command's hint and fills the hint into
-the message box. `/revoke`
-takes badge codes only: withdraw a name code with `//revoke` in `--run-cli` mode. The group has no
-`/refund`. A member's role
+the message box. `/revoke` takes badge and name codes. The group has no `/refund`. A member's role
 is checked as the service last saw it, so a command sent by a moderator just demoted or removed can still run if it
 reaches the service first; revoke any code the service posts for them after the change. `uses`
 above 1 makes a multi-use code, tracked by a group message showing its remaining uses and the time

@@ -64,6 +64,7 @@ namesCodesTests = describe "StoreService names: prepaid codes" $ do
   describe "group commands" $ do
     it "parses /issue name and /bulk name with the length, years and count" testGroupNameCommands
     it "answers the usage to a bad length, years or count, or a badge option" testGroupNameCommandsRefused
+    it "parses /revoke of a prepaid code, telling a moderator it was not revoked" testGroupRevokeNameCommand
 
 r1, r2 :: RegistrationId
 r1 = RegistrationId "r1"
@@ -361,6 +362,14 @@ testGroupNameCommands = do
   p "/bulk name 12 years 3 count 100" `shouldBe` RunCmd (GCBulkName 12 3 100)
   p "/bulk name 6 count 100" `shouldBe` RunCmd (GCBulkName 6 2 100)
   groupCmdAction GRMember "/issue name 8" `shouldBe` IgnoreMsg
+
+testGroupRevokeNameCommand :: IO ()
+testGroupRevokeNameCommand = do
+  code <- newCode 8
+  let cmd = "/revoke " <> formatNameCode (NCPrepaid code)
+  groupCmdAction GRAdmin cmd `shouldBe` RunCmd (GCRevokeName code)
+  groupCmdAction GRModerator cmd `shouldBe` ReplyText "Only admins can revoke codes. This code is now visible to all members."
+  groupCmdAction GRAdmin (cmd <> " junk") `shouldBe` ReplyText "Usage: /revoke <code>"
 
 testGroupNameCommandsRefused :: IO ()
 testGroupNameCommandsRefused = do

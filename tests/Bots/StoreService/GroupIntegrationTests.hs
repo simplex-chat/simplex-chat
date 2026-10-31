@@ -295,6 +295,7 @@ namesCodesChatTests = describe "StoreService names: prepaid codes" $ do
   it "issues prepaid codes on /issue name and /bulk name, answering the usage to years below 2" testGroupNameCodes
   it "issues prepaid codes on //issue name, checks them through the names router and revokes them on //revoke" testOperatorNameCodes
   it "revokes a prepaid code in the code's turn, after a reservation holding it" testRevokeTakesCodeTurn
+  it "revokes a prepaid code on /revoke, answering a repeat as already revoked" testGroupRevokeNameCode
 
 testGroupNameCodes :: HasCallStack => TestParams -> IO ()
 testGroupNameCodes ps = do
@@ -308,6 +309,16 @@ testGroupNameCodes ps = do
     forM_ bulk $ \code -> (namePrepaidCodeLength code,) <$> prepaidTerms cc code `shouldReturn` (6, Just (6, 2, CPSFree))
     replyTo cc alice "/issue name 8 years 1" `shouldReturn` issueUsage
     countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 4
+
+testGroupRevokeNameCode :: HasCallStack => TestParams -> IO ()
+testGroupRevokeNameCode ps = do
+  svc <- prepareGroupService ps
+  runWithOwner svc {gsIniSections = "" : codesOnlyNames <> chainSection} $ \cc _ _ alice -> do
+    code <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 8"
+    let codeText = formatNameCode (NCPrepaid code)
+    revokeInGroup cc alice codeText "Revoked."
+    revokeInGroup cc alice codeText "Already revoked."
+    (pcRevokedAt =<<) <$> withTransaction (chatStore cc) (`getPrepaidCode` namePrepaidCodeHash code) >>= (`shouldSatisfy` isJust)
 
 testOperatorNameCodes :: HasCallStack => TestParams -> IO ()
 testOperatorNameCodes ps = do

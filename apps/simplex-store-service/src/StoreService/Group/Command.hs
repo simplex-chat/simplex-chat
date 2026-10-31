@@ -11,6 +11,7 @@ module StoreService.Group.Command
     codeP,
     badgeTypeP,
     nameCodeP,
+    prepaidCodeP,
     textTokenP,
     maxMonths,
     maxUses,
@@ -27,7 +28,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Badges (BadgeType (..))
-import Simplex.Chat.Badges.Code (BadgeCode, maxNameLength, minNameLength, parseBadgeCode)
+import Simplex.Chat.Badges.Code (BadgeCode, NameCode (..), NamePrepaidCode, maxNameLength, minNameLength, parseBadgeCode, parseNameCode)
 import Simplex.Chat.Types.Preferences (ChatBotCommand (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
@@ -46,6 +47,7 @@ data GroupCmd
   | GCIssueName Int Int
   | GCBulkName Int Int Int
   | GCRevoke BadgeCode
+  | GCRevokeName NamePrepaidCode
   deriving (Eq, Show)
 
 data CmdAction
@@ -74,7 +76,7 @@ cmdArgsP :: CmdTag -> A.Parser GroupCmd
 cmdArgsP = \case
   CTIssue -> uncurry GCIssueName <$> nameCodeP <|> GCIssue <$> badgeTypeP <*> optP monthsOpt <*> optP usesOpt
   CTBulk -> uncurry GCBulkName <$> nameCodeP <*> countP <|> GCBulk <$> badgeTypeP <*> optP monthsOpt <*> countP
-  CTRevoke -> GCRevoke <$> codeP
+  CTRevoke -> GCRevoke <$> codeP <|> GCRevokeName <$> prepaidCodeP
   where
     countP = A.space *> optValueP countOpt
 
@@ -112,6 +114,12 @@ groupCommands = map command [minBound .. maxBound]
 
 codeP :: A.Parser BadgeCode
 codeP = A.takeWhile1 (not . isSpace) >>= maybe (fail "not a badge code") pure . parseBadgeCode . safeDecodeUtf8
+
+prepaidCodeP :: A.Parser NamePrepaidCode
+prepaidCodeP =
+  parseNameCode . safeDecodeUtf8 <$> A.takeWhile1 (not . isSpace) >>= \case
+    Just (NCPrepaid code) -> pure code
+    _ -> fail "not a prepaid name code"
 
 -- attoparsec's decimal wraps silently at Int, so the bound is checked on the wider Integer.
 boundedInt :: CmdOpt -> A.Parser Int
