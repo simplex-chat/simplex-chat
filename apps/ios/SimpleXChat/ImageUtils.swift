@@ -24,6 +24,7 @@ public func getLoadedImage(_ file: CIFile?) -> UIImage? {
         let filePath = getAppFilePath(fileSource.filePath)
         do {
             let data = try getFileData(filePath, fileSource.cryptoArgs)
+            guard isImageFile(data) else { return nil }
             let img = UIImage(data: data)
             do {
                 try img?.setGifFromData(data, levelOfIntegrity: 1.0)
@@ -36,6 +37,36 @@ public func getLoadedImage(_ file: CIFile?) -> UIImage? {
         }
     }
     return nil
+}
+
+public enum ImageFileType: CaseIterable {
+    case jpeg
+    case png
+    case gif
+    case webp
+
+    var signatures: [[UInt8?]] {
+        switch self {
+        case .jpeg: [[0xFF, 0xD8, 0xFF]]
+        case .png: [[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]]
+        case .gif: [ascii("GIF87a"), ascii("GIF89a")]
+        case .webp: [ascii("RIFF") + [nil, nil, nil, nil] + ascii("WEBP")]
+        }
+    }
+
+    public func matches(_ data: Data) -> Bool {
+        signatures.contains { signature in
+            data.count >= signature.count && zip(signature, data).allSatisfy { b, d in b == nil || b == d }
+        }
+    }
+}
+
+public func isImageFile(_ data: Data) -> Bool {
+    ImageFileType.allCases.contains { $0.matches(data) }
+}
+
+private func ascii(_ s: String) -> [UInt8?] {
+    s.utf8.map { $0 }
 }
 
 public func getFileData(_ path: URL, _ cfArgs: CryptoFileArgs?) throws -> Data {
