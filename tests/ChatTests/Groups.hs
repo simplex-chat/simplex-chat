@@ -315,7 +315,7 @@ chatGroupTests = do
       it "should preserve working link after welcome message update" testChannelLinkAfterWelcomeUpdate
       it "should set chat layout of channel joined via relays from link data" testChannelChatLayout
       it "should preserve owner key in link data after profile update" testChannelOwnerKeyAfterLinkUpdate
-      it "malicious relay cannot change channel profile of joining subscriber" testChannelRelayCannotChangeProfile
+      it "should keep channel profile from link data when joining" testChannelJoinKeepsLinkProfile
       it "subscriber should not apply link data of another channel" testChannelLinkDataOtherChannel
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
@@ -10666,14 +10666,14 @@ testChannelOwnerKeyAfterLinkUpdate ps =
                 dan <## "changed to #team"
             ]
 
-testChannelRelayCannotChangeProfile :: HasCallStack => TestParams -> IO ()
-testChannelRelayCannotChangeProfile ps =
+testChannelJoinKeepsLinkProfile :: HasCallStack => TestParams -> IO ()
+testChannelJoinKeepsLinkProfile ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
         withCCTransaction bob $ \db ->
-          DB.execute_ db "UPDATE group_profiles SET short_descr = 'forged by relay'"
+          DB.execute_ db "UPDATE group_profiles SET short_descr = 'relay copy'"
         memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
         withCCTransaction cath (\db -> DB.query_ db "SELECT short_descr FROM group_profiles" :: IO [Only (Maybe T.Text)])
           `shouldReturn` [Only Nothing]
