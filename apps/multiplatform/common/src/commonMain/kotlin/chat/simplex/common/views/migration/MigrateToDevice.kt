@@ -6,6 +6,7 @@ import SectionDividerSpaced
 import SectionSpacer
 import SectionTextFooter
 import SectionView
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -788,5 +789,17 @@ private class MigrationToChatReceiver(
     chatCloseStore(ctrl)
     File(databaseUrl.absolutePath + "_chat.db").delete()
     File(databaseUrl.absolutePath + "_agent.db").delete()
+  }
+}
+
+@Preview
+@Composable
+fun PreviewMigrateToDeviceOnion() {
+  SimpleXTheme {
+    ColumnWithScrollBar(maxIntrinsicSize = true) {
+      AppBarTitle(stringResource(MR.strings.migrate_to_device_title))
+      remember { ModalData() }.OnionView("https://simplex.chat/migration", null, null, HostMode.OnionViaSocks, false, remember { mutableStateOf(null) })
+      SectionBottomSpacer()
+    }
   }
 }
