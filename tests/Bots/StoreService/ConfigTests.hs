@@ -31,7 +31,7 @@ badgeConfigTests = describe "store service config" $ do
   it "disables a provider whose section is absent" testAbsentSection
   it "refuses an incomplete provider section, naming the key" testIncompleteSection
   it "reads the badges_port and badges_static_dir written out, as a local run sets them" testBadgesListenerKeys
-  it "refuses the listener keys of earlier releases, naming the key that replaced each" testRetiredListenerKeys
+  it "refuses the listener keys of earlier releases, naming the key that replaced each, all at once" testRetiredListenerKeys
   it "refuses a badges_port outside 1-65535" testBadgesPortRange
   it "reads serve_webapp off and a badges_export_dir" testWebappSplitDeployment
   it "applies every documented stripe default" testStripeDefaults
@@ -160,11 +160,13 @@ testRetiredListenerKeys = do
   refused "static_dir =" "listener.static_dir is now listener.badges_static_dir"
   refused "webapp_export_dir = /srv/badges-export" "listener.webapp_export_dir is now listener.badges_export_dir"
   refused "names_hosts = simplex.domains" "listener.names_hosts is replaced by listener.names_port: serve the names site on its own port"
+  refusedAll ["port = 8080", "static_dir = /srv/badges"] "listener.port is now listener.badges_port; listener.static_dir is now listener.badges_static_dir"
   withIni (withListenerKeys ["static_dir = /srv/badges", "webapp_export_dir = /srv/badges-export", "names_hosts = simplex.domains", "port = 8080"]) $ \p -> do
     Right ini <- readIniFile p
     unknownKeys ini `shouldBe` []
   where
-    refused key e = parseIni (withListenerKeys [key]) >>= (`shouldBe` e) . either id (const "parsed")
+    refused key = refusedAll [key]
+    refusedAll keys e = parseIni (withListenerKeys keys) >>= (`shouldBe` e) . either id (const "parsed")
 
 testBadgesPortRange :: IO ()
 testBadgesPortRange = do

@@ -42,7 +42,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (GeneralCategory (..), generalCategory, isAsciiLower, isAsciiUpper, isControl, isDigit, isSpace)
 import Data.Ini (Ini, iniGlobals, iniParser, keyValueParser, keys, lookupValue, sectionParser, sections)
-import Data.List (nub, (\\))
+import Data.List (intercalate, nub, (\\))
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -404,7 +404,9 @@ unknownKeys ini = beforeAnySection <> unknownSections <> settings
 
 parseConfig :: Ini -> Either String ServiceConfig
 parseConfig ini = do
-  forM_ retiredListenerKeys $ \(k, e) -> when (isJust (look "listener" k)) (Left e)
+  case [e | (k, e) <- retiredListenerKeys, isJust (look "listener" k)] of
+    [] -> pure ()
+    es -> Left (intercalate "; " es)
   lHost <- optional "listener" "host" "127.0.0.1"
   lBadgesPort <- listenerPort "badges_port" defaultBadgesPort
   let lBadgesStaticDir = maybe defaultBadgesStaticDir T.unpack (present "listener" "badges_static_dir")
