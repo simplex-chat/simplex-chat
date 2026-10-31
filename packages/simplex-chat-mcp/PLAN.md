@@ -1155,7 +1155,7 @@ result {chat, item, responses: messages, more}
 - Responses come from events, not from reads after the sent item: group items are ordered by `item_ts`, the sender's time, so a response can sort before the sent item (`getChatItemIDs`, `Store/Messages.hs:1533-1607`). Item IDs are `AUTOINCREMENT` (`chat_schema.sql:476`), so a response has an ID above the sent item's.
 - The library delivers each event to the handler in order (`api.js:113-142`); a response that arrives before `/_send` returns is kept, and an item received before the sent one has a lower ID and is dropped.
 - `wait` starts when the message is sent; when the call attaches to an action already done, at the call.
-- `sndFileCompleteXFTP` and `sndFileError` delete the folder of a copy in `DIR/files/sent/` (`fileTransferMeta.filePath`, Library/Subscriber.hs:312, :364). The core emits `sndFileCompleteXFTP` for group messages only (:308-312); a copy sent to a contact stays.
+- `sndFileCompleteXFTP` and `sndFileError` delete the folder of a copy in `DIR/files/sent/` (`fileTransferMeta.filePath`). The core emits `sndFileCompleteXFTP` for a group message after the file descriptions are sent (Library/Subscriber.hs:312), for a contact when the description message is sent (`checkSndInlineFTComplete`, :694, :2603-2613), and `sndFileError` at an upload error (:364).
 
 ### Card size
 

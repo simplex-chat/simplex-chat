@@ -574,7 +574,7 @@ describe("send with a file", () => {
 
   const resizeCalls = (resize: jest.SpyInstance): unknown[][] => resize.mock.calls.map(([image, size]) => [Buffer.from(image).toString(), size])
 
-  it("sends a JPEG or PNG as an image with the core's preview and a resized copy, deleted when the file is sent", async () => {
+  it("sends a JPEG or PNG to a contact as an image with the core's preview and a resized copy, deleted when its upload completes", async () => {
     const resize = jest.spyOn(core, "resizeImage").mockImplementation(async (_image, size) => (size === core.ImageSize.MessagePreview ? preview : resized))
     const photo = fileIn("Trail.PNG", "photo")
     const {chat, tools, action, result} = await sent({text: "trail map", file: photo})

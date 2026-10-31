@@ -386,7 +386,7 @@ register options:
   server.json        name, port and expiry of the server, read by register
   lock               PID of the running server
   files/#3/          files downloaded from chat #3; the core makes each name unique
-  files/sent/        resized copies of the images the agent sends; a copy sent to a group is deleted after the upload
+  files/sent/        resized copies of the images the agent sends, each deleted when its upload completes or fails
 ```
 
 The folder is readable only by the user: every start sets its mode to 0700, except on Windows.
