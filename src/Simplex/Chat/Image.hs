@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
@@ -24,8 +25,7 @@ import Codec.Picture (DynamicImage (..), Image (..), Pixel (..), PixelRGB8, Pixe
 import Codec.Picture.JPEGTurbo (DecodeOptions (DecodeOptions), JpegHeader (..), Scale (..), decodeJpeg, encodeRGB, readJpegHeader)
 import qualified Codec.Picture.STBIR as STBIR
 import qualified Codec.Picture.Spng as Spng
-import Codec.Picture.Types (pixelFoldMap)
-import Control.Monad (forM_, guard, when, (<=<))
+import Control.Monad (guard, when, (<=<))
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
@@ -35,12 +35,13 @@ import Data.FileEmbed (embedFile)
 import Data.Int (Int32, Int64)
 import Data.List (maximumBy, minimumBy, sortOn)
 import Data.Maybe (fromMaybe, listToMaybe)
-import Data.Monoid (All (..))
 import Data.Ord (comparing)
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Storable.Mutable as VSM
 import Data.Word (Word8)
-import GHC.Float (double2Float, float2Double)
+import Foreign.Storable (Storable)
+import GHC.Float (double2Float, float2Double, int2Double, int2Float)
+import GHC.Float.RealFracMethods (floorDoubleInt)
 
 data ImageFormat = IFJpeg | IFPng
 
@@ -49,16 +50,21 @@ data ColourProfile = CPNone | CPDisplayP3
 
 imageFormat :: DynamicImage -> ImageFormat
 imageFormat = \case
-  ImageYA8 img -> alphaFormat img
-  ImageYA16 img -> alphaFormat img
-  ImageRGBA8 img -> alphaFormat img
-  ImageRGBA16 img -> alphaFormat img
+  ImageYA8 img -> alphaFormat 2 img
+  ImageYA16 img -> alphaFormat 2 img
+  ImageRGBA8 img -> alphaFormat 4 img
+  ImageRGBA16 img -> alphaFormat 4 img
   _ -> IFJpeg
   where
-    alphaFormat :: (Pixel a, Eq (PixelBaseComponent a), Bounded (PixelBaseComponent a)) => Image a -> ImageFormat
-    alphaFormat img
-      | getAll $ pixelFoldMap (All . (maxBound ==) . pixelOpacity) img = IFJpeg
+    alphaFormat :: (Storable (PixelBaseComponent a), Eq (PixelBaseComponent a), Bounded (PixelBaseComponent a)) => Int -> Image a -> ImageFormat
+    alphaFormat components Image {imageData}
+      | opaqueFrom (components - 1) = IFJpeg
       | otherwise = IFPng
+      where
+        opaqueFrom !i
+          | i >= VS.length imageData = True
+          | VS.unsafeIndex imageData i /= maxBound = False
+          | otherwise = opaqueFrom (i + components)
 
 decodeResizable :: ByteString -> IO (Either String (DynamicImage, ColourProfile))
 decodeResizable s = runExceptT $ do
@@ -213,9 +219,10 @@ fitImage output format maxSize img profile
   | dynamicMap (hasSideAbove maxImageSide) img = pure imageDoesNotFit
   | otherwise = maybe (pure imageDoesNotFit) (fitLargest . snd) $ dynamicMap (\i -> displaySize (imageWidth i) (imageHeight i)) img
   where
-    (out, quality, bitsPerPixel, jpegBytes, outputLength) = case output of
-      ImageBytes -> (id, 65, 0.9, id, id)
-      ImageDataUri -> (toDataUri format, 20, 0.35, \target -> 0.75 * max 0 (target - fromIntegral (LB.length $ toDataUri format "")), \n -> 4 * ((n + 2) `div` 3))
+    (out, quality, jpegBitsPerPixel, pngBitsPerPixel, dataBytes, outputLength) = case output of
+      ImageBytes -> (id, 65, 0.9, Nothing, id, id)
+      ImageDataUri -> (toDataUri format, 20, 0.35, Just 8, \target -> 0.75 * max 0 (target - fromIntegral (LB.length $ toDataUri format "")), \n -> 4 * ((n + 2) `div` 3))
+    pixelsFor bitsPerPixel target = 8 * dataBytes target / bitsPerPixel
     keptProfile = displayP3 <$ guard (profile == CPDisplayP3 && fromIntegral (outputLength $ B.length displayP3) <= maxSize `div` 10)
     fitLargest largest = case format of
       IFJpeg -> do
@@ -223,12 +230,12 @@ fitImage output format maxSize img profile
             largestRGB = scaleRGB8 rgb largest
             scale size = if size == largest then largestRGB else scaleRGB8 rgb size
             jpeg q = fmap (out . LB.fromStrict) . encodeRGB q keptProfile
-        fitSize maxSize (Just $ \target -> 8 * jpegBytes target / bitsPerPixel) largest (jpeg quality . scale) >>= \case
+        fitSize maxSize (Just $ pixelsFor jpegBitsPerPixel) largest (jpeg quality . scale) >>= \case
           Right (size, r) | size == largest && fromIntegral (LB.length r) < minFill * fromIntegral maxSize -> Right <$> bisect maxSize (`jpeg` largestRGB) (quality, r) 96
           r -> pure $ snd <$> r
       IFPng -> do
         let png = fmap (out . LB.fromStrict) . encodeSmallerPng keptProfile
-        fmap snd <$> fitSize maxSize Nothing largest (png . scaleRGBA8 (convertRGBA8 img))
+        fmap snd <$> fitSize maxSize (pixelsFor <$> pngBitsPerPixel) largest (png . scaleRGBA8 (convertRGBA8 img))
 
 fitSize :: Int64 -> Maybe (Double -> Double) -> (Int, Int) -> ((Int, Int) -> IO LB.ByteString) -> IO (Either String ((Int, Int), LB.ByteString))
 fitSize maxSize firstPixels (lw, lh) encode = search [] $ maybe lw (widthFor . ($ target)) firstPixels
@@ -352,38 +359,71 @@ unpremultiply (PixelRGBA8 r g b a) = PixelRGBA8 (divide r) (divide g) (divide b)
 
 sharpen :: Int -> (Int, Int) -> VS.Vector Word8 -> VS.Vector Word8
 sharpen channels (w, h) samples = VS.create $ do
-  rows <- VSM.unsafeNew $ VS.length sharpenOffsets * stride
+  rows <- VSM.unsafeNew $ sharpenTaps * stride
   out <- VSM.unsafeNew $ VS.length samples
-  let blurRow r = forM_ [0 .. w - 1] $ \p -> do
-        let offsets
-              | p >= sharpenRadius && p < w - sharpenRadius = interior
-              | otherwise = VS.map (\t -> (max 0 (min (w - 1) (p + t)) - p) * channels) sharpenOffsets
-        forM_ [0 .. channels - 1] $ \c -> do
-          let i = (r * w + p) * channels + c
-          v <- convolve (\o -> pure $ fromIntegral $ VS.unsafeIndex samples $ i + o) offsets
-          VSM.unsafeWrite rows (rowStart r + p * channels + c) $ double2Float v
-  forM_ [0 .. min h sharpenRadius - 1] blurRow
-  forM_ [0 .. h - 1] $ \y -> do
-    when (y + sharpenRadius < h) $ blurRow $ y + sharpenRadius
-    let offsets = VS.map (\t -> rowStart $ max 0 $ min (h - 1) $ y + t) sharpenOffsets
-    forM_ [0 .. stride - 1] $ \x -> do
-      b <- convolve (\o -> float2Double <$> VSM.unsafeRead rows (o + x)) offsets
-      let i = y * stride + x
-      VSM.unsafeWrite out i $ unsharp (VS.unsafeIndex samples i) $ double2Float b
+  let blurRows !r
+        | r == min h sharpenRadius = pure ()
+        | otherwise = blurRow r >> blurRows (r + 1)
+      blurRow !r = blurPixels 0
+        where
+          blurPixels !p
+            | p == w = pure ()
+            | otherwise = blurSamples 0
+            where
+              tap t = (r * w + clampIndex w (p + t)) * channels
+              !i0 = tap (-2)
+              !i1 = tap (-1)
+              !i2 = tap 0
+              !i3 = tap 1
+              !i4 = tap 2
+              blurSamples !c
+                | c == channels = blurPixels (p + 1)
+                | otherwise = do
+                    let sample i = int2Double $ fromEnum $ VS.unsafeIndex samples $ i + c
+                    VSM.unsafeWrite rows (rowStart r + p * channels + c) $ double2Float $ convolve (sample i0) (sample i1) (sample i2) (sample i3) (sample i4)
+                    blurSamples (c + 1)
+      sharpenRows !y
+        | y == h = pure ()
+        | otherwise = do
+            when (y + sharpenRadius < h) $ blurRow $ y + sharpenRadius
+            sharpenSamples 0
+        where
+          row t = rowStart $ clampIndex h $ y + t
+          !r0 = row (-2)
+          !r1 = row (-1)
+          !r2 = row 0
+          !r3 = row 1
+          !r4 = row 2
+          sharpenSamples !x
+            | x == stride = sharpenRows (y + 1)
+            | otherwise = do
+                let blurred r = float2Double <$> VSM.unsafeRead rows (r + x)
+                b <- convolve <$> blurred r0 <*> blurred r1 <*> blurred r2 <*> blurred r3 <*> blurred r4
+                let i = y * stride + x
+                VSM.unsafeWrite out i $ unsharp (VS.unsafeIndex samples i) $ double2Float b
+                sharpenSamples (x + 1)
+  blurRows 0
+  sharpenRows 0
   pure out
   where
     stride = channels * w
-    rowStart r = (r `mod` VS.length sharpenOffsets) * stride
-    interior = VS.map (* channels) sharpenOffsets
-    unsharp v b = fromIntegral (max 0 $ min 255 $ floor (fromIntegral v + sharpenAmount * float2Double (fromIntegral v - b) + 0.5) :: Int)
+    rowStart r = (r `mod` sharpenTaps) * stride
+    convolve a b c d e = k0 * a + k1 * b + k2 * c + k3 * d + k4 * e
+    (k0, k1, k2, k3, k4) = sharpenKernel
+    unsharp v b = toEnum $ max 0 $ min 255 $ floorDoubleInt (int2Double n + sharpenAmount * float2Double (int2Float n - b) + 0.5)
+      where
+        n = fromEnum v
 
-convolve :: Monad m => (Int -> m Double) -> VS.Vector Int -> m Double
-convolve sample offsets = go 0 0
-  where
-    go t s
-      | t == VS.length sharpenWeights = pure s
-      | otherwise = sample (VS.unsafeIndex offsets t) >>= \v -> go (t + 1) (s + VS.unsafeIndex sharpenWeights t * v)
-{-# INLINE convolve #-}
+clampIndex :: Int -> Int -> Int
+clampIndex n i = max 0 $ min (n - 1) i
+
+sharpenKernel :: (Double, Double, Double, Double, Double)
+sharpenKernel = case VS.toList sharpenWeights of
+  [k0, k1, k2, k3, k4] -> (k0, k1, k2, k3, k4)
+  weights -> error $ "sharpenKernel: 5 taps expected, " <> show (length weights) <> " computed"
+
+sharpenTaps :: Int
+sharpenTaps = VS.length sharpenOffsets
 
 sharpenOffsets :: VS.Vector Int
 sharpenOffsets = VS.enumFromTo (-radius) radius

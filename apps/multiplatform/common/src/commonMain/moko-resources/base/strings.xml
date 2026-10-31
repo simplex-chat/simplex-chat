@@ -3348,6 +3348,12 @@
   <string name="badges_renews_on_for">Renews on %1$s for %2$s.</string>
   <string name="badges_renews_on">Renews on %1$s.</string>
   <string name="supporter_perks">Supporter perks</string>
-  <string name="v7_1_supporter_badge_title">Supporter badge ❤️</string>
-  <string name="v7_1_supporter_badge_body">Help keep the network running — send files up to 2 GB.</string>
+  <string name="v7_1_supporter_badge_title">Supporter badges 🚀</string>
+  <string name="v7_1_supporter_badge_body">Send larger files\navailable for longer.</string>
+  <string name="v7_1_channels">Safer channels</string>
+  <string name="v7_1_channels_moderators">Promote contributors to moderators.</string>
+  <string name="v7_1_channels_signed_messages">Opt in to sign all channel messages.</string>
+  <string name="v7_1_terminal_layout">Flat ("terminal") chat layout</string>
+  <string name="v7_1_terminal_layout_descr">And full markdown support.</string>
+  <string name="v7_1_better_calls_descr">Reconnect after dropped connection.</string>
 </resources>
