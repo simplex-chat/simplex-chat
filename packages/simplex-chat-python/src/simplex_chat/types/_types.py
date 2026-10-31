@@ -23,6 +23,7 @@ class AddRelayResult(TypedDict):
 class AddressSettings(TypedDict):
     businessAddress: bool
     autoAccept: NotRequired["AutoAccept"]
+    chatLayout: NotRequired["ChatLayout"]
     autoReply: NotRequired["MsgContent"]
 
 class AgentCryptoError_DECRYPT_AES(TypedDict):
@@ -197,6 +198,9 @@ class BadgeRedeemError_serviceNotConfigured(TypedDict):
 class BadgeRedeemError_badgeActive(TypedDict):
     type: Literal["badgeActive"]
 
+class BadgeRedeemError_storePurchaseOpen(TypedDict):
+    type: Literal["storePurchaseOpen"]
+
 class BadgeRedeemError_serviceError(TypedDict):
     type: Literal["serviceError"]
     serviceError: "BadgeServiceErrorCode"
@@ -216,15 +220,16 @@ BadgeRedeemError = (
     | BadgeRedeemError_invalidReceipt
     | BadgeRedeemError_serviceNotConfigured
     | BadgeRedeemError_badgeActive
+    | BadgeRedeemError_storePurchaseOpen
     | BadgeRedeemError_serviceError
     | BadgeRedeemError_invalidResponse
     | BadgeRedeemError_unknownKeyIndex
     | BadgeRedeemError_credentialNotVerified
 )
 
-BadgeRedeemError_Tag = Literal["invalidCode", "invalidReceipt", "serviceNotConfigured", "badgeActive", "serviceError", "invalidResponse", "unknownKeyIndex", "credentialNotVerified"]
+BadgeRedeemError_Tag = Literal["invalidCode", "invalidReceipt", "serviceNotConfigured", "badgeActive", "storePurchaseOpen", "serviceError", "invalidResponse", "unknownKeyIndex", "credentialNotVerified"]
 
-BadgeServiceErrorCode = Literal["bad_request", "unsupported_version", "unknown_purchase_key", "unknown_offer_id", "offer_disabled", "offer_mismatch", "product_unavailable", "payment_not_entitled", "payment_pending", "provider_unavailable", "provider_not_configured", "rate_limited", "code_invalid", "code_used", "code_expired", "receipt_invalid", "receipt_used", "test_purchase", "internal"]
+BadgeServiceErrorCode = Literal["bad_request", "unsupported_version", "unknown_purchase_key", "unknown_offer_id", "offer_disabled", "offer_mismatch", "product_unavailable", "payment_not_entitled", "payment_pending", "provider_unavailable", "provider_not_configured", "rate_limited", "code_invalid", "code_used", "code_expired", "receipt_invalid", "receipt_used", "transfer_limited", "test_purchase", "internal"]
 
 BadgeStatus = Literal["active", "expired", "expiredOld", "failed", "unknownKey"]
 
@@ -1307,6 +1312,22 @@ class ChatItemDeletion(TypedDict):
     deletedChatItem: "AChatItem"
     toChatItem: NotRequired["AChatItem"]
 
+class ChatItemInfo(TypedDict):
+    itemVersions: list["ChatItemVersion"]
+    memberDeliveryStatuses: NotRequired[list["MemberDeliveryStatus"]]  # non-empty
+    forwardedFromChatItem: NotRequired["AChatItem"]
+    fileXftpServers: list[str]
+
+class ChatItemVersion(TypedDict):
+    chatItemVersionId: int  # int64
+    msgContent: "MsgContent"
+    formattedText: NotRequired[list["FormattedText"]]
+    markdownBlocks: NotRequired[list["MarkdownBlock"]]  # non-empty
+    itemVersionTs: str  # ISO-8601 timestamp
+    createdAt: str  # ISO-8601 timestamp
+
+ChatLayout = Literal["classic", "terminal"]
+
 class ChatListQuery_filters(TypedDict):
     type: Literal["filters"]
     favorite: bool
@@ -1319,6 +1340,43 @@ class ChatListQuery_search(TypedDict):
 ChatListQuery = ChatListQuery_filters | ChatListQuery_search
 
 ChatListQuery_Tag = Literal["filters", "search"]
+
+class ChatPagination_last(TypedDict):
+    type: Literal["last"]
+    count: int  # int
+
+class ChatPagination_after(TypedDict):
+    type: Literal["after"]
+    chatItemId: int  # int64
+    count: int  # int
+
+class ChatPagination_before(TypedDict):
+    type: Literal["before"]
+    chatItemId: int  # int64
+    count: int  # int
+
+class ChatPagination_around(TypedDict):
+    type: Literal["around"]
+    chatItemId: int  # int64
+    count: int  # int
+
+class ChatPagination_initial(TypedDict):
+    type: Literal["initial"]
+    count: int  # int
+
+ChatPagination = (
+    ChatPagination_last
+    | ChatPagination_after
+    | ChatPagination_before
+    | ChatPagination_around
+    | ChatPagination_initial
+)
+
+ChatPagination_Tag = Literal["last", "after", "before", "around", "initial"]
+
+
+def ChatPagination_cmd_string(self: ChatPagination) -> str:
+    return 'count=' + str(self['count']) if str(self['type']) == 'last' else 'after=' + str(self['chatItemId']) + ' count=' + str(self['count']) if str(self['type']) == 'after' else 'before=' + str(self['chatItemId']) + ' count=' + str(self['count']) if str(self['type']) == 'before' else 'around=' + str(self['chatItemId']) + ' count=' + str(self['count']) if str(self['type']) == 'around' else 'initial=' + str(self['count'])  # type: ignore[typeddict-item]
 
 ChatPeerType = Literal["human", "bot", "business", "agent"]
 
@@ -1429,6 +1487,19 @@ class ComposedMessage(TypedDict):
     quotedItemId: NotRequired[int]  # int64
     msgContent: "MsgContent"
     mentions: dict[str, int]  # str : int64
+
+class ConditionsAcceptance_accepted(TypedDict):
+    type: Literal["accepted"]
+    acceptedAt: NotRequired[str]  # ISO-8601 timestamp
+    autoAccepted: bool
+
+class ConditionsAcceptance_required(TypedDict):
+    type: Literal["required"]
+    deadline: NotRequired[str]  # ISO-8601 timestamp
+
+ConditionsAcceptance = ConditionsAcceptance_accepted | ConditionsAcceptance_required
+
+ConditionsAcceptance_Tag = Literal["accepted", "required"]
 
 class ConnStatus_new(TypedDict):
     type: Literal["new"]
@@ -1576,6 +1647,14 @@ ConnectionPlan = (
 
 ConnectionPlan_Tag = Literal["invitationLink", "contactAddress", "groupLink", "error"]
 
+class ConnectionStats(TypedDict):
+    connAgentVersion: int  # int
+    rcvQueuesInfo: list["RcvQueueInfo"]
+    sndQueuesInfo: list["SndQueueInfo"]
+    ratchetSyncState: "RatchetSyncState"
+    ratchetSyncSupported: bool
+    subStatus: NotRequired["SubscriptionStatus"]
+
 class Contact(TypedDict):
     contactId: int  # int64
     localDisplayName: str
@@ -1598,6 +1677,7 @@ class Contact(TypedDict):
     chatTags: list[int]  # int64
     chatItemTTL: NotRequired[int]  # int64
     uiThemes: NotRequired["UIThemeEntityOverrides"]
+    chatLayout: NotRequired["ChatLayout"]
     chatDeleted: bool
     customData: NotRequired[dict[str, object]]
 
@@ -1639,6 +1719,7 @@ class ContactShortLinkData(TypedDict):
     profile: "Profile"
     message: NotRequired["MsgContent"]
     business: bool
+    chatLayout: NotRequired["ChatLayout"]
     localBadge: NotRequired["LocalBadge"]
 
 ContactStatus = Literal["active", "deleted", "deletedByUser", "rejected"]
@@ -2143,6 +2224,14 @@ class GroupMemberSettings(TypedDict):
 
 GroupMemberStatus = Literal["rejected", "removed", "left", "deleted", "unknown", "invited", "pending_approval", "pending_review", "introduced", "intro-inv", "accepted", "announced", "connected", "complete", "creator"]
 
+class GroupOwnerContact(TypedDict):
+    contactId: int  # int64
+    memberId: str
+
+
+def GroupOwnerContact_cmd_string(self: GroupOwnerContact) -> str:
+    return 'contact=' + str(self['contactId']) + ' owner=' + self['memberId']
+
 class GroupPreference(TypedDict):
     enable: "GroupFeatureEnabled"
 
@@ -2171,6 +2260,7 @@ class GroupProfile(TypedDict):
     publicGroup: NotRequired["PublicGroupProfile"]
     groupPreferences: NotRequired["GroupPreferences"]
     memberAdmission: NotRequired["GroupMemberAdmission"]
+    chatLayout: NotRequired["ChatLayout"]
 
 class GroupRelay(TypedDict):
     groupRelayId: int  # int64
@@ -2189,6 +2279,47 @@ class GroupShortLinkInfo(TypedDict):
     groupRelays: list[str]
     publicGroupId: NotRequired[str]
 
+class GroupSndStatus_new(TypedDict):
+    type: Literal["new"]
+
+class GroupSndStatus_forwarded(TypedDict):
+    type: Literal["forwarded"]
+
+class GroupSndStatus_inactive(TypedDict):
+    type: Literal["inactive"]
+
+class GroupSndStatus_sent(TypedDict):
+    type: Literal["sent"]
+
+class GroupSndStatus_rcvd(TypedDict):
+    type: Literal["rcvd"]
+    msgRcptStatus: "MsgReceiptStatus"
+
+class GroupSndStatus_error(TypedDict):
+    type: Literal["error"]
+    agentError: "SndError"
+
+class GroupSndStatus_warning(TypedDict):
+    type: Literal["warning"]
+    agentError: "SndError"
+
+class GroupSndStatus_invalid(TypedDict):
+    type: Literal["invalid"]
+    text: str
+
+GroupSndStatus = (
+    GroupSndStatus_new
+    | GroupSndStatus_forwarded
+    | GroupSndStatus_inactive
+    | GroupSndStatus_sent
+    | GroupSndStatus_rcvd
+    | GroupSndStatus_error
+    | GroupSndStatus_warning
+    | GroupSndStatus_invalid
+)
+
+GroupSndStatus_Tag = Literal["new", "forwarded", "inactive", "sent", "rcvd", "error", "warning", "invalid"]
+
 class GroupSummary(TypedDict):
     currentMembers: int  # int64
     publicMemberCount: NotRequired[int]  # int64
@@ -2203,6 +2334,8 @@ class GroupSupportChat(TypedDict):
 GroupType = Literal["channel", "group"]
 
 HandshakeError = Literal["PARSE", "IDENTITY", "BAD_AUTH", "BAD_SERVICE"]
+
+HostMode = Literal["onionViaSocks", "onion", "public"]
 
 InlineFileMode = Literal["offer", "sent"]
 
@@ -2244,6 +2377,11 @@ class InvitedBy_unknown(TypedDict):
 InvitedBy = InvitedBy_contact | InvitedBy_user | InvitedBy_unknown
 
 InvitedBy_Tag = Literal["contact", "user", "unknown"]
+
+class KeepAliveOpts(TypedDict):
+    keepIdle: int  # int
+    keepIntvl: int  # int
+    keepCnt: int  # int
 
 class LinkContent_page(TypedDict):
     type: Literal["page"]
@@ -2346,6 +2484,11 @@ MarkdownBlock_Tag = Literal["paragraph", "heading", "codeBlock", "quote", "list"
 
 MemberCriteria = Literal["all"]
 
+class MemberDeliveryStatus(TypedDict):
+    groupMemberId: int  # int64
+    memberDeliveryStatus: "GroupSndStatus"
+    sentViaProxy: NotRequired[bool]
+
 # Connection link sent in a message - only short links are allowed.
 
 class MsgChatLink_contact(TypedDict):
@@ -2428,6 +2571,8 @@ MsgContent = (
 
 MsgContent_Tag = Literal["text", "link", "image", "video", "voice", "file", "report", "chat", "unknown"]
 
+MsgContentTag = Literal["text", "link", "image", "video", "voice", "file", "report", "chat"]
+
 MsgDecryptError = Literal["ratchetHeader", "tooManySkipped", "ratchetEarlier", "other", "ratchetSync"]
 
 MsgDirection = Literal["rcv", "snd"]
@@ -2500,6 +2645,28 @@ NameErrorType = NameErrorType_NO_RESOLVER | NameErrorType_NOT_FOUND | NameErrorT
 
 NameErrorType_Tag = Literal["NO_RESOLVER", "NOT_FOUND", "RESOLVER"]
 
+class NavigationInfo(TypedDict):
+    afterUnread: int  # int
+    afterTotal: int  # int
+
+class NetworkConfig(TypedDict):
+    socksProxy: NotRequired[str]
+    socksMode: "SocksMode"
+    hostMode: "HostMode"
+    requiredHostMode: bool
+    sessionMode: "TransportSessionMode"
+    smpProxyMode: "SMPProxyMode"
+    smpProxyFallback: "SMPProxyFallback"
+    smpWebPortServers: "SMPWebPortServers"
+    tcpConnectTimeout: "NetworkTimeout"
+    tcpTimeout: "NetworkTimeout"
+    tcpTimeoutPerKb: int  # int64
+    rcvConcurrency: int  # int
+    tcpKeepAlive: NotRequired["KeepAliveOpts"]
+    smpPingInterval: int  # int64
+    smpPingCount: int  # int
+    logTLSErrors: bool
+
 class NetworkError_connectError(TypedDict):
     type: Literal["connectError"]
     connectError: str
@@ -2532,6 +2699,10 @@ NetworkError = (
 
 NetworkError_Tag = Literal["connectError", "tLSError", "unknownCAError", "failedError", "timeoutError", "subscribeError"]
 
+class NetworkTimeout(TypedDict):
+    backgroundTimeout: int  # int
+    interactiveTimeout: int  # int
+
 class NewUser(TypedDict):
     profile: NotRequired["Profile"]
     pastTimestamp: bool
@@ -2546,6 +2717,8 @@ class NoteFolder(TypedDict):
     chatTs: str  # ISO-8601 timestamp
     favorite: bool
     unread: bool
+
+OperatorTag = Literal["simplex", "flux"]
 
 class OwnerVerification_verified(TypedDict):
     type: Literal["verified"]
@@ -2584,6 +2757,10 @@ class PendingContactConnection(TypedDict):
     updatedAt: str  # ISO-8601 timestamp
 
 PlanResolveMode = Literal["allGroups", "unknown", "never"]
+
+
+def PlanResolveMode_cmd_string(self: PlanResolveMode) -> str:
+    return ' resolve=allGroups' if str(self) == 'allGroups' else ' resolve=never' if str(self) == 'never' else ''
 
 class PrefEnabled(TypedDict):
     forUser: bool
@@ -2676,6 +2853,8 @@ class PublicGroupProfile(TypedDict):
     groupLink: str
     publicGroupId: str
     publicGroupAccess: NotRequired["PublicGroupAccess"]
+
+QueueStatus = Literal["new", "confirmed", "secured", "active", "disabled"]
 
 class RCErrorType_internal(TypedDict):
     type: Literal["internal"]
@@ -2946,6 +3125,15 @@ RcvMsgError = RcvMsgError_dropped | RcvMsgError_parseError
 
 RcvMsgError_Tag = Literal["dropped", "parseError"]
 
+class RcvQueueInfo(TypedDict):
+    rcvServer: str
+    status: "QueueStatus"
+    rcvSwitchStatus: NotRequired["RcvSwitchStatus"]
+    canAbortSwitch: bool
+    subStatus: "SubscriptionStatus"
+
+RcvSwitchStatus = Literal["switch_started", "sending_qadd", "sending_quse", "received_message", "received_qend"]
+
 class RelayCapabilities(TypedDict):
     webDomain: NotRequired[str]
 
@@ -3067,6 +3255,12 @@ SMPAgentError = (
 
 SMPAgentError_Tag = Literal["A_MESSAGE", "A_PROHIBITED", "A_VERSION", "A_LINK", "A_CRYPTO", "A_DUPLICATE", "A_QUEUE", "A_SERVICE"]
 
+SMPProxyFallback = Literal["allow", "allowProtected", "prohibit"]
+
+SMPProxyMode = Literal["always", "unknown", "unprotected", "never"]
+
+SMPWebPortServers = Literal["all", "preset", "off"]
+
 class SecurityCode(TypedDict):
     securityCode: str
     verifiedAt: str  # ISO-8601 timestamp
@@ -3075,6 +3269,27 @@ SegmentRange = TypedDict("SegmentRange", {
     "from": int,  # int
     "to": int,  # int
 })
+
+class ServerOperator(TypedDict):
+    operatorId: int  # int64
+    operatorTag: NotRequired["OperatorTag"]
+    tradeName: str
+    legalName: NotRequired[str]
+    serverDomains: list[str]
+    conditionsAcceptance: "ConditionsAcceptance"
+    enabled: bool
+    smpRoles: "ServerRoles"
+    xftpRoles: "ServerRoles"
+
+class ServerRoles(TypedDict):
+    storage: bool
+    proxy: bool
+    names: bool
+
+class ServerRolesOverride(TypedDict):
+    storage: NotRequired[bool]
+    proxy: NotRequired[bool]
+    names: NotRequired[bool]
 
 class SimplePreference(TypedDict):
     allow: "FeatureAllowed"
@@ -3234,6 +3449,15 @@ SndGroupEvent = (
 )
 
 SndGroupEvent_Tag = Literal["memberRole", "memberBlocked", "userRole", "memberDeleted", "userLeft", "groupUpdated", "memberAccepted", "userPendingReview"]
+
+class SndQueueInfo(TypedDict):
+    sndServer: str
+    status: "QueueStatus"
+    sndSwitchStatus: NotRequired["SndSwitchStatus"]
+
+SndSwitchStatus = Literal["sending_qkey", "sending_qtest", "securing_queue", "sending_qend"]
+
+SocksMode = Literal["always", "onion"]
 
 class SrvError_host(TypedDict):
     type: Literal["host"]
@@ -3752,6 +3976,8 @@ TransportError = (
 
 TransportError_Tag = Literal["badBlock", "version", "largeMsg", "badSession", "noServerAuth", "handshake"]
 
+TransportSessionMode = Literal["user", "session", "server", "entity"]
+
 UIColorMode = Literal["light", "dark"]
 
 class UIColors(TypedDict):
@@ -3776,6 +4002,7 @@ class UIThemeEntityOverride(TypedDict):
 class UIThemeEntityOverrides(TypedDict):
     light: NotRequired["UIThemeEntityOverride"]
     dark: NotRequired["UIThemeEntityOverride"]
+    chatLayout: NotRequired["ChatLayout"]
 
 class UpdatedMessage(TypedDict):
     msgContent: "MsgContent"
@@ -3849,6 +4076,12 @@ class UserInfo(TypedDict):
     user: "User"
     unreadCount: int  # int
 
+class UserOperatorServers(TypedDict):
+    operator: NotRequired["ServerOperator"]
+    smpServers: list["UserServer"]
+    xftpServers: list["UserServer"]
+    chatRelays: list["UserChatRelay"]
+
 class UserProfileUpdateSummary(TypedDict):
     updateSuccesses: int  # int
     updateFailures: int  # int
@@ -3857,6 +4090,15 @@ class UserProfileUpdateSummary(TypedDict):
 class UserPwdHash(TypedDict):
     hash: str
     salt: str
+
+class UserServer(TypedDict):
+    serverId: int  # int64
+    server: str
+    preset: bool
+    tested: NotRequired[bool]
+    enabled: bool
+    roles: "ServerRolesOverride"
+    deleted: bool
 
 class VersionRange(TypedDict):
     minVersion: int  # int

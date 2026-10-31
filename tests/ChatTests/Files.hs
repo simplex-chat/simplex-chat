@@ -17,13 +17,20 @@ import Control.Monad.Reader (runReaderT)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Int (Int64)
+import qualified Data.Text as T
 import Network.HTTP.Types.URI (urlEncode)
 import Data.Time.Clock (addUTCTime, getCurrentTime, nominalDay)
 import Simplex.Chat.Badges (BadgeProof, BadgeStatus (..), BadgeType (..), FileSizeLimits (..), ProofPresHeader (..), badgeProof, defaultFileSizeLimits)
-import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Controller (ChatCommand (APIGetChat), ChatConfig (..), ChatPagination (CPLast), ChatResponse (CRApiChat))
+import Simplex.Chat.Library.Commands (execChatCommand')
 import Simplex.Chat.Library.Internal (badgeProofStatus, roundedFDCount)
+import Simplex.Chat.Messages (AChat (..), CChatItem (..), Chat (..), ChatItem (..), ChatRef (..), ChatType (..))
+import Simplex.Chat.Messages.CIContent (ciMsgContent)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Options (ChatOpts (..))
+import Simplex.Chat.Protocol (MsgContent (MCImage))
+import Simplex.Chat.Types (ImageData (..))
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), XFTPStoreConfig (..))
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -39,6 +46,7 @@ chatFileTests = do
   describe "messages with files" $ do
     it "send and receive message with file" runTestMessageWithFile
     it "send and receive image" testSendImage
+    it "send image with generated preview" testSendImagePreview
     it "sender marking chat item deleted cancels file" testSenderMarkItemDeleted
     it "files folder: send and receive image" testFilesFoldersSendImage
     it "files folder: sender deleted file" testFilesFoldersImageSndDelete -- TODO add test deleting during upload
@@ -175,6 +183,29 @@ testSendImage =
       alice <## "bob (Bob) deleted contact with you"
       fileExists <- doesFileExist testJpg
       fileExists `shouldBe` True
+
+testSendImagePreview :: HasCallStack => TestParams -> IO ()
+testSendImagePreview =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> withXFTPServer alice $ do
+      connectUsers alice bob
+      alice ##> "/img @bob ./tests/fixtures/test.jpg"
+      alice <# "/f @bob ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice <## "completed uploading file 1 (test.jpg) for bob"
+      preview <- lastImagePreview bob 2
+      T.length preview `shouldSatisfy` (<= 14000)
+      preview `shouldSatisfy` ("data:image/jpg;base64," `T.isPrefixOf`)
+
+lastImagePreview :: TestCC -> Int64 -> IO T.Text
+lastImagePreview TestCC {chatController = cc} contactId = do
+  r <- execChatCommand' (APIGetChat (ChatRef CTDirect contactId Nothing) Nothing (CPLast 1) Nothing) 0 `runReaderT` cc
+  case r of
+    Right (CRApiChat _ (AChat _ Chat {chatItems = [CChatItem _ ChatItem {content = itemContent}]}) _)
+      | Just (MCImage _ (ImageData image)) <- ciMsgContent itemContent -> pure image
+    _ -> fail $ "no image item: " <> show r
 
 testSenderMarkItemDeleted :: HasCallStack => TestParams -> IO ()
 testSenderMarkItemDeleted =

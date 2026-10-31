@@ -8,4 +8,4 @@
 
 > `const` **defaultBotAddressSettings**: [`BotAddressSettings`](api.Interface.BotAddressSettings.md)
 
-Defined in: [src/api.ts:44](../api.ts#L44)
+Defined in: [src/api.ts:46](../api.ts#L46)

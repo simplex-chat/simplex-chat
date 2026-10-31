@@ -27,7 +27,7 @@
     <string name="trying_to_connect_to_server_to_receive_messages">Próba połączenia z serwerem, który służył do odbierania wiadomości z tego połączenia.</string>
     <string name="error_connecting_to_server_to_receive_messages">Próbowanie połączenia z serwerem używanym do odbierania wiadomości od tego kontaktu (błąd: %1$s).</string>
     <string name="unknown_message_format">nieznany format wiadomości</string>
-    <string name="app_name">SimpleX</string>
+    <string name="app_name" translatable="false">SimpleX</string>
     <string name="sender_you_pronoun">Ty</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Jesteś połączony z serwerem, który służył do odbierania wiadomości z tego połączenia.</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Twój profil zostanie wysłany do kontaktu, od którego otrzymałeś ten link.</string>
@@ -108,8 +108,7 @@
     <string name="notification_preview_mode_message_desc">Pokaż kontakt i wiadomość</string>
     <string name="notification_preview_mode_contact_desc">Pokaż tylko kontakt</string>
     <string name="la_notice_title_simplex_lock">Blokada SimpleX</string>
-    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Aby chronić swoje informacje, włącz funkcję blokady SimpleX.
-\nPrzed włączeniem tej funkcji zostanie wyświetlony monit uwierzytelniania.</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Aby chronić swoje informacje, włącz funkcję blokady SimpleX. \nPrzed włączeniem tej funkcji zostanie wyświetlony monit uwierzytelniania.</string>
     <string name="la_notice_turn_on">Włącz</string>
     <string name="auth_disable_simplex_lock">Wyłącz blokadę SimpleX</string>
     <string name="auth_enable_simplex_lock">Włącz blokadę SimpleX</string>
@@ -124,7 +123,7 @@
     <string name="auth_stop_chat">Zatrzymaj czat</string>
     <string name="copy_verb">Kopiuj</string>
     <string name="delete_verb">Usuń</string>
-    <string name="delete_message__question">Usunąć wiadomość\?</string>
+    <string name="delete_message__question">Usunąć wiadomość?</string>
     <string name="edit_verb">Edytuj</string>
     <string name="hide_verb">Ukryj</string>
     <string name="delete_message_mark_deleted_warning">Wiadomość zostanie oznaczona do usunięcia. Odbiorca(y) będzie mógł ujawnić tę wiadomość.</string>
@@ -137,7 +136,7 @@
     <string name="contact_connection_pending">łączenie…</string>
     <string name="icon_descr_context">Ikona kontekstu</string>
     <string name="for_me_only">Usuń dla mnie</string>
-    <string name="delete_member_message__question">Usunąć wiadomość członka\?</string>
+    <string name="delete_member_message__question">Usunąć wiadomość członka?</string>
     <string name="icon_descr_edited">edytowana</string>
     <string name="for_everybody">Dla wszystkich</string>
     <string name="group_preview_join_as">Dołącz jako %s</string>
@@ -184,7 +183,7 @@
     <string name="icon_descr_server_status_connected">Połączony</string>
     <string name="maximum_supported_file_size">Obecnie maksymalny obsługiwany rozmiar pliku to %1$s.</string>
     <string name="button_delete_contact">Usuń kontakt</string>
-    <string name="delete_contact_question">Usunąć kontakt\?</string>
+    <string name="delete_contact_question">Usunąć kontakt?</string>
     <string name="icon_descr_server_status_disconnected">Rozłączony</string>
     <string name="icon_descr_server_status_error">Błąd</string>
     <string name="error_saving_file">Błąd zapisu pliku</string>
@@ -197,7 +196,7 @@
     <string name="icon_descr_record_voice_message">Nagraj wiadomość głosową</string>
     <string name="icon_descr_send_message">Wyślij wiadomość</string>
     <string name="text_field_set_contact_placeholder">Ustaw nazwę kontaktu…</string>
-    <string name="switch_receiving_address_question">Zmienić adres odbioru\?</string>
+    <string name="switch_receiving_address_question">Zmienić adres odbioru?</string>
     <string name="verify_security_code">Weryfikuj kod bezpieczeństwa</string>
     <string name="view_security_code">Pokaż kod bezpieczeństwa</string>
     <string name="voice_message">Wiadomość głosowa</string>
@@ -231,11 +230,11 @@
     <string name="clear_verb">Wyczyść</string>
     <string name="clear_chat_menu_action">Wyczyść</string>
     <string name="clear_chat_button">Wyczyść czat</string>
-    <string name="clear_chat_question">Wyczyścić czat\?</string>
+    <string name="clear_chat_question">Wyczyścić czat?</string>
     <string name="icon_descr_close_button">Przycisk zamknij</string>
     <string name="alert_title_contact_connection_pending">Kontakt nie jest jeszcze połączony!</string>
     <string name="delete_contact_menu_action">Usuń</string>
-    <string name="delete_pending_connection__question">Usunąć oczekujące połączenie\?</string>
+    <string name="delete_pending_connection__question">Usunąć oczekujące połączenie?</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 komputer: zeskanuj wyświetlony kod QR z aplikacji, przez <b>Zeskanuj kod QR</b>.]]></string>
     <string name="image_descr_link_preview">link podglądu obrazu</string>
     <string name="mark_read">Oznacz jako przeczytane</string>
@@ -255,8 +254,7 @@
     <string name="contact_wants_to_connect_with_you">chce się z Tobą połączyć!</string>
     <string name="you_accepted_connection">Zaakceptowałeś połączenie</string>
     <string name="you_invited_a_contact">Zaprosiłeś swój kontakt</string>
-    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Twój kontakt musi być online, aby połączenie zostało zakończone.
-\nMożesz anulować to połączenie i usunąć kontakt (i spróbować później z nowym linkiem).</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Twój kontakt musi być online, aby połączenie zostało zakończone. \nMożesz anulować to połączenie i usunąć kontakt (i spróbować później z nowym linkiem).</string>
     <string name="connect_button">Połącz</string>
     <string name="connection_request_sent">Prośba o połączenie wysłana!</string>
     <string name="connect_via_link">Połącz się przez link</string>
@@ -298,7 +296,7 @@
     <string name="rate_the_app">Oceń aplikację</string>
     <string name="saved_ICE_servers_will_be_removed">Zapisane serwery WebRTC ICE zostaną usunięte.</string>
     <string name="smp_servers_save">Zapisz serwery</string>
-    <string name="smp_save_servers_question">Zapisać serwery\?</string>
+    <string name="smp_save_servers_question">Zapisać serwery?</string>
     <string name="smp_servers_scan_qr">Zeskanuj kod QR serwera</string>
     <string name="chat_with_the_founder">Wyślij pytania i pomysły</string>
     <string name="send_us_an_email">Wyślij do nas email</string>
@@ -316,7 +314,7 @@
     <string name="smp_servers_your_server_address">Twój adres serwera</string>
     <string name="your_simplex_contact_address">Twój adres SimpleX</string>
     <string name="contribute">Przyczyń się</string>
-    <string name="network_enable_socks_info">Uzyskiwanie dostępu do serwerów przez SOCKS proxy na porcie %d\? Proxy musi zostać uruchomione przed włączeniem tej opcji.</string>
+    <string name="network_enable_socks_info">Uzyskiwanie dostępu do serwerów przez SOCKS proxy na porcie %d? Proxy musi zostać uruchomione przed włączeniem tej opcji.</string>
     <string name="network_settings">Zaawansowane ustawienia sieci</string>
     <string name="app_version_code">Kompilacja aplikacji: %s</string>
     <string name="appearance_settings">Wygląd</string>
@@ -333,21 +331,20 @@
     <string name="network_and_servers">Sieć i serwery</string>
     <string name="network_settings_title">Zaawansowane ustawienia</string>
     <string name="network_use_onion_hosts_no">Nie</string>
-    <string name="network_use_onion_hosts_required_desc">Hosty onion będą wymagane do połączenia.
-\nUwaga: nie będziesz mógł połączyć się z serwerami bez adresu .onion.</string>
+    <string name="network_use_onion_hosts_required_desc">Hosty onion będą wymagane do połączenia. \nUwaga: nie będziesz mógł połączyć się z serwerami bez adresu .onion.</string>
     <string name="network_use_onion_hosts_prefer_desc">Hosty onion będą używane, gdy będą dostępne.</string>
     <string name="network_use_onion_hosts_no_desc">Hosty onion nie będą używane.</string>
     <string name="network_use_onion_hosts_required">Wymagane</string>
     <string name="save_servers_button">Zapisz</string>
     <string name="network_session_mode_transport_isolation">Izolacja transportu</string>
-    <string name="network_disable_socks">Użyć bezpośredniego połączenia z Internetem\?</string>
+    <string name="network_disable_socks">Użyć bezpośredniego połączenia z Internetem?</string>
     <string name="network_use_onion_hosts">Użyj hostów .onion</string>
-    <string name="network_enable_socks">Użyć proxy SOCKS\?</string>
+    <string name="network_enable_socks">Użyć proxy SOCKS?</string>
     <string name="all_your_contacts_will_remain_connected">Wszystkie Twoje kontakty pozostaną połączone.</string>
     <string name="create_address">Utwórz adres</string>
     <string name="developer_options">ID bazy danych i opcja izolacji transportu.</string>
     <string name="delete_address">Usuń adres</string>
-    <string name="delete_address__question">Usunąć adres\?</string>
+    <string name="delete_address__question">Usunąć adres?</string>
     <string name="delete_image">Usuń obraz</string>
     <string name="display_name__field">Nazwa profilu:</string>
     <string name="edit_image">Edytuj obraz</string>
@@ -358,7 +355,7 @@
     <string name="save_and_notify_contact">Zapisz i powiadom kontakt</string>
     <string name="save_and_notify_contacts">Zapisz i powiadom kontakty</string>
     <string name="save_and_notify_group_members">Zapisz i powiadom członków grupy</string>
-    <string name="save_preferences_question">Zapisać preferencje\?</string>
+    <string name="save_preferences_question">Zapisać preferencje?</string>
     <string name="share_link">Udostępnij link</string>
     <string name="show_dev_options">Pokaż:</string>
     <string name="show_developer_options">Pokaż opcje dewelopera</string>
@@ -459,10 +456,7 @@
     <string name="icon_descr_video_off">Wideo wyłączone</string>
     <string name="icon_descr_video_on">Wideo włączone</string>
     <string name="integrity_msg_skipped">%1$d pominięta(ych) wiadomość(i)</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Może to nastąpić, gdy:
-\n1. Wiadomości wygasły w wysyłającym kliencie po 2 dniach lub na serwerze po 30 dniach.
-\n2. Odszyfrowanie wiadomości nie powiodło się, ponieważ Ty lub Twój kontakt użyliście starej kopii zapasowej bazy danych.
-\n3. Połączenie zostało skompromitowane.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Może to nastąpić, gdy: \n1. Wiadomości wygasły w wysyłającym kliencie po 2 dniach lub na serwerze po 30 dniach. \n2. Odszyfrowanie wiadomości nie powiodło się, ponieważ Ty lub Twój kontakt użyliście starej kopii zapasowej bazy danych. \n3. Połączenie zostało skompromitowane.</string>
     <string name="privacy_and_security">Prywatność i bezpieczeństwo</string>
     <string name="alert_title_skipped_messages">Pominięte wiadomości</string>
     <string name="your_privacy">Twoja prywatność</string>
@@ -492,7 +486,7 @@
     <string name="run_chat_section">Uruchom czat</string>
     <string name="send_link_previews">Wyślij podgląd linku</string>
     <string name="settings_section_title_settings">Ustawienia</string>
-    <string name="stop_chat_question">Zatrzymać czat\?</string>
+    <string name="stop_chat_question">Zatrzymać czat?</string>
     <string name="settings_section_title_support">Wspieraj SimpleX Chat</string>
     <string name="settings_section_title_themes">Motywy</string>
     <string name="settings_section_title_you">Ty</string>
@@ -512,12 +506,12 @@
     <string name="current_passphrase">Obecne hasło…</string>
     <string name="database_encrypted">Baza danych zaszyfrowana!</string>
     <string name="delete_files_and_media_all">Usuń wszystkie pliki</string>
-    <string name="delete_chat_profile_question">Usunąć profil czatu\?</string>
-    <string name="delete_files_and_media_question">Usunąć pliki i media\?</string>
+    <string name="delete_chat_profile_question">Usunąć profil czatu?</string>
+    <string name="delete_files_and_media_question">Usunąć pliki i media?</string>
     <string name="delete_files_and_media_for_all_users">Usuń pliki dla wszystkich profili czatu</string>
     <string name="delete_messages">Usuń wiadomości</string>
     <string name="total_files_count_and_size">%d plik(i) o łącznym rozmiarze %s</string>
-    <string name="enable_automatic_deletion_question">Czy włączyć automatyczne usuwanie wiadomości\?</string>
+    <string name="enable_automatic_deletion_question">Czy włączyć automatyczne usuwanie wiadomości?</string>
     <string name="encrypt_database">Szyfruj</string>
     <string name="error_changing_message_deletion">Błąd zmiany ustawienia</string>
     <string name="error_encrypting_database">Błąd szyfrowania bazy danych</string>
@@ -528,7 +522,7 @@
     <string name="no_received_app_files">Brak odebranych lub wysłanych plików</string>
     <string name="enter_correct_current_passphrase">Wprowadź poprawne aktualne hasło.</string>
     <string name="remove_passphrase">Usuń</string>
-    <string name="remove_passphrase_from_keychain">Usunąć hasło z Keystore\?</string>
+    <string name="remove_passphrase_from_keychain">Usunąć hasło z Keystore?</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Uruchom ponownie aplikację, aby utworzyć nowy profil czatu.</string>
     <string name="save_passphrase_in_keychain">Zapisz hasło w Keystore</string>
     <string name="chat_item_ttl_seconds">%s sekund(y)</string>
@@ -542,7 +536,7 @@
     <string name="keychain_allows_to_receive_ntfs">Android Keystore będzie używany do bezpiecznego przechowywania hasła po ponownym uruchomieniu aplikacji lub zmianie hasła - pozwoli to na otrzymywanie powiadomień.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b> Uwaga</b>: NIE będziesz w stanie odzyskać ani zmienić hasła, jeśli je zgubisz.]]></string>
     <string name="cannot_access_keychain">Nie można uzyskać dostępu do Keystore w celu zapisania hasła bazy danych</string>
-    <string name="change_database_passphrase_question">Zmienić hasło bazy danych\?</string>
+    <string name="change_database_passphrase_question">Zmienić hasło bazy danych?</string>
     <string name="database_passphrase_will_be_updated">Hasło szyfrowania bazy danych zostanie zaktualizowane.</string>
     <string name="database_encryption_will_be_updated">Hasło szyfrowania bazy danych zostanie zaktualizowane i zapisane w Keystore.</string>
     <string name="database_error">Błąd bazy danych</string>
@@ -551,7 +545,7 @@
     <string name="database_passphrase_is_required">Hasło do bazy danych jest wymagane do otwarcia czatu.</string>
     <string name="database_will_be_encrypted">Baza danych zostanie zaszyfrowana.</string>
     <string name="database_will_be_encrypted_and_passphrase_stored">Baza danych zostanie zaszyfrowana, a hasło zapisane w Keystore.</string>
-    <string name="encrypt_database_question">Zaszyfrować bazę danych\?</string>
+    <string name="encrypt_database_question">Zaszyfrować bazę danych?</string>
     <string name="encrypted_database">Zaszyfrowana baza danych</string>
     <string name="enter_correct_passphrase">Wprowadź poprawne hasło.</string>
     <string name="enter_passphrase">Wprowadź hasło…</string>
@@ -579,17 +573,17 @@
     <string name="alert_title_group_invitation_expired">Zaproszenie wygasło!</string>
     <string name="icon_descr_add_members">Zaproś członków</string>
     <string name="join_group_button">Dołącz</string>
-    <string name="join_group_question">Dołączyć do grupy\?</string>
+    <string name="join_group_question">Dołączyć do grupy?</string>
     <string name="join_group_incognito_button">Dołącz incognito</string>
     <string name="joining_group">Dołączanie do grupy</string>
     <string name="leave_group_button">Opuść</string>
-    <string name="leave_group_question">Opuścić grupę\?</string>
+    <string name="leave_group_question">Opuścić grupę?</string>
     <string name="database_migrations">Migracje: %s</string>
     <string name="open_chat">Otwórz czat</string>
     <string name="restore_database_alert_desc">Proszę podać poprzednie hasło po przywróceniu kopii zapasowej bazy danych. Tej czynności nie można cofnąć.</string>
     <string name="restore_database_alert_confirm">Przywróć</string>
     <string name="restore_database">Przywróć kopię zapasową bazy danych</string>
-    <string name="restore_database_alert_title">Przywrócić kopię zapasową bazy danych\?</string>
+    <string name="restore_database_alert_title">Przywrócić kopię zapasową bazy danych?</string>
     <string name="database_restore_error">Błąd przywracania bazy danych</string>
     <string name="database_backup_can_be_restored">Próba zmiany hasła bazy danych nie została zakończona.</string>
     <string name="alert_message_no_group">Ta grupa już nie istnieje.</string>
@@ -657,7 +651,7 @@
     <string name="create_group_link">Utwórz link do grupy</string>
     <string name="button_create_group_link">Utwórz link</string>
     <string name="button_delete_group">Usuń grupę</string>
-    <string name="delete_group_question">Usunąć grupę\?</string>
+    <string name="delete_group_question">Usunąć grupę?</string>
     <string name="button_edit_group_profile">Edytuj profil grupy</string>
     <string name="group_link">Link do grupy</string>
     <string name="delete_group_for_self_cannot_undo_warning">Grupa zostanie usunięta dla Ciebie - nie można tego cofnąć!</string>
@@ -672,7 +666,7 @@
     <string name="info_row_connection">Połączenie</string>
     <string name="info_row_database_id">ID bazy danych</string>
     <string name="delete_link">Usuń link</string>
-    <string name="delete_link_question">Usunąć link\?</string>
+    <string name="delete_link_question">Usunąć link?</string>
     <string name="conn_level_desc_direct">bezpośredni</string>
     <string name="error_changing_role">Błąd zmiany roli</string>
     <string name="error_creating_link_for_group">Błąd tworzenia linku grupy</string>
@@ -692,16 +686,16 @@
     <string name="button_remove_member">Usuń członka</string>
     <string name="role_in_group">Rola</string>
     <string name="save_and_update_group_profile">Zapisz i zaktualizuj profil grupowy</string>
-    <string name="save_welcome_message_question">Zapisać wiadomość powitalną\?</string>
+    <string name="save_welcome_message_question">Zapisać wiadomość powitalną?</string>
     <string name="button_send_direct_message">Wyślij wiadomość bezpośrednią</string>
     <string name="sending_via">Wysyłanie przez</string>
     <string name="conn_stats_section_title_servers">Serwery</string>
     <string name="switch_verb">Przełącz</string>
     <string name="switch_receiving_address">Zmień adres odbioru</string>
     <string name="group_is_decentralized">W pełni zdecentralizowana – widoczna tylko dla członków.</string>
-    <string name="member_role_will_be_changed_with_invitation">Rola zostanie zmieniona na "%s". Członek otrzyma nowe zaproszenie.</string>
+    <string name="member_role_will_be_changed_with_invitation">Rola zostanie zmieniona na %s. Członek otrzyma nowe zaproszenie.</string>
     <string name="group_welcome_title">Wiadomość powitalna</string>
-    <string name="users_delete_question">Usunąć profil czatu\?</string>
+    <string name="users_delete_question">Usunąć profil czatu?</string>
     <string name="users_delete_profile_for">Usuń profil czatu dla</string>
     <string name="dont_show_again">Nie pokazuj ponownie</string>
     <string name="network_option_enable_tcp_keep_alive">Włącz utrzymywanie aktywności TCP</string>
@@ -723,7 +717,7 @@
     <string name="user_unhide">Odkryj</string>
     <string name="user_unmute">Wyłącz wyciszenie</string>
     <string name="update_network_settings_confirmation">Aktualizuj</string>
-    <string name="update_network_settings_question">Zaktualizować ustawienia sieci\?</string>
+    <string name="update_network_settings_question">Zaktualizować ustawienia sieci?</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Aktualizacja ustawień spowoduje ponowne połączenie klienta ze wszystkimi serwerami.</string>
     <string name="you_can_hide_or_mute_user_profile">Możesz ukryć lub wyciszyć profil użytkownika - przytrzymaj go dla menu.</string>
     <string name="group_main_profile_sent">Twój profil czatu zostanie wysłany do członków grupy</string>
@@ -852,7 +846,7 @@
     <string name="allow_your_contacts_irreversibly_delete">Zezwól swoim kontaktom na nieodwracalne usuwanie wysłanych wiadomości. (24 godziny)</string>
     <string name="about_simplex_chat">O SimpleX Chat</string>
     <string name="above_then_preposition_continuation">powyżej, wtedy:</string>
-    <string name="accept_connection_request__question">Zaakceptować prośbę o połączenie\?</string>
+    <string name="accept_connection_request__question">Zaakceptować prośbę o połączenie?</string>
     <string name="color_primary">Akcent</string>
     <string name="all_group_members_will_remain_connected">Wszyscy członkowie grupy pozostaną połączeni.</string>
     <string name="allow_disappearing_messages_only_if">Zezwalaj na znikające wiadomości tylko wtedy, gdy Twój kontakt na to pozwala.</string>
@@ -865,7 +859,7 @@
     <string name="notifications_mode_service">Zawsze włączona</string>
     <string name="allow_irreversible_message_deletion_only_if">Zezwalaj na nieodwracalne usuwanie wiadomości tylko wtedy, gdy Twój kontakt Ci na to pozwoli. (24 godziny)</string>
     <string name="allow_to_send_disappearing">Zezwól na wysyłanie znikających wiadomości.</string>
-    <string name="allow_voice_messages_question">Zezwolić na wiadomości głosowe\?</string>
+    <string name="allow_voice_messages_question">Zezwolić na wiadomości głosowe?</string>
     <string name="notifications_mode_off_desc">Aplikacja może otrzymywać powiadomienia tylko wtedy, gdy jest uruchomiona, żadna usługa w tle nie zostanie uruchomiona</string>
     <string name="audio_call_no_encryption">połączenie audio (nie szyfrowane e2e)</string>
     <string name="auth_unavailable">Uwierzytelnianie niedostępne</string>
@@ -898,9 +892,7 @@
     <string name="error_joining_group">Błąd dołączenia do grupy</string>
     <string name="error_saving_group_profile">Błąd zapisu profilu grupy</string>
     <string name="failed_to_parse_chat_title">Nie udało się załadować czatu</string>
-    <string name="v4_6_group_moderation_descr">Teraz administratorzy mogą:
-\n- usuwać wiadomości członków.
-\n- wyłączyć członków (rola "obserwatora")</string>
+    <string name="v4_6_group_moderation_descr">Teraz administratorzy mogą: \n- usuwać wiadomości członków. \n- wyłączyć członków (rola obserwatora)</string>
     <string name="from_gallery_button">Z Galerii</string>
     <string name="gallery_image_button">Obraz</string>
     <string name="gallery_video_button">Wideo</string>
@@ -915,7 +907,7 @@
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Jeśli odrzucisz nadawca NIE zostanie powiadomiony.</string>
     <string name="description_via_contact_address_link_incognito">incognito poprzez link adresu kontaktowego</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Jeśli otrzymałeś link do zaproszenia SimpleX Chat, możesz go otworzyć w swojej przeglądarce:</string>
-    <string name="import_database_question">Zaimportować bazę danych czatu\?</string>
+    <string name="import_database_question">Zaimportować bazę danych czatu?</string>
     <string name="incognito_info_protects">Tryb incognito chroni Twoją prywatność używając nowego losowego profilu dla każdego kontaktu.</string>
     <string name="conn_level_desc_indirect">pośrednie (%1$s)</string>
     <string name="turn_off_battery_optimization"><![CDATA[<b>Pozwól</b> w następnym oknie dialogowym natychmiast otrzymywać powiadomienia.]]></string>
@@ -946,14 +938,14 @@
     <string name="smp_servers_test_some_failed">Niektóre serwery nie przeszły testu:</string>
     <string name="thank_you_for_installing_simplex">Dziękujemy za zainstalowanie SimpleX Chat!</string>
     <string name="moderate_message_will_be_marked_warning">Wiadomość zostanie oznaczona jako zmoderowana dla wszystkich członków.</string>
-    <string name="member_role_will_be_changed_with_notification">Rola zostanie zmieniona na "%s". Wszyscy w grupie zostaną powiadomieni.</string>
+    <string name="member_role_will_be_changed_with_notification">Rola zostanie zmieniona na %s. Wszyscy w grupie zostaną powiadomieni.</string>
     <string name="delete_files_and_media_desc">Tego działania nie można cofnąć - wszystkie odebrane i wysłane pliki oraz media zostaną usunięte. Obrazy o niskiej rozdzielczości pozostaną.</string>
     <string name="switch_receiving_address_desc">Adres odbiorczy zostanie zmieniony na inny serwer. Zmiana adresu zostanie zakończona gdy nadawca będzie online.</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Aby poprawić prywatność, <b>SimpleX działa w tle</b> zamiast korzystać z powiadomień push.]]></string>
     <string name="to_verify_compare">Aby zweryfikować szyfrowanie end-to-end z Twoim kontaktem porównaj (lub zeskanuj) kod na waszych urządzeniach.</string>
     <string name="smp_servers_use_server_for_new_conn">Użyj dla nowych połączeń</string>
     <string name="connection_error_auth_desc">O ile Twój kontakt nie usunął połączenia lub ten link był już użyty, może to być błąd - zgłoś go. \nAby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połączenia i sprawdź, czy masz stabilne połączenie z siecią.</string>
-    <string name="use_simplex_chat_servers__question">Używać serwerów SimpleX Chat\?</string>
+    <string name="use_simplex_chat_servers__question">Używać serwerów SimpleX Chat?</string>
     <string name="icon_descr_simplex_team">Drużyna SimpleX</string>
     <string name="network_use_onion_hosts_prefer">Gdy dostępny</string>
     <string name="v4_2_auto_accept_contact_requests_desc">Z opcjonalną wiadomością powitalną.</string>
@@ -966,8 +958,7 @@
     <string name="you_must_use_the_most_recent_version_of_database">Musisz używać najnowszej wersji bazy danych czatu TYLKO na jednym urządzeniu, w przeciwnym razie możesz przestać otrzymywać wiadomości od niektórych kontaktów.</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Możesz rozpocząć czat poprzez Ustawienia aplikacji / Bazę danych lub poprzez ponowne uruchomienie aplikacji.</string>
     <string name="your_settings">Twoje ustawienia</string>
-    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Twoja obecna baza danych czatu zostanie USUNIĘTA i ZASTĄPIONA zaimportowaną.
-\nTej czynności nie można cofnąć - Twój profil, kontakty, wiadomości i pliki zostaną nieodwracalnie utracone.</string>
+    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Twoja obecna baza danych czatu zostanie USUNIĘTA i ZASTĄPIONA zaimportowaną. \nTej czynności nie można cofnąć - Twój profil, kontakty, wiadomości i pliki zostaną nieodwracalnie utracone.</string>
     <string name="contact_sent_large_file">Twój kontakt wysłał plik, który jest większy niż obecnie obsługiwany maksymalny rozmiar (%1$s).</string>
     <string name="snd_group_event_member_deleted">usunąłeś %1$s</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Twój profil jest przechowywany na Twoim urządzeniu i udostępniany tylko Twoim kontaktom. Serwery SimpleX nie widzą Twojego profilu.</string>
@@ -1020,8 +1011,7 @@
     <string name="alert_title_msg_bad_hash">Zły hash wiadomości</string>
     <string name="alert_title_msg_bad_id">Zły identyfikator wiadomości</string>
     <string name="alert_text_msg_bad_hash">Hash poprzedniej wiadomości jest inny.</string>
-    <string name="alert_text_msg_bad_id">Identyfikator następnej wiadomości jest nieprawidłowy (mniejszy lub równy poprzedniej).
-\nMoże się to zdarzyć z powodu jakiegoś błędu lub gdy połączenie jest skompromitowane.</string>
+    <string name="alert_text_msg_bad_id">Identyfikator następnej wiadomości jest nieprawidłowy (mniejszy lub równy poprzedniej). \nMoże się to zdarzyć z powodu jakiegoś błędu lub gdy połączenie jest skompromitowane.</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">Nie udało się odszyfrować %1$d wiadomości.</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d pominiętych wiadomości.</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Może się to zdarzyć, gdy Ty lub Twoje połączenie użyło starej kopii zapasowej bazy danych.</string>
@@ -1037,12 +1027,12 @@
     <string name="prohibit_calls">Zabroń połączeń audio/wideo.</string>
     <string name="only_your_contact_can_make_calls">Tylko Twój kontakt może wykonywać połączenia.</string>
     <string name="revoke_file__action">Odwołaj plik</string>
-    <string name="revoke_file__title">Odwołać plik\?</string>
+    <string name="revoke_file__title">Odwołać plik?</string>
     <string name="stop_snd_file__message">Wysyłanie pliku zostanie przerwane.</string>
     <string name="stop_file__confirm">Zatrzymaj</string>
     <string name="stop_file__action">Zatrzymaj plik</string>
-    <string name="stop_rcv_file__title">Przestać odbierać plik\?</string>
-    <string name="stop_snd_file__title">Przestać wysyłać plik\?</string>
+    <string name="stop_rcv_file__title">Przestać odbierać plik?</string>
+    <string name="stop_snd_file__title">Przestać wysyłać plik?</string>
     <string name="revoke_file__confirm">Odwołaj</string>
     <string name="v5_0_app_passcode">Pin aplikacji</string>
     <string name="v5_0_polish_interface">Polski interfejs</string>
@@ -1066,16 +1056,15 @@
     <string name="share_address">Udostępnij adres</string>
     <string name="you_can_share_this_address_with_your_contacts">Możesz udostępnić ten adres Twoim kontaktom, aby umożliwić im połączenie z %s.</string>
     <string name="learn_more">Dowiedz się więcej</string>
-    <string name="stop_sharing_address">Przestać udostępniać adres\?</string>
+    <string name="stop_sharing_address">Przestać udostępniać adres?</string>
     <string name="auto_accept_contact">Automatycznie akceptuj</string>
     <string name="share_address_with_contacts_question">Udostępnić adres kontaktom?</string>
     <string name="enter_welcome_message_optional">Wpisz wiadomość powitalną… (opcjonalne)</string>
     <string name="profile_update_will_be_sent_to_contacts">Aktualizacja profilu zostanie wysłana do Twoich kontaktów.</string>
-    <string name="save_settings_question">Zapisać ustawienia\?</string>
+    <string name="save_settings_question">Zapisać ustawienia?</string>
     <string name="stop_sharing">Przestań udostępniać</string>
     <string name="continue_to_next_step">Kontynuuj</string>
-    <string name="email_invite_body">Cześć!
-\nPołącz się ze mną za pomocą SimpleX Chat: %s</string>
+    <string name="email_invite_body">Cześć! \nPołącz się ze mną za pomocą SimpleX Chat: %s</string>
     <string name="invite_friends">Zaproś znajomych</string>
     <string name="email_invite_subject">Porozmawiajmy w SimpleX Chat</string>
     <string name="group_welcome_preview">Podgląd</string>
@@ -1172,20 +1161,18 @@
     <string name="v5_1_japanese_portuguese_interface">Japoński i portugalski interfejs użytkownika</string>
     <string name="whats_new_read_more">Przeczytaj więcej</string>
     <string name="v5_1_self_destruct_passcode">Pin samozniszczenia</string>
-    <string name="v5_1_better_messages_descr">- wiadomości głosowe do 5 minut.
-\n- niestandardowy czas zniknięcia.
-\n- historia edycji.</string>
+    <string name="v5_1_better_messages_descr">- wiadomości głosowe do 5 minut. \n- niestandardowy czas zniknięcia. \n- historia edycji.</string>
     <string name="item_info_no_text">brak tekstu</string>
     <string name="non_fatal_errors_occured_during_import">Podczas importu wystąpiły niekrytyczne błędy:</string>
     <string name="settings_restart_app">Restart</string>
     <string name="settings_section_title_app">Aplikacja</string>
     <string name="shutdown_alert_desc">Powiadomienia przestaną działać do momentu ponownego uruchomienia aplikacji.</string>
     <string name="settings_shutdown">Wyłączenie</string>
-    <string name="shutdown_alert_question">Wyłączyć\?</string>
+    <string name="shutdown_alert_question">Wyłączyć?</string>
     <string name="abort_switch_receiving_address">Przerwij zmianę adresu</string>
     <string name="abort_switch_receiving_address_desc">Zmiana adresu zostanie przerwana. Użyty zostanie stary adres odbiorczy.</string>
     <string name="error_aborting_address_change">Błąd przerwania zmiany adresu</string>
-    <string name="abort_switch_receiving_address_question">Przerwać zmianę adresu\?</string>
+    <string name="abort_switch_receiving_address_question">Przerwać zmianę adresu?</string>
     <string name="abort_switch_receiving_address_confirm">Przerwij</string>
     <string name="favorite_chat">Ulubione</string>
     <string name="files_and_media">Pliki i media</string>
@@ -1214,8 +1201,8 @@
     <string name="settings_section_title_delivery_receipts">Wyślij potwierdzenia dostawy do</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Wysyłanie potwierdzeń dostawy zostanie włączone dla wszystkich kontaktów we wszystkich widocznych profilach czatu.</string>
     <string name="receipts_section_contacts">Kontakty</string>
-    <string name="receipts_contacts_title_enable">Włączyć potwierdzenia\?</string>
-    <string name="receipts_contacts_title_disable">Wyłączyć potwierdzenia\?</string>
+    <string name="receipts_contacts_title_enable">Włączyć potwierdzenia?</string>
+    <string name="receipts_contacts_title_disable">Wyłączyć potwierdzenia?</string>
     <string name="conn_event_ratchet_sync_required">renegocjacja szyfrowania wymagana</string>
     <string name="receipts_contacts_override_disabled">Wysyłanie potwierdzeń jest wyłączone dla %d kontaktów</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Możesz je włączyć później w ustawieniach Prywatności i Bezpieczeństwa aplikacji.</string>
@@ -1225,16 +1212,14 @@
     <string name="snd_conn_event_ratchet_sync_ok">szyfrowanie ok dla %s</string>
     <string name="snd_conn_event_ratchet_sync_required">renegocjacja szyfrowania wymagana dla %s</string>
     <string name="error_enabling_delivery_receipts">Błąd włączania potwierdzeń dostawy!</string>
-    <string name="v5_2_more_things_descr">- bardziej stabilne dostarczanie wiadomości.
-\n- nieco lepsze grupy.
-\n- i więcej!</string>
+    <string name="v5_2_more_things_descr">- bardziej stabilne dostarczanie wiadomości. \n- nieco lepsze grupy. \n- i więcej!</string>
     <string name="v5_2_favourites_filter_descr">Filtruj nieprzeczytane i ulubione czaty.</string>
     <string name="v5_2_favourites_filter">Szybciej znajduj czaty</string>
     <string name="fix_connection">Napraw połączenie</string>
     <string name="fix_connection_confirm">Napraw</string>
-    <string name="fix_connection_question">Naprawić połączenie\?</string>
+    <string name="fix_connection_question">Naprawić połączenie?</string>
     <string name="v5_2_message_delivery_receipts">Potwierdzenia dostarczenia wiadomości!</string>
-    <string name="sync_connection_force_question">Renegocjować szyfrowanie\?</string>
+    <string name="sync_connection_force_question">Renegocjować szyfrowanie?</string>
     <string name="receipts_contacts_override_enabled">Wysyłanie potwierdzeń jest włączone dla %d kontaktów</string>
     <string name="sync_connection_force_desc">Szyfrowanie działa, a nowe uzgodnienie szyfrowania nie jest wymagane. Może to spowodować błędy w połączeniu!</string>
     <string name="these_settings_are_for_your_current_profile">Te ustawienia dotyczą Twojego bieżącego profilu</string>
@@ -1265,9 +1250,9 @@
     <string name="delivery">Dostarczenie</string>
     <string name="send_receipts_disabled">wyłączony</string>
     <string name="receipts_groups_disable_keep_overrides">Wyłącz (zachowaj nadpisania grup)</string>
-    <string name="receipts_groups_title_disable">Wyłączyć potwierdzenia dla grup\?</string>
+    <string name="receipts_groups_title_disable">Wyłączyć potwierdzenia dla grup?</string>
     <string name="no_info_on_delivery">Brak informacji dostawy</string>
-    <string name="receipts_groups_title_enable">Włączyć potwierdzenia dla grup\?</string>
+    <string name="receipts_groups_title_enable">Włączyć potwierdzenia dla grup?</string>
     <string name="receipts_section_groups">Małe grupy (maks. 20)</string>
     <string name="receipts_groups_override_enabled">Wysyłanie potwierdzeń jest włączone dla %d grup.</string>
     <string name="receipts_groups_enable_for_all">Włącz dla wszystkich grup</string>
@@ -1278,7 +1263,7 @@
     <string name="send_receipts_disabled_alert_title">Potwierdzenia są wyłączone</string>
     <string name="receipts_groups_override_disabled">Wysyłanie potwierdzeń jest wyłączone dla %d grup.</string>
     <string name="connect_via_member_address_alert_desc">Prośba o połączenie zostanie wysłana do tego członka grupy.</string>
-    <string name="connect_via_member_address_alert_title">Połączyć bezpośrednio\?</string>
+    <string name="connect_via_member_address_alert_title">Połączyć bezpośrednio?</string>
     <string name="connect_use_current_profile">Użyj obecnego profilu</string>
     <string name="turn_off_battery_optimization_button">Zezwól</string>
     <string name="disable_notifications_button">Wyłącz powiadomienia</string>
@@ -1299,10 +1284,9 @@
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Baza danych zostanie zaszyfrowana, a hasło zapisane w ustawieniach.</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Uwaga</b>: przekaźniki wiadomości i plików są połączone za pośrednictwem serwera proxy SOCKS. Połączenia i wysyłanie podglądów linków korzystają z połączenia bezpośredniego.]]></string>
     <string name="encrypt_local_files">Zaszyfruj lokalne pliki</string>
-    <string name="you_can_change_it_later">Losowe hasło jest trzymane w ustawieniach w czystym tekście.
-\nMożesz zmienić je później.</string>
+    <string name="you_can_change_it_later">Losowe hasło jest trzymane w ustawieniach w czystym tekście. \nMożesz zmienić je później.</string>
     <string name="database_encryption_will_be_updated_in_settings">Hasło szyfrowania bazy danych zostanie zaktualizowane i zapisane w ustawieniach.</string>
-    <string name="remove_passphrase_from_settings">Usunąć hasło z ustawień\?</string>
+    <string name="remove_passphrase_from_settings">Usunąć hasło z ustawień?</string>
     <string name="use_random_passphrase">Użyj losowego hasła</string>
     <string name="save_passphrase_in_settings">Zapisz hasło w ustawieniach</string>
     <string name="setup_database_passphrase">Ustaw hasło bazy danych</string>
@@ -1435,9 +1419,7 @@
     <string name="scan_qr_code_from_desktop">Zeskanuj kod QR z komputera</string>
     <string name="devices">Urządzenia</string>
     <string name="multicast_discoverable_via_local_network">Odkrywane przez sieć lokalna</string>
-    <string name="v5_4_more_things_descr">- opcjonalnie powiadamiaj usunięte kontakty.
-\n- nazwy profili ze spacją.
-\n- i wiele więcej!</string>
+    <string name="v5_4_more_things_descr">- opcjonalnie powiadamiaj usunięte kontakty. \n- nazwy profili ze spacją. \n- i wiele więcej!</string>
     <string name="scan_from_mobile">Zeskanuj z telefonu</string>
     <string name="verify_connections">Zweryfikuj połączenia</string>
     <string name="disconnect_desktop_question">Rozłączyć komputer?</string>
@@ -1513,12 +1495,8 @@
     <string name="v5_5_simpler_connect_ui_descr">Pasek wyszukiwania akceptuje linki zaproszenia.</string>
     <string name="v5_5_join_group_conversation_descr">Ostatnia historia i ulepszony bot adresowy.</string>
     <string name="agent_critical_error_title">Krytyczny błąd</string>
-    <string name="agent_critical_error_desc">Proszę zgłosić to do deweloperów:
-\n%s
-\n
-\nZalecane jest zrestartowanie aplikacji.</string>
-    <string name="agent_internal_error_desc">Proszę zgłosić to do deweloperów:
-\n%s</string>
+    <string name="agent_critical_error_desc">Proszę zgłosić to do deweloperów: \n%s \n \nZalecane jest zrestartowanie aplikacji.</string>
+    <string name="agent_internal_error_desc">Proszę zgłosić to do deweloperów: \n%s</string>
     <string name="restart_chat_button">Zrestartuj czat</string>
     <string name="clear_note_folder_warning">Wszystkie wiadomości zostaną usunięte – nie można tego cofnąć!</string>
     <string name="member_info_member_blocked">zablokowany</string>
@@ -1557,8 +1535,7 @@
     <string name="remote_ctrl_error_inactive">Komputer jest nieaktywny</string>
     <string name="remote_host_error_disconnected"><![CDATA[Telefon <b>%s</b> został rozłączony]]></string>
     <string name="welcome_message_is_too_long">Wiadomość powitalna jest zbyt długa</string>
-    <string name="database_migration_in_progress">Proces migracji bazy danych jest w toku.
-\nMoże to potrwać kilka minut.</string>
+    <string name="database_migration_in_progress">Proces migracji bazy danych jest w toku. \nMoże to potrwać kilka minut.</string>
     <string name="message_too_large">Wiadomość jest zbyt duża</string>
     <string name="call_service_notification_audio_call">Połączenie audio</string>
     <string name="call_service_notification_end_call">Zakończ połączenie</string>
@@ -1701,10 +1678,8 @@
     <string name="snd_error_quota">Przekroczono pojemność - odbiorca nie otrzymał wcześniej wysłanych wiadomości.</string>
     <string name="snd_error_relay">Błąd serwera docelowego: %1$s</string>
     <string name="ci_status_other_error">Błąd: %1$s</string>
-    <string name="snd_error_proxy_relay">Serwer przekazujący: %1$s
-\nBłąd serwera docelowego: %2$s</string>
-    <string name="snd_error_proxy">Serwer przekazujący: %1$s
-\nBłąd: %2$s</string>
+    <string name="snd_error_proxy_relay">Serwer przekazujący: %1$s \nBłąd serwera docelowego: %2$s</string>
+    <string name="snd_error_proxy">Serwer przekazujący: %1$s \nBłąd: %2$s</string>
     <string name="message_delivery_warning_title">Ostrzeżenie dostarczenia wiadomości</string>
     <string name="snd_error_expired">Błąd sieciowy - wiadomość wygasła po wielu próbach wysłania jej.</string>
     <string name="srv_error_host">Adres serwera jest niekompatybilny z ustawieniami sieciowymi.</string>
@@ -1727,8 +1702,7 @@
     <string name="network_smp_proxy_fallback_allow_description">Wysyłaj wiadomości bezpośrednio, gdy Twój lub docelowy serwer nie obsługuje prywatnego trasowania.</string>
     <string name="network_smp_proxy_mode_unprotected_description">Używaj prywatnego trasowania z nieznanymi serwerami, gdy adres IP nie jest chroniony.</string>
     <string name="file_not_approved_title">Nieznane serwery!</string>
-    <string name="file_not_approved_descr">Bez Tor lub VPN, Twój adres IP będzie widoczny dla tych przekaźników XFTP:
-\n%1$s.</string>
+    <string name="file_not_approved_descr">Bez Tor lub VPN, Twój adres IP będzie widoczny dla tych przekaźników XFTP: \n%1$s.</string>
     <string name="protect_ip_address">Chroń adres IP</string>
     <string name="app_will_ask_to_confirm_unknown_file_servers">Aplikacja będzie prosić o potwierdzenie pobierań z nieznanych serwerów plików (z wyjątkiem .onion lub gdy proxy SOCKS jest włączone).</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Bez Tor lub VPN, Twój adres IP będzie widoczny do serwerów plików.</string>
@@ -1761,8 +1735,7 @@
     <string name="settings_section_title_chat_theme">Motyw czatu</string>
     <string name="color_mode">Tryb koloru</string>
     <string name="color_mode_dark">Ciemny</string>
-    <string name="error_initializing_web_view">Błąd inicjacji WebView. Zaktualizuj swój system do nowej wersji. Proszę skontaktować się z deweloperami.
-\nBłąd: %s</string>
+    <string name="error_initializing_web_view">Błąd inicjacji WebView. Zaktualizuj swój system do nowej wersji. Proszę skontaktować się z deweloperami. \nBłąd: %s</string>
     <string name="message_queue_info_none">nic</string>
     <string name="v5_8_chat_themes">Nowy motywy czatu</string>
     <string name="v5_8_private_routing">Trasowanie prywatnych wiadomości🚀</string>
@@ -1772,12 +1745,9 @@
     <string name="v5_8_safe_files_descr">Potwierdzaj pliki z nieznanych serwerów.</string>
     <string name="info_row_debug_delivery">Dostarczenie debugowania</string>
     <string name="v5_8_chat_themes_descr">Zrób wygląd Twoich czatów inny!</string>
-    <string name="v5_8_private_routing_descr">Chroni Twój adres IP przed przekaźnikami wiadomości wybranych przez Twoje kontakty.
-\nWłącz w ustawianiach *Sieć i serwery* .</string>
+    <string name="v5_8_private_routing_descr">Chroni Twój adres IP przed przekaźnikami wiadomości wybranych przez Twoje kontakty. \nWłącz w ustawianiach *Sieć i serwery* .</string>
     <string name="message_queue_info">Informacje kolejki wiadomości</string>
-    <string name="message_queue_info_server_info">Informacje kolejki serwera: %1$s
-\n
-\nostatnia otrzymana wiadomość: %2$s</string>
+    <string name="message_queue_info_server_info">Informacje kolejki serwera: %1$s \n \nostatnia otrzymana wiadomość: %2$s</string>
     <string name="v5_8_message_delivery_descr">Ze zredukowanym zużyciem baterii.</string>
     <string name="theme_destination_app_theme">Motyw aplikacji</string>
     <string name="chat_theme_reset_to_app_theme">Zresetuj do motywu aplikacji</string>

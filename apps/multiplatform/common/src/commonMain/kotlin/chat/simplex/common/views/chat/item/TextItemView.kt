@@ -50,6 +50,9 @@ import kotlinx.coroutines.*
 val reserveTimestampStyle = SpanStyle(color = Color.Transparent)
 val boldFont = SpanStyle(fontWeight = FontWeight.Medium)
 
+@Composable
+fun messageTextColor(): Color = MaterialTheme.colors.onSurface.copy(alpha = if (MaterialTheme.colors.isLight) 1f else 0.95f)
+
 fun appendSender(b: AnnotatedString.Builder, sender: String?, senderBold: Boolean) {
   if (sender != null) {
     if (senderBold) b.withStyle(boldFont) { append(sender) }
@@ -174,11 +177,13 @@ fun MarkdownText (
   sender: String? = null,
   meta: CIMeta? = null,
   chatTTL: Int? = null,
+  encrypted: Boolean? = null,
+  signedFileVerified: Boolean? = null,
   mentions: Map<String, CIMention>? = null,
   userMemberId: String? = null,
   toggleSecrets: Boolean,
   sendCommandMsg: ((String) -> Unit)? = null,
-  style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface, lineHeight = 22.sp),
+  style: TextStyle = MaterialTheme.typography.body1.copy(color = messageTextColor(), lineHeight = 22.sp),
   maxLines: Int = Int.MAX_VALUE,
   overflow: TextOverflow = TextOverflow.Clip,
   uriHandler: UriHandler? = null,
@@ -204,36 +209,47 @@ fun MarkdownText (
   val textLayoutDirection = remember (text) {
     if (isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr
   }
+  val metaCopy = if (meta != null) {
+    metaReserveCopy(meta, chatTTL, encrypted, signedFileVerified, MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp, breakBefore = !LocalTerminalLayout.current && range?.isEmpty() != true)
+  } else null
   if (blockLayout && formattedText != null && markdownBlocks != null && range == null) {
     val direction = LocalLayoutDirection.current
+    val terminal = LocalTerminalLayout.current
+    val ruleMinWidth = if (terminal && metaCopy != null && markdownBlocks.isNotEmpty() && markdownBlocks.all { it is MarkdownBlock.Rule }) {
+      with(LocalDensity.current) { rememberTextMeasurer().measure(metaCopy, style).size.width.toDp() }
+    } else 0.dp
     CompositionLocalProvider(LocalLayoutDirection provides textLayoutDirection) {
       MarkdownBlocks(
         formattedText, markdownBlocks, style, modifier, cardColor ?: MaterialTheme.appColors.receivedQuote,
         blockText = { index, r, blockStyle, blockModifier, blockSoftWrap, last ->
           MarkdownText(
             text, formattedText, markdownBlocks, sender = if (index == 0) sender else null, meta = if (last) meta else null, chatTTL = chatTTL,
+            encrypted = encrypted, signedFileVerified = signedFileVerified,
             mentions = mentions, userMemberId = userMemberId, toggleSecrets = toggleSecrets, sendCommandMsg = sendCommandMsg, style = blockStyle,
             uriHandler = uriHandler, senderBold = senderBold, modifier = blockModifier, linkMode = linkMode, onLinkLongClick = onLinkLongClick,
             showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = if (index == 0) prefix else null,
             selection = selection, textIndex = index, range = r.from until r.to, softWrap = blockSoftWrap, parentDirection = direction
           )
         },
-        metaLine = {
-          MarkdownText(
-            text, formattedText, markdownBlocks, meta = meta, chatTTL = chatTTL, toggleSecrets = toggleSecrets, style = style,
-            linkMode = linkMode, showViaProxy = showViaProxy, showTimestamp = showTimestamp, range = IntRange.EMPTY
-          )
-        }
+        metaLine = if (terminal && meta?.isLive != true) null else {
+          {
+            MarkdownText(
+              text, formattedText, markdownBlocks, meta = meta, chatTTL = chatTTL, encrypted = encrypted, signedFileVerified = signedFileVerified, toggleSecrets = toggleSecrets, style = style,
+              linkMode = linkMode, showViaProxy = showViaProxy, showTimestamp = showTimestamp, range = IntRange.EMPTY, parentDirection = if (terminal) direction else null
+            )
+          }
+        },
+        ruleMinWidth = ruleMinWidth
       )
     }
     return
   }
-  val reserve = if (textLayoutDirection != (parentDirection ?: LocalLayoutDirection.current) && meta != null) {
-    "\n"
-  } else if (meta != null) {
-    reserveSpaceForMeta(meta, chatTTL, null, secondaryColor = MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
-  } else {
-    "    "
+  val reserve = meta?.let {
+    if (textLayoutDirection != (parentDirection ?: LocalLayoutDirection.current)) {
+      AnnotatedString("\n")
+    } else {
+      metaCopy
+    }
   }
   val scope = rememberCoroutineScope()
   CompositionLocalProvider(
@@ -284,7 +300,7 @@ fun MarkdownText (
         if (meta?.isLive == true) {
           append(typingIndicator(meta.recent, typingIdx))
         }
-        if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
+        if (reserve != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
       val clampedRange = textSelection?.highlightRange?.let { it.first .. minOf(it.last, selectableEnd - 1) }?.takeUnless { it.isEmpty() }
       if (textSelection != null) {
@@ -440,7 +456,7 @@ fun MarkdownText (
         // With RTL language set globally links looks bad sometimes, better to add a new line to bo sure everything looks good
         /*if (metaText != null && hasLinks && LocalLayoutDirection.current == LayoutDirection.Rtl)
           withStyle(reserveTimestampStyle) { append("\n" + metaText) }
-        else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
+        else */if (reserve != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
       val clampedRange = textSelection?.highlightRange?.let { it.first .. minOf(it.last, selectableEnd - 1) }?.takeUnless { it.isEmpty() }
       val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }

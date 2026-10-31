@@ -125,7 +125,7 @@ struct GroupChatInfoView: View {
                                     Label("Share via chat", systemImage: "arrowshape.turn.up.forward")
                                 }
                             }
-                            if groupInfo.isOwner || members.contains(where: { $0.wrapped.memberRole >= .owner }) {
+                            if groupInfo.canModerate || members.contains(where: { $0.wrapped.memberRole >= .owner }) {
                                 channelMembersButton()
                             }
                             if groupInfo.membership.memberRole >= .moderator {
@@ -734,7 +734,7 @@ struct GroupChatInfoView: View {
     }
 
     private func channelMembersButton() -> some View {
-        let label: LocalizedStringKey = groupInfo.isOwner ? "Subscribers" : "Owners & contributors"
+        let label: LocalizedStringKey = groupInfo.canModerate ? "Subscribers" : "Owners & contributors"
         return NavigationLink {
             ChannelMembersView(chat: chat, groupInfo: groupInfo)
                 .navigationTitle(label)

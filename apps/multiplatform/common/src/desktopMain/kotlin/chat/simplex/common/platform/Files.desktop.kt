@@ -75,9 +75,10 @@ actual class FileChooserLauncher actual constructor() {
       )
       res = simplexWindowState.openDialog.awaitResult(params)
     } else {
-      res = simplexWindowState.saveDialog.awaitResult(DialogParams(filename = input))
+      val filename = saveDialogFileName(input)
+      res = simplexWindowState.saveDialog.awaitResult(DialogParams(filename = filename))
       if (res != null && res.isDirectory) {
-        res = File(res, input)
+        res = File(res, filename)
       }
     }
     onResult(res?.toURI())
@@ -114,6 +115,8 @@ private fun fileFilterDescription(input: String): String = when(input) {
   "*/*" -> generalGetString(MR.strings.choose_file)
   else -> ""
 }
+
+internal fun saveDialogFileName(name: String): String = name.trimStart('.').ifEmpty { name }
 
 actual fun URI.inputStream(): InputStream? = toFile().inputStream()
 actual fun URI.outputStream(): OutputStream = toFile().outputStream()

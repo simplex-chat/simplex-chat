@@ -21,7 +21,7 @@ constraints: zip +disable-bzip2 +disable-zstd
 source-repository-package
     type: git
     location: https://github.com/evgeny-simplex/simplexmq.git
-    tag: 5cbc42c286ffd4461d496d7a7efc956078da06d4
+    tag: 83e9f1462b0f50fc61327df745f89eb27f135cc5
 
 source-repository-package
     type: git
@@ -70,5 +70,16 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/wai.git
-    tag: 2f6e5aa5f05ba9140ac99e195ee647b4f7d926b0
+    tag: 63667cb577d09c967ddcd945e42c324872dfeb7d
     subdir: warp
+
+source-repository-package
+    type: git
+    location: https://github.com/simplex-chat/hs-jpeg-turbo.git
+    tag: d0a4d954038ee5bcb5c4dc9372a6fb0b05fed77c
+    subdir: JuicyPixels-jpeg-turbo JuicyPixels-spng jpeg-turbo
+
+source-repository-package
+    type: git
+    location: https://github.com/simplex-chat/JuicyPixels-stbir.git
+    tag: e0090e14f6348a33b53c11b377cb69df766b02b4

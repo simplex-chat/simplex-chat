@@ -36,6 +36,8 @@ struct Library {
   chat_read_file_fn chat_read_file = nullptr;
   chat_encrypt_file_fn chat_encrypt_file = nullptr;
   chat_decrypt_file_fn chat_decrypt_file = nullptr;
+  chat_resize_image_fn chat_resize_image = nullptr;
+  chat_resize_image_uri_fn chat_resize_image_uri = nullptr;
 };
 
 static Library lib;
@@ -136,6 +138,45 @@ static bool RequireLoaded(Env env) {
   return false;
 }
 
+template <typename F>
+static bool RequireExport(Env env, F fn, const std::string& name, const std::string& feature) {
+  if (fn != nullptr) return true;
+  Error::New(env, "loaded libsimplex does not export " + name + "; " + feature + " needs a newer libsimplex").ThrowAsJavaScriptException();
+  return false;
+}
+
+static bool GetInt32Arg(Env env, const Value& value, const std::string& name, int& result) {
+  Number number = value.As<Number>();
+  result = number.Int32Value();
+  if (static_cast<double>(result) == number.DoubleValue()) return true;
+  RangeError::New(env, "Expected 32-bit integer " + name).ThrowAsJavaScriptException();
+  return false;
+}
+
+struct BufferArg {
+  char* data;
+  int len;
+};
+
+static bool GetBufferArg(Env env, const Value& value, BufferArg& result) {
+  size_t len;
+  if (value.IsArrayBuffer()) {
+    ArrayBuffer ab = value.As<ArrayBuffer>();
+    result.data = static_cast<char*>(ab.Data());
+    len = ab.ByteLength();
+  } else {
+    TypedArray view = value.As<TypedArray>();
+    result.data = static_cast<char*>(view.ArrayBuffer().Data()) + view.ByteOffset();
+    len = view.ByteLength();
+  }
+  if (len > static_cast<size_t>(INT_MAX)) {
+    RangeError::New(env, "Buffer is too large").ThrowAsJavaScriptException();
+    return false;
+  }
+  result.len = static_cast<int>(len);
+  return true;
+}
+
 Value Load(const CallbackInfo& args) {
   Env env = args.Env();
   if (args.Length() < 1 || !args[0].IsString()) {
@@ -173,6 +214,8 @@ Value Load(const CallbackInfo& args) {
     return env.Undefined();
   }
   Resolve(h, "chat_migrate_init_queue", l.chat_migrate_init_queue);
+  Resolve(h, "chat_resize_image", l.chat_resize_image);
+  Resolve(h, "chat_resize_image_uri", l.chat_resize_image_uri);
   Resolve(h, "hs_thread_done", l.hs_thread_done);
   lib = l;
   haskell_init();
@@ -527,10 +570,7 @@ Value ChatMigrateInit(const CallbackInfo& args) {
 Value ChatMigrateInitQueue(const CallbackInfo& args) {
   Env env = args.Env();
   if (!RequireLoaded(env)) return env.Undefined();
-  if (lib.chat_migrate_init_queue == nullptr) {
-    Error::New(env, "loaded libsimplex does not export chat_migrate_init_queue; queue size needs a newer libsimplex").ThrowAsJavaScriptException();
-    return env.Undefined();
-  }
+  if (!RequireExport(env, lib.chat_migrate_init_queue, "chat_migrate_init_queue", "queue size")) return env.Undefined();
   if (args.Length() < 4 || !args[0].IsString() || !args[1].IsString() || !args[2].IsString() || !args[3].IsNumber()) {
     TypeError::New(env, "Expected three string arguments and number").ThrowAsJavaScriptException();
     return env.Undefined();
@@ -539,12 +579,8 @@ Value ChatMigrateInitQueue(const CallbackInfo& args) {
   std::string path = args[0].As<String>().Utf8Value();
   std::string key = args[1].As<String>().Utf8Value();
   std::string confirm = args[2].As<String>().Utf8Value();
-  Number queue_size_arg = args[3].As<Number>();
-  int queue_size = queue_size_arg.Int32Value();
-  if (static_cast<double>(queue_size) != queue_size_arg.DoubleValue()) {
-    RangeError::New(env, "Expected 32-bit integer queue size").ThrowAsJavaScriptException();
-    return env.Undefined();
-  }
+  int queue_size;
+  if (!GetInt32Arg(env, args[3], "queue size", queue_size)) return env.Undefined();
 
   Function cb;
   Promise promise = CreatePromiseAndCallback(env, cb);
@@ -657,27 +693,14 @@ Value ChatWriteFile(const CallbackInfo& args) {
 
   chat_ctrl ctrl = FromChatCtrlBigInt(args[0]);
   std::string path = args[1].As<String>().Utf8Value();
-  char* data;
-  size_t len;
-  if (args[2].IsArrayBuffer()) {
-    ArrayBuffer ab = args[2].As<ArrayBuffer>();
-    data = static_cast<char*>(ab.Data());
-    len = ab.ByteLength();
-  } else {
-    TypedArray view = args[2].As<TypedArray>();
-    data = static_cast<char*>(view.ArrayBuffer().Data()) + view.ByteOffset();
-    len = view.ByteLength();
-  }
-  if (len > static_cast<size_t>(INT_MAX)) {
-    RangeError::New(env, "Buffer is too large").ThrowAsJavaScriptException();
-    return env.Undefined();
-  }
+  BufferArg buffer;
+  if (!GetBufferArg(env, args[2], buffer)) return env.Undefined();
 
   Function cb;
   Promise promise = CreatePromiseAndCallback(env, cb);
 
-  auto execute_fn = [ctrl, path, data, len](ResultAsyncWorker* worker) {
-    char* c_res = lib.chat_write_file(ctrl, path.c_str(), data, static_cast<int>(len));
+  auto execute_fn = [ctrl, path, buffer](ResultAsyncWorker* worker) {
+    char* c_res = lib.chat_write_file(ctrl, path.c_str(), buffer.data, buffer.len);
     HandleCResult(worker, c_res, "chat_write_file");
   };
 
@@ -785,6 +808,66 @@ Value ChatDecryptFile(const CallbackInfo& args) {
   return promise;
 }
 
+Value ChatResizeImage(const CallbackInfo& args) {
+  Env env = args.Env();
+  if (!RequireLoaded(env)) return env.Undefined();
+  if (!RequireExport(env, lib.chat_resize_image, "chat_resize_image", "image resizing")) return env.Undefined();
+  if (args.Length() < 3 || !(args[0].IsArrayBuffer() || args[0].IsTypedArray()) || !args[1].IsNumber() || !args[2].IsNumber()) {
+    TypeError::New(env, "Expected ArrayBuffer or Uint8Array, number (maxSize), number (png)").ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+
+  BufferArg image;
+  if (!GetBufferArg(env, args[0], image)) return env.Undefined();
+  int max_size;
+  if (!GetInt32Arg(env, args[1], "maxSize", max_size)) return env.Undefined();
+  int png;
+  if (!GetInt32Arg(env, args[2], "png", png)) return env.Undefined();
+
+  Function cb;
+  Promise promise = CreatePromiseAndCallback(env, cb);
+
+  auto execute_fn = [image, max_size, png](ResultAsyncWorker* worker) {
+    char* c_res = lib.chat_resize_image(image.data, image.len, max_size, png);
+    HandleCResult(worker, c_res, "chat_resize_image");
+  };
+
+  ResultAsyncWorker* worker = new ResultAsyncWorker(cb, std::move(execute_fn));
+  worker->KeepAlive(args[0].As<Object>());
+  worker->Queue();
+
+  return promise;
+}
+
+Value ChatResizeImageUri(const CallbackInfo& args) {
+  Env env = args.Env();
+  if (!RequireLoaded(env)) return env.Undefined();
+  if (!RequireExport(env, lib.chat_resize_image_uri, "chat_resize_image_uri", "image resizing")) return env.Undefined();
+  if (args.Length() < 2 || !(args[0].IsArrayBuffer() || args[0].IsTypedArray()) || !args[1].IsNumber()) {
+    TypeError::New(env, "Expected ArrayBuffer or Uint8Array, number (maxSize)").ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+
+  BufferArg image;
+  if (!GetBufferArg(env, args[0], image)) return env.Undefined();
+  int max_size;
+  if (!GetInt32Arg(env, args[1], "maxSize", max_size)) return env.Undefined();
+
+  Function cb;
+  Promise promise = CreatePromiseAndCallback(env, cb);
+
+  auto execute_fn = [image, max_size](ResultAsyncWorker* worker) {
+    char* c_res = lib.chat_resize_image_uri(image.data, image.len, max_size);
+    HandleCResult(worker, c_res, "chat_resize_image_uri");
+  };
+
+  ResultAsyncWorker* worker = new ResultAsyncWorker(cb, std::move(execute_fn));
+  worker->KeepAlive(args[0].As<Object>());
+  worker->Queue();
+
+  return promise;
+}
+
 Object Init(Env env, Object exports) {
   exports.Set("load", Function::New(env, Load));
   auto* receivers = new Receivers();
@@ -804,6 +887,8 @@ Object Init(Env env, Object exports) {
   exports.Set("chat_read_file", Function::New(env, ChatReadFile));
   exports.Set("chat_encrypt_file", Function::New(env, ChatEncryptFile));
   exports.Set("chat_decrypt_file", Function::New(env, ChatDecryptFile));
+  exports.Set("chat_resize_image", Function::New(env, ChatResizeImage));
+  exports.Set("chat_resize_image_uri", Function::New(env, ChatResizeImageUri));
   return exports;
 }
 
