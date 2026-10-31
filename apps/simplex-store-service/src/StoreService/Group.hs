@@ -198,8 +198,8 @@ coalesceTrackerRefreshes = snd . foldr keepLast (S.empty, [])
 logUncaught :: HasCallStack => IO () -> IO ()
 logUncaught a = a `catchOwn'` withFrozenCallStack (logError . tshow)
 
-handleGroupEvent :: ChatController -> Turns -> GroupId -> GroupEvent -> IO ()
-handleGroupEvent cc turns groupId ev = logUncaught (handle ev)
+handleGroupEvent :: ChatController -> Turns -> Bool -> GroupId -> GroupEvent -> IO ()
+handleGroupEvent cc turns namesOn groupId ev = logUncaught (handle ev)
   where
     handle = \case
       GEInGroup gid action
@@ -207,7 +207,7 @@ handleGroupEvent cc turns groupId ev = logUncaught (handle ev)
         | otherwise -> case action of
             GAJoined -> promoteOwner cc groupId
             GACommand role t -> case groupCmdAction role t of
-              RunCmd cmd -> runGroupCmd cc turns groupId cmd
+              RunCmd cmd -> runGroupCmd cc turns namesOn groupId cmd
               ReplyText txt -> void $ sendGroupText cc groupId "command reply" txt
               IgnoreMsg -> pure ()
       GETracker badgeCodeId code -> updateTracker cc groupId badgeCodeId code
@@ -224,15 +224,15 @@ promoteFirstOwner cc g@GroupInfo {groupId} member =
     _ -> pure ()
 
 -- Nothing is a group that is not served, so its events are drained.
-runGroupLane :: ChatController -> Turns -> TQueue GroupEvent -> Maybe GroupId -> IO ()
-runGroupLane cc turns q groupId_ = case groupId_ of
+runGroupLane :: ChatController -> Turns -> Bool -> TQueue GroupEvent -> Maybe GroupId -> IO ()
+runGroupLane cc turns namesOn q groupId_ = case groupId_ of
   Just groupId -> do
     promoteOwner cc groupId
     -- Reconciling precedes the first batch, so queued events write after the correction.
     reconcileTrackers cc groupId
     forever $ do
       evs <- atomically $ (:) <$> readTQueue q <*> flushTQueue q
-      mapM_ (handleGroupEvent cc turns groupId) (coalesceTrackerRefreshes evs)
+      mapM_ (handleGroupEvent cc turns namesOn groupId) (coalesceTrackerRefreshes evs)
   Nothing -> forever $ void $ atomically (readTQueue q)
 
 -- The earliest joined member is promoted, not the one who just joined, so a join the lane never handled
@@ -259,8 +259,8 @@ promoteOwner cc groupId =
 noOwnerHint :: GroupName -> Text
 noOwnerHint gName = "the badge group has no member owner, make one with /mr #" <> viewName gName <> " <member> owner in --run-cli mode"
 
-runGroupCmd :: ChatController -> Turns -> GroupId -> GroupCmd -> IO ()
-runGroupCmd cc turns groupId = \case
+runGroupCmd :: ChatController -> Turns -> Bool -> GroupId -> GroupCmd -> IO ()
+runGroupCmd cc turns namesOn groupId = \case
   GCIssue bt months uses ->
     issueOneCode cc bt months CPSFree uses >>= \case
       Left _ -> reply issueFailedText
@@ -271,6 +271,8 @@ runGroupCmd cc turns groupId = \case
             sendGroupText cc groupId ("tracker, code " <> tshow badgeCodeId <> " is lost") (initialTrackerBody code uses)
               >>= mapM_ (\iid -> withDB' "setCodeGroupItem" cc $ \db -> setCodeGroupItem db badgeCodeId iid now)
   GCBulk bt months count -> issueMany count (fmap (formatBadgeCode . fst) <$> issueOneCode cc bt months CPSFree singleUse)
+  GCIssueName {} | not namesOn -> reply namesOffText
+  GCBulkName {} | not namesOn -> reply namesOffText
   GCIssueName len years ->
     issueNameCode cc len years CPSFree >>= reply . either (const issueFailedText) (("Code: " <>) . formatNameCode . NCPrepaid)
   GCBulkName len years count -> issueMany count (fmap (formatNameCode . NCPrepaid) <$> issueNameCode cc len years CPSFree)
@@ -288,6 +290,9 @@ runGroupCmd cc turns groupId = \case
       reply . T.intercalate "\n" $ case errs of
         [] -> issued
         _ : _ -> issued <> ["Issued " <> tshow (length issued) <> " of " <> tshow count <> " codes. The remaining codes could not be issued."]
+
+namesOffText :: Text
+namesOffText = "Names are not enabled on this service, so name codes cannot be issued."
 
 -- The label says what is lost when the send fails, since the log line is its only trace.
 sendGroupText :: HasCallStack => ChatController -> GroupId -> Text -> Text -> IO (Maybe ChatItemId)

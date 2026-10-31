@@ -132,6 +132,7 @@ badgeGroupIntegrationTests = do
   it "publishes nothing when a code whose tracker was deleted is used up" testDeletedTrackerUsedUp
   it "revokes a code whose tracker an owner deleted for everyone without reposting it" testModeratedTrackerNotRepostedOnRevoke
   it "revokes a code on /revoke, answers a repeat as already revoked and an unknown code as no such code" testGroupRevoke
+  it "refuses /issue name and /bulk name while names are off, still revoking name codes" testGroupNameCodesNamesOff
   it "retires the tracker message when a multi-use code is revoked" testRevokeRetiresTracker
   it "retires the tracker message when the service command revokes the code" testServiceRevokeRetiresTracker
   it "retires a tracker left behind when the code is revoked again" testGroupRevokeRepairsTracker
@@ -1293,6 +1294,17 @@ testGroupRevoke ps =
     revokedTrackerCount cc `shouldReturn` 0
     unissued <- formatBadgeCode <$> randomBadgeCode (random cc)
     revokeInGroup cc alice unissued "No such code."
+
+testGroupNameCodesNamesOff :: HasCallStack => TestParams -> IO ()
+testGroupNameCodesNamesOff ps =
+  withGroupOwner ps $ \_ cc _ alice -> do
+    replyTo cc alice "/issue name 8" `shouldReturn` namesOffReply
+    replyTo cc alice "/bulk name 6 count 2" `shouldReturn` namesOffReply
+    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 0
+    unissued <- formatNameCode . NCPrepaid <$> randomNamePrepaidCode (random cc) 8
+    revokeInGroup cc alice unissued "No such code."
+  where
+    namesOffReply = "Names are not enabled on this service, so name codes cannot be issued."
 
 testGroupRevokeRepairsTracker :: HasCallStack => TestParams -> IO ()
 testGroupRevokeRepairsTracker ps =
