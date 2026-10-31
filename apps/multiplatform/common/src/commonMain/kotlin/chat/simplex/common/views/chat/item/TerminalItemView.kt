@@ -26,13 +26,16 @@ import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Measured
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.VerticalAlignmentLine
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
@@ -40,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.chat.*
@@ -54,6 +58,7 @@ import kotlin.math.pow
 import kotlin.math.roundToInt
 
 val LocalTerminalLayout = staticCompositionLocalOf { false }
+val LocalBubbleLayout = staticCompositionLocalOf { false }
 
 val TERMINAL_BLOCK_TOP_GAP = 5.75.sp
 val TERMINAL_BLOCK_BOTTOM_GAP = 5.sp
@@ -69,16 +74,33 @@ val TERMINAL_FILE_TOP_GAP = 2.sp
 val TERMINAL_EMOJI_TOP_GAP = 4.25.sp
 val TERMINAL_EMOJI_BOTTOM_GAP = 1.5.sp
 val TERMINAL_META_GAP = 6.sp
-const val TERMINAL_HEADING_RATIO = 1.3125f
-private const val TERMINAL_LINE_HEIGHT_RATIO = 22f / 16f
-private const val TERMINAL_LINE_HEIGHT_CONTRAST_SLOPE = 0.1515f
+const val TERMINAL_HEADING_RATIO = 1.25f
+private const val CHAT_LINE_HEIGHT_RATIO = 22f / 16f
+private const val CHAT_LINE_HEIGHT_CONTRAST_SLOPE = 0.1515f
 const val INTER_CAP_HEIGHT = 2048f / 2816f
-private val TERMINAL_LINE_HEIGHT_STYLE = LineHeightStyle(LineHeightStyle.Alignment.Proportional, LineHeightStyle.Trim.None)
+const val INTER_LINE_HEIGHT = 3408f / 2816f
+private val CHAT_LINE_HEIGHT_STYLE = LineHeightStyle(LineHeightStyle.Alignment.Proportional, LineHeightStyle.Trim.None)
 
 @Composable
-fun terminalTextStyle(fontSize: TextUnit, color: Color = messageTextColor()): TextStyle =
-  if (LocalTerminalLayout.current) {
-    TextStyle(lineHeight = fontSize * (TERMINAL_LINE_HEIGHT_RATIO * contrastLineHeightFactor(color)), lineHeightStyle = TERMINAL_LINE_HEIGHT_STYLE)
+fun usesChatTypography(): Boolean = LocalTerminalLayout.current || LocalBubbleLayout.current
+
+@Composable
+fun chatTextStyle(fontSize: TextUnit, color: Color = messageTextColor()): TextStyle =
+  if (usesChatTypography()) {
+    val lineHeight = fontSize * (CHAT_LINE_HEIGHT_RATIO * contrastLineHeightFactor(color))
+    TextStyle(lineHeight = lineHeight, lineHeightStyle = CHAT_LINE_HEIGHT_STYLE).merge(bubbleLineHeight(lineHeight))
+  } else {
+    TextStyle.Default
+  }
+
+@Composable
+fun bubbleTextStyle(fontSize: TextUnit, color: Color): TextStyle =
+  if (LocalBubbleLayout.current) chatTextStyle(fontSize, color) else TextStyle.Default
+
+@Composable
+fun bubbleLineHeight(lineHeight: TextUnit): TextStyle =
+  if (LocalBubbleLayout.current && appPlatform.isDesktop) {
+    TextStyle(lineHeight = with(LocalDensity.current) { lineHeight.toPx().roundToInt().toSp() }, lineHeightStyle = CHAT_LINE_HEIGHT_STYLE)
   } else {
     TextStyle.Default
   }
@@ -88,7 +110,7 @@ private fun contrastLineHeightFactor(color: Color): Float {
   val background = MaterialTheme.colors.background
   val textContrast = lightnessContrast(messageTextColor(), background)
   val weight = if (textContrast > 0f) (lightnessContrast(color, background) / textContrast).coerceIn(0f, 1f) else 1f
-  return 1 - TERMINAL_LINE_HEIGHT_CONTRAST_SLOPE * (1 - weight)
+  return 1 - CHAT_LINE_HEIGHT_CONTRAST_SLOPE * (1 - weight)
 }
 
 private fun lightnessContrast(color: Color, background: Color): Float =
@@ -127,7 +149,7 @@ private val ChatItem.textAtItemTop: Boolean get() =
 private val ChatItem.startsWithHeading: Boolean get() =
   markdownBlocks?.firstOrNull() is MarkdownBlock.Heading
 
-private val CIContent.hasTerminalSender: Boolean get() = when (this) {
+val CIContent.hasTerminalSender: Boolean get() = when (this) {
   is CIContent.SndMsgContent,
   is CIContent.SndDeleted,
   is CIContent.SndCall,
@@ -188,7 +210,7 @@ private fun Modifier.lastLine(extraAlignmentLines: (Placeable) -> Map<AlignmentL
 
 @Composable
 fun Modifier.inlineIcon(): Modifier =
-  if (LocalTerminalLayout.current) {
+  if (usesChatTypography()) {
     layout { measurable, constraints ->
       val placeable = measurable.measure(constraints)
       layout(placeable.width, 0) { placeable.placeRelative(0, -placeable.height / 2) }
@@ -233,7 +255,7 @@ private fun TerminalMetaLayout(metaReserved: Boolean, hasOverlay: Boolean, conte
     }
     val metaBelow = lineEnd != null && lineEnd + meta.width > width
     val textBaseline = content[LastBaseline]
-    val metaBaseline = meta[FirstBaseline].takeIf { it != AlignmentLine.Unspecified } ?: ((meta.height + 12.sp.toPx() * INTER_CAP_HEIGHT) / 2).roundToInt()
+    val metaBaseline = metaBaseline(meta)
     val metaTop = when {
       metaBelow -> content.height + gap
       overlay == null && textBaseline != AlignmentLine.Unspecified -> textBaseline - metaBaseline
@@ -254,6 +276,9 @@ private fun TerminalMetaLayout(metaReserved: Boolean, hasOverlay: Boolean, conte
     }
   }
 }
+
+fun Density.metaBaseline(meta: Measured): Int =
+  meta[FirstBaseline].takeIf { it != AlignmentLine.Unspecified } ?: ((meta.measuredHeight + 12.sp.toPx() * INTER_CAP_HEIGHT) / 2).roundToInt()
 
 class ChatItemSender(val name: String, val badge: LocalBadge?, val role: String?, val own: Boolean, val image: (@Composable () -> Unit)?)
 
@@ -336,7 +361,7 @@ private fun SenderNameAndRole(sender: ChatItemSender, modifier: Modifier) {
 
 @Composable
 fun terminalGutter(chatInfo: ChatInfo): Dp =
-  if (chatInfo is ChatInfo.Group) MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + 4.dp else 0.dp
+  if (chatInfo is ChatInfo.Group) MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + CHAT_ITEM_TEXT_PADDING else 0.dp
 
 @Composable
 fun TerminalChatItemRow(
@@ -354,7 +379,7 @@ fun TerminalChatItemRow(
       }
       Box {
         if (sender != null) {
-          ProvideTextStyle(LocalTextStyle.current.merge(terminalTextStyle(13.5.sp))) {
+          ProvideTextStyle(LocalTextStyle.current.merge(chatTextStyle(13.5.sp))) {
             SenderNameAndRole(sender, Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, bottom = TERMINAL_SENDER_BOTTOM_GAP.toDp()))
           }
         }
@@ -364,7 +389,7 @@ fun TerminalChatItemRow(
       }
     },
     modifier
-      .padding(top = topGap + if (sender != null) senderTopGap else 0.dp, start = 8.dp, end = 12.dp)
+      .padding(top = topGap + if (sender != null) senderTopGap else 0.dp)
       .fillMaxWidth()
   ) { measurables, constraints ->
     val messageStart = gutter.roundToPx()
@@ -375,7 +400,7 @@ fun TerminalChatItemRow(
     val message = measurables[2].measure(messageConstraints)
     val messageTop = name.height
     layout(constraints.maxWidth, max(messageTop + message.height, avatar.height)) {
-      avatar.placeRelative(0, 0)
+      avatar.placeRelative(CHAT_ITEM_TEXT_PADDING.roundToPx(), 0)
       name.placeRelative(messageStart, 0)
       message.placeRelative(messageStart, messageTop)
     }

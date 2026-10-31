@@ -38,7 +38,7 @@ describe("native load", () => {
         try { simplex[name](); console.log(name + ": no error") } catch (e) { console.log(name + ": " + e.message) }
       }`)
     const bindings = ["chat_close_store", "chat_decrypt_file", "chat_encrypt_file", "chat_migrate_init", "chat_migrate_init_queue",
-      "chat_read_file", "chat_recv_msg_wait", "chat_send_cmd", "chat_write_file"]
+      "chat_read_file", "chat_recv_msg_wait", "chat_resize_image", "chat_resize_image_uri", "chat_send_cmd", "chat_write_file"]
     const expected = bindings.map(name => `${name}: libsimplex is not loaded, call core.loadLibrary(backend) first\n`).join("")
     expect(out).toBe(`${expected}status=0 signal=null`)
   })

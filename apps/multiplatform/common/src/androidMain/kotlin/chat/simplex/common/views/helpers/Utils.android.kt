@@ -183,6 +183,7 @@ actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? 
       } else {
         File(getAppFilePath(file.fileName)).readBytes()
       }
+      if (!isImageFile(data)) return null
       decodeSampledBitmapFromByteArray(data, 1000, 1000).asImageBitmap() to data
     } catch (e: Exception) {
       Log.e(TAG, e.stackTraceToString())

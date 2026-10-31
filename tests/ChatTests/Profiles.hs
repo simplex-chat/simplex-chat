@@ -1200,7 +1200,7 @@ testSetProfileImageTooLarge =
       alice <## "profile image updated"
       -- image over the size limit is rejected;
       -- the long command wraps in the virtual terminal, so drain echo lines until the error
-      alice `send` ("/set profile image data:image/png;base64," <> replicate 12500 'A')
+      alice `send` ("/set profile image data:image/png;base64," <> take 12500 ("iVBORw0KGgo" <> repeat 'A'))
       let errPrefix = "bad chat command: Profile image is too large"
           expectError = do
             l <- getTermLine alice
