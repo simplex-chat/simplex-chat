@@ -465,7 +465,7 @@ private fun NewChatButton(
 ) {
   SectionItemView(click, disabled = disabled) {
     Row {
-      Icon(icon, text, Modifier.width(22.dp).wrapContentWidth(unbounded = true), tint = if (disabled) MaterialTheme.colors.secondary else iconColor)
+      Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else iconColor)
       TextIconSpaced(false)
       Text(text, color = if (disabled) MaterialTheme.colors.secondary else textColor)
     }
