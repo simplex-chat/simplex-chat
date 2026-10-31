@@ -53,7 +53,7 @@ struct ContextItemView: View {
             .tint(theme.colors.primary)
         }
         .padding(12)
-        .frame(minHeight: 60)
+        .frame(minHeight: 54)
         .frame(maxWidth: .infinity)
         .background(background)
     }

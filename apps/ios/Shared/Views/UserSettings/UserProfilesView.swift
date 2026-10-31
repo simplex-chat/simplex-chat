@@ -103,6 +103,8 @@ struct UserProfilesView: View {
             } footer: {
                 Text("Tap to activate profile.")
                     .foregroundColor(theme.colors.secondary)
+                    .font(.body)
+                    .padding(.top, 8)
 
             }
         }
@@ -243,6 +245,7 @@ struct UserProfilesView: View {
                     if actionEnabled(user) {
                         Text("All chats and messages will be deleted - this cannot be undone!")
                             .foregroundColor(theme.colors.secondary)
+                            .font(.callout)
                     }
                 }
             case let .unhideUser(user):

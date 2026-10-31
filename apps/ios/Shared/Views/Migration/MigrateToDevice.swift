@@ -318,6 +318,7 @@ struct MigrateToDevice: View {
             } footer: {
                 Text("You can give another try.")
                     .foregroundColor(theme.colors.secondary)
+                    .font(.callout)
             }
         }
         .onAppear {
@@ -358,6 +359,7 @@ struct MigrateToDevice: View {
             } footer: {
                 Text("You can give another try.")
                     .foregroundColor(theme.colors.secondary)
+                    .font(.callout)
             }
         }
     }
@@ -405,6 +407,7 @@ struct MigrateToDevice: View {
             } footer: {
                 Text(footer)
                     .foregroundColor(theme.colors.secondary)
+                    .font(.callout)
             }
         }
     }
@@ -452,6 +455,7 @@ struct MigrateToDevice: View {
                 } footer: {
                     Text("Please confirm that network settings are correct for this device.")
                         .foregroundColor(theme.colors.secondary)
+                        .font(.callout)
                 }
 
                 Section(header: Text("Network settings").foregroundColor(theme.colors.secondary)) {
@@ -706,6 +710,8 @@ private struct PassphraseEnteringView: View {
                         }
                     }
                     .foregroundColor(theme.colors.secondary)
+                    .font(.callout)
+                    .padding(.top, 1)
                     .onTapGesture { keyboardVisible = false }
                 }
                 .onAppear {

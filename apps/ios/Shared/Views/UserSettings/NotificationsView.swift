@@ -48,6 +48,8 @@ struct NotificationsView: View {
                                 Text(ntfModeDescription(notificationMode))
                                     .foregroundColor(theme.colors.secondary)
                             }
+                            .font(.callout)
+                            .padding(.top, 1)
                         }
                     }
                     .navigationTitle("Send notifications")
@@ -72,6 +74,8 @@ struct NotificationsView: View {
                 if legacyDatabase {
                     Text("Please restart the app and migrate the database to enable push notifications.")
                         .foregroundColor(theme.colors.secondary)
+                        .font(.callout)
+                        .padding(.top, 1)
                 }
             }
         }

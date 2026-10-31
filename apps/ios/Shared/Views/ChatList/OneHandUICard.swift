@@ -73,7 +73,7 @@ struct OneHandUICard: View {
                 .font(.subheadline)
                 .foregroundColor(isSelected ? theme.colors.secondary : theme.colors.onBackground)
         }
-        .padding(.leading, 13)
+        .padding(.leading, 16)
         .padding(.vertical, 4)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .contentShape(Rectangle())

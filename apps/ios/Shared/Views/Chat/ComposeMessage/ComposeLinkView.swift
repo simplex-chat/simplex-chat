@@ -31,6 +31,7 @@ struct ComposeLinkView: View {
                 }
             }
         }
+        .padding(.vertical, 1)
         .padding(.trailing, 12)
         .background(theme.appColors.sentMessage)
         .frame(minHeight: 54)
@@ -56,7 +57,6 @@ struct ComposeLinkView: View {
             .padding(.vertical, 5)
             .frame(maxWidth: .infinity, minHeight: 60)
         }
-        .padding(.leading, 12)
     }
 }
 

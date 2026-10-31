@@ -40,7 +40,7 @@ struct ContactRequestView: View {
                         .frame(minWidth: 60, alignment: .trailing)
                         .foregroundColor(theme.colors.secondary)
                 }
-                .padding(.bottom, 4)
+                .padding(.bottom, 2)
 
                 Text("wants to connect to you!")
                     .frame(alignment: .topLeading)
@@ -50,7 +50,6 @@ struct ContactRequestView: View {
             }
             .frame(maxHeight: .infinity)
         }
-        .padding(.bottom, -8)
     }
 }
 

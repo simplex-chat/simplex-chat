@@ -38,7 +38,7 @@ struct ComposeVoiceView: View {
     @State private var playbackTime: TimeInterval?
     @State private var startingPlayback: Bool = false
 
-    private static let previewHeight: CGFloat = 60
+    private static let previewHeight: CGFloat = 55
 
     var body: some View {
         ZStack {

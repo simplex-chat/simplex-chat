@@ -132,6 +132,8 @@ struct DatabaseEncryptionView: View {
                 }
             }
             .foregroundColor(theme.colors.secondary)
+            .padding(.top, 1)
+            .font(.callout)
         }
         .onAppear {
             if initialRandomDBPassphrase { currentKey = kcDatabasePassword.get() ?? "" }
