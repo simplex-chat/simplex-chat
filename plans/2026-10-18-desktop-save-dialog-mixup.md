@@ -2,12 +2,12 @@
 
 ## Problem
 
-On desktop, some save requests open the Save dialog after a wait:
+On desktop, the Save dialog of some save requests opens after a wait:
 - a received file tapped before its download finished (`OpenWhenReceivedEffect`);
 - a file fetched from a linked mobile (`loadRemoteFile`);
 - the database export, after the archive is written.
 
-When such a request arrives while a Save dialog for another file is open, Save in that dialog writes the second file's content under the first file's name, and the second file gets no dialog.
+When such a request arrives while a Save dialog for another file is open and the user presses Save, the second file's content is saved under the first file's name, and the second file gets no dialog.
 
 After a QR code is clicked and its image saved, later saves open nothing until the app is restarted. The same happens when a QR code view closes while its folder chooser is open.
 
@@ -17,7 +17,7 @@ After a QR code is clicked and its image saved, later saves open nothing until t
 
 The slot is cleared only after `await()` returns. A cancelled awaiting coroutine (the QR code view's scope) leaves the slot claimed, and no later request gets a chooser.
 
-After the QR image is saved, desktop `shareFile` makes a second save request.
+After the QR image is saved, desktop `shareFile` makes a second save request for the same file.
 
 ## Fix
 
