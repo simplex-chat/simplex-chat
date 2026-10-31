@@ -4,7 +4,7 @@
 
 The public keys and message queue address in this link are NOT sent over the network when you view this page — they are contained in the hash fragment of the link URL.
 
-Not downloaded the SimpleX Chat yet?
+Not downloaded the SimpleX Chat app yet?
 
 Use the links below to download the app.
 
