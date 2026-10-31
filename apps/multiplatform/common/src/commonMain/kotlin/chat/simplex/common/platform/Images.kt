@@ -29,6 +29,21 @@ expect fun ImageBitmap.scale(width: Int, height: Int): ImageBitmap
 expect fun isImage(uri: URI): Boolean
 expect fun isAnimImage(uri: URI, drawable: Any?): Boolean
 
+enum class ImageFileType(val signatures: List<List<Int?>>) {
+  JPEG(listOf(listOf(0xFF, 0xD8, 0xFF))),
+  PNG(listOf(listOf(0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A))),
+  GIF(listOf(ascii("GIF87a"), ascii("GIF89a"))),
+  WEBP(listOf(ascii("RIFF") + List(4) { null } + ascii("WEBP")));
+
+  fun matches(data: ByteArray): Boolean = signatures.any { signature ->
+    data.size >= signature.size && signature.withIndex().all { (i, b) -> b == null || b == data[i].toInt() and 0xFF }
+  }
+}
+
+fun isImageFile(data: ByteArray): Boolean = ImageFileType.entries.any { it.matches(data) }
+
+private fun ascii(s: String): List<Int?> = s.map { it.code }
+
 expect fun loadImageBitmap(inputStream: InputStream): ImageBitmap
 
 expect fun resizeImageFileUri(uri: URI, maxSize: Int): String

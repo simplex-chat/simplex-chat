@@ -143,8 +143,7 @@
     <string name="blocked_by_admin_item_description">مسدود شده توسط مدیر</string>
     <string name="blocked_by_admin_items_description">%d پیام توسط مدیر مسدود شده</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>به وسیله تنظیمات می‌تواند غیرفعال شود</b> – اعلان‌ها تا زمانی که برنامه در حال اجراست، همچنان نمایش داده می‌شوند.]]></string>
-    <string name="database_migration_in_progress">جابه‌جایی پایگاه داده در حال جریان است.
-\nممکن است دقایقی زمان ببرد.</string>
+    <string name="database_migration_in_progress">جابه‌جایی پایگاه داده در حال جریان است. \nممکن است دقایقی زمان ببرد.</string>
     <string name="turn_off_battery_optimization"><![CDATA[در دیالوگ بعدی <b>اجازه دهید</b> تا اعلان‌ها را فوری دریافت کنید.]]></string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[برای بهبود حریم خصوصی، <b>SimpleX در پس‌زمینه اجرا می‌شود</b> و به جای استفاده از پوش نوتیفیکیشن، کار می‌کند.]]></string>
     <string name="saved_description">ذخیره شده</string>
@@ -265,8 +264,7 @@
     <string name="add_contact_or_create_group">شروع چت جدید</string>
     <string name="from_gallery_button">از گالری</string>
     <string name="call_service_notification_video_call">تماس تصویری</string>
-    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">برای محافظت از اطلاعاتتان، قفل SimpleX را روشن کنید.
-\nاز شما خواسته خواهد شد قبل از فعال شدن این ویژگی، تصدیق را تکمیل کنید.</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">برای محافظت از اطلاعاتتان، قفل SimpleX را روشن کنید. \nاز شما خواسته خواهد شد قبل از فعال شدن این ویژگی، تصدیق را تکمیل کنید.</string>
     <string name="la_no_app_password">عدم وجود کد عبور</string>
     <string name="la_minutes">%d دقیقه</string>
     <string name="auth_enable_simplex_lock">فعال‌سازی قفل SimpleX</string>
@@ -539,8 +537,7 @@
     <string name="rate_the_app">به برنامه امتیاز بدهید</string>
     <string name="smp_servers_your_server_address">نشانی‌ سرور شما</string>
     <string name="smp_servers_check_address">نشانی‌ سرور را بررسی و دوباره امتحان کنید.</string>
-    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">لازم است مخاطبتان آنلاین باشد تا اتصال کامل شود.
-\nمی‌توانید این اتصال را لغو و مخاطب را حذف کنید (و بعدا با یک لینک جدید امتحان کنید).</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">لازم است مخاطبتان آنلاین باشد تا اتصال کامل شود. \nمی‌توانید این اتصال را لغو و مخاطب را حذف کنید (و بعدا با یک لینک جدید امتحان کنید).</string>
     <string name="icon_descr_address">نشانی‌ SimpleX</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[مطالعه بیشتر در <font color="#0088ff">راهنمای کاربر</font>.]]></string>
     <string name="this_string_is_not_a_connection_link">این رشته متن، یک لینک اتصال نیست!</string>
@@ -555,8 +552,7 @@
     <string name="share_this_1_time_link">این لینک دعوت یک‌بارمصرف را به اشتراک بگذارید</string>
     <string name="tap_to_paste_link">برای الصاق لینک ضربه بزنید</string>
     <string name="your_settings">تنظیمات شما</string>
-    <string name="network_use_onion_hosts_required_desc">میزبان‌های Onion برای اتصال الزامی خواهد بود.
-\nلطفا توجه داشته باشید: شما بدون نشانی‌ onion. قادر نخواهید بود به سرورها متصل شوید.</string>
+    <string name="network_use_onion_hosts_required_desc">میزبان‌های Onion برای اتصال الزامی خواهد بود. \nلطفا توجه داشته باشید: شما بدون نشانی‌ onion. قادر نخواهید بود به سرورها متصل شوید.</string>
     <string name="save_servers_button">ذخیره</string>
     <string name="port_verb">پورت</string>
     <string name="network_enable_socks">از پروکسی SOCKS استفاده شود؟</string>
@@ -616,8 +612,7 @@
     <string name="save_settings_question">تنظیمات ذخیره شوند؟</string>
     <string name="save_auto_accept_settings">ذخیره تنظیمات آدرس SimpleX</string>
     <string name="delete_address">حذف نشانی</string>
-    <string name="email_invite_body">سلام!
-\nبه وسیله SimpleX Chat به من متصل شوید: %s</string>
+    <string name="email_invite_body">سلام! \nبه وسیله SimpleX Chat به من متصل شوید: %s</string>
     <string name="continue_to_next_step">ادامه</string>
     <string name="your_current_profile">پروفایل فعلی شما</string>
     <string name="full_name__field">نام کامل:</string>
@@ -791,8 +786,7 @@
     <string name="receipts_section_groups">گروه‌های کوچک (حداکثر ۲۰)</string>
     <string name="settings_section_title_settings">تنظیمات</string>
     <string name="onboarding_notifications_mode_title">اعلان‌های خصوصی</string>
-    <string name="you_can_change_it_later">عبارت عبور تصادفی در تنظیمات به صورت متن آشکار ذخیره می‌شود.
-\nمی‌توانید بعدا آن را تغییر دهید.</string>
+    <string name="you_can_change_it_later">عبارت عبور تصادفی در تنظیمات به صورت متن آشکار ذخیره می‌شود. \nمی‌توانید بعدا آن را تغییر دهید.</string>
     <string name="incoming_video_call">تماس تصویری رسیده</string>
     <string name="incoming_audio_call">تماس صوتی رسیده</string>
     <string name="encrypted_video_call">تماس تصویری با رمزنگاری انتها به انتها</string>
@@ -841,8 +835,7 @@
     <string name="allow_accepting_calls_from_lock_screen">تماس‌ها از صفحه قفل را از طریق تنظیمات فعال کنید.</string>
     <string name="status_contact_has_no_e2e_encryption">مخاطب رمزنگاری انتها به انتها ندارد</string>
     <string name="webrtc_ice_servers">سرورهای WebRTC ICE</string>
-    <string name="alert_text_msg_bad_id">شناسه پیام بعدی نادرست است (کمتر یا برابر است با قبلی).
-\nبروز این اتفاق می‌تواند به دلیل وجود اشکال نرم‌افزاری یا مورد حمله قرار گرفتن اتصال باشد.</string>
+    <string name="alert_text_msg_bad_id">شناسه پیام بعدی نادرست است (کمتر یا برابر است با قبلی). \nبروز این اتفاق می‌تواند به دلیل وجود اشکال نرم‌افزاری یا مورد حمله قرار گرفتن اتصال باشد.</string>
     <string name="alert_text_fragment_please_report_to_developers">لطفا آن را به توسعه‌دهندگان گزارش دهید.</string>
     <string name="integrity_msg_duplicate">پیام همسان</string>
     <string name="stop_chat_question">چت متوقف شود؟</string>
@@ -875,10 +868,7 @@
     <string name="permissions_camera_and_record_audio">دوربین و میکروفون</string>
     <string name="permissions_grant">اعطای اجازه‌ها برای برقراری تماس‌ها</string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>از باتری بیشتر استفاده می‌کند</b>! سرویس پس‌زمینه همیشه در حال اجراست - اعلان‌ها به محض موجود شدن، نمایش داده می‌شوند.]]></string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">وقتی می‌تواند اتفاق بیفتد که:
-\n۱. پیام‌ها در کلاینت فرستنده بعد از ۲ روز یا روی سرور بعد از ۳۰ روز منقضی شده باشند.
-\n۲. رمزگشایی پیام ناموفق بود، چون شما یا مخاطبتان از پشتیبان پایگاه داده قدیمی استفاده استفاده کردید.
-\n۳. اتصال مورد حمله قرار گرفته باشد.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">وقتی می‌تواند اتفاق بیفتد که: \n۱. پیام‌ها در کلاینت فرستنده بعد از ۲ روز یا روی سرور بعد از ۳۰ روز منقضی شده باشند. \n۲. رمزگشایی پیام ناموفق بود، چون شما یا مخاطبتان از پشتیبان پایگاه داده قدیمی استفاده استفاده کردید. \n۳. اتصال مورد حمله قرار گرفته باشد.</string>
     <string name="settings_section_title_profile_images">تصاویر پروفایل</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">چت را متوقف کنید تا بتوانید پایگاه داده چت را اکسپورت، ایمپورت یا حذف کنید. در حالی که چت متوقف است، نمی‌توانید پیام‌ها را ارسال یا دریافت کنید.</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">پایگاه داده چت فعلی شما حذف و توسط پایگاه داده ایمپورت شده جایگزین خواهد شد. \nاین عمل قابل برگشت نیست - پروفایل، مخاطبان، پیام‌ها و فایل‌های شما به صورت غیر قابل بازگشت از بین خواهند رفت.</string>
@@ -1472,9 +1462,7 @@
     <string name="v5_1_self_destruct_passcode_descr">تمام اطلاعات وقتی وارد می‌شوند پاک می‌شوند.</string>
     <string name="v5_1_custom_themes_descr">سفارشی کردن و اشتراک‌گذاری تم‌های رنگ.</string>
     <string name="v5_1_custom_themes">تم‌های سفارشی</string>
-    <string name="v5_3_discover_join_groups_descr">- اتصال به سرویس فهرست راهنما (آزمایشی)!
-\n- رسیدهای تحویل (تا ۲۰ دقیقه).
-\n- سریع‌تر و پایداری بیشتر.</string>
+    <string name="v5_3_discover_join_groups_descr">- اتصال به سرویس فهرست راهنما (آزمایشی)! \n- رسیدهای تحویل (تا ۲۰ دقیقه). \n- سریع‌تر و پایداری بیشتر.</string>
     <string name="v5_4_better_groups">گروه‌های بهتر</string>
     <string name="v5_6_quantum_resistant_encryption_descr">فعال کردن در چت‌های مستقیم (آزمایشی)!</string>
     <string name="unlink_desktop_question">اتصال با کامپیوتر قطع شود؟</string>
@@ -1504,17 +1492,14 @@
     <string name="bad_desktop_address">نشانی کامپیوتر ناصحیح</string>
     <string name="desktop_incompatible_version">نسخه ناسازگار</string>
     <string name="v5_3_new_interface_languages_descr">عربی، بلغاری، فنلاندی، عبری، تایلندی و اوکراینی - با سپاس از کاربران و Weblate</string>
-    <string name="snd_error_proxy_relay">سرور فرستادن: %1$s
-\nخطای سرور مقصد: %2$s</string>
-    <string name="snd_error_proxy">سرور فرستادن: %1$s
-\nخطا: %2$s</string>
+    <string name="snd_error_proxy_relay">سرور فرستادن: %1$s \nخطای سرور مقصد: %2$s</string>
+    <string name="snd_error_proxy">سرور فرستادن: %1$s \nخطا: %2$s</string>
     <string name="message_delivery_warning_title">هشدار تحویل پیام</string>
     <string name="snd_error_expired">مشکلات شبکه - پیام بعد از تلاش‌های زیاد برای ارسالش منقضی شد.</string>
     <string name="srv_error_host">نشانی سرور با تنظیمات شبکه ناسازگار است.</string>
     <string name="srv_error_version">نسخه سرور با تنظیمات شبکه ناسازگار است.</string>
     <string name="snd_error_auth">کلید اشتباه یا اتصال ناشناخته - به احتمال زیاد این اتصال حذف شده است.</string>
-    <string name="agent_internal_error_desc">لطفا آن را به توسعه‌دهندگان گزارش دهید:
-\n%s</string>
+    <string name="agent_internal_error_desc">لطفا آن را به توسعه‌دهندگان گزارش دهید: \n%s</string>
     <string name="v5_2_fix_encryption">نگه‌داشتن اتصال‌های خود</string>
     <string name="network_smp_proxy_mode_never">هرگز</string>
     <string name="network_smp_proxy_mode_unknown_description">استفاده از مسیریابی خصوصی با سرورهای ناشناخته.</string>
@@ -1538,9 +1523,7 @@
     <string name="v4_5_reduced_battery_usage">استفاده باتری کاهش یافته</string>
     <string name="v5_0_app_passcode_descr">به جای تصدیق سیستم آن را تعیین کنید.</string>
     <string name="v4_6_audio_video_calls_descr">پشتیبانی از بلوتوث و دیگر بهبودها.</string>
-    <string name="v5_1_better_messages_descr">- پیام‌های صوتی تا ۵ دقیقه.
-\n- زمان سفارشی برای ناپدید کردن.
-\n- ویرایش تاریخچه.</string>
+    <string name="v5_1_better_messages_descr">- پیام‌های صوتی تا ۵ دقیقه. \n- زمان سفارشی برای ناپدید کردن. \n- ویرایش تاریخچه.</string>
     <string name="v5_4_better_groups_descr">پیوستن سریع‌تر و پیام‌های قابل اطمینان تر.</string>
     <string name="v5_7_forward">باز فرستادن و ذخیره پیام‌ها</string>
     <string name="v5_7_shape_profile_images_descr">مربع، دایره، یا هر چیزی در این بین.</string>
@@ -1581,9 +1564,7 @@
     <string name="v5_2_disappear_one_message_descr">حتی وقتی در مکالمه غیرفعال باشند.</string>
     <string name="network_smp_proxy_fallback_prohibit">خیر</string>
     <string name="no_connected_mobile">موبایل متصلی وجود ندارد</string>
-    <string name="v4_6_group_moderation_descr">مدیران حالا می‌توانند:
-\n- پیام‌های اعضا را حذف کنند.
-\n- اعضا را غیرفعال کنند ( نقش «ناظر»)</string>
+    <string name="v4_6_group_moderation_descr">مدیران حالا می‌توانند: \n- پیام‌های اعضا را حذف کنند. \n- اعضا را غیرفعال کنند ( نقش «ناظر»)</string>
     <string name="migrate_to_device_confirm_network_settings_footer">لطفا تایید کنید که تنظیمات شبکه برای این دستگاه درست هستند.</string>
     <string name="v4_5_message_draft_descr">محفوظ نگه داشتن پیش‌نویس پیام آخر، به همراه ضمیمه‌ها.</string>
     <string name="connect_plan_repeat_connection_request">درخواست اتصال تکرار شود؟</string>
@@ -1615,14 +1596,9 @@
     <string name="whats_new_thanks_to_users_contribute_weblate">با سپاس از کاربران - از طریق Weblate همکاری کنید!</string>
     <string name="v5_2_message_delivery_receipts">رسیدهای تحویل پیام!</string>
     <string name="remote_host_error_timeout"><![CDATA[مهلت زمانی هنگام اتصال به موبایل <b>%s</b> به پایان رسید]]></string>
-    <string name="agent_critical_error_desc">لطفا آن را به توسعه‌دهندگان گزارش دهید:
-\n%s
-\n
-\nپیشنهاد می‌شود که برنامه را شروع مجدد کنید.</string>
+    <string name="agent_critical_error_desc">لطفا آن را به توسعه‌دهندگان گزارش دهید: \n%s \n \nپیشنهاد می‌شود که برنامه را شروع مجدد کنید.</string>
     <string name="v4_5_italian_interface">رابط ایتالیایی</string>
-    <string name="v5_2_more_things_descr">- تحویل پیام پایدارتر
-\n- گروه‌های کمی بهتر
-\n- و بیشتر!</string>
+    <string name="v5_2_more_things_descr">- تحویل پیام پایدارتر \n- گروه‌های کمی بهتر \n- و بیشتر!</string>
     <string name="v5_1_self_destruct_passcode">کد عبور خودتخریبی</string>
     <string name="v4_6_chinese_spanish_interface_descr">با سپاس از کاربران - از طریق Weblate همکاری کنید!</string>
     <string name="v5_0_large_files_support">ویدئوها و فایل‌ها تا ۱ گیگابایت</string>
@@ -1725,8 +1701,7 @@
     <string name="app_will_ask_to_confirm_unknown_file_servers">این اپلیکیشن از شما می‌خواهد که دانلودها از سرورهای فایل ناشناخته را تأیید کنید (به جز .onion یا زمانی که پروکسی SOCKS فعال باشد).</string>
     <string name="settings_section_title_files">فایل‌ها</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">بدون Tor یا VPN، نشانی IP شما برای سرورهای فایل قابل رویت خواهد بود.</string>
-    <string name="file_not_approved_descr">بدون تور یا VPN، نشانی IP شما برای این واسطه‌های XFTP قابل رویت خواهد بود:
-\n%1$s.</string>
+    <string name="file_not_approved_descr">بدون تور یا VPN، نشانی IP شما برای این واسطه‌های XFTP قابل رویت خواهد بود: \n%1$s.</string>
     <string name="message_queue_info_none">هیچ</string>
     <string name="v5_8_message_delivery">تحویل پیام بهبود یافته</string>
     <string name="v5_8_persian_ui">رابط کاربری فارسی</string>
@@ -1735,9 +1710,7 @@
     <string name="message_queue_info">اطلاعات صف پیام</string>
     <string name="theme_destination_app_theme">تم برنامه</string>
     <string name="v5_8_safe_files_descr">تایید فایل‌ها از سرورهای ناشناخته.</string>
-    <string name="message_queue_info_server_info">اطلاعات صف سرور: %1$s
-\n
-\nآخرین پیام دریافتی: %2$s</string>
+    <string name="message_queue_info_server_info">اطلاعات صف سرور: %1$s \n \nآخرین پیام دریافتی: %2$s</string>
     <string name="chat_theme_apply_to_dark_mode">حالت تاریک</string>
     <string name="theme_black">سیاه</string>
     <string name="color_mode">حالت رنگ</string>
@@ -1746,8 +1719,7 @@
     <string name="color_mode_light">روشن</string>
     <string name="reset_single_color">بازنشاندن رنگ</string>
     <string name="color_mode_system">سیستم</string>
-    <string name="error_initializing_web_view">خطا در مقداردهی اولیه WebView. سیستم خود را به نسخه جدید به روز کنید. لطفا با توسعه‌دهنگان تماس بگیرید.
-\nخطا: 9%s</string>
+    <string name="error_initializing_web_view">خطا در مقداردهی اولیه WebView. سیستم خود را به نسخه جدید به روز کنید. لطفا با توسعه‌دهنگان تماس بگیرید. \nخطا: 9%s</string>
     <string name="settings_section_title_chat_colors">رنگ‌های چت</string>
     <string name="settings_section_title_chat_theme">تم چت</string>
     <string name="settings_section_title_user_theme">تم پروفایل</string>
@@ -1773,8 +1745,7 @@
     <string name="v5_8_private_routing">مسیریابی پیام خصوصی 🚀</string>
     <string name="v5_8_chat_themes_descr">ظاهر چت‌های خود را متمایز کنید!</string>
     <string name="v5_8_chat_themes">تم‌های جدید چت</string>
-    <string name="v5_8_private_routing_descr">از نشانی IP خود در برابر واسطه‌های پیام‌رسانی انتخاب شده توسط مخاطبانتان محافظت کنید.
-\nدر تنظیمات «شبکه و سرورها» فعال کنید.</string>
+    <string name="v5_8_private_routing_descr">از نشانی IP خود در برابر واسطه‌های پیام‌رسانی انتخاب شده توسط مخاطبانتان محافظت کنید. \nدر تنظیمات «شبکه و سرورها» فعال کنید.</string>
     <string name="v5_8_safe_files">دریافت امن فایل‌ها</string>
     <string name="file_error_no_file">فایل یافت نشد - احتمالا حذف یا لغو شده.</string>
     <string name="file_error_auth">کلید اشتباه یا نشانی پرونده ناشناخته - به احتمال زیاد فایل حذف شده است.</string>
@@ -2256,7 +2227,7 @@
     <string name="error_adding_server">خطا در افزودن سرور</string>
     <string name="error_changing_user">خطا در تغییر پروفایل</string>
     <string name="error_creating_chat_tags">خطا در ایجاد لیست چت</string>
-    <string name="error_initializing_web_view_wrong_arch">خطا در راه‌اندازی WebView. لطفاً اطمینان حاصل کنید که WebView نصب شده و معماری پشتیبانی شده آن arm64 است.  \nخطا: %s</string>
+    <string name="error_initializing_web_view_wrong_arch">خطا در راه‌اندازی WebView. لطفاً اطمینان حاصل کنید که WebView نصب شده و معماری پشتیبانی شده آن arm64 است. \nخطا: %s</string>
     <string name="error_loading_chat_tags">خطا در بارگذاری لیست‌های چت</string>
     <string name="error_preparing_contact">خطا در باز کردن چت</string>
     <string name="error_preparing_group">خطا در باز کردن گروه</string>
@@ -2275,7 +2246,7 @@
     <string name="v6_3_faster_deletion_of_groups">حذف سریع‌تر گروه‌ها.</string>
     <string name="v6_3_faster_sending_messages">ارسال سریع‌تر پیام‌ها.</string>
     <string name="chat_list_favorites">علاقه‌مندی‌ها</string>
-    <string name="file_error_blocked">فایل توسط اپراتور سرور مسدود شده است:  \n%1$s.</string>
+    <string name="file_error_blocked">فایل توسط اپراتور سرور مسدود شده است: \n%1$s.</string>
     <string name="servers_info_files_tab">فایل‌ها</string>
     <string name="sync_connection_confirm">اصلاح کردن</string>
     <string name="sync_connection_question">اتصال اصلاح شود؟</string>

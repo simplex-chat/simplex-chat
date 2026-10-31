@@ -54,10 +54,7 @@ import java.nio.charset.CodingErrorAction
 import java.util.Base64
 
 private const val DATA_IMAGE = "data:image/"
-private val IMAGE_SIGNATURES = listOf(
-  listOf(0xFF, 0xD8, 0xFF),
-  listOf(0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
-)
+private val IMAGE_TYPES = listOf(ImageFileType.JPEG, ImageFileType.PNG)
 private const val MAX_MARKDOWN_VIEW_SIZE: Long = 1_048_576
 private const val MAX_MARKDOWN_LINE_LENGTH = 15_000
 private const val MAX_MARKDOWN_DEPTH = 32
@@ -295,6 +292,5 @@ private class DataImageTransformer : ImageTransformer {
 
 private fun hasImageSignature(base64: String): Boolean {
   val header = runCatching { Base64.getDecoder().decode(base64.take(12)) }.getOrNull() ?: return false
-  val bytes = header.map { it.toInt() and 0xFF }
-  return IMAGE_SIGNATURES.any { bytes.take(it.size) == it }
+  return IMAGE_TYPES.any { it.matches(header) }
 }

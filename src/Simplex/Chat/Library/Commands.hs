@@ -1984,8 +1984,9 @@ processChatCommand cxt nm = \case
   APIGetUpdatedGroupLinkData groupId -> withUser $ \user -> do
     gInfo@GroupInfo {groupProfile = p} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     case p of
-      GroupProfile {publicGroup = Just PublicGroupProfile {groupLink = sLnk}} | useRelays' gInfo -> do
-        (_, cData@(ContactLinkData _ UserContactData {relays = currentRelayLinks}), _) <- getShortLinkConnReq' nm user sLnk
+      GroupProfile {publicGroup = Just PublicGroupProfile {groupLink = sLnk, publicGroupId}} | useRelays' gInfo -> do
+        (FixedLinkData {linkEntityId}, cData@(ContactLinkData _ UserContactData {relays = currentRelayLinks}), _) <- getShortLinkConnReq' nm user sLnk
+        unless ((B64UrlByteString <$> linkEntityId) == Just publicGroupId) $ throwChatError CEInvalidConnReq
         groupSLinkData_ <- liftIO $ decodeLinkUserData cData
         gInfo' <- case groupSLinkData_ of
           Just sLinkData -> fst <$> updateGroupFromLinkData user gInfo sLinkData Nothing
@@ -2338,8 +2339,8 @@ processChatCommand cxt nm = \case
         groupSLinkData_ <- liftIO $ decodeLinkUserData cData
         -- Validate link entity ID matches group profile's publicGroupId (relay groups must have both)
         case groupSLinkData_ of
-          Just GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {publicGroupId}}}
-            | (B64UrlByteString <$> linkEntityId) == Just publicGroupId -> pure ()
+          Just sLinkData@GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {publicGroupId}}}
+            | (B64UrlByteString <$> linkEntityId) == Just publicGroupId -> void $ updateGroupFromLinkData user gInfo sLinkData Nothing
           _ -> throwChatError CEInvalidConnReq
         let publicGroupData_ = groupSLinkData_ >>= \GroupShortLinkData {publicGroupData} -> publicGroupData
             publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
