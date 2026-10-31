@@ -349,7 +349,7 @@ chatGroupTests = do
         it "role transitions update the roster (mod <-> admin, admin -> non-roster)" testChannelRoleTransitionsUpdateRoster
         it "malicious relay cannot downgrade or re-key a roster-established moderator via XGrpMemNew" testChannelRelayCannotDowngradeRosterMember
         it "malicious relay cannot forge a privileged member via XGrpMemNew forwarded as the owner" testChannelRelayCannotForgePrivilegedMember
-        it "malicious relay cannot substitute the key of a member the owner promotes" testChannelRelayCannotSubstitutePromotedMemberKey
+        it "owner promotion with a different member key keeps the stored key and role" testChannelPromotionDifferentKeyKeepsRole
         it "owner promotion pins the key of a member known without a key" testChannelPromotionPinsMemberKey
         it "should add relay to channel with roster (relay caches roster before joinable)" testChannelAddRelayWithRoster
         it "roster blob spanning multiple chunks reassembles" testChannelRosterMultipartReassembly
@@ -11282,8 +11282,8 @@ testChannelRelayCannotForgePrivilegedMember ps =
       withCCTransaction cc $ \db ->
         DB.query db "SELECT member_role, member_pub_key FROM group_members WHERE local_display_name = ?" (Only name)
 
-testChannelRelayCannotSubstitutePromotedMemberKey :: HasCallStack => TestParams -> IO ()
-testChannelRelayCannotSubstitutePromotedMemberKey ps =
+testChannelPromotionDifferentKeyKeepsRole :: HasCallStack => TestParams -> IO ()
+testChannelPromotionDifferentKeyKeepsRole ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath ->
