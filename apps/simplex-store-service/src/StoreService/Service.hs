@@ -294,12 +294,14 @@ storeService opts@StoreServiceOpts {serviceConfigFile} baseCfg env = do
       pure $ [runWebListeners webEnv, runPoller pollerEnv] <> nameLanes
 
 startNames :: ChatController -> Turns -> Waiters -> [Provider] -> NamesConfig -> IO NamesEnv
-startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig {nTLD, nChain = ChainConfig {cChainId}} =
+startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig {nTLD, nCodesOnly, nChain = ChainConfig {cChainId}} =
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
     Just User {userId} -> do
-      logInfo $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId
+      logInfo $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId <> codesOnlyNote
       newNamesEnv cc userId nc chatStore turns waiters providers
+  where
+    codesOnlyNote = if nCodesOnly then ", codes only: registration needs a prepaid code" else ""
 
 -- | The workers resume every registration in their phases, and the code sweep runs at the start and then daily.
 namesLanes :: NamesEnv -> IO [IO ()]
