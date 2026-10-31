@@ -191,6 +191,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ChatItemView_NonMsgContentDeleted_Previews.self, allSizes: true),
         SnapshotScene(ChatItemView_Previews.self, allSizes: true),
         SnapshotScene(ChatListNavLink_Previews.self),
+        SnapshotScene(ChatListRows_Previews.self, allSizes: true),
         SnapshotScene(ChatListView_Previews.self),
         SnapshotScene(ChatPreviewView_Previews.self),
         SnapshotScene(ChatView_Previews.self),

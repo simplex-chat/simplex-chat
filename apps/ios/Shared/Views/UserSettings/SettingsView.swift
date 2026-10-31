@@ -414,7 +414,7 @@ struct SettingsView: View {
                         .navigationBarTitle("App version")
                         .modifier(ThemedBackground(grouped: true))
                 } label: {
-                    settingsRow("info.circle", color: theme.colors.secondary) { infoRow("App version", appVersion ?? "?") }
+                    Text(verbatim: "v\(appVersion ?? "?")")
                 }
             }
 

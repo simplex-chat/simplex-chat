@@ -22,7 +22,6 @@ struct DeletedItemView: View {
         } content: { inlineMeta in
             HStack(alignment: .lastTextBaseline, spacing: 0) {
                 Text(chatItem.content.text)
-                    .font(.caption)
                     .foregroundColor(theme.colors.secondary)
                     .italic()
                 if let inlineMeta {

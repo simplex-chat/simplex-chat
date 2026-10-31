@@ -352,9 +352,10 @@ private struct InviteView: View {
                 .id("simplex-qrcode-view-for-\(connLinkInvitation.simplexChatUri(short: showShortLink))")
                 .padding()
                 .background(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .fill(Color(uiColor: .secondarySystemGroupedBackground))
                 )
+                .padding(.horizontal)
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
@@ -745,10 +746,11 @@ struct ScannerInView: View {
             if showQRCodeScanner, case .authorized = cameraAuthorizationStatus {
                 CodeScannerView(codeTypes: [.qr], scanMode: scanMode, isPaused: scannerPaused?.wrappedValue ?? false, completion: processQRCode)
                     .aspectRatio(1, contentMode: .fit)
-                    .cornerRadius(10)
+                    .cornerRadius(12)
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .padding(.horizontal)
             } else {
                 Button {
                     switch cameraAuthorizationStatus {
@@ -775,9 +777,10 @@ struct ScannerInView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 .padding()
                 .background(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .fill(placeholderBackground)
                 )
+                .padding(.horizontal)
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))

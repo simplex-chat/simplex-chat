@@ -134,10 +134,6 @@ struct AdvancedNetworkSettings: View {
                     }
                     .if(!useNetProxy) { $0.foregroundColor(theme.colors.secondary) }
                     .disabled(!useNetProxy)
-                    Picker("Use .onion hosts", selection: $onionHosts) {
-                        ForEach(OnionHosts.values, id: \.self) { Text($0.text) }
-                    }
-                    .frame(height: 36)
                 } header: {
                     HStack {
                         Text("SOCKS proxy").foregroundColor(theme.colors.secondary)
@@ -147,15 +143,11 @@ struct AdvancedNetworkSettings: View {
                         }
                     }
                 } footer: {
-                    VStack(alignment: .leading) {
-                        if netProxyAuth {
-                            Text("Your credentials may be sent unencrypted.")
-                                .foregroundColor(theme.colors.secondary)
-                        } else {
-                            Text("Do not use credentials with proxy.")
-                                .foregroundColor(theme.colors.secondary)
-                        }
-                        Text(onionHostsInfo(onionHosts))
+                    if netProxyAuth {
+                        Text("Your credentials may be sent unencrypted.")
+                            .foregroundColor(theme.colors.secondary)
+                    } else {
+                        Text("Do not use credentials with proxy.")
                             .foregroundColor(theme.colors.secondary)
                     }
                 }
@@ -181,6 +173,16 @@ struct AdvancedNetworkSettings: View {
                     netCfg.socksProxy = useNetProxy && netProxy.valid
                         ? netProxy.toProxyString()
                         : nil
+                }
+
+                Section {
+                    Picker("Use .onion hosts", selection: $onionHosts) {
+                        ForEach(OnionHosts.values, id: \.self) { Text($0.text) }
+                    }
+                    .frame(height: 36)
+                } footer: {
+                    Text(onionHostsInfo(onionHosts))
+                        .foregroundColor(theme.colors.secondary)
                 }
                 .onChange(of: onionHosts) { hosts in
                     if hosts != OnionHosts(netCfg: currentNetCfg) {

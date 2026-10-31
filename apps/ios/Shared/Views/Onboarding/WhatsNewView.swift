@@ -1068,7 +1068,7 @@ struct WhatsNewView: View {
                 Text(title).font(.title3).bold()
             }
         } else {
-            Text(title).font(.title3).bold().padding(.leading, 34)
+            Text(title).font(.title3).bold()
         }
     }
 
@@ -1079,7 +1079,6 @@ struct WhatsNewView: View {
                 Text(d)
                     .multilineTextAlignment(.leading)
                     .lineLimit(10)
-                    .padding(.leading, 34)
             }
             if f.subfeatures.count > 0 {
                 ForEach(f.subfeatures, id: \.icon) { s in

@@ -45,7 +45,7 @@ struct ComposeLinkView: View {
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: 80, maxHeight: 60)
             }
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .center, spacing: 4) {
                 Text(linkPreview.title)
                     .lineLimit(1)
                 Text(linkPreview.uri)
@@ -54,7 +54,7 @@ struct ComposeLinkView: View {
                     .foregroundColor(theme.colors.secondary)
             }
             .padding(.vertical, 5)
-            .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 60)
         }
         .padding(.leading, 12)
     }
