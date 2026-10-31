@@ -11,9 +11,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.*
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.*
+import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
@@ -92,24 +96,42 @@ actual fun PlatformTextField(
   var textFieldValueState by remember { mutableStateOf(TextFieldValue(text = cs.message.text, selection = cs.message.selection)) }
   val textFieldValue = textFieldValueState.copy(text = cs.message.text, selection = cs.message.selection)
   val clipboard = LocalClipboardManager.current
+  val onValueChange: (TextFieldValue) -> Unit = onValueChange@ {
+    if (!composeState.value.inProgress && !(composeState.value.preview is ComposePreview.VoicePreview && it.text != "")) {
+      val diff = textFieldValueState.selection.length + (it.text.length - textFieldValueState.text.length)
+      if (diff > 1 && it.text != textFieldValueState.text && it.selection.max - diff >= 0) {
+        val pasted = it.text.substring(it.selection.max - diff, it.selection.max)
+        val files = parseToFiles(AnnotatedString(pasted))
+        if (files.isNotEmpty()) {
+          onFilesPasted(files)
+          return@onValueChange
+        }
+      }
+      textFieldValueState = it
+      onMessageChange(ComposeMessage(it.text, it.selection))
+      if (!it.selection.collapsed) copyToPrimarySelection(it.getSelectedText().text)
+    }
+  }
+  var textLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
+  var fieldCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+  var textCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+  fun pastePrimarySelection(primary: String, position: Offset) {
+    val layout = textLayout
+    val field = fieldCoordinates
+    val inner = textCoordinates
+    val at = if (layout != null && field != null && inner != null && layout.size.height <= inner.size.height) {
+      layout.getOffsetForPosition(inner.localPositionOf(field, position))
+    } else {
+      textFieldValue.selection.max
+    }
+    onValueChange(TextFieldValue(textFieldValue.text.substring(0, at) + primary + textFieldValue.text.substring(at), TextRange(at + primary.length)))
+    focusReq.requestFocus()
+  }
   BasicTextField(
     value = textFieldValue,
-    onValueChange = onValueChange@ {
-      if (!composeState.value.inProgress && !(composeState.value.preview is ComposePreview.VoicePreview && it.text != "")) {
-        val diff = textFieldValueState.selection.length + (it.text.length - textFieldValueState.text.length)
-        if (diff > 1 && it.text != textFieldValueState.text && it.selection.max - diff >= 0) {
-          val pasted = it.text.substring(it.selection.max - diff, it.selection.max)
-          val files = parseToFiles(AnnotatedString(pasted))
-          if (files.isNotEmpty()) {
-            onFilesPasted(files)
-            return@onValueChange
-          }
-        }
-        textFieldValueState = it
-        onMessageChange(ComposeMessage(it.text, it.selection))
-      }
-    },
+    onValueChange = onValueChange,
     textStyle = textStyle.value,
+    onTextLayout = { textLayout = it },
     maxLines = 16,
     keyboardOptions = KeyboardOptions.Default.copy(
       capitalization = KeyboardCapitalization.Sentences,
@@ -120,6 +142,14 @@ actual fun PlatformTextField(
       .offset(y = (-5).dp)
       .fillMaxWidth()
       .focusRequester(focusReq)
+      .onGloballyPositioned { fieldCoordinates = it }
+      .onPointerEvent(PointerEventType.Press, PointerEventPass.Initial) { event ->
+        val primary = if (event.button == PointerButton.Tertiary) primarySelectionText() else null
+        if (primary != null) {
+          event.changes.forEach { it.consume() }
+          pastePrimarySelection(primary, event.changes.first().position)
+        }
+      }
       .onPreviewKeyEvent {
         if ((it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyDown) {
           if (it.isShiftPressed) {
@@ -187,7 +217,7 @@ actual fun PlatformTextField(
         ) {
           TextFieldDefaults.TextFieldDecorationBox(
             value = textFieldValue.text,
-            innerTextField = innerTextField,
+            innerTextField = { Box(Modifier.onGloballyPositioned { textCoordinates = it }, propagateMinConstraints = true) { innerTextField() } },
             placeholder = { Text(placeholder, style = textStyle.value.copy(color = MaterialTheme.colors.secondary)) },
             singleLine = false,
             enabled = true,
