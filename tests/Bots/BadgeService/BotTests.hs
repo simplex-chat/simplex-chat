@@ -2541,7 +2541,7 @@ testSubscriptionRenews ps =
       alice <## "ok"
       renewed <- waitLedgerRows (chatController alice) 4
       alice <##. "1: supporter"
-      drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 1 renewalStart, Just "badge")]
+      drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 2 firstStart, Just "badge")]
       balanceChecks (chatController alice) `shouldReturn` replicate 4 (Just True)
       issueErrorRow (chatController alice) `shouldReturn` (Nothing, Nothing)
       shownBadgeId (chatController alice) >>= (`shouldSatisfy` isJust)
@@ -3497,7 +3497,7 @@ testStoreUnreachableWaitsStall ps =
       alice <## "ok"
       renewed <- waitLedgerRows (chatController alice) 4
       alice <##. "1: supporter"
-      drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 1 renewalStart, Just "badge")]
+      drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 2 firstStart, Just "badge")]
       waitShownIssued (chatController alice)
       waitIssueErrorCleared (chatController alice)
 
@@ -6002,7 +6002,7 @@ testRenewalHoldsNoOtherRequest ps = do
           putMVar release ()
           alice <##. "1: supporter"
           renewed <- waitLedgerRows (chatController alice) 4
-          drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 1 renewalStart, Just "badge")]
+          drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 2 firstStart, Just "badge")]
 
 testPurchaseHoldsNoRenewal :: HasCallStack => TestParams -> IO ()
 testPurchaseHoldsNoRenewal ps = do
@@ -6025,7 +6025,7 @@ testPurchaseHoldsNoRenewal ps = do
         alice <## "ok"
         alice <##. "1: supporter"
         renewed <- waitLedgerRows (chatController alice) 4
-        drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 1 renewalStart, Just "badge")]
+        drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 2 firstStart, Just "badge")]
         putMVar release ()
         expectLinesWithin 60 bob ["1: supporter"] []
 
