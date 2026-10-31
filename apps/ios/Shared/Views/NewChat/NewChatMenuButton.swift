@@ -502,10 +502,3 @@ struct NewChatMenuButton_Previews: PreviewProvider {
         NewChatMenuButton(showNewChatSheet: Binding.constant(false))
     }
 }
-
-struct NewChatSheet_Previews: PreviewProvider {
-    static var previews: some View {
-        NewChatSheet()
-            .environmentObject(ChatModel())
-    }
-}

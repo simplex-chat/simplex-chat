@@ -800,37 +800,3 @@ struct ChatListNavLink_Previews: PreviewProvider {
         .previewLayout(.fixed(width: 360, height: 82))
     }
 }
-
-struct ChatListRows_Previews: PreviewProvider {
-    static var previews: some View {
-        var contactRequest = UserContactRequest.sampleData
-        contactRequest.updatedAt = previewDate
-        var requester = Contact.sampleData
-        requester.contactRequestId = 1
-        requester.activeConn = nil
-        let long = "Hi! I found your address on the website and would like to ask about the next release."
-        return Group {
-            ChatListNavLink(chat: Chat(
-                chatInfo: ChatInfo.sampleData.direct,
-                chatItems: [ChatItem.getSample(1, .directRcv, previewDate, "hello")]
-            ), parentSheet: .constant(nil))
-            ChatListNavLink(chat: Chat(
-                chatInfo: ChatInfo.sampleData.direct,
-                chatItems: [ChatItem.getSample(1, .directRcv, previewDate, long)]
-            ), parentSheet: .constant(nil))
-            ChatListNavLink(chat: Chat(
-                chatInfo: .contactRequest(contactRequest: contactRequest),
-                chatItems: []
-            ), parentSheet: .constant(nil))
-            ChatListNavLink(chat: Chat(
-                chatInfo: .direct(contact: requester),
-                chatItems: [ChatItem.getSample(1, .directRcv, previewDate, "Hi, it's Alice")]
-            ), parentSheet: .constant(nil))
-            ChatListNavLink(chat: Chat(
-                chatInfo: .direct(contact: requester),
-                chatItems: [ChatItem.getSample(1, .directRcv, previewDate, long)]
-            ), parentSheet: .constant(nil))
-        }
-        .previewLayout(.fixed(width: 360, height: 82))
-    }
-}
