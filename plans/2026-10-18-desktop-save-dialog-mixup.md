@@ -33,6 +33,8 @@ After the QR image is saved, desktop `shareFile` makes a second save request for
 
 `QRCode.kt`: after the image is saved, `shareFile` is called only on Android.
 
+`DialogStateTest` (desktopTest): a save request made while one is pending gets `null`; after a waiting request is cancelled, the next request waits for its dialog.
+
 ## Scope
 
 Desktop file dialogs: the open, open-multiple and save slots and all their callers. Android: only the platform check before the existing `shareFile` call.
