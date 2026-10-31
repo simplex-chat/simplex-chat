@@ -15,6 +15,10 @@ on:
         description: Also test the latest released app, to tell a branch's failure from the runner's
         type: boolean
         default: false
+      armv7a:
+        description: Also build the core library for 32-bit Arm (armeabi-v7a)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -41,6 +45,7 @@ jobs:
       run-claude: ${{ steps.jobs.outputs.claude }}
       run-backend: ${{ steps.jobs.outputs.backend }}
       run-release: ${{ steps.jobs.outputs.release }}
+      run-armv7a: ${{ steps.jobs.outputs.armv7a }}
       claude-backend: ${{ steps.scope.outputs.backend }}
       core: ${{ steps.names.outputs.core }}
       core-run: ${{ steps.core.outputs.run-id }}
@@ -53,10 +58,12 @@ jobs:
           CLAUDE: ${{ inputs.claude }}
           BACKEND: ${{ inputs.backend }}
           RELEASE: ${{ inputs.release }}
+          ARMV7A: ${{ inputs.armv7a }}
         run: |
           echo "claude=$CLAUDE" | tee -a "$GITHUB_OUTPUT"
           echo "backend=$BACKEND" | tee -a "$GITHUB_OUTPUT"
           echo "release=$RELEASE" | tee -a "$GITHUB_OUTPUT"
+          echo "armv7a=$ARMV7A" | tee -a "$GITHUB_OUTPUT"
 
       - name: Checkout code
         uses: actions/checkout@v6
@@ -173,11 +180,34 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+  core-armv7a:
+    name: core library for Android armv7a
+    needs: plan
+    if: needs.plan.outputs.run-armv7a == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: tree:0
+
+      - name: Show runner
+        run: |
+          lsb_release -ds
+          nproc
+          free -h
+          df -h /
+
+      - name: Build core library
+        run: scripts/ci/android/build-core.sh ~/core/android-core-armeabi-v7a.tar.gz armv7a
+
   app:
     name: Android app in the emulator
     needs: [plan, core, backend]
     # core and backend are skipped when an earlier run built them, and backend also when the run doesn't start it
-    if: ${{ !cancelled() && !failure() && needs.plan.result == 'success' }}
+    if: ${{ !cancelled() && !failure() && needs.plan.result == 'success' && needs.core.result != 'cancelled' && needs.backend.result != 'cancelled' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 75
     steps:
@@ -250,13 +280,13 @@ jobs:
           unzip -l "$RUNNER_TEMP/apk/$APK" | grep -E ' lib/'
 
       - name: Upload app
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && needs.plan.outputs.run-claude == 'true' }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         uses: actions/upload-artifact@v7
         with:
           name: android-app
           path: ${{ runner.temp }}/apk/${{ env.APK }}
           compression-level: 0
-          retention-days: 1
+          retention-days: 14
           if-no-files-found: error
 
       - name: Install emulator and system image
@@ -363,6 +393,14 @@ jobs:
 
       - name: Boot emulator
         run: scripts/ci/android/emulator.sh start "$RUNNER_TEMP/claude-test/screens"
+
+      - name: Add test images
+        run: |
+          adb push tests/fixtures/test.jpg /sdcard/Pictures/test-card.jpg
+          adb push tests/fixtures/logo-large-rgba.png /sdcard/Pictures/simplex-logo.png
+          for image in test-card.jpg simplex-logo.png; do
+            adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d "file:///sdcard/Pictures/$image"
+          done
 
       - name: Reach the test backend
         if: steps.backend.outcome == 'success'

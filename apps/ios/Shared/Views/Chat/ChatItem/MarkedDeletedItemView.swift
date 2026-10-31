@@ -20,13 +20,18 @@ struct MarkedDeletedItemView: View {
     var chatItem: ChatItem
 
     var body: some View {
-        (Text(mergedMarkedDeletedText).italic() + textSpace + chatItem.timestampText)
-        .font(.caption)
-        .foregroundColor(theme.colors.secondary)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
-        .textSelection(.disabled)
+        ItemWithMeta {
+            CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
+        } content: { inlineMeta in
+            (inlineMeta == nil ? Text(mergedMarkedDeletedText).italic() : Text(mergedMarkedDeletedText).italic() + textSpace + chatItem.timestampText)
+            .font(.caption)
+            .foregroundColor(theme.colors.secondary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
+            .if(inlineMeta == nil) { $0.modifier(ChatItemClipped(chatItem, tailVisible: false)) }
+            .textSelection(.disabled)
+        }
     }
 
     var mergedMarkedDeletedText: LocalizedStringKey {
@@ -86,11 +91,12 @@ struct MarkedDeletedItemView: View {
 struct MarkedDeletedItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
+            let ci = ChatItem.getSample(1, .directSnd, previewDate, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: previewDate))
             MarkedDeletedItemView(
                 chat: Chat.sampleData,
                 im: ItemsModel.shared,
-                chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now))
-            ).environment(\.revealed, true)
+                chatItem: ci
+            ).environment(\.revealed, true).modifier(ChatItemClipped(ci, tailVisible: true))
         }
         .previewLayout(.fixed(width: 360, height: 200))
     }

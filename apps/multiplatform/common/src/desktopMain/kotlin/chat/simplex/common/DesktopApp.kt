@@ -1,6 +1,5 @@
 package chat.simplex.common
 
-import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -317,10 +316,4 @@ class DialogState<T>(private val cancelled: T) {
       }
     }
   }
-}
-
-@Preview
-@Composable
-fun AppPreview() {
-  AppScreen()
 }

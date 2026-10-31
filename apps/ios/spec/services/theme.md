@@ -91,7 +91,7 @@ struct ActiveTheme: Equatable {
 1. Determine base theme from `currentThemeDefault`:
    - If `"system"`: use light or dark based on [`systemInDarkThemeCurrently`](../../Shared/Theme/Theme.swift#L95)
    - Dark mode maps to `systemDarkThemeDefault` (Dark, SimpleX, or Black)
-2. Get base color palette ([`LightColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L650), [`DarkColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L629), [`SimplexColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L671), [`BlackColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L692))
+2. Get base color palette ([`LightColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L656), [`DarkColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L635), [`SimplexColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L677), [`BlackColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L698))
 3. Look up app settings theme override (`themeOverridesDefault`)
 4. Look up per-user theme override (`User.uiThemes`)
 5. Look up per-chat theme override (from ChatInfo)
@@ -135,10 +135,10 @@ Each base theme defines two palette types:
 - [`AppColors`](../../SimpleXChat/Theme/ThemeTypes.swift#L90): App-specific colors (sentMessage, receivedMessage, title, primaryVariant2)
 
 Palette instances:
-- [`LightColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L650) / [`LightColorPaletteApp`](../../SimpleXChat/Theme/ThemeTypes.swift#L662)
-- [`DarkColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L629) / [`DarkColorPaletteApp`](../../SimpleXChat/Theme/ThemeTypes.swift#L641)
-- [`SimplexColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L671) / [`SimplexColorPaletteApp`](../../SimpleXChat/Theme/ThemeTypes.swift#L683)
-- [`BlackColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L692) / [`BlackColorPaletteApp`](../../SimpleXChat/Theme/ThemeTypes.swift#L704)
+- [`LightColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L656) / [`LightColorPaletteApp`](../../SimpleXChat/Theme/ThemeTypes.swift#L668)
+- [`DarkColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L635) / [`DarkColorPaletteApp`](../../SimpleXChat/Theme/ThemeTypes.swift#L647)
+- [`SimplexColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L677) / [`SimplexColorPaletteApp`](../../SimpleXChat/Theme/ThemeTypes.swift#L689)
+- [`BlackColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L698) / [`BlackColorPaletteApp`](../../SimpleXChat/Theme/ThemeTypes.swift#L710)
 
 ---
 
@@ -168,10 +168,13 @@ Stored on the `User` object (`User.uiThemes: ThemeModeOverrides?`), persisted in
 struct ThemeModeOverrides: Codable {
     var light: ThemeModeOverride?
     var dark: ThemeModeOverride?
+    var chatLayout: ChatLayout?
 }
 ```
 
-#### [`ThemeModeOverride`](../../SimpleXChat/Theme/ThemeTypes.swift#L585)
+`chatLayout`: the chat layout chosen for the profile or the chat (Chat Layout below). `withChatLayout(_:)` sets it and returns nil for overrides left empty. Theme writes keep it: "Reset to app theme" and "Remove image" keep only the layout (`layoutOnly()`).
+
+#### [`ThemeModeOverride`](../../SimpleXChat/Theme/ThemeTypes.swift#L591)
 
 ```swift
 struct ThemeModeOverride: Codable {
@@ -185,6 +188,29 @@ struct ThemeModeOverride: Codable {
 ### Layer 3: Per-Chat Theme
 
 Stored per-chat via `apiSetChatUIThemes(chatId:, themes:)`. Same `ThemeModeOverrides` structure.
+
+### Chat Layout
+
+Values of `ChatLayout`: `.classic`, `.terminal`, `.unknown(String)`. Terminal rows: [chat view spec, section 9](../client/chat-view.md#9-terminal-layout).
+
+```
+app             chatLayoutDefault (DEFAULT_CHAT_LAYOUT in UserDefaults); AppSettings.uiChatLayout
+profile         User.uiThemes.chatLayout
+chat            uiThemes.chatLayout of the contact or group
+chat profile    Contact.chatLayout, GroupProfile.chatLayout (ChatInfo.chatLayout)
+```
+
+Pickers, "Chat layout":
+
+```
+Appearance, app destination        ChatLayoutPicker: Classic, Terminal → chatLayoutDefault
+Appearance, profile destination    ChatLayoutPicker: "<app layout> (default)" → nil; other layout
+                                   → themeUserDestination.withChatLayout, saveThemeToDatabase
+chat theme screen                  ChatLayoutSection, first section of ChatWallpaperEditor (layoutSection)
+                                   "<default> (chat)" when ChatInfo.chatLayout is the default, else "<default> (default)" → nil
+                                   other layout → chat uiThemes.withChatLayout, apiSetChatUIThemes, ChatModel.updateChatInfo
+app destination selected           ThemeDestinationPicker: currentUser.uiThemes = uiThemes.layoutOnly()
+```
 
 ### Override Merging
 
@@ -277,6 +303,8 @@ Users can set a custom image as wallpaper:
 - Stored in `Documents/wallpapers/` directory
 - Scaled and tiled to fill the chat background
 - Custom wallpapers can be combined with color overrides
+
+Chats in the terminal layout draw the wallpaper background colour without the image; their theme screens show presets as colours and hide the custom image tile, image scale and wallpaper tint ([chat view spec, section 9](../client/chat-view.md#9-terminal-layout)).
 
 ### [WallpaperType](../../SimpleXChat/Theme/ChatWallpaperTypes.swift#L311)
 
@@ -374,7 +402,7 @@ Key functions in [`AppearanceSettings.swift`](../../Shared/Views/UserSettings/Ap
 | File | Path | Key Definitions |
 |------|------|-----------------|
 | Theme manager | [`Shared/Theme/ThemeManager.swift`](../../Shared/Theme/ThemeManager.swift) | `ThemeManager` (L15), `ActiveTheme` (L17) |
-| Theme types & colors | [`SimpleXChat/Theme/ThemeTypes.swift`](../../SimpleXChat/Theme/ThemeTypes.swift) | `DefaultTheme` (L13), `Colors` (L44), `AppColors` (L90), `AppWallpaper` (L142), `ThemeColors` (L230), `ThemeWallpaper` (L302), `ThemeOverrides` (L385), `ThemeModeOverrides` (L570), `ThemeModeOverride` (L585) |
+| Theme types & colors | [`SimpleXChat/Theme/ThemeTypes.swift`](../../SimpleXChat/Theme/ThemeTypes.swift) | `DefaultTheme` (L13), `Colors` (L44), `AppColors` (L90), `AppWallpaper` (L142), `ThemeColors` (L230), `ThemeWallpaper` (L302), `ThemeOverrides` (L385), `ThemeModeOverrides` (L570), `ThemeModeOverride` (L591) |
 | Wallpaper types | [`SimpleXChat/Theme/ChatWallpaperTypes.swift`](../../SimpleXChat/Theme/ChatWallpaperTypes.swift) | `PresetWallpaper` (L13), `WallpaperType` (L311) |
 | Color utilities | [`SimpleXChat/Theme/Color.swift`](../../SimpleXChat/Theme/Color.swift) | Hex color conversion |
 | App theme observable | [`Shared/Theme/Theme.swift`](../../Shared/Theme/Theme.swift) | `AppTheme` (L22), `CurrentColors` (L14), `systemInDarkThemeCurrently` (L95) |
