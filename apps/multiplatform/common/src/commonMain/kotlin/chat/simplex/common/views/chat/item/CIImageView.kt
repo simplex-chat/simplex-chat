@@ -24,7 +24,9 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.UiKey
 import chat.simplex.common.ui.theme.DEFAULT_MAX_IMAGE_WIDTH
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.chat.chatViewScrollState
 import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
@@ -38,6 +40,7 @@ fun CIImageView(
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
   smallView: Boolean,
+  uiKey: UiKey? = null,
   receiveFile: (Long) -> Unit
 ) {
   val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
@@ -101,13 +104,14 @@ fun CIImageView(
   }
 
   @Composable
-  fun imageView(imageBitmap: ImageBitmap, onClick: () -> Unit) {
+  fun imageView(imageBitmap: ImageBitmap, onClick: () -> Unit, key: UiKey? = null) {
     Image(
       imageBitmap,
       contentDescription = stringResource(MR.strings.image_descr),
       // .width(DEFAULT_MAX_IMAGE_WIDTH) is a hack for image to increase IntrinsicSize of FramedItemView
       // if text is short and take all available width if text is long
       modifier = Modifier
+        .ui(key)
         .width(if (imageBitmap.width * 0.97 <= imageBitmap.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
         .combinedClickable(
           onLongClick = { showMenu.value = true },
@@ -132,6 +136,7 @@ fun CIImageView(
         // .width(DEFAULT_MAX_IMAGE_WIDTH) is a hack for image to increase IntrinsicSize of FramedItemView
         // if text is short and take all available width if text is long
         modifier = Modifier
+          .ui(uiKey)
           .width(if (painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
           .combinedClickable(
             onLongClick = { showMenu.value = true },
@@ -224,7 +229,7 @@ fun CIImageView(
       val (imageBitmap, data, _) = loaded
       SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView, blurred, @Composable { painter, onClick -> ImageView(painter, image, onClick) })
     } else {
-      imageView(previewBitmap, onClick = {
+      imageView(previewBitmap, key = uiKey?.part("preview"), onClick = {
         if (file != null) {
           when {
             file.fileStatus is CIFileStatus.RcvInvitation || file.fileStatus is CIFileStatus.RcvAborted ->

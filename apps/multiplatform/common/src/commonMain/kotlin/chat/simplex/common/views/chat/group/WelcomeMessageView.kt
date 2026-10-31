@@ -22,7 +22,9 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
@@ -99,7 +101,7 @@ private fun GroupWelcomeLayout(
         val focusRequester = remember { FocusRequester() }
         TextEditor(
           wt,
-          Modifier.height(140.dp), stringResource(MR.strings.enter_welcome_message),
+          Modifier.height(140.dp).ui(Ui.Welcome.Text), stringResource(MR.strings.enter_welcome_message),
           focusRequester = focusRequester
         )
         LaunchedEffect(Unit) {
@@ -144,7 +146,7 @@ private fun GroupWelcomeLayout(
 @Composable
 private fun TextPreview(text: String, linkMode: SimplexLinkMode, markdown: Boolean = true) {
   val uriHandler = LocalUriHandler.current
-  Column {
+  Column(Modifier.ui(Ui.Welcome.Preview)) {
     SelectionContainer(Modifier.fillMaxWidth()) {
       val parsed = if (markdown) remember(text) { parseToMarkdownText(text) } else null
       MarkdownText(
@@ -164,7 +166,7 @@ private fun TextPreview(text: String, linkMode: SimplexLinkMode, markdown: Boole
 @Composable
 private fun SaveButton(save: () -> Unit, disabled: Boolean) {
   SectionView {
-    SectionItemView(save, disabled = disabled) {
+    SectionItemView(save, disabled = disabled, uiKey = Ui.Welcome.Save) {
       Text(stringResource(MR.strings.save_and_update_group_profile), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
   }

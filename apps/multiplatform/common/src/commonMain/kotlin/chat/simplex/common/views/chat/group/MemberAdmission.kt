@@ -9,6 +9,7 @@ import SectionView
 import androidx.compose.foundation.background
 import androidx.compose.material.MaterialTheme
 import androidx.compose.ui.Modifier
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
@@ -119,6 +120,7 @@ private fun AdmissionSection(
         generalGetString(admissionStageStrId),
         memberCriterias,
         memberCriteria,
+        uiKey = Ui.MemberAdmission.Review,
         onSelected = { value ->
           onSelected(value)
         }
@@ -139,7 +141,7 @@ private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Bool
     SectionItemView(reset, disabled = disabled) {
       Text(stringResource(MR.strings.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
-    SectionItemView(save, disabled = disabled) {
+    SectionItemView(save, disabled = disabled, uiKey = Ui.MemberAdmission.Save) {
       Text(stringResource(MR.strings.save_and_notify_group_members), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
   }

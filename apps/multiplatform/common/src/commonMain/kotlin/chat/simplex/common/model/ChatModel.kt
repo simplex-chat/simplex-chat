@@ -10,6 +10,7 @@ import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.common.model.MsgFilter.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.UiIdle
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.*
@@ -844,14 +845,16 @@ object ChatModel {
       private val subject = MutableSharedFlow<Unit>()
       private var remoteHostId: Long? = null
       private val chatsToPop = mutableMapOf<ChatId, Instant>()
+      private val pendingIdle = java.util.concurrent.atomic.AtomicLong()
 
       init {
-        withLongRunningApi {
+        withLongRunningApi(idle = false) {
           subject
             .throttleLatest(2000)
             .collect {
               withContext(Dispatchers.Main) {
                 chatsCtx.chats.replaceAll(popCollectedChats())
+                UiIdle.finish(pendingIdle.getAndSet(0))
               }
             }
         }
@@ -864,11 +867,23 @@ object ChatModel {
         }
         if (currentPosition > 0 || chatsToPop.isNotEmpty()) {
           chatsToPop[chatId] = Clock.System.now()
-          subject.emit(Unit)
+          if (pendingIdle.get() == 0L) {
+            val id = UiIdle.start { "chat list reorder" }
+            if (!pendingIdle.compareAndSet(0, id)) UiIdle.finish(id)
+          }
+          try {
+            subject.emit(Unit)
+          } catch (e: CancellationException) {
+            UiIdle.finish(pendingIdle.getAndSet(0))
+            throw e
+          }
         }
       }
 
-      fun clear() = chatsToPop.clear()
+      fun clear() {
+        chatsToPop.clear()
+        UiIdle.finish(pendingIdle.getAndSet(0))
+      }
 
       private fun popCollectedChats(): List<Chat> {
         val chs = mutableListOf<Chat>()

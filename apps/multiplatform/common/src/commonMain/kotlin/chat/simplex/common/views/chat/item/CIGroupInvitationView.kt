@@ -16,7 +16,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.res.*
@@ -87,10 +89,10 @@ fun CIGroupInvitationView(
   val receivedColor = MaterialTheme.appColors.receivedMessage
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = showTimestamp) }) { inlineMeta ->
     Surface(
-      modifier = if (action && !inProgress.value) Modifier.clickable(onClick = {
+      modifier = (if (action && !inProgress.value) Modifier.clickable(onClick = {
         inProgress.value = true
         joinGroup(groupInvitation.groupId) { inProgress.value = false }
-      }) else Modifier,
+      }) else Modifier).ui(Ui.Chat.Item(ci.id).part("join")),
       shape = RoundedCornerShape(18.dp),
       color = if (sent) sentColor else receivedColor,
       contentColor = LocalContentColor.current

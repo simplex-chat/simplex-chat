@@ -6,6 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import chat.simplex.common.model.CustomTimeUnit
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 
 @Composable
@@ -64,6 +65,7 @@ actual fun CustomTimePicker(
       selection,
       textColor = MaterialTheme.colors.onBackground,
       enabled = remember { mutableStateOf(true) },
+      uiKey = Ui.TimePicker.Value,
       onSelected = { selection.value = it }
     )
     Spacer(Modifier.width(DEFAULT_PADDING))

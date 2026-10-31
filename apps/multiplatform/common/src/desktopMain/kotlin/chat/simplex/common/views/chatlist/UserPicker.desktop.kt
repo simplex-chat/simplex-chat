@@ -19,6 +19,8 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.User
 import chat.simplex.common.model.UserInfo
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,6 +53,7 @@ actual fun UserPickerUsersSection(
           ) {
             row.forEach { u ->
               Column(modifier = Modifier
+                .ui(Ui.UserPicker.User(u.user.userId))
                 .clickable (
                   onClick = { onUserClicked(u.user) },
                   enabled = !stopped
@@ -96,6 +99,7 @@ actual fun PlatformUserPicker(modifier: Modifier, pickerState: MutableStateFlow<
     Box(
       Modifier
         .fillMaxSize()
+        .ui(Ui.UserPicker.Sheet)
         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { pickerState.value = AnimatedViewState.HIDING }),
       contentAlignment = Alignment.TopStart
     ) {

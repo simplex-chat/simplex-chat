@@ -29,6 +29,8 @@ import chat.simplex.common.model.ChatController.switchToLocalSession
 import chat.simplex.common.model.ChatModel.connectedToRemote
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
@@ -271,7 +273,7 @@ private fun VerifySession(session: RemoteCtrlSession, rc: RemoteCtrlInfo?, sessC
 
   SectionView(stringResource(MR.strings.verify_code_with_desktop)) {
     SessionCodeText(sessCode)
-    SectionItemView({ verifyDesktopSessionCode(remoteCtrls, sessCode) }) {
+    SectionItemView({ verifyDesktopSessionCode(remoteCtrls, sessCode) }, uiKey = Ui.Remote.Confirm) {
       Icon(painterResource(MR.images.ic_check), generalGetString(MR.strings.confirm_verb), tint = MaterialTheme.colors.secondary)
       TextIconSpaced(false)
       Text(generalGetString(MR.strings.confirm_verb))
@@ -333,7 +335,7 @@ private fun ActiveSession(session: RemoteCtrlSession, rc: RemoteCtrlInfo, close:
   SectionDividerSpaced()
 
   SectionView {
-    DisconnectButton { disconnectDesktop(close) }
+    DisconnectButton(onClick = { disconnectDesktop(close) }, uiKey = Ui.Remote.Disconnect)
   }
 }
 
@@ -381,6 +383,7 @@ private fun DesktopAddressView(sessionAddress: MutableState<String>) {
         click = {
           sessionAddress.value = clipboard.getText()?.text ?: ""
         },
+        uiKey = Ui.Remote.PasteAddress,
       )
     } else {
       Row(Modifier.padding(horizontal = DEFAULT_PADDING).fillMaxWidth()) {
@@ -408,6 +411,7 @@ private fun DesktopAddressView(sessionAddress: MutableState<String>) {
       click = {
         withBGApi { connectDesktopAddress(sessionAddress, sessionAddress.value) }
       },
+      uiKey = Ui.Remote.Connect,
     )
   }
 }
@@ -537,8 +541,8 @@ private fun verifyDesktopSessionCode(remoteCtrls: SnapshotStateList<RemoteCtrlIn
 }
 
 @Composable
-private fun DisconnectButton(label: String = generalGetString(MR.strings.disconnect_remote_host), icon: ImageResource = MR.images.ic_close, onClick: () -> Unit) {
-  SectionItemView(onClick) {
+private fun DisconnectButton(label: String = generalGetString(MR.strings.disconnect_remote_host), icon: ImageResource = MR.images.ic_close, onClick: () -> Unit, uiKey: UiKey? = null) {
+  SectionItemView(onClick, uiKey = uiKey) {
     Icon(painterResource(icon), label, tint = MaterialTheme.colors.secondary)
     TextIconSpaced(false)
     Text(label)

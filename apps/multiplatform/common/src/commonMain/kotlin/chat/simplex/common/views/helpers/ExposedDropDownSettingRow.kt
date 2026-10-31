@@ -17,6 +17,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.res.*
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.usersettings.SettingsActionItemWithContent
 import dev.icerock.moko.resources.ImageResource
@@ -31,6 +33,8 @@ fun <T> ExposedDropDownSetting(
   enabled: State<Boolean> = mutableStateOf(true),
   minWidth: Dp = 200.dp,
   maxWidth: Dp = with(LocalDensity.current) { 180.sp.toDp() },
+  uiKey: UiKey? = null,
+  optionKey: (T) -> Any? = { it },
   onSelected: (T) -> Unit
 ) {
   val expanded = remember { mutableStateOf(false) }
@@ -38,7 +42,8 @@ fun <T> ExposedDropDownSetting(
     expanded = expanded.value,
     onExpandedChange = {
       expanded.value = !expanded.value && enabled.value
-    }
+    },
+    modifier = Modifier.ui(uiKey)
   ) {
     Row(
       Modifier.padding(start = 10.dp),
@@ -70,6 +75,7 @@ fun <T> ExposedDropDownSetting(
             onSelected(selectionOption.first)
             expanded.value = false
           },
+          modifier = Modifier.ui(uiKey?.option(optionKey(selectionOption.first) ?: "null")),
           contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)
         ) {
           Text(
@@ -164,9 +170,11 @@ fun <T> ExposedDropDownSettingRow(
   enabled: State<Boolean> = mutableStateOf(true),
   minWidth: Dp = 200.dp,
   maxWidth: Dp = with(LocalDensity.current) { 180.sp.toDp() },
+  uiKey: UiKey? = null,
+  optionKey: (T) -> Any? = { it },
   onSelected: (T) -> Unit
 ) {
   SettingsActionItemWithContent(icon, title, iconColor = iconTint, disabled = !enabled.value) {
-    ExposedDropDownSetting(values, selection ,textColor, label = label, enabled = enabled, minWidth = minWidth, maxWidth = maxWidth, onSelected = onSelected)
+    ExposedDropDownSetting(values, selection ,textColor, label = label, enabled = enabled, minWidth = minWidth, maxWidth = maxWidth, uiKey = uiKey, optionKey = optionKey, onSelected = onSelected)
   }
 }

@@ -54,6 +54,8 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.setConditionsNotified
 import chat.simplex.common.model.ServerOperator.Companion.dummyOperatorInfo
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.helpers.*
@@ -200,6 +202,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
           stringResource(MR.strings.view_updated_conditions),
           color = MaterialTheme.colors.primary,
           modifier = Modifier
+            .ui(Ui.WhatsNew.ViewConditions)
             .clickable(
               interactionSource = remember { MutableInteractionSource() },
               indication = null
@@ -226,6 +229,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
               verticalAlignment = Alignment.CenterVertically,
               horizontalArrangement = Arrangement.Center,
               modifier = Modifier
+                .ui(Ui.WhatsNew.Ok)
                 .clickable { close() }
                 .padding(8.dp)
             ) {

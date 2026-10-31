@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
@@ -262,6 +263,7 @@ fun GroupLinkLayout(
             },
             iconColor = MaterialTheme.colors.primary,
             textColor = MaterialTheme.colors.primary,
+            uiKey = Ui.GroupLink.Share,
           )
           if (shareGroupInfo != null && isChannel) {
             SettingsActionItem(
@@ -292,6 +294,7 @@ fun GroupLinkLayout(
               click = close,
               iconColor = MaterialTheme.colors.primary,
               textColor = MaterialTheme.colors.primary,
+              uiKey = Ui.GroupLink.Continue,
             )
           }
         }
@@ -314,7 +317,8 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
       values,
       selectedRole,
       icon = null,
-      enabled = rememberUpdatedState(enabled)
+      enabled = rememberUpdatedState(enabled),
+      uiKey = Ui.GroupLink.Role
     ) { selectedRole.value = it }
   }
 }

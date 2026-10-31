@@ -16,6 +16,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import chat.simplex.common.platform.appPlatform
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.res.*
 
 @Composable
@@ -41,7 +44,7 @@ fun PasscodeView(password: MutableState<String>) {
   var showPasscode by rememberSaveable { mutableStateOf(false) }
   Text(
     if (password.value.isEmpty()) "" else remember(password.value, showPasscode) { splitPassword(showPasscode, password.value) },
-    Modifier.padding(vertical = 10.dp).clickable { showPasscode = !showPasscode },
+    Modifier.ui(Ui.Passcode.Entered).padding(vertical = 10.dp).clickable { showPasscode = !showPasscode },
     style = MaterialTheme.typography.body1
   )
 }
@@ -57,13 +60,13 @@ private fun BoxWithConstraintsScope.VerticalPasswordGrid(password: MutableState<
     DigitsRow(s, 7, 8, 9, password)
     Divider()
     Row(Modifier.requiredHeight(s)) {
-      PasswordEdit(s, painterResource(MR.images.ic_close)) {
+      PasswordEdit(s, painterResource(MR.images.ic_close), Ui.Passcode.Clear) {
         password.value = ""
       }
       VerticalDivider()
       PasswordDigit(s, 0, password)
       VerticalDivider()
-      PasswordEdit(s, painterResource(MR.images.ic_backspace)) {
+      PasswordEdit(s, painterResource(MR.images.ic_backspace), Ui.Passcode.Backspace) {
         password.value = password.value.dropLast(1)
       }
     }
@@ -121,7 +124,7 @@ private fun PasswordDigit(size: Dp, d: Int, password: MutableState<String>) {
     if (password.value.length < 16) {
       password.value += s
     }
-  }) {
+  }, uiKey = Ui.Passcode.Digit(d)) {
     Text(
       s,
       style = TextStyle(
@@ -135,16 +138,16 @@ private fun PasswordDigit(size: Dp, d: Int, password: MutableState<String>) {
 }
 
 @Composable
-private fun PasswordEdit(size: Dp, image: Painter, action: () -> Unit) {
-  PasswordButton(size, action) {
+private fun PasswordEdit(size: Dp, image: Painter, uiKey: UiKey? = null, action: () -> Unit) {
+  PasswordButton(size, action, uiKey) {
     Icon(image, null, tint = MaterialTheme.colors.secondary)
   }
 }
 
 @Composable
-private fun PasswordButton(size: Dp, action: () -> Unit, content: @Composable BoxScope.() -> Unit) {
+private fun PasswordButton(size: Dp, action: () -> Unit, uiKey: UiKey? = null, content: @Composable BoxScope.() -> Unit) {
   return Box(
-    Modifier.size(size)
+    Modifier.ui(uiKey).size(size)
       .background(MaterialTheme.colors.background, RoundedCornerShape(50))
       .clickable { action() },
     contentAlignment = Alignment.Center

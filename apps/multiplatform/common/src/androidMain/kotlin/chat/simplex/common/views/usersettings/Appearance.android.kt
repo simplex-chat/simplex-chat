@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
@@ -105,11 +106,11 @@ fun AppearanceScope.AppearanceLayout(
       }
       //      }
 
-      SettingsPreferenceItem(icon = null, stringResource(MR.strings.one_hand_ui), ChatModel.controller.appPrefs.oneHandUI) { enabled ->
+      SettingsPreferenceItem(icon = null, stringResource(MR.strings.one_hand_ui), ChatModel.controller.appPrefs.oneHandUI, uiKey = Ui.Appearance.OneHandUI) { enabled ->
         if (enabled) appPrefs.chatBottomBar.set(true)
       }
       if (remember { appPrefs.oneHandUI.state }.value) {
-        SettingsPreferenceItem(icon = null, stringResource(MR.strings.chat_bottom_bar), ChatModel.controller.appPrefs.chatBottomBar)
+        SettingsPreferenceItem(icon = null, stringResource(MR.strings.chat_bottom_bar), ChatModel.controller.appPrefs.chatBottomBar, uiKey = Ui.Appearance.ChatBottomBar)
       }
     }
 

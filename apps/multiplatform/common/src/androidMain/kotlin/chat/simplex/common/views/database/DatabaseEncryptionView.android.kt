@@ -12,7 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.ui.UiKey
 import chat.simplex.common.ui.theme.SimplexGreen
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -26,6 +28,7 @@ actual fun SavePassphraseSetting(
   minHeight: Dp,
   enabled: Boolean,
   smallPadding: Boolean,
+  uiKey: UiKey?,
   onCheckedChange: (Boolean) -> Unit,
 ) {
   SectionItemView(minHeight = minHeight) {
@@ -48,6 +51,7 @@ actual fun SavePassphraseSetting(
       DefaultSwitch(
         checked = useKeychain,
         onCheckedChange = onCheckedChange,
+        modifier = Modifier.ui(uiKey),
         enabled = enabled
       )
     }

@@ -12,6 +12,8 @@ import androidx.compose.ui.node.DelegatableNode
 import androidx.compose.ui.node.DrawModifierNode
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.onRightClick
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.helpers.*
 
 object NoIndication : IndicationNodeFactory {
@@ -33,8 +35,9 @@ actual fun ChatListNavLinkLayout(
   disabled: Boolean,
   selectedChat: State<Boolean>,
   nextChatSelected: State<Boolean>,
+  uiKey: UiKey?,
 ) {
-  var modifier = Modifier.fillMaxWidth()
+  var modifier = Modifier.fillMaxWidth().ui(uiKey)
   if (!disabled) modifier = modifier
     .combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
     .onRightClick { showMenu.value = true }

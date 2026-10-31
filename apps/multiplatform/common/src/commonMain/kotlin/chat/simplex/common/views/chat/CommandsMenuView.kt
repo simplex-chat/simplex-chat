@@ -20,8 +20,10 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.chat.group.*
 import chat.simplex.common.views.chat.item.sendCommandMsg
 import chat.simplex.common.views.helpers.commandMenuAnimSpec
@@ -112,6 +114,7 @@ fun CommandsMenuView(
   fun MenuLabelRow(prev: Pair<String, List<ChatBotCommand>>) {
     Box(
       modifier = Modifier
+        .ui(Ui.Chat.CommandsBack)
         .fillMaxWidth()
         .height(COMMAND_MENU_ROW_SIZE)
         .clickable {
@@ -148,6 +151,7 @@ fun CommandsMenuView(
       is ChatBotCommand.Command -> {
         Box(
           modifier = Modifier
+            .ui(Ui.Chat.Command(cmd.keyword))
             .fillMaxWidth()
             .height(COMMAND_MENU_ROW_SIZE)
             .clickable {
@@ -184,6 +188,7 @@ fun CommandsMenuView(
       is ChatBotCommand.Menu ->
         Box(
           modifier = Modifier
+            .ui(Ui.Chat.CommandMenu(cmd.label))
             .fillMaxWidth()
             .height(COMMAND_MENU_ROW_SIZE)
             .clickable {

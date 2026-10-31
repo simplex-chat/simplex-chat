@@ -16,6 +16,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.themedBackground
 import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.newchat.ActiveProfilePicker
@@ -182,7 +183,8 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
           )
         }
       }
-    }
+    },
+    uiKey = Ui.Share.Bar
   )
 }
 
