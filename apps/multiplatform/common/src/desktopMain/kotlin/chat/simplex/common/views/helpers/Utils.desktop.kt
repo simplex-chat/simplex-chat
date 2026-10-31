@@ -10,6 +10,7 @@ import chat.simplex.common.model.CIFile
 import chat.simplex.common.model.readCryptoFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.simplexWindowState
+import chat.simplex.res.*
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.File
@@ -244,6 +245,7 @@ actual suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean)
       val ext = if (asPng) "png" else "jpg"
       val newFile = File(file.absolutePath + File.separator + generateNewFileName("IMG", ext, File(file.absolutePath)))
       ImageIO.write(image.toAwtImage(), ext, newFile.outputStream())
+      showToast(generalGetString(MR.strings.file_saved))
       newFile
     } catch (e: Exception) {
       Log.e(TAG, "Util.kt saveTempImageUncompressed error: ${e.message}")
