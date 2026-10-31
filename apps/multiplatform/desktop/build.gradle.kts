@@ -1,5 +1,6 @@
 import org.gradle.internal.extensions.stdlib.toDefaultLowerCase
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 
 plugins {
   kotlin("multiplatform")
@@ -164,6 +165,19 @@ tasks.named("clean") {
 }
 tasks.named("compileKotlinJvm") {
   dependsOn("cmakeBuildAndCopy")
+}
+tasks.withType<AbstractJPackageTask>().configureEach {
+  if (targetFormat == TargetFormat.Msi) {
+    doLast {
+      exec {
+        commandLine(
+          "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
+          "-File", project.file("../../../scripts/desktop/disable-msi-install-dir-wipe-windows.ps1"),
+          destinationDir.asFileTree.matching { include("*.msi") }.singleFile
+        )
+      }
+    }
+  }
 }
 afterEvaluate {
   tasks.create("cmakeBuildAndCopy") {
