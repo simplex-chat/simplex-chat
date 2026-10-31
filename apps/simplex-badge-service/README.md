@@ -51,7 +51,7 @@ simplex-badge-service --help
   `simplex-directory-service --run-cli`). This mode is the chat/RPC side and the `//` commands
   below: it starts no web listener and no poller, and serves no group commands, whatever
   `--service-config` says. It still updates a code's group message when the code is redeemed or
-  revoked. `[apple]`, `[google]` and `[dev]` apply to it.
+  revoked. `[apple]`, `[google]`, `[dev]` and `[log]` apply to it.
 - `--no-address`: skip address creation on start-up (for operators who provision the address themselves).
 The service cannot sign credentials without an issuer key and refuses to start without one:
 
@@ -85,13 +85,20 @@ Other options:
 - `--service-config INI_FILE`: path to `badge_service.ini`. Omit it to run the chat/RPC side
   only; the process never starts a web listener without it, and never starts one under
   `--run-cli`, which parses and validates the whole file (`[listener] static_dir` included) but
-  uses only its `[issuer]`, `[apple]`, `[google]` and `[dev]` sections. An issuer key is
+  uses only its `[issuer]`, `[apple]`, `[google]`, `[dev]` and `[log]` sections. An issuer key is
   still required either way.
 - `--service-name NAME`: the bot's display name, without `*`s or spaces (default `SimpleX Badges`).
 - `--client-service`: use the client service certificate.
 - also accepts the standard SimpleX Chat core options — database path, SMP/XFTP servers,
   `--socks-proxy`, `--log-level`/`-l`, and the rest — run `simplex-badge-service --help`
   for the complete list.
+
+The service logs to stderr: its routine lines at note level, its warnings and errors at their own.
+`[log] level` in `badge_service.ini` sets the lowest level printed, one of `trace`, `debug`, `info`,
+`note` (the default), `warn` or `error`, in both run modes. The level applies to the whole process,
+so below `note` the SMP agent's lines print too, and above it the group's join link is not logged
+on the start that creates the group; the link is still stored (see "From the group"). With
+`--log-agent` or `-l debug`, the level is set from `-l` instead, `important` counting as `info`.
 
 ### Running the web checkout
 

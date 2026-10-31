@@ -18,13 +18,14 @@ module BadgeService.Config
     ServiceConfig (..),
     defaultExpiryMinutes,
     defaultSessionMinutes,
+    defaultLogLevel,
     readServiceConfig,
     unknownKeys,
   )
 where
 
 import qualified Control.Exception as E
-import BadgeService.Log (logWarn)
+import Control.Logger.Simple (LogLevel (..), logWarn)
 import Control.Monad (mfilter, unless, when)
 import Data.Attoparsec.Text (Parser, endOfInput, isEndOfLine, parseOnly, satisfy, skipMany, skipSpace, skipWhile)
 import qualified Data.ByteString.Char8 as B
@@ -145,6 +146,7 @@ data ServiceConfig = ServiceConfig
     playStore :: Maybe PlayStoreConfig,
     issuer :: Maybe BadgeIssuerKey,
     group :: Maybe GroupConfig,
+    serviceLogLevel :: LogLevel,
     -- Local testing only; anyone who can reach the service can mint badges with any well-formed receipt.
     devAcceptUnverifiedStoreReceipts :: Bool,
     -- Local testing only; every issue request for a subscription asks its store and banks the months it charges.
@@ -162,6 +164,12 @@ defaultStripeHost = "https://api.stripe.com"
 
 defaultSessionMinutes :: Int
 defaultSessionMinutes = 60
+
+defaultLogLevel :: LogLevel
+defaultLogLevel = LogNote
+
+logLevels :: [(Text, LogLevel)]
+logLevels = [("trace", LogTrace), ("debug", LogDebug), ("info", LogInfo), ("note", LogNote), ("warn", LogWarn), ("error", LogError)]
 
 defaultPlayApiHost :: Text
 defaultPlayApiHost = "https://androidpublisher.googleapis.com"
@@ -228,7 +236,8 @@ knownSettings =
     ("google", ["package_name", "service_account_file"]),
     ("group", ["display_name", "description"]),
     ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage", "credit_test_purchases"]),
-    ("issuer", ["index", "private_key"])
+    ("issuer", ["index", "private_key"]),
+    ("log", ["level"])
   ]
 
 unknownKeys :: Ini -> [Text]
@@ -257,6 +266,7 @@ parseConfig ini = do
   str <- stripeSection
   iss <- issuerSection
   grp <- groupSection
+  serviceLogLevel <- logLevel
   pWaitingSeconds <- cadence "waiting_seconds" 3
   pIdleSeconds <- cadence "idle_seconds" 60
   apple <- appleSection
@@ -279,6 +289,7 @@ parseConfig ini = do
         playStore = google,
         issuer = iss,
         group = grp,
+        serviceLogLevel,
         devAcceptUnverifiedStoreReceipts = devUnverifiedReceipts,
         devCheckStoreDuringCoverage,
         devCreditTestPurchases
@@ -364,6 +375,11 @@ parseConfig ini = do
     closest valid
       | T.null valid = ""
       | otherwise = ", the closest valid name is \"" <> T.unpack valid <> "\""
+    logLevel = case look "log" "level" of
+      Nothing -> Right defaultLogLevel
+      Just v -> case lookup (T.strip v) logLevels of
+        Just l -> Right l
+        Nothing -> Left ("log.level must be one of " <> T.unpack (T.intercalate ", " (map fst logLevels)) <> ", not " <> T.unpack (T.strip v))
     stripeSection
       | not (hasSection "stripe") = Right Nothing
       | otherwise = do
