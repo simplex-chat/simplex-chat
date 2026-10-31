@@ -349,6 +349,8 @@ chatGroupTests = do
         it "role transitions update the roster (mod <-> admin, admin -> non-roster)" testChannelRoleTransitionsUpdateRoster
         it "malicious relay cannot downgrade or re-key a roster-established moderator via XGrpMemNew" testChannelRelayCannotDowngradeRosterMember
         it "malicious relay cannot forge a privileged member via XGrpMemNew forwarded as the owner" testChannelRelayCannotForgePrivilegedMember
+        it "owner promotion with a different member key keeps the member role" testChannelPromotionDifferentKeyKeepsRole
+        it "owner promotion pins the key of a member known without a key" testChannelPromotionPinsMemberKey
         it "should add relay to channel with roster (relay caches roster before joinable)" testChannelAddRelayWithRoster
         it "roster blob spanning multiple chunks reassembles" testChannelRosterMultipartReassembly
         it "corrupted roster blob is rejected on digest mismatch" testChannelRosterDigestMismatchRejected
@@ -11279,6 +11281,54 @@ testChannelRelayCannotForgePrivilegedMember ps =
     forgedMemberRows cc name =
       withCCTransaction cc $ \db ->
         DB.query db "SELECT member_role, member_pub_key FROM group_members WHERE local_display_name = ?" (Only name)
+
+testChannelPromotionDifferentKeyKeepsRole :: HasCallStack => TestParams -> IO ()
+testChannelPromotionDifferentKeyKeepsRole ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          danId <- memberIdByName alice "dan"
+          connId <- relayConnIdToMember bob "cath"
+          g <- C.newRandom
+          kp <- atomically $ C.generateKeyPair g
+          let relayKey = fst kp :: C.PublicKeyEd25519
+              memInfo = MemberInfo {memberId = danId, memberRole = GRObserver, v = Nothing, profile = danProfile, memberKey = Just (MemberKey relayKey)}
+          agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpMemNew memInfo Nothing)
+          cath <## "#team: bob introduced dan (Daniel) in the channel"
+          threadDelay 1000000
+          alice ##> "/mr #team dan admin"
+          alice <## "#team: you changed the role of dan to admin (signed)"
+          concurrentlyN_
+            [ bob <## "#team: alice changed the role of dan from observer to admin (signed)",
+              dan <## "#team: alice changed your role from observer to admin (signed)",
+              cath <##. "error: x.grp.mem.role: member key conflict, keeping trusted key, memberId="
+            ]
+          checkMemberRow cath "dan" (Just "observer")
+
+testChannelPromotionPinsMemberKey :: HasCallStack => TestParams -> IO ()
+testChannelPromotionPinsMemberKey ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          threadDelay 1000000
+          alice ##> "/block for all #team dan"
+          alice <## "#team: you blocked dan (signed)"
+          bob <## "#team: alice blocked dan (signed)"
+          cath <##. "#team: alice blocked an unknown member, creating unknown member record"
+          cath .<##. ("#team: alice blocked", "(signed)")
+          threadDelay 1000000
+          promoteChannelMember "team" alice bob dan [cath]
+          danId <- getMemberIdByName alice "dan"
+          (_, danKey) <- getMemberRoleKey alice danId
+          getMemberRoleKey cath danId `shouldReturn` ("member", danKey)
 
 testChannelRemoveMemberSigned :: HasCallStack => TestParams -> IO ()
 testChannelRemoveMemberSigned ps =
