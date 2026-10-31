@@ -7,7 +7,7 @@
 # core
 
 A low level API to the core library - the same that is used in desktop clients.
-You are unlikely to ever need to use this module directly.
+You are unlikely to ever need to use this module directly, except for image resizing.
 
 ## Namespaces
 
@@ -17,6 +17,7 @@ You are unlikely to ever need to use this module directly.
 
 ## Enumerations
 
+- [ImageSize](core.Enumeration.ImageSize.md)
 - [MigrationConfirmation](core.Enumeration.MigrationConfirmation.md)
 
 ## Classes
@@ -45,6 +46,9 @@ You are unlikely to ever need to use this module directly.
 - [chatMigrateInit](core.Function.chatMigrateInit.md)
 - [chatReadFile](core.Function.chatReadFile.md)
 - [chatRecvMsgWait](core.Function.chatRecvMsgWait.md)
+- [chatResizeImage](core.Function.chatResizeImage.md)
+- [chatResizeImageUri](core.Function.chatResizeImageUri.md)
 - [chatSendCmd](core.Function.chatSendCmd.md)
 - [chatWriteFile](core.Function.chatWriteFile.md)
 - [loadLibrary](core.Function.loadLibrary.md)
+- [resizeImage](core.Function.resizeImage.md)

@@ -69,6 +69,17 @@ enum BadgePeriod: String, CaseIterable, Identifiable {
 }
 
 struct BadgesHowLongView: View {
+    let level: BadgeLevel
+    var startDate = Date()
+    var priceList: BadgePriceList? = nil
+
+    var body: some View {
+        BadgesHowLongLayout(level: level, startDate: startDate, priceList: priceList)
+            .task { await BadgeStore.shared.load() }
+    }
+}
+
+struct BadgesHowLongLayout: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var store = BadgeStore.shared
     // store.forSale reads the active profile's badge
@@ -142,7 +153,6 @@ struct BadgesHowLongView: View {
         }
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
-        .task { await store.load() }
     }
 
     private func periodCard(_ period: BadgePeriod) -> some View {
@@ -239,7 +249,7 @@ struct BadgeBillingFooter: View {
 struct BadgesHowLongView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesHowLongView(
+            BadgesHowLongLayout(
                 level: .supporter,
                 startDate: previewDate,
                 priceList: BadgePriceList(oneMonth: .price("$7"), monthly: .price("$7"), annual: .price("$42"), monthlyAmount: 7, annualAmount: 42, subscriptionsForSale: true, subscribedBefore: false)

@@ -604,7 +604,9 @@ fun ChatItemView(
             }
 
             @Composable fun CallItem(status: CICallStatus, duration: Int) {
-              CICallItemView(cInfo, cItem, status, duration, showTimestamp = showTimestamp, acceptCall, cInfo.timedMessagesTTL)
+              CompositionLocalProvider(LocalBubbleLayout provides false) {
+                CICallItemView(cInfo, cItem, status, duration, showTimestamp = showTimestamp, acceptCall, cInfo.timedMessagesTTL)
+              }
               DeleteItemMenu()
             }
 
@@ -1220,15 +1222,13 @@ fun ItemAction(text: String, color: Color = Color.Unspecified, onClick: () -> Un
 fun chatItemTailEnabled(): Boolean = remember { appPreferences.chatItemTail.state }.value && !LocalTerminalLayout.current
 
 @Composable
-fun Modifier.chatItemOffset(cItem: ChatItem, tailVisible: Boolean, inverted: Boolean = false, revealed: Boolean): Modifier {
-  val style = shapeStyle(cItem, chatItemTailEnabled(), tailVisible, revealed)
+fun chatItemTailRendered(chatItem: ChatItem, tailVisible: Boolean, revealed: Boolean): Boolean =
+  shapeStyle(chatItem, chatItemTailEnabled(), tailVisible, revealed).let { it is ShapeStyle.Bubble && it.tailVisible }
 
-  val offset = if (style is ShapeStyle.Bubble) {
-    if (style.tailVisible) {
-      if (cItem.chatDir.sent) msgTailWidthDp else -msgTailWidthDp
-    } else {
-      0.dp
-    }
+@Composable
+fun Modifier.chatItemOffset(cItem: ChatItem, tailVisible: Boolean, inverted: Boolean = false, revealed: Boolean): Modifier {
+  val offset = if (chatItemTailRendered(cItem, tailVisible, revealed)) {
+    if (cItem.chatDir.sent) msgTailWidthDp else -msgTailWidthDp
   } else 0.dp
 
   return this.offset(x = if (inverted) (-1f * offset) else offset)
@@ -1368,6 +1368,7 @@ fun shapeStyleWithTail(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVis
             tailVisible
           }
         }
+        null -> false
         else -> tailVisible
       }
       return if (tailEnabled) {
@@ -1501,11 +1502,16 @@ val previewDate = Instant.fromEpochSeconds(1_736_936_100)
 fun previewDated(chatItem: ChatItem): ChatItem =
   chatItem.copy(meta = chatItem.meta.copy(itemTs = previewDate, createdAt = previewDate, updatedAt = previewDate))
 
+@Composable
+fun BubblePreview(content: @Composable () -> Unit) {
+  CompositionLocalProvider(LocalBubbleLayout provides !LocalTerminalLayout.current, content = content)
+}
+
 @Preview
 @Composable
 fun PreviewChatItemView(
   chatItem: ChatItem = ChatItem.getSampleData(1, CIDirection.DirectSnd(), previewDate, "hello")
-) {
+) = BubblePreview {
   ChatItemView(
     chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
     rhId = null,
@@ -1555,7 +1561,7 @@ fun PreviewChatItemView(
 
 @Preview
 @Composable
-fun PreviewChatItemViewDeletedContent() {
+fun PreviewChatItemViewDeletedContent() = BubblePreview {
   SimpleXTheme {
     ChatItemView(
       chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),

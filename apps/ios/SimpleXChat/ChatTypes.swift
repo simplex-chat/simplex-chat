@@ -267,6 +267,18 @@ public enum ChatLayout: Hashable {
     case classic
     case terminal
     case unknown(String)
+
+    public var known: ChatLayout? {
+        if case .unknown = self { nil } else { self }
+    }
+
+    public var displayName: String {
+        switch self {
+        case .classic: NSLocalizedString("Classic", comment: "chat layout")
+        case .terminal: NSLocalizedString("Terminal", comment: "chat layout")
+        case let .unknown(text): text
+        }
+    }
 }
 
 extension ChatLayout: RawRepresentable {
@@ -2452,6 +2464,30 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var chatLayout: ChatLayout? {
+        switch self {
+        case let .direct(contact): contact.chatLayout
+        case let .group(groupInfo, _): groupInfo.groupProfile.chatLayout
+        default: nil
+        }
+    }
+
+    public var uiThemes: ThemeModeOverrides? {
+        switch self {
+        case let .direct(contact): contact.uiThemes
+        case let .group(groupInfo, _): groupInfo.uiThemes
+        default: nil
+        }
+    }
+
+    public func defaultChatLayout(_ profileLayout: ChatLayout) -> ChatLayout {
+        chatLayout?.known ?? profileLayout
+    }
+
+    public func activeChatLayout(_ profileLayout: ChatLayout) -> ChatLayout {
+        uiThemes?.chatLayout?.known ?? defaultChatLayout(profileLayout)
+    }
+
     public var chatTs: Date {
         switch self {
         case let .direct(contact): return contact.chatTs ?? contact.updatedAt
@@ -2610,6 +2646,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
     public var uiThemes: ThemeModeOverrides?
+    public var chatLayout: ChatLayout?
     public var chatDeleted: Bool
 
     public var id: ChatId { get { "@\(contactId)" } }
@@ -4158,6 +4195,27 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         (content.msgContent != nil && !meta.isLive) || meta.itemDeleted != nil || isDeletedContent || mergeCategory != nil || showLocalDelete
     }
 
+    public var channelIsSender: Bool {
+        switch chatDir {
+        case .channelRcv: true
+        case .groupSnd: meta.showGroupAsSender
+        default: false
+        }
+    }
+
+    public var textAtItemTop: Bool {
+        let textContent = switch content.msgContent {
+        case .text: true
+        case .unknown: file == nil
+        default: false
+        }
+        return textContent && quotedItem == nil && meta.itemForwarded == nil && meta.itemDeleted == nil && !meta.isLive && !isReport
+    }
+
+    public var startsWithHeading: Bool {
+        if case .heading = markdownBlocks?.first { true } else { false }
+    }
+
     public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> ChatItem {
         ChatItem(
             chatDir: dir,
@@ -4938,6 +4996,13 @@ public enum CIContent: Decodable, ItemContent, Hashable {
         case .rcvBlocked: return true
         case .invalidJSON: return true
         default: return false
+        }
+    }
+
+    public var hasTerminalSender: Bool {
+        switch self {
+        case .sndMsgContent, .sndDeleted, .sndCall, .sndGroupInvitation, .sndModerated: true
+        default: showMemberName
         }
     }
 
@@ -5842,6 +5907,10 @@ public enum MarkdownBlock: Decodable, Hashable {
     case list(items: [ListEntry])
     case table(columns: [TableAlign], header: [SegmentRange], rows: [[SegmentRange]])
     case rule(mark: SegmentRange)
+
+    public var isHeading: Bool {
+        if case .heading = self { true } else { false }
+    }
 }
 
 public struct ListEntry: Decodable, Hashable {

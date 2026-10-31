@@ -11,6 +11,18 @@ import StoreKit
 import SimpleXChat
 
 struct BadgesCheckOrderView: View {
+    let level: BadgeLevel
+    let period: BadgePeriod
+    var startDate = Date()
+    var priceList: BadgePriceList? = nil
+
+    var body: some View {
+        BadgesCheckOrderLayout(level: level, period: period, startDate: startDate, priceList: priceList)
+            .task { await BadgeStore.shared.load() }
+    }
+}
+
+struct BadgesCheckOrderLayout: View {
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject private var store = BadgeStore.shared
@@ -104,7 +116,6 @@ struct BadgesCheckOrderView: View {
         }
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
-        .task { await store.load() }
         .alert(item: $alert) { $0.alert }
     }
 
@@ -217,7 +228,7 @@ struct RestorePurchasesButton: View {
 struct BadgesCheckOrderView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesCheckOrderView(
+            BadgesCheckOrderLayout(
                 level: .supporter,
                 period: .oneMonth,
                 startDate: previewDate,
