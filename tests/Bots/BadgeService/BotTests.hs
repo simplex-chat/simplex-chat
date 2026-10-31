@@ -2563,8 +2563,8 @@ testSubscriptionTierChangeAtRenewal :: HasCallStack => TestParams -> IO ()
 testSubscriptionTierChangeAtRenewal ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS}} -> do
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
-      firstStart <- addUTCTime (-3600) <$> serviceNow env
-      let monthly plan n = (storeCharge plan (addMonths n firstStart) 1) {chargeRef = "apple.renewal." <> tshow n}
+      firstStart <- monthEndStart env
+      let monthly plan n = (monthlyCharge plan firstStart n) {chargeRef = "apple.renewal." <> tshow n}
           tiersOf = map (\(_, ch, m, start, tier, t) -> (ch, m, start, tier, t))
           renewAs plan n = do
             rows <- ledgerRows (chatController alice) "badge_ledger"
@@ -2579,11 +2579,10 @@ testSubscriptionTierChangeAtRenewal ps =
       alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSubscriptionJWS})
       inAnyOrder alice [[openPurchase ""], ["1: supporter"]]
       waitWakeArmed (chatController alice)
-      -- the store charges Legend at the renewal: a new run from its period start, on both sides
+      -- the store charges Legend at the renewal: the run continues on its renewal day, on both sides
       upgraded <- renewAs "SUBSCR_BADGE_LEGEND_MONTH_01" 1
       alice <##. "1: legend"
-      let legendStart = addMonths 1 firstStart
-      tiersOf upgraded `shouldBe` [(1, 1, legendStart, "legend", Just "charge"), (-1, 0, addMonths 1 legendStart, "legend", Just "badge")]
+      tiersOf upgraded `shouldBe` [(1, 1, addMonths 1 firstStart, "legend", Just "charge"), (-1, 0, addMonths 2 firstStart, "legend", Just "badge")]
       balanceChecks (chatController alice) `shouldReturn` replicate 4 (Just True)
       purchaseBadgeTypes (chatController alice) "badge_purchases" `shouldReturn` ["legend"]
       purchaseBadgeTypes cc "sx_badge_service_badge_purchases" `shouldReturn` ["legend"]
@@ -4929,7 +4928,7 @@ testAppleTierChangeLowerWaitsForRenewal ps =
       renewed <- waitLedgerRows a (length rows + 2)
       alice <##. "1: supporter"
       map (\(_, ch, m, start, tier, t) -> (ch, m, start, tier, t)) (drop (length rows) renewed)
-        `shouldBe` [(1, 1, supporterStart, "supporter", Just "charge"), (-1, 0, addMonths 1 supporterStart, "supporter", Just "badge")]
+        `shouldBe` [(1, 1, supporterStart, "supporter", Just "charge"), (-1, 0, addMonths 2 legendBoughtAt, "supporter", Just "badge")]
       purchaseBadgeTypes a "badge_purchases" `shouldReturn` ["supporter"]
       purchaseBadgeTypes cc "sx_badge_service_badge_purchases" `shouldReturn` ["supporter"]
       issuedBadgeTypes a `shouldReturn` ["legend", "supporter"]

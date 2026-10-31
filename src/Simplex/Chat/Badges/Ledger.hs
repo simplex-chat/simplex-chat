@@ -95,15 +95,18 @@ lapseEntry t entryId e@StatementEntry {balanceMonths}
 
 -- | New months start where the current coverage ends, or at t if it has already lapsed - so they
 -- are neither spent on the month still running nor backdated over a gap. Months of another tier
--- replace the balance, so they are granted only onto an empty one.
+-- replace the balance, so they are granted only onto an empty one, and start a new run unless they
+-- start where the coverage ends, as a tier change at renewal does.
 grantEntry :: UTCTime -> Text -> BadgeType -> Int -> StatementCreditType -> StatementEntry -> StatementEntry
 grantEntry t entryId badgeType n credit e@StatementEntry {balanceMonths, balanceStartTs, balanceBadgeType}
-  -- only a lapsed run, or one of another tier, restarts; topping up before coverage ends continues the
-  -- run on its anchor, so buying a month at a time keeps the same day of month as buying a year at once
-  | lapsed || badgeType /= balanceBadgeType = credited {balanceMonths = n, balanceStartTs = t, balanceAnchorTs = t}
+  -- a lapsed run, or one of another tier before its coverage ends, restarts; topping up before coverage ends, or
+  -- changing the tier where it ends, continues the run on its anchor, so buying a month at a time keeps the same day
+  -- of month as buying a year at once, and a tier change at renewal keeps the store's renewal day
+  | lapsed || (badgeType /= balanceBadgeType && not atCoverageEnd) = credited {balanceMonths = n, balanceStartTs = t, balanceAnchorTs = t}
   | otherwise = credited {balanceMonths = balanceMonths + n}
   where
     lapsed = balanceMonths == 0 && t > balanceStartTs
+    atCoverageEnd = balanceMonths == 0 && t == balanceStartTs
     credited = e {entryId, createdAt = t, changeMonths = n, balanceBadgeType = badgeType, entryType = SECredit credit}
 
 -- | The period issued runs from the previous entry's balanceStartTs to this one's.
@@ -129,7 +132,8 @@ debitEntry t entryId debit e@StatementEntry {balanceMonths} =
 -- | A store charge's rows, dated to its billing period start so coverage follows the store's periods, or to
 -- the tip when the period started before it was written, so createdAt never decreases: a lapse to that date,
 -- the grant, and a lapse to now; the caller issues at now.
--- A charge of another tier ends the run with an upgrade debit naming ownKey before its grant restarts it.
+-- A charge of another tier ends the run with an upgrade debit naming ownKey when months are left, and its grant
+-- restarts the run, or continues it on its anchor when the charge starts where the coverage ends.
 chargeEntries :: UTCTime -> UTCTime -> BadgeType -> Int -> C.PublicKeyEd25519 -> Text -> (Text, Text, Text, Text) -> StatementEntry -> [StatementEntry]
 chargeEntries periodStart now badgeType months ownKey chargeId (lapseBeforeId, debitId, grantId, lapseSinceId) tip@StatementEntry {balanceBadgeType, createdAt} =
   maybeToList lapsedBefore <> maybeToList debited <> [granted] <> maybeToList lapsedSince
