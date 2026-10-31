@@ -140,3 +140,7 @@ def test_api_get_chat_item_info_cmd_string():
         CC.APIGetChatItemInfo_cmd_string({"chatRef": ref, "chatItemId": 5})
         == "/_get item info @2 5"
     )
+
+
+def test_api_get_user_servers_cmd_string():
+    assert CC.APIGetUserServers_cmd_string({"userId": 1}) == "/_servers 1"

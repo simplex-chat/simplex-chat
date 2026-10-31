@@ -1002,6 +1002,18 @@ def APISetNetworkConfig_cmd_string(self: APISetNetworkConfig) -> str:
 APISetNetworkConfig_Response = CR.CmdOk | CR.ChatCmdError
 
 
+# Get user servers and chat relays, grouped by operator.
+# Network usage: no.
+class APIGetUserServers(TypedDict):
+    userId: int  # int64
+
+
+def APIGetUserServers_cmd_string(self: APIGetUserServers) -> str:
+    return '/_servers ' + str(self['userId'])
+
+APIGetUserServers_Response = CR.UserServers | CR.ChatCmdError
+
+
 # Remote control commands
 # Allows a bot to accept an incoming remote control session from a SimpleX Desktop client, giving the desktop live access to the bot's SimpleX instance.
 

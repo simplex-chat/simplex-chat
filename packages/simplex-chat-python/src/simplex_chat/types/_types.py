@@ -1488,6 +1488,19 @@ class ComposedMessage(TypedDict):
     msgContent: "MsgContent"
     mentions: dict[str, int]  # str : int64
 
+class ConditionsAcceptance_accepted(TypedDict):
+    type: Literal["accepted"]
+    acceptedAt: NotRequired[str]  # ISO-8601 timestamp
+    autoAccepted: bool
+
+class ConditionsAcceptance_required(TypedDict):
+    type: Literal["required"]
+    deadline: NotRequired[str]  # ISO-8601 timestamp
+
+ConditionsAcceptance = ConditionsAcceptance_accepted | ConditionsAcceptance_required
+
+ConditionsAcceptance_Tag = Literal["accepted", "required"]
+
 class ConnStatus_new(TypedDict):
     type: Literal["new"]
 
@@ -2705,6 +2718,8 @@ class NoteFolder(TypedDict):
     favorite: bool
     unread: bool
 
+OperatorTag = Literal["simplex", "flux"]
+
 class OwnerVerification_verified(TypedDict):
     type: Literal["verified"]
 
@@ -3254,6 +3269,27 @@ SegmentRange = TypedDict("SegmentRange", {
     "from": int,  # int
     "to": int,  # int
 })
+
+class ServerOperator(TypedDict):
+    operatorId: int  # int64
+    operatorTag: NotRequired["OperatorTag"]
+    tradeName: str
+    legalName: NotRequired[str]
+    serverDomains: list[str]
+    conditionsAcceptance: "ConditionsAcceptance"
+    enabled: bool
+    smpRoles: "ServerRoles"
+    xftpRoles: "ServerRoles"
+
+class ServerRoles(TypedDict):
+    storage: bool
+    proxy: bool
+    names: bool
+
+class ServerRolesOverride(TypedDict):
+    storage: NotRequired[bool]
+    proxy: NotRequired[bool]
+    names: NotRequired[bool]
 
 class SimplePreference(TypedDict):
     allow: "FeatureAllowed"
@@ -4040,6 +4076,12 @@ class UserInfo(TypedDict):
     user: "User"
     unreadCount: int  # int
 
+class UserOperatorServers(TypedDict):
+    operator: NotRequired["ServerOperator"]
+    smpServers: list["UserServer"]
+    xftpServers: list["UserServer"]
+    chatRelays: list["UserChatRelay"]
+
 class UserProfileUpdateSummary(TypedDict):
     updateSuccesses: int  # int
     updateFailures: int  # int
@@ -4048,6 +4090,15 @@ class UserProfileUpdateSummary(TypedDict):
 class UserPwdHash(TypedDict):
     hash: str
     salt: str
+
+class UserServer(TypedDict):
+    serverId: int  # int64
+    server: str
+    preset: bool
+    tested: NotRequired[bool]
+    enabled: bool
+    roles: "ServerRolesOverride"
+    deleted: bool
 
 class VersionRange(TypedDict):
     minVersion: int  # int

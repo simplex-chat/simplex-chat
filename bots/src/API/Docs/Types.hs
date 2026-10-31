@@ -43,11 +43,12 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.FileTransfer.Transport
 import Simplex.FileTransfer.Types hiding (RcvFileStatus) -- the type with the same name is used in simplex-chat.
+import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Client
 import Simplex.Messaging.Crypto.File
 import Simplex.Messaging.Parsers (dropPrefix, fstToLower)
-import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), NameErrorType (..), NetworkError (..), ProxyError (..))
+import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), NameErrorType (..), NetworkError (..), ProtocolType (..), ProxyError (..))
 import Simplex.Messaging.Protocol.Types (ClientNotice (..))
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Transport.KeepAlive (KeepAliveOpts (..))
@@ -264,6 +265,7 @@ chatTypesDocsData =
     (sti @CommandErrorType, STUnion, "", [], "", ""),
     (sti @CommentsGroupPreference, STRecord, "", [], "", ""),
     (sti @ComposedMessage, STRecord, "", [], "", ""),
+    (sti @ConditionsAcceptance, STUnion, "CA", [], "", ""),
     (sti @Connection, STRecord, "", [], "", ""),
     (sti @ConnectionEntity, STUnion, "", [], "", ""),
     (sti @ConnectionErrorType, STUnion, "", [], "", ""),
@@ -351,6 +353,7 @@ chatTypesDocsData =
     (sti @NetworkTimeout, STRecord, "", [], "", ""),
     (sti @NewUser, STRecord, "", [], "", ""),
     (sti @NoteFolder, STRecord, "", [], "", ""),
+    (sti @OperatorTag, STEnum, "OT", [], "", ""),
     (sti @OwnerVerification, STUnion, "OV", [], "", ""),
     (sti @PendingContactConnection, STRecord, "", [], "", ""),
     (sti @PlanResolveMode, STEnum, "PRM", [], Choice "self" [("allGroups", " resolve=allGroups"), ("never", " resolve=never")] "", ""),
@@ -386,6 +389,9 @@ chatTypesDocsData =
     (sti @RoleGroupPreference, STRecord, "", [], "", ""),
     (sti @SecurityCode, STRecord, "", [], "", ""),
     (sti @SegmentRange, STRecord, "", [], "", ""),
+    ((sti @ServerOperator) {typeName = "ServerOperator"}, STRecord, "", [], "", ""),
+    (sti @ServerRoles, STRecord, "", [], "", ""),
+    (sti @ServerRolesOverride, STRecord, "", [], "", ""),
     (sti @SimplePreference, STRecord, "", [], "", ""),
     (sti @SimplexDomain, STRecord, "", [], "", ""),
     (sti @SimplexDomainClaim, STRecord, "", [], "", ""),
@@ -426,8 +432,10 @@ chatTypesDocsData =
     (sti @UserContactLink, STRecord, "", [], "", ""),
     (sti @UserContactRequest, STRecord, "", [], "", ""),
     (sti @UserInfo, STRecord, "", [], "", ""),
+    (sti @UserOperatorServers, STRecord, "", [], "", ""),
     (sti @UserProfileUpdateSummary, STRecord, "", [], "", ""),
     (sti @UserPwdHash, STRecord, "", [], "", ""),
+    ((sti @(UserServer 'PSMP)) {typeName = "UserServer"}, STRecord, "", [], "", ""),
     (sti @XFTPErrorType, STUnion, "", [], "", ""),
     (sti @XFTPRcvFile, STRecord, "", [], "", ""),
     (sti @XFTPSndFile, STRecord, "", [], "", ""),
@@ -514,6 +522,7 @@ deriving instance Generic CommandError
 deriving instance Generic CommandErrorType
 deriving instance Generic CommentsGroupPreference
 deriving instance Generic ComposedMessage
+deriving instance Generic ConditionsAcceptance
 deriving instance Generic Connection
 deriving instance Generic ConnectionEntity
 deriving instance Generic ConnectionErrorType
@@ -608,6 +617,7 @@ deriving instance Generic NetworkError
 deriving instance Generic NetworkTimeout
 deriving instance Generic NewUser
 deriving instance Generic NoteFolder
+deriving instance Generic OperatorTag
 deriving instance Generic OwnerVerification
 deriving instance Generic PendingContactConnection
 deriving instance Generic PlanResolveMode
@@ -642,6 +652,9 @@ deriving instance Generic RemoteCtrlStopReason
 deriving instance Generic ReportReason
 deriving instance Generic SecurityCode
 deriving instance Generic SegmentRange
+deriving instance Generic (ServerOperator' 'DBStored)
+deriving instance Generic ServerRoles
+deriving instance Generic ServerRolesOverride
 deriving instance Generic SimplexDomain
 deriving instance Generic SimplexDomainClaim
 deriving instance Generic SimplexDomainError
@@ -681,8 +694,10 @@ deriving instance Generic UserContact
 deriving instance Generic UserContactLink
 deriving instance Generic UserContactRequest
 deriving instance Generic UserInfo
+deriving instance Generic UserOperatorServers
 deriving instance Generic UserProfileUpdateSummary
 deriving instance Generic UserPwdHash
+deriving instance Generic (UserServer' 'DBStored p)
 deriving instance Generic XFTPErrorType
 deriving instance Generic XFTPRcvFile
 deriving instance Generic XFTPSndFile

@@ -172,6 +172,13 @@ describe("documented success responses", () => {
     await expect(chat.apiGetChatItemInfo(T.ChatType.Direct, 2, 5)).resolves.toEqual(info)
     expect(sentCommands()).toEqual(["/_get item info @2 5"])
   })
+
+  it("apiGetUserServers returns the servers", async () => {
+    const userServers = [{xftpServers: [{serverId: 1, server: "xftp://abc@localhost:7002", preset: false, enabled: true, roles: {}, deleted: false}], smpServers: [], chatRelays: []}]
+    const chat = await chatWithResponse({type: "userServers", user, userServers})
+    await expect(chat.apiGetUserServers(1)).resolves.toEqual(userServers)
+    expect(sentCommands()).toEqual(["/_servers 1"])
+  })
 })
 
 describe("startChat lifecycle", () => {

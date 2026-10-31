@@ -119,3 +119,9 @@ describe("APIGetChatItemInfo.cmdString", () => {
     expect(CC.APIGetChatItemInfo.cmdString({chatRef: {chatType: T.ChatType.Direct, chatId: 2}, chatItemId: 5})).toBe("/_get item info @2 5")
   })
 })
+
+describe("APIGetUserServers.cmdString", () => {
+  it("renders user ID", () => {
+    expect(CC.APIGetUserServers.cmdString({userId: 1})).toBe("/_servers 1")
+  })
+})

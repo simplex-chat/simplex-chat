@@ -115,6 +115,7 @@ chatResponsesDocsData =
     ("CRUserDeletedMembers", "Members deleted"),
     ("CRUserProfileUpdated", "User profile updated"),
     ("CRUserProfileNoChange", "User profile was not changed"),
+    ("CRUserServers", "User servers and chat relays, grouped by operator"),
     ("CRUsersList", "Users"),
     ("CRApiChats", "Chat previews (paginated). Use this instead of CRContactsList / CRGroupsList when scanning at scale.")
     -- ("CRChatCleared", ""),
@@ -212,7 +213,6 @@ undocumentedResponses =
     "CRUserPrivacy",
     "CRUserProfile",
     "CRUserProfileImage",
-    "CRUserServers",
     "CRUserServersValidation",
     "CRVersionInfo",
     "CRWelcome"

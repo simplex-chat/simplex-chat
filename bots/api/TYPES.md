@@ -68,6 +68,7 @@ This file is generated automatically.
 - [CommandErrorType](#commanderrortype)
 - [CommentsGroupPreference](#commentsgrouppreference)
 - [ComposedMessage](#composedmessage)
+- [ConditionsAcceptance](#conditionsacceptance)
 - [ConnStatus](#connstatus)
 - [ConnType](#conntype)
 - [Connection](#connection)
@@ -165,6 +166,7 @@ This file is generated automatically.
 - [NetworkTimeout](#networktimeout)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
+- [OperatorTag](#operatortag)
 - [OwnerVerification](#ownerverification)
 - [PaginationByTime](#paginationbytime)
 - [PendingContactConnection](#pendingcontactconnection)
@@ -206,6 +208,9 @@ This file is generated automatically.
 - [SMPWebPortServers](#smpwebportservers)
 - [SecurityCode](#securitycode)
 - [SegmentRange](#segmentrange)
+- [ServerOperator](#serveroperator)
+- [ServerRoles](#serverroles)
+- [ServerRolesOverride](#serverrolesoverride)
 - [SimplePreference](#simplepreference)
 - [SimplexDomain](#simplexdomain)
 - [SimplexDomainClaim](#simplexdomainclaim)
@@ -245,8 +250,10 @@ This file is generated automatically.
 - [UserContactRequest](#usercontactrequest)
 - [UserContactRequestRef](#usercontactrequestref)
 - [UserInfo](#userinfo)
+- [UserOperatorServers](#useroperatorservers)
 - [UserProfileUpdateSummary](#userprofileupdatesummary)
 - [UserPwdHash](#userpwdhash)
+- [UserServer](#userserver)
 - [VersionRange](#versionrange)
 - [XFTPErrorType](#xftperrortype)
 - [XFTPRcvFile](#xftprcvfile)
@@ -1906,6 +1913,22 @@ LARGE:
 
 ---
 
+## ConditionsAcceptance
+
+**Discriminated union type**:
+
+Accepted:
+- type: "accepted"
+- acceptedAt: UTCTime?
+- autoAccepted: bool
+
+Required:
+- type: "required"
+- deadline: UTCTime?
+
+
+---
+
 ## ConnStatus
 
 **Discriminated union type**:
@@ -3555,6 +3578,15 @@ SubscribeError:
 
 ---
 
+## OperatorTag
+
+**Enum type**:
+- "simplex"
+- "flux"
+
+
+---
+
 ## OwnerVerification
 
 **Discriminated union type**:
@@ -4265,6 +4297,42 @@ A_SERVICE:
 **Record type**:
 - from: int
 - to: int
+
+
+---
+
+## ServerOperator
+
+**Record type**:
+- operatorId: int64
+- operatorTag: [OperatorTag](#operatortag)?
+- tradeName: string
+- legalName: string?
+- serverDomains: [string]
+- conditionsAcceptance: [ConditionsAcceptance](#conditionsacceptance)
+- enabled: bool
+- smpRoles: [ServerRoles](#serverroles)
+- xftpRoles: [ServerRoles](#serverroles)
+
+
+---
+
+## ServerRoles
+
+**Record type**:
+- storage: bool
+- proxy: bool
+- names: bool
+
+
+---
+
+## ServerRolesOverride
+
+**Record type**:
+- storage: bool?
+- proxy: bool?
+- names: bool?
 
 
 ---
@@ -5146,6 +5214,17 @@ Handshake:
 
 ---
 
+## UserOperatorServers
+
+**Record type**:
+- operator: [ServerOperator](#serveroperator)?
+- smpServers: [[UserServer](#userserver)]
+- xftpServers: [[UserServer](#userserver)]
+- chatRelays: [[UserChatRelay](#userchatrelay)]
+
+
+---
+
 ## UserProfileUpdateSummary
 
 **Record type**:
@@ -5161,6 +5240,20 @@ Handshake:
 **Record type**:
 - hash: string
 - salt: string
+
+
+---
+
+## UserServer
+
+**Record type**:
+- serverId: int64
+- server: string
+- preset: bool
+- tested: bool?
+- enabled: bool
+- roles: [ServerRolesOverride](#serverrolesoverride)
+- deleted: bool
 
 
 ---

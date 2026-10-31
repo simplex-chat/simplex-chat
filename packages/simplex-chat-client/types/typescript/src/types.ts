@@ -2139,6 +2139,27 @@ export interface ComposedMessage {
   mentions: {[key: string]: number} // string : int64
 }
 
+export type ConditionsAcceptance = ConditionsAcceptance.Accepted | ConditionsAcceptance.Required
+
+export namespace ConditionsAcceptance {
+  export type Tag = "accepted" | "required"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Accepted extends Interface {
+    type: "accepted"
+    acceptedAt?: string // ISO-8601 timestamp
+    autoAccepted: boolean
+  }
+
+  export interface Required extends Interface {
+    type: "required"
+    deadline?: string // ISO-8601 timestamp
+  }
+}
+
 export type ConnStatus = 
   | ConnStatus.New
   | ConnStatus.Prepared
@@ -3866,6 +3887,11 @@ export interface NoteFolder {
   unread: boolean
 }
 
+export enum OperatorTag {
+  Simplex = "simplex",
+  Flux = "flux",
+}
+
 export type OwnerVerification = OwnerVerification.Verified | OwnerVerification.Failed
 
 export namespace OwnerVerification {
@@ -4672,6 +4698,30 @@ export interface SecurityCode {
 export interface SegmentRange {
   from: number // int
   to: number // int
+}
+
+export interface ServerOperator {
+  operatorId: number // int64
+  operatorTag?: OperatorTag
+  tradeName: string
+  legalName?: string
+  serverDomains: string[]
+  conditionsAcceptance: ConditionsAcceptance
+  enabled: boolean
+  smpRoles: ServerRoles
+  xftpRoles: ServerRoles
+}
+
+export interface ServerRoles {
+  storage: boolean
+  proxy: boolean
+  names: boolean
+}
+
+export interface ServerRolesOverride {
+  storage?: boolean
+  proxy?: boolean
+  names?: boolean
 }
 
 export interface SimplePreference {
@@ -5784,6 +5834,13 @@ export interface UserInfo {
   unreadCount: number // int
 }
 
+export interface UserOperatorServers {
+  operator?: ServerOperator
+  smpServers: UserServer[]
+  xftpServers: UserServer[]
+  chatRelays: UserChatRelay[]
+}
+
 export interface UserProfileUpdateSummary {
   updateSuccesses: number // int
   updateFailures: number // int
@@ -5793,6 +5850,16 @@ export interface UserProfileUpdateSummary {
 export interface UserPwdHash {
   hash: string
   salt: string
+}
+
+export interface UserServer {
+  serverId: number // int64
+  server: string
+  preset: boolean
+  tested?: boolean
+  enabled: boolean
+  roles: ServerRolesOverride
+  deleted: boolean
 }
 
 export interface VersionRange {

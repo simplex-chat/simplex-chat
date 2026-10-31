@@ -219,7 +219,8 @@ chatCommandsDocsData =
       [ ("StartChat", [], "Start chat controller.", ["CRChatStarted", "CRChatRunning"], [], Nothing, "/_start" <> OnOffParam "main" "mainApp" Nothing <> OnOffParam "snd_files" "enableSndFiles" (Just True) <> OnOffParam "service_requests" "serviceRequests" (Just False)),
         ("APIStopChat", [], "Stop chat controller.", ["CRChatStopped"], [], Nothing, "/_stop"),
         ("APIGetNetworkConfig", [], "Get network configuration.", ["CRNetworkConfig", "CRChatCmdError"], [], Nothing, "/network"),
-        ("APISetNetworkConfig", [], "Set network configuration.", ["CRCmdOk", "CRChatCmdError"], [], Just UNBackground, "/_network " <> Json "networkConfig")
+        ("APISetNetworkConfig", [], "Set network configuration.", ["CRCmdOk", "CRChatCmdError"], [], Just UNBackground, "/_network " <> Json "networkConfig"),
+        ("APIGetUserServers", [], "Get user servers and chat relays, grouped by operator.", ["CRUserServers", "CRChatCmdError"], [], Nothing, "/_servers " <> Param "userId")
       ]
     ),
     ( "Remote control commands",
@@ -407,7 +408,6 @@ undocumentedCommands =
     "APIGetReactionMembers",
     "APIGetServerOperators",
     "APIGetUsageConditions",
-    "APIGetUserServers",
     "APIGroupInfo",
     "APIGetUpdatedGroupLinkData",
     "APIGroupMemberInfo",

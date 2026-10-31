@@ -214,4 +214,15 @@ describeIfSmpServerAvailable("API tests (use local SMP server)", () => {
     await expect(alice.apiGetNetworkConfig()).resolves.toEqual(updated)
     await alice.close()
   })
+
+  it("should get user servers", async () => {
+    const alice = await api.ChatApi.init({type: "sqlite", filePrefix: alicePath})
+    const {userId} = await alice.apiCreateActiveUser({displayName: "alice", fullName: ""})
+    await alice.startChat()
+    await useSmpServer(alice)
+    const servers = await alice.apiGetUserServers(userId)
+    const custom = servers.find(({operator}) => operator === undefined)
+    expect(custom?.smpServers.map(({server, enabled}) => ({server, enabled}))).toEqual([{server: smpServer.address, enabled: true}])
+    await alice.close()
+  })
 })

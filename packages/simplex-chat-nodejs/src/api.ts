@@ -1005,6 +1005,12 @@ export class ChatApi {
     throw new ChatCommandError("error setting network config", r)
   }
 
+  async apiGetUserServers(userId: number): Promise<T.UserOperatorServers[]> {
+    const r = await this.sendChatCmd(CC.APIGetUserServers.cmdString({userId}))
+    if (r.type === "userServers") return r.userServers
+    throw new ChatCommandError("error getting user servers", r)
+  }
+
   /**
    * Get active user profile
    * Network usage: no.

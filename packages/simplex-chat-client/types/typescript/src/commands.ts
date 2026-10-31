@@ -1140,6 +1140,20 @@ export namespace APISetNetworkConfig {
   }
 }
 
+// Get user servers and chat relays, grouped by operator.
+// Network usage: no.
+export interface APIGetUserServers {
+  userId: number // int64
+}
+
+export namespace APIGetUserServers {
+  export type Response = CR.UserServers | CR.ChatCmdError
+
+  export function cmdString(self: APIGetUserServers): string {
+    return '/_servers ' + self.userId
+  }
+}
+
 // Remote control commands
 // Allows a bot to accept an incoming remote control session from a SimpleX Desktop client, giving the desktop live access to the bot's SimpleX instance.
 

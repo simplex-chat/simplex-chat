@@ -74,6 +74,7 @@ export type ChatResponse =
   | CR.UserDeletedMembers
   | CR.UserProfileUpdated
   | CR.UserProfileNoChange
+  | CR.UserServers
   | CR.UsersList
   | CR.ApiChats
 
@@ -149,6 +150,7 @@ export namespace CR {
     | "userDeletedMembers"
     | "userProfileUpdated"
     | "userProfileNoChange"
+    | "userServers"
     | "usersList"
     | "apiChats"
 
@@ -620,6 +622,12 @@ export namespace CR {
   export interface UserProfileNoChange extends Interface {
     type: "userProfileNoChange"
     user: T.User
+  }
+
+  export interface UserServers extends Interface {
+    type: "userServers"
+    user: T.User
+    userServers: T.UserOperatorServers[]
   }
 
   export interface UsersList extends Interface {

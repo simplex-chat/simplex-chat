@@ -93,6 +93,7 @@ This file is generated automatically.
 - [APIStopChat](#apistopchat)
 - [APIGetNetworkConfig](#apigetnetworkconfig)
 - [APISetNetworkConfig](#apisetnetworkconfig)
+- [APIGetUserServers](#apigetuserservers)
 
 [Remote control commands](#remote-control-commands)
 - [ConnectRemoteCtrl](#connectremotectrl)
@@ -3020,6 +3021,43 @@ Set network configuration.
 CmdOk: Ok.
 - type: "cmdOk"
 - user_: [User](./TYPES.md#user)?
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIGetUserServers
+
+Get user servers and chat relays, grouped by operator.
+
+*Network usage*: no.
+
+**Parameters**:
+- userId: int64
+
+**Syntax**:
+
+```
+/_servers <userId>
+```
+
+```javascript
+'/_servers ' + userId // JavaScript
+```
+
+```python
+'/_servers ' + str(userId) # Python
+```
+
+**Responses**:
+
+UserServers: User servers and chat relays, grouped by operator.
+- type: "userServers"
+- user: [User](./TYPES.md#user)
+- userServers: [[UserOperatorServers](./TYPES.md#useroperatorservers)]
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"

@@ -505,7 +505,7 @@ data ChatCommand
   | APIGetServerOperators
   | APISetServerOperators (NonEmpty ServerOperator)
   | SetServerOperators (NonEmpty ServerOperatorRoles)
-  | APIGetUserServers UserId
+  | APIGetUserServers {userId :: UserId}
   | APISetUserServers UserId (NonEmpty UpdatedUserOperatorServers)
   | APIValidateServers UserId [UpdatedUserOperatorServers] -- response is CRUserServersValidation
   | APIGetUsageConditions
