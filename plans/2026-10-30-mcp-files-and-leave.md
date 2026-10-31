@@ -29,6 +29,7 @@ Phases:
 11. C1 (a): the download card names unknown servers before approval, from the item's `fileXftpServers` (`apiGetChatItemInfo`, `Messages.hs:1362`) and the user's XFTP servers (`APIGetUserServers`); both methods are added to #7808.
 12. C2 (a): a GIF or WebP, which the core does not decode (`Image.hs:62-70`), is sent as an image with a fixed preview, the file unchanged.
 13. C3 (a): a video's preview and duration come from `ffmpeg` and `ffprobe` when installed, otherwise a fixed preview and duration 0.
+14. `download` waits for the file description (`rcvFileDescrReady`) before it creates the action, at most `wait` seconds; at the end of `wait` it returns a tool error that asks to call again later. Known servers follow the core's rule (`Library/Internal.hs:898-904`, `Operators.hs:455-465`), compared without passwords.
 
 Open choices:
 - C4, the wait at stop: a core command for pending deliveries, or a final message whose sent status is awaited; see "Library methods"
@@ -315,7 +316,7 @@ pending   I want to download a file from Alice in group Builders (#3):     (dire
 done      I downloaded a file from ... and the file line
 ```
 - Sizes: bytes, KB, MB, GB by 1000, one decimal.
-- The servers line follows #7808's `apiGetChatItemInfo` and `APIGetUserServers`.
+- The servers line, after the file line: `Servers: known.`, or the unknown servers by their first host as code (decision 14); from `apiGetChatItemInfo` and `apiGetUserServers` of #7808.
 
 Owner commands, completed:
 ```
