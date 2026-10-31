@@ -1163,3 +1163,49 @@ fun PreviewChatListNavLinkContactConnection() {
     )
   }
 }
+
+@Preview
+@Composable
+fun PreviewChatListNavLinkUnread() {
+  SimpleXTheme {
+    Column {
+      UnreadChatPreview(ChatInfo.Direct.sampleData, Chat.ChatStats(unreadCount = 3))
+      UnreadChatPreview(ChatInfo.Group.sampleData, Chat.ChatStats(unreadCount = 2, unreadMentions = 1))
+      UnreadChatPreview(
+        ChatInfo.Group(GroupInfo.sampleData.copy(chatSettings = ChatSettings(enableNtfs = MsgFilter.None, sendRcpts = null, favorite = false)), groupChatScope = null),
+        Chat.ChatStats(unreadCount = 5)
+      )
+    }
+  }
+}
+
+@Composable
+private fun UnreadChatPreview(chatInfo: ChatInfo, chatStats: Chat.ChatStats) {
+  ChatListNavLinkLayout(
+    chatLinkPreview = {
+      ChatPreviewView(
+        chat = Chat(
+          remoteHostId = null,
+          chatInfo = chatInfo,
+          chatItems = listOf(ChatItem.getSampleData(1, CIDirection.DirectSnd(), previewDate, "hello")),
+          chatStats = chatStats
+        ),
+        true,
+        null,
+        null,
+        null,
+        disabled = false,
+        linkMode = SimplexLinkMode.DESCRIPTION,
+        inProgress = false,
+        progressByTimeout = false,
+        {}
+      )
+    },
+    click = {},
+    dropdownMenuItems = null,
+    showMenu = remember { mutableStateOf(false) },
+    disabled = false,
+    selectedChat = remember { mutableStateOf(false) },
+    nextChatSelected = remember { mutableStateOf(false) },
+  )
+}
