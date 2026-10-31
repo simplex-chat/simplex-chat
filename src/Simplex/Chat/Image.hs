@@ -14,6 +14,7 @@ module Simplex.Chat.Image
     decodeResizable,
     resizeImage,
     resizeImageDataUri,
+    cropToSquare,
     maxDecodeMemoryMB,
     scaleRGB8,
     scaleRGBA8,
@@ -163,6 +164,14 @@ orientImage orientation = dynamicPixelMap orient
       7 -> generateImage (\x y -> pixelAt img (w - 1 - y) (h - 1 - x)) h w
       8 -> generateImage (\x y -> pixelAt img (w - 1 - y) x) h w
       _ -> img
+
+cropToSquare :: DynamicImage -> DynamicImage
+cropToSquare = dynamicPixelMap crop
+  where
+    crop :: Pixel a => Image a -> Image a
+    crop img@Image {imageWidth = w, imageHeight = h} = generateImage (\x y -> pixelAt img (x + (w - side) `div` 2) (y + (h - side) `div` 2)) side side
+      where
+        side = min w h
 
 colourProfile :: ByteString -> ColourProfile
 colourProfile profile = fromMaybe CPNone $ do
