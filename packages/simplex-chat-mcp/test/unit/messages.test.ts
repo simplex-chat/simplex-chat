@@ -5,7 +5,7 @@ import {basename, dirname, join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
-import {Action, Actions, SendAction, Standing} from "../../src/actions"
+import {Action, Actions, DownloadAction, SendAction, Standing} from "../../src/actions"
 import {cardText} from "../../src/control"
 import {ChatItemsWatch, Collected, awaitResponses, toMessage} from "../../src/messages"
 import {AgentTools, classifyPlan} from "../../src/tools"
@@ -961,11 +961,30 @@ describe("download", () => {
     return {tools, actions}
   }
 
+  const knownServer = "xftp://hash1@xftp1.simplex.im"
+
   function offeredIn(chat: FakeChat, fileStatus: object = {type: "rcvInvitation"}, fileSource?: object): T.ChatItem {
     const offered = fileItem(30, image, fileStatus, {chatDir: {type: "groupRcv", groupMember: switchback}, fileSource})
     chat.chats.set("#15", {chatInfo: trail, items: [offered]})
     chat.responses.set(`/freceive 7 approved_relays=on ${folder}`, {type: "rcvFileAccepted", user, chatItem: event(trail, offered)})
+    fileServersIn(chat, [knownServer])
+    chat.responses.set("/_servers 1", {
+      type: "userServers",
+      user,
+      userServers: [
+        {smpServers: [], xftpServers: [userServer("xftp://hash1:secret@xftp1.simplex.im")], chatRelays: []},
+        {operator: {operatorId: 2, enabled: false}, smpServers: [], xftpServers: [userServer("xftp://hash3@disabled.example.com")], chatRelays: []},
+      ],
+    })
     return offered
+  }
+
+  function fileServersIn(chat: FakeChat, fileXftpServers: string[]): void {
+    chat.responses.set("/_get item info #15 30", {type: "chatItemInfo", user, chatItem: event(trail, chat.chats.get("#15")!.items[0]), chatItemInfo: {itemVersions: [], fileXftpServers}})
+  }
+
+  function userServer(server: string): object {
+    return {serverId: 1, server, preset: false, enabled: true, roles: {}, deleted: false}
   }
 
   const completed = (path: string): T.CIFile => fileItem(30, image, {type: "rcvComplete"}, {fileSource: {filePath: path}}).file!
@@ -1060,6 +1079,50 @@ describe("download", () => {
     expect(actions.get(1)!.card).toBeUndefined()
     tools.onFile(completed(join(folder, "report.pdf")))
     expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: join(folder, "report.pdf")})
+  })
+
+  it("waits for the file description before it asks, and names the unknown servers on the card", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    fileServersIn(chat, [])
+    const {tools, actions} = downloadTools(chat)
+    const {call, progress, controller} = signal()
+    const downloading = tools.call("download", {chat: "#15", item: 30}, call)
+    await flushed()
+    expect(actions.all()).toEqual([])
+    expect(progress).toEqual([expect.stringMatching(/^The sender is uploading the file of item 30 in #15; waiting until \d{4}-\d\d-\d\d \d\d:\d\d UTC\.$/)])
+    const unknown = ["xftp://hash2@xftp.example.com", "xftp://hash3@disabled.example.com"]
+    fileServersIn(chat, [knownServer, ...unknown])
+    tools.onFileDescription()
+    await flushed()
+    const action = actions.get(1) as DownloadAction
+    expect(action.unknownServers).toEqual(unknown)
+    expect(cardText(action, "requests").split("\n")[2]).toBe("Servers: `xftp.example.com`, `disabled.example.com`, unknown: downloading shows them this computer's IP address.")
+    controller.abort()
+    expect(await downloading).toBeUndefined()
+  })
+
+  it("asks at once when the servers are known, and returns a tool error when the sender's upload outlasts wait", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const {call, controller} = signal()
+    const asking = tools.call("download", {chat: "#15", item: 30}, call)
+    await jest.advanceTimersByTimeAsync(0)
+    expect(cardText(actions.get(1)!, "requests").split("\n")[2]).toBe("Servers: known.")
+    controller.abort()
+    expect(await asking).toBeUndefined()
+    actions.reject(actions.get(1)!, "Alice")
+    expect((await tools.call("download", {chat: "#15", item: 30}, signal().call))!.structuredContent).toEqual({action: 1, status: "rejected"})
+
+    fileServersIn(chat, [])
+    const waiting = tools.call("download", {chat: "#15", item: 30, wait: 5}, signal().call)
+    await jest.advanceTimersByTimeAsync(4_999)
+    expect(actions.all()).toEqual([])
+    await jest.advanceTimersByTimeAsync(1)
+    expect(textOf(await waiting)).toBe("item: the sender has not uploaded the file of item 30 in #15 yet; call download again later.")
+    expect(actions.all()).toEqual([])
   })
 
   it("refuses an unknown item, an item without a received file, and a failed file", async () => {

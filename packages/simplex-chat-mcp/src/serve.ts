@@ -146,6 +146,8 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
         return tools.onFile(event.chatItem.chatItem.file)
       case "rcvFileError":
         return tools.onFileError(event)
+      case "rcvFileDescrReady":
+        return tools.onFileDescription()
       case "sndFileCompleteXFTP":
       case "sndFileError":
         return tools.onSentFile(event.fileTransferMeta)

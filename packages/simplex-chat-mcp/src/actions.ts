@@ -102,6 +102,7 @@ export interface DownloadAction extends ActionRecord {
   readonly item: number
   readonly from?: string
   readonly file: FileOffer
+  readonly unknownServers?: string[]
   startedAt?: number
   path?: string
 }

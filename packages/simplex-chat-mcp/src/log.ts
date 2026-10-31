@@ -226,7 +226,7 @@ function srvErrorText(error: T.SrvError): string {
   }
 }
 
-function serverHostname(server: string): string {
+export function serverHostname(server: string): string {
   return /^[a-z]+:\/\/[^@]*@([^,:/]+)/.exec(server)?.[1] ?? server
 }
 

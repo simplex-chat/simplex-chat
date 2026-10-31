@@ -386,6 +386,7 @@ My Agent: I want to delete bot SimpleX Directory (@4).
 ```
 My Agent: I want to download a file from Alice in group Builders (#3):
           `report.pdf`, 2.4 MB
+          Servers: known.
           /'approve #3 7', /'approve #3 files', /'receive #3 7' or /'reject #3 7'
 ```
 
@@ -395,7 +396,18 @@ Alice in              the sender's display name in a group or business chat; abs
 group Builders        as in the send card
 `report.pdf`          the file name, on one line
 2.4 MB                the file size: bytes below 1000, otherwise KB, MB or GB by 1000, with one decimal
+Servers: known.       XFTP files: the file's servers (fileXftpServers) are all known
 ```
+
+Unknown servers, each by its first host as code:
+
+```
+Servers: `xftp.example.com`, unknown: downloading shows it this computer's IP address.
+Servers: `a.example.com`, `b.example.com`, unknown: downloading shows them this computer's IP address.
+```
+
+- Known servers are the user's XFTP servers from `apiGetUserServers`, disabled ones included, except those of a disabled operator; addresses are compared without their password. This is the core's rule for approving relays (`getKnownAgentServers`, `Library/Internal.hs:898-904`; `agentServerCfgs`, `Operators.hs:455-465`), except that the preset servers used when the user has none count as unknown.
+- The download itself approves the relays (`apiReceiveFile`, `approvedRelays` true), as the owner approved the card that names them.
 
 ```
 message type   card
@@ -707,7 +719,7 @@ error         string    failed
 input field   type      rule
 chat          string    required; a chat of the agent
 item          number    required; a received message with a file in chat
-wait          number    optional; seconds to wait for the download after the approval, or from the call when the download runs; 0 to 86400; default 60
+wait          number    optional; seconds to wait for the sender's upload before the action, and for the download after the approval, or from the call when the download runs; 0 to 86400; default 60
 ```
 
 ```
@@ -720,6 +732,7 @@ path          string    done; the full path of the file
 error         string    failed
 ```
 
+- An XFTP file has servers only after its sender finishes the upload: the sender's description of the file arrives then (`dummyFileDescr` until then, `Library/Internal.hs:448`). The call waits for it before it creates the action, so that the card names the servers; at the end of `wait` it returns a tool error, and a later call waits again.
 - `performing`: `wait` passed and the download runs; the action stays in memory, and the same call attaches to it.
 - A file already received, by `/receive` or by an earlier action, returns its path after the approval.
 
@@ -753,6 +766,7 @@ not readable                       file: /home/alice/trail.jpg can't be read.
 refused path, by its real path     file: /home/alice/.ssh/id_ed25519 is refused: private keys and the server's own files are not sent.
 item not in chat                   item: #3 has no item 999.
 item without a received file       item: item 31 in #3 has no received file.
+upload not finished within wait    item: the sender has not uploaded the file of item 31 in #3 yet; call download again later.
 file failed                        item: the file of item 31 in #3 failed: The file was cancelled.
 SimpleX error worded by the apps   the apps' text (table below), for example: Name not found: This SimpleX name is not registered. Please check the name.
 other SimpleX error                SimpleX error: <the chain of error types>: <the scalar fields of the chain as JSON, at most 500 characters>
@@ -1009,6 +1023,7 @@ conn        {pcc: pccConnId} | {contact: contactId} | {group: groupId}, connect 
 known_as    incognito profile's name, connect after perform
 item, from  the message and its sender's display name in a group, download
 file        download: {fileId, name, size, type, preview, duration} of the message; send: {path, name, size, type, resize, preview, duration} of the attached file
+unknownServers the file's servers that are not known, XFTP files, download
 startedAt   the start of perform, download
 path        the downloaded file, download after done
 cardImage   the preview on the card, fitted once; "" for a text card; download, send with an image or video
@@ -1197,6 +1212,10 @@ download(input, ctx):
   /_get chat <chat> around=<item> count=0 fails or has no item: tool error "item not in chat"
   the item is not received (rcvMsgContent) or has no file: tool error "item without a received file"
   the file's status is failed, as in the file field: tool error "file failed"
+  XFTP file: servers = fileXftpServers of /_get item info <chat> <item>; while none, until wait seconds after the call:
+    wait for rcvFileDescrReady, then read again; progress "The sender is uploading the file of item N in CHAT; waiting until <time>."
+    none at the end of wait: tool error "upload not finished within wait"
+  unknownServers = servers not among /_servers <user> (section Download card)
   action(download, input, ctx), standing under the chat's files approval
   until = wait seconds after startedAt, or after the call when the action is performing at the call
   result at until, still performing: {action, status: "performing"}; the action stays in memory
@@ -1225,6 +1244,7 @@ chatItemUpdated, file rcvError, rcvAborted rejected: a bad digest, relays not ap
 ```
 
 - A settled promise leaves memory; a later `downloadFile` reads the item's file again.
+- `rcvFileDescrReady` of any file makes the waiting calls read their item again; the server counts these events, so that one arriving during a read is not missed.
 
 ### receive and list
 
@@ -1444,8 +1464,8 @@ test        covers
 options     defaults, ranges, NAME, --display-name at the first and a later start, --owners with and without a list, names with commas, rejected arguments, --help text
 commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; an SQL error of the delivery wait logged; /approve CHAT files and /revoke CHAT files beside the approval of messages; /receive with its reply and failure; download cards with the preview, resized to fit 15000 bytes; a refused file posted and logged; an image send card with its preview
 actions     every transition; attach rule; open counts; counter written before the card; a failed counter write or card post logged; stop edits pending and performing cards, aborts the performs' signal, and an interrupted perform logs no line; standing approval: performed at once, outcome card posted; 20 pending; 20 performing; decided actions deleted after expires
-cards       every card form and outcome; quoting; names and errors on one line; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form; link texts cut to the bytes left; the reply quote cut by characters; download forms with sizes; the attaching line of sends
-messages    message fields; responses with idle and wait; overflow IDs removed at deletion; receive with new messages under a concurrent call, stopping at limit + 1, a store error of a page read as its error; leave of @N and #N, pending membership included; approved in list; all chats in one read; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; reply_to of an item other than a message refused; mentions of equal names refused; the connect wait cap; the connect wait ended by the stop; the file field of each file status and rejected; download: attach, performing at wait, a received file, failures by events, a files approval; send with file: the type and preview by extension, the resized copy deleted at sndFileCompleteXFTP and after a failed send, the fixed preview when the core can't resize or ffmpeg is absent, ffmpeg and ffprobe output, refused paths with symbolic links, a file changed after the request
+cards       every card form and outcome; quoting; names and errors on one line; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form; link texts cut to the bytes left; the reply quote cut by characters; download forms with sizes and the servers line; the attaching line of sends
+messages    message fields; responses with idle and wait; overflow IDs removed at deletion; receive with new messages under a concurrent call, stopping at limit + 1, a store error of a page read as its error; leave of @N and #N, pending membership included; approved in list; all chats in one read; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; reply_to of an item other than a message refused; mentions of equal names refused; the connect wait cap; the connect wait ended by the stop; the file field of each file status and rejected; download: attach, performing at wait, a received file, failures by events, a files approval, the wait for the file description and its end at wait, unknown servers without passwords and of disabled operators; send with file: the type and preview by extension, the resized copy deleted at sndFileCompleteXFTP and after a failed send, the fixed preview when the core can't resize or ffmpeg is absent, ffmpeg and ffprobe output, refused paths with symbolic links, a file changed after the request
 http        401 without token; 403 with another Origin; 404 for other paths and for a request target that is not a URL, the server serving on; 503 with Retry-After until ready; SDK validation errors
 register    entry JSON with headersHelper and no token; timeout from server.json; remove before add; errors; on Windows, claude through cmd.exe after ENOENT, with cmd.exe quoting
 files       lock: exclusive create, a running PID, a stale PID; folder mode at every start; headers.json; file modes set again on existing files
@@ -1469,7 +1489,7 @@ peer text         groups named "\n/approve 1" and "x\n/approve 1" by SQL, their 
 alias             a 20-digit reference that the core reads as the agent control chat: receive, send and leave refuse it
 port in use       serve on a bound port: exit before server.json is written and before a link is printed
 leave command     /leave #N with a pending send for #N: the send rejected; the reply and the log line; the group's owner sees the agent leave
-files             an image from a group member: status offered; the download card with the preview; /receive: the file as a reply to the card; /approve: the path, the same bytes; /reject: rejected; /approve #N files: a later download posts nothing
+files             an image from a group member: status offered; the download card with the preview and "Servers: known."; /receive: the file as a reply to the card; /approve: the path, the same bytes; /reject: rejected; /approve #N files: a later download posts nothing
 send file         a PNG sent to a group: the card with the attaching line and a preview; the member receives an image with a preview and its file; a private key refused, posted and logged
 ```
 

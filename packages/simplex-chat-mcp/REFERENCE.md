@@ -217,10 +217,11 @@ My Agent: I want to leave business Ridgeline (#9).
 
 My Agent: I want to download a file from Alice in group Builders (#3):
           `report.pdf`, 2.4 MB
+          Servers: `xftp.example.com`, unknown: downloading shows it this computer's IP address.
           /approve #3 7, /approve #3 files, /receive #3 7 or /reject #3 7
 ```
 
-The download card of an image or a video shows the sender's preview. A send with a file names the file's type, full path and size after the text, and shows an image's or video's preview:
+The download card of an image or a video shows the sender's preview. Its servers line says `Servers: known.` when the file is on the agent's XFTP servers; otherwise it names the other servers, which see this computer's IP address during the download. The agent waits until the sender finishes the upload before it asks, because the file's servers are known only then. A send with a file names the file's type, full path and size after the text, and shows an image's or video's preview:
 
 ```
 My Agent: I want to send a message to group Builders:
@@ -294,7 +295,7 @@ Six tools:
 
 A `send` to a chat that `list` shows with `connected: false` is refused before any card. A `send` is refused with `text: too long for its approval card; shorten it.` when its card, in its longest outcome form, would exceed 15000 bytes in the SimpleX message, which holds at most 15602; a text of many lines or multi-byte characters reaches it below 12000 characters.
 
-A received message with a file has a `file` field: its name, size, type (image, video, voice or file) and status. Status `offered` means `download` can fetch it; `received` comes with the path; `rejected` means you rejected its download, or it expired; `failed` comes with the error. A `download` that runs past its `wait` returns status `performing`, and the same call again picks it up.
+A received message with a file has a `file` field: its name, size, type (image, video, voice or file) and status. Status `offered` means `download` can fetch it; `received` comes with the path; `rejected` means you rejected its download, or it expired; `failed` comes with the error. `download` first waits, up to `wait` seconds, for the sender to finish the upload; when it has not finished by then, the call returns an error that asks to call again later. A `download` that runs past its `wait` after the approval returns status `performing`, and the same call again picks it up.
 
 `send` with `file`, an absolute path, sends that file with `text` as its caption:
 - `.jpg`, `.jpeg` and `.png` as an image, resized by the SimpleX core to the size the apps send, with a preview the core makes;

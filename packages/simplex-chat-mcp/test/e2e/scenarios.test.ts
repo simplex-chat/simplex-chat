@@ -295,7 +295,12 @@ test("files: a received image downloaded after the approval, /receive, /reject a
   const card = await firstCard
   const n = cardNumber(card)
   expect(card.chatItem.content).toMatchObject({msgContent: {type: "image", image: preview}})
-  expect(lines(card)).toEqual([`I want to download a file from Alice in group Trail (${group}):`, `\`trail.png\`, ${Buffer.from(png, "base64").length} bytes`, `/'approve ${group} ${n}', /'approve ${group} files', /'receive ${group} ${n}' or /'reject ${group} ${n}'`])
+  expect(lines(card)).toEqual([
+    `I want to download a file from Alice in group Trail (${group}):`,
+    `\`trail.png\`, ${Buffer.from(png, "base64").length} bytes`,
+    "Servers: known.",
+    `/'approve ${group} ${n}', /'approve ${group} files', /'receive ${group} ${n}' or /'reject ${group} ${n}'`,
+  ])
   const forwarded = received(alice.chat, ci => ci.chatItem.file !== undefined && ci.chatInfo.type === "group" && ci.chatInfo.groupInfo.groupId === controlId)
   await ownerSends(`/receive ${group} ${n}`)
   const copy = await forwarded

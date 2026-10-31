@@ -2,7 +2,7 @@ import {ChatEvent, T} from "@simplex-chat/types"
 import * as qrcode from "qrcode"
 import {api, core} from "simplex-chat"
 import {Action, ActionHooks, Actions, ConnectAction, DownloadAction, Standing, Subject, ToolError, leaveVerbs, subjectText, summary} from "./actions"
-import {ExitError, chatErrorOf, errorText, log, logError, oneLine, shellWord} from "./log"
+import {ExitError, chatErrorOf, errorText, log, logError, oneLine, serverHostname, shellWord} from "./log"
 import {chatNumber, chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "./messages"
 import type {OwnerEntry, QrCodeSize} from "./serve"
 import {AgentTools, chatSubject, isActive, isConnected, memberCurrent, refusedFileReason} from "./tools"
@@ -542,9 +542,10 @@ function requestLines(action: Action): string[] {
       return [`${done ? `I ${past}` : `I want to ${present}`} ${chatName(action.subject)} (${action.chat}).`]
     }
     case "download": {
-      const {from, file} = action
+      const {from, file, unknownServers} = action
       const source = `${from === undefined ? "" : `${safeName(from)} in `}${chatName(action.subject)} (${action.chat})`
-      return [`${done ? "I downloaded" : "I want to download"} a file from ${source}:`, `${codeSpan(oneLine(file.name))}, ${sizeText(file.size)}`]
+      const servers = unknownServers === undefined ? [] : [serversLine(unknownServers)]
+      return [`${done ? "I downloaded" : "I want to download"} a file from ${source}:`, `${codeSpan(oneLine(file.name))}, ${sizeText(file.size)}`, ...servers]
     }
   }
 }
@@ -606,6 +607,12 @@ function linkLines({plan, linkTextBytes = Infinity}: ConnectAction): string[] {
 
 function chatName(subject: Subject, showName: (name: string) => string = safeName): string {
   return subjectText({...subject, simplexName: undefined}, showName)
+}
+
+function serversLine(unknownServers: string[]): string {
+  if (unknownServers.length === 0) return "Servers: known."
+  const hosts = unknownServers.map(server => codeSpan(oneLine(serverHostname(server)))).join(", ")
+  return `Servers: ${hosts}, unknown: downloading shows ${unknownServers.length === 1 ? "it" : "them"} this computer's IP address.`
 }
 
 function sizeText(bytes: number): string {

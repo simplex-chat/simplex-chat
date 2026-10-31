@@ -70,7 +70,7 @@ Files, in a group of yours:
 
 1. In the app, create a group and copy its link. `Connect to <the group link> as yourself.` Approve the card.
 2. Send a photo to the group from the app. `Check for new messages in that group.` The message has `file` with `type: image` and `status: offered`.
-3. `Download that photo.` Card: `I want to download a file from Alice in group <name> (#N):`, with the photo's preview, the file name and its size.
+3. `Download that photo.` Card: `I want to download a file from Alice in group <name> (#N):`, with the photo's preview, the file name, its size, and `Servers: known.` when the app uploaded it to servers the agent also has. For a large video asked for right after sending it, the call waits until the upload finishes, and only then the card appears.
 4. Tap `/receive #N A`: the photo arrives in the agent control chat as a reply to the card, and the card stays pending.
 5. Tap `/approve #N A`: the call returns `status: done` and the path, in `~/.simplex-mcp/my-agent/files/#N/`.
 6. Send a document, `Download that file.`, and tap `/approve #N files` on its card: the reply is `Files approved for group <name> (#N) by Alice. /revoke #N files`, and the download completes. The next file downloads with no card; `/list` shows `, files approved by Alice`. Tap `/revoke #N files`.

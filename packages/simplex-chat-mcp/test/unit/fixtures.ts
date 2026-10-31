@@ -133,6 +133,8 @@ export class FakeChat {
   apiConnectContactViaAddress = library.apiConnectContactViaAddress
   apiConnectPreparedLink = library.apiConnectPreparedLink
   apiReceiveFile = library.apiReceiveFile
+  apiGetChatItemInfo = library.apiGetChatItemInfo
+  apiGetUserServers = library.apiGetUserServers
   commands: string[] = []
   sent: {chat: [T.ChatType, number]; messages: T.ComposedMessage[]}[] = []
   updates: {chatId: number; itemId: number; text: string}[] = []

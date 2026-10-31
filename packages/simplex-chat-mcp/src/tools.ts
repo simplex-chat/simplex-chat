@@ -9,6 +9,7 @@ import {api, core} from "simplex-chat"
 import {Action, Actions, Attachment, ConnRef, ConnectAction, DownloadAction, LeaveAction, Mode, SendAction, Standing, Subject, ToolError, isDecided} from "./actions"
 import {chatErrorOf, chatErrorText, errorText, fileStatusError, fullDomainName} from "./log"
 import {
+  Changes,
   ChatItemsWatch,
   Collected,
   FileType,
@@ -271,7 +272,7 @@ const downloadSchema: Schema = {
   properties: {
     chat: {type: "string", description: "Chat reference of the message: @N or #N."},
     item: {type: "integer", minimum: 1, description: "Item ID of a received message whose file has status offered."},
-    wait: {type: "number", minimum: 0, maximum: 86400, description: "Seconds to wait for the download after the approval. Default 60. Keep it below the host's tool-call time limit."},
+    wait: {type: "number", minimum: 0, maximum: 86400, description: "Seconds to wait for the sender's upload before the approval, and for the download after it. Default 60. Keep it below the host's tool-call time limit."},
   },
   required: ["chat", "item"],
   additionalProperties: false,
@@ -449,6 +450,8 @@ class Download {
 export class AgentTools {
   private readonly downloads = new Map<number, Download>()
   private readonly rejectedFiles = new Set<number>()
+  private readonly fileDescriptions = new Changes()
+  private describedFiles = 0
 
   constructor(private readonly agent: Agent, private readonly mode: Mode) {}
 
@@ -507,6 +510,11 @@ export class AgentTools {
     const file = chatItem_?.chatItem.file
     if (file !== undefined) return this.onFile(file)
     this.settleDownload(rcvFileTransfer.fileId, ({reject}) => reject(new Error(chatErrorText({type: "errorAgent", agentError} as T.ChatError))))
+  }
+
+  onFileDescription(): void {
+    this.describedFiles++
+    this.fileDescriptions.notify()
   }
 
   onContactConnected({contact}: CEvt.ContactConnected): void {
@@ -841,11 +849,39 @@ export class AgentTools {
     if (content.type !== "rcvMsgContent" || file === undefined) throw new ToolError(`item: item ${item} in ${chat} has no received file.`)
     const failure = fileStatusError(file.fileStatus)
     if (failure !== undefined) throw new ToolError(`item: the file of item ${item} in ${chat} failed: ${failure}`)
+    const deadline = Date.now() + (input.wait ?? downloadWait) * 1000
+    const servers = file.fileProtocol === T.FileProtocol.XFTP ? await this.fileServers(chat, item, deadline, call) : undefined
+    const unknownServers = servers === undefined ? undefined : await this.unknownServers(servers)
     if (call.signal.aborted) return undefined
     const from = chatDir.type === "groupRcv" ? chatDir.groupMember.memberProfile.displayName : undefined
     const subject = chatSubject(chatInfo)
-    const action = this.agent.actions.find(key) ?? this.agent.actions.create(key, {tool: "download", input, subject, chat, item, from, file: fileOffer(content.msgContent, file)}, this.agent.standingApprover(chatInfo, "files"))
+    const action = this.agent.actions.find(key) ?? this.agent.actions.create(key, {tool: "download", input, subject, chat, item, from, file: fileOffer(content.msgContent, file), unknownServers}, this.agent.standingApprover(chatInfo, "files"))
     return this.downloadResult(action as DownloadAction, input, call)
+  }
+
+  private async fileServers(chat: string, item: number, deadline: number, call: ToolCall): Promise<string[]> {
+    const read = async (): Promise<string[]> => (await this.agent.chat.apiGetChatItemInfo(chatType(chat), chatNumber(chat), item)).chatItemInfo.fileXftpServers
+    let described = this.describedFiles
+    let servers = await read()
+    if (servers.length > 0) return servers
+    const stopProgress = reportProgress(call, () => `The sender is uploading the file of item ${item} in ${chat}; waiting until ${utcMinutes(deadline)}.`)
+    try {
+      while (servers.length === 0 && Date.now() < deadline) {
+        if (described === this.describedFiles && !(await nextChange(this.fileDescriptions, call.signal, deadline - Date.now()))) return []
+        described = this.describedFiles
+        servers = await read()
+      }
+    } finally {
+      stopProgress()
+    }
+    if (servers.length === 0) throw new ToolError(`item: the sender has not uploaded the file of item ${item} in ${chat} yet; call download again later.`)
+    return servers
+  }
+
+  private async unknownServers(servers: string[]): Promise<string[]> {
+    const groups = await this.agent.chat.apiGetUserServers(this.agent.user.userId)
+    const known = groups.filter(({operator}) => operator === undefined || operator.enabled).flatMap(({xftpServers}) => xftpServers.map(({server}) => server.replace(/^(\w+:\/\/[^:@]*):[^@]*@/, "$1@")))
+    return servers.filter(server => !known.includes(server))
   }
 
   private async downloadResult(action: DownloadAction, input: DownloadInput, call: ToolCall): Promise<object | undefined> {
