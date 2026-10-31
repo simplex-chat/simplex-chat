@@ -316,7 +316,8 @@ chatGroupTests = do
       it "should set chat layout of channel joined via relays from link data" testChannelChatLayout
       it "should preserve owner key in link data after profile update" testChannelOwnerKeyAfterLinkUpdate
       it "should keep channel profile from link data when joining" testChannelJoinKeepsLinkProfile
-      it "subscriber should not apply link data of another channel" testChannelLinkDataOtherChannel
+      it "should apply channel profile from link data when joining" testChannelJoinAppliesLinkProfile
+      it "should check entity ID of channel link on refresh" testChannelLinkDataOtherChannel
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
       it "should block member for all (signed)" testChannelBlockMemberSigned
@@ -10675,6 +10676,31 @@ testChannelJoinKeepsLinkProfile ps =
         withCCTransaction bob $ \db ->
           DB.execute_ db "UPDATE group_profiles SET short_descr = 'relay copy'"
         memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        withCCTransaction cath (\db -> DB.query_ db "SELECT short_descr FROM group_profiles" :: IO [Only (Maybe T.Text)])
+          `shouldReturn` [Only Nothing]
+
+testChannelJoinAppliesLinkProfile :: HasCallStack => TestParams -> IO ()
+testChannelJoinAppliesLinkProfile ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        cath ##> ("/_connect plan 1 " <> shortLink)
+        cath <## "group link: ok to connect via relays"
+        groupSLinkData <- getTermLine cath
+        cath ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " direct=off " <> groupSLinkData)
+        cath <## "#team: group is prepared"
+        withCCTransaction cath $ \db ->
+          DB.execute_ db "UPDATE group_profiles SET short_descr = 'earlier copy'"
+        cath ##> "/_connect group #1"
+        cath <## "#team: connection started"
+        concurrentlyN_
+          [ cath <### ["#team: joining the group (connecting to relay bob)...", "#team: you joined the group (connected to relay bob)"],
+            do
+              bob <## "cath (Catherine): accepting request to join group #team..."
+              bob <## "#team: cath joined the group",
+            alice <### [EndsWith "introduced cath (Catherine) in the channel"]
+          ]
         withCCTransaction cath (\db -> DB.query_ db "SELECT short_descr FROM group_profiles" :: IO [Only (Maybe T.Text)])
           `shouldReturn` [Only Nothing]
 
