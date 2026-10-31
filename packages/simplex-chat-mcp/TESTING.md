@@ -11,17 +11,17 @@ All commands run in `/code/simplex-chat-6/packages/simplex-chat-mcp`. The depend
 ```
 node node_modules/typescript/bin/tsc
 node node_modules/jest/bin/jest.js test/unit     # about 10 s
-SMP_SERVER=/code/steward/node_modules/.cache/smp-server/smp-server-v7.1.0-beta.3 node node_modules/jest/bin/jest.js test/e2e      # about 3 minutes; a local smp-server on a free port
+SMP_SERVER=/code/steward/node_modules/.cache/smp-server/smp-server-v7.1.0-beta.3 XFTP_SERVER=/code/simplexmq-5/dist-newstyle/build/x86_64-linux/ghc-9.6.3/simplexmq-7.1.0.9/x/xftp-server/build/xftp-server/xftp-server node node_modules/jest/bin/jest.js test/e2e      # about 4 minutes; a local smp-server and xftp-server on free ports
 ```
 
-`node_modules` is not writable here, so the end-to-end test takes the smp-server binary from `SMP_SERVER` instead of downloading it to `node_modules/.cache`.
+`node_modules` is not writable here, so the end-to-end test takes the smp-server and xftp-server binaries from `SMP_SERVER` and `XFTP_SERVER` instead of downloading them to `node_modules/.cache`.
 
 ### On your own machine
 
 1. Check out simplex-chat master; the package is `packages/simplex-chat-mcp`.
 2. In that folder: `npm install`, then `npx tsc`. `tsc` leaves the output of deleted sources in `dist`; `npm pack` and `npm publish` delete `dist` first and build it again (script `prepack`).
 3. `node dist/cli.js serve my-agent --display-name "My Agent"`. At the first start, `simplex-chat` downloads libsimplex and its Node.js add-on, with a `Downloading ...` line each on stderr.
-4. Tests: `npx jest test/unit`; `npx jest test/e2e` downloads smp-server v7.1.0-beta.3 on Linux, and elsewhere takes `SMP_SERVER=/path/to/smp-server`.
+4. Tests: `npx jest test/unit`; `npx jest test/e2e` downloads smp-server and xftp-server v7.1.0-beta.3 on Linux, and elsewhere takes `SMP_SERVER=/path/to/smp-server XFTP_SERVER=/path/to/xftp-server`.
 
 Until the package is published, the printed hint `npx -y @simplex-chat/mcp register my-agent` stands for `node dist/cli.js register my-agent`.
 
@@ -31,7 +31,7 @@ Until the package is published, the printed hint `npx -y @simplex-chat/mcp regis
 2. In the SimpleX app, scan the QR code, or paste the link into "Connect via link". If the code does not scan, restart with `--qr-code large`. The chat "My Agent" appears with `I'm your agent. I ask here before I connect or send.` The terminal prints `Alice joined (member N) and is now an owner. The link is deleted.` and the register hint.
 3. `node dist/cli.js register my-agent`. It prints `Added to Claude Code: scope user, server simplex-my-agent.` Run it in a terminal with the same `CLAUDE_CONFIG_DIR` as the one where `claude` runs: `claude mcp add-json` writes to the config of its own environment.
 4. Add `"mcp__simplex-my-agent"` to `permissions.allow` in `~/.claude/settings.json`, so Claude Code does not prompt for each call; approval happens in the SimpleX app.
-5. Start `claude`. `/mcp` shows `simplex-my-agent` connected with 5 tools. A session started before `register` does not load the entry; start a new one.
+5. Start `claude`. `/mcp` shows `simplex-my-agent` connected with 6 tools. A session started before `register` does not load the entry; start a new one.
 
 ## Try the tools
 
@@ -65,6 +65,19 @@ A channel:
 1. `Search the directory for channels about trail running.` Take a channel link from the answers.
 2. `Connect to <the channel link> as yourself.` Card: `I want to connect to channel <name>, as myself.` Approve it; Claude gets `type: channel`, `role: observer` and the recent posts in `messages`.
 3. `Wait up to 10 minutes for a new post in that channel.` `receive` with `wait` returns the next post.
+
+Files, in a group of yours:
+
+1. In the app, create a group and copy its link. `Connect to <the group link> as yourself.` Approve the card.
+2. Send a photo to the group from the app. `Check for new messages in that group.` The message has `file` with `type: image` and `status: offered`.
+3. `Download that photo.` Card: `I want to download a file from Alice in group <name> (#N):`, with the photo's preview, the file name, its size, and `Servers: known.` when the app uploaded it to servers the agent also has. For a large video asked for right after sending it, the call waits until the upload finishes, and only then the card appears.
+4. Tap `/receive #N A`: the photo arrives in the agent control chat as a reply to the card, and the card stays pending.
+5. Tap `/approve #N A`: the call returns `status: done` and the path, in `~/.simplex-mcp/my-agent/files/#N/`.
+6. Send a document, `Download that file.`, and tap `/approve #N files` on its card: the reply is `Files approved for group <name> (#N) by Alice. /revoke #N files`, and the download completes. The next file downloads with no card; `/list` shows `, files approved by Alice`. Tap `/revoke #N files`.
+7. Send another file, `Download it.`, and tap `/reject #N A`: the call returns `status: rejected`.
+8. `Send the photo /home/alice/trail.jpg to that group, with the text "trail map".` Card: `I want to send a message to group <name>:`, `` `trail map` `` and ``attaching image `/home/alice/trail.jpg`, SIZE``, with the photo's preview. Approve it: the group gets the photo, resized to at most 261120 bytes, with its preview.
+9. `Send ~/.ssh/id_ed25519 to that group.` The call returns the error `file: /home/alice/.ssh/id_ed25519 is refused: ...`, and the agent control chat gets ``Refused to send `/home/alice/.ssh/id_ed25519` to group <name> (#N): ...``. A symbolic link to the key gets the same refusal, with the key's real path.
+10. With `ffmpeg` installed, `Send /home/alice/ride.mp4 to that group.`: the card and the message show the video's first frame and its duration; without `ffmpeg`, a gray preview and duration 0.
 
 Incognito, as a second agent, because the first one already knows the directory:
 

@@ -1,5 +1,6 @@
-import {ChatResponse, T} from "@simplex-chat/types"
+import {T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
+import {fileStatusError} from "./log"
 
 const progressInterval = 60_000
 const maxTimer = 2_147_483_647
@@ -16,9 +17,30 @@ export interface Message {
   from_type?: string
   time: string
   text: string
+  file?: MessageFile
   new: boolean
   reply_to?: {chat: string; item: number}
   mentions_me: boolean
+}
+
+export type FileType = "image" | "video" | "voice" | "file"
+
+export interface MessageFile {
+  name: string
+  size: number
+  type: FileType
+  status: "offered" | "received" | "rejected" | "failed"
+  path?: string
+  error?: string
+}
+
+export interface FileOffer {
+  fileId: number
+  name: string
+  size: number
+  type: FileType
+  preview?: string
+  duration?: number
 }
 
 export interface Sender {
@@ -123,6 +145,10 @@ export function chatNumber(chat: string): number {
   return Number(chat.slice(1))
 }
 
+export function chatType(chat: string): T.ChatType {
+  return chat.startsWith("@") ? T.ChatType.Direct : T.ChatType.Group
+}
+
 export function isMessageItem({content}: T.ChatItem): boolean {
   return content.type === "rcvMsgContent" || content.type === "sndMsgContent"
 }
@@ -135,7 +161,7 @@ export function isLive({meta}: T.ChatItem): boolean {
   return meta.itemLive === true
 }
 
-export function toMessage(chatInfo: T.ChatInfo, item: T.ChatItem, self: Sender): Message {
+export function toMessage(chatInfo: T.ChatInfo, item: T.ChatItem, self: Sender, rejectedFiles: ReadonlySet<number>): Message {
   const chat = chatRef(chatInfo) ?? ""
   const {meta, content, quotedItem} = item
   const text = content.type === "rcvMsgContent" || content.type === "sndMsgContent" ? content.msgContent.text : ""
@@ -148,9 +174,48 @@ export function toMessage(chatInfo: T.ChatInfo, item: T.ChatItem, self: Sender):
     ...(sender.type === undefined ? {} : {from_type: sender.type}),
     time: meta.itemTs,
     text,
+    ...(content.type === "rcvMsgContent" && item.file !== undefined ? {file: messageFile(content.msgContent, item.file, rejectedFiles)} : {}),
     new: isNew(item),
     ...(quotedItem?.itemId === undefined ? {} : {reply_to: {chat, item: quotedItem.itemId}}),
     mentions_me: meta.userMention,
+  }
+}
+
+function messageFile(msgContent: T.MsgContent, ciFile: T.CIFile, rejectedFiles: ReadonlySet<number>): MessageFile {
+  const {name, size, type} = fileOffer(msgContent, ciFile)
+  const file = {name, size, type}
+  const {fileId, fileSource, fileStatus} = ciFile
+  const error = fileStatusError(fileStatus)
+  if (rejectedFiles.has(fileId)) return {...file, status: "rejected"}
+  if (error !== undefined) return {...file, status: "failed", error}
+  if (fileStatus.type === "rcvComplete") return {...file, status: "received", ...(fileSource === undefined ? {} : {path: fileSource.filePath})}
+  return {...file, status: "offered"}
+}
+
+export function fileOffer(msgContent: T.MsgContent, {fileId, fileName, fileSize}: T.CIFile): FileOffer {
+  const file = {fileId, name: fileName, size: fileSize}
+  switch (msgContent.type) {
+    case "image":
+      return {...file, type: "image", preview: msgContent.image}
+    case "video":
+      return {...file, type: "video", preview: msgContent.image, duration: msgContent.duration}
+    case "voice":
+      return {...file, type: "voice", duration: msgContent.duration}
+    default:
+      return {...file, type: "file"}
+  }
+}
+
+export function fileContent({type, preview = "", duration = 0}: Pick<FileOffer, "type" | "preview" | "duration">, text: string): T.MsgContent {
+  switch (type) {
+    case "image":
+      return {type, text, image: preview}
+    case "video":
+      return {type, text, image: preview, duration}
+    case "voice":
+      return {type, text, duration}
+    case "file":
+      return {type, text}
   }
 }
 
@@ -169,25 +234,19 @@ function itemSender(chatInfo: T.ChatInfo, chatDir: T.CIDirection, self: Sender):
   }
 }
 
-export async function chatCommand<R>(chat: api.ChatApi, cmd: string, type: string): Promise<R> {
-  const r: ChatResponse = await chat.sendChatCmd(cmd)
-  if ((r.type as string) !== type) throw new api.ChatCommandError(`unexpected response to ${cmd.split(" ")[0]}`, r)
-  return r as unknown as R
-}
-
-export async function getChat(chat: api.ChatApi, ref: string, pagination: string): Promise<T.AChat> {
-  return (await chatCommand<{chat: T.AChat}>(chat, `/_get chat ${ref} ${pagination}`, "apiChat")).chat
+export async function getChat(chat: api.ChatApi, ref: string, pagination: T.ChatPagination | number): Promise<T.AChat> {
+  return chat.apiGetChat(chatType(ref), chatNumber(ref), pagination)
 }
 
 export async function markRead(chat: api.ChatApi, ref: string, itemIds: number[]): Promise<void> {
-  if (itemIds.length > 0) await chatCommand(chat, `/_read chat items ${ref} ${itemIds.join(",")}`, "itemsReadForChat")
+  if (itemIds.length > 0) await chat.apiChatItemsRead(chatType(ref), chatNumber(ref), itemIds)
 }
 
 export async function unreadItems(chat: api.ChatApi, ref: string, {chatInfo, chatStats}: T.AChat, messages: number): Promise<{chatInfo: T.ChatInfo; items: T.ChatItem[]; unreadRest: number}> {
   if (chatStats.unreadCount === 0) return {chatInfo, items: [], unreadRest: 0}
-  const items = (await getChat(chat, ref, `around=${chatStats.minUnreadItemId} count=0`)).chatItems
+  const items = (await getChat(chat, ref, {type: "around", chatItemId: chatStats.minUnreadItemId, count: 0})).chatItems
   for (let last = items.at(-1); last !== undefined && items.filter(isNewMessage).length < messages;) {
-    const page = (await getChat(chat, ref, `after=${last.meta.itemId} count=${pageSize}`)).chatItems
+    const page = (await getChat(chat, ref, {type: "after", chatItemId: last.meta.itemId, count: pageSize})).chatItems
     items.push(...page)
     last = page.length === pageSize ? page.at(-1) : undefined
   }
@@ -261,9 +320,4 @@ export function validName(name: string): string {
 
 export function viewName(name: string): string {
   return /\s/u.test(name) || /\p{P}$/u.test(name) ? `'${name}'` : name
-}
-
-export function fullDomainName({nameTLD, domain, subDomain}: T.SimplexDomain): string {
-  const tld = nameTLD === T.SimplexTLD.Simplex ? ".simplex" : nameTLD === T.SimplexTLD.Testing ? ".testing" : ""
-  return `${[...subDomain].reverse().concat(domain).join(".")}${tld}`
 }

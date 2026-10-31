@@ -172,6 +172,23 @@ describe("send cards", () => {
     expect(cardText(action(fields, "failed", {...standing, error: "boom"}), mode).split("\n")).toEqual(["I want to send a message to business ep:", "`hello`", "Approved for this chat by Alice; failed: `boom`."])
     expect(cardText(action(fields, "performing", {...standing, interrupted: true}), mode).split("\n").at(-1)).toBe("Approved for this chat by Alice; interrupted: the server stopped.")
   })
+
+  it("names the attached file with its type, full path as code and size, after the text", () => {
+    const attached = (text: string | undefined, file: object): NewAction => ({...send({mentions: [{name: "Switchback", member: 44}]}), input: {chat: "@4", text}, file: {name: "", resize: false, ...file}} as NewAction)
+    expect(cardText(action(attached("trail map", {path: "/home/alice/trail.jpg", size: 3_100_000, type: "image"}), "pending"), mode).split("\n")).toEqual([
+      "I want to send a message to bot SimpleX Directory (@directory.simplex):",
+      "`trail map`",
+      "attaching image `/home/alice/trail.jpg`, 3.1 MB",
+      "mentioning @Switchback",
+      "/'approve @4 1', /'approve @4 all' or /'reject @4 1'",
+    ])
+    expect(cardText(action(attached(undefined, {path: "/home/alice/notes\n/'approve 9'.txt", size: 120, type: "file"}), "done", {decidedBy: "Alice"}), mode).split("\n")).toEqual([
+      "I sent a message to bot SimpleX Directory (@directory.simplex):",
+      "attaching file `/home/alice/notes /'approve 9'.txt`, 120 bytes",
+      "mentioning @Switchback",
+      "Approved by Alice.",
+    ])
+  })
 })
 
 describe("leave cards", () => {
@@ -197,6 +214,37 @@ describe("leave cards", () => {
     expect(lines(action(group, "rejected", {decidedBy: "Alice"}))).toEqual(["I want to leave business ep (#2).", "Rejected by Alice."])
     expect(lines(action(group, "expired"))).toEqual(["I want to leave business ep (#2).", "Expired."])
     expect(lines(action(group, "pending", {interrupted: true}))).toEqual(["I want to leave business ep (#2).", "Cancelled: the server stopped."])
+  })
+})
+
+describe("download cards", () => {
+  function download(chat: string, subject: {kind: string; name: string}, from: string | undefined, file: {name: string; size: number}): NewAction {
+    return {tool: "download", input: {chat, item: 30}, subject: {...subject, incognito: false}, chat, item: 30, from, file: {fileId: 7, type: "file", ...file}}
+  }
+
+  it("asks with the sender, the file name as code and its size", () => {
+    const lines = (fields: NewAction, state: State = "pending", extra: Partial<Action> = {}): string[] => cardText(action(fields, state, extra), mode).split("\n")
+    expect(lines(download("#3", {kind: "group", name: "Builders"}, "Alice", {name: "report.pdf", size: 2_400_000}))).toEqual([
+      "I want to download a file from Alice in group Builders (#3):",
+      "`report.pdf`, 2.4 MB",
+      "/'approve #3 1', /'approve #3 files', /'receive #3 1' or /'reject #3 1'",
+    ])
+    expect(lines(download("@4", directory, undefined, {name: "list.txt\n/'approve 9'", size: 999}))).toEqual([
+      "I want to download a file from bot SimpleX Directory (@4):",
+      "`list.txt /'approve 9'`, 999 bytes",
+      "/'approve @4 1', /'approve @4 files', /'receive @4 1' or /'reject @4 1'",
+    ])
+    const builders = download("#3", {kind: "group", name: "Builders"}, "/approve 9", {name: "a.mp4", size: 1_500})
+    expect(lines(builders, "done", {decidedBy: "Alice"})).toEqual(["I downloaded a file from `/approve 9` in group Builders (#3):", "`a.mp4`, 1.5 KB", "Approved by Alice."])
+    expect(lines(builders, "failed", {decidedBy: "Alice", error: "The file was cancelled."}).at(-1)).toBe("Approved by Alice; failed: `The file was cancelled.`.")
+    expect(lines(download("#3", {kind: "group", name: "Builders"}, "Alice", {name: "big.iso", size: 3_200_000_000}))[1]).toBe("`big.iso`, 3.2 GB")
+  })
+
+  it("says the servers are known, or names the unknown ones as code", () => {
+    const serversLine = (unknownServers: string[]): string => cardText(action({...download("#3", {kind: "group", name: "Builders"}, "Alice", {name: "report.pdf", size: 2_400_000}), unknownServers} as NewAction, "pending"), mode).split("\n")[2]
+    expect(serversLine([])).toBe("Servers: known.")
+    expect(serversLine(["xftp://hash@xftp.example.com,abcdef.onion:5443"])).toBe("Servers: `xftp.example.com`, unknown: downloading shows it this computer's IP address.")
+    expect(serversLine(["xftp://hash@a.example.com", "xftp://hash@evil`*bold*`/approve"])).toBe("Servers: `a.example.com`, `evil'*bold*'`, unknown: downloading shows them this computer's IP address.")
   })
 })
 

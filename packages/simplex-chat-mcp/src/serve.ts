@@ -8,7 +8,7 @@ import {Control, controlDataOf, createControlChat, findControlGroup, isControlEv
 import {acquireLock, createDataFolder, releaseLock, serverToken, writeHeadersFile, writeServerFile} from "./files"
 import {startHttp, stopHttp} from "./http"
 import {ExitError, log, logError, shellPath} from "./log"
-import {ChatItemsWatch, chatCommand} from "./messages"
+import {ChatItemsWatch} from "./messages"
 import {AgentTools, instructions} from "./tools"
 
 export const version: string = require("../package.json").version
@@ -87,7 +87,8 @@ export async function startServer(options: ServeOptions): Promise<RunningServer>
 async function startAgent(chat: api.ChatApi, options: ServeOptions, token: string): Promise<RunningServer> {
   const {name, data, port, approve, expireHours} = options
   const created = (await chat.apiGetActiveUser()) ?? (await chat.apiCreateActiveUser({displayName: options.displayName ?? name, fullName: "", peerType: T.ChatPeerType.Agent}))
-  await chatCommand(chat, "/network socks=off smp-proxy=always smp-proxy-fallback=protected", "networkConfig")
+  const networkConfig = await chat.apiGetNetworkConfig()
+  await chat.apiSetNetworkConfig({...networkConfig, smpProxyMode: T.SMPProxyMode.Always, smpProxyFallback: T.SMPProxyFallback.AllowProtected})
   const events = bufferEvents(chat)
   await chat.startChat()
   const user = await updatedUser(chat, created, options.displayName)
@@ -101,7 +102,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
     perform: (action, signal) => tools.perform(action, signal),
   })
   const watch = new ChatItemsWatch()
-  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: chatInfo => control.standingApprover(chatInfo)}, approve)
+  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), refusedFile: (path, chatInfo, chat) => control.refusedFile(path, chatInfo, chat), data}, approve)
   const control: Control = new Control(chat, group, {displayName, owners: options.owners, registerHint: registerHint(options), qrCode: options.qrCode}, actions, tools)
   await control.load()
   const factory = (): McpServer => {
@@ -132,6 +133,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
         watch.deliver(event.chatItems)
         return
       case "chatItemUpdated":
+        tools.onFile(event.chatItem.chatItem.file)
         return watch.update(event.chatItem)
       case "chatItemsDeleted":
         return watch.remove(event.chatItemDeletions.map(({deletedChatItem}) => deletedChatItem))
@@ -139,6 +141,16 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
         return tools.onContactConnected(event)
       case "userJoinedGroup":
         return tools.onUserJoinedGroup(event)
+      case "rcvFileComplete":
+      case "rcvFileSndCancelled":
+        return tools.onFile(event.chatItem.chatItem.file)
+      case "rcvFileError":
+        return tools.onFileError(event)
+      case "rcvFileDescrReady":
+        return tools.onFileDescription()
+      case "sndFileCompleteXFTP":
+      case "sndFileError":
+        return tools.onSentFile(event.fileTransferMeta)
     }
     if (isControlEvent(event, control.groupId)) {
       controlEvents = controlEvents.then(() => control.onEvent(event)).catch(error => logError(`${event.type} in the agent control chat`, error))

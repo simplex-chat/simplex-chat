@@ -8,4 +8,4 @@
 
 > **EventSubscribers** = `{ [K in CEvt.Tag]?: EventSubscriberFunc<K> }`
 
-Defined in: [src/api.ts:52](../api.ts#L52)
+Defined in: [src/api.ts:55](../api.ts#L55)

@@ -54,7 +54,7 @@ Approve the connection in "My Agent", and accept the request in the app if it as
 
 ## Safety
 
-- The agent asks in "My Agent" before it connects, sends or leaves; you approve or reject.
+- The agent asks in "My Agent" before it connects, sends a message or a file, downloads a file or leaves; you approve or reject.
 - `all` approves every message to one chat; `/revoke` ends it.
 - Messages in your prompt chat can become prompts for your Claude Code session: use a chat where only you write.
 - The agent runs on your computer and has no address in SimpleX Network, so nobody can contact it first.
