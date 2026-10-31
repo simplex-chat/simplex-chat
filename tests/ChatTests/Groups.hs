@@ -349,7 +349,7 @@ chatGroupTests = do
         it "role transitions update the roster (mod <-> admin, admin -> non-roster)" testChannelRoleTransitionsUpdateRoster
         it "malicious relay cannot downgrade or re-key a roster-established moderator via XGrpMemNew" testChannelRelayCannotDowngradeRosterMember
         it "malicious relay cannot forge a privileged member via XGrpMemNew forwarded as the owner" testChannelRelayCannotForgePrivilegedMember
-        it "owner promotion with a different member key keeps the stored key and role" testChannelPromotionDifferentKeyKeepsRole
+        it "owner promotion with a different member key keeps the member role" testChannelPromotionDifferentKeyKeepsRole
         it "owner promotion pins the key of a member known without a key" testChannelPromotionPinsMemberKey
         it "should add relay to channel with roster (relay caches roster before joinable)" testChannelAddRelayWithRoster
         it "roster blob spanning multiple chunks reassembles" testChannelRosterMultipartReassembly

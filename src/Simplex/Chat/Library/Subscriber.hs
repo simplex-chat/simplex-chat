@@ -3462,7 +3462,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           let allowCreate = useRelays' gInfo && senderRole == GROwner && isRosterRole memRole && isJust memberKey_
           withStore' (\db -> runExceptT $ getCreateUnknownGMByMemberId db cxt user gInfo memId (nameFromMemberId memId) defaultRole allowCreate) >>= \case
             Right (Just (member, created))
-              -- allowCreate ensured the event carries its key: keep a different stored key, else pin key + role
+              -- allowCreate ensured the event carries its key: keep a different stored key, else pin the key if absent and set the role
               | allowCreate, Just (MemberKey pubKey) <- memberKey_ -> case memberPubKey member of
                   Just k | k /= pubKey -> messageError ("x.grp.mem.role: member key conflict, keeping trusted key, memberId=" <> safeDecodeUtf8 (strEncode memId)) $> Nothing
                   _ ->
