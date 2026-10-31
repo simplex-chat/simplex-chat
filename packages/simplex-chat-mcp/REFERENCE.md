@@ -2,7 +2,7 @@
 
 [README](README.md) has the short version.
 
-`@simplex-chat/mcp` is a local server that gives an AI agent its own presence on the SimpleX network. The agent connects to people, bots, groups, channels and directories, as itself or incognito, sends messages and receives all the responses, with the files people send it. Bots tell it which commands they understand, so every bot on the network becomes a service the agent can use. You supervise the agent from its control chat in SimpleX: it asks there before it connects, sends, downloads a file or leaves, and you approve or reject from your phone with one tap, or approve all its messages to a chat you trust, or all files from it. Six tools cover it: `connect`, `send`, `receive`, `download`, `list`, `leave`. Setup is one command to start the agent, a scan to join its control chat, and one command to add it to Claude Code.
+`@simplex-chat/mcp` is a local server that gives an AI agent its own presence on the SimpleX network. The agent connects to people, bots, groups, channels and directories, as itself or incognito, sends messages and files, and receives all the responses, with the files people send it. Bots tell it which commands they understand, so every bot on the network becomes a service the agent can use. You supervise the agent from its control chat in SimpleX: it asks there before it connects, sends, downloads a file or leaves, and you approve or reject from your phone with one tap, or approve all its messages to a chat you trust, or all files from it. Six tools cover it: `connect`, `send`, `receive`, `download`, `list`, `leave`. Setup is one command to start the agent, a scan to join its control chat, and one command to add it to Claude Code.
 
 What it isn't:
 - **Not a directory or a search service.** The agent reaches chats through links, SimpleX names and the directories it connects to.
@@ -12,7 +12,6 @@ What it isn't:
 - **Not in v0.1:**
   - an address for the agent: nobody can contact it first;
   - your approval of incoming messages;
-  - sending files;
   - a Claude Code plugin or channel;
   - registration in other hosts.
 
@@ -221,7 +220,16 @@ My Agent: I want to download a file from Alice in group Builders (#3):
           /approve #3 7, /approve #3 files, /receive #3 7 or /reject #3 7
 ```
 
-The download card of an image or a video shows the sender's preview.
+The download card of an image or a video shows the sender's preview. A send with a file names the file's type, full path and size after the text, and shows an image's or video's preview:
+
+```
+My Agent: I want to send a message to group Builders:
+          `The trail map.`
+          attaching image `/home/alice/trail.jpg`, 3.1 MB
+          /approve #3 8, /approve #3 all or /reject #3 8
+```
+
+When the agent asks to send a private key or a file of the server's data folder, the server refuses it and posts ``Refused to send `/home/alice/.ssh/id_ed25519` to group Builders (#3): private keys and the server's own files are not sent.``
 
 After the decision the card is edited, and its commands removed:
 
@@ -278,7 +286,7 @@ Six tools:
 | Tool | What it does |
 |---|---|
 | `connect` | Joins a contact, bot, business, group or channel by a link or a SimpleX name, as the agent's profile or incognito. Returns the chat, its profile, welcome message, the commands a bot advertises, and the messages so far. |
-| `send` | Sends a message and returns every message received in that chat after it, until none arrives for `idle` seconds (30 by default). A directory bot's search results arrive this way. |
+| `send` | Sends a message, with a file of this computer when asked, and returns every message received in that chat after it, until none arrives for `idle` seconds (30 by default). A directory bot's search results arrive this way. |
 | `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked. |
 | `download` | Downloads the file of a received message to the data folder and returns its full path. |
 | `list` | Lists the agent's chats with unread counts and `approved: true` for chats approved for all messages, and its actions without a result. |
@@ -287,6 +295,14 @@ Six tools:
 A `send` to a chat that `list` shows with `connected: false` is refused before any card. A `send` is refused with `text: too long for its approval card; shorten it.` when its card, in its longest outcome form, would exceed 15000 bytes in the SimpleX message, which holds at most 15602; a text of many lines or multi-byte characters reaches it below 12000 characters.
 
 A received message with a file has a `file` field: its name, size, type (image, video, voice or file) and status. Status `offered` means `download` can fetch it; `received` comes with the path; `rejected` means you rejected its download, or it expired; `failed` comes with the error. A `download` that runs past its `wait` returns status `performing`, and the same call again picks it up.
+
+`send` with `file`, an absolute path, sends that file with `text` as its caption:
+- `.jpg`, `.jpeg` and `.png` as an image, resized by the SimpleX core to the size the apps send, with a preview the core makes;
+- `.gif` and `.webp` as an image, unchanged, with a gray preview;
+- `.mp4` and `.mov` as a video, unchanged, with the first frame as its preview and its duration when `ffmpeg` and `ffprobe` are installed, otherwise a gray preview;
+- other files as a file, unchanged; `as: "file"` sends an image or video this way too.
+
+The server checks the file by its real path, after symbolic links, and refuses files under `~/.ssh` and `~/.gnupg`, files named `id_*`, `*.pem`, `*.key`, `*.p12` and `*.pfx`, and the files of its data folder except downloads. The card and the message show the real path. A file whose real path or size changed before the approval is not sent: the action fails.
 
 Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in [`PLAN.md`](PLAN.md), section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
 
@@ -370,6 +386,7 @@ register options:
   server.json        name, port and expiry of the server, read by register
   lock               PID of the running server
   files/#3/          files downloaded from chat #3; the core makes each name unique
+  files/sent/        resized copies of the images the agent sends; a copy sent to a group is deleted after the upload
 ```
 
 The folder is readable only by the user: every start sets its mode to 0700, except on Windows.
@@ -387,7 +404,8 @@ One server runs per data folder: a second one exits, because two processes on on
 - Names written by peers are folded to one line, with control and format characters replaced by spaces, in the terminal and in the agent control chat; there, a name that is not a valid display name is shown as code.
 - Without `--owners`, whoever opens the link first becomes an owner. The link works once.
 - With `--owners`, only the listed owners approve.
-- After `/approve #N all`, the agent sends to that chat without asking; `/revoke #N` ends it.
+- After `/approve #N all`, the agent sends to that chat without asking, files included; `/revoke #N` ends it.
+- The server refuses to send private keys and its own files; other files the agent can read are sent after approval.
 - After `/approve #N files`, the agent downloads every file sent to that chat without asking; `/revoke #N files` ends it.
 - Peers of a chat connected as the agent see its profile; peers of an incognito chat see a random profile made for that chat only.
 - The agent has no address, so nobody can contact it first.

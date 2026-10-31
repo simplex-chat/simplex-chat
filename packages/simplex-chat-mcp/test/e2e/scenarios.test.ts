@@ -327,6 +327,49 @@ test("files: a received image downloaded after the approval, /receive, /reject a
   expect(await lastControlItem()).toBe(beforeThird)
 }, 600_000)
 
+test("send with a file: a PNG reaches the group as an image with a preview, and a private key is refused", async () => {
+  const alice = await personIn("send-file", "Alice")
+  const agent = await agentIn("send-file")
+  await agent.start()
+  const controlId = await joinAsOwner(alice)
+  const trail = await alice.chat.apiNewGroup(alice.user.userId, {displayName: "Trail", fullName: ""})
+  const trailLink = await alice.chat.apiCreateGroupLink(trail.groupId, T.GroupMemberRole.Member)
+  const joinCard = received(alice.chat, textStarts("I want to connect to group Trail, as myself."))
+  const joining = agent.client.tool("connect", {target: trailLink, idle: 2})
+  await approve(alice, controlId, joinCard)
+  const group = (await joining).result.chat as string
+
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAABAAAAAJCAAAAAAeQfPuAAAAD0lEQVR42mNoQAMMg0QAAIXUSAG1CN3UAAAAAElFTkSuQmCC", "base64")
+  const image = join(dir, "send-file", "trail.png")
+  writeFileSync(image, png)
+  const sendCard = received(alice.chat, textStarts("I want to send a message to group Trail:"))
+  const delivered = received(alice.chat, ci => ci.chatInfo.type === "group" && ci.chatInfo.groupInfo.groupId === trail.groupId && ci.chatItem.file !== undefined)
+  const sending = agent.client.tool("send", {chat: group, text: "trail map", file: image, idle: 1, wait: 2})
+  const card = await sendCard
+  const n = cardNumber(card)
+  expect(lines(card)).toEqual(["I want to send a message to group Trail:", "`trail map`", `attaching image \`${image}\`, ${png.length} bytes`, `/'approve ${group} ${n}', /'approve ${group} all' or /'reject ${group} ${n}'`])
+  expect(card.chatItem.content).toMatchObject({msgContent: {type: "image", image: expect.stringMatching(/^data:image\/(jpg|png);base64,/)}})
+  await alice.chat.apiSendTextMessage([T.ChatType.Group, controlId], `/approve ${group} ${n}`)
+  expect((await sending).result).toMatchObject({action: n, status: "done", chat: group})
+  const message = await delivered
+  expect(message.chatItem.content).toMatchObject({msgContent: {type: "image", text: "trail map", image: expect.stringMatching(/^data:image\/(jpg|png);base64,/)}})
+  const {fileId, fileSize} = message.chatItem.file!
+  expect(fileSize).toBeLessThanOrEqual(261120)
+  const copy = join(dir, "send-file", "received.png")
+  const complete = alice.chat.wait("rcvFileComplete", ({chatItem}) => chatItem.chatItem.file?.fileId === fileId, timeout)
+  await alice.chat.apiReceiveFile(fileId, copy)
+  expect(await complete).toBeDefined()
+  expect(readFileSync(copy).length).toBe(fileSize)
+
+  const key = join(dir, "send-file", "id_ed25519")
+  writeFileSync(key, "key")
+  const refusal = received(alice.chat, textStarts("Refused to send"))
+  const reason = "private keys and the server's own files are not sent."
+  expect(await agent.client.tool("send", {chat: group, file: key})).toMatchObject({isError: true, text: `file: ${key} is refused: ${reason}`})
+  expect((await refusal).chatItem.meta.itemText).toBe(`Refused to send \`${key}\` to group Trail (${group}): ${reason}`)
+  expect(logLines).toContain(`Refused to send ${key} to group Trail (${group}): ${reason}`)
+}, 600_000)
+
 test("a business address, incognito, with a message", async () => {
   const alice = await personIn("business", "Alice")
   const ridgeline = await botIn("business", "Ridgeline", {businessAddress: true, welcomeMessage: "Welcome to Ridgeline."})

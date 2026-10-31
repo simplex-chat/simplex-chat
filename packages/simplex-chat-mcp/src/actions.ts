@@ -1,5 +1,5 @@
 import {errorText, log, logError, oneLine} from "./log"
-import {Changes, Collected, FileOffer, ToolCall, nextChange, reportProgress, utcMinutes} from "./messages"
+import {Changes, Collected, FileOffer, FileType, ToolCall, nextChange, reportProgress, utcMinutes} from "./messages"
 import type {ConnectInput, DownloadInput, LeaveInput, PlanSummary, SendInput} from "./tools"
 
 export type Mode = "requests" | "host"
@@ -64,11 +64,22 @@ export interface ConnectAction extends ActionRecord {
   linkTextBytes?: number
 }
 
+export interface Attachment {
+  readonly path: string
+  readonly name: string
+  readonly size: number
+  readonly type: FileType
+  readonly resize: boolean
+  readonly preview?: string
+  readonly duration?: number
+}
+
 export interface SendAction extends ActionRecord {
   readonly tool: "send"
   readonly input: SendInput
   readonly subject: Subject
   readonly chat: string
+  readonly file?: Attachment
   readonly replyTo?: {from: string; text: string}
   readonly mentions: {name: string; member: number}[]
   readonly responses: Collected

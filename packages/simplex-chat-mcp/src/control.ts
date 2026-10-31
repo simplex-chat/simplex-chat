@@ -3,9 +3,9 @@ import * as qrcode from "qrcode"
 import {api, core} from "simplex-chat"
 import {Action, ActionHooks, Actions, ConnectAction, DownloadAction, Standing, Subject, ToolError, leaveVerbs, subjectText, summary} from "./actions"
 import {ExitError, chatErrorOf, errorText, log, logError, oneLine, shellWord} from "./log"
-import {FileOffer, chatNumber, chatRef, isChatRef, utcMinutes, validName, viewName} from "./messages"
+import {chatNumber, chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "./messages"
 import type {OwnerEntry, QrCodeSize} from "./serve"
-import {AgentTools, chatSubject, isActive, isConnected, memberCurrent} from "./tools"
+import {AgentTools, chatSubject, isActive, isConnected, memberCurrent, refusedFileReason} from "./tools"
 
 const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "pending", label: "Pending actions"},
@@ -145,6 +145,12 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const content = await this.cardContent(action)
     if (action.card === undefined) await this.postMessage({msgContent: content, mentions: {}})
     else await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, action.card, content, false)
+  }
+
+  refusedFile(path: string, chatInfo: T.ChatInfo, chat: string): void {
+    const refused = (shown: Shown, shownPath: string): string => `Refused to send ${shownPath} to ${chatName(chatSubject(chatInfo), shown.name)} (${chat}): ${refusedFileReason}.`
+    log(refused(inLog, oneLine(path)))
+    if (!this.actions.lost) this.post(refused(inChat, codeSpan(oneLine(path)))).catch(error => logError("refused file", error))
   }
 
   onMessage(ci: T.AChatItem): void {
@@ -388,7 +394,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
 
   private async cardContent(action: Action): Promise<T.MsgContent> {
     const text = cardText(action, this.actions.mode)
-    const content = action.tool === "download" ? fileContent(action.file, text) : undefined
+    const file = action.tool === "download" || action.tool === "send" ? action.file : undefined
+    const content = file === undefined ? undefined : fileContent(file, text)
     if (content?.type !== "image" && content?.type !== "video") return {type: "text", text}
     action.cardImage ??= await this.fittedImage(action, content)
     return action.cardImage === "" ? {type: "text", text} : {...content, image: action.cardImage}
@@ -523,10 +530,11 @@ function requestLines(action: Action): string[] {
       return [`${verb} to ${subject}, ${action.subject.incognito ? "incognito" : "as myself"}.`, ...linkLines(action), ...message]
     }
     case "send": {
-      const {replyTo, mentions} = action
+      const {file, replyTo, mentions} = action
+      const attaching = file === undefined ? [] : [`attaching ${file.type} ${codeSpan(oneLine(file.path))}, ${sizeText(file.size)}`]
       const reply = replyTo === undefined ? [] : [`replying to ${safeName(replyTo.from)}: ${codeSpan([...replyTo.text.replace(/\s+/g, " ")].slice(0, 100).join(""))}`]
       const mentioning = mentions.length === 0 ? [] : [`mentioning ${mentions.map(({name}) => mentionText(name)).join(", ")}`]
-      return [`${done ? "I sent" : "I want to send"} a message to ${subject}${action.subject.incognito ? ", where I am incognito" : ""}:`, ...codeLines(action.input.text), ...reply, ...mentioning]
+      return [`${done ? "I sent" : "I want to send"} a message to ${subject}${action.subject.incognito ? ", where I am incognito" : ""}:`, ...codeLines(action.input.text), ...attaching, ...reply, ...mentioning]
     }
     case "leave": {
       const {present, past} = leaveVerbs(action)
@@ -602,19 +610,6 @@ function chatName(subject: Subject, showName: (name: string) => string = safeNam
 function sizeText(bytes: number): string {
   const exponent = Math.min(Math.floor(Math.log10(Math.max(bytes, 1)) / 3), 3)
   return exponent === 0 ? `${bytes} bytes` : `${(bytes / 1000 ** exponent).toFixed(1)} ${["KB", "MB", "GB"][exponent - 1]}`
-}
-
-function fileContent({type, preview = "", duration = 0}: FileOffer, text: string): T.MsgContent {
-  switch (type) {
-    case "image":
-      return {type, text, image: preview}
-    case "video":
-      return {type, text, image: preview, duration}
-    case "voice":
-      return {type, text, duration}
-    case "file":
-      return {type, text}
-  }
 }
 
 function codeLines(text: string | undefined): string[] {

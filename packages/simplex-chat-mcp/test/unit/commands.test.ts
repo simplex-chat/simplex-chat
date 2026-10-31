@@ -1,4 +1,5 @@
-import {rmSync} from "fs"
+import {mkdtempSync, realpathSync, rmSync, writeFileSync} from "fs"
+import {tmpdir} from "os"
 import {join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {ChatEvent, T} from "@simplex-chat/types"
@@ -45,7 +46,7 @@ function agentChats(): FakeChat {
 }
 
 async function controlWith(chat: FakeChat, actions: Actions, owners?: OwnerEntry[], mode: Mode = "requests"): Promise<{control: Control; tools: AgentTools}> {
-  const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), data}, mode)
+  const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), refusedFile: (path, chatInfo, chat) => control.refusedFile(path, chatInfo, chat), data}, mode)
   const control: Control = new Control(chat.api(), group(10, "agent"), {displayName: "agent", owners, registerHint: "hint", qrCode: "small"}, actions, tools)
   await control.load()
   return {control, tools}
@@ -406,6 +407,57 @@ describe("downloads in the agent control chat", () => {
   })
 })
 
+describe("files sent by the agent in the agent control chat", () => {
+  const refusal = "private keys and the server's own files are not sent."
+  const flushed = (): Promise<void> => new Promise(resolve => setImmediate(resolve))
+  let files: string
+
+  beforeEach(() => {
+    files = realpathSync(mkdtempSync(join(tmpdir(), "simplex-mcp-files-")))
+  })
+
+  afterEach(() => rmSync(files, {recursive: true, force: true}))
+
+  it("posts the refusal of a private key with the path as code, and logs it on one line", async () => {
+    const lines: string[] = []
+    jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
+    const chat = agentChats()
+    const {tools} = await controlWith(chat, actionsWith("requests", fakeHooks()))
+    const key = join(files, "id_rsa")
+    writeFileSync(key, "key")
+    const result = await tools.call("send", {chat: "@4", file: key}, signal().call)
+    expect((result!.content[0] as {text: string}).text).toBe(`file: ${key} is refused: ${refusal}`)
+    await flushed()
+    expect(lines.at(-1)).toBe(`Refused to send ${key} to bot SimpleX Directory (@4): ${refusal}`)
+    expect(chat.sent.map(({chat: [, id], messages: [{msgContent}]}) => [id, msgContent.text])).toEqual([[10, `Refused to send \`${key}\` to bot SimpleX Directory (@4): ${refusal}`]])
+  })
+
+  it("shows the image's preview on the send card", async () => {
+    const preview = "data:image/jpg;base64,/9j/preview"
+    jest.spyOn(core, "resizeImage").mockResolvedValue(preview)
+    const fake = fakeHooks()
+    const actions: Actions = new Actions("requests", 23, 1, {...fake.hooks, refusal: action => control.refusal(action), postCard: action => control.postCard(action), outcome: action => control.outcome(action)})
+    const chat = agentChats()
+    const {control, tools} = await controlWith(chat, actions)
+    const photo = join(files, "trail.jpg")
+    writeFileSync(photo, "x".repeat(3_100_000))
+    const {controller, call} = signal()
+    const sending = tools.call("send", {chat: "@4", text: "trail map", file: photo}, call)
+    while (chat.sent.length === 0) await flushed()
+    expect(chat.sent[0]).toEqual({
+      chat: [T.ChatType.Group, 10],
+      messages: [
+        {
+          msgContent: {type: "image", text: `I want to send a message to bot SimpleX Directory:\n\`trail map\`\nattaching image \`${photo}\`, 3.1 MB\n/'approve @4 1', /'approve @4 all' or /'reject @4 1'`, image: preview},
+          mentions: {},
+        },
+      ],
+    })
+    controller.abort()
+    expect(await sending).toBeUndefined()
+  })
+})
+
 describe("leaving a chat at an owner's command", () => {
   it("leaves a group at once, rejects its pending actions, and replies and logs who asked", async () => {
     const lines: string[] = []
@@ -514,7 +566,7 @@ describe("command menu", () => {
     const chat = agentChats()
     const actions = actionsWith("requests", fakeHooks())
     const old = group(10, "agent", self, {groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: [{type: "command", keyword: "approve", label: "Approve", params: "N"}]}}})
-    const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: () => undefined, data}, "requests")
+    const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: () => undefined, refusedFile: () => undefined, data}, "requests")
     await new Control(chat.api(), old, {displayName: "agent", registerHint: "hint", qrCode: "small"}, actions, tools).load()
     expect(chat.profiles).toEqual([{groupId: 10, groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: menu}}}])
     const current = group(10, "agent", self, {groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: menu}}})

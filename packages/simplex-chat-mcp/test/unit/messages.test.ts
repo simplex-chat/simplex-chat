@@ -1,9 +1,11 @@
-import {existsSync, rmSync} from "fs"
-import {join} from "path"
+import * as childProcess from "child_process"
+import {chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync} from "fs"
+import * as os from "os"
+import {basename, dirname, join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
-import {Actions, Standing} from "../../src/actions"
+import {Action, Actions, SendAction, Standing} from "../../src/actions"
 import {cardText} from "../../src/control"
 import {ChatItemsWatch, Collected, awaitResponses, toMessage} from "../../src/messages"
 import {AgentTools, classifyPlan} from "../../src/tools"
@@ -169,7 +171,7 @@ function textOf(result: CallToolResult | undefined): string {
 
 function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined): {tools: AgentTools; watch: ChatItemsWatch} {
   const watch = new ChatItemsWatch()
-  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, data}, "requests"), watch}
+  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, refusedFile: () => undefined, data}, "requests"), watch}
 }
 
 describe("receive", () => {
@@ -517,6 +519,170 @@ describe("send", () => {
     actions.approve(actions.get(1)!, "Alice")
     expect((await sending)!.structuredContent).toMatchObject({status: "done", responses: [], more: 0})
     expect(chat.sent[0].messages[0]).toEqual({msgContent: {type: "text", text: "@'Ana Lu' hi @Switchback, any news?"}, mentions: {Switchback: 44, "Ana Lu": 45}, quotedItemId: undefined})
+  })
+})
+
+describe("send with a file", () => {
+  const fixedPreview = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAJCAAAAAAeQfPuAAAAD0lEQVR42mNoQAMMg0QAAIXUSAG1CN3UAAAAAElFTkSuQmCC"
+  const preview = "data:image/jpg;base64,/9j/preview"
+  const resized = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.from("resized")])
+  let files: string
+
+  beforeEach(() => {
+    files = realpathSync(mkdtempSync(join(os.tmpdir(), "simplex-mcp-files-")))
+  })
+
+  afterEach(() => rmSync(files, {recursive: true, force: true}))
+
+  function commandOutputs(output: (command: string) => Buffer | Error): jest.SpyInstance {
+    const run = (command: string, _args: string[], _options: object, callback: (error: Error | null, stdout: Buffer) => void): void => {
+      const result = output(command)
+      if (result instanceof Error) callback(result, Buffer.alloc(0))
+      else callback(null, result)
+    }
+    return jest.spyOn(childProcess, "execFile").mockImplementation(run as unknown as typeof childProcess.execFile)
+  }
+
+  function fileIn(name: string, content = "content"): string {
+    const path = join(files, name)
+    writeFileSync(path, content)
+    return path
+  }
+
+  function sendTools(): {chat: FakeChat; tools: AgentTools; actions: Actions} {
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "SimpleX Directory", {peerType: "bot"})), items: []})
+    const fake = fakeHooks()
+    const actions = actionsWith("requests", fake)
+    const {tools} = agentTools(chat, actions)
+    fake.hooks.perform = (action, signal) => tools.perform(action, signal)
+    return {chat, tools, actions}
+  }
+
+  async function created(actions: Actions): Promise<Action> {
+    while (actions.get(1) === undefined) await new Promise(resolve => setImmediate(resolve))
+    return actions.get(1)!
+  }
+
+  async function sent(args: object): Promise<{chat: FakeChat; tools: AgentTools; action: SendAction; result: object}> {
+    const {chat, tools, actions} = sendTools()
+    const sending = tools.call("send", {chat: "@4", wait: 0, ...args}, signal().call)
+    const action = (await created(actions)) as SendAction
+    actions.approve(action, "Alice")
+    return {chat, tools, action, result: (await sending)!.structuredContent!}
+  }
+
+  const resizeCalls = (resize: jest.SpyInstance): unknown[][] => resize.mock.calls.map(([image, size]) => [Buffer.from(image).toString(), size])
+
+  it("sends a JPEG or PNG as an image with the core's preview and a resized copy, deleted when the file is sent", async () => {
+    const resize = jest.spyOn(core, "resizeImage").mockImplementation(async (_image, size) => (size === core.ImageSize.MessagePreview ? preview : resized))
+    const photo = fileIn("Trail.PNG", "photo")
+    const {chat, tools, action, result} = await sent({text: "trail map", file: photo})
+    expect(result).toMatchObject({status: "done"})
+    expect(action.file).toEqual({path: photo, name: "Trail.PNG", size: 5, type: "image", resize: true, preview})
+    const [message] = chat.sent[0].messages
+    const copy = message.fileSource!.filePath
+    expect(dirname(dirname(copy))).toBe(join(data, "files", "sent"))
+    expect(basename(copy)).toBe("Trail.png")
+    expect(readFileSync(copy)).toEqual(resized)
+    expect(message).toEqual({fileSource: {filePath: copy}, msgContent: {type: "image", text: "trail map", image: preview}, mentions: {}, quotedItemId: undefined})
+    expect(resizeCalls(resize)).toEqual([
+      ["photo", "messagePreview"],
+      ["photo", "image"],
+    ])
+    tools.onSentFile({filePath: copy} as T.FileTransferMeta)
+    expect(existsSync(dirname(copy))).toBe(false)
+  })
+
+  it("sends a GIF or WebP with the fixed preview, a video without ffmpeg with the fixed preview and duration 0, and other files unchanged", async () => {
+    const resize = jest.spyOn(core, "resizeImage")
+    const commands = commandOutputs(command => new Error(`spawn ${command} ENOENT`))
+    const cases: [object, object][] = [
+      [{file: fileIn("wave.gif")}, {type: "image", text: "", image: fixedPreview}],
+      [{text: "pass", file: fileIn("pass.WEBP")}, {type: "image", text: "pass", image: fixedPreview}],
+      [{text: "ride", file: fileIn("ride.mp4")}, {type: "video", text: "ride", image: fixedPreview, duration: 0}],
+      [{text: "report", file: fileIn("report.pdf")}, {type: "file", text: "report"}],
+      [{text: "original", file: fileIn("photo.jpg"), as: "file"}, {type: "file", text: "original"}],
+    ]
+    for (const [args, msgContent] of cases) {
+      const {chat} = await sent(args)
+      expect(chat.sent[0].messages[0]).toEqual({fileSource: {filePath: (args as {file: string}).file}, msgContent, mentions: {}, quotedItemId: undefined})
+    }
+    expect(resize).not.toHaveBeenCalled()
+    expect(commands.mock.calls.map(([command]) => command)).toEqual(["ffmpeg", "ffprobe"])
+  })
+
+  it("sends an image unchanged with the fixed preview when the core can't resize it", async () => {
+    jest.spyOn(core, "resizeImage").mockRejectedValue(new Error("image cannot be decoded or does not fit maxSize"))
+    const photo = fileIn("photo.jpeg")
+    const {chat} = await sent({text: "trail", file: photo})
+    expect(chat.sent[0].messages[0]).toMatchObject({fileSource: {filePath: photo}, msgContent: {type: "image", text: "trail", image: fixedPreview}})
+  })
+
+  it("takes a video's preview from the first frame of ffmpeg and its duration from ffprobe", async () => {
+    const commands = commandOutputs(command => Buffer.from(command === "ffmpeg" ? "frame" : "12.6\n"))
+    const resize = jest.spyOn(core, "resizeImage").mockResolvedValue(preview)
+    const video = fileIn("ride.MOV")
+    const {chat} = await sent({text: "ride", file: video})
+    expect(chat.sent[0].messages[0].msgContent).toEqual({type: "video", text: "ride", image: preview, duration: 13})
+    expect(resizeCalls(resize)).toEqual([["frame", "messagePreview"]])
+    expect(commands.mock.calls.map(([command, args, options]) => [command, args, options])).toEqual([
+      ["ffmpeg", ["-v", "error", "-i", video, "-frames:v", "1", "-f", "image2pipe", "-vcodec", "mjpeg", "-"], {encoding: "buffer", timeout: 30_000, maxBuffer: 64 * 1024 * 1024}],
+      ["ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", video], {encoding: "buffer", timeout: 30_000, maxBuffer: 64 * 1024 * 1024}],
+    ])
+  })
+
+  it("refuses paths that are not absolute readable files, private keys and the server's own files, after resolving symbolic links", async () => {
+    const home = join(files, "home")
+    mkdirSync(join(home, ".ssh"), {recursive: true})
+    jest.spyOn(os, "homedir").mockReturnValue(home)
+    mkdirSync(join(data, "files", "#4"), {recursive: true})
+    const token = join(realpathSync(data), "token")
+    writeFileSync(token, "secret")
+    const received = join(realpathSync(data), "files", "#4", "report.pdf")
+    writeFileSync(received, "report")
+    const config = join(home, ".ssh", "config")
+    writeFileSync(config, "")
+    const link = join(files, "notes.txt")
+    symlinkSync(token, link)
+    const locked = fileIn("locked.txt")
+    chmodSync(locked, 0)
+    const {tools, actions} = sendTools()
+    const text = async (args: object): Promise<string> => textOf(await tools.call("send", {chat: "@4", ...args}, signal().call))
+    const refused = (path: string): string => `file: ${path} is refused: private keys and the server's own files are not sent.`
+    expect(await text({text: "x", file: "notes.txt"})).toBe("file: an absolute path is expected.")
+    expect(await text({file: join(files, "missing.txt")})).toBe(`file: no file at ${join(files, "missing.txt")}.`)
+    expect(await text({file: files})).toBe(`file: ${files} is not a file.`)
+    expect(await text({file: locked})).toBe(`file: ${locked} can't be read.`)
+    expect(await text({file: link})).toBe(refused(token))
+    expect(await text({file: config})).toBe(refused(config))
+    for (const name of ["id_ed25519", "server.PEM", "tls.key", "cert.p12", "cert.pfx"]) expect(await text({file: fileIn(name)})).toBe(refused(join(files, name)))
+    expect(await text({})).toBe("text: required without file.")
+    expect(actions.all()).toEqual([])
+    const {controller, call} = signal()
+    const sending = tools.call("send", {chat: "@4", file: received}, call)
+    expect(((await created(actions)) as SendAction).file).toMatchObject({path: received, type: "file"})
+    controller.abort()
+    expect(await sending).toBeUndefined()
+  })
+
+  it("fails when the file changed after the request, and deletes the copy when the send fails", async () => {
+    jest.spyOn(core, "resizeImage").mockImplementation(async (_image, size) => (size === core.ImageSize.MessagePreview ? preview : resized))
+    const photo = fileIn("photo.png")
+    const {tools, actions} = sendTools()
+    const sending = tools.call("send", {chat: "@4", file: photo, wait: 0}, signal().call)
+    const action = await created(actions)
+    writeFileSync(photo, "a longer photo")
+    actions.approve(action, "Alice")
+    expect((await sending)!.structuredContent).toEqual({action: 1, status: "failed", error: `file: ${photo} changed after the request.`})
+    const failing = sendTools()
+    failing.chat.apiSendMessages = async () => {
+      throw new Error("send failed")
+    }
+    const failed = failing.tools.call("send", {chat: "@4", file: photo, wait: 0}, signal().call)
+    failing.actions.approve(await created(failing.actions), "Alice")
+    expect((await failed)!.structuredContent).toEqual({action: 1, status: "failed", error: "send failed"})
+    expect(readdirSync(join(data, "files", "sent"))).toEqual([])
   })
 })
 

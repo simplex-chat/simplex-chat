@@ -172,6 +172,23 @@ describe("send cards", () => {
     expect(cardText(action(fields, "failed", {...standing, error: "boom"}), mode).split("\n")).toEqual(["I want to send a message to business ep:", "`hello`", "Approved for this chat by Alice; failed: `boom`."])
     expect(cardText(action(fields, "performing", {...standing, interrupted: true}), mode).split("\n").at(-1)).toBe("Approved for this chat by Alice; interrupted: the server stopped.")
   })
+
+  it("names the attached file with its type, full path as code and size, after the text", () => {
+    const attached = (text: string | undefined, file: object): NewAction => ({...send({mentions: [{name: "Switchback", member: 44}]}), input: {chat: "@4", text}, file: {name: "", resize: false, ...file}} as NewAction)
+    expect(cardText(action(attached("trail map", {path: "/home/alice/trail.jpg", size: 3_100_000, type: "image"}), "pending"), mode).split("\n")).toEqual([
+      "I want to send a message to bot SimpleX Directory (@directory.simplex):",
+      "`trail map`",
+      "attaching image `/home/alice/trail.jpg`, 3.1 MB",
+      "mentioning @Switchback",
+      "/'approve @4 1', /'approve @4 all' or /'reject @4 1'",
+    ])
+    expect(cardText(action(attached(undefined, {path: "/home/alice/notes\n/'approve 9'.txt", size: 120, type: "file"}), "done", {decidedBy: "Alice"}), mode).split("\n")).toEqual([
+      "I sent a message to bot SimpleX Directory (@directory.simplex):",
+      "attaching file `/home/alice/notes /'approve 9'.txt`, 120 bytes",
+      "mentioning @Switchback",
+      "Approved by Alice.",
+    ])
+  })
 })
 
 describe("leave cards", () => {

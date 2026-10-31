@@ -1,13 +1,17 @@
-import {mkdirSync} from "fs"
-import {join} from "path"
+import {execFile} from "child_process"
+import {constants, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync} from "fs"
+import {access, readFile, realpath, stat} from "fs/promises"
+import {homedir} from "os"
+import {basename, dirname, extname, isAbsolute, join, sep} from "path"
 import {CallToolResult, JsonSchemaType, McpServer, ServerContext, fromJsonSchema} from "@modelcontextprotocol/server"
 import {CEvt, CR, T} from "@simplex-chat/types"
-import {api} from "simplex-chat"
-import {Action, Actions, ConnRef, ConnectAction, DownloadAction, LeaveAction, Mode, SendAction, Standing, Subject, ToolError, isDecided} from "./actions"
+import {api, core} from "simplex-chat"
+import {Action, Actions, Attachment, ConnRef, ConnectAction, DownloadAction, LeaveAction, Mode, SendAction, Standing, Subject, ToolError, isDecided} from "./actions"
 import {chatErrorOf, chatErrorText, errorText, fileStatusError, fullDomainName} from "./log"
 import {
   ChatItemsWatch,
   Collected,
+  FileType,
   Message,
   Sender,
   ToolCall,
@@ -15,6 +19,7 @@ import {
   chatNumber,
   chatRef,
   chatType,
+  fileContent,
   fileOffer,
   getChat,
   isChatRef,
@@ -40,7 +45,9 @@ export interface ConnectInput {
 
 export interface SendInput {
   chat: string
-  text: string
+  text?: string
+  file?: string
+  as?: "file"
   reply_to?: number
   mention?: number[]
   wait?: number
@@ -101,6 +108,7 @@ export interface Agent {
   watch: ChatItemsWatch
   controlChat: () => string
   standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined
+  refusedFile: (path: string, chatInfo: T.ChatInfo, chat: string) => void
   data: string
 }
 
@@ -127,6 +135,23 @@ const downloadWait = 60
 const defaultIdle = 30
 const defaultLimit = 50
 const messagesOnConnect = 50
+const mediaTimeout = 30_000
+const maxOutputBytes = 64 * 1024 * 1024
+const fixedPreview = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAJCAAAAAAeQfPuAAAAD0lEQVR42mNoQAMMg0QAAIXUSAG1CN3UAAAAAElFTkSuQmCC"
+const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+const refusedName = /^id_|\.(pem|key|p12|pfx)$/i
+export const refusedFileReason = "private keys and the server's own files are not sent"
+
+const attachmentTypes: {[extension: string]: {type: FileType; resize: boolean}} = {
+  ".jpg": {type: "image", resize: true},
+  ".jpeg": {type: "image", resize: true},
+  ".png": {type: "image", resize: true},
+  ".gif": {type: "image", resize: false},
+  ".webp": {type: "image", resize: false},
+  ".mp4": {type: "video", resize: false},
+  ".mov": {type: "video", resize: false},
+}
+const otherFile = {type: "file", resize: false} as const
 
 const messageSchema: Schema = {
   type: "object",
@@ -206,14 +231,16 @@ const sendSchema: Schema = {
   type: "object",
   properties: {
     chat: {type: "string", description: "Chat reference from connect or list: @N or #N."},
-    text: {type: "string", minLength: 1, maxLength: 12000, description: "Message text. A bot command is sent as text, for example /help."},
+    text: {type: "string", minLength: 1, maxLength: 12000, description: "Message text, or the caption of file; required without file. A bot command is sent as text, for example /help."},
+    file: {type: "string", minLength: 1, description: "Absolute path of a file on this computer to send: .jpg, .jpeg and .png as an image, resized; .gif and .webp as an image; .mp4 and .mov as a video; other files as a file. Send a file only when your user asked you to."},
+    as: {type: "string", enum: ["file"], description: "file: send an image or video unchanged, as a file."},
     reply_to: {type: "integer", minimum: 1, description: "Item ID of a message in this chat to reply to."},
     mention: {type: "array", items: {type: "integer", minimum: 1}, minItems: 1, maxItems: 3, uniqueItems: true, description: "Member IDs (from_member) to mention, groups and channels only; their names are added to the text."},
     wait: {type: "number", minimum: 0, maximum: 86400, description: "Seconds to wait for responses after the message is sent. Default 60. Keep it below the host's tool-call time limit."},
     idle: {type: "number", minimum: 1, maximum: 300, description: "Seconds without a new response that end the wait once a response arrived. Default 30."},
     limit: {type: "integer", minimum: 1, maximum: 100, description: "Most responses returned. Default 50; the rest stay unread for receive."},
   },
-  required: ["chat", "text"],
+  required: ["chat"],
   additionalProperties: false,
 }
 
@@ -358,6 +385,7 @@ Use chat with send and receive. Bots advertise commands: send "/keyword" or "/ke
 messages has the chat's first messages, such as a welcome. When a message has a file with status offered, call download when your user's task needs it. If the call ends without a result, repeat it with the same arguments: it attaches to the same action.`
 
 const sendDescription = `Sends a message to one of your chats and returns every message received in that chat after it, until no new one arrives for idle seconds or wait ends.
+With file, it sends a file from this computer, with text as its caption; private keys and the server's own files are refused.
 It is an action: in approval mode requests the owner approves it in the SimpleX app first, and the call waits for the decision. A send to a chat with approved: true in list is performed without waiting for approval.
 Result status: done (item is your message; responses are the answers in arrival order, more counts the ones not returned), rejected, expired, failed (error).
 Send bot commands as text, for example /help. When a message has a file with status offered, call download when your user's task needs it. If the call ends without a result, repeat it with the same arguments: it attaches to the same action and returns its responses.`
@@ -667,6 +695,10 @@ export class AgentTools {
 
   private async send(input: SendInput, call: ToolCall): Promise<object | undefined> {
     const {chat} = input
+    const key = actionKey("send", {chat, text: input.text ?? null, file: input.file ?? null, as: input.as ?? null, reply_to: input.reply_to ?? null, mention: input.mention ?? null})
+    const attached = this.agent.actions.find(key)
+    if (attached !== undefined) return this.sendResult(attached as SendAction, input, call)
+    if (input.text === undefined && input.file === undefined) throw new ToolError("text: required without file.")
     const {chatInfo} = await this.knownChat(chat)
     if (!isConnected(chatInfo)) throw new ToolError(`The agent is not connected to ${chat} and can't post; list shows connected: false.`)
     if (chatInfo.type === "group") {
@@ -675,11 +707,11 @@ export class AgentTools {
     }
     const replyTo = input.reply_to === undefined ? undefined : await this.quotedItem(chat, input.reply_to)
     const mentions = input.mention === undefined ? [] : await this.mentionedMembers(chatInfo, chat, input.mention)
-    const key = actionKey("send", {chat, text: input.text, reply_to: input.reply_to ?? null, mention: input.mention ?? null})
+    const file = input.file === undefined ? undefined : await this.attachment(input.file, input.as, chatInfo, chat)
     const subject = chatSubject(chatInfo)
     const responses = new Collected()
     if (call.signal.aborted) return undefined
-    const action = this.agent.actions.find(key) ?? this.agent.actions.create(key, {tool: "send", input, subject, chat, replyTo, mentions, responses}, this.agent.standingApprover(chatInfo, "messages"))
+    const action = this.agent.actions.find(key) ?? this.agent.actions.create(key, {tool: "send", input, subject, chat, file, replyTo, mentions, responses}, this.agent.standingApprover(chatInfo, "messages"))
     return this.sendResult(action as SendAction, input, call)
   }
 
@@ -704,13 +736,19 @@ export class AgentTools {
   }
 
   private async performSend(action: SendAction): Promise<void> {
-    const {input, mentions, chat, responses} = action
+    const {input, mentions, chat, responses, file} = action
+    const filePath = file === undefined ? undefined : await this.fileToSend(file)
     action.stopCollecting = this.agent.watch.collect(chat, responses, ({meta}) => action.item === undefined || meta.itemId > action.item)
     try {
-      const missing = mentions.filter(({name}) => !mentionedIn(input.text, name)).map(({name}) => `@${viewName(name)}`)
-      const text = missing.length === 0 ? input.text : `${missing.join(" ")} ${input.text}`
+      const missing = mentions.filter(({name}) => !mentionedIn(input.text ?? "", name)).map(({name}) => `@${viewName(name)}`)
+      const text = [...missing, input.text ?? ""].filter(part => part !== "").join(" ")
       const [sent] = await this.agent.chat.apiSendMessages([chatType(chat), chatNumber(chat)], [
-        {msgContent: {type: "text", text}, mentions: Object.fromEntries(mentions.map(({name, member}) => [name, member])), quotedItemId: input.reply_to},
+        {
+          ...(filePath === undefined ? {} : {fileSource: {filePath}}),
+          msgContent: file === undefined ? {type: "text", text} : fileContent(file, text),
+          mentions: Object.fromEntries(mentions.map(({name, member}) => [name, member])),
+          quotedItemId: input.reply_to,
+        },
       ])
       action.item = sent.chatItem.meta.itemId
       action.sentAt = Date.now()
@@ -719,7 +757,53 @@ export class AgentTools {
       if (kept.length === 0) responses.lastAt = undefined
     } catch (error) {
       action.stopCollecting()
+      if (filePath !== undefined && this.isSentCopy(filePath)) rmSync(dirname(filePath), {recursive: true, force: true})
       throw error
+    }
+  }
+
+  onSentFile({filePath}: T.FileTransferMeta): void {
+    if (this.isSentCopy(filePath)) rmSync(dirname(filePath), {recursive: true, force: true})
+  }
+
+  private isSentCopy(filePath: string): boolean {
+    return dirname(dirname(filePath)) === join(this.agent.data, "files", "sent")
+  }
+
+  private async attachment(file: string, as: SendInput["as"], chatInfo: T.ChatInfo, chat: string): Promise<Attachment> {
+    const {path, size} = await realFile(file)
+    if (this.isRefused(path)) {
+      this.agent.refusedFile(path, chatInfo, chat)
+      throw new ToolError(`file: ${path} is refused: ${refusedFileReason}.`)
+    }
+    const {type, resize} = as === "file" ? otherFile : (attachmentTypes[extname(path).toLowerCase()] ?? otherFile)
+    return {path, name: basename(path), size, type, resize, ...(await attachmentMedia(path, type, resize))}
+  }
+
+  private isRefused(path: string): boolean {
+    const home = realFolder(homedir())
+    const data = realFolder(this.agent.data)
+    const within = (folder: string): boolean => path.startsWith(`${folder}${sep}`)
+    return refusedName.test(basename(path)) || within(join(home, ".ssh")) || within(join(home, ".gnupg")) || (within(data) && !within(join(data, "files")))
+  }
+
+  private async fileToSend(file: Attachment): Promise<string> {
+    const current = await realFile(file.path).catch(() => undefined)
+    if (current?.path !== file.path || current.size !== file.size) throw new Error(`file: ${file.path} changed after the request.`)
+    return file.resize ? this.resizedCopy(file) : file.path
+  }
+
+  private async resizedCopy({path, name}: Attachment): Promise<string> {
+    try {
+      const image = await core.resizeImage(await readFile(path), core.ImageSize.Image)
+      const sent = join(this.agent.data, "files", "sent")
+      mkdirSync(sent, {recursive: true, mode: 0o700})
+      const extension = image.subarray(0, pngSignature.length).equals(pngSignature) ? ".png" : ".jpg"
+      const copy = join(mkdtempSync(join(sent, "send-")), `${basename(name, extname(name))}${extension}`)
+      writeFileSync(copy, image, {mode: 0o600})
+      return copy
+    } catch {
+      return path
     }
   }
 
@@ -1112,6 +1196,68 @@ function mentionedIn(text: string, name: string): boolean {
 
 function unknownChat(chat: string): ToolError {
   return new ToolError(`No chat ${chat}. list shows the agent's chats.`)
+}
+
+async function realFile(file: string): Promise<{path: string; size: number}> {
+  if (!isAbsolute(file)) throw new ToolError("file: an absolute path is expected.")
+  const path = await realpath(file).catch(() => {
+    throw new ToolError(`file: no file at ${file}.`)
+  })
+  const stats = await stat(path)
+  if (!stats.isFile()) throw new ToolError(`file: ${path} is not a file.`)
+  await access(path, constants.R_OK).catch(() => {
+    throw new ToolError(`file: ${path} can't be read.`)
+  })
+  return {path, size: stats.size}
+}
+
+function realFolder(folder: string): string {
+  try {
+    return realpathSync.native(folder)
+  } catch {
+    return folder
+  }
+}
+
+async function attachmentMedia(path: string, type: FileType, resize: boolean): Promise<{preview?: string; duration?: number}> {
+  switch (type) {
+    case "image":
+      return {preview: resize ? await messagePreview(readFile(path)) : fixedPreview}
+    case "video": {
+      const [preview, duration] = await Promise.all([messagePreview(videoFrame(path)), videoDuration(path)])
+      return {preview, duration}
+    }
+    default:
+      return {}
+  }
+}
+
+async function messagePreview(image: Promise<Buffer>): Promise<string> {
+  try {
+    return await core.resizeImage(await image, core.ImageSize.MessagePreview)
+  } catch {
+    return fixedPreview
+  }
+}
+
+function videoFrame(path: string): Promise<Buffer> {
+  return commandOutput("ffmpeg", ["-v", "error", "-i", path, "-frames:v", "1", "-f", "image2pipe", "-vcodec", "mjpeg", "-"])
+}
+
+async function videoDuration(path: string): Promise<number> {
+  try {
+    const output = await commandOutput("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path])
+    const seconds = Math.round(Number(output.toString().trim()))
+    return Number.isFinite(seconds) ? seconds : 0
+  } catch {
+    return 0
+  }
+}
+
+function commandOutput(command: string, args: string[]): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    execFile(command, args, {encoding: "buffer", timeout: mediaTimeout, maxBuffer: maxOutputBytes}, (error, stdout) => (error === null ? resolve(stdout) : reject(error)))
+  })
 }
 
 function actionKey(tool: string, fields: object): string {

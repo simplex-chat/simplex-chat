@@ -206,6 +206,19 @@ export function fileOffer(msgContent: T.MsgContent, {fileId, fileName, fileSize}
   }
 }
 
+export function fileContent({type, preview = "", duration = 0}: Pick<FileOffer, "type" | "preview" | "duration">, text: string): T.MsgContent {
+  switch (type) {
+    case "image":
+      return {type, text, image: preview}
+    case "video":
+      return {type, text, image: preview, duration}
+    case "voice":
+      return {type, text, duration}
+    case "file":
+      return {type, text}
+  }
+}
+
 function itemSender(chatInfo: T.ChatInfo, chatDir: T.CIDirection, self: Sender): Sender & {member?: number} {
   switch (chatDir.type) {
     case "groupRcv": {

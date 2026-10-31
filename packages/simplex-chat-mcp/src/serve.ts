@@ -102,7 +102,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
     perform: (action, signal) => tools.perform(action, signal),
   })
   const watch = new ChatItemsWatch()
-  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), data}, approve)
+  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), refusedFile: (path, chatInfo, chat) => control.refusedFile(path, chatInfo, chat), data}, approve)
   const control: Control = new Control(chat, group, {displayName, owners: options.owners, registerHint: registerHint(options), qrCode: options.qrCode}, actions, tools)
   await control.load()
   const factory = (): McpServer => {
@@ -146,6 +146,9 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
         return tools.onFile(event.chatItem.chatItem.file)
       case "rcvFileError":
         return tools.onFileError(event)
+      case "sndFileCompleteXFTP":
+      case "sndFileError":
+        return tools.onSentFile(event.fileTransferMeta)
     }
     if (isControlEvent(event, control.groupId)) {
       controlEvents = controlEvents.then(() => control.onEvent(event)).catch(error => logError(`${event.type} in the agent control chat`, error))

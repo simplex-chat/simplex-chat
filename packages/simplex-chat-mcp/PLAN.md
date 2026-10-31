@@ -10,7 +10,7 @@ In:
 - MCP over Streamable HTTP on 127.0.0.1, registered in Claude Code;
 - the agent control chat: the owner approves the agent's connects, sends, downloads and leaves there, or all sends to one chat, or all downloads from one chat;
 - six tools: `connect`, `send`, `receive`, `download`, `list`, `leave`;
-- received files: the `file` field of messages; `download` saves the file in the data folder;
+- files: the `file` field of received messages, `download` to save one in the data folder, `send` with `file` to send one;
 - connections to contact addresses, one-time links, groups, channels and SimpleX names, as the agent's profile or incognito;
 - bots as services: the commands a bot advertises are returned by `connect`.
 
@@ -18,7 +18,7 @@ Out of v0.1:
 
 - an address of the agent: nobody can contact it first;
 - the owner's approval of messages to the agent;
-- sending files, reactions, edits, deletions, forwarding;
+- reactions, edits, deletions, forwarding;
 - one call over all chats: the agent receives from each chat; `list` gives unread counts;
 - running catalogues or vendor services: those are bots on the bot library;
 - Claude Code channels, OpenClaw hooks, registration in hosts other than Claude Code.
@@ -81,7 +81,7 @@ connect -> chat          actions[N].conn, completed by the event of the connecti
 agent -> follow-up       results carry chat, item, member and action IDs; inputs take chat, item and member IDs: send, receive, reply_to, mention; action IDs match the cards and list
 ```
 
-Action fields: `target`, `incognito`, `message` for `connect`; `chat`, `text`, `reply_to`, `mention` for `send`; `chat`, `item` for `download`; `chat` for `leave`.
+Action fields: `target`, `incognito`, `message` for `connect`; `chat`, `text`, `file`, `as`, `reply_to`, `mention` for `send`; `chat`, `item` for `download`; `chat` for `leave`.
 
 ## MCP facts the tools rely on
 
@@ -159,6 +159,9 @@ DIR/headers.json   {"Authorization": "Bearer <token>"}, written 0600
 DIR/server.json    {name, port, expireHours} of the server      0600
 DIR/lock           PID of the running server                    0600
 DIR/files/CHAT/    files downloaded from CHAT                   0700, created at the first download from CHAT
+DIR/files/sent/    resized copies of sent images, one folder    0700; a copy 0600
+                   per send, deleted at sndFileCompleteXFTP
+                   or sndFileError
 ```
 
 - DIR is `~/.simplex-mcp/NAME` unless `--data` sets it.
@@ -291,6 +294,7 @@ moment                          line
 action created                  Action 2: send to bot SimpleX Directory (@4)
 action created                  Action 1: connect to bot SimpleX Directory, as itself
 action created                  Action 7: download report.pdf from group Builders (#3)
+file refused                    Refused to send /home/alice/.ssh/id_ed25519 to bot SimpleX Directory (@4): private keys and the server's own files are not sent.
 action decided                  Action 2 approved by Alice: sent. | Action 1 approved by Alice: connected. | Action 5 approved by Alice: connection requested. | Action 7 approved by Alice: downloaded. | Action 2 approved by Alice: failed: <error>.
 action decided                  Action 2 rejected by Alice. | Action 2 expired.
 mode host                       Action 2: performed without approval (mode host). | ...; failed: <error>.
@@ -354,9 +358,13 @@ Optional lines, before the commands:
 
 ```
 line                                         when
+attaching image `/home/alice/trail.jpg`, 3.1 MB   file: its type, real path and size, after the text
 replying to Switchback: `Ridgecrest, $142`   reply_to
 mentioning @Switchback                       mention
 ```
+
+- The card of a send with an image or video is an image or video message with the file's preview, fitted as on download cards.
+- A refused file is posted, with the same line in the log: ``Refused to send `/home/alice/.ssh/id_ed25519` to bot SimpleX Directory (@4): private keys and the server's own files are not sent.``
 
 - Cards show no expiry; `/pending` shows it.
 - The commands of sends and leaves name the chat, and `/'approve @4 all'` approves all sends to it (section Commands).
@@ -596,7 +604,9 @@ Command:
 ```
 input field   type      rule
 chat          string    required; a chat of the agent
-text          string    required; 1 to 12000 characters
+text          string    1 to 12000 characters; required without file; the caption with file
+file          string    optional; absolute path of a file on this computer
+as            string    optional; file: an image or video sent unchanged, as a file
 reply_to      number    optional; an item in chat
 mention       number[]  optional; groups and channels only (assertNoMentions for contacts, Commands.hs:761); 1 to 3 members of chat (maxSndMentions = 3, Internal.hs:123)
 wait          number    optional; seconds after sending; 0 to 86400; default 60
@@ -616,6 +626,19 @@ error         string      failed
 ```
 
 - `mention`: each member's name is added to the text as `@name`, or `@'name'` when it has spaces or ends with punctuation, unless the text has it (`Markdown.hs:273`, `:511-518`).
+- `file`, by the extension of its real path, unless `as` is `file`:
+
+```
+extension          message   preview                                               file sent
+.jpg .jpeg .png    image     core.resizeImage(file, MessagePreview)                core.resizeImage(file, Image), JPEG or PNG
+.gif .webp         image     the fixed preview                                     unchanged
+.mp4 .mov          video     ffmpeg's first frame, core.resizeImage(frame,         unchanged
+                             MessagePreview); duration from ffprobe, rounded
+other              file      none                                                  unchanged
+```
+
+- The fixed preview is a 16 × 9 mid-gray PNG. It replaces a preview that the core can't make, and ffmpeg's frame when ffmpeg is absent or fails; the duration is then 0. A resizing error sends the file unchanged.
+- `ffmpeg -v error -i PATH -frames:v 1 -f image2pipe -vcodec mjpeg -` and `ffprobe -v error -show_entries format=duration -of csv=p=0 PATH`, 30 s each, at most 64 MB of output.
 - Responses are marked read; the ones over `limit` stay unread for `receive`.
 - Hosts with a fixed tool-call limit (60 s to 300 s) need `wait` below it.
 
@@ -712,6 +735,12 @@ reply_to not in chat               reply_to: #15 has no item 999.
 reply_to not a message             reply_to: item 31 in #15 is not a message.
 mention not a member               mention: #15 has no member 45. (in a contact chat: mention: @4 is a contact chat; mentions apply to groups and channels.)
 mention of equal names             mention: members 44 and 45 have the same name.
+no text and no file                text: required without file.
+file not absolute                  file: an absolute path is expected.
+no file at the path                file: no file at /home/alice/trail.jpg.
+not a regular file                 file: /home/alice/trails is not a file.
+not readable                       file: /home/alice/trail.jpg can't be read.
+refused path, by its real path     file: /home/alice/.ssh/id_ed25519 is refused: private keys and the server's own files are not sent.
 item not in chat                   item: #3 has no item 999.
 item without a received file       item: item 31 in #3 has no received file.
 file failed                        item: the file of item 31 in #3 failed: The file was cancelled.
@@ -968,10 +997,10 @@ plan        {type, name, simplexName, description, welcome, commands, connLink, 
 conn        {pcc: pccConnId} | {contact: contactId} | {group: groupId}, connect after perform
 known_as    incognito profile's name, connect after perform
 item, from  the message and its sender's display name in a group, download
-file        {fileId, name, size, type, preview, duration} of the message, download
+file        download: {fileId, name, size, type, preview, duration} of the message; send: {path, name, size, type, resize, preview, duration} of the attached file
 startedAt   the start of perform, download
 path        the downloaded file, download after done
-cardImage   the preview on the card, fitted once; "" for a text card, download
+cardImage   the preview on the card, fitted once; "" for a text card; download, send with an image or video
 error       text, failed
 ```
 
@@ -1065,6 +1094,8 @@ newChatItems        wake the waiting send and receive calls of that chat
 
 ```
 send(input, ctx):
+  an action in memory with tool send and the same action fields: action(send, input, ctx); go to result
+  no text and no file: tool error "no text and no file"
   chat is the agent control chat: tool error "unknown chat"
   r = /_get chat <chat> count=0; a store error: tool error "unknown chat"
   r.chat.chatInfo not connected (as connected in list()): tool error "chat not connected"
@@ -1072,13 +1103,28 @@ send(input, ctx):
   reply_to i: /_get chat <chat> around=<i> count=0 fails or has no item i: tool error "reply_to not in chat"; item i not a message: tool error "reply_to not a message"
   mention, chat a contact chat: tool error "mention not a member"
   mention m: /_members <chat> has no member m: tool error "mention not a member"; two members with the same display name: tool error "mention of equal names"
+  file: attachment(file, as)
   action(send, input, ctx)
   return responses(action, wait, idle, limit, ctx) with {action, status: "done"}
 
+attachment(file, as):
+  not absolute: tool error "file not absolute"; realpath fails: "no file at the path"; not a regular file: "not a regular file"; not readable: "not readable"
+  the real path refused (below): post and log the refusal; tool error "refused path"
+  type, preview and duration by the extension of the real path, or type file when as is file (section send of the tools)
+  {path: the real path, name, size, type, resize: JPEG or PNG sent as an image, preview, duration}
+
+refused real paths:
+  under ~/.ssh/ or ~/.gnupg/, the home folder by its real path
+  file names id_*, *.pem, *.key, *.p12, *.pfx, in any case
+  under DIR, except DIR/files/
+
 perform send:
+  file: its real path and size read again; another real path or size: failed, "file: PATH changed after the request."
+  file to resize: core.resizeImage(file, Image) -> DIR/files/sent/send-XXXXXX/NAME with .png for a PNG result, else .jpg; an error: the file unchanged
   text' = text with @name for each mention it lacks
   action.responses = []; from now until the action is deleted, each newChatItems of chat adds its received message items (content.type rcvMsgContent) to action.responses
-  /_send <chat> json [{msgContent: {type: "text", text: text'}, mentions: {name: m}, quotedItemId: reply_to}] -> S     # parser Commands.hs:6353
+  /_send <chat> json [{fileSource: {filePath}, msgContent: {type: "text", text: text'} or the file's {type, text: text', image: preview, duration}, mentions: {name: m}, quotedItemId: reply_to}] -> S     # parser Commands.hs:6353
+  an error of the send: the copy's folder deleted
   action.chat = chat; action.item = S; drop from action.responses the items with itemId not above S
 ```
 
@@ -1098,6 +1144,7 @@ result {chat, item, responses: messages, more}
 - Responses come from events, not from reads after the sent item: group items are ordered by `item_ts`, the sender's time, so a response can sort before the sent item (`getChatItemIDs`, `Store/Messages.hs:1533-1607`). Item IDs are `AUTOINCREMENT` (`chat_schema.sql:476`), so a response has an ID above the sent item's.
 - The library delivers each event to the handler in order (`api.js:113-142`); a response that arrives before `/_send` returns is kept, and an item received before the sent one has a lower ID and is dropped.
 - `wait` starts when the message is sent; when the call attaches to an action already done, at the call.
+- `sndFileCompleteXFTP` and `sndFileError` delete the folder of a copy in `DIR/files/sent/` (`fileTransferMeta.filePath`, Library/Subscriber.hs:312, :364). The core emits `sndFileCompleteXFTP` for group messages only (:308-312); a copy sent to a contact stays.
 
 ### Card size
 
@@ -1384,10 +1431,10 @@ Unit:
 ```
 test        covers
 options     defaults, ranges, NAME, --display-name at the first and a later start, --owners with and without a list, names with commas, rejected arguments, --help text
-commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; an SQL error of the delivery wait logged; /approve CHAT files and /revoke CHAT files beside the approval of messages; /receive with its reply and failure; download cards with the preview, resized to fit 15000 bytes
+commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; an SQL error of the delivery wait logged; /approve CHAT files and /revoke CHAT files beside the approval of messages; /receive with its reply and failure; download cards with the preview, resized to fit 15000 bytes; a refused file posted and logged; an image send card with its preview
 actions     every transition; attach rule; open counts; counter written before the card; a failed counter write or card post logged; stop edits pending and performing cards, aborts the performs' signal, and an interrupted perform logs no line; standing approval: performed at once, outcome card posted; 20 pending; 20 performing; decided actions deleted after expires
-cards       every card form and outcome; quoting; names and errors on one line; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form; link texts cut to the bytes left; the reply quote cut by characters; download forms with sizes
-messages    message fields; responses with idle and wait; overflow IDs removed at deletion; receive with new messages under a concurrent call, stopping at limit + 1, a store error of a page read as its error; leave of @N and #N, pending membership included; approved in list; all chats in one read; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; reply_to of an item other than a message refused; mentions of equal names refused; the connect wait cap; the connect wait ended by the stop; the file field of each file status and rejected; download: attach, performing at wait, a received file, failures by events, a files approval
+cards       every card form and outcome; quoting; names and errors on one line; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form; link texts cut to the bytes left; the reply quote cut by characters; download forms with sizes; the attaching line of sends
+messages    message fields; responses with idle and wait; overflow IDs removed at deletion; receive with new messages under a concurrent call, stopping at limit + 1, a store error of a page read as its error; leave of @N and #N, pending membership included; approved in list; all chats in one read; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; reply_to of an item other than a message refused; mentions of equal names refused; the connect wait cap; the connect wait ended by the stop; the file field of each file status and rejected; download: attach, performing at wait, a received file, failures by events, a files approval; send with file: the type and preview by extension, the resized copy deleted at sndFileCompleteXFTP and after a failed send, the fixed preview when the core can't resize or ffmpeg is absent, ffmpeg and ffprobe output, refused paths with symbolic links, a file changed after the request
 http        401 without token; 403 with another Origin; 404 for other paths and for a request target that is not a URL, the server serving on; 503 with Retry-After until ready; SDK validation errors
 register    entry JSON with headersHelper and no token; timeout from server.json; remove before add; errors; on Windows, claude through cmd.exe after ENOENT, with cmd.exe quoting
 files       lock: exclusive create, a running PID, a stale PID; folder mode at every start; headers.json; file modes set again on existing files
@@ -1412,6 +1459,7 @@ alias             a 20-digit reference that the core reads as the agent control 
 port in use       serve on a bound port: exit before server.json is written and before a link is printed
 leave command     /leave #N with a pending send for #N: the send rejected; the reply and the log line; the group's owner sees the agent leave
 files             an image from a group member: status offered; the download card with the preview; /receive: the file as a reply to the card; /approve: the path, the same bytes; /reject: rejected; /approve #N files: a later download posts nothing
+send file         a PNG sent to a group: the card with the attaching line and a preview; the member receives an image with a preview and its file; a private key refused, posted and logged
 ```
 
 Claude Code checks, by hand (TESTING.md):

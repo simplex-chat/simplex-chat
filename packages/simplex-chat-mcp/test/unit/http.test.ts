@@ -19,7 +19,7 @@ async function start(mode: Mode = "requests"): Promise<void> {
   const chat = new FakeChat()
   chat.chats.set("@4", {chatInfo: direct(contact(4, "SimpleX Directory")), items: []})
   actions = actionsWith(mode, fakeHooks())
-  const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: () => undefined, data}, mode)
+  const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: () => undefined, refusedFile: () => undefined, data}, mode)
   const factory = (): McpServer => {
     const mcp = new McpServer({name: "simplex-mcp", version: "0.1.0"}, {instructions: "Use the tools."})
     tools.register(mcp)
