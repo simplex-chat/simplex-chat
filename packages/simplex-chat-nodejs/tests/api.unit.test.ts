@@ -249,16 +249,6 @@ describe("startChat lifecycle", () => {
     await chat.stopChat()
   })
 
-  it("passes file upload progress to subscribers", async () => {
-    const chat = await chatWithResponses({type: "chatStarted"}, {type: "chatStopped"})
-    const event = {type: "sndFileProgressXFTP", user, fileTransferMeta: {fileId: 3}, sentSize: 1, totalSize: 1}
-    jest.mocked(core.chatRecvMsgWait).mockResolvedValueOnce(event as ChatEvent)
-    const received = new Promise(resolve => chat.on("sndFileProgressXFTP", ({sentSize, totalSize}) => resolve([sentSize, totalSize])))
-    await chat.startChat()
-    await expect(received).resolves.toEqual([1, 1])
-    await chat.stopChat()
-  })
-
   it("passes event errors to chatError subscribers", async () => {
     const chat = await chatWithResponses({type: "chatStarted"}, {type: "chatStopped"})
     const chatError = {type: "errorStore", storeError: {type: "connectionNotFound", agentConnId: "Y29ubg=="}} as T.ChatError

@@ -55,7 +55,6 @@ This file is generated automatically.
   - [RcvFileWarning](#rcvfilewarning)
   - [SndFileError](#sndfileerror)
   - [SndFileWarning](#sndfilewarning)
-  - [SndFileProgressXFTP](#sndfileprogressxftp)
 
 [Connection progress events](#connection-progress-events)
 - [AcceptingContactRequest](#acceptingcontactrequest)
@@ -649,21 +648,6 @@ Warning when sending file.
 - chatItem_: [AChatItem](./TYPES.md#achatitem)?
 - fileTransferMeta: [FileTransferMeta](./TYPES.md#filetransfermeta)
 - errorMessage: string
-
----
-
-
-### SndFileProgressXFTP
-
-File upload progress. `sentSize` equals `totalSize` when the upload is complete.
-
-**Record type**:
-- type: "sndFileProgressXFTP"
-- user: [User](./TYPES.md#user)
-- chatItem_: [AChatItem](./TYPES.md#achatitem)?
-- fileTransferMeta: [FileTransferMeta](./TYPES.md#filetransfermeta)
-- sentSize: int64
-- totalSize: int64
 
 ---
 
