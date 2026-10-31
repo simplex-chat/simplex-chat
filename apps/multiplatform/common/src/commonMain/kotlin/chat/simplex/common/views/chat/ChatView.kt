@@ -413,6 +413,7 @@ fun ChatView(
                 var preloadedContactInfo: Pair<ConnectionStats?, Profile?>? = null
                 var preloadedCode: String? = null
                 var preloadedLink: GroupLink? = null
+                var preloadedChatId: ChatId? = chatInfo.id
                 if (chatInfo is ChatInfo.Direct) {
                   preloadedContactInfo = chatModel.controller.apiContactInfo(chatRh, chatInfo.apiId)
                   preloadedCode = chatModel.controller.apiGetContactCode(chatRh, chatInfo.apiId)?.second
@@ -428,27 +429,35 @@ fun ChatView(
                   ModalView(close, cardScreen = true, appBar = appBar.value) {
                     val chatInfo = remember { activeChat }.value?.chatInfo
                     if (chatInfo is ChatInfo.Direct) {
-                      var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
-                      var code: String? by remember { mutableStateOf(preloadedCode) }
-                      KeyChangeEffect(chatInfo.id) {
+                      var contactInfo: Pair<ConnectionStats?, Profile?>? by remember(chatInfo.id) { mutableStateOf(if (chatInfo.id == preloadedChatId) preloadedContactInfo else null) }
+                      var code: String? by remember(chatInfo.id) { mutableStateOf(if (chatInfo.id == preloadedChatId) preloadedCode else null) }
+                      LaunchedEffect(chatInfo.id) {
+                        if (chatInfo.id == preloadedChatId) return@LaunchedEffect
+                        preloadedChatId = null
                         contactInfo = chatModel.controller.apiContactInfo(chatRh, chatInfo.apiId)
                         preloadedContactInfo = contactInfo
                         code = chatModel.controller.apiGetContactCode(chatRh, chatInfo.apiId)?.second
                         preloadedCode = code
+                        preloadedChatId = chatInfo.id
                       }
                       ChatInfoView(chatsCtx, chatModel, chatInfo.contact, contactInfo?.first, contactInfo?.second, chatInfo.localAlias, code, close) {
                         showSearch.value = true
                       }
                     } else if (chatInfo is ChatInfo.Group) {
-                      var link: GroupLink? by remember(chatInfo.id) { mutableStateOf(preloadedLink) }
-                      KeyChangeEffect(chatInfo.id) {
+                      var link: GroupLink? by remember(chatInfo.id) { mutableStateOf(if (chatInfo.id == preloadedChatId) preloadedLink else null) }
+                      var linkLoaded by remember(chatInfo.id) { mutableStateOf(chatInfo.id == preloadedChatId) }
+                      LaunchedEffect(chatInfo.id) {
+                        if (chatInfo.id == preloadedChatId && chatModel.membersLoaded.value) return@LaunchedEffect
+                        preloadedChatId = null
                         setGroupMembers(chatRh, chatInfo.groupInfo, chatModel)
                         link = chatModel.controller.apiGetGroupLink(chatRh, chatInfo.groupInfo.groupId)
+                        linkLoaded = true
                         preloadedLink = link
+                        preloadedChatId = chatInfo.id
                       }
-                      GroupChatInfoView(chatsCtx, chatRh, chatInfo.id, link, selectedItems, appBar, scrollToItemId, {
+                      GroupChatInfoView(chatsCtx, chatRh, chatInfo.id, link, linkLoaded, selectedItems, appBar, scrollToItemId, {
                         link = it
-                        preloadedLink = it
+                        if (chatInfo.id == preloadedChatId) preloadedLink = it
                       }, close, { showSearch.value = true })
                     } else {
                       LaunchedEffect(Unit) {
