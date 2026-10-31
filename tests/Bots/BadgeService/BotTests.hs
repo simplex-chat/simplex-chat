@@ -2266,15 +2266,22 @@ subscribedMonthly env = subscribedTo env "subscr-badge-supporter-month-02" 1
 -- | The same for the Play plan given, of that many months.
 subscribedTo :: HasCallStack => BadgeServiceEnv -> Text -> Integer -> IO (C.PublicKeyEd25519, UTCTime, [StatementEntry])
 subscribedTo env@BadgeServiceEnv {bsStore} planId months = do
-  firstStart <- addUTCTime (-3600) <$> serviceNow env
+  firstStart <- monthEndStart env
   setSubscription bsStore (SubscriptionGoogle googleSubscriptionToken) $ subscriptionCheck SSRenewing $ Just $ storeCharge planId firstStart months
   (purchaseKey, masterKey) <- newPurchaseKeys
   purchased <- serviceCmd env purchaseKey $ purchaseCmd masterKey subscriptionPlay
   pure (purchaseKey, firstStart, fst $ statementOf purchased)
 
+monthEndStart :: BadgeServiceEnv -> IO UTCTime
+monthEndStart env@BadgeServiceEnv {bsClock} = do
+  (year, _, _) <- toGregorian . utctDay <$> serviceNow env
+  let start = UTCTime (fromGregorian (year + 1) 1 31) 36000
+  setClockAt bsClock $ addUTCTime 3600 start
+  pure start
+
 -- | The store's charge n months after the first, for the plan given.
 monthlyCharge :: Text -> UTCTime -> Integer -> StoreCharge
-monthlyCharge planId firstStart n = (storeCharge planId (addMonths n firstStart) 1) {chargeRef = "GPA.renewal." <> tshow n}
+monthlyCharge planId firstStart n = (storeCharge planId (addMonths n firstStart) 1) {chargeRef = "GPA.renewal." <> tshow n, periodEnd = addMonths (n + 1) firstStart}
 
 storeReports :: FakeStore -> SubscriptionCheck -> IO ()
 storeReports store = setSubscription store (SubscriptionGoogle googleSubscriptionToken)
@@ -2500,7 +2507,7 @@ testAppleSubscriptionRenews ps =
 -- | The client buys a monthly Play subscription an hour into its first period: that period's start, and its ledger then.
 clientSubscribedMonthly :: HasCallStack => BadgeServiceEnv -> TestCC -> IO (UTCTime, [ReplicatedRow])
 clientSubscribedMonthly env@BadgeServiceEnv {bsStore} alice = do
-  firstStart <- addUTCTime (-3600) <$> serviceNow env
+  firstStart <- monthEndStart env
   storeReports bsStore $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" firstStart 1
   alice ##> ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
   inAnyOrder alice [[openPurchase ""], ["1: supporter"]]
@@ -2541,7 +2548,7 @@ testSubscriptionRenews ps =
       alice <## "ok"
       renewed <- waitLedgerRows (chatController alice) 4
       alice <##. "1: supporter"
-      drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 1 renewalStart, Just "badge")]
+      drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 2 firstStart, Just "badge")]
       balanceChecks (chatController alice) `shouldReturn` replicate 4 (Just True)
       issueErrorRow (chatController alice) `shouldReturn` (Nothing, Nothing)
       shownBadgeId (chatController alice) >>= (`shouldSatisfy` isJust)
@@ -2710,7 +2717,7 @@ testSubscriptionUpgradeLateInMonth ps =
 testUpgradeCheckGrantsRenewal :: HasCallStack => TestParams -> IO ()
 testUpgradeCheckGrantsRenewal ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS, appleLegendSubscriptionJWS}} -> do
-    firstStart <- addUTCTime (-3600) <$> serviceNow env
+    firstStart <- monthEndStart env
     appleStoreReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" firstStart 1
     (purchaseKey, masterKey) <- newPurchaseKeys
     purchased <- serviceCmd env purchaseKey $ purchaseCmd masterKey SPApple {jws = appleSubscriptionJWS}
@@ -2718,7 +2725,7 @@ testUpgradeCheckGrantsRenewal ps =
         renewalStart = addMonths 1 firstStart
         upgradedAt = addUTCTime 600 renewalStart
     -- coverage has ended and Apple charged the Supporter renewal, while its status still shows Supporter
-    appleStoreReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" renewalStart 1) {chargeRef = "apple.renewal"}
+    appleStoreReports store $ subscriptionCheck SSRenewing $ Just (monthlyCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" firstStart 1) {chargeRef = "apple.renewal"}
     setClockAt bsClock upgradedAt
     checks <- subscriptionChecks store
     refusalOf <$> serviceCmd env purchaseKey (upgradeCmdWith appleLegendSubscriptionJWS tip) `shouldReturn` (BSEPaymentPending, Just 3600)
@@ -3497,7 +3504,7 @@ testStoreUnreachableWaitsStall ps =
       alice <## "ok"
       renewed <- waitLedgerRows (chatController alice) 4
       alice <##. "1: supporter"
-      drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 1 renewalStart, Just "badge")]
+      drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 2 firstStart, Just "badge")]
       waitShownIssued (chatController alice)
       waitIssueErrorCleared (chatController alice)
 
@@ -3719,7 +3726,7 @@ testIdleSubscriptionKeptPastWindow ps =
       alice <## "ok"
       renewed <- waitLedgerRows (chatController alice) 4
       alice <##. "1: supporter"
-      drop 2 (rowChanges renewed) `shouldBe` [(1, 1, addMonths 3 firstStart, Just "charge"), (-1, 0, addMonths 4 firstStart, Just "badge")]
+      drop 2 (rowChanges renewed) `shouldBe` [(1, 1, addMonths 3 firstStart, Just "charge"), (-1, 0, addMonths 1 (addMonths 3 firstStart), Just "badge")]
       waitShownIssued (chatController alice)
       shownBadgeId (chatController alice) >>= (`shouldSatisfy` isJust)
       unrenewedRuns (chatController alice) `shouldReturn` [(Nothing, Nothing)]
@@ -6002,7 +6009,7 @@ testRenewalHoldsNoOtherRequest ps = do
           putMVar release ()
           alice <##. "1: supporter"
           renewed <- waitLedgerRows (chatController alice) 4
-          drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 1 renewalStart, Just "badge")]
+          drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 2 firstStart, Just "badge")]
 
 testPurchaseHoldsNoRenewal :: HasCallStack => TestParams -> IO ()
 testPurchaseHoldsNoRenewal ps = do
@@ -6025,7 +6032,7 @@ testPurchaseHoldsNoRenewal ps = do
         alice <## "ok"
         alice <##. "1: supporter"
         renewed <- waitLedgerRows (chatController alice) 4
-        drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 1 renewalStart, Just "badge")]
+        drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 2 firstStart, Just "badge")]
         putMVar release ()
         expectLinesWithin 60 bob ["1: supporter"] []
 
