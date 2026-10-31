@@ -560,6 +560,7 @@ describe("command menu", () => {
   const menu = [
     {type: "command", keyword: "pending", label: "Pending actions"},
     {type: "command", keyword: "list", label: "Chats and approvals"},
+    {type: "command", keyword: "leave", label: "Leave a chat", params: "<chat ID>"},
   ]
 
   it("is updated at load when it differs", async () => {
@@ -572,6 +573,12 @@ describe("command menu", () => {
     const current = group(10, "agent", self, {groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: menu}}})
     await new Control(chat.api(), current, {displayName: "agent", registerHint: "hint", qrCode: "small"}, actions, tools).load()
     expect(chat.profiles).toHaveLength(1)
+  })
+
+  it("answers the /leave template sent unedited with the list of commands", async () => {
+    const {control, chat} = await setup()
+    expect(await control.ownerCommand(alice, parseCommand("/leave <chat ID>")!)).toBe(commandsReply)
+    expect(chat.deleted).toEqual([])
   })
 })
 

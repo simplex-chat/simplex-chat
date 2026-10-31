@@ -254,7 +254,7 @@ Commands:
 | `/pending` | Lists pending actions. |
 | `/list` | Lists the agent's 100 most recent chats, one line each, and which of them are approved for all messages; a last line counts the older chats. |
 
-`/pending` and `/list` are in the chat's command menu, `/leave` is typed, and the cards carry the others. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](PLAN.md), section "What the owner sees: the agent control chat".
+`/pending`, `/list` and `/leave` are in the chat's command menu, and the cards carry the others. Tapping `/leave` in the menu puts `/leave <chat ID>` into the entry field: replace `<chat ID>` with the chat's ID from `/list`, such as `#9`, and send it. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](PLAN.md), section "What the owner sees: the agent control chat".
 
 ### Approval of all messages to a chat
 

@@ -433,7 +433,17 @@ host, interrupted   the request's lines except the commands line + "Performed wi
 
 ### Commands
 
-The group's command menu has `/pending` and `/list`; `/leave` is typed; the cards carry the others.
+The group's command menu has `/pending`, `/list` and `/leave`; the cards carry the others.
+
+```
+menu entry   keyword   label                 params      tapped
+/pending     pending   Pending actions       none        sent
+/list        list      Chats and approvals   none        sent
+/leave       leave     Leave a chat          <chat ID>   "/leave <chat ID>" in the entry field, the cursor at its end
+```
+
+- The apps put "/keyword params" into the entry field for a command with params, and send "/keyword" for one without (`CommandsMenuView.kt:154-159`, `CommandsMenuView.swift:118-124`).
+- The template sent unedited gets the commands reply.
 
 ```
 command             result
@@ -862,7 +872,8 @@ g = /_group <user> {displayName: DISPLAY, fullName: "",
   description: "Supervise your AI agent here: approve or reject its connections and messages with one tap.",
   groupPreferences: {history: {enable: "on"}, commands: [
     {type: "command", keyword: "pending", label: "Pending actions"},
-    {type: "command", keyword: "list", label: "Chats and approvals"}]}}
+    {type: "command", keyword: "list", label: "Chats and approvals"},
+    {type: "command", keyword: "leave", label: "Leave a chat", params: "<chat ID>"}]}}
 /_set custom #g {simplexMcp: {control: true, nextAction: n}}
 log "Agent control chat \"DISPLAY\" created."
 return g with customData {simplexMcp: {control: true, nextAction: n}}       # the /_group response precedes the custom data

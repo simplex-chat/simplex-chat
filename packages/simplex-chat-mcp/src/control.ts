@@ -10,6 +10,7 @@ import {AgentTools, chatSubject, isActive, isConnected, memberCurrent, refusedFi
 const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "pending", label: "Pending actions"},
   {type: "command", keyword: "list", label: "Chats and approvals"},
+  {type: "command", keyword: "leave", label: "Leave a chat", params: "<chat ID>"},
 ]
 
 const commandsReply = "Commands: /approve, /reject, /receive, /revoke, /leave, /pending, /list. Each card shows its commands."
