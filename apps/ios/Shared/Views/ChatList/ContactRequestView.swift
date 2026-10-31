@@ -45,7 +45,7 @@ struct ContactRequestView: View {
                 Text("wants to connect to you!")
                     .frame(alignment: .topLeading)
                     .padding([.leading, .trailing], 8)
-
+                
                 Spacer()
             }
             .frame(maxHeight: .infinity)
