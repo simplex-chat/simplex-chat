@@ -217,7 +217,6 @@ struct MigrateFromDevice: View {
             } footer: {
                 Text("In order to continue, chat should be stopped.")
                     .foregroundColor(theme.colors.secondary)
-                    .font(.callout)
             }
         }
     }
@@ -246,7 +245,6 @@ struct MigrateFromDevice: View {
             } footer: {
                 Text("All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays.")
                     .foregroundColor(theme.colors.secondary)
-                    .font(.callout)
             }
         }
     }
@@ -298,7 +296,6 @@ struct MigrateFromDevice: View {
             } footer: {
                 Text("You can give another try.")
                     .foregroundColor(theme.colors.secondary)
-                    .font(.callout)
             }
         }
         .onAppear {
@@ -337,7 +334,6 @@ struct MigrateFromDevice: View {
                     Text("Choose _Migrate from another device_ on the new device and scan QR code.")
                 }
                 .foregroundColor(theme.colors.secondary)
-                .font(.callout)
             }
             Section(header: Text("Show QR code").foregroundColor(theme.colors.secondary)) {
                 SimpleXLinkQRCode(uri: link)
@@ -382,7 +378,6 @@ struct MigrateFromDevice: View {
                         Text("**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection.")
                     }
                     .foregroundColor(theme.colors.secondary)
-                    .font(.callout)
                 }
             }
             if chatDeletion {
@@ -671,7 +666,6 @@ private struct PassphraseConfirmationView: View {
                 } footer: {
                     Text("Confirm that you remember database passphrase to migrate it.")
                         .foregroundColor(theme.colors.secondary)
-                        .font(.callout)
                 }
                 .onAppear {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {

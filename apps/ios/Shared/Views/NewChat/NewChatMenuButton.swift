@@ -133,7 +133,7 @@ struct NewChatSheet: View {
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        Label("Create group", systemImage: "person.2.circle.fill")
+                        Label("Create group", systemImage: "person.2")
                     }
                     NavigationLink {
                         AddChannelView()
@@ -500,5 +500,12 @@ struct DeletedChats: View {
 struct NewChatMenuButton_Previews: PreviewProvider {
     static var previews: some View {
         NewChatMenuButton(showNewChatSheet: Binding.constant(false))
+    }
+}
+
+struct NewChatSheet_Previews: PreviewProvider {
+    static var previews: some View {
+        NewChatSheet()
+            .environmentObject(ChatModel())
     }
 }

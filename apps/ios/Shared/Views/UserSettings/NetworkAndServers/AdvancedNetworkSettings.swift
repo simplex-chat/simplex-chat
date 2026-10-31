@@ -54,7 +54,6 @@ struct AdvancedNetworkSettings: View {
                                 }
                             } footer: {
                                 Text(proxyModeInfo(netCfg.smpProxyMode))
-                                    .font(.callout)
                                     .foregroundColor(theme.colors.secondary)
                             }
                         }
@@ -78,7 +77,6 @@ struct AdvancedNetworkSettings: View {
                                 .disabled(netCfg.smpProxyMode == .never)
                             } footer: {
                                 Text(proxyFallbackInfo(netCfg.smpProxyFallback))
-                                    .font(.callout)
                                     .foregroundColor(theme.colors.secondary)
                             }
                         }

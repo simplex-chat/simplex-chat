@@ -63,8 +63,6 @@ struct HiddenProfileView: View {
             } footer: {
                 Text("To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page.")
                     .foregroundColor(theme.colors.secondary)
-                    .font(.body)
-                    .padding(.top, 8)
             }
         }
         .alert(isPresented: $saveErrorAlert) {
