@@ -1,6 +1,6 @@
 # SimpleX MCP server 0.2.0: files, /leave and library methods
 
-Status: draft for review. Design agreed on 2026-10-22; C1-C3 decided on 2026-10-30; C4 is open. Code references: master `d7d180a42`; library references: `ep/bot-api` (#7808).
+Status: draft for review. Design agreed on 2026-10-22; C1-C3 decided on 2026-10-30; C4 decided on 2026-10-31. Code references: master `d7d180a42`; library references: `ep/bot-api` (#7808).
 
 Prerequisites, in order:
 1. #7808 merged: bot API commands documented, the Node library typed (`packages/simplex-chat-nodejs/src/api.ts`).
@@ -10,13 +10,13 @@ Prerequisites, in order:
 Phases:
 1. Library methods, except the wait at stop, and `/leave CHAT`; `ep/bot-api` at `45c77f6aa` is merged into `ep/mcp-files`.
 2. Files: received files, `download`, `send` with `file`.
-3. The wait at stop, after C4.
+3. The wait at stop: a fixed wait, decision 15.
 
 ## Decisions
 
 1. Library methods only:
    - the 15 command strings of the server are replaced by typed methods
-   - the wait at stop uses item status events, without `/sql`
+   - the wait at stop runs without `/sql`: decision 15
 2. `/leave CHAT` is an owner command in the agent control chat; it acts at once.
 3. A received file reaches the agent at once, in the message's `file` field, with status `offered`.
 4. `download` is a new action tool; the owner approves each download, or all files of one chat.
@@ -30,9 +30,7 @@ Phases:
 12. C2 (a): a GIF or WebP, which the core does not decode (`Image.hs:62-70`), is sent as an image with a fixed preview, the file unchanged.
 13. C3 (a): a video's preview and duration come from `ffmpeg` and `ffprobe` when installed, otherwise a fixed preview and duration 0.
 14. `download` waits for the file description (`rcvFileDescrReady`) before it creates the action, at most `wait` seconds; at the end of `wait` it returns a tool error that asks to call again later. Known servers follow the core's rule (`Library/Internal.hs:898-904`, `Operators.hs:455-465`), compared without passwords.
-
-Open choices:
-- C4, the wait at stop: a core command for pending deliveries, or a final message whose sent status is awaited; see "Library methods"
+15. C4, for now: a fixed wait at stop, `--stop-wait SECONDS`, 0 to 60, 10 by default, only when cards were edited or posted at the stop; a second Ctrl-C ends it. The `/sql` count of pending deliveries is removed. A later change can post a final message and wait for its "sent" status for each owner.
 
 ## Library methods
 
