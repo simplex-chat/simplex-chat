@@ -541,6 +541,7 @@ export class ChatApi {
 
   /**
    * Receive file.
+   * With `approvedRelays = false`, a file on unknown XFTP relays is received only when the IP address is protected; otherwise `fileNotApproved` is thrown.
    * Network usage: no.
    */
   async apiReceiveFile(fileId: number, filePath?: string, approvedRelays = true): Promise<T.AChatItem> {
@@ -1009,6 +1010,10 @@ export class ChatApi {
     throw new ChatCommandError("error setting network config", r)
   }
 
+  /**
+   * Get user servers and chat relays, grouped by operator.
+   * Network usage: no.
+   */
   async apiGetUserServers(userId: number): Promise<T.UserOperatorServers[]> {
     const r = await this.sendChatCmd(CC.APIGetUserServers.cmdString({userId}))
     if (r.type === "userServers") return r.userServers
