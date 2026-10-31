@@ -85,7 +85,7 @@ badgeGroupTests = describe "badge group" $ do
                  ]
   it "advertises every kind of code in the issue and bulk menu entries" $
     groupCommands
-      `shouldBe` [ CBCCommand "issue" "Generate a code" (Just "<name <length>|supporter|legend|investor> [years|months <N>]"),
+      `shouldBe` [ CBCCommand "issue" "Generate a code" (Just "<name <length>|supporter|legend|investor> [years|months <N>] [uses <N>]"),
                    CBCCommand "bulk" "Generate many codes" (Just "<name <length>|supporter|legend|investor> [years|months <N>] count <N>"),
                    CBCCommand "revoke" "Revoke a code" (Just "<code>")
                  ]

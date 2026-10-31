@@ -1578,7 +1578,7 @@ issueUsage = "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>
 -- The list is spelled out rather than taken from the service, so a change there fails here.
 expectedCommands :: [ChatBotCommand]
 expectedCommands =
-  [ CBCCommand "issue" "Generate a code" (Just "<name <length>|supporter|legend|investor> [years|months <N>]"),
+  [ CBCCommand "issue" "Generate a code" (Just "<name <length>|supporter|legend|investor> [years|months <N>] [uses <N>]"),
     CBCCommand "bulk" "Generate many codes" (Just "<name <length>|supporter|legend|investor> [years|months <N>] count <N>"),
     CBCCommand "revoke" "Revoke a code" (Just "<code>")
   ]

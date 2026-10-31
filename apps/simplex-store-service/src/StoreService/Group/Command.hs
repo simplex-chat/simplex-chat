@@ -158,7 +158,7 @@ cmdLabel = \case
 -- The menu hints and the usage replies are built from the same kinds, options and bounds, so they cannot drift apart.
 cmdParams :: CmdTag -> Text
 cmdParams = \case
-  CTIssue -> kindParams
+  CTIssue -> kindParams <> " [" <> optArg usesOpt <> "]"
   CTBulk -> kindParams <> " " <> optArg countOpt
   CTRevoke -> "<code>"
   where
