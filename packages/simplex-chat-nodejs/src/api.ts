@@ -969,6 +969,10 @@ export class ChatApi {
     throw new ChatCommandError("error marking chat items read", r)
   }
 
+  /**
+   * Get message information.
+   * Network usage: no.
+   */
   async apiGetChatItemInfo(chatType: T.ChatType, chatId: number, chatItemId: number): Promise<CR.ChatItemInfo> {
     const r = await this.sendChatCmd(CC.APIGetChatItemInfo.cmdString({chatRef: {chatType, chatId}, chatItemId}))
     if (r.type === "chatItemInfo") return r
