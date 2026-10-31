@@ -516,17 +516,17 @@ private fun MutableState<MigrationFromState>.uploadArchive(archivePath: String) 
 suspend fun initTemporaryDatabase(tempDatabaseFile: File, netCfg: NetCfg): Pair<ChatCtrl, User>? {
   val (status, ctrl) = chatInitTemporaryDatabase(tempDatabaseFile.absolutePath)
   showErrorOnMigrationIfNeeded(status)
-  try {
-    if (ctrl != null) {
+  if (ctrl != null) {
+    try {
       val user = startChatWithTemporaryDatabase(ctrl, netCfg)
       if (user != null) return ctrl to user
-      chatCloseStore(ctrl)
+    } catch (e: Throwable) {
+      Log.e(TAG, "Error while starting chat in temporary database: ${e.stackTraceToString()}")
     }
-    File(tempDatabaseFile.absolutePath + "_chat.db").delete()
-    File(tempDatabaseFile.absolutePath + "_agent.db").delete()
-  } catch (e: Throwable) {
-    Log.e(TAG, "Error while starting chat in temporary database: ${e.stackTraceToString()}")
+    controller.stopChatWithTemporaryDatabase(ctrl)
   }
+  File(tempDatabaseFile.absolutePath + "_chat.db").delete()
+  File(tempDatabaseFile.absolutePath + "_agent.db").delete()
   return null
 }
 
