@@ -1,0 +1,681 @@
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+
+module StoreService.Store.Postgres.Migrations (storeServiceSchemaMigrations, schemaMigrations, servicePrefix, withPrefix) where
+
+import Data.List (sortOn)
+import Data.Text (Text)
+import Simplex.Chat.Store.Postgres.Migrations.M20260915_user_badges (badgeSchema, badgeSchemaDown, withPrefix)
+import Simplex.Messaging.Agent.Store.Shared (Migration (..))
+import Text.RawString.QQ (r)
+
+storeServiceSchemaMigrations :: [Migration]
+storeServiceSchemaMigrations = sortOn name $ map migration schemaMigrations
+  where
+    migration (name, up, down) = Migration {name, up, down}
+
+schemaMigrations :: [(String, Text, Maybe Text)]
+schemaMigrations =
+  [ ("20260915_badge_service_schema", m20260915_badge_service_schema, Just down_m20260915_badge_service_schema),
+    ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
+    ("20260925_badge_store_receipts", m20260925_badge_store_receipts, Just down_m20260925_badge_store_receipts),
+    ("20261012_badge_subscriptions", m20261012_badge_subscriptions, Just down_m20261012_badge_subscriptions),
+    ("20261013_names", m20261013_names, Just down_m20261013_names),
+    ("20261022_drop_taken_codes", m20261022_drop_taken_codes, Just down_m20261022_drop_taken_codes),
+    ("20261022_name_balances", m20261022_name_balances, Just down_m20261022_name_balances),
+    ("20261022_name_late_wait", m20261022_name_late_wait, Just down_m20261022_name_late_wait),
+    ("20261023_name_terms", m20261023_name_terms, Just down_m20261023_name_terms),
+    ("20261027_name_invoiced_units", m20261027_name_invoiced_units, Just down_m20261027_name_invoiced_units),
+    ("20261029_name_record_changes", m20261029_name_record_changes, Just down_m20261029_name_record_changes)
+  ]
+
+-- | The client tables share this database, so the service tables are the same names behind a prefix.
+servicePrefix :: Text
+servicePrefix = "sx_badge_service_"
+
+m20260915_badge_service_schema :: Text
+m20260915_badge_service_schema =
+  badgeSchema servicePrefix
+    <> withPrefix
+      servicePrefix
+      -- The payment columns are added to @payments, which badgeSchema owns. crypto_paid,
+      -- crypto_due and paid_in_full record the provider's own figures: it applies a payment
+      -- tolerance and adds a network fee after a partial payment, so what is owed and whether
+      -- an invoice is settled are its verdicts, not amounts recomputable from what we store.
+      [r|
+ALTER TABLE @payments ADD COLUMN crypto_paid TEXT;
+
+ALTER TABLE @payments ADD COLUMN crypto_due TEXT;
+
+ALTER TABLE @payments ADD COLUMN paid_in_full SMALLINT NOT NULL DEFAULT 0;
+
+CREATE TABLE @badge_codes(
+  badge_code_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  code_hash BYTEA NOT NULL,
+  badge_type TEXT NOT NULL,
+  months SMALLINT NOT NULL,
+  code_payment_status TEXT NOT NULL,
+  redeemed_at TIMESTAMPTZ,
+  expires_at TIMESTAMPTZ,
+  revoked_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL,
+  UNIQUE(code_hash)
+);
+
+ALTER TABLE @badge_purchases ADD COLUMN badge_code_id BIGINT REFERENCES @badge_codes;
+
+CREATE UNIQUE INDEX @idx_badge_purchases_code ON @badge_purchases(badge_code_id);
+
+CREATE TABLE @badge_code_invoices(
+  invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices ON DELETE CASCADE,
+  badge_code_id BIGINT NOT NULL REFERENCES @badge_codes,
+  price_id TEXT NOT NULL REFERENCES @badge_prices,
+  offer_id TEXT REFERENCES @badge_offers,
+  provider_ref TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX @idx_badge_code_invoices_offer ON @badge_code_invoices(offer_id);
+
+CREATE INDEX @idx_badge_code_invoices_price ON @badge_code_invoices(price_id);
+
+-- provider_ref is the provider's own id for the invoice; unique so a webhook or poller read
+-- resolves a payment to exactly one invoice.
+CREATE UNIQUE INDEX @idx_badge_code_invoices_provider_ref ON @badge_code_invoices(provider_ref);
+|]
+    -- Two filters run on every poller pass and neither may read the whole table, or the pass
+    -- lengthens for as long as the service keeps selling: the expiry sweep, on (status, expires_at),
+    -- and the read lane, which takes a window of created_at. Status leads the first because it is
+    -- matched by equality there; the second matches it with <>, which no index can seek, so it seeks
+    -- the window and filters what little that leaves.
+    <> withPrefix
+      servicePrefix
+      [r|
+CREATE INDEX @idx_invoices_status_expires_at ON @invoices(status, expires_at);
+
+CREATE INDEX @idx_invoices_created ON @invoices(created_at);
+|]
+
+down_m20260915_badge_service_schema :: Text
+down_m20260915_badge_service_schema =
+  withPrefix
+    servicePrefix
+    [r|
+DROP INDEX @idx_invoices_created;
+DROP INDEX @idx_invoices_status_expires_at;
+
+DROP INDEX @idx_badge_code_invoices_provider_ref;
+DROP INDEX @idx_badge_code_invoices_offer;
+DROP INDEX @idx_badge_code_invoices_price;
+DROP TABLE @badge_code_invoices;
+
+DROP INDEX @idx_badge_purchases_code;
+|]
+    <> badgeSchemaDown servicePrefix
+    <> withPrefix
+      servicePrefix
+      [r|
+DROP TABLE @badge_codes;
+|]
+
+m20260918_badge_group_ops :: Text
+m20260918_badge_group_ops =
+  withPrefix
+    servicePrefix
+    [r|
+CREATE TABLE @group(
+  group_id BIGINT NOT NULL PRIMARY KEY,
+  group_link TEXT NOT NULL,
+  owner_bootstrapped SMALLINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
+ALTER TABLE @badge_codes ADD COLUMN redeem_limit INTEGER NOT NULL DEFAULT 1;
+
+ALTER TABLE @badge_codes ADD COLUMN redeem_count INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE @badge_codes ADD COLUMN group_item_id BIGINT;
+
+ALTER TABLE @badge_codes ADD COLUMN group_item_sent_at TIMESTAMPTZ;
+
+-- Redemptions made before this migration must count against the new limit, or every code
+-- redeemed already would read as unspent and could be redeemed once more.
+UPDATE @badge_codes SET redeem_count = 1 WHERE redeemed_at IS NOT NULL;
+
+DROP INDEX @idx_badge_purchases_code;
+
+CREATE INDEX @idx_badge_purchases_code ON @badge_purchases(badge_code_id);
+|]
+
+-- The index stays non-unique, since a multi-use code may already have several purchases.
+down_m20260918_badge_group_ops :: Text
+down_m20260918_badge_group_ops =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @badge_codes DROP COLUMN group_item_sent_at;
+ALTER TABLE @badge_codes DROP COLUMN group_item_id;
+ALTER TABLE @badge_codes DROP COLUMN redeem_count;
+ALTER TABLE @badge_codes DROP COLUMN redeem_limit;
+DROP TABLE @group;
+|]
+
+m20260925_badge_store_receipts :: Text
+m20260925_badge_store_receipts =
+  withPrefix
+    servicePrefix
+    -- The unique provider_ref is what makes one store transaction fund one purchase: presented twice
+    -- at once, or under two keys, only one insert of its payment succeeds.
+    [r|
+DROP INDEX @idx_payments_provider_ref;
+
+CREATE UNIQUE INDEX @idx_payments_provider_ref ON @payments(provider, provider_ref);
+
+ALTER TABLE @badge_purchases ADD COLUMN payment_id TEXT REFERENCES @payments;
+
+CREATE UNIQUE INDEX @idx_badge_purchases_payment ON @badge_purchases(payment_id);
+
+ALTER TABLE @badge_ledger ADD COLUMN payment_id TEXT REFERENCES @payments;
+
+CREATE INDEX @idx_badge_ledger_payment ON @badge_ledger(payment_id);
+|]
+
+down_m20260925_badge_store_receipts :: Text
+down_m20260925_badge_store_receipts =
+  withPrefix
+    servicePrefix
+    [r|
+DROP INDEX @idx_badge_ledger_payment;
+
+ALTER TABLE @badge_ledger DROP COLUMN payment_id;
+
+DROP INDEX @idx_badge_purchases_payment;
+
+ALTER TABLE @badge_purchases DROP COLUMN payment_id;
+
+DROP INDEX @idx_payments_provider_ref;
+
+CREATE INDEX @idx_payments_provider_ref ON @payments(provider, provider_ref);
+|]
+
+m20261012_badge_subscriptions :: Text
+m20261012_badge_subscriptions =
+  withPrefix
+    servicePrefix
+    -- provider_token is a Play purchase token, a bearer secret: it is kept only for a subscription, which Play is asked about again.
+    [r|
+CREATE TABLE @subscription_charges(
+  charge_id TEXT NOT NULL PRIMARY KEY,
+  payment_id TEXT NOT NULL REFERENCES @payments ON DELETE CASCADE,
+  provider_charge_ref TEXT NOT NULL,
+  plan_id TEXT NOT NULL,
+  period_start TIMESTAMPTZ NOT NULL,
+  period_end TIMESTAMPTZ NOT NULL,
+  amount BIGINT,
+  currency TEXT,
+  created_at TIMESTAMPTZ NOT NULL,
+  UNIQUE(payment_id, provider_charge_ref)
+);
+
+ALTER TABLE @badge_ledger ADD COLUMN charge_id TEXT REFERENCES @subscription_charges;
+
+CREATE UNIQUE INDEX @idx_badge_ledger_charge ON @badge_ledger(charge_id, badge_purchase_id);
+
+ALTER TABLE @badge_ledger ADD COLUMN from_purchase_id BIGINT REFERENCES @badge_purchases;
+
+ALTER TABLE @badge_ledger ADD COLUMN to_purchase_id BIGINT REFERENCES @badge_purchases;
+
+CREATE INDEX @idx_badge_ledger_from_purchase ON @badge_ledger(from_purchase_id);
+
+CREATE INDEX @idx_badge_ledger_to_purchase ON @badge_ledger(to_purchase_id);
+
+ALTER TABLE @payments ADD COLUMN subscription_state TEXT;
+
+ALTER TABLE @payments ADD COLUMN subscription_checked_at TIMESTAMPTZ;
+
+ALTER TABLE @payments ADD COLUMN provider_token TEXT;
+
+ALTER TABLE @payments ADD COLUMN rebound_at TIMESTAMPTZ;
+
+ALTER TABLE @payments DROP COLUMN subscription_renews_at;
+
+ALTER TABLE @payments DROP COLUMN grace_until;
+
+ALTER TABLE @payments DROP COLUMN cancelled;
+|]
+
+down_m20261012_badge_subscriptions :: Text
+down_m20261012_badge_subscriptions =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @payments ADD COLUMN subscription_renews_at TIMESTAMPTZ;
+
+ALTER TABLE @payments ADD COLUMN grace_until TIMESTAMPTZ;
+
+ALTER TABLE @payments ADD COLUMN cancelled SMALLINT NOT NULL DEFAULT 0;
+
+ALTER TABLE @payments DROP COLUMN rebound_at;
+
+ALTER TABLE @payments DROP COLUMN provider_token;
+
+ALTER TABLE @payments DROP COLUMN subscription_checked_at;
+
+ALTER TABLE @payments DROP COLUMN subscription_state;
+
+DROP INDEX @idx_badge_ledger_to_purchase;
+
+DROP INDEX @idx_badge_ledger_from_purchase;
+
+ALTER TABLE @badge_ledger DROP COLUMN to_purchase_id;
+
+ALTER TABLE @badge_ledger DROP COLUMN from_purchase_id;
+
+DROP INDEX @idx_badge_ledger_charge;
+
+ALTER TABLE @badge_ledger DROP COLUMN charge_id;
+
+DROP TABLE @subscription_charges;
+|]
+
+-- A registration is live as Names.Store's orderLive decides.
+-- reserved_by is added after the registrations table, which references the codes table.
+m20261013_names :: Text
+m20261013_names =
+  withPrefix
+    servicePrefix
+    [r|
+CREATE TABLE @name_prepaid_codes(
+  name_prepaid_code_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  code_hash BYTEA NOT NULL,
+  min_length INTEGER NOT NULL,
+  years INTEGER NOT NULL,
+  code_payment_status TEXT NOT NULL,
+  reserved_at TIMESTAMPTZ,
+  spent_at TIMESTAMPTZ,
+  revoked_at TIMESTAMPTZ,
+  expires_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL,
+  UNIQUE(code_hash)
+);
+
+CREATE TABLE @name_registrations(
+  registration_id TEXT NOT NULL PRIMARY KEY,
+  version BIGINT NOT NULL,
+  label_hash BYTEA NOT NULL,
+  length INTEGER NOT NULL,
+  duration BIGINT NOT NULL,
+  owner BYTEA NOT NULL,
+  commitment BYTEA NOT NULL,
+  sealed TEXT NOT NULL,
+  phase TEXT NOT NULL,
+  years INTEGER NOT NULL,
+  price INTEGER NOT NULL,
+  method TEXT,
+  name_prepaid_code_id BIGINT REFERENCES @name_prepaid_codes,
+  label TEXT,
+  secret BYTEA,
+  contact_link TEXT,
+  channel_link TEXT,
+  intent_nonce BIGINT,
+  intent_deadline BIGINT,
+  intent_signature BYTEA,
+  commit_tx BYTEA,
+  commit_block BIGINT,
+  register_tx BYTEA,
+  register_block BIGINT,
+  reveal_after BIGINT,
+  reveal_before BIGINT,
+  expires_at BIGINT,
+  issued_code_id BIGINT REFERENCES @name_prepaid_codes,
+  registered_at TIMESTAMPTZ,
+  failed_at TIMESTAMPTZ,
+  error TEXT,
+  live SMALLINT NOT NULL,
+  order_hash BYTEA NOT NULL,
+  moves INTEGER NOT NULL DEFAULT 0,
+  links_refused_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL
+);
+
+ALTER TABLE @name_prepaid_codes ADD COLUMN reserved_by TEXT REFERENCES @name_registrations;
+
+CREATE UNIQUE INDEX @idx_name_prepaid_codes_reserved_by ON @name_prepaid_codes(reserved_by);
+
+CREATE UNIQUE INDEX @idx_name_registrations_live_commitment ON @name_registrations(commitment) WHERE live = 1;
+
+CREATE UNIQUE INDEX @idx_name_registrations_live_owner_label ON @name_registrations(owner, label_hash) WHERE live = 1;
+
+CREATE INDEX @idx_name_registrations_label_phase ON @name_registrations(label_hash, phase);
+
+CREATE INDEX @idx_name_registrations_owner ON @name_registrations(owner, created_at);
+
+CREATE INDEX @idx_name_registrations_phase ON @name_registrations(phase, created_at);
+
+CREATE INDEX @idx_name_registrations_order_hash ON @name_registrations(order_hash);
+
+CREATE INDEX @idx_name_registrations_prepaid_code ON @name_registrations(name_prepaid_code_id);
+
+CREATE INDEX @idx_name_registrations_issued_code ON @name_registrations(issued_code_id);
+
+CREATE TABLE @name_invoices(
+  invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices ON DELETE CASCADE,
+  registration_id TEXT NOT NULL REFERENCES @name_registrations ON DELETE CASCADE,
+  provider_ref TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE UNIQUE INDEX @idx_name_invoices_registration ON @name_invoices(registration_id);
+
+CREATE UNIQUE INDEX @idx_name_invoices_provider_ref ON @name_invoices(provider_ref);
+
+CREATE TABLE @name_record_edits(
+  name_record_edit_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  label_hash BYTEA NOT NULL,
+  owner BYTEA NOT NULL,
+  nonce BIGINT NOT NULL,
+  record_key TEXT,
+  record_value TEXT,
+  deadline BIGINT NOT NULL,
+  signature BYTEA NOT NULL,
+  body_hash BYTEA NOT NULL,
+  state TEXT NOT NULL,
+  revert TEXT,
+  mined_tx BYTEA,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
+-- A reverted edit keeps its row for its repeats while a new body reuses the nonce.
+CREATE UNIQUE INDEX @idx_name_record_edits_owner_nonce ON @name_record_edits(owner, nonce) WHERE state IN ('pending', 'mined');
+
+CREATE INDEX @idx_name_record_edits_body_hash ON @name_record_edits(body_hash);
+
+CREATE INDEX @idx_name_record_edits_label_created ON @name_record_edits(label_hash, created_at);
+
+CREATE TABLE @name_transactions(
+  name_transaction_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  registration_id TEXT REFERENCES @name_registrations,
+  name_record_edit_id BIGINT REFERENCES @name_record_edits,
+  kind TEXT NOT NULL,
+  raw BYTEA NOT NULL,
+  tx_hash BYTEA NOT NULL,
+  registrar_nonce BIGINT NOT NULL,
+  sent_at TIMESTAMPTZ NOT NULL,
+  mined_block BIGINT,
+  status TEXT NOT NULL,
+  CHECK ((registration_id IS NULL) <> (name_record_edit_id IS NULL)),
+  UNIQUE(tx_hash)
+);
+
+CREATE INDEX @idx_name_transactions_registration ON @name_transactions(registration_id);
+
+CREATE INDEX @idx_name_transactions_edit ON @name_transactions(name_record_edit_id);
+
+CREATE INDEX @idx_name_transactions_status ON @name_transactions(status, registrar_nonce);
+|]
+
+-- A table another table's foreign key references cannot be dropped, so reserved_by goes first.
+-- The name orders' invoices go with them, except those with a payment, which stay for the accounts.
+down_m20261013_names :: Text
+down_m20261013_names =
+  withPrefix
+    servicePrefix
+    [r|
+DROP INDEX @idx_name_transactions_status;
+DROP INDEX @idx_name_transactions_edit;
+DROP INDEX @idx_name_transactions_registration;
+DROP TABLE @name_transactions;
+
+DROP INDEX @idx_name_record_edits_label_created;
+DROP INDEX @idx_name_record_edits_body_hash;
+DROP INDEX @idx_name_record_edits_owner_nonce;
+DROP TABLE @name_record_edits;
+
+DELETE FROM @invoices WHERE invoice_id IN (
+  SELECT ni.invoice_id FROM @name_invoices ni
+  WHERE NOT EXISTS (SELECT 1 FROM @payments p WHERE p.invoice_id = ni.invoice_id)
+);
+DROP INDEX @idx_name_invoices_provider_ref;
+DROP INDEX @idx_name_invoices_registration;
+DROP TABLE @name_invoices;
+
+DROP INDEX @idx_name_registrations_issued_code;
+DROP INDEX @idx_name_registrations_prepaid_code;
+DROP INDEX @idx_name_registrations_order_hash;
+DROP INDEX @idx_name_registrations_phase;
+DROP INDEX @idx_name_registrations_owner;
+DROP INDEX @idx_name_registrations_label_phase;
+DROP INDEX @idx_name_registrations_live_owner_label;
+DROP INDEX @idx_name_registrations_live_commitment;
+DROP INDEX @idx_name_prepaid_codes_reserved_by;
+ALTER TABLE @name_prepaid_codes DROP COLUMN reserved_by;
+DROP TABLE @name_registrations;
+
+DROP TABLE @name_prepaid_codes;
+|]
+
+-- A code_issued order's worth went into its code, which stays a valid prepaid code, so it ends taken with nothing left.
+m20261022_drop_taken_codes :: Text
+m20261022_drop_taken_codes =
+  withPrefix
+    servicePrefix
+    [r|
+UPDATE @name_registrations SET version = version + 1, phase = 'taken', price = 0, live = 0 WHERE phase = 'code_issued';
+
+DROP INDEX @idx_name_registrations_issued_code;
+
+ALTER TABLE @name_registrations DROP COLUMN issued_code_id;
+|]
+
+down_m20261022_drop_taken_codes :: Text
+down_m20261022_drop_taken_codes =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @name_registrations ADD COLUMN issued_code_id BIGINT REFERENCES @name_prepaid_codes;
+
+CREATE INDEX @idx_name_registrations_issued_code ON @name_registrations(issued_code_id);
+|]
+
+-- amount = credited - spent - refunded, spent being the balance_used of the orders it paid for that went past unpaid.
+-- Crypto is counted in integer units (satoshi, piconero), so every sum is exact; rates are decimal text, never summed.
+m20261022_name_balances :: Text
+m20261022_name_balances =
+  withPrefix
+    servicePrefix
+    [r|
+CREATE TABLE @name_balances(
+  registration_id TEXT NOT NULL PRIMARY KEY REFERENCES @name_registrations,
+  amount INTEGER NOT NULL CHECK (amount >= 0),
+  credited INTEGER NOT NULL DEFAULT 0 CHECK (credited >= 0),
+  refunded INTEGER NOT NULL DEFAULT 0 CHECK (refunded >= 0),
+  reserved_by TEXT REFERENCES @name_registrations,
+  refunded_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE UNIQUE INDEX @idx_name_balances_reserved_by ON @name_balances(reserved_by);
+
+ALTER TABLE @name_registrations ADD COLUMN balance_source TEXT REFERENCES @name_registrations;
+
+ALTER TABLE @name_registrations ADD COLUMN balance_used INTEGER NOT NULL DEFAULT 0;
+
+CREATE INDEX @idx_name_registrations_balance_source ON @name_registrations(balance_source);
+
+ALTER TABLE @payments ADD COLUMN confirmed_amount INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE @payments ADD COLUMN received_units BIGINT;
+
+ALTER TABLE @payments ADD COLUMN confirmed_units BIGINT;
+
+ALTER TABLE @payments ADD COLUMN invoice_rate TEXT;
+
+ALTER TABLE @name_invoices ADD COLUMN late_alerted_at TIMESTAMPTZ;
+
+ALTER TABLE @name_invoices ADD COLUMN late_alerted_units BIGINT;
+
+CREATE TABLE @name_late_credits(
+  name_late_credit_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  invoice_id TEXT NOT NULL REFERENCES @invoices,
+  credit_no INTEGER NOT NULL,
+  registration_id TEXT NOT NULL REFERENCES @name_registrations,
+  units BIGINT,
+  invoice_rate TEXT,
+  current_rate TEXT,
+  rate_used TEXT,
+  cents INTEGER NOT NULL CHECK (cents >= 0),
+  created_at TIMESTAMPTZ NOT NULL,
+  UNIQUE(invoice_id, credit_no)
+);
+
+CREATE INDEX @idx_name_late_credits_registration ON @name_late_credits(registration_id);
+
+UPDATE @name_registrations SET live = 0 WHERE phase = 'taken';
+
+INSERT INTO @name_balances (registration_id, amount, credited, refunded, created_at, updated_at)
+SELECT registration_id, price, price, 0, updated_at, updated_at FROM @name_registrations
+WHERE phase = 'taken' AND name_prepaid_code_id IS NULL AND price > 0;
+|]
+
+-- Taken orders stay not live.
+down_m20261022_name_balances :: Text
+down_m20261022_name_balances =
+  withPrefix
+    servicePrefix
+    [r|
+DROP INDEX @idx_name_late_credits_registration;
+DROP TABLE @name_late_credits;
+
+ALTER TABLE @name_invoices DROP COLUMN late_alerted_units;
+ALTER TABLE @name_invoices DROP COLUMN late_alerted_at;
+
+ALTER TABLE @payments DROP COLUMN invoice_rate;
+ALTER TABLE @payments DROP COLUMN confirmed_units;
+ALTER TABLE @payments DROP COLUMN received_units;
+ALTER TABLE @payments DROP COLUMN confirmed_amount;
+
+DROP INDEX @idx_name_registrations_balance_source;
+ALTER TABLE @name_registrations DROP COLUMN balance_used;
+ALTER TABLE @name_registrations DROP COLUMN balance_source;
+
+DROP INDEX @idx_name_balances_reserved_by;
+DROP TABLE @name_balances;
+|]
+
+-- Why a closed order's late money will not be credited by itself: high_speed, units, rate_floor, unconfirmed or no_confirmation. Never cleared.
+m20261022_name_late_wait :: Text
+m20261022_name_late_wait =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @name_invoices ADD COLUMN late_support TEXT;
+|]
+
+down_m20261022_name_late_wait :: Text
+down_m20261022_name_late_wait =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @name_invoices DROP COLUMN late_support;
+|]
+
+-- The terms an order signed; '' for an order stored before orders signed them.
+m20261023_name_terms :: Text
+m20261023_name_terms =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @name_registrations ADD COLUMN agreed_terms TEXT NOT NULL DEFAULT '';
+|]
+
+down_m20261023_name_terms :: Text
+down_m20261023_name_terms =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @name_registrations DROP COLUMN agreed_terms;
+|]
+
+-- The crypto a payment's invoice asks in atomic units, network fee included, which late and overpaid crypto is a price share of.
+-- The partial index holds the overpaid payments, which the poller's credit pass reads on every pass.
+m20261027_name_invoiced_units :: Text
+m20261027_name_invoiced_units =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @payments ADD COLUMN invoiced_units BIGINT;
+
+CREATE INDEX @idx_payments_overpaid ON @payments(invoice_id) WHERE received_units > invoiced_units;
+|]
+
+down_m20261027_name_invoiced_units :: Text
+down_m20261027_name_invoiced_units =
+  withPrefix
+    servicePrefix
+    [r|
+DROP INDEX @idx_payments_overpaid;
+
+ALTER TABLE @payments DROP COLUMN invoiced_units;
+|]
+
+-- An edit is one request of the page, relayed as one transaction; its signed changes are its rows here, one per nonce.
+m20261029_name_record_changes :: Text
+m20261029_name_record_changes =
+  withPrefix
+    servicePrefix
+    [r|
+CREATE TABLE @name_record_changes(
+  name_record_edit_id BIGINT NOT NULL REFERENCES @name_record_edits ON DELETE CASCADE,
+  nonce BIGINT NOT NULL,
+  record_key TEXT,
+  record_value TEXT,
+  deadline BIGINT NOT NULL,
+  signature BYTEA NOT NULL,
+  PRIMARY KEY (name_record_edit_id, nonce)
+);
+
+INSERT INTO @name_record_changes (name_record_edit_id, nonce, record_key, record_value, deadline, signature)
+SELECT name_record_edit_id, nonce, record_key, record_value, deadline, signature FROM @name_record_edits;
+
+ALTER TABLE @name_record_edits DROP COLUMN record_key;
+
+ALTER TABLE @name_record_edits DROP COLUMN record_value;
+
+ALTER TABLE @name_record_edits DROP COLUMN deadline;
+
+ALTER TABLE @name_record_edits DROP COLUMN signature;
+|]
+
+-- An edit of two changes keeps only its first, the one its nonce names.
+down_m20261029_name_record_changes :: Text
+down_m20261029_name_record_changes =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @name_record_edits ADD COLUMN record_key TEXT;
+
+ALTER TABLE @name_record_edits ADD COLUMN record_value TEXT;
+
+ALTER TABLE @name_record_edits ADD COLUMN deadline BIGINT NOT NULL DEFAULT 0;
+
+ALTER TABLE @name_record_edits ADD COLUMN signature BYTEA NOT NULL DEFAULT '';
+
+UPDATE @name_record_edits SET
+  record_key = (SELECT c.record_key FROM @name_record_changes c WHERE c.name_record_edit_id = @name_record_edits.name_record_edit_id AND c.nonce = @name_record_edits.nonce),
+  record_value = (SELECT c.record_value FROM @name_record_changes c WHERE c.name_record_edit_id = @name_record_edits.name_record_edit_id AND c.nonce = @name_record_edits.nonce),
+  deadline = (SELECT c.deadline FROM @name_record_changes c WHERE c.name_record_edit_id = @name_record_edits.name_record_edit_id AND c.nonce = @name_record_edits.nonce),
+  signature = (SELECT c.signature FROM @name_record_changes c WHERE c.name_record_edit_id = @name_record_edits.name_record_edit_id AND c.nonce = @name_record_edits.nonce);
+
+DROP TABLE @name_record_changes;
+|]
+
+{- TODO [badges] deferred with the draft in M20260915_user_badges, service only.
+
+ALTER TABLE @payments ADD COLUMN receipt_hash BYTEA;
+
+-- down
+ALTER TABLE @payments DROP COLUMN receipt_hash;
+-}

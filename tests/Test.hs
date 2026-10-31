@@ -3,17 +3,38 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
 
-import Bots.BadgeService.BTCPayTests
-import Bots.BadgeService.BotTests
-import Bots.BadgeService.CatalogTests
-import Bots.BadgeService.ConfigTests
-import Bots.BadgeService.GroupIntegrationTests
-import Bots.BadgeService.GroupTests
-import Bots.BadgeService.NameRegistrationTests
-import Bots.BadgeService.StoreVerifierTests
-import Bots.BadgeService.StripeTests
-import Bots.BadgeService.WaitersTests
-import Bots.BadgeService.WebTests
+import Bots.StoreService.BTCPayTests
+import Bots.StoreService.BotTests
+import Bots.StoreService.CatalogTests
+import Bots.StoreService.ConfigTests
+import Bots.StoreService.GroupIntegrationTests
+import Bots.StoreService.GroupTests
+import Bots.StoreService.NameRegistrationTests
+import Bots.StoreService.NamesBalancesTests
+import Bots.StoreService.NamesLateCreditTests
+import Bots.StoreService.NamesChainTests
+import Bots.StoreService.NamesCodesTests
+import Bots.StoreService.NamesCommunityTests
+import Bots.StoreService.NamesContractsTests
+import Bots.StoreService.NamesLabelTests
+import Bots.StoreService.NamesLinksTests
+import Bots.StoreService.NamesOrdersTests
+import Bots.StoreService.NamesOwnerTests
+import Bots.StoreService.NamesPhasesTests
+import Bots.StoreService.NamesProfilesTests
+import Bots.StoreService.NamesRecordsTests
+import Bots.StoreService.NamesRevealTests
+import Bots.StoreService.NamesSearchTests
+import Bots.StoreService.NamesSenderTests
+import Bots.StoreService.NamesSignatureTests
+import Bots.StoreService.NamesSpendTests
+import Bots.StoreService.NamesStoreTests
+import Bots.StoreService.NamesWiringTests
+import Bots.StoreService.NamesWorkerTests
+import Bots.StoreService.StoreVerifierTests
+import Bots.StoreService.StripeTests
+import Bots.StoreService.WaitersTests
+import Bots.StoreService.WebTests
 import Bots.BroadcastTests
 import Bots.DirectoryTests
 import ChatClient
@@ -78,7 +99,7 @@ main = do
       around tmpBracket $ describe "WebRTC encryption" webRTCTests
 #endif
       describe "Supporter badges" badgeTests
-      describe "SimpleX badge service" $ do
+      describe "SimpleX store service" $ do
         badgeConfigTests
         badgeWebTests
         badgeCatalogTests
@@ -88,6 +109,28 @@ main = do
         badgeStripeTests
         badgeNameRegistrationTests
         badgeStoreVerifierTests
+      namesConfigTests
+      namesBalancesTests
+      namesLateCreditTests
+      namesChainTests
+      namesCodesTests
+      namesCommunityTests
+      namesContractsTests
+      namesLabelTests
+      namesLinksTests
+      namesOrdersTests
+      namesOwnerTests
+      namesPhasesTests
+      namesProfilesTests
+      namesRecordsTests
+      namesRevealTests
+      namesSearchTests
+      namesSenderTests
+      namesSignatureTests
+      namesSpendTests
+      namesStoreTests
+      namesWiringTests
+      namesWorkerTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "Member relations" memberRelationsTests
@@ -115,9 +158,15 @@ main = do
           describe "Wallet" walletTests
           xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
           describe "SimpleX Directory service bot" directoryServiceTests
-          describe "SimpleX badge service e2e" $ do
-            badgeServiceTests
+          describe "SimpleX store service e2e" $ do
+            storeServiceTests
             describe "managed group" badgeGroupIntegrationTests
+          describe "StoreService names: boot" namesBootTests
+          describe "StoreService names: worker" namesWorkerBootTests
+          namesCodesChatTests
+          namesRefundChatTests
+          namesSpendChatTests
+          namesProfilesChatTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
           sequential $ xdescribe'' "Save query plans" saveQueryPlans

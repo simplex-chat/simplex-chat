@@ -1,0 +1,177 @@
+[listener]
+; bind locally; the reverse proxy terminates TLS. It must pass the query string through:
+; the long poll's `wait`, `seenPaid` and `seenFull` all travel in it
+host = 127.0.0.1
+; the API, the webhooks and the badges site
+badges_port = 8080
+; the directory `npm run build` writes in apps/simplex-store-service/web. The default, /srv/badges,
+; is the Docker image's path, so a local run sets it
+badges_static_dir = ./apps/simplex-store-service/web/dist
+; serve the sites over HTTP. On (default) is the all-in-one deployment. Off is a split deployment
+; where a reverse proxy serves the exported folders and this service is only the API and webhooks.
+serve_webapp = on
+; when set, the badges site is written here at boot with the publishable key injected, copied from
+; badges_static_dir, for a reverse proxy to serve. Leave unset in the all-in-one deployment.
+; badges_export_dir = /srv/badges-export
+; on behind the reverse proxy above: without it every request keys the rate limiter on the
+; proxy's own address, so one bucket is shared by everyone. Set it off only where this
+; listener is reached directly, since a client can write the header itself.
+trust_forwarded_for = on
+; the names site (simplex.domains), with [names] only: its build directory (the default, /srv/names,
+; is the Docker image's path), the directory it is exported to for a reverse proxy, and its port in
+; the all-in-one deployment, which also answers the API and the webhooks
+; names_static_dir = ./apps/simplex-domains/webapp/dist
+; names_export_dir = /srv/names-export
+; names_port = 8081
+
+; omit this whole section to disable Bitcoin and Monero (the browser shows the provider-unavailable screen)
+[btcpay]
+host = https://btcpay.example.org
+api_key = replace-me
+store_id = replace-me
+webhook_secret = replace-me
+expiry_minutes = 60
+speed_policy = MediumSpeed
+payment_tolerance = 0.5
+
+; omit this whole section to disable card payments (the browser shows the provider-unavailable screen)
+[stripe]
+; restricted key (rk_): Payment Intents write + Charges read — never a full secret key (sk_)
+secret_key = rk_test_replace-me
+publishable_key = pk_test_replace-me
+; the signing secret of the /webhooks/stripe endpoint configured in the Dashboard
+webhook_secret = whsec_replace-me
+; minutes the service holds an unpaid card invoice open before it expires it; 1-1440
+session_minutes = 60
+
+[poll]
+waiting_seconds = 3
+idle_seconds = 60
+
+; verifies App Store purchases offline. Omit the whole section and the service answers every App Store
+; receipt provider_not_configured, which the app retries later.
+; root_certificates lists, comma-separated, the roots trusted to sign receipts, each in DER. Today that
+; is Apple Root CA - G3 as Apple publishes it: https://www.apple.com/certificateauthority/AppleRootCA-G3.cer
+; When Apple adds a root, list it beside the old one rather than in its place.
+; The api_ keys verify subscriptions through the App Store Server API, with the in-app purchase key
+; App Store Connect issues: its .p8 file, its key id and the account's issuer id, set together. Without
+; them every App Store subscription is answered provider_not_configured. api_host defaults to production,
+; the only host accepted unless [dev] credit_test_purchases = on, which needs
+; https://api.storekit-sandbox.itunes.apple.com instead; case and a trailing slash do not matter.
+; Keep the key file readable by this service alone.
+;[apple]
+;bundle_id = chat.simplex.app
+;root_certificates = /etc/simplex-store-service/AppleRootCA-G3.cer
+;api_key_id = 2X9R4HXF34
+;api_issuer_id = 57246542-96fe-1a63-e053-0824d011072a
+;api_private_key_file = /etc/simplex-store-service/AuthKey_2X9R4HXF34.p8
+;api_host = https://api.storekit.itunes.apple.com
+
+; verifies Play purchases with the Google Play Developer API. Omit the whole section and the service answers
+; every Play receipt provider_not_configured, which the app retries later.
+; service_account_file is the JSON key Google issues for a service account with the Play Console
+; permissions "View financial data, orders, and cancellation survey responses" and "Manage orders and
+; subscriptions", to read and acknowledge purchases. Without the second, a purchase the app has not
+; already acknowledged itself is answered internal until the permission is granted. Keep the file readable by this service alone.
+;[google]
+;package_name = chat.simplex.app
+;service_account_file = /etc/simplex-store-service/play-service-account.json
+
+; the key this service signs credentials with. index is the index clients verify against, so
+; private_key has to be one whose public half already ships in the apps at that index: a fresh
+; `simplex-chat badge keygen` pair is refused until it does.
+; --issuer-key-idx and --issuer-secret override this section if both are given.
+; to rotate, change index and private_key together, once clients trust the new index.
+; the key is checked at startup, so this section stays commented out until it holds a real key.
+;[issuer]
+;index = 1
+;private_key = replace-me
+
+; optional: when present the service manages one group, created on its first start without
+; --run-cli, and logs its join link once, on the start that creates it. The link is a bearer
+; secret that stays valid, so keep that log private. The first member to join is promoted to
+; owner, so join right away.
+; moderators can /issue and /bulk codes; admins and owners can also /revoke.
+; display_name must be a name the chat core accepts unchanged: one it would spell
+; differently stops the whole service, payments included, from starting.
+;[group]
+;display_name = SimpleX Badges
+;description = Welcome to the badges group
+;
+; the names store: omit [names] and [chain] together to turn it off.
+;[names]
+; testing until the .simplex TLD is deployed
+;tld = testing
+; the version of the name terms buyers agree to (1 to 32 letters, digits, dots, underscores or
+; hyphens), and the page the order's checkbox links to; both required, read only at startup
+;terms_version = 2026-10-23
+;terms_url = https://simplex.chat/
+; the paid years of a name; at least 2, the controller's minimum
+;years = 2
+; a name's term starts here; the days until then are free
+;term_start = 2027-01-01T00:00:00Z
+; how far an order's duration may be from the one the service computes
+;term_slack_seconds = 3600
+; a commitment with less than this left before its reveal deadline is not reused
+;reveal_margin_seconds = 900
+; how many times one order may move to another name
+;max_order_moves = 3
+; on: only prepaid codes register names, and every paid name order answers 403 codes_only
+;codes_only = off
+; the owner's link edits relayed for one name in any 365 days, each a transaction whose gas the
+; service pays; 1 to 100. A request refused, never sent or reverted on chain does not count
+;record_edits_per_year = 3
+;
+; community names, with [names] only: one line per name, `<label> = <what it is for>`, the label in
+; lower case and listed once, the text 1 to 200 characters without a full stop at the end, which
+; the page adds; read only at startup, see apps/simplex-store-service/README.md
+;[community]
+;bakers = bakers and bakeries in Portugal
+;
+; the chain the names are registered on. rpc_url can carry a provider's API key and service_key
+; pays for every commit and register: keep both secret. Neither is ever logged.
+;[chain]
+;rpc_url = http://127.0.0.1:8545
+;chain_id = 31337
+;controller = 0x...
+;sponsor = 0x...
+;base_registrar = 0x...
+;resolver = 0x...
+; 0x and 64 hex digits: the registrar key the service sends transactions with; create, fund and
+; rotate it as apps/simplex-store-service/README.md, "The gas key", says
+;service_key = 0x...
+; blocks after a register's receipt before a name counts as registered
+;confirmations = 3
+; the most gas any one transaction may use
+;gas_limit_cap = 8000000
+; the most wei per gas any transaction may pay (100 gwei); a transaction that needs more waits
+;max_fee_per_gas = 100000000000
+
+; local testing only, in both run modes: accepts any well-formed App Store or Play receipt without
+; verifying it, so anyone who can reach this service can mint badges. The service refuses to start
+; with this on beside an [apple] or [google] section. Its issuer key is always one released apps
+; trust, so they accept every badge minted this way.
+; A subscription is answered renewing and charged for its plan: the App Store product's, or the base
+; plan a Play test token test.<basePlanId>.<uuid> names when it is a plan of that product, and else
+; the product's monthly base plan, so a licence tester's purchase is credited too. An App Store tier
+; raise is charged for the raised plan, which its renewals then charge. The plans are kept in memory,
+; so a restart answers later renewals as ended, and refunds the unissued
+; months of a plan still covered at its next month. Nothing is acknowledged, so Play refunds a
+; licence tester's subscription once its acknowledgement window lapses.
+[dev]
+accept_unverified_store_receipts = off
+; only beside accept_unverified_store_receipts or credit_test_purchases = on: every issue request for a
+; subscription asks its store, while coverage runs too, and banks the months each check charges, to
+; watch a renewal by hand.
+check_store_during_coverage = off
+
+; local testing only, beside a real [apple] or [google]: credits a purchase the store itself calls a
+; test - an App Store sandbox purchase, or a Play licence tester's - which no real buyer pays for.
+; Without it such a purchase is refused as test_purchase, which is terminal, so it can never be credited.
+; Beside [apple] the service starts with this on only when its api_ keys are set with
+; api_host = https://api.storekit-sandbox.itunes.apple.com, since a sandbox receipt verifies like any
+; other and would otherwise be credited as a real purchase. Beside [google] it is allowed: never turn it
+; on beside the production app's [google], as the issuer key is one released apps trust and every
+; licence tester the Play Console lists would get a badge without paying. Each test purchase or test
+; subscription taken as paid is logged as a warning.
+credit_test_purchases = off

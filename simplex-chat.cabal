@@ -42,7 +42,6 @@ library
       Simplex.Chat.Badges.CLI
       Simplex.Chat.Badges.Code
       Simplex.Chat.Badges.Ledger
-      Simplex.Chat.Badges.Service
       Simplex.Chat.Badges.StorePlan
       Simplex.Chat.Badges.Types
       Simplex.Chat.Names
@@ -96,6 +95,7 @@ library
       Simplex.Chat.Store.Remote
       Simplex.Chat.Store.Shared
       Simplex.Chat.Store.Wallets
+      Simplex.Chat.StoreService
       Simplex.Chat.Styled
       Simplex.Chat.Types
       Simplex.Chat.Types.MemberRelations
@@ -436,42 +436,74 @@ library
       , template-haskell ==2.16.*
       , text >=1.2.4.0 && <1.3
 
-executable simplex-badge-service
+executable simplex-store-service
   if flag(client_library)
       buildable: False
   main-is: Main.hs
   hs-source-dirs:
-      apps/simplex-badge-service
-      apps/simplex-badge-service/src
+      apps/simplex-store-service
+      apps/simplex-store-service/src
   default-extensions:
       StrictData
   other-modules:
-      BadgeService.Catalog
-      BadgeService.Codes
-      BadgeService.Config
-      BadgeService.Group
-      BadgeService.Group.Command
-      BadgeService.Log
-      BadgeService.Options
-      BadgeService.Orders
-      BadgeService.Poller
-      BadgeService.Providers
-      BadgeService.Providers.BTCPay
-      BadgeService.Providers.Stripe
-      BadgeService.Service
-      BadgeService.Store
-      BadgeService.Store.Invoices
-      BadgeService.Store.Migrate
-      BadgeService.StoreReceipts
-      BadgeService.StoreReceipts.Apple
-      BadgeService.StoreReceipts.Google
-      BadgeService.StoreReceipts.Mock
-      BadgeService.Waiters
-      BadgeService.Web.Server
+      StoreService.Catalog
+      StoreService.Codes
+      StoreService.Config
+      StoreService.Group
+      StoreService.Group.Command
+      StoreService.Log
+      StoreService.Names.Abi
+      StoreService.Names.Balances
+      StoreService.Names.Chain
+      StoreService.Names.Codes
+      StoreService.Names.Community
+      StoreService.Names.Contracts
+      StoreService.Names.Env
+      StoreService.Names.Label
+      StoreService.Names.LateCredits
+      StoreService.Names.Links
+      StoreService.Names.Orders
+      StoreService.Names.Phases
+      StoreService.Names.Profiles
+      StoreService.Names.Records
+      StoreService.Names.Registration
+      StoreService.Names.Reveal
+      StoreService.Names.Revert
+      StoreService.Names.Sender
+      StoreService.Names.Signatures
+      StoreService.Names.Store
+      StoreService.Names.Turns
+      StoreService.Names.View
+      StoreService.Names.Worker
+      StoreService.Options
+      StoreService.Orders
+      StoreService.Poller
+      StoreService.Providers
+      StoreService.Providers.BTCPay
+      StoreService.Providers.Stripe
+      StoreService.Service
+      StoreService.Store
+      StoreService.Store.Invoices
+      StoreService.Store.Migrate
+      StoreService.StoreReceipts
+      StoreService.StoreReceipts.Apple
+      StoreService.StoreReceipts.Google
+      StoreService.StoreReceipts.Mock
+      StoreService.Waiters
+      StoreService.Web.Http
+      StoreService.Web.Names
+      StoreService.Web.Names.Codes
+      StoreService.Web.Names.Orders
+      StoreService.Web.Names.Owner
+      StoreService.Web.Names.Records
+      StoreService.Web.Names.Registration
+      StoreService.Web.Names.Search
+      StoreService.Web.Server
       Paths_simplex_chat
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -Werror=name-shadowing -threaded -rtsopts
   build-depends:
       aeson ==2.2.*
+    , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
@@ -501,14 +533,14 @@ executable simplex-badge-service
   default-language: Haskell2010
   if flag(client_postgres)
     other-modules:
-        BadgeService.Store.Postgres.Migrations
+        StoreService.Store.Postgres.Migrations
     build-depends:
         postgresql-simple ==0.7.*
         , raw-strings-qq ==1.1.*
     cpp-options: -DdbPostgres
   else
     other-modules:
-        BadgeService.Store.SQLite.Migrations
+        StoreService.Store.SQLite.Migrations
     build-depends:
         sqlcipher-simple ==0.4.*
   if impl(ghc >= 9.6.2)
@@ -745,48 +777,45 @@ test-suite simplex-chat-test
       API.Docs.Syntax.Types
       API.Docs.Types
       API.TypeInfo
-      BadgeService.Catalog
-      BadgeService.Codes
-      BadgeService.Config
-      BadgeService.Group
-      BadgeService.Group.Command
-      BadgeService.Log
-      BadgeService.Names.Chain
-      BadgeService.Names.Registration
-      BadgeService.Options
-      BadgeService.Orders
-      BadgeService.Poller
-      BadgeService.Providers
-      BadgeService.Providers.BTCPay
-      BadgeService.Providers.Stripe
-      BadgeService.Service
-      BadgeService.Store
-      BadgeService.Store.Invoices
-      BadgeService.Store.Migrate
-      BadgeService.StoreReceipts
-      BadgeService.StoreReceipts.Apple
-      BadgeService.StoreReceipts.Google
-      BadgeService.StoreReceipts.Mock
-      BadgeService.Waiters
-      BadgeService.Web.Server
-      Bots.BadgeService.BTCPayTests
-      Bots.BadgeService.BotTests
-      Bots.BadgeService.CatalogTests
-      Bots.BadgeService.ConfigTests
-      Bots.BadgeService.FakeAppStore
-      Bots.BadgeService.FakeBTCPay
-      Bots.BadgeService.FakeEthNode
-      Bots.BadgeService.FakePlay
-      Bots.BadgeService.FakeStore
-      Bots.BadgeService.FakeStripe
-      Bots.BadgeService.GroupIntegrationTests
-      Bots.BadgeService.GroupTests
-      Bots.BadgeService.NameRegistrationTests
-      Bots.BadgeService.StoreVerifierTests
-      Bots.BadgeService.StripeTests
-      Bots.BadgeService.WaitersTests
-      Bots.BadgeService.WebTests
-      Bots.BadgeService.WebUIMock
+      Bots.StoreService.BTCPayTests
+      Bots.StoreService.BotTests
+      Bots.StoreService.CatalogTests
+      Bots.StoreService.ConfigTests
+      Bots.StoreService.FakeAppStore
+      Bots.StoreService.FakeBTCPay
+      Bots.StoreService.FakeEthNode
+      Bots.StoreService.FakePlay
+      Bots.StoreService.FakeStore
+      Bots.StoreService.FakeStripe
+      Bots.StoreService.GroupIntegrationTests
+      Bots.StoreService.GroupTests
+      Bots.StoreService.NameRegistrationTests
+      Bots.StoreService.NamesBalancesTests
+      Bots.StoreService.NamesChainTests
+      Bots.StoreService.NamesCodesTests
+      Bots.StoreService.NamesCommunityTests
+      Bots.StoreService.NamesContractsTests
+      Bots.StoreService.NamesLabelTests
+      Bots.StoreService.NamesLateCreditTests
+      Bots.StoreService.NamesLinksTests
+      Bots.StoreService.NamesOrdersTests
+      Bots.StoreService.NamesOwnerTests
+      Bots.StoreService.NamesPhasesTests
+      Bots.StoreService.NamesProfilesTests
+      Bots.StoreService.NamesRecordsTests
+      Bots.StoreService.NamesRevealTests
+      Bots.StoreService.NamesSearchTests
+      Bots.StoreService.NamesSenderTests
+      Bots.StoreService.NamesSignatureTests
+      Bots.StoreService.NamesSpendTests
+      Bots.StoreService.NamesStoreTests
+      Bots.StoreService.NamesWiringTests
+      Bots.StoreService.NamesWorkerTests
+      Bots.StoreService.StoreVerifierTests
+      Bots.StoreService.StripeTests
+      Bots.StoreService.WaitersTests
+      Bots.StoreService.WebTests
+      Bots.StoreService.WebUIMock
       Broadcast.Bot
       Broadcast.Options
       Directory.BlockedWords
@@ -798,6 +827,59 @@ test-suite simplex-chat-test
       Directory.Service
       Directory.Store
       Directory.Store.Migrate
+      StoreService.Catalog
+      StoreService.Codes
+      StoreService.Config
+      StoreService.Group
+      StoreService.Group.Command
+      StoreService.Log
+      StoreService.Names.Abi
+      StoreService.Names.Balances
+      StoreService.Names.Chain
+      StoreService.Names.Codes
+      StoreService.Names.Community
+      StoreService.Names.Contracts
+      StoreService.Names.Env
+      StoreService.Names.Label
+      StoreService.Names.LateCredits
+      StoreService.Names.Links
+      StoreService.Names.Orders
+      StoreService.Names.Phases
+      StoreService.Names.Profiles
+      StoreService.Names.Records
+      StoreService.Names.Registration
+      StoreService.Names.Reveal
+      StoreService.Names.Revert
+      StoreService.Names.Sender
+      StoreService.Names.Signatures
+      StoreService.Names.Store
+      StoreService.Names.Turns
+      StoreService.Names.View
+      StoreService.Names.Worker
+      StoreService.Options
+      StoreService.Orders
+      StoreService.Poller
+      StoreService.Providers
+      StoreService.Providers.BTCPay
+      StoreService.Providers.Stripe
+      StoreService.Service
+      StoreService.Store
+      StoreService.Store.Invoices
+      StoreService.Store.Migrate
+      StoreService.StoreReceipts
+      StoreService.StoreReceipts.Apple
+      StoreService.StoreReceipts.Google
+      StoreService.StoreReceipts.Mock
+      StoreService.Waiters
+      StoreService.Web.Http
+      StoreService.Web.Names
+      StoreService.Web.Names.Codes
+      StoreService.Web.Names.Orders
+      StoreService.Web.Names.Owner
+      StoreService.Web.Names.Records
+      StoreService.Web.Names.Registration
+      StoreService.Web.Names.Search
+      StoreService.Web.Server
       Paths_simplex_chat
   if flag(client_postgres)
       other-modules:
@@ -812,7 +894,7 @@ test-suite simplex-chat-test
   hs-source-dirs:
       bots/src
       tests
-      apps/simplex-badge-service/src
+      apps/simplex-store-service/src
       apps/simplex-broadcast-bot/src
       apps/simplex-directory-service/src
   default-extensions:
@@ -863,7 +945,7 @@ test-suite simplex-chat-test
   default-language: Haskell2010
   if flag(client_postgres)
     other-modules:
-        BadgeService.Store.Postgres.Migrations
+        StoreService.Store.Postgres.Migrations
         Directory.Store.Postgres.Migrations
     build-depends:
         postgresql-simple ==0.7.*
@@ -871,7 +953,7 @@ test-suite simplex-chat-test
     cpp-options: -DdbPostgres
   else
     other-modules:
-        BadgeService.Store.SQLite.Migrations
+        StoreService.Store.SQLite.Migrations
         Directory.Store.SQLite.Migrations
     build-depends:
         sqlcipher-simple ==0.4.*

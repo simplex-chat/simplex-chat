@@ -55,7 +55,7 @@ BUILD_CHANGES = {
         "apps/simplex-chat/**",
         "apps/simplex-bot/**",
         "apps/simplex-bot-advanced/**",
-        "apps/simplex-badge-service/**",
+        "apps/simplex-store-service/**",
         "apps/simplex-broadcast-bot/**",
         "apps/simplex-directory-service/**",
         "tests/**",
@@ -80,7 +80,7 @@ BUILD_CHANGES = {
     ],
 }
 SCOPE_CHANGES = {
-    "badge-web": ["apps/simplex-badge-service/web/**"],
+    "badge-web": ["apps/simplex-store-service/web/**"],
     "ci-scripts": ["scripts/ci/packages_release.py", "scripts/ci/test_packages_release.py"],
 }
 CABAL_FILE = "simplex-chat.cabal"

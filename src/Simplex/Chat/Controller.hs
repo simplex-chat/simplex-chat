@@ -85,7 +85,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyMode (..), SMPWebPortServers (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges (BadgeCredential, FileSizeLimits, LocalBadge)
-import Simplex.Chat.Badges.Service (BadgeServiceErrorCode, StatementEntry)
+import Simplex.Chat.StoreService (StoreServiceErrorCode, StatementEntry)
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind, BadgeIssueFailure, BadgeState (..), OpenStorePurchase (..), StoreReceiptOrigin, SubscriptionState)
 import Simplex.Chat.PaymentService (ServicePayment)
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
@@ -149,15 +149,15 @@ data ChatConfig = ChatConfig
     callVRange :: VersionRangeCall,
     -- issuer public keys by index: credentials and proofs name the key that signed them, for rotation
     badgePublicKeys :: Map Int BBSPublicKey,
-    -- Nothing until the badge service is deployed
-    badgeServiceAddress :: Maybe (ConnectTarget 'CMContact),
+    -- Nothing until the store service is deployed
+    storeServiceAddress :: Maybe (ConnectTarget 'CMContact),
     -- the only clock badge code reads, so tests can shift it; production arithmetic is unchanged
     badgeCurrentTime :: IO UTCTime,
     -- how long a badge worker waits before repeating a renewal that failed for a passing reason
     badgeRetryInterval :: RetryInterval,
     -- attempts a store receipt gets in one turn before its next one waits for the stored schedule
     badgeConsecutiveRetries :: Int,
-    -- set only by builds for a dev badge service: allows /_badge request, sent off the shared schedule
+    -- set only by builds for a dev store service: allows /_badge request, sent off the shared schedule
     badgeDevRequests :: Bool,
     -- Local testing only: the badge worker treats a request as due this often, instead of near the
     -- credential's expiry, so a renewal can be watched without waiting weeks.
@@ -676,7 +676,7 @@ data ChatCommand
   | UpdateProfileImage (Maybe ImageData) -- UserId (not used in UI)
   | UpdateProfileImageFromFile FilePath -- set profile image from a .png/.jpg/.jpeg file
   | AddBadge BadgeCredential -- attach an issued badge credential (testing; credential from `simplex-chat badge sign`)
-  | APIRedeemBadgeCode {userId :: UserId, code :: Text} -- redeem a badge code with the configured badge service
+  | APIRedeemBadgeCode {userId :: UserId, code :: Text} -- redeem a badge code with the configured store service
   | APIPurchaseBadge {userId :: UserId, echoedInvoiceId :: Maybe Text, origin :: StoreReceiptOrigin, payment :: ServicePayment} -- hand over an App Store or Google Play receipt, held until a worker credits it; answers from the record and sends nothing
   | APISetBadgeSubscriptionStatus {status :: SubscriptionState, payment :: ServicePayment} -- the device store's view of a credited subscription, which changes what is shown and alerted, and retires its badge once ended
   | APICreateBadgeInvoice {userId :: UserId} -- the record of a store purchase, created before the store charges; answers the id the store echoes
@@ -1548,7 +1548,7 @@ data BadgeRedeemError
   | BREServiceNotConfigured
   | BREBadgeActive
   | BREStorePurchaseOpen -- a store receipt held for this profile may still be credited
-  | BREServiceError {serviceError :: BadgeServiceErrorCode}
+  | BREServiceError {serviceError :: StoreServiceErrorCode}
   | BREInvalidResponse {message :: String}
   | BREUnknownKeyIndex
   | BRECredentialNotVerified
