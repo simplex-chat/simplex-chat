@@ -1,5 +1,7 @@
 import {ChatResponse, T} from "@simplex-chat/types"
+import {Server} from "http"
 import {api, core} from "simplex-chat"
+import {Readable, Writable} from "stream"
 import {Actions, ActionHooks} from "../../src/actions"
 import {ToolCall} from "../../src/messages"
 
@@ -95,8 +97,14 @@ export function fakeHooks(): FakeHooks {
   return fake
 }
 
-export function actionsWith(mode: "requests" | "host", fake: FakeHooks, next = 1, expireHours = 23): Actions {
-  return new Actions(mode, expireHours, next, fake.hooks)
+export function actionsWith(fake: FakeHooks, next = 1, expireHours = 23): Actions {
+  return new Actions(expireHours, next, fake.hooks)
+}
+
+export function closeServer(server: Server): Promise<void> {
+  const closed = new Promise<void>(resolve => server.close(() => resolve()))
+  server.closeAllConnections()
+  return closed
 }
 
 export async function settled(): Promise<void> {
@@ -117,6 +125,9 @@ export class FakeChat {
   left: number[] = []
   customData: {chat: string; customData?: object}[] = []
   profiles: {groupId: number; groupProfile: T.GroupProfile}[] = []
+  roles: {groupId: number; members: number[]; role: T.GroupMemberRole}[] = []
+  links: {groupId: number; role: T.GroupMemberRole}[] = []
+  newGroups: {userId: number; groupProfile: T.GroupProfile}[] = []
   members = new Map<number, T.GroupMember[]>()
   chats = new Map<string, FakeChatData>()
   responses = new Map<string, object>()
@@ -169,6 +180,10 @@ export class FakeChat {
     return this.members.get(groupId) ?? []
   }
 
+  async apiGetChats(): Promise<T.AChat[]> {
+    return [...this.chats.values()].map(({chatInfo, items}) => ({chatInfo, chatItems: [], chatStats: chatStats(items)}))
+  }
+
   async apiDeleteChat(chatType: T.ChatType, chatId: number, mode?: T.ChatDeleteMode): Promise<void> {
     this.deleted.push({chatType, chatId, mode})
     this.chats.delete(`${chatType === T.ChatType.Direct ? "@" : "#"}${chatId}`)
@@ -190,6 +205,23 @@ export class FakeChat {
   }
 
   async apiDeleteGroupLink(): Promise<void> {}
+
+  async apiCreateGroupLink(groupId: number, role: T.GroupMemberRole): Promise<string> {
+    this.links.push({groupId, role})
+    return "https://simplex.chat/g#link"
+  }
+
+  async apiSetMembersRole(groupId: number, members: number[], role: T.GroupMemberRole): Promise<void> {
+    this.roles.push({groupId, members, role})
+    this.members.set(groupId, (this.members.get(groupId) ?? []).map(m => (members.includes(m.groupMemberId) ? {...m, memberRole: role} : m)))
+  }
+
+  async apiNewGroup(userId: number, groupProfile: T.GroupProfile): Promise<T.GroupInfo> {
+    this.newGroups.push({userId, groupProfile})
+    const created = group(20, groupProfile.displayName)
+    this.chats.set("#20", {chatInfo: groupChat(created), items: []})
+    return created
+  }
 
   async apiUpdateGroupProfile(groupId: number, groupProfile: T.GroupProfile): Promise<T.GroupInfo> {
     this.profiles.push({groupId, groupProfile})
@@ -242,4 +274,40 @@ function chatStats(items: T.ChatItem[]): T.ChatStats {
 
 function storeError(ref: string): Error {
   return new core.ChatAPIError("Chat command error", {type: "errorStore", storeError: {type: "contactNotFound", contactId: Number(ref.slice(1))}})
+}
+
+export class LineClient {
+  private nextId = 1
+  private buffer = ""
+  private readonly waiting = new Map<number, (message: any) => void>()
+  readonly notifications: any[] = []
+
+  constructor(private readonly input: Writable, output: Readable) {
+    output.on("data", chunk => {
+      this.buffer += chunk
+      for (let i = this.buffer.indexOf("\n"); i >= 0; i = this.buffer.indexOf("\n")) {
+        const message = JSON.parse(this.buffer.slice(0, i))
+        this.buffer = this.buffer.slice(i + 1)
+        if (message.id !== undefined && this.waiting.has(message.id)) this.waiting.get(message.id)!(message)
+        else this.notifications.push(message)
+      }
+    })
+  }
+
+  request(method: string, params: object = {}): Promise<any> {
+    const id = this.nextId++
+    const reply = new Promise<any>(resolve => this.waiting.set(id, resolve))
+    this.input.write(`${JSON.stringify({jsonrpc: "2.0", id, method, params})}\n`)
+    return reply
+  }
+
+  notify(method: string, params: object = {}): void {
+    this.input.write(`${JSON.stringify({jsonrpc: "2.0", method, params})}\n`)
+  }
+
+  async initialize(): Promise<any> {
+    const reply = await this.request("initialize", {protocolVersion: "2025-11-25", capabilities: {}, clientInfo: {name: "test", version: "1"}})
+    this.notify("notifications/initialized")
+    return reply.result
+  }
 }

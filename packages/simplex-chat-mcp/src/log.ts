@@ -15,15 +15,6 @@ export class ExitError extends Error {
   }
 }
 
-export function shellWord(word: string, plain: RegExp): string {
-  if (plain.test(word)) return word
-  return process.platform === "win32" ? `"${word}"` : `'${word.replace(/'/g, "'\\''")}'`
-}
-
-export function shellPath(path: string): string {
-  return shellWord(path, process.platform === "win32" ? /^[A-Za-z0-9_.:\\/-]+$/ : /^[A-Za-z0-9_./-]+$/)
-}
-
 export function oneLine(text: string): string {
   return text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, " ")
 }

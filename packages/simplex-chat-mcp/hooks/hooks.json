@@ -1,0 +1,6 @@
+{
+  "hooks": {
+    "SessionStart": [{"hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/plugin/launch.js\" hook session-start", "timeout": 600}]}],
+    "PreToolUse": [{"matcher": "mcp__plugin_simplex_simplex__.*", "hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/plugin/allow.js\""}]}]
+  }
+}
