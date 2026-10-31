@@ -18,6 +18,7 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.PreviewTerminalLayout
+import chat.simplex.common.views.badges.PreviewPeriodCards
 import chat.simplex.common.views.call.PreviewIncomingCallAlertLayout
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.group.*
@@ -25,6 +26,7 @@ import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.database.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.migration.PreviewMigrateToDeviceOnion
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
@@ -61,7 +63,9 @@ private val previewScenes = listOf(
   SnapshotScene("ChatInfoView.PreviewChatInfoLayout") { chat.simplex.common.views.chat.PreviewChatInfoLayout() },
   SnapshotScene("ChatView.PreviewChatLayout") { PreviewChatLayout() },
   SnapshotScene("ChatView.PreviewGroupChatLayout") { PreviewGroupChatLayout() },
+  SnapshotScene("ComposeChatLinkView.PreviewComposeChatLinkView") { PreviewComposeChatLinkView() },
   SnapshotScene("ComposeFileView.PreviewComposeFileView") { PreviewComposeFileView() },
+  SnapshotScene("ComposeImageView.PreviewComposeImageView") { PreviewComposeImageView() },
   SnapshotScene("ComposeVoiceView.PreviewComposeAudioView") { PreviewComposeAudioView() },
   SnapshotScene("ContextItemView.PreviewContextItemView") { PreviewContextItemView() },
   SnapshotScene("SendMsgView.PreviewSendMsgView") { PreviewSendMsgView() },
@@ -92,6 +96,11 @@ private val previewScenes = listOf(
   SnapshotScene("ChatListNavLinkView.PreviewChatListNavLinkDirect") { PreviewChatListNavLinkDirect() },
   SnapshotScene("ChatListNavLinkView.PreviewChatListNavLinkGroup") { PreviewChatListNavLinkGroup() },
   SnapshotScene("ChatListNavLinkView.PreviewChatListNavLinkContactRequest") { PreviewChatListNavLinkContactRequest() },
+  SnapshotScene("ChatListNavLinkView.PreviewChatListNavLinkContactConnection") { PreviewChatListNavLinkContactConnection() },
+  SnapshotScene("ChatListNavLinkView.PreviewChatListNavLinkUnread") { PreviewChatListNavLinkUnread() },
+  SnapshotScene("AdvancedNetworkSettings.PreviewSMPProxyModeView") { PreviewSMPProxyModeView() },
+  SnapshotScene("AdvancedNetworkSettings.PreviewSMPProxyFallbackView") { PreviewSMPProxyFallbackView() },
+  SnapshotScene("MigrateToDevice.PreviewMigrateToDeviceOnion") { PreviewMigrateToDeviceOnion() },
   SnapshotScene("ChatPreviewView.PreviewChatPreviewView") { PreviewChatPreviewView() },
   SnapshotScene("DatabaseEncryptionView.PreviewDatabaseEncryptionLayout") { PreviewDatabaseEncryptionLayout() },
   SnapshotScene("DatabaseErrorView.PreviewChatInfoLayout") { chat.simplex.common.views.database.PreviewChatInfoLayout() },
@@ -107,6 +116,8 @@ private val previewScenes = listOf(
   SnapshotScene("HowItWorks.PreviewHowItWorks") { PreviewHowItWorks() },
   SnapshotScene("SimpleXInfo.PreviewSimpleXInfo") { PreviewSimpleXInfo() },
   SnapshotScene("WhatsNewView.PreviewWhatsNewView") { PreviewWhatsNewView() },
+  SnapshotScene("SetNotificationsMode.PreviewSetNotificationsMode") { PreviewSetNotificationsMode() },
+  SnapshotScene("BadgesHowLongView.PreviewPeriodCards") { PreviewPeriodCards() },
   SnapshotScene("HelpView.PreviewHelpView") { PreviewHelpView() },
   SnapshotScene("MarkdownHelpView.PreviewMarkdownHelpView") { PreviewMarkdownHelpView() },
   SnapshotScene("SettingsView.PreviewSettingsLayout") { PreviewSettingsLayout() },

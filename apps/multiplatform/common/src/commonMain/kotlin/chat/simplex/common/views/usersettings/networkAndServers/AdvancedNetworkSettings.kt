@@ -352,8 +352,22 @@ private fun SMPProxyModePicker(
   showModal: (@Composable ModalData.() -> Unit) -> Unit,
   updateSMPProxyMode: (SMPProxyMode) -> Unit,
 ) {
+  val values = smpProxyModeValues()
+  SectionItemWithValue(
+    generalGetString(MR.strings.network_smp_proxy_mode_private_routing),
+    smpProxyMode,
+    values,
+    icon = painterResource(MR.images.ic_route),
+    onSelected = {
+      showModal { SMPProxyModeView(smpProxyMode, values, updateSMPProxyMode) }
+    }
+  )
+}
+
+@Composable
+private fun smpProxyModeValues(): List<ValueTitleDesc<SMPProxyMode>> {
   val density = LocalDensity.current
-  val values = remember {
+  return remember {
     SMPProxyMode.entries.map {
       when (it) {
         SMPProxyMode.Always -> ValueTitleDesc(SMPProxyMode.Always, generalGetString(MR.strings.network_smp_proxy_mode_always), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_mode_always_description), density))
@@ -363,21 +377,14 @@ private fun SMPProxyModePicker(
       }
     }
   }
+}
 
-  SectionItemWithValue(
-    generalGetString(MR.strings.network_smp_proxy_mode_private_routing),
-    smpProxyMode,
-    values,
-    icon = painterResource(MR.images.ic_settings_ethernet),
-    onSelected = {
-      showModal {
-        ColumnWithScrollBar {
-          AppBarTitle(stringResource(MR.strings.network_smp_proxy_mode_private_routing))
-          SectionViewSelectableCards(null, smpProxyMode, values, updateSMPProxyMode)
-        }
-      }
-    }
-  )
+@Composable
+private fun SMPProxyModeView(smpProxyMode: State<SMPProxyMode>, values: List<ValueTitleDesc<SMPProxyMode>>, updateSMPProxyMode: (SMPProxyMode) -> Unit) {
+  ColumnWithScrollBar {
+    AppBarTitle(stringResource(MR.strings.network_smp_proxy_mode_private_routing))
+    SectionViewSelectableCards(null, smpProxyMode, values, updateSMPProxyMode)
+  }
 }
 
 @Composable
@@ -387,8 +394,23 @@ private fun SMPProxyFallbackPicker(
   updateSMPProxyFallback: (SMPProxyFallback) -> Unit,
   enabled: State<Boolean>,
 ) {
+  val values = smpProxyFallbackValues()
+  SectionItemWithValue(
+    generalGetString(MR.strings.network_smp_proxy_fallback_allow_downgrade),
+    smpProxyFallback,
+    values,
+    icon = painterResource(MR.images.ic_arrows_left_right),
+    enabled = enabled,
+    onSelected = {
+      showModal { SMPProxyFallbackView(smpProxyFallback, values, updateSMPProxyFallback) }
+    }
+  )
+}
+
+@Composable
+private fun smpProxyFallbackValues(): List<ValueTitleDesc<SMPProxyFallback>> {
   val density = LocalDensity.current
-  val values = remember {
+  return remember {
     SMPProxyFallback.entries.map {
       when (it) {
         SMPProxyFallback.Allow -> ValueTitleDesc(SMPProxyFallback.Allow, generalGetString(MR.strings.network_smp_proxy_fallback_allow), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_fallback_allow_description), density))
@@ -397,22 +419,14 @@ private fun SMPProxyFallbackPicker(
       }
     }
   }
+}
 
-  SectionItemWithValue(
-    generalGetString(MR.strings.network_smp_proxy_fallback_allow_downgrade),
-    smpProxyFallback,
-    values,
-    icon = painterResource(MR.images.ic_arrows_left_right),
-    enabled = enabled,
-    onSelected = {
-      showModal {
-        ColumnWithScrollBar {
-          AppBarTitle(stringResource(MR.strings.network_smp_proxy_fallback_allow_downgrade))
-          SectionViewSelectableCards(null, smpProxyFallback, values, updateSMPProxyFallback)
-        }
-      }
-    }
-  )
+@Composable
+private fun SMPProxyFallbackView(smpProxyFallback: State<SMPProxyFallback>, values: List<ValueTitleDesc<SMPProxyFallback>>, updateSMPProxyFallback: (SMPProxyFallback) -> Unit) {
+  ColumnWithScrollBar {
+    AppBarTitle(stringResource(MR.strings.network_smp_proxy_fallback_allow_downgrade))
+    SectionViewSelectableCards(null, smpProxyFallback, values, updateSMPProxyFallback)
+  }
 }
 
 @Composable
@@ -604,5 +618,21 @@ fun PreviewAdvancedNetworkSettingsLayout() {
       saveDisabled = false,
       save = {}
     )
+  }
+}
+
+@Preview
+@Composable
+fun PreviewSMPProxyModeView() {
+  SimpleXTheme {
+    SMPProxyModeView(remember { mutableStateOf(SMPProxyMode.Unknown) }, smpProxyModeValues()) {}
+  }
+}
+
+@Preview
+@Composable
+fun PreviewSMPProxyFallbackView() {
+  SimpleXTheme {
+    SMPProxyFallbackView(remember { mutableStateOf(SMPProxyFallback.AllowProtected) }, smpProxyFallbackValues()) {}
   }
 }

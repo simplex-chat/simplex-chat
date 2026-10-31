@@ -21,46 +21,45 @@ import chat.simplex.res.*
 
 @Composable
 fun ContactConnectionView(contactConnection: PendingContactConnection) {
-  Row {
-    Box(Modifier.size(72.dp * fontSizeSqrtMultiplier), contentAlignment = Alignment.Center) {
-      ProfileImage(size = 54.dp * fontSizeSqrtMultiplier, null, if (contactConnection.initiated) MR.images.ic_add_link else MR.images.ic_link)
-    }
-    Column(
-      modifier = Modifier
-        .padding(start = 8.dp / fontSizeSqrtMultiplier, end = 8.sp.toDp())
-        .weight(1F)
-    ) {
-      Text(
-        contactConnection.displayName,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        style = MaterialTheme.typography.h3,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colors.secondary
-      )
-      Text(
-        contactConnection.description,
-        Modifier.heightIn(min = 46.sp.toDp()).padding(top = 3.sp.toDp()),
-        maxLines = 2,
-        style = TextStyle(
-          fontFamily = Inter,
-          fontSize = 15.sp,
-          color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight,
-          lineHeight = 21.sp
+  Box(contentAlignment = Alignment.TopEnd) {
+    Row {
+      Box(Modifier.size(72.dp * fontSizeSqrtMultiplier), contentAlignment = Alignment.Center) {
+        ProfileImage(size = 54.dp * fontSizeSqrtMultiplier, null, if (contactConnection.initiated) MR.images.ic_add_link else MR.images.ic_link)
+      }
+      Column(
+        modifier = Modifier
+          .padding(start = 8.dp / fontSizeSqrtMultiplier, end = 8.sp.toDp())
+          .weight(1F)
+          .alignByBaseline()
+      ) {
+        Text(
+          contactConnection.displayName,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
+          style = MaterialTheme.typography.h3,
+          fontWeight = FontWeight.Bold,
+          color = MaterialTheme.colors.secondary
         )
-      )
+        Text(
+          contactConnection.description,
+          Modifier.heightIn(min = 46.sp.toDp()).padding(top = 3.sp.toDp()),
+          maxLines = 2,
+          style = TextStyle(
+            fontFamily = Inter,
+            fontSize = 15.sp,
+            color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight,
+            lineHeight = 21.sp
+          )
+        )
+      }
+      val ts = getTimestampText(contactConnection.updatedAt)
+      ChatListTimestampView(ts, Modifier.alignByBaseline())
     }
     Box(
-      contentAlignment = Alignment.TopEnd
+      Modifier.padding(top = 50.sp.toDp()),
+      contentAlignment = Alignment.Center
     ) {
-      val ts = getTimestampText(contactConnection.updatedAt)
-      ChatListTimestampView(ts)
-      Box(
-        Modifier.padding(top = 50.sp.toDp()),
-        contentAlignment = Alignment.Center
-      ) {
-        IncognitoIcon(contactConnection.incognito)
-      }
+      IncognitoIcon(contactConnection.incognito)
     }
   }
 }
