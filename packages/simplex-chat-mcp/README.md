@@ -21,7 +21,7 @@ You need Node.js 22 or later, Claude Code and the [SimpleX Chat app](https://sim
    npx -y @simplex-chat/mcp serve my-agent --display-name "My Agent"
    ```
 
-   Scan the QR code it prints with the SimpleX app, and tap Join. The chat "My Agent" appears: your agent asks there before it acts.
+   Scan the QR code it prints with the SimpleX app, and tap Join. The chat "My Agent" appears: your agent asks there before it acts. Ctrl-C stops it; when requests were waiting, it first marks them cancelled in "My Agent", waiting up to 10 seconds (`--stop-wait`), and a second Ctrl-C stops it at once.
 
 2. In another terminal, add it to Claude Code:
 

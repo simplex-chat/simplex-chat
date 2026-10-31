@@ -235,7 +235,7 @@ export class Actions {
     }
   }
 
-  async stop(): Promise<number> {
+  async stop(): Promise<Action[]> {
     this.stopping = true
     clearInterval(this.expiry)
     await Promise.all(this.posting.values())
@@ -244,7 +244,7 @@ export class Actions {
     this.abortPerforms.abort()
     if (!this.lost) await Promise.all(stopped.map(action => this.hooks.outcome(action).catch(error => logError(`action ${action.n} card`, error))))
     await Promise.allSettled(this.outcomes)
-    return stopped.length
+    return stopped
   }
 
   private async post(action: Action): Promise<boolean> {

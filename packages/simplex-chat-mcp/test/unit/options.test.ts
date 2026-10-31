@@ -31,13 +31,14 @@ describe("serve options", () => {
         newToken: false,
         port: 5226,
         qrCode: "small",
+        stopWait: 10,
       },
     })
   })
 
   it("reads every option", () => {
     const {options} = parseCommand(
-      ["serve", "agent-2", "--data", "/tmp/a", "--display-name", "Agent Two", "--approve", "host", "--expire", "1", "--port", "5227", "--qr-code", "large", "--new-token", "--reset-owners", "--owners"],
+      ["serve", "agent-2", "--data", "/tmp/a", "--display-name", "Agent Two", "--approve", "host", "--expire", "1", "--stop-wait", "0", "--port", "5227", "--qr-code", "large", "--new-token", "--reset-owners", "--owners"],
       home,
     ) as {options: object}
     expect(options).toEqual({
@@ -47,6 +48,7 @@ describe("serve options", () => {
       displayName: "Agent Two",
       approve: "host",
       expireHours: 1,
+      stopWait: 0,
       port: 5227,
       qrCode: "large",
       newToken: true,
@@ -78,6 +80,11 @@ describe("serve options", () => {
   it("checks ranges", () => {
     expect(usage(["serve", "agent", "--expire", "24"])).toBe("--expire: hours from 1 to 23 expected, got 24")
     expect(usage(["serve", "agent", "--expire", "0"])).toBe("--expire: hours from 1 to 23 expected, got 0")
+    expect(parseCommand(["serve", "agent", "--stop-wait", "60"], home)).toMatchObject({options: {stopWait: 60}})
+    expect(usage(["serve", "agent", "--stop-wait", "61"])).toBe("--stop-wait: seconds from 0 to 60 expected, got 61")
+    expect(usage(["serve", "agent", "--stop-wait", "-1"])).toBe("--stop-wait: seconds from 0 to 60 expected, got -1")
+    expect(usage(["serve", "agent", "--stop-wait", "2.5"])).toBe("--stop-wait: seconds from 0 to 60 expected, got 2.5")
+    expect(usage(["serve", "agent", "--stop-wait"])).toBe("--stop-wait: a value expected.")
     expect(usage(["serve", "agent", "--port", "65536"])).toBe("--port: a port from 1 to 65535 expected, got 65536")
     expect(usage(["serve", "agent", "--port", "x"])).toBe("--port: a port from 1 to 65535 expected, got x")
     expect(usage(["serve", "agent", "--approve", "all"])).toBe("--approve: requests or host expected, got all")
@@ -161,6 +168,7 @@ describe("help", () => {
   it("matches the manual", () => {
     expect(parseCommand(["--help"], home)).toEqual({command: "help"})
     expect(helpText).toContain("  --owners [ID:NAME,...] only these owners approve; without a list, the link\n")
+    expect(helpText).toContain("  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards to be sent,\n                         0 to 60 (default: 10)\n")
     expect(helpText.endsWith("--reset-owners takes --owners without a list.\n")).toBe(true)
   })
 })

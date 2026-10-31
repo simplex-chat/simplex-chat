@@ -4,10 +4,10 @@ import {join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {ChatEvent, T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
-import {Actions, Mode, NewAction, ToolError} from "../../src/actions"
+import {Action, Actions, Mode, NewAction, ToolError} from "../../src/actions"
 import {Control, cardText, parseCommand} from "../../src/control"
 import {ChatItemsWatch, Collected, utcMinutes} from "../../src/messages"
-import {OwnerEntry, deliveries} from "../../src/serve"
+import {OwnerEntry, waitForCancelledCards} from "../../src/serve"
 import {AgentTools} from "../../src/tools"
 import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
 
@@ -752,15 +752,49 @@ describe("approval card size", () => {
   })
 })
 
-describe("delivery wait at the stop", () => {
-  it("logs an error of the SQL query and ends", async () => {
-    const errors: string[] = []
-    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text).trimEnd()), true))
-    const chat = new FakeChat()
-    chat.sendChatCmd = async () => {
-      throw new core.ChatAPIError("Chat command error", {type: "errorStore", storeError: {type: "dBException", message: "no such table: connections"}} as unknown as T.ChatError)
-    }
-    await deliveries(chat.api(), 10)
-    expect(errors).toEqual(['delivery wait: SimpleX error: errorStore: dBException: {"message":"no such table: connections"}'])
+describe("wait at the stop", () => {
+  const send = {tool: "send", card: 1001} as Action
+  const connect = {tool: "connect"} as Action
+  const download = {tool: "download"} as Action
+
+  afterEach(() => jest.useRealTimers())
+
+  function logged(): string[] {
+    const lines: string[] = []
+    jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
+    return lines
+  }
+
+  it("waits the stop wait when cards were cancelled, and stops at once without them", async () => {
+    jest.useFakeTimers()
+    const lines = logged()
+    let ended = false
+    const waiting = waitForCancelledCards([send, connect, download], 10, new AbortController().signal).then(() => (ended = true))
+    expect(lines).toEqual(["Stopping: sending 2 cancelled cards, up to 10 s. Ctrl-C to stop now."])
+    await jest.advanceTimersByTimeAsync(9_999)
+    expect(ended).toBe(false)
+    await jest.advanceTimersByTimeAsync(1)
+    await waiting
+    await waitForCancelledCards([download], 10, new AbortController().signal)
+    await waitForCancelledCards([send], 0, new AbortController().signal)
+    await waitForCancelledCards([], 10, new AbortController().signal)
+    expect(lines).toHaveLength(1)
+    expect(jest.getTimerCount()).toBe(0)
+  })
+
+  it("ends the wait at a second Ctrl-C", async () => {
+    jest.useFakeTimers()
+    const lines = logged()
+    const endWait = new AbortController()
+    let ended = false
+    const waiting = waitForCancelledCards([send], 10, endWait.signal).then(() => (ended = true))
+    expect(lines).toEqual(["Stopping: sending 1 cancelled card, up to 10 s. Ctrl-C to stop now."])
+    await jest.advanceTimersByTimeAsync(1_000)
+    expect(ended).toBe(false)
+    endWait.abort()
+    await waiting
+    expect(jest.getTimerCount()).toBe(0)
+    await waitForCancelledCards([send], 10, endWait.signal)
+    expect(jest.getTimerCount()).toBe(0)
   })
 })

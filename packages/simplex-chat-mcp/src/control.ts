@@ -142,7 +142,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   }
 
   async outcome(action: Action): Promise<void> {
-    if (action.tool === "download" && action.card === undefined) return
+    if (!hasOutcomeCard(action)) return
     const content = await this.cardContent(action)
     if (action.card === undefined) await this.postMessage({msgContent: content, mentions: {}})
     else await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, action.card, content, false)
@@ -444,6 +444,10 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const owner = member.memberRole === T.GroupMemberRole.Owner
     return owners === undefined ? owner : owner && owners.some(entry => listsMember(entry, member))
   }
+}
+
+export function hasOutcomeCard(action: Action): boolean {
+  return action.tool !== "download" || action.card !== undefined
 }
 
 export async function findControlGroup(chat: api.ChatApi, userId: number): Promise<T.GroupInfo | undefined> {

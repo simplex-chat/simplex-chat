@@ -87,7 +87,7 @@ Incognito, as a second agent, because the first one already knows the directory:
 
 Stop and restart:
 
-- Stop the server while a card waits: the card ends with `Cancelled: the server stopped.` After a restart, `/approve` of that number replies `Action N is not pending.`, and the next card has the next number.
+- Stop the server while a card waits: the terminal prints `Stopping: sending 1 cancelled card, up to 10 s. Ctrl-C to stop now.`, and the card ends with `Cancelled: the server stopped.` A second Ctrl-C during the wait stops the server at once. With no card waiting, Ctrl-C stops it at once. After a restart, `/approve` of that number replies `Action N is not pending.`, and the next card has the next number.
 - A second `serve my-agent` on the same data folder exits with `Another server uses ... (PID N). If no server runs, remove .../lock.` A port in use exits with `Port 5226 is in use. Start with --port N.`, before any link is printed.
 - Restart with `--new-token`, without `register`: after the reconnection, `list` returns the chats. Checked with `claude -p` and an `--mcp-config` entry with `headersHelper`, Claude Code 2.1.302, 2026-10-18.
 

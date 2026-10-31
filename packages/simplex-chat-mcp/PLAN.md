@@ -192,6 +192,7 @@ serve NAME:
 --approve         requests | host                      requests
 --owners          no value, or ID:NAME[,ID:NAME...]    absent
 --expire          hours, 1 to 23                       23
+--stop-wait       seconds, 0 to 60                     10
 --reset-owners    flag                                 off
 --new-token       flag                                 off
 --port            1 to 65535                           5226
@@ -206,6 +207,7 @@ register NAME:
 - `--owners` with no value: the next argument is absent or starts with `--`; parsing is custom, because `util.parseArgs` takes an option either as a flag or with a value. Entries whose NAME has characters other than letters, digits, `_` and `-` are printed in single quotes, `'` escaped as `'\''` (double quotes on Windows): `--owners '3:Alice Smith'`. The register hint adds `--data <folder>`, quoted the same way, when serve was started with `--data`.
 - `--port` and `--expire` apply to one run; `server.json` records them at each start for `register`. An agent on another port takes the same `--port` at every start; after a change of `--port` or `--expire`, `register NAME` runs again.
 - `--expire` at most 23: a sent message is editable for 24 hours (`deletable'`, `Messages.hs:537-548`; refused edit, `Commands.hs:845-868`), so the outcome edit of a pending card falls within that window. Standing and host-mode outcomes are posted, not edited.
+- `--stop-wait`: at stop, after the cards of pending and performing actions are edited or posted, the server waits this many seconds before it closes the chat, so that the agent sends those messages; 0 does not wait (section Start and shutdown).
 
 Rejected arguments, exit code 2:
 
@@ -306,6 +308,7 @@ no human owner remains          Alice (member 3) is no longer an owner. No owner
 no approver, no --owners        No owners in the agent control chat. (followed by a new link)
 control chat lost               The agent lost its control chat. Restart the server with --reset-owners.
 shutdown                        Cancelled 2 actions. Stopped.   (the count only when actions were pending or performing; a perform interrupted by the stop logs no line)
+shutdown, cards edited or posted Stopping: sending 2 cancelled cards, up to 10 s. Ctrl-C to stop now.   (between the two lines above; "1 cancelled card")
 ```
 
 ## What the owner sees: the agent control chat
@@ -861,7 +864,7 @@ serve(NAME, options):
     delete from memory the decided actions (done, failed, rejected, expired) with open 0 whose expires has passed, and stop their collections
   drain buffered events
 
-SIGINT, SIGTERM (process.on; the second signal joins the stop in progress):
+SIGINT, SIGTERM (process.on; a second signal ends the wait for the cards at once):
   stopping = true: new actions get the tool error "The server is stopping."; a host-mode action whose card is still being posted is cancelled, not performed
   close HTTP (open calls end); stop handling events, so no /approve starts a perform
   wait for the cards being posted
@@ -870,10 +873,8 @@ SIGINT, SIGTERM (process.on; the second signal joins the stop in progress):
   abort the stop signal of the performs: a connect's wait for the connection ends
   wait for the outcome edits of performs that ended before the stop
   K = pending and performing actions; log "Cancelled K actions." ("1 action." for one) when K > 0
-  wait until the control chat's pending deliveries are 0, polled every 100 ms, at most 10 s:   # an edit of a received card emits no status event (Subscriber.hs:4139-4146, 9711dcfc9)
-    /sql chat SELECT hex(agent_conn_id) FROM connections WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE group_id = <control group>)
-    /sql agent SELECT count(*) FROM snd_message_deliveries WHERE failed = 0 AND hex(conn_id) IN (<those IDs>)
-    an error of either query: log "delivery wait: <error>" to stderr; the wait ends
+  N = the cards edited or posted above (all K, except downloads without a card); none when the control chat is lost
+  N > 0 and --stop-wait S > 0: log "Stopping: sending N cancelled cards, up to S s. Ctrl-C to stop now."; wait S seconds, or until a second signal
   chat.close(); remove DIR/lock; log "Stopped."; exit 0
 ```
 
@@ -1461,8 +1462,8 @@ Unit:
 
 ```
 test        covers
-options     defaults, ranges, NAME, --display-name at the first and a later start, --owners with and without a list, names with commas, rejected arguments, --help text
-commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; an SQL error of the delivery wait logged; /approve CHAT files and /revoke CHAT files beside the approval of messages; /receive with its reply and failure; download cards with the preview, resized to fit 15000 bytes; a refused file posted and logged; an image send card with its preview
+options     defaults, ranges, --stop-wait from 0 to 60, NAME, --display-name at the first and a later start, --owners with and without a list, names with commas, rejected arguments, --help text
+commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; the wait at stop with cancelled cards, skipped without them, and ended by a second signal; /approve CHAT files and /revoke CHAT files beside the approval of messages; /receive with its reply and failure; download cards with the preview, resized to fit 15000 bytes; a refused file posted and logged; an image send card with its preview
 actions     every transition; attach rule; open counts; counter written before the card; a failed counter write or card post logged; stop edits pending and performing cards, aborts the performs' signal, and an interrupted perform logs no line; standing approval: performed at once, outcome card posted; 20 pending; 20 performing; decided actions deleted after expires
 cards       every card form and outcome; quoting; names and errors on one line; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form; link texts cut to the bytes left; the reply quote cut by characters; download forms with sizes and the servers line; the attaching line of sends
 messages    message fields; responses with idle and wait; overflow IDs removed at deletion; receive with new messages under a concurrent call, stopping at limit + 1, a store error of a page read as its error; leave of @N and #N, pending membership included; approved in list; all chats in one read; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; reply_to of an item other than a message refused; mentions of equal names refused; the connect wait cap; the connect wait ended by the stop; the file field of each file status and rejected; download: attach, performing at wait, a received file, failures by events, a files approval, the wait for the file description and its end at wait, unknown servers without passwords and of disabled operators; send with file: the type and preview by extension, the resized copy deleted at sndFileCompleteXFTP and after a failed send, the fixed preview when the core can't resize or ffmpeg is absent, ffmpeg and ffprobe output, refused paths with symbolic links, a file changed after the request
@@ -1530,3 +1531,7 @@ C6      Claude Code closes the request stream when a call times out or its task 
 - Cards show no expiry. The commands of sends and leaves name the chat: `/approve CHAT N`.
 - The command menu has `/pending` and `/list`.
 - `leave`: one action deletes a contact, or leaves a group, business chat or channel and deletes it; always with notification.
+
+## Decisions of 2026-10-31
+
+- The wait at stop is fixed for now: `--stop-wait` seconds, 10 by default, when cards were edited or posted at the stop; a second signal ends it. It replaces the count of pending deliveries read with `/sql`. A later change can post a final message and wait for its "sent" status for each owner.

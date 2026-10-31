@@ -197,7 +197,7 @@ A pending action expires after `--expire HOURS`, 23 by default and at most: Simp
 
 A result that no call has returned is dropped after the action's expiry time; a repeated call after that creates a new action. At most 20 actions are pending at once; a further `connect`, `send`, `download` or `leave` fails until the owner decides.
 
-Actions last only while the server runs. When the server stops, the last line of each pending card is edited to `Cancelled: the server stopped.`; after a restart, `/approve` of an earlier number replies `Action N is not pending.`, and the agent's repeated call posts a new card. Action numbers continue across restarts.
+Actions last only while the server runs. When the server stops, the last line of each pending card is edited to `Cancelled: the server stopped.`, and the server waits up to 10 seconds, `--stop-wait`, for these edits to be sent: it prints `Stopping: sending 2 cancelled cards, up to 10 s. Ctrl-C to stop now.`, and a second Ctrl-C ends the wait. After a restart, `/approve` of an earlier number replies `Action N is not pending.`, and the agent's repeated call posts a new card. Action numbers continue across restarts.
 
 ## What the owner sees
 
@@ -364,6 +364,8 @@ serve options:
                          Without --owners, whoever joins becomes an owner and
                          every owner approves.
   --expire HOURS         pending actions expire after HOURS, 1 to 23 (default: 23)
+  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards to be sent,
+                         0 to 60 (default: 10)
   --reset-owners         replace the owners: a new agent control chat and link
   --new-token            replace the access token
   --port N               HTTP port on 127.0.0.1 (default: 5226)

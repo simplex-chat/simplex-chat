@@ -144,6 +144,7 @@ test("agent with an owner, a bot and the tools", async () => {
     await server.stop()
     server = undefined
     expect(logLines).toContain("Cancelled 1 action.")
+    expect(logLines).toContain("Stopping: sending 1 cancelled card, up to 10 s. Ctrl-C to stop now.")
     expect(logLines).toContain("Stopped.")
     expect((await cancelledCard).chatItem.meta.itemText.split("\n").at(-1)).toBe("Cancelled: the server stopped.")
 
