@@ -1312,6 +1312,20 @@ class ChatItemDeletion(TypedDict):
     deletedChatItem: "AChatItem"
     toChatItem: NotRequired["AChatItem"]
 
+class ChatItemInfo(TypedDict):
+    itemVersions: list["ChatItemVersion"]
+    memberDeliveryStatuses: NotRequired[list["MemberDeliveryStatus"]]  # non-empty
+    forwardedFromChatItem: NotRequired["AChatItem"]
+    fileXftpServers: list[str]
+
+class ChatItemVersion(TypedDict):
+    chatItemVersionId: int  # int64
+    msgContent: "MsgContent"
+    formattedText: NotRequired[list["FormattedText"]]
+    markdownBlocks: NotRequired[list["MarkdownBlock"]]  # non-empty
+    itemVersionTs: str  # ISO-8601 timestamp
+    createdAt: str  # ISO-8601 timestamp
+
 ChatLayout = Literal["classic", "terminal"]
 
 class ChatListQuery_filters(TypedDict):
@@ -1473,6 +1487,19 @@ class ComposedMessage(TypedDict):
     quotedItemId: NotRequired[int]  # int64
     msgContent: "MsgContent"
     mentions: dict[str, int]  # str : int64
+
+class ConditionsAcceptance_accepted(TypedDict):
+    type: Literal["accepted"]
+    acceptedAt: NotRequired[str]  # ISO-8601 timestamp
+    autoAccepted: bool
+
+class ConditionsAcceptance_required(TypedDict):
+    type: Literal["required"]
+    deadline: NotRequired[str]  # ISO-8601 timestamp
+
+ConditionsAcceptance = ConditionsAcceptance_accepted | ConditionsAcceptance_required
+
+ConditionsAcceptance_Tag = Literal["accepted", "required"]
 
 class ConnStatus_new(TypedDict):
     type: Literal["new"]
@@ -2252,6 +2279,47 @@ class GroupShortLinkInfo(TypedDict):
     groupRelays: list[str]
     publicGroupId: NotRequired[str]
 
+class GroupSndStatus_new(TypedDict):
+    type: Literal["new"]
+
+class GroupSndStatus_forwarded(TypedDict):
+    type: Literal["forwarded"]
+
+class GroupSndStatus_inactive(TypedDict):
+    type: Literal["inactive"]
+
+class GroupSndStatus_sent(TypedDict):
+    type: Literal["sent"]
+
+class GroupSndStatus_rcvd(TypedDict):
+    type: Literal["rcvd"]
+    msgRcptStatus: "MsgReceiptStatus"
+
+class GroupSndStatus_error(TypedDict):
+    type: Literal["error"]
+    agentError: "SndError"
+
+class GroupSndStatus_warning(TypedDict):
+    type: Literal["warning"]
+    agentError: "SndError"
+
+class GroupSndStatus_invalid(TypedDict):
+    type: Literal["invalid"]
+    text: str
+
+GroupSndStatus = (
+    GroupSndStatus_new
+    | GroupSndStatus_forwarded
+    | GroupSndStatus_inactive
+    | GroupSndStatus_sent
+    | GroupSndStatus_rcvd
+    | GroupSndStatus_error
+    | GroupSndStatus_warning
+    | GroupSndStatus_invalid
+)
+
+GroupSndStatus_Tag = Literal["new", "forwarded", "inactive", "sent", "rcvd", "error", "warning", "invalid"]
+
 class GroupSummary(TypedDict):
     currentMembers: int  # int64
     publicMemberCount: NotRequired[int]  # int64
@@ -2415,6 +2483,11 @@ MarkdownBlock = (
 MarkdownBlock_Tag = Literal["paragraph", "heading", "codeBlock", "quote", "list", "table", "rule"]
 
 MemberCriteria = Literal["all"]
+
+class MemberDeliveryStatus(TypedDict):
+    groupMemberId: int  # int64
+    memberDeliveryStatus: "GroupSndStatus"
+    sentViaProxy: NotRequired[bool]
 
 # Connection link sent in a message - only short links are allowed.
 
@@ -2644,6 +2717,8 @@ class NoteFolder(TypedDict):
     chatTs: str  # ISO-8601 timestamp
     favorite: bool
     unread: bool
+
+OperatorTag = Literal["simplex", "flux"]
 
 class OwnerVerification_verified(TypedDict):
     type: Literal["verified"]
@@ -3194,6 +3269,27 @@ SegmentRange = TypedDict("SegmentRange", {
     "from": int,  # int
     "to": int,  # int
 })
+
+class ServerOperator(TypedDict):
+    operatorId: int  # int64
+    operatorTag: NotRequired["OperatorTag"]
+    tradeName: str
+    legalName: NotRequired[str]
+    serverDomains: list[str]
+    conditionsAcceptance: "ConditionsAcceptance"
+    enabled: bool
+    smpRoles: "ServerRoles"
+    xftpRoles: "ServerRoles"
+
+class ServerRoles(TypedDict):
+    storage: bool
+    proxy: bool
+    names: bool
+
+class ServerRolesOverride(TypedDict):
+    storage: NotRequired[bool]
+    proxy: NotRequired[bool]
+    names: NotRequired[bool]
 
 class SimplePreference(TypedDict):
     allow: "FeatureAllowed"
@@ -3980,6 +4076,12 @@ class UserInfo(TypedDict):
     user: "User"
     unreadCount: int  # int
 
+class UserOperatorServers(TypedDict):
+    operator: NotRequired["ServerOperator"]
+    smpServers: list["UserServer"]
+    xftpServers: list["UserServer"]
+    chatRelays: list["UserChatRelay"]
+
 class UserProfileUpdateSummary(TypedDict):
     updateSuccesses: int  # int
     updateFailures: int  # int
@@ -3988,6 +4090,15 @@ class UserProfileUpdateSummary(TypedDict):
 class UserPwdHash(TypedDict):
     hash: str
     salt: str
+
+class UserServer(TypedDict):
+    serverId: int  # int64
+    server: str
+    preset: bool
+    tested: NotRequired[bool]
+    enabled: bool
+    roles: "ServerRolesOverride"
+    deleted: bool
 
 class VersionRange(TypedDict):
     minVersion: int  # int

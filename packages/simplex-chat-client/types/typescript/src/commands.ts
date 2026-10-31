@@ -868,6 +868,21 @@ export namespace APIContactInfo {
   }
 }
 
+// Get message information.
+// Network usage: no.
+export interface APIGetChatItemInfo {
+  chatRef: T.ChatRef
+  chatItemId: number // int64
+}
+
+export namespace APIGetChatItemInfo {
+  export type Response = CR.ChatItemInfo | CR.ChatCmdError
+
+  export function cmdString(self: APIGetChatItemInfo): string {
+    return '/_get item info ' + T.ChatRef.cmdString(self.chatRef) + ' ' + self.chatItemId
+  }
+}
+
 // Delete chat.
 // Network usage: background.
 export interface APIDeleteChat {
@@ -1122,6 +1137,20 @@ export namespace APISetNetworkConfig {
 
   export function cmdString(self: APISetNetworkConfig): string {
     return '/_network ' + JSON.stringify(self.networkConfig)
+  }
+}
+
+// Get user servers and chat relays, grouped by operator.
+// Network usage: no.
+export interface APIGetUserServers {
+  userId: number // int64
+}
+
+export namespace APIGetUserServers {
+  export type Response = CR.UserServers | CR.ChatCmdError
+
+  export function cmdString(self: APIGetUserServers): string {
+    return '/_servers ' + self.userId
   }
 }
 

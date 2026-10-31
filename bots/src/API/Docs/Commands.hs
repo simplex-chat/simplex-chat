@@ -170,6 +170,7 @@ chatCommandsDocsData =
         ("APIGetChat", [], "Get chat messages.", ["CRApiChat", "CRChatCmdError"], [], Nothing, "/_get chat " <> Param "chatRef" <> Optional "" (" content=" <> Param "$0") "contentTag" <> " " <> Param "chatPagination" <> Optional "" (" search=" <> Param "$0") "search"),
         ("APIChatItemsRead", [], "Mark messages as read.", ["CRItemsReadForChat", "CRChatCmdError"], [], Nothing, "/_read chat items " <> Param "chatRef" <> " " <> Join ',' "chatItemIds"),
         ("APIContactInfo", [], "Get contact information.", ["CRContactInfo", "CRChatCmdError"], [], Nothing, "/_info @" <> Param "contactId"),
+        ("APIGetChatItemInfo", [], "Get message information.", ["CRChatItemInfo", "CRChatCmdError"], [], Nothing, "/_get item info " <> Param "chatRef" <> " " <> Param "chatItemId"),
         ("APIDeleteChat", [], "Delete chat.", ["CRContactDeleted", "CRContactConnectionDeleted", "CRGroupDeletedUser", "CRChatCmdError"], [], Just UNBackground, "/_delete " <> Param "chatRef" <> " " <> Param "chatDeleteMode"),
         ("APISetGroupCustomData", [], "Set group custom data.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set custom #" <> Param "groupId" <> Optional "" (" " <> Json "$0") "customData"),
         ("APISetContactCustomData", [], "Set contact custom data.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set custom @" <> Param "contactId" <> Optional "" (" " <> Json "$0") "customData"),
@@ -178,7 +179,6 @@ chatCommandsDocsData =
         -- ("APIChatRead", [], "Mark chat as read.", ["CRCmdOk"], [], Nothing, ""),
         -- ("APIChatUnread", [], "Mark chat as unread.", ["CRCmdOk"], [], Nothing, ""),
         -- ("APIClearChat", [], "Clear chat.", ["CRChatCleared"], [], Nothing, ""),
-        -- ("APIGetChatItemInfo", [], "Get message information.", ["CRChatItemInfo"], [], Nothing, ""),
         -- ("APIGetChatItems", [], "Get the most recent messages from all chats.", ["CRChatItems"], [], Nothing, ""),
         -- ("APIGetChats", [], "Get chats.", ["CRApiChats"], [], Nothing, ""),
         -- ("APISetChatSettings", [], "Set chat settings.", ["CRCmdOk"], [], Nothing, ""),
@@ -219,7 +219,8 @@ chatCommandsDocsData =
       [ ("StartChat", [], "Start chat controller.", ["CRChatStarted", "CRChatRunning"], [], Nothing, "/_start" <> OnOffParam "main" "mainApp" Nothing <> OnOffParam "snd_files" "enableSndFiles" (Just True) <> OnOffParam "service_requests" "serviceRequests" (Just False)),
         ("APIStopChat", [], "Stop chat controller.", ["CRChatStopped"], [], Nothing, "/_stop"),
         ("APIGetNetworkConfig", [], "Get network configuration.", ["CRNetworkConfig", "CRChatCmdError"], [], Nothing, "/network"),
-        ("APISetNetworkConfig", [], "Set network configuration.", ["CRCmdOk", "CRChatCmdError"], [], Just UNBackground, "/_network " <> Json "networkConfig")
+        ("APISetNetworkConfig", [], "Set network configuration.", ["CRCmdOk", "CRChatCmdError"], [], Just UNBackground, "/_network " <> Json "networkConfig"),
+        ("APIGetUserServers", [], "Get user servers and chat relays, grouped by operator.", ["CRUserServers", "CRChatCmdError"], [], Nothing, "/_servers " <> Param "userId")
       ]
     ),
     ( "Remote control commands",
@@ -396,7 +397,6 @@ undocumentedCommands =
     "APIGetBadgeState",
     "APIGetCallInvitations",
     "APIGetChatContentTypes",
-    "APIGetChatItemInfo",
     "APIGetChatItems",
     "APIGetChatItemTTL",
     "APIGetChatTags",
@@ -408,7 +408,6 @@ undocumentedCommands =
     "APIGetReactionMembers",
     "APIGetServerOperators",
     "APIGetUsageConditions",
-    "APIGetUserServers",
     "APIGroupInfo",
     "APIGetUpdatedGroupLinkData",
     "APIGroupMemberInfo",

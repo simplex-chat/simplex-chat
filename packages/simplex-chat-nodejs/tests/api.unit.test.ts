@@ -69,6 +69,15 @@ describe("documented success responses", () => {
     expect(sentCommands()).toEqual(["/freceive 3 approved_relays=on ./f.txt"])
   })
 
+  it("apiReceiveFile approves relays by default", async () => {
+    const chatItem = {chatItem: {meta: {itemId: 2}}}
+    const chat = await chatWithResponse({type: "rcvFileAccepted", user, chatItem})
+    await expect(chat.apiReceiveFile(3)).resolves.toEqual(chatItem)
+    await expect(chat.apiReceiveFile(3, undefined, false)).resolves.toEqual(chatItem)
+    await expect(chat.apiReceiveFile(3, "./f.txt", false)).resolves.toEqual(chatItem)
+    expect(sentCommands()).toEqual(["/freceive 3 approved_relays=on", "/freceive 3", "/freceive 3 ./f.txt"])
+  })
+
   it("apiGetChat accepts a count or a pagination", async () => {
     const aChat = {chatInfo: {type: "direct"}, chatItems: [], chatStats: {}}
     const chat = await chatWithResponse({type: "apiChat", user, chat: aChat})
@@ -155,6 +164,20 @@ describe("documented success responses", () => {
     nextResponse({type: "newMemberContactSentInv", user, contact, groupInfo: {}, member: {}})
     await expect(chat.apiSendMemberContactInvitation(2, "hi")).resolves.toEqual(contact)
     expect(sentCommands()).toEqual(["/_create member contact #1 2", '/_invite member contact @2 json {"type":"text","text":"hi"}'])
+  })
+
+  it("apiGetChatItemInfo returns the response", async () => {
+    const info = {type: "chatItemInfo", user, chatItem: {chatItem: {meta: {itemId: 5}}}, chatItemInfo: {itemVersions: [], fileXftpServers: ["xftp://abc@localhost:7002"]}}
+    const chat = await chatWithResponse(info)
+    await expect(chat.apiGetChatItemInfo(T.ChatType.Direct, 2, 5)).resolves.toEqual(info)
+    expect(sentCommands()).toEqual(["/_get item info @2 5"])
+  })
+
+  it("apiGetUserServers returns the servers", async () => {
+    const userServers = [{xftpServers: [{serverId: 1, server: "xftp://abc@localhost:7002", preset: false, enabled: true, roles: {}, deleted: false}], smpServers: [], chatRelays: []}]
+    const chat = await chatWithResponse({type: "userServers", user, userServers})
+    await expect(chat.apiGetUserServers(1)).resolves.toEqual(userServers)
+    expect(sentCommands()).toEqual(["/_servers 1"])
   })
 })
 

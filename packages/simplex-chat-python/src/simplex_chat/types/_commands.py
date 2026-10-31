@@ -762,6 +762,19 @@ def APIContactInfo_cmd_string(self: APIContactInfo) -> str:
 APIContactInfo_Response = CR.ContactInfo | CR.ChatCmdError
 
 
+# Get message information.
+# Network usage: no.
+class APIGetChatItemInfo(TypedDict):
+    chatRef: "T.ChatRef"
+    chatItemId: int  # int64
+
+
+def APIGetChatItemInfo_cmd_string(self: APIGetChatItemInfo) -> str:
+    return '/_get item info ' + T.ChatRef_cmd_string(self['chatRef']) + ' ' + str(self['chatItemId'])
+
+APIGetChatItemInfo_Response = CR.ChatItemInfo | CR.ChatCmdError
+
+
 # Delete chat.
 # Network usage: background.
 class APIDeleteChat(TypedDict):
@@ -987,6 +1000,18 @@ def APISetNetworkConfig_cmd_string(self: APISetNetworkConfig) -> str:
     return '/_network ' + json.dumps(self['networkConfig'])
 
 APISetNetworkConfig_Response = CR.CmdOk | CR.ChatCmdError
+
+
+# Get user servers and chat relays, grouped by operator.
+# Network usage: no.
+class APIGetUserServers(TypedDict):
+    userId: int  # int64
+
+
+def APIGetUserServers_cmd_string(self: APIGetUserServers) -> str:
+    return '/_servers ' + str(self['userId'])
+
+APIGetUserServers_Response = CR.UserServers | CR.ChatCmdError
 
 
 # Remote control commands

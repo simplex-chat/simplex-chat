@@ -543,8 +543,8 @@ export class ChatApi {
    * Receive file.
    * Network usage: no.
    */
-  async apiReceiveFile(fileId: number, filePath?: string): Promise<T.AChatItem> {
-    const r = await this.sendChatCmd(CC.ReceiveFile.cmdString({fileId, userApprovedRelays: true, filePath}))
+  async apiReceiveFile(fileId: number, filePath?: string, approvedRelays = true): Promise<T.AChatItem> {
+    const r = await this.sendChatCmd(CC.ReceiveFile.cmdString({fileId, userApprovedRelays: approvedRelays, filePath}))
     if (r.type === "rcvFileAccepted") return r.chatItem
     if (r.type === "rcvFileAcceptedSndCancelled") throw new ChatCommandError("file cancelled by sender", r)
     throw new ChatCommandError("error receiving file", r)
@@ -970,6 +970,16 @@ export class ChatApi {
   }
 
   /**
+   * Get message information.
+   * Network usage: no.
+   */
+  async apiGetChatItemInfo(chatType: T.ChatType, chatId: number, chatItemId: number): Promise<CR.ChatItemInfo> {
+    const r = await this.sendChatCmd(CC.APIGetChatItemInfo.cmdString({chatRef: {chatType, chatId}, chatItemId}))
+    if (r.type === "chatItemInfo") return r
+    throw new ChatCommandError("error getting chat item info", r)
+  }
+
+  /**
    * Get contact information.
    * Network usage: no.
    */
@@ -997,6 +1007,12 @@ export class ChatApi {
     const r = await this.sendChatCmd(CC.APISetNetworkConfig.cmdString({networkConfig}))
     if (r.type === "cmdOk") return
     throw new ChatCommandError("error setting network config", r)
+  }
+
+  async apiGetUserServers(userId: number): Promise<T.UserOperatorServers[]> {
+    const r = await this.sendChatCmd(CC.APIGetUserServers.cmdString({userId}))
+    if (r.type === "userServers") return r.userServers
+    throw new ChatCommandError("error getting user servers", r)
   }
 
   /**

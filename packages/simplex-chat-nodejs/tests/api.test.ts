@@ -191,6 +191,9 @@ describeIfSmpServerAvailable("API tests (use local SMP server)", () => {
     await expect(alice.apiChatItemsRead(CT.Direct, bobContact.contactId, [itemId])).resolves.toMatchObject({type: CT.Direct})
     const around = await alice.apiGetChat(CT.Direct, bobContact.contactId, {type: "around", chatItemId: itemId, count: 0})
     expect(around.chatItems.find(ci => ci.meta.itemId === itemId)?.meta.itemStatus.type).toBe("rcvRead")
+    const {chatItem, chatItemInfo} = await alice.apiGetChatItemInfo(CT.Direct, bobContact.contactId, itemId)
+    expect(chatItem.chatItem.meta.itemId).toBe(itemId)
+    expect(chatItemInfo.fileXftpServers).toEqual([])
     const info = await bob.apiContactInfo(aliceContact.contactId)
     expect(info.contact.contactId).toBe(aliceContact.contactId)
     expect(info.customUserProfile).toBeUndefined()
@@ -209,6 +212,17 @@ describeIfSmpServerAvailable("API tests (use local SMP server)", () => {
     const updated = {...networkConfig, smpProxyFallback: T.SMPProxyFallback.AllowProtected, logTLSErrors: true}
     await alice.apiSetNetworkConfig(updated)
     await expect(alice.apiGetNetworkConfig()).resolves.toEqual(updated)
+    await alice.close()
+  })
+
+  it("should get user servers", async () => {
+    const alice = await api.ChatApi.init({type: "sqlite", filePrefix: alicePath})
+    const {userId} = await alice.apiCreateActiveUser({displayName: "alice", fullName: ""})
+    await alice.startChat()
+    await useSmpServer(alice)
+    const servers = await alice.apiGetUserServers(userId)
+    const custom = servers.find(({operator}) => operator === undefined)
+    expect(custom?.smpServers.map(({server, enabled}) => ({server, enabled}))).toEqual([{server: smpServer.address, enabled: true}])
     await alice.close()
   })
 })

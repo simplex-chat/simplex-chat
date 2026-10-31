@@ -69,6 +69,7 @@ This file is generated automatically.
 - [APIGetChat](#apigetchat)
 - [APIChatItemsRead](#apichatitemsread)
 - [APIContactInfo](#apicontactinfo)
+- [APIGetChatItemInfo](#apigetchatiteminfo)
 - [APIDeleteChat](#apideletechat)
 - [APISetGroupCustomData](#apisetgroupcustomdata)
 - [APISetContactCustomData](#apisetcontactcustomdata)
@@ -92,6 +93,7 @@ This file is generated automatically.
 - [APIStopChat](#apistopchat)
 - [APIGetNetworkConfig](#apigetnetworkconfig)
 - [APISetNetworkConfig](#apisetnetworkconfig)
+- [APIGetUserServers](#apigetuserservers)
 
 [Remote control commands](#remote-control-commands)
 - [ConnectRemoteCtrl](#connectremotectrl)
@@ -2368,6 +2370,45 @@ ChatCmdError: Command error (only used in WebSockets API).
 ---
 
 
+### APIGetChatItemInfo
+
+Get message information.
+
+*Network usage*: no.
+
+**Parameters**:
+- chatRef: [ChatRef](./TYPES.md#chatref)
+- chatItemId: int64
+
+**Syntax**:
+
+```
+/_get item info <str(chatRef)> <chatItemId>
+```
+
+```javascript
+'/_get item info ' + ChatRef.cmdString(chatRef) + ' ' + chatItemId // JavaScript
+```
+
+```python
+'/_get item info ' + ChatRef_cmd_string(chatRef) + ' ' + str(chatItemId) # Python
+```
+
+**Responses**:
+
+ChatItemInfo: Message information.
+- type: "chatItemInfo"
+- user: [User](./TYPES.md#user)
+- chatItem: [AChatItem](./TYPES.md#achatitem)
+- chatItemInfo: [ChatItemInfo](./TYPES.md#chatiteminfo)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
 ### APIDeleteChat
 
 Delete chat.
@@ -2980,6 +3021,43 @@ Set network configuration.
 CmdOk: Ok.
 - type: "cmdOk"
 - user_: [User](./TYPES.md#user)?
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIGetUserServers
+
+Get user servers and chat relays, grouped by operator.
+
+*Network usage*: no.
+
+**Parameters**:
+- userId: int64
+
+**Syntax**:
+
+```
+/_servers <userId>
+```
+
+```javascript
+'/_servers ' + userId // JavaScript
+```
+
+```python
+'/_servers ' + str(userId) # Python
+```
+
+**Responses**:
+
+UserServers: User servers and chat relays, grouped by operator.
+- type: "userServers"
+- user: [User](./TYPES.md#user)
+- userServers: [[UserOperatorServers](./TYPES.md#useroperatorservers)]
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"

@@ -1887,6 +1887,22 @@ export interface ChatItemDeletion {
   toChatItem?: AChatItem
 }
 
+export interface ChatItemInfo {
+  itemVersions: ChatItemVersion[]
+  memberDeliveryStatuses?: MemberDeliveryStatus[]
+  forwardedFromChatItem?: AChatItem
+  fileXftpServers: string[]
+}
+
+export interface ChatItemVersion {
+  chatItemVersionId: number // int64
+  msgContent: MsgContent
+  formattedText?: FormattedText[]
+  markdownBlocks?: MarkdownBlock[]
+  itemVersionTs: string // ISO-8601 timestamp
+  createdAt: string // ISO-8601 timestamp
+}
+
 export enum ChatLayout {
   Classic = "classic",
   Terminal = "terminal",
@@ -2121,6 +2137,27 @@ export interface ComposedMessage {
   quotedItemId?: number // int64
   msgContent: MsgContent
   mentions: {[key: string]: number} // string : int64
+}
+
+export type ConditionsAcceptance = ConditionsAcceptance.Accepted | ConditionsAcceptance.Required
+
+export namespace ConditionsAcceptance {
+  export type Tag = "accepted" | "required"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Accepted extends Interface {
+    type: "accepted"
+    acceptedAt?: string // ISO-8601 timestamp
+    autoAccepted: boolean
+  }
+
+  export interface Required extends Interface {
+    type: "required"
+    deadline?: string // ISO-8601 timestamp
+  }
 }
 
 export type ConnStatus = 
@@ -3218,6 +3255,68 @@ export interface GroupShortLinkInfo {
   publicGroupId?: string
 }
 
+export type GroupSndStatus = 
+  | GroupSndStatus.New
+  | GroupSndStatus.Forwarded
+  | GroupSndStatus.Inactive
+  | GroupSndStatus.Sent
+  | GroupSndStatus.Rcvd
+  | GroupSndStatus.Error
+  | GroupSndStatus.Warning
+  | GroupSndStatus.Invalid
+
+export namespace GroupSndStatus {
+  export type Tag = 
+    | "new"
+    | "forwarded"
+    | "inactive"
+    | "sent"
+    | "rcvd"
+    | "error"
+    | "warning"
+    | "invalid"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface New extends Interface {
+    type: "new"
+  }
+
+  export interface Forwarded extends Interface {
+    type: "forwarded"
+  }
+
+  export interface Inactive extends Interface {
+    type: "inactive"
+  }
+
+  export interface Sent extends Interface {
+    type: "sent"
+  }
+
+  export interface Rcvd extends Interface {
+    type: "rcvd"
+    msgRcptStatus: MsgReceiptStatus
+  }
+
+  export interface Error extends Interface {
+    type: "error"
+    agentError: SndError
+  }
+
+  export interface Warning extends Interface {
+    type: "warning"
+    agentError: SndError
+  }
+
+  export interface Invalid extends Interface {
+    type: "invalid"
+    text: string
+  }
+}
+
 export interface GroupSummary {
   currentMembers: number // int64
   publicMemberCount?: number // int64
@@ -3445,6 +3544,12 @@ export namespace MarkdownBlock {
 
 export enum MemberCriteria {
   All = "all",
+}
+
+export interface MemberDeliveryStatus {
+  groupMemberId: number // int64
+  memberDeliveryStatus: GroupSndStatus
+  sentViaProxy?: boolean
 }
 // Connection link sent in a message - only short links are allowed.
 
@@ -3780,6 +3885,11 @@ export interface NoteFolder {
   chatTs: string // ISO-8601 timestamp
   favorite: boolean
   unread: boolean
+}
+
+export enum OperatorTag {
+  Simplex = "simplex",
+  Flux = "flux",
 }
 
 export type OwnerVerification = OwnerVerification.Verified | OwnerVerification.Failed
@@ -4588,6 +4698,30 @@ export interface SecurityCode {
 export interface SegmentRange {
   from: number // int
   to: number // int
+}
+
+export interface ServerOperator {
+  operatorId: number // int64
+  operatorTag?: OperatorTag
+  tradeName: string
+  legalName?: string
+  serverDomains: string[]
+  conditionsAcceptance: ConditionsAcceptance
+  enabled: boolean
+  smpRoles: ServerRoles
+  xftpRoles: ServerRoles
+}
+
+export interface ServerRoles {
+  storage: boolean
+  proxy: boolean
+  names: boolean
+}
+
+export interface ServerRolesOverride {
+  storage?: boolean
+  proxy?: boolean
+  names?: boolean
 }
 
 export interface SimplePreference {
@@ -5700,6 +5834,13 @@ export interface UserInfo {
   unreadCount: number // int
 }
 
+export interface UserOperatorServers {
+  operator?: ServerOperator
+  smpServers: UserServer[]
+  xftpServers: UserServer[]
+  chatRelays: UserChatRelay[]
+}
+
 export interface UserProfileUpdateSummary {
   updateSuccesses: number // int
   updateFailures: number // int
@@ -5709,6 +5850,16 @@ export interface UserProfileUpdateSummary {
 export interface UserPwdHash {
   hash: string
   salt: string
+}
+
+export interface UserServer {
+  serverId: number // int64
+  server: string
+  preset: boolean
+  tested?: boolean
+  enabled: boolean
+  roles: ServerRolesOverride
+  deleted: boolean
 }
 
 export interface VersionRange {
