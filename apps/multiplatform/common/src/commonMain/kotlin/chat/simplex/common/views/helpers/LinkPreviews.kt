@@ -150,12 +150,12 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
 fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancelEnabled: Boolean) {
   val sentColor = MaterialTheme.appColors.sentMessage
   Row(
-    Modifier.fillMaxWidth().background(sentColor),
+    Modifier.fillMaxWidth().padding(top = 8.dp).background(sentColor),
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (linkPreview == null) {
       Box(
-        Modifier.fillMaxWidth().weight(1f).height(60.dp).padding(start = 12.dp),
+        Modifier.fillMaxWidth().weight(1f).height(60.dp).padding(start = 16.dp),
         contentAlignment = Alignment.CenterStart
       ) {
         CircularProgressIndicator(

@@ -102,7 +102,6 @@ fun ContextItemView(
 
   Row(
     Modifier
-      .heightIn(min = 60.dp)
       .background(if (sent) sentColor else receivedColor),
     verticalAlignment = Alignment.CenterVertically
   ) {
@@ -116,7 +115,7 @@ fun ContextItemView(
       Icon(
         contextIcon,
         modifier = Modifier
-          .padding(start = 12.dp, end = 8.dp)
+          .padding(horizontal = 8.dp)
           .height(20.dp)
           .width(20.dp),
         contentDescription = stringResource(MR.strings.icon_descr_context),

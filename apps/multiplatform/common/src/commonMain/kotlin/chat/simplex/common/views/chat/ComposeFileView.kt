@@ -21,6 +21,7 @@ fun ComposeFileView(fileName: String, cancelFile: () -> Unit, cancelEnabled: Boo
     Modifier
       .height(60.dp)
       .fillMaxWidth()
+      .padding(top = 8.dp)
       .background(sentColor),
     verticalAlignment = Alignment.CenterVertically
   ) {
@@ -28,7 +29,7 @@ fun ComposeFileView(fileName: String, cancelFile: () -> Unit, cancelEnabled: Boo
       painterResource(MR.images.ic_draft_filled),
       stringResource(MR.strings.icon_descr_file),
       Modifier
-        .padding(start = 12.dp, end = 8.dp)
+        .padding(start = 4.dp, end = 2.dp)
         .size(36.dp),
       tint = if (isInDarkTheme()) FileDark else FileLight
     )

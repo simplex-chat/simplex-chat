@@ -26,7 +26,6 @@ fun ContactRequestView(contactRequest: ChatInfo.ContactRequest) {
       modifier = Modifier
         .padding(start = 8.dp, end = 8.sp.toDp())
         .weight(1F)
-        .alignByBaseline()
     ) {
       NameWithBadge(
         contactRequest.chatViewName,
@@ -50,6 +49,6 @@ fun ContactRequestView(contactRequest: ChatInfo.ContactRequest) {
       )
     }
     val ts = getTimestampText(contactRequest.contactRequest.updatedAt)
-    ChatListTimestampView(ts, Modifier.alignByBaseline())
+    ChatListTimestampView(ts)
   }
 }

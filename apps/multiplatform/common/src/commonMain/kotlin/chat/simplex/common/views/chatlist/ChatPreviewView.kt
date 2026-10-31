@@ -411,12 +411,12 @@ fun ChatPreviewView(
       Spacer(Modifier.width(8.dp))
       Column(Modifier.weight(1f)) {
         Row {
-          Box(Modifier.weight(1f).alignByBaseline()) {
+          Box(Modifier.weight(1f)) {
             chatPreviewTitle()
           }
           Spacer(Modifier.width(8.sp.toDp()))
           val ts = getTimestampText(chat.chatItems.lastOrNull()?.meta?.itemTs ?: chat.chatInfo.chatTs)
-          ChatListTimestampView(ts, Modifier.alignByBaseline())
+          ChatListTimestampView(ts)
         }
         Row(Modifier.heightIn(min = 46.sp.toDp()).fillMaxWidth()) {
           Row(Modifier.padding(top = 3.sp.toDp()).weight(1f)) {
@@ -613,13 +613,21 @@ fun unreadCountStr(n: Int): String {
   return if (n < 1000) "$n" else "${n / 1000}" + stringResource(MR.strings.thousand_abbreviation)
 }
 
-@Composable fun ChatListTimestampView(ts: String, modifier: Modifier = Modifier) {
-  Text(
-    ts,
-    modifier.offset(x = if (appPlatform.isDesktop) 1.5.sp.toDp() else 0.dp),
-    color = MaterialTheme.colors.secondary,
-    style = MaterialTheme.typography.body2.copy(fontSize = 13.sp),
-  )
+@Composable fun ChatListTimestampView(ts: String) {
+  Box(contentAlignment = Alignment.BottomStart) {
+    // This should be the same font style as in title to make date located on the same line as title
+    Text(
+      " ",
+      style = MaterialTheme.typography.h3,
+      fontWeight = FontWeight.Bold,
+    )
+    Text(
+      ts,
+      Modifier.padding(bottom = 5.sp.toDp()).offset(x = if (appPlatform.isDesktop) 1.5.sp.toDp() else 0.dp),
+      color = MaterialTheme.colors.secondary,
+      style = MaterialTheme.typography.body2.copy(fontSize = 13.sp),
+    )
+  }
 }
 
 private data class ActiveVoicePreview(

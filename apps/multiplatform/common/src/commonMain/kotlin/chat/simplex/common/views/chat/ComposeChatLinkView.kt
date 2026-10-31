@@ -27,8 +27,9 @@ fun ComposeChatLinkView(
   Row(
     Modifier
       .fillMaxWidth()
+      .padding(top = 8.dp)
       .background(sentColor)
-      .padding(start = 12.dp, top = 3.dp, bottom = 3.dp),
+      .padding(start = 8.dp, top = 6.dp, bottom = 6.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
     ProfileImage(size = 54.dp, image = chatLink.image, icon = chatLink.iconRes)

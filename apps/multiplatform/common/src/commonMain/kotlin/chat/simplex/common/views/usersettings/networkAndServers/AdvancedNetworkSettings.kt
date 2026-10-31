@@ -357,7 +357,7 @@ private fun SMPProxyModePicker(
     generalGetString(MR.strings.network_smp_proxy_mode_private_routing),
     smpProxyMode,
     values,
-    icon = painterResource(MR.images.ic_route),
+    icon = painterResource(MR.images.ic_settings_ethernet),
     onSelected = {
       showModal { SMPProxyModeView(smpProxyMode, values, updateSMPProxyMode) }
     }
