@@ -42,6 +42,7 @@ export type ChatEvent =
   | CEvt.RcvFileWarning
   | CEvt.SndFileError
   | CEvt.SndFileWarning
+  | CEvt.SndFileProgressXFTP
   | CEvt.AcceptingContactRequest
   | CEvt.AcceptingBusinessRequest
   | CEvt.ContactConnecting
@@ -99,6 +100,7 @@ export namespace CEvt {
     | "rcvFileWarning"
     | "sndFileError"
     | "sndFileWarning"
+    | "sndFileProgressXFTP"
     | "acceptingContactRequest"
     | "acceptingBusinessRequest"
     | "contactConnecting"
@@ -412,6 +414,15 @@ export namespace CEvt {
     chatItem_?: T.AChatItem
     fileTransferMeta: T.FileTransferMeta
     errorMessage: string
+  }
+
+  export interface SndFileProgressXFTP extends Interface {
+    type: "sndFileProgressXFTP"
+    user: T.User
+    chatItem_?: T.AChatItem
+    fileTransferMeta: T.FileTransferMeta
+    sentSize: number // int64
+    totalSize: number // int64
   }
 
   export interface AcceptingContactRequest extends Interface {

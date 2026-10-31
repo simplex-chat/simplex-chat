@@ -144,3 +144,15 @@ def test_api_get_chat_item_info_cmd_string():
 
 def test_api_get_user_servers_cmd_string():
     assert CC.APIGetUserServers_cmd_string({"userId": 1}) == "/_servers 1"
+
+
+def test_snd_file_progress_xftp_event():
+    assert "sndFileProgressXFTP" in typing.get_args(CEvt.ChatEvent_Tag)
+    assert list(CEvt.SndFileProgressXFTP.__annotations__) == [
+        "type",
+        "user",
+        "chatItem_",
+        "fileTransferMeta",
+        "sentSize",
+        "totalSize",
+    ]

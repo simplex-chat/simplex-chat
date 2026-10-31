@@ -124,7 +124,8 @@ chatEventsDocsData =
         ("CEvtRcvFileError", "Error receiving file."),
         ("CEvtRcvFileWarning", "Warning when receiving file. It can happen when CLI settings do not allow to connect to file server(s)."),
         ("CEvtSndFileError", "Error sending file."),
-        ("CEvtSndFileWarning", "Warning when sending file.")
+        ("CEvtSndFileWarning", "Warning when sending file."),
+        ("CEvtSndFileProgressXFTP", "File upload progress. `sentSize` equals `totalSize` when the upload is complete.")
       ]
     ),
     ( "Connection progress events",
@@ -218,7 +219,6 @@ undocumentedEvents =
     "CEvtRemoteHostSessionCode",
     "CEvtRemoteHostStopped",
     "CEvtSndFileComplete", -- legacy SMP files
-    "CEvtSndFileProgressXFTP",
     "CEvtSndFileRcvCancelled", -- legacy SMP files
     "CEvtSndFileRedirectStartXFTP",
     "CEvtSndFileStart", -- legacy SMP files

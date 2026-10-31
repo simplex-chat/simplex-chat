@@ -261,6 +261,14 @@ class SndFileWarning(TypedDict):
     fileTransferMeta: "T.FileTransferMeta"
     errorMessage: str
 
+class SndFileProgressXFTP(TypedDict):
+    type: Literal["sndFileProgressXFTP"]
+    user: "T.User"
+    chatItem_: NotRequired["T.AChatItem"]
+    fileTransferMeta: "T.FileTransferMeta"
+    sentSize: int  # int64
+    totalSize: int  # int64
+
 class AcceptingContactRequest(TypedDict):
     type: Literal["acceptingContactRequest"]
     user: "T.User"
@@ -386,6 +394,7 @@ ChatEvent = (
     | RcvFileWarning
     | SndFileError
     | SndFileWarning
+    | SndFileProgressXFTP
     | AcceptingContactRequest
     | AcceptingBusinessRequest
     | ContactConnecting
@@ -404,7 +413,7 @@ ChatEvent = (
     | ChatErrors
 )
 
-ChatEvent_Tag = Literal["contactConnected", "contactUpdated", "contactDeletedByContact", "receivedContactRequest", "newMemberContactReceivedInv", "contactSndReady", "newChatItems", "chatItemReaction", "chatItemsDeleted", "chatItemUpdated", "groupChatItemsDeleted", "chatItemsStatusesUpdated", "receivedGroupInvitation", "receivedGroupInvitationViaGroup", "userJoinedGroup", "groupUpdated", "joinedGroupMember", "memberRole", "deletedMember", "leftMember", "deletedMemberUser", "groupDeleted", "connectedToGroupMember", "memberAcceptedByOther", "memberBlockedForAll", "groupMemberUpdated", "groupLinkDataUpdated", "groupRelayUpdated", "rcvFileDescrReady", "rcvFileComplete", "sndFileCompleteXFTP", "rcvFileStart", "rcvFileSndCancelled", "rcvFileAccepted", "rcvFileError", "rcvFileWarning", "sndFileError", "sndFileWarning", "acceptingContactRequest", "acceptingBusinessRequest", "contactConnecting", "businessLinkConnecting", "joinedGroupMemberConnecting", "groupLinkConnecting", "hostConnected", "hostDisconnected", "subscriptionStatus", "serviceRequest", "serviceReplySent", "remoteCtrlSessionCode", "remoteCtrlStopped", "messageError", "chatError", "chatErrors"]
+ChatEvent_Tag = Literal["contactConnected", "contactUpdated", "contactDeletedByContact", "receivedContactRequest", "newMemberContactReceivedInv", "contactSndReady", "newChatItems", "chatItemReaction", "chatItemsDeleted", "chatItemUpdated", "groupChatItemsDeleted", "chatItemsStatusesUpdated", "receivedGroupInvitation", "receivedGroupInvitationViaGroup", "userJoinedGroup", "groupUpdated", "joinedGroupMember", "memberRole", "deletedMember", "leftMember", "deletedMemberUser", "groupDeleted", "connectedToGroupMember", "memberAcceptedByOther", "memberBlockedForAll", "groupMemberUpdated", "groupLinkDataUpdated", "groupRelayUpdated", "rcvFileDescrReady", "rcvFileComplete", "sndFileCompleteXFTP", "rcvFileStart", "rcvFileSndCancelled", "rcvFileAccepted", "rcvFileError", "rcvFileWarning", "sndFileError", "sndFileWarning", "sndFileProgressXFTP", "acceptingContactRequest", "acceptingBusinessRequest", "contactConnecting", "businessLinkConnecting", "joinedGroupMemberConnecting", "groupLinkConnecting", "hostConnected", "hostDisconnected", "subscriptionStatus", "serviceRequest", "serviceReplySent", "remoteCtrlSessionCode", "remoteCtrlStopped", "messageError", "chatError", "chatErrors"]
 
 
 class OnEventDecorator(Protocol):
@@ -641,6 +650,12 @@ class OnEventDecorator(Protocol):
     def __call__(self, event: Literal["sndFileWarning"], /) -> Callable[
         [Callable[["SndFileWarning"], Awaitable[None]]],
         Callable[["SndFileWarning"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["sndFileProgressXFTP"], /) -> Callable[
+        [Callable[["SndFileProgressXFTP"], Awaitable[None]]],
+        Callable[["SndFileProgressXFTP"], Awaitable[None]],
     ]: ...
 
     @overload
