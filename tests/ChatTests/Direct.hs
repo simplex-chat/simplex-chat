@@ -52,7 +52,7 @@ import Test.Hspec hiding (it)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
 #else
-import Database.SQLite.Simple (Only (..))
+import Database.SQLite.Simple (Only (..), Query (..))
 import Simplex.Chat.Options.DB
 #endif
 
@@ -125,6 +125,9 @@ chatDirectTests = do
     it "mute/unmute contact" testMuteContact
     it "mute/unmute group and member" testMuteGroup
   describe "multiple users" $ do
+#if !defined(dbPostgres)
+    it "users' unread counts read only unread chat items" testUsersUnreadCountQueryPlans
+#endif
     it "create second user" testCreateSecondUser
     it "multiple users subscribe and receive messages after restart" testUsersSubscribeAfterRestart
     it "both users have contact link" testMultipleUserAddresses
@@ -1971,6 +1974,27 @@ testMuteGroup =
         (alice <# "#team cath> test 4")
       bob ##> "/gs"
       bob <## "#team (3 members)"
+
+#if !defined(dbPostgres)
+testUsersUnreadCountQueryPlans :: HasCallStack => TestParams -> IO ()
+testUsersUnreadCountQueryPlans ps@TestParams {chatQueryStats} =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    alice ##> "/users"
+    alice <## "alice (Alice) (active)"
+    unreadCountQueries <- filter isUnreadCountQuery . M.keys <$> readTVarIO chatQueryStats
+    plans <- withCCTransaction alice $ \db -> mapM (queryPlan db) unreadCountQueries
+    plans
+      `shouldBe` [ [ "SEARCH i USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)",
+                     "SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)"
+                   ],
+                   [ "SEARCH i USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)",
+                     "SEARCH g USING INTEGER PRIMARY KEY (rowid=?)"
+                   ]
+                 ]
+  where
+    isUnreadCountQuery q = any (`T.isInfixOf` fromQuery q) ["JOIN contacts ct USING (contact_id)", "JOIN groups g USING (group_id)"]
+    queryPlan db q = map (\(_, _, _, detail) -> detail) <$> (DB.query_ db ("EXPLAIN QUERY PLAN " <> q) :: IO [(Int, Int, Int, T.Text)])
+#endif
 
 testCreateSecondUser :: HasCallStack => TestParams -> IO ()
 testCreateSecondUser =
