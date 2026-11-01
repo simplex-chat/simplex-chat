@@ -203,6 +203,7 @@ storeService opts@StoreServiceOpts {serviceConfigFile} cfg env = do
   requestEnv <- configureStoreVerifier serviceCfg env
   let groupCfg = serviceCfg >>= \ServiceConfig {group} -> group
       trackerQ_ = groupEventQ env <$ groupCfg
+      namesOn = isJust (serviceCfg >>= names)
       readEvents cc =
         forever $
           atomically (readTBQueue $ outputQ cc) >>= \case
@@ -214,7 +215,7 @@ storeService opts@StoreServiceOpts {serviceConfigFile} cfg env = do
       startLanes cc = do
         lanes <- maybe (pure []) (serviceLanes waiters cc) serviceCfg
         -- The group is resolved before the other lanes start, so a failed lookup exits at once rather than waiting for them to end.
-        groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc turns (groupEventQ env) <$> ensureManagedGroup cc gc
+        groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc turns namesOn (groupEventQ env) <$> ensureManagedGroup cc gc
         raceAny_ $ processQueuedRequests key trackerQ_ requestEnv : maybeToList groupLane_ <> lanes
       chatHooks =
         defaultChatHooks

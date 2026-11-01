@@ -6,13 +6,19 @@ module Bots.StoreService.ConfigTests where
 
 import StoreService.Config
 import Control.Monad (forM_)
+import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Char8 as B
 import Data.Either (isLeft)
 import Data.Ini (readIniFile)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Data.Time.Calendar (fromGregorian)
+import Data.Time.Clock (UTCTime (..))
+import Simplex.Messaging.Crypto.Secp256k1 (mkPrivateKey)
 import Simplex.Messaging.Encoding.String (strDecode)
+import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath ((</>))
 import Test.Hspec
@@ -608,3 +614,168 @@ testGroupAbsent :: IO ()
 testGroupAbsent = do
   r <- parseIni listenerIni
   fmap group r `shouldBe` Right Nothing
+
+namesConfigTests :: Spec
+namesConfigTests = describe "StoreService names: config" $ do
+  it "reads [names] and [chain], applying every documented default" testNamesDefaults
+  it "reads every [names] and [chain] setting written out" testNamesWrittenOut
+  it "leaves the names side off when [names] is absent" testNamesAbsent
+  it "refuses [names] without [chain], and [chain] without [names]" testNamesNeedsChain
+  it "refuses years below 2" testNamesYearsBelowTwo
+  it "refuses a term_start that is not an ISO 8601 UTC time" testNamesBadTermStart
+  it "refuses a TLD other than simplex or testing" testNamesBadTLD
+  it "refuses a bad or wrongly checksummed contract address, naming the key" testNamesBadAddress
+  it "refuses a bad service key without quoting it" testNamesBadServiceKey
+  it "keeps the RPC URL and the service key out of errors and the shown config" testNamesSecretsHidden
+  it "names a [names] or [chain] setting nothing reads, and still boots" testNamesUnknownKeys
+
+rpcUrl :: T.Text
+rpcUrl = "https://eth.example.org/v2/rpc-token-value"
+
+-- anvil's first dev account, a real secp256k1 key
+serviceKeyHex :: T.Text
+serviceKeyHex = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+
+controllerAddr, sponsorAddr, registrarAddr, resolverAddr :: T.Text
+controllerAddr = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
+sponsorAddr = "0x0B306BF915C4d645ff596e518fAf3F9669b97016"
+registrarAddr = "0x014f9c09CcEeDEF1B713110d04D3a07d5B5D9b73"
+resolverAddr = "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318"
+
+namesSection :: [T.Text]
+namesSection = ["[names]", "tld = testing"]
+
+chainSection :: [T.Text]
+chainSection =
+  [ "[chain]",
+    "rpc_url = " <> rpcUrl,
+    "chain_id = 31337",
+    "controller = " <> controllerAddr,
+    "sponsor = " <> sponsorAddr,
+    "base_registrar = " <> registrarAddr,
+    "resolver = " <> resolverAddr,
+    "service_key = " <> serviceKeyHex
+  ]
+
+namesIni :: [T.Text] -> [T.Text] -> T.Text
+namesIni ns cs = fullIni <> T.unlines (ns <> cs)
+
+namesRefusal :: [T.Text] -> [T.Text] -> IO String
+namesRefusal ns cs =
+  parseIni (namesIni ns cs) >>= \r -> case r of
+    Left e -> pure e
+    Right cfg -> expectationFailure ("must not boot, it read " <> show (names cfg)) >> pure ""
+
+parsedNames :: [T.Text] -> [T.Text] -> IO NamesConfig
+parsedNames ns cs =
+  parseIni (namesIni ns cs) >>= \r -> case r of
+    Right cfg -> maybe (fail "[names] was present but not read") pure (names cfg)
+    Left e -> fail ("must boot, but: " <> e)
+
+address :: HasCallStack => T.Text -> Address
+address t = either error id (strDecode (B.pack (T.unpack t)))
+
+testNamesDefaults :: IO ()
+testNamesDefaults = do
+  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nChain} <- parsedNames namesSection chainSection
+  nTLD `shouldBe` TLDTesting
+  nYears `shouldBe` 2
+  nTermStart `shouldBe` UTCTime (fromGregorian 2027 1 1) 0
+  nTermSlackSeconds `shouldBe` 3600
+  let ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cGasLimitCap} = nChain
+  cRpcUrl `shouldBe` T.unpack rpcUrl
+  cChainId `shouldBe` 31337
+  (cController, cSponsor, cBaseRegistrar, cResolver) `shouldBe` (address controllerAddr, address sponsorAddr, address registrarAddr, address resolverAddr)
+  Right expectedKey <- pure (mkPrivateKey (BA.pack [0xac, 0x09, 0x74, 0xbe, 0xc3, 0x9a, 0x17, 0xe3, 0x6b, 0xa4, 0xa6, 0xb4, 0xd2, 0x38, 0xff, 0x94, 0x4b, 0xac, 0xb4, 0x78, 0xcb, 0xed, 0x5e, 0xfc, 0xae, 0x78, 0x4d, 0x7b, 0xf4, 0xf2, 0xff, 0x80]))
+  (cServiceKey == expectedKey) `shouldBe` True
+  cGasLimitCap `shouldBe` 8000000
+
+testNamesWrittenOut :: IO ()
+testNamesWrittenOut = do
+  let ns = ["[names]", "tld = simplex", "years = 5", "term_start = 2027-03-01T12:00:00Z", "term_slack_seconds = 60"]
+      cs = chainSection <> ["gas_limit_cap = 500000"]
+  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nChain = ChainConfig {cGasLimitCap}} <- parsedNames ns cs
+  nTLD `shouldBe` TLDSimplex
+  nYears `shouldBe` 5
+  nTermStart `shouldBe` UTCTime (fromGregorian 2027 3 1) (12 * 3600)
+  nTermSlackSeconds `shouldBe` 60
+  cGasLimitCap `shouldBe` 500000
+  namesRefusal ns (chainSection <> ["gas_limit_cap = 0"]) `shouldReturn` "chain.gas_limit_cap must be a positive whole number"
+  namesRefusal ns (chainSection <> ["gas_limit_cap = 18446744073709551616"]) `shouldReturn` "chain.gas_limit_cap must be a positive whole number"
+  namesRefusal ns (filter (not . ("chain_id" `T.isPrefixOf`)) chainSection) `shouldReturn` "chain.chain_id is required"
+
+testNamesAbsent :: IO ()
+testNamesAbsent = do
+  Right cfg <- parseIni fullIni
+  names cfg `shouldBe` Nothing
+
+testNamesNeedsChain :: IO ()
+testNamesNeedsChain = do
+  namesRefusal namesSection [] `shouldReturn` "[names] needs a [chain] section"
+  namesRefusal [] chainSection `shouldReturn` "[chain] is set but [names] is absent, so nothing would use it"
+
+testNamesYearsBelowTwo :: IO ()
+testNamesYearsBelowTwo = do
+  mapM_ (\v -> namesRefusal (namesSection <> ["years = " <> v]) chainSection `shouldReturn` "names.years must be at least 2") ["1", "0", "-2"]
+  NamesConfig {nYears} <- parsedNames (namesSection <> ["years = 2"]) chainSection
+  nYears `shouldBe` 2
+
+testNamesBadTermStart :: IO ()
+testNamesBadTermStart =
+  mapM_
+    (\v -> namesRefusal (namesSection <> ["term_start = " <> v]) chainSection >>= (`shouldContain` "names.term_start must be an ISO 8601 UTC time"))
+    ["2027-01-01", "2027-01-01T00:00:00", "2027-13-01T00:00:00Z", "1 January 2027"]
+
+testNamesBadTLD :: IO ()
+testNamesBadTLD = do
+  namesRefusal ["[names]", "tld = simplex.chat"] chainSection `shouldReturn` "names.tld must be simplex or testing, not simplex.chat"
+  namesRefusal ["[names]", "years = 2"] chainSection `shouldReturn` "names.tld is required"
+
+testNamesBadAddress :: IO ()
+testNamesBadAddress = do
+  let withSponsor v = map (\l -> if "sponsor =" `T.isPrefixOf` l then "sponsor = " <> v else l) chainSection
+      refused v = namesRefusal namesSection (withSponsor v) `shouldReturn` "chain.sponsor is not an Ethereum address"
+  -- the mixed-case form of sponsorAddr with one letter's case flipped fails its EIP-55 checksum
+  refused "0x0b306BF915C4d645ff596e518fAf3F9669b97016"
+  refused "0x0B306BF915C4d645ff596e518fAf3F9669b970"
+  refused "0x0B306BF915C4d645ff596e518fAf3F9669b97016ff"
+  refused "not-an-address"
+  NamesConfig {nChain = ChainConfig {cSponsor}} <- parsedNames namesSection (withSponsor (T.toLower sponsorAddr))
+  cSponsor `shouldBe` address sponsorAddr
+
+testNamesBadServiceKey :: IO ()
+testNamesBadServiceKey = do
+  let withKey v = map (\l -> if "service_key =" `T.isPrefixOf` l then "service_key = " <> v else l) chainSection
+      refused v = do
+        e <- namesRefusal namesSection (withKey v)
+        e `shouldBe` "chain.service_key must be 0x and 64 hex digits of a valid secp256k1 key"
+  refused (T.drop 2 serviceKeyHex)
+  refused (T.dropEnd 2 serviceKeyHex)
+  refused ("0x" <> T.replicate 64 "0")
+  -- the curve order n is not a valid key
+  refused "0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141"
+  refused "0xzz0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+
+testNamesSecretsHidden :: IO ()
+testNamesSecretsHidden = do
+  let secretUrl = "ftp://eth.example.org/v2/rpc-token-value"
+      withUrl v = map (\l -> if "rpc_url =" `T.isPrefixOf` l then "rpc_url = " <> v else l) chainSection
+  e <- namesRefusal namesSection (withUrl secretUrl)
+  e `shouldBe` "chain.rpc_url must be an http or https URL"
+  e `shouldNotContain` "rpc-token-value"
+  other <- namesRefusal namesSection (chainSection <> ["gas_limit_cap = many"])
+  other `shouldNotContain` "rpc-token-value"
+  other `shouldNotContain` T.unpack (T.drop 2 serviceKeyHex)
+  Right cfg <- parseIni (namesIni namesSection chainSection)
+  show cfg `shouldNotContain` "rpc-token-value"
+  show cfg `shouldNotContain` T.unpack (T.drop 2 serviceKeyHex)
+  show cfg `shouldContain` "chain 31337"
+
+testNamesUnknownKeys :: IO ()
+testNamesUnknownKeys = do
+  let t = namesIni (namesSection <> ["yeers = 3"]) (chainSection <> ["rpc = x"])
+  withIni t $ \p -> do
+    Right ini <- readIniFile p
+    unknownKeys ini `shouldMatchList` ["names.yeers", "chain.rpc"]
+  NamesConfig {nYears} <- parsedNames (namesSection <> ["yeers = 3"]) (chainSection <> ["rpc = x"])
+  nYears `shouldBe` 2
