@@ -157,7 +157,7 @@ The workflow `mcp` (mcp.yml) tests packages/simplex-chat-mcp in one job, test (u
   - `npx tsc` and `npx tsc -p test/tsconfig.json --noEmit` (step "Type-check and build");
   - `npm test`, the unit tests (step "Unit tests");
   - `npm run test:e2e`, the end-to-end tests (step "End-to-end tests"). They download libsimplex and the add-on pinned in packages/simplex-chat-nodejs/src/release.ts, and smp-server and xftp-server of the simplexmq release in test/e2e/smpServer.ts.
-- Dispatch: `POST /repos/<owner>/simplex-chat/actions/workflows/mcp.yml/dispatches` with `{"ref": "<branch>"}`.
+- Dispatch, once mcp.yml is on the repository's default branch: `POST /repos/<owner>/simplex-chat/actions/workflows/mcp.yml/dispatches` with `{"ref": "<branch>"}`.
 - Local, after the types package and the Node.js library are built as in CI:
   ```sh
   cd packages/simplex-chat-mcp
