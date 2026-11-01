@@ -25,6 +25,7 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalUriHandler
 import dev.icerock.moko.resources.compose.painterResource
@@ -969,34 +970,50 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       ),
     )
   ),
-  // TODO [badges] restore when badges ship, with final copy and the Read more link.
-  /*
   VersionDescription(
-    version = "v7.1",
+    version = "v7.1-beta.8",
     post = null,
     features = listOf(
       VersionFeature.FeatureView(
         icon = null,
         titleId = MR.strings.v7_1_supporter_badge_title,
         view = { SupporterBadgeWhatsNew() }
-      )
+      ),
+      VersionFeature.FeatureDescription(
+        icon = null,
+        titleId = MR.strings.v7_1_channels,
+        descrId = null,
+        subfeatures = listOf(
+          MR.images.ic_flag to MR.strings.v7_1_channels_moderators,
+          MR.images.ic_verified to MR.strings.v7_1_channels_signed_messages,
+        )
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_outline_terminal,
+        titleId = MR.strings.v7_1_terminal_layout,
+        descrId = MR.strings.v7_1_terminal_layout_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_call,
+        titleId = MR.strings.v6_1_better_calls,
+        descrId = MR.strings.v7_1_better_calls_descr
+      ),
     )
   ),
-  */
 )
 
 @Composable
 private fun SupporterBadgeWhatsNew() {
-  Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+  Box(Modifier.padding(bottom = 12.dp).fillMaxWidth()) {
+    Column(Modifier.padding(end = 96.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
       Text(
         stringResource(MR.strings.v7_1_supporter_badge_title),
-        style = MaterialTheme.typography.h3,
-        fontWeight = FontWeight.Bold
+        style = MaterialTheme.typography.h4,
+        fontWeight = FontWeight.Medium
       )
       Text(
         stringResource(MR.strings.v7_1_supporter_badge_body),
-        style = MaterialTheme.typography.body1,
+        fontSize = 15.sp,
         maxLines = 10
       )
     }
@@ -1006,17 +1023,22 @@ private fun SupporterBadgeWhatsNew() {
         painterResource(if (isDark) MR.images.phone_supporter_light else MR.images.phone_supporter),
         contentDescription = null,
         contentScale = ContentScale.Fit,
-        modifier = Modifier.size(110.dp)
+        modifier = Modifier.align(Alignment.TopEnd).spill(x = 23.dp, y = (-24).dp).size(width = 115.dp, height = 144.dp)
       )
     } else {
       Image(
         painterResource(MR.images.badge_supporter),
         contentDescription = null,
         contentScale = ContentScale.Fit,
-        modifier = Modifier.size(72.dp)
+        modifier = Modifier.align(Alignment.TopEnd).size(72.dp)
       )
     }
   }
+}
+
+private fun Modifier.spill(x: Dp, y: Dp): Modifier = layout { measurable, constraints ->
+  val placeable = measurable.measure(constraints)
+  layout(0, 0) { placeable.place(x.roundToPx() - placeable.width, y.roundToPx()) }
 }
 
 private val lastVersion = versionDescriptions.last().version

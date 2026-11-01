@@ -50,6 +50,7 @@ struct ChatItemView: View {
     @Binding var scrollToItemId: ChatItem.ID?
     var maxWidth: CGFloat = .infinity
     @Binding var allowMenu: Bool
+    var endButton: AnyView?
 
     init(
         chat: Chat,
@@ -59,7 +60,8 @@ struct ChatItemView: View {
         scrollToItemId: Binding<ChatItem.ID?> = .constant(nil),
         showMember: Bool = false,
         maxWidth: CGFloat = .infinity,
-        allowMenu: Binding<Bool> = .constant(false)
+        allowMenu: Binding<Bool> = .constant(false),
+        endButton: AnyView? = nil
     ) {
         self.chat = chat
         self.im = im
@@ -68,6 +70,7 @@ struct ChatItemView: View {
         _scrollToItemId = scrollToItemId
         self.maxWidth = maxWidth
         _allowMenu = allowMenu
+        self.endButton = endButton
     }
 
     var body: some View {
@@ -116,7 +119,8 @@ struct ChatItemView: View {
             maxWidth: maxWidth,
             imgWidth: adjustedMaxWidth,
             videoWidth: adjustedMaxWidth,
-            allowMenu: $allowMenu
+            allowMenu: $allowMenu,
+            endButton: endButton
         )
     }
 }
@@ -125,6 +129,7 @@ struct ChatItemContentView<Content: View>: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.revealed) var revealed: Bool
+    @Environment(\.terminalLayout) private var terminal
     @ObservedObject var chat: Chat
     @ObservedObject var im: ItemsModel
     var chatItem: ChatItem
@@ -192,7 +197,9 @@ struct ChatItemContentView<Content: View>: View {
     }
 
     private func eventItemView() -> some View {
-        CIEventView(eventText: eventItemViewText(theme.colors.secondary))
+        ChatEventWithMeta(chatItem: chatItem) { ts in
+            CIEventView(eventText: eventItemViewText(theme.colors.secondary, terminal ? ts : textSpace + ts))
+        }
     }
 
     private func pendingReviewEventItemText() -> Text {
@@ -202,17 +209,17 @@ struct ChatItemContentView<Content: View>: View {
             .fontWeight(.bold)
     }
 
-    private func eventItemViewText(_ secondaryColor: Color) -> Text {
+    private func eventItemViewText(_ secondaryColor: Color, _ ts: Text) -> Text {
         if !revealed, let t = mergedGroupEventText {
-            return chatEventText(t + textSpace + chatItem.timestampText, secondaryColor)
+            return chatEventText(t + textSpace + ts, secondaryColor)
         } else if let member = chatItem.memberDisplayName {
             return Text(member + " ")
                     .font(.caption)
                     .foregroundColor(secondaryColor)
                     .fontWeight(.light)
-                + chatEventText(chatItem, secondaryColor, isChannel: chat.chatInfo.isChannel)
+                + chatEventText(chatItem, secondaryColor, isChannel: chat.chatInfo.isChannel, ts: ts)
         } else {
-            return chatEventText(chatItem, secondaryColor, isChannel: chat.chatInfo.isChannel)
+            return chatEventText(chatItem, secondaryColor, isChannel: chat.chatInfo.isChannel, ts: ts)
         }
     }
 
@@ -282,23 +289,40 @@ func chatEventText(_ eventText: LocalizedStringKey, _ ts: Text, _ secondaryColor
     chatEventText(Text(eventText) + textSpace + ts, secondaryColor)
 }
 
-func chatEventText(_ ci: ChatItem, _ secondaryColor: Color, isChannel: Bool = false) -> Text {
-    chatEventText("\(ci.content.text(isChannel: isChannel))", ci.timestampText, secondaryColor)
+func chatEventText(_ ci: ChatItem, _ secondaryColor: Color, isChannel: Bool = false, ts: Text) -> Text {
+    chatEventText("\(ci.content.text(isChannel: isChannel))", ts, secondaryColor)
+}
+
+func previewDated(_ chatItem: ChatItem) -> ChatItem {
+    var ci = chatItem
+    ci.meta.itemTs = previewDate
+    ci.meta.createdAt = previewDate
+    ci.meta.updatedAt = previewDate
+    return ci
 }
 
 struct ChatItemView_Previews: PreviewProvider {
     static var previews: some View {
         let im = ItemsModel.shared
         Group{
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂🙂"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getDeletedContentSample(), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now)), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂", .sndSent(sndProgress: .complete), itemLive: true), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).environment(\.revealed, true)
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemLive: true), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).environment(\.revealed, true)
+            let ci1 = ChatItem.getSample(1, .directSnd, previewDate, "hello")
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci1, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).modifier(ChatItemClipped(ci1, tailVisible: true))
+            let ci2 = ChatItem.getSample(2, .directRcv, previewDate, "hello there too")
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci2, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).modifier(ChatItemClipped(ci2, tailVisible: true))
+            let ci3 = ChatItem.getSample(1, .directSnd, previewDate, "🙂")
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci3, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).modifier(ChatItemClipped(ci3, tailVisible: true))
+            let ci4 = ChatItem.getSample(2, .directRcv, previewDate, "🙂🙂🙂🙂🙂")
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci4, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).modifier(ChatItemClipped(ci4, tailVisible: true))
+            let ci5 = ChatItem.getSample(2, .directRcv, previewDate, "🙂🙂🙂🙂🙂🙂")
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci5, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).modifier(ChatItemClipped(ci5, tailVisible: true))
+            let ci6 = ChatItem.getDeletedContentSample(1, previewDate)
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci6, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).modifier(ChatItemClipped(ci6, tailVisible: true))
+            let ci7 = ChatItem.getSample(1, .directSnd, previewDate, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: previewDate))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci7, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).modifier(ChatItemClipped(ci7, tailVisible: true))
+            let ci8 = ChatItem.getSample(1, .directSnd, previewDate, "🙂", .sndSent(sndProgress: .complete), itemLive: true)
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci8, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).environment(\.revealed, true).modifier(ChatItemClipped(ci8, tailVisible: true))
+            let ci9 = ChatItem.getSample(1, .directSnd, previewDate, "hello", .sndSent(sndProgress: .complete), itemLive: true)
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci9, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).environment(\.revealed, true).modifier(ChatItemClipped(ci9, tailVisible: true))
         }
         .environment(\.revealed, false)
         .previewLayout(.fixed(width: 360, height: 70))
@@ -311,70 +335,80 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
         let im = ItemsModel.shared
         let ciFeatureContent = CIContent.rcvChatFeature(feature: .fullDelete, enabled: FeatureEnabled(forUser: false, forContact: false), param: nil)
         Group{
-            ChatItemView(
-                chat: Chat.sampleData,
-                im: im,
-                chatItem: ChatItem(
-                    chatDir: .directRcv,
-                    meta: CIMeta.getSample(1, .now, "1 skipped message", .rcvRead, itemDeleted: .deleted(deletedTs: .now)),
-                    content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 1, toMsgId: 2)),
-                    quotedItem: nil,
-                    file: nil
-                ),
-                scrollToItem: { _ in },
-                scrollToItemId: Binding.constant(nil)
+            let ci1 = ChatItem(
+                chatDir: .directRcv,
+                meta: CIMeta.getSample(1, previewDate, "1 skipped message", .rcvRead, itemDeleted: .deleted(deletedTs: previewDate)),
+                content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 1, toMsgId: 2)),
+                quotedItem: nil,
+                file: nil
             )
             ChatItemView(
                 chat: Chat.sampleData,
                 im: im,
-                chatItem: ChatItem(
-                    chatDir: .directRcv,
-                    meta: CIMeta.getSample(1, .now, "1 skipped message", .rcvRead),
-                    content: .rcvDecryptionError(msgDecryptError: .ratchetHeader, msgCount: 2),
-                    quotedItem: nil,
-                    file: nil
-                ),
+                chatItem: ci1,
+                scrollToItem: { _ in },
+                scrollToItemId: Binding.constant(nil)
+            )
+            .modifier(ChatItemClipped(ci1, tailVisible: true))
+            let ci2 = ChatItem(
+                chatDir: .directRcv,
+                meta: CIMeta.getSample(1, previewDate, "1 skipped message", .rcvRead),
+                content: .rcvDecryptionError(msgDecryptError: .ratchetHeader, msgCount: 2),
+                quotedItem: nil,
+                file: nil
+            )
+            ChatItemView(
+                chat: Chat.sampleData,
+                im: im,
+                chatItem: ci2,
                 scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)
             )
-            ChatItemView(
-                chat: Chat.sampleData,
-                im: im,
-                chatItem: ChatItem(
-                    chatDir: .directRcv,
-                    meta: CIMeta.getSample(1, .now, "received invitation to join group team as admin", .rcvRead, itemDeleted: .deleted(deletedTs: .now)),
-                    content: .rcvGroupInvitation(groupInvitation: CIGroupInvitation.getSample(status: .pending), memberRole: .admin),
-                    quotedItem: nil,
-                    file: nil
-                ),
-                scrollToItem: { _ in },
-                scrollToItemId: Binding.constant(nil)
+            .modifier(ChatItemClipped(ci2, tailVisible: true))
+            let ci3 = ChatItem(
+                chatDir: .directRcv,
+                meta: CIMeta.getSample(1, previewDate, "received invitation to join group team as admin", .rcvRead, itemDeleted: .deleted(deletedTs: previewDate)),
+                content: .rcvGroupInvitation(groupInvitation: CIGroupInvitation.getSample(status: .pending), memberRole: .admin),
+                quotedItem: nil,
+                file: nil
             )
             ChatItemView(
                 chat: Chat.sampleData,
                 im: im,
-                chatItem: ChatItem(
-                    chatDir: .directRcv,
-                    meta: CIMeta.getSample(1, .now, "group event text", .rcvRead, itemDeleted: .deleted(deletedTs: .now)),
-                    content: .rcvGroupEvent(rcvGroupEvent: .memberAdded(groupMemberId: 1, profile: Profile.sampleData)),
-                    quotedItem: nil,
-                    file: nil
-                ),
+                chatItem: ci3,
                 scrollToItem: { _ in },
                 scrollToItemId: Binding.constant(nil)
+            )
+            .modifier(ChatItemClipped(ci3, tailVisible: true))
+            let ci4 = ChatItem(
+                chatDir: .directRcv,
+                meta: CIMeta.getSample(1, previewDate, "group event text", .rcvRead, itemDeleted: .deleted(deletedTs: previewDate)),
+                content: .rcvGroupEvent(rcvGroupEvent: .memberAdded(groupMemberId: 1, profile: Profile.sampleData)),
+                quotedItem: nil,
+                file: nil
             )
             ChatItemView(
                 chat: Chat.sampleData,
                 im: im,
-                chatItem: ChatItem(
-                    chatDir: .directRcv,
-                    meta: CIMeta.getSample(1, .now, ciFeatureContent.text, .rcvRead, itemDeleted: .deleted(deletedTs: .now)),
-                    content: ciFeatureContent,
-                    quotedItem: nil,
-                    file: nil
-                ),
+                chatItem: ci4,
                 scrollToItem: { _ in },
                 scrollToItemId: Binding.constant(nil)
             )
+            .modifier(ChatItemClipped(ci4, tailVisible: true))
+            let ci5 = ChatItem(
+                chatDir: .directRcv,
+                meta: CIMeta.getSample(1, previewDate, ciFeatureContent.text, .rcvRead, itemDeleted: .deleted(deletedTs: previewDate)),
+                content: ciFeatureContent,
+                quotedItem: nil,
+                file: nil
+            )
+            ChatItemView(
+                chat: Chat.sampleData,
+                im: im,
+                chatItem: ci5,
+                scrollToItem: { _ in },
+                scrollToItemId: Binding.constant(nil)
+            )
+            .modifier(ChatItemClipped(ci5, tailVisible: true))
         }
         .environment(\.revealed, true)
         .previewLayout(.fixed(width: 360, height: 70))

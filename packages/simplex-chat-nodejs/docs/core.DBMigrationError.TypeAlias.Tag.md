@@ -8,4 +8,4 @@
 
 > **Tag** = `"invalidConfirmation"` \| `"invalidQueueSize"` \| `"errorNotADatabase"` \| `"errorMigration"` \| `"errorSQL"`
 
-Defined in: [src/core.ts:155](../core.ts#L155)
+Defined in: [src/core.ts:201](../core.ts#L201)

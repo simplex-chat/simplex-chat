@@ -1,5 +1,6 @@
 package chat.simplex.common.views.badges
 
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -75,7 +76,9 @@ enum class BadgePeriod {
 
 @Composable
 fun BadgesHowLongView(level: BadgeLevel, modalManager: ModalManager, unwindToDepth: Int) {
-  var selectedPeriod by remember { mutableStateOf(if (BadgePeriod.Monthly in badgePeriodsForSale) BadgePeriod.Monthly else BadgePeriod.OneMonth) }
+  var chosenPeriod by remember { mutableStateOf<BadgePeriod?>(null) }
+  // monthly once subscriptions turn out to be for sale, unless a period was chosen before that
+  val selectedPeriod = chosenPeriod ?: (if (BadgeStore.forSale(BadgePeriod.Monthly)) BadgePeriod.Monthly else BadgePeriod.OneMonth)
 
   LaunchedEffect(Unit) { BadgeStore.load() }
   CloseWhenSupportGivesWay(modalManager, unwindToDepth)
@@ -114,14 +117,14 @@ fun BadgesHowLongView(level: BadgeLevel, modalManager: ModalManager, unwindToDep
       horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
       BadgePeriod.entries.forEach { period ->
-        PeriodCard(level, period, selectedPeriod, Modifier.weight(1f).fillMaxHeight()) { selectedPeriod = it }
+        PeriodCard(level, period, selectedPeriod, Modifier.weight(1f).fillMaxHeight()) { chosenPeriod = it }
       }
     }
 
     Spacer(Modifier.weight(1f).heightIn(min = 8.dp))
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      ContinueButton(level, selectedPeriod, modalManager, unwindToDepth)
+      ContinueButton(level, selectedPeriod, modalManager, unwindToDepth) { chosenPeriod = it }
       BadgeBillingFooter(selectedPeriod)
     }
   }
@@ -145,18 +148,18 @@ fun BadgeBillingFooter(period: BadgePeriod) {
 @Composable
 private fun PeriodCard(level: BadgeLevel, period: BadgePeriod, selectedPeriod: BadgePeriod, modifier: Modifier, onSelect: (BadgePeriod) -> Unit) {
   val isSelected = period == selectedPeriod
-  val forSale = period in badgePeriodsForSale
+  val forSale = BadgeStore.forSale(period)
   val textColor = if (forSale) Color.Unspecified else MaterialTheme.colors.secondary
   val borderColor = if (isSelected) MaterialTheme.colors.primary else MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.92f)
   // Light: transparent so card matches page background. Dark: subtle gray tint for visible contrast.
   val cardBackground = if (isInDarkTheme()) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
                        else MaterialTheme.colors.background
-  val shape = RoundedCornerShape(16.dp)
+  val shape = RoundedCornerShape(18.dp)
   Column(
     modifier
       .clip(shape)
       .background(cardBackground, shape)
-      .border(2.dp, borderColor, shape)
+      .border(1.dp, borderColor, shape)
       .clickable(enabled = forSale) { onSelect(period) }
       .padding(vertical = 20.dp, horizontal = 12.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
@@ -186,12 +189,13 @@ private fun savingsPercent(level: BadgeLevel, period: BadgePeriod): Int? =
   if (period == BadgePeriod.Annual) BadgeStore.annualSavings(level) else null
 
 @Composable
-private fun ContinueButton(level: BadgeLevel, selectedPeriod: BadgePeriod, modalManager: ModalManager, unwindToDepth: Int) {
+private fun ContinueButton(level: BadgeLevel, selectedPeriod: BadgePeriod, modalManager: ModalManager, unwindToDepth: Int, choosePeriod: (BadgePeriod) -> Unit) {
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = MR.strings.badges_continue,
     onboarding = null,
     onclick = {
+      choosePeriod(selectedPeriod)
       modalManager.showModal(cardScreen = true) { BadgesCheckOrderView(level, selectedPeriod, modalManager, unwindToDepth) }
     }
   )
@@ -208,4 +212,19 @@ private fun billingDate(period: BadgePeriod): String {
   val date = java.time.LocalDate.now().plusMonths(period.months.toLong())
   val formatter = java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.LONG)
   return date.format(formatter)
+}
+
+@Preview
+@Composable
+fun PreviewPeriodCards() {
+  SimpleXTheme {
+    Row(
+      Modifier.fillMaxWidth().height(IntrinsicSize.Max).padding(25.dp),
+      horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+      BadgePeriod.entries.forEach { period ->
+        PeriodCard(BadgeLevel.Supporter, period, BadgePeriod.Monthly, Modifier.weight(1f).fillMaxHeight()) {}
+      }
+    }
+  }
 }

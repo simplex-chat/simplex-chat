@@ -130,7 +130,7 @@ object BadgeModel {
     this.rhId.value == rhId && this.userId.value == userId
 }
 
-enum class ChatListBanner { BadgeExpired, BadgeIssueFailed, BadgePitch, GetStake }
+enum class ChatListBanner { BadgeAlert, BadgePitch, GetStake }
 
 data class FileToOpen(val fileId: Long, val inChatList: Boolean)
 
@@ -1283,6 +1283,7 @@ object ChatModel {
     }
   }
 
+  @Synchronized
   private fun addTerminalItem(item: TerminalItem, maxItems: Int) {
     if (terminalItems.value.size >= maxItems) {
       terminalItems.value = terminalItems.value.subList(1, terminalItems.value.size)
@@ -1865,6 +1866,24 @@ sealed class ChatInfo: SomeChat, NamedChat {
     else -> emptyList()
   }
 
+  val chatLayout: ChatLayoutMode? get() = when (this) {
+    is Direct -> contact.chatLayout
+    is Group -> groupInfo.groupProfile.chatLayout
+    else -> null
+  }
+
+  val uiThemes: ThemeModeOverrides? get() = when (this) {
+    is Direct -> contact.uiThemes
+    is Group -> groupInfo.uiThemes
+    else -> null
+  }
+
+  fun defaultChatLayout(user: User?): ChatLayoutMode =
+    chatLayout.known ?: profileChatLayout(user)
+
+  fun activeChatLayout(user: User?): ChatLayoutMode =
+    uiThemes?.chatLayout.known ?: defaultChatLayout(user)
+
   val contactCard: Boolean
     get() = when (this) {
       is Direct -> contact.isContactCard
@@ -1908,6 +1927,7 @@ data class Contact(
   val chatItemTTL: Long?,
   override val chatDeleted: Boolean,
   val uiThemes: ThemeModeOverrides? = null,
+  val chatLayout: ChatLayoutMode? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
@@ -2202,6 +2222,39 @@ object ChatPeerTypeSerializer : KSerializer<ChatPeerType> {
   override fun serialize(encoder: Encoder, value: ChatPeerType) = encoder.encodeString(value.text)
 }
 
+@Serializable(with = ChatLayoutModeSerializer::class)
+sealed class ChatLayoutMode {
+  @Serializable @SerialName("classic") object Classic: ChatLayoutMode()
+  @Serializable @SerialName("terminal") object Terminal: ChatLayoutMode()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): ChatLayoutMode()
+
+  val text: String
+    get() = when (this) {
+      is Classic -> "classic"
+      is Terminal -> "terminal"
+      is Unknown -> type
+    }
+
+  companion object {
+    fun fromText(text: String): ChatLayoutMode = when (text) {
+      "classic" -> Classic
+      "terminal" -> Terminal
+      else -> Unknown(text)
+    }
+  }
+}
+
+object ChatLayoutModeSerializer : KSerializer<ChatLayoutMode> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("ChatLayoutMode", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): ChatLayoutMode = ChatLayoutMode.fromText(decoder.decodeString())
+  override fun serialize(encoder: Encoder, value: ChatLayoutMode) = encoder.encodeString(value.text)
+}
+
+private val ChatLayoutMode?.known: ChatLayoutMode? get() = if (this is ChatLayoutMode.Unknown) null else this
+
+fun profileChatLayout(user: User?): ChatLayoutMode =
+  user?.uiThemes?.chatLayout.known ?: ChatController.appPrefs.chatLayout.state.value.known ?: ChatLayoutMode.Classic
+
 fun peerTypeIcon(peerType: ChatPeerType?): ImageResource =
   when (peerType) {
     ChatPeerType.Bot -> MR.images.ic_cube
@@ -2278,9 +2331,52 @@ data class BadgeState(
   val willRenew: Boolean,
   val alert: BadgeAlert? = null,
   val issueError: BadgeIssueError? = null,
-  val nextWakeAt: Instant? = null
+  val nextWakeAt: Instant? = null,
+  val subscription: BadgeSubscription? = null
 ) {
   val paidThroughText: String get() = badgeDateText(paidThrough)
+}
+
+@Serializable
+data class BadgeSubscription(
+  val planMonths: Int,
+  // null until the service or the device's store has been asked
+  val status: BadgeSubscriptionState? = null,
+  // the store's reference: Apple's original transaction id, or a hash of Play's token
+  val transactionRef: String? = null
+)
+
+// the store's state as last observed; a newer core may know a state this version does not
+@Serializable(with = BadgeSubscriptionStateSerializer::class)
+enum class BadgeSubscriptionState {
+  Renewing,
+  Cancelled,
+  BillingRetry,
+  Ended,
+  Unknown;
+
+  // as /_badge subscription takes it, which accepts only the four known states
+  val text: String
+    get() = when (this) {
+      Renewing -> "renewing"
+      Cancelled -> "cancelled"
+      BillingRetry -> "billingRetry"
+      Ended -> "ended"
+      Unknown -> "unknown"
+    }
+}
+
+object BadgeSubscriptionStateSerializer : KSerializer<BadgeSubscriptionState> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("BadgeSubscriptionState", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): BadgeSubscriptionState =
+    when (decoder.decodeString()) {
+      "renewing" -> BadgeSubscriptionState.Renewing
+      "cancelled" -> BadgeSubscriptionState.Cancelled
+      "billingRetry" -> BadgeSubscriptionState.BillingRetry
+      "ended" -> BadgeSubscriptionState.Ended
+      else -> BadgeSubscriptionState.Unknown
+    }
+  override fun serialize(encoder: Encoder, value: BadgeSubscriptionState) = encoder.encodeString(value.text)
 }
 
 @Serializable
@@ -2467,14 +2563,45 @@ data class BadgeAlert(
 @Serializable
 data class BadgeAlertPrice(val amount: Long, val currency: String)
 
-@Serializable
-enum class BadgeAlertKind {
-  @SerialName("renewalApproaching") RenewalApproaching,
-  @SerialName("paymentIssue") PaymentIssue,
-  @SerialName("subscriptionEnded") SubscriptionEnded,
-  @SerialName("prepaidEnding") PrepaidEnding,
-  @SerialName("supportEnded") SupportEnded,
-  @SerialName("issueFailed") IssueFailed
+// a kind added by a newer core decodes, so the badge state still does, and shows no banner
+@Serializable(with = BadgeAlertKindSerializer::class)
+sealed class BadgeAlertKind {
+  object RenewalApproaching: BadgeAlertKind()
+  object PaymentIssue: BadgeAlertKind()
+  object SubscriptionCancelled: BadgeAlertKind()
+  object SubscriptionEnded: BadgeAlertKind()
+  object PrepaidEnding: BadgeAlertKind()
+  object SupportEnded: BadgeAlertKind()
+  object IssueFailed: BadgeAlertKind()
+  data class Unknown(val kind: String): BadgeAlertKind()
+
+  val text: String
+    get() = when (this) {
+      is RenewalApproaching -> "renewalApproaching"
+      is PaymentIssue -> "paymentIssue"
+      is SubscriptionCancelled -> "subscriptionCancelled"
+      is SubscriptionEnded -> "subscriptionEnded"
+      is PrepaidEnding -> "prepaidEnding"
+      is SupportEnded -> "supportEnded"
+      is IssueFailed -> "issueFailed"
+      is Unknown -> kind
+    }
+}
+
+object BadgeAlertKindSerializer : KSerializer<BadgeAlertKind> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("BadgeAlertKind", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): BadgeAlertKind =
+    when (val v = decoder.decodeString()) {
+      "renewalApproaching" -> BadgeAlertKind.RenewalApproaching
+      "paymentIssue" -> BadgeAlertKind.PaymentIssue
+      "subscriptionCancelled" -> BadgeAlertKind.SubscriptionCancelled
+      "subscriptionEnded" -> BadgeAlertKind.SubscriptionEnded
+      "prepaidEnding" -> BadgeAlertKind.PrepaidEnding
+      "supportEnded" -> BadgeAlertKind.SupportEnded
+      "issueFailed" -> BadgeAlertKind.IssueFailed
+      else -> BadgeAlertKind.Unknown(v)
+    }
+  override fun serialize(encoder: Encoder, value: BadgeAlertKind) = encoder.encodeString(value.text)
 }
 
 private fun badgeDateText(date: Instant): String {
@@ -2696,7 +2823,8 @@ data class GroupProfile (
   val publicGroup: PublicGroupProfile? = null,
   override val localAlias: String = "",
   val groupPreferences: GroupPreferences? = null,
-  val memberAdmission: GroupMemberAdmission? = null
+  val memberAdmission: GroupMemberAdmission? = null,
+  val chatLayout: ChatLayoutMode? = null
 ): NamedChat {
   val isChannel: Boolean get() = publicGroup?.groupType == GroupType.Channel
 
@@ -2735,6 +2863,7 @@ data class ContactShortLinkData (
   val profile: Profile,
   val message: MsgContent?,
   val business: Boolean,
+  val chatLayout: ChatLayoutMode? = null,
   // set by the core when building the connection plan: the link profile's badge, verified and crypto-free
   val localBadge: LocalBadge? = null
 )
@@ -2988,10 +3117,7 @@ data class GroupMember (
     else if (groupInfo.useRelays && !groupInfo.isOwner) null
     else groupInfo.membership.memberRole.let { userRole ->
       if (groupInfo.useRelays)
-        // TODO [relays]: for now owners can only set observer/member in channels.
-        //   Restore the full Owner-excluded picker when moderator/admin promotion is supported:
-        // GroupMemberRole.selectableRoles.filter { it <= userRole && it != GroupMemberRole.Owner }
-        listOf(GroupMemberRole.Observer, GroupMemberRole.Member)
+        listOf(GroupMemberRole.Observer, GroupMemberRole.Member, GroupMemberRole.Moderator)
       else
         GroupMemberRole.selectableRoles.filter { it <= userRole }
     }

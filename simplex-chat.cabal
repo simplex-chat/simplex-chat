@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        7.1.0.14
+version:        7.1.0.17
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -18,6 +18,7 @@ extra-source-files:
     README.md
     PRIVACY.md
     cabal.project
+    src/Simplex/Chat/Image/DisplayP3-v4.icc
 
 flag swift
   description: Enable swift JSON format
@@ -43,12 +44,14 @@ library
       Simplex.Chat.Badges.Code
       Simplex.Chat.Badges.Ledger
       Simplex.Chat.Badges.Service
+      Simplex.Chat.Badges.StorePlan
       Simplex.Chat.Badges.Types
       Simplex.Chat.Names
       Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Delivery
       Simplex.Chat.Files
+      Simplex.Chat.Image
       Simplex.Chat.Library.Commands
       Simplex.Chat.Library.Internal
       Simplex.Chat.Library.Subscriber
@@ -172,6 +175,8 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20261010_invite_member_via_group
           Simplex.Chat.Store.Postgres.Migrations.M20261012_delivery_job_notification
           Simplex.Chat.Store.Postgres.Migrations.M20261016_badge_store_receipts
+          Simplex.Chat.Store.Postgres.Migrations.M20261019_chat_layout
+          Simplex.Chat.Store.Postgres.Migrations.M20261021_badge_subscriptions
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -354,6 +359,8 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20261012_delivery_job_notification
           Simplex.Chat.Store.SQLite.Migrations.M20261016_badge_store_receipts
           Simplex.Chat.Store.SQLite.Migrations.M20261018_autoincrement_ids
+          Simplex.Chat.Store.SQLite.Migrations.M20261019_chat_layout
+          Simplex.Chat.Store.SQLite.Migrations.M20261021_badge_subscriptions
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -381,6 +388,10 @@ library
     , filepath ==1.4.*
     , http-types ==0.12.*
     , http2 >=4.2.2 && <4.3
+    , JuicyPixels ==3.3.*
+    , JuicyPixels-jpeg-turbo ==0.1.*
+    , JuicyPixels-spng ==0.1.*
+    , JuicyPixels-stbir ==0.1.*
     , memory ==0.18.*
     , mtl >=2.3.1 && <3.0
     , network >=3.1.2.7 && <3.2
@@ -399,11 +410,14 @@ library
     , unliftio-core ==0.2.*
     , uri-bytestring >=0.3.3.1 && <0.4
     , uuid ==1.3.*
+    , vector ==0.13.*
     , zip ==2.2.*
     , zstd ==0.1.3.*
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
+  if flag(swift) || os(android)
+    cpp-options: -DmobileBuild
   if flag(client_postgres)
     build-depends:
         postgresql-libpq >=0.10.0.0
@@ -713,6 +727,7 @@ test-suite simplex-chat-test
       ChatTests.Names
       ChatTests.Profiles
       ChatTests.Utils
+      ImageTests
       JSONFixtures
       JSONTests
       MarkdownTests
@@ -761,6 +776,7 @@ test-suite simplex-chat-test
       Bots.BadgeService.BotTests
       Bots.BadgeService.CatalogTests
       Bots.BadgeService.ConfigTests
+      Bots.BadgeService.FakeAppStore
       Bots.BadgeService.FakeBTCPay
       Bots.BadgeService.FakePlay
       Bots.BadgeService.FakeStore
@@ -804,7 +820,9 @@ test-suite simplex-chat-test
   -- add -fhpc to ghc-options below to run tests with coverage
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -Werror=name-shadowing -threaded -rtsopts "-with-rtsopts=-N"
   build-depends:
-      QuickCheck ==2.14.*
+      JuicyPixels ==3.3.*
+    , JuicyPixels-jpeg-turbo ==0.1.*
+    , QuickCheck ==2.14.*
     , aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*
