@@ -112,6 +112,8 @@ idle_seconds = 60
 ;term_start = 2027-01-01T00:00:00Z
 ; how far an order's duration may be from the one the service computes
 ;term_slack_seconds = 3600
+; a commitment with less than this left before its reveal deadline is not reused
+;reveal_margin_seconds = 900
 ; on: only prepaid codes register names, and every paid name order answers 403 codes_only
 ;codes_only = off
 ;
@@ -122,7 +124,7 @@ idle_seconds = 60
 ;bakers = bakers and bakeries in Portugal
 ;
 ; the chain the names are registered on. rpc_url can carry a provider's API key and service_key
-; is the registrar key: keep both secret. Neither is ever logged.
+; pays for every commit and register: keep both secret. Neither is ever logged.
 ;[chain]
 ;rpc_url = http://127.0.0.1:8545
 ;chain_id = 31337
@@ -130,10 +132,15 @@ idle_seconds = 60
 ;sponsor = 0x...
 ;base_registrar = 0x...
 ;resolver = 0x...
-; 0x and 64 hex digits: the registrar key the service sends transactions with
+; 0x and 64 hex digits: the registrar key the service sends transactions with; create, fund and
+; rotate it as apps/simplex-store-service/README.md, "The gas key", says
 ;service_key = 0x...
+; blocks after a register's receipt before a name counts as registered
+;confirmations = 3
 ; the most gas any one transaction may use
 ;gas_limit_cap = 8000000
+; the most wei per gas any transaction may pay (100 gwei); a transaction that needs more waits
+;max_fee_per_gas = 100000000000
 
 ; local testing only, in both run modes: accepts any well-formed App Store or Play receipt without
 ; verifying it, so anyone who can reach this service can mint badges. The service refuses to start

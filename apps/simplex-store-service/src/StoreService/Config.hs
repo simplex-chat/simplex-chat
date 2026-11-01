@@ -170,6 +170,7 @@ data NamesConfig = NamesConfig
     nYears :: Int,
     nTermStart :: UTCTime,
     nTermSlackSeconds :: Int,
+    nRevealMarginSeconds :: Int,
     -- | Only prepaid codes pay for names: every order that would take money for one is refused.
     nCodesOnly :: Bool,
     nTerms :: TermsConfig,
@@ -191,7 +192,10 @@ data ChainConfig = ChainConfig
     cBaseRegistrar :: Address,
     cResolver :: Address,
     cServiceKey :: Secp256k1PrivateKey,
-    cGasLimitCap :: Word64
+    cConfirmations :: Int,
+    cGasLimitCap :: Word64,
+    -- | wei; no transaction is signed with a higher max fee per gas
+    cMaxFeePerGas :: Word64
   }
   deriving (Eq)
 
@@ -260,6 +264,10 @@ maxCommunityTextLength = 200
 -- | The controller refuses a registration under 730 days.
 minNameYears :: Int
 minNameYears = 2
+
+-- | 100 gwei.
+defaultMaxFeePerGas :: Word64
+defaultMaxFeePerGas = 100000000000
 
 defaultTermStart :: String
 defaultTermStart = "2027-01-01T00:00:00Z"
@@ -349,8 +357,8 @@ knownSettings =
     ("group", ["display_name", "description"]),
     ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage", "credit_test_purchases"]),
     ("issuer", ["index", "private_key"]),
-    ("names", ["tld", "terms_version", "terms_url", "years", "term_start", "term_slack_seconds", "codes_only"]),
-    ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "gas_limit_cap"])
+    ("names", ["tld", "terms_version", "terms_url", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "codes_only"]),
+    ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap", "max_fee_per_gas"])
   ]
 
 unknownKeys :: Ini -> [Text]
@@ -550,11 +558,12 @@ parseConfig ini = do
           when (nYears < minNameYears) $ Left ("names.years must be at least " <> show minNameYears)
           nTermStart <- termStart
           nTermSlackSeconds <- atLeast 0 "names" "term_slack_seconds" 3600
+          nRevealMarginSeconds <- atLeast 0 "names" "reveal_margin_seconds" 900
           nCodesOnly <- bool "names" "codes_only" False
           nTerms <- termsSetting
           nCommunity <- communityList nTLD
           nChain <- chainSection
-          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nCodesOnly, nTerms, nCommunity, nChain})
+          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nCodesOnly, nTerms, nCommunity, nChain})
     tldSetting =
       required "names" "tld" >>= \case
         "simplex" -> Right TLDSimplex
@@ -599,8 +608,10 @@ parseConfig ini = do
       cBaseRegistrar <- address "base_registrar"
       cResolver <- address "resolver"
       cServiceKey <- serviceKey
+      cConfirmations <- atLeast 0 "chain" "confirmations" 3
       cGasLimitCap <- positiveWord "gas_limit_cap" (Just 8000000)
-      pure ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cGasLimitCap}
+      cMaxFeePerGas <- positiveWord "max_fee_per_gas" (Just defaultMaxFeePerGas)
+      pure ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cConfirmations, cGasLimitCap, cMaxFeePerGas}
     rpcUrl = do
       v <- required "chain" "rpc_url"
       unless (any (`T.isPrefixOf` v) ["http://", "https://"]) $ Left "chain.rpc_url must be an http or https URL"
