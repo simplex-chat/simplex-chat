@@ -151,7 +151,7 @@ The app includes support contact operated by SimpleX Chat Ltd. If you contact su
 
 #### Supporter badges
 
-A badge is a credential from the SimpleX Chat Ltd store service, kept on your device and presented as zero-knowledge proofs in chats, except incognito ones, and to your file servers. Only the badge type, signing key and expiry date, rounded to a week, are disclosed; nothing else in a proof can be linked to other proofs or to the purchase.
+A badge is a credential from the SimpleX Chat Ltd store service, kept on your device and presented as zero-knowledge proofs in chats, except incognito ones, and to your file servers. Only the badge type, public key of the store service and expiry date, rounded to a week, are disclosed; nothing else in a proof can be linked to other proofs or to the purchase.
 
 The store service has no user accounts: purchases are identified by random keys or codes from your device. The app sends requests end-to-end encrypted and without your profile. The store service never receives your IP address with these requests, and with private routing (the default), its servers do not see it either. Stripe (card), App Store and Google Play process payments; cryptocurrency payments are accepted directly to SimpleX Chat Ltd's addresses.
 
