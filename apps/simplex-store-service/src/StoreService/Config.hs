@@ -18,6 +18,7 @@ module StoreService.Config
     ServiceConfig (..),
     defaultExpiryMinutes,
     defaultSessionMinutes,
+    minNameYears,
     readServiceConfig,
     unknownKeys,
   )
@@ -186,6 +187,10 @@ requireHttps :: Text -> Either String Text
 requireHttps u
   | "https://" `T.isPrefixOf` u = Right u
   | otherwise = Left "btcpay.host must be an absolute https URL"
+
+-- | The controller refuses a registration under 730 days.
+minNameYears :: Int
+minNameYears = 2
 
 -- | Well below 100, where BTCPay settles an invoice for one satoshi.
 maxTolerance :: Double
