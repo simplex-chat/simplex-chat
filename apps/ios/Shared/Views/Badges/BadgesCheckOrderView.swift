@@ -67,8 +67,8 @@ struct BadgesCheckOrderLayout: View {
 
                     if case let .price(p) = prices.price(period) {
                         switch period {
-                        case .monthly: footnote("Renews at \(p) a month; manage it in the App Store.")
-                        case .annual: footnote("Renews at \(p) a year; manage it in the App Store.")
+                        case .monthly: footnote("Renews at \(p) a month until you cancel it in the App Store.")
+                        case .annual: footnote("Renews at \(p) a year until you cancel it in the App Store.")
                         case .oneMonth: EmptyView()
                         }
                     }
