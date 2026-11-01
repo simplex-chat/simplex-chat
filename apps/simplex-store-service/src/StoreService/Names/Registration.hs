@@ -4,6 +4,12 @@
 module StoreService.Names.Registration
   ( Registration (..),
     RegisterIntent (..),
+    Node,
+    nodeBytes,
+    namehash,
+    labelNode,
+    contactRecordKey,
+    channelRecordKey,
     sponsorDomain,
     makeCommitment,
     commitCalldata,
@@ -17,8 +23,8 @@ import Control.Monad (unless, when)
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import Data.Maybe (catMaybes)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word64)
 import Simplex.Messaging.Crypto (keccak256)
@@ -26,7 +32,7 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Eip712Value (..), hashTypedData, serializeSignature)
-import Simplex.Messaging.SimplexName (SimplexTLD)
+import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import StoreService.Names.Abi (AbiValue (..), abiArray, abiBytes, abiTuple, addressWord, selector, uint256)
 
 data Registration = Registration
@@ -36,9 +42,19 @@ data Registration = Registration
     rDuration :: Word64,
     rSecret :: ByteString,
     rResolver :: Address,
-    rContactLinks :: [Text],
-    rChannelLinks :: [Text]
+    rContactLink :: Maybe Text,
+    rChannelLink :: Maybe Text
   }
+
+-- | Only built by 'labelNode', so it always holds 32 bytes.
+newtype Node = Node ByteString
+
+nodeBytes :: Node -> ByteString
+nodeBytes (Node node) = node
+
+contactRecordKey, channelRecordKey :: ByteString
+contactRecordKey = "simplex.contact"
+channelRecordKey = "simplex.channel"
 
 data RegisterIntent = RegisterIntent
   { riRegistration :: Registration,
@@ -104,15 +120,18 @@ registrationTuple r@Registration {rLabel, rOwner, rDuration, rSecret, rResolver}
     referrer = B.replicate 32 0
 
 recordCalls :: Registration -> [ByteString]
-recordCalls Registration {rLabel, rTLD, rContactLinks, rChannelLinks} =
-  [setText key ls | (key, ls) <- [("simplex.contact", rContactLinks), ("simplex.channel", rChannelLinks)], not (null ls)]
+recordCalls Registration {rLabel, rTLD, rContactLink, rChannelLink} =
+  catMaybes [setText contactRecordKey <$> rContactLink, setText channelRecordKey <$> rChannelLink]
   where
-    setText key ls =
+    setText key link =
       selector "setText(bytes32,string,string)"
-        <> abiTuple [Static node, Dynamic $ abiBytes key, Dynamic $ abiBytes $ encodeUtf8 $ T.intercalate ";" ls]
-    node = namehash rTLD rLabel
+        <> abiTuple [Static node, Dynamic $ abiBytes key, Dynamic $ abiBytes $ encodeUtf8 link]
+    Node node = namehash rTLD rLabel
 
-namehash :: SimplexTLD -> Text -> ByteString
-namehash tld label = keccak256 $ tldNode <> keccak256 (encodeUtf8 label)
+namehash :: SimplexTLD -> Text -> Node
+namehash tld = labelNode tld . LabelHash . keccak256 . encodeUtf8
+
+labelNode :: SimplexTLD -> LabelHash -> Node
+labelNode tld (LabelHash h) = Node $ keccak256 $ tldNode <> h
   where
     tldNode = keccak256 $ B.replicate 32 0 <> keccak256 (B.drop 1 $ strEncode tld)
