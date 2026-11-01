@@ -3462,11 +3462,13 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           let allowCreate = useRelays' gInfo && senderRole == GROwner && isRosterRole memRole && isJust memberKey_
           withStore' (\db -> runExceptT $ getCreateUnknownGMByMemberId db cxt user gInfo memId (nameFromMemberId memId) defaultRole allowCreate) >>= \case
             Right (Just (member, created))
-              -- just created (keyless, and allowCreate ensured the event carries its key): pin key + role
-              | created, Just (MemberKey pubKey) <- memberKey_ ->
-                  let gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
-                   in changeMemberRole gInfo member created (\db -> void $ applyMemberKeyRole db member pubKey memRole) gEvent (not $ useRelays' gInfo)
-              -- known member: apply the role (its key is established via roster/intro; the event's key is ignored)
+              -- allowCreate ensured the event carries its key: keep a different stored key, else pin the key if absent and set the role
+              | allowCreate, Just (MemberKey pubKey) <- memberKey_ -> case memberPubKey member of
+                  Just k | k /= pubKey -> messageError ("x.grp.mem.role: member key conflict, keeping trusted key, memberId=" <> safeDecodeUtf8 (strEncode memId)) $> Nothing
+                  _ ->
+                    let gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
+                     in changeMemberRole gInfo member created (\db -> void $ applyMemberKeyRole db member pubKey memRole) gEvent (not $ useRelays' gInfo)
+              -- known member: apply the role (the event's key is ignored)
               | otherwise ->
                   let gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
                    in changeMemberRole gInfo member created (\db -> updateGroupMemberRole db user member memRole) gEvent (not $ useRelays' gInfo)
@@ -3475,7 +3477,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               | otherwise -> messageError "x.grp.mem.role with unknown member ID" $> Nothing
       where
         GroupMember {memberId = membershipMemId} = membership
-        -- applyMember writes the change (role, or role + pinned key for a freshly TOFU-created member);
+        -- applyMember writes the change (role, or role + pinned key for a keyless member);
         -- the delivery scope (relay forwarding) is computed on the pre-change role
         changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} created applyMember gEvent createItem
           | fromRole == GRRelay =
