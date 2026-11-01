@@ -1178,6 +1178,7 @@ testServiceConfig staticDir trustForwarded =
       issuer = Nothing,
       group = Nothing,
       serviceLogLevel = defaultLogLevel,
+      names = Nothing,
       devAcceptUnverifiedStoreReceipts = False,
       devCheckStoreDuringCoverage = False,
       devCreditTestPurchases = False
