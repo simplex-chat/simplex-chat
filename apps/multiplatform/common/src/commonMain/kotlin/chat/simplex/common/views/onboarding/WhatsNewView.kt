@@ -1172,7 +1172,7 @@ private fun InvestInSimpleXChatView() {
         contentDescription = null,
         contentScale = ContentScale.FillWidth,
         modifier = Modifier
-          .padding(top = 8.dp, bottom = 12.dp)
+          .padding(top = 2.dp, bottom = 12.dp)
           .widthIn(max = MAX_CROWDFUNDING_IMAGE_WIDTH)
           .fillMaxWidth()
           .clip(crowdfundingLayout.imageShape)
