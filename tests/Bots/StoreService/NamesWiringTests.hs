@@ -45,6 +45,8 @@ namesWiringTests = describe "StoreService names: wiring" $ do
     it "runs two holders of one label hash one after the other" testOneLabelSerialized
     it "runs holders of different label hashes at once" testDifferentLabelsConcurrent
     it "runs two holders of one code hash one after the other" testOneCodeSerialized
+    it "holds both label hashes in withLabelTurns, and one when they are equal" testLabelTurnsHoldBoth
+    it "never deadlocks withLabelTurns A->B against B->A" testLabelTurnsNoDeadlock
     it "releases a turn whose holder throws" testTurnReleasedOnThrow
     it "drops a lock once nobody holds or waits for it" testTurnsDropIdleLocks
 
@@ -201,6 +203,29 @@ testDifferentLabelsConcurrent = do
         (withLabelTurn turns (labelHash "bobby2") (putMVar bInside () >> takeMVar aInside))
   r `shouldBe` Just ()
 
+testLabelTurnsHoldBoth :: IO ()
+testLabelTurnsHoldBoth = do
+  turns <- newTurns
+  let a = labelHash "alice1"
+      b = labelHash "bobby2"
+  withLabelTurns turns a b $ do
+    timeout parkDelay (withLabelTurn turns a (pure ())) `shouldReturn` Nothing
+    timeout parkDelay (withLabelTurn turns b (pure ())) `shouldReturn` Nothing
+  timeout prompt (withLabelTurns turns a a (pure ())) `shouldReturn` Just ()
+
+testLabelTurnsNoDeadlock :: IO ()
+testLabelTurnsNoDeadlock = do
+  turns <- newTurns
+  let a = labelHash "alice1"
+      b = labelHash "bobby2"
+      rounds = 200
+  r <-
+    timeout (5 * prompt) $
+      concurrently_
+        (replicateConcurrently_ rounds (withLabelTurns turns a b (threadDelay 50)))
+        (replicateConcurrently_ rounds (withLabelTurns turns b a (threadDelay 50)))
+  r `shouldBe` Just ()
+
 data Boom = Boom
   deriving (Show)
 
@@ -219,7 +244,7 @@ testTurnsDropIdleLocks :: IO ()
 testTurnsDropIdleLocks = do
   turns <- newTurns
   let a = labelHash "alice1"
-  withLabelTurn turns a $ withLabelTurn turns (labelHash "bobby2") $ withCodeTurn turns (BC.replicate 32 'c') $ turnsCount turns `shouldReturn` 3
+  withLabelTurns turns a (labelHash "bobby2") $ withCodeTurn turns (BC.replicate 32 'c') $ turnsCount turns `shouldReturn` 3
   E.handle (\Boom -> pure ()) $ withLabelTurn turns a (E.throwIO Boom)
   -- the waiter is cancelled by the timeout while the holder keeps the turn
   withLabelTurn turns a $ timeout parkDelay (withLabelTurn turns a (pure ())) `shouldReturn` Nothing

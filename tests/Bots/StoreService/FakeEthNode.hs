@@ -12,12 +12,14 @@ module Bots.StoreService.FakeEthNode
     answerCall,
     answerCallOnce,
     answerCallFrom,
+    forgetCall,
     setFault,
     clearFault,
     releaseGate,
     pausedAt,
     setBlock,
     setFees,
+    revertDryRun,
     mine,
     dropTransaction,
     pruneReceipt,
@@ -102,6 +104,8 @@ data FakeState = FakeState
     -- | the transactions the node knows and has not mined, by nonce
     fsPool :: Map Word64 ByteString,
     fsReceipts :: Map ByteString (Bool, Word64),
+    -- | the revert data of the dry runs of these calldata
+    fsDryRuns :: Map ByteString ByteString,
     -- | the key's transaction count at the latest block
     fsUsed :: Word64,
     fsBlock :: (Word64, Word64),
@@ -147,6 +151,7 @@ withFakeEthNode action = do
           fsSent = [],
           fsPool = M.empty,
           fsReceipts = M.empty,
+          fsDryRuns = M.empty,
           fsUsed = 0,
           fsBlock = (1, genesisTime),
           fsBlockTimes = M.fromList [(0, genesisTime - blockSeconds), (1, genesisTime)],
@@ -182,6 +187,10 @@ answerCallOnce FakeEthNode {fnState} to calldata a = atomically $ modifyTVar' fn
 -- | At this block and later ones the call answers this way, at earlier blocks as before.
 answerCallFrom :: FakeEthNode -> Word64 -> Address -> ByteString -> CallAnswer -> IO ()
 answerCallFrom FakeEthNode {fnState} block to calldata a = atomically $ modifyTVar' fnState $ \s -> s {fsCallsFrom = M.insert (unAddress to, calldata) (block, a) $ fsCallsFrom s}
+
+-- | The call has no answer any more, as if the node failed it.
+forgetCall :: FakeEthNode -> Address -> ByteString -> IO ()
+forgetCall FakeEthNode {fnState} to calldata = atomically $ modifyTVar' fnState $ \s -> s {fsCalls = M.delete (unAddress to, calldata) $ fsCalls s}
 
 -- | Every request for the method fails this way until 'clearFault'.
 setFault :: FakeEthNode -> Text -> Fault -> IO ()
@@ -220,6 +229,10 @@ revertFault = RpcError 3 "execution reverted" . Just
 -- | Sets the latest block's number and time.
 setBlock :: FakeEthNode -> Word64 -> Word64 -> IO ()
 setBlock FakeEthNode {fnState} number time = atomically $ modifyTVar' fnState $ \s -> s {fsBlock = (number, time), fsBlockTimes = M.insert number time $ fsBlockTimes s}
+
+-- | The dry run of this calldata reverts with this data, or passes again with Nothing.
+revertDryRun :: FakeEthNode -> ByteString -> Maybe ByteString -> IO ()
+revertDryRun FakeEthNode {fnState} calldata revertData = atomically $ modifyTVar' fnState $ \s -> s {fsDryRuns = M.alter (const revertData) calldata $ fsDryRuns s}
 
 setFees :: FakeEthNode -> Word64 -> Word64 -> IO ()
 setFees FakeEthNode {fnState} tip baseFee = atomically $ modifyTVar' fnState $ \s -> s {fsFees = (tip, baseFee)}
@@ -291,7 +304,7 @@ fakeApp st req respond = do
 
 answer :: TVar FakeState -> Text -> [J.Value] -> STM [JT.Pair]
 answer st method params = do
-  s@FakeState {fsCalls, fsCallsOnce, fsCallsFrom, fsSent, fsPool, fsReceipts, fsUsed, fsBlock = (number, time), fsBlockTimes, fsFees = (tip, baseFee)} <- readTVar st
+  s@FakeState {fsCalls, fsCallsOnce, fsCallsFrom, fsSent, fsPool, fsReceipts, fsDryRuns, fsUsed, fsBlock = (number, time), fsBlockTimes, fsFees = (tip, baseFee)} <- readTVar st
   case (method, params) of
     ("eth_call", [call, J.String tag])
       | Just (to, calldata) <- JT.parseMaybe callTarget call,
@@ -306,6 +319,10 @@ answer st method params = do
                 Nothing -> pure $ callAnswer $ case M.lookup key fsCallsFrom of
                   Just (from, a) | at >= from -> Just a
                   _ -> M.lookup key fsCalls
+    ("eth_estimateGas", call : _)
+      | Just (_, calldata) <- JT.parseMaybe callTarget call,
+        Just revertData <- M.lookup calldata fsDryRuns ->
+          pure $ rpcError 3 "execution reverted" (Just revertData)
     ("eth_estimateGas", _) -> pure $ result $ quantity fakeGas
     ("eth_getTransactionCount", [_, J.String "latest"]) -> pure $ result $ quantity $ toInteger fsUsed
     ("eth_getTransactionCount", [_, J.String "pending"]) ->

@@ -9,11 +9,13 @@ module Bots.StoreService.NamesRevealTests (namesRevealTests) where
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (noncesCall)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), aliceOrder, invoiceRegistration, orderTime, placed, post, registrationOf, settleNow, settled, withOrders)
-import Bots.StoreService.NamesPhasesTests (change, held, registrationPath, seenVersion, woken)
+import Bots.StoreService.NamesOwnerTests (answerFree, moveBody, moveTo, postMove)
+import Bots.StoreService.NamesPhasesTests (change, held, prompt, registrationPath, seenVersion, woken)
 import Bots.StoreService.NamesStoreTests (ownerA)
 import Bots.StoreService.WebTests (bounded, jsonObject, statusOf, webGet, webRequestBody)
 import Control.Concurrent.Async (Async, async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
+import Control.Concurrent.STM
 import Control.Monad (forM_, replicateM)
 import Crypto.Number.Serialize (i2ospOf_, os2ip)
 import qualified Crypto.PubKey.ECC.Types as ECC
@@ -38,14 +40,17 @@ import Simplex.Chat.PaymentService.Types (InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
-import Simplex.Messaging.SimplexName (SimplexTLD (..))
+import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Links (linkMaxBytes)
+import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (Registration (..), makeCommitment, registerIntentDigest, sponsorDomain)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), NameReveal (..), getRegistration)
-import StoreService.Web.Http (holdMicros, maxBodyBytes, nameBodyBytes, readLimit)
+import StoreService.Names.Turns (labelTurnCount)
+import StoreService.Web.Http (createLimit, holdMicros, maxBodyBytes, nameBodyBytes, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
+import StoreService.Web.Names.Owner (retargetHandler)
 import StoreService.Web.Names.Registration (registrationHandler, revealHandler)
 import StoreService.Web.Server (WebEnv (..), webApp)
 import System.Timeout (timeout)
@@ -72,13 +77,14 @@ namesRevealTests = describe "StoreService names: reveal" $ do
     it "records no refusal for links that do not rebuild the commitment, or for another signer" testNoRefusalRecorded
   describe "races" $ do
     it "answers registration_changed with the current view when the registration changed during the checks" testLostRace
+    it "runs one at a time with /name for the name, exactly one of them taking effect" testRacesName
     it "takes one read token per request, whatever its outcome" testReadToken
 
 -- fixtures
 
 data Fx = Fx {fCtx :: Ctx, fApp :: Application}
 
--- | The registration routes as namesRoutes registers them, the reveal's included.
+-- | The registration routes as namesRoutes registers them, the reveal's and another name's included.
 withReveals :: (Fx -> IO a) -> IO a
 withReveals action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb} -> do
   answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (0 :: Int)
@@ -86,13 +92,14 @@ withReveals action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb} -> do
       routes = \case
         ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders holdMicros rid}
         ["api", "registration", rid, "reveal"] -> Just Route {rMethod = "POST", rLimit = readLimit, rHandler = revealHandler cOrders rid}
+        ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler cOrders rid}
         _ -> Nothing
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
   mgr <- newManager defaultManagerSettings
   Warp.testWithApplication (pure app) $ \port ->
     action Fx {fCtx = ctx {cWeb = web, cClient = (mgr, "http://127.0.0.1:" <> show port)}, fApp = app}
 
--- | The request, held at its first chain read: a reveal's nonce read or its last check before it writes, in its turns.
+-- | The request, held at its first chain read: a reveal's nonce read, its last check before it writes, or /name's name check, in its turns.
 pausedAtChainRead :: Ctx -> IO a -> IO (Async a, Gate)
 pausedAtChainRead Ctx {cNode} = pausedAt cNode "eth_call"
 
@@ -208,6 +215,10 @@ highS sig@RecoverableSignature {rsS, rsRecId} = sig {rsS = i2ospOf_ 32 (n - os2i
     n = ECC.ecc_n $ ECC.common_curve $ ECC.getCurveByName ECC.SEC_p256k1
 
 -- | Waits until this many requests hold or wait for the label's turn.
+queuedOn :: Ctx -> LabelHash -> Int -> IO ()
+queuedOn Ctx {cOrders = OrdersEnv {oeTurns}} lh n =
+  timeout prompt (atomically $ labelTurnCount oeTurns lh >>= check . (== n)) >>= maybe (fail $ show n <> " requests did not queue on the turn") pure
+
 -- tests
 
 testWithLinks :: IO ()
@@ -437,6 +448,40 @@ testLostRace = bounded "lost race" $ withReveals $ \Fx {fCtx = ctx} -> do
     (what, status, field "error" =<< answer, field "version" view, field "label" view, field "linksRefused" view, field "revealBefore" view)
       `shouldBe` (what, 409, Just "registration_changed", Just (J.toJSON v), Just J.Null, Just (J.Bool False), Just (J.toJSON $ revealBefore + 60))
     (what,) . unwritten <$> stored ctx rid `shouldReturn` (what, (v, Nothing, False))
+
+testRacesName :: IO ()
+testRacesName = bounded "races /name" $ withReveals $ \Fx {fCtx = ctx} -> do
+  -- the reveal holds the name's turn while it reads the nonce, so /name waits and then finds it revealed
+  rid <- committed ctx (orderOf alice)
+  answerFree ctx "alicebakers"
+  toAlicebakers <- moveTo ctx "alicebakers" 1
+  (inFlight, gate) <- pausedAtChainRead ctx (ownerReveal ctx rid alice)
+  move <- async $ postMove ctx rid =<< moveBody ctx keyA rid toAlicebakers
+  queuedOn ctx (labelHash "alicebakery") 2
+  releaseGate gate
+  wait inFlight `shouldReturn` accepted
+  wait move `shouldReturn` badRequest
+  NameRegistration {nrLabelHash, nrReveal, nrMoves} <- stored ctx rid
+  (nrLabelHash, rvLabel <$> nrReveal, nrMoves) `shouldBe` (labelHash "alicebakery", Just "alicebakery", 0)
+  -- /name holds the turns of a reveal refused for its links while it checks the name, so the reveal waits and then finds the order moved
+  answerFree ctx "dynamit"
+  let overBound = dynamis {rContactLink = Just $ padded "a" (linkMaxBytes + 1)}
+  refusedRid <- committed ctx (orderOf overBound)
+  body <- ownerBody ctx overBound
+  reveal ctx refusedRid body `shouldReturn` refused 400 "invalid_link"
+  toDynamit <- moveTo ctx "dynamit" 2
+  (move', gate') <- pausedAtChainRead ctx (postMove ctx refusedRid =<< moveBody ctx keyA refusedRid toDynamit)
+  late <- async $ reveal ctx refusedRid body
+  queuedOn ctx (labelHash "dynamis") 2
+  releaseGate gate'
+  (200, Just movedView) <- wait move'
+  (status, answer) <- wait late
+  let view = registrationOf $ fromJust answer
+      LabelHash dynamit = labelHash "dynamit"
+  (status, field "error" =<< answer, field "version" view, field "phase" view, field "labelHash" view, field "moves" view)
+    `shouldBe` (409, Just "registration_changed", field "version" movedView, Just "queued", Just (J.String $ hex dynamit), Just (J.Number 1))
+  NameRegistration {nrLabelHash = movedHash, nrReveal = movedReveal, nrLinksRefusedAt} <- stored ctx refusedRid
+  (movedHash, movedReveal, nrLinksRefusedAt) `shouldBe` (labelHash "dynamit", Nothing, Nothing)
 
 testReadToken :: IO ()
 testReadToken = withReveals $ \Fx {fCtx = ctx@Ctx {cClient}} -> do

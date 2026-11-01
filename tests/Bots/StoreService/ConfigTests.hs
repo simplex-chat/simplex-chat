@@ -661,6 +661,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "keeps the RPC URL and the service key out of errors and the shown config" testNamesSecretsHidden
   it "names a [names] or [chain] setting nothing reads, and still boots" testNamesUnknownKeys
   it "reads codes_only on and off as a known setting, off when absent, and refuses any other value" testNamesCodesOnly
+  it "reads record_edits_per_year as a known setting, 3 when absent, and refuses a value outside 1-100" testNamesRecordEdits
 
 rpcUrl :: T.Text
 rpcUrl = "https://eth.example.org/v2/rpc-token-value"
@@ -714,12 +715,13 @@ address t = either error id (strDecode (B.pack (T.unpack t)))
 
 testNamesDefaults :: IO ()
 testNamesDefaults = do
-  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nChain} <- parsedNames namesSection chainSection
+  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nChain} <- parsedNames namesSection chainSection
   nTLD `shouldBe` TLDTesting
   nYears `shouldBe` 2
   nTermStart `shouldBe` UTCTime (fromGregorian 2027 1 1) 0
   nTermSlackSeconds `shouldBe` 3600
   nRevealMarginSeconds `shouldBe` 900
+  nMaxOrderMoves `shouldBe` 3
   let ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cConfirmations, cGasLimitCap, cMaxFeePerGas} = nChain
   cRpcUrl `shouldBe` T.unpack rpcUrl
   cChainId `shouldBe` 31337
@@ -732,20 +734,21 @@ testNamesDefaults = do
 
 testNamesWrittenOut :: IO ()
 testNamesWrittenOut = do
-  let ns = ["[names]", "tld = simplex", "terms_version = 2027-01.b", "terms_url = https://simplex.chat/names/terms", "years = 5", "term_start = 2027-03-01T12:00:00Z", "term_slack_seconds = 60", "reveal_margin_seconds = 0"]
+  let ns = ["[names]", "tld = simplex", "terms_version = 2027-01.b", "terms_url = https://simplex.chat/names/terms", "years = 5", "term_start = 2027-03-01T12:00:00Z", "term_slack_seconds = 60", "reveal_margin_seconds = 0", "max_order_moves = 0"]
       cs = chainSection <> ["confirmations = 0", "gas_limit_cap = 500000", "max_fee_per_gas = 30000000000"]
-  NamesConfig {nTLD, nTerms, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nChain = ChainConfig {cConfirmations, cGasLimitCap, cMaxFeePerGas}} <- parsedNames ns cs
+  NamesConfig {nTLD, nTerms, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nChain = ChainConfig {cConfirmations, cGasLimitCap, cMaxFeePerGas}} <- parsedNames ns cs
   nTLD `shouldBe` TLDSimplex
   nTerms `shouldBe` TermsConfig {tVersion = "2027-01.b", tUrl = "https://simplex.chat/names/terms"}
   nYears `shouldBe` 5
   nTermStart `shouldBe` UTCTime (fromGregorian 2027 3 1) (12 * 3600)
-  (nTermSlackSeconds, nRevealMarginSeconds) `shouldBe` (60, 0)
+  (nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves) `shouldBe` (60, 0, 0)
   (cConfirmations, cGasLimitCap, cMaxFeePerGas) `shouldBe` (0, 500000, 30000000000)
   namesRefusal ns (chainSection <> ["confirmations = -1"]) `shouldReturn` "chain.confirmations must be at least 0"
   namesRefusal ns (chainSection <> ["gas_limit_cap = 0"]) `shouldReturn` "chain.gas_limit_cap must be a positive whole number"
   namesRefusal ns (chainSection <> ["max_fee_per_gas = 0"]) `shouldReturn` "chain.max_fee_per_gas must be a positive whole number"
   namesRefusal ns (chainSection <> ["max_fee_per_gas = 18446744073709551616"]) `shouldReturn` "chain.max_fee_per_gas must be a positive whole number"
   namesRefusal ns (filter (not . ("chain_id" `T.isPrefixOf`)) chainSection) `shouldReturn` "chain.chain_id is required"
+  namesRefusal (namesSection <> ["max_order_moves = -1"]) chainSection `shouldReturn` "names.max_order_moves must be at least 0"
 
 testNamesListenerKeys :: IO ()
 testNamesListenerKeys = do
@@ -869,3 +872,18 @@ testNamesCodesOnly = do
     NamesConfig {nCodesOnly} <- parsedNames ns chainSection
     (value, nCodesOnly) `shouldBe` (value, expected)
   namesRefusal (namesSection <> ["codes_only = yes"]) chainSection `shouldReturn` "codes_only must be on or off, not yes"
+
+testNamesRecordEdits :: IO ()
+testNamesRecordEdits = do
+  NamesConfig {nRecordEditsPerYear = absent} <- parsedNames namesSection chainSection
+  absent `shouldBe` 3
+  forM_ [1, 100] $ \n -> do
+    let ns = namesSection <> ["record_edits_per_year = " <> T.pack (show n)]
+    withIni (namesIni ns chainSection) $ \p -> do
+      Right ini <- readIniFile p
+      unknownKeys ini `shouldBe` []
+    NamesConfig {nRecordEditsPerYear} <- parsedNames ns chainSection
+    (n, nRecordEditsPerYear) `shouldBe` (n, n)
+  forM_ ["0", "101", "-3"] $ \v ->
+    namesRefusal (namesSection <> ["record_edits_per_year = " <> v]) chainSection `shouldReturn` "names.record_edits_per_year must be between 1 and 100"
+  namesRefusal (namesSection <> ["record_edits_per_year = three"]) chainSection `shouldReturn` "record_edits_per_year must be a whole number"

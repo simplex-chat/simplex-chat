@@ -45,6 +45,7 @@ import StoreService.Names.Codes (issueNameCode, revokeNameCode)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Records (runRecordEdits)
 import StoreService.Names.Sender (runSender)
 import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), LateCredit (..), RegistrationPayment (..), balanceByReference, balanceChain, methodText)
 import StoreService.Names.Turns (Turns, newTurns)
@@ -266,9 +267,9 @@ startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig 
 
 -- | The workers resume every registration in their phases, and the code sweep runs at the start and then daily.
 namesLanes :: NamesEnv -> IO [IO ()]
-namesLanes ne@NamesEnv {neChain, neSender} = do
+namesLanes ne@NamesEnv {neChain, neSender, neRecords} = do
   worker <- newWorker (ordersEnv ne) neChain neSender
-  pure [runSender neSender, runWorkers worker, runCodeSweep worker]
+  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker]
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do
