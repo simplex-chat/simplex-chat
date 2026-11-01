@@ -25,7 +25,6 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalUriHandler
 import dev.icerock.moko.resources.compose.painterResource
@@ -1067,28 +1066,13 @@ private fun SupporterBadgeWhatsNew(modalManager: ModalManager) {
         )
       }
     }
-    val isDark = isInDarkTheme()
-    if (BuildConfigCommon.SIMPLEX_ASSETS) {
-      Image(
-        painterResource(if (isDark) MR.images.phone_supporter_light else MR.images.phone_supporter),
-        contentDescription = null,
-        contentScale = ContentScale.Fit,
-        modifier = Modifier.spill(x = 23.dp, y = (-24).dp).size(width = 115.dp, height = 144.dp)
-      )
-    } else {
-      Image(
-        painterResource(MR.images.badge_supporter),
-        contentDescription = null,
-        contentScale = ContentScale.Fit,
-        modifier = Modifier.padding(start = 24.dp).size(72.dp)
-      )
-    }
+    Image(
+      painterResource(MR.images.badge_supporter),
+      contentDescription = null,
+      contentScale = ContentScale.Fit,
+      modifier = Modifier.padding(start = 24.dp).size(72.dp)
+    )
   }
-}
-
-private fun Modifier.spill(x: Dp, y: Dp): Modifier = layout { measurable, constraints ->
-  val placeable = measurable.measure(constraints)
-  layout(0, 0) { placeable.place(x.roundToPx() - placeable.width, y.roundToPx()) }
 }
 
 private val lastVersion = versionDescriptions.last().version

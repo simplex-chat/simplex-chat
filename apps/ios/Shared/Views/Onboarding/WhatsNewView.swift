@@ -747,7 +747,6 @@ func shouldShowWhatsNew() -> Bool {
 }
 
 fileprivate struct SupporterBadgeWhatsNew: View {
-    @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var badgeModel = BadgeModel.shared
 
@@ -772,27 +771,14 @@ fileprivate struct SupporterBadgeWhatsNew: View {
                     .onTapGesture { openBadgesView() }
             }
         }
-        #if !SIMPLEX_ASSETS
         .padding(.trailing, 96)
-        #endif
         .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(alignment: .topTrailing) { heroThumbnail() }
-    }
-
-    @ViewBuilder
-    private func heroThumbnail() -> some View {
-        #if SIMPLEX_ASSETS
-        Image(colorScheme == .light ? "phone-supporter" : "phone-supporter-light")
-            .resizable()
-            .scaledToFit()
-            .frame(width: 115, height: 144)
-            .offset(x: 23, y: -24)
-        #else
-        Image("badge-supporter")
-            .resizable()
-            .scaledToFit()
-            .frame(width: 72, height: 72)
-        #endif
+        .overlay(alignment: .topTrailing) {
+            Image("badge-supporter")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 72, height: 72)
+        }
     }
 }
 
