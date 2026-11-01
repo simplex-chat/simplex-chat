@@ -460,6 +460,7 @@ executable simplex-store-service
       StoreService.Config
       StoreService.Group
       StoreService.Group.Command
+      StoreService.Names.Abi
       StoreService.Names.Codes
       StoreService.Names.Store
       StoreService.Names.Turns
@@ -793,6 +794,7 @@ test-suite simplex-chat-test
       StoreService.Config
       StoreService.Group
       StoreService.Group.Command
+      StoreService.Names.Abi
       StoreService.Names.Chain
       StoreService.Names.Codes
       StoreService.Names.Label
