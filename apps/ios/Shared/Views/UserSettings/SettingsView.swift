@@ -445,7 +445,6 @@ struct SettingsView: View {
     private func badgeRowTexts() -> (label: LocalizedStringKey, benefits: LocalizedStringKey) {
         switch currentShownBadge()?.badgeType {
         case nil: return ("Support SimpleX", "Larger files available for longer.")
-        case .supporter?: return ("Your supporter badge", "Files up to 2 GB, stored for 7 days.")
         case .legend?: return ("Your legend badge", "Files up to 5 GB, stored for 21 days.")
         default: return ("Your badge", "Files up to 2 GB, stored for 7 days.")
         }

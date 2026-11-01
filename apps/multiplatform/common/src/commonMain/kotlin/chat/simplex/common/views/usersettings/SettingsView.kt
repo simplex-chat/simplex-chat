@@ -111,9 +111,8 @@ fun SettingsLayout(
 
     val (badgeLabel, badgeBenefits) = when (currentShownBadge()?.badgeType) {
       null -> MR.strings.badges_support_simplex_title to MR.strings.v7_1_supporter_badge_descr
-      is BadgeType.Supporter -> MR.strings.badges_your_supporter_badge to MR.strings.badges_supporter_benefits
       is BadgeType.Legend -> MR.strings.badges_your_legend_badge to MR.strings.badges_legend_benefits
-      is BadgeType.Investor, is BadgeType.Unknown -> MR.strings.badges_your_badge to MR.strings.badges_supporter_benefits
+      is BadgeType.Supporter, is BadgeType.Investor, is BadgeType.Unknown -> MR.strings.badges_your_badge to MR.strings.badges_supporter_benefits
     }
     SectionView {
       // Direct showModal (no settings / cardScreen flags) — settings-style card chrome would render
