@@ -455,6 +455,16 @@ channel relay bar</note>
         <target>%u messages skipped.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="(chat)" xml:space="preserve">
+        <source>(chat)</source>
+        <target>(chat)</target>
+        <note>chat layout</note>
+      </trans-unit>
+      <trans-unit id="(default)" xml:space="preserve">
+        <source>(default)</source>
+        <target>(default)</target>
+        <note>chat layout</note>
+      </trans-unit>
       <trans-unit id="(from owner)" xml:space="preserve">
         <source>(from owner)</source>
         <target>(from owner)</target>
@@ -701,6 +711,16 @@ time interval</note>
         <target>A separate TCP connection will be used **for each contact and group member**.
 **Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="A store purchase is being added to this profile." xml:space="preserve">
+        <source>A store purchase is being added to this profile.</source>
+        <target>A store purchase is being added to this profile.</target>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="A store purchase is being added to this profile. Redeem the code once it is added, or on another profile." xml:space="preserve">
+        <source>A store purchase is being added to this profile. Redeem the code once it is added, or on another profile.</source>
+        <target>A store purchase is being added to this profile. Redeem the code once it is added, or on another profile.</target>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Abort" xml:space="preserve">
         <source>Abort</source>
@@ -1506,6 +1526,11 @@ swipe action</note>
         <target>Badge ledger</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Badge payment problem" xml:space="preserve">
+        <source>Badge payment problem</source>
+        <target>Badge payment problem</target>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Badge renewal failed" xml:space="preserve">
         <source>Badge renewal failed</source>
         <target>Badge renewal failed</target>
@@ -2077,6 +2102,11 @@ alert subtitle</note>
         <target>Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Chat layout" xml:space="preserve">
+        <source>Chat layout</source>
+        <target>Chat layout</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chat list" xml:space="preserve">
         <source>Chat list</source>
         <target>Chat list</target>
@@ -2252,6 +2282,11 @@ chat toolbar</note>
         <source>Chunks uploaded</source>
         <target>Chunks uploaded</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Classic" xml:space="preserve">
+        <source>Classic</source>
+        <target>Classic</target>
+        <note>chat layout</note>
       </trans-unit>
       <trans-unit id="Clear" xml:space="preserve">
         <source>Clear</source>
@@ -2718,6 +2753,11 @@ This is your own one-time link!</target>
       <trans-unit id="Contribute" xml:space="preserve">
         <source>Contribute</source>
         <target>Contribute</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Contributor" xml:space="preserve">
+        <source>Contributor</source>
+        <target>Contributor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Conversation deleted!" xml:space="preserve">
@@ -3921,9 +3961,19 @@ chat item action</note>
         <target>End call</target>
         <note>alert action</note>
       </trans-unit>
+      <trans-unit id="Ended" xml:space="preserve">
+        <source>Ended</source>
+        <target>Ended</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Ends" xml:space="preserve">
         <source>Ends</source>
         <target>Ends</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Ends %@" xml:space="preserve">
+        <source>Ends %@</source>
+        <target>Ends %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Ends on %@." xml:space="preserve">
@@ -5397,6 +5447,11 @@ More improvements are coming soon!</target>
         <target>In reply to</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="In-app purchases are not allowed on this device." xml:space="preserve">
+        <source>In-app purchases are not allowed on this device.</source>
+        <target>In-app purchases are not allowed on this device.</target>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="In-call sounds" xml:space="preserve">
         <source>In-call sounds</source>
         <target>In-call sounds</target>
@@ -5992,6 +6047,11 @@ This is your link for group %@!</target>
         <target>Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Manage subscription" xml:space="preserve">
+        <source>Manage subscription</source>
+        <target>Manage subscription</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Manage your relays." xml:space="preserve">
         <source>Manage your relays.</source>
         <target>Manage your relays.</target>
@@ -6297,6 +6357,11 @@ This is your link for group %@!</target>
         <target>Messages sent</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Messages sent before will show &quot;signature missing&quot; to subscribers who join later." xml:space="preserve">
+        <source>Messages sent before will show "signature missing" to subscribers who join later.</source>
+        <target>Messages sent before will show "signature missing" to subscribers who join later.</target>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Messages were deleted after you selected them." xml:space="preserve">
         <source>Messages were deleted after you selected them.</source>
         <target>Messages were deleted after you selected them.</target>
@@ -6386,6 +6451,11 @@ This is your link for group %@!</target>
         <source>Moderated at: %@</source>
         <target>Moderated at: %@</target>
         <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="Moderator" xml:space="preserve">
+        <source>Moderator</source>
+        <target>Moderator</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Monthly" xml:space="preserve">
         <source>Monthly</source>
@@ -6633,6 +6703,11 @@ who talks to whom</target>
         <source>No</source>
         <target>No</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No App Store purchase waiting to be added was found." xml:space="preserve">
+        <source>No App Store purchase waiting to be added was found.</source>
+        <target>No App Store purchase waiting to be added was found.</target>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="No account. No phone. No email. No ID.&#10;The most secure encryption." xml:space="preserve">
         <source>No account. No phone. No email. No ID.
@@ -6894,6 +6969,11 @@ The most secure encryption.</target>
       <trans-unit id="Nothing to forward!" xml:space="preserve">
         <source>Nothing to forward!</source>
         <target>Nothing to forward!</target>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Nothing to restore" xml:space="preserve">
+        <source>Nothing to restore</source>
+        <target>Nothing to restore</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Notifications" xml:space="preserve">
@@ -7385,6 +7465,21 @@ alert button</note>
         <target>Pay %@/year</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Payment is charged to your Apple ID when you confirm the purchase. The subscription renews automatically at %@ per month unless you cancel it at least 24 hours before the end of the current period. You can manage and cancel it in your App Store account settings." xml:space="preserve">
+        <source>Payment is charged to your Apple ID when you confirm the purchase. The subscription renews automatically at %@ per month unless you cancel it at least 24 hours before the end of the current period. You can manage and cancel it in your App Store account settings.</source>
+        <target>Payment is charged to your Apple ID when you confirm the purchase. The subscription renews automatically at %@ per month unless you cancel it at least 24 hours before the end of the current period. You can manage and cancel it in your App Store account settings.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Payment is charged to your Apple ID when you confirm the purchase. The subscription renews automatically at %@ per year unless you cancel it at least 24 hours before the end of the current period. You can manage and cancel it in your App Store account settings." xml:space="preserve">
+        <source>Payment is charged to your Apple ID when you confirm the purchase. The subscription renews automatically at %@ per year unless you cancel it at least 24 hours before the end of the current period. You can manage and cancel it in your App Store account settings.</source>
+        <target>Payment is charged to your Apple ID when you confirm the purchase. The subscription renews automatically at %@ per year unless you cancel it at least 24 hours before the end of the current period. You can manage and cancel it in your App Store account settings.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Payment problem" xml:space="preserve">
+        <source>Payment problem</source>
+        <target>Payment problem</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Pending" xml:space="preserve">
         <source>Pending</source>
         <target>Pending</target>
@@ -7567,6 +7662,11 @@ Error: %@</target>
       <trans-unit id="Privacy for your customers." xml:space="preserve">
         <source>Privacy for your customers.</source>
         <target>Privacy for your customers.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Privacy policy" xml:space="preserve">
+        <source>Privacy policy</source>
+        <target>Privacy policy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy policy and conditions of use." xml:space="preserve">
@@ -8159,6 +8259,31 @@ swipe action</note>
         <target>Renegotiate encryption?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Renewing" xml:space="preserve">
+        <source>Renewing</source>
+        <target>Renewing</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews %@" xml:space="preserve">
+        <source>Renews %@</source>
+        <target>Renews %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews %@ · %@" xml:space="preserve">
+        <source>Renews %@ · %@</source>
+        <target>Renews %@ · %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews on %@ for %@." xml:space="preserve">
+        <source>Renews on %@ for %@.</source>
+        <target>Renews on %@ for %@.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews on %@." xml:space="preserve">
+        <source>Renews on %@.</source>
+        <target>Renews on %@.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Renews on %@. Cancel anytime." xml:space="preserve">
         <source>Renews on %@. Cancel anytime.</source>
         <target>Renews on %@. Cancel anytime.</target>
@@ -8322,6 +8447,16 @@ swipe action</note>
       <trans-unit id="Restore database error" xml:space="preserve">
         <source>Restore database error</source>
         <target>Restore database error</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Restore failed" xml:space="preserve">
+        <source>Restore failed</source>
+        <target>Restore failed</target>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Restore purchases" xml:space="preserve">
+        <source>Restore purchases</source>
+        <target>Restore purchases</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Retry" xml:space="preserve">
@@ -9317,6 +9452,11 @@ chat item action</note>
         <target>Sign messages</target>
         <note>chat feature</note>
       </trans-unit>
+      <trans-unit id="Sign messages?" xml:space="preserve">
+        <source>Sign messages?</source>
+        <target>Sign messages?</target>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Signature missing" xml:space="preserve">
         <source>Signature missing</source>
         <target>Signature missing</target>
@@ -9748,6 +9888,16 @@ Relay address was used to set up this relay for the channel.</source>
 Relay address was used to set up this relay for the channel.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Subscription" xml:space="preserve">
+        <source>Subscription</source>
+        <target>Subscription</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscription cancelled" xml:space="preserve">
+        <source>Subscription cancelled</source>
+        <target>Subscription cancelled</target>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Subscription errors" xml:space="preserve">
         <source>Subscription errors</source>
         <target>Subscription errors</target>
@@ -9894,11 +10044,6 @@ alert title</note>
         <target>Tap button </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap for details" xml:space="preserve">
-        <source>Tap for details</source>
-        <target>Tap for details</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Tap to Connect" xml:space="preserve">
         <source>Tap to Connect</source>
         <target>Tap to Connect</target>
@@ -9938,6 +10083,16 @@ alert title</note>
         <source>Temporary file error</source>
         <target>Temporary file error</target>
         <note>file error alert title</note>
+      </trans-unit>
+      <trans-unit id="Terminal" xml:space="preserve">
+        <source>Terminal</source>
+        <target>Terminal</target>
+        <note>chat layout</note>
+      </trans-unit>
+      <trans-unit id="Terms of use" xml:space="preserve">
+        <source>Terms of use</source>
+        <target>Terms of use</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Test failed at step %@." xml:space="preserve">
         <source>Test failed at step %@.</source>
@@ -9983,6 +10138,11 @@ server test failure</note>
       <trans-unit id="Thanks to the users – contribute via Weblate!" xml:space="preserve">
         <source>Thanks to the users – contribute via Weblate!</source>
         <target>Thanks to the users – contribute via Weblate!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The App Store could not charge your payment method and is retrying. Update it to keep your badge. Until the payment goes through, you cannot buy or redeem another badge." xml:space="preserve">
+        <source>The App Store could not charge your payment method and is retrying. Update it to keep your badge. Until the payment goes through, you cannot buy or redeem another badge.</source>
+        <target>The App Store could not charge your payment method and is retrying. Update it to keep your badge. Until the payment goes through, you cannot buy or redeem another badge.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The ID of the next message is incorrect (less or equal to the previous).&#10;It can happen because of some bug or when the connection is compromised." xml:space="preserve">
@@ -10102,11 +10262,6 @@ It can happen because of some bug or when the connection is compromised.</target
         <target>The badge will be added to this profile.</target>
         <note>badge link, being issued</note>
       </trans-unit>
-      <trans-unit id="The channel required this message to be signed, but the signature is missing." xml:space="preserve">
-        <source>The channel required this message to be signed, but the signature is missing.</source>
-        <target>The channel required this message to be signed, but the signature is missing.</target>
-        <note>alert message</note>
-      </trans-unit>
       <trans-unit id="The code was accepted, but the badge it grants has already ended." xml:space="preserve">
         <source>The code was accepted, but the badge it grants has already ended.</source>
         <target>The code was accepted, but the badge it grants has already ended.</target>
@@ -10167,6 +10322,11 @@ your contacts and groups.</target>
       <trans-unit id="The link will be short, and group profile will be shared via the link." xml:space="preserve">
         <source>The link will be short, and group profile will be shared via the link.</source>
         <target>The link will be short, and group profile will be shared via the link.</target>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="The message was sent before the channel started signing messages, or it is fake." xml:space="preserve">
+        <source>The message was sent before the channel started signing messages, or it is fake.</source>
+        <target>The message was sent before the channel started signing messages, or it is fake.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
@@ -10249,6 +10409,11 @@ your contacts and groups.</target>
         <target>The store could not be reached.</target>
         <note>alert message</note>
       </trans-unit>
+      <trans-unit id="The store could not charge your payment method." xml:space="preserve">
+        <source>The store could not charge your payment method.</source>
+        <target>The store could not charge your payment method.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The store did not confirm this purchase." xml:space="preserve">
         <source>The store did not confirm this purchase.</source>
         <target>The store did not confirm this purchase.</target>
@@ -10298,6 +10463,11 @@ your contacts and groups.</target>
         <source>They can be overridden in contact and group settings.</source>
         <target>They can be overridden in contact and group settings.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="This Apple ID already has a badge subscription. Only the profile that bought it can continue it." xml:space="preserve">
+        <source>This Apple ID already has a badge subscription. Only the profile that bought it can continue it.</source>
+        <target>This Apple ID already has a badge subscription. Only the profile that bought it can continue it.</target>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="This SimpleX name is not registered. Please check the name." xml:space="preserve">
         <source>This SimpleX name is not registered. Please check the name.</source>
@@ -10463,6 +10633,11 @@ alert subtitle</note>
       <trans-unit id="This purchase was already credited to a badge on another device or profile." xml:space="preserve">
         <source>This purchase was already credited to a badge on another device or profile.</source>
         <target>This purchase was already credited to a badge on another device or profile.</target>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="This purchase was moved to another device or profile recently." xml:space="preserve">
+        <source>This purchase was moved to another device or profile recently.</source>
+        <target>This purchase was moved to another device or profile recently.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
@@ -11831,6 +12006,11 @@ Repeat connection request?</target>
         <target>Your badge</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your badge could not be renewed." xml:space="preserve">
+        <source>Your badge could not be renewed.</source>
+        <target>Your badge could not be renewed.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your badge expired" xml:space="preserve">
         <source>Your badge expired</source>
         <target>Your badge expired</target>
@@ -11845,6 +12025,26 @@ Repeat connection request?</target>
         <source>Your badge expired.</source>
         <target>Your badge expired.</target>
         <note>file alert</note>
+      </trans-unit>
+      <trans-unit id="Your badge is renewed once the App Store charges your subscription. Until then you cannot buy or redeem another badge." xml:space="preserve">
+        <source>Your badge is renewed once the App Store charges your subscription. Until then you cannot buy or redeem another badge.</source>
+        <target>Your badge is renewed once the App Store charges your subscription. Until then you cannot buy or redeem another badge.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your badge renews soon" xml:space="preserve">
+        <source>Your badge renews soon</source>
+        <target>Your badge renews soon</target>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Your badge stays until %@." xml:space="preserve">
+        <source>Your badge stays until %@.</source>
+        <target>Your badge stays until %@.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your badge subscription ended on %@." xml:space="preserve">
+        <source>Your badge subscription ended on %@.</source>
+        <target>Your badge subscription ended on %@.</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your business contact" xml:space="preserve">
         <source>Your business contact</source>
@@ -12025,6 +12225,26 @@ Relays can access channel messages.</target>
       <trans-unit id="Your settings" xml:space="preserve">
         <source>Your settings</source>
         <target>Your settings</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your subscription ended" xml:space="preserve">
+        <source>Your subscription ended</source>
+        <target>Your subscription ended</target>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Your subscription has ended. The badge will be removed from your profile." xml:space="preserve">
+        <source>Your subscription has ended. The badge will be removed from your profile.</source>
+        <target>Your subscription has ended. The badge will be removed from your profile.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your subscription is cancelled. The badge stays until %@." xml:space="preserve">
+        <source>Your subscription is cancelled. The badge stays until %@.</source>
+        <target>Your subscription is cancelled. The badge stays until %@.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your subscription renews automatically. You can cancel it in the App Store." xml:space="preserve">
+        <source>Your subscription renews automatically. You can cancel it in the App Store.</source>
+        <target>Your subscription renews automatically. You can cancel it in the App Store.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="[Send us email](mailto:chat@simplex.chat)" xml:space="preserve">

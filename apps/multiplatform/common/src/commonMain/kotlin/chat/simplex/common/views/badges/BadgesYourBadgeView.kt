@@ -7,6 +7,7 @@ import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -22,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.BadgeState
+import chat.simplex.common.model.BadgeSubscriptionState
+import chat.simplex.common.model.BadgeType
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.localTimestamp
 import chat.simplex.common.platform.ColumnWithScrollBar
@@ -35,6 +38,7 @@ import chat.simplex.common.views.helpers.openVerifiedSimplexUri
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.views.usersettings.simplexTeamUri
 import chat.simplex.res.*
+import kotlinx.datetime.Clock
 
 @Composable
 fun BadgesYourBadgeView(badgeState: BadgeState, modalManager: ModalManager) {
@@ -45,11 +49,67 @@ fun BadgesYourBadgeView(badgeState: BadgeState, modalManager: ModalManager) {
       BadgeSummary(badgeState)
     }
     SectionSpacer()
-    SectionView(stringResource(MR.strings.badges_ends)) {
-      Text(badgeState.paidThroughText, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = 12.dp))
+    val subscription = badgeState.subscription
+    if (subscription != null) {
+      val ended = badgeState.paidThrough <= Clock.System.now()
+      val date = badgeState.paidThroughText
+      when (subscription.status) {
+        BadgeSubscriptionState.BillingRetry ->
+          SubscriptionSection(
+            badgeState.badgeType,
+            footer = stringResource(if (badgeStoreLane) MR.strings.badges_payment_problem_footer else MR.strings.badges_payment_problem_footer_store)
+          ) {
+            Icon(painterResource(MR.images.ic_warning), null, tint = Color.Red)
+            Spacer(Modifier.width(6.dp))
+            Text(stringResource(MR.strings.badges_payment_problem))
+          }
+        BadgeSubscriptionState.Cancelled ->
+          if (!ended) {
+            SubscriptionSection(badgeState.badgeType, footer = String.format(stringResource(MR.strings.badges_subscription_cancelled_footer), date)) {
+              Text(String.format(stringResource(MR.strings.badges_subscription_ends), date))
+            }
+          } else {
+            SubscriptionSection(badgeState.badgeType, footer = stringResource(MR.strings.badges_subscription_ended_footer)) {
+              Text(stringResource(MR.strings.badges_subscription_ended))
+            }
+          }
+        BadgeSubscriptionState.Ended ->
+          SubscriptionSection(badgeState.badgeType, footer = stringResource(MR.strings.badges_subscription_ended_footer)) {
+            Text(stringResource(MR.strings.badges_subscription_ended))
+          }
+        BadgeSubscriptionState.Renewing, BadgeSubscriptionState.Unknown, null -> {
+          val price = BadgeStore.subscriptionPrice(badgeState.badgeType, subscription.planMonths)
+          if (ended) {
+            SubscriptionSection(
+              badgeState.badgeType,
+              footer = stringResource(if (badgeStoreLane) MR.strings.badges_subscription_renewing_footer else MR.strings.badges_subscription_renewing_footer_store)
+            ) {
+              Text(stringResource(MR.strings.badges_subscription_renewing))
+            }
+          } else if (price != null) {
+            SubscriptionSection(
+              badgeState.badgeType,
+              footer = stringResource(if (badgeStoreLane) MR.strings.badges_subscription_renews_footer else MR.strings.badges_subscription_renews_footer_store)
+            ) {
+              Text(String.format(stringResource(MR.strings.badges_subscription_renews_price), date, price))
+            }
+          } else {
+            SubscriptionSection(
+              badgeState.badgeType,
+              footer = stringResource(if (badgeStoreLane) MR.strings.badges_subscription_renews_footer else MR.strings.badges_subscription_renews_footer_store)
+            ) {
+              Text(String.format(stringResource(MR.strings.badges_subscription_renews), date))
+            }
+          }
+        }
+      }
+    } else {
+      SectionView(stringResource(MR.strings.badges_ends)) {
+        Text(badgeState.paidThroughText, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = 12.dp))
+      }
+      SectionTextFooter(stringResource(MR.strings.badges_prepaid_footer))
+      SectionSpacer()
     }
-    SectionTextFooter(stringResource(MR.strings.badges_prepaid_footer))
-    SectionSpacer()
     SectionView {
       SettingsActionItem(
         painterResource(MR.images.ic_info),
@@ -105,6 +165,23 @@ fun BadgesYourBadgeView(badgeState: BadgeState, modalManager: ModalManager) {
       SectionSpacer()
     }
   }
+}
+
+@Composable
+private fun SubscriptionSection(badgeType: BadgeType, footer: String, status: @Composable RowScope.() -> Unit) {
+  SectionView(stringResource(MR.strings.badges_subscription)) {
+    SectionItemView(content = status)
+    if (badgeStoreLane) {
+      SettingsActionItem(
+        painterResource(MR.images.ic_open_in_new),
+        stringResource(MR.strings.badges_manage_subscription),
+        { BadgeStore.manageSubscriptions(badgeType) },
+        textColor = MaterialTheme.colors.primary
+      )
+    }
+  }
+  SectionTextFooter(footer)
+  SectionSpacer()
 }
 
 @Composable

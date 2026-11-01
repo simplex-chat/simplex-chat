@@ -1,4 +1,4 @@
-// Makes a group avatar the way the app makes profile images (resizeImageToStrSize in apps/ios/SimpleXChat/ImageUtils.swift):
+// Makes a group avatar:
 // a JPEG at quality 0.85 drawn at scale 1, shrunk by sqrt(size / 12500), at most halved per step,
 // until its data URI is at most 12500 characters. The picture is synthetic and photo-like: a gradient,
 // discs and noise, with more noise for a higher detail.

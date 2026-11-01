@@ -949,9 +949,9 @@ fun groupInvitationAcceptedAlert(rhId: Long?) {
   )
 }
 
-fun toggleNotifications(remoteHostId: Long?, chatInfo: ChatInfo, filter: MsgFilter, chatModel: ChatModel, currentState: MutableState<MsgFilter>? = null) {
+fun toggleNotifications(remoteHostId: Long?, chatInfo: ChatInfo, filter: MsgFilter, chatModel: ChatModel) {
   val chatSettings = (chatInfo.chatSettings ?: ChatSettings.defaults).copy(enableNtfs = filter)
-  updateChatSettings(remoteHostId, chatInfo, chatSettings, chatModel, currentState)
+  updateChatSettings(remoteHostId, chatInfo, chatSettings, chatModel)
 }
 
 fun toggleChatFavorite(remoteHostId: Long?, chatInfo: ChatInfo, favorite: Boolean, chatModel: ChatModel) {
@@ -959,7 +959,7 @@ fun toggleChatFavorite(remoteHostId: Long?, chatInfo: ChatInfo, favorite: Boolea
   updateChatSettings(remoteHostId, chatInfo, chatSettings, chatModel)
 }
 
-fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: ChatSettings, chatModel: ChatModel, currentState: MutableState<MsgFilter>? = null) {
+fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: ChatSettings, chatModel: ChatModel) {
   val newChatInfo = when(chatInfo) {
     is ChatInfo.Direct -> with (chatInfo) {
       ChatInfo.Direct(contact.copy(chatSettings = chatSettings))
@@ -995,10 +995,6 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
         withContext(Dispatchers.Main) {
           chatModel.chatsContext.updateChatTagReadInPrimaryContext(updatedChat, wasUnread)
         }
-      }
-      val current = currentState?.value
-      if (current != null) {
-        currentState.value = chatSettings.enableNtfs
       }
     }
   }
