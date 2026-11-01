@@ -12,6 +12,7 @@ module StoreService.Names.Abi
     addressFromBytes,
     selector,
     hex,
+    bytes32FromHex,
     decodeUint256,
     decodeWord64,
     decodeAddress,
@@ -23,12 +24,14 @@ where
 import Control.Monad (unless)
 import Crypto.Number.Serialize (i2ospOf_, os2ip)
 import Data.Bifunctor (first)
-import Data.ByteArray.Encoding (Base (Base16), convertToBase)
+import Data.ByteArray.Encoding (Base (Base16), convertFromBase, convertToBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import Data.Char (isAsciiLower, isDigit, isHexDigit)
 import Data.List (mapAccumL)
 import Data.Text (Text)
-import Data.Text.Encoding (decodeLatin1, decodeUtf8')
+import qualified Data.Text as T
+import Data.Text.Encoding (decodeLatin1, decodeUtf8', encodeUtf8)
 import Data.Word (Word64)
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Encoding.String (strDecode)
@@ -76,6 +79,14 @@ selector = B.take 4 . keccak256
 
 hex :: ByteString -> Text
 hex bs = "0x" <> decodeLatin1 (convertToBase Base16 bs)
+
+-- | A hash as 'hex' writes it, and only so: upper-case digits would give a second spelling of one hash.
+bytes32FromHex :: Text -> Maybe ByteString
+bytes32FromHex t = case T.stripPrefix "0x" t of
+  Just h | T.length h == 2 * abiWordSize && T.all lowerHex h -> either (const Nothing) Just $ convertFromBase Base16 $ encodeUtf8 h
+  _ -> Nothing
+  where
+    lowerHex c = isDigit c || (isAsciiLower c && isHexDigit c)
 
 decodeUint256 :: ByteString -> Either AbiError Integer
 decodeUint256 = uintAt 0
