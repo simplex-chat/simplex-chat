@@ -1238,6 +1238,7 @@ testServiceConfig staticDir trustForwarded =
       appleStore = Nothing,
       playStore = Nothing,
       issuer = Nothing,
+      devIssuerKeys = [],
       group = Nothing,
       names = Nothing,
       devAcceptUnverifiedStoreReceipts = False,

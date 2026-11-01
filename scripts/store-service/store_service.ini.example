@@ -2,9 +2,8 @@
 host = 0.0.0.0
 ; the API and the webhooks, and the badges site when serve_webapp = on
 badges_port = 8080
-; the badges build is read from the image's /srv/badges, the default of badges_static_dir; the
-; image does not build the names site yet, so mount a names build at /srv/names, the default of
-; names_static_dir
+; the builds are read from the image's /srv/badges and /srv/names, the defaults of badges_static_dir
+; and names_static_dir
 ; split deployment: Caddy serves the exported folders; this service is the API and webhooks only.
 ; Set to on for an all-in-one deployment where this service serves the sites itself, the names
 ; site on names_port (default 8081), which also answers the API and the webhooks.

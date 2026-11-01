@@ -22,6 +22,8 @@ module StoreService.Config
     defaultExpiryMinutes,
     defaultSessionMinutes,
     minNameYears,
+    localChainId,
+    isLoopbackHost,
     readServiceConfig,
     unknownKeys,
   )
@@ -214,6 +216,8 @@ data ServiceConfig = ServiceConfig
     appleStore :: Maybe AppleStoreConfig,
     playStore :: Maybe PlayStoreConfig,
     issuer :: Maybe BadgeIssuerKey,
+    -- | Trusted beside the clients' keys; only with names on the local chain.
+    devIssuerKeys :: [BadgeIssuerKey],
     group :: Maybe GroupConfig,
     names :: Maybe NamesConfig,
     -- Local testing only; anyone who can reach the service can mint badges with any well-formed receipt.
@@ -252,6 +256,18 @@ minSessionMinutes, maxSessionMinutes :: Int
 minSessionMinutes = 1
 maxSessionMinutes = 1440
 
+isLoopbackHost :: Text -> Bool
+isLoopbackHost h = h `elem` ["127.0.0.1", "::1", "localhost"]
+
+-- | The host of an absolute URL, lower-cased, without user info, port or an IPv6 literal's brackets.
+urlHost :: Text -> Text
+urlHost url = T.toLower $ case T.stripPrefix "[" hostPort of
+  Just literal -> T.takeWhile (/= ']') literal
+  Nothing -> T.takeWhile (/= ':') hostPort
+  where
+    authority = T.takeWhile (`notElem` ['/', '?', '#']) (T.drop 2 (snd (T.breakOn "//" url)))
+    hostPort = snd (T.breakOnEnd "@" authority)
+
 -- | An http host would carry the API key in the clear on every call.
 requireHttps :: Text -> Either String Text
 requireHttps u
@@ -272,6 +288,10 @@ maxRecordEditsPerYear = 100
 -- | The controller refuses a registration under 730 days.
 minNameYears :: Int
 minNameYears = 2
+
+-- | anvil's chain id, the only chain [issuer] dev_keys are accepted on.
+localChainId :: Word64
+localChainId = 31337
 
 -- | 100 gwei.
 defaultMaxFeePerGas :: Word64
@@ -364,7 +384,7 @@ knownSettings =
     ("google", ["package_name", "service_account_file"]),
     ("group", ["display_name", "description"]),
     ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage", "credit_test_purchases"]),
-    ("issuer", ["index", "private_key"]),
+    ("issuer", ["index", "private_key", "dev_keys"]),
     ("names", ["tld", "terms_version", "terms_url", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves", "codes_only", "record_edits_per_year"]),
     ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap", "max_fee_per_gas"])
   ]
@@ -399,6 +419,18 @@ parseConfig ini = do
   iss <- issuerSection
   grp <- groupSection
   nms <- namesSection
+  devKeys <- devKeysSetting
+  unless (null devKeys || maybe False onLocalChain nms) $
+    Left ("issuer.dev_keys is accepted only with [names] on the local chain, [chain] chain_id = " <> show localChainId)
+  unless (null devKeys) $ do
+    forM_ str $ \StripeConfig {sSecretKey, sPublishableKey} -> do
+      unless (any (`T.isPrefixOf` sSecretKey) ["sk_test_", "rk_test_"]) $
+        Left "issuer.dev_keys is refused with a live Stripe key: stripe.secret_key must be a test key, sk_test_ or rk_test_"
+      unless ("pk_test_" `T.isPrefixOf` sPublishableKey) $
+        Left "issuer.dev_keys is refused with a live Stripe key: stripe.publishable_key must be a test key, pk_test_"
+    forM_ btc $ \BTCPayConfig {bHost} ->
+      unless (isLoopbackHost (urlHost bHost)) $
+        Left "issuer.dev_keys is refused with a remote BTCPay: btcpay.host must be on loopback, 127.0.0.1, ::1 or localhost"
   pWaitingSeconds <- cadence "waiting_seconds" 3
   pIdleSeconds <- cadence "idle_seconds" 60
   apple <- appleSection
@@ -420,6 +452,7 @@ parseConfig ini = do
         appleStore = apple,
         playStore = google,
         issuer = iss,
+        devIssuerKeys = devKeys,
         group = grp,
         names = nms,
         devAcceptUnverifiedStoreReceipts = devUnverifiedReceipts,
@@ -467,15 +500,27 @@ parseConfig ini = do
           keyIdx <- issuerIndex
           secretKey <- issuerSecret
           pure (Just BadgeIssuerKey {keyIdx, secretKey})
-    issuerIndex = do
-      v <- required "issuer" "index"
-      case readMaybe (T.unpack v) of
-        Just n | n >= 1, n <= toInteger (maxBound :: Int) -> Right (fromInteger n)
-        _ -> Left "issuer.index must be a positive whole number"
-    issuerSecret = do
-      v <- required "issuer" "private_key"
-      either (const (Left "issuer.private_key is not a valid issuer secret; use the value from `simplex-chat badge keygen`")) Right $
+    issuerIndex = required "issuer" "index" >>= keyIndex "issuer.index"
+    issuerSecret = required "issuer" "private_key" >>= keySecret "issuer.private_key"
+    keyIndex k v = case readMaybe (T.unpack v) of
+      Just n | n >= 1, n <= toInteger (maxBound :: Int) -> Right (fromInteger n)
+      _ -> Left (k <> " must be a positive whole number")
+    keySecret k v =
+      either (const (Left (k <> " is not a valid issuer secret; use the value from `simplex-chat badge keygen`"))) Right $
         strDecode (B.pack (T.unpack v))
+    -- No error quotes an entry, since each holds a secret.
+    devKeysSetting = do
+      ks <- mapM devKey $ filter (not . T.null) $ map T.strip $ maybe [] (T.splitOn ",") (present "issuer" "dev_keys")
+      let idxs = map (\BadgeIssuerKey {keyIdx} -> keyIdx) ks
+      unless (length (nub idxs) == length idxs) $ Left "issuer.dev_keys names an index twice"
+      pure ks
+    devKey entry = case T.breakOn ":" entry of
+      (i, sk) | not (T.null sk) -> do
+        keyIdx <- keyIndex "issuer.dev_keys index" (T.strip i)
+        secretKey <- keySecret "issuer.dev_keys secret" (T.strip (T.drop 1 sk))
+        pure BadgeIssuerKey {keyIdx, secretKey}
+      _ -> Left "issuer.dev_keys must be <index>:<secret> entries separated by commas"
+    onLocalChain NamesConfig {nChain = ChainConfig {cChainId}} = cChainId == localChainId
     btcpaySection
       | not (hasSection "btcpay") = Right Nothing
       | otherwise = do
