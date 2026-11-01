@@ -19,6 +19,7 @@ module StoreService.Group
     TrackerAction (..),
     trackerDecision,
     codeInTracker,
+    fmtTime,
     noOwnerHint,
     orphanHint,
   )
