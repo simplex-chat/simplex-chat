@@ -449,6 +449,11 @@ running beside the new one, on the same port and database. The database `badge_s
 `BADGE_DB_CONN`, the `sx_badge_service_` tables and the chat database prefix
 `simplex_badge_service` are unchanged.
 
+A badge-service database upgrades in place: the store's own migrations run after every badge
+migration, `20261012_badge_subscriptions` included. A store database created before the names
+migration became `20261013_names` (it was `20261010_names`) does not start, as the service refuses
+migrations applied out of the order it lists. Recreate such a database.
+
 ## Issuing codes
 
 Operators issue codes two ways: from the service's own command line in `--run-cli` mode, and from the
