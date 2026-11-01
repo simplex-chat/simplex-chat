@@ -1,0 +1,58 @@
+name: mcp
+
+on:
+  pull_request:
+    paths:
+      - "packages/simplex-chat-mcp/**"
+      - ".github/workflows/mcp.yml"
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Build the types and the Node.js library
+        run: |
+          (cd packages/simplex-chat-client/types/typescript && npm install --no-audit --no-fund && npx tsc)
+          (cd packages/simplex-chat-nodejs && npm install --ignore-scripts --no-save --no-audit --no-fund ../simplex-chat-client/types/typescript && npx tsc && cp src/simplex.* dist)
+
+      - name: Install
+        working-directory: packages/simplex-chat-mcp
+        run: |
+          npm ci --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund ../simplex-chat-nodejs ../simplex-chat-client/types/typescript
+
+      - name: Type-check and build
+        working-directory: packages/simplex-chat-mcp
+        run: |
+          npx tsc
+          npx tsc -p test/tsconfig.json --noEmit
+
+      - name: Unit tests
+        working-directory: packages/simplex-chat-mcp
+        run: npm test
+
+      - name: End-to-end tests
+        working-directory: packages/simplex-chat-mcp
+        timeout-minutes: 15
+        run: npm run test:e2e
