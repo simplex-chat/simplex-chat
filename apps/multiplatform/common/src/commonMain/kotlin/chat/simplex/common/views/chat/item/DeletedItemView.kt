@@ -5,11 +5,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatItem
@@ -17,27 +18,35 @@ import chat.simplex.common.ui.theme.*
 
 @Composable
 fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean, showTimestamp: Boolean) {
-  val sent = ci.chatDir.sent
-  val sentColor = MaterialTheme.appColors.sentMessage
-  val receivedColor = MaterialTheme.appColors.receivedMessage
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
-    Surface(
-      shape = RoundedCornerShape(18.dp),
-      color = if (sent) sentColor else receivedColor,
-      contentColor = LocalContentColor.current
-    ) {
-      Row(
-        Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.Bottom
-      ) {
-        Text(
-          buildAnnotatedString {
-            withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(ci.content.text) }
-          },
-          style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
-          modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp)
-        )
-        inlineMeta?.invoke()
+    ItemTextCard(ci, 16.sp, inlineMeta) {
+      Text(
+        buildAnnotatedString {
+          withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(ci.content.text) }
+        },
+        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleTextStyle(16.sp, MaterialTheme.colors.secondary)),
+        modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp).alignBy(LastBaseline)
+      )
+    }
+  }
+}
+
+@Composable
+fun ItemTextCard(ci: ChatItem, firstLineFontSize: TextUnit, inlineMeta: (@Composable () -> Unit)?, modifier: Modifier = Modifier, text: @Composable RowScope.() -> Unit) {
+  val color = if (ci.chatDir.sent) MaterialTheme.appColors.sentMessage else MaterialTheme.appColors.receivedMessage
+  if (inlineMeta != null) {
+    Surface(modifier, color = color, contentColor = LocalContentColor.current) {
+      Row(Modifier.bubbleTextPadding(firstLineFontSize)) {
+        text()
+        Box(bubbleMetaOnBaseline()) {
+          inlineMeta()
+        }
+      }
+    }
+  } else {
+    Surface(modifier, shape = RoundedCornerShape(18.dp), color = color, contentColor = LocalContentColor.current) {
+      Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+        text()
       }
     }
   }
@@ -48,13 +57,16 @@ fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean,
   name = "Dark Mode"
 )*/
 @Composable
-fun PreviewDeletedItemView() {
+fun PreviewDeletedItemView() = BubblePreview {
   SimpleXTheme {
-    DeletedItemView(
-      ChatItem.getDeletedContentSampleData(),
-      null,
-      showViaProxy = false,
-      showTimestamp = true
-    )
+    val ci = ChatItem.getDeletedContentSampleData(ts = previewDate)
+    Box(Modifier.clipChatItem(ci)) {
+      DeletedItemView(
+        ci,
+        null,
+        showViaProxy = false,
+        showTimestamp = true
+      )
+    }
   }
 }

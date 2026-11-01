@@ -22,6 +22,7 @@ import ChatTests.Utils (xdescribe'')
 import Control.Logger.Simple
 import Data.Time.Clock.System
 import BadgeTests
+import ImageTests
 import JSONTests
 import MarkdownTests
 import MemberRelationsTests
@@ -94,6 +95,7 @@ main = do
       describe "Message batching" batchingTests
       describe "Operators" operatorTests
       describe "Random servers" randomServersTests
+      describe "Image resize" imageTests
 #if !defined(dbPostgres)
       around (tmpTestBracket chatQueryStats agentQueryStats portBases) $ describe "names tests" chatNamesTests
       around (tmpTestBracket chatQueryStats agentQueryStats portBases) $ describe "SimpleX Directory names" directoryNameTests

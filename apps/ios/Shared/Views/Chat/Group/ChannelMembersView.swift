@@ -26,7 +26,7 @@ struct ChannelMembersView: View {
             .sorted { $0.wrapped.memberRole > $1.wrapped.memberRole }
         let subscriberCount = groupInfo.groupSummary.publicMemberCount ?? Int64(members.count + 1)
         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-        if groupInfo.isOwner {
+        if groupInfo.canModerate {
             List {
                 Section(header: Text(subscriberCountStr(subscriberCount)).foregroundColor(theme.colors.secondary)) {
                     searchFieldView(text: $searchText, focussed: $searchFocussed, theme.colors.onBackground, theme.colors.secondary)
@@ -104,9 +104,11 @@ struct ChannelMembersView: View {
     }
 }
 
-#Preview {
-    ChannelMembersView(
-        chat: Chat.sampleData,
-        groupInfo: GroupInfo.sampleData
-    )
+struct ChannelMembersView_Previews: PreviewProvider {
+    static var previews: some View {
+        ChannelMembersView(
+            chat: Chat.sampleData,
+            groupInfo: GroupInfo.sampleData
+        )
+    }
 }

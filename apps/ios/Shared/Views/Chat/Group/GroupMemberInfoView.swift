@@ -38,6 +38,8 @@ struct GroupMemberInfoView: View {
             switch groupMember.wrapped.memberRole {
             case .relay: "Relay"
             case .owner: "Owner"
+            case .moderator: "Moderator"
+            case .member: "Contributor"
             default: "Subscriber"
             }
         } else {
@@ -513,10 +515,10 @@ struct GroupMemberInfoView: View {
     }
 
     private func groupMemberInfoHeader(_ mem: GroupMember) -> some View {
-        VStack {
+        VStack(spacing: 8) {
             MemberProfileImage(mem, size: 192, color: Color(uiColor: .tertiarySystemFill))
-                .padding(.top, 12)
-                .padding()
+                .padding(.top, 20)
+                .padding(.bottom, 12)
             // show alias if set, alias cannot be edited in this view
             let displayName = mem.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
             let fullName = mem.fullName.trimmingCharacters(in: .whitespacesAndNewlines)

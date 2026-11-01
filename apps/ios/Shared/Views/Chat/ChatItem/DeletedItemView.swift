@@ -17,25 +17,35 @@ struct DeletedItemView: View {
     var chatItem: ChatItem
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: 0) {
-            Text(chatItem.content.text)
-                .foregroundColor(theme.colors.secondary)
-                .italic()
+        ItemWithMeta {
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
-                .padding(.horizontal, 12)
+        } content: { inlineMeta in
+            HStack(alignment: .lastTextBaseline, spacing: 0) {
+                Text(chatItem.content.text)
+                    .foregroundColor(theme.colors.secondary)
+                    .italic()
+                if let inlineMeta {
+                    inlineMeta
+                        .padding(.horizontal, 12)
+                }
+            }
+            .padding(.leading, 12)
+            .padding(.trailing, inlineMeta == nil ? 12 : 0)
+            .padding(.vertical, 6)
+            .background(chatItemFrameColor(chatItem, theme))
+            .if(inlineMeta == nil) { $0.modifier(ChatItemClipped(chatItem, tailVisible: false)) }
+            .textSelection(.disabled)
         }
-        .padding(.leading, 12)
-        .padding(.vertical, 6)
-        .background(chatItemFrameColor(chatItem, theme))
-        .textSelection(.disabled)
     }
 }
 
 struct DeletedItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            DeletedItemView(chat: Chat.sampleData, chatItem: ChatItem.getDeletedContentSample())
-            DeletedItemView(chat: Chat.sampleData, chatItem: ChatItem.getDeletedContentSample(dir: .groupRcv(groupMember: GroupMember.sampleData)))
+            let ci1 = ChatItem.getDeletedContentSample(1, previewDate)
+            DeletedItemView(chat: Chat.sampleData, chatItem: ci1).modifier(ChatItemClipped(ci1, tailVisible: true))
+            let ci2 = ChatItem.getDeletedContentSample(dir: .groupRcv(groupMember: GroupMember.sampleData), previewDate)
+            DeletedItemView(chat: Chat.sampleData, chatItem: ci2).modifier(ChatItemClipped(ci2, tailVisible: true))
         }
         .previewLayout(.fixed(width: 360, height: 200))
     }

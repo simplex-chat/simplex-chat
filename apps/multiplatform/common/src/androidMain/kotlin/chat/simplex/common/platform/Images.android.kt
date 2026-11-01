@@ -13,6 +13,7 @@ import androidx.core.graphics.scale
 import boofcv.android.ConvertBitmap
 import boofcv.struct.image.GrayU8
 import chat.simplex.common.R
+import chat.simplex.common.helpers.toUri
 import chat.simplex.common.views.helpers.decodeSampledBitmapFromByteArray
 import chat.simplex.common.views.helpers.errorBitmap
 import chat.simplex.common.views.helpers.getFileName
@@ -20,7 +21,6 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.net.URI
 import kotlin.math.min
-import kotlin.math.sqrt
 
 private const val MAX_IMAGE_DIMENSION = 4320
 
@@ -50,20 +50,6 @@ actual fun decodeBase64Image(base64: String, width: Int): ImageBitmap? =
     null
   }
 
-actual fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String {
-  var img = image
-  var str = compressImageStr(img)
-  while (str.length > maxDataSize) {
-    val ratio = sqrt(str.length.toDouble() / maxDataSize.toDouble())
-    val clippedRatio = min(ratio, 2.0)
-    val width = (img.width.toDouble() / clippedRatio).toInt()
-    val height = img.height * width / img.width
-    img = Bitmap.createScaledBitmap(img.asAndroidBitmap(), width, height, true).asImageBitmap()
-    str = compressImageStr(img)
-  }
-  return str
-}
-
 // Inspired by https://github.com/MakeItEasyDev/Jetpack-Compose-Capture-Image-Or-Choose-from-Gallery
 actual fun cropToSquare(image: ImageBitmap): ImageBitmap {
   var xOffset = 0
@@ -87,29 +73,9 @@ fun Bitmap.clipToCircle(): Bitmap {
   return circle
 }
 
-actual fun compressImageStr(bitmap: ImageBitmap): String {
-  val usePng = bitmap.hasAlpha()
-  val ext = if (usePng) "png" else "jpg"
-  return "data:image/$ext;base64," + Base64.encodeToString(compressImageData(bitmap, usePng).toByteArray(), Base64.NO_WRAP)
-}
-
 actual fun compressImageData(bitmap: ImageBitmap, usePng: Boolean): ByteArrayOutputStream {
   val stream = ByteArrayOutputStream()
   bitmap.asAndroidBitmap().compress(if (!usePng) Bitmap.CompressFormat.JPEG else Bitmap.CompressFormat.PNG, 85, stream)
-  return stream
-}
-
-actual fun resizeImageToDataSize(image: ImageBitmap, usePng: Boolean, maxDataSize: Long): ByteArrayOutputStream {
-  var img = image
-  var stream = compressImageData(img, usePng)
-  while (stream.size() > maxDataSize) {
-    val ratio = sqrt(stream.size().toDouble() / maxDataSize.toDouble())
-    val clippedRatio = min(ratio, 2.0)
-    val width = (img.width.toDouble() / clippedRatio).toInt()
-    val height = img.height * width / img.width
-    img = Bitmap.createScaledBitmap(img.asAndroidBitmap(), width, height, true).asImageBitmap()
-    stream = compressImageData(img, usePng)
-  }
   return stream
 }
 
@@ -142,3 +108,17 @@ actual fun isAnimImage(uri: URI, drawable: Any?): Boolean {
 
 actual fun loadImageBitmap(inputStream: InputStream): ImageBitmap =
   BitmapFactory.decodeStream(inputStream).asImageBitmap()
+
+actual fun resizeImageFileUri(uri: URI, maxSize: Int): String =
+  imageFileDescriptor(uri)?.let { chatResizeImageFdUri(it, maxSize) } ?: ""
+
+actual fun resizeImageFileData(uri: URI, maxSize: Int): String =
+  imageFileDescriptor(uri)?.let { chatResizeImageFd(it, maxSize, -1) } ?: ""
+
+private fun imageFileDescriptor(uri: URI): Int? =
+  try {
+    androidAppContext.contentResolver.openFileDescriptor(uri.toUri(), "r")?.detachFd()
+  } catch (e: Exception) {
+    Log.e(TAG, "imageFileDescriptor error: ${e.stackTraceToString()}")
+    null
+  }

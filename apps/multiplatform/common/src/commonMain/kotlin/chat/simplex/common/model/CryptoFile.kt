@@ -2,7 +2,6 @@ package chat.simplex.common.model
 
 import chat.simplex.common.platform.*
 import kotlinx.serialization.*
-import java.nio.ByteBuffer
 
 @Serializable
 sealed class WriteFileResult {
@@ -23,10 +22,7 @@ sealed class WriteFileResult {
 // Spec: spec/services/files.md#writeCryptoFile
 fun writeCryptoFile(path: String, data: ByteArray): CryptoFileArgs {
   val ctrl = ChatController.getChatCtrl() ?: throw Exception("Controller is not initialized")
-  val buffer = ByteBuffer.allocateDirect(data.size)
-  buffer.put(data)
-  buffer.rewind()
-  val str = chatWriteFile(ctrl, path, buffer)
+  val str = chatWriteFile(ctrl, path, data.toDirectBuffer())
   return when (val d = json.decodeFromString(WriteFileResult.serializer(), str)) {
     is WriteFileResult.Result -> d.cryptoArgs
     is WriteFileResult.Error -> throw Exception(d.writeError)

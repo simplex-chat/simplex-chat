@@ -78,15 +78,20 @@ struct LibraryMediaListPicker: UIViewControllerRepresentable {
 
         private func loadImageData(_ p: NSItemProvider) async -> UploadContent? {
             await withCheckedContinuation { cont in
-                loadFileURL(p, type: UTType.data) { url in
+                loadFileURL(p, type: imageFileType(p)) { url in
                     if let url = url {
-                        let img = UploadContent.loadFromURL(url: url)
+                        let img = UploadContent.loadImageFileFromURL(url: url)
                         cont.resume(returning: img)
                     } else {
                         cont.resume(returning: nil)
                     }
                 }
             }
+        }
+
+        private func imageFileType(_ p: NSItemProvider) -> UTType {
+            let original = p.hasItemConformingToTypeIdentifier(UTType.png.identifier) || p.hasItemConformingToTypeIdentifier(UTType.gif.identifier)
+            return original || !p.hasItemConformingToTypeIdentifier(UTType.jpeg.identifier) ? UTType.data : UTType.jpeg
         }
 
         private func loadImage(_ p: NSItemProvider) async -> UIImage? {
