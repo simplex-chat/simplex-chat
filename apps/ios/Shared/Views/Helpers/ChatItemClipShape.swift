@@ -16,6 +16,7 @@ import SimpleXChat
 struct ChatItemClipped: ViewModifier {
     @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
     @AppStorage(DEFAULT_CHAT_ITEM_TAIL) private var tailEnabled = true
+    @Environment(\.terminalLayout) private var terminal
     private let chatItem: (content: CIContent, chatDir: CIDirection)?
     private let tailVisible: Bool
 
@@ -44,11 +45,17 @@ struct ChatItemClipped: ViewModifier {
                 } else {
                     tailVisible
                 }
-                return tailEnabled
+                return tailEnabled && !terminal
                 ? .bubble(
                     padding: ci.chatDir.sent ? .trailing : .leading,
                     tailVisible: tail
                 )
+                : .roundRect(radius: msgRectMaxRadius)
+            case .sndDeleted, .rcvDeleted, .sndModerated, .rcvModerated, .rcvBlocked:
+                return terminal
+                ? .roundRect(radius: 8)
+                : tailEnabled
+                ? .bubble(padding: ci.chatDir.sent ? .trailing : .leading, tailVisible: false)
                 : .roundRect(radius: msgRectMaxRadius)
             case .rcvGroupInvitation, .sndGroupInvitation:
                 return .roundRect(radius: msgRectMaxRadius)

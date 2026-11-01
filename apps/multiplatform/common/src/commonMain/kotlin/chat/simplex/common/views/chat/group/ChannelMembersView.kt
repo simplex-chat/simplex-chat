@@ -72,7 +72,7 @@ fun ModalData.ChannelMembersView(
           }
         }
       }
-      val filtered = if (s.isEmpty()) members else members.filter { it.anyNameContains(s) }
+      val filtered = if (!showSearch || s.isEmpty()) members else members.filter { it.anyNameContains(s) }
       channelMemberItems(filtered, groupInfo, GroupMemberRole.Member, dividerAboveFirst = true, showMemberInfo)
     } else {
       val contributors = members.filter { it.memberRole >= GroupMemberRole.Member && it.memberStatus != GroupMemberStatus.MemUnknown }
@@ -96,7 +96,7 @@ fun ModalData.ChannelMembersView(
           }
         }
       }
-      val filtered = if (s.isEmpty()) contributors else contributors.filter { it.anyNameContains(s) }
+      val filtered = if (!showSearch || s.isEmpty()) contributors else contributors.filter { it.anyNameContains(s) }
       channelMemberItems(filtered, groupInfo, GroupMemberRole.Moderator, dividerAboveFirst = showSearch || showUserRow, showMemberInfo)
     }
     item {

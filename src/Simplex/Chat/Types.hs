@@ -950,7 +950,10 @@ instance ToJSON ImageData where
 
 safeImageData :: Text -> Text
 safeImageData t
-  | "data:" `T.isPrefixOf` t = t
+  | Just b64 <- T.stripPrefix "data:image/jpg;base64," t <|> T.stripPrefix "data:image/png;base64," t,
+    Right header <- B64.decode $ encodeUtf8 $ T.take 12 b64,
+    any (`B.isPrefixOf` header) ["\xFF\xD8\xFF", "\x89PNG\r\n\x1a\n"] =
+      t
   | otherwise = ""
 
 instance ToField ImageData where toField (ImageData t) = toField t

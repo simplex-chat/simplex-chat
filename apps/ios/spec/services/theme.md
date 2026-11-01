@@ -172,7 +172,7 @@ struct ThemeModeOverrides: Codable {
 }
 ```
 
-`chatLayout` is set by the Android and desktop apps; iOS keeps it in theme writes: "Reset to app theme" and "Remove image" keep only the layout (`layoutOnly()`).
+`chatLayout`: the chat layout chosen for the profile or the chat (Chat Layout below). `withChatLayout(_:)` sets it and returns nil for overrides left empty. Theme writes keep it: "Reset to app theme" and "Remove image" keep only the layout (`layoutOnly()`).
 
 #### [`ThemeModeOverride`](../../SimpleXChat/Theme/ThemeTypes.swift#L591)
 
@@ -188,6 +188,29 @@ struct ThemeModeOverride: Codable {
 ### Layer 3: Per-Chat Theme
 
 Stored per-chat via `apiSetChatUIThemes(chatId:, themes:)`. Same `ThemeModeOverrides` structure.
+
+### Chat Layout
+
+Values of `ChatLayout`: `.classic`, `.terminal`, `.unknown(String)`. Terminal rows: [chat view spec, section 9](../client/chat-view.md#9-terminal-layout).
+
+```
+app             chatLayoutDefault (DEFAULT_CHAT_LAYOUT in UserDefaults); AppSettings.uiChatLayout
+profile         User.uiThemes.chatLayout
+chat            uiThemes.chatLayout of the contact or group
+chat profile    Contact.chatLayout, GroupProfile.chatLayout (ChatInfo.chatLayout)
+```
+
+Pickers, "Chat layout":
+
+```
+Appearance, app destination        ChatLayoutPicker: Classic, Terminal → chatLayoutDefault
+Appearance, profile destination    ChatLayoutPicker: "<app layout> (default)" → nil; other layout
+                                   → themeUserDestination.withChatLayout, saveThemeToDatabase
+chat theme screen                  ChatLayoutSection, first section of ChatWallpaperEditor (layoutSection)
+                                   "<default> (chat)" when ChatInfo.chatLayout is the default, else "<default> (default)" → nil
+                                   other layout → chat uiThemes.withChatLayout, apiSetChatUIThemes, ChatModel.updateChatInfo
+app destination selected           ThemeDestinationPicker: currentUser.uiThemes = uiThemes.layoutOnly()
+```
 
 ### Override Merging
 
@@ -280,6 +303,8 @@ Users can set a custom image as wallpaper:
 - Stored in `Documents/wallpapers/` directory
 - Scaled and tiled to fill the chat background
 - Custom wallpapers can be combined with color overrides
+
+Chats in the terminal layout draw the wallpaper background colour without the image; their theme screens show presets as colours and hide the custom image tile, image scale and wallpaper tint ([chat view spec, section 9](../client/chat-view.md#9-terminal-layout)).
 
 ### [WallpaperType](../../SimpleXChat/Theme/ChatWallpaperTypes.swift#L311)
 
