@@ -117,6 +117,7 @@ namesConfig node =
       nYears = 2,
       nTermStart = UTCTime (fromGregorian 2027 1 1) 0,
       nTermSlackSeconds = 3600,
+      nRevealMarginSeconds = 900,
       nCodesOnly = False,
       nTerms = TermsConfig {tVersion = termsVersion, tUrl = termsUrl},
       nCommunity = M.empty,

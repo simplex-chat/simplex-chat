@@ -714,32 +714,37 @@ address t = either error id (strDecode (B.pack (T.unpack t)))
 
 testNamesDefaults :: IO ()
 testNamesDefaults = do
-  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nChain} <- parsedNames namesSection chainSection
+  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nChain} <- parsedNames namesSection chainSection
   nTLD `shouldBe` TLDTesting
   nYears `shouldBe` 2
   nTermStart `shouldBe` UTCTime (fromGregorian 2027 1 1) 0
   nTermSlackSeconds `shouldBe` 3600
-  let ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cGasLimitCap} = nChain
+  nRevealMarginSeconds `shouldBe` 900
+  let ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cConfirmations, cGasLimitCap, cMaxFeePerGas} = nChain
   cRpcUrl `shouldBe` T.unpack rpcUrl
   cChainId `shouldBe` 31337
   (cController, cSponsor, cBaseRegistrar, cResolver) `shouldBe` (address controllerAddr, address sponsorAddr, address registrarAddr, address resolverAddr)
   Right expectedKey <- pure (mkPrivateKey (BA.pack [0xac, 0x09, 0x74, 0xbe, 0xc3, 0x9a, 0x17, 0xe3, 0x6b, 0xa4, 0xa6, 0xb4, 0xd2, 0x38, 0xff, 0x94, 0x4b, 0xac, 0xb4, 0x78, 0xcb, 0xed, 0x5e, 0xfc, 0xae, 0x78, 0x4d, 0x7b, 0xf4, 0xf2, 0xff, 0x80]))
   (cServiceKey == expectedKey) `shouldBe` True
+  cConfirmations `shouldBe` 3
   cGasLimitCap `shouldBe` 8000000
+  cMaxFeePerGas `shouldBe` 100000000000
 
 testNamesWrittenOut :: IO ()
 testNamesWrittenOut = do
-  let ns = ["[names]", "tld = simplex", "terms_version = 2027-01.b", "terms_url = https://simplex.chat/names/terms", "years = 5", "term_start = 2027-03-01T12:00:00Z", "term_slack_seconds = 60"]
-      cs = chainSection <> ["gas_limit_cap = 500000"]
-  NamesConfig {nTLD, nTerms, nYears, nTermStart, nTermSlackSeconds, nChain = ChainConfig {cGasLimitCap}} <- parsedNames ns cs
+  let ns = ["[names]", "tld = simplex", "terms_version = 2027-01.b", "terms_url = https://simplex.chat/names/terms", "years = 5", "term_start = 2027-03-01T12:00:00Z", "term_slack_seconds = 60", "reveal_margin_seconds = 0"]
+      cs = chainSection <> ["confirmations = 0", "gas_limit_cap = 500000", "max_fee_per_gas = 30000000000"]
+  NamesConfig {nTLD, nTerms, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nChain = ChainConfig {cConfirmations, cGasLimitCap, cMaxFeePerGas}} <- parsedNames ns cs
   nTLD `shouldBe` TLDSimplex
   nTerms `shouldBe` TermsConfig {tVersion = "2027-01.b", tUrl = "https://simplex.chat/names/terms"}
   nYears `shouldBe` 5
   nTermStart `shouldBe` UTCTime (fromGregorian 2027 3 1) (12 * 3600)
-  nTermSlackSeconds `shouldBe` 60
-  cGasLimitCap `shouldBe` 500000
+  (nTermSlackSeconds, nRevealMarginSeconds) `shouldBe` (60, 0)
+  (cConfirmations, cGasLimitCap, cMaxFeePerGas) `shouldBe` (0, 500000, 30000000000)
+  namesRefusal ns (chainSection <> ["confirmations = -1"]) `shouldReturn` "chain.confirmations must be at least 0"
   namesRefusal ns (chainSection <> ["gas_limit_cap = 0"]) `shouldReturn` "chain.gas_limit_cap must be a positive whole number"
-  namesRefusal ns (chainSection <> ["gas_limit_cap = 18446744073709551616"]) `shouldReturn` "chain.gas_limit_cap must be a positive whole number"
+  namesRefusal ns (chainSection <> ["max_fee_per_gas = 0"]) `shouldReturn` "chain.max_fee_per_gas must be a positive whole number"
+  namesRefusal ns (chainSection <> ["max_fee_per_gas = 18446744073709551616"]) `shouldReturn` "chain.max_fee_per_gas must be a positive whole number"
   namesRefusal ns (filter (not . ("chain_id" `T.isPrefixOf`)) chainSection) `shouldReturn` "chain.chain_id is required"
 
 testNamesListenerKeys :: IO ()
@@ -835,7 +840,7 @@ testNamesSecretsHidden = do
   e <- namesRefusal namesSection (withUrl secretUrl)
   e `shouldBe` "chain.rpc_url must be an http or https URL"
   e `shouldNotContain` "rpc-token-value"
-  other <- namesRefusal namesSection (chainSection <> ["gas_limit_cap = many"])
+  other <- namesRefusal namesSection (chainSection <> ["confirmations = many"])
   other `shouldNotContain` "rpc-token-value"
   other `shouldNotContain` T.unpack (T.drop 2 serviceKeyHex)
   Right cfg <- parseIni (namesIni namesSection chainSection)

@@ -464,11 +464,14 @@ executable simplex-store-service
       StoreService.Names.Phases
       StoreService.Names.Profiles
       StoreService.Names.Registration
+      StoreService.Names.Reveal
       StoreService.Names.Revert
+      StoreService.Names.Sender
       StoreService.Names.Signatures
       StoreService.Names.Store
       StoreService.Names.Turns
       StoreService.Names.View
+      StoreService.Names.Worker
       StoreService.Options
       StoreService.Orders
       StoreService.Poller
@@ -789,12 +792,16 @@ test-suite simplex-chat-test
       Bots.StoreService.NamesLabelTests
       Bots.StoreService.NamesLinksTests
       Bots.StoreService.NamesOrdersTests
+      Bots.StoreService.NamesOwnerTests
       Bots.StoreService.NamesPhasesTests
       Bots.StoreService.NamesProfilesTests
+      Bots.StoreService.NamesRevealTests
       Bots.StoreService.NamesSearchTests
+      Bots.StoreService.NamesSenderTests
       Bots.StoreService.NamesSignatureTests
       Bots.StoreService.NamesStoreTests
       Bots.StoreService.NamesWiringTests
+      Bots.StoreService.NamesWorkerTests
       Bots.StoreService.StoreVerifierTests
       Bots.StoreService.StripeTests
       Bots.StoreService.WaitersTests
@@ -829,11 +836,14 @@ test-suite simplex-chat-test
       StoreService.Names.Phases
       StoreService.Names.Profiles
       StoreService.Names.Registration
+      StoreService.Names.Reveal
       StoreService.Names.Revert
+      StoreService.Names.Sender
       StoreService.Names.Signatures
       StoreService.Names.Store
       StoreService.Names.Turns
       StoreService.Names.View
+      StoreService.Names.Worker
       StoreService.Options
       StoreService.Orders
       StoreService.Poller

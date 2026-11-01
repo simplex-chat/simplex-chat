@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 -- | The checks every order runs, by paid invoice or prepaid code, in the contract's order.
 module StoreService.Names.Orders
@@ -10,6 +11,8 @@ module StoreService.Names.Orders
     OrderRefusal (..),
     ExistingOrder (..),
     ClosedOrder (..),
+    WriteRefusal (..),
+    Landing (..),
     maxSealedChars,
     signedRequestSeconds,
     parseOrderRequest,
@@ -28,11 +31,14 @@ module StoreService.Names.Orders
     checkTerms,
     checkNameFree,
     checkPrice,
+    versionWritten,
+    confirmLanded,
   )
 where
 
 import qualified Control.Exception as E
-import Control.Monad (unless, when)
+import Control.Monad (forM, unless, when)
+import Control.Monad.Except (ExceptT (..), runExceptT)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.Bifunctor (first)
@@ -53,15 +59,15 @@ import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
-import StoreService.Log (logWarn)
-import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveRefusal)
+import StoreService.Log (logError, logWarn)
+import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveRefusal, spendLandedCode)
 import StoreService.Names.Community (communityJSON, termsFor, termsJSON)
-import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, nameStatus, secondsPerYear)
+import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
-import StoreService.Names.Abi (bytes32FromHex)
+import StoreService.Names.Abi (bytes32FromHex, hex)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage, parseChecksumAddress, parseSignature, personalDigest)
-import StoreService.Names.Store (LiveOrder (..), NameRegistration (..), NewRegistration (..), PrepaidCode (..), RegistrationRefused (..), closeOverdue, createCodeRegistration, getLiveOrders, getPrepaidCode, getRegistrationByOrderHash, isLabelRegistering)
+import StoreService.Names.Store (LiveOrder (..), NamePhase (..), NameRegistration (..), NewRegistration (..), PrepaidCode (..), RegistrationPayment (..), RegistrationRefused (..), NameTransaction (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistrationByOrderHash, isLabelRegistering, registrationTransactions, updateRegistration)
 import StoreService.Names.Turns (Turns, withCodeTurn)
 
 data OrdersEnv = OrdersEnv
@@ -108,6 +114,15 @@ data ExistingOrder = EOResent NameRegistration | EONew [NameRegistration] | EOMe
 
 -- | An overdue order a new order closed, at its new version; its invoice is now expired.
 data ClosedOrder = ClosedOrder {coRegistration :: NameRegistration, coVersion :: Int64}
+
+-- | Why an owner's write changed nothing: the registration changed since it was read, or a refusal.
+data WriteRefusal = WRChanged | WRRefused OrderRefusal
+  deriving (Eq, Show)
+
+-- | What /retry's first check found on the order's current name: no register through, the order registered at a new version,
+-- the order changed since it was read, or a failed chain read.
+data Landing = LNotLanded | LRegistered Int64 | LChanged | LUnread
+  deriving (Eq, Show)
 
 maxSealedChars :: Int
 maxSealedChars = 11095
@@ -262,3 +277,54 @@ checkPrice ct len years price =
 
 unixSeconds :: UTCTime -> Integer
 unixSeconds = floor . utcTimeToPOSIXSeconds
+
+versionWritten :: VersionWrite -> Either WriteRefusal Int64
+versionWritten = \case
+  Written v -> Right v
+  VersionChanged -> Left WRChanged
+  LiveOrderExists -> Left $ WRRefused OROrderExists
+  NotLive -> Left $ WRRefused ORBadRequest
+
+-- | /retry's first check, on the order's current name: a register mined with status 1, or the owner holding the name at the confirmation depth,
+-- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code.
+-- The caller holds the turn of the order's label hash and passes the order as registrationAt reads it.
+confirmLanded :: OrdersEnv -> NameRegistration -> IO Landing
+confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment} = do
+  txs <- withTransaction oeStore (`registrationTransactions` nrId)
+  let mined = [(ntHash, ntMinedBlock) | NameTransaction {ntFor = TxRegister _, ntStatus = TSMined, ntHash, ntMinedBlock} <- txs]
+  runExceptT (landed mined) >>= \case
+    Left e -> LUnread <$ logWarn ("names: a register check's chain read failed: " <> tshow e)
+    Right Nothing -> pure LNotLanded
+    Right (Just (tx, expiry)) -> either (const LChanged) LRegistered <$> markRegistered tx expiry
+  where
+    landed mined = do
+      confirmed <- ExceptT $ confirmedTag oeContracts
+      registerTx <- case mined of
+        tx : _ -> pure $ Just $ Just tx
+        [] -> (\holder -> if holder == Just nrOwner then Just Nothing else Nothing) <$> ExceptT (ownerOfToken oeContracts confirmed nrLabelHash)
+      forM registerTx $ \tx -> (tx,) <$> ExceptT (nameExpires oeContracts confirmed nrLabelHash)
+    markRegistered tx expiry = do
+      now <- oeNow
+      let registered =
+            r
+              { nrPhase = PRegistered,
+                -- judged by ownerOf alone, no hash is known to have mined: none is shown (contract section 6)
+                nrRegisterTx = fst <$> tx,
+                nrRegisterBlock = snd =<< tx,
+                nrExpiresAt = Just expiry,
+                nrRegisteredAt = Just now,
+                nrFailedAt = Nothing,
+                nrError = Nothing
+              }
+          write db = versionWritten <$> updateRegistration db registered now
+      case nrPayment of
+        RPInvoice {} -> withTransaction oeStore write
+        RPCode codeId -> spendLandedCode oeTurns oeStore now codeId nrId write >>= traverse (paidWith codeId)
+    paidWith codeId (v, spent) = do
+      unless spent $ do
+        code <- withTransaction oeStore (`getPrepaidCodeById` codeId)
+        logError $
+          "names: registration " <> ridText nrId <> " turned out registered with prepaid code " <> maybe (tshow codeId) (hex . pcCodeHash) code
+            <> ", which was released and then spent, revoked or expired: the name was paid with it"
+      pure v
+    ridText (RegistrationId t) = t
