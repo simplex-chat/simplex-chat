@@ -37,7 +37,7 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
   | group | `CEvtSndFileCompleteXFTP` |
   | `SFERR` | `CEvtSndFileError` |
 
-- The deletion is added to these paths of master `d63906ad5`:
+- The deletion is added to these paths of master `99b91696f`:
   - the agent file is unknown to the chat (:225);
   - file cancelled: the deletion by `agentXFTPDeleteSndFilesRemote` at cancellation is repeated;
   - `SFDONE` with fewer descriptions than transfers (:270);
@@ -102,7 +102,7 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
 - An agent event queued or in handling at the instant suspension can be handled after the stores are closed:
   - `SFDONE`: the file descriptions are not sent, since the agent sends no further `SFDONE` for a complete file; the agent file is deleted at the next activation;
   - `SFERR`: the error status of the item is not recorded.
-- The NSE's share extension subscriber: unchanged. The NSE does not act on `.sendingMessage` (its subscriber is never created). The wait therefore ends only when the NSE suspends on its own, or after 2 s. The app's instant suspension can start the chat of an NSE instance waiting for the app, and that chat then runs concurrently with the share extension.
+- The NSE's share extension subscriber: unchanged. The NSE does not act on `.sendingMessage` (its subscriber is never created). The wait therefore ends only when the NSE suspends on its own, or after 2 s. While the stored NSE state is `.created`, the wait lasts the full 2 s. The app's instant suspension can start the chat of an NSE instance waiting for the app, and that chat then runs concurrently with the share extension.
 - `cabal.project`: simplexmq pinned to commit `a90dcbc4` of the simplexmq fork during review.
 - After the simplexmq pull request in simplex-chat/simplexmq is merged and before the final pull request is opened in simplex-chat/simplex-chat:
   - the pin is replaced by the merged simplex-chat/simplexmq commit;
@@ -112,18 +112,18 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
 
 - `src/Simplex/Chat/Library/Subscriber.hs`, `processAgentMsgSndFile`:
   - clause for `SFERR` with an empty entity ID (:224-225): `eToView $ chatErrorAgent e`;
-  - `` (`allFinally` when sndFileEnded deleteAgentFile) `` around the handling (:226);
+  - `flip allFinally (when sndFileEnded deleteAgentFile)` around the handling (:226);
   - missing user (:232): `unless sndFileEnded deleteAgentFile`;
   - `sndFileEnded :: Bool` (:235-239): `SFDONE` or `SFERR`;
   - `deleteAgentFile :: CM ()` (:240-241);
-  - removed, the deletions of master `d63906ad5`:
+  - removed, the deletions of master `99b91696f`:
     - :255, item missing;
     - :291, direct;
     - :311, group;
     - :363, `sendFileError`.
 - `apps/ios/spec/architecture.md` (:137), "Background Task Protection": the text.
 - `apps/ios/spec/services/files.md` (:274), "Sending": the text.
-- `apps/ios/spec/architecture.md` (:263), "Share Extension (SE)": the signal at setup and before sending; the wait at setup when the app state read at setup is `.suspending`, and before sending in any app state; the NSE, which does not act on the signal; the instant suspension of the app in `.suspending`.
+- `apps/ios/spec/architecture.md` (:263), "Share Extension (SE)": the signal at setup and before sending; the wait at setup when the app state read at setup is `.suspending`, and before sending in any app state; the NSE, which does not act on the signal; the full 2 s wait while the stored NSE state is `.created`; the instant suspension of the app in `.suspending`, with the conditions `ChatModel.ok` and `chatRunning == true`.
 - `apps/ios/spec/database.md` (:79) and `apps/ios/spec/architecture.md` (:8): the `AppDelegate.swift` line ranges.
 - `apps/ios/SimpleX SE/ShareModel.swift`, `setup(with:)` (:97-100): `SEChatState.shared.set(.sendingMessage)`, then `await waitForOtherProcessesToSuspend()` when `appStateGroupDefault.get() == .suspending`, before `initChat`.
 - `apps/ios/Shared/AppDelegate.swift`, `application(_:didFinishLaunchingWithOptions:)` (:22): `_ = seSubscriber`.
