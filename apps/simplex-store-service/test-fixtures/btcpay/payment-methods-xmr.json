@@ -11,7 +11,7 @@
       "totalPaid": "9.99999999",
       "due": "0.00000000",
       "amount": "0.32095000",
-      "networkFee": "0.00000500",
+      "paymentMethodFee": "0.00000500",
       "activated": true,
       "payments": [
         {

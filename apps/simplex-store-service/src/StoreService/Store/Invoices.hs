@@ -36,6 +36,7 @@ module StoreService.Store.Invoices
     upsertPayment,
     paymentStatusText,
     cryptoCurrencyText,
+    textToCryptoCurrency,
     textToInvoiceStatus,
     invoiceStatusText,
     updateInvoiceStatus,
@@ -48,6 +49,7 @@ import qualified Control.Exception as E
 import Crypto.Random (getRandomBytes)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
+import Data.Int (Int64)
 import qualified Data.ByteString.Char8 as BC8
 import Data.String (fromString)
 import Data.Text (Text)
@@ -65,6 +67,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (textDecode, textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Providers (Confirmed (..), Received (..))
 
 #if defined(dbPostgres)
 import StoreService.Store.Postgres.Migrations (servicePrefix, withPrefix)
@@ -107,7 +110,8 @@ data InvoicePayment = InvoicePayment
     ipCryptoDue :: Maybe Text,
     ipPaidInFull :: Bool,
     ipStatus :: Text,
-    ipUpdatedAt :: UTCTime
+    ipUpdatedAt :: UTCTime,
+    ipConfirmed :: Confirmed
   }
   deriving (Eq, Show)
 
@@ -205,7 +209,7 @@ invoiceRowSelect =
     <> ", bc.badge_type, bc.months, ni.registration_id, "
     <> "i.price, i.amount, i.currency, i.payment_url, i.payment_address, i.payment_crypto_currency, "
     <> "i.payment_crypto_amount, i.expires_at, i.status, i.created_at, "
-    <> "p.amount, p.crypto_paid, p.crypto_due, p.paid_in_full, p.status, p.updated_at "
+    <> "p.amount, p.crypto_paid, p.crypto_due, p.paid_in_full, p.status, p.updated_at, p.confirmed_amount, p.confirmed_units "
     <> "FROM @invoices i "
     <> productJoins
     <> "LEFT JOIN @payments p ON p.invoice_id = i.invoice_id "
@@ -280,17 +284,29 @@ largerOf = "GREATEST"
 largerOf = "MAX"
 #endif
 
--- Once a row is settled it stays settled, so a later pending update cannot overwrite it.
+-- Once a row is settled it stays settled, so a later pending update cannot overwrite it. The confirmed figures and the received and
+-- invoiced units only rise, so a settled sum that falls (a payment turned invalid, a reorg) leaves them; the invoice's rate is written once.
 qUpsertPayment :: Query
 qUpsertPayment =
   mkQuery $
     "INSERT INTO @payments "
-      <> "(payment_id, invoice_id, provider, provider_ref, amount, currency, crypto_paid, crypto_due, paid_in_full, status, created_at, updated_at) "
-      <> "VALUES (?,?,?,?,?,?,?,?,?,?,?,?) "
+      <> "(payment_id, invoice_id, provider, provider_ref, amount, currency, crypto_paid, crypto_due, paid_in_full, status, "
+      <> "received_units, invoiced_units, confirmed_amount, confirmed_units, invoice_rate, created_at, updated_at) "
+      <> "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
       <> "ON CONFLICT (payment_id) DO UPDATE SET "
       <> "amount = "
       <> largerOf
       <> "(COALESCE(@payments.amount, 0), excluded.amount), "
+      <> "received_units = "
+      <> largerOfNullable "received_units"
+      <> ", invoiced_units = "
+      <> largerOfNullable "invoiced_units"
+      <> ", confirmed_amount = "
+      <> largerOf
+      <> "(@payments.confirmed_amount, excluded.confirmed_amount), "
+      <> "confirmed_units = "
+      <> largerOfNullable "confirmed_units"
+      <> ", invoice_rate = COALESCE(@payments.invoice_rate, excluded.invoice_rate), "
       <> "crypto_paid = CASE WHEN excluded.amount > COALESCE(@payments.amount, 0) OR @payments.crypto_paid IS NULL "
       <> "THEN excluded.crypto_paid ELSE @payments.crypto_paid END, "
       <> "crypto_due = COALESCE(excluded.crypto_due, @payments.crypto_due), "
@@ -305,6 +321,8 @@ qUpsertPayment =
       <> " THEN @payments.updated_at ELSE excluded.updated_at END"
   where
     alreadySettled = "@payments.status = '" <> paymentStatusText PSSettled <> "'"
+    -- SQLite's MAX of a NULL is NULL, so each side falls back to the other
+    largerOfNullable column = largerOf <> "(COALESCE(@payments." <> column <> ", excluded." <> column <> "), COALESCE(excluded." <> column <> ", @payments." <> column <> "))"
 
 qLockInvoice :: Query
 qLockInvoice = mkQuery "UPDATE @invoices SET updated_at = ? WHERE invoice_id = ?"
@@ -405,14 +423,14 @@ type InvoiceCols =
   (Text, Text, Text, Maybe BadgeType, Maybe Word32, Maybe Text)
     :. (Word32, Word32, Text, Maybe Text, Maybe Text, Maybe Text)
     :. (Maybe Text, UTCTime, Text, UTCTime)
-    :. (Maybe Word32, Maybe Text, Maybe Text, Maybe Int, Maybe Text, Maybe UTCTime)
+    :. (Maybe Word32, Maybe Text, Maybe Text, Maybe Int, Maybe Text, Maybe UTCTime, Maybe Word32, Maybe Int64)
 
 mkInvoiceRow :: InvoiceCols -> Either Text InvoiceRow
 mkInvoiceRow
   ( (invId, providerTxt, providerRef, badgeType, months, registrationId)
       :. (price, amount, currency, url, addr, cryptoCur)
       :. (cryptoAmt, expiresAt, statusTxt, createdAt)
-      :. (pAmount, pCryptoPaid, pCryptoDue, pPaidInFull, pStatus, pUpdatedAt)
+      :. (pAmount, pCryptoPaid, pCryptoDue, pPaidInFull, pStatus, pUpdatedAt, pConfirmedAmount, pConfirmedUnits)
     ) = do
     provider <- note "invoices.provider" (textDecode providerTxt)
     invoiceProduct <- case (badgeType, months, registrationId) of
@@ -434,12 +452,15 @@ mkInvoiceRow
           irExpiresAt = expiresAt,
           irStatus = status,
           irCreatedAt = createdAt,
-          irPayment = mkPayment pAmount pCryptoPaid pCryptoDue pPaidInFull pStatus pUpdatedAt
+          irPayment = mkPayment pAmount pCryptoPaid pCryptoDue pPaidInFull pStatus pUpdatedAt pConfirmedAmount pConfirmedUnits
         }
 
-mkPayment :: Maybe Word32 -> Maybe Text -> Maybe Text -> Maybe Int -> Maybe Text -> Maybe UTCTime -> Maybe InvoicePayment
-mkPayment amt cryptoPaid cryptoDue paidInFull status updatedAt =
-  InvoicePayment (CurrencyAmount <$> amt) cryptoPaid cryptoDue (paidInFull == Just 1) <$> status <*> updatedAt
+mkPayment :: Maybe Word32 -> Maybe Text -> Maybe Text -> Maybe Int -> Maybe Text -> Maybe UTCTime -> Maybe Word32 -> Maybe Int64 -> Maybe InvoicePayment
+mkPayment amt cryptoPaid cryptoDue paidInFull status updatedAt confirmedAmount confirmedUnits =
+  InvoicePayment (CurrencyAmount <$> amt) cryptoPaid cryptoDue (paidInFull == Just 1)
+    <$> status
+    <*> updatedAt
+    <*> ((\cents -> Confirmed {cfCents = CurrencyAmount cents, cfUnits = confirmedUnits}) <$> confirmedAmount)
 
 selectInvoiceRow :: DB.Connection -> Query -> Text -> IO (Maybe InvoiceRow)
 selectInvoiceRow db q param = do
@@ -639,16 +660,18 @@ settlementCodeHash db (InvoiceId invId) = do
     (Only codeHash : _) -> DB.fromBinary <$> codeHash
     [] -> Nothing
 
-upsertPayment :: DB.Connection -> InvoiceRow -> PaymentStatus -> CurrencyAmount -> Maybe Text -> Maybe Text -> Bool -> UTCTime -> IO ()
-upsertPayment db InvoiceRow {irInvoiceId, irProvider, irProviderRef, irCurrency} status (CurrencyAmount amount) cryptoAmount cryptoDue paidInFull at' =
+upsertPayment :: DB.Connection -> InvoiceRow -> PaymentStatus -> Received -> Bool -> UTCTime -> IO ()
+upsertPayment db InvoiceRow {irInvoiceId, irProvider, irProviderRef, irCurrency} status received paidInFull at' =
   DB.execute
     db
     qUpsertPayment
     ( (invId, invId, textEncode irProvider, irProviderRef, amount)
-        :. (irCurrency, cryptoAmount, cryptoDue, if paidInFull then 1 :: Int else 0, paymentStatusText status, at, at)
+        :. (irCurrency, rcvCrypto, rcvDue, if paidInFull then 1 :: Int else 0, paymentStatusText status)
+        :. (rcvUnits, rcvInvoicedUnits, confirmedCents, cfUnits, rcvRate, at, at)
     )
   where
     InvoiceId invId = irInvoiceId
+    Received {rcvAmount = CurrencyAmount amount, rcvCrypto, rcvDue, rcvUnits, rcvInvoicedUnits, rcvRate, rcvConfirmed = Confirmed {cfCents = CurrencyAmount confirmedCents, cfUnits}} = received
     at = truncateToSecond at'
 
 -- | Takes the invoice row's lock for the rest of the transaction; SQLite's transactions hold the whole database already.

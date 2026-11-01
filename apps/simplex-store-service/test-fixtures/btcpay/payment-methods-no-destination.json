@@ -9,7 +9,7 @@
       "totalPaid": "0.00000000",
       "due": "0.00050000",
       "amount": "0.00050000",
-      "networkFee": "0.00000500",
+      "paymentMethodFee": "0.00000500",
       "activated": false,
       "payments": [],
       "additionalData": {}
