@@ -26,6 +26,8 @@ import Bots.StoreService.NamesContractsTests
     year,
   )
 import Bots.StoreService.NamesProfilesTests (bakeryLink, jpeg, newsLink)
+import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, t0, usable)
+import Bots.StoreService.WebTests (withServiceStore)
 import Control.Concurrent.STM
 import Control.Monad (forM_, replicateM_)
 import Crypto.Random (ChaChaDRG)
@@ -34,7 +36,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromJust, fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
@@ -44,6 +46,7 @@ import Network.HTTP.Client (Manager, Request, RequestBody (..), defaultManagerSe
 import qualified Network.HTTP.Client as HTTP
 import Network.HTTP.Types.Status (statusCode)
 import qualified Network.Wai.Handler.Warp as Warp
+import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
@@ -51,7 +54,9 @@ import Simplex.Messaging.Transport.Client (TransportHost (..))
 import StoreService.Config (ListenerConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, uint256)
 import StoreService.Names.Contracts (Contracts (..))
+import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (ChatKind (..), HostResolver, LinkProfile (..), ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
+import StoreService.Names.Store (NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, updateRegistration)
 import StoreService.Web.Http (newHttpEnv, notFound, previewLimit, searchLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Search (previewHandler, searchHandler)
@@ -63,7 +68,8 @@ namesSearchTests = describe "StoreService names: search" $ do
   describe "search" $ do
     it "answers an available name with the chain's price for the paid years, the term start and the order's contracts" $ testAvailable g
     it "answers a reserved name" $ testReserved g
-    it "answers a registered name with its entities, raw records, owner, resolver, expiry and grace period" $ testRegistered g
+    it "answers a name the chain has available as registered while its register here is sent, without a price" $ testRegistering g
+    it "answers a registered name with its entities, raw records, owner, resolver, nonce, expiry and grace period" $ testRegistered g
     it "makes one entity per short link of its record's kind, splitting on ';', and none from other values" $ testRecordLinks g
     it "makes entities of the first 5 short links of a record only, fetching no other" $ testRecordLinksCap g
     it "reads no records from another resolver" $ testOtherResolver g
@@ -83,22 +89,22 @@ namesSearchTests = describe "StoreService names: search" $ do
 
 -- harness
 
-data Search = Search {node :: FakeEthNode, client :: (Manager, String), fetched :: TVar [Text]}
+data Search = Search {node :: FakeEthNode, store :: DBStore, client :: (Manager, String), fetched :: TVar [Text]}
 
 -- | The routes as namesRoutes registers them, since a NamesEnv needs a running chat controller.
 withSearch :: TVar ChaChaDRG -> (NamesConfig -> NamesConfig) -> (Contracts -> Contracts) -> (Search -> IO a) -> IO a
-withSearch g adjustConfig adjust action = withContracts g $ \node ct -> do
+withSearch g adjustConfig adjust action = withServiceStore $ \store -> withContracts g $ \node ct -> do
   fetched <- newTVarIO []
   ps <- newProfiles defaultProfileLimits {fetchTimeout = fetchMicros} monotonicSeconds (fakeFetch fetched) stubResolver
   http <- newHttpEnv ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = "", lServeWebapp = False, lBadgesExportDir = Nothing, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesPort = Nothing}
   let cfg = adjustConfig $ namesConfig node
       routes = \case
         ["api", "link", "preview"] -> Just Route {rMethod = "POST", rLimit = previewLimit, rHandler = previewHandler ps}
-        ["api", "name", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = searchHandler cfg (adjust ct) ps hash}
+        ["api", "name", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = searchHandler cfg store (adjust ct) ps hash}
         _ -> Nothing
       app req respond = fromMaybe (respond notFound) (namesApp http routes req respond)
   mgr <- newManager defaultManagerSettings
-  Warp.testWithApplication (pure app) $ \port -> action Search {node, client = (mgr, "http://127.0.0.1:" <> show port), fetched}
+  Warp.testWithApplication (pure app) $ \port -> action Search {node, store, client = (mgr, "http://127.0.0.1:" <> show port), fetched}
 
 namesConfig :: FakeEthNode -> NamesConfig
 namesConfig node =
@@ -107,6 +113,7 @@ namesConfig node =
       nYears = 2,
       nTermStart = UTCTime (fromGregorian 2027 1 1) 0,
       nTermSlackSeconds = 3600,
+      nCodesOnly = False,
       nChain = fakeChainConfig node
     }
 
@@ -229,22 +236,24 @@ availableAnswer price =
       "tld" .= str "simplex"
     ]
 
-registeredAnswer :: [J.Value] -> J.Value -> Text -> Answer
-registeredAnswer entities records resolver =
+registeredAnswer :: [J.Value] -> J.Value -> Text -> J.Value -> Answer
+registeredAnswer entities records resolver nonce =
   ok
     [ "status" .= str "registered",
       "entities" .= entities,
       "records" .= records,
       "owner" .= ownerText,
       "resolver" .= resolver,
+      "recordsNonce" .= nonce,
       "expiresAt" .= (now + year),
       "gracePeriod" .= gracePeriod,
       "chainId" .= fakeChainId,
       "tld" .= str "simplex"
     ]
 
-reservedAnswer :: Answer
+reservedAnswer, registeringAnswer :: Answer
 reservedAnswer = ok ["status" .= str "reserved"]
+registeringAnswer = ok ["status" .= str "registered", "entities" .= ([] :: [J.Value]), "tld" .= str "simplex"]
 
 recordsOf :: Text -> Text -> J.Value
 recordsOf contact channel = J.object ["contact" .= contact, "channel" .= channel]
@@ -281,6 +290,15 @@ timed action = do
   a <- action
   (a,) . (`diffUTCTime` start) <$> getCurrentTime
 
+setPhase :: DBStore -> NamePhase -> IO ()
+setPhase st phase = withTransaction st $ \db -> do
+  r <- fromJust <$> getRegistration db (RegistrationId "r1")
+  updateRegistration db r {nrPhase = phase} t0 >>= (`shouldSatisfy` written)
+  where
+    written = \case
+      Written _ -> True
+      _ -> False
+
 -- search
 
 testAvailable :: TVar ChaChaDRG -> IO ()
@@ -296,6 +314,18 @@ testReserved g = withSearch g id id $ \s@Search {node} -> do
   reserved node
   searchAlice s 12 `shouldReturn` reservedAnswer
 
+testRegistering :: TVar ChaChaDRG -> IO ()
+testRegistering g = withSearch g id id $ \s@Search {node, store} -> do
+  available node
+  code <- issue store 1 usable
+  placeCode store "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
+  setPhase store PRegistering
+  -- no price is answered, so reading one would fail the search
+  searchAlice s 12 `shouldReturn` registeringAnswer
+  setPhase store PRegistered
+  answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
+  searchAlice s 12 `shouldReturn` availableAnswer 10000
+
 testRegistered :: TVar ChaChaDRG -> IO ()
 testRegistered g = withSearch g id id $ \s@Search {node} -> do
   registeredWith node bakeryLink newsLink
@@ -306,6 +336,7 @@ testRegistered g = withSearch g id id $ \s@Search {node} -> do
       ]
       (recordsOf bakeryLink newsLink)
       resolverText
+      (J.toJSON (0 :: Int))
 
 testRecordLinks :: TVar ChaChaDRG -> IO ()
 testRecordLinks g = withSearch g id id $ \s@Search {node} -> do
@@ -318,7 +349,7 @@ testRecordLinks g = withSearch g id id $ \s@Search {node} -> do
     `shouldBe` [("address", "contact", "ok", bakeryLink), ("address", "bot", "ok", botLink), ("channel", "channel", "ok", newsLink)]
   (snd answer >>= JT.parseMaybe (J.withObject "answer" (J..: "records"))) `shouldBe` Just (recordsOf contact channel)
   registeredWith node fullLink ""
-  searchAlice s 12 `shouldReturn` registeredAnswer [] (recordsOf fullLink "") resolverText
+  searchAlice s 12 `shouldReturn` registeredAnswer [] (recordsOf fullLink "") resolverText (J.toJSON (0 :: Int))
 
 testRecordLinksCap :: TVar ChaChaDRG -> IO ()
 testRecordLinksCap g = withSearch g id id $ \s@Search {node} -> do
@@ -334,7 +365,7 @@ testOtherResolver :: TVar ChaChaDRG -> IO ()
 testOtherResolver g = withSearch g id id $ \s@Search {node} -> do
   nameState node (toInteger $ now + year) 0
   answerRegistered node otherResolver
-  searchAlice s 12 `shouldReturn` registeredAnswer [] J.Null otherResolverText
+  searchAlice s 12 `shouldReturn` registeredAnswer [] J.Null otherResolverText J.Null
 
 testEntityProfiles :: TVar ChaChaDRG -> IO ()
 testEntityProfiles g = withSearch g id id $ \s@Search {node} -> do
@@ -350,6 +381,7 @@ testEntityProfiles g = withSearch g id id $ \s@Search {node} -> do
       ]
       (recordsOf (gone <> ";" <> privateName) privateLiteral)
       resolverText
+      (J.toJSON (0 :: Int))
   map (T.isInfixOf "#Gone") <$> fetchedLinks s `shouldReturn` [True]
   where
     deepLinkAt host kind tag = "simplex:/" <> T.singleton kind <> "#" <> snd (T.breakOnEnd "#" $ taggedLink host kind tag) <> "?h=" <> host
@@ -386,7 +418,7 @@ testOneDeadline g = withSearch g id (\ct -> ct {ctDeadline = deadline}) $ \s@Sea
   answer `shouldBe` refused 503 "provider_unavailable"
   elapsed `shouldSatisfy` (< 3)
   answerRegistered node otherResolver
-  searchAlice s 12 `shouldReturn` registeredAnswer [] J.Null otherResolverText
+  searchAlice s 12 `shouldReturn` registeredAnswer [] J.Null otherResolverText J.Null
   where
     deadline = 2000000
 
