@@ -10,6 +10,8 @@ import Bots.StoreService.ConfigTests
 import Bots.StoreService.GroupIntegrationTests
 import Bots.StoreService.GroupTests
 import Bots.StoreService.NameRegistrationTests
+import Bots.StoreService.NamesCodesTests
+import Bots.StoreService.NamesLabelTests
 import Bots.StoreService.StoreVerifierTests
 import Bots.StoreService.StripeTests
 import Bots.StoreService.WaitersTests
@@ -88,6 +90,8 @@ main = do
         badgeStripeTests
         badgeNameRegistrationTests
         badgeStoreVerifierTests
+      namesCodesTests
+      namesLabelTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "Member relations" memberRelationsTests
@@ -118,6 +122,7 @@ main = do
           describe "SimpleX store service e2e" $ do
             storeServiceTests
             describe "managed group" badgeGroupIntegrationTests
+          namesCodesChatTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
           sequential $ xdescribe'' "Save query plans" saveQueryPlans
