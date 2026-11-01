@@ -10,6 +10,8 @@ import Bots.StoreService.ConfigTests
 import Bots.StoreService.GroupIntegrationTests
 import Bots.StoreService.GroupTests
 import Bots.StoreService.NameRegistrationTests
+import Bots.StoreService.NamesBalancesTests
+import Bots.StoreService.NamesLateCreditTests
 import Bots.StoreService.NamesChainTests
 import Bots.StoreService.NamesCodesTests
 import Bots.StoreService.NamesContractsTests
@@ -22,6 +24,7 @@ import Bots.StoreService.NamesRevealTests
 import Bots.StoreService.NamesSearchTests
 import Bots.StoreService.NamesSenderTests
 import Bots.StoreService.NamesSignatureTests
+import Bots.StoreService.NamesSpendTests
 import Bots.StoreService.NamesStoreTests
 import Bots.StoreService.NamesWiringTests
 import Bots.StoreService.NamesWorkerTests
@@ -105,6 +108,8 @@ main = do
         badgeNameRegistrationTests
         badgeStoreVerifierTests
       namesConfigTests
+      namesBalancesTests
+      namesLateCreditTests
       namesChainTests
       namesCodesTests
       namesContractsTests
@@ -117,6 +122,7 @@ main = do
       namesSearchTests
       namesSenderTests
       namesSignatureTests
+      namesSpendTests
       namesStoreTests
       namesWiringTests
       namesWorkerTests
@@ -154,6 +160,8 @@ main = do
           describe "StoreService names: boot" namesBootTests
           describe "StoreService names: worker" namesWorkerBootTests
           namesCodesChatTests
+          namesRefundChatTests
+          namesSpendChatTests
           namesProfilesChatTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
