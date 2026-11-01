@@ -108,6 +108,8 @@ idle_seconds = 60
 ;term_start = 2027-01-01T00:00:00Z
 ; how far an order's duration may be from the one the service computes
 ;term_slack_seconds = 3600
+; on: only prepaid codes register names, and every paid name order answers 403 codes_only
+;codes_only = off
 ;
 ; the chain the names are registered on. rpc_url can carry a provider's API key and service_key
 ; is the registrar key: keep both secret. Neither is ever logged.
