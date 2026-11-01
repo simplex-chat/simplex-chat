@@ -55,8 +55,10 @@ import chat.simplex.common.model.ChatController.setConditionsNotified
 import chat.simplex.common.model.ServerOperator.Companion.dummyOperatorInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.badges.BadgesView
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.newchat.noShownBadge
 import chat.simplex.common.views.usersettings.UserAddressView
 import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
 import chat.simplex.common.views.usersettings.showAddShortLinkAlert
@@ -82,7 +84,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
   }
 
   @Composable
-  fun featureDescription(icon: ImageResource?, titleId: StringResource, descrId: StringResource?, link: String?, subfeatures: List<Pair<ImageResource, StringResource>>) {
+  fun featureDescription(icon: ImageResource?, titleId: StringResource, descrId: StringResource?, link: String?, learnMoreLink: String?, subfeatures: List<Pair<ImageResource, StringResource>>) {
     @Composable
     fun linkButton(link: String) {
       val uriHandler = LocalUriHandler.current
@@ -112,7 +114,23 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
           linkButton(link)
         }
       }
-      if (descrId != null) Text(generalGetString(descrId), fontSize = 15.sp)
+      if (descrId != null) {
+        val uriHandler = LocalUriHandler.current
+        Text(
+          buildAnnotatedString {
+            append(generalGetString(descrId))
+            if (learnMoreLink != null) {
+              append(" ")
+              withLink(LinkAnnotation.Url(learnMoreLink) { uriHandler.openExternalLink(learnMoreLink) }) {
+                withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
+                  append(generalGetString(MR.strings.whats_new_learn_more))
+                }
+              }
+            }
+          },
+          fontSize = 15.sp
+        )
+      }
       for ((si, sd) in subfeatures) {
         Row(
           verticalAlignment = Alignment.CenterVertically,
@@ -182,7 +200,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
         when (feature) {
           is VersionFeature.FeatureDescription -> {
             if (feature.show) {
-              featureDescription(feature.icon, feature.titleId, feature.descrId, feature.link, feature.subfeatures)
+              featureDescription(feature.icon, feature.titleId, feature.descrId, feature.link, feature.learnMoreLink, feature.subfeatures)
             }
           }
           is VersionFeature.FeatureView -> {
@@ -273,6 +291,7 @@ private sealed class VersionFeature {
     val descrId: StringResource?,
     var subfeatures: List<Pair<ImageResource, StringResource>> = listOf(),
     val link: String? = null,
+    val learnMoreLink: String? = null,
     val show: Boolean = true
   ): VersionFeature()
 
@@ -971,51 +990,68 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     )
   ),
   VersionDescription(
-    version = "v7.1-beta.8",
+    version = "v7.1",
     post = null,
     features = listOf(
       VersionFeature.FeatureView(
         icon = null,
+        titleId = MR.strings.v7_1_invest,
+        view = { modalManager -> InvestInSimpleXChatView(modalManager) }
+      ),
+      VersionFeature.FeatureView(
+        icon = null,
         titleId = MR.strings.v7_1_supporter_badge_title,
-        view = { SupporterBadgeWhatsNew() }
+        view = { modalManager -> SupporterBadgeWhatsNew(modalManager) }
+      ),
+      VersionFeature.FeatureDescription(
+        icon = null,
+        titleId = MR.strings.v7_1_simplex_names,
+        descrId = MR.strings.v7_1_simplex_names_descr,
+        learnMoreLink = "https://simplex.chat/blog/20260722-simplex-public-names.html"
       ),
       VersionFeature.FeatureDescription(
         icon = null,
         titleId = MR.strings.v7_1_channels,
-        descrId = null,
-        subfeatures = listOf(
-          MR.images.ic_flag to MR.strings.v7_1_channels_moderators,
-          MR.images.ic_verified to MR.strings.v7_1_channels_signed_messages,
-        )
+        descrId = MR.strings.v7_1_channels_descr
       ),
       VersionFeature.FeatureDescription(
-        icon = MR.images.ic_outline_terminal,
-        titleId = MR.strings.v7_1_terminal_layout,
-        descrId = MR.strings.v7_1_terminal_layout_descr
-      ),
-      VersionFeature.FeatureDescription(
-        icon = MR.images.ic_call,
-        titleId = MR.strings.v6_1_better_calls,
-        descrId = MR.strings.v7_1_better_calls_descr
+        icon = null,
+        titleId = MR.strings.v7_1_flat_layout,
+        descrId = MR.strings.v7_1_flat_layout_descr
       ),
     )
   ),
 )
 
 @Composable
-private fun SupporterBadgeWhatsNew() {
-  Box(Modifier.padding(bottom = 12.dp).fillMaxWidth()) {
-    Column(Modifier.padding(end = 96.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+private fun SupporterBadgeWhatsNew(modalManager: ModalManager) {
+  Row(Modifier.padding(bottom = 12.dp).fillMaxWidth()) {
+    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
       Text(
         stringResource(MR.strings.v7_1_supporter_badge_title),
         style = MaterialTheme.typography.h4,
         fontWeight = FontWeight.Medium
       )
       Text(
-        stringResource(MR.strings.v7_1_supporter_badge_body),
+        stringResource(MR.strings.v7_1_supporter_badge_descr),
         fontSize = 15.sp,
         maxLines = 10
       )
+      if (noShownBadge()) {
+        Text(
+          stringResource(MR.strings.v7_1_supporter_badge_get),
+          color = MaterialTheme.colors.primary,
+          fontSize = 15.sp,
+          modifier = Modifier
+            .pointerHoverIcon(PointerIcon.Hand)
+            .clickable(
+              interactionSource = remember { MutableInteractionSource() },
+              indication = null
+            ) {
+              modalManager.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(modalManager, close) }
+            }
+        )
+      }
     }
     val isDark = isInDarkTheme()
     if (BuildConfigCommon.SIMPLEX_ASSETS) {
@@ -1023,14 +1059,14 @@ private fun SupporterBadgeWhatsNew() {
         painterResource(if (isDark) MR.images.phone_supporter_light else MR.images.phone_supporter),
         contentDescription = null,
         contentScale = ContentScale.Fit,
-        modifier = Modifier.align(Alignment.TopEnd).spill(x = 23.dp, y = (-24).dp).size(width = 115.dp, height = 144.dp)
+        modifier = Modifier.spill(x = 23.dp, y = (-24).dp).size(width = 115.dp, height = 144.dp)
       )
     } else {
       Image(
         painterResource(MR.images.badge_supporter),
         contentDescription = null,
         contentScale = ContentScale.Fit,
-        modifier = Modifier.align(Alignment.TopEnd).size(72.dp)
+        modifier = Modifier.padding(start = 24.dp).size(72.dp)
       )
     }
   }
@@ -1056,6 +1092,8 @@ fun shouldShowWhatsNew(m: ChatModel): Boolean {
 }
 
 private const val WEFUNDER_URL = "https://wefunder.com/simplex.chat?utm_source=app"
+
+private val WHATS_NEW_WEFUNDER_URL = "https://wefunder.com/simplex.chat?utm_source=" + if (appPlatform.isAndroid) "app_android" else "app_desktop"
 
 private const val CROWDFUNDING_CONTACT_URI = "simplex:/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo?h=smp11.simplex.im"
 
@@ -1110,29 +1148,27 @@ fun isInUs(): Boolean =
 @Composable
 private fun InvestInSimpleXChatView(modalManager: ModalManager) {
   if (!crowdfundingAvailable()) return
+  val uriHandler = LocalUriHandler.current
   val showGetStake = { modalManager.showModalCloseable(cardScreen = true) { close -> GetStakeView(showFirstImage = false, inCenterOfWindow = crowdfundingLayout.inCenterOfWindow(modalManager), close = close) } }
   Column(modifier = Modifier.padding(bottom = 12.dp)) {
     Text(
-      generalGetString(MR.strings.v7_0_invest),
+      generalGetString(MR.strings.v7_1_invest),
       style = MaterialTheme.typography.h4,
       fontWeight = FontWeight.Medium,
       modifier = Modifier.padding(bottom = 6.dp)
     )
+    Text(generalGetString(MR.strings.v7_1_invest_descr), fontSize = 15.sp)
     Text(
-      buildAnnotatedString {
-        append(generalGetString(MR.strings.v7_0_invest_descr))
-        append(" ")
-        withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
-          append(generalGetString(MR.strings.learn_more))
-        }
-      },
+      generalGetString(MR.strings.v7_1_invest_learn_more),
+      color = MaterialTheme.colors.primary,
       fontSize = 15.sp,
       modifier = Modifier
+        .padding(top = 6.dp)
         .pointerHoverIcon(PointerIcon.Hand)
         .clickable(
           interactionSource = remember { MutableInteractionSource() },
           indication = null,
-          onClick = showGetStake
+          onClick = { uriHandler.openUriCatching(WHATS_NEW_WEFUNDER_URL) }
         )
     )
     if (BuildConfigCommon.SIMPLEX_ASSETS) {

@@ -2311,6 +2311,7 @@
   <string name="chat_layout">Chat layout</string>
   <string name="chat_layout_classic">Classic</string>
   <string name="chat_layout_terminal">Terminal</string>
+  <string name="chat_layout_flat">Flat</string>
   <string name="chat_layout_chat_suffix">(chat)</string>
   <string name="chat_layout_default_suffix">(default)</string>
 
@@ -2511,6 +2512,7 @@
   <string name="whats_new">What\'s new</string>
   <string name="new_in_version">New in %s</string>
   <string name="whats_new_read_more">Read more</string>
+  <string name="whats_new_learn_more">Learn more.</string>
   <string name="v4_2_security_assessment">Security assessment</string>
   <string name="v4_2_security_assessment_desc">SimpleX Chat security was audited by Trail of Bits.</string>
   <string name="v4_2_group_links">Group links</string>
@@ -2713,7 +2715,6 @@
   <string name="v6_5_non_profit_governance">Non-profit governance</string>
   <string name="v6_5_non_profit_governance_descr">To make SimpleX Network last.</string>
   <string name="v7_0_invest" translatable="false">You can now invest in SimpleX Chat! 🚀</string>
-  <string name="v7_0_invest_descr" translatable="false">Crowdfunding on Wefunder.</string>
   <string name="v7_0_crowdfunding" translatable="false">Crowdfunding on Wefunder</string>
   <string name="v7_0_invest_learn_more" translatable="false">Learn more on Wefunder</string>
   <string name="invest_banner_title" translatable="false">Invest in SimpleX Chat!</string>
@@ -3348,12 +3349,18 @@
   <string name="badges_renews_on_for">Renews on %1$s for %2$s.</string>
   <string name="badges_renews_on">Renews on %1$s.</string>
   <string name="supporter_perks">Supporter perks</string>
+  <string name="get_supporter_badge">Get a supporter badge</string>
+  <string name="v7_1_invest" translatable="false">Own a part of SimpleX Chat! 🚀</string>
+  <string name="v7_1_invest_descr" translatable="false">192 people have already invested.</string>
+  <string name="v7_1_invest_learn_more" translatable="false">Learn more on Wefunder.</string>
   <string name="v7_1_supporter_badge_title">Supporter badges 🚀</string>
   <string name="v7_1_supporter_badge_body">Send larger files\navailable for longer.</string>
+  <string name="v7_1_supporter_badge_descr">Larger files available for longer.</string>
+  <string name="v7_1_supporter_badge_get">Support SimpleX and get a badge.</string>
+  <string name="v7_1_simplex_names">SimpleX public names</string>
+  <string name="v7_1_simplex_names_descr">Sale starts on December 12.</string>
   <string name="v7_1_channels">Safer channels</string>
-  <string name="v7_1_channels_moderators">Promote contributors to moderators.</string>
-  <string name="v7_1_channels_signed_messages">Opt in to sign all channel messages.</string>
-  <string name="v7_1_terminal_layout">Flat ("terminal") chat layout</string>
-  <string name="v7_1_terminal_layout_descr">And full markdown support.</string>
-  <string name="v7_1_better_calls_descr">Reconnect after dropped connection.</string>
+  <string name="v7_1_channels_descr">Add moderators and sign every message.</string>
+  <string name="v7_1_flat_layout">Flat layout and markdown</string>
+  <string name="v7_1_flat_layout_descr">Enable in Appearance settings.</string>
 </resources>

@@ -538,7 +538,7 @@ private fun SetDefaultThemeButton(onClick: () -> Unit) {
 
 fun chatLayoutName(layout: ChatLayoutMode): String = when (layout) {
   is ChatLayoutMode.Classic -> generalGetString(MR.strings.chat_layout_classic)
-  is ChatLayoutMode.Terminal -> generalGetString(MR.strings.chat_layout_terminal)
+  is ChatLayoutMode.Terminal -> generalGetString(MR.strings.chat_layout_flat)
   is ChatLayoutMode.Unknown -> layout.type
 }
 

@@ -27,6 +27,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.badges.BadgesView
+import chat.simplex.common.views.badges.currentShownBadge
 import chat.simplex.common.views.database.DatabaseView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrateFromDeviceView
@@ -112,9 +113,10 @@ fun SettingsLayout(
       // a gray top bar / back button that badges views don't want (they have their own inline titles).
       SectionItemView(click = { ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) } }) {
         val badgeType = chatModel.currentUser.value?.profile?.localBadge?.badge?.badgeType ?: BadgeType.Supporter
-        Image(painterResource(badgeImage(badgeType)), stringResource(MR.strings.supporter_perks), Modifier.size(24.dp))
+        val label = stringResource(if (currentShownBadge() != null) MR.strings.badges_your_badge else MR.strings.get_supporter_badge)
+        Image(painterResource(badgeImage(badgeType)), label, Modifier.size(24.dp))
         TextIconSpaced()
-        Text(stringResource(MR.strings.supporter_perks))
+        Text(label)
       }
     }
     SectionDividerSpaced()
