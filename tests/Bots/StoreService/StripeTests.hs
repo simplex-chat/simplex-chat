@@ -6,7 +6,8 @@ module Bots.StoreService.StripeTests (badgeStripeTests) where
 
 import StoreService.Config (StripeConfig (..))
 import StoreService.Providers
-  ( ListPass (..),
+  ( Funded (..),
+    ListPass (..),
     OrderDraft (..),
     PaymentSignal (..),
     Provider (..),
@@ -25,6 +26,7 @@ import qualified Data.ByteString.Lazy as LB
 import Data.Either (isLeft)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Network.HTTP.Types (hAuthorization, parseSimpleQuery)
@@ -44,6 +46,7 @@ badgeStripeTests = describe "badge stripe adapter" $ do
   describe "against the fake Stripe" $ do
     it "creates a PaymentIntent and reads back the client secret" testFakeCreatesCard
     it "sends the create form Stripe documents, over HTTP Basic" testFakeCreateBody
+    it "sends an Idempotency-Key of the order, so a create sent again gets the same intent" testFakeCreateIsIdempotent
     it "is refused when the secret key is wrong, rather than passing silently" testFakeWrongSecretKey
     it "walks requires_payment_method through processing to succeeded, then refuses a cancel" testFakeLifecycle
     it "cancels an open intent once, then refuses a second cancel" testFakeCancel
@@ -70,7 +73,10 @@ badgeStripeTests = describe "badge stripe adapter" $ do
     it "accepts a signature up to 15 minutes from now, either way, and refuses one further out" testWebhookTimestampWindow
 
 fiftyFourDollars :: OrderDraft
-fiftyFourDollars = OrderDraft {odAmount = CurrencyAmount 5400, odCurrency = "usd"}
+fiftyFourDollars = OrderDraft {odAmount = CurrencyAmount 5400, odCurrency = "usd", odReference = sampleReference}
+
+sampleReference :: Text
+sampleReference = "name:0x6a3c0f1e9b2d4c5a8e7f60192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d"
 
 fiftyFourDollarsReceived :: Received
 fiftyFourDollarsReceived = Received {rcvAmount = CurrencyAmount 5400, rcvCrypto = Nothing, rcvDue = Nothing}
@@ -122,8 +128,20 @@ testFakeCreateBody = withProvider $ \fake p -> do
       lookup "currency" form `shouldBe` Just "usd"
       -- Card only keeps the client confirm from redirecting the top window out of the embedded frame.
       lookup "allowed_payment_method_types[]" form `shouldBe` Just "card"
+      lookup "metadata[order]" form `shouldBe` Just (TE.encodeUtf8 sampleReference)
+      lookup "Idempotency-Key" (frHeaders created) `shouldBe` Just (TE.encodeUtf8 sampleReference <> ":5400:usd")
       lookup hAuthorization (frHeaders created) `shouldSatisfy` maybe False ("Basic " `B8.isPrefixOf`)
     _ -> expectationFailure ("expected one create, got " <> show (length posts))
+
+-- | Stripe answers a create sent again with the same Idempotency-Key with the intent the first one made.
+testFakeCreateIsIdempotent :: IO ()
+testFakeCreateIsIdempotent = withProvider $ \fake p -> do
+  ProviderInvoice {piProviderRef = first} <- createdInvoice p (SPMCard CPStripe)
+  ProviderInvoice {piProviderRef = again} <- createdInvoice p (SPMCard CPStripe)
+  again `shouldBe` first
+  other <- pCreateInvoice p (SPMCard CPStripe) fiftyFourDollars {odReference = "badge:0x01"}
+  fmap piProviderRef other `shouldSatisfy` either (const False) (/= first)
+  length <$> fakeIntentIds fake `shouldReturn` 2
 
 testFakeWrongSecretKey :: IO ()
 testFakeWrongSecretKey = bounded $ withFakeStripe $ \fake -> do
@@ -159,7 +177,7 @@ testFakeCancel = withProvider $ \fake p -> do
   ProviderInvoice {piProviderRef = pid} <- createdInvoice p (SPMCard CPStripe)
   pCancelInvoice p pid `shouldReturn` Right ()
   fakeIntentStatus fake pid `shouldReturn` Just "canceled"
-  pReadInvoice p pid `shouldReturn` Right (Just (SigClosed nothingReceived))
+  pReadInvoice p pid `shouldReturn` Right (Just (SigClosed nothingReceived PaidInPart))
   pCancelInvoice p pid >>= (`shouldSatisfy` namesInError "payment_intent_unexpected_state")
 
 testFakeReadExpands :: IO ()
@@ -176,7 +194,7 @@ testFakeCanceled = withProvider $ \fake p -> do
   ProviderInvoice {piProviderRef = pid} <- createdInvoice p (SPMCard CPStripe)
   setIntentState fake pid ["status" .= ("canceled" :: Text)]
   -- A nonzero received amount here would write a phantom payment for money the buyer never sent.
-  pReadInvoice p pid `shouldReturn` Right (Just (SigClosed nothingReceived))
+  pReadInvoice p pid `shouldReturn` Right (Just (SigClosed nothingReceived PaidInPart))
 
 testFakeCreate500 :: IO ()
 testFakeCreate500 = withProvider $ \fake p -> do
@@ -249,7 +267,7 @@ testFakeListsOpen = withProvider $ \_ p -> do
           rcv `shouldBe` fiftyFourDollarsReceived
           settledAt `shouldSatisfy` \t -> t >= askedAt && t <= answeredAt
         other -> failWith ("pi_test_a should settle at read time, got " <> show other)
-      lookup "pi_test_b" lpMoved `shouldBe` Just (SigClosed nothingReceived)
+      lookup "pi_test_b" lpMoved `shouldBe` Just (SigClosed nothingReceived PaidInPart)
     Left e -> failWith ("expected a list pass, got " <> show e)
 
 testFakeListSkipsIdless :: IO ()

@@ -129,6 +129,11 @@ The BTCPay API key needs four permissions, each scoped to the one store:
 `canmodifyinvoices` so `POST /api/invoice/:id/cancel` can invalidate an invoice at BTCPay
 rather than only in this store.
 
+BTCPay keeps an invoice it has closed `Expired` (or `Invalid` after a cancel) when money arrives late.
+The invoice view reports `paidInFull` on such an invoice once BTCPay reads it `PaidLate` or
+`PaidOver`, or its due is 0 or less, and reports an overpaid invoice's `cryptoAmountDue` as `0`,
+never below.
+
 Give the service a BTCPay store of its own, and a Stripe account of its own if card payments are
 on. The poller lists every invoice and payment intent of the last three days or so, and one it did
 not create and cannot read is reported in a warning once an hour until it falls out of that window.
@@ -151,6 +156,13 @@ absent `[btcpay]` does for Bitcoin and Monero. Its keys:
   If the order is over 72 hours old and the cancel has kept failing for an hour, the service marks
   it expired and logs an error. Check such orders in the Stripe Dashboard. After a restart, the
   hour starts again.
+
+The service creates each payment intent with `metadata[order]`, the order's reference:
+`badge:0x<code hash>` (`code_hash` in `sx_badge_service_badge_codes`). It is not a secret,
+and support finds an intent's order from it in the Dashboard. The create also sends an
+`Idempotency-Key` of that reference with the amount and currency, so a buyer who sends the same order
+again after the first answer was lost gets the same intent, not a second one; Stripe keeps the key
+for 24 hours.
 
 The service fills `publishable_key` into the shell at boot: the built `index.html` ships
 with an empty `<meta id="stripe-publishable-key" name="stripe-publishable-key" content="">`

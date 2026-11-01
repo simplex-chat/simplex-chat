@@ -37,13 +37,12 @@ import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Code
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.StoreService
-import Simplex.Chat.Badges.Types (BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeSubscription (..))
+import Simplex.Chat.Badges.Types (BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeOfferId (..), BadgePriceId (..), BadgeSubscription (..))
 import qualified Simplex.Chat.Badges.Types as BT
 import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller (BadgeRedeemError (..), ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
 import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRenewal, badgeRetryAfter, badgeStalledInterval, boundedSubscriptionState, derivedBadgeAlert, resumableCharge, resumeHoldEnded, storeServiceErrorText, storeTransactionRef)
-import Simplex.Chat.PaymentService (AppleTransactionFacts (..), ServicePayment (..), appleTransactionFacts, appleTransactionRef)
-import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..), StoreTransactionRef (..))
+import Simplex.Chat.PaymentService
 import qualified Simplex.Chat.Store.Badges as SB
 import Simplex.Chat.Types (BoolDef (..))
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), AgentServiceError (..), SMPAgentError (..))
@@ -121,6 +120,7 @@ badgeTests = do
     it "badgeCredential carries a subscription's state, and reads one it does not know as unknown" testCredentialSubscriptionJSON
     it "error response matches the schema" testErrorResponseJSON
     it "statement entries round-trip, unknown entry types verbatim" testStatementJSON
+    it "pins the wire tag of every command, response and error code" testServiceWireTags
   describe "badge state" $ do
     it "carries a subscription's plan and last seen state, renewing only when it was seen renewing, and bounds a state it does not know" testBadgeSubscriptionJSON
     it "derives one alert for a subscription in order of urgency, dated paidThrough, leaves prepaid alerts as they were, and derives none for a purchase Restore moved away" testSubscriptionAlertDerivation
@@ -1395,20 +1395,23 @@ testErrorResponseJSON = do
   J.toJSON STPError {code = STERateLimited, message = Just "slow down", retryAfter = Just 30}
     `shouldBe` J.object ["type" J..= ("error" :: T.Text), "code" J..= ("rate_limited" :: T.Text), "message" J..= ("slow down" :: T.Text), "retryAfter" J..= (30 :: Int)]
 
+testEntry :: StatementEntry
+testEntry =
+  StatementEntry
+    { entryId = "e1",
+      changeMonths = 3,
+      balanceMonths = 3,
+      balanceStartTs = futureTime,
+      balanceAnchorTs = futureTime,
+      balanceBadgeType = BTSupporter,
+      wasPausedSince = Nothing,
+      createdAt = futureTime,
+      entryType = SECredit {credit = SCPayment {invoiceId = Nothing}}
+    }
+
 testStatementJSON :: IO ()
 testStatementJSON = do
-  let entry =
-        StatementEntry
-          { entryId = "e1",
-            changeMonths = 3,
-            balanceMonths = 3,
-            balanceStartTs = futureTime,
-            balanceAnchorTs = futureTime,
-            balanceBadgeType = BTSupporter,
-            wasPausedSince = Nothing,
-            createdAt = futureTime,
-            entryType = SECredit {credit = SCPayment {invoiceId = Nothing}}
-          }
+  let entry = testEntry
   -- the whole entry: the required fields, and wasPausedSince omitted rather than sent as null
   J.toJSON entry
     `shouldBe` J.object
@@ -1435,6 +1438,119 @@ testStatementJSON = do
       tag `shouldBe` "grant"
       J.toJSON c `shouldBe` futureCredit
     r -> expectationFailure $ "expected SCUnknown, got " <> show (fmap (const ()) r)
+
+testServiceWireTags :: IO ()
+testServiceWireTags = do
+  drg <- C.newRandom
+  masterKey <- generateMasterKey drg
+  let badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = futureTime, badgeExtra = ""}
+      payment = SPInvoice {invoiceId = InvoiceId "inv-1"}
+      balance = BadgeBalance {lastEntry = testEntry}
+      statement = BadgeStatement {entries = [testEntry], previousEntryId = Nothing}
+      invoice =
+        ServiceInvoice
+          { invoiceId = InvoiceId "inv-1",
+            price = CurrencyAmount 500,
+            discount = Nothing,
+            credit = Nothing,
+            amount = CurrencyAmount 500,
+            currency = "USD",
+            expiresAt = futureTime,
+            paymentTo = SPDCard {provider = CPStripe, url = "https://checkout.example/inv-1"}
+          }
+      commands =
+        [ STCGetBadgeCatalog,
+          STCGetBadgeInvoice {priceId = BadgePriceId "price-1", offerId = Just (BadgeOfferId "offer-1"), badgeInfo, paymentVia = SPMCard {provider = CPStripe}, upgrade = Nothing},
+          STCRedeemBadgeCode {masterKey, code = "SB-4K2P7-TQ9M1-ZX3RB-8HJ5W"},
+          STCPurchaseBadge {masterKey, payment, upgrade = Nothing},
+          STCUpgradeBadgeSubscription {payment, balance},
+          STCTransferBadge {masterKey, payment},
+          STCIssueBadge {balance},
+          STCPauseBadge
+        ]
+      responses =
+        [ STPBadgeCatalog {catalog = BadgeCatalog {prices = [], offers = []}, badgeStatement = Just statement},
+          STPBadgeInvoice {invoice, badgeType = BTSupporter, months = 3},
+          STPBadgeCredential {credential = Nothing, receipt = Just "receipt", statement, subscription = Just SSRenewing},
+          STPError {code = STEInternal, message = Nothing, retryAfter = Nothing}
+        ]
+      errors =
+        [ STEBadRequest,
+          STEUnsupportedVersion,
+          STEUnknownPurchaseKey,
+          STEUnknownOfferId,
+          STEOfferDisabled,
+          STEOfferMismatch,
+          STEProductUnavailable,
+          STEPaymentNotEntitled,
+          STEPaymentPending,
+          STEProviderUnavailable,
+          STEProviderNotConfigured,
+          STERateLimited,
+          STECodeInvalid,
+          STECodeUsed,
+          STECodeExpired,
+          STEReceiptInvalid,
+          STEReceiptUsed,
+          STETransferLimited,
+          STETestPurchase,
+          STEInternal,
+          STEUnknown "future_code"
+        ]
+  forM_ commands $ pinsTypeTag commandTag
+  forM_ responses $ pinsTypeTag responseTag
+  forM_ errors $ \e -> do
+    J.toJSON e `shouldBe` J.String (errorTag e)
+    J.fromJSON (J.String $ errorTag e) `shouldBe` J.Success e
+  where
+    commandTag = \case
+      STCGetBadgeCatalog -> "getBadgeCatalog"
+      STCGetBadgeInvoice {} -> "getBadgeInvoice"
+      STCRedeemBadgeCode {} -> "redeemBadgeCode"
+      STCPurchaseBadge {} -> "purchaseBadge"
+      STCUpgradeBadgeSubscription {} -> "upgradeBadgeSubscription"
+      STCTransferBadge {} -> "transferBadge"
+      STCIssueBadge {} -> "issueBadge"
+      STCPauseBadge -> "pauseBadge"
+    responseTag = \case
+      STPBadgeCatalog {} -> "badgeCatalog"
+      STPBadgeInvoice {} -> "badgeInvoice"
+      STPBadgeCredential {} -> "badgeCredential"
+      STPError {} -> "error"
+    errorTag = \case
+      STEBadRequest -> "bad_request"
+      STEUnsupportedVersion -> "unsupported_version"
+      STEUnknownPurchaseKey -> "unknown_purchase_key"
+      STEUnknownOfferId -> "unknown_offer_id"
+      STEOfferDisabled -> "offer_disabled"
+      STEOfferMismatch -> "offer_mismatch"
+      STEProductUnavailable -> "product_unavailable"
+      STEPaymentNotEntitled -> "payment_not_entitled"
+      STEPaymentPending -> "payment_pending"
+      STEProviderUnavailable -> "provider_unavailable"
+      STEProviderNotConfigured -> "provider_not_configured"
+      STERateLimited -> "rate_limited"
+      STECodeInvalid -> "code_invalid"
+      STECodeUsed -> "code_used"
+      STECodeExpired -> "code_expired"
+      STEReceiptInvalid -> "receipt_invalid"
+      STEReceiptUsed -> "receipt_used"
+      STETransferLimited -> "transfer_limited"
+      STETestPurchase -> "test_purchase"
+      STEInternal -> "internal"
+      STEUnknown t -> t
+
+-- the tag is checked in both encodings, and decoding must land on the constructor the tag names
+pinsTypeTag :: (HasCallStack, J.ToJSON a, J.FromJSON a) => (a -> T.Text) -> a -> IO ()
+pinsTypeTag tagOf x = do
+  let tag = J.String $ tagOf x
+  typeTag (J.toJSON x) `shouldBe` Just tag
+  (typeTag <$> J.eitherDecode (J.encode x)) `shouldBe` Right (Just tag)
+  (tagOf <$> J.eitherDecode (J.encode x)) `shouldBe` Right (tagOf x)
+  where
+    typeTag = \case
+      J.Object o -> KM.lookup "type" o
+      _ -> Nothing
 
 -- decoding and re-encoding reproduces the encoding, without Eq on the protocol types
 roundTrips :: (HasCallStack, J.ToJSON a, J.FromJSON a) => a -> IO ()

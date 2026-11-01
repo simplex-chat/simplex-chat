@@ -50,6 +50,7 @@ idle_seconds = 60
 ;api_key_id = 2X9R4HXF34
 ;api_issuer_id = 57246542-96fe-1a63-e053-0824d011072a
 ;api_private_key_file = /etc/simplex-store-service/AuthKey_2X9R4HXF34.p8
+;api_host = https://api.storekit.itunes.apple.com
 
 ; optional; without it every Play receipt is answered provider_not_configured, which the app retries later.
 ; service_account_file is the JSON key of a service account with the Play Console permissions "View

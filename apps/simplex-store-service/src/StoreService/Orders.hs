@@ -38,13 +38,13 @@ paidInFull :: PaymentSignal -> Bool
 paidInFull = \case
   SigFunded _ f -> f == PaidInFull
   SigSettled {} -> True
-  SigClosed {} -> False
+  SigClosed _ f -> f == PaidInFull
 
 received :: PaymentSignal -> Received
 received = \case
   SigFunded r _ -> r
   SigSettled r _ -> r
-  SigClosed r -> r
+  SigClosed r _ -> r
 
 -- | Uses the provider's settlement instant, not now, so an outage does not push deadlines out;
 -- an implausible value (zero, milliseconds, negative) falls back to now.

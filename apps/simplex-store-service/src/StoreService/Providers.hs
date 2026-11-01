@@ -36,10 +36,11 @@ data Received = Received {rcvAmount :: CurrencyAmount, rcvCrypto :: Maybe Text, 
 data Funded = PaidInFull | PaidInPart
   deriving (Eq, Show)
 
+-- | A closed invoice's Funded says whether the whole amount reached it, late or not.
 data PaymentSignal
   = SigFunded Received Funded
   | SigSettled Received UTCTime
-  | SigClosed Received
+  | SigClosed Received Funded
   deriving (Eq, Show)
 
 data ProviderInvoice = ProviderInvoice
@@ -58,9 +59,11 @@ expiresItself = \case
 settleWindow :: NominalDiffTime
 settleWindow = 72 * 3600
 
+-- | odReference names the order, the same on every retry of it, and is not secret.
 data OrderDraft = OrderDraft
   { odAmount :: CurrencyAmount,
-    odCurrency :: Text
+    odCurrency :: Text,
+    odReference :: Text
   }
   deriving (Eq, Show)
 
