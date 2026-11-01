@@ -81,8 +81,9 @@ xmrMethodId = "XMR-CHAIN"
 knownMethodIds :: [Text]
 knownMethodIds = [btcMethodId, xmrMethodId]
 
+-- The last two are the only events a payment into a closed invoice sends.
 actedOnEventTypes :: [Text]
-actedOnEventTypes = ["InvoiceProcessing", "InvoiceSettled", "InvoiceExpired", "InvoiceInvalid"]
+actedOnEventTypes = ["InvoiceProcessing", "InvoiceSettled", "InvoiceExpired", "InvoiceInvalid", "InvoiceReceivedPayment", "InvoicePaymentSettled"]
 
 maxErrorBytes :: Int64
 maxErrorBytes = 4000
