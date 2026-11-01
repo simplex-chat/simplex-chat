@@ -427,13 +427,16 @@ issueCode cc badgeType months = issueCodeAs cc badgeType months "free"
 revokeCodeAs :: HasCallStack => ChatController -> BadgeCode -> IO (Either T.Text T.Text)
 revokeCodeAs cc code = revokeRaw cc (formatBadgeCode code)
 
--- | Left is a refusal or a failure the service answers as a command error.
 revokeRaw :: HasCallStack => ChatController -> T.Text -> IO (Either T.Text T.Text)
-revokeRaw cc args =
-  sendChatCmdStr cc ("//revoke " <> T.unpack args) >>= \case
+revokeRaw cc args = operatorCmd cc ("//revoke " <> args)
+
+-- | Left is a refusal or a failure the service answers as a command error.
+operatorCmd :: HasCallStack => ChatController -> T.Text -> IO (Either T.Text T.Text)
+operatorCmd cc cmd =
+  sendChatCmdStr cc (T.unpack cmd) >>= \case
     Right (CRCustomChatResponse _ response) -> pure (Right response)
     Left (ChatError (CECommandError e)) -> pure (Left (T.pack e))
-    r -> error $ "revoke failed: " <> show (() <$ r)
+    r -> error $ T.unpack cmd <> " failed: " <> show (() <$ r)
 
 issueCodeAs :: HasCallStack => ChatController -> BadgeType -> Int -> String -> IO BadgeCode
 issueCodeAs cc badgeType months status =
