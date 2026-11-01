@@ -1,21 +1,29 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
--- | A thread that takes a turn it already holds waits forever.
-module StoreService.Names.Turns (Turns, newTurns, withCodeTurn) where
+-- | A thread that takes a turn it already holds waits forever. Label turns are taken before a code turn.
+module StoreService.Names.Turns (Turns, newTurns, withLabelTurn, withCodeTurn, turnsCount) where
 
 import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
 import Data.ByteString (ByteString)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import Simplex.Messaging.SimplexName (LabelHash (..))
 
 -- | Each lock counts the requests holding or waiting for it, and its entry goes when none are left.
 type TurnLocks = TVar (Map ByteString (TMVar (), Int))
 
-data Turns = Turns {codeTurns :: TurnLocks}
+data Turns = Turns {labelTurns :: TurnLocks, codeTurns :: TurnLocks}
 
 newTurns :: IO Turns
-newTurns = Turns <$> newTVarIO Map.empty
+newTurns = Turns <$> newTVarIO Map.empty <*> newTVarIO Map.empty
+
+withLabelTurn :: Turns -> LabelHash -> IO a -> IO a
+withLabelTurn Turns {labelTurns} (LabelHash h) = withTurn labelTurns h
+
+-- | The label and code hashes with a holder or a waiter.
+turnsCount :: Turns -> IO Int
+turnsCount Turns {labelTurns, codeTurns} = atomically $ (+) <$> (Map.size <$> readTVar labelTurns) <*> (Map.size <$> readTVar codeTurns)
 
 -- | Keyed by the code's SHA-256 hash.
 withCodeTurn :: Turns -> ByteString -> IO a -> IO a
