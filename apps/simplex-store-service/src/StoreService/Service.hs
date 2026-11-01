@@ -37,11 +37,12 @@ where
 
 import StoreService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
 import StoreService.Codes (issueFailedText, issueOneCode, singleUse)
-import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), PlayStoreConfig (..), ServiceConfig (..), minNameYears, readServiceConfig)
+import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ChainConfig (..), NamesConfig (..), PlayStoreConfig (..), ServiceConfig (..), minNameYears, readServiceConfig)
 import StoreService.Group (GroupEvent, ensureManagedGroup, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
 import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, maxNameYears, nameCodeP, prepaidCodeP, textTokenP)
 import StoreService.Log (logError, logInfo, logWarn)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
+import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Options
 import StoreService.Poller (newPollerEnv, newReadHints, runPoller)
@@ -55,7 +56,8 @@ import StoreService.StoreReceipts.Apple (appleSubscriptionChecker, readAppleRoot
 import StoreService.StoreReceipts.Google (PlayVerifier (..), playStoreVerifier)
 import StoreService.StoreReceipts.Mock (newMockStoreVerifier)
 import StoreService.Waiters (Waiters, newWaiters)
-import StoreService.Web.Server (Bucket, exportWebapp, newWebEnv, runWebListener, takeFrom)
+import StoreService.Web.Http (Bucket, takeFrom)
+import StoreService.Web.Server (checkSiteDirs, exportWebapp, newWebEnv, runWebListeners)
 import Control.Applicative (optional)
 import Control.Concurrent.STM
 import Control.Monad
@@ -143,7 +145,10 @@ checkOne ChatConfig {badgePublicKeys} k@BadgeIssuerKey {keyIdx, secretKey} =
 
 requireIssuerKey :: StoreServiceOpts -> Maybe ServiceConfig -> ChatConfig -> IO BadgeIssuerKey
 requireIssuerKey opts serviceCfg cfg =
-  checkIssuerKey opts serviceCfg cfg >>= either (\e -> putStrLn ("Error: " <> e) >> exitFailure) (\k@BadgeIssuerKey {keyIdx} -> logInfo ("signing badges with issuer key " <> tshow keyIdx) $> k)
+  checkIssuerKey opts serviceCfg cfg >>= orExit >>= \k@BadgeIssuerKey {keyIdx} -> logInfo ("signing badges with issuer key " <> tshow keyIdx) $> k
+
+orExit :: Either String a -> IO a
+orExit = either (\e -> putStrLn ("Error: " <> e) >> exitFailure) pure
 
 readConfigOrExit :: FilePath -> IO ServiceConfig
 readConfigOrExit path =
@@ -164,10 +169,10 @@ configureStoreVerifier serviceCfg env@ServiceState {serviceCC, storeVerifier = v
   Just ServiceConfig {appleStore, playStore, devCheckStoreDuringCoverage, devCreditTestPurchases} -> do
     when devCreditTestPurchases $ logWarn "[dev] credit_test_purchases is on: a purchase the store calls a test is credited as a real one"
     apple <- forM appleStore $ \AppleStoreConfig {aBundleId, aRootCertificates, aServerApi} -> do
-      roots <- mapM (orExit . readAppleRoot) aRootCertificates
-      appleSubscriptions <- forM aServerApi $ orExit . appleSubscriptionChecker roots aBundleId
+      roots <- mapM ((>>= orExit) . readAppleRoot) aRootCertificates
+      appleSubscriptions <- forM aServerApi $ (>>= orExit) . appleSubscriptionChecker roots aBundleId
       pure (verifyAppleTransaction roots aBundleId, appleSubscriptions)
-    google <- forM playStore $ orExit . playStoreVerifier
+    google <- forM playStore $ (>>= orExit) . playStoreVerifier
     forM_ appleStore $ \AppleStoreConfig {aBundleId, aServerApi} ->
       logInfo $ "verifying App Store receipts for " <> aBundleId <> maybe ", but not its subscriptions: [apple] sets no API key" (const "") aServerApi
     forM_ playStore $ \PlayStoreConfig {gPackageName} -> logInfo $ "verifying Play purchases for " <> gPackageName
@@ -190,12 +195,12 @@ configureStoreVerifier serviceCfg env@ServiceState {serviceCC, storeVerifier = v
         }
   Nothing -> pure env
   where
-    orExit = (>>= either (\e -> putStrLn ("Error: " <> e) >> exitFailure) pure)
     notConfigured = pure $ Left SRNotConfigured
 
 storeService :: StoreServiceOpts -> ChatConfig -> ServiceState -> IO ()
 storeService opts@StoreServiceOpts {serviceConfigFile} cfg env = do
   serviceCfg <- traverse readConfigOrExit serviceConfigFile
+  forM_ serviceCfg $ \sc -> checkSiteDirs (listener sc) >>= orExit
   key <- requireIssuerKey opts serviceCfg cfg
   waiters <- newWaiters
   -- The hooks' //revoke takes a prepaid code's turn, so the turns exist before the chat starts.
@@ -227,17 +232,26 @@ storeService opts@StoreServiceOpts {serviceConfigFile} cfg env = do
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc -> raceAny_ [readEvents cc, startLanes cc]
   where
     serviceLanes :: Waiters -> ChatController -> ServiceConfig -> IO [IO ()]
-    serviceLanes ws ChatController {chatStore} sc = do
+    serviceLanes ws cc@ChatController {chatStore} sc = do
       -- Seed before the listener accepts anything, since every checkout is priced from these.
       seedServiceCatalog chatStore
       btc <- maybe (pure []) (fmap (: []) . btcpayProvider) (btcpay sc)
       str <- maybe (pure []) (fmap (: []) . stripeProvider) (stripe sc)
       let providers = btc <> str
       hints <- newReadHints
-      webEnv <- newWebEnv chatStore sc ws hints providers
-      exportWebapp (listener sc) (stripe sc)
+      namesEnv <- forM (names sc) (startNames cc)
+      webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
+      exportWebapp sc
       pollerEnv <- newPollerEnv chatStore ws hints providers (poll sc)
-      pure [runWebListener webEnv, runPoller pollerEnv]
+      pure [runWebListeners webEnv, runPoller pollerEnv]
+
+startNames :: ChatController -> NamesConfig -> IO NamesEnv
+startNames cc nc@NamesConfig {nTLD, nChain = ChainConfig {cChainId}} =
+  readTVarIO (currentUser cc) >>= \case
+    Nothing -> putStrLn "No current user" >> exitFailure
+    Just User {userId} -> do
+      logInfo $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId
+      newNamesEnv cc userId nc
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do

@@ -9,9 +9,9 @@ ARG CABAL=3.10.2.0
 ARG NODE=24
 
 # The checkout page's dist/ is gitignored, so this stage builds it.
-FROM node:${NODE}-bookworm-slim AS web
+FROM node:${NODE}-bookworm-slim AS badges
 
-WORKDIR /web
+WORKDIR /badges
 COPY apps/simplex-store-service/web/package.json apps/simplex-store-service/web/package-lock.json ./
 RUN npm ci
 COPY apps/simplex-store-service/web ./
@@ -81,12 +81,12 @@ RUN if existing_user=$(getent passwd ${USER_UID} | cut -d: -f1) && [ -n "${exist
     useradd -u ${USER_UID} -g ${USER_GID} -m -d /home/badge badge
 
 COPY --from=build /out/simplex-store-service /usr/local/bin/simplex-store-service
-COPY --from=web /web/dist /srv/web
+COPY --from=badges /badges/dist /srv/badges
 
 USER badge
 WORKDIR /home/badge
 
-EXPOSE 8080
+EXPOSE 8080 8081
 
 # There is no HEALTHCHECK because the listener answers before the chat side has an address, so it
 # would report healthy too early.

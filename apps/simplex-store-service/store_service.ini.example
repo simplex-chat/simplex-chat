@@ -2,19 +2,27 @@
 ; bind locally; the reverse proxy terminates TLS. It must pass the query string through:
 ; the long poll's `wait`, `seenPaid` and `seenFull` all travel in it
 host = 127.0.0.1
-port = 8080
-; required: the directory `npm run build` writes in apps/simplex-store-service/web
-static_dir = ./apps/simplex-store-service/web/dist
-; serve the webapp over HTTP. On (default) is the all-in-one deployment. Off is a split deployment
-; where a reverse proxy serves the exported folder and this service is only the API and webhooks.
+; the API, the webhooks and the badges site
+badges_port = 8080
+; the directory `npm run build` writes in apps/simplex-store-service/web. The default, /srv/badges,
+; is the Docker image's path, so a local run sets it
+badges_static_dir = ./apps/simplex-store-service/web/dist
+; serve the sites over HTTP. On (default) is the all-in-one deployment. Off is a split deployment
+; where a reverse proxy serves the exported folders and this service is only the API and webhooks.
 serve_webapp = on
-; when set, the webapp is written here at boot with the publishable key injected, copied from
-; static_dir, for a reverse proxy to serve. Leave unset in the all-in-one deployment.
-; webapp_export_dir = /srv/webapp
+; when set, the badges site is written here at boot with the publishable key injected, copied from
+; badges_static_dir, for a reverse proxy to serve. Leave unset in the all-in-one deployment.
+; badges_export_dir = /srv/badges-export
 ; on behind the reverse proxy above: without it every request keys the rate limiter on the
 ; proxy's own address, so one bucket is shared by everyone. Set it off only where this
 ; listener is reached directly, since a client can write the header itself.
 trust_forwarded_for = on
+; the names site (simplex.domains), with [names] only: its build directory (the default, /srv/names,
+; is the Docker image's path), the directory it is exported to for a reverse proxy, and its port in
+; the all-in-one deployment, which also answers the API and the webhooks
+; names_static_dir = /srv/names
+; names_export_dir = /srv/names-export
+; names_port = 8081
 
 ; omit this whole section to disable Bitcoin and Monero (the browser shows the provider-unavailable screen)
 [btcpay]

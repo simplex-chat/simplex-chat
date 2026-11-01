@@ -649,7 +649,7 @@ testAppleConfiguredSubscriptions = do
         ini = dir </> "store_service.ini"
         apple serverApi = Just AppleStoreConfig {aBundleId = ourBundleId, aRootCertificates = rootFile :| [], aServerApi = serverApi}
     B.writeFile rootFile (encodeSignedObject $ rootCert chain)
-    writeFile ini "[listener]\nstatic_dir = /srv/badges\n"
+    writeFile ini "[listener]\nbadges_static_dir = /srv/badges\n"
     Right cfg <- readServiceConfig ini
     ServiceState {storeVerifier = withKey} <- newServiceState >>= configureStoreVerifier (Just cfg {appleStore = apple (Just fasApi)})
     ServiceState {storeVerifier = withoutKey} <- newServiceState >>= configureStoreVerifier (Just cfg {appleStore = apple Nothing})
@@ -879,7 +879,7 @@ testPlayAcknowledgementFails = withFakePlay $ \fake -> do
 testPlayConfiguredAcknowledges :: IO ()
 testPlayConfiguredAcknowledges = withFakePlay $ \fake@FakePlay {fpConfig} -> do
   let ini = takeDirectory (gServiceAccountFile fpConfig) </> "store_service.ini"
-  writeFile ini "[listener]\nstatic_dir = /srv/badges\n"
+  writeFile ini "[listener]\n"
   Right cfg <- readServiceConfig ini
   ServiceState {storeVerifier} <- newServiceState >>= configureStoreVerifier (Just cfg {playStore = Just fpConfig})
   answerPurchase fake testToken $ PlayRecord $ purchaseRecord 0 []
@@ -1077,7 +1077,7 @@ testPlayConfiguredSubscriptions = do
         outcomes v = (,) <$> (outcome <$> checkStoreSubscription v (SubscriptionGoogle subscriptionToken) Nothing) <*> (outcome <$> checkStoreSubscription v (SubscriptionApple subscriptionId) Nothing)
         acknowledging v = subscriptionAcknowledgement v SPGoogle {productId = subscriptionProductId, token = subscriptionToken}
     B.writeFile rootFile (encodeSignedObject $ rootCert chain)
-    writeFile ini "[listener]\nstatic_dir = /srv/badges\n"
+    writeFile ini "[listener]\nbadges_static_dir = /srv/badges\n"
     Right cfg <- readServiceConfig ini
     both <- configured cfg {appleStore = apple, playStore = Just fpConfig}
     playOnly <- configured cfg {playStore = Just fpConfig}
