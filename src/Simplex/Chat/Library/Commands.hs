@@ -1984,8 +1984,9 @@ processChatCommand cxt nm = \case
   APIGetUpdatedGroupLinkData groupId -> withUser $ \user -> do
     gInfo@GroupInfo {groupProfile = p} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     case p of
-      GroupProfile {publicGroup = Just PublicGroupProfile {groupLink = sLnk}} | useRelays' gInfo -> do
-        (_, cData@(ContactLinkData _ UserContactData {relays = currentRelayLinks}), _) <- getShortLinkConnReq' nm user sLnk
+      GroupProfile {publicGroup = Just PublicGroupProfile {groupLink = sLnk, publicGroupId}} | useRelays' gInfo -> do
+        (FixedLinkData {linkEntityId}, cData@(ContactLinkData _ UserContactData {relays = currentRelayLinks}), _) <- getShortLinkConnReq' nm user sLnk
+        unless ((B64UrlByteString <$> linkEntityId) == Just publicGroupId) $ throwChatError CEInvalidConnReq
         groupSLinkData_ <- liftIO $ decodeLinkUserData cData
         gInfo' <- case groupSLinkData_ of
           Just sLinkData -> fst <$> updateGroupFromLinkData user gInfo sLinkData Nothing
@@ -2220,7 +2221,7 @@ processChatCommand cxt nm = \case
                 groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
                 groupProfile = businessGroupProfile profile groupPreferences chatLayout
             gVar <- asks random
-            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile True ccLink welcomeSharedMsgId False GRMember Nothing verifiedDomain
+            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile True ccLink welcomeSharedMsgId False GRMember Nothing (unStrJSON <$> verifiedDomain)
             hostMember <- maybe (throwCmdError "no host member") pure hostMember_
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
             let cd = CDGroupRcv gInfo Nothing hostMember
@@ -2249,7 +2250,7 @@ processChatCommand cxt nm = \case
   APIPrepareGroup userId ccLink direct verifiedDomain groupSLinkData -> withUserId userId $ \user -> do
     let GroupShortLinkData {groupProfile = GroupProfile {description}} = groupSLinkData
     welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
-    (gInfo, hostMember_) <- preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId verifiedDomain
+    (gInfo, hostMember_) <- preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId (unStrJSON <$> verifiedDomain)
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
     let cd = maybe (CDChannelRcv gInfo Nothing) (CDGroupRcv gInfo Nothing) hostMember_
         cInfo = GroupChat gInfo Nothing
@@ -2338,8 +2339,8 @@ processChatCommand cxt nm = \case
         groupSLinkData_ <- liftIO $ decodeLinkUserData cData
         -- Validate link entity ID matches group profile's publicGroupId (relay groups must have both)
         case groupSLinkData_ of
-          Just GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {publicGroupId}}}
-            | (B64UrlByteString <$> linkEntityId) == Just publicGroupId -> pure ()
+          Just sLinkData@GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {publicGroupId}}}
+            | (B64UrlByteString <$> linkEntityId) == Just publicGroupId -> void $ updateGroupFromLinkData user gInfo sLinkData Nothing
           _ -> throwChatError CEInvalidConnReq
         let publicGroupData_ = groupSLinkData_ >>= \GroupShortLinkData {publicGroupData} -> publicGroupData
             publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
@@ -4713,7 +4714,7 @@ processChatCommand cxt nm = \case
             _ -> processChatCommand cxt nm $ APIConnect userId incognito $ Just ccLink
       | otherwise = pure $ CRConnectionPlan user ccLink planSimplexName otherSimplexName plan
       where
-        vName = nameDomain <$> planSimplexName
+        vName = StrJSON . nameDomain <$> planSimplexName
         joinChannelViaRelays :: CreatedLinkContact -> GroupShortLinkData -> CM ChatResponse
         joinChannelViaRelays ccl gld = do
           GroupInfo {groupId} <- prepareChannelGroup
@@ -6964,8 +6965,8 @@ chatCommandP =
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
       "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> ((Just <$> strP) <|> A.takeTill (== ' ') $> Nothing) <*> ((" resolve=" *> planResolveModeP) <|> pure PRMUnknown) <*> optional (" sig=" *> jsonP)),
-      "/_prepare contact " *> (APIPrepareContact <$> A.decimal <* A.space <*> connLinkP <*> optional (" domain=" *> strP) <* A.space <*> jsonP),
-      "/_prepare group " *> (APIPrepareGroup <$> A.decimal <* A.space <*> connLinkP' <*> (" direct=" *> onOffP <|> pure True) <*> optional (" domain=" *> strP) <* A.space <*> jsonP),
+      "/_prepare contact " *> (APIPrepareContact <$> A.decimal <* A.space <*> connLinkP <*> optional (" domain=" *> (StrJSON <$> strP)) <* A.space <*> jsonP),
+      "/_prepare group " *> (APIPrepareGroup <$> A.decimal <* A.space <*> connLinkP' <*> (" direct=" *> onOffP <|> pure True) <*> optional (" domain=" *> (StrJSON <$> strP)) <* A.space <*> jsonP),
       "/_set contact user @" *> (APIChangePreparedContactUser <$> A.decimal <* A.space <*> A.decimal),
       "/_set group user #" *> (APIChangePreparedGroupUser <$> A.decimal <* A.space <*> A.decimal),
       "/_connect contact @" *> (APIConnectPreparedContact <$> A.decimal <*> incognitoOnOffP <*> optional (A.space *> msgContentP)),
