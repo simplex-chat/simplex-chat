@@ -138,6 +138,7 @@ revokeInGroup :: HasCallStack => ChatController -> TestCC -> Text -> Text -> IO 
 revokeInGroup cc member code outcome = do
   sendGroupCmd member (revokeCmd code)
   waitStoredItem cc (revokeReply code outcome)
+  awaitOnConsole member (revokeReply code outcome)
 
 -- The name is quoted because console output quotes a name with a space.
 botName :: String
@@ -269,6 +270,7 @@ issueTracked :: HasCallStack => ChatController -> TestCC -> String -> Int -> IO 
 issueTracked cc member badgeType uses = do
   sendGroupCmd member ("/issue " <> badgeType <> " uses " <> show uses)
   (citemId, body) <- waitTrackerItemOf cc uses
+  awaitTrackerOnConsole member body
   pure (citemId, body, extractCode body)
 
 testGroupCreateReuse :: HasCallStack => TestParams -> IO ()
@@ -312,7 +314,7 @@ testMissedOwnerPromotedOnStart :: HasCallStack => TestParams -> IO ()
 testMissedOwnerPromotedOnStart ps = do
   svc <- prepareGroupService ps
   -- A demoted owner with the flag cleared looks like a join the lane never handled.
-  withTwoMembersOwnerUnset svc $ \cc gid _ -> setMemberRole cc gid "alice" "member"
+  withTwoMembersOwnerUnset svc $ \cc gid alice bob -> setMemberRoleSeen cc gid [alice, bob] "alice" "member"
   runGroupService svc $ \cc env gid -> do
     waitMemberRole cc gid "alice" "owner"
     awaitLane cc env
@@ -324,16 +326,16 @@ testEarliestPromotedOnLaterJoin ps = do
   runWithOwner svc $ \cc env gid alice -> do
     setMemberRole cc gid "alice" "member"
     executeSql cc "UPDATE sx_badge_service_group SET owner_bootstrapped = 0"
-    withMemberJoined ps cc env gid alice $ \_ -> do
+    withMemberJoined ps cc env gid alice $ \bob -> do
       waitMemberRole cc gid "alice" "owner"
-      awaitLane cc env
+      awaitLaneOnConsoles cc env [alice, bob]
       memberRoles cc gid `shouldReturn` [("alice", "owner"), ("bob", "member")]
 
 testJoiningMemberSkippedOnStart :: HasCallStack => TestParams -> IO ()
 testJoiningMemberSkippedOnStart ps = do
   svc <- prepareGroupService ps
-  withTwoMembersOwnerUnset svc $ \cc gid _ -> do
-    setMemberRole cc gid "alice" "member"
+  withTwoMembersOwnerUnset svc $ \cc gid alice bob -> do
+    setMemberRoleSeen cc gid [alice, bob] "alice" "member"
     withTransaction (chatStore cc) $ \db ->
       DB.execute db "UPDATE group_members SET member_status = 'accepted' WHERE group_id = ? AND local_display_name = 'alice'" (Only gid)
   runGroupService svc $ \cc env gid -> do
@@ -344,9 +346,9 @@ testJoiningMemberSkippedOnStart ps = do
 testHandMadeOwnerKeptOnStart :: HasCallStack => TestParams -> IO ()
 testHandMadeOwnerKeptOnStart ps = do
   svc <- prepareGroupService ps
-  withTwoMembersOwnerUnset svc $ \cc gid _ -> do
-    setMemberRole cc gid "bob" "owner"
-    setMemberRole cc gid "alice" "member"
+  withTwoMembersOwnerUnset svc $ \cc gid alice bob -> do
+    setMemberRoleSeen cc gid [alice, bob] "bob" "owner"
+    setMemberRoleSeen cc gid [alice, bob] "alice" "member"
   runGroupService svc $ \cc env gid -> do
     awaitLane cc env
     memberRoles cc gid `shouldReturn` [("alice", "member"), ("bob", "owner")]
@@ -410,17 +412,19 @@ listening port =
 testLeftOwnerReplacedOnStart :: HasCallStack => TestParams -> IO ()
 testLeftOwnerReplacedOnStart ps = do
   svc <- prepareGroupService ps
-  withTwoMembersOwnerUnset svc $ \cc gid bob -> do
-    setMemberRole cc gid "bob" "owner"
-    setMemberRole cc gid "alice" "member"
+  withTwoMembersOwnerUnset svc $ \cc gid alice bob -> do
+    setMemberRoleSeen cc gid [alice, bob] "bob" "owner"
+    setMemberRoleSeen cc gid [alice, bob] "alice" "member"
     send bob ("/l " <> groupName)
     pollUntilTrue $ (== Just "left") <$> memberStatus cc gid "bob"
+    drainUntil bob ["#" <> groupName <> ": you left the group"]
+    drainUntil alice ["#" <> groupName <> ": bob left the group"]
   runGroupService svc $ \cc _ gid -> waitMemberRole cc gid "alice" "owner"
 
 testSetUpOwnerNotReplacedOnStart :: HasCallStack => TestParams -> IO ()
 testSetUpOwnerNotReplacedOnStart ps = do
   svc <- prepareGroupService ps
-  runWithOwner svc $ \cc _ gid _ -> setMemberRole cc gid "alice" "member"
+  runWithOwner svc $ \cc _ gid alice -> setMemberRoleSeen cc gid [alice] "alice" "member"
   runGroupService svc $ \cc env gid -> do
     awaitLane cc env
     memberRoles cc gid `shouldReturn` [("alice", "member")]
@@ -434,13 +438,13 @@ memberStatus cc gid name =
       <> T.unpack name
       <> "'"
 
-withTwoMembersOwnerUnset :: HasCallStack => GroupSvc -> (ChatController -> Int64 -> TestCC -> IO ()) -> IO ()
+withTwoMembersOwnerUnset :: HasCallStack => GroupSvc -> (ChatController -> Int64 -> TestCC -> TestCC -> IO ()) -> IO ()
 withTwoMembersOwnerUnset svc@GroupSvc {gsPs = ps} action =
   runWithOwner svc $ \cc env gid alice ->
     withMemberJoined ps cc env gid alice $ \bob -> do
       -- The lane must handle bob's join before the flag is cleared, or it would act on the cleared flag in this run.
-      awaitLane cc env
-      action cc gid bob
+      awaitLaneOnConsoles cc env [alice, bob]
+      action cc gid alice bob
       executeSql cc "UPDATE sx_badge_service_group SET owner_bootstrapped = 0"
 
 testFirstJoinerPromoted :: HasCallStack => TestParams -> IO ()
@@ -466,9 +470,9 @@ testFailedPromotionNotRetried ps = do
     withNewTestChat ps "alice" aliceProfile $ \alice -> do
       joinGroup cc alice
       pollUntilTrue $ mgOwnerBootstrapped <$> storedGroup cc
-      awaitLane cc env
+      awaitLaneOnConsoles cc env [alice]
       setBotRole cc "owner"
-      withMemberJoined ps cc env gid alice $ \_ -> awaitLane cc env
+      withMemberJoined ps cc env gid alice $ \bob -> awaitLaneOnConsoles cc env [alice, bob]
       memberRoles cc gid `shouldReturn` [("alice", "member"), ("bob", "member")]
       drainConsole alice
 
@@ -527,6 +531,8 @@ testBlockedMemberCommandIgnored ps = do
       deleted `shouldBe` blockedByAdminMark
       content `shouldSatisfy` T.isInfixOf "/bulk legend months 255 count 100"
       ownerIssuesNext cc alice 1
+      awaitOnConsole alice "Code: SB-"
+      awaitOnConsole bob "Code: SB-"
 
 -- The lane is a single FIFO drainer, so the owner's next code proves every earlier command was handled.
 ownerIssuesNext :: HasCallStack => ChatController -> TestCC -> Int -> IO ()
@@ -545,6 +551,7 @@ testSupportScopeIgnored ps =
     send alice "/_send #1(_support) text /issue legend"
     waitStoredItem cc "/issue legend"
     ownerIssuesNext cc alice 1
+    awaitOnConsole alice "Code: SB-"
 
 testLiveMessageIgnored :: HasCallStack => TestParams -> IO ()
 testLiveMessageIgnored ps =
@@ -552,6 +559,7 @@ testLiveMessageIgnored ps =
     send alice ("/live #" <> groupName <> " /issue legend")
     waitStoredItem cc "/issue legend"
     ownerIssuesNext cc alice 1
+    awaitOnConsole alice "Code: SB-"
 
 testOtherGroupEventIgnored :: HasCallStack => TestParams -> IO ()
 testOtherGroupEventIgnored ps = do
@@ -581,6 +589,7 @@ testIssueMonths ps =
   withGroupOwner ps $ \_ cc _ alice -> do
     sendGroupCmd alice "/issue legend months 12"
     waitCodeMonths cc "legend" `shouldReturn` 12
+    awaitOnConsole alice "Code: SB-"
     freeCodeCount cc `shouldReturn` 1
 
 testBulkPartialFailureListsIssued :: HasCallStack => TestParams -> IO ()
@@ -650,6 +659,7 @@ testMultiUseTracker ps =
     usedUp <- waitItemText cc trackerItemId "All 2 uses redeemed"
     sentItemsWithCode cc code `shouldReturn` [usedUp]
     redeemViaService gsKey cc env code >>= (`shouldAnswerError` STECodeUsed)
+    awaitTrackerOnConsole alice usedUp
 
 testStaleRefreshIgnored :: HasCallStack => TestParams -> IO ()
 testStaleRefreshIgnored ps =
@@ -659,7 +669,7 @@ testStaleRefreshIgnored ps =
     redeemOk gsKey cc env code
     usedUp <- waitItemText cc trackerItemId "All 2 uses redeemed"
     replayRefresh cc env code 2
-    awaitLane cc env
+    awaitLaneOnConsoles cc env [alice]
     sentItemsWithCode cc code `shouldReturn` [usedUp]
 
 testCountersKeptApart :: HasCallStack => TestParams -> IO ()
@@ -670,8 +680,9 @@ testCountersKeptApart ps =
     void $ waitItemText cc firstItemId "2 of 5 uses remaining"
     (secondItemId, _, secondCode) <- issueTracked cc alice "legend" 3
     replicateM_ 3 (redeemOk gsKey cc env secondCode)
-    void $ waitItemText cc secondItemId "All 3 uses redeemed"
+    secondUsedUp <- waitItemText cc secondItemId "All 3 uses redeemed"
     readItemText cc firstItemId >>= (`shouldSatisfy` T.isInfixOf "2 of 5 uses remaining")
+    awaitTrackerOnConsole alice secondUsedUp
 
 testLanelessRedeemRefreshesTracker :: HasCallStack => TestParams -> IO ()
 testLanelessRedeemRefreshesTracker ps =
@@ -684,15 +695,17 @@ testLanelessRedeemRefreshesTracker ps =
     t1 `shouldSatisfy` T.isInfixOf "1 of 2 uses remaining"
     t1 `shouldSatisfy` T.isInfixOf "last used"
     redeemOkWith gsKey cc Nothing code
-    readItemText cc trackerItemId >>= (`shouldSatisfy` T.isInfixOf "All 2 uses redeemed")
+    usedUp <- readItemText cc trackerItemId
+    usedUp `shouldSatisfy` T.isInfixOf "All 2 uses redeemed"
     redeemedTrackerCount cc `shouldReturn` 1
+    awaitTrackerOnConsole alice usedUp
 
 testQueuedRequestRefreshesTracker :: HasCallStack => TestParams -> IO ()
 testQueuedRequestRefreshesTracker ps =
   withGroupOwner ps $ \_ cc env alice -> do
     (trackerItemId, _, code) <- issueTracked cc alice "supporter" 2
     queueRedemption cc env code
-    void $ waitItemText cc trackerItemId "1 of 2 uses remaining"
+    waitItemText cc trackerItemId "1 of 2 uses remaining" >>= awaitTrackerOnConsole alice
 
 testQueuedRequestWithoutGroupConfig :: HasCallStack => TestParams -> IO ()
 testQueuedRequestWithoutGroupConfig ps = do
@@ -714,6 +727,7 @@ testTrackerRepost ps =
     readItemText cc itemId0 `shouldReturn` tracker0
     sentAt <- trackerSentAt cc 2
     sentAt `shouldSatisfy` (> backdated)
+    awaitTrackerOnConsole alice tracker1
 
 testRefusedEditReposted :: HasCallStack => TestParams -> IO ()
 testRefusedEditReposted ps =
@@ -726,6 +740,7 @@ testRefusedEditReposted ps =
     redeemOk gsKey cc env code
     usedUp <- waitItemText cc itemId1 "All 2 uses redeemed"
     sentItemsWithCode cc code `shouldReturn` [tracker0, usedUp]
+    awaitTrackerOnConsole alice usedUp
 
 testFailedRepostDropped :: HasCallStack => TestParams -> IO ()
 testFailedRepostDropped ps =
@@ -742,6 +757,7 @@ testFailedRepostDropped ps =
     redeemOk gsKey cc env code
     (_, tracker1) <- waitTrackerRepost cc 2 itemId0
     tracker1 `shouldSatisfy` T.isInfixOf "All 2 uses redeemed"
+    awaitTrackerOnConsole alice tracker1
 
 testDeletedTrackerNotReposted :: HasCallStack => TestParams -> IO ()
 testDeletedTrackerNotReposted ps =
@@ -749,7 +765,7 @@ testDeletedTrackerNotReposted ps =
     (itemId0, _, code) <- issueTracked cc alice "supporter" 2
     deleteItem cc itemId0
     readItemText cc itemId0 `shouldReturn` ""
-    trackerNeverReposted gsKey cc env code itemId0 []
+    trackerNeverReposted gsKey cc env alice code itemId0 []
 
 testDeletedTrackerNotRepostedOnRevoke :: HasCallStack => TestParams -> IO ()
 testDeletedTrackerNotRepostedOnRevoke ps =
@@ -767,7 +783,7 @@ testDeletedTrackerUsedUp ps =
     (itemId0, _, code) <- issueTracked cc alice "supporter" 2
     deleteItem cc itemId0
     replicateM_ 2 $ redeemOk gsKey cc env code
-    awaitLane cc env
+    awaitLaneOnConsoles cc env [alice]
     sentItemsWithCode cc code `shouldReturn` []
 
 testModeratedTrackerNotRepostedOnRevoke :: HasCallStack => TestParams -> IO ()
@@ -788,7 +804,7 @@ testModeratedTrackerNotReposted ps =
     byMember `shouldSatisfy` isJust
     content `shouldSatisfy` T.isInfixOf code
     readItemText cc itemId0 `shouldReturn` tracker0
-    trackerNeverReposted gsKey cc env code itemId0 [tracker0]
+    trackerNeverReposted gsKey cc env alice code itemId0 [tracker0]
 
 -- This is the item_deleted value the core writes for a message a member deleted for everyone.
 moderatedMark :: Int
@@ -796,15 +812,15 @@ moderatedMark = 1
 
 -- The code must be the 2-use tracked one: two claims, the second past the edit window and using it up,
 -- leave the code's bot items as they were.
-trackerNeverReposted :: HasCallStack => BadgeIssuerKey -> ChatController -> ServiceState -> Text -> Int64 -> [Text] -> IO ()
-trackerNeverReposted key cc env code itemId0 codeItems = do
+trackerNeverReposted :: HasCallStack => BadgeIssuerKey -> ChatController -> ServiceState -> TestCC -> Text -> Int64 -> [Text] -> IO ()
+trackerNeverReposted key cc env member code itemId0 codeItems = do
   redeemOk key cc env code
-  awaitLane cc env
+  awaitLaneOnConsoles cc env [member]
   sentItemsWithCode cc code `shouldReturn` codeItems
   trackerAnchor cc 2 `shouldReturn` Just itemId0
   void $ backdateTracker cc 2
   redeemOk key cc env code
-  awaitLane cc env
+  awaitLaneOnConsoles cc env [member]
   sentItemsWithCode cc code `shouldReturn` codeItems
   trackerAnchor cc 2 `shouldReturn` Just itemId0
 
@@ -839,6 +855,7 @@ testGroupRevokeRepairsTracker ps =
     retired <- waitItemText cc trackerItemId "Revoked"
     retired `shouldBe` retiredText code
     waitStoredItem cc (revokeReply code "Already revoked.")
+    awaitOnConsole alice (revokeReply code "Already revoked.")
     revokedTrackerCount cc `shouldReturn` 1
 
 testRevokeRepeatPastWindow :: HasCallStack => TestParams -> IO ()
@@ -890,7 +907,7 @@ testStalledTrackerReconciledOnRestart ps = do
     (stalledItemId, _, code) <- issueTracked cc alice "supporter" 5
     redeemOk gsKey cc env code
     redeemOk gsKey cc env code
-    awaitLane cc env
+    awaitLaneOnConsoles cc env [alice]
     stalled <- waitItemText cc stalledItemId "3 of 5 uses remaining"
     redeemLosingRefresh gsKey cc code
     readItemText cc stalledItemId `shouldReturn` stalled
@@ -965,7 +982,7 @@ testRevokeRetiresTracker ps =
     retired `shouldBe` retiredText code
     revokedTrackerCount cc `shouldReturn` 1
     replayRefresh cc env code 2
-    awaitLane cc env
+    awaitLaneOnConsoles cc env [alice]
     readItemText cc trackerItemId `shouldReturn` retired
     revokedTrackerCount cc `shouldReturn` 1
     redeemViaService gsKey cc env code >>= (`shouldAnswerError` STECodeInvalid)
@@ -996,6 +1013,7 @@ testServiceRevokeRepairsTracker ps =
     revokeRaw cc code `shouldReturn` Right "Already revoked."
     readItemText cc trackerItemId `shouldReturn` retiredText code
     revokedTrackerCount cc `shouldReturn` 1
+    awaitTrackerOnConsole alice (retiredText code)
 
 -- A discarded code makes later code ids differ from the group id, so swapped arguments fail.
 offsetCodeIds :: HasCallStack => ChatController -> IO ()
@@ -1055,6 +1073,10 @@ awaitLane cc env = do
   issued <- codeCount cc
   atomically $ writeTQueue (groupEventQ env) (GEInGroup mgGroupId (GACommand GROwner "/issue supporter"))
   pollUntilTrue $ (> issued) <$> codeCount cc
+
+-- The lane's reply to awaitLane's command reaches each member after every message the lane sent before it.
+awaitLaneOnConsoles :: HasCallStack => ChatController -> ServiceState -> [TestCC] -> IO ()
+awaitLaneOnConsoles cc env members = awaitLane cc env >> forM_ members (`awaitOnConsole` "Code: SB-")
 
 -- Saving a tracker's item id is the lane's last write for its command, so the lane is idle after it.
 settleLane :: HasCallStack => ChatController -> ServiceState -> Int64 -> IO ()
@@ -1321,6 +1343,16 @@ setMemberRole cc gid name role = do
   sendChatCmdStr cc ("/mr #" <> groupName <> " " <> T.unpack name <> " " <> T.unpack role) >>= (`shouldSatisfy` isRight)
   waitMemberRole cc gid name role
 
+-- Each member's console shows the bot's role change, naming the member or "your role".
+setMemberRoleSeen :: HasCallStack => ChatController -> Int64 -> [TestCC] -> Text -> Text -> IO ()
+setMemberRoleSeen cc gid members name role = do
+  from <- fromMaybe (error $ "no member " <> T.unpack name) . lookup name <$> memberRoles cc gid
+  setMemberRole cc gid name role
+  forM_ members $ \member -> do
+    viewer <- userName member
+    let whose = if viewer == T.unpack name then "your role" else "the role of " <> T.unpack name
+    drainUntil member ["#" <> groupName <> ": " <> botName <> " changed " <> whose <> " from " <> T.unpack from <> " to " <> T.unpack role]
+
 waitMemberBlocked :: HasCallStack => ChatController -> Int64 -> Text -> IO ()
 waitMemberBlocked cc gid name =
   pollUntilTrue $ (== Just (Just ("blocked" :: Text))) <$> queryFirst cc restrictionSql
@@ -1349,7 +1381,18 @@ replyTo :: HasCallStack => ChatController -> TestCC -> String -> IO Text
 replyTo cc member cmd = do
   lastId <- maxChatItemId cc
   sendGroupCmd member cmd
-  waitReceivedItemId cc lastId (T.pack cmd) >>= waitReplyAfter cc
+  reply <- waitReceivedItemId cc lastId (T.pack cmd) >>= waitReplyAfter cc
+  awaitOnConsole member reply
+  pure reply
+
+-- A line left unread when the test ends fails the per-core teardown check, however late the bot's reply arrives.
+awaitOnConsole :: HasCallStack => TestCC -> Text -> IO ()
+awaitOnConsole member reply =
+  drainUntil member ["#" <> groupName <> " " <> botName <> "> " <> T.unpack (T.takeWhile (/= '\n') reply)]
+
+-- A tracker shows as its code line, then its state line, which tells its post and its edits apart.
+awaitTrackerOnConsole :: HasCallStack => TestCC -> Text -> IO ()
+awaitTrackerOnConsole member body = drainUntil member [T.unpack $ T.drop 1 $ T.dropWhile (/= '\n') body]
 
 maxChatItemId :: ChatController -> IO Int64
 maxChatItemId cc = fromMaybe 0 <$> queryFirst cc "SELECT COALESCE(MAX(chat_item_id), 0) FROM chat_items"
