@@ -56,9 +56,9 @@ import chat.simplex.common.model.ServerOperator.Companion.dummyOperatorInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.badges.BadgesView
+import chat.simplex.common.views.badges.currentShownBadge
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.newchat.noShownBadge
 import chat.simplex.common.views.usersettings.UserAddressView
 import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
 import chat.simplex.common.views.usersettings.showAddShortLinkAlert
@@ -969,7 +969,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       VersionFeature.FeatureView(
         icon = null,
         titleId = MR.strings.v7_0_invest,
-        view = { modalManager -> InvestInSimpleXChatView(modalManager) }
+        view = { InvestInSimpleXChatView() }
       ),
       VersionFeature.FeatureDescription(
         icon = MR.images.ic_alternate_email,
@@ -996,7 +996,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       VersionFeature.FeatureView(
         icon = null,
         titleId = MR.strings.v7_1_invest,
-        view = { modalManager -> InvestInSimpleXChatView(modalManager) }
+        view = { InvestInSimpleXChatView() }
       ),
       VersionFeature.FeatureView(
         icon = null,
@@ -1004,18 +1004,18 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         view = { modalManager -> SupporterBadgeWhatsNew(modalManager) }
       ),
       VersionFeature.FeatureDescription(
-        icon = null,
+        icon = MR.images.ic_alternate_email,
         titleId = MR.strings.v7_1_simplex_names,
         descrId = MR.strings.v7_1_simplex_names_descr,
         learnMoreLink = "https://simplex.chat/blog/20260722-simplex-public-names.html"
       ),
       VersionFeature.FeatureDescription(
-        icon = null,
+        icon = MR.images.ic_bigtop_updates,
         titleId = MR.strings.v7_1_channels,
         descrId = MR.strings.v7_1_channels_descr
       ),
       VersionFeature.FeatureDescription(
-        icon = null,
+        icon = MR.images.ic_outline_terminal,
         titleId = MR.strings.v7_1_flat_layout,
         descrId = MR.strings.v7_1_flat_layout_descr
       ),
@@ -1026,23 +1026,34 @@ private val versionDescriptions: List<VersionDescription> = listOf(
 @Composable
 private fun SupporterBadgeWhatsNew(modalManager: ModalManager) {
   Row(Modifier.padding(bottom = 12.dp).fillMaxWidth()) {
-    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-      Text(
-        stringResource(MR.strings.v7_1_supporter_badge_title),
-        style = MaterialTheme.typography.h4,
-        fontWeight = FontWeight.Medium
-      )
+    Column(Modifier.weight(1f)) {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(bottom = 4.dp)
+      ) {
+        Image(painterResource(MR.images.badge_supporter), stringResource(MR.strings.v7_1_supporter_badge_title), Modifier.size(24.dp))
+        Text(
+          stringResource(MR.strings.v7_1_supporter_badge_title),
+          style = MaterialTheme.typography.h4,
+          fontWeight = FontWeight.Medium,
+          modifier = Modifier.padding(bottom = 6.dp)
+        )
+      }
       Text(
         stringResource(MR.strings.v7_1_supporter_badge_descr),
         fontSize = 15.sp,
         maxLines = 10
       )
-      if (noShownBadge()) {
+      if (currentShownBadge() != null) {
+        Text(stringResource(MR.strings.v7_1_supporter_badge_have), Modifier.padding(top = 6.dp), fontSize = 15.sp)
+      } else {
         Text(
           stringResource(MR.strings.v7_1_supporter_badge_get),
           color = MaterialTheme.colors.primary,
           fontSize = 15.sp,
           modifier = Modifier
+            .padding(top = 6.dp)
             .pointerHoverIcon(PointerIcon.Hand)
             .clickable(
               interactionSource = remember { MutableInteractionSource() },
@@ -1109,12 +1120,8 @@ private const val CROWDFUNDING_IMAGE_CORNER_RADIUS_RATIO = 0.03f
 
 private class CrowdfundingLayout(
   val maxImageWidth: Dp,
-  val imageShape: Shape,
-  // the modal manager that shows the page in the center of the window, or null when nothing does
-  private val centerOfWindow: ModalManager?
-) {
-  fun inCenterOfWindow(modalManager: ModalManager) = modalManager === centerOfWindow
-}
+  val imageShape: Shape
+)
 
 // the images are designed for the width of a phone screen, which Android always gives them. On desktop
 // they are limited to their own width, and their radius is scaled with them, as they are still shown
@@ -1124,9 +1131,9 @@ private val crowdfundingLayout = if (appPlatform.isDesktop)
   CrowdfundingLayout(CROWDFUNDING_PAGE_IMAGE_WIDTH, object : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
       Outline.Rounded(RoundRect(size.toRect(), CornerRadius(size.width * CROWDFUNDING_IMAGE_CORNER_RADIUS_RATIO)))
-  }, ModalManager.center)
+  })
 else
-  CrowdfundingLayout(Dp.Unspecified, RoundedCornerShape(CROWDFUNDING_IMAGE_CORNER_RADIUS), null)
+  CrowdfundingLayout(Dp.Unspecified, RoundedCornerShape(CROWDFUNDING_IMAGE_CORNER_RADIUS))
 
 // Google Play policy restricts promoting investments, so Play builds only show it in the US
 @Composable
@@ -1146,10 +1153,10 @@ fun isInUs(): Boolean =
       || androidPlayStoreCountry.value == null
 
 @Composable
-private fun InvestInSimpleXChatView(modalManager: ModalManager) {
+private fun InvestInSimpleXChatView() {
   if (!crowdfundingAvailable()) return
   val uriHandler = LocalUriHandler.current
-  val showGetStake = { modalManager.showModalCloseable(cardScreen = true) { close -> GetStakeView(showFirstImage = false, inCenterOfWindow = crowdfundingLayout.inCenterOfWindow(modalManager), close = close) } }
+  val openWefunder = { uriHandler.openUriCatching(WHATS_NEW_WEFUNDER_URL) }
   Column(modifier = Modifier.padding(bottom = 12.dp)) {
     Text(
       generalGetString(MR.strings.v7_1_invest),
@@ -1157,6 +1164,24 @@ private fun InvestInSimpleXChatView(modalManager: ModalManager) {
       fontWeight = FontWeight.Medium,
       modifier = Modifier.padding(bottom = 6.dp)
     )
+    if (BuildConfigCommon.SIMPLEX_ASSETS) {
+      Image(
+        painterResource(MR.images.crowdfunding_1),
+        contentDescription = null,
+        contentScale = ContentScale.FillWidth,
+        modifier = Modifier
+          .padding(vertical = 8.dp)
+          .widthIn(max = MAX_CROWDFUNDING_IMAGE_WIDTH)
+          .fillMaxWidth()
+          .clip(crowdfundingLayout.imageShape)
+          .pointerHoverIcon(PointerIcon.Hand)
+          .clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null,
+            onClick = openWefunder
+          )
+      )
+    }
     Text(generalGetString(MR.strings.v7_1_invest_descr), fontSize = 15.sp)
     Text(
       generalGetString(MR.strings.v7_1_invest_learn_more),
@@ -1168,27 +1193,9 @@ private fun InvestInSimpleXChatView(modalManager: ModalManager) {
         .clickable(
           interactionSource = remember { MutableInteractionSource() },
           indication = null,
-          onClick = { uriHandler.openUriCatching(WHATS_NEW_WEFUNDER_URL) }
+          onClick = openWefunder
         )
     )
-    if (BuildConfigCommon.SIMPLEX_ASSETS) {
-      Image(
-        painterResource(MR.images.crowdfunding_1),
-        contentDescription = null,
-        contentScale = ContentScale.FillWidth,
-        modifier = Modifier
-          .padding(top = 8.dp)
-          .widthIn(max = MAX_CROWDFUNDING_IMAGE_WIDTH)
-          .fillMaxWidth()
-          .clip(crowdfundingLayout.imageShape)
-          .pointerHoverIcon(PointerIcon.Hand)
-          .clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = null,
-            onClick = showGetStake
-          )
-      )
-    }
   }
 }
 
@@ -1228,7 +1235,7 @@ private val getStakeSlides: List<CrowdfundingSlide> = listOf(
 )
 
 @Composable
-fun GetStakeView(showFirstImage: Boolean, inCenterOfWindow: Boolean = false, close: () -> Unit) {
+fun GetStakeView(inCenterOfWindow: Boolean = false, close: () -> Unit) {
   val uriHandler = LocalUriHandler.current
   val stopped = chatModel.chatRunning.value == false
 
@@ -1257,10 +1264,7 @@ fun GetStakeView(showFirstImage: Boolean, inCenterOfWindow: Boolean = false, clo
     // in the center of the window the page is wide enough for the title to fit on one line
     val title = "Invest in\nSimpleX Chat"
     AppBarTitle(if (inCenterOfWindow) title.replace("\n", " ") else title, withPadding = false)
-    // What's new already shows the image of the first slide, above the link that opens this page
-    if (showFirstImage) {
-      slideImage(getStakeSlides[0])
-    }
+    slideImage(getStakeSlides[0])
     Text(
       buildAnnotatedString {
         append(getStakeSlides[0].text)
@@ -1271,7 +1275,7 @@ fun GetStakeView(showFirstImage: Boolean, inCenterOfWindow: Boolean = false, clo
           }
         }
       },
-      Modifier.padding(top = if (showFirstImage) 8.dp else 0.dp),
+      Modifier.padding(top = 8.dp),
       lineHeight = 24.sp
     )
 
