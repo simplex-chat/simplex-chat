@@ -4969,7 +4969,7 @@ alert button */
 "Port" = "Port";
 
 /* No comment provided by engineer. */
-"Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out." = "Az előre fizetett hónapoknál nincs számlázási dátum. A kitűző minden hónapban újra kiállítódik a már kifizetett egyenlegből, és akkor jár le, amikor az egyenleg elfogy.";
+"No renewal: the badge ends when the prepaid months run out." = "Nincs megújítás: a kitűző lejár, amikor az előre fizetett hónapok elfogynak.";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Az utolsó üzenet tervezetének megőrzése a mellékletekkel együtt.";
@@ -5572,7 +5572,7 @@ swipe action */
 "Sandbox purchase" = "Tesztkörnyezeti vásárlás";
 
 /* alert message */
-"Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app." = "A tesztkörnyezeti vásárlások nem lesznek jóváírva. Kitűzőt csak az App Store-ból származó alkalmazásverzióban lehet vásárolni.";
+"Buy badges in the App Store version of the app." = "Kitűzőt az alkalmazás App Store-verziójában vásárolhat.";
 
 /* alert action
 alert button
@@ -6713,7 +6713,7 @@ server test failure */
 "The store did not confirm this purchase." = "Az áruház nem erősítette meg ezt a vásárlást.";
 
 /* No comment provided by engineer. */
-"The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store." = "Az áruház egy olyan tranzakciót adott vissza, amelyet az Apple nem írt alá. A SimpleX nem tudja ellenőrizni ezt a vásárlást az App Store-ban.";
+"Apple did not sign this purchase, so it cannot be verified." = "Az Apple nem írta alá ezt a vásárlást, ezért nem ellenőrizhető.";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "A beillesztett szöveg nem egy SimpleX-hivatkozás.";

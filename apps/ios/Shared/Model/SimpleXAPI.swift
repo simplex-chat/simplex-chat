@@ -2261,7 +2261,7 @@ func redeemErrorText(_ error: Error, purchase: Bool) -> String {
     if let e = error as? Product.PurchaseError {
         switch e {
         case .productUnavailable: return NSLocalizedString("This badge is not on sale.", comment: "alert message")
-        case .purchaseNotAllowed: return NSLocalizedString("In-app purchases are not allowed on this device.", comment: "alert message")
+        case .purchaseNotAllowed: return NSLocalizedString("Purchases are off on this device.", comment: "alert message")
         default: break
         }
     }

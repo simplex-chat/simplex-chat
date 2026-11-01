@@ -2867,7 +2867,7 @@
     <string name="badges_error_title">Impossible d’utiliser le code</string>
     <string name="badges_error_invalid_code">Ce code n’est pas valide.</string>
     <string name="badges_error_service_not_configured">Cette version de l’application ne permet pas d’utiliser les codes de badge.</string>
-    <string name="badges_error_already_active">Ce profil possède déjà un badge. Utilisez le code sur un autre profil, ou lorsque ce badge expire.</string>
+    <string name="badges_error_already_active">Ce profil possède déjà un badge.</string>
     <string name="badges_error_code_invalid">Ce code n’a pas été reconnu.</string>
     <string name="badges_error_code_used">Ce code a déjà été utilisé.</string>
     <string name="badges_error_code_expired">Ce code a expiré.</string>
@@ -2882,7 +2882,7 @@
     <string name="badges_support_ended">Votre badge a expiré</string>
     <string name="badges_shown_on_your_profile">affiché sur votre profil</string>
     <string name="badges_ends">Se termine</string>
-    <string name="badges_prepaid_footer">Les mois prépayés n’ont pas de date de facturation. Le badge est réémis chaque mois à partir du solde que vous avez déjà payé, et se termine lorsque celui-ci est épuisé.</string>
+    <string name="badges_prepaid_footer">Pas de renouvellement : le badge expire à la fin des mois prépayés.</string>
     <string name="badges_type_investor">Investisseur</string>
     <string name="badges_support_ended_on">Votre badge a expiré le %1$s.</string>
     <string name="badges_remind_me_later">Me le rappeler plus tard</string>
@@ -2962,7 +2962,7 @@
     <string name="badges_link_added_profile">Le badge a été ajouté au profil %1$s.</string>
     <string name="badges_error_service_not_configured_purchase">Cette version de l’application ne permet pas d’acheter des badges.</string>
     <string name="badges_error_already_active_purchase">Ce profil possède déjà un badge.</string>
-    <string name="badges_error_store_purchase_open">Un achat effectué dans la boutique est en cours d’ajout à ce profil. Utilisez le code une fois l’ajout terminé, ou sur un autre profil.</string>
+    <string name="badges_error_store_purchase_open">Un achat est en cours d’ajout à ce profil. Réessayez plus tard.</string>
     <string name="badges_error_store_purchase_open_purchase">Un achat effectué dans la boutique est en cours d’ajout à ce profil.</string>
     <string name="badges_error_unknown_purchase">Le service des badges ne reconnaît pas ce badge.</string>
     <string name="badges_error_service_internal">Le service des badges a signalé une erreur interne.</string>

@@ -2853,7 +2853,7 @@
     <string name="badges_pay_monthly">Pagar %1$s/mes</string>
     <string name="badges_pay_annual">Pagar %1$s/año</string>
     <string name="badges_how_it_works_p3">Nadie puede vincular dos pruebas distintas entre sí ni con la compra.</string>
-    <string name="badges_prepaid_footer">Los meses prepagados no tienen fecha de facturación. La insignia se vuelve a emitir cada mes a partir del saldo que ya has pagado, y finaliza cuando este se agota.</string>
+    <string name="badges_prepaid_footer">Sin renovación: la insignia finaliza cuando se agotan los meses prepagados.</string>
     <string name="badges_purchase_error">Error en la compra</string>
     <string name="badges_redeem">Canjear</string>
     <string name="badges_redeem_code_button">Canjear código de insignia</string>
@@ -2881,7 +2881,7 @@
     <string name="badges_error_code_expired">El código ha caducado.</string>
     <string name="badges_error_invalid_code">El código no es válido.</string>
     <string name="badges_error_code_invalid">El código no se ha reconocido.</string>
-    <string name="badges_error_already_active">El perfil ya tienen una insignia. Canjea el código en otro perfil o una vez que la insignia caduque.</string>
+    <string name="badges_error_already_active">Este perfil ya tiene una insignia.</string>
     <string name="badges_error_rate_limited">Demasiados intentos. Por favor, prueba más tarde.</string>
     <string name="badges_why_simplex_is_built">Por qué fue creado SimpleX.</string>
     <string name="badges_banner_dismiss_message">Puedes apoyar SimpleX más tarde en Configuración.</string>

@@ -2852,7 +2852,7 @@
     <string name="info_row_file_expired">Arquivo ficou disponível até</string>
     <string name="file_error_expired">O arquivo ficou disponível até %1$s.</string>
     <string name="forwarded_from">Encaminhado de</string>
-    <string name="badges_prepaid_footer">Os meses pré-pagos não têm uma data de cobrança fixa. O selo é renovado a cada mês, usando o saldo que você já pagou, e deixa de valer quando esse saldo acaba.</string>
+    <string name="badges_prepaid_footer">Sem renovação: o selo deixa de valer quando os meses pré-pagos acabarem.</string>
     <string name="badges_purchase_error">Erro na compra</string>
     <string name="badges_redeem">Resgatar</string>
     <string name="badges_redeem_code_button">Resgatar código do selo</string>
@@ -2879,7 +2879,7 @@
     <string name="badges_error_code_expired">Este código expirou.</string>
     <string name="badges_error_invalid_code">Este código é inválido.</string>
     <string name="badges_error_code_invalid">Este código não foi reconhecido.</string>
-    <string name="badges_error_already_active">Este perfil já tem um selo. Resgate o código em outro perfil ou aguarde até que o selo atual expire.</string>
+    <string name="badges_error_already_active">Este perfil já tem um selo.</string>
     <string name="badges_error_rate_limited">Muitas tentativas. Tente novamente mais tarde.</string>
     <string name="until_register_simplex_domain">até que você possa registrar um domínio SimpleX</string>
     <string name="update_app_register_simplex_domain">Atualize o aplicativo para registrar um domínio SimpleX.</string>

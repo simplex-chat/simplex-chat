@@ -4969,7 +4969,7 @@ alert button */
 "Port" = "Port";
 
 /* No comment provided by engineer. */
-"Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out." = "Für vorausbezahlte Monate gibt es kein Abrechnungsdatum. Der Badge wird monatlich aus Ihrem Guthaben erneuert und endet, wenn dieses aufgebraucht ist.";
+"No renewal: the badge ends when the prepaid months run out." = "Keine Verlängerung: Der Badge endet, wenn die vorausbezahlten Monate aufgebraucht sind.";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Den letzten Nachrichtenentwurf, auch mit seinen Anhängen, aufbewahren.";
@@ -5572,7 +5572,7 @@ swipe action */
 "Sandbox purchase" = "Test-Kauf";
 
 /* alert message */
-"Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app." = "Test-Käufe werden nicht angerechnet. Badges können nur in der App-Store-Version der App gekauft werden.";
+"Buy badges in the App Store version of the app." = "Kaufen Sie Badges in der App-Store-Version der App.";
 
 /* alert action
 alert button
@@ -6713,7 +6713,7 @@ server test failure */
 "The store did not confirm this purchase." = "Der Store hat diesen Kauf nicht bestätigt.";
 
 /* No comment provided by engineer. */
-"The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store." = "Der Store hat eine nicht von Apple signierte Transaktion zurückgegeben. SimpleX kann diesen Kauf daher nicht mit dem App Store verifizieren.";
+"Apple did not sign this purchase, so it cannot be verified." = "Apple hat diesen Kauf nicht signiert, daher kann er nicht verifiziert werden.";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Der von Ihnen eingefügte Text ist kein SimpleX-Link.";
