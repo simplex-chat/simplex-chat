@@ -166,9 +166,11 @@ absent `[btcpay]` does for Bitcoin and Monero. Its keys:
   it expired and logs an error. Check such orders in the Stripe Dashboard. After a restart, the
   hour starts again.
 
-The service creates each payment intent with `metadata[order]`, the order's id, which the page
-shows the buyer as "Reference" (`invoice_id` in `sx_badge_service_invoices`). It is not a secret,
-and support finds the intent of the reference a buyer quotes from it in the Dashboard.
+The service creates each payment intent with `metadata[order]`, the order's reference. A badge
+order's is its id, which the page shows the buyer as "Reference" (`invoice_id` in
+`sx_badge_service_invoices`); a name order's is `name:0x<order hash>` (`order_hash` in
+`sx_badge_service_name_registrations`). Neither is a secret, and support finds an intent's order
+from it in the Dashboard.
 
 The service fills `publishable_key` into the shell at boot: the built `index.html` ships
 with an empty `<meta id="stripe-publishable-key" name="stripe-publishable-key" content="">`
@@ -599,6 +601,25 @@ simplex.domains {
 The service sets each file's type and `Cache-Control` itself: `no-cache`, and a year for
 `/assets/*`, so the names site's fonts and images are revalidated rather than kept for a day.
 
+### Codes-only launch
+
+`[names] codes_only = on` lets only prepaid codes register names, as for the launch to the investors
+who hold them before anyone can pay. It is `off` by default. While it is on:
+
+- the names site's shell is served and exported with `<meta name="simplex-names-mode" content="codes">`
+  in place of the build's `content="open"`, and the page then offers only codes. The badges site's
+  shell is unchanged;
+- `POST /api/invoice` for a name answers `403 {"error": "codes_only"}`, before it reads the order,
+  so no order takes money for a name;
+- search, link previews, code checks, code orders (`POST /api/name/register`) and the registration
+  view work as before. Webhooks and the poller still settle the invoices already open, and badges
+  sell as before.
+
+The setting is read at startup, and the export is written then, so switching it is an edit of the
+ini and a restart, with the same build. Codes for investors come from the group (needs `[group]`, see
+[From the group](#from-the-group)) or from `//issue name` in `--run-cli` (see
+[From the command line](#from-the-command-line)).
+
 ## Issuing codes
 
 Operators issue codes two ways: from the service's own command line in `--run-cli` mode, and from the
@@ -622,7 +643,8 @@ whether the code was sold (`paid`), is awaiting payment (`unpaid`), or was issue
 code row when the invoice is created, and settlement is what marks it paid.
 
 `//issue name` makes a prepaid name code (`SN<length>-…`): it pays for one name of at least
-`<length>` letters, 6 to 63, for `years` years, 2 to 10 (default 2). The status is as above.
+`<length>` letters, 6 to 63, for `years` years, 2 to 10 (default 2). The status is as above: an
+order refuses an `unpaid` name code with `payment_pending`.
 
 The code is printed once and only its `SHA-256` is stored, so a code that is not copied when it is
 shown cannot be recovered.
