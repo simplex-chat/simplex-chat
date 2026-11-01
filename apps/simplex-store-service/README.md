@@ -127,14 +127,31 @@ proxy appends.
 
 The BTCPay API key needs four permissions, each scoped to the one store:
 `cancreateinvoice` and `canviewinvoices` for checkout and the poller,
-`canviewstoresettings` to log the store's live payment methods at startup, and
+`canviewstoresettings` to log the store's live payment methods at startup and to read the store's
+rates for late crypto credits, and
 `canmodifyinvoices` so `POST /api/invoice/:id/cancel` can invalidate an invoice at BTCPay
 rather than only in this store.
+
+**Do not set `speed_policy = HighSpeed` when names are sold** (`[names]` configured). Under it
+BTCPay can mark a payment `Settled` with no confirmation, so the service never credits crypto that
+reaches a name invoice after the invoice closed: the money stays pending, the poller alerts about it
+once it is older than its read window (about 72 hours), and support settles it by hand. The service
+judges each invoice by the policy it was created with, so changing the setting later credits nothing
+that arrived under `HighSpeed`. With `MediumSpeed` (the template's value) or a slower policy, late
+bitcoin is credited to the order's balance once confirmed, at the lower of the invoice's rate and the
+rate when it is credited.
 
 BTCPay keeps an invoice it has closed `Expired` (or `Invalid` after a cancel) when money arrives late.
 The invoice view reports `paidInFull` on such an invoice once BTCPay reads it `PaidLate` or
 `PaidOver`, or its due is 0 or less, and reports an overpaid invoice's `cryptoAmountDue` as `0`,
 never below.
+
+**Set the Monero plugin's settled-confirmation threshold (`InvoiceSettledConfirmationThreshold`) to
+at least 1.** BTCPay's API does not show how many confirmations a Monero payment has, only that
+threshold, so late Monero is credited only on an invoice made while it was 1 or more; it is then
+credited as late bitcoin is. Left unset (the plugin's default) or at 0,
+every late Monero payment stays pending and goes to support, as under `HighSpeed`. Each invoice
+keeps the threshold it was made with, so raising it later credits nothing already paid.
 
 Give the service a BTCPay store of its own, and a Stripe account of its own if card payments are
 on. The poller lists every invoice and payment intent of the last three days or so, and one it did
@@ -604,8 +621,8 @@ who hold them before anyone can pay. It is `off` by default. While it is on:
 - the names site's shell is served and exported with `<meta name="simplex-names-mode" content="codes">`
   in place of the build's `content="open"`, and the page then offers only codes. The badges site's
   shell is unchanged;
-- `POST /api/invoice` for a name answers `403 {"error": "codes_only"}`, before it reads the order,
-  so no order takes money for a name;
+- `POST /api/invoice` for a name and `POST /api/registration/:id/spend` answer
+  `403 {"error": "codes_only"}`, before they read the order, so no order takes money for a name;
 - search, link previews, code checks, code orders (`POST /api/name/register`), the registration
   view, the reveal and Try again work as before. Webhooks and the poller still settle the invoices already open, and badges sell as before.
 
@@ -921,7 +938,8 @@ were already given out, and the command answers with an error. A multi-use code 
 be revoked, which stops the uses that remain.
 
 Core parses `//...` into `CustomChatCommand` and leaves it to the service's `preCmdHook`, which is
-why issuing codes lives in the service rather than in core.
+why issuing codes lives in the service rather than in core. `//refund`, the other command of this
+console, is in [Refunding a name balance](#refunding-a-name-balance).
 
 ### From the group
 
@@ -943,7 +961,7 @@ the other kind's unit gets the usage reply, which lists the form, each kind's bo
 of each. The group's command menu shows every kind in each command's hint and fills the hint into
 the message box. Without `[names]`, `/issue name` and `/bulk name` get a reply that names are not
 enabled, and issue nothing. `/revoke` takes badge and name codes, so a name code issued before names
-were turned off can still be withdrawn. A member's role
+were turned off can still be withdrawn. The group has no `/refund`. A member's role
 is checked as the service last saw it, so a command sent by a moderator just demoted or removed can still run if it
 reaches the service first; revoke any code the service posts for them after the change. `uses`
 above 1 makes a multi-use code, tracked by a group message showing its remaining uses and the time
@@ -1002,3 +1020,57 @@ join link still works and its messages hold every code posted there.
 
 The configured `display_name` and `description` apply only to the group the service creates. Editing
 them later is logged as not applied and changes nothing.
+
+## Refunding a name balance
+
+A paid name order keeps its money as a balance when it ends `taken` (another buyer registered the
+name first), and when a payment reaches its invoice
+after the invoice closed. The buyer spends a balance on another name from Your names, or asks for it
+back: the page tells them to write to chat@simplex.chat with the order's reference, which is its
+invoice id, or its registration id for an order without an invoice. Nothing is refunded
+automatically, and the service never learns where to send money. Support records each refund in
+`--run-cli` mode with the service stopped, like the other `//` commands:
+
+```
+//refund <reference>
+//refund <reference> <cents>
+```
+
+1. Run `//refund <reference>` with the reference the buyer sent. It records nothing and answers the
+   balance, what paid for it and the command that refunds it:
+
+   ```
+   Order <id>: balance $100.00 (credited $100.00, refunded $0.00). Paid by: order <id>: $100.00 by btc on invoice <invoice id>. To record its refund: //refund <reference> 10000
+   ```
+
+   `Paid by` starts at this order and follows every balance the money came through back to the
+   first order: each order with what its invoice paid and by which method (`card`, `btc` or
+   `xmr`), the part paid from the balance of the next order listed, and, marked `late`, money
+   credited after its invoice closed.
+2. Run the command the answer ends with. The cents must equal the whole balance: a refund zeroes it,
+   and part of a balance is never refunded. Other cents record nothing, and the answer gives the
+   balance.
+3. The answer, `Recorded a refund of $100.00 for order <id>. Refund it now, by: …`, repeats the
+   chain. Pay the balance's amount in US dollars back now, by the methods it lists. The refund is
+   recorded first so that the buyer cannot spend the money while it is paid
+   back. The service logs each recorded refund at info with the order's registration id and the
+   cents.
+
+A balance that an open order holds is never refunded: that order is buying another name with it and
+its invoice is waiting for the difference. The command names the order instead, with its invoice's
+expiry unless money reached the invoice:
+
+- `its invoice open until <time>`: if the buyer pays it, the balance is spent; if not, it is released
+  once the invoice expires and the poller, in service mode, closes the order. Run the command again
+  then.
+- `its invoice expired at <time>; start the service so the poller closes that order, 10 minutes
+  after the expiry at the earliest, then stop it and run //refund again`: the poller runs only in
+  service mode. Its first pass from 10 minutes after the expiry closes the order and releases the
+  hold; a card order closes only once Stripe accepts the cancel.
+- `whose invoice holds money`: a payment reached the invoice, before or after its expiry; the hold
+  stays until that payment settles, which spends the balance, or the provider closes the invoice,
+  which releases it.
+
+The command also answers when the reference matches no order, when the order has no balance, and
+when the cents are not the balance. A refunded balance shows `amount` 0 and its `refunded` total in
+Your names; a later late payment credits it again, and a second refund adds to `refunded`.
