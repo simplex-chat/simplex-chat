@@ -142,6 +142,7 @@ actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? 
   return if (filePath != null) {
     loadedImageCache[filePath] ?: try {
       val data = if (file?.fileSource?.cryptoArgs != null) readCryptoFile(filePath, file.fileSource.cryptoArgs) else File(filePath).readBytes()
+      if (!isImageFile(data)) return null
       val bitmap = decodeBoundedImage(data, MAX_THUMBNAIL_DIMENSION)
       (bitmap to data).also { loadedImageCache[filePath] = it }
     } catch (e: Exception) {

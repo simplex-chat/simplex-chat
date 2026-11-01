@@ -8,7 +8,7 @@
 
 > **subscribeChatItems**(`bot`, `onMessage`, `commands`): `void`
 
-Defined in: [src/bot.ts:110](../bot.ts#L110)
+Defined in: [src/bot.ts:111](../bot.ts#L111)
 
 ## Parameters
 

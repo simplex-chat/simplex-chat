@@ -14,6 +14,9 @@
 "Cannot forward message" = "Nem lehet továbbítani az üzenetet";
 
 /* No comment provided by engineer. */
+"Cannot generate random database passphrase" = "Nem sikerült véletlenszerű adatbázis-jelmondatot előállítani";
+
+/* No comment provided by engineer. */
 "Comment" = "Megjegyzés";
 
 /* No comment provided by engineer. */

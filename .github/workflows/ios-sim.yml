@@ -95,12 +95,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: scripts/ci/ios-sim/earlier-run.sh "${{ steps.names.outputs.backend }}"
 
-  core:
-    name: core library for the iOS simulator
+  app:
+    name: app in the iOS simulator
     needs: plan
-    if: needs.plan.outputs.core-run == ''
     runs-on: macos-26
-    timeout-minutes: 240
+    timeout-minutes: 360
+    env:
+      START_BACKEND: ${{ needs.plan.outputs.run-backend }}
+      BUILD_CORE: ${{ needs.plan.outputs.core-run == '' }}
+      BUILD_BACKEND: ${{ needs.plan.outputs.run-backend == 'true' && needs.plan.outputs.backend-run == '' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -113,27 +116,28 @@ jobs:
           xcodebuild -version
           xcrun --show-sdk-path
           ls /Library/Developer/CommandLineTools/SDKs || true
+          xcrun simctl list runtimes
 
       - name: Use the macOS 26 SDK
         run: scripts/ci/ios-sim/use-macos26-sdk.sh
 
       - name: Setup Haskell
+        if: env.BUILD_CORE == 'true' || env.BUILD_BACKEND == 'true'
         uses: simplex-chat/setup-haskell-action@v2
         with:
           ghc-version: ${{ env.GHC_VER }}
           cabal-version: ${{ env.CABAL_VER }}
 
       - name: Install libraries
+        if: env.BUILD_CORE == 'true'
         run: brew install openssl@3 libffi gmp
 
       - name: Build core library
-        id: build
+        if: env.BUILD_CORE == 'true'
         run: scripts/ci/ios-sim/build-core.sh ~/Downloads/${{ env.CORE_PKG }}
 
-      - name: Patch core library for the simulator
-        run: scripts/ci/ios-sim/prepare-libs.sh
-
       - name: Upload core library
+        if: env.BUILD_CORE == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: ${{ needs.plan.outputs.core }}
@@ -142,36 +146,26 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
-  backend:
-    name: test backend for the app
-    needs: plan
-    if: needs.plan.outputs.run-backend == 'true' && needs.plan.outputs.backend-run == ''
-    runs-on: macos-26
-    timeout-minutes: 240
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Show runner
-        run: |
-          sw_vers
-          xcodebuild -version
-          xcrun --show-sdk-path
-          ls /Library/Developer/CommandLineTools/SDKs || true
-
-      - name: Use the macOS 26 SDK
-        run: scripts/ci/ios-sim/use-macos26-sdk.sh
-
-      - name: Setup Haskell
-        uses: simplex-chat/setup-haskell-action@v2
+      - name: Download core library
+        if: env.BUILD_CORE != 'true'
+        uses: actions/download-artifact@v8
         with:
-          ghc-version: ${{ env.GHC_VER }}
-          cabal-version: ${{ env.CABAL_VER }}
+          name: ${{ needs.plan.outputs.core }}
+          path: ~/Downloads
+          run-id: ${{ needs.plan.outputs.core-run }}
+          github-token: ${{ github.token }}
+
+      - name: Prepare libraries
+        run: |
+          scripts/ci/ios-sim/prepare-libs.sh
+          scripts/ios/update-pbxproj.sh
 
       - name: Build backend
+        if: env.BUILD_BACKEND == 'true'
         run: scripts/ci/ios-sim/build-backend.sh ~/Downloads/${{ env.BACKEND_PKG }}
 
       - name: Upload backend
+        if: env.BUILD_BACKEND == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: ${{ needs.plan.outputs.backend }}
@@ -180,51 +174,13 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
-  app:
-    name: app in the iOS simulator
-    needs: [plan, core, backend]
-    # core and backend are skipped when an earlier run built them, and backend also when the run doesn't start it
-    if: ${{ !cancelled() && !failure() && needs.plan.result == 'success' }}
-    runs-on: macos-26
-    timeout-minutes: 120
-    env:
-      START_BACKEND: ${{ needs.plan.outputs.run-backend }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Show runner
-        run: |
-          sw_vers
-          df -h /
-          xcodebuild -version
-          xcrun --show-sdk-path
-          ls /Library/Developer/CommandLineTools/SDKs || true
-          xcrun simctl list runtimes
-
-      - name: Use the macOS 26 SDK
-        run: scripts/ci/ios-sim/use-macos26-sdk.sh
-
-      - name: Download core library
-        uses: actions/download-artifact@v8
-        with:
-          name: ${{ needs.plan.outputs.core }}
-          path: ~/Downloads
-          run-id: ${{ needs.plan.outputs.core-run || github.run_id }}
-          github-token: ${{ github.token }}
-
-      - name: Prepare libraries
-        run: |
-          scripts/ci/ios-sim/prepare-libs.sh
-          scripts/ios/update-pbxproj.sh
-
       - name: Download backend
-        if: env.START_BACKEND == 'true'
+        if: env.START_BACKEND == 'true' && env.BUILD_BACKEND != 'true'
         uses: actions/download-artifact@v8
         with:
           name: ${{ needs.plan.outputs.backend }}
           path: ~/Downloads
-          run-id: ${{ needs.plan.outputs.backend-run || github.run_id }}
+          run-id: ${{ needs.plan.outputs.backend-run }}
           github-token: ${{ github.token }}
 
       - name: Start test backend
@@ -266,7 +222,7 @@ jobs:
         run: scripts/ci/ios-sim/install-axe.sh
 
       - name: Run smoke test
-        run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app" "$RUNNER_TEMP/smoke-test"
+        run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app" "$RUNNER_TEMP/smoke-test" images
 
       - name: Stop test backend
         if: ${{ !cancelled() && env.START_BACKEND == 'true' }}
@@ -353,6 +309,14 @@ jobs:
 
       - name: Run smoke test
         run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/SimpleX.app" "$RUNNER_TEMP/claude-test/smoke-test"
+
+      - name: Add test images
+        run: |
+          images=(tests/fixtures/test.jpg tests/fixtures/logo-large-rgba.png)
+          if sips -r 90 -s format heic tests/fixtures/test.jpg --out "$RUNNER_TEMP/test-card-portrait.heic"; then
+            images+=("$RUNNER_TEMP/test-card-portrait.heic")
+          fi
+          xcrun simctl addmedia "$SIM_UDID" "${images[@]}"
 
       - name: Install Claude Code
         run: |

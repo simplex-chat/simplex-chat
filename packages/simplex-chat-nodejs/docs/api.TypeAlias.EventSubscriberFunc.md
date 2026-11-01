@@ -8,7 +8,7 @@
 
 > **EventSubscriberFunc**\<`K`\> = (`event`, `chat`) => `void` \| `Promise`\<`void`\>
 
-Defined in: [src/api.ts:50](../api.ts#L50)
+Defined in: [src/api.ts:53](../api.ts#L53)
 
 ## Type Parameters
 

@@ -10,8 +10,25 @@ import SwiftUI
 import SimpleXChat
 
 struct VersionView: View {
-    @EnvironmentObject var theme: AppTheme
     @State var versionInfo: CoreVersionInfo?
+
+    var body: some View {
+        VersionLayout(appVersion: appVersion, appBuild: appBuild, versionInfo: versionInfo)
+            .onAppear {
+                do {
+                    versionInfo = try apiGetVersion()
+                } catch let error {
+                    logger.error("apiGetVersion error: \(responseError(error))")
+                }
+            }
+    }
+}
+
+struct VersionLayout: View {
+    @EnvironmentObject var theme: AppTheme
+    let appVersion: String?
+    let appBuild: String?
+    let versionInfo: CoreVersionInfo?
 
     var body: some View {
         List {
@@ -37,18 +54,11 @@ struct VersionView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .onAppear {
-            do {
-                versionInfo = try apiGetVersion()
-            } catch let error {
-                logger.error("apiGetVersion error: \(responseError(error))")
-            }
-        }
     }
 }
 
 struct VersionView_Previews: PreviewProvider {
     static var previews: some View {
-        VersionView()
+        VersionLayout(appVersion: "7.1", appBuild: "363", versionInfo: CoreVersionInfo(version: "7.1.0.14", simplexmqVersion: "7.1.0.14", simplexmqCommit: "c0c416daf052eb0215ae432ae665522a7c96c0a6"))
     }
 }

@@ -17,7 +17,6 @@ import java.net.URI
 import java.util.*
 import javax.imageio.*
 import javax.imageio.stream.MemoryCacheImageOutputStream
-import kotlin.math.sqrt
 
 private fun errorBitmap(): ImageBitmap =
   ImageIO.read(ByteArrayInputStream(Base64.getMimeDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="))).toComposeImageBitmap()
@@ -63,33 +62,6 @@ actual fun decodeBase64Image(base64: String, width: Int): ImageBitmap? =
     null
   }
 
-actual fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String {
-  var img = image
-  var str = compressImageStr(img)
-  while (str.length > maxDataSize) {
-    val ratio = sqrt(str.length.toDouble() / maxDataSize.toDouble())
-    val clippedRatio = kotlin.math.min(ratio, 2.0)
-    val width = (img.width.toDouble() / clippedRatio).toInt()
-    val height = img.height * width / img.width
-    img = img.scale(width, height)
-    str = compressImageStr(img)
-  }
-  return str
-}
-actual fun resizeImageToDataSize(image: ImageBitmap, usePng: Boolean, maxDataSize: Long): ByteArrayOutputStream {
-  var img = image
-  var stream = compressImageData(img, usePng)
-  while (stream.size() > maxDataSize) {
-    val ratio = sqrt(stream.size().toDouble() / maxDataSize.toDouble())
-    val clippedRatio = kotlin.math.min(ratio, 2.0)
-    val width = (img.width.toDouble() / clippedRatio).toInt()
-    val height = img.height * width / img.width
-    img = img.scale(width, height)
-    stream = compressImageData(img, usePng)
-  }
-  return stream
-}
-
 actual fun cropToSquare(image: ImageBitmap): ImageBitmap {
   var xOffset = 0
   var yOffset = 0
@@ -109,18 +81,6 @@ actual fun cropToSquare(image: ImageBitmap): ImageBitmap {
     paint = Paint()
   )
   return croppedImage
-}
-
-actual fun compressImageStr(bitmap: ImageBitmap): String {
-  val usePng = bitmap.hasAlpha()
-  val ext = if (usePng) "png" else "jpg"
-  return try {
-    val encoded  = Base64.getEncoder().encodeToString(compressImageData(bitmap, usePng).toByteArray())
-    "data:image/$ext;base64,$encoded"
-  } catch (e: Exception) {
-    Log.e(TAG, "resizeImageToStrSize error: $e")
-    throw e
-  }
 }
 
 actual fun compressImageData(bitmap: ImageBitmap, usePng: Boolean): ByteArrayOutputStream {
@@ -212,6 +172,10 @@ actual fun isAnimImage(uri: URI, drawable: Any?): Boolean {
 
 actual fun loadImageBitmap(inputStream: InputStream): ImageBitmap =
   Image.makeFromEncoded(inputStream.readBytes()).toComposeImageBitmap()
+
+actual fun resizeImageFileUri(uri: URI, maxSize: Int): String = chatResizeImageFileUri(uri.toFile().absolutePath, maxSize)
+
+actual fun resizeImageFileData(uri: URI, maxSize: Int): String = chatResizeImageFile(uri.toFile().absolutePath, maxSize, -1)
 
 // https://stackoverflow.com/a/68926993
 fun BufferedImage.rotate(angle: Double): BufferedImage {

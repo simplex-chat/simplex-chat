@@ -18,6 +18,7 @@ module Simplex.Chat.Badges.Service
     BadgeUpgrade (..),
     BadgeServiceResponse (..),
     BadgeServiceErrorCode (..),
+    SubscriptionState (..),
     BadgeCatalog (..),
     BadgePrice (..),
     BadgeOffer (..),
@@ -92,9 +93,12 @@ data BadgeServiceCommand
         upgrade :: Maybe BadgeUpgrade -- upgrade store 1-time badge
       }
   | BSCUpgradeBadgeSubscription
-      { badgeRequest :: BadgeRequest, -- TODO [badges] drop when implemented: a client-stated expiry leaves the week's anonymity set
-        payment :: ServicePayment, -- store payments only
+      { payment :: ServicePayment, -- names the subscription and the tier to wait for; the store's answer is what is granted
         balance :: BadgeBalance
+      }
+  | BSCTransferBadge
+      { masterKey :: BadgeMasterKey,
+        payment :: ServicePayment -- the store receipt of the subscription to move to the signing key
       }
   | BSCIssueBadge
       { balance :: BadgeBalance -- no badgeRequest: the service holds the key, the tier and the expiry
@@ -121,7 +125,8 @@ data BadgeServiceResponse
   | BSPBadgeCredential
       { credential :: Maybe BadgeCredential, -- Nothing when no balance to issueBadge or no current credential for pause
         receipt :: Maybe Text, -- not provided for lifetime badges
-        statement :: BadgeStatement
+        statement :: BadgeStatement,
+        subscription :: Maybe SubscriptionState -- present exactly when a store subscription funds the purchase
       }
   | BSPError
       { code :: BadgeServiceErrorCode,

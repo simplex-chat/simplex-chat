@@ -1,7 +1,8 @@
 import * as path from "path"
 import * as fs from "fs"
+import * as assert from "assert"
 import {CEvt, T} from "@simplex-chat/types"
-import {api} from ".."
+import {api, util} from ".."
 import {SmpServer, describeIfSmpServerAvailable, startSmpServer} from "./smpServer"
 
 const CT = T.ChatType
@@ -159,4 +160,69 @@ describeIfSmpServerAvailable("API tests (use local SMP server)", () => {
     await bob.close()
     await carol.close()
   }, 90000)
+
+  it("should connect via prepared contact and read messages", async () => {
+    const alice = await api.ChatApi.init({type: "sqlite", filePrefix: alicePath})
+    const bob = await api.ChatApi.init({type: "sqlite", filePrefix: bobPath})
+    const aliceUser = await alice.apiCreateActiveUser({displayName: "alice", fullName: ""})
+    const bobUser = await bob.apiCreateActiveUser({displayName: "bob", fullName: ""})
+    await alice.startChat()
+    await bob.startChat()
+    await useSmpServer(alice)
+    await useSmpServer(bob)
+    const address = await alice.apiCreateUserAddress(aliceUser.userId)
+    const [plan, addressLink, planSimplexName] = await bob.apiConnectPlan(bobUser.userId, util.contactAddressStr(address))
+    assert(plan.type === "contactAddress" && plan.contactAddressPlan.type === "ok" && plan.contactAddressPlan.contactSLinkData_)
+    expect(planSimplexName).toBeUndefined()
+    const prepared = await bob.apiPrepareContact(bobUser.userId, addressLink, plan.contactAddressPlan.contactSLinkData_)
+    assert(prepared.chatInfo.type === CT.Direct)
+    const request = alice.wait("receivedContactRequest")
+    await expect(bob.apiConnectPreparedContact(prepared.chatInfo.contact.contactId, false)).resolves.toMatchObject({type: "startedConnectionToContact"})
+    const connected = Promise.all([alice.wait("contactConnected"), bob.wait("contactConnected")])
+    await alice.apiAcceptContactRequest((await request).contactRequest.contactRequestId)
+    const [{contact: bobContact}, {contact: aliceContact}] = await connected
+    const hello = alice.wait("newChatItems", ({chatItems}) => chatItems.some(ci => ci.chatItem.meta.itemText === "hello"))
+    await bob.apiSendTextMessage([CT.Direct, aliceContact.contactId], "hello")
+    await hello
+    const initial = await alice.apiGetChat(CT.Direct, bobContact.contactId, {type: "initial", count: 10})
+    const item = initial.chatItems.find(ci => ci.meta.itemText === "hello")
+    assert(item?.meta.itemStatus.type === "rcvNew")
+    const {itemId} = item.meta
+    await expect(alice.apiChatItemsRead(CT.Direct, bobContact.contactId, [itemId])).resolves.toMatchObject({type: CT.Direct})
+    const around = await alice.apiGetChat(CT.Direct, bobContact.contactId, {type: "around", chatItemId: itemId, count: 0})
+    expect(around.chatItems.find(ci => ci.meta.itemId === itemId)?.meta.itemStatus.type).toBe("rcvRead")
+    const {chatItem, chatItemInfo} = await alice.apiGetChatItemInfo(CT.Direct, bobContact.contactId, itemId)
+    expect(chatItem.chatItem.meta.itemId).toBe(itemId)
+    expect(chatItemInfo.fileXftpServers).toEqual([])
+    const info = await bob.apiContactInfo(aliceContact.contactId)
+    expect(info.contact.contactId).toBe(aliceContact.contactId)
+    expect(info.customUserProfile).toBeUndefined()
+    const [, invitationLink] = await bob.apiConnectPlan(bobUser.userId, await alice.apiCreateLink(aliceUser.userId))
+    const reconnected = Promise.all([alice.wait("contactConnected"), bob.wait("contactConnected")])
+    await expect(bob.apiConnectPreparedLink(bobUser.userId, false, invitationLink)).resolves.toMatchObject({type: "sentConfirmation"})
+    await reconnected
+    await alice.close()
+    await bob.close()
+  }, 60000)
+
+  it("should get and set network config", async () => {
+    const alice = await api.ChatApi.init({type: "sqlite", filePrefix: alicePath})
+    await alice.apiCreateActiveUser({displayName: "alice", fullName: ""})
+    const networkConfig = await alice.apiGetNetworkConfig()
+    const updated = {...networkConfig, smpProxyFallback: T.SMPProxyFallback.AllowProtected, logTLSErrors: true}
+    await alice.apiSetNetworkConfig(updated)
+    await expect(alice.apiGetNetworkConfig()).resolves.toEqual(updated)
+    await alice.close()
+  })
+
+  it("should get user servers", async () => {
+    const alice = await api.ChatApi.init({type: "sqlite", filePrefix: alicePath})
+    const {userId} = await alice.apiCreateActiveUser({displayName: "alice", fullName: ""})
+    await alice.startChat()
+    await useSmpServer(alice)
+    const servers = await alice.apiGetUserServers(userId)
+    const custom = servers.find(({operator}) => operator === undefined)
+    expect(custom?.smpServers.map(({server, enabled}) => ({server, enabled}))).toEqual([{server: smpServer.address, enabled: true}])
+    await alice.close()
+  })
 })
