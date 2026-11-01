@@ -31,7 +31,7 @@ struct CIGroupInvitationView: View {
         let v = ItemWithMeta {
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary, showStatus: false, showEdited: false)
         } content: { inlineMeta in
-            ZStack(alignment: .bottomTrailing) {
+            ZStack(alignment: Alignment(horizontal: .trailing, vertical: .lastTextBaseline)) {
                 ZStack {
                     VStack(alignment: .leading) {
                         groupInfoView(action)
