@@ -1,5 +1,6 @@
 package chat.simplex.common.views.badges
 
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -153,12 +154,12 @@ private fun PeriodCard(level: BadgeLevel, period: BadgePeriod, selectedPeriod: B
   // Light: transparent so card matches page background. Dark: subtle gray tint for visible contrast.
   val cardBackground = if (isInDarkTheme()) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
                        else MaterialTheme.colors.background
-  val shape = RoundedCornerShape(16.dp)
+  val shape = RoundedCornerShape(18.dp)
   Column(
     modifier
       .clip(shape)
       .background(cardBackground, shape)
-      .border(2.dp, borderColor, shape)
+      .border(1.dp, borderColor, shape)
       .clickable(enabled = forSale) { onSelect(period) }
       .padding(vertical = 20.dp, horizontal = 12.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
@@ -211,4 +212,19 @@ private fun billingDate(period: BadgePeriod): String {
   val date = java.time.LocalDate.now().plusMonths(period.months.toLong())
   val formatter = java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.LONG)
   return date.format(formatter)
+}
+
+@Preview
+@Composable
+fun PreviewPeriodCards() {
+  SimpleXTheme {
+    Row(
+      Modifier.fillMaxWidth().height(IntrinsicSize.Max).padding(25.dp),
+      horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+      BadgePeriod.entries.forEach { period ->
+        PeriodCard(BadgeLevel.Supporter, period, BadgePeriod.Monthly, Modifier.weight(1f).fillMaxHeight()) {}
+      }
+    }
+  }
 }
