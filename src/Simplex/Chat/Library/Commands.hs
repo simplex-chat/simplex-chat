@@ -64,7 +64,7 @@ import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey
 import qualified Simplex.Chat.Badges.Ledger as L
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeState (..), BadgeSubscription (..), OpenStorePurchase (..), StoreReceiptOrigin (..))
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
-import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), SubscriptionState (..), currentBadgeServiceVersion)
+import Simplex.Chat.StoreService (BadgeBalance (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), StoreServiceCommand (..), StoreServiceErrorCode (..), StoreServiceRequest (..), StoreServiceResponse (..), SubscriptionState (..), currentStoreServiceVersion)
 import Simplex.Chat.Badges.StorePlan (storePlan)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Wallet (deriveAccount, masterMnemonic, newEntropy)
@@ -3665,7 +3665,7 @@ processChatCommand cxt nm = \case
   APIPurchaseBadge userId echoedInvoiceId origin payment -> withUserId userId $ \user -> handOverStoreReceipt user echoedInvoiceId origin payment
   APISetBadgeSubscriptionStatus status payment -> recordStoreSubscriptionStatus status payment >> ok_
   APICreateBadgeInvoice userId -> withUserId userId $ \user -> do
-    void requireBadgeService
+    void requireStoreService
     refuseWhileBadgeHeld user
     refuseWhileStoreReceiptPending user Nothing
     g <- asks random
@@ -5462,7 +5462,7 @@ presentUserBadgeToContacts user'@User {userId, profile = LocalProfile {localBadg
 redeemBadgeCode :: NetworkRequestMode -> User -> Text -> CM ChatResponse
 redeemBadgeCode nm user@User {userId} codeText = do
   code <- maybe (throwRedeemError BREInvalidCode) pure $ parseBadgeCode codeText
-  sendTarget <- requireBadgeService
+  sendTarget <- requireStoreService
   g <- asks random
   now <- liftIO getCurrentTime
   let codeSent = badgeCodeText code
@@ -5471,7 +5471,7 @@ redeemBadgeCode nm user@User {userId} codeText = do
   (present_, redeemed) <- withEntityLock "badgeRedeem" (CLBadgeUser userId) $ do
     stash_ <- withStore' $ \db -> getBadgeCodeRedemption db user codeSent
     stash@BadgeStash {masterKey} <- stashBadgeKeys user stash_ $ \db -> createBadgeCodeRedemption db g user codeSent now
-    requestBadgeStash nm user sendTarget stash BSCRedeemBadgeCode {masterKey, code = codeSent} >>= \case
+    requestBadgeStash nm user sendTarget stash STCRedeemBadgeCode {masterKey, code = codeSent} >>= \case
       Left (errCode, _) -> do
         when (terminalCodeError errCode) $ withStore' $ \db -> deleteBadgeCodeRedemption db user codeSent
         throwRedeemError $ BREServiceError errCode
@@ -5482,9 +5482,9 @@ redeemBadgeCode nm user@User {userId} codeText = do
   where
     -- the code will never work, so the keys stashed for it are dead; a timeout keeps them
     terminalCodeError = \case
-      BSECodeInvalid -> True
-      BSECodeUsed -> True
-      BSECodeExpired -> True
+      STECodeInvalid -> True
+      STECodeUsed -> True
+      STECodeExpired -> True
       _ -> False
 
 -- | The app hands a receipt over until it is answered credited or refused, under whichever profile is
@@ -5492,7 +5492,7 @@ redeemBadgeCode nm user@User {userId} codeText = do
 handOverStoreReceipt :: User -> Maybe Text -> StoreReceiptOrigin -> ServicePayment -> CM ChatResponse
 handOverStoreReceipt presentingUser echoedInvoiceId origin payment = do
   txRef <- maybe (throwRedeemError BREInvalidReceipt) pure $ storeTransactionRef payment
-  void requireBadgeService
+  void requireStoreService
   g <- asks random
   now <- badgeNow
   limited <- case origin of
@@ -5509,7 +5509,7 @@ handOverStoreReceipt presentingUser echoedInvoiceId origin payment = do
       _ -> throwChatError $ CEInternalError "store receipt was not recorded"
     Just BadgeReceiptRecord {receiptId, ownerId, status} -> do
       owner <- withStore $ \db -> getUser db ownerId
-      when limited $ lift (resumeStoreReceiptWork ownerId) >> throwRedeemError (BREServiceError BSETransferLimited)
+      when limited $ lift (resumeStoreReceiptWork ownerId) >> throwRedeemError (BREServiceError STETransferLimited)
       case status of
         RSHeld {} -> lift (resumeStoreReceiptWork ownerId) >> badgeStateResponse owner
         RSCredited {badgePurchaseId, refusalRecorded} -> do
@@ -5522,7 +5522,7 @@ handOverStoreReceipt presentingUser echoedInvoiceId origin payment = do
                   True -> do
                     unlessM (withStore' (`userHasBadge` owner)) $
                       whenM (withStore' $ \db -> holdStoreTransfer db g owner txRef payment now) $
-                        lift (resumeStoreReceiptWork ownerId) >> throwRedeemError (BREServiceError BSETransferLimited)
+                        lift (resumeStoreReceiptWork ownerId) >> throwRedeemError (BREServiceError STETransferLimited)
                     pure True
           movedOut <- withStore' (`purchaseMovedOut` badgePurchaseId)
           answeredHeld <- case resumeHold now payment of
@@ -5582,13 +5582,13 @@ recordStoreSubscriptionStatus reported payment = do
       _ -> True
 
 -- | The receipt will never be credited to its key; any other refusal may pass on a retry.
-storeReceiptRefused :: BadgeServiceErrorCode -> Bool
+storeReceiptRefused :: StoreServiceErrorCode -> Bool
 storeReceiptRefused = \case
-  BSEReceiptInvalid -> True
-  BSEReceiptUsed -> True
+  STEReceiptInvalid -> True
+  STEReceiptUsed -> True
   -- a badge moves only on the user's Restore, never by a retry once the limit has passed
-  BSETransferLimited -> True
-  BSETestPurchase -> True
+  STETransferLimited -> True
+  STETestPurchase -> True
   _ -> False
 
 -- | How far ahead of this device's clock a charge's purchase date may be: a payload dated further ahead is never held.
@@ -5668,8 +5668,8 @@ stashBadgeKeys user stash_ createStash = do
   unless replaying $ refuseWhileBadgeHeld user >> refuseWhileStoreReceiptPending user Nothing
   maybe (withStore' createStash) pure stash_
 
-requireBadgeService :: CM (ConnectTarget 'CMContact)
-requireBadgeService = asks (badgeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
+requireStoreService :: CM (ConnectTarget 'CMContact)
+requireStoreService = asks (storeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
 
 refuseWhileBadgeHeld :: User -> CM ()
 refuseWhileBadgeHeld user = whenM (withStore' (`userHasBadge` user)) $ throwRedeemError BREBadgeActive
@@ -5691,29 +5691,29 @@ refuseWhileStoreReceiptPending user presented_ = do
 
 -- | One attempt to turn a stash into a badge. A refusal is answered rather than thrown, with the
 -- service's retryAfter.
-requestBadgeStash :: NetworkRequestMode -> User -> ConnectTarget 'CMContact -> BadgeStash -> BadgeServiceCommand -> CM (Either (BadgeServiceErrorCode, Maybe Word32) (Maybe User, ChatResponse))
+requestBadgeStash :: NetworkRequestMode -> User -> ConnectTarget 'CMContact -> BadgeStash -> StoreServiceCommand -> CM (Either (StoreServiceErrorCode, Maybe Word32) (Maybe User, ChatResponse))
 requestBadgeStash nm user sendTarget stash@BadgeStash {purchaseKey, purchasePrivKey} request = do
-  let req = BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request}
+  let req = StoreServiceRequest {version = currentStoreServiceVersion, purchaseKey = Just purchaseKey, request}
   respBytes <- sendServiceRequestBytes nm user sendTarget Nothing (Just purchasePrivKey) req
   respData <- either (const $ throwRedeemError $ BREInvalidResponse "not JSON") pure $ J.eitherDecodeStrict' respBytes
   case J.fromJSON (J.Object respData) of
-    J.Error _ -> throwRedeemError $ BREInvalidResponse "not a badge service response"
-    J.Success BSPError {code, retryAfter} -> pure $ Left (code, retryAfter)
-    J.Success BSPBadgeCredential {credential = Just cred, statement, subscription} -> Right <$> storeRedeemedBadge user stash cred statement (boundedSubscriptionState <$> subscription)
+    J.Error _ -> throwRedeemError $ BREInvalidResponse "not a store service response"
+    J.Success STPError {code, retryAfter} -> pure $ Left (code, retryAfter)
+    J.Success STPBadgeCredential {credential = Just cred, statement, subscription} -> Right <$> storeRedeemedBadge user stash cred statement (boundedSubscriptionState <$> subscription)
     J.Success _ -> throwRedeemError $ BREInvalidResponse "unexpected response type"
 
 throwRedeemError :: BadgeRedeemError -> CM a
 throwRedeemError = throwChatError . CEBadgeRedeemError
 
-badgeServiceErrorText :: BadgeServiceErrorCode -> Text
-badgeServiceErrorText = textEncode . boundedServiceErrorCode
+storeServiceErrorText :: StoreServiceErrorCode -> Text
+storeServiceErrorText = textEncode . boundedServiceErrorCode
 
 -- | An unknown code is reported and recorded, since the service is deployed ahead of clients, but
 -- its text is the service's - so it is bounded and stripped before it reaches a terminal that acts
 -- on controls, or a sentence the app shows the user as its own.
-boundedServiceErrorCode :: BadgeServiceErrorCode -> BadgeServiceErrorCode
+boundedServiceErrorCode :: StoreServiceErrorCode -> StoreServiceErrorCode
 boundedServiceErrorCode = \case
-  BSEUnknown t -> boundedServiceText BSEUnknown errorCodeChar t
+  STEUnknown t -> boundedServiceText STEUnknown errorCodeChar t
   code -> code
   where
     errorCodeChar c = isAsciiLower c || isDigit c || c == '_'
@@ -5739,12 +5739,12 @@ badgeNow = asks (badgeCurrentTime . config) >>= liftIO
 -- | A signal carries nothing: each pass derives its work from stored state, so a signal lost or
 -- duplicated changes no outcome.
 startBadgeWork :: User -> CM' ()
-startBadgeWork user = whenM (isJust <$> asks (badgeServiceAddress . config)) $ void $ getBadgeWorker user
+startBadgeWork user = whenM (isJust <$> asks (storeServiceAddress . config)) $ void $ getBadgeWorker user
 
--- | Sent off the shared request moment, so only a build for a dev badge service may send it.
+-- | Sent off the shared request moment, so only a build for a dev store service may send it.
 requestBadgeNow :: User -> CM ChatResponse
 requestBadgeNow user@User {userId} = do
-  unlessM (asks $ badgeDevRequests . config) $ throwCmdError "/_badge request is only available in builds for a dev badge service"
+  unlessM (asks $ badgeDevRequests . config) $ throwCmdError "/_badge request is only available in builds for a dev store service"
   withStore' (`getUserBadgePurchase` user) >>= \case
     Just p@UserBadgePurchase {shown = True} -> do
       badgeNow >>= requestBadgeIssue userId p >>= \case
@@ -5913,19 +5913,19 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
     credit ri delay cmd =
       tryAllErrors (attempt cmd) >>= \answer -> serviceAnswered ri delay refuse (failed ri delay) answer $ \(present_, _) -> pure $ SROCredited present_
     -- retried takes only a service error that is not a refusal: a thrown error is recorded as a failure as it is
-    serviceAnswered :: RetryInterval -> Int64 -> (BadgeIssueFailure -> CM StoreReceiptOutcome) -> (BadgeIssueFailure -> Maybe Word32 -> CM StoreReceiptOutcome) -> Either ChatError (Either (BadgeServiceErrorCode, Maybe Word32) r) -> (r -> CM StoreReceiptOutcome) -> CM StoreReceiptOutcome
+    serviceAnswered :: RetryInterval -> Int64 -> (BadgeIssueFailure -> CM StoreReceiptOutcome) -> (BadgeIssueFailure -> Maybe Word32 -> CM StoreReceiptOutcome) -> Either ChatError (Either (StoreServiceErrorCode, Maybe Word32) r) -> (r -> CM StoreReceiptOutcome) -> CM StoreReceiptOutcome
     serviceAnswered ri delay refused retried answer answered = case answer of
       Left e -> failed ri delay (badgeIssueFailure e) Nothing
       Right (Left (code, retryAfter))
         | storeReceiptRefused code -> refused $ serviceFailure code retryAfter
         | otherwise -> retried (serviceFailure code retryAfter) retryAfter
       Right (Right r) -> answered r
-    purchaseCmd payment' = BSCPurchaseBadge {masterKey, payment = payment', upgrade = Nothing}
-    transferCmd payment' = BSCTransferBadge {masterKey, payment = payment'}
+    purchaseCmd payment' = STCPurchaseBadge {masterKey, payment = payment', upgrade = Nothing}
+    transferCmd payment' = STCTransferBadge {masterKey, payment = payment'}
     attempt cmd = do
       user <- withStore $ \db -> getUser db userId
       refuseWhileBadgeHeld user
-      sendTarget <- requireBadgeService
+      sendTarget <- requireStoreService
       payment' <- maybe (throwChatError $ CEInternalError "held store payment does not decode") pure $ decodeJSON payment
       requestBadgeStash NRMBackground user sendTarget stash (cmd payment')
     -- a held record whose keys already fund a purchase is a resume of that retired subscription, checked before every send
@@ -5944,7 +5944,7 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
           | isNewest, Just hold <- resumeHold now =<< decodeJSON payment -> resumeIssue ri delay user p hold now
         _ -> refuse receiptInvalid
     resumeIssue ri delay user p@UserBadgePurchase {badgePurchaseId} hold now = do
-      answer <- tryAllErrors $ requireBadgeService >>= \sendTarget -> sendBadgeIssue sendTarget userId p BSCIssueBadge (recordBadgeIssueFailure p) now
+      answer <- tryAllErrors $ requireStoreService >>= \sendTarget -> sendBadgeIssue sendTarget userId p STCIssueBadge (recordBadgeIssueFailure p) now
       answeredAt <- badgeNow
       -- a charge the service does not grant, as a revoked one, stops holding the profile once its hold ends
       let notCredited failure retryAfter = case hold of
@@ -5963,7 +5963,7 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
                 lift $ startBadgeWork user'
                 pure $ SROCredited (Just user')
           -- the service's own check interval
-          _ -> notCredited BIFServiceError {code = BSEPaymentPending, retryable = True} (Just 3600)
+          _ -> notCredited BIFServiceError {code = STEPaymentPending, retryable = True} (Just 3600)
     -- Settles with nothing to announce: a charge expired or no newer than the last one credited, or to a tier that is not
     -- higher, the renewal check grants the change, and a badge no longer shown is resumed by the charge's next hand-over.
     changeTier ri delay purchaseId = do
@@ -5978,8 +5978,8 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
     -- the receipt's failures are recorded on the record, not as the purchase's failed renewal, as the badge shown still covers
     upgradeIssue ri delay user p@UserBadgePurchase {badgePurchaseId} payment' tier now = do
       failure_ <- newTVarIO Nothing
-      let upgradeCmd balance = BSCUpgradeBadgeSubscription {payment = payment', balance}
-      answer <- tryAllErrors $ requireBadgeService >>= \sendTarget -> sendBadgeIssue sendTarget userId p upgradeCmd (atomically . writeTVar failure_ . Just) now
+      let upgradeCmd balance = STCUpgradeBadgeSubscription {payment = payment', balance}
+      answer <- tryAllErrors $ requireStoreService >>= \sendTarget -> sendBadgeIssue sendTarget userId p upgradeCmd (atomically . writeTVar failure_ . Just) now
       answeredAt <- badgeNow
       recorded_ <- readTVarIO failure_
       let refusedInSilence failure = SRODeferred <$ withStore' (\db -> refuseStoreReceipt db receiptId payment failure)
@@ -5994,7 +5994,7 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
                     setUserBadge db user (Just $ OwnBadge cred (mkBadgeStatus answeredAt (Just True) info))
                   lift $ startBadgeWork user'
                   pure $ SROCredited (Just user')
-            _ -> failedHeld ri delay BIFServiceError {code = BSEPaymentPending, retryable = True} (Just 3600)
+            _ -> failedHeld ri delay BIFServiceError {code = STEPaymentPending, retryable = True} (Just 3600)
     -- out of attempts, the record is set aside without a refusal, so the next hand-over holds it again;
     -- this attempt's failure is not recorded yet, so it is counted here
     failedHeld ri delay failure retryAfter = do
@@ -6003,7 +6003,7 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
         then setAside
         else failed ri delay failure retryAfter
     setAside = SRODeferred <$ withStore' (`settleStoreReceipt` receiptId)
-    receiptInvalid = BIFServiceError {code = BSEReceiptInvalid, retryable = False}
+    receiptInvalid = BIFServiceError {code = STEReceiptInvalid, retryable = False}
     -- a payment adopted while this one was with the service stays held and is sent next, so nothing is announced
     refuse failure = do
       refused <- withStore' $ \db -> refuseStoreReceipt db receiptId payment failure
@@ -6297,7 +6297,7 @@ badgeIssueFailure e = case e of
 badgeFailureTransient :: BadgeIssueFailure -> Bool
 badgeFailureTransient = \case
   -- the service withholds retryAfter from internal to avoid being pressed while failing, not because it is final
-  BIFServiceError {code = BSEInternal} -> True
+  BIFServiceError {code = STEInternal} -> True
   BIFServiceError {retryable} -> retryable
   BIFServiceTimeout -> True
   BIFNetwork {} -> True
@@ -6314,10 +6314,10 @@ badgeErrorRetry = badgeFailureTransient . badgeIssueFailure
 -- since a service error is answered rather than thrown. Any request that
 -- ends without a credential the ledger still owes is recorded on the purchase as a failed renewal;
 -- nothing else records one.
-requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either (BadgeServiceErrorCode, Maybe Word32) (StatementEntry, Maybe SubscriptionState))
+requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either (StoreServiceErrorCode, Maybe Word32) (StatementEntry, Maybe SubscriptionState))
 requestBadgeIssue userId p now = do
-  sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
-  withEntityLock "badgeIssue" (CLBadgeUser userId) $ sendBadgeIssue sendTarget userId p BSCIssueBadge (recordBadgeIssueFailure p) now
+  sendTarget <- asks (storeServiceAddress . config) >>= maybe (throwCmdError "store service not configured") pure
+  withEntityLock "badgeIssue" (CLBadgeUser userId) $ sendBadgeIssue sendTarget userId p STCIssueBadge (recordBadgeIssueFailure p) now
 
 recordBadgeIssueFailure :: UserBadgePurchase -> BadgeIssueFailure -> CM ()
 recordBadgeIssueFailure UserBadgePurchase {badgePurchaseId} failure = do
@@ -6325,13 +6325,13 @@ recordBadgeIssueFailure UserBadgePurchase {badgePurchaseId} failure = do
   withStore' $ \db -> setBadgeIssueError db badgePurchaseId failedAt failure
 
 -- | 'requestBadgeIssue' for a caller that already holds the owner's badge lock, which is not reentrant.
-sendBadgeIssue :: ConnectTarget 'CMContact -> UserId -> UserBadgePurchase -> (BadgeBalance -> BadgeServiceCommand) -> (BadgeIssueFailure -> CM ()) -> UTCTime -> CM (Either (BadgeServiceErrorCode, Maybe Word32) (StatementEntry, Maybe SubscriptionState))
+sendBadgeIssue :: ConnectTarget 'CMContact -> UserId -> UserBadgePurchase -> (BadgeBalance -> StoreServiceCommand) -> (BadgeIssueFailure -> CM ()) -> UTCTime -> CM (Either (StoreServiceErrorCode, Maybe Word32) (StatementEntry, Maybe SubscriptionState))
 sendBadgeIssue sendTarget userId UserBadgePurchase {badgePurchaseId, badgeType, purchaseKey, purchasePrivKey, masterKey} command recordFailure now = do
   user <- withStore $ \db -> getUser db userId
   lastEntry <- withStore' (`getBadgeLedgerLastEntry` badgePurchaseId) >>= maybe (throwCmdError "badge ledger has no entry to assert") pure
   let req =
-        BadgeServiceRequest
-          { version = currentBadgeServiceVersion,
+        StoreServiceRequest
+          { version = currentStoreServiceVersion,
             purchaseKey = Just purchaseKey,
             request = command BadgeBalance {lastEntry}
           }
@@ -6339,7 +6339,7 @@ sendBadgeIssue sendTarget userId UserBadgePurchase {badgePurchaseId, badgeType, 
     sendServiceRequestTo NRMBackground user sendTarget Nothing (Just purchasePrivKey) req
       `catchAllErrors` \e -> recordFailure (badgeIssueFailure e) >> throwError e
   case J.fromJSON (J.Object respData) of
-    J.Success BSPBadgeCredential {credential = sentCred_, statement, subscription} -> do
+    J.Success STPBadgeCredential {credential = sentCred_, statement, subscription} -> do
       verifiedCred_ <- verifyIssuedCredential masterKey sentCred_
       g <- asks random
       -- read again: now was taken before a lock wait and an untimed request, and the check reads
@@ -6360,11 +6360,11 @@ sendBadgeIssue sendTarget userId UserBadgePurchase {badgePurchaseId, badgeType, 
         (_, _, False) -> recordUnexpected "issued badge credential has no ledger row to store it against"
         -- no credential is the service saying nothing is owed - the months ran out, or a subscription
         -- waits for its store to charge - which its statement then shows; ended after a move leaves the issued month running
-        (Nothing, _, _) | subscription /= Just SSEnded && maybe False ((> storedAt) . L.paidThrough) balance_ -> recordUnexpected "badge service issued no credential"
+        (Nothing, _, _) | subscription /= Just SSEnded && maybe False ((> storedAt) . L.paidThrough) balance_ -> recordUnexpected "store service issued no credential"
         _ -> pure ()
       maybe (throwCmdError "badge ledger has no balance") (pure . Right . (,storedSubscription)) balance_
-    J.Success BSPError {code, retryAfter} -> do
-      eToView $ ChatError $ CECommandError $ "badge service error: " <> T.unpack (badgeServiceErrorText code)
+    J.Success STPError {code, retryAfter} -> do
+      eToView $ ChatError $ CECommandError $ "store service error: " <> T.unpack (storeServiceErrorText code)
       -- retryAfter only marks the failure as one that can clear: the retry waits a stall like any request that
       -- issued nothing, since a shorter wait would let the service choose how often activations reach it
       recordFailure BIFServiceError {code = boundedServiceErrorCode code, retryable = isJust retryAfter}
@@ -6373,7 +6373,7 @@ sendBadgeIssue sendTarget userId UserBadgePurchase {badgePurchaseId, badgeType, 
       recordFailure BIFUnexpected {message = unexpectedResponse}
       throwCmdError $ T.unpack unexpectedResponse
   where
-    unexpectedResponse = "unexpected badge service response"
+    unexpectedResponse = "unexpected store service response"
     recordUnexpected message = do
       eToView $ ChatError $ CEInternalError $ T.unpack message
       recordFailure BIFUnexpected {message}

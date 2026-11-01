@@ -29,7 +29,7 @@ import Data.Time.Calendar (addDays, addGregorianMonthsClip, toGregorian)
 import Data.Time.Calendar.WeekDate (toWeekDate)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime)
 import Simplex.Chat.Badges (BadgeType)
-import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
+import Simplex.Chat.StoreService (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
 import Simplex.Chat.PaymentService.Types (InvoiceId)
 import qualified Simplex.Messaging.Crypto as C
 

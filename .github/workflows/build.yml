@@ -15,7 +15,7 @@ on:
       - "apps/simplex-chat/**"
       - "apps/simplex-bot/**"
       - "apps/simplex-bot-advanced/**"
-      - "apps/simplex-badge-service/**"
+      - "apps/simplex-store-service/**"
       - "apps/simplex-broadcast-bot/**"
       - "apps/simplex-directory-service/**"
       - "apps/multiplatform/**"
@@ -35,7 +35,7 @@ on:
       - "packages/simplex-chat-client/types/typescript/**"
       - "packages/simplex-chat-python/**"
       - "scripts/ci/package-tests.sh"
-      - "apps/simplex-badge-service/web/**"
+      - "apps/simplex-store-service/web/**"
       - "scripts/ci/packages_release.py"
       - "scripts/ci/test_packages_release.py"
     types: [opened, synchronize, reopened, ready_for_review]
