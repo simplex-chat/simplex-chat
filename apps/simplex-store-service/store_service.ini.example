@@ -89,6 +89,31 @@ idle_seconds = 60
 ;[group]
 ;display_name = SimpleX Badges
 ;description = Welcome to the badges group
+;
+; the names store: omit [names] and [chain] together to turn it off.
+;[names]
+; testing until the .simplex TLD is deployed
+;tld = testing
+; the paid years of a name; at least 2, the controller's minimum
+;years = 2
+; a name's term starts here; the days until then are free
+;term_start = 2027-01-01T00:00:00Z
+; how far an order's duration may be from the one the service computes
+;term_slack_seconds = 3600
+;
+; the chain the names are registered on. rpc_url can carry a provider's API key and service_key
+; is the registrar key: keep both secret. Neither is ever logged.
+;[chain]
+;rpc_url = http://127.0.0.1:8545
+;chain_id = 31337
+;controller = 0x...
+;sponsor = 0x...
+;base_registrar = 0x...
+;resolver = 0x...
+; 0x and 64 hex digits: the registrar key the service sends transactions with
+;service_key = 0x...
+; the most gas any one transaction may use
+;gas_limit_cap = 8000000
 
 ; local testing only, in both run modes: accepts any well-formed App Store or Play receipt without
 ; verifying it, so anyone who can reach this service can mint badges. The service refuses to start

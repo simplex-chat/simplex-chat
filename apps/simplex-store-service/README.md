@@ -98,8 +98,10 @@ Other options:
 `store_service.ini` holds the listener bind address and `static_dir`, an optional
 `[btcpay]` section (omitting it disables Bitcoin and Monero), an optional `[stripe]`
 section (omitting it disables card payments), an optional `[group]` section (omitting it
-turns off the group's commands, though a group created earlier still has its code messages updated)
-and the poll cadence.
+turns off the group's commands, though a group created earlier still has its code messages updated),
+the poll cadence, optional `[apple]` and `[google]` sections that verify store purchases (see
+[Store purchases](#store-purchases-app-store-and-google-play)), and optional `[names]` and `[chain]` sections for the names store (omitting both
+turns it off).
 `store_service.ini.example` is the committed template; `store_service.ini` itself is
 gitignored, since a real one holds API keys and webhook secrets.
 
