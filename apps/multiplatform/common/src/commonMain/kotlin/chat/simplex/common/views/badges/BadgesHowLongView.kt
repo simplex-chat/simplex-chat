@@ -125,8 +125,10 @@ fun BadgesHowLongView(level: BadgeLevel, modalManager: ModalManager, unwindToDep
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
       ContinueButton(level, selectedPeriod, modalManager, unwindToDepth) { chosenPeriod = it }
-      BadgeBillingFooter(selectedPeriod)
-      BadgeInvestorOffer(level)
+      BadgeStoreFooter {
+        BadgeBillingFooter(selectedPeriod)
+        BadgeInvestorOffer(level)
+      }
     }
   }
 }

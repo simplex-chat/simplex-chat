@@ -69,8 +69,10 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
       PayButton(level, period, purchasing)
-      BadgeBillingFooter(period)
-      BadgeInvestorOffer(level)
+      BadgeStoreFooter {
+        BadgeBillingFooter(period)
+        BadgeInvestorOffer(level)
+      }
     }
   }
 }
@@ -132,11 +134,11 @@ private fun purchase(level: BadgeLevel, period: BadgePeriod, purchasing: Mutable
 val badgeStoreLane: Boolean get() = badgeStoreAvailable && chatModel.remoteHostId() == null
 
 @Composable
-fun RestorePurchasesButton() {
+fun RestorePurchasesButton(enabled: Boolean = true) {
   val restoring = remember { mutableStateOf(false) }
   Text(
     stringResource(MR.strings.badges_restore_purchases),
-    Modifier.clickable(enabled = !restoring.value) { restoreBadgePurchases(restoring) },
+    Modifier.clickable(enabled = enabled && !restoring.value) { restoreBadgePurchases(restoring) },
     style = MaterialTheme.typography.body2,
     color = MaterialTheme.colors.primary
   )

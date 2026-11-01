@@ -3353,10 +3353,11 @@
   <string name="badges_supporter_benefits">Files up to 2 GB, stored for 7 days.</string>
   <string name="badges_legend_benefits">Files up to 5 GB, stored for 21 days.</string>
   <string name="badges_benefits">Benefits</string>
-  <string name="badges_investor_offer_supporter" translatable="false">Invest $100+ and get a free badge.</string>
-  <string name="badges_investor_offer_legend" translatable="false">Invest $1000+ and get a free legend badge.</string>
-  <string name="v7_1_invest" translatable="false">Own a part of SimpleX Chat! 🚀</string>
-  <string name="v7_1_invest_learn_more" translatable="false">Learn more on Wefunder.</string>
+  <string name="badges_investor_offer_supporter">Invest $100+ and get a free badge.</string>
+  <string name="badges_investor_offer_legend">Invest $1000+ and get a free legend badge.</string>
+  <string name="badges_investor_offer_learn_more">Learn more on Wefunder</string>
+  <string name="v7_1_invest">Own a part of SimpleX Chat! 🚀</string>
+  <string name="v7_1_invest_learn_more">Learn more on Wefunder.</string>
   <string name="v7_1_supporter_badge_title">Supporter badges</string>
   <string name="v7_1_supporter_badge_body">Send larger files\navailable for longer.</string>
   <string name="v7_1_supporter_badge_descr">Larger files available for longer.</string>

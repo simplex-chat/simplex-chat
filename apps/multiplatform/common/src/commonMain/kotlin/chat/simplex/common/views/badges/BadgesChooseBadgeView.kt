@@ -118,14 +118,27 @@ fun BadgesChooseBadgeView(modalManager: ModalManager, unwindToDepth: Int) {
     // the action button (matches onboarding pattern where its own 7.5dp top padding is the gap).
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
       ContinueButton(selectedLevel, modalManager, unwindToDepth)
-      // redeeming a code is here only when Support SimpleX offers the browser instead
-      if (badgeBrowserAllowed()) {
-        RedeemCodeButton(modalManager, unwindToDepth)
-      } else {
-        TextButtonBelowOnboardingButton("", null)
+      BadgeStoreFooter {
+        // redeeming a code is here only when Support SimpleX offers the browser instead
+        if (badgeBrowserAllowed()) {
+          RedeemCodeButton(modalManager, unwindToDepth)
+        } else {
+          TextButtonBelowOnboardingButton("", null)
+        }
+        BadgeInvestorOffer(selectedLevel)
       }
-      BadgeInvestorOffer(selectedLevel)
     }
+  }
+}
+
+@Composable
+fun BadgeStoreFooter(content: @Composable () -> Unit) {
+  Box(contentAlignment = Alignment.TopCenter) {
+    Column(Modifier.alpha(0f), horizontalAlignment = Alignment.CenterHorizontally) {
+      TextButtonBelowOnboardingButton(stringResource(MR.strings.badges_buy_in_browser), null)
+      RestorePurchasesRows(enabled = false)
+    }
+    Column(horizontalAlignment = Alignment.CenterHorizontally) { content() }
   }
 }
 
@@ -139,7 +152,7 @@ fun BadgeInvestorOffer(level: BadgeLevel, shown: Boolean = true) {
       textAlign = TextAlign.Center
     )
     Text(
-      stringResource(MR.strings.v7_0_invest_learn_more),
+      stringResource(MR.strings.badges_investor_offer_learn_more),
       Modifier
         .padding(top = 4.dp)
         .clickable(enabled = shown) { uriHandler.openUriCatching(WEFUNDER_URL) },
