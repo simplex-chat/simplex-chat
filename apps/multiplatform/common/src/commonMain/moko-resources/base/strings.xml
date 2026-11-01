@@ -25,7 +25,7 @@
   <string name="connect_plan_you_are_owner">You are an owner</string>
   <string name="error_parsing_uri_title">Invalid link</string>
   <string name="error_parsing_uri_desc">Please check that SimpleX link is correct.</string>
-  <string name="app_link_not_supported">This link is not supported by this app version. Please check for app updates.</string>
+  <string name="app_link_not_supported">Update the app to open this link.</string>
 
   <!-- MainActivity.kt -->
   <string name="opening_database">Opening database…</string>
@@ -789,12 +789,12 @@
   <string name="message_signatures_are_required">Message signing is required.</string>
   <string name="message_signatures_are_not_required">Message signing is not required.</string>
   <string name="sign_messages_question">Sign messages?</string>
-  <string name="sign_messages_alert_desc">Messages sent before will show "signature missing" to subscribers who join later.</string>
+  <string name="sign_messages_alert_desc">New subscribers will see earlier messages as unsigned.</string>
   <string name="sign_messages_enable">Enable</string>
   <string name="show_signature">Show signature</string>
   <string name="show_encryption">Show encryption</string>
   <string name="signature_missing_alert_title">Signature missing</string>
-  <string name="signature_missing_alert_desc">The message was sent before the channel started signing messages, or it is fake.</string>
+  <string name="signature_missing_alert_desc">Sent before the channel started signing, or fake.</string>
   <string name="live_message">Live message!</string>
   <string name="send_live_message_desc">Send a live message - it will update for the recipient(s) as you type it</string>
   <string name="send_verb">Send</string>
@@ -2311,6 +2311,7 @@
   <string name="chat_layout">Chat layout</string>
   <string name="chat_layout_classic">Classic</string>
   <string name="chat_layout_terminal">Terminal</string>
+  <string name="chat_layout_flat">Flat</string>
   <string name="chat_layout_chat_suffix">(chat)</string>
   <string name="chat_layout_default_suffix">(default)</string>
 
@@ -2511,6 +2512,7 @@
   <string name="whats_new">What\'s new</string>
   <string name="new_in_version">New in %s</string>
   <string name="whats_new_read_more">Read more</string>
+  <string name="whats_new_learn_more">Learn more.</string>
   <string name="v4_2_security_assessment">Security assessment</string>
   <string name="v4_2_security_assessment_desc">SimpleX Chat security was audited by Trail of Bits.</string>
   <string name="v4_2_group_links">Group links</string>
@@ -2712,12 +2714,11 @@
   <string name="v6_5_safe_web_links_descr">- opt-in to send link previews.\n- use SOCKS proxy if enabled.\n- prevent hyperlink phishing.\n- remove link tracking.</string>
   <string name="v6_5_non_profit_governance">Non-profit governance</string>
   <string name="v6_5_non_profit_governance_descr">To make SimpleX Network last.</string>
-  <string name="v7_0_invest" translatable="false">You can now invest in SimpleX Chat! 🚀</string>
-  <string name="v7_0_invest_descr" translatable="false">Crowdfunding on Wefunder.</string>
   <string name="v7_0_crowdfunding" translatable="false">Crowdfunding on Wefunder</string>
   <string name="v7_0_invest_learn_more" translatable="false">Learn more on Wefunder</string>
   <string name="invest_banner_title" translatable="false">Invest in SimpleX Chat!</string>
   <string name="invest_banner_subtitle" translatable="false">Crowdfunding on Wefunder</string>
+  <string name="invest_settings_title" translatable="false">Own a part of SimpleX Chat</string>
   <string name="v7_0_simplex_names">SimpleX public names (BETA)</string>
   <string name="v7_0_simplex_names_descr">Public names for your channel or business.</string>
   <string name="v7_0_channels">Better channels 📢</string>
@@ -3247,9 +3248,9 @@
   <string name="badges_error_invalid_code">This code is not valid.</string>
   <string name="badges_error_service_not_configured">This app version cannot redeem badge codes.</string>
   <string name="badges_error_service_not_configured_purchase">This app version cannot buy badges.</string>
-  <string name="badges_error_already_active">This profile already has a badge. Redeem the code on another profile, or once this badge ends.</string>
+  <string name="badges_error_already_active">This profile already has a badge.</string>
   <string name="badges_error_already_active_purchase">This profile already has a badge.</string>
-  <string name="badges_error_store_purchase_open">A store purchase is being added to this profile. Redeem the code once it is added, or on another profile.</string>
+  <string name="badges_error_store_purchase_open">A purchase is being added to this profile. Try again later.</string>
   <string name="badges_error_store_purchase_open_purchase">A store purchase is being added to this profile.</string>
   <string name="badges_error_code_invalid">This code was not recognized.</string>
   <string name="badges_error_code_used">This code has already been used.</string>
@@ -3257,13 +3258,13 @@
   <string name="badges_error_rate_limited">Too many attempts. Please try again later.</string>
   <string name="badges_error_bad_service_response">The badge service sent an unexpected response: %1$s</string>
   <string name="badges_error_credential_not_verified">This app version cannot verify this badge. Please update the app.</string>
-  <string name="badges_error_unsupported_version">This app version is too old for the badge service. Please update the app.</string>
+  <string name="badges_error_unsupported_version">Update the app to use badges.</string>
   <string name="badges_error_unknown_purchase">The badge service does not recognize this badge.</string>
   <string name="badges_error_service_internal">The badge service reported an internal error.</string>
   <string name="badges_error_receipt_invalid">The store did not confirm this purchase.</string>
-  <string name="badges_error_receipt_used">This purchase was already credited to a badge on another device or profile.</string>
+  <string name="badges_error_receipt_used">This purchase is already used on another profile.</string>
   <string name="badges_error_transfer_limited">This purchase was moved to another device or profile recently.</string>
-  <string name="badges_error_test_purchase">Test purchases are not credited. Badges can only be bought with a real purchase.</string>
+  <string name="badges_error_test_purchase">Test purchases do not add badges.</string>
   <string name="badges_error_payment_pending">The payment has not been confirmed yet.</string>
   <string name="badges_error_provider_unavailable">The store could not be reached.</string>
   <string name="badges_error_provider_not_configured">Badges cannot be bought in the app yet.</string>
@@ -3275,7 +3276,7 @@
   <string name="badges_support_ended">Your badge expired</string>
   <string name="badges_shown_on_your_profile">shown on your profile</string>
   <string name="badges_ends">Ends</string>
-  <string name="badges_prepaid_footer">Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out.</string>
+  <string name="badges_prepaid_footer">No renewal: the badge ends when the prepaid months run out.</string>
   <string name="badges_type_investor">Investor</string>
   <string name="badges_support_ended_on">Your badge expired on %1$s.</string>
   <string name="badges_remind_me_later">Remind me later</string>
@@ -3311,33 +3312,33 @@
   <string name="badges_error_last_attempt">Last attempt</string>
   <string name="badges_contact_team">Contact SimpleX team</string>
   <string name="badges_credential_next_check">Next check</string>
-  <string name="badges_subscription_disclosure_monthly">Payment is charged to your Google Play account when you confirm the purchase. The subscription renews automatically at %1$s per month until you cancel it. You can manage and cancel it in Google Play subscriptions.</string>
-  <string name="badges_subscription_disclosure_annual">Payment is charged to your Google Play account when you confirm the purchase. The subscription renews automatically at %1$s per year until you cancel it. You can manage and cancel it in Google Play subscriptions.</string>
+  <string name="badges_subscription_disclosure_monthly">Renews at %1$s a month until you cancel it in Google Play.</string>
+  <string name="badges_subscription_disclosure_annual">Renews at %1$s a year until you cancel it in Google Play.</string>
   <string name="badges_privacy_policy">Privacy policy</string>
   <string name="badges_restore_purchases">Restore purchases</string>
-  <string name="badges_restore_purchases_footnote">Adds a badge you paid for. A subscription bought with this Google Play account moves to this profile, and the profile or device that had it loses it.</string>
+  <string name="badges_restore_purchases_footnote">Moves a paid badge to this profile.</string>
   <string name="badges_nothing_to_restore">Nothing to restore</string>
   <string name="badges_nothing_to_restore_desc">No Google Play purchase waiting to be added was found.</string>
   <string name="badges_restore_failed">Restore failed</string>
-  <string name="badges_error_already_owned">This Google Play account already has this purchase, on another profile or device. To add it to this profile, use Restore purchases.</string>
+  <string name="badges_error_already_owned">Bought on another profile. Use Restore purchases to move it here.</string>
   <string name="badges_error_store_unreachable">The store could not be reached.</string>
   <string name="badges_error_not_on_sale">This badge is not on sale.</string>
   <string name="badges_subscription">Subscription</string>
   <string name="badges_manage_subscription">Manage subscription</string>
   <string name="badges_payment_problem">Payment problem</string>
-  <string name="badges_payment_problem_footer">Google Play could not charge your payment method and is retrying. Update it to keep your badge. Until the payment goes through, you cannot buy or redeem another badge.</string>
-  <string name="badges_payment_problem_footer_store">The store could not charge your payment method and is retrying. Update it to keep your badge. Until the payment goes through, you cannot buy or redeem another badge.</string>
+  <string name="badges_payment_problem_footer">Payment failed. Update your payment method in Google Play.</string>
+  <string name="badges_payment_problem_footer_store">Payment failed. Update your payment method in the store.</string>
   <string name="badges_subscription_ends">Ends %1$s</string>
   <string name="badges_subscription_cancelled_footer">Your subscription is cancelled. The badge stays until %1$s.</string>
   <string name="badges_subscription_ended">Ended</string>
-  <string name="badges_subscription_ended_footer">Your subscription has ended. The badge will be removed from your profile.</string>
+  <string name="badges_subscription_ended_footer">Subscription ended. The badge will be removed.</string>
   <string name="badges_subscription_renewing">Renewing</string>
-  <string name="badges_subscription_renewing_footer">Your badge is renewed once Google Play charges your subscription. Until then you cannot buy or redeem another badge.</string>
-  <string name="badges_subscription_renewing_footer_store">Your badge is renewed once the store charges your subscription. Until then you cannot buy or redeem another badge.</string>
+  <string name="badges_subscription_renewing_footer">Renews once Google Play charges your subscription.</string>
+  <string name="badges_subscription_renewing_footer_store">Renews once the store charges your subscription.</string>
   <string name="badges_subscription_renews_price">Renews %1$s · %2$s</string>
   <string name="badges_subscription_renews">Renews %1$s</string>
-  <string name="badges_subscription_renews_footer">Your subscription renews automatically. You can cancel it in Google Play.</string>
-  <string name="badges_subscription_renews_footer_store">Your subscription renews automatically. You can cancel it in the store.</string>
+  <string name="badges_subscription_renews_footer">Renews automatically until you cancel it in Google Play.</string>
+  <string name="badges_subscription_renews_footer_store">Renews automatically until you cancel it in the store.</string>
   <string name="badges_subscription_ended_title">Your subscription ended</string>
   <string name="badges_subscription_ended_on">Your badge subscription ended on %1$s.</string>
   <string name="badges_payment_problem_title">Badge payment problem</string>
@@ -3348,12 +3349,24 @@
   <string name="badges_renews_on_for">Renews on %1$s for %2$s.</string>
   <string name="badges_renews_on">Renews on %1$s.</string>
   <string name="supporter_perks">Supporter perks</string>
-  <string name="v7_1_supporter_badge_title">Supporter badges 🚀</string>
+  <string name="badges_your_legend_badge">Your legend badge</string>
+  <string name="badges_supporter_benefits">Files up to 2 GB, stored for 7 days.</string>
+  <string name="badges_legend_benefits">Files up to 5 GB, stored for 21 days.</string>
+  <string name="badges_benefits">Benefits</string>
+  <string name="badges_investor_offer_supporter">Invest $100+ and get a free badge.</string>
+  <string name="badges_investor_offer_legend">Invest $1000+ and get a free legend badge.</string>
+  <string name="badges_investor_offer_learn_more">Learn more on Wefunder</string>
+  <string name="v7_1_invest">Own a part of SimpleX Chat! 🚀</string>
+  <string name="v7_1_invest_learn_more">Learn more on Wefunder.</string>
+  <string name="v7_1_supporter_badge_title">Supporter badges</string>
   <string name="v7_1_supporter_badge_body">Send larger files\navailable for longer.</string>
+  <string name="v7_1_supporter_badge_descr">Larger files available for longer.</string>
+  <string name="v7_1_supporter_badge_get">Support SimpleX and get a badge.</string>
+  <string name="v7_1_supporter_badge_have">You already have a badge!</string>
+  <string name="v7_1_simplex_names">SimpleX public names</string>
+  <string name="v7_1_simplex_names_descr">Sale starts on December 12.</string>
   <string name="v7_1_channels">Safer channels</string>
-  <string name="v7_1_channels_moderators">Promote contributors to moderators.</string>
-  <string name="v7_1_channels_signed_messages">Opt in to sign all channel messages.</string>
-  <string name="v7_1_terminal_layout">Flat ("terminal") chat layout</string>
-  <string name="v7_1_terminal_layout_descr">And full markdown support.</string>
-  <string name="v7_1_better_calls_descr">Reconnect after dropped connection.</string>
+  <string name="v7_1_channels_descr">Add moderators and sign every message.</string>
+  <string name="v7_1_flat_layout">Flat layout and markdown</string>
+  <string name="v7_1_flat_layout_descr">Enable in Appearance settings.</string>
 </resources>

@@ -129,7 +129,7 @@ struct BadgesHowLongLayout: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                     if !prices.forSale(.monthly) && prices.subscribedBefore {
-                        Text("This Apple ID already has a badge subscription. Only the profile that bought it can continue it.")
+                        Text("Subscribed on another profile.")
                             .font(.footnote)
                             .foregroundColor(theme.colors.secondary)
                             .multilineTextAlignment(.center)
@@ -142,6 +142,7 @@ struct BadgesHowLongLayout: View {
                         continueButton()
                             .padding(.vertical, 10)
                         BadgeBillingFooter(period: selectedPeriod, startDate: startDate)
+                        BadgeInvestorOffer(level: level)
                     }
                     .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }

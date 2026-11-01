@@ -35,6 +35,14 @@ struct BadgesYourBadgeView: View {
                 Section {
                     BadgeSummary(badgeState: badgeState)
                 }
+                let level: BadgeLevel = badgeState.badgeType == .legend ? .legend : .supporter
+                Section {
+                    settingsRow("doc", color: theme.colors.secondary) { Text(level.fileSize) }
+                    settingsRow("clock", color: theme.colors.secondary) { Text(level.fileStorage) }
+                } header: {
+                    Text("Benefits")
+                        .foregroundColor(theme.colors.secondary)
+                }
                 if let subscription = badgeState.subscription {
                     let ended = badgeState.paidThrough <= Date.now
                     let date = badgeState.paidThroughText
@@ -46,19 +54,19 @@ struct BadgesYourBadgeView: View {
                                     .foregroundColor(.red)
                                 Text("Payment problem")
                             },
-                            footer: "The App Store could not charge your payment method and is retrying. Update it to keep your badge. Until the payment goes through, you cannot buy or redeem another badge."
+                            footer: "Payment failed. Update your payment method in the App Store."
                         )
                     case .cancelled where !ended:
                         subscriptionSection(Text("Ends \(date)"), footer: "Your subscription is cancelled. The badge stays until \(date).")
                     case .ended, .cancelled:
-                        subscriptionSection(Text("Ended"), footer: "Your subscription has ended. The badge will be removed from your profile.")
+                        subscriptionSection(Text("Ended"), footer: "Subscription ended. The badge will be removed.")
                     case .renewing, .unknown, nil:
                         if ended {
-                            subscriptionSection(Text("Renewing"), footer: "Your badge is renewed once the App Store charges your subscription. Until then you cannot buy or redeem another badge.")
+                            subscriptionSection(Text("Renewing"), footer: "Renews once the App Store charges your subscription.")
                         } else if let price = store.subscriptionPrice(badgeState.badgeType, planMonths: subscription.planMonths) {
-                            subscriptionSection(Text("Renews \(date) · \(price)"), footer: "Your subscription renews automatically. You can cancel it in the App Store.")
+                            subscriptionSection(Text("Renews \(date) · \(price)"), footer: "Renews automatically until you cancel it in the App Store.")
                         } else {
-                            subscriptionSection(Text("Renews \(date)"), footer: "Your subscription renews automatically. You can cancel it in the App Store.")
+                            subscriptionSection(Text("Renews \(date)"), footer: "Renews automatically until you cancel it in the App Store.")
                         }
                     }
                 } else {
@@ -68,7 +76,7 @@ struct BadgesYourBadgeView: View {
                         Text("Ends")
                             .foregroundColor(theme.colors.secondary)
                     } footer: {
-                        Text("Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out.")
+                        Text("No renewal: the badge ends when the prepaid months run out.")
                             .foregroundColor(theme.colors.secondary)
                     }
                 }

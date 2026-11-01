@@ -4969,7 +4969,7 @@ alert button */
 "Port" = "Port";
 
 /* No comment provided by engineer. */
-"Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out." = "Az előre fizetett hónapoknál nincs számlázási dátum. A kitűző minden hónapban újra kiállítódik a már kifizetett egyenlegből, és akkor jár le, amikor az egyenleg elfogy.";
+"No renewal: the badge ends when the prepaid months run out." = "Nincs megújítás: a kitűző lejár, amikor az előre fizetett hónapok elfogynak.";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Az utolsó üzenet tervezetének megőrzése a mellékletekkel együtt.";
@@ -5572,7 +5572,7 @@ swipe action */
 "Sandbox purchase" = "Tesztkörnyezeti vásárlás";
 
 /* alert message */
-"Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app." = "A tesztkörnyezeti vásárlások nem lesznek jóváírva. Kitűzőt csak az App Store-ból származó alkalmazásverzióban lehet vásárolni.";
+"Buy badges in the App Store version of the app." = "Kitűzőt az alkalmazás App Store-verziójában vásárolhat.";
 
 /* alert action
 alert button
@@ -6713,7 +6713,7 @@ server test failure */
 "The store did not confirm this purchase." = "Az áruház nem erősítette meg ezt a vásárlást.";
 
 /* No comment provided by engineer. */
-"The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store." = "Az áruház egy olyan tranzakciót adott vissza, amelyet az Apple nem írt alá. A SimpleX nem tudja ellenőrizni ezt a vásárlást az App Store-ban.";
+"Apple did not sign this purchase, so it cannot be verified." = "Az Apple nem írta alá ezt a vásárlást, ezért nem ellenőrizhető.";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "A beillesztett szöveg nem egy SimpleX-hivatkozás.";
@@ -6761,7 +6761,7 @@ server test failure */
 "This app version cannot verify this badge. Please update the app." = "Az alkalmazás ezen verziója nem tudja ellenőrizni ezt a kitűzőt. Frissítse az alkalmazást.";
 
 /* alert message */
-"This app version is too old for the badge service. Please update the app." = "Az alkalmazás ezen verziója túl régi a kitűzőszolgáltatáshoz. Frissítse az alkalmazást.";
+"Update the app to use badges." = "Frissítse az alkalmazást a kitűzők használatához.";
 
 /* badge alert */
 "This badge could not be verified and may not be genuine." = "Nem sikerült ellenőrizni ezt a kitűzőt, és lehet, hogy nem eredeti.";
@@ -6819,7 +6819,7 @@ alert subtitle */
 "This is your link for channel %@!" = "Ez a saját hivatkozása a(z) %@ nevű csatornához!";
 
 /* No comment provided by engineer. */
-"This link is not supported by this app version. Please check for app updates." = "Ezt a hivatkozást nem támogatja az alkalmazás ezen verziója. Ellenőrizze, hogy van-e elérhető alkalmazásfrissítés.";
+"Update the app to open this link." = "Frissítse az alkalmazást a hivatkozás megnyitásához.";
 
 /* No comment provided by engineer. */
 "This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." = "Ez a hivatkozás újabb alkalmazásverziót igényel. Frissítse az alkalmazást vagy kérjen egy kompatibilis hivatkozást a partnerétől.";
@@ -6837,7 +6837,7 @@ alert subtitle */
 "This profile already has a badge. Redeem the code on another profile, or once this badge ends." = "Ehhez a profilhoz már tartozik kitűző. Használja fel a kódot egy másik profilon, vagy miután a meglévő kitűző lejárt.";
 
 /* alert message */
-"This purchase was already credited to a badge on another device or profile." = "Ezt a vásárlást már jóváírták egy kitűzőhöz egy másik eszközön vagy profilon.";
+"This purchase is already used on another profile." = "Ezt a vásárlást már egy másik profilon használják.";
 
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Ez a beállítás csak az Ön jelenlegi **%@** nevű csevegési profiljában lévő üzenetekre vonatkozik.";

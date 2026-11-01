@@ -55,7 +55,7 @@ struct GroupPreferencesView: View {
                             if enable == .on && currentPreferences.signMessages.enable != .on {
                                 showAlert(
                                     NSLocalizedString("Sign messages?", comment: "alert title"),
-                                    message: NSLocalizedString("Messages sent before will show \"signature missing\" to subscribers who join later.", comment: "alert message"),
+                                    message: NSLocalizedString("New subscribers will see earlier messages as unsigned.", comment: "alert message"),
                                     actions: {[
                                         UIAlertAction(title: NSLocalizedString("Enable", comment: "alert button"), style: .default) { _ in },
                                         UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert button"), style: .cancel) { _ in

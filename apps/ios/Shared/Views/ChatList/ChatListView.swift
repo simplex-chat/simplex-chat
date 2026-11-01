@@ -225,7 +225,7 @@ struct ChatListView: View {
             }
         }
         .appSheet(isPresented: $showGetStakeSheet) {
-            GetStakeView(fromSettings: false, showFirstImage: true)
+            GetStakeView(fromSettings: false)
         }
         .onChange(of: activeUserPickerSheet) {
             if $0 != nil {

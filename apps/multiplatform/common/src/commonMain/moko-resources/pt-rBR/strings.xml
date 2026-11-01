@@ -2756,7 +2756,7 @@
     <string name="chat_banner_your_channel">Seu canal</string>
     <string name="chat_banner_your_business_contact">Seu contato comercial</string>
     <string name="report_sent_alert_msg_view_in_support_chat">Você pode ver suas denúncias no chat com administradores.</string>
-    <string name="signature_missing_alert_desc">O canal exigiu que esta mensagem fosse assinada, mas a assinatura está ausente.</string>
+    <string name="signature_missing_alert_desc">Enviada antes de o canal começar a assinar, ou falsa.</string>
     <string name="the_sender_will_not_be_notified">O remetente NÃO será notificado.</string>
     <string name="verify_simplex_name_action">Verificar nome</string>
     <string name="verify_simplex_names">Verificar nomes SimpleX</string>
@@ -2852,7 +2852,7 @@
     <string name="info_row_file_expired">Arquivo ficou disponível até</string>
     <string name="file_error_expired">O arquivo ficou disponível até %1$s.</string>
     <string name="forwarded_from">Encaminhado de</string>
-    <string name="badges_prepaid_footer">Os meses pré-pagos não têm uma data de cobrança fixa. O selo é renovado a cada mês, usando o saldo que você já pagou, e deixa de valer quando esse saldo acaba.</string>
+    <string name="badges_prepaid_footer">Sem renovação: o selo deixa de valer quando os meses pré-pagos acabarem.</string>
     <string name="badges_purchase_error">Erro na compra</string>
     <string name="badges_redeem">Resgatar</string>
     <string name="badges_redeem_code_button">Resgatar código do selo</string>
@@ -2874,12 +2874,12 @@
     <string name="badges_code_you_scanned_is_not_badge_code">O código escaneado não é um código de selo.</string>
     <string name="badges_error_service_not_configured">Esta versão do aplicativo não permite resgatar códigos de selo.</string>
     <string name="badges_error_credential_not_verified">Esta versão do aplicativo não consegue verificar este selo. Atualize o aplicativo para continuar.</string>
-    <string name="badges_error_unsupported_version">Esta versão do aplicativo está desatualizada para usar o serviço de selos. Atualize o aplicativo para continuar.</string>
+    <string name="badges_error_unsupported_version">Atualize o aplicativo para usar selos.</string>
     <string name="badges_error_code_used">Este código já foi utilizado.</string>
     <string name="badges_error_code_expired">Este código expirou.</string>
     <string name="badges_error_invalid_code">Este código é inválido.</string>
     <string name="badges_error_code_invalid">Este código não foi reconhecido.</string>
-    <string name="badges_error_already_active">Este perfil já tem um selo. Resgate o código em outro perfil ou aguarde até que o selo atual expire.</string>
+    <string name="badges_error_already_active">Este perfil já tem um selo.</string>
     <string name="badges_error_rate_limited">Muitas tentativas. Tente novamente mais tarde.</string>
     <string name="until_register_simplex_domain">até que você possa registrar um domínio SimpleX</string>
     <string name="update_app_register_simplex_domain">Atualize o aplicativo para registrar um domínio SimpleX.</string>
@@ -2958,5 +2958,5 @@
     <string name="badges_level_legend_file_storage">Armazenado por 21 dias</string>
     <string name="badges_level_supporter_file_storage">Armazenado por 7 dias</string>
     <string name="emoji_category_symbols">Símbolos</string>
-    <string name="badges_error_test_purchase">Compras de teste não contam. Os selos só podem ser adquiridos com compras reais.</string>
+    <string name="badges_error_test_purchase">Compras de teste não adicionam selos.</string>
 </resources>

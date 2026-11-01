@@ -4969,7 +4969,7 @@ alert button */
 "Port" = "Port";
 
 /* No comment provided by engineer. */
-"Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out." = "Für vorausbezahlte Monate gibt es kein Abrechnungsdatum. Der Badge wird monatlich aus Ihrem Guthaben erneuert und endet, wenn dieses aufgebraucht ist.";
+"No renewal: the badge ends when the prepaid months run out." = "Keine Verlängerung: Der Badge endet, wenn die vorausbezahlten Monate aufgebraucht sind.";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Den letzten Nachrichtenentwurf, auch mit seinen Anhängen, aufbewahren.";
@@ -5572,7 +5572,7 @@ swipe action */
 "Sandbox purchase" = "Test-Kauf";
 
 /* alert message */
-"Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app." = "Test-Käufe werden nicht angerechnet. Badges können nur in der App-Store-Version der App gekauft werden.";
+"Buy badges in the App Store version of the app." = "Kaufen Sie Badges in der App-Store-Version der App.";
 
 /* alert action
 alert button
@@ -6713,7 +6713,7 @@ server test failure */
 "The store did not confirm this purchase." = "Der Store hat diesen Kauf nicht bestätigt.";
 
 /* No comment provided by engineer. */
-"The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store." = "Der Store hat eine nicht von Apple signierte Transaktion zurückgegeben. SimpleX kann diesen Kauf daher nicht mit dem App Store verifizieren.";
+"Apple did not sign this purchase, so it cannot be verified." = "Apple hat diesen Kauf nicht signiert, daher kann er nicht verifiziert werden.";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Der von Ihnen eingefügte Text ist kein SimpleX-Link.";
@@ -6761,7 +6761,7 @@ server test failure */
 "This app version cannot verify this badge. Please update the app." = "Diese App-Version kann diesen Badge nicht überprüfen. Bitte aktualisieren Sie die App.";
 
 /* alert message */
-"This app version is too old for the badge service. Please update the app." = "Diese App-Version ist für den Badge-Dienst zu alt. Bitte aktualisieren Sie die App.";
+"Update the app to use badges." = "Aktualisieren Sie die App, um Badges zu verwenden.";
 
 /* badge alert */
 "This badge could not be verified and may not be genuine." = "Dieser Badge konnte nicht verifiziert werden und ist möglicherweise nicht echt.";
@@ -6819,7 +6819,7 @@ alert subtitle */
 "This is your link for channel %@!" = "Dies ist Ihr Link für den Kanal %@!";
 
 /* No comment provided by engineer. */
-"This link is not supported by this app version. Please check for app updates." = "Dieser Link wird von dieser App-Version nicht unterstützt. Bitte prüfen Sie, ob ein App-Update verfügbar ist.";
+"Update the app to open this link." = "Aktualisieren Sie die App, um diesen Link zu öffnen.";
 
 /* No comment provided by engineer. */
 "This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." = "Für diesen Link wird eine neuere App-Version benötigt. Bitte aktualisieren Sie die App oder bitten Sie Ihren Kontakt einen kompatiblen Link zu senden.";
@@ -6837,7 +6837,7 @@ alert subtitle */
 "This profile already has a badge. Redeem the code on another profile, or once this badge ends." = "Dieses Profil verfügt bereits über einen Badge. Lösen Sie den Code in einem anderen Profil ein oder warten Sie, bis dieser Badge abgelaufen ist.";
 
 /* alert message */
-"This purchase was already credited to a badge on another device or profile." = "Dieser Kauf wurde bereits einem Badge auf einem anderen Gerät oder Profil gutgeschrieben.";
+"This purchase is already used on another profile." = "Dieser Kauf wird bereits auf einem anderen Profil verwendet.";
 
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Diese Einstellung gilt für Nachrichten in Ihrem aktuellen Chat-Profil **%@**.";

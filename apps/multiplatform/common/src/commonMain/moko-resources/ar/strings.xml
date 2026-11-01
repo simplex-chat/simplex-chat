@@ -2794,7 +2794,7 @@
     <string name="sign_message_desc">التوقيع يثبت أنك مَن كاتب هذه الرسالة ولا يمكن إنكار ذلك لاحقًا.</string>
     <string name="sign_message">وقِّع الرسالة</string>
     <string name="sign_messages">وقِّع الرسائل</string>
-    <string name="signature_missing_alert_desc">طلبت القناة توقيع هذه الرسالة، لكن التوقيع غير موجود.</string>
+    <string name="signature_missing_alert_desc">أُرسلت قبل أن تبدأ القناة بالتوقيع، أو أنها مزيفة.</string>
     <string name="add_description">أضف وصف</string>
     <string name="profile_description__field">الوصف</string>
     <string name="edit_description">حرّر الوصف</string>

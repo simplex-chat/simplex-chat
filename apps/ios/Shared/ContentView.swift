@@ -517,7 +517,7 @@ private func openAppLink(_ url: URL) {
     if path.hasPrefix(badgeLinkPath) {
         openBadgeLink(String(path.dropFirst(badgeLinkPath.count)))
     } else {
-        AlertManager.shared.showAlert(Alert(title: Text("This link is not supported by this app version. Please check for app updates.")))
+        AlertManager.shared.showAlert(Alert(title: Text("Update the app to open this link.")))
     }
 }
 

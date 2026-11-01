@@ -356,7 +356,7 @@ The badge alert banner always offers the X; only the pitch waits to be tapped on
 
 Both are in `AppPreferences.hintPreferences`, so "Reset all hints" restores the banner. The X is never offered below the onboarding cards, so the banner cannot be dismissed before the user has a chat.
 
-Tapping the card runs `openGetStake()`, which opens `GetStakeView(showFirstImage = true)` as a card modal — `showFirstImage` decides whether the page repeats the first slide's image, which only What's New shows above its own link.
+Tapping the card runs `openGetStake()`, which opens `GetStakeView` as a card modal.
 
 ### Shared card chrome
 

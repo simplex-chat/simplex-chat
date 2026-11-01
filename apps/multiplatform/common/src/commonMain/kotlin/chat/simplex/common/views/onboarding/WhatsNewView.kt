@@ -25,7 +25,6 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalUriHandler
 import dev.icerock.moko.resources.compose.painterResource
@@ -55,8 +54,11 @@ import chat.simplex.common.model.ChatController.setConditionsNotified
 import chat.simplex.common.model.ServerOperator.Companion.dummyOperatorInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.badges.BadgesView
+import chat.simplex.common.views.badges.currentShownBadge
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.newchat.noShownBadge
 import chat.simplex.common.views.usersettings.UserAddressView
 import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
 import chat.simplex.common.views.usersettings.showAddShortLinkAlert
@@ -82,7 +84,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
   }
 
   @Composable
-  fun featureDescription(icon: ImageResource?, titleId: StringResource, descrId: StringResource?, link: String?, subfeatures: List<Pair<ImageResource, StringResource>>) {
+  fun featureDescription(icon: ImageResource?, titleId: StringResource, descrId: StringResource?, link: String?, learnMoreLink: String?, subfeatures: List<Pair<ImageResource, StringResource>>) {
     @Composable
     fun linkButton(link: String) {
       val uriHandler = LocalUriHandler.current
@@ -112,7 +114,23 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
           linkButton(link)
         }
       }
-      if (descrId != null) Text(generalGetString(descrId), fontSize = 15.sp)
+      if (descrId != null) {
+        val uriHandler = LocalUriHandler.current
+        Text(
+          buildAnnotatedString {
+            append(generalGetString(descrId))
+            if (learnMoreLink != null) {
+              append(" ")
+              withLink(LinkAnnotation.Url(learnMoreLink) { uriHandler.openExternalLink(learnMoreLink) }) {
+                withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
+                  append(generalGetString(MR.strings.whats_new_learn_more))
+                }
+              }
+            }
+          },
+          fontSize = 15.sp
+        )
+      }
       for ((si, sd) in subfeatures) {
         Row(
           verticalAlignment = Alignment.CenterVertically,
@@ -182,7 +200,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
         when (feature) {
           is VersionFeature.FeatureDescription -> {
             if (feature.show) {
-              featureDescription(feature.icon, feature.titleId, feature.descrId, feature.link, feature.subfeatures)
+              featureDescription(feature.icon, feature.titleId, feature.descrId, feature.link, feature.learnMoreLink, feature.subfeatures)
             }
           }
           is VersionFeature.FeatureView -> {
@@ -273,6 +291,7 @@ private sealed class VersionFeature {
     val descrId: StringResource?,
     var subfeatures: List<Pair<ImageResource, StringResource>> = listOf(),
     val link: String? = null,
+    val learnMoreLink: String? = null,
     val show: Boolean = true
   ): VersionFeature()
 
@@ -288,6 +307,8 @@ private data class VersionDescription(
   val features: List<VersionFeature>,
   val post: String? = null,
 )
+
+private val APP_UTM_SOURCE = if (appPlatform.isAndroid) "app_android" else "app_desktop"
 
 private val versionDescriptions: List<VersionDescription> = listOf(
   VersionDescription(
@@ -949,8 +970,8 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     features = listOf(
       VersionFeature.FeatureView(
         icon = null,
-        titleId = MR.strings.v7_0_invest,
-        view = { modalManager -> InvestInSimpleXChatView(modalManager) }
+        titleId = MR.strings.v7_1_invest,
+        view = { InvestInSimpleXChatView() }
       ),
       VersionFeature.FeatureDescription(
         icon = MR.images.ic_alternate_email,
@@ -971,74 +992,79 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     )
   ),
   VersionDescription(
-    version = "v7.1-beta.8",
+    version = "v7.1",
     post = null,
     features = listOf(
       VersionFeature.FeatureView(
         icon = null,
+        titleId = MR.strings.v7_1_invest,
+        view = { InvestInSimpleXChatView() }
+      ),
+      VersionFeature.FeatureView(
+        icon = null,
         titleId = MR.strings.v7_1_supporter_badge_title,
-        view = { SupporterBadgeWhatsNew() }
+        view = { modalManager -> SupporterBadgeWhatsNew(modalManager) }
       ),
       VersionFeature.FeatureDescription(
-        icon = null,
+        icon = MR.images.ic_alternate_email,
+        titleId = MR.strings.v7_1_simplex_names,
+        descrId = MR.strings.v7_1_simplex_names_descr,
+        learnMoreLink = "https://simplex.domains/?utm_source=$APP_UTM_SOURCE"
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_bigtop_updates,
         titleId = MR.strings.v7_1_channels,
-        descrId = null,
-        subfeatures = listOf(
-          MR.images.ic_flag to MR.strings.v7_1_channels_moderators,
-          MR.images.ic_verified to MR.strings.v7_1_channels_signed_messages,
-        )
+        descrId = MR.strings.v7_1_channels_descr
       ),
       VersionFeature.FeatureDescription(
         icon = MR.images.ic_outline_terminal,
-        titleId = MR.strings.v7_1_terminal_layout,
-        descrId = MR.strings.v7_1_terminal_layout_descr
-      ),
-      VersionFeature.FeatureDescription(
-        icon = MR.images.ic_call,
-        titleId = MR.strings.v6_1_better_calls,
-        descrId = MR.strings.v7_1_better_calls_descr
+        titleId = MR.strings.v7_1_flat_layout,
+        descrId = MR.strings.v7_1_flat_layout_descr
       ),
     )
   ),
 )
 
 @Composable
-private fun SupporterBadgeWhatsNew() {
-  Box(Modifier.padding(bottom = 12.dp).fillMaxWidth()) {
-    Column(Modifier.padding(end = 96.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+private fun SupporterBadgeWhatsNew(modalManager: ModalManager) {
+  Column(Modifier.padding(bottom = 12.dp)) {
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      modifier = Modifier.padding(bottom = 4.dp)
+    ) {
+      Image(painterResource(MR.images.badge_supporter), stringResource(MR.strings.v7_1_supporter_badge_title), Modifier.size(24.dp))
       Text(
         stringResource(MR.strings.v7_1_supporter_badge_title),
         style = MaterialTheme.typography.h4,
-        fontWeight = FontWeight.Medium
-      )
-      Text(
-        stringResource(MR.strings.v7_1_supporter_badge_body),
-        fontSize = 15.sp,
-        maxLines = 10
+        fontWeight = FontWeight.Medium,
+        modifier = Modifier.padding(bottom = 6.dp)
       )
     }
-    val isDark = isInDarkTheme()
-    if (BuildConfigCommon.SIMPLEX_ASSETS) {
-      Image(
-        painterResource(if (isDark) MR.images.phone_supporter_light else MR.images.phone_supporter),
-        contentDescription = null,
-        contentScale = ContentScale.Fit,
-        modifier = Modifier.align(Alignment.TopEnd).spill(x = 23.dp, y = (-24).dp).size(width = 115.dp, height = 144.dp)
-      )
-    } else {
-      Image(
-        painterResource(MR.images.badge_supporter),
-        contentDescription = null,
-        contentScale = ContentScale.Fit,
-        modifier = Modifier.align(Alignment.TopEnd).size(72.dp)
+    Text(
+      stringResource(MR.strings.v7_1_supporter_badge_descr),
+      fontSize = 15.sp,
+      maxLines = 10
+    )
+    if (currentShownBadge() != null) {
+      Text(stringResource(MR.strings.v7_1_supporter_badge_have), Modifier.padding(top = 6.dp), fontSize = 15.sp)
+    } else if (noShownBadge()) {
+      Text(
+        stringResource(MR.strings.v7_1_supporter_badge_get),
+        color = MaterialTheme.colors.primary,
+        fontSize = 15.sp,
+        modifier = Modifier
+          .padding(top = 6.dp)
+          .pointerHoverIcon(PointerIcon.Hand)
+          .clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null
+          ) {
+            modalManager.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(modalManager, close) }
+          }
       )
     }
   }
-}
-
-private fun Modifier.spill(x: Dp, y: Dp): Modifier = layout { measurable, constraints ->
-  val placeable = measurable.measure(constraints)
-  layout(0, 0) { placeable.place(x.roundToPx() - placeable.width, y.roundToPx()) }
 }
 
 private val lastVersion = versionDescriptions.last().version
@@ -1055,9 +1081,7 @@ fun shouldShowWhatsNew(m: ChatModel): Boolean {
   return v != lastVersion
 }
 
-private const val WEFUNDER_URL = "https://wefunder.com/simplex.chat?utm_source=app"
-
-private const val CROWDFUNDING_CONTACT_URI = "simplex:/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo?h=smp11.simplex.im"
+val WEFUNDER_URL = "https://wefunder.com/simplex.chat?utm_source=$APP_UTM_SOURCE"
 
 // the center modal takes the remaining width of the window, so the image is limited to its design width
 private val MAX_CROWDFUNDING_IMAGE_WIDTH = DEFAULT_MIN_CENTER_MODAL_WIDTH
@@ -1071,12 +1095,8 @@ private const val CROWDFUNDING_IMAGE_CORNER_RADIUS_RATIO = 0.03f
 
 private class CrowdfundingLayout(
   val maxImageWidth: Dp,
-  val imageShape: Shape,
-  // the modal manager that shows the page in the center of the window, or null when nothing does
-  private val centerOfWindow: ModalManager?
-) {
-  fun inCenterOfWindow(modalManager: ModalManager) = modalManager === centerOfWindow
-}
+  val imageShape: Shape
+)
 
 // the images are designed for the width of a phone screen, which Android always gives them. On desktop
 // they are limited to their own width, and their radius is scaled with them, as they are still shown
@@ -1086,9 +1106,9 @@ private val crowdfundingLayout = if (appPlatform.isDesktop)
   CrowdfundingLayout(CROWDFUNDING_PAGE_IMAGE_WIDTH, object : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
       Outline.Rounded(RoundRect(size.toRect(), CornerRadius(size.width * CROWDFUNDING_IMAGE_CORNER_RADIUS_RATIO)))
-  }, ModalManager.center)
+  })
 else
-  CrowdfundingLayout(Dp.Unspecified, RoundedCornerShape(CROWDFUNDING_IMAGE_CORNER_RADIUS), null)
+  CrowdfundingLayout(Dp.Unspecified, RoundedCornerShape(CROWDFUNDING_IMAGE_CORNER_RADIUS))
 
 // Google Play policy restricts promoting investments, so Play builds only show it in the US
 @Composable
@@ -1108,32 +1128,16 @@ fun isInUs(): Boolean =
       || androidPlayStoreCountry.value == null
 
 @Composable
-private fun InvestInSimpleXChatView(modalManager: ModalManager) {
+private fun InvestInSimpleXChatView() {
   if (!crowdfundingAvailable()) return
-  val showGetStake = { modalManager.showModalCloseable(cardScreen = true) { close -> GetStakeView(showFirstImage = false, inCenterOfWindow = crowdfundingLayout.inCenterOfWindow(modalManager), close = close) } }
+  val uriHandler = LocalUriHandler.current
+  val openWefunder = { uriHandler.openUriCatching(WEFUNDER_URL) }
   Column(modifier = Modifier.padding(bottom = 12.dp)) {
     Text(
-      generalGetString(MR.strings.v7_0_invest),
+      generalGetString(MR.strings.v7_1_invest),
       style = MaterialTheme.typography.h4,
       fontWeight = FontWeight.Medium,
       modifier = Modifier.padding(bottom = 6.dp)
-    )
-    Text(
-      buildAnnotatedString {
-        append(generalGetString(MR.strings.v7_0_invest_descr))
-        append(" ")
-        withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
-          append(generalGetString(MR.strings.learn_more))
-        }
-      },
-      fontSize = 15.sp,
-      modifier = Modifier
-        .pointerHoverIcon(PointerIcon.Hand)
-        .clickable(
-          interactionSource = remember { MutableInteractionSource() },
-          indication = null,
-          onClick = showGetStake
-        )
     )
     if (BuildConfigCommon.SIMPLEX_ASSETS) {
       Image(
@@ -1141,7 +1145,7 @@ private fun InvestInSimpleXChatView(modalManager: ModalManager) {
         contentDescription = null,
         contentScale = ContentScale.FillWidth,
         modifier = Modifier
-          .padding(top = 8.dp)
+          .padding(top = 2.dp, bottom = 12.dp)
           .widthIn(max = MAX_CROWDFUNDING_IMAGE_WIDTH)
           .fillMaxWidth()
           .clip(crowdfundingLayout.imageShape)
@@ -1149,10 +1153,22 @@ private fun InvestInSimpleXChatView(modalManager: ModalManager) {
           .clickable(
             interactionSource = remember { MutableInteractionSource() },
             indication = null,
-            onClick = showGetStake
+            onClick = openWefunder
           )
       )
     }
+    Text(
+      generalGetString(MR.strings.v7_1_invest_learn_more),
+      color = MaterialTheme.colors.primary,
+      fontSize = 15.sp,
+      modifier = Modifier
+        .pointerHoverIcon(PointerIcon.Hand)
+        .clickable(
+          interactionSource = remember { MutableInteractionSource() },
+          indication = null,
+          onClick = openWefunder
+        )
+    )
   }
 }
 
@@ -1192,9 +1208,8 @@ private val getStakeSlides: List<CrowdfundingSlide> = listOf(
 )
 
 @Composable
-fun GetStakeView(showFirstImage: Boolean, inCenterOfWindow: Boolean = false, close: () -> Unit) {
+fun GetStakeView(inCenterOfWindow: Boolean = false) {
   val uriHandler = LocalUriHandler.current
-  val stopped = chatModel.chatRunning.value == false
 
   @Composable
   fun slideImage(slide: CrowdfundingSlide) {
@@ -1221,10 +1236,7 @@ fun GetStakeView(showFirstImage: Boolean, inCenterOfWindow: Boolean = false, clo
     // in the center of the window the page is wide enough for the title to fit on one line
     val title = "Invest in\nSimpleX Chat"
     AppBarTitle(if (inCenterOfWindow) title.replace("\n", " ") else title, withPadding = false)
-    // What's new already shows the image of the first slide, above the link that opens this page
-    if (showFirstImage) {
-      slideImage(getStakeSlides[0])
-    }
+    slideImage(getStakeSlides[0])
     Text(
       buildAnnotatedString {
         append(getStakeSlides[0].text)
@@ -1235,7 +1247,7 @@ fun GetStakeView(showFirstImage: Boolean, inCenterOfWindow: Boolean = false, clo
           }
         }
       },
-      Modifier.padding(top = if (showFirstImage) 8.dp else 0.dp),
+      Modifier.padding(top = 8.dp),
       lineHeight = 24.sp
     )
 
@@ -1247,7 +1259,7 @@ fun GetStakeView(showFirstImage: Boolean, inCenterOfWindow: Boolean = false, clo
     }
 
     Column(
-      Modifier.fillMaxWidth().padding(top = DEFAULT_PADDING * 2),
+      Modifier.fillMaxWidth().padding(vertical = DEFAULT_PADDING * 2),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       OnboardingActionButton(
@@ -1256,15 +1268,6 @@ fun GetStakeView(showFirstImage: Boolean, inCenterOfWindow: Boolean = false, clo
         onboarding = null,
         onclick = { uriHandler.openUriCatching(WEFUNDER_URL) }
       )
-      if (!chatModel.desktopNoUserNoRemote) {
-        TextButtonBelowOnboardingButton(
-          "or ask SimpleX team",
-          onClick = if (stopped) null else ({
-            close()
-            uriHandler.openVerifiedSimplexUri(CROWDFUNDING_CONTACT_URI)
-          })
-        )
-      }
     }
   }
 }

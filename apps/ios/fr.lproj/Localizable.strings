@@ -4966,7 +4966,7 @@ alert button */
 "Port" = "Port";
 
 /* No comment provided by engineer. */
-"Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out." = "Les mois prépayés n’ont pas de date de facturation. Le badge est renouvelé chaque mois à partir du solde déjà payé et expire lorsque celui-ci est épuisé.";
+"No renewal: the badge ends when the prepaid months run out." = "Pas de renouvellement : le badge expire à la fin des mois prépayés.";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Conserver le brouillon du dernier message, avec les pièces jointes.";
@@ -5569,7 +5569,7 @@ swipe action */
 "Sandbox purchase" = "Achat test";
 
 /* alert message */
-"Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app." = "Les achats de test ne sont pas crédités. Les badges ne peuvent être achetés que dans la version de l’application disponible sur l’App Store.";
+"Buy badges in the App Store version of the app." = "Achetez des badges dans la version App Store de l’application.";
 
 /* alert action
 alert button
@@ -6710,7 +6710,7 @@ server test failure */
 "The store did not confirm this purchase." = "La boutique n’a pas confirmé cet achat.";
 
 /* No comment provided by engineer. */
-"The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store." = "La boutique a renvoyé une transaction qui n’a pas été signée par Apple. SimpleX ne peut pas vérifier cet achat auprès de l’App Store.";
+"Apple did not sign this purchase, so it cannot be verified." = "Apple n’a pas signé cet achat, il ne peut donc pas être vérifié.";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Le texte collé n'est pas un lien SimpleX.";
@@ -6758,7 +6758,7 @@ server test failure */
 "This app version cannot verify this badge. Please update the app." = "Cette version de l’application ne permet pas de vérifier ce badge. Veuillez mettre à jour l’application.";
 
 /* alert message */
-"This app version is too old for the badge service. Please update the app." = "Cette version de l’application est trop ancienne pour le service des badges. Veuillez mettre à jour l’application.";
+"Update the app to use badges." = "Mettez à jour l’application pour utiliser les badges.";
 
 /* badge alert */
 "This badge could not be verified and may not be genuine." = "Ce badge n'a pas pu être vérifié et pourrait ne pas être authentique.";
@@ -6816,7 +6816,7 @@ alert subtitle */
 "This is your link for channel %@!" = "Voici votre lien pour le canal %@ !";
 
 /* No comment provided by engineer. */
-"This link is not supported by this app version. Please check for app updates." = "Ce lien n’est pas pris en charge par cette version de l’application. Veuillez vérifier si des mises à jour sont disponibles.";
+"Update the app to open this link." = "Mettez à jour l’application pour ouvrir ce lien.";
 
 /* No comment provided by engineer. */
 "This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." = "Ce lien nécessite une version plus récente. Mettez l'application à jour ou demandez à votre contact d'envoyer un lien compatible.";
@@ -6834,7 +6834,7 @@ alert subtitle */
 "This profile already has a badge. Redeem the code on another profile, or once this badge ends." = "Ce profil possède déjà un badge. Utilisez le code sur un autre profil ou lorsque ce badge aura expiré.";
 
 /* alert message */
-"This purchase was already credited to a badge on another device or profile." = "Cet achat a déjà été crédité sur un badge associé à un autre appareil ou profil.";
+"This purchase is already used on another profile." = "Cet achat est déjà utilisé sur un autre profil.";
 
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Ce paramètre s'applique aux messages de votre profil de messagerie actuel **%@**.";
