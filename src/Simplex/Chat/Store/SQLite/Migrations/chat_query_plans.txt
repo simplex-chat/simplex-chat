@@ -944,6 +944,15 @@ SEARCH chat_items USING COVERING INDEX idx_chat_items_notes (user_id=? AND note_
 SCAN ci
 
 Query: 
+            SELECT MIN(chat_item_id)
+            FROM chat_items
+            WHERE user_id = ? AND item_status = ?
+            GROUP BY user_id
+          
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)
+
+Query: 
             SELECT author_group_member_id, forwarded_by_group_member_id
             FROM messages
             WHERE group_id = ? AND shared_msg_id = ? LIMIT 1

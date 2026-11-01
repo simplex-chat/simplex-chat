@@ -1981,21 +1981,23 @@ testMuteGroup =
 testUsersUnreadCountQueryPlans :: HasCallStack => TestParams -> IO ()
 testUsersUnreadCountQueryPlans ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    alice ##> "/_get items initial=10"
     alice ##> "/users"
     alice <## "alice (Alice) (active)"
     plans <- withConnection (chatStore $ chatController alice) $ \db -> do
       executedQueries <- readTVarIO $ DB.slow db
-      mapM (queryPlan $ DB.conn db) $ filter isUnreadCountQuery $ M.keys executedQueries
+      mapM (queryPlan $ DB.conn db) $ filter isUnreadQuery $ M.keys executedQueries
     plans
       `shouldBe` [ [ "SEARCH i USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)",
                      "SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)"
                    ],
                    [ "SEARCH i USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)",
                      "SEARCH g USING INTEGER PRIMARY KEY (rowid=?)"
-                   ]
+                   ],
+                   ["SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)"]
                  ]
   where
-    isUnreadCountQuery q = any (`T.isInfixOf` fromQuery q) ["JOIN contacts ct USING (contact_id)", "JOIN groups g USING (group_id)"]
+    isUnreadQuery q = any (`T.isInfixOf` fromQuery q) ["JOIN contacts ct USING (contact_id)", "JOIN groups g USING (group_id)", "GROUP BY user_id"]
     queryPlan db q = map (\(_, _, _, detail) -> detail) <$> (SQL.query_ db ("EXPLAIN QUERY PLAN " <> q) :: IO [(Int, Int, Int, T.Text)])
 #endif
 

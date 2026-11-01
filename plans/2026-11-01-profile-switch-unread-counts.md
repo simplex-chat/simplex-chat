@@ -27,7 +27,7 @@ In both counts, only the profile's unread items are read: `SEARCH i USING COVERI
 
 ## Scope
 
-- `chat_query_plans.txt`: 21 changed plans.
+- `chat_query_plans.txt`: 21 changed plans; the entry of `getFirstUnreadItemId_` is added.
   - The 2 counts.
   - 11 chat list queries of contacts' unread counts (`getChatPreviews`): `(user_id=? AND item_status=? AND contact_id>?)` instead of `(user_id=? AND contact_id>?)`. 4 more variants, outside the file (favorite+unread and search filters with `PTAfter`/`PTBefore`), are changed the same way.
   - 3 per-contact queries with `user_id`, `contact_id` and `item_status`: the new index in place of `idx_chat_items_contacts`.
@@ -36,4 +36,4 @@ In both counts, only the profile's unread items are read: `SEARCH i USING COVERI
 - `src/Simplex/Chat/Store/Messages.hs`: `GROUP BY user_id` in `getFirstUnreadItemId_`.
 - `chat_schema.sql`: the index is listed after the other indexes, before the triggers (SQLite); its column list is extended (Postgres).
 - `tests/SchemaDump.hs`: the migration is in `skipComparisonForDownMigrations`; after the down migration the index is listed after the other indexes.
-- `tests/ChatTests/Direct.hs`: test `testUsersUnreadCountQueryPlans` (SQLite).
+- `tests/ChatTests/Direct.hs`: test `testUsersUnreadCountQueryPlans` (SQLite): plans of the two counts and of `getFirstUnreadItemId_`.
