@@ -449,7 +449,7 @@ issueCodeAs cc badgeType months status =
 runBadgeService :: TestParams -> StoreVerifier -> ChatConfig -> BadgeServiceOpts -> (ServiceState -> IO ()) -> IO ()
 runBadgeService ps verifier cfg opts action = do
   env <- (\s -> s {storeVerifier = verifier}) <$> newServiceState
-  t <- async $ badgeService opts (fst $ testPortsCfg ps cfg testOpts) env
+  t <- async $ badgeService opts Nothing (fst $ testPortsCfg ps cfg testOpts) env
   ready <- timeout 30000000 $ atomically $ readTMVar $ serviceCC env
   when (isNothing ready) $ cancel t >> error "badge service did not start"
   action env `finally` (cancel t >> atomically (readTMVar $ serviceCC env) >>= disposeAgentClient . smpAgent)

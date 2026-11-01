@@ -5,6 +5,7 @@
 module Bots.BadgeService.ConfigTests where
 
 import BadgeService.Config
+import Control.Logger.Simple (LogLevel (..))
 import Control.Monad (forM_)
 import qualified Data.ByteString.Char8 as B
 import Data.Either (isLeft)
@@ -109,6 +110,7 @@ testDefaults = withIni fullIni $ \p -> do
   let PollConfig {pWaitingSeconds, pIdleSeconds} = poll cfg
   pWaitingSeconds `shouldBe` 3
   pIdleSeconds `shouldBe` 60
+  serviceLogLevel cfg `shouldBe` LogNote
   case btcpay cfg of
     Nothing -> expectationFailure "the btcpay section was present"
     Just BTCPayConfig {bExpiryMinutes, bSpeedPolicy, bPaymentTolerance} -> do

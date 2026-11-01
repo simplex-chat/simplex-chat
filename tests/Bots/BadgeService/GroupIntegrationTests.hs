@@ -9,7 +9,7 @@
 -- Members' messages reach a console over separate connections in no fixed order, so gating is asserted from the bot's store.
 module Bots.BadgeService.GroupIntegrationTests (badgeGroupIntegrationTests) where
 
-import BadgeService.Config (BadgeIssuerKey (..), GroupConfig (..))
+import BadgeService.Config (BadgeIssuerKey (..), GroupConfig (..), ServiceConfig, readServiceConfig)
 import BadgeService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup)
 import BadgeService.Group.Command (maxUses)
 import BadgeService.Options (BadgeServiceOpts (..))
@@ -182,9 +182,9 @@ settleServingLane cc env gid = do
 -- It returns once chat has started, while group start-up may still run; the Int is its web listener's port.
 startGroupService :: HasCallStack => GroupSvc -> Maybe GroupConfig -> IO (Async (), ChatController, ServiceState, Int)
 startGroupService svc@GroupSvc {gsCfg} groupCfg = do
-  (opts, port) <- groupServiceOpts svc groupCfg
+  (opts, serviceCfg, port) <- groupServiceOpts svc groupCfg
   env <- newServiceState
-  t <- async $ badgeService opts gsCfg env
+  t <- async $ badgeService opts (Just serviceCfg) gsCfg env
   -- A service that ends before it is ready fails the test with its own error, not the timeout.
   cc <-
     timeout waitLimit (atomically $ (Right <$> readTMVar (serviceCC env)) `orElse` (Left <$> waitCatchSTM t)) >>= \case
@@ -206,7 +206,7 @@ stopChat :: ChatController -> IO ()
 stopChat cc = stopBadgeService cc >> disposeAgentClient (smpAgent cc)
 
 -- It writes the service's ini on a free port; Nothing omits the [group] section.
-groupServiceOpts :: GroupSvc -> Maybe GroupConfig -> IO (BadgeServiceOpts, Int)
+groupServiceOpts :: GroupSvc -> Maybe GroupConfig -> IO (BadgeServiceOpts, ServiceConfig, Int)
 groupServiceOpts GroupSvc {gsKey = BadgeIssuerKey {secretKey}, gsStaticDir, gsPs = ps@TestParams {tmpPath}} groupCfg = do
   (port, sock) <- openFreePort
   close sock
@@ -219,7 +219,8 @@ groupServiceOpts GroupSvc {gsKey = BadgeIssuerKey {secretKey}, gsStaticDir, gsPs
         "static_dir = " <> gsStaticDir
       ]
         <> maybe [] groupSection groupCfg
-  pure ((mkBadgeServiceOpts ps secretKey) {serviceConfigFile = Just iniPath, noAddress = True}, port)
+  Right serviceCfg <- readServiceConfig iniPath
+  pure ((mkBadgeServiceOpts ps secretKey) {noAddress = True}, serviceCfg, port)
   where
     groupSection GroupConfig {gDisplayName, gDescription} =
       ["", "[group]", "display_name = " <> T.unpack gDisplayName]
@@ -387,10 +388,10 @@ testGroupLookupFailureStops ps = do
   svc@GroupSvc {gsCfg} <- prepareGroupService ps
   runGroupService svc $ \cc _ _ ->
     executeSql cc "ALTER TABLE sx_badge_service_group RENAME TO sx_badge_service_group_hidden"
-  (opts, _) <- groupServiceOpts svc (Just testGroupConfig)
+  (opts, serviceCfg, _) <- groupServiceOpts svc (Just testGroupConfig)
   env <- newServiceState
   -- Falling through to create would keep the service running, so the timeout would fire instead.
-  ended <- timeout waitLimit (try $ badgeService opts gsCfg env)
+  ended <- timeout waitLimit (try $ badgeService opts (Just serviceCfg) gsCfg env)
   atomically (tryReadTMVar (serviceCC env)) >>= mapM_ stopChat
   ended `shouldBe` Just (Left (ExitFailure 1))
 

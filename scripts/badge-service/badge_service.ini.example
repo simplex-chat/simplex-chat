@@ -77,6 +77,13 @@ private_key = replace-me
 ;display_name = SimpleX Badges
 ;description = Welcome to the badges group
 
+; the lowest level of the lines printed: trace, debug, info, note, warn or error. The service's
+; routine lines are note, so warn and error hide them, the group's join link included. The level
+; applies to the whole process, so below note the SMP agent's lines print too.
+; --log-agent or -l debug sets the level from -l instead.
+[log]
+level = note
+
 ; local testing only, in both run modes: accepts any well-formed App Store or Play receipt without
 ; verifying it, so anyone who can reach this service can mint badges. The service refuses to start
 ; with this on beside an [apple] or [google] section. Its issuer key is always one released apps

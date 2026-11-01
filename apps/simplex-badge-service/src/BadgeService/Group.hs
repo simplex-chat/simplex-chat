@@ -27,10 +27,10 @@ where
 import BadgeService.Codes (issueFailedText, issueOneCode, revokeBadgeCode, singleUse)
 import BadgeService.Config (GroupConfig (..))
 import BadgeService.Group.Command (CmdAction (..), GroupCmd (..), groupCmdAction, groupCommands)
-import BadgeService.Log (logError, logInfo, logWarn)
 import BadgeService.Store (CodeTracker (..), ManagedGroup (..), RevokeResult (..), clearCodeGroupItems, getCodeTracker, getEditableTrackers, getManagedGroup, insertManagedGroup, markOwnerBootstrapped, setCodeGroupItem)
 import BadgeService.Store.Invoices (truncateToSecond)
 import Control.Concurrent.STM (TQueue, atomically, flushTQueue, readTQueue, readTVarIO, writeTQueue)
+import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (forM_, forever, mfilter, replicateM, unless, void)
 import Control.Monad.Except (runExceptT)
 import Data.Either (partitionEithers)
@@ -93,7 +93,7 @@ ensureManagedGroup cc gc =
           | memberCurrent membership -> do
               forM_ (inertGroupConfig gc p) logWarn
               unless (commandsCurrent p) $ advertiseCommands cc mgGroupId p
-              logInfo "badge group ready"
+              logNote "badge group ready"
               pure (Just mgGroupId)
           | otherwise -> groupGone
         Left (ChatErrorStore SEGroupNotFound {}) -> groupGone
@@ -119,7 +119,7 @@ createManagedGroup cc gc userId =
           let linkText = groupLinkText connLinkContact
           withDB' "insertManagedGroup" cc (\db -> insertManagedGroup db groupId linkText now >> clearCodeGroupItems db) >>= \case
             Right () -> do
-              logInfo $ "badge group created, join link: " <> linkText
+              logNote $ "badge group created, join link: " <> linkText
               pure (Just groupId)
             Left _ -> logError ("badge group " <> tshow groupId <> " not recorded - " <> orphanHint (groupName' g)) >> pure Nothing
         r -> logError ("badge group " <> tshow groupId <> " link failed: " <> tshow r <> " - " <> orphanHint (groupName' g)) >> pure Nothing
@@ -136,7 +136,7 @@ commandsCurrent groupProfile = (groupPreferences groupProfile >>= commands_) == 
 advertiseCommands :: ChatController -> GroupId -> GroupProfile -> IO ()
 advertiseCommands cc groupId groupProfile =
   sendChatCmd cc (APIUpdateGroupProfile groupId p') >>= \case
-    Right CRGroupUpdated {} -> logInfo "badge group commands advertised"
+    Right CRGroupUpdated {} -> logNote "badge group commands advertised"
     r -> logError ("badge group profile update failed: " <> tshow r)
   where
     prefs = fromMaybe emptyGroupPrefs (groupPreferences groupProfile)
@@ -216,7 +216,7 @@ promoteFirstOwner cc g@GroupInfo {groupId} member =
     Right True ->
       sendChatCmd cc (APIMembersRole groupId (groupMemberId' member :| []) GROwner) >>= \case
         -- The core returns no members when every store update failed.
-        Right CRMembersRoleUser {members = _ : _} -> logInfo $ "badge group owner promoted: member " <> tshow (groupMemberId' member)
+        Right CRMembersRoleUser {members = _ : _} -> logNote $ "badge group owner promoted: member " <> tshow (groupMemberId' member)
         r -> logError $ "badge group owner promotion failed: " <> tshow r <> " - " <> noOwnerHint (groupName' g)
     _ -> pure ()
 
