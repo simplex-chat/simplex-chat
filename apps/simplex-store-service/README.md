@@ -25,7 +25,7 @@ At this stage the service:
 - does not accept contact requests: the address is for RPC only,
 - in service mode with `[group]` in the ini, manages one SimpleX group and serves `/issue`, `/bulk`
   and `/revoke` in it (see [Issuing codes](#issuing-codes)),
-- in service mode with `--service-config`, also serves the built web app (`npm run build` in `web/`), `POST /api/invoice` and `GET /api/invoice/:id`, the BTCPay and Stripe webhook routes, and a payment poller, seeding its price/offer catalog on every start,
+- in service mode with `--service-config`, also serves the built web app (`npm run build` in `web/`) on `badges_port` and, with `[names]`, the names site on `names_port` (see [Two sites](#two-sites)), `POST /api/invoice` and `GET /api/invoice/:id`, the BTCPay and Stripe webhook routes, and a payment poller, seeding its price/offer catalog on every start,
 - owns the `sx_badge_service_`-prefixed tables and its own migrations table (`sx_badge_service_migrations`).
 
 Every other command answers `unsupported_version`, or `unknown_purchase_key` when the key that
@@ -84,7 +84,7 @@ Other options:
 
 - `--service-config INI_FILE`: path to `store_service.ini`. Omit it to run the chat/RPC side
   only; the process never starts a web listener without it, and never starts one under
-  `--run-cli`, which parses and validates the whole file (`[listener] static_dir` included) but
+  `--run-cli`, which parses and validates the whole file (`[listener]` included) but
   uses only its `[issuer]`, `[apple]`, `[google]` and `[dev]` sections. An issuer key is
   still required either way.
 - `--service-name NAME`: the bot's display name, without `*`s or spaces (default `SimpleX Badges`).
@@ -95,7 +95,7 @@ Other options:
 
 ### Running the web checkout
 
-`store_service.ini` holds the listener bind address and `static_dir`, an optional
+`store_service.ini` holds the listener bind address, its ports and `badges_static_dir`, an optional
 `[btcpay]` section (omitting it disables Bitcoin and Monero), an optional `[stripe]`
 section (omitting it disables card payments), an optional `[group]` section (omitting it
 turns off the group's commands, though a group created earlier still has its code messages updated),
@@ -169,7 +169,8 @@ for 24 hours.
 The service fills `publishable_key` into the shell at boot: the built `index.html` ships
 with an empty `<meta id="stripe-publishable-key" name="stripe-publishable-key" content="">`
 (`web/public/index.html`), and the listener serves a copy with the configured key
-substituted in, so the ini is the only place the key is set. With no `[stripe]` section the
+substituted in, so the ini is the only place the key is set. The names site's shell carries the
+same meta without the `id`, and is filled the same way. With no `[stripe]` section the
 pristine (empty) shell is served and the page shows its development stand-in card form. The
 dev mock (`web/mock/server.py`) does the same substitution from `$STRIPE_PUBLISHABLE_KEY`,
 since it runs without an ini.
@@ -187,6 +188,8 @@ script:
 script-src 'self' https://js.stripe.com https://*.js.stripe.com;
 frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com
 ```
+
+The full policies of both sites are in [Caddy](#caddy).
 
 **Stripe Link must be disabled in the Dashboard.** Left on, it needs `link.com` in the
 CSP above and reintroduces an email prompt of its own, which this design otherwise avoids.
@@ -423,6 +426,16 @@ badge without paying.
 
 ## Deployment
 
+`scripts/store-service/` holds the production deployment: the image (`Dockerfile`, built from
+the repository root), `compose.yml` and the ini template `store_service.ini.example`. The service
+runs with `+client_postgres` and host networking; one Caddy serves both sites from the folders the
+service exports at boot and proxies the API to it.
+
+`compose.yml` mounts the folder `scripts/store-service/config/` read-only at
+`/etc/simplex-store-service`. It holds `store_service.ini`, and the App Store root and the Play
+service account key when `[apple]` and `[google]` are configured. The folder must exist before
+`docker compose up`: compose refuses to start rather than create it empty.
+
 ### Upgrading from the badge service
 
 The rename to StoreService changed what the operator runs:
@@ -435,12 +448,17 @@ The rename to StoreService changed what the operator runs:
 | the folder `config`, mounted read-only at `/etc/simplex-badge-service` (before it, `badge_service.ini` alone, mounted at `/etc/simplex-badge-service/badge_service.ini`) | the folder `config`, mounted read-only at `/etc/simplex-store-service` |
 | `[apple] root_certificates` and `[google] service_account_file` under `/etc/simplex-badge-service/` | the same files under `/etc/simplex-store-service/` |
 | the binary `simplex-badge-service` | `simplex-store-service` |
+| `port = 8080` | `badges_port = 8080`, the default, which can be omitted |
+| `static_dir = /srv/web` | `badges_static_dir = /srv/badges`, the image's build and the default, which can be omitted in Docker |
+| `webapp_export_dir = /srv/webapp`, host folder `web` | `badges_export_dir = /srv/badges-export`, host folder `badges` |
+| `names_hosts`, the hosts that got the names site by `Host` | `names_port = 8081`, the default: the names site on its own port (see [Two sites](#two-sites)) |
 
+The service refuses to start with a key from the left column, naming the key that replaced it.
 Move `scripts/badge-service/config/` to `scripts/store-service/config/` (a deployment from before
 the config folder creates it and moves `badge_service.ini` into it), rename `badge_service.ini` in it
-to `store_service.ini`, and change its paths as the table says, the
+to `store_service.ini`, and change its keys and paths as the table says, the
 `/etc/simplex-badge-service/` files under `[apple]` and `[google]` among them. Point Caddy's badges root at
-`scripts/store-service/web`, which the service fills at boot. Then start the new service with
+`scripts/store-service/badges`, which the service fills at boot. Then start the new service with
 
 ```
 docker compose up -d --build --remove-orphans
@@ -455,6 +473,127 @@ A badge-service database upgrades in place: the store's own migrations run after
 migration, `20261012_badge_subscriptions` included. A store database created before the names
 migration became `20261013_names` (it was `20261010_names`) does not start, as the service refuses
 migrations applied out of the order it lists. Recreate such a database.
+
+### Two sites
+
+The image carries the badges build at `/srv/badges`, the default of `badges_static_dir`. The names
+site (simplex.domains) is configured beside it in `[listener]`. The image does not build the names
+site yet, so mount a names build into the container at `/srv/names`, the default of
+`names_static_dir`, until it does; a run outside the image sets both.
+
+The names site is on when, and only when, the ini has `[names]`. Its `[listener]` keys:
+
+- `names_static_dir`: the names build, by default `/srv/names`;
+- `names_export_dir`: where the service writes the names site at boot, with the Stripe
+  publishable key in its shell, as `badges_export_dir` is for the badges site. `compose.yml`
+  bind-mounts `./names` there (`/srv/names-export`), and `./badges` at `/srv/badges-export`;
+- `names_port`: the port the names site is served on when `serve_webapp = on`, by default 8081,
+  beside `badges_port` (by default 8080), which serves the badges site. The two must differ.
+
+The service refuses to start with any of these keys but no `[names]`, and with `names_port` and
+`serve_webapp = off`. It also refuses to start when a build it serves or exports is not a
+directory, naming the setting, so a local run that keeps a default path stops there.
+
+With `serve_webapp = on` (all in one), the service listens on both ports, and each serves only its
+own site: every path outside `/api/` and `/webhooks/` is a file of that site, `/` and `/index.html`
+its shell. Both ports answer `/api/` and `/webhooks/`, whatever the `Host`. A reverse proxy sends
+each domain to its own port, as the all-in-one example in [Caddy](#caddy) does. With
+`serve_webapp = off`, the service listens on `badges_port` alone, for the API and the webhooks.
+
+### Caddy
+
+The Caddyfile is not in this repository. Its two host blocks for the split deployment
+(`serve_webapp = off`), with the exported folders at `/srv/store-service/badges` and
+`/srv/store-service/names` and the listener at `127.0.0.1:8080`:
+
+```
+badges.simplex.chat {
+	encode zstd gzip
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle /webhooks/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle {
+		root * /srv/store-service/badges
+		file_server
+	}
+	@shell path / /index.html /sw.js
+	header @shell Cache-Control "no-cache"
+	header /assets/* {
+		Cache-Control "public, max-age=31536000, immutable"
+		match status 2xx
+	}
+	header Content-Security-Policy "default-src 'self'; script-src 'self' https://js.stripe.com https://*.js.stripe.com; frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com; connect-src 'self' https://api.stripe.com; img-src 'self' https://*.stripe.com; frame-ancestors 'self' https://simplex.chat https://*.simplex.chat"
+}
+
+simplex.domains {
+	encode zstd gzip
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle {
+		root * /srv/store-service/names
+		file_server
+	}
+	@shell path / /index.html /sw.js
+	header @shell Cache-Control "no-cache"
+	header /assets/* {
+		Cache-Control "public, max-age=31536000, immutable"
+		match status 2xx
+	}
+	header /manifest.webmanifest Content-Type "application/manifest+json"
+	@media path /fonts/* /img/*
+	header @media {
+		Cache-Control "public, max-age=86400"
+		match status 2xx
+	}
+	header {
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-i5ar+ITNdQiucbmin4/AN6DAY5LbAWeq3at+RiFoUoY=' 'sha256-lxURZtAGLIPkeIfIfFjl4UIJp4ElJWSbFqE1ktKB8hk=' 'sha256-djvAKNENifE9sLU9+NrLdzdGftMgCwpvCvH/MAbkElY=' https://js.stripe.com https://*.js.stripe.com; frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com; connect-src 'self' https://api.stripe.com; img-src 'self' data: https://*.stripe.com; style-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+		Strict-Transport-Security "max-age=63072000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Cross-Origin-Opener-Policy "same-origin-allow-popups"
+	}
+}
+```
+
+- Both sites call `/api/*` on their own origin, so there is no CORS.
+- `/webhooks/*` is proxied on badges.simplex.chat only. BTCPay and Stripe send every event there,
+  names payments included.
+- The shell and `/sw.js` are `no-cache`, since they name the build's hashed files, and Caddy's
+  `file_server` sends no `Cache-Control` of its own. `/assets/*` file names carry a content hash.
+  The long lifetimes apply to found files only, so a missing asset is not cached for a year.
+- `file_server` sends no type for `.webmanifest`, which the names site's manifest needs.
+- The badges policy is `web/README.md`'s. The names policy is the names webapp's (its README,
+  "Hosting"), with `https://*.stripe.com` added to `img-src` beside `data:`, which the link
+  profiles' pictures need. Its two hashes are those of the inline theme and font-preload scripts
+  in the names `index.html`, and change with them. It allows no inline style.
+- Stripe.js runs on simplex.domains itself, in the document that keeps the owner codes and prepaid
+  codes in `localStorage`. The owner accepted this on 2026-10-20, rather than a Checkout redirect
+  or a separate card origin. Scripts and frames are allowed only from this origin and Stripe's
+  hosts.
+
+With `serve_webapp = on`, the service serves both sites itself, so each host block proxies
+everything to its site's port, `badges_port` and `names_port`:
+
+```
+badges.simplex.chat {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8080
+	# the Content-Security-Policy header of the badges.simplex.chat block above
+}
+
+simplex.domains {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8081
+	# the last header { } block, the policy with it, of the simplex.domains block above
+}
+```
+
+The service sets each file's type and `Cache-Control` itself: `no-cache`, and a year for
+`/assets/*`, so the names site's fonts and images are revalidated rather than kept for a day.
 
 ## Issuing codes
 
