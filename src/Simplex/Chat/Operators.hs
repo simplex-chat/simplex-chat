@@ -60,10 +60,10 @@ import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (atomicModifyIORef'_, safeDecodeUtf8)
 
 usageConditionsCommit :: Text
-usageConditionsCommit = "05f99634c470f8bddac20046947a0606938b22ad"
+usageConditionsCommit = "5cb85b913989aa4dc618a0a47ffb9a758e44f375"
 
 previousConditionsCommit :: Text
-previousConditionsCommit = "7471fd2af5838dc0467aebc570b5ea75e5df3209"
+previousConditionsCommit = "05f99634c470f8bddac20046947a0606938b22ad"
 
 usageConditionsText :: Text
 usageConditionsText =
