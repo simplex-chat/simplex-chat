@@ -810,7 +810,7 @@ extension WebRTC.RTCPeerConnection {
     }
 
     private func processSDP(_ cont: CheckedContinuation<(RTCSessionDescription?, Error?), Never>, _ sdp: RTCSessionDescription?, _ error: Error?) {
-        if let sdp = sdp {
+        if let sdp = sdp?.restrictedToCodecs(["vp8", "opus"]) {
             self.setLocalDescription(sdp, completionHandler: { (error) in
                 if let error = error {
                     cont.resume(returning: (nil, error))
@@ -821,6 +821,34 @@ extension WebRTC.RTCPeerConnection {
         } else {
             cont.resume(returning: (nil, error))
         }
+    }
+}
+
+extension WebRTC.RTCSessionDescription {
+    func restrictedToCodecs(_ codecs: Set<String>) -> RTCSessionDescription {
+        let sections = sdp.components(separatedBy: "\r\nm=")
+        let restricted = [sections[0]] + sections.dropFirst().map { restrictSectionCodecs($0, codecs) }
+        return RTCSessionDescription(type: type, sdp: restricted.joined(separator: "\r\nm="))
+    }
+
+    private func restrictSectionCodecs(_ section: String, _ codecs: Set<String>) -> String {
+        let lines = section.components(separatedBy: "\r\n")
+        let payloadTypes = Set(lines.compactMap { codecPayloadType($0, codecs) })
+        let mLine = lines[0].split(separator: " ")
+        let restrictedMLine = (mLine.prefix(3) + mLine.dropFirst(3).filter { payloadTypes.contains($0) }).joined(separator: " ")
+        let attributes = lines.dropFirst().filter { line in attributePayloadType(line).map { payloadTypes.contains($0) } ?? true }
+        return ([restrictedMLine] + attributes).joined(separator: "\r\n")
+    }
+
+    private func codecPayloadType(_ line: String, _ codecs: Set<String>) -> Substring? {
+        let fields = line.split(whereSeparator: { " :/".contains($0) })
+        return fields.count > 2 && fields[0] == "a=rtpmap" && codecs.contains(fields[2].lowercased()) ? fields[1] : nil
+    }
+
+    private func attributePayloadType(_ line: String) -> Substring? {
+        ["a=rtpmap:", "a=fmtp:", "a=rtcp-fb:"]
+            .first { line.hasPrefix($0) }
+            .flatMap { line.dropFirst($0.count).split(separator: " ").first }
     }
 }
 
