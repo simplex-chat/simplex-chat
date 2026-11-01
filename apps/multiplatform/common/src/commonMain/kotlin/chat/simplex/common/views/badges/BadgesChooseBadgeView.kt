@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -21,6 +22,8 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingActionButton
 import chat.simplex.common.views.onboarding.TextButtonBelowOnboardingButton
+import chat.simplex.common.views.onboarding.WEFUNDER_URL
+import chat.simplex.common.views.onboarding.crowdfundingAvailable
 import chat.simplex.res.*
 
 // TODO [badges]: replace with types produced by the badge purchase API when it lands.
@@ -50,6 +53,12 @@ enum class BadgeLevel {
     get() = when (this) {
       Supporter -> MR.strings.badges_level_supporter_summary
       Legend -> MR.strings.badges_level_legend_summary
+    }
+
+  val investorOffer: StringResource
+    get() = when (this) {
+      Supporter -> MR.strings.badges_investor_offer_supporter
+      Legend -> MR.strings.badges_investor_offer_legend
     }
 
   val badgeType: BadgeType
@@ -115,8 +124,29 @@ fun BadgesChooseBadgeView(modalManager: ModalManager, unwindToDepth: Int) {
       } else {
         TextButtonBelowOnboardingButton("", null)
       }
+      BadgeInvestorOffer(selectedLevel)
     }
   }
+}
+
+@Composable
+fun BadgeInvestorOffer(level: BadgeLevel) {
+  if (!crowdfundingAvailable()) return
+  val uriHandler = LocalUriHandler.current
+  Text(
+    stringResource(level.investorOffer),
+    style = MaterialTheme.typography.body2,
+    textAlign = TextAlign.Center
+  )
+  Text(
+    stringResource(MR.strings.v7_0_invest_learn_more),
+    Modifier
+      .padding(top = 4.dp)
+      .clickable { uriHandler.openUriCatching(WEFUNDER_URL) },
+    style = MaterialTheme.typography.body1,
+    color = MaterialTheme.colors.primary,
+    textAlign = TextAlign.Center
+  )
 }
 
 @Composable

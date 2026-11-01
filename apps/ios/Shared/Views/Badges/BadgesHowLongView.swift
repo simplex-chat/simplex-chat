@@ -142,6 +142,7 @@ struct BadgesHowLongLayout: View {
                         continueButton()
                             .padding(.vertical, 10)
                         BadgeBillingFooter(period: selectedPeriod, startDate: startDate)
+                        BadgeInvestorOffer(level: level)
                     }
                     .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }

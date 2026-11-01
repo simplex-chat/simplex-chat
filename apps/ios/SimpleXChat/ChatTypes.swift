@@ -275,7 +275,7 @@ public enum ChatLayout: Hashable {
     public var displayName: String {
         switch self {
         case .classic: NSLocalizedString("Classic", comment: "chat layout")
-        case .terminal: NSLocalizedString("Terminal", comment: "chat layout")
+        case .terminal: NSLocalizedString("Flat", comment: "chat layout")
         case let .unknown(text): text
         }
     }

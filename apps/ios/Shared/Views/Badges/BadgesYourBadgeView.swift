@@ -35,6 +35,14 @@ struct BadgesYourBadgeView: View {
                 Section {
                     BadgeSummary(badgeState: badgeState)
                 }
+                let level: BadgeLevel = badgeState.badgeType == .legend ? .legend : .supporter
+                Section {
+                    settingsRow("doc", color: theme.colors.secondary) { Text(level.fileSize) }
+                    settingsRow("clock", color: theme.colors.secondary) { Text(level.fileStorage) }
+                } header: {
+                    Text("Benefits")
+                        .foregroundColor(theme.colors.secondary)
+                }
                 if let subscription = badgeState.subscription {
                     let ended = badgeState.paidThrough <= Date.now
                     let date = badgeState.paidThroughText

@@ -33,7 +33,6 @@ struct BadgesCheckOrderLayout: View {
     var startDate = Date()
     var priceList: BadgePriceList? = nil
     @State private var purchasing = false
-    @State private var privacyPolicyActive = false
     // presented from this view, not AlertManager: its host is behind the sheet these views open in
     @State private var alert: SomeAlert?
 
@@ -88,23 +87,7 @@ struct BadgesCheckOrderLayout: View {
                         payButton()
                             .padding(.vertical, 10)
                         BadgeBillingFooter(period: period, startDate: startDate)
-                        HStack(spacing: 20) {
-                            Link("Terms of use", destination: appleStandardEULAURL)
-                            ZStack {
-                                Button("Privacy policy") { privacyPolicyActive = true }
-                                NavigationLink(isActive: $privacyPolicyActive) {
-                                    ConditionsTextView()
-                                        .padding()
-                                        .navigationTitle("Privacy policy")
-                                        .modifier(ThemedBackground(grouped: true))
-                                } label: {
-                                    EmptyView()
-                                }
-                                .frame(width: 1, height: 1)
-                                .hidden()
-                            }
-                        }
-                        .font(.footnote)
+                        BadgeInvestorOffer(level: level)
                     }
                     .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }
@@ -185,9 +168,6 @@ struct BadgesCheckOrderLayout: View {
         }
     }
 }
-
-// Apple's standard licence agreement, which an app selling subscriptions links as its terms of use
-let appleStandardEULAURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
 
 struct RestorePurchasesButton: View {
     @State private var restoring = false

@@ -1105,7 +1105,7 @@ fun shouldShowWhatsNew(m: ChatModel): Boolean {
   return v != lastVersion
 }
 
-private val WEFUNDER_URL = "https://wefunder.com/simplex.chat?utm_source=$APP_UTM_SOURCE"
+val WEFUNDER_URL = "https://wefunder.com/simplex.chat?utm_source=$APP_UTM_SOURCE"
 
 // the center modal takes the remaining width of the window, so the image is limited to its design width
 private val MAX_CROWDFUNDING_IMAGE_WIDTH = DEFAULT_MIN_CENTER_MODAL_WIDTH
@@ -1285,7 +1285,7 @@ fun GetStakeView(inCenterOfWindow: Boolean = false) {
     }
 
     Column(
-      Modifier.fillMaxWidth().padding(top = DEFAULT_PADDING * 2),
+      Modifier.fillMaxWidth().padding(vertical = DEFAULT_PADDING * 2),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       OnboardingActionButton(
@@ -1294,7 +1294,6 @@ fun GetStakeView(inCenterOfWindow: Boolean = false) {
         onboarding = null,
         onclick = { uriHandler.openUriCatching(WEFUNDER_URL) }
       )
-      TextButtonBelowOnboardingButton("", null)
     }
   }
 }
