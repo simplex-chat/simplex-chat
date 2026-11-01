@@ -101,7 +101,11 @@ section (omitting it disables card payments), an optional `[group]` section (omi
 turns off the group's commands, though a group created earlier still has its code messages updated),
 the poll cadence, optional `[apple]` and `[google]` sections that verify store purchases (see
 [Store purchases](#store-purchases-app-store-and-google-play)), and optional `[names]` and `[chain]` sections for the names store (omitting both
-turns it off).
+turns it off). `[names]` requires
+`terms_version` and `terms_url`, and an optional `[community]` section lists the community names
+(see [Terms and community names](#terms-and-community-names)). Write every setting as
+`key = value`: the parser also reads `key: value`, but drops the first character of its value. A
+key written twice in one section, or a section header written twice, stops the service at startup.
 `store_service.ini.example` is the committed template; `store_service.ini` itself is
 gitignored, since a real one holds API keys and webhook secrets.
 
@@ -160,7 +164,8 @@ absent `[btcpay]` does for Bitcoin and Monero. Its keys:
   hour starts again.
 
 The service creates each payment intent with `metadata[order]`, the order's reference:
-`badge:0x<code hash>` (`code_hash` in `sx_badge_service_badge_codes`). It is not a secret,
+`name:0x<order hash>` for a name order (`order_hash` in `sx_badge_service_name_registrations`) or
+`badge:0x<code hash>` for a badge (`code_hash` in `sx_badge_service_badge_codes`). Neither is a secret,
 and support finds an intent's order from it in the Dashboard. The create also sends an
 `Idempotency-Key` of that reference with the amount and currency, so a buyer who sends the same order
 again after the first answer was lost gets the same intent, not a second one; Stripe keeps the key
@@ -595,6 +600,63 @@ simplex.domains {
 The service sets each file's type and `Cache-Control` itself: `no-cache`, and a year for
 `/assets/*`, so the names site's fonts and images are revalidated rather than kept for a day.
 
+### Terms and community names
+
+`[names]` needs two settings, with no default:
+
+- `terms_version`: the version of the name terms buyers agree to, 1 to 32 letters, digits, dots,
+  underscores or hyphens, such as `2026-10-23`. Change it whenever the terms change.
+- `terms_url`: the `https://` page of those terms, which the order's checkbox links to.
+
+**Upgrading:** an ini written before these settings existed stops the service at startup until both
+are added under `[names]`.
+
+`[community]` lists the community names, one line per name: the label, as it is searched, then `=`
+and what the name is for:
+
+```
+[community]
+bakers = bakers and bakeries in Portugal
+```
+
+Search answers and the registration view carry a listed name's text, which the page shows with the
+name as a community name. Each label must be a valid name in lower case and listed once; each text is
+1 to 200 characters with no control, format or line separator characters, and should not end with a
+full stop, since the page adds one. The service refuses to start, naming the setting, on any other
+entry, on `[community]` without `[names]`, on a key written twice in a section (only the first would
+be read) and on a section header written twice in the file (only the last would be read). It logs
+how many community names it loaded.
+
+Both the terms and the list are read only at startup, so an edit applies after a restart. After a
+restart, search each listed name on the names site and check that it shows as a community name.
+
+Every order signs the terms the buyer agreed to: `terms_version`, followed by `/community` for a
+listed name. The service stores them with the order, so an open order keeps the terms it signed
+after an edit. An order signed with any other value answers `409 terms_changed` with the current terms and
+the name's community entry, and the page asks again. An exact resend is still answered after the version changed.
+
+**Upgrading:** a page that sends no `terms` gets `bad_request` on every order, so the
+page and the service are deployed together.
+
+### Codes-only launch
+
+`[names] codes_only = on` lets only prepaid codes register names, as for the launch to the investors
+who hold them before anyone can pay. It is `off` by default. While it is on:
+
+- the names site's shell is served and exported with `<meta name="simplex-names-mode" content="codes">`
+  in place of the build's `content="open"`, and the page then offers only codes. The badges site's
+  shell is unchanged;
+- `POST /api/invoice` for a name answers `403 {"error": "codes_only"}`, before it reads the order,
+  so no order takes money for a name;
+- search, link previews, code checks, code orders (`POST /api/name/register`) and the registration
+  view work as before. Webhooks and the poller still settle the invoices already open, and badges
+  sell as before.
+
+The setting is read at startup, and the export is written then, so switching it is an edit of the
+ini and a restart, with the same build. Codes for investors come from the group (needs `[group]`, see
+[From the group](#from-the-group)) or from `//issue name` in `--run-cli` (see
+[From the command line](#from-the-command-line)).
+
 ## Issuing codes
 
 Operators issue codes two ways: from the service's own command line in `--run-cli` mode, and from the
@@ -618,7 +680,8 @@ whether the code was sold (`paid`), is awaiting payment (`unpaid`), or was issue
 code row when the invoice is created, and settlement is what marks it paid.
 
 `//issue name` makes a prepaid name code (`SN<length>-…`): it pays for one name of at least
-`<length>` letters, 6 to 63, for `years` years, 2 to 10 (default 2). The status is as above.
+`<length>` letters, 6 to 63, for `years` years, 2 to 10 (default 2). The status is as above: an
+order refuses an `unpaid` name code with `payment_pending`.
 
 The code is printed once and only its `SHA-256` is stored, so a code that is not copied when it is
 shown cannot be recovered.
