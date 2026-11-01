@@ -19,10 +19,13 @@ import Bots.StoreService.NamesLinksTests
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesPhasesTests
 import Bots.StoreService.NamesProfilesTests
+import Bots.StoreService.NamesRevealTests
 import Bots.StoreService.NamesSearchTests
+import Bots.StoreService.NamesSenderTests
 import Bots.StoreService.NamesSignatureTests
 import Bots.StoreService.NamesStoreTests
 import Bots.StoreService.NamesWiringTests
+import Bots.StoreService.NamesWorkerTests
 import Bots.StoreService.StoreVerifierTests
 import Bots.StoreService.StripeTests
 import Bots.StoreService.WaitersTests
@@ -111,10 +114,13 @@ main = do
       namesOrdersTests
       namesPhasesTests
       namesProfilesTests
+      namesRevealTests
       namesSearchTests
+      namesSenderTests
       namesSignatureTests
       namesStoreTests
       namesWiringTests
+      namesWorkerTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "Member relations" memberRelationsTests
@@ -146,6 +152,7 @@ main = do
             storeServiceTests
             describe "managed group" badgeGroupIntegrationTests
           describe "StoreService names: boot" namesBootTests
+          describe "StoreService names: worker" namesWorkerBootTests
           namesCodesChatTests
           namesProfilesChatTests
           describe "Remote session" remoteTests

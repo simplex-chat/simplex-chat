@@ -9,10 +9,10 @@ import Network.HTTP.Types (Method)
 import Network.Wai (Request, ResponseReceived, pathInfo)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Orders (ordersEnv)
-import StoreService.Web.Http (HttpEnv, Limit, Respond, codeLimit, holdMicros, limited, only, previewLimit, readLimit, searchLimit)
+import StoreService.Web.Http (HttpEnv, Limit, Respond, codeLimit, createLimit, holdMicros, limited, only, previewLimit, readLimit, searchLimit)
 import StoreService.Web.Names.Codes (codeCheckHandler)
 import StoreService.Web.Names.Orders (codeOrderHandler)
-import StoreService.Web.Names.Registration (registrationHandler)
+import StoreService.Web.Names.Registration (registrationHandler, retryHandler, revealHandler)
 import StoreService.Web.Names.Search (previewHandler, searchHandler)
 
 data Route = Route
@@ -29,6 +29,8 @@ namesRoutes env@NamesEnv {neConfig, neStore, neContracts, neProfiles, neWaiters,
   -- below every fixed /api/name/<word> route, which it would otherwise match
   ["api", "name", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = searchHandler neConfig neStore neContracts neProfiles hash}
   ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler (ordersEnv env) holdMicros rid}
+  ["api", "registration", rid, "reveal"] -> Just Route {rMethod = "POST", rLimit = readLimit, rHandler = revealHandler (ordersEnv env) rid}
+  ["api", "registration", rid, "retry"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retryHandler (ordersEnv env) rid}
   _ -> Nothing
 
 -- | Nothing for a path no route knows. The limit is taken only once the route and the method match.
