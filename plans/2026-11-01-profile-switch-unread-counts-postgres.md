@@ -6,7 +6,7 @@ On Postgres, with the `GROUP BY user_id` of `getFirstUnreadItemId_` (`/_get item
 
 ## Cause
 
-With `GROUP BY user_id`, the Postgres planner reads the unread messages of all profiles in `idx_chat_items_item_status`. Without it, the planner reads `chat_items_pkey` up to the first matching row, on master's and on the new index set alike.
+For that profile, with `GROUP BY user_id`, the Postgres planner reads the unread messages of all profiles in `idx_chat_items_item_status`; without it, the planner reads `chat_items_pkey` up to the first matching row, on master's and on the new index set alike. For a profile with 15 unread messages, both texts use `idx_chat_items_user_id_item_status`.
 
 ## Fix
 
