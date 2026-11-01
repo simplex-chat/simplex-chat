@@ -160,6 +160,8 @@ data NamesConfig = NamesConfig
     nYears :: Int,
     nTermStart :: UTCTime,
     nTermSlackSeconds :: Int,
+    -- | Only prepaid codes pay for names: every order that would take money for one is refused.
+    nCodesOnly :: Bool,
     nChain :: ChainConfig
   }
   deriving (Eq, Show)
@@ -315,7 +317,7 @@ knownSettings =
     ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage", "credit_test_purchases"]),
     ("issuer", ["index", "private_key"]),
     ("log", ["level"]),
-    ("names", ["tld", "years", "term_start", "term_slack_seconds"]),
+    ("names", ["tld", "years", "term_start", "term_slack_seconds", "codes_only"]),
     ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "gas_limit_cap"])
   ]
 
@@ -522,8 +524,9 @@ parseConfig ini = do
           when (nYears < minNameYears) $ Left ("names.years must be at least " <> show minNameYears)
           nTermStart <- termStart
           nTermSlackSeconds <- atLeast 0 "names" "term_slack_seconds" 3600
+          nCodesOnly <- bool "names" "codes_only" False
           nChain <- chainSection
-          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nChain})
+          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nCodesOnly, nChain})
     tldSetting =
       required "names" "tld" >>= \case
         "simplex" -> Right TLDSimplex
