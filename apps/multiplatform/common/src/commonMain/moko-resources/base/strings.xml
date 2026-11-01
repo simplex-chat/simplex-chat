@@ -2714,11 +2714,11 @@
   <string name="v6_5_safe_web_links_descr">- opt-in to send link previews.\n- use SOCKS proxy if enabled.\n- prevent hyperlink phishing.\n- remove link tracking.</string>
   <string name="v6_5_non_profit_governance">Non-profit governance</string>
   <string name="v6_5_non_profit_governance_descr">To make SimpleX Network last.</string>
-  <string name="v7_0_invest" translatable="false">You can now invest in SimpleX Chat! 🚀</string>
   <string name="v7_0_crowdfunding" translatable="false">Crowdfunding on Wefunder</string>
   <string name="v7_0_invest_learn_more" translatable="false">Learn more on Wefunder</string>
   <string name="invest_banner_title" translatable="false">Invest in SimpleX Chat!</string>
   <string name="invest_banner_subtitle" translatable="false">Crowdfunding on Wefunder</string>
+  <string name="invest_settings_title" translatable="false">Own a part of SimpleX Chat</string>
   <string name="v7_0_simplex_names">SimpleX public names (BETA)</string>
   <string name="v7_0_simplex_names_descr">Public names for your channel or business.</string>
   <string name="v7_0_channels">Better channels 📢</string>
@@ -3349,7 +3349,11 @@
   <string name="badges_renews_on_for">Renews on %1$s for %2$s.</string>
   <string name="badges_renews_on">Renews on %1$s.</string>
   <string name="supporter_perks">Supporter perks</string>
-  <string name="get_supporter_badge">Get a supporter badge</string>
+  <string name="badges_your_supporter_badge">Your supporter badge</string>
+  <string name="badges_your_legend_badge">Your legend badge</string>
+  <string name="badges_supporter_benefits">Files up to 2 GB, stored for 7 days.</string>
+  <string name="badges_legend_benefits">Files up to 5 GB, stored for 21 days.</string>
+  <string name="badges_benefits">Benefits</string>
   <string name="v7_1_invest" translatable="false">Own a part of SimpleX Chat! 🚀</string>
   <string name="v7_1_invest_descr" translatable="false">192 people have already invested.</string>
   <string name="v7_1_invest_learn_more" translatable="false">Learn more on Wefunder.</string>

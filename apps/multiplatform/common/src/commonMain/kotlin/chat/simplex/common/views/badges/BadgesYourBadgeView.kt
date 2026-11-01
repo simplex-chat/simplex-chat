@@ -49,6 +49,12 @@ fun BadgesYourBadgeView(badgeState: BadgeState, modalManager: ModalManager) {
       BadgeSummary(badgeState)
     }
     SectionSpacer()
+    val level = if (badgeState.badgeType is BadgeType.Legend) BadgeLevel.Legend else BadgeLevel.Supporter
+    SectionView(stringResource(MR.strings.badges_benefits)) {
+      SettingsActionItem(painterResource(MR.images.ic_draft), stringResource(level.fileSize))
+      SettingsActionItem(painterResource(MR.images.ic_schedule), stringResource(level.fileStorage))
+    }
+    SectionSpacer()
     val subscription = badgeState.subscription
     if (subscription != null) {
       val ended = badgeState.paidThrough <= Clock.System.now()

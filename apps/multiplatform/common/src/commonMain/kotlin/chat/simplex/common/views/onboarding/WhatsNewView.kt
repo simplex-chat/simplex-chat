@@ -308,6 +308,8 @@ private data class VersionDescription(
   val post: String? = null,
 )
 
+private val APP_UTM_SOURCE = if (appPlatform.isAndroid) "app_android" else "app_desktop"
+
 private val versionDescriptions: List<VersionDescription> = listOf(
   VersionDescription(
     version = "v4.2",
@@ -968,7 +970,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     features = listOf(
       VersionFeature.FeatureView(
         icon = null,
-        titleId = MR.strings.v7_0_invest,
+        titleId = MR.strings.v7_1_invest,
         view = { InvestInSimpleXChatView() }
       ),
       VersionFeature.FeatureDescription(
@@ -1007,7 +1009,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         icon = MR.images.ic_alternate_email,
         titleId = MR.strings.v7_1_simplex_names,
         descrId = MR.strings.v7_1_simplex_names_descr,
-        learnMoreLink = "https://simplex.chat/blog/20260722-simplex-public-names.html"
+        learnMoreLink = "https://simplex.domains/?utm_source=$APP_UTM_SOURCE"
       ),
       VersionFeature.FeatureDescription(
         icon = MR.images.ic_bigtop_updates,
@@ -1104,7 +1106,7 @@ fun shouldShowWhatsNew(m: ChatModel): Boolean {
 
 private const val WEFUNDER_URL = "https://wefunder.com/simplex.chat?utm_source=app"
 
-private val WHATS_NEW_WEFUNDER_URL = "https://wefunder.com/simplex.chat?utm_source=" + if (appPlatform.isAndroid) "app_android" else "app_desktop"
+private val WHATS_NEW_WEFUNDER_URL = "https://wefunder.com/simplex.chat?utm_source=$APP_UTM_SOURCE"
 
 private const val CROWDFUNDING_CONTACT_URI = "simplex:/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo?h=smp11.simplex.im"
 
@@ -1170,7 +1172,7 @@ private fun InvestInSimpleXChatView() {
         contentDescription = null,
         contentScale = ContentScale.FillWidth,
         modifier = Modifier
-          .padding(vertical = 8.dp)
+          .padding(top = 8.dp, bottom = 12.dp)
           .widthIn(max = MAX_CROWDFUNDING_IMAGE_WIDTH)
           .fillMaxWidth()
           .clip(crowdfundingLayout.imageShape)
