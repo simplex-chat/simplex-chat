@@ -1165,13 +1165,11 @@ private fun InvestInSimpleXChatView() {
           )
       )
     }
-    Text(generalGetString(MR.strings.v7_1_invest_descr), fontSize = 15.sp)
     Text(
       generalGetString(MR.strings.v7_1_invest_learn_more),
       color = MaterialTheme.colors.primary,
       fontSize = 15.sp,
       modifier = Modifier
-        .padding(top = 6.dp)
         .pointerHoverIcon(PointerIcon.Hand)
         .clickable(
           interactionSource = remember { MutableInteractionSource() },

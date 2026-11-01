@@ -859,7 +859,6 @@ fileprivate struct InvestInSimpleXChat: View {
                 .padding(.bottom, 8)
                 .onTapGesture { UIApplication.shared.open(wefunderURL) }
             #endif
-            Text("\(192) people have already invested.")
             Text("Learn more on Wefunder.")
                 .foregroundColor(theme.colors.primary)
                 .onTapGesture { UIApplication.shared.open(wefunderURL) }
