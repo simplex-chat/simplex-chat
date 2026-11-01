@@ -8,6 +8,8 @@ module StoreService.Names.Signatures
     parseSignature,
     personalDigest,
     orderMessage,
+    findMessage,
+    retargetMessage,
     spendMessage,
     parseChecksumAddress,
     parseAnyCaseAddress,
@@ -30,7 +32,7 @@ import Data.Word (Word64)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
 import Simplex.Messaging.Encoding.String (strDecode, strEncode)
-import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Names.Abi (hex)
@@ -92,6 +94,12 @@ personalDigest msg = keccak256 $ "\x19\&Ethereum Signed Message:\n" <> BC.pack (
 
 orderMessage :: OrderFields -> Word64 -> ByteString
 orderMessage order timestamp = message $ ["order"] <> orderWords order <> [tshow timestamp]
+
+findMessage :: Address -> Word64 -> ByteString
+findMessage owner timestamp = message ["find", hex $ unAddress owner, tshow timestamp]
+
+retargetMessage :: RegistrationId -> OrderFields -> Word64 -> ByteString
+retargetMessage (RegistrationId rid) order timestamp = message $ ["name", rid] <> orderWords order <> [tshow timestamp]
 
 -- | The registration id is the order whose balance pays; the fields are the new order's.
 spendMessage :: RegistrationId -> OrderFields -> Word64 -> ByteString

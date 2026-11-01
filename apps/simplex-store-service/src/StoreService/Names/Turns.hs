@@ -2,7 +2,7 @@
 
 -- | A thread that takes a turn it already holds waits forever. Label turns are taken before a code turn or a balance turn,
 -- and a balance turn is never taken with a code turn.
-module StoreService.Names.Turns (Turns, newTurns, withLabelTurn, withCodeTurn, withBalanceTurn, turnsCount, labelTurnCount, balanceTurnCount) where
+module StoreService.Names.Turns (Turns, newTurns, withLabelTurn, withLabelTurns, withCodeTurn, withBalanceTurn, turnsCount, labelTurnCount, balanceTurnCount) where
 
 import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
@@ -23,6 +23,13 @@ newTurns = Turns <$> newTVarIO Map.empty <*> newTVarIO Map.empty <*> newTVarIO M
 
 withLabelTurn :: Turns -> LabelHash -> IO a -> IO a
 withLabelTurn Turns {labelTurns} (LabelHash h) = withTurn labelTurns h
+
+-- | Taken in hash order, so two requests moving between the same names cannot each hold one and wait for the other.
+withLabelTurns :: Turns -> LabelHash -> LabelHash -> IO a -> IO a
+withLabelTurns turns a@(LabelHash ha) b@(LabelHash hb) action
+  | ha == hb = withLabelTurn turns a action
+  | ha < hb = withLabelTurn turns a $ withLabelTurn turns b action
+  | otherwise = withLabelTurn turns b $ withLabelTurn turns a action
 
 -- | The label hashes, code hashes and balances with a holder or a waiter.
 turnsCount :: Turns -> IO Int
