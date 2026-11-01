@@ -59,6 +59,7 @@ imageTests = do
     it "should scale and sharpen as the research code" testScaleResearch
     it "should keep an image of the same size" testScaleSameSize
     it "should scale transparency in premultiplied alpha" testScaleTransparency
+    it "should crop to the centre square" testCropToSquare
   describe "colour profiles" $ do
     it "should write the Display P3 profile for Display P3 JPEG" testJpegProfile
     it "should write the Display P3 profile for Display P3 PNG" testPngProfile
@@ -332,6 +333,24 @@ testScaleSameSize = do
       rgba = generateImage (\x y -> PixelRGBA8 (fromIntegral $ x * 4) (fromIntegral $ y * 5) 128 (fromIntegral $ x + y)) 64 48
   imageData (scaleRGB8 rgb (64, 48)) `shouldBe` imageData rgb
   imageData (scaleRGBA8 rgba (64, 48)) `shouldBe` imageData rgba
+
+testCropToSquare :: IO ()
+testCropToSquare = do
+  let pixel :: Int -> Int -> PixelRGB8
+      pixel x y = PixelRGB8 (fromIntegral x) (fromIntegral y) 128
+      rgbaPixel :: Int -> Int -> PixelRGBA8
+      rgbaPixel x y = PixelRGBA8 (fromIntegral x) (fromIntegral y) 128 200
+  ImageRGB8 wide <- pure $ cropToSquare $ ImageRGB8 $ generateImage pixel 7 4
+  imageSize (ImageRGB8 wide) `shouldBe` (4, 4)
+  imageData wide `shouldBe` imageData (generateImage (\x y -> pixel (x + 1) y) 4 4)
+  ImageRGB8 tall <- pure $ cropToSquare $ ImageRGB8 $ generateImage pixel 4 7
+  imageSize (ImageRGB8 tall) `shouldBe` (4, 4)
+  imageData tall `shouldBe` imageData (generateImage (\x y -> pixel x (y + 1)) 4 4)
+  ImageRGBA8 rgba <- pure $ cropToSquare $ ImageRGBA8 $ generateImage rgbaPixel 6 3
+  imageSize (ImageRGBA8 rgba) `shouldBe` (3, 3)
+  imageData rgba `shouldBe` imageData (generateImage (\x y -> rgbaPixel (x + 1) y) 3 3)
+  ImageRGB8 square <- pure $ cropToSquare $ ImageRGB8 $ generateImage pixel 4 4
+  imageData square `shouldBe` imageData (generateImage pixel 4 4)
 
 testScaleTransparency :: IO ()
 testScaleTransparency = do
