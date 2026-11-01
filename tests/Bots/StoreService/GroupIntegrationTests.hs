@@ -8,7 +8,7 @@
 {-# LANGUAGE TupleSections #-}
 
 -- Members' messages reach a console over separate connections in no fixed order, so gating is asserted from the bot's store.
-module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, namesCodesChatTests) where
+module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, namesBootTests, namesCodesChatTests) where
 
 import StoreService.Config (BadgeIssuerKey (..), GroupConfig (..))
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup)
@@ -21,6 +21,7 @@ import StoreService.Service (ServiceState (..), storeService, newServiceState)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx)
 import Bots.StoreService.ConfigTests (chainSection, namesSection)
+import Bots.StoreService.NamesSearchTests (aliceHex)
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
@@ -30,6 +31,7 @@ import Control.Concurrent.Async (Async, async, cancel, poll, wait, waitCatchSTM)
 import Control.Concurrent.STM (TQueue, atomically, newTQueueIO, orElse, readTMVar, readTQueue, readTVarIO, tryReadTMVar, writeTQueue)
 import Control.Exception (IOException, bracket, catch, finally, throwIO, try)
 import Control.Monad (forM_, guard, mfilter, replicateM_, unless, void, when)
+import qualified Data.Aeson as J
 import Data.Either (isLeft, isRight)
 import Data.Int (Int64)
 import Data.List (isInfixOf)
@@ -42,6 +44,8 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
+import Network.HTTP.Client (defaultManagerSettings, httpLbs, newManager, parseRequest, responseBody, responseStatus)
+import Network.HTTP.Types.Status (statusCode)
 import Network.Socket (Family (..), SockAddr (..), SocketType (..), close, connect, defaultProtocol, socket, tupleToHostAddress)
 import Network.Wai.Handler.Warp (openFreePort)
 import Simplex.Chat.Badges (BadgeType (..))
@@ -127,6 +131,26 @@ badgeGroupIntegrationTests = do
   it "retires on restart a tracker whose revoke never reached it" testRevokedTrackerReconciledOnRestart
   it "reconciles every stalled tracker on restart, not only the first" testEveryStalledTrackerReconciled
   it "leaves a tracker it cannot edit alone rather than publishing the code again" testUneditableTrackerLeftAlone
+
+namesBootTests :: SpecWith TestParams
+namesBootTests = do
+  it "boots with [names] and [chain], routing a search, and a path no route knows to 404" testNamesBoot
+
+testNamesBoot :: HasCallStack => TestParams -> IO ()
+testNamesBoot ps = do
+  svc <- prepareGroupService ps
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> chainSection} Nothing
+  flip finally (stopGroupService t cc) $ do
+    pollUntilTrue (listening port)
+    mgr <- newManager defaultManagerSettings
+    let request path = parseRequest $ "http://127.0.0.1:" <> show port <> path
+        answer req = (\r -> (statusCode $ responseStatus r, J.decode $ responseBody r)) <$> httpLbs req mgr
+        refused tag = (400, Just $ J.object ["error" J..= (tag :: Text)])
+    unknown <- request "/api/names/unknown"
+    statusCode . responseStatus <$> httpLbs unknown mgr `shouldReturn` 404
+    search <- request $ "/api/name/" <> T.unpack aliceHex <> "?length=5"
+    answer search `shouldReturn` refused "invalid_name"
+    poll t >>= (`shouldSatisfy` isNothing)
 
 namesCodesChatTests :: SpecWith TestParams
 namesCodesChatTests = describe "StoreService names: prepaid codes" $ do
@@ -319,19 +343,24 @@ stopGroupService t cc = do
 stopChat :: ChatController -> IO ()
 stopChat cc = stopStoreService cc >> disposeAgentClient (smpAgent cc)
 
--- It writes the service's ini on a free port; Nothing omits the [group] section.
+-- It writes the service's ini on free ports, the names site's too with [names]; Nothing omits the [group] section.
 groupServiceOpts :: GroupSvc -> Maybe GroupConfig -> IO (StoreServiceOpts, Int)
 groupServiceOpts GroupSvc {gsKey = BadgeIssuerKey {secretKey}, gsStaticDir, gsIniSections, gsPs = ps@TestParams {tmpPath}} groupCfg = do
   (port, sock) <- openFreePort
-  close sock
+  (namesPort, namesSock) <- openFreePort
+  close sock >> close namesSock
   let iniPath = tmpPath </> "badge_group.ini"
+      namesSite
+        | "[names]" `elem` gsIniSections = ["names_static_dir = " <> gsStaticDir, "names_port = " <> show namesPort]
+        | otherwise = []
   writeFile iniPath $
     unlines $
       [ "[listener]",
         "host = 127.0.0.1",
-        "port = " <> show port,
-        "static_dir = " <> gsStaticDir
+        "badges_port = " <> show port,
+        "badges_static_dir = " <> gsStaticDir
       ]
+        <> namesSite
         <> maybe [] groupSection groupCfg
         <> map T.unpack gsIniSections
   pure ((mkStoreServiceOpts ps secretKey) {serviceConfigFile = Just iniPath, noAddress = True}, port)

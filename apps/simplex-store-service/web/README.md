@@ -84,7 +84,7 @@ cd ../../..
 cd apps/simplex-store-service
 cp store_service.ini.example store_service.ini
 cd ../..
-#   static_dir = ./apps/simplex-store-service/web/dist   <- the build above
+#   badges_static_dir = ./apps/simplex-store-service/web/dist   <- the build above
 #   [btcpay]   = a real store's host, api_key, store_id and webhook_secret,
 #                or delete the whole section to disable BTC and XMR (the provider-unavailable screen)
 #   [issuer]   = uncomment the section and put a real issuer secret in private_key,
@@ -102,8 +102,8 @@ cabal run simplex-store-service -- \
   --service-config apps/simplex-store-service/store_service.ini
 ```
 
-Then open the `[listener]` host and port — `http://127.0.0.1:8080/` as the
-example ships. `static_dir` is relative to the working directory, so run from
+Then open the `[listener]` host and `badges_port` — `http://127.0.0.1:8080/` as the
+example ships. `badges_static_dir` is relative to the working directory, so run from
 the repository root or make it absolute.
 
 **The executable is the whole store service, not just this listener.**
