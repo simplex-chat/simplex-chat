@@ -44,7 +44,7 @@ enum BadgeLevel: String, CaseIterable, Identifiable {
         }
     }
 
-    var investorOffer: String {
+    var investorOffer: LocalizedStringKey {
         switch self {
         case .supporter: "Invest $100+ and get a free badge."
         case .legend: "Invest $1000+ and get a free legend badge."
@@ -189,10 +189,10 @@ struct BadgeInvestorOffer: View {
     var body: some View {
         if isInUS {
             VStack(spacing: 4) {
-                Text(verbatim: level.investorOffer)
+                Text(level.investorOffer)
                     .font(.footnote)
                 Link(destination: wefunderURL) {
-                    Text(verbatim: "Learn more on Wefunder")
+                    Text("Learn more on Wefunder")
                         .font(.subheadline)
                         .foregroundColor(theme.colors.primary)
                 }

@@ -20,6 +20,7 @@ final class SnapshotTests: XCTestCase {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let windowScene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
         ChatModel.shared.currentUser = User.sampleData
+        BadgeModel.shared.set(userId: User.sampleData.userId, badgeState: nil)
         var index: [[String: Any]] = []
         for dark in [false, true] {
             let theme = snapshotTheme(dark)

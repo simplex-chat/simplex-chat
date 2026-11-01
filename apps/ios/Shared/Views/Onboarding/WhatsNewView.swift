@@ -752,7 +752,7 @@ fileprivate struct SupporterBadgeWhatsNew: View {
     @ObservedObject private var badgeModel = BadgeModel.shared
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .center, spacing: 4) {
                 Image(badgeImageName(.supporter))
                     .resizable()
@@ -772,16 +772,12 @@ fileprivate struct SupporterBadgeWhatsNew: View {
                     .onTapGesture { openBadgesView() }
             }
         }
-        .padding(.trailing, textTrailingInset)
+        #if !SIMPLEX_ASSETS
+        .padding(.trailing, 96)
+        #endif
         .frame(maxWidth: .infinity, alignment: .leading)
         .overlay(alignment: .topTrailing) { heroThumbnail() }
     }
-
-    #if SIMPLEX_ASSETS
-    private let textTrailingInset: CGFloat = 0
-    #else
-    private let textTrailingInset: CGFloat = 96
-    #endif
 
     @ViewBuilder
     private func heroThumbnail() -> some View {
@@ -867,7 +863,7 @@ fileprivate struct InvestInSimpleXChat: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(verbatim: "Own a part of SimpleX Chat! 🚀").font(.title3).bold()
+            Text("Own a part of SimpleX Chat! 🚀").font(.title3).bold()
             #if SIMPLEX_ASSETS
             Image("crowdfunding_1")
                 .resizable()
@@ -877,8 +873,8 @@ fileprivate struct InvestInSimpleXChat: View {
                 .padding(.bottom, 8)
                 .onTapGesture { UIApplication.shared.open(wefunderURL) }
             #endif
-            Text(verbatim: "192 people have already invested.")
-            Text(verbatim: "Learn more on Wefunder.")
+            Text("\(192) people have already invested.")
+            Text("Learn more on Wefunder.")
                 .foregroundColor(theme.colors.primary)
                 .onTapGesture { UIApplication.shared.open(wefunderURL) }
         }

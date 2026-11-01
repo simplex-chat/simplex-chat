@@ -424,7 +424,7 @@ struct SettingsView: View {
             }
 
             if isInUS {
-                Section(header: Text(verbatim: "Own a part of SimpleX Chat").foregroundColor(theme.colors.secondary)) {
+                Section(header: Text("Own a part of SimpleX Chat").foregroundColor(theme.colors.secondary)) {
                     NavigationLink {
                         GetStakeView(fromSettings: true)
                             .navigationBarTitle("", displayMode: .inline)

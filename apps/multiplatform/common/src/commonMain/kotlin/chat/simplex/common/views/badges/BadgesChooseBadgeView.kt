@@ -7,6 +7,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
@@ -130,23 +131,25 @@ fun BadgesChooseBadgeView(modalManager: ModalManager, unwindToDepth: Int) {
 }
 
 @Composable
-fun BadgeInvestorOffer(level: BadgeLevel) {
+fun BadgeInvestorOffer(level: BadgeLevel, shown: Boolean = true) {
   if (!crowdfundingAvailable()) return
   val uriHandler = LocalUriHandler.current
-  Text(
-    stringResource(level.investorOffer),
-    style = MaterialTheme.typography.body2,
-    textAlign = TextAlign.Center
-  )
-  Text(
-    stringResource(MR.strings.v7_0_invest_learn_more),
-    Modifier
-      .padding(top = 4.dp)
-      .clickable { uriHandler.openUriCatching(WEFUNDER_URL) },
-    style = MaterialTheme.typography.body1,
-    color = MaterialTheme.colors.primary,
-    textAlign = TextAlign.Center
-  )
+  Column(Modifier.alpha(if (shown) 1f else 0f), horizontalAlignment = Alignment.CenterHorizontally) {
+    Text(
+      stringResource(level.investorOffer),
+      style = MaterialTheme.typography.body2,
+      textAlign = TextAlign.Center
+    )
+    Text(
+      stringResource(MR.strings.v7_0_invest_learn_more),
+      Modifier
+        .padding(top = 4.dp)
+        .clickable(enabled = shown) { uriHandler.openUriCatching(WEFUNDER_URL) },
+      style = MaterialTheme.typography.body1,
+      color = MaterialTheme.colors.primary,
+      textAlign = TextAlign.Center
+    )
+  }
 }
 
 @Composable
