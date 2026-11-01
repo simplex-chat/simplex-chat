@@ -2525,6 +2525,7 @@ getAllChatItems db cxt user@User {userId} pagination search_ = do
             SELECT MIN(chat_item_id)
             FROM chat_items
             WHERE user_id = ? AND item_status = ?
+            GROUP BY user_id
           |]
           (userId, CISRcvNew)
 

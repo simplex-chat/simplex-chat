@@ -21,13 +21,15 @@ CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(user_id, item_stat
 
 Down migration: the index on `(user_id, item_status)`.
 
-Both counts read only the profile's unread items: `SEARCH i USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)`. The query texts are unchanged.
+Both counts read only the profile's unread items: `SEARCH i USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)`. Their query texts are unchanged.
+
+`getFirstUnreadItemId_` (`getAllChatItems`, `/_get items initial=`) has `GROUP BY user_id`, so that its `MIN(chat_item_id)` reads the profile's unread items in the new index instead of all profiles' unread items in `idx_chat_items_item_status`.
 
 Test `testUsersUnreadCountQueryPlans` (`tests/ChatTests/Direct.hs`, SQLite): runs `/users` and checks the plans of the two count queries recorded on alice's connection.
 
 ## Scope
 
-- `chat_query_plans.txt`: 21 plans change.
+- `chat_query_plans.txt`: 21 plans change. `getFirstUnreadItemId_` is not in it, as no test runs it.
   - The 2 counts.
   - 11 chat list queries of contacts' unread counts (`getChatPreviews`): `(user_id=? AND item_status=? AND contact_id>?)` instead of `(user_id=? AND contact_id>?)`.
   - 3 per-contact queries with `user_id`, `contact_id` and `item_status`: the new index in place of `idx_chat_items_contacts`.
