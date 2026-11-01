@@ -296,6 +296,7 @@ testNamesConfig node =
       nYears = 2,
       nTermStart = termStart,
       nTermSlackSeconds = slackSeconds,
+      nRevealMarginSeconds = 900,
       nCodesOnly = False,
       nChain = fakeChainConfig node
     }
