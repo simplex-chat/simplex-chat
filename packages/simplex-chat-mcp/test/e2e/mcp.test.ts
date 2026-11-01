@@ -55,7 +55,7 @@ test("agent with an owner, a bot and the tools", async () => {
 
     expect(await client.initialize()).toMatchObject({protocolVersion: "2025-11-25", serverInfo: {name: "simplex-mcp"}})
     const {tools} = await client.request("tools/list")
-    expect(tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "list", "leave"])
+    expect(tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave"])
 
     const connectCard = received(alice, textStarts("I want to connect to bot Directory, as myself."))
     const connecting = client.tool("connect", {target: directoryLink, idle: 2})
@@ -144,6 +144,7 @@ test("agent with an owner, a bot and the tools", async () => {
     await server.stop()
     server = undefined
     expect(logLines).toContain("Cancelled 1 action.")
+    expect(logLines).toContain("Stopping: sending 1 cancelled card, up to 10 s. Ctrl-C to stop now.")
     expect(logLines).toContain("Stopped.")
     expect((await cancelledCard).chatItem.meta.itemText.split("\n").at(-1)).toBe("Cancelled: the server stopped.")
 

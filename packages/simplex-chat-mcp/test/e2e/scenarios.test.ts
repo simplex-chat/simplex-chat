@@ -1,4 +1,4 @@
-import {mkdirSync, mkdtempSync, rmSync} from "fs"
+import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "fs"
 import {createServer} from "net"
 import {tmpdir} from "os"
 import {join} from "path"
@@ -23,16 +23,19 @@ import {
   textStarts,
   timeout,
   until,
+  updated,
 } from "./helpers"
-import {SmpServer, freePort, startSmpServer} from "./smpServer"
+import {SmpServer, freePort, startSmpServer, startXftpServer} from "./smpServer"
 
 let smpServer: SmpServer
+let xftpServer: SmpServer
 let dir: string
 let logLines: string[]
 let closing: (() => Promise<void>)[]
 
 beforeAll(async () => {
   smpServer = await startSmpServer()
+  xftpServer = await startXftpServer()
   dir = mkdtempSync(join(tmpdir(), "simplex-mcp-scenarios-"))
   logLines = captureLog()
 }, 120_000)
@@ -40,6 +43,7 @@ beforeAll(async () => {
 afterAll(async () => {
   jest.restoreAllMocks()
   await smpServer?.stop()
+  await xftpServer?.stop()
   rmSync(dir, {recursive: true, force: true})
 })
 
@@ -56,12 +60,12 @@ type Person = {chat: api.ChatApi; user: T.User}
 async function agentData(scenario: string): Promise<string> {
   const data = join(dir, scenario, "agent")
   mkdirSync(data, {recursive: true})
-  await profileWithServer(smpServer.address, join(data, "simplex"), {displayName: "agent", fullName: "", peerType: T.ChatPeerType.Bot})
+  await profileWithServer(smpServer.address, join(data, "simplex"), {displayName: "agent", fullName: "", peerType: T.ChatPeerType.Bot}, xftpServer.address)
   return data
 }
 
 async function personIn(scenario: string, name: string): Promise<Person> {
-  const p = await person(smpServer.address, join(dir, scenario, name), name)
+  const p = await person(smpServer.address, join(dir, scenario, name), name, xftpServer.address)
   closing.push(() => p.chat.close())
   return p
 }
@@ -172,6 +176,7 @@ test("host mode: actions run without approval and post outcome cards", async () 
     connect: {"anthropic/requiresUserInteraction": true},
     send: {"anthropic/requiresUserInteraction": true},
     receive: undefined,
+    download: {"anthropic/requiresUserInteraction": true},
     list: undefined,
     leave: {"anthropic/requiresUserInteraction": true},
   })
@@ -230,6 +235,144 @@ test("a group joined by its link: a mention, and the observer role", async () =>
   expect(joinedNews.result).toMatchObject({status: "done", type: "group", role: "observer"})
   const newsChat = joinedNews.result.chat as string
   expect(await agent.client.tool("send", {chat: newsChat, text: "hello"})).toMatchObject({isError: true, text: `The agent has role observer in ${newsChat} and can't post.`})
+}, 600_000)
+
+test("/leave: the owner makes the agent leave a group at once, and the pending send to it is rejected", async () => {
+  const alice = await personIn("leave", "Alice")
+  const agent = await agentIn("leave")
+  await agent.start()
+  const controlId = await joinAsOwner(alice)
+
+  const trail = await alice.chat.apiNewGroup(alice.user.userId, {displayName: "Trail", fullName: ""})
+  const trailLink = await alice.chat.apiCreateGroupLink(trail.groupId, T.GroupMemberRole.Member)
+  const joinCard = received(alice.chat, textStarts("I want to connect to group Trail, as myself."))
+  const joining = agent.client.tool("connect", {target: trailLink, idle: 2})
+  await approve(alice, controlId, joinCard)
+  const group = (await joining).result.chat as string
+
+  const sendCard = received(alice.chat, textStarts("I want to send a message to group Trail:"))
+  const sending = agent.client.tool("send", {chat: group, text: "any trail news?"})
+  const card = await sendCard
+  const rejectedCard = updated(alice.chat, ci => ci.chatItem.meta.itemId === card.chatItem.meta.itemId)
+  const reply = received(alice.chat, textStarts("Left group Trail"))
+  const agentLeft = alice.chat.wait("leftMember", ({groupInfo}) => groupInfo.groupId === trail.groupId, timeout)
+  await alice.chat.apiSendTextMessage([T.ChatType.Group, controlId], `/leave ${group}`)
+  const line = `Left group Trail (${group}), requested by Alice.`
+  expect((await reply).chatItem.meta.itemText).toBe(line)
+  expect(logLines).toContain(line)
+  expect((await sending).result).toEqual({action: cardNumber(card), status: "rejected"})
+  expect(lines(await rejectedCard).at(-1)).toBe("Rejected by Alice.")
+  expect(await agentLeft).toBeDefined()
+  expect((await agent.client.tool("list", {})).result.chats).not.toContainEqual(expect.objectContaining({chat: group}))
+}, 600_000)
+
+test("files: a received image downloaded after the approval, /receive, /reject and the files approval of a chat", async () => {
+  const alice = await personIn("files", "Alice")
+  const agent = await agentIn("files")
+  await agent.start()
+  const controlId = await joinAsOwner(alice)
+  const trail = await alice.chat.apiNewGroup(alice.user.userId, {displayName: "Trail", fullName: ""})
+  const trailLink = await alice.chat.apiCreateGroupLink(trail.groupId, T.GroupMemberRole.Member)
+  const joinCard = received(alice.chat, textStarts("I want to connect to group Trail, as myself."))
+  const joining = agent.client.tool("connect", {target: trailLink, idle: 2})
+  await approve(alice, controlId, joinCard)
+  const group = (await joining).result.chat as string
+
+  const png = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAJCAAAAAAeQfPuAAAAD0lEQVR42mNoQAMMg0QAAIXUSAG1CN3UAAAAAElFTkSuQmCC"
+  const preview = `data:image/png;base64,${png}`
+  const image = join(dir, "files", "trail.png")
+  writeFileSync(image, Buffer.from(png, "base64"))
+  const ownerSends = (text: string) => alice.chat.apiSendTextMessage([T.ChatType.Group, controlId], text)
+  const fileFromAlice = async (msgContent: T.MsgContent): Promise<{item: number; file: object}> => {
+    await alice.chat.apiSendMessages([T.ChatType.Group, trail.groupId], [{fileSource: {filePath: image}, msgContent, mentions: {}}])
+    return (await agent.client.tool("receive", {chat: group, wait: 30})).result.messages[0]
+  }
+
+  const first = await fileFromAlice({type: "image", text: "trail map", image: preview})
+  expect(first.file).toEqual({name: "trail.png", size: Buffer.from(png, "base64").length, type: "image", status: "offered"})
+  const firstCard = received(alice.chat, textStarts("I want to download a file from Alice in group Trail"))
+  const downloading = agent.client.tool("download", {chat: group, item: first.item, wait: 60})
+  const card = await firstCard
+  const n = cardNumber(card)
+  expect(card.chatItem.content).toMatchObject({msgContent: {type: "image", image: preview}})
+  expect(lines(card)).toEqual([
+    `I want to download a file from Alice in group Trail (${group}):`,
+    `\`trail.png\`, ${Buffer.from(png, "base64").length} bytes`,
+    "Servers: known.",
+    `/'approve ${group} ${n}', /'approve ${group} files', /'receive ${group} ${n}' or /'reject ${group} ${n}'`,
+  ])
+  const forwarded = received(alice.chat, ci => ci.chatItem.file !== undefined && ci.chatInfo.type === "group" && ci.chatInfo.groupInfo.groupId === controlId)
+  await ownerSends(`/receive ${group} ${n}`)
+  const copy = await forwarded
+  expect(copy.chatItem.file!.fileName).toBe("trail.png")
+  expect(copy.chatItem.quotedItem?.itemId).toBe(card.chatItem.meta.itemId)
+  await ownerSends(`/approve ${group} ${n}`)
+  const downloaded = (await downloading).result
+  expect(downloaded).toEqual({action: n, status: "done", chat: group, item: first.item, path: join(dir, "files", "agent", "files", group, "trail.png")})
+  expect(readFileSync(downloaded.path)).toEqual(readFileSync(image))
+
+  const second = await fileFromAlice({type: "file", text: ""})
+  const secondCard = received(alice.chat, textStarts("I want to download a file from Alice in group Trail"))
+  const rejecting = agent.client.tool("download", {chat: group, item: second.item})
+  const n2 = cardNumber(await secondCard)
+  await ownerSends(`/reject ${group} ${n2}`)
+  expect((await rejecting).result).toEqual({action: n2, status: "rejected"})
+
+  const approvedFiles = received(alice.chat, textStarts("Files approved for group Trail"))
+  await ownerSends(`/approve ${group} files`)
+  expect((await approvedFiles).chatItem.meta.itemText).toBe(`Files approved for group Trail (${group}) by Alice. /'revoke ${group} files'`)
+  const third = await fileFromAlice({type: "file", text: "notes"})
+  const {server} = agent
+  const agentControlId = (await controlGroupOf(server.chat, server.user.userId)).groupId
+  const lastControlItem = async (): Promise<number | undefined> => (await server.chat.apiGetChat(T.ChatType.Group, agentControlId, 1)).chatItems.at(-1)?.meta.itemId
+  const beforeThird = await lastControlItem()
+  const thirdDownload = (await agent.client.tool("download", {chat: group, item: third.item})).result
+  expect(thirdDownload).toMatchObject({status: "done", chat: group, item: third.item})
+  expect(readFileSync(thirdDownload.path)).toEqual(readFileSync(image))
+  expect(await lastControlItem()).toBe(beforeThird)
+}, 600_000)
+
+test("send with a file: a PNG reaches the group as an image with a preview, and a private key is refused", async () => {
+  const alice = await personIn("send-file", "Alice")
+  const agent = await agentIn("send-file")
+  await agent.start()
+  const controlId = await joinAsOwner(alice)
+  const trail = await alice.chat.apiNewGroup(alice.user.userId, {displayName: "Trail", fullName: ""})
+  const trailLink = await alice.chat.apiCreateGroupLink(trail.groupId, T.GroupMemberRole.Member)
+  const joinCard = received(alice.chat, textStarts("I want to connect to group Trail, as myself."))
+  const joining = agent.client.tool("connect", {target: trailLink, idle: 2})
+  await approve(alice, controlId, joinCard)
+  const group = (await joining).result.chat as string
+
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAABAAAAAJCAAAAAAeQfPuAAAAD0lEQVR42mNoQAMMg0QAAIXUSAG1CN3UAAAAAElFTkSuQmCC", "base64")
+  const image = join(dir, "send-file", "trail.png")
+  writeFileSync(image, png)
+  const sendCard = received(alice.chat, textStarts("I want to send a message to group Trail:"))
+  const delivered = received(alice.chat, ci => ci.chatInfo.type === "group" && ci.chatInfo.groupInfo.groupId === trail.groupId && ci.chatItem.file !== undefined)
+  const sending = agent.client.tool("send", {chat: group, text: "trail map", file: image, idle: 1, wait: 2})
+  const card = await sendCard
+  const n = cardNumber(card)
+  expect(lines(card)).toEqual(["I want to send a message to group Trail:", "`trail map`", `attaching image \`${image}\`, ${png.length} bytes`, `/'approve ${group} ${n}', /'approve ${group} all' or /'reject ${group} ${n}'`])
+  expect(card.chatItem.content).toMatchObject({msgContent: {type: "image", image: expect.stringMatching(/^data:image\/(jpg|png);base64,/)}})
+  await alice.chat.apiSendTextMessage([T.ChatType.Group, controlId], `/approve ${group} ${n}`)
+  expect((await sending).result).toMatchObject({action: n, status: "done", chat: group})
+  const message = await delivered
+  expect(message.chatItem.content).toMatchObject({msgContent: {type: "image", text: "trail map", image: expect.stringMatching(/^data:image\/(jpg|png);base64,/)}})
+  const {fileId, fileSize} = message.chatItem.file!
+  expect(fileSize).toBeLessThanOrEqual(261120)
+  const copy = join(dir, "send-file", "received.png")
+  const complete = alice.chat.wait("rcvFileComplete", ({chatItem}) => chatItem.chatItem.file?.fileId === fileId, timeout)
+  await alice.chat.apiReceiveFile(fileId, copy)
+  expect(await complete).toBeDefined()
+  expect(readFileSync(copy).length).toBe(fileSize)
+
+  const key = join(dir, "send-file", "id_ed25519")
+  writeFileSync(key, "key")
+  const refusal = received(alice.chat, textStarts("Refused to send"))
+  const reason = "private keys and the server's own files are not sent."
+  expect(await agent.client.tool("send", {chat: group, file: key})).toMatchObject({isError: true, text: `file: ${key} is refused: ${reason}`})
+  expect((await refusal).chatItem.meta.itemText).toBe(`Refused to send \`${key}\` to group Trail (${group}): ${reason}`)
+  expect(logLines).toContain(`Refused to send ${key} to group Trail (${group}): ${reason}`)
 }, 600_000)
 
 test("a business address, incognito, with a message", async () => {

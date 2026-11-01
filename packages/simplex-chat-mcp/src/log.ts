@@ -1,6 +1,5 @@
 import {T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
-import {fullDomainName} from "./messages"
 
 const maxDetails = 500
 const causeKey = /(Err|Error|errorType)$/
@@ -186,7 +185,48 @@ function storeErrorText(error: T.StoreError): string | undefined {
   }
 }
 
-function serverHostname(server: string): string {
+export function fileStatusError(status: T.CIFileStatus): string | undefined {
+  switch (status.type) {
+    case "rcvCancelled":
+      return "The file was cancelled."
+    case "rcvAborted":
+      return "The download was aborted."
+    case "rcvError":
+      return fileErrorText(status.rcvFileError)
+    case "invalid":
+      return oneLine(`Invalid file: ${status.text}`)
+    default:
+      return undefined
+  }
+}
+
+function fileErrorText(error: T.FileError): string {
+  switch (error.type) {
+    case "auth":
+      return "Wrong key or unknown file chunk address - most likely file is deleted."
+    case "blocked":
+      return `File is blocked by server operator: ${blockingReasons[error.blockInfo.reason]}.`
+    case "noFile":
+      return "File not found - most likely file was deleted or cancelled."
+    case "relay":
+      return oneLine(`File server error: ${srvErrorText(error.srvError)}`)
+    case "other":
+      return oneLine(`Error: ${error.fileError}`)
+  }
+}
+
+function srvErrorText(error: T.SrvError): string {
+  switch (error.type) {
+    case "host":
+      return "Server address is incompatible with network settings."
+    case "version":
+      return "Server version is incompatible with network settings."
+    case "other":
+      return error.srvError
+  }
+}
+
+export function serverHostname(server: string): string {
   return /^[a-z]+:\/\/[^@]*@([^,:/]+)/.exec(server)?.[1] ?? server
 }
 
@@ -210,4 +250,9 @@ function isTyped(value: unknown): boolean {
 
 export function chatErrorOf(error: unknown): T.ChatError | undefined {
   return error instanceof core.ChatAPIError ? error.chatError : undefined
+}
+
+export function fullDomainName({nameTLD, domain, subDomain}: T.SimplexDomain): string {
+  const tld = nameTLD === T.SimplexTLD.Simplex ? ".simplex" : nameTLD === T.SimplexTLD.Testing ? ".testing" : ""
+  return `${[...subDomain].reverse().concat(domain).join(".")}${tld}`
 }

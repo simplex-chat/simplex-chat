@@ -22,7 +22,9 @@ serve options:
                          Without --owners, whoever joins becomes an owner and
                          every owner approves.
   --expire HOURS         pending actions expire after HOURS, 1 to 23 (default: 23)
-  --reset-owners         replace the owners: a new agent control chat and link
+  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards to be sent,
+                         0 to 60 (default: 10)
+  --reset-owners        replace the owners: a new agent control chat and link
   --new-token            replace the access token
   --port N               HTTP port on 127.0.0.1 (default: 5226)
   --qr-code SIZE         QR code of the link: small (default) or large
@@ -58,6 +60,7 @@ function serveOptions(name: string, options: OptionReader, home: string): ServeO
     newToken: false,
     port: 5226,
     qrCode: "small",
+    stopWait: 10,
     dataGiven: false,
   }
   for (let option = options.next(); option !== undefined; option = options.next()) {
@@ -77,6 +80,9 @@ function serveOptions(name: string, options: OptionReader, home: string): ServeO
         break
       case "--expire":
         serve.expireHours = integer(option, options.value(option), 1, 23, "hours from 1 to 23")
+        break
+      case "--stop-wait":
+        serve.stopWait = integer(option, options.value(option), 0, 60, "seconds from 0 to 60")
         break
       case "--reset-owners":
         serve.resetOwners = true
