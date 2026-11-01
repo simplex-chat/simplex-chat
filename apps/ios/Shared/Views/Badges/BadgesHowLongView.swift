@@ -69,12 +69,35 @@ enum BadgePeriod: String, CaseIterable, Identifiable {
 }
 
 struct BadgesHowLongView: View {
-    @EnvironmentObject var theme: AppTheme
-    @ObservedObject private var store = BadgeStore.shared
     let level: BadgeLevel
     var startDate = Date()
-    @State private var selectedPeriod: BadgePeriod = badgePeriodsForSale.contains(.monthly) ? .monthly : .oneMonth
+    var priceList: BadgePriceList? = nil
+
+    var body: some View {
+        BadgesHowLongLayout(level: level, startDate: startDate, priceList: priceList)
+            .task { await BadgeStore.shared.load() }
+    }
+}
+
+struct BadgesHowLongLayout: View {
+    @EnvironmentObject var theme: AppTheme
+    @ObservedObject private var store = BadgeStore.shared
+    // store.forSale reads the active profile's badge
+    @ObservedObject private var badgeModel = BadgeModel.shared
+    let level: BadgeLevel
+    var startDate = Date()
+    var priceList: BadgePriceList? = nil
+    @State private var chosenPeriod: BadgePeriod? = nil
     @State private var continueActive = false
+
+    private var prices: BadgePriceList {
+        priceList ?? store.priceList(level)
+    }
+
+    // monthly once subscriptions turn out to be for sale, unless a period was chosen before that
+    private var selectedPeriod: BadgePeriod {
+        chosenPeriod ?? (prices.forSale(.monthly) ? .monthly : .oneMonth)
+    }
 
     var body: some View {
         GeometryReader { g in
@@ -105,6 +128,14 @@ struct BadgesHowLongView: View {
                     }
                     .fixedSize(horizontal: false, vertical: true)
 
+                    if !prices.forSale(.monthly) && prices.subscribedBefore {
+                        Text("This Apple ID already has a badge subscription. Only the profile that bought it can continue it.")
+                            .font(.footnote)
+                            .foregroundColor(theme.colors.secondary)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
                     Spacer(minLength: 20)
 
                     VStack(spacing: 10) {
@@ -122,14 +153,13 @@ struct BadgesHowLongView: View {
         }
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
-        .task { await store.load() }
     }
 
     private func periodCard(_ period: BadgePeriod) -> some View {
         let isSelected = period == selectedPeriod
-        let forSale = badgePeriodsForSale.contains(period)
+        let forSale = prices.forSale(period)
         return Button {
-            selectedPeriod = period
+            chosenPeriod = period
         } label: {
             VStack(spacing: 12) {
                 Image(systemName: period.icon)
@@ -140,7 +170,7 @@ struct BadgesHowLongView: View {
                     .opacity(forSale ? 1 : 0.4)
                 Text(period.label)
                     .font(.subheadline)
-                period.priceText(store.price(level, period))
+                period.priceText(prices.price(period))
                     .font(.headline)
                 if let percent = savingsPercent(period) {
                     Text("\(percent)% off")
@@ -165,12 +195,13 @@ struct BadgesHowLongView: View {
     }
 
     private func savingsPercent(_ period: BadgePeriod) -> Int? {
-        period == .annual ? store.annualSavings(level) : nil
+        period == .annual ? prices.annualSavings : nil
     }
 
     private func continueButton() -> some View {
         ZStack {
             Button {
+                chosenPeriod = selectedPeriod
                 continueActive = true
             } label: {
                 Text("Continue")
@@ -218,7 +249,11 @@ struct BadgeBillingFooter: View {
 struct BadgesHowLongView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesHowLongView(level: .supporter, startDate: previewDate)
+            BadgesHowLongLayout(
+                level: .supporter,
+                startDate: previewDate,
+                priceList: BadgePriceList(oneMonth: .price("$7"), monthly: .price("$7"), annual: .price("$42"), monthlyAmount: 7, annualAmount: 42, subscriptionsForSale: true, subscribedBefore: false)
+            )
         }
     }
 }

@@ -315,7 +315,7 @@ Bottom sheet (`ModalBottomSheetLayout`) presenting attachment type options:
 
 **`processPickedMedia`** (line ~300):
 1. For each URI, determines type (image, animated image, video).
-2. Images: Gets bitmap, creates `SimpleImage` or `AnimatedImage` upload content.
+2. Images: the preview of a non-animated image is made by core from the file (`resizeImageFileToStrSize`); otherwise, or when core returns no preview, from the bitmap; creates `SimpleImage` or `AnimatedImage` upload content.
 3. Videos: Extracts thumbnail and duration, creates `Video` upload content.
 4. Generates base64 preview thumbnails (max 14KB).
 5. Sets `ComposePreview.MediaPreview` with thumbnails and content list.

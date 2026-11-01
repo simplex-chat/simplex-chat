@@ -51,7 +51,7 @@ val reserveTimestampStyle = SpanStyle(color = Color.Transparent)
 val boldFont = SpanStyle(fontWeight = FontWeight.Medium)
 
 @Composable
-fun messageTextColor(): Color = MaterialTheme.colors.onSurface.copy(alpha = if (MaterialTheme.colors.isLight) 1f else 0.87f)
+fun messageTextColor(): Color = MaterialTheme.colors.onSurface.copy(alpha = if (MaterialTheme.colors.isLight) 1f else 0.95f)
 
 fun appendSender(b: AnnotatedString.Builder, sender: String?, senderBold: Boolean) {
   if (sender != null) {
@@ -209,13 +209,13 @@ fun MarkdownText (
   val textLayoutDirection = remember (text) {
     if (isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr
   }
-  val metaCopy = if (meta != null && LocalTerminalLayout.current) {
-    terminalReserveSpaceForMeta(meta, chatTTL, encrypted, signedFileVerified, MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+  val metaCopy = if (meta != null) {
+    metaReserveCopy(meta, chatTTL, encrypted, signedFileVerified, MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp, breakBefore = !LocalTerminalLayout.current && range?.isEmpty() != true)
   } else null
   if (blockLayout && formattedText != null && markdownBlocks != null && range == null) {
     val direction = LocalLayoutDirection.current
     val terminal = LocalTerminalLayout.current
-    val ruleMinWidth = if (metaCopy != null && markdownBlocks.isNotEmpty() && markdownBlocks.all { it is MarkdownBlock.Rule }) {
+    val ruleMinWidth = if (terminal && metaCopy != null && markdownBlocks.isNotEmpty() && markdownBlocks.all { it is MarkdownBlock.Rule }) {
       with(LocalDensity.current) { rememberTextMeasurer().measure(metaCopy, style).size.width.toDp() }
     } else 0.dp
     CompositionLocalProvider(LocalLayoutDirection provides textLayoutDirection) {
@@ -247,10 +247,8 @@ fun MarkdownText (
   val reserve = meta?.let {
     if (textLayoutDirection != (parentDirection ?: LocalLayoutDirection.current)) {
       AnnotatedString("\n")
-    } else if (metaCopy != null) {
-      metaCopy
     } else {
-      AnnotatedString(reserveSpaceForMeta(it, chatTTL, null, secondaryColor = MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp))
+      metaCopy
     }
   }
   val scope = rememberCoroutineScope()

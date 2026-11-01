@@ -4,6 +4,7 @@ import SimpleXChat
 struct CIChatLinkHeader: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.showTimestamp) var showTimestamp: Bool
+    @Environment(\.terminalLayout) private var terminal
     var chatItem: ChatItem
     var chatLink: MsgChatLink
     var ownerSig: LinkOwnerSig?
@@ -32,7 +33,7 @@ struct CIChatLinkHeader: View {
                     .foregroundColor(theme.colors.secondary)
                     .padding(.bottom, 2)
                 let t = Text("Tap to open").foregroundColor(theme.colors.primary).font(.callout)
-                if hasText {
+                if hasText || terminal {
                     t
                 } else {
                     t
