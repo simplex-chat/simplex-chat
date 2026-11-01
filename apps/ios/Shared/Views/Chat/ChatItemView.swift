@@ -129,6 +129,7 @@ struct ChatItemContentView<Content: View>: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.revealed) var revealed: Bool
+    @Environment(\.terminalLayout) private var terminal
     @ObservedObject var chat: Chat
     @ObservedObject var im: ItemsModel
     var chatItem: ChatItem
@@ -197,7 +198,7 @@ struct ChatItemContentView<Content: View>: View {
 
     private func eventItemView() -> some View {
         ChatEventWithMeta(chatItem: chatItem) { ts in
-            CIEventView(eventText: eventItemViewText(theme.colors.secondary, ts))
+            CIEventView(eventText: eventItemViewText(theme.colors.secondary, terminal ? ts : textSpace + ts))
         }
     }
 

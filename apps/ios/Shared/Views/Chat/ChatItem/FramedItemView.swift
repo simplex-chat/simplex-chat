@@ -48,7 +48,7 @@ struct FramedItemView: View {
                 invertedMaterial: useWhiteMetaColor && !terminal
             )
         } content: { inlineMeta in
-            ZStack(alignment: .bottomTrailing) {
+            ZStack(alignment: metaPlacement.reserved ? Alignment(horizontal: .trailing, vertical: .lastTextBaseline) : .bottomTrailing) {
                 VStack(alignment: .leading, spacing: 0) {
                     if chatItem.isReport {
                         if chatItem.meta.itemDeleted == nil {
@@ -164,9 +164,9 @@ struct FramedItemView: View {
                     .modifier(MessageLastLine())
                     .padding(EdgeInsets(top: terminalEmojiTopGap, leading: chatItemTextPadding, bottom: terminalEmojiBottomGap, trailing: chatItemTextPadding))
             } else {
-                VStack {
+                VStack(spacing: 4) {
                     emojiText(chatItem.content.text)
-                    Text("")
+                    Text("").font(.caption)
                 }
                 .padding(.vertical, 6)
                 .padding(.horizontal, 12)

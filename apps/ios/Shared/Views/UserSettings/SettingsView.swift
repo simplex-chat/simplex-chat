@@ -395,10 +395,8 @@ struct SettingsView: View {
                         .navigationTitle("Notifications")
                         .modifier(ThemedBackground(grouped: true))
                 } label: {
-                    HStack {
-                        notificationsIcon()
-                        Text("Notifications")
-                    }
+                    let (icon, color) = notificationsIcon()
+                    settingsRow(icon, color: color) { Text("Notifications") }
                 }
                 .disabled(chatModel.chatRunning != true)
 
@@ -555,7 +553,7 @@ struct SettingsView: View {
         case error(LocalizedStringKey, String)
     }
 
-    private func notificationsIcon() -> some View {
+    private func notificationsIcon() -> (String, Color) {
         let icon: String
         let color: Color
         switch (chatModel.tokenStatus) {
@@ -585,9 +583,7 @@ struct SettingsView: View {
             icon = "bolt"
             color = theme.colors.secondary
         }
-        return Image(systemName: icon)
-            .padding(.trailing, 9)
-            .foregroundColor(color)
+        return (icon, color)
     }
 }
 
