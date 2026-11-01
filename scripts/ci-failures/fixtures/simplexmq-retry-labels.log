@@ -1,0 +1,73 @@
+﻿2026-10-26T20:47:11.7405435Z Current runner version: '2.338.0'
+2026-10-26T20:47:11.7427772Z ##[group]Runner Image Provisioner
+2026-10-26T20:47:11.7428613Z Hosted Compute Agent
+2026-10-26T20:47:13.5863739Z Complete job name: ubuntu-22.04-x86-64, GHC: 8.10.7
+2026-10-26T20:50:22.9528897Z ##[group]Run scripts/ci/run-tests.sh ./simplexmq-test
+2026-10-26T20:50:22.9529287Z [36;1mscripts/ci/run-tests.sh ./simplexmq-test[0m
+2026-10-26T20:50:22.9563939Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-26T20:50:22.9564290Z env:
+2026-10-26T20:50:22.9564542Z   apps: smp-server xftp-server ntf-server xftp
+2026-10-26T20:50:22.9564845Z   opt: O0
+2026-10-26T20:50:22.9565057Z   ghc_options: --ghc-options=-O0
+2026-10-26T20:50:22.9565321Z   release: false
+2026-10-26T20:50:22.9565545Z   postgres_dist: dist-postgres
+2026-10-26T20:50:22.9565802Z   branch: master
+2026-10-26T20:50:22.9566007Z   cache_o0: false
+2026-10-26T20:50:22.9566350Z   image_cache: ghcr.io/simplex-chat/simplexmq-build-cache:22.04-x86-64-ghc8.10.7
+2026-10-26T20:50:22.9566760Z   source_hashes: dist-newstyle/sources.sha256
+2026-10-26T20:50:22.9567051Z   PGHOST: localhost
+2026-10-26T20:50:22.9567264Z   REDUCED: false
+2026-10-26T20:50:22.9567618Z   TESTS: 
+2026-10-26T20:50:22.9567811Z   PR_BODY: 
+2026-10-26T20:50:22.9568052Z   ATTEMPTS: 1
+2026-10-26T20:50:22.9568258Z ##[endgroup]
+2026-10-26T20:50:22.9931618Z 
+2026-10-26T20:50:22.9932540Z Core tests
+2026-10-26T20:50:22.9932903Z   Batching tests
+2026-10-26T20:50:22.9934506Z     batchTransmissions
+2026-10-26T20:50:25.3266626Z       should batch with 135 subscriptions per batch [[32m✔[0m]
+2026-10-26T20:50:25.3301639Z       should break on message that does not fit [[32m✔[0m]
+2026-10-26T20:50:25.3308764Z       should break on large message [[32m✔[0m]
+2026-10-26T20:55:55.2590907Z       should deliver messages to the user once, even if repeat delivery is made by the server (no ACK) [[32m✔[0m]
+2026-10-26T20:55:55.2593149Z       should report error via msg integrity on skipped messages [[32m✔[0m]
+2026-10-26T20:55:55.9313155Z       should connect to the server when server goes up if it initially was down [[32m✔[0m]
+2026-10-26T20:55:55.9314540Z       should deliver messages if one of connections has quota exceeded [[32m✔[0m]
+2026-10-26T20:55:55.9320871Z       message expiration
+2026-10-26T20:55:57.0010416Z Processed: 4 log lines
+2026-10-26T20:55:57.0016359Z Processed: 0 log lines
+2026-10-26T20:55:58.1735090Z Processed: 4 log lines
+2026-10-26T20:55:58.1740708Z Processed: 0 log lines
+2026-10-26T20:56:00.7856253Z Processed: 4 log lines
+2026-10-26T20:56:00.7861502Z Processed: 0 log lines
+2026-10-26T20:56:01.0905249Z Processed: 4 log lines
+2026-10-26T20:56:01.0911650Z Processed: 0 log lines
+2026-10-26T20:56:01.2312924Z closeDBStore: already closed
+2026-10-26T20:56:02.4075765Z closeDBStore: already closed
+2026-10-26T20:56:02.7853342Z Test exception: "should expire one message", inAnyOrder timeout
+2026-10-26T20:56:02.7854171Z CallStack (from HasCallStack):
+2026-10-26T20:56:02.7855035Z   getInAnyOrder, called at tests/AgentTests/FunctionalAPITests.hs:2554:5 in main:AgentTests.FunctionalAPITests
+2026-10-26T20:56:02.7856394Z   withUP, called at tests/AgentTests/FunctionalAPITests.hs:2518:9 in main:AgentTests.FunctionalAPITests
+2026-10-26T20:56:02.7857362Z   f, called at tests/SMPClient.hs:404:47 in main:SMPClient
+2026-10-26T20:56:02.7858118Z   serverBracket, called at tests/SMPClient.hs:389:3 in main:SMPClient
+2026-10-26T20:56:02.7859022Z   withSmpServerConfigOn, called at tests/SMPClient.hs:379:3 in main:SMPClient
+2026-10-26T20:56:02.7860182Z   withSmpServerStoreLogOn, called at tests/AgentTests/FunctionalAPITests.hs:2516:7 in main:AgentTests.FunctionalAPITests
+2026-10-26T20:56:02.7861563Z   withAgent, called at tests/AgentTests/FunctionalAPITests.hs:2508:5 in main:AgentTests.FunctionalAPITests
+2026-10-26T20:56:02.7863193Z   withAgent, called at tests/AgentTests/FunctionalAPITests.hs:2507:3 in main:AgentTests.FunctionalAPITests
+2026-10-26T20:56:02.7864392Z   testExpireMessage, called at tests/AgentTests/FunctionalAPITests.hs:456:40 in main:AgentTests.FunctionalAPITests
+2026-10-26T20:56:02.7865290Z Retrying with more logs...
+2026-10-26T20:56:02.8057148Z [0;0m[0;34m[INFO 2026-10-26 20:56:02 +0000 src/Simplex/Messaging/Agent/Client.hs:1935] A (1) --> localhost:19141 : WXXU ACK:g95a
+2026-10-26T20:56:03.3722874Z [0;0m[1;32m[NOTE 2026-10-26 20:56:02 +0000 src/Simplex/Messaging/Server/Env/STM.hs:609] restoring queues from file tests/tmp/915/smp-server-store.log
+2026-10-26T20:56:03.3724282Z [0;0m[1;32m[NOTE 2026-10-26 20:56:02 +0000 src/Simplex/Messaging/Server/StoreLog.hs:319] creating store log...
+2026-10-26T20:56:03.3751305Z [0;0m[1;32m[NOTE 2026-10-26 20:56:02 +0000 src/Simplex/Messaging/Server.hs:2466] notifications stored: 0, expired: 0, queues: 0
+2026-10-26T20:56:03.3752647Z [0;0m[0;34m[INFO 2026-10-26 20:56:02 +0000 src/Simplex/Messaging/Agent/Client.hs:1935] A (1) --> localhost:19151 :  NEW
+2026-10-26T21:01:06.2335780Z down migration m20261018_xftp_autoincrement
+2026-10-26T21:01:06.2585944Z   verify schema down migrations [[32m✔[0m]
+2026-10-26T21:01:06.3036936Z   verify strict tables [[32m✔[0m]
+2026-10-26T21:01:06.3496799Z   should NOT create user record for new database [[32m✔[0m]
+2026-10-26T21:01:06.3959168Z   should create user record for old database [[32m✔[0m]
+2026-10-26T21:01:06.4462655Z   should remove duplicate ratchet key hashes before adding unique index [[32m✔[0m]
+2026-10-26T21:01:06.6853986Z   should clear received_qend switch status on downgrade [[32m✔[0m]
+2026-10-26T21:01:06.6854827Z 
+2026-10-26T21:01:06.6856291Z Finished in 643.7090 seconds
+2026-10-26T21:01:06.6857121Z [33m1443 examples, 0 failures, 63 pending[0m
+2026-10-26T21:01:06.7799476Z Post job cleanup.

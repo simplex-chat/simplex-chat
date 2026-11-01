@@ -1,0 +1,27 @@
+﻿2026-10-26T21:33:32.2357257Z Current runner version: '2.338.0'
+2026-10-26T21:33:32.2384172Z ##[group]Runner Image Provisioner
+2026-10-26T21:33:32.2385088Z Hosted Compute Agent
+2026-10-26T21:33:36.4061472Z Complete job name: ubuntu-22.04-x86_64 (CLI,Desktop), GHC: 9.6.3
+2026-10-26T21:35:39.5064153Z ##[group]Run scripts/ci/run-tests.sh ./simplex-chat-test
+2026-10-26T21:35:39.5064653Z [36;1mscripts/ci/run-tests.sh ./simplex-chat-test[0m
+2026-10-26T21:35:39.5135020Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-26T21:35:39.5135599Z env:
+2026-10-26T21:35:39.5135808Z   opt: O0
+2026-10-26T21:35:39.5136044Z   ghc_options: --ghc-options=-O0
+2026-10-26T21:35:39.5136330Z   release: false
+2026-10-26T21:35:39.5136574Z   branch: ep/x
+2026-10-26T21:35:39.5136820Z   cache_o0: false
+2026-10-26T21:35:39.5137042Z   release_branch: 
+2026-10-26T21:35:39.5137270Z   ZSTD_CLEVEL: 9
+2026-10-26T21:35:39.5137668Z   image_cache: ghcr.io/evgeny-simplex/simplex-chat-build-cache:22.04-x86_64-ghc9.6.3
+2026-10-26T21:35:39.5138164Z   source_hashes: dist-newstyle/sources.sha256
+2026-10-26T21:35:39.5138483Z   REDUCED: true
+2026-10-26T21:35:39.5138704Z   TESTS: 
+2026-10-26T21:35:39.5138905Z   PR_BODY: 
+2026-10-26T21:35:39.5139123Z   ATTEMPTS: 1
+2026-10-26T21:35:39.5139372Z ##[endgroup]
+2026-10-26T21:35:39.5246412Z No tests selected
+2026-10-26T21:35:39.5298035Z ##[group]Run cd apps/multiplatform
+2026-10-26T21:35:39.5298396Z [36;1mcd apps/multiplatform[0m
+2026-10-26T21:35:39.5298726Z [36;1m./gradlew --no-daemon --max-workers=1 \[0m
+2026-10-26T21:35:39.5299089Z [36;1m  :common:desktopTest \[0m

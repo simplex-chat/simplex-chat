@@ -1,0 +1,654 @@
+import argparse
+import datetime
+import tempfile
+import unittest
+import unittest.mock
+import urllib.error
+from pathlib import Path
+
+import ci_failures
+
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
+CHAT = "simplex-chat/simplex-chat"
+SMP = "simplex-chat/simplexmq"
+LINUX = "ubuntu-22.04-x86_64 (CLI,Desktop), GHC: 9.6.3"
+LINUX_GHC8 = "ubuntu-22.04-x86_64 (CLI,Desktop), GHC: 8.10.7"
+LINUX_SMP = "ubuntu-22.04-x86-64, GHC: 8.10.7"
+MASTER = {"id": 1, "event": "push", "head_branch": "master", "head_sha": "a" * 40, "created_at": "2026-10-20T12:44:00Z"}
+DISPATCH = {**MASTER, "event": "workflow_dispatch", "head_branch": "ep/x"}
+TIME = datetime.datetime(2026, 10, 26, tzinfo=datetime.timezone.utc)
+
+
+def fixture(name: str) -> str:
+    return (FIXTURES / name).read_text(encoding="utf-8")
+
+
+def lines(name: str) -> list[ci_failures.Line]:
+    return ci_failures.log_lines(fixture(name))
+
+
+def job(name, test, conclusion, earlier=(("Build CLI", "success"),), step="Run tests", status="completed", job_id=2):
+    steps = [{"name": n, "number": i, "conclusion": c} for i, (n, c) in enumerate(earlier, 1)]
+    if test != "absent":
+        steps.append({"name": step, "number": len(steps) + 1, "conclusion": test})
+    return {
+        "id": job_id,
+        "run_attempt": 1,
+        "name": name,
+        "status": status,
+        "conclusion": conclusion,
+        "html_url": f"https://github.com/simplex-chat/simplex-chat/actions/runs/1/job/{job_id}",
+        "steps": steps,
+    }
+
+
+def record(repository, job, log=None, run=MASTER):
+    def read_log():
+        if log is None:
+            raise AssertionError("the log is not needed")
+        return fixture(log) if log else None
+
+    return ci_failures.job_record(repository, run, job, read_log)[0]
+
+
+class OutcomeTest(unittest.TestCase):
+    def test_failed_tests_of_both_hspec_versions(self):
+        failed = record(CHAT, job(LINUX, "failure", "failure"), "hspec-2.11-failures.log")
+        self.assertEqual((failed["outcome"], len(failed["failures"]), failed["summaries"]), ("failed", 3, [3]))
+        self.assertEqual(failed["job_key"], "ubuntu-22.04-x86_64 GHC 9.6.3")
+        failed = record(CHAT, job(LINUX_GHC8, "failure", "failure"), "hspec-2.7-failures.log")
+        self.assertEqual((failed["outcome"], len(failed["failures"]), failed["summaries"]), ("failed", 12, [12]))
+
+    def test_step_timeouts_of_both_hspec_versions(self):
+        for log in ("hspec-2.11-timeout.log", "hspec-2.7-timeout.log"):
+            timeout = record(CHAT, job(LINUX, "failure", "failure"), log)
+            self.assertEqual(timeout["outcome"], "timeout")
+            self.assertEqual(timeout["hang"]["description"], "verify .lint fkey-indexes")
+
+    def test_build_failures(self):
+        expected = {
+            "build-ghc-error.log": (
+                "src/Simplex/Chat/View.hs:2873:20: error: [-Wincomplete-patterns, -Werror=incomplete-patterns]"
+            ),
+            "build-sigkill.log": "build process killed (SIGKILL)",
+            "build-fatal.log": "fatal: could not get a repository handle for submodule 'cbits/libsecp256k1'",
+        }
+        for log, raw in expected.items():
+            failed = record(CHAT, job(LINUX, "skipped", "failure", earlier=(("Build CLI", "failure"),)), log)
+            self.assertEqual(failed["outcome"], "build failed")
+            self.assertEqual((failed["build"]["step"], failed["build"]["raw"]), ("Build CLI", raw))
+
+    def test_failure_after_a_skipped_test_step_is_not_a_build_failure(self):
+        scoped = job(LINUX, "skipped", "failure", earlier=(("Build CLI", "skipped"),))
+        scoped["steps"].append({"name": "Test changed scopes", "number": 3, "conclusion": "failure"})
+        self.assertEqual(record(CHAT, scoped, run=PULL_RUN)["outcome"], "not tested")
+
+    def test_test_step_failure_without_failed_tests_or_timeout_is_a_crash(self):
+        empty = fixture("no-tests-selected.log").replace("No tests selected", "0 examples, 0 failures")
+        for log in (fixture("build-fatal.log"), empty):
+            crashed = ci_failures.job_record(CHAT, MASTER, job(LINUX, "failure", "failure"), lambda: log)[0]
+            self.assertEqual((crashed["outcome"], crashed["build"]["step"]), ("crashed", "Run tests"))
+
+    def test_simplexmq_retries_are_read_from_passed_and_failed_jobs(self):
+        pattern = "user error (Pattern match failure in do expression at tests/AgentTests/NotificationTests.hs:N:N-N)"
+        expected = [
+            {"label": None, "signature": pattern},
+            {"label": None, "signature": "no notification"},
+            {"label": None, "signature": pattern},
+        ]
+        for test, outcome in (("failure", "failed"), ("success", "passed")):
+            tested = record(SMP, job(LINUX_SMP, test, test, step="Test"), "simplexmq-retries.log")
+            self.assertEqual((tested["outcome"], tested["retries"]), (outcome, expected))
+
+    def test_simplexmq_retries_are_keyed_by_test_label(self):
+        tested = record(SMP, job(LINUX_SMP, "success", "success", step="Test"), "simplexmq-retry-labels.log")
+        expected = [{"label": "should expire one message", "signature": "inAnyOrder timeout"}]
+        self.assertEqual((tested["outcome"], tested["retries"]), ("passed", expected))
+
+    def test_simplexmq_retries_are_not_read_from_timeouts_and_crashes(self):
+        log = fixture("simplexmq-retries.log")
+        timeout = "##[error]The action 'Test' has timed out after 120 minutes."
+        logs = {
+            "timeout": log.replace("Attempt 1 failed, retrying...", timeout),
+            "crashed": log.replace("1412 examples, 1 failure", "0 examples, 0 failures"),
+        }
+        for outcome, text in logs.items():
+            tested = ci_failures.job_record(
+                SMP, MASTER, job(LINUX_SMP, "failure", "failure", step="Test"), lambda: text
+            )[0]
+            self.assertEqual((tested["outcome"], tested["retries"]), (outcome, []))
+
+    def test_retries_are_not_read_from_simplex_chat_jobs(self):
+        failed = record(CHAT, job(LINUX, "failure", "failure"), "simplexmq-retries.log")
+        self.assertEqual((failed["outcome"], failed["retries"]), ("failed", []))
+
+    def test_job_without_selected_tests_is_not_tested_in_manual_and_pull_request_runs(self):
+        for run in (DISPATCH, PULL_RUN):
+            untested = record(CHAT, job(LINUX, "success", "success"), "no-tests-selected.log", run)
+            self.assertEqual(untested["outcome"], "not tested")
+
+    def test_pull_request_body_lines_are_not_test_output(self):
+        body = [
+            "No tests selected",
+            "Failures:",
+            "  1) Agent, should expire one message",
+            '  To rerun use: --match "/Agent/should expire one message/"',
+            'Test exception: "should expire one message", inAnyOrder timeout',
+            "1443 examples, 1 failure",
+        ]
+        log = fixture("simplexmq-retry-labels.log")
+        lines = log.split("\n")
+        after = next(i for i, line in enumerate(lines, 1) if line.endswith("  PR_BODY: "))
+        with_body = "\n".join(lines[:after] + body + lines[after:])
+        for test in ("success", "failure"):
+            tested = job(LINUX_SMP, test, test, step="Test")
+            plain = ci_failures.job_record(SMP, PULL_RUN, tested, lambda: log)[0]
+            self.assertEqual(ci_failures.job_record(SMP, PULL_RUN, tested, lambda: with_body)[0], plain)
+
+    def test_passed_job_on_stable_or_a_tag_keeps_failures_of_earlier_attempts(self):
+        for branch in ("stable", "v6.4.1"):
+            run = {**MASTER, "head_branch": branch}
+            passed = record(CHAT, job(LINUX, "success", "success"), "hspec-2.11-failures.log", run)
+            self.assertEqual((passed["outcome"], len(passed["failures"])), ("passed", 3))
+
+    def test_outcomes_without_logs(self):
+        cases = [
+            (job(LINUX, "success", "success"), "passed"),
+            (job(LINUX, None, "failure"), "runner lost"),
+            (job(LINUX, "absent", "cancelled", earlier=()), "cancelled"),
+            (job(LINUX, "cancelled", "cancelled"), "cancelled"),
+            (job(LINUX, "skipped", "success"), "not tested"),
+            (job(LINUX, None, None, status="in_progress"), "in progress"),
+        ]
+        for tested, outcome in cases:
+            self.assertEqual(record(CHAT, tested)["outcome"], outcome)
+
+    def test_missing_log(self):
+        self.assertEqual(record(CHAT, job(LINUX, "failure", "failure"), "")["outcome"], "log missing")
+        self.assertEqual(record(SMP, job(LINUX_SMP, "success", "success", step="Test"), "")["outcome"], "passed")
+
+    def test_cancelled_job_without_steps_is_counted_when_its_job_key_is_tested(self):
+        cancelled = job(LINUX, "absent", "cancelled", earlier=())
+        self.assertTrue(ci_failures.is_counted(cancelled, "Run tests", {ci_failures.job_key(LINUX)}))
+        self.assertFalse(ci_failures.is_counted(cancelled, "Run tests", set()))
+
+    def test_job_keys(self):
+        self.assertEqual(ci_failures.job_key("macos-latest (CLI,Desktop), GHC: 9.6.3"), "macos-latest GHC 9.6.3")
+        self.assertEqual(ci_failures.job_key(LINUX_SMP), "ubuntu-22.04-x86-64 GHC 8.10.7")
+        self.assertIsNone(ci_failures.job_key("resolver (python)"))
+        self.assertIsNone(ci_failures.job_key("macos-latest (iOS)"))
+        self.assertIsNone(ci_failures.job_key("ubuntu-${{ matrix.os }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"))
+
+
+class FailureTest(unittest.TestCase):
+    def test_failures_equal_the_summary_count(self):
+        counts = {"hspec-2.11-failures.log": 3, "hspec-2.7-failures.log": 12, "simplexmq-retries.log": 1}
+        for log, count in counts.items():
+            output = ci_failures.test_output(lines(log))
+            self.assertEqual((len(output.failures), sum(output.summaries)), (count, count))
+
+    def test_failure_records(self):
+        failure = ci_failures.test_output(lines("hspec-2.7-failures.log")).failures[1]
+        self.assertEqual(
+            failure["test"], "/SimpleX chat client/direct tests/maintenance mode/export/import chat with files/"
+        )
+        self.assertEqual(failure["location"], "tests/ChatTests/Direct.hs:114:40")
+        self.assertEqual(
+            failure["reason"],
+            [
+                "uncaught exception: ErrorCall",
+                'alice: no output for 20 seconds, expected: "completed receiving file 1 (test.jpg) from bob"',
+            ],
+        )
+        self.assertEqual(
+            failure["signature"],
+            'uncaught exception: ErrorCall | alice: no output for N seconds, expected: "completed receiving file ',
+        )
+
+    def test_byte_order_marks_and_carriage_returns_are_removed(self):
+        log = fixture("hspec-2.11-failures.log")
+        marked = "\n".join(chr(0xFEFF) + line if "To rerun use:" in line else line for line in log.split("\n"))
+        for variant in (marked, log.replace("\n", "\r\n")):
+            self.assertEqual(ci_failures.log_lines(variant), ci_failures.log_lines(log))
+
+    def test_reason_keeps_3_lines_and_the_signature_all_lines(self):
+        texts = ["Failures:", "  1) a", *(f"       line {n}" for n in range(1, 5)), '  To rerun use: --match "/a/"']
+        failure = ci_failures.test_output([ci_failures.Line(TIME, text) for text in texts]).failures[0]
+        self.assertEqual(failure["reason"], ["line 1", "line 2", "line 3"])
+        self.assertEqual(failure["signature"], "line N | line N | line N | line N")
+
+    def test_reason_lines_are_indented_by_7_spaces(self):
+        texts = ["Failures:", "  1) a", "       line 1", "unindented", "       line 2", '  To rerun use: --match "/a/"']
+        failure = ci_failures.test_output([ci_failures.Line(TIME, text) for text in texts]).failures[0]
+        self.assertEqual(failure["reason"], ["line 1", "line 2"])
+
+    def test_both_hspec_versions_give_one_signature(self):
+        current = ci_failures.test_output(lines("hspec-2.11-failures.log")).failures[2]
+        older = ci_failures.test_output(lines("hspec-2.7-failures.log")).failures[0]
+        self.assertTrue(current["signature"].startswith('expected: "Your new chat address is created!" | but got: '))
+        self.assertEqual(current["signature"], older["signature"])
+
+    def test_signature_replaces_identifiers_digits_and_spaces(self):
+        self.assertEqual(
+            ci_failures.signature("queue AbCdEfGhIjKlMnOp1  failed after 30 s"), "queue X failed after N s"
+        )
+        self.assertEqual(ci_failures.signature("x" * 120), "x" * 100)
+
+    def test_haskell_string(self):
+        self.assertEqual(ci_failures.haskell_string('"/a \\"b\\"/\\955\\&1/"'), '/a "b"/λ1/')
+
+    def test_retry_location_is_its_file(self):
+        retry = (
+            'Test exception: HUnitFailure (Just (SrcLoc {srcLocPackage = "p", srcLocModule = "M", '
+            'srcLocFile = "tests/CoreTests/CryptoTests.hs", srcLocStartLine = 407, srcLocStartCol = 10, '
+            'srcLocEndLine = 407, srcLocEndCol = 20})) (ExpectedButGot Nothing "False" "True")'
+        )
+        signature = 'HUnitFailure tests/CoreTests/CryptoTests.hs (ExpectedButGot Nothing "False" "True")'
+        self.assertEqual(
+            ci_failures.retries([ci_failures.Line(TIME, retry)]), [{"label": None, "signature": signature}]
+        )
+
+    def test_failed_retry_lines_with_and_without_label(self):
+        lines = [
+            'Test failed: location Nothing, reason: Reason "no notification"',
+            'Test failed: "sends \\"hello\\"", location Nothing, reason: ExpectedButGot Nothing "1" "2"',
+        ]
+        self.assertEqual(
+            ci_failures.retries([ci_failures.Line(TIME, line) for line in lines]),
+            [
+                {"label": None, "signature": 'location Nothing, reason: Reason "no notification"'},
+                {"label": 'sends "hello"', "signature": 'location Nothing, reason: ExpectedButGot Nothing "N" "N"'},
+            ],
+        )
+
+    def test_build_signature_includes_the_error_message(self):
+        _, key = ci_failures.failed_step_signature(lines("build-ghc-error.log"))
+        self.assertEqual(
+            key,
+            "src/Simplex/Chat/View.hs:N:N: error: [-Wincomplete-patterns, -Werror=incomplete-patterns] | Pattern ",
+        )
+
+    def test_build_signature_is_the_last_line_of_the_failed_step(self):
+        texts = [
+            "##[group]Run git describe --tags",
+            "##[endgroup]",
+            "fatal: No names found, cannot describe anything.",
+            "##[group]Run cabal build",
+            "##[endgroup]",
+            "Error: cabal: Failed to build simplexmq.",
+            "",
+            "##[error]Process completed with exit code 1.",
+        ]
+        raw, _ = ci_failures.failed_step_signature([ci_failures.Line(TIME, text) for text in texts])
+        self.assertEqual(raw, "Error: cabal: Failed to build simplexmq.")
+
+
+class HangTest(unittest.TestCase):
+    def hang(self, log):
+        parsed = lines(log)
+        return ci_failures.hang(parsed, ci_failures.step_timeout(parsed, "Run tests"))
+
+    def test_last_reported_item_and_silence(self):
+        current = self.hang("hspec-2.11-timeout.log")
+        self.assertEqual((current["item"], current["silence"]), ("/Schema dump/verify .lint fkey-indexes/", 7211))
+        older = self.hang("hspec-2.7-timeout.log")
+        self.assertEqual((older["item"], older["silence"]), ("verify .lint fkey-indexes", 7137))
+
+    def test_last_reported_item_after_a_pending_item(self):
+        self.assertEqual(
+            self.hang("hspec-2.11-timeout-after-pending.log")["item"],
+            "/SimpleX Directory service bot/member admission/"
+            "should make joining members observers in all groups with --always-observer/",
+        )
+
+    def test_spec_has_pending_items_and_group_paths_without_test_output(self):
+        expected = [
+            "/Schema dump/verify and overwrite schema dump/",
+            "/Schema dump/verify .lint fkey-indexes/",
+            "/Schema dump/verify schema down migrations/",
+            "/Schema dump/verify strict tables/",
+            "/SimpleX badge service/badge service config/applies every documented default/",
+            "/SimpleX badge service/badge service web/serves the built web app, exactly as it is shipped/",
+            "/SimpleX chat client/group tests/async group connections/create and join group when clients go offline/",
+            "/SimpleX chat client/group tests/group links/create group link, join via group link/",
+            "/SimpleX Broadcast bot/should broadcast message/",
+            "/SimpleX Directory service bot/should register group/",
+            "/Save query plans/verify and overwrite query plans/",
+        ]
+        self.assertEqual([path for path, _ in ci_failures.spec_items(lines("hspec-2.11-pending.log"))], expected)
+
+    def test_indented_lines_starting_with_a_bracket_are_not_groups(self):
+        texts = ["Chat client", "  group tests", "    a [✔]", "  [INFO] b", "    b [✔]", "2 examples, 0 failures"]
+        self.assertEqual(
+            ci_failures.spec_items([ci_failures.Line(TIME, text) for text in texts]),
+            [["/Chat client/group tests/a/", "a"], ["/Chat client/group tests/b/", "b"]],
+        )
+
+    def next_item(self, timeout, spec_log):
+        with tempfile.TemporaryDirectory() as directory:
+            collector = ci_failures.Collector(None, ci_failures.Cache(Path(directory)))
+            spec = ci_failures.spec_items(lines(spec_log))
+            collector.update_spec(CHAT, {"job": 3, "job_key": timeout["job_key"], "branch": "master"}, spec)
+            return collector.next_item(timeout, "master")
+
+    def test_next_item_is_read_from_the_spec_of_the_job_key(self):
+        timeout = record(CHAT, job(LINUX, "failure", "failure"), "hspec-2.11-timeout.log")
+        self.assertEqual(self.next_item(timeout, "hspec-2.11-failures.log"), "verify schema down migrations")
+
+    def test_next_item_is_found_by_description_when_the_group_path_differs(self):
+        timeout = record(CHAT, job(LINUX, "failure", "failure"), "hspec-2.11-timeout.log")
+        timeout["hang"]["item"] = "/Stray output/verify .lint fkey-indexes/"
+        self.assertEqual(self.next_item(timeout, "hspec-2.11-failures.log"), "verify schema down migrations")
+
+    def test_failed_hspec_2_7_item_is_found_in_the_spec(self):
+        log = fixture("hspec-2.7-timeout.log").replace(
+            "  verify .lint fkey-indexes", "        should send files from CLI without /store FAILED [1]"
+        )
+        timeout = ci_failures.job_record(CHAT, MASTER, job(LINUX_GHC8, "failure", "failure"), lambda: log)[0]
+        self.assertEqual(timeout["hang"]["item"], "should send files from CLI without /store")
+        self.assertEqual(self.next_item(timeout, "hspec-2.7-failures.log"), "switches remote hosts")
+
+    def test_timeout_before_the_first_item_of_the_test_step(self):
+        log = "\n".join(line for line in fixture("hspec-2.7-timeout.log").split("\n") if "Z   verify " not in line)
+        timeout = ci_failures.job_record(CHAT, MASTER, job(LINUX_GHC8, "failure", "failure"), lambda: log)[0]
+        self.assertEqual((timeout["outcome"], timeout["hang"]["item"]), ("timeout", None))
+
+    def test_spec_is_kept_from_the_newest_job(self):
+        key = ci_failures.job_key(LINUX)
+        with tempfile.TemporaryDirectory() as directory:
+            collector = ci_failures.Collector(None, ci_failures.Cache(Path(directory)))
+            for job_id in (3, 5, 4):
+                spec_record = {"job": job_id, "job_key": key, "branch": "master"}
+                collector.update_spec(CHAT, spec_record, [[f"/{job_id}/", str(job_id)]])
+            self.assertEqual(collector.cache.read(CHAT, "spec/master", key)["job"], 5)
+
+    def test_next_item_is_read_from_the_spec_of_the_window_branch(self):
+        timeout = record(CHAT, job(LINUX, "failure", "failure"), "hspec-2.11-timeout.log")
+        master = ci_failures.spec_items(lines("hspec-2.11-failures.log"))
+        stable = [item for item in master if item[1] != "verify schema down migrations"]
+        with tempfile.TemporaryDirectory() as directory:
+            collector = ci_failures.Collector(None, ci_failures.Cache(Path(directory)))
+            collector.update_spec(CHAT, {"job": 3, "job_key": timeout["job_key"], "branch": "master"}, master)
+            collector.update_spec(CHAT, {"job": 4, "job_key": timeout["job_key"], "branch": "stable"}, stable)
+            collector.resolve_hangs([ci_failures.RunRecords(MASTER, [(None, timeout)])], "master")
+        self.assertEqual(timeout["hang"]["next"], "verify schema down migrations")
+
+    def test_spec_is_saved_from_push_runs_only(self):
+        logs = {PUSH_RUN["id"]: "hspec-2.11-failures.log", PULL_RUN["id"]: "hspec-2.11-failures.log"}
+        with tempfile.TemporaryDirectory() as directory:
+            collector = ci_failures.Collector(FakeGitHub(logs), ci_failures.Cache(Path(directory)))
+            collector.runs(CHAT, [PUSH_RUN])
+            collector.runs(CHAT, [PULL_RUN])
+            self.assertEqual(collector.cache.read(CHAT, "spec/master", ci_failures.job_key(LINUX))["job"], 1000)
+
+    def test_pr_reads_the_next_item_from_the_window_on_a_cold_cache(self):
+        logs = {PUSH_RUN["id"]: "hspec-2.11-failures.log", PULL_RUN["id"]: "hspec-2.11-timeout.log"}
+        with tempfile.TemporaryDirectory() as directory:
+            collector = ci_failures.Collector(FakeGitHub(logs), ci_failures.Cache(Path(directory)))
+            report = ci_failures.pr_command(collector, argparse.Namespace(url=PULL["html_url"], window=30)).text
+            self.assertIn("next item: verify schema down migrations", report)
+
+
+def workflow_run(run_id, event, branch, created):
+    return {
+        "id": run_id,
+        "run_attempt": 1,
+        "status": "completed",
+        "event": event,
+        "head_branch": branch,
+        "head_sha": "c" * 40,
+        "created_at": created,
+        "html_url": f"https://github.com/{CHAT}/actions/runs/{run_id}",
+        "head_repository": {"full_name": "fork/simplex-chat"},
+    }
+
+
+PUSH_RUN = workflow_run(100, "push", "master", "2026-10-21T00:00:00Z")
+PULL_RUN = workflow_run(200, "pull_request", "ep/x", "2026-10-22T00:00:00Z")
+PULL = {
+    "html_url": f"https://github.com/{CHAT}/pull/1",
+    "head": {"repo": {"full_name": "fork/simplex-chat"}, "ref": "ep/x"},
+    "base": {"ref": "master"},
+}
+
+
+class FakeGitHub:
+    def __init__(self, logs, runs=(PULL_RUN, PUSH_RUN)):
+        self.logs = logs
+        self.runs = runs
+
+    def get(self, path, **params):
+        if path.endswith("/pulls/1"):
+            return PULL
+        listed = [run for run in self.runs if run["event"] == params["event"]]
+        if "created" in params:
+            listed = [run for run in listed if run["created_at"] < params["created"].removeprefix("<")]
+        return {"workflow_runs": listed}
+
+    def pages(self, path, key, **params):
+        run_id = int(path.split("/")[-2])
+        return [job(LINUX, "failure", "failure", job_id=run_id * 10)]
+
+    def log(self, repository, job_id):
+        return fixture(self.logs[job_id // 10])
+
+
+class FakeOpener:
+    def __init__(self, code, location=None):
+        self.code = code
+        self.location = location
+
+    def open(self, request, timeout):
+        raise urllib.error.HTTPError(request.full_url, self.code, "fake", {"Location": self.location}, None)
+
+
+class CollectorTest(unittest.TestCase):
+    def test_pr_compares_the_10_newest_runs_of_its_head_repository_with_earlier_push_runs(self):
+        own = [workflow_run(n, "pull_request", "ep/x", f"2026-10-22T{n - 200:02}:00:00Z") for n in range(211, 200, -1)]
+        other = workflow_run(300, "pull_request", "ep/x", "2026-10-23T00:00:00Z")
+        other["head_repository"] = {"full_name": "other/simplex-chat"}
+        later = workflow_run(101, "push", "master", "2026-10-24T00:00:00Z")
+        runs = [later, other, *own, PUSH_RUN]
+        logs = {run["id"]: "hspec-2.11-failures.log" for run in runs}
+        with tempfile.TemporaryDirectory() as directory:
+            collector = ci_failures.Collector(FakeGitHub(logs, runs), ci_failures.Cache(Path(directory)))
+            report = ci_failures.pr_command(collector, argparse.Namespace(url=PULL["html_url"], window=30)).text
+        self.assertIn(f"Run: {own[0]['html_url']}, attempt 1", report)
+        self.assertIn("Window: simplex-chat/simplex-chat master: 1 runs, 2026-10-21 to 2026-10-21", report)
+        self.assertIn("| 10 of 10 | 1 of 1 | 0 | on master |", report)
+
+    def test_unfinished_runs_and_jobs_in_progress_are_not_cached(self):
+        unfinished = {**PULL_RUN, "status": "in_progress"}
+        with tempfile.TemporaryDirectory() as directory:
+            collector = ci_failures.Collector(FakeGitHub({}), ci_failures.Cache(Path(directory)))
+            collector.run_jobs(CHAT, unfinished)
+            collector.record(CHAT, unfinished, job(LINUX, None, None, status="in_progress"))
+            self.assertEqual(list(Path(directory).iterdir()), [])
+
+    def test_log_is_missing_after_410_from_the_api_or_404_from_the_blob(self):
+        github = ci_failures.GitHub("token")
+        github.opener = FakeOpener(410)
+        self.assertIsNone(github.log(CHAT, 2))
+        github.opener = FakeOpener(302, "https://blob.example/2")
+        with unittest.mock.patch("urllib.request.build_opener", return_value=FakeOpener(404)):
+            self.assertIsNone(github.log(CHAT, 2))
+
+    def test_test_path_is_matched_without_its_leading_and_trailing_slashes(self):
+        path = "SimpleX chat client/group tests/group history/quoted messages"
+        logs = {PUSH_RUN["id"]: "hspec-2.11-failures.log"}
+        with tempfile.TemporaryDirectory() as directory:
+            collector = ci_failures.Collector(FakeGitHub(logs), ci_failures.Cache(Path(directory)))
+            args = argparse.Namespace(url=f"https://github.com/{CHAT}", base="master", window=30, path=path)
+            failures = ci_failures.test_command(collector, args).data["failures"]
+        self.assertEqual([failure["test"] for failure in failures], [f"/{path}/"])
+
+
+def entry(run_id, created, jobs):
+    run = {
+        "id": run_id,
+        "run_attempt": 1,
+        "head_sha": "b" * 40,
+        "created_at": created,
+        "html_url": f"https://github.com/{CHAT}/actions/runs/{run_id}",
+    }
+    entries = []
+    for number, (name, attempt, tests) in enumerate(jobs):
+        job_id = run_id * 100 + number
+        tested = job(name, "failure" if tests else "success", "failure" if tests else "success", job_id=job_id)
+        failures = [{"test": t, "signature": "s", "reason": ["s"], "location": None, "step_attempt": 1} for t in tests]
+        entries.append(({**tested, "run_attempt": attempt}, {
+            "repository": CHAT,
+            "run": run_id,
+            "run_attempt": attempt,
+            "job": job_id,
+            "url": tested["html_url"],
+            "job_key": ci_failures.job_key(name),
+            "outcome": "failed" if tests else "passed",
+            "build": None,
+            "failures": failures,
+            "hang": None,
+            "retries": [],
+            "summaries": [len(tests)],
+        }))
+    return ci_failures.RunRecords(run, entries)
+
+
+class ReportTest(unittest.TestCase):
+    def test_labels_compare_failures_with_the_window(self):
+        window = ci_failures.Window(CHAT, "master", [
+            entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, ["/a/"]), (LINUX_GHC8, 1, [])]),
+            entry(11, "2026-10-20T00:00:00Z", [(LINUX, 1, []), (LINUX_GHC8, 1, ["/b/"])]),
+        ])
+        analysed = entry(20, "2026-10-22T00:00:00Z", [(LINUX, 1, ["/a/", "/b/", "/c/"]), (LINUX, 2, [])])
+        report = ci_failures.run_report("CI failures", analysed, window, [analysed]).text
+        self.assertIn("| /a/ | s | 1 of 1 | 1 of 2 | 0 | on master, passed on re-run |", report)
+        self.assertIn("| /b/ | s | 1 of 1 | 0 of 2 | 1 | on master, other jobs, passed on re-run |", report)
+        self.assertIn("| /c/ | s | 1 of 1 | 0 of 2 | 0 | new, passed on re-run |", report)
+        self.assertIn("master, other jobs: ubuntu-22.04-x86_64 GHC 8.10.7 on 2026-10-20", report)
+        self.assertIn("Parser check: 6 of 6 logs with summaries match their failure counts", report)
+
+    def test_window_and_passed_jobs_use_the_latest_attempt_in_any_listing_order(self):
+        window = ci_failures.Window(CHAT, "master", [
+            entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, ["/a/"]), (LINUX, 2, [])]),
+            entry(11, "2026-10-20T00:00:00Z", [(LINUX, 2, []), (LINUX, 1, ["/a/"])]),
+        ])
+        analysed = entry(20, "2026-10-22T00:00:00Z", [(LINUX, 2, []), (LINUX, 1, ["/a/"])])
+        report = ci_failures.run_report("CI failures", analysed, window, None).text
+        self.assertIn("| /a/ | s | 0 of 2 | 0 | new, passed on re-run |", report)
+        self.assertIn("Passed: ubuntu-22.04-x86_64 GHC 9.6.3", report)
+
+    def test_parser_check_lists_logs_whose_failures_differ_from_their_summaries(self):
+        run = entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, ["/a/", "/b/"]), (LINUX_GHC8, 1, ["/a/"])])
+        differing = run.entries[0][1]
+        differing["summaries"] = [3]
+        self.assertEqual(
+            ci_failures.parser_check([record for _, record in run.entries]).split("\n"),
+            [
+                "Parser check: 1 of 2 logs with summaries match their failure counts",
+                f"- {differing['url']}: 2 failures parsed, 3 in summaries",
+            ],
+        )
+
+    def test_test_passed_on_re_run_inside_the_test_step(self):
+        window = ci_failures.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, [])])])
+        analysed = entry(20, "2026-10-22T00:00:00Z", [(LINUX, 1, ["/a/", "/b/"])])
+        tested = analysed.entries[0][1]
+        tested["failures"].append({**tested["failures"][1], "step_attempt": 2})
+        tested["summaries"] = [2, 1]
+        report = ci_failures.run_report("CI failures", analysed, window, None).text
+        self.assertIn("| /a/ | s | 0 of 1 | 0 | new, passed on re-run |", report)
+        self.assertIn("| /b/ | s | 0 of 1 | 0 | new |", report)
+
+    def test_build_failure_notes_other_signatures_of_the_same_job(self):
+        window = ci_failures.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, [])])])
+        analysed = entry(20, "2026-10-22T00:00:00Z", [(LINUX, 1, [])])
+        for run, raw in ((window.runs[0], "build process killed (SIGKILL)"), (analysed, "fatal: x")):
+            run.entries[0][1].update(outcome="build failed", build={"step": "Build CLI", "raw": raw, "signature": raw})
+        report = ci_failures.run_report("CI failures", analysed, window, None).text
+        self.assertIn("master, same job, other signature: build process killed (SIGKILL), 1 run, 2026-10-21", report)
+
+    def test_timeout_label_compares_the_last_reported_item_with_the_window(self):
+        window = ci_failures.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, [])])])
+        analysed = entry(20, "2026-10-22T00:00:00Z", [(LINUX, 1, [])])
+        hang = record(CHAT, job(LINUX, "failure", "failure"), "hspec-2.11-timeout.log")["hang"]
+        for run in (window.runs[0], analysed):
+            run.entries[0][1].update(outcome="timeout", hang=hang)
+        report = ci_failures.run_report("CI failures", analysed, window, None).text
+        self.assertIn("| silent 120 min, next item: unknown | 1 of 1 | 0 | on master |", report)
+
+    def test_branch_summary_counts_outcomes_and_tests(self):
+        window = ci_failures.Window(CHAT, "master", [
+            entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, ["/a/"]), (LINUX_GHC8, 1, ["/a/"])]),
+            entry(11, "2026-10-20T00:00:00Z", [(LINUX, 1, []), (LINUX_GHC8, 1, [])]),
+        ])
+        report = ci_failures.branch_report(window).text
+        self.assertIn("simplex-chat/simplex-chat master: 2 runs, 2026-10-20 to 2026-10-21", report)
+        self.assertIn("| 1 | ubuntu-22.04-x86_64 GHC 8.10.7 | 2 | 1 | 1 |", report)
+        self.assertIn("| 1 | /a/ | 2 | 1 | 1 | 2026-10-21 |", report)
+
+    def test_branch_summary_orders_job_keys_and_tests_by_failures(self):
+        window = ci_failures.Window(CHAT, "master", [
+            entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, ["/c/", "/b/"]), (LINUX_GHC8, 1, ["/c/"])]),
+            entry(11, "2026-10-20T00:00:00Z", [(LINUX, 1, ["/c/", "/b/", "/a/"]), (LINUX_GHC8, 1, [])]),
+        ])
+        report = ci_failures.branch_report(window).text
+        self.assertIn("| 1 | ubuntu-22.04-x86_64 GHC 9.6.3 | 2 | 0 | 2 |", report)
+        self.assertIn("| 2 | ubuntu-22.04-x86_64 GHC 8.10.7 | 2 | 1 | 1 |", report)
+        self.assertIn("| 1 | /c/ | 3 | 2 | 1 | 2026-10-21 |", report)
+        self.assertIn("| 2 | /b/ | 2 | 2 | 0 | 2026-10-21 |", report)
+        self.assertIn("| 3 | /a/ | 1 | 1 | 0 | 2026-10-20 |", report)
+
+    def test_branch_summary_counts_retries_by_test(self):
+        runs = [entry(run_id, "2026-10-21T00:00:00Z", [(LINUX, 1, [])]) for run_id in (10, 11)]
+        runs[0].entries[0][1]["retries"] = [{"label": "a", "signature": "s1"}, {"label": None, "signature": "s2"}]
+        runs[1].entries[0][1]["retries"] = [{"label": "a", "signature": "s3"}, {"label": None, "signature": "s4"}]
+        report = ci_failures.branch_report(ci_failures.Window(CHAT, "master", runs)).text
+        self.assertIn("Retries: 4", report)
+        self.assertIn("| 1 | a | 2 | s1; s3 |", report)
+        self.assertIn("| 2 | unknown | 1 | s2 |", report)
+        self.assertIn("| 3 | unknown | 1 | s4 |", report)
+
+    def test_branch_summary_leaves_out_job_keys_that_were_not_tested(self):
+        window = ci_failures.Window(CHAT, "master", [
+            entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, []), (LINUX_GHC8, 1, [])]),
+        ])
+        window.runs[0].entries[1][1]["outcome"] = "not tested"
+        report = ci_failures.branch_report(window).text
+        self.assertIn("| 1 | ubuntu-22.04-x86_64 GHC 9.6.3 | 1 | 1 |", report)
+        self.assertNotIn("GHC 8.10.7", report)
+
+    def test_pr_runs_exclude_runs_without_selected_tests(self):
+        window = ci_failures.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, [])])])
+        analysed = entry(20, "2026-10-22T00:00:00Z", [(LINUX, 1, ["/a/"])])
+        untested = entry(19, "2026-10-21T12:00:00Z", [(LINUX, 1, [])])
+        untested.entries[0][1]["outcome"] = "not tested"
+        report = ci_failures.run_report("CI failures", analysed, window, [analysed, untested]).text
+        self.assertIn("| /a/ | s | 1 of 1 | 0 of 1 | 0 | new |", report)
+
+    def test_test_report_includes_the_parser_check(self):
+        window = ci_failures.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, ["/a/"])])])
+        report = ci_failures.test_report(window, "/a/").text
+        self.assertIn("Parser check: 1 of 1 logs with summaries match their failure counts", report)
+
+    def test_base_of_a_run(self):
+        other = {"base": {"ref": "dev", "repo": {"id": 2}}}
+        own = {"base": {"ref": "stable", "repo": {"id": 1}}}
+
+        def base(event, pulls):
+            run = {"event": event, "head_branch": "master", "repository": {"id": 1}, "pull_requests": pulls}
+            return ci_failures.run_base(run, "release")
+
+        self.assertEqual(base("push", [other]), "master")
+        self.assertEqual(base("pull_request", [other, own]), "stable")
+        self.assertEqual(base("workflow_dispatch", [other]), "release")
+
+    def test_urls(self):
+        pull = "https://github.com/simplex-chat/simplex-chat/pull/7703"
+        job_url = "https://github.com/simplex-chat/simplexmq/actions/runs/5/job/6"
+        self.assertEqual(ci_failures.parse_url(pull, "pull"), (CHAT, 7703))
+        self.assertEqual(ci_failures.parse_url(job_url, "actions/runs"), (SMP, 5))
+        self.assertEqual(ci_failures.parse_url("https://github.com/simplex-chat/simplexmq", None), (SMP, None))
+
+
+if __name__ == "__main__":
+    unittest.main()

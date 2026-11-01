@@ -1,0 +1,130 @@
+﻿2026-10-20T12:44:46.8640101Z Current runner version: '2.337.0'
+2026-10-20T12:44:46.8661810Z ##[group]Runner Image Provisioner
+2026-10-20T12:44:46.8662664Z Hosted Compute Agent
+2026-10-20T12:44:50.7782353Z Complete job name: ubuntu-22.04-x86_64 (CLI,Desktop), GHC: 9.6.3
+2026-10-20T12:49:42.2126408Z ##[group]Run i=1
+2026-10-20T12:49:42.2126739Z [36;1mi=1[0m
+2026-10-20T12:49:42.2127020Z [36;1mattempts=1[0m
+2026-10-20T12:49:42.2127323Z [36;1mfalse && attempts=3[0m
+2026-10-20T12:49:42.2127672Z [36;1mwhile [ "$i" -le "$attempts" ]; do[0m
+2026-10-20T12:49:42.2128044Z [36;1m  if ./simplex-chat-test; then[0m
+2026-10-20T12:49:42.2128372Z [36;1m    break[0m
+2026-10-20T12:49:42.2128660Z [36;1m  else[0m
+2026-10-20T12:49:42.2128968Z [36;1m    echo "Attempt $i failed, retrying..."[0m
+2026-10-20T12:49:42.2129328Z [36;1m    i=$((i + 1))[0m
+2026-10-20T12:49:42.2129628Z [36;1m    sleep 1[0m
+2026-10-20T12:49:42.2129920Z [36;1m  fi[0m
+2026-10-20T12:49:42.2130196Z [36;1mdone[0m
+2026-10-20T12:49:42.2130507Z [36;1mif [ "$i" -gt "$attempts" ]; then[0m
+2026-10-20T12:49:42.2130868Z [36;1m  echo "All "$attempts" attempts failed."[0m
+2026-10-20T12:49:42.2131211Z [36;1m  exit 1[0m
+2026-10-20T12:49:42.2131492Z [36;1mfi[0m
+2026-10-20T12:49:42.2188130Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-20T12:49:42.2188526Z env:
+2026-10-20T12:49:42.2188805Z   opt: O2
+2026-10-20T12:49:42.2189078Z   ghc_options: 
+2026-10-20T12:49:42.2189368Z   release: false
+2026-10-20T12:49:42.2189656Z   branch: master
+2026-10-20T12:49:42.2189935Z   cache_o0: true
+2026-10-20T12:49:42.2190211Z   release_branch: master
+2026-10-20T12:49:42.2190513Z   ZSTD_CLEVEL: 9
+2026-10-20T12:49:42.2190912Z   image_cache: ghcr.io/simplex-chat/simplex-chat-build-cache:22.04-x86_64-ghc9.6.3
+2026-10-20T12:49:42.2191382Z   source_hashes: dist-newstyle/sources.sha256
+2026-10-20T12:49:42.2191716Z ##[endgroup]
+2026-10-20T12:49:42.2694454Z 
+2026-10-20T12:49:42.2718958Z Schema dump
+2026-10-20T12:49:42.8326038Z [ERROR 2026-10-20 12:49:42 +0000 apps/simplex-badge-service/src/BadgeService/Service.hs:312] badge service: a request failed; the next one will be handled
+2026-10-20T12:49:42.8605837Z [WARN 2026-10-20 12:49:42 +0000 apps/simplex-badge-service/src/BadgeService/Config.hs:180] tests/tmp/badge-ini4172/badge_service.ini: nothing reads [legacy], so it was ignored
+2026-10-20T12:49:42.8607965Z [WARN 2026-10-20 12:49:42 +0000 apps/simplex-badge-service/src/BadgeService/Config.hs:180] tests/tmp/badge-ini4173/badge_service.ini: nothing reads issuer.default, so it was ignored
+2026-10-20T12:49:42.8609957Z [WARN 2026-10-20 12:49:42 +0000 apps/simplex-badge-service/src/BadgeService/Config.hs:180] tests/tmp/badge-ini4173/badge_service.ini: nothing reads issuer.key_1, so it was ignored
+2026-10-20T12:49:42.9084606Z   verify and overwrite schema dump [[32m✔[0m]
+2026-10-20T12:49:42.9483617Z [INFO 2026-10-20 12:49:42 +0000 apps/simplex-badge-service/src/BadgeService/Web/Server.hs:539] POST /api/invoice refused: no provider configured for SPMCard {provider = CPStripe}
+2026-10-20T12:49:42.9575472Z [INFO 2026-10-20 12:49:42 +0000 apps/simplex-badge-service/src/BadgeService/Web/Server.hs:339] badge service: exported the webapp to tests/tmp/badge-export4172/out
+2026-10-20T12:49:42.9645022Z [INFO 2026-10-20 12:49:42 +0000 apps/simplex-badge-service/src/BadgeService/Web/Server.hs:539] POST /api/invoice refused: malformed body
+2026-10-20T12:49:43.0096951Z [WARN 2026-10-20 12:49:43 +0000 apps/simplex-badge-service/src/BadgeService/Web/Server.hs:677] POST /webhooks/btcpay: no PPCrypto adapter is configured, so every delivery is refused
+2026-10-20T12:49:43.1958229Z SQLite3 returned ErrorError while attempting to perform prepare "SELECT i.invoice_id, i.provider, ci.provider_ref, bc.badge_type, bc.months, i.price, i.amount, i.currency, i.payment_url, i.payment_address, i.payment_crypto_currency, i.payment_crypto_amount, i.expires_at, i.status, i.created_at, p.amount, p.crypto_paid, p.crypto_due, p.paid_in_full, p.status, p.updated_at FROM sx_badge_service_invoices i JOIN sx_badge_service_badge_code_invoices ci ON ci.invoice_id = i.invoice_id JOIN sx_badge_service_badge_codes bc ON bc.badge_code_id = ci.badge_code_id LEFT JOIN sx_badge_service_payments p ON p.invoice_id = i.invoice_id WHERE i.invoice_id = ?": no such table: sx_badge_service_badge_code_invoices
+2026-10-20T12:49:43.2740951Z   verify .lint fkey-indexes [[32m✔[0m]
+2026-10-20T12:49:43.3185254Z down migration 20230317_hidden_profiles
+2026-10-20T12:49:43.3488104Z [INFO 2026-10-20 12:49:43 +0000 apps/simplex-badge-service/src/BadgeService/Providers/BTCPay.hs:242] btcpay: store BqZKtkeSN9JgLLdCJRJfXQjLwCLDNCVLdxLTTdMzTHnT has enabled BTC-CHAIN, XMR-CHAIN
+2026-10-20T12:49:43.3509214Z down migration 20230318_file_description
+2026-10-20T12:49:43.3539611Z [INFO 2026-10-20 12:49:43 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:210] badge poller: order FakeInvoiceRef0001 ISOpen -> ISPaid
+2026-10-20T12:49:43.3615052Z [INFO 2026-10-20 12:49:43 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:210] badge poller: order p-1 ISOpen -> ISPaid
+2026-10-20T12:49:43.3623582Z [INFO 2026-10-20 12:49:43 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:210] badge poller: order p-2 ISOpen -> ISPaid
+2026-10-20T12:49:43.3639214Z [INFO 2026-10-20 12:49:43 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:210] badge poller: order p-3 ISOpen -> ISPaid
+2026-10-20T12:49:43.3725768Z [ERROR 2026-10-20 12:49:43 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:153] badge poller: invoice p-none-1 names provider crypto, which this build has none of
+2026-10-20T12:49:43.3979429Z [INFO 2026-10-20 12:49:43 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:210] badge poller: order p-1 ISOpen -> ISPaid
+2026-10-20T12:49:50.5406547Z down migration 20260720_server_roles
+2026-10-20T12:49:50.6236315Z down migration 20260723_contact_request_rejection
+2026-10-20T12:49:50.6956167Z down migration 20260813_auto_accept_group_invitations
+2026-10-20T12:49:50.7874987Z down migration 20260822_forward_link
+2026-10-20T12:49:50.9066158Z down migration 20260828_file_expiry
+2026-10-20T12:49:50.9979711Z down migration 20260904_file_badges
+2026-10-20T12:49:51.1424858Z down migration 20260915_user_badges
+2026-10-20T12:49:51.2581717Z down migration 20260918_badge_issue_errors
+2026-10-20T12:49:51.3525096Z down migration 20260923_preferences_json
+2026-10-20T12:49:51.4182610Z down migration 20260925_badge_bindings
+2026-10-20T12:49:51.4748587Z down migration 20261010_invite_member_via_group
+2026-10-20T12:49:51.5406331Z down migration 20261012_delivery_job_notification
+2026-10-20T12:49:51.6124165Z down migration 20261016_badge_store_receipts
+2026-10-20T12:49:51.6980029Z down migration 20261018_autoincrement_ids
+2026-10-20T12:49:51.7508897Z   verify schema down migrations [[32m✔[0m]
+2026-10-20T12:49:52.1894143Z   verify strict tables [[32m✔[0m]
+2026-10-20T12:49:52.1895117Z Bot API docs
+2026-10-20T12:49:52.1895623Z   API commands
+2026-10-20T12:49:57.3473266Z SimpleX chat markdown
+2026-10-20T12:49:57.3473864Z   text format (bold)
+2026-10-20T12:49:57.3474406Z     correct markdown [[32m✔[0m]
+2026-10-20T12:49:57.3475035Z     correct markdown with double asterisk [[32m✔[0m]
+2026-10-20T12:49:57.3475688Z     ignored as markdown [[32m✔[0m]
+2026-10-20T12:49:57.3476283Z     ignored internal markdown [[32m✔[0m]
+2026-10-20T12:49:57.3476823Z   secret text
+2026-10-20T12:49:57.3477313Z     correct markdown [[32m✔[0m]
+2026-10-20T12:49:57.3477859Z     ignored as markdown [[32m✔[0m]
+2026-10-20T13:05:09.3868127Z         connects with new pairing (stops mobile) [[32m✔[0m]
+2026-10-20T13:05:09.3869232Z         connects with new pairing (stops desktop) [[32m✔[0m]
+2026-10-20T13:05:09.3870368Z         connects with stored pairing [[32m✔[0m]
+2026-10-20T13:05:09.3871460Z         connects with multicast discovery [[32m✔[0m]
+2026-10-20T13:05:09.3872395Z         refuses invalid client cert [[32m✔[0m]
+2026-10-20T13:05:09.3872968Z         connects with stored server bindings [[32m✔[0m]
+2026-10-20T13:05:09.3873519Z       sends messages [[32m✔[0m]
+2026-10-20T13:05:09.3874089Z       remote files
+2026-10-20T13:05:11.6341889Z         store/get/send/receive files [[32m✔[0m]
+2026-10-20T13:05:13.3632100Z         should send files from CLI without /store [[32m✔[0m]
+2026-10-20T13:05:13.3632777Z       switches remote hosts [[32m✔[0m]
+2026-10-20T13:05:13.3633351Z       indicates remote hosts [[32m✔[0m]
+2026-10-20T13:05:13.3634701Z       works with multiple profiles [[32m✔[0m]
+2026-10-20T13:05:13.3635506Z Save query plans
+2026-10-20T13:05:13.4664795Z   verify and overwrite query plans [[33m‐[0m]
+2026-10-20T13:05:13.4665415Z [33m    # PENDING: No reason given[0m
+2026-10-20T13:05:13.4665641Z 
+2026-10-20T13:05:13.4665773Z Failures:
+2026-10-20T13:05:13.4665926Z 
+2026-10-20T13:05:13.4672753Z [36m  tests/ChatTests/Groups.hs:215:56: [0m
+2026-10-20T13:05:13.4673363Z   1) SimpleX chat client, group tests, group history, history is not sent if preference is disabled
+2026-10-20T13:05:13.4676189Z [31m       [(1,"chat banner"),(0,"hello"),(0,"This conversation is protected by end-to-end encryption with perfect forward secrecy, repudiation and break-in recovery."),(0,"Disappearing messages: off"),(0,"Direct messages: on"),(0,"Full deletion: off"),(0,"Message reactions: on"),(0,"Voice messages: on"),(0,"Files and media: on"),(0,"SimpleX links: on"),(0,"Member reports: on"),(0,"Recent history: on"),(0,"Chat with admins: on"),(0,"connected"),(0,"hey!"),(0,"connected")] does not contain [(0,"hello"),(0,"hey!")][0m
+2026-10-20T13:05:13.4678330Z 
+2026-10-20T13:05:13.4678805Z   To rerun use: --match "/SimpleX chat client/group tests/group history/history is not sent if preference is disabled/" --seed 1171042994
+2026-10-20T13:05:13.4679304Z 
+2026-10-20T13:05:13.4679593Z [36m  tests/ChatTests/Groups.hs:222:26: [0m
+2026-10-20T13:05:13.4680099Z   2) SimpleX chat client, group tests, group history, quoted messages
+2026-10-20T13:05:13.4683899Z [31m       [((1,"chat banner"),Nothing),((0,"ALICE"),Nothing),((0,"BOB"),Nothing),((0,"1"),Just (0,"ALICE")),((0,"2"),Just (0,"BOB")),((0,"3"),Just (0,"ALICE")),((0,"This conversation is protected by end-to-end encryption with perfect forward secrecy, repudiation and break-in recovery."),Nothing),((0,"Disappearing messages: off"),Nothing),((0,"Direct messages: on"),Nothing),((0,"Full deletion: off"),Nothing),((0,"Message reactions: on"),Nothing),((0,"Voice messages: on"),Nothing),((0,"Files and media: on"),Nothing),((0,"SimpleX links: on"),Nothing),((0,"Member reports: on"),Nothing),((0,"Recent history: on"),Nothing),((0,"Chat with admins: on"),Nothing),((0,"connected"),Nothing),((0,"4"),Just (0,"BOB")),((0,"connected"),Nothing)] does not contain [((0,"ALICE"),Nothing),((0,"BOB"),Nothing),((0,"1"),Just (0,"ALICE")),((0,"2"),Just (0,"BOB")),((0,"3"),Just (0,"ALICE")),((0,"4"),Just (0,"BOB"))][0m
+2026-10-20T13:05:13.4686075Z 
+2026-10-20T13:05:13.4686389Z   To rerun use: --match "/SimpleX chat client/group tests/group history/quoted messages/" --seed 1171042994
+2026-10-20T13:05:13.4686757Z 
+2026-10-20T13:05:13.4686983Z [36m  tests/ChatTests/Groups.hs:309:87: [0m
+2026-10-20T13:05:13.4687631Z   3) SimpleX chat client, group tests, channels, deliver member profiles via relay, owner, relay and subscriber store address and peer type of promoted member
+2026-10-20T13:05:13.4688461Z [31m       expected: [0m"[31mYour[0m [31mnew[0m [31mchat[0m [31maddress[0m [31mis[0m [31mcreated![0m"
+2026-10-20T13:05:13.4689477Z [31m        but got: [0m"[32msmp[0m [32magent[0m [32merror:[0m [32mBROKER[0m [32m{brokerAddress[0m [32m= \"smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7011\", brokerErr = TIMEOUT}[0m"
+2026-10-20T13:05:13.4690062Z 
+2026-10-20T13:05:13.4690591Z   To rerun use: --match "/SimpleX chat client/group tests/channels/deliver member profiles via relay/owner, relay and subscriber store address and peer type of promoted member/" --seed 1171042994
+2026-10-20T13:05:13.4691162Z 
+2026-10-20T13:05:13.4691304Z Randomized with seed 1171042994
+2026-10-20T13:05:13.4691494Z 
+2026-10-20T13:05:13.4691629Z Finished in 931.2333 seconds
+2026-10-20T13:05:13.4692000Z [31m1732 examples, 3 failures, 46 pending[0m
+2026-10-20T13:05:13.9788874Z Attempt 1 failed, retrying...
+2026-10-20T13:05:14.9810950Z All 1 attempts failed.
+2026-10-20T13:05:14.9812144Z [0;0m
+2026-10-20T13:05:14.9826073Z ##[error]Process completed with exit code 1.
+2026-10-20T13:05:14.9920188Z ##[group]Run find dist-newstyle -mindepth 1 -maxdepth 1 ! -name src -exec rm -rf {} +
+2026-10-20T13:05:14.9920785Z [36;1mfind dist-newstyle -mindepth 1 -maxdepth 1 ! -name src -exec rm -rf {} +[0m

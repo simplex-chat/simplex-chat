@@ -1,0 +1,102 @@
+﻿2026-10-19T12:42:53.8836347Z Current runner version: '2.337.0'
+2026-10-19T12:42:57.3435748Z Complete job name: ubuntu-24.04-x86_64 (CLI,Desktop), GHC: 9.6.3
+2026-10-19T12:47:35.3173131Z ##[group]Run i=1
+2026-10-19T12:47:35.3173444Z [36;1mi=1[0m
+2026-10-19T12:47:35.3173678Z [36;1mattempts=1[0m
+2026-10-19T12:47:35.3173930Z [36;1mfalse && attempts=3[0m
+2026-10-19T12:47:35.3174246Z [36;1mwhile [ "$i" -le "$attempts" ]; do[0m
+2026-10-19T12:47:35.3174593Z [36;1m  if ./simplex-chat-test; then[0m
+2026-10-19T12:47:35.3174892Z [36;1m    break[0m
+2026-10-19T12:47:35.3175120Z [36;1m  else[0m
+2026-10-19T12:47:35.3175385Z [36;1m    echo "Attempt $i failed, retrying..."[0m
+2026-10-19T12:47:35.3175723Z [36;1m    i=$((i + 1))[0m
+2026-10-19T12:47:35.3175978Z [36;1m    sleep 1[0m
+2026-10-19T12:47:35.3176222Z [36;1m  fi[0m
+2026-10-19T12:47:35.3176436Z [36;1mdone[0m
+2026-10-19T12:47:35.3176678Z [36;1mif [ "$i" -gt "$attempts" ]; then[0m
+2026-10-19T12:47:35.3177036Z [36;1m  echo "All "$attempts" attempts failed."[0m
+2026-10-19T12:47:35.3177349Z [36;1m  exit 1[0m
+2026-10-19T12:47:35.3177570Z [36;1mfi[0m
+2026-10-19T12:47:35.3237273Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T12:47:35.3237672Z env:
+2026-10-19T12:47:35.3237880Z   opt: O2
+2026-10-19T12:47:35.3238085Z   ghc_options: 
+2026-10-19T12:47:35.3238316Z   release: false
+2026-10-19T12:47:35.3238533Z   branch: master
+2026-10-19T12:47:35.3238745Z   cache_o0: true
+2026-10-19T12:47:35.3238963Z   release_branch: master
+2026-10-19T12:47:35.3239203Z   ZSTD_CLEVEL: 9
+2026-10-19T12:47:35.3239586Z   image_cache: ghcr.io/simplex-chat/simplex-chat-build-cache:24.04-x86_64-ghc9.6.3
+2026-10-19T12:47:35.3240438Z   source_hashes: dist-newstyle/sources.sha256
+2026-10-19T12:47:35.3240763Z ##[endgroup]
+2026-10-19T12:47:35.3750568Z 
+2026-10-19T12:47:35.3753798Z Schema dump
+2026-10-19T12:47:36.1888799Z [ERROR 2026-10-19 12:47:36 +0000 apps/simplex-badge-service/src/BadgeService/Service.hs:312] badge service: a request failed; the next one will be handled
+2026-10-19T12:47:36.2131599Z [WARN 2026-10-19 12:47:36 +0000 apps/simplex-badge-service/src/BadgeService/Config.hs:180] tests/tmp/badge-ini4487/badge_service.ini: nothing reads [legacy], so it was ignored
+2026-10-19T12:47:36.2160541Z   verify and overwrite schema dump [[32m✔[0m]
+2026-10-19T12:47:36.2194455Z [WARN 2026-10-19 12:47:36 +0000 apps/simplex-badge-service/src/BadgeService/Config.hs:180] tests/tmp/badge-ini4487/badge_service.ini: nothing reads issuer.default, so it was ignored
+2026-10-19T12:47:36.2211842Z [WARN 2026-10-19 12:47:36 +0000 apps/simplex-badge-service/src/BadgeService/Config.hs:180] tests/tmp/badge-ini4487/badge_service.ini: nothing reads issuer.key_1, so it was ignored
+2026-10-19T12:47:36.3237188Z [INFO 2026-10-19 12:47:36 +0000 apps/simplex-badge-service/src/BadgeService/Web/Server.hs:539] POST /api/invoice refused: no provider configured for SPMCard {provider = CPStripe}
+2026-10-19T12:47:36.3449482Z [INFO 2026-10-19 12:47:36 +0000 apps/simplex-badge-service/src/BadgeService/Web/Server.hs:539] POST /api/invoice refused: malformed body
+2026-10-19T12:47:36.3632054Z [INFO 2026-10-19 12:47:36 +0000 apps/simplex-badge-service/src/BadgeService/Web/Server.hs:339] badge service: exported the webapp to tests/tmp/badge-export4487/out
+2026-10-19T12:47:36.4253827Z [WARN 2026-10-19 12:47:36 +0000 apps/simplex-badge-service/src/BadgeService/Web/Server.hs:677] POST /webhooks/btcpay: no PPCrypto adapter is configured, so every delivery is refused
+2026-10-19T12:47:36.6215891Z SQLite3 returned ErrorError while attempting to perform prepare "SELECT i.invoice_id, i.provider, ci.provider_ref, bc.badge_type, bc.months, i.price, i.amount, i.currency, i.payment_url, i.payment_address, i.payment_crypto_currency, i.payment_crypto_amount, i.expires_at, i.status, i.created_at, p.amount, p.crypto_paid, p.crypto_due, p.paid_in_full, p.status, p.updated_at FROM sx_badge_service_invoices i JOIN sx_badge_service_badge_code_invoices ci ON ci.invoice_id = i.invoice_id JOIN sx_badge_service_badge_codes bc ON bc.badge_code_id = ci.badge_code_id LEFT JOIN sx_badge_service_payments p ON p.invoice_id = i.invoice_id WHERE i.invoice_id = ?": no such table: sx_badge_service_badge_code_invoices
+2026-10-19T12:47:36.7532542Z   verify .lint fkey-indexes [[32m✔[0m]
+2026-10-19T12:47:36.8122769Z [INFO 2026-10-19 12:47:36 +0000 apps/simplex-badge-service/src/BadgeService/Providers/BTCPay.hs:242] btcpay: store BqZKtkeSN9JgLLdCJRJfXQjLwCLDNCVLdxLTTdMzTHnT has enabled BTC-CHAIN, XMR-CHAIN
+2026-10-19T12:47:38.4667450Z down migration 20231113_group_forward
+2026-10-19T12:47:38.4713577Z [[IINNFFOO  22002266--[11I00N--F11O99   2110222::644-771::033-881  9++ 00100200:004  7aa:pp3pp8ss //+ss0ii0mm0pp0ll eeaxxp--pbbsaa/ddsggieem--pssleeerrxvv-iibccaeed//gsserr-ccs//eBBraavddiggceeeSS/eesrrrvvcii/ccBeea//dPPgrreooSvveiirddveeirrcsse///BBPTTrCCoPPvaaiyyd..ehhrsss::/22B44T22C]]P  abbytt.cchppsaa:yy2::4  2ss]tt oobrrteec  pBBaqqyZZ:KK ttskkteeoSSrNNe99 JJBggqLLZLLKddtCCkJJeRRSJJNff9XXJQQgjjLLLLwwdCCCLLJDDRNNJCCfVVXLLQddjxxLLLwTTCTTLddDMMNzzCTTVHHLnndTTx  LhhTaaTssd  MeeznnTaaHbbnllTee ddh  aBBsTT CCe--nCCaHHbAAlIIeNNd,,   BXXTMMCRR---CCCHHHAAAIIINNN,
+2026-10-19T12:47:38.4718033Z 
+2026-10-19T12:47:38.4718526Z  XMR-CHAIN
+2026-10-19T12:47:38.4751094Z [WARN 2026-10-19 12:47:38 +0000 apps/simplex-badge-service/src/BadgeService/Providers/BTCPay.hs:259] btcpay: the refused request was {"amount":"54.00","checkout":{"expirationMinutes":60,"paymentMethods":["BTC-CHAIN"],"paymentTolerance":0.5,"speedPolicy":"MediumSpeed"},"currency":"USD"} -- create invoice failed: HTTP 500 {"code":"Injected Failure","message":"the fake was told to fail this call"}
+2026-10-19T12:47:38.4834885Z [INFO 2026-10-19 12:47:38 +0000 apps/simplex-badge-service/src/BadgeService/Providers/BTCPay.hs:242] btcpay: store BqZKtkeSN9JgLLdCJRJfXQjLwCLDNCVLdxLTTdMzTHn[TI NhFaOs  2e0n2a6b[-lI1eN0dF- O1B 9T2 C01-22C6:H-4A17I0:N-3,18 9 X +M10R20-:0C40H7 A:aI3pN8p
+2026-10-19T12:47:38.4844221Z  s+/0s0i0m0p laepxp-sb/asdigmep-lseexr-vbiacdeg/es-rsce/rBvaidcgee/Sserrcv/iBcaed/gPerSoevrivdiecres//PBrToCvPiadye.rhss/:B2T4C2P]a yb.thcsp:a2y4:2 ]s tbotrcep aByq:Z KsttkoerSeN 9BJqgZLKLtdkCeJSRNJ9fJXgQLjLLdwCCJLRDJNfCXVQLjdLxwLCTLTDdNMCzVTLHdnxTL ThTadsM zeTnHanbTl ehda sB TeCn-aCbHlAeIdN ,B TXCM-RC-HCAHIANI,N 
+2026-10-19T12:47:38.4857350Z XMR-CHAIN
+2026-10-19T12:47:38.4904564Z [INFO 2026-10-19 12:47:38 +0000 apps/simplex-badge-service/src/BadgeService/Providers/BTCPay.hs:242] btcpay: store BqZKtkeSN9JgLLdCJRJfXQjLwCLDNCVLdxLTTdMzTHnT has enabled BTC-CHAIN, XMR-CHAIN
+2026-10-19T12:47:38.5063799Z [INFO 2026-10-19 12:47:38 +0000 apps/si[mIpNlFeOx- b2a0d2g6e--1s0e-r1v9i c1e2/:s4r7c:/3B8a d+g0e0S0[e0Ir NvaFipOcp es2//0Ps2ri6om-vp1il0de-ex1r-9sb /a1Bd2Tg:Ce4P-7as:ye3.r8hv si+:c02e04/02s0]r  cab/ptBpcaspd/agsyei:Sm epsrltveoixrc-eeb /aBPdqrgZoeKv-tiskdeeerSrvNsi9/cJBegT/LCsLPrdacCy/J.BRhaJsdf:gX2eQ4Sj2eL]rw vCbiLtcDceNp/CaPVyrL:od vxsiLtdToeTrrdesM /zBBTqTHZCnKPTta kyhe.aShsNs 9:eJ2ng4aL2bL]ld eCbdJt RcBJpTfaCXy-Q:Cj HLsAwtICoNLr,De N XCBMVqRLZ-dKCxtHLkATeITSNdN
+2026-10-19T12:47:38.5067676Z M9zJTgHLnLTd ChJaRsJ feXnQajbLlweCdL DBNTCCV-LCdHxALITNT,d MXzMTRH-nCTH AhIaNs
+2026-10-19T12:47:38.5068794Z  enabled BTC-CHAIN, XMR-CHAIN
+2026-10-19T12:47:48.6554788Z down migration 20261018_autoincrement_ids
+2026-10-19T12:47:48.7441683Z   verify schema down migrations [[32m✔[0m]
+2026-10-19T12:47:49.2239981Z   verify strict tables [[32m✔[0m]
+2026-10-19T12:47:49.3652427Z SimpleX badge service
+2026-10-19T12:47:49.3652667Z   badge service config
+2026-10-19T12:47:49.3652984Z     applies every documented default [[32m✔[0m]
+2026-10-19T12:47:49.3731927Z   badge service web
+2026-10-19T12:47:49.3735710Z     serves the built web app, exactly as it is shipped [[33m‐[0m]
+2026-10-19T12:47:49.3737105Z [33m      # PENDING: no web build at apps/simplex-badge-service/web/dist: run `npm run build` in apps/simplex-badge-service/web[0m
+2026-10-19T12:48:01.2961668Z SimpleX chat client
+2026-10-19T12:50:44.3555624Z   group tests
+2026-10-19T12:52:08.2990692Z     async group connections
+2026-10-19T12:52:08.2991893Z       create and join group when clients go offline [[33m‐[0m]
+2026-10-19T12:52:08.2993204Z [33m        # PENDING: No reason given[0m
+2026-10-19T12:52:08.2993912Z     group links
+2026-10-19T12:52:08.2994639Z       create group link, join via group link [[32m✔[0m]
+2026-10-19T13:05:34.3822650Z SimpleX Broadcast bot
+2026-10-19T13:05:34.3823482Z   should broadcast message [[33m‐[0m]
+2026-10-19T13:05:34.3824087Z [33m    # PENDING: No reason given[0m
+2026-10-19T13:05:34.3824611Z SimpleX Directory service bot
+2026-10-19T13:05:34.3825157Z   should register group [[32m✔[0m]
+2026-10-19T13:05:36.5924463Z Save query plans
+2026-10-19T13:05:36.6944383Z   verify and overwrite query plans [[33m‐[0m]
+2026-10-19T13:05:36.6945120Z [33m    # PENDING: No reason given[0m
+2026-10-19T13:05:36.6945471Z 
+2026-10-19T13:05:36.6945622Z Failures:
+2026-10-19T13:05:36.6945813Z 
+2026-10-19T13:05:36.6946203Z [36m  tests/ChatTests/Groups.hs:222:26: [0m
+2026-10-19T13:05:36.6947098Z   1) SimpleX chat client, group tests, group history, quoted messages
+2026-10-19T13:05:36.6954527Z [31m       [((1,"chat banner"),Nothing),((0,"ALICE"),Nothing),((0,"BOB"),Nothing),((0,"1"),Just (0,"ALICE")),((0,"2"),Just (0,"BOB")),((0,"3"),Just (0,"ALICE")),((0,"This conversation is protected by end-to-end encryption with perfect forward secrecy, repudiation and break-in recovery."),Nothing),((0,"Disappearing messages: off"),Nothing),((0,"Direct messages: on"),Nothing),((0,"Full deletion: off"),Nothing),((0,"Message reactions: on"),Nothing),((0,"Voice messages: on"),Nothing),((0,"Files and media: on"),Nothing),((0,"SimpleX links: on"),Nothing),((0,"Member reports: on"),Nothing),((0,"Recent history: on"),Nothing),((0,"Chat with admins: on"),Nothing),((0,"connected"),Nothing),((0,"4"),Just (0,"BOB")),((0,"connected"),Nothing)] does not contain [((0,"ALICE"),Nothing),((0,"BOB"),Nothing),((0,"1"),Just (0,"ALICE")),((0,"2"),Just (0,"BOB")),((0,"3"),Just (0,"ALICE")),((0,"4"),Just (0,"BOB"))][0m
+2026-10-19T13:05:36.6959108Z 
+2026-10-19T13:05:36.6959594Z   To rerun use: --match "/SimpleX chat client/group tests/group history/quoted messages/" --seed 771370732
+2026-10-19T13:05:36.6960580Z 
+2026-10-19T13:05:36.6960757Z Randomized with seed 771370732
+2026-10-19T13:05:36.6960998Z 
+2026-10-19T13:05:36.6961142Z Finished in 1081.3553 seconds
+2026-10-19T13:05:36.6961720Z [31m1731 examples, 1 failure, 46 pending[0m
+2026-10-19T13:05:37.2662425Z Attempt 1 failed, retrying...
+2026-10-19T13:05:38.2701605Z All 1 attempts failed.
+2026-10-19T13:05:38.2703198Z [0;0m
+2026-10-19T13:05:38.2743971Z ##[error]Process completed with exit code 1.
+2026-10-19T13:05:38.2857979Z ##[group]Run find dist-newstyle -mindepth 1 -maxdepth 1 ! -name src -exec rm -rf {} +
+2026-10-19T13:05:38.2858661Z [36;1mfind dist-newstyle -mindepth 1 -maxdepth 1 ! -name src -exec rm -rf {} +[0m
+2026-10-19T13:05:38.2913529Z shell: /usr/bin/docker exec -t builder sh -eu {0}
+2026-10-19T13:05:38.2913874Z env:
