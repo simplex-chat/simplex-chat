@@ -771,14 +771,7 @@ fileprivate struct SupporterBadgeWhatsNew: View {
                     .onTapGesture { openBadgesView() }
             }
         }
-        .padding(.trailing, 96)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(alignment: .topTrailing) {
-            Image("badge-supporter")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 72, height: 72)
-        }
     }
 }
 

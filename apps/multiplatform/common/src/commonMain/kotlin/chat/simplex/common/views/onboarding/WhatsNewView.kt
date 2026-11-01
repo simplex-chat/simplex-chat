@@ -1027,51 +1027,43 @@ private val versionDescriptions: List<VersionDescription> = listOf(
 
 @Composable
 private fun SupporterBadgeWhatsNew(modalManager: ModalManager) {
-  Row(Modifier.padding(bottom = 12.dp).fillMaxWidth()) {
-    Column(Modifier.weight(1f)) {
-      Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.padding(bottom = 4.dp)
-      ) {
-        Image(painterResource(MR.images.badge_supporter), stringResource(MR.strings.v7_1_supporter_badge_title), Modifier.size(24.dp))
-        Text(
-          stringResource(MR.strings.v7_1_supporter_badge_title),
-          style = MaterialTheme.typography.h4,
-          fontWeight = FontWeight.Medium,
-          modifier = Modifier.padding(bottom = 6.dp)
-        )
-      }
+  Column(Modifier.padding(bottom = 12.dp)) {
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      modifier = Modifier.padding(bottom = 4.dp)
+    ) {
+      Image(painterResource(MR.images.badge_supporter), stringResource(MR.strings.v7_1_supporter_badge_title), Modifier.size(24.dp))
       Text(
-        stringResource(MR.strings.v7_1_supporter_badge_descr),
-        fontSize = 15.sp,
-        maxLines = 10
+        stringResource(MR.strings.v7_1_supporter_badge_title),
+        style = MaterialTheme.typography.h4,
+        fontWeight = FontWeight.Medium,
+        modifier = Modifier.padding(bottom = 6.dp)
       )
-      if (currentShownBadge() != null) {
-        Text(stringResource(MR.strings.v7_1_supporter_badge_have), Modifier.padding(top = 6.dp), fontSize = 15.sp)
-      } else if (noShownBadge()) {
-        Text(
-          stringResource(MR.strings.v7_1_supporter_badge_get),
-          color = MaterialTheme.colors.primary,
-          fontSize = 15.sp,
-          modifier = Modifier
-            .padding(top = 6.dp)
-            .pointerHoverIcon(PointerIcon.Hand)
-            .clickable(
-              interactionSource = remember { MutableInteractionSource() },
-              indication = null
-            ) {
-              modalManager.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(modalManager, close) }
-            }
-        )
-      }
     }
-    Image(
-      painterResource(MR.images.badge_supporter),
-      contentDescription = null,
-      contentScale = ContentScale.Fit,
-      modifier = Modifier.padding(start = 24.dp).size(72.dp)
+    Text(
+      stringResource(MR.strings.v7_1_supporter_badge_descr),
+      fontSize = 15.sp,
+      maxLines = 10
     )
+    if (currentShownBadge() != null) {
+      Text(stringResource(MR.strings.v7_1_supporter_badge_have), Modifier.padding(top = 6.dp), fontSize = 15.sp)
+    } else if (noShownBadge()) {
+      Text(
+        stringResource(MR.strings.v7_1_supporter_badge_get),
+        color = MaterialTheme.colors.primary,
+        fontSize = 15.sp,
+        modifier = Modifier
+          .padding(top = 6.dp)
+          .pointerHoverIcon(PointerIcon.Hand)
+          .clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null
+          ) {
+            modalManager.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(modalManager, close) }
+          }
+      )
+    }
   }
 }
 
