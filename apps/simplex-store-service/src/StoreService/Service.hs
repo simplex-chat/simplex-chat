@@ -38,9 +38,11 @@ where
 
 import StoreService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
 import StoreService.Codes (issueFailedText, issueOneCode, singleUse)
-import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), PlayStoreConfig (..), ServiceConfig (..), readServiceConfig)
+import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), PlayStoreConfig (..), ServiceConfig (..), minNameYears, readServiceConfig)
 import StoreService.Group (GroupEvent, ensureManagedGroup, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
-import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, textTokenP)
+import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, maxNameYears, nameCodeP, prepaidCodeP, textTokenP)
+import StoreService.Names.Codes (issueNameCode, revokeNameCode)
+import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Options
 import StoreService.Poller (newPollerEnv, newReadHints, runPoller)
 import StoreService.Providers.BTCPay (btcpayProvider)
@@ -196,6 +198,8 @@ storeService :: StoreServiceOpts -> Maybe ServiceConfig -> ChatConfig -> Service
 storeService opts serviceCfg cfg env = do
   key <- requireIssuerKey opts serviceCfg cfg
   waiters <- newWaiters
+  -- The hooks' //revoke takes a prepaid code's turn, so the turns exist before the chat starts.
+  turns <- newTurns
   requestEnv <- configureStoreVerifier serviceCfg env
   let groupCfg = serviceCfg >>= \ServiceConfig {group} -> group
       trackerQ_ = groupEventQ env <$ groupCfg
@@ -210,13 +214,13 @@ storeService opts serviceCfg cfg env = do
       startLanes cc = do
         lanes <- maybe (pure []) (serviceLanes waiters cc) serviceCfg
         -- The group is resolved before the other lanes start, so a failed lookup exits at once rather than waiting for them to end.
-        groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc (groupEventQ env) <$> ensureManagedGroup cc gc
+        groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc turns (groupEventQ env) <$> ensureManagedGroup cc gc
         raceAny_ $ processQueuedRequests key trackerQ_ requestEnv : maybeToList groupLane_ <> lanes
       chatHooks =
         defaultChatHooks
           { preStartHook = Just $ badgePreStartHook opts,
             postStartHook = Just $ badgePostStartHook opts env,
-            preCmdHook = Just badgeCmdHook
+            preCmdHook = Just $ badgeCmdHook turns
           }
   -- The reader runs from the start and must not block, since outputQ carries every chat event and a full queue stalls the core.
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc -> raceAny_ [readEvents cc, startLanes cc]
@@ -247,6 +251,8 @@ storeServiceCLI :: StoreServiceOpts -> Maybe ServiceConfig -> IO ()
 storeServiceCLI opts serviceCfg = do
   key <- requireIssuerKey opts serviceCfg terminalChatConfig
   env <- newServiceState >>= configureStoreVerifier serviceCfg
+  -- This mode runs no names lanes, so only its own //revoke takes these turns.
+  turns <- newTurns
   let eventHook _cc = \case
         Right (CEvtServiceRequest u reqId sigKey reqData) -> do
           atomically $ writeTQueue (serviceRequestQ env) (u, reqId, sigKey, reqData)
@@ -256,7 +262,7 @@ storeServiceCLI opts serviceCfg = do
         defaultChatHooks
           { preStartHook = Just $ badgePreStartHook opts,
             postStartHook = Just $ badgePostStartHook opts env,
-            preCmdHook = Just badgeCmdHook,
+            preCmdHook = Just $ badgeCmdHook turns,
             eventHook = Just eventHook
           }
   raceAny_
@@ -270,25 +276,46 @@ shownServiceRequest reqData = case KM.lookup "request" reqData of
   Just (J.Object cmd) | Just t <- KM.lookup "type" cmd -> KM.singleton "request" $ J.object ["type" J..= t]
   _ -> KM.empty
 
-badgeCmdHook :: ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
-badgeCmdHook cc = \case
-  CustomChatCommand cmd -> Left <$> runBadgeCmd cc cmd
+badgeCmdHook :: Turns -> ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
+badgeCmdHook turns cc = \case
+  CustomChatCommand cmd -> Left <$> runBadgeCmd turns cc cmd
   cmd -> pure $ Right cmd
 
-runBadgeCmd :: ChatController -> ByteString -> IO (Either ChatError ChatResponse)
-runBadgeCmd cc cmd
+runBadgeCmd :: Turns -> ChatController -> ByteString -> IO (Either ChatError ChatResponse)
+runBadgeCmd turns cc cmd
   | Right issueOpts <- A.parseOnly issueCmdP cmd =
-      issueBadgeCode cc issueOpts >>= \case
-        Right code -> pure $ Right CRCustomChatResponse {user_ = Nothing, response = "Code: " <> formatBadgeCode code}
-        Left _ -> pure $ chatCmdError (T.unpack issueFailedText)
-  | Right code <- A.parseOnly revokeCmdP cmd =
-      revokeWithTracker cc code <&> \case
-        Right response -> Right CRCustomChatResponse {user_ = Nothing, response}
-        Left e -> chatCmdError (T.unpack e)
-  | otherwise = pure $ chatCmdError $ "Usage: //issue supporter|legend|investor [months 1-" <> show maxMonths <> "] [paid|unpaid|free], or //revoke <code>"
+      issuedReply formatBadgeCode <$> issueBadgeCode cc issueOpts
+  | Right (len, years, paymentStatus) <- A.parseOnly issueNameCmdP cmd =
+      issuedReply (formatNameCode . NCPrepaid) <$> issueNameCode cc len years paymentStatus
+  | Right code <- A.parseOnly revokeCmdP cmd = textReply <$> revokeWithTracker cc code
+  | Right code <- A.parseOnly revokeNameCmdP cmd = textReply <$> revokeNameCode turns cc code
+  | otherwise =
+      pure $ chatCmdError $
+        "Usage: //issue supporter|legend|investor [months 1-" <> show maxMonths <> "] [paid|unpaid|free], //issue name <length "
+          <> show minNameLength <> "-" <> show maxNameLength <> "> [years " <> show minNameYears <> "-" <> show maxNameYears
+          <> "] [paid|unpaid|free], or //revoke <code>"
+  where
+    issuedReply :: (c -> T.Text) -> Either String c -> Either ChatError ChatResponse
+    issuedReply format = \case
+      Right code -> Right CRCustomChatResponse {user_ = Nothing, response = "Code: " <> format code}
+      Left _ -> chatCmdError (T.unpack issueFailedText)
+    textReply = \case
+      Right response -> Right CRCustomChatResponse {user_ = Nothing, response}
+      Left e -> chatCmdError (T.unpack e)
 
 revokeCmdP :: A.Parser BadgeCode
 revokeCmdP = "revoke " *> codeP <* (A.skipSpace *> A.endOfInput)
+
+revokeNameCmdP :: A.Parser NamePrepaidCode
+revokeNameCmdP = "revoke " *> prepaidCodeP <* (A.skipSpace *> A.endOfInput)
+
+issueNameCmdP :: A.Parser (Int, Int, BadgeCodePaymentStatus)
+issueNameCmdP = do
+  (len, years) <- "issue " *> nameCodeP
+  paymentStatus <- fromMaybe CPSFree <$> optional (A.space *> textTokenP)
+  A.skipSpace
+  A.endOfInput
+  pure (len, years, paymentStatus)
 
 issueCmdP :: A.Parser IssueCodeOpts
 issueCmdP =
