@@ -725,8 +725,13 @@ webSettings :: ListenerConfig -> Warp.Settings
 webSettings ListenerConfig {lHost, lPort} =
   Warp.setHost (fromString (T.unpack lHost))
     . Warp.setPort lPort
+    . Warp.setOnException logRequestException
     . Warp.setOnExceptionResponse (const internalError)
     $ Warp.defaultSettings
+
+-- | Warp's default writes the text and its newline apart, splitting a record another thread logs between them.
+logRequestException :: Maybe Request -> E.SomeException -> IO ()
+logRequestException _ e = when (Warp.defaultShouldDisplayException e) $ logError ("store service: a web request failed: " <> tshow e)
 
 runWebListener :: WebEnv -> IO ()
 runWebListener env = do
