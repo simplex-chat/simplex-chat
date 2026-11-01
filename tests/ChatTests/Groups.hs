@@ -39,7 +39,7 @@ import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XFile, XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -100,6 +100,7 @@ chatGroupTests = do
     it "update group profile" testUpdateGroupProfile
     it "update member role" testUpdateMemberRole
     it "check owner role change" testOwnerRoleChange
+    it "observer cannot post file with legacy x.file" testGroupObserverLegacyFile
     it "group description is shown as the first message to new members" testGroupDescription
     it "moderate message of another group member" testGroupModerate
     it "moderate own message (should process as deletion)" testGroupModerateOwn
@@ -1761,6 +1762,17 @@ testOwnerRoleChange =
                "bob (Bob): admin, you, connected",
                "cath (Catherine): admin, connected"
              ]
+
+testGroupObserverLegacyFile :: HasCallStack => TestParams -> IO ()
+testGroupObserverLegacyFile =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2' "team" alice (bob, GRObserver) True
+      connId <- relayConnIdToMember bob "alice"
+      let fInv = FileInvitation {fileName = "test.txt", fileSize = 1, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}
+      agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XFile fInv)
+      alice <##. "error: unsupported message: XFile"
+      alice #$> ("/_get chat #1 count=1", chat, [(0, "connected")])
 
 testGroupDescription :: HasCallStack => TestParams -> IO ()
 testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
