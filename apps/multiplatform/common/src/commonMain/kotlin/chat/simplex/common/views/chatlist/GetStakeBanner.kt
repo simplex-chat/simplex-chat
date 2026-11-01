@@ -73,8 +73,8 @@ fun GetStakeBanner(showDismiss: Boolean, onTap: () -> Unit, onDismiss: () -> Uni
 
 fun openGetStake(modalManager: ModalManager) {
   appPrefs.getStakeBannerTapped.set(true)
-  modalManager.showModalCloseable(cardScreen = true) { close ->
-    GetStakeView(inCenterOfWindow = modalManager === ModalManager.center, close = close)
+  modalManager.showModal(cardScreen = true) {
+    GetStakeView(inCenterOfWindow = modalManager === ModalManager.center)
   }
 }
 

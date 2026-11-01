@@ -59,6 +59,7 @@ import chat.simplex.common.views.badges.BadgesView
 import chat.simplex.common.views.badges.currentShownBadge
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.newchat.noShownBadge
 import chat.simplex.common.views.usersettings.UserAddressView
 import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
 import chat.simplex.common.views.usersettings.showAddShortLinkAlert
@@ -1049,7 +1050,7 @@ private fun SupporterBadgeWhatsNew(modalManager: ModalManager) {
       )
       if (currentShownBadge() != null) {
         Text(stringResource(MR.strings.v7_1_supporter_badge_have), Modifier.padding(top = 6.dp), fontSize = 15.sp)
-      } else {
+      } else if (noShownBadge()) {
         Text(
           stringResource(MR.strings.v7_1_supporter_badge_get),
           color = MaterialTheme.colors.primary,
@@ -1104,11 +1105,7 @@ fun shouldShowWhatsNew(m: ChatModel): Boolean {
   return v != lastVersion
 }
 
-private const val WEFUNDER_URL = "https://wefunder.com/simplex.chat?utm_source=app"
-
-private val WHATS_NEW_WEFUNDER_URL = "https://wefunder.com/simplex.chat?utm_source=$APP_UTM_SOURCE"
-
-private const val CROWDFUNDING_CONTACT_URI = "simplex:/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo?h=smp11.simplex.im"
+private val WEFUNDER_URL = "https://wefunder.com/simplex.chat?utm_source=$APP_UTM_SOURCE"
 
 // the center modal takes the remaining width of the window, so the image is limited to its design width
 private val MAX_CROWDFUNDING_IMAGE_WIDTH = DEFAULT_MIN_CENTER_MODAL_WIDTH
@@ -1158,7 +1155,7 @@ fun isInUs(): Boolean =
 private fun InvestInSimpleXChatView() {
   if (!crowdfundingAvailable()) return
   val uriHandler = LocalUriHandler.current
-  val openWefunder = { uriHandler.openUriCatching(WHATS_NEW_WEFUNDER_URL) }
+  val openWefunder = { uriHandler.openUriCatching(WEFUNDER_URL) }
   Column(modifier = Modifier.padding(bottom = 12.dp)) {
     Text(
       generalGetString(MR.strings.v7_1_invest),
@@ -1237,9 +1234,8 @@ private val getStakeSlides: List<CrowdfundingSlide> = listOf(
 )
 
 @Composable
-fun GetStakeView(inCenterOfWindow: Boolean = false, close: () -> Unit) {
+fun GetStakeView(inCenterOfWindow: Boolean = false) {
   val uriHandler = LocalUriHandler.current
-  val stopped = chatModel.chatRunning.value == false
 
   @Composable
   fun slideImage(slide: CrowdfundingSlide) {
@@ -1298,15 +1294,7 @@ fun GetStakeView(inCenterOfWindow: Boolean = false, close: () -> Unit) {
         onboarding = null,
         onclick = { uriHandler.openUriCatching(WEFUNDER_URL) }
       )
-      if (!chatModel.desktopNoUserNoRemote) {
-        TextButtonBelowOnboardingButton(
-          "or ask SimpleX team",
-          onClick = if (stopped) null else ({
-            close()
-            uriHandler.openVerifiedSimplexUri(CROWDFUNDING_CONTACT_URI)
-          })
-        )
-      }
+      TextButtonBelowOnboardingButton("", null)
     }
   }
 }

@@ -3357,11 +3357,11 @@
   <string name="v7_1_invest" translatable="false">Own a part of SimpleX Chat! 🚀</string>
   <string name="v7_1_invest_descr" translatable="false">192 people have already invested.</string>
   <string name="v7_1_invest_learn_more" translatable="false">Learn more on Wefunder.</string>
-  <string name="v7_1_supporter_badge_title">Supporter badges 🚀</string>
+  <string name="v7_1_supporter_badge_title">Supporter badges</string>
   <string name="v7_1_supporter_badge_body">Send larger files\navailable for longer.</string>
   <string name="v7_1_supporter_badge_descr">Larger files available for longer.</string>
   <string name="v7_1_supporter_badge_get">Support SimpleX and get a badge.</string>
-  <string name="v7_1_supporter_badge_have">You already have the badge!</string>
+  <string name="v7_1_supporter_badge_have">You already have a badge!</string>
   <string name="v7_1_simplex_names">SimpleX public names</string>
   <string name="v7_1_simplex_names_descr">Sale starts on December 12.</string>
   <string name="v7_1_channels">Safer channels</string>
