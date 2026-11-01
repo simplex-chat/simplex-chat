@@ -54,6 +54,7 @@ import Database.PostgreSQL.Simple (Only (..))
 #else
 import Database.SQLite.Simple (Only (..), Query (..))
 import Simplex.Chat.Options.DB
+import Simplex.Messaging.Agent.Store.Common (withConnection)
 #endif
 
 chatDirectTests :: SpecWith TestParams
@@ -1977,11 +1978,12 @@ testMuteGroup =
 
 #if !defined(dbPostgres)
 testUsersUnreadCountQueryPlans :: HasCallStack => TestParams -> IO ()
-testUsersUnreadCountQueryPlans ps@TestParams {chatQueryStats} =
+testUsersUnreadCountQueryPlans ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
     alice ##> "/users"
     alice <## "alice (Alice) (active)"
-    unreadCountQueries <- filter isUnreadCountQuery . M.keys <$> readTVarIO chatQueryStats
+    executedQueries <- withConnection (chatStore $ chatController alice) $ readTVarIO . DB.slow
+    let unreadCountQueries = filter isUnreadCountQuery $ M.keys executedQueries
     plans <- withCCTransaction alice $ \db -> mapM (queryPlan db) unreadCountQueries
     plans
       `shouldBe` [ [ "SEARCH i USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)",

@@ -23,7 +23,7 @@ Down migration: the index on `(user_id, item_status)`.
 
 Both counts read only the profile's unread items: `SEARCH i USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)`. The query texts are unchanged.
 
-Test `testUsersUnreadCountQueryPlans` (`tests/ChatTests/Direct.hs`, SQLite): runs `/users` and checks the plans of the two executed count queries.
+Test `testUsersUnreadCountQueryPlans` (`tests/ChatTests/Direct.hs`, SQLite): runs `/users` and checks the plans of the two count queries recorded on alice's connection.
 
 ## Scope
 
