@@ -467,6 +467,8 @@ The command is sent to the running service in `--run-cli` mode, not a way to sta
 ```
 //issue <badge_type> [months] [paid|unpaid|free]
 //issue supporter 12
+//issue name <length> [years <Y>] [paid|unpaid|free]
+//issue name 7 years 5
 ```
 
 `months` defaults to 1 and must be between 1 and 255; the status defaults to `free` and records
@@ -474,10 +476,13 @@ whether the code was sold (`paid`), is awaiting payment (`unpaid`), or was issue
 (`free`). Redemption refuses an `unpaid` code with `payment_pending`: the web checkout writes the
 code row when the invoice is created, and settlement is what marks it paid.
 
+`//issue name` makes a prepaid name code (`SN<length>-…`): it pays for one name of at least
+`<length>` letters, 6 to 63, for `years` years, 2 to 10 (default 2). The status is as above.
+
 The code is printed once and only its `SHA-256` is stored, so a code that is not copied when it is
 shown cannot be recovered.
 
-A code that leaked, or that was refunded, is withdrawn the same way:
+A code that leaked, or that was refunded, is withdrawn the same way, badge and name codes alike:
 
 ```
 //revoke <code>
@@ -496,10 +501,23 @@ why issuing codes lives in the service rather than in core.
 ### From the group
 
 With `[group]` in `store_service.ini`, the service manages one group and serves three commands in
-it: `/issue <type> [months <M>] [uses <N>]` and `/bulk <type> [months <M>] count <B>` for moderators
-and above, `/revoke <code>` for admins and owners. `months` is 1 to 255, `uses` 1 to 1000 and
-`count` 1 to 100; a value outside these gets the usage reply. A member's role is checked as the
-service last saw it, so a command sent by a moderator just demoted or removed can still run if it
+it: `/issue` and `/bulk` for moderators and above, `/revoke <code>` for admins and owners. Both
+code commands take every kind of code in one form:
+
+```
+/issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]
+/bulk <kind> [<length>] [years <Y> | months <M>] count <N>
+```
+
+`/issue` makes one code and `/bulk` makes `<N>` single-use codes of the kind. `<kind>` is `name`
+with a length, or a badge type: `supporter`, `legend` or `investor`. A name takes `years`, with the
+bounds of `//issue name` (length 6 to 63, years 2 to 10, 2 by default); a name code issued in the
+group is single-use and `free`. A badge takes `months`, 1 to 255 and 1 by default, and in `/issue`
+also `uses`, 1 to 1000. `count` is 1 to 100. A value outside these bounds, a length for a badge, or
+the other kind's unit gets the usage reply, which lists the form, each kind's bounds and an example
+of each. The group's command menu shows every kind in each command's hint and fills the hint into
+the message box. `/revoke` takes badge and name codes. A member's role
+is checked as the service last saw it, so a command sent by a moderator just demoted or removed can still run if it
 reaches the service first; revoke any code the service posts for them after the change. `uses`
 above 1 makes a multi-use code, tracked by a group message showing its remaining uses and the time
 of the last one; when every use is redeemed, the same message says so. Every reply carrying a code is read by every member,
