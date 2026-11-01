@@ -21,7 +21,9 @@ schemaMigrations =
     ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
     ("20260925_badge_store_receipts", m20260925_badge_store_receipts, Just down_m20260925_badge_store_receipts),
     ("20261012_badge_subscriptions", m20261012_badge_subscriptions, Just down_m20261012_badge_subscriptions),
-    ("20261013_names", m20261013_names, Just down_m20261013_names)
+    ("20261013_names", m20261013_names, Just down_m20261013_names),
+    ("20261022_drop_taken_codes", m20261022_drop_taken_codes, Just down_m20261022_drop_taken_codes),
+    ("20261023_name_terms", m20261023_name_terms, Just down_m20261023_name_terms)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -448,6 +450,46 @@ ALTER TABLE @name_prepaid_codes DROP COLUMN reserved_by;
 DROP TABLE @name_registrations;
 
 DROP TABLE @name_prepaid_codes;
+|]
+
+-- A code_issued order's worth went into its code, which stays a valid prepaid code, so it ends taken with nothing left.
+m20261022_drop_taken_codes :: Text
+m20261022_drop_taken_codes =
+  withPrefix
+    servicePrefix
+    [r|
+UPDATE @name_registrations SET version = version + 1, phase = 'taken', price = 0, live = 0 WHERE phase = 'code_issued';
+
+DROP INDEX @idx_name_registrations_issued_code;
+
+ALTER TABLE @name_registrations DROP COLUMN issued_code_id;
+|]
+
+down_m20261022_drop_taken_codes :: Text
+down_m20261022_drop_taken_codes =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @name_registrations ADD COLUMN issued_code_id BIGINT REFERENCES @name_prepaid_codes;
+
+CREATE INDEX @idx_name_registrations_issued_code ON @name_registrations(issued_code_id);
+|]
+
+-- The terms an order signed; '' for an order stored before orders signed them.
+m20261023_name_terms :: Text
+m20261023_name_terms =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @name_registrations ADD COLUMN agreed_terms TEXT NOT NULL DEFAULT '';
+|]
+
+down_m20261023_name_terms :: Text
+down_m20261023_name_terms =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @name_registrations DROP COLUMN agreed_terms;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.

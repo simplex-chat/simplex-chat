@@ -20,14 +20,17 @@ import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived, queryString)
 import Simplex.Chat.Badges.Code (maxNameLength, minNameLength)
+import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Log (logWarn)
 import StoreService.Names.Abi (bytes32FromHex)
+import StoreService.Names.Community (communityJSON, termsJSON)
 import StoreService.Names.Contracts
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
+import StoreService.Names.Store (isLabelRegistering)
 import StoreService.Names.View (addressText, tldText)
 import StoreService.Web.Http (Respond, badRequest, invalidLink, invalidName, jsonResponse, maxBodyBytes, providerUnavailable, readBoundedBody)
 import System.Timeout (timeout)
@@ -35,24 +38,29 @@ import Text.Read (readMaybe)
 
 data Found
   = FAvailable Int
+  | -- | the chain says available while a registration here has its register sent, not mined
+    FRegistering
   | FReserved
   | FRegistered RegisteredName (Maybe NameRecords)
 
 -- | The chain reads of one search share one deadline, so a node that answers slowly fails the search once.
-searchHandler :: NamesConfig -> Contracts -> Profiles -> Text -> Request -> Respond -> IO ResponseReceived
-searchHandler cfg@NamesConfig {nYears} ct ps hashText req respond = case LabelHash <$> bytes32FromHex hashText of
+searchHandler :: NamesConfig -> DBStore -> Contracts -> Profiles -> Text -> Request -> Respond -> IO ResponseReceived
+searchHandler cfg@NamesConfig {nYears} st ct ps hashText req respond = case LabelHash <$> bytes32FromHex hashText of
   Nothing -> respond badRequest
   Just lh -> case queryLength req of
     Nothing -> respond invalidName
-    Just len ->
-      timeout (ctDeadline ct) (runExceptT $ found lh len) >>= \case
-        Just (Right f) -> respond =<< searchAnswer cfg ps f
+    Just len -> do
+      registering <- withTransaction st (`isLabelRegistering` lh)
+      timeout (ctDeadline ct) (runExceptT $ found lh len registering) >>= \case
+        Just (Right f) -> respond =<< searchAnswer cfg ps lh f
         Just (Left e) -> unavailable $ tshow e
         Nothing -> unavailable "timed out"
   where
-    found lh len =
+    found lh len registering =
       ExceptT (nameStatus ct lh) >>= \case
-        NSAvailable -> FAvailable <$> ExceptT (chainPriceCents ct len nYears)
+        NSAvailable
+          | registering -> pure FRegistering
+          | otherwise -> FAvailable <$> ExceptT (chainPriceCents ct len nYears)
         NSReserved -> pure FReserved
         NSRegistered name -> FRegistered name <$> ExceptT (nameRecords ct lh name)
     unavailable :: Text -> IO ResponseReceived
@@ -69,24 +77,26 @@ queryLength req = case join $ lookup "length" $ queryString req of
       | n >= toInteger minNameLength && n <= toInteger maxNameLength = Just $ fromInteger n
       | otherwise = Nothing
 
-searchAnswer :: NamesConfig -> Profiles -> Found -> IO Response
-searchAnswer NamesConfig {nTLD, nYears, nTermStart, nChain = ChainConfig {cChainId, cResolver, cSponsor}} ps = \case
+searchAnswer :: NamesConfig -> Profiles -> LabelHash -> Found -> IO Response
+searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nChain = ChainConfig {cChainId, cResolver, cSponsor}} ps lh = \case
   FAvailable price ->
     ok $
       ["status" .= ("available" :: Text), "price" .= price, "currency" .= ("usd" :: Text), "years" .= nYears, "termStart" .= termStart]
         <> ["resolver" .= addressText cResolver, "sponsor" .= addressText cSponsor]
         <> chain
+        <> ["terms" .= termsJSON cfg]
+  FRegistering -> ok ["status" .= ("registered" :: Text), "entities" .= ([] :: [Entity]), "tld" .= tldText nTLD]
   FReserved -> ok ["status" .= ("reserved" :: Text)]
   FRegistered RegisteredName {rnOwner, rnResolver, rnExpiresAt, rnGracePeriod} records_ -> do
     entities <- maybe (pure []) (recordEntities ps) records_
     ok $
       ["status" .= ("registered" :: Text), "entities" .= entities, "records" .= (recordsJSON <$> records_)]
-        <> ["owner" .= addressText rnOwner, "resolver" .= addressText rnResolver]
+        <> ["owner" .= addressText rnOwner, "resolver" .= addressText rnResolver, "recordsNonce" .= (rdNonce <$> records_)]
         <> ["expiresAt" .= rnExpiresAt, "gracePeriod" .= rnGracePeriod]
         <> chain
   where
     ok :: [JT.Pair] -> IO Response
-    ok fields = pure $ jsonResponse status200 $ J.object fields
+    ok fields = pure $ jsonResponse status200 $ J.object $ fields <> ["community" .= communityJSON cfg lh]
     chain = ["chainId" .= cChainId, "tld" .= tldText nTLD]
     termStart = floor (utcTimeToPOSIXSeconds nTermStart) :: Integer
     recordsJSON NameRecords {rdContact, rdChannel} = J.object ["contact" .= rdContact, "channel" .= rdChannel]

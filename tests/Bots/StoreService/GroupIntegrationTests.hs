@@ -13,15 +13,17 @@ module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, name
 import StoreService.Config (BadgeIssuerKey (..), GroupConfig (..))
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup)
 import StoreService.Group.Command (maxUses)
-import StoreService.Names.Codes (issueNameCode, revokeNameCode)
-import StoreService.Names.Store (PrepaidCode (..), getPrepaidCode)
+import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
+import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Store (PrepaidCode (..), getPrepaidCode, spendPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Options (StoreServiceOpts (..))
-import StoreService.Service (ServiceState (..), storeService, newServiceState)
+import StoreService.Service (ServiceState (..), newServiceState, storeService)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx)
 import Bots.StoreService.ConfigTests (chainSection, namesSection)
 import Bots.StoreService.NamesSearchTests (aliceHex)
+import Bots.StoreService.NamesStoreTests (order, ownerA, placeCode, placePaid)
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
@@ -32,6 +34,8 @@ import Control.Concurrent.STM (TQueue, atomically, newTQueueIO, orElse, readTMVa
 import Control.Exception (IOException, bracket, catch, finally, throwIO, try)
 import Control.Monad (forM_, guard, mfilter, replicateM_, unless, void, when)
 import qualified Data.Aeson as J
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as LB
 import Data.Either (isLeft, isRight)
 import Data.Int (Int64)
 import Data.List (isInfixOf)
@@ -44,7 +48,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
-import Network.HTTP.Client (defaultManagerSettings, httpLbs, newManager, parseRequest, responseBody, responseStatus)
+import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, responseBody, responseHeaders, responseStatus)
 import Network.HTTP.Types.Status (statusCode)
 import Network.Socket (Family (..), SockAddr (..), SocketType (..), close, connect, defaultProtocol, socket, tupleToHostAddress)
 import Network.Wai.Handler.Warp (openFreePort)
@@ -134,7 +138,8 @@ badgeGroupIntegrationTests = do
 
 namesBootTests :: SpecWith TestParams
 namesBootTests = do
-  it "boots with [names] and [chain], routing a search, and a path no route knows to 404" testNamesBoot
+  it "boots codes-only, refusing paid name orders 403 codes_only and answering code orders and code checks, the badges shell as built" testNamesBootCodesOnly
+  it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, registrations to GET, a path no route knows and a taken order's code to 404, and code checks and orders under one limit" testNamesBoot
 
 testNamesBoot :: HasCallStack => TestParams -> IO ()
 testNamesBoot ps = do
@@ -148,21 +153,58 @@ testNamesBoot ps = do
         refused tag = (400, Just $ J.object ["error" J..= (tag :: Text)])
     unknown <- request "/api/names/unknown"
     statusCode . responseStatus <$> httpLbs unknown mgr `shouldReturn` 404
+    register <- request "/api/name/register"
+    answer register {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refused "bad_request"
     search <- request $ "/api/name/" <> T.unpack aliceHex <> "?length=5"
     answer search `shouldReturn` refused "invalid_name"
+    registration <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g"
+    answer registration `shouldReturn` (404, Just $ J.object ["error" J..= ("not_found" :: Text)])
+    posted <- httpLbs registration {method = "POST"} mgr
+    (statusCode $ responseStatus posted, lookup "Allow" $ responseHeaders posted) `shouldBe` (405, Just "GET")
+    coded <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/code"
+    answer coded {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` (404, Just $ J.object ["error" J..= ("not_found" :: Text)])
+    -- the register above took the first of this client's 10 code requests a minute, which the code check shares
+    let codeRequest path = request path >>= \r -> statusCode . responseStatus <$> httpLbs r {method = "POST", requestBody = RequestBodyLBS "{}"} mgr
+    forM_ (take 9 $ cycle ["/api/code/check", "/api/name/register"]) $ \path -> (path,) <$> codeRequest path `shouldReturn` (path, 400)
+    forM_ ["/api/code/check", "/api/name/register"] $ \path -> (path,) <$> codeRequest path `shouldReturn` (path, 429)
     poll t >>= (`shouldSatisfy` isNothing)
+
+testNamesBootCodesOnly :: HasCallStack => TestParams -> IO ()
+testNamesBootCodesOnly ps = do
+  svc@GroupSvc {gsStaticDir} <- prepareGroupService ps
+  let shell = "<!doctype html><meta name=\"simplex-names-mode\" content=\"open\">"
+  B.writeFile (gsStaticDir </> "index.html") shell
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : codesOnlyNames <> chainSection} Nothing
+  flip finally (stopGroupService t cc) $ do
+    pollUntilTrue (listening port)
+    mgr <- newManager defaultManagerSettings
+    let posted path body = do
+          req <- parseRequest $ "http://127.0.0.1:" <> show port <> path
+          r <- httpLbs req {method = "POST", requestBody = RequestBodyLBS body} mgr
+          pure (statusCode $ responseStatus r, J.decode $ responseBody r :: Maybe J.Value)
+        answered tag status = (status, Just $ J.object ["error" J..= (tag :: Text)])
+    posted "/api/invoice" "{\"kind\":\"name\"}" `shouldReturn` answered "codes_only" 403
+    posted "/api/name/register" "{}" `shouldReturn` answered "bad_request" 400
+    posted "/api/code/check" "{}" `shouldReturn` answered "bad_request" 400
+    badgesShell <- parseRequest ("http://127.0.0.1:" <> show port <> "/") >>= (`httpLbs` mgr)
+    (statusCode $ responseStatus badgesShell, responseBody badgesShell) `shouldBe` (200, LB.fromStrict shell)
+    poll t >>= (`shouldSatisfy` isNothing)
+
+-- | [names] with codes_only on, as an investors' launch runs.
+codesOnlyNames :: [Text]
+codesOnlyNames = namesSection <> ["codes_only = on"]
 
 namesCodesChatTests :: SpecWith TestParams
 namesCodesChatTests = describe "StoreService names: prepaid codes" $ do
   it "issues prepaid codes on /issue name and /bulk name, answering the usage to years below 2" testGroupNameCodes
-  it "issues prepaid codes on //issue name and revokes them on //revoke" testOperatorNameCodes
-  it "revokes a prepaid code in the code's turn" testRevokeTakesCodeTurn
+  it "issues prepaid codes on //issue name, checks them through the names router and revokes them on //revoke" testOperatorNameCodes
+  it "revokes a prepaid code in the code's turn, after a reservation holding it" testRevokeTakesCodeTurn
   it "revokes a prepaid code on /revoke, answering a repeat as already revoked" testGroupRevokeNameCode
 
 testGroupNameCodes :: HasCallStack => TestParams -> IO ()
 testGroupNameCodes ps = do
   svc <- prepareGroupService ps
-  runWithOwner svc {gsIniSections = "" : namesSection <> chainSection} $ \cc _ _ alice -> do
+  runWithOwner svc {gsIniSections = "" : codesOnlyNames <> chainSection} $ \cc _ _ alice -> do
     one <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 8 years 5"
     namePrepaidCodeLength one `shouldBe` 8
     prepaidTerms cc one `shouldReturn` Just (8, 5, CPSFree)
@@ -175,7 +217,7 @@ testGroupNameCodes ps = do
 testGroupRevokeNameCode :: HasCallStack => TestParams -> IO ()
 testGroupRevokeNameCode ps = do
   svc <- prepareGroupService ps
-  runWithOwner svc {gsIniSections = "" : namesSection <> chainSection} $ \cc _ _ alice -> do
+  runWithOwner svc {gsIniSections = "" : codesOnlyNames <> chainSection} $ \cc _ _ alice -> do
     code <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 8"
     let codeText = formatNameCode (NCPrepaid code)
     revokeInGroup cc alice codeText "Revoked."
@@ -185,7 +227,7 @@ testGroupRevokeNameCode ps = do
 testOperatorNameCodes :: HasCallStack => TestParams -> IO ()
 testOperatorNameCodes ps = do
   svc <- prepareGroupService ps
-  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> chainSection} Nothing
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : codesOnlyNames <> chainSection} Nothing
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
     forM_ ["name", "name 5", "name 64", "name 07", "name 7 years 1", "name 7 years 11", "name 7 gratis"] $ \args ->
@@ -197,12 +239,30 @@ testOperatorNameCodes ps = do
     unpaid <- issueNameRaw cc "name 6 unpaid"
     prepaidTerms cc paid `shouldReturn` Just (7, 3, CPSPaid)
     prepaidTerms cc unpaid `shouldReturn` Just (6, 2, CPSUnpaid)
-    let revoke = revokeRaw cc . formatNameCode . NCPrepaid
+    let check code = checkPrepaid port (formatNameCode (NCPrepaid code))
+        coverage :: Int -> Int -> Text -> (Int, Maybe J.Value)
+        coverage minLength years state = (200, Just $ J.object ["minLength" J..= minLength, "years" J..= years, "state" J..= state])
+        revoke = revokeRaw cc . formatNameCode . NCPrepaid
+    check paid `shouldReturn` coverage 7 3 "unused"
+    check unpaid `shouldReturn` coverage 6 2 "unpaid"
     revokeRaw cc (formatNameCode (NCPrepaid paid) <> " junk") `shouldReturn` Left badgeCmdUsage
     revoke paid `shouldReturn` Right "Revoked."
     revoke paid `shouldReturn` Right "Already revoked."
+    check paid `shouldReturn` coverage 7 3 "revoked"
     unknown <- C.newRandom >>= (`randomNamePrepaidCode` 7)
     revoke unknown `shouldReturn` Left "No such code."
+    held <- issueNameRaw cc "name 8"
+    spent <- issueNameRaw cc "name 8"
+    let st = chatStore cc
+        rowOf code = fromMaybe (error "no prepaid code row") <$> withTransaction st (`getPrepaidCode` namePrepaidCodeHash code)
+    rowOf held >>= placeCode st "r1" ownerA (order "alicebakery" 1) >>= (`shouldBe` Right ())
+    rowOf spent >>= placeCode st "r2" ownerA (order "bobsbakery" 2) >>= (`shouldBe` Right ())
+    spentAt <- getCurrentTime
+    PrepaidCode {pcId = spentId} <- rowOf spent
+    withTransaction st (\db -> spendPrepaidCode db spentId (RegistrationId "r2") spentAt) `shouldReturn` True
+    revoke held `shouldReturn` Right "Revoked. The order holding it keeps it."
+    revoke spent `shouldReturn` Left "Already used. It cannot be revoked."
+    check spent `shouldReturn` coverage 8 2 "used"
 
 testRevokeTakesCodeTurn :: HasCallStack => TestParams -> IO ()
 testRevokeTakesCodeTurn ps = do
@@ -211,7 +271,8 @@ testRevokeTakesCodeTurn ps = do
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
     turns <- newTurns
-    let revokeAfter code release = do
+    let st = chatStore cc
+        revokeAfter code release = do
           revoking <- async $ revokeNameCode turns cc code
           threadDelay 200000
           poll revoking >>= (`shouldSatisfy` isNothing)
@@ -221,6 +282,12 @@ testRevokeTakesCodeTurn ps = do
     holder <- holdTurn $ \body -> withCodeTurn turns (namePrepaidCodeHash held) body
     revokeAfter held (releaseTurn holder) `shouldReturn` Right "Revoked."
     finished (thAction holder) `shouldReturn` ()
+    now <- getCurrentTime
+    placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 now) `shouldReturn` Right ()
+    reserved <- issueNameRaw cc "name 8"
+    reserving <- holdTurn $ \body -> reserveCode turns st now (namePrepaidCodeHash reserved) (RegistrationId "r1") 8 (\_ -> Right <$> body :: IO (Either Text ()))
+    revokeAfter reserved (releaseTurn reserving) `shouldReturn` Right "Revoked. The order holding it keeps it."
+    finished (thAction reserving) `shouldReturn` Right (Right ())
 
 data TurnHolder a = TurnHolder {thAction :: Async a, thRelease :: MVar ()}
 
@@ -254,6 +321,13 @@ prepaidTerms :: ChatController -> NamePrepaidCode -> IO (Maybe (Int, Int, BadgeC
 prepaidTerms cc code =
   fmap (\PrepaidCode {pcMinLength, pcYears, pcPaymentStatus} -> (pcMinLength, pcYears, pcPaymentStatus))
     <$> withTransaction (chatStore cc) (`getPrepaidCode` namePrepaidCodeHash code)
+
+checkPrepaid :: Int -> Text -> IO (Int, Maybe J.Value)
+checkPrepaid port code = do
+  mgr <- newManager defaultManagerSettings
+  req <- parseRequest $ "http://127.0.0.1:" <> show port <> "/api/code/check"
+  r <- httpLbs req {method = "POST", requestBody = RequestBodyLBS (J.encode (J.object ["code" J..= code]))} mgr
+  pure (statusCode (responseStatus r), J.decode (responseBody r))
 
 groupName :: String
 groupName = "testbadges"
