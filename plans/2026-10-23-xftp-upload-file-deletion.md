@@ -103,7 +103,7 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
   - `SFDONE`: the file descriptions are not sent, since the agent sends no further `SFDONE` for a complete file; the agent file is deleted at the next activation;
   - `SFERR`: the error status of the item is not recorded.
 - The NSE's share extension subscriber: unchanged. The NSE does not act on `.sendingMessage` (its subscriber is never created). The wait therefore ends only when the NSE suspends on its own, or after 2 s. While the stored NSE state is `.created`, the wait lasts the full 2 s. The app's instant suspension can start the chat of an NSE instance waiting for the app, and that chat then runs concurrently with the share extension.
-- `cabal.project`: simplexmq pinned to commit `a90dcbc4` of the simplexmq fork during review.
+- `cabal.project`: simplexmq pinned to commit `57111046` of the simplexmq fork during review.
 - After the simplexmq pull request in simplex-chat/simplexmq is merged and before the final pull request is opened in simplex-chat/simplex-chat:
   - the pin is replaced by the merged simplex-chat/simplexmq commit;
   - `scripts/nix/sha256map.nix` is updated.
@@ -135,7 +135,7 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
   - new: `_suspendChatInstantly` (:87-91): `apiSuspendChat(timeoutMicroseconds: 0)` when `ChatModel.ok`, with its comment from `terminateChat`, then `_chatSuspended()`.
 - `cabal.project` (:23-24):
   - `location: https://github.com/evgeny-simplex/simplexmq.git`;
-  - `tag: a90dcbc4d2aa1f07cc20ddc6d56d3b0d3d9ea4ae`.
+  - `tag: 57111046231e2c21d5c2d6f9920617c15d4f891e`.
 
 ## Tests
 
