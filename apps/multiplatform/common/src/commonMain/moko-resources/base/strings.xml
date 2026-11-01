@@ -3312,11 +3312,11 @@
   <string name="badges_error_last_attempt">Last attempt</string>
   <string name="badges_contact_team">Contact SimpleX team</string>
   <string name="badges_credential_next_check">Next check</string>
-  <string name="badges_subscription_disclosure_monthly">Payment is charged to your Google Play account when you confirm the purchase. The subscription renews automatically at %1$s per month until you cancel it. You can manage and cancel it in Google Play subscriptions.</string>
-  <string name="badges_subscription_disclosure_annual">Payment is charged to your Google Play account when you confirm the purchase. The subscription renews automatically at %1$s per year until you cancel it. You can manage and cancel it in Google Play subscriptions.</string>
+  <string name="badges_subscription_disclosure_monthly">Renews at %1$s a month until you cancel it in Google Play.</string>
+  <string name="badges_subscription_disclosure_annual">Renews at %1$s a year until you cancel it in Google Play.</string>
   <string name="badges_privacy_policy">Privacy policy</string>
   <string name="badges_restore_purchases">Restore purchases</string>
-  <string name="badges_restore_purchases_footnote">Adds a badge you paid for. A subscription bought with this Google Play account moves to this profile, and the profile or device that had it loses it.</string>
+  <string name="badges_restore_purchases_footnote">Moves a paid badge to this profile.</string>
   <string name="badges_nothing_to_restore">Nothing to restore</string>
   <string name="badges_nothing_to_restore_desc">No Google Play purchase waiting to be added was found.</string>
   <string name="badges_restore_failed">Restore failed</string>
