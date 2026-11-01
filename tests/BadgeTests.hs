@@ -17,7 +17,7 @@ import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically)
 import Control.Exception (SomeAsyncException, SomeException, catch, fromException, throwIO)
 import Control.Monad (forM_)
-import Data.ByteArray.Encoding (Base (Base16), convertToBase)
+import Data.ByteArray.Encoding (Base (Base16, Base64URLUnpadded), convertToBase)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Lazy as LB
@@ -74,9 +74,14 @@ badgeTests = do
     it "reads a code as typed - any case, separators, ambiguous characters" testCodeNormalisation
     it "rejects a code whose check character does not match" testCodeCheckCharacter
     it "hashes the canonical form, whatever was typed" testCodeHash
-  describe "name codes" $ do
-    it "encodes the entropy and its checksum" testNameCodeVectors
-    it "rejects a name code with a wrong character" testNameCodeChecksum
+  describe "StoreService names: codes" $ do
+    it "encodes an owner code's entropy and its checksum" testNameOwnerCodeVectors
+    it "rejects an owner code with a wrong character" testNameOwnerCodeChecksum
+    it "reads the webapp's prepaid codes: length, canonical form, display and hash, and refuses lengths outside 6 to 63" testNamePrepaidCodeVectors
+    it "never reads an owner code as prepaid, nor the reverse" testNameCodeKinds
+    it "reads random codes of both kinds back, as typed" testNameCodeRoundTrip
+    it "refuses a prepaid code with one character changed or two adjacent swapped, except 0 and Z" testNamePrepaidCodeCheck
+    it "refuses a prepaid code whose length is not plain ASCII digits" testNamePrepaidCodeLengthDigits
   describe "ledger transitions" $ do
     it "issues a twelve month code one month at a time, and no thirteenth" testTwelveMonths
     it "lapses only the elapsed months after a gap, leaving paidThrough unchanged" testLapseAfterGap
@@ -368,24 +373,124 @@ testCodeHash = do
   Just typed <- pure $ parseBadgeCode $ T.toLower $ formatBadgeCode code
   badgeCodeHash typed `shouldBe` badgeCodeHash code
 
-testNameCodeVectors :: IO ()
-testNameCodeVectors =
-  forM_ nameCodeVectors $ \(entropy, formatted) -> do
-    let code = parseNameCode formatted
-    formatNameCode <$> code `shouldBe` Just formatted
-    convertToBase Base16 . unEntropy . nameCodeEntropy <$> code `shouldBe` Just entropy
+testNameOwnerCodeVectors :: IO ()
+testNameOwnerCodeVectors =
+  forM_ nameOwnerCodeVectors $ \(entropy, formatted) -> do
+    let code = parseNameOwnerCode formatted
+    formatNameOwnerCode <$> code `shouldBe` Just formatted
+    convertToBase Base16 . unEntropy . nameOwnerCodeEntropy <$> code `shouldBe` Just entropy
+    formatNameCode <$> parseNameCode (T.toLower formatted) `shouldBe` Just formatted
 
-testNameCodeChecksum :: IO ()
-testNameCodeChecksum =
-  formatNameCode <$> parseNameCode "SN-KT45V-59ATD-HCNTT-EZRTA-HT8VT-8A0BV" `shouldBe` Nothing
+testNameOwnerCodeChecksum :: IO ()
+testNameOwnerCodeChecksum = do
+  formatNameOwnerCode <$> parseNameOwnerCode "SN-KT45V-59ATD-HCNTT-EZRTA-HT8VT-8A0BV" `shouldBe` Nothing
+  parseNameCode "SN-DWPHT-6JBFR-ZR1MA-T5HQ9-P17QM-F5GM5" `shouldBe` Nothing
 
--- entropy and its name code, computed by a separate Python implementation of the format
-nameCodeVectors :: [(ByteString, T.Text)]
-nameCodeVectors =
+-- entropy and its name code, computed by a separate Python implementation of the format,
+-- and the webapp's fixture from simplex.domains webapp/test/crypto.test.ts
+nameOwnerCodeVectors :: [(ByteString, T.Text)]
+nameOwnerCodeVectors =
   [ ("00000000000000000000000000000000", "SN-00000-00000-00000-00000-00000-0VME2"),
     ("ffffffffffffffffffffffffffffffff", "SN-ZZZZZ-ZZZZZ-ZZZZZ-ZZZZZ-ZZZZZ-XDCD9"),
-    ("9e885d952ad362caeb4efe34a8e91bd2", "SN-KT45V-59ATD-HCNTT-EZRTA-HT8VT-8A0BT")
+    ("9e885d952ad362caeb4efe34a8e91bd2", "SN-KT45V-59ATD-HCNTT-EZRTA-HT8VT-8A0BT"),
+    ("6f2d1c9a4b7e3f80d15a2c6e9b04f7a3", "SN-DWPHS-6JBFR-ZR1MA-T5HQ9-P17QM-F5GM5")
   ]
+
+testNamePrepaidCodeVectors :: IO ()
+testNamePrepaidCodeVectors = do
+  forM_ namePrepaidCodeVectors $ \(typed, len, canonical, display, hash) -> do
+    Just (NCPrepaid code) <- pure $ parseNameCode typed
+    (namePrepaidCodeLength code, namePrepaidCodeText code, formatNameCode (NCPrepaid code)) `shouldBe` (len, canonical, display)
+    convertToBase Base64URLUnpadded (namePrepaidCodeHash code) `shouldBe` (hash :: ByteString)
+  -- the webapp's typo vector
+  parseNameCode "SN7-4K2P7-TQ9M1-ZX3RB-8HJ5X" `shouldBe` Nothing
+  -- their check characters are valid, but no name length is outside 6 to 63
+  parseNameCode "SN5-N0N9J-5D292-HPSYA-R911Q" `shouldBe` Nothing
+  parseNameCode "SN64-N0N9J-5D292-HPSYA-R911C" `shouldBe` Nothing
+
+-- typed code, length, canonical form, display and the webapp's codeHash
+namePrepaidCodeVectors :: [(T.Text, Int, T.Text, T.Text, ByteString)]
+namePrepaidCodeVectors =
+  [ ("SN7-BJTBP-29596-R3HJ8-25YM7", 7, "SN7BJTBP29596R3HJ825YM7", "SN7-BJTBP-29596-R3HJ8-25YM7", "7hg6ED6EotRVm21uS1KOZ-CKEzkJK5hvG4W5atfcn_Q"),
+    ("sn7 bjtbp 29596 r3hj8 25ym7", 7, "SN7BJTBP29596R3HJ825YM7", "SN7-BJTBP-29596-R3HJ8-25YM7", "7hg6ED6EotRVm21uS1KOZ-CKEzkJK5hvG4W5atfcn_Q"),
+    ("SN8-25X6F-6JDNM-8C59E-HDHJD", 8, "SN825X6F6JDNM8C59EHDHJD", "SN8-25X6F-6JDNM-8C59E-HDHJD", "cOnJDSzWBEZiY2z1I-HMGW2gylyx_13V8sOpMDeJOvU"),
+    ("SN6-N0N9J-5D292-HPSYA-R911P", 6, "SN6N0N9J5D292HPSYAR911P", "SN6-N0N9J-5D292-HPSYA-R911P", "SKKFjAl5K21B6HRIgQcYQ3AaZ67nVxl2xszsSkZ97cA"),
+    ("SN12-N0N9J-5D292-HPSYA-R911R", 12, "SN12N0N9J5D292HPSYAR911R", "SN12-N0N9J-5D292-HPSYA-R911R", "FozeCQ3A_sUsZF9_OwQDp42kdHRMsoJazuGvOkTS-FQ"),
+    ("SN63-N0N9J-5D292-HPSYA-R911D", 63, "SN63N0N9J5D292HPSYAR911D", "SN63-N0N9J-5D292-HPSYA-R911D", "U-Nh_Kw3-xDlQuFJffkuCAyolK5m9EfN3QuYiJ28A0A")
+  ]
+
+testNameCodeKinds :: IO ()
+testNameCodeKinds = do
+  drg <- C.newRandom
+  forM_ [1 :: Int .. 100] $ \_ -> do
+    owner <- randomNameOwnerCode drg
+    parseNameCode (formatNameOwnerCode owner) `shouldBe` Just (NCOwner owner)
+  forM_ [6 .. 63] $ \len -> do
+    prepaid <- randomNamePrepaidCode drg len
+    parseNameCode (namePrepaidCodeText prepaid) `shouldBe` Just (NCPrepaid prepaid)
+    parseNameOwnerCode (namePrepaidCodeText prepaid) `shouldBe` Nothing
+
+testNameCodeRoundTrip :: IO ()
+testNameCodeRoundTrip = do
+  drg <- C.newRandom
+  owner <- NCOwner <$> randomNameOwnerCode drg
+  forM_ (typings $ formatNameCode owner) $ \typed -> parseNameCode typed `shouldBe` Just owner
+  forM_ [6 .. 63] $ \len -> do
+    prepaid <- randomNamePrepaidCode drg len
+    let display = formatNameCode (NCPrepaid prepaid)
+    T.length display `shouldBe` T.length (namePrepaidCodeText prepaid) + 4 -- four separators
+    T.isPrefixOf ("SN" <> tshow len <> "-") display `shouldBe` True
+    forM_ (namePrepaidCodeText prepaid : typings display) $ \typed -> parseNameCode typed `shouldBe` Just (NCPrepaid prepaid)
+  where
+    typings display = [display, T.toLower display, T.replace "-" " " display, misreadAfterLength display]
+    -- folding never applies to a prepaid code's length, which is refused when misread
+    misreadAfterLength display = let (prefix, rest) = T.breakOn "-" display in prefix <> T.map misread rest
+    misread = \case
+      '1' -> 'I'
+      '0' -> 'O'
+      c -> c
+
+testNamePrepaidCodeCheck :: IO ()
+testNamePrepaidCodeCheck = do
+  drg <- C.newRandom
+  forM_ [6, 9, 10, 63] $ \len -> do
+    code <- randomNamePrepaidCode drg len
+    let canonical = namePrepaidCodeText code
+        (prefix, rest) = T.splitAt 2 canonical
+        changed =
+          [ prefix <> T.take i rest <> T.singleton c <> T.drop (i + 1) rest
+            | i <- [0 .. T.length rest - 1],
+              c <- "0123456789ABCDEFGHJKMNPQRSTVWXYZ",
+              c /= T.index rest i
+          ]
+        swapped =
+          [ prefix <> T.take i rest <> T.pack [b, a] <> T.drop (i + 2) rest
+            | i <- [0 .. T.length rest - 2],
+              let a = T.index rest i
+                  b = T.index rest (i + 1),
+              a /= b,
+              -- Luhn mod 32's blind spot, the values 0 and 31
+              [a, b] `notElem` ["0Z", "Z0"]
+          ]
+    forM_ (changed <> swapped) $ \typed -> (typed, parseNameCode typed) `shouldBe` (typed, Nothing)
+  -- the blind spot itself: a 0 and Z swapped in the payload still pass the check
+  Just code <- pure $ parseNameCode "SN7-N0ZNJ-5D292-HPSYA-R911N"
+  Just swapped <- pure $ parseNameCode "SN7-NZ0NJ-5D292-HPSYA-R911N"
+  swapped `shouldNotBe` code
+
+testNamePrepaidCodeLengthDigits :: IO ()
+testNamePrepaidCodeLengthDigits = do
+  drg <- C.newRandom
+  code <- randomNamePrepaidCode drg 10
+  let display = formatNameCode (NCPrepaid code)
+  parseNameCode display `shouldBe` Just (NCPrepaid code)
+  -- O and I fold to 0 and 1 in the 20 characters, never in the length
+  parseNameCode (T.replace "SN10-" "SN1O-" display) `shouldBe` Nothing
+  parseNameCode (T.replace "SN10-" "SNI0-" display) `shouldBe` Nothing
+  -- a leading zero adds nothing to the check, so it would be a second text with another hash
+  parseNameCode "SN07-BJTBP-29596-R3HJ8-25YM7" `shouldBe` Nothing
+  parseNameCode "SN-BJTBP-29596-R3HJ8-25YM7" `shouldBe` Nothing
+  parseNameCode "SN100-BJTBP-29596-R3HJ8-25YM7" `shouldBe` Nothing
 
 -- Ledger transitions, against plans/2026-07-30-supporter-badges-v3-ux.md §3
 
