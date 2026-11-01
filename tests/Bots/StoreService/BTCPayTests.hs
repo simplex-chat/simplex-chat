@@ -435,7 +435,7 @@ testWebhookAccepts :: IO ()
 testWebhookAccepts =
   mapM_
     (\t -> let b = webhookEvent t ref in verifyEvent (webhookSigHeader secret b) b `shouldBe` Right (Just ref))
-    ["InvoiceProcessing", "InvoiceSettled", "InvoiceExpired", "InvoiceInvalid"]
+    ["InvoiceProcessing", "InvoiceSettled", "InvoiceExpired", "InvoiceInvalid", "InvoiceReceivedPayment", "InvoicePaymentSettled"]
 
 testWebhookHeaderCase :: IO ()
 testWebhookHeaderCase = do
@@ -449,7 +449,7 @@ testWebhookUppercaseHex = do
 
 testWebhookIgnoresOtherType :: IO ()
 testWebhookIgnoresOtherType = do
-  let b = webhookEvent "InvoiceReceivedPayment" ref
+  let b = webhookEvent "InvoiceCreated" ref
   verifyEvent (webhookSigHeader secret b) b `shouldBe` Right Nothing
 
 testWebhookIgnoresUnreadableBody :: IO ()
