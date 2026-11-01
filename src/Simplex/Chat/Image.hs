@@ -169,9 +169,14 @@ cropToSquare :: DynamicImage -> DynamicImage
 cropToSquare = dynamicPixelMap crop
   where
     crop :: Pixel a => Image a -> Image a
-    crop img@Image {imageWidth = w, imageHeight = h} = generateImage (\x y -> pixelAt img (x + (w - side) `div` 2) (y + (h - side) `div` 2)) side side
+    crop img@Image {imageWidth = w, imageHeight = h, imageData}
+      | w == h = img
+      | otherwise = Image side side $ VS.concat [VS.slice ((y * w + x0) * n) (side * n) imageData | y <- [y0 .. y0 + side - 1]]
       where
         side = min w h
+        n = VS.length imageData `div` (w * h)
+        x0 = (w - side) `div` 2
+        y0 = (h - side) `div` 2
 
 colourProfile :: ByteString -> ColourProfile
 colourProfile profile = fromMaybe CPNone $ do
