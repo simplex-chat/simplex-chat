@@ -7,11 +7,12 @@ module StoreService.Web.Names (Route (..), namesRoutes, namesApp) where
 import Data.Text (Text)
 import Network.HTTP.Types (Method)
 import Network.Wai (Request, ResponseReceived, pathInfo)
+import StoreService.Config (ServiceConfig)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Web.Http (HttpEnv, Limit, Respond, codeLimit, createLimit, holdMicros, limited, only, previewLimit, readLimit, searchLimit)
 import StoreService.Web.Names.Codes (codeCheckHandler)
-import StoreService.Web.Names.Orders (codeOrderHandler)
+import StoreService.Web.Names.Orders (codeOrderHandler, spendHandler)
 import StoreService.Web.Names.Registration (registrationHandler, retryHandler, revealHandler)
 import StoreService.Web.Names.Search (previewHandler, searchHandler)
 
@@ -21,8 +22,8 @@ data Route = Route
     rHandler :: Request -> Respond -> IO ResponseReceived
   }
 
-namesRoutes :: NamesEnv -> [Text] -> Maybe Route
-namesRoutes env@NamesEnv {neConfig, neStore, neContracts, neProfiles, neWaiters, neProviders} = \case
+namesRoutes :: ServiceConfig -> NamesEnv -> [Text] -> Maybe Route
+namesRoutes cfg env@NamesEnv {neConfig, neStore, neContracts, neProfiles, neWaiters, neProviders} = \case
   ["api", "name", "register"] -> Just Route {rMethod = "POST", rLimit = codeLimit, rHandler = codeOrderHandler (ordersEnv env) neProviders neWaiters}
   ["api", "code", "check"] -> Just Route {rMethod = "POST", rLimit = codeLimit, rHandler = codeCheckHandler neStore}
   ["api", "link", "preview"] -> Just Route {rMethod = "POST", rLimit = previewLimit, rHandler = previewHandler neProfiles}
@@ -31,6 +32,7 @@ namesRoutes env@NamesEnv {neConfig, neStore, neContracts, neProfiles, neWaiters,
   ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler (ordersEnv env) holdMicros rid}
   ["api", "registration", rid, "reveal"] -> Just Route {rMethod = "POST", rLimit = readLimit, rHandler = revealHandler (ordersEnv env) rid}
   ["api", "registration", rid, "retry"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retryHandler (ordersEnv env) rid}
+  ["api", "registration", rid, "spend"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = spendHandler (ordersEnv env) cfg neProviders neWaiters rid}
   _ -> Nothing
 
 -- | Nothing for a path no route knows. The limit is taken only once the route and the method match.

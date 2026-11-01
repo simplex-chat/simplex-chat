@@ -132,7 +132,7 @@ siteApp env@WebEnv {weHttp} served req respond = case pathInfo req of
   ["webhooks", "stripe"] -> only "POST" req respond $ webhookHandler env PPStripe "POST /webhooks/stripe" req respond
   _ -> fromMaybe (respond notFound) names
   where
-    names = weNames env >>= \n -> namesApp weHttp (namesRoutes n) req respond
+    names = weNames env >>= \n -> namesApp weHttp (namesRoutes (weConfig env) n) req respond
 
 -- | The names build keeps files at its root, so every path outside the API and the webhooks is the site's.
 sitePath :: [Text] -> Bool

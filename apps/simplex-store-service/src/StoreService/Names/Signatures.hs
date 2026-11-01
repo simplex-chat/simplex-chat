@@ -8,6 +8,7 @@ module StoreService.Names.Signatures
     parseSignature,
     personalDigest,
     orderMessage,
+    spendMessage,
     parseChecksumAddress,
     parseAnyCaseAddress,
   )
@@ -33,6 +34,7 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Names.Abi (hex)
+import StoreService.Names.Phases (RegistrationId (..))
 
 data SignatureError
   = SEFormat
@@ -90,6 +92,10 @@ personalDigest msg = keccak256 $ "\x19\&Ethereum Signed Message:\n" <> BC.pack (
 
 orderMessage :: OrderFields -> Word64 -> ByteString
 orderMessage order timestamp = message $ ["order"] <> orderWords order <> [tshow timestamp]
+
+-- | The registration id is the order whose balance pays; the fields are the new order's.
+spendMessage :: RegistrationId -> OrderFields -> Word64 -> ByteString
+spendMessage (RegistrationId rid) order timestamp = message $ ["spend", rid] <> orderWords order <> [tshow timestamp]
 
 message :: [Text] -> ByteString
 message = encodeUtf8 . T.unwords . ("simplex.domains" :)
