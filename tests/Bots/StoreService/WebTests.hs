@@ -1177,6 +1177,7 @@ testServiceConfig staticDir trustForwarded =
       playStore = Nothing,
       issuer = Nothing,
       group = Nothing,
+      names = Nothing,
       devAcceptUnverifiedStoreReceipts = False,
       devCheckStoreDuringCoverage = False,
       devCreditTestPurchases = False
