@@ -1853,7 +1853,7 @@ testRevokeRejectsTrailingInput ps =
 
 -- The text is spelled out rather than taken from the service, so a change there fails here.
 badgeCmdUsage :: Text
-badgeCmdUsage = "Usage: //issue supporter|legend|investor [months 1-255] [paid|unpaid|free], or //revoke <code>"
+badgeCmdUsage = "Usage: //issue supporter|legend|investor [months 1-255] [paid|unpaid|free], //issue name <length 6-63> [years 2-10] [paid|unpaid|free], or //revoke <code>"
 
 purchaseCmd :: BadgeMasterKey -> ServicePayment -> StoreServiceCommand
 purchaseCmd masterKey payment = STCPurchaseBadge {masterKey, payment, upgrade = Nothing}
