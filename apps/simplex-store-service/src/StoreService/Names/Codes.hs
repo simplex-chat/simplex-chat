@@ -15,6 +15,7 @@ module StoreService.Names.Codes
     reserveCode,
     releaseCode,
     spendCode,
+    spendLandedCode,
     issueNameCode,
     revokeNameCode,
   )
@@ -37,7 +38,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import StoreService.Config (minNameYears)
 import StoreService.Group.Command (maxNameYears)
 import StoreService.Names.Phases (RegistrationId)
-import StoreService.Names.Store (CodeHashTaken (..), NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reservePrepaidCode, revokePrepaidCode, spendPrepaidCode)
+import StoreService.Names.Store (CodeHashTaken (..), NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode, spendPrepaidCode)
 import StoreService.Names.Turns (Turns, withCodeTurn)
 import StoreService.Store (RevokeResult (..))
 
@@ -136,6 +137,11 @@ releaseCode turns st codeId rid = afterWrite turns st codeId (\db -> releasePrep
 -- | The write runs first, and the code is spent only if it succeeds. False when the registration did not hold the code.
 spendCode :: Turns -> DBStore -> UTCTime -> Int64 -> RegistrationId -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
 spendCode turns st now codeId rid = afterWrite turns st codeId (\db -> spendPrepaidCode db codeId rid now)
+
+-- | As spendCode, for a registration whose register went through: a code it no longer holds is spent too while still usable.
+-- False when the code was released and then spent, revoked or expired meanwhile.
+spendLandedCode :: Turns -> DBStore -> UTCTime -> Int64 -> RegistrationId -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
+spendLandedCode turns st now codeId rid = afterWrite turns st codeId (\db -> spendLandedPrepaidCode db codeId rid now)
 
 afterWrite :: Turns -> DBStore -> Int64 -> (DB.Connection -> IO Bool) -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
 afterWrite turns st codeId change write = do
