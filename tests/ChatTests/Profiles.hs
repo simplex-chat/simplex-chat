@@ -1218,7 +1218,7 @@ testSetProfileImageFromFile ps = testChat aliceProfile test ps
     emptyPath = tmp <> "/empty.png"
     test alice = do
       -- set profile image from a .jpg file
-      alice ##> "/set profile image file ./tests/fixtures/test.jpg"
+      alice ##> "/set profile image file ./tests/fixtures/logo.jpg"
       alice <## "profile image updated"
       Profile {image = Just (ImageData img)} <- withCCUser alice $ \User {profile} -> pure $ fromLocalProfile profile
       T.length img `shouldSatisfy` (<= 12500)
