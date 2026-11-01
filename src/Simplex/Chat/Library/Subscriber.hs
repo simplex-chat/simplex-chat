@@ -223,7 +223,7 @@ processAgentMessageNoConn = \case
 processAgentMsgSndFile :: ACorrId -> SndFileId -> AEvent 'AESndFile -> CM ()
 processAgentMsgSndFile _ "" (SFERR e) =
   eToView $ chatErrorAgent e
-processAgentMsgSndFile _corrId aFileId msg = (`allFinally` when sndFileEnded deleteAgentFile) $ do
+processAgentMsgSndFile _corrId aFileId msg = flip allFinally (when sndFileEnded deleteAgentFile) $ do
   (cRef_, fileId) <- withStore (`getXFTPSndFileDBIds` AgentSndFileId aFileId)
   withEntityLock_ cRef_ . withFileLock "processAgentMsgSndFile" fileId $
     withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
