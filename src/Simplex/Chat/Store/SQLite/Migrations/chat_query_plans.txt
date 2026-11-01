@@ -947,8 +947,7 @@ Query:
             SELECT MIN(chat_item_id)
             FROM chat_items
             WHERE user_id = ? AND item_status = ?
-            GROUP BY user_id
-          
+           GROUP BY user_id
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)
 

@@ -2521,12 +2521,15 @@ getAllChatItems db cxt user@User {userId} pagination search_ = do
       fmap join . maybeFirstRow fromOnly $
         DB.query
           db
-          [sql|
+          ( [sql|
             SELECT MIN(chat_item_id)
             FROM chat_items
             WHERE user_id = ? AND item_status = ?
-            GROUP BY user_id
           |]
+#if !defined(dbPostgres)
+            <> " GROUP BY user_id"
+#endif
+          )
           (userId, CISRcvNew)
 
 getChatItemIdsByAgentMsgId :: DB.Connection -> Int64 -> AgentMsgId -> IO [ChatItemId]
