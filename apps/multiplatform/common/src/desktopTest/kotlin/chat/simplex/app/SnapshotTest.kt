@@ -18,6 +18,7 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.PreviewTerminalLayout
+import chat.simplex.common.views.badges.PreviewPeriodCards
 import chat.simplex.common.views.call.PreviewIncomingCallAlertLayout
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.group.*
@@ -107,6 +108,8 @@ private val previewScenes = listOf(
   SnapshotScene("HowItWorks.PreviewHowItWorks") { PreviewHowItWorks() },
   SnapshotScene("SimpleXInfo.PreviewSimpleXInfo") { PreviewSimpleXInfo() },
   SnapshotScene("WhatsNewView.PreviewWhatsNewView") { PreviewWhatsNewView() },
+  SnapshotScene("SetNotificationsMode.PreviewSetNotificationsMode") { PreviewSetNotificationsMode() },
+  SnapshotScene("BadgesHowLongView.PreviewPeriodCards") { PreviewPeriodCards() },
   SnapshotScene("HelpView.PreviewHelpView") { PreviewHelpView() },
   SnapshotScene("MarkdownHelpView.PreviewMarkdownHelpView") { PreviewMarkdownHelpView() },
   SnapshotScene("SettingsView.PreviewSettingsLayout") { PreviewSettingsLayout() },

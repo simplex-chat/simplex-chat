@@ -100,7 +100,7 @@ struct CIChatFeatureView: View {
                     .foregroundColor(iconColor)
                     .scaleEffect(feature.iconScale)
                     .if(terminal) { $0.frame(height: 0) }
-                chatEventText(chatItem, theme.colors.secondary, ts: ts)
+                chatEventText(chatItem, theme.colors.secondary, ts: terminal ? ts : textSpace + ts)
                     .if(terminal) { $0.modifier(terminalLineBox(UIFont.preferredFont(forTextStyle: .caption1), theme.colors.secondary, theme)) }
             }
             .padding(terminal ? terminalEventPadding : EdgeInsets(top: 4, leading: 6, bottom: 4, trailing: 6))
