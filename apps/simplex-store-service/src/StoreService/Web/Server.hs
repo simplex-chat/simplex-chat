@@ -35,6 +35,7 @@ import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.Aeson.Types (Pair)
+import Data.ByteArray.Encoding (Base (Base16), convertToBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64.URL as B64U
@@ -48,7 +49,7 @@ import Data.Maybe (fromMaybe)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8', encodeUtf8)
+import Data.Text.Encoding (decodeLatin1, decodeUtf8', encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word16)
 import Network.HTTP.Types (Header, Status, hCacheControl, hContentType, status200, status400, status404, status405, status409, status413, status429, status500, status503)
@@ -546,7 +547,7 @@ createAtProvider WebEnv {weStore, weConfig} provider CreateRequest {crPriceId, c
       -- truncate once, so the response, the row and the provider get the same value
       now <- truncateToSecond <$> getCurrentTime
       let expiresAt = addUTCTime (invoiceWindow weConfig crMethod) now
-          draft = OrderDraft {odAmount = poAmount priced, odCurrency = poCurrency priced}
+          draft = OrderDraft {odAmount = poAmount priced, odCurrency = poCurrency priced, odReference = "badge:0x" <> decodeLatin1 (convertToBase Base16 crCodeHash)}
       pCreateInvoice provider crMethod draft >>= \case
         Left (ProviderError e) -> failed ("provider refused to create an invoice: " <> e) providerUnavailable
         Right ProviderInvoice {piProviderRef, piDestination} -> do
