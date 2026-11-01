@@ -2244,13 +2244,11 @@ func redeemErrorText(_ error: Error, purchase: Bool) -> String {
                 ? NSLocalizedString("This app version cannot buy badges.", comment: "alert message")
                 : NSLocalizedString("This app version cannot redeem badge codes.", comment: "alert message")
         case .badgeActive:
-            return purchase
-                ? NSLocalizedString("This profile already has a badge.", comment: "alert message")
-                : NSLocalizedString("This profile already has a badge. Redeem the code on another profile, or once this badge ends.", comment: "alert message")
+            return NSLocalizedString("This profile already has a badge.", comment: "alert message")
         case .storePurchaseOpen:
             return purchase
                 ? NSLocalizedString("A store purchase is being added to this profile.", comment: "alert message")
-                : NSLocalizedString("A store purchase is being added to this profile. Redeem the code once it is added, or on another profile.", comment: "alert message")
+                : NSLocalizedString("A purchase is being added to this profile. Try again later.", comment: "alert message")
         case let .serviceError(code): if let text = badgeServiceErrorText(code) { return text }
         case let .invalidResponse(message):
             return String.localizedStringWithFormat(NSLocalizedString("The badge service sent an unexpected response: %@", comment: "alert message"), message)
@@ -2258,7 +2256,7 @@ func redeemErrorText(_ error: Error, purchase: Bool) -> String {
         }
     }
     if case .subscribedBefore? = error as? BadgeStoreError {
-        return NSLocalizedString("This Apple ID already has a badge subscription. Only the profile that bought it can continue it.", comment: "alert message")
+        return NSLocalizedString("Subscribed on another profile.", comment: "alert message")
     }
     if let e = error as? Product.PurchaseError {
         switch e {

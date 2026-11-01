@@ -143,7 +143,7 @@ struct BadgesCheckOrderLayout: View {
                         alert = SomeAlert(
                             alert: mkAlert(
                                 title: "Cannot verify this purchase",
-                                message: "The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store."
+                                message: "Apple did not sign this purchase, so it cannot be verified."
                             ),
                             id: "badgePurchaseUnverified"
                         )
