@@ -20,6 +20,7 @@ import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Service (ServiceState (..), storeService, newServiceState)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx)
+import Bots.StoreService.ConfigTests (chainSection, namesSection)
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
@@ -115,6 +116,7 @@ badgeGroupIntegrationTests = do
   it "publishes nothing when a code whose tracker was deleted is used up" testDeletedTrackerUsedUp
   it "revokes a code whose tracker an owner deleted for everyone without reposting it" testModeratedTrackerNotRepostedOnRevoke
   it "revokes a code on /revoke, answers a repeat as already revoked and an unknown code as no such code" testGroupRevoke
+  it "refuses /issue name and /bulk name while names are off, still revoking name codes" testGroupNameCodesNamesOff
   it "retires the tracker message when a multi-use code is revoked" testRevokeRetiresTracker
   it "retires the tracker message when the service command revokes the code" testServiceRevokeRetiresTracker
   it "retires a tracker left behind when the code is revoked again" testGroupRevokeRepairsTracker
@@ -136,7 +138,7 @@ namesCodesChatTests = describe "StoreService names: prepaid codes" $ do
 testGroupNameCodes :: HasCallStack => TestParams -> IO ()
 testGroupNameCodes ps = do
   svc <- prepareGroupService ps
-  runWithOwner svc $ \cc _ _ alice -> do
+  runWithOwner svc {gsIniSections = "" : namesSection <> chainSection} $ \cc _ _ alice -> do
     one <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 8 years 5"
     namePrepaidCodeLength one `shouldBe` 8
     prepaidTerms cc one `shouldReturn` Just (8, 5, CPSFree)
@@ -149,7 +151,7 @@ testGroupNameCodes ps = do
 testGroupRevokeNameCode :: HasCallStack => TestParams -> IO ()
 testGroupRevokeNameCode ps = do
   svc <- prepareGroupService ps
-  runWithOwner svc $ \cc _ _ alice -> do
+  runWithOwner svc {gsIniSections = "" : namesSection <> chainSection} $ \cc _ _ alice -> do
     code <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 8"
     let codeText = formatNameCode (NCPrepaid code)
     revokeInGroup cc alice codeText "Revoked."
@@ -159,7 +161,7 @@ testGroupRevokeNameCode ps = do
 testOperatorNameCodes :: HasCallStack => TestParams -> IO ()
 testOperatorNameCodes ps = do
   svc <- prepareGroupService ps
-  (t, cc, _, port) <- startGroupService svc Nothing
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> chainSection} Nothing
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
     forM_ ["name", "name 5", "name 64", "name 07", "name 7 years 1", "name 7 years 11", "name 7 gratis"] $ \args ->
@@ -181,7 +183,7 @@ testOperatorNameCodes ps = do
 testRevokeTakesCodeTurn :: HasCallStack => TestParams -> IO ()
 testRevokeTakesCodeTurn ps = do
   svc <- prepareGroupService ps
-  (t, cc, _, port) <- startGroupService svc Nothing
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> chainSection} Nothing
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
     turns <- newTurns
@@ -258,6 +260,7 @@ data GroupSvc = GroupSvc
   { gsCfg :: ChatConfig,
     gsKey :: BadgeIssuerKey,
     gsStaticDir :: FilePath,
+    gsIniSections :: [Text],
     gsPs :: TestParams
   }
 
@@ -271,7 +274,7 @@ prepareGroupService ps@TestParams {tmpPath} =
           gsStaticDir = tmpPath </> "badge_group_static"
       createDirectoryIfMissing True gsStaticDir
       withNewTestChatCfg ps gsCfg serviceDbPrefix badgeProfile $ \_ -> pure ()
-      pure GroupSvc {gsCfg, gsKey, gsStaticDir, gsPs = ps}
+      pure GroupSvc {gsCfg, gsKey, gsStaticDir, gsIniSections = [], gsPs = ps}
 
 runGroupService :: HasCallStack => GroupSvc -> (ChatController -> ServiceState -> Int64 -> IO a) -> IO a
 runGroupService svc = runGroupServiceAs svc (Just testGroupConfig)
@@ -318,7 +321,7 @@ stopChat cc = stopStoreService cc >> disposeAgentClient (smpAgent cc)
 
 -- It writes the service's ini on a free port; Nothing omits the [group] section.
 groupServiceOpts :: GroupSvc -> Maybe GroupConfig -> IO (StoreServiceOpts, Int)
-groupServiceOpts GroupSvc {gsKey = BadgeIssuerKey {secretKey}, gsStaticDir, gsPs = ps@TestParams {tmpPath}} groupCfg = do
+groupServiceOpts GroupSvc {gsKey = BadgeIssuerKey {secretKey}, gsStaticDir, gsIniSections, gsPs = ps@TestParams {tmpPath}} groupCfg = do
   (port, sock) <- openFreePort
   close sock
   let iniPath = tmpPath </> "badge_group.ini"
@@ -330,6 +333,7 @@ groupServiceOpts GroupSvc {gsKey = BadgeIssuerKey {secretKey}, gsStaticDir, gsPs
         "static_dir = " <> gsStaticDir
       ]
         <> maybe [] groupSection groupCfg
+        <> map T.unpack gsIniSections
   pure ((mkStoreServiceOpts ps secretKey) {serviceConfigFile = Just iniPath, noAddress = True}, port)
   where
     groupSection GroupConfig {gDisplayName, gDescription} =
@@ -953,6 +957,17 @@ testGroupRevoke ps =
     revokedTrackerCount cc `shouldReturn` 0
     unissued <- formatBadgeCode <$> randomBadgeCode (random cc)
     revokeInGroup cc alice unissued "No such code."
+
+testGroupNameCodesNamesOff :: HasCallStack => TestParams -> IO ()
+testGroupNameCodesNamesOff ps =
+  withGroupOwner ps $ \_ cc _ alice -> do
+    replyTo cc alice "/issue name 8" `shouldReturn` namesOffReply
+    replyTo cc alice "/bulk name 6 count 2" `shouldReturn` namesOffReply
+    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 0
+    unissued <- formatNameCode . NCPrepaid <$> randomNamePrepaidCode (random cc) 8
+    revokeInGroup cc alice unissued "No such code."
+  where
+    namesOffReply = "Names are not enabled on this service, so name codes cannot be issued."
 
 testGroupRevokeRepairsTracker :: HasCallStack => TestParams -> IO ()
 testGroupRevokeRepairsTracker ps =
