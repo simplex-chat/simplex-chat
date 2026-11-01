@@ -220,6 +220,7 @@ badgeWebTests = do
     it "answers a hold from the row it read, not from the status it woke on" testHoldReportsTheRowNotTheWake
     it "answers a hold that timed out with a change nothing published" testHoldTimeoutReportsAnUnpublishedChange
     it "answers a handler exception with 500 internal, and keeps serving" testHandlerExceptionIsContained
+    it "logs a handler exception as one service log record, never a bare line" testHandlerExceptionIsLogged
   describe "store service settlement" $ do
     it "settles an open invoice: paid, a settled payment row, and the code" testSettlesAnOpenInvoice
     it "settles an expired invoice, because late settlement is routine" testLateSettlementIsLegal
@@ -1684,6 +1685,17 @@ testHandlerExceptionIsContained = bounded "handler exception" $ withWebAppExpect
   shell <- webGet client "/"
   statusOf shell `shouldBe` 200
   responseBody shell `shouldBe` shellHtml
+
+-- | Warp reports an exception after sending the 500, and serves the connection's next request only after that report.
+testHandlerExceptionIsLogged :: IO ()
+testHandlerExceptionIsLogged = bounded "handler exception logged" $ withWebAppExpectingThrow $ \env client -> do
+  iid <- seedOpenInvoice env
+  breakStore (weStore env)
+  logs <- capturingStderr $ do
+    statusOf <$> webGet client (invoicePath iid) >>= (`shouldBe` 500)
+    statusOf <$> webGet client "/" >>= (`shouldBe` 200)
+  logs `shouldSatisfy` loggedError "store service: a web request failed: "
+  filter (not . ("[ERROR " `T.isPrefixOf`)) (filter ("badge_code_invoices" `T.isInfixOf`) (T.lines logs)) `shouldBe` []
 
 createsPerMinute :: Int
 createsPerMinute = 5
