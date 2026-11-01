@@ -12,7 +12,8 @@ where
 
 import StoreService.Config (StripeConfig (..))
 import StoreService.Providers
-  ( ListPass (..),
+  ( Funded (..),
+    ListPass (..),
     OrderDraft (..),
     PaymentSignal (..),
     Provider (..),
@@ -264,7 +265,7 @@ signalOf :: UTCTime -> IntentRead -> Either ProviderError (Maybe PaymentSignal)
 signalOf now IntentRead {irStatus, irAmountReceived, irChargeCreated} =
   case irStatus of
     "succeeded" -> Right (Just (SigSettled (received irAmountReceived) settledAt))
-    "canceled" -> Right (Just (SigClosed (received 0)))
+    "canceled" -> Right (Just (SigClosed (received 0) PaidInPart))
     s | s `elem` openStatuses -> Right Nothing
       | otherwise -> Left (ProviderError ("stripe payment_intent: unknown status " <> s))
   where

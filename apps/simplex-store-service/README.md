@@ -129,6 +129,11 @@ The BTCPay API key needs four permissions, each scoped to the one store:
 `canmodifyinvoices` so `POST /api/invoice/:id/cancel` can invalidate an invoice at BTCPay
 rather than only in this store.
 
+BTCPay keeps an invoice it has closed `Expired` (or `Invalid` after a cancel) when money arrives late.
+The invoice view reports `paidInFull` on such an invoice once BTCPay reads it `PaidLate` or
+`PaidOver`, or its due is 0 or less, and reports an overpaid invoice's `cryptoAmountDue` as `0`,
+never below.
+
 Give the service a BTCPay store of its own, and a Stripe account of its own if card payments are
 on. The poller lists every invoice and payment intent of the last three days or so, and one it did
 not create and cannot read is reported in a warning once an hour until it falls out of that window.

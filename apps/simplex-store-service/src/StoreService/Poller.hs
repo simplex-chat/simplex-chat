@@ -202,7 +202,7 @@ settleMoved env@PollerEnv {peStore, peWaiters} provider now (ref, signal) =
   where
     reportSettled before after
       -- checked before the no-change case, so a refund still alerts when money lands after expiry
-      | after == ISExpired, SigClosed Received {rcvCrypto = Just paid} <- signal = do
+      | after == ISExpired, SigClosed Received {rcvCrypto = Just paid} _ <- signal = do
           let alert = "badge poller: order " <> ref <> " expired holding " <> paid <> ", which needs a refund"
           due <- dueToWarn env now alert
           when due $ logError alert

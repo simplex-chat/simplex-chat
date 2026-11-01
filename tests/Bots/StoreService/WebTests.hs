@@ -197,6 +197,7 @@ badgeWebTests = do
     it "omits the confirmations where no provider is configured" testViewOmitsConfirmationsWithoutBTCPay
     it "carries the provider's paid-in-full verdict, which the amounts cannot give" testViewCarriesTheProvidersPaidVerdict
     it "never withdraws a paid-in-full verdict on a later read" testPaidVerdictIsNotWithdrawnByALaterRead
+    it "carries a closed invoice's paid-in-full verdict, the status staying expired" testViewCarriesAClosedPaidVerdict
     it "answers an unknown id with 404 not_found and nothing else" testUnknownInvoiceIsOpaque
     it "releases a held wait when a payment lands without settling" testHeldWaitWakesOnAPaymentThatDoesNotSettle
     it "leaves a held wait alone when a pass writes nothing" testHeldWaitIsNotWokenByAPassThatWroteNothing
@@ -1028,7 +1029,7 @@ stubProvider ref =
         lost <- ssCancelLost <$> readIORef ref
         if lost
           then do
-            atomicModifyIORef' ref $ \s -> (s {ssInvoices = Map.insert providerRef (SigClosed (rcv 0 Nothing)) (ssInvoices s)}, ())
+            atomicModifyIORef' ref $ \s -> (s {ssInvoices = Map.insert providerRef (SigClosed (rcv 0 Nothing) PaidInPart) (ssInvoices s)}, ())
             pure (Left (ProviderError "the response was lost"))
           else maybe (Right ()) Left . ssCancelError <$> readIORef ref,
       pListOpen = do
@@ -2267,7 +2268,7 @@ testFundedRecordsWithoutMoving = bounded "funded records only" $ withServiceStor
 testClosedExpiresAnOpenInvoice :: IO ()
 testClosedExpiresAnOpenInvoice = bounded "closed expires" $ withServiceStore $ \st -> do
   iid <- seedOpen st
-  settle st iid (SigClosed (rcv 200 (Just "0.00020000"))) settleAt `shouldReturn` Right ISExpired
+  settle st iid (SigClosed (rcv 200 (Just "0.00020000")) PaidInPart) settleAt `shouldReturn` Right ISExpired
   invoiceStatus st iid `shouldReturn` ISExpired
   p <- paymentRow st iid
   ipAmount p `shouldBe` Just (CurrencyAmount 200)
@@ -2277,7 +2278,7 @@ testClosedExpiresAnOpenInvoice = bounded "closed expires" $ withServiceStore $ \
 testClosedWithNothingWritesNoPayment :: IO ()
 testClosedWithNothingWritesNoPayment = bounded "closed on nothing" $ withServiceStore $ \st -> do
   iid <- seedOpen st
-  settle st iid (SigClosed (rcv 0 Nothing)) settleAt `shouldReturn` Right ISExpired
+  settle st iid (SigClosed (rcv 0 Nothing) PaidInPart) settleAt `shouldReturn` Right ISExpired
   invoiceStatus st iid `shouldReturn` ISExpired
   Just row <- getInvoice st iid
   irPayment row `shouldBe` Nothing
@@ -2286,8 +2287,8 @@ testClosedWithNothingWritesNoPayment = bounded "closed on nothing" $ withService
 testClosedReplayIsIdempotent :: IO ()
 testClosedReplayIsIdempotent = bounded "closed replay" $ withServiceStore $ \st -> do
   iid <- seedOpen st
-  settle st iid (SigClosed (rcv 200 (Just "0.00020000"))) settleAt `shouldReturn` Right ISExpired
-  settle st iid (SigClosed (rcv 200 (Just "0.00020000"))) replayAt `shouldReturn` Right ISExpired
+  settle st iid (SigClosed (rcv 200 (Just "0.00020000")) PaidInPart) settleAt `shouldReturn` Right ISExpired
+  settle st iid (SigClosed (rcv 200 (Just "0.00020000")) PaidInPart) replayAt `shouldReturn` Right ISExpired
   invoiceStatus st iid `shouldReturn` ISExpired
   p <- paymentRow st iid
   ipAmount p `shouldBe` Just (CurrencyAmount 200)
@@ -2308,7 +2309,7 @@ testPaidRefusesEverySignal = bounded "paid refuses" $ withServiceStore $ \st -> 
     )
     [ SigSettled (rcv 900 (Just "0.00090000")) replayAt,
       SigFunded (rcv 900 (Just "0.00090000")) PaidInPart,
-      SigClosed (rcv 900 (Just "0.00090000"))
+      SigClosed (rcv 900 (Just "0.00090000")) PaidInPart
     ]
   invoiceStatus st iid `shouldReturn` ISPaid
   bcExpiresAt <$> settledCode st iid `shouldReturn` deadline
@@ -2670,7 +2671,7 @@ testEverySignalSettles = bounded "every signal settles" $ withStubPoller raceHol
     ref
     [ ("p-settled", settledSignal),
       ("p-funded", SigFunded (rcv 200 (Just "0.00020000")) PaidInPart),
-      ("p-closed", SigClosed (rcv 100 (Just "0.00010000")))
+      ("p-closed", SigClosed (rcv 100 (Just "0.00010000")) PaidInPart)
     ]
   runOnePass poller
   invoiceStatus (weStore env) paid `shouldReturn` ISPaid
@@ -2816,7 +2817,7 @@ testSweepWritesStatusAlone = bounded "sweep writes status alone" $ withStubPolle
   invoiceStatus (weStore env) iid `shouldReturn` ISExpired
   Just row <- getInvoice (weStore env) iid
   irPayment row `shouldBe` Nothing
-  setSignals ref [("p-1", SigClosed (rcv 200 (Just "0.00020000")))]
+  setSignals ref [("p-1", SigClosed (rcv 200 (Just "0.00020000")) PaidInPart)]
   runOnePass poller
   invoiceStatus (weStore env) iid `shouldReturn` ISExpired
   p <- paymentRow (weStore env) iid
@@ -3718,6 +3719,17 @@ testPaidVerdictIsNotWithdrawnByALaterRead = bounded "verdict sticks" $ withCheck
     `shouldReturn` Right ISOpen
   o <- jsonObject =<< webGet client (invoicePath iid)
   fieldOf o "paidInFull" `shouldBe` Just (J.Bool True)
+
+testViewCarriesAClosedPaidVerdict :: IO ()
+testViewCarriesAClosedPaidVerdict = bounded "closed in full" $ withCheckout $ \_ env client -> do
+  iid <- seedOpenInvoice env
+  let readVerdict = (\o -> (fieldOf o "status", fieldOf o "paidInFull", fieldOf o "amountPaid")) <$> (jsonObject =<< webGet client (invoicePath iid))
+  settleOrder (weStore env) (weWaiters env) iid (SigClosed (rcv 250 (Just "0.00025000")) PaidInPart) someCreated
+    `shouldReturn` Right ISExpired
+  readVerdict `shouldReturn` (Just (J.String "expired"), Just (J.Bool False), Just (J.Number 250))
+  settleOrder (weStore env) (weWaiters env) iid (SigClosed (rcv 500 (Just "0.00050000")) PaidInFull) someCreated
+    `shouldReturn` Right ISExpired
+  readVerdict `shouldReturn` (Just (J.String "expired"), Just (J.Bool True), Just (J.Number 500))
 
 testExpireOverdueSparesAZeroAmount :: IO ()
 testExpireOverdueSparesAZeroAmount = withServiceStore $ \st -> do
