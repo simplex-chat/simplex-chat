@@ -660,6 +660,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "refuses a bad service key without quoting it" testNamesBadServiceKey
   it "keeps the RPC URL and the service key out of errors and the shown config" testNamesSecretsHidden
   it "names a [names] or [chain] setting nothing reads, and still boots" testNamesUnknownKeys
+  it "reads codes_only on and off as a known setting, off when absent, and refuses any other value" testNamesCodesOnly
 
 rpcUrl :: T.Text
 rpcUrl = "https://eth.example.org/v2/rpc-token-value"
@@ -674,8 +675,12 @@ sponsorAddr = "0x0B306BF915C4d645ff596e518fAf3F9669b97016"
 registrarAddr = "0x014f9c09CcEeDEF1B713110d04D3a07d5B5D9b73"
 resolverAddr = "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318"
 
+termsVersion, termsUrl :: T.Text
+termsVersion = "2026-10-23"
+termsUrl = "https://simplex.chat/"
+
 namesSection :: [T.Text]
-namesSection = ["[names]", "tld = testing"]
+namesSection = ["[names]", "tld = testing", "terms_version = " <> termsVersion, "terms_url = " <> termsUrl]
 
 chainSection :: [T.Text]
 chainSection =
@@ -724,10 +729,11 @@ testNamesDefaults = do
 
 testNamesWrittenOut :: IO ()
 testNamesWrittenOut = do
-  let ns = ["[names]", "tld = simplex", "years = 5", "term_start = 2027-03-01T12:00:00Z", "term_slack_seconds = 60"]
+  let ns = ["[names]", "tld = simplex", "terms_version = 2027-01.b", "terms_url = https://simplex.chat/names/terms", "years = 5", "term_start = 2027-03-01T12:00:00Z", "term_slack_seconds = 60"]
       cs = chainSection <> ["gas_limit_cap = 500000"]
-  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nChain = ChainConfig {cGasLimitCap}} <- parsedNames ns cs
+  NamesConfig {nTLD, nTerms, nYears, nTermStart, nTermSlackSeconds, nChain = ChainConfig {cGasLimitCap}} <- parsedNames ns cs
   nTLD `shouldBe` TLDSimplex
+  nTerms `shouldBe` TermsConfig {tVersion = "2027-01.b", tUrl = "https://simplex.chat/names/terms"}
   nYears `shouldBe` 5
   nTermStart `shouldBe` UTCTime (fromGregorian 2027 3 1) (12 * 3600)
   nTermSlackSeconds `shouldBe` 60
@@ -845,3 +851,16 @@ testNamesUnknownKeys = do
     unknownKeys ini `shouldMatchList` ["names.yeers", "chain.rpc"]
   NamesConfig {nYears} <- parsedNames (namesSection <> ["yeers = 3"]) (chainSection <> ["rpc = x"])
   nYears `shouldBe` 2
+
+testNamesCodesOnly :: IO ()
+testNamesCodesOnly = do
+  NamesConfig {nCodesOnly = absent} <- parsedNames namesSection chainSection
+  absent `shouldBe` False
+  forM_ [("on", True), ("off", False)] $ \(value, expected) -> do
+    let ns = namesSection <> ["codes_only = " <> value]
+    withIni (namesIni ns chainSection) $ \p -> do
+      Right ini <- readIniFile p
+      unknownKeys ini `shouldBe` []
+    NamesConfig {nCodesOnly} <- parsedNames ns chainSection
+    (value, nCodesOnly) `shouldBe` (value, expected)
+  namesRefusal (namesSection <> ["codes_only = yes"]) chainSection `shouldReturn` "codes_only must be on or off, not yes"

@@ -102,12 +102,24 @@ idle_seconds = 60
 ;[names]
 ; testing until the .simplex TLD is deployed
 ;tld = testing
+; the version of the name terms buyers agree to (1 to 32 letters, digits, dots, underscores or
+; hyphens), and the page the order's checkbox links to; both required, read only at startup
+;terms_version = 2026-10-23
+;terms_url = https://simplex.chat/
 ; the paid years of a name; at least 2, the controller's minimum
 ;years = 2
 ; a name's term starts here; the days until then are free
 ;term_start = 2027-01-01T00:00:00Z
 ; how far an order's duration may be from the one the service computes
 ;term_slack_seconds = 3600
+; on: only prepaid codes register names, and every paid name order answers 403 codes_only
+;codes_only = off
+;
+; community names, with [names] only: one line per name, `<label> = <what it is for>`, the label in
+; lower case and listed once, the text 1 to 200 characters without a full stop at the end, which
+; the page adds; read only at startup, see apps/simplex-store-service/README.md
+;[community]
+;bakers = bakers and bakeries in Portugal
 ;
 ; the chain the names are registered on. rpc_url can carry a provider's API key and service_key
 ; is the registrar key: keep both secret. Neither is ever logged.
