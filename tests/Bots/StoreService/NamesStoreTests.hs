@@ -47,7 +47,9 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "creates the names tables with the planned columns" testNamesColumns
     it "rolls back and re-applies only the names migrations, with rows in them, leaving the badge tables and paid invoices as they were" testNamesDownUp
     it "turns a code_issued order taken at price 0 and not live at its next version, dropping issued_code_id with its index and foreign key, which the down migration restores" testDropTakenCodes
+    it "makes taken orders not live and gives a taken paid order a balance of its price, none to a code order or a price of 0, and rolls back the balance tables and columns" testNameBalancesMigration
     it "gives the orders stored before it empty agreed terms, and rolls the column back keeping them" testNameTermsMigration
+    it "adds the payments' invoiced units with the index of overpaid payments, and rolls both back keeping the payments" testInvoicedUnitsMigration
   describe "order hash" $ do
     it "is equal for the same order fields, and differs when any one field differs" testOrderHashFields
     it "keeps field boundaries, so moving a byte between two fields changes it" testOrderHashBoundaries
@@ -138,7 +140,7 @@ insertInvoiceRow db invId expiresAt status =
 placePaid :: DBStore -> Text -> Address -> OrderFields -> UTCTime -> IO (Either RegistrationRefused ())
 placePaid st rid owner o expiresAt = withTransaction st $ \db -> do
   insertInvoiceRow db ("inv-" <> rid) expiresAt "open"
-  createPaidRegistration db (newReg rid owner o) (paidOrder $ "inv-" <> rid) t0
+  createPaidRegistration db (newReg rid owner o) (OTInvoice btc price) (paidOrder $ "inv-" <> rid) t0
 
 issue :: DBStore -> Word8 -> NewPrepaidCode -> IO PrepaidCode
 issue st n c = withTransaction st $ \db -> do
@@ -158,7 +160,11 @@ write :: DBStore -> NameRegistration -> IO VersionWrite
 write st r = withTransaction st $ \db -> updateRegistration db r (at 1)
 
 namesTables :: [Text]
-namesTables = map ("sx_badge_service_name_" <>) ["prepaid_codes", "registrations", "invoices", "record_edits", "transactions"]
+namesTables = map ("sx_badge_service_name_" <>) ["prepaid_codes", "registrations", "invoices", "record_edits", "transactions", "balances", "late_credits"]
+
+-- | Added to the badge tables' payments by the names migrations.
+balancePaymentColumns :: [Text]
+balancePaymentColumns = ["confirmed_amount", "received_units", "confirmed_units", "invoice_rate", "invoiced_units"]
 
 badgeTables :: [Text]
 badgeTables = map ("sx_badge_service_" <>) ["invoices", "payments", "badge_prices", "badge_offers", "badge_purchases", "badge_ledger", "badge_issuances", "badge_codes", "badge_code_invoices", "group"]
@@ -172,9 +178,12 @@ testNamesColumns = withServiceStore $ \st -> do
     [ "registration_id", "label_hash", "length", "label", "secret", "contact_link", "channel_link", "intent_nonce", "intent_deadline", "intent_signature",
       "sealed", "owner", "commitment", "phase", "commit_tx", "commit_block", "register_tx", "register_block", "reveal_after", "reveal_before",
       "years", "duration", "expires_at", "price", "name_prepaid_code_id", "registered_at", "failed_at", "error", "created_at",
-      "updated_at", "version", "live", "order_hash", "method", "moves", "links_refused_at", "agreed_terms"
+      "updated_at", "version", "live", "order_hash", "method", "moves", "links_refused_at", "balance_source", "balance_used", "agreed_terms"
     ]
-  has "sx_badge_service_name_invoices" ["invoice_id", "registration_id", "provider_ref"]
+  has "sx_badge_service_name_invoices" ["invoice_id", "registration_id", "provider_ref", "late_alerted_at", "late_alerted_units", "late_support"]
+  has "sx_badge_service_name_balances" ["registration_id", "amount", "credited", "refunded", "reserved_by", "refunded_at", "created_at", "updated_at"]
+  has "sx_badge_service_name_late_credits" ["invoice_id", "credit_no", "registration_id", "units", "invoice_rate", "current_rate", "rate_used", "cents", "created_at"]
+  has "sx_badge_service_payments" balancePaymentColumns
   has "sx_badge_service_name_record_edits" ["label_hash", "owner", "nonce", "body_hash", "state", "revert", "mined_tx", "created_at"]
   has "sx_badge_service_name_transactions" ["registration_id", "name_record_edit_id", "kind", "raw", "tx_hash", "registrar_nonce", "sent_at", "mined_block", "status"]
 
@@ -182,7 +191,7 @@ testNamesDownUp :: IO ()
 testNamesDownUp = withServiceStore $ \st -> do
   let names = dropWhile ((/= "20261013_names") . name) storeServiceSchemaMigrations
       badgeColumns = mapM (fmap sort . columnsOf st) badgeTables
-  map name names `shouldBe` ["20261013_names", "20261022_drop_taken_codes", "20261023_name_terms"]
+  map name names `shouldBe` ["20261013_names", "20261022_drop_taken_codes", "20261022_name_balances", "20261022_name_late_wait", "20261023_name_terms", "20261027_name_invoiced_units"]
   badgeBefore <- badgeColumns
   code <- issue st 1 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
@@ -192,7 +201,7 @@ testNamesDownUp = withServiceStore $ \st -> do
   runMigrations st $ MTRDown (mapMaybe toDownMigration names)
   mapM (columnsOf st) namesTables `shouldReturn` map (const []) namesTables
   mapM (invoiceCount st) ["inv-r2", "inv-r3"] `shouldReturn` [0, 1]
-  badgeColumns `shouldReturn` badgeBefore
+  badgeColumns `shouldReturn` map (filter (`notElem` balancePaymentColumns)) badgeBefore
   runMigrations st $ MTRUp names
   mapM (fmap null . columnsOf st) namesTables `shouldReturn` map (const False) namesTables
   badgeColumns `shouldReturn` badgeBefore
@@ -222,6 +231,43 @@ testDropTakenCodes = withServiceStore $ \st -> do
   worth <$> reg st "r1" `shouldReturn` (PTaken, 0, False, 2)
   withTransaction st (\db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET issued_code_id = ? WHERE registration_id = 'r1'" (Only $ pcId code + 1)) `shouldThrow` foreignKeyViolation
 
+testNameBalancesMigration :: IO ()
+testNameBalancesMigration = withServiceStore $ \st -> do
+  let balances = [m | m@Migration {name = "20261022_name_balances"} <- storeServiceSchemaMigrations]
+      -- its index reads received_units, which the balances' down migration drops
+      invoicedUnits = [m | m@Migration {name = "20261027_name_invoiced_units"} <- storeServiceSchemaMigrations]
+      down = MTRDown (mapMaybe toDownMigration (balances <> invoicedUnits))
+      up = MTRUp (balances <> invoicedUnits)
+      applied :: IO (Bool, Bool, Bool)
+      applied = (,,) <$> (not . null <$> columnsOf st "sx_badge_service_name_balances") <*> (elem "balance_source" <$> columnsOf st "sx_badge_service_name_registrations") <*> (elem "confirmed_units" <$> columnsOf st "sx_badge_service_payments")
+      live :: Text -> IO Bool
+      live rid = withTransaction st $ \db -> DB.query db "SELECT live FROM sx_badge_service_name_registrations WHERE registration_id = ?" (Only rid) >>= \case
+        [Only (DB.BI l)] -> pure l
+        rows -> fail $ "registration " <> show rid <> ": " <> show (length rows) <> " rows"
+      balanceOf :: Text -> IO (Maybe (Int, Int, Int, Maybe BalanceHold))
+      balanceOf rid = withTransaction st $ \db -> fmap (\Balance {blAmount, blCredited, blRefunded, blHold} -> (blAmount, blCredited, blRefunded, blHold)) <$> getBalance db (RegistrationId rid) t0
+  length balances `shouldBe` 1
+  runMigrations st down
+  applied `shouldReturn` (False, False, False)
+  code <- issue st 1 usable
+  withTransaction st $ \db -> do
+    insertInvoiceRow db "inv-paid" (at 60) "paid"
+    insertOldRegistration db "paid" 1 "taken" price Nothing (Just "inv-paid")
+    insertOldRegistration db "code" 2 "taken" 0 (Just $ pcId code) Nothing
+    insertInvoiceRow db "inv-converted" (at 60) "paid"
+    insertOldRegistration db "converted" 3 "taken" 0 Nothing (Just "inv-converted")
+    insertInvoiceRow db "inv-queued" (at 60) "paid"
+    insertOldRegistration db "queued" 4 "queued" price Nothing (Just "inv-queued")
+  runMigrations st up
+  applied `shouldReturn` (True, True, True)
+  mapM live ["paid", "code", "converted", "queued"] `shouldReturn` [False, False, False, True]
+  mapM balanceOf ["paid", "code", "converted", "queued"] `shouldReturn` [Just (price, price, 0, Nothing), Nothing, Nothing, Nothing]
+  runMigrations st down
+  applied `shouldReturn` (False, False, False)
+  mapM live ["paid", "queued"] `shouldReturn` [False, True]
+  runMigrations st up
+  balanceOf "paid" `shouldReturn` Just (price, price, 0, Nothing)
+
 testNameTermsMigration :: IO ()
 testNameTermsMigration = withServiceStore $ \st -> do
   let terms = [m | m@Migration {name = "20261023_name_terms"} <- storeServiceSchemaMigrations]
@@ -247,7 +293,28 @@ testNameTermsMigration = withServiceStore $ \st -> do
   runMigrations st $ MTRUp terms
   agreedTerms `shouldReturn` [("paid", "")]
 
--- | A registration row as the code before the terms wrote it, paid by the invoice or the code given.
+testInvoicedUnitsMigration :: IO ()
+testInvoicedUnitsMigration = withServiceStore $ \st -> do
+  let invoiced = [m | m@Migration {name = "20261027_name_invoiced_units"} <- storeServiceSchemaMigrations]
+      applied :: IO (Bool, Bool)
+      applied = (,) <$> (elem "invoiced_units" <$> columnsOf st "sx_badge_service_payments") <*> indexExists st "sx_badge_service_idx_payments_overpaid"
+      payments :: IO [(Text, Maybe Int64)]
+      payments = withTransaction st $ \db -> DB.query_ db "SELECT invoice_id, received_units FROM sx_badge_service_payments"
+  length invoiced `shouldBe` 1
+  applied `shouldReturn` (True, True)
+  runMigrations st $ MTRDown (mapMaybe toDownMigration invoiced)
+  applied `shouldReturn` (False, False)
+  withTransaction st $ \db -> do
+    insertInvoiceRow db "inv-paid" (at 60) "paid"
+    insertPayment db "inv-paid"
+  stored <- payments
+  runMigrations st $ MTRUp invoiced
+  applied `shouldReturn` (True, True)
+  runMigrations st $ MTRDown (mapMaybe toDownMigration invoiced)
+  applied `shouldReturn` (False, False)
+  payments `shouldReturn` stored
+
+-- | A registration row as the code before the balances wrote it, paid by the invoice or the code given.
 insertOldRegistration :: DB.Connection -> Text -> Word8 -> Text -> Int -> Maybe Int64 -> Maybe Text -> IO ()
 insertOldRegistration db rid n phase cents codeId invId = do
   let OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed} = order ("alicebakery" <> rid) n
@@ -309,6 +376,8 @@ testCreatePaid = withServiceStore $ \st -> do
         nrYears = twoYears,
         nrPrice = price,
         nrPayment = RPInvoice btc (InvoiceId "inv-r1"),
+        nrBalanceSource = Nothing,
+        nrBalanceUsed = 0,
         nrReveal = Nothing,
         nrCommitTx = Nothing,
         nrCommitBlock = Nothing,
@@ -398,7 +467,7 @@ testCloseOverdue = withServiceStore $ \st -> do
     [LiveOrder {loRegistration, loOverdue = True}] <- getLiveOrders db (ofCommitment o') ownerA (ofLabelHash o') (at 61)
     void $ closeOverdue db loRegistration (at 61)
     insertInvoiceRow db "inv-r2" (at 120) "open"
-    createPaidRegistration db (newReg "r2" ownerA o') (paidOrder "inv-r2") (at 61)
+    createPaidRegistration db (newReg "r2" ownerA o') (OTInvoice btc price) (paidOrder "inv-r2") (at 61)
   placed `shouldBe` Right ()
   old <- reg st "r1"
   (nrLive old, nrPhase old, nrVersion old) `shouldBe` (False, PUnpaid, 2)
@@ -541,11 +610,11 @@ testFind = withServiceStore $ \st -> do
     let rid = "r" <> T.pack (show i)
         o = order ("alicebakery" <> T.pack (show i)) (fromIntegral i)
     insertInvoiceRow db ("inv-" <> rid) (at 60) "open"
-    createPaidRegistration db (newReg rid ownerA o) (paidOrder $ "inv-" <> rid) (at i) `shouldReturn` Right ()
+    createPaidRegistration db (newReg rid ownerA o) (OTInvoice btc price) (paidOrder $ "inv-" <> rid) (at i) `shouldReturn` Right ()
   placePaid st "other" ownerB (order "bobsbakery" 99) (at 60) `shouldReturn` Right ()
-  found <- withTransaction st $ \db -> findRegistrations db ownerA
-  map nrId found `shouldBe` [RegistrationId $ "r" <> T.pack (show i) | i <- [52, 51 .. 3 :: Int]]
-  withTransaction st (\db -> findRegistrations db (address "0x0000000000000000000000000000000000000001")) `shouldReturn` []
+  found <- withTransaction st $ \db -> findRegistrations db ownerA t0
+  map (nrId . fst) found `shouldBe` [RegistrationId $ "r" <> T.pack (show i) | i <- [52, 51 .. 3 :: Int]]
+  withTransaction st (\db -> findRegistrations db (address "0x0000000000000000000000000000000000000001") t0) `shouldReturn` []
 
 testSameSecondOrder :: IO ()
 testSameSecondOrder = withServiceStore $ \st -> do
@@ -555,7 +624,7 @@ testSameSecondOrder = withServiceStore $ \st -> do
     placePaid st rid ownerA (order ("alicebakery" <> rid) n) (at 60) `shouldReturn` Right ()
     r <- reg st rid
     write st r {nrPhase = PQueued} `shouldReturn` Written 2
-  map nrId <$> withTransaction st (`findRegistrations` ownerA) `shouldReturn` map RegistrationId ["r3", "r2", "r1"]
+  map (nrId . fst) <$> withTransaction st (\db -> findRegistrations db ownerA t0) `shouldReturn` map RegistrationId ["r3", "r2", "r1"]
   map nrId <$> withTransaction st activeRegistrations `shouldReturn` map RegistrationId ["r1", "r2", "r3"]
   forM_ ["r5", "r4"] $ \rid -> do
     placePaid st rid ownerB o (at 60) `shouldReturn` Right ()
@@ -600,7 +669,7 @@ testUnpaidCleanup = withServiceStore $ \st -> do
   void $ write st r {nrPhase = PQueued}
   candidates <- withTransaction st $ \db -> unpaidCleanupCandidates db (at 61)
   map (\(RegistrationId rid, InvoiceId invId) -> (rid, invId)) candidates `shouldBe` [("old", "inv-old")]
-  withTransaction st (\db -> mapM (deleteUnpaidRegistration db . RegistrationId) ["old", "funded", "queued"]) `shouldReturn` [True, False, False]
+  withTransaction st (\db -> mapM (deleteUnpaidRegistration db . RegistrationId) ["old", "funded", "queued"]) `shouldReturn` [Right (), Left CKPaid, Left CKPaid]
   withTransaction st (\db -> getRegistration db (RegistrationId "old")) `shouldReturn` Nothing
   invoiceCount st "inv-old" `shouldReturn` 0
   invoiceCount st "inv-funded" `shouldReturn` 1

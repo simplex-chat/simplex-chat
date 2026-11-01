@@ -5,16 +5,20 @@
 
 module Bots.StoreService.NamesWorkerTests (namesWorkerTests) where
 
+import Bots.StoreService.ConfigTests (termsVersion)
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, noncesCall, registrarOf, unhex)
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
-import Bots.StoreService.NamesStoreTests (reveal)
+import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, ownerA, paidOrder, reveal)
 import Bots.StoreService.WebTests (capturingStderr, jsonObject, statusOf, stubCalls, webGet, webRequestBody)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
+import Control.Concurrent (threadDelay)
+import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.Async (wait, withAsync)
+import qualified Control.Exception as E
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
 import Control.Monad (forM_, replicateM, replicateM_, void)
@@ -30,6 +34,7 @@ import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Network.HTTP.Client (defaultManagerSettings, newManager, responseBody)
 import qualified Network.Wai.Handler.Warp as Warp
+import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (keccak256)
@@ -44,6 +49,7 @@ import StoreService.Names.Phases (RegistrationId (..), awaitChange)
 import StoreService.Names.Registration (RegisterIntent (..), commitCalldata, registerIntentDigest, registerWithCreditCalldata, sponsorDomain)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Sender
+import StoreService.Names.Signatures (OrderFields (..))
 import StoreService.Names.Store
 import StoreService.Names.Turns (labelTurnCount, withLabelTurn)
 import StoreService.Names.Worker
@@ -55,7 +61,16 @@ import System.Timeout (timeout)
 import Test.Hspec
 
 namesWorkerTests :: Spec
-namesWorkerTests = describe "StoreService names: worker" $ do
+namesWorkerTests = workerTests >> takenBalanceTests
+
+takenBalanceTests :: Spec
+takenBalanceTests = describe "StoreService names: balance life" $ describe "taken" $ do
+  it "credits a taken order paid wholly from a balance, and one paid partly, its whole price as a balance of its own, the source's left as it was" testTakenFromBalance
+  it "leaves the order as it was when the taken write's credit is refused, in one transaction" testTakenCreditRefused
+  it "wakes a held poll with the taken write, and not with a change of the order's balance" testTakenWakesPoll
+
+workerTests :: Spec
+workerTests = describe "StoreService names: worker" $ do
   describe "commit" $ do
     it "commits, waits for the reveal and revealAfter, and registers a code order, spending its code and publishing each change" testCommitWaitRegister
     it "registers a code order with codes_only on, from the code check to the registered view, refusing a paid order" testCodesOnlyRegister
@@ -70,8 +85,8 @@ namesWorkerTests = describe "StoreService names: worker" $ do
     it "writes nothing when the registration changed since it was read" testLostRace
     it "writes in the name's turn" testInNameTurn
   describe "register" $ do
-    it "ends the later of two wallets' paid orders for one name taken, not live, with its value kept" testTwoWallets
-    it "ends taken on any revert while the name is not available, releasing a code" testRevertTaken
+    it "ends the later of two wallets' paid orders for one name taken, not live, with a balance of its price" testTwoWallets
+    it "ends taken on any revert while the name is not available, releasing a code and keeping no balance" testRevertTaken
     it "keeps the phase on NameNotAvailable while the name still reads available, as for a pending competitor" testPendingCompetitor
     it "ends failed on a revert while the name is available, alerting on InsufficientAllowance and keeping a code" testRevertFailed
     it "clears the reveal on InvalidNonce, staying committed" testInvalidNonce
@@ -507,7 +522,76 @@ testTwoWallets = withWorker $ \w@W {wCtx = ctx} -> do
   published w b (steps w b) >>= done
   x <- stored ctx b
   (nrPhase x, nrLive x, nrPrice x, nrPayment x, nrError x) `shouldBe` (PTaken, False, nrPrice b, nrPayment b, Nothing)
+  fmap (\Balance {blAmount, blCredited, blHold} -> (blAmount, blCredited, blHold)) <$> withTransaction (cStore ctx) (\db -> getBalance db (nrId b) orderTime)
+    `shouldReturn` Just (nrPrice b, nrPrice b, Nothing)
   length <$> sent w `shouldReturn` 1
+
+-- | The order of alicebakery, by owner A, with this commitment.
+aliceFields :: Int -> OrderFields
+aliceFields n = OrderFields {ofLabelHash = labelHash "alicebakery", ofLength = 11, ofDuration = yearsDuration 2 orderTime, ofCommitment = commitmentOf n, ofSealed = "sealed-alicebakery-" <> tshow n, ofAgreedTerms = termsVersion}
+
+aliceRegistration :: Text -> Int -> NewRegistration
+aliceRegistration rid n = NewRegistration {nrgId = RegistrationId rid, nrgOwner = ownerA, nrgOrder = aliceFields n, nrgYears = 2}
+
+-- | The amount and credited of the order's balance.
+balanceFigures :: Ctx -> RegistrationId -> IO (Maybe (Int, Int))
+balanceFigures Ctx {cStore} rid = fmap (\Balance {blAmount, blCredited} -> (blAmount, blCredited)) <$> withTransaction cStore (\db -> getBalance db rid orderTime)
+
+-- | The register's dry run reverts on a name someone else holds, so the registration ends taken.
+endsTaken :: W -> NameRegistration -> IO ()
+endsTaken w@W {wCtx = Ctx {cNode}} r = do
+  answerAvailable w False
+  setFault cNode "eth_estimateGas" $ RpcError 3 "execution reverted: ERC721: invalid token ID" Nothing
+  published w r (steps w r) >>= done
+
+testTakenFromBalance :: IO ()
+testTakenFromBalance = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
+  let price = oPrice aliceOrder
+  wholly <- paidIn ctx (byB dynamisOrder) failedPhase
+  partly <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 5} failedPhase
+  withTransaction cStore $ \db -> creditBalance db (nrId wholly) 30000 orderTime >> creditBalance db (nrId partly) 4000 orderTime
+  withTransaction cStore (\db -> createBalanceRegistration db (aliceRegistration "covered" 1) (nrId wholly) price 30000 orderTime) `shouldReturn` Right ()
+  covered <- registrationById ctx (RegistrationId "covered") >>= \r -> rewrite ctx r openPhase >>= revealed ctx keyA "alicebakery"
+  endsTaken w covered
+  (\x -> (nrPhase x, nrLive x, nrPayment x)) <$> stored ctx covered `shouldReturn` (PTaken, False, RPBalance)
+  balanceFigures ctx (nrId covered) `shouldReturn` Just (price, price)
+  balanceFigures ctx (nrId wholly) `shouldReturn` Just (30000 - price, 30000)
+  withTransaction cStore $ \db -> do
+    insertInvoiceRow db "inv-diff" (addUTCTime 3600 orderTime) "open"
+    createPaidRegistration db (aliceRegistration "diff" 2) (OTBalance (nrId partly) price 4000 (Just btc)) (paidOrder "inv-diff") {poPrice = price} orderTime `shouldReturn` Right ()
+  settleNow ctx (InvoiceId "inv-diff") settled `shouldReturn` Right ISPaid
+  balanceFigures ctx (nrId partly) `shouldReturn` Just (0, 4000)
+  diff <- registrationById ctx (RegistrationId "diff") >>= \r -> rewrite ctx r openPhase >>= revealed ctx keyA "alicebakery"
+  endsTaken w diff
+  nrPhase <$> stored ctx diff `shouldReturn` PTaken
+  balanceFigures ctx (nrId diff) `shouldReturn` Just (price, price)
+  balanceFigures ctx (nrId partly) `shouldReturn` Just (0, 4000)
+
+-- | A price the balance's CHECK refuses makes the credit fail inside the taken write's transaction.
+testTakenCreditRefused :: IO ()
+testTakenCreditRefused = withWorker $ \w@W {wCtx = ctx@Ctx {cStore, cNode}} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
+  withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET price = -1 WHERE registration_id = ?" [(\(RegistrationId t) -> t) $ nrId r]
+  unchanged <- stored ctx r
+  answerAvailable w False
+  setFault cNode "eth_estimateGas" $ RpcError 3 "execution reverted: ERC721: invalid token ID" Nothing
+  void (E.try (steps w r) :: IO (Either E.SomeException Next))
+  stored ctx r `shouldReturn` unchanged
+  balanceFigures ctx (nrId r) `shouldReturn` Nothing
+
+testTakenWakesPoll :: IO ()
+testTakenWakesPoll = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
+  waiting <- held ctx (0, 1) $ registrationPath (nrId r) <> "?seenVersion=" <> show (nrVersion r)
+  withTransaction cStore $ \db -> creditBalance db (nrId r) 500 orderTime
+  threadDelay shortWait
+  isJust <$> Async.poll waiting `shouldReturn` False
+  endsTaken w r
+  (status, view) <- woken "the registration poll" waiting
+  (status, field "phase" view) `shouldBe` (200, Just "taken")
+  balanceFigures ctx (nrId r) `shouldReturn` Just (500 + oPrice aliceOrder, 500 + oPrice aliceOrder)
+  where
+    shortWait = 500000
 
 testPendingCompetitor :: IO ()
 testPendingCompetitor = withWorker $ \w@W {wCtx = ctx} -> do
@@ -534,6 +618,7 @@ testRevertTaken = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   (nrPhase x, nrLive x) `shouldBe` (PTaken, False)
   PrepaidCode {pcReservedBy, pcSpentAt} <- codeOf ctx code
   (pcReservedBy, pcSpentAt) `shouldBe` (Nothing, Nothing)
+  balanceFigures ctx (nrId r) `shouldReturn` Nothing
   sent w `shouldReturn` []
 
 testRevertFailed :: IO ()

@@ -8,6 +8,7 @@
 module Bots.StoreService.WebTests
   ( badgeWebTests,
     withServiceStore,
+    withServiceStores,
     columnsOf,
     runMigrations,
     digestFixture,
@@ -77,7 +78,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (toLower)
 import Data.Either (isLeft)
 import Data.Functor ((<&>))
-import Data.IORef (IORef, atomicModifyIORef', newIORef, readIORef)
+import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef)
 import Data.Int (Int64)
 import Data.List (isInfixOf, sort, sortOn)
 import qualified Data.Map.Strict as Map
@@ -134,32 +135,37 @@ import Simplex.Messaging.Agent.Store.DB (TrackQueries (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 #endif
 
-#if defined(dbPostgres)
 withServiceStore :: (DBStore -> IO a) -> IO a
-withServiceStore action = do
+withServiceStore action = withServiceStores (>>= action)
+
+-- | Each store the action opens is a new one over the same test database, as a restarted service opens; all are closed at the end.
+withServiceStores :: (IO DBStore -> IO a) -> IO a
+withServiceStores action = withServiceDBOpts $ \opts -> do
+  opened <- newIORef []
+  let open = do
+        Right st <- createDBStore opts storeServiceSchemaMigrations (MigrationConfig MCError Nothing)
+        st <$ modifyIORef' opened (st :)
+  action open `E.finally` (readIORef opened >>= mapM_ closeDBStore)
+
+withServiceDBOpts :: (DBOpts -> IO a) -> IO a
+#if defined(dbPostgres)
+withServiceDBOpts action = do
   n <- atomicModifyIORef' serviceSchemaCounter (\i -> (i + 1, i))
-  Right st <- createDBStore (serviceDBOpts n) storeServiceSchemaMigrations (MigrationConfig MCError Nothing)
-  action st `E.finally` closeDBStore st
-  where
-    serviceDBOpts :: Int -> DBOpts
-    serviceDBOpts n =
-      DBOpts
-        { connstr = BC.pack testDBConnstr,
-          schema = "sx_badge_service_web_test_" <> BC.pack (show n),
-          poolSize = 4,
-          createSchema = True
-        }
+  action
+    DBOpts
+      { connstr = BC.pack testDBConnstr,
+        schema = "sx_badge_service_web_test_" <> BC.pack (show n),
+        poolSize = 4,
+        createSchema = True
+      }
 
 serviceSchemaCounter :: IORef Int
 serviceSchemaCounter = unsafePerformIO $ newIORef 0
 {-# NOINLINE serviceSchemaCounter #-}
 #else
-withServiceStore :: (DBStore -> IO a) -> IO a
-withServiceStore action = do
+withServiceDBOpts action = do
   createDirectoryIfMissing True "tests/tmp"
-  withTempDirectory "tests/tmp" "badge-web" $ \dir -> do
-    Right st <- createDBStore (DBOpts (dir </> "badge_service_test.db") [] "" False True TQOff) storeServiceSchemaMigrations (MigrationConfig MCError Nothing)
-    action st `E.finally` closeDBStore st
+  withTempDirectory "tests/tmp" "badge-web" $ \dir -> action (DBOpts (dir </> "badge_service_test.db") [] "" False True TQOff)
 #endif
 
 columnsOf :: DBStore -> Text -> IO [Text]
@@ -417,7 +423,7 @@ testMigrationOrder = do
   [(a, b) | (a, b) <- zip declared (drop 1 declared), a >= b] `shouldBe` []
   let (badges, ours) = span (`elem` badgeMigrations) (map name storeServiceSchemaMigrations)
   badges `shouldBe` badgeMigrations
-  ours `shouldBe` ["20261013_names", "20261022_drop_taken_codes", "20261023_name_terms"]
+  ours `shouldBe` ["20261013_names", "20261022_drop_taken_codes", "20261022_name_balances", "20261022_name_late_wait", "20261023_name_terms", "20261027_name_invoiced_units"]
   where
     badgeMigrations = ["20260915_badge_service_schema", "20260918_badge_group_ops", "20260925_badge_store_receipts", "20261012_badge_subscriptions"]
 
@@ -1039,6 +1045,7 @@ data StubCall
   | StubRead Text
   | StubCancel Text
   | StubListOpen
+  | StubRate CryptoCurrency
   deriving (Eq, Show)
 
 data StubState = StubState
@@ -1054,7 +1061,8 @@ data StubState = StubState
     ssVerifyResult :: Either WebhookError (Maybe Text),
     ssVerifyThrows :: Bool,
     ssWebhooks :: [([Header], ByteString)],
-    ssReadDelay :: Int
+    ssReadDelay :: Int,
+    ssRate :: Either ProviderError Rate
   }
 
 newStubState :: Either ProviderError ProviderInvoice -> StubState
@@ -1071,8 +1079,13 @@ newStubState ssCreateResult =
       ssVerifyResult = Right Nothing,
       ssVerifyThrows = False,
       ssWebhooks = [],
-      ssReadDelay = 0
+      ssReadDelay = 0,
+      ssRate = Right stubRate
     }
+
+-- | Below the stored invoices' rate of 62500.
+stubRate :: Rate
+stubRate = Rate {rateText = "60000.5", rateValue = 60000.5}
 
 record :: IORef StubState -> StubCall -> IO ()
 record ref call = atomicModifyIORef' ref $ \s -> (s {ssCalls = ssCalls s ++ [call]}, ())
@@ -1103,6 +1116,9 @@ stubProvider ref =
         pure $ case ssListError stub of
           Just e -> Left e
           Nothing -> Right ListPass {lpMoved = Map.toList (ssInvoices stub), lpSkipped = ssSkipped stub},
+      pCurrentRate = Just $ \cc -> do
+        record ref (StubRate cc)
+        ssRate <$> readIORef ref,
       pVerifyWebhook = const (verifyRecording ref)
     }
 
@@ -2416,8 +2432,19 @@ replayAt = addUTCTime 3600 settleAt
 detectedAt :: UTCTime
 detectedAt = addUTCTime 300 settleAt
 
+-- | Nothing confirmed and no units, as the badge paths read it.
 rcv :: Word32 -> Maybe Text -> Received
-rcv amount crypto = Received {rcvAmount = CurrencyAmount amount, rcvCrypto = crypto, rcvDue = Nothing}
+rcv amount crypto =
+  Received
+    { rcvAmount = CurrencyAmount amount,
+      rcvCrypto = crypto,
+      rcvDue = Nothing,
+      rcvUnits = Nothing,
+      rcvInvoicedUnits = Nothing,
+      rcvRate = Nothing,
+      rcvConfirmed = Confirmed {cfCents = CurrencyAmount 0, cfUnits = Nothing},
+      rcvUncreditable = Nothing
+    }
 
 settle :: DBStore -> InvoiceId -> PaymentSignal -> UTCTime -> IO (Either Text InvoiceStatus)
 settle st iid signal at = newWaiters >>= \waiters -> settleOrder st waiters Nothing iid signal at
@@ -2727,8 +2754,8 @@ testSettledPaymentIsNotDowngraded :: IO ()
 testSettledPaymentIsNotDowngraded = bounded "settled is not downgraded" $ withServiceStore $ \st -> do
   iid <- seedOpen st
   row <- getInvoice st iid >>= maybe (failWith "no invoice row") pure
-  withTransaction st $ \db -> upsertPayment db row PSSettled (CurrencyAmount 500) (Just "0.00050000") Nothing False settleAt
-  withTransaction st $ \db -> upsertPayment db row PSPending (CurrencyAmount 200) (Just "0.00020000") Nothing False replayAt
+  withTransaction st $ \db -> upsertPayment db row PSSettled (rcv 500 (Just "0.00050000")) False settleAt
+  withTransaction st $ \db -> upsertPayment db row PSPending (rcv 200 (Just "0.00020000")) False replayAt
   p <- paymentRow st iid
   ipStatus p `shouldBe` "settled"
   ipUpdatedAt p `shouldBe` settleAt
@@ -2737,8 +2764,8 @@ testSettledPaymentIsNotDowngraded = bounded "settled is not downgraded" $ withSe
   let second' = sampleInvoice {niInvoiceId = InvoiceId "inv-pending", niProviderRef = "p-pending", niCodeHash = digestFixture 16}
   createInvoiceRows st second' `shouldReturn` Right ()
   row' <- getInvoice st (niInvoiceId second') >>= maybe (failWith "no invoice row") pure
-  withTransaction st $ \db -> upsertPayment db row' PSPending (CurrencyAmount 100) Nothing Nothing False settleAt
-  withTransaction st $ \db -> upsertPayment db row' PSSettled (CurrencyAmount 500) (Just "0.00050000") Nothing False replayAt
+  withTransaction st $ \db -> upsertPayment db row' PSPending (rcv 100 Nothing) False settleAt
+  withTransaction st $ \db -> upsertPayment db row' PSSettled (rcv 500 (Just "0.00050000")) False replayAt
   p' <- paymentRow st (niInvoiceId second')
   ipStatus p' `shouldBe` "settled"
   ipUpdatedAt p' `shouldBe` replayAt
