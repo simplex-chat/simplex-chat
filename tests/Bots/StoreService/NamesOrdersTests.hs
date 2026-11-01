@@ -319,6 +319,7 @@ testNamesConfig node =
       nYears = 2,
       nTermStart = termStart,
       nTermSlackSeconds = slackSeconds,
+      nRevealMarginSeconds = 900,
       nCodesOnly = False,
       nTerms = TermsConfig {tVersion = termsVersion, tUrl = termsUrl},
       nCommunity = M.empty,

@@ -42,7 +42,10 @@ import StoreService.Group (GroupEvent, ensureManagedGroup, groupEvent, hasTracke
 import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, maxNameYears, nameCodeP, prepaidCodeP, textTokenP)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
+import StoreService.Names.Orders (ordersEnv)
+import StoreService.Names.Sender (runSender)
 import StoreService.Names.Turns (Turns, newTurns)
+import StoreService.Names.Worker (newWorker, runCodeSweep, runWorkers)
 import StoreService.Options
 import StoreService.Poller (newPollerEnv, newReadHints, runPoller)
 import StoreService.Providers (Provider)
@@ -244,7 +247,8 @@ storeService opts@StoreServiceOpts {serviceConfigFile} cfg env = do
       webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
       exportWebapp sc
       pollerEnv <- newPollerEnv chatStore ws (nePhases <$> namesEnv) hints providers (poll sc)
-      pure [runWebListeners webEnv, runPoller pollerEnv]
+      nameLanes <- maybe (pure []) namesLanes namesEnv
+      pure $ [runWebListeners webEnv, runPoller pollerEnv] <> nameLanes
 
 startNames :: ChatController -> Turns -> Waiters -> [Provider] -> NamesConfig -> IO NamesEnv
 startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig {nTLD, nCodesOnly, nChain = ChainConfig {cChainId}} =
@@ -255,6 +259,12 @@ startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig 
       newNamesEnv cc userId nc chatStore turns waiters providers
   where
     codesOnlyNote = if nCodesOnly then ", codes only: registration needs a prepaid code" else ""
+
+-- | The workers resume every registration in their phases, and the code sweep runs at the start and then daily.
+namesLanes :: NamesEnv -> IO [IO ()]
+namesLanes ne@NamesEnv {neChain, neSender} = do
+  worker <- newWorker (ordersEnv ne) neChain neSender
+  pure [runSender neSender, runWorkers worker, runCodeSweep worker]
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do

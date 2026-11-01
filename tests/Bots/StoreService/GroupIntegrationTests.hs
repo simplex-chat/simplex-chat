@@ -8,11 +8,12 @@
 {-# LANGUAGE TupleSections #-}
 
 -- Members' messages reach a console over separate connections in no fixed order, so gating is asserted from the bot's store.
-module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, namesBootTests, namesCodesChatTests) where
+module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, namesBootTests, namesCodesChatTests, namesWorkerBootTests) where
 
 import StoreService.Config (BadgeIssuerKey (..), GroupConfig (..))
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup)
 import StoreService.Group.Command (maxUses)
+import StoreService.Names.Abi (selector, uint256)
 import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Store (PrepaidCode (..), getPrepaidCode, spendPrepaidCode)
@@ -21,7 +22,9 @@ import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Service (ServiceState (..), newServiceState, storeService)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx)
-import Bots.StoreService.ConfigTests (chainSection, namesSection)
+import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection)
+import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), answerCall, awaitSent, withFakeEthNode)
+import Bots.StoreService.WebTests (digestFixture)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import Bots.StoreService.NamesStoreTests (order, ownerA, placeCode, placePaid)
 import ChatClient
@@ -139,7 +142,7 @@ badgeGroupIntegrationTests = do
 namesBootTests :: SpecWith TestParams
 namesBootTests = do
   it "boots codes-only, refusing paid name orders 403 codes_only and answering code orders and code checks, the badges shell as built" testNamesBootCodesOnly
-  it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, registrations to GET, a path no route knows and a taken order's code to 404, and code checks and orders under one limit" testNamesBoot
+  it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, registrations to GET, a reveal and a retry to POST, a path no route knows and a taken order's code to 404, code checks and orders under one limit, and retries under another" testNamesBoot
 
 testNamesBoot :: HasCallStack => TestParams -> IO ()
 testNamesBoot ps = do
@@ -163,6 +166,17 @@ testNamesBoot ps = do
     (statusCode $ responseStatus posted, lookup "Allow" $ responseHeaders posted) `shouldBe` (405, Just "GET")
     coded <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/code"
     answer coded {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` (404, Just $ J.object ["error" J..= ("not_found" :: Text)])
+    revealed <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/reveal"
+    answer revealed {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` (404, Just $ J.object ["error" J..= ("not_found" :: Text)])
+    revealedByGet <- httpLbs revealed mgr
+    (statusCode $ responseStatus revealedByGet, lookup "Allow" $ responseHeaders revealedByGet) `shouldBe` (405, Just "POST")
+    retried <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/retry"
+    answer retried {method = "POST"} `shouldReturn` (404, Just $ J.object ["error" J..= ("not_found" :: Text)])
+    retriedByGet <- httpLbs retried mgr
+    (statusCode $ responseStatus retriedByGet, lookup "Allow" $ responseHeaders retriedByGet) `shouldBe` (405, Just "POST")
+    -- the retry above took 1 of this client's 5 create requests a minute
+    replicateM_ 4 $ statusCode . responseStatus <$> httpLbs retried {method = "POST"} mgr `shouldReturn` 404
+    statusCode . responseStatus <$> httpLbs retried {method = "POST"} mgr `shouldReturn` 429
     -- the register above took the first of this client's 10 code requests a minute, which the code check shares
     let codeRequest path = request path >>= \r -> statusCode . responseStatus <$> httpLbs r {method = "POST", requestBody = RequestBodyLBS "{}"} mgr
     forM_ (take 9 $ cycle ["/api/code/check", "/api/name/register"]) $ \path -> (path,) <$> codeRequest path `shouldReturn` (path, 400)
@@ -193,6 +207,27 @@ testNamesBootCodesOnly ps = do
 -- | [names] with codes_only on, as an investors' launch runs.
 codesOnlyNames :: [Text]
 codesOnlyNames = namesSection <> ["codes_only = on"]
+
+namesWorkerBootTests :: SpecWith TestParams
+namesWorkerBootTests = it "starts the workers with the service, sending the commit of an order queued after the start" testWorkerBoot
+
+testWorkerBoot :: HasCallStack => TestParams -> IO ()
+testWorkerBoot ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
+  svc <- prepareGroupService ps
+  let onFakeNode line = if "rpc_url" `T.isPrefixOf` line then "rpc_url = " <> T.pack fnUrl else line
+      controller = either error id $ strDecode $ encodeUtf8 controllerAddr
+  -- the order's commitment, digestFixture 1, not yet committed
+  forM_ [("minCommitmentAge()", "", 60 :: Int), ("maxCommitmentAge()", "", 86400), ("commitments(bytes32)", digestFixture 1, 0)] $ \(signature, args, value) ->
+    answerCall node controller (selector signature <> args) $ Returns $ uint256 value
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> map onFakeNode chainSection} Nothing
+  flip finally (stopGroupService t cc) $ do
+    pollUntilTrue (listening port)
+    let st = chatStore cc
+    code <- issueNameRaw cc "name 8"
+    row <- fromMaybe (error "no prepaid code row") <$> withTransaction st (`getPrepaidCode` namePrepaidCodeHash code)
+    placeCode st "r1" ownerA (order "alicebakery" 1) row `shouldReturn` Right ()
+    timeout waitLimit (awaitSent node 1) >>= (`shouldSatisfy` isJust)
+    poll t >>= (`shouldSatisfy` isNothing)
 
 namesCodesChatTests :: SpecWith TestParams
 namesCodesChatTests = describe "StoreService names: prepaid codes" $ do
