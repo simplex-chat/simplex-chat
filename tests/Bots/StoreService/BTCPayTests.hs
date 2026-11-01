@@ -536,7 +536,8 @@ fiftyFourDollars :: OrderDraft
 fiftyFourDollars =
   OrderDraft
     { odAmount = CurrencyAmount 5400,
-      odCurrency = "usd"
+      odCurrency = "usd",
+      odReference = "badge:0x01"
     }
 
 exampleCeiling :: Int

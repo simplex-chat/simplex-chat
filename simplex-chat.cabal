@@ -452,6 +452,7 @@ executable simplex-store-service
       StoreService.Group
       StoreService.Group.Command
       StoreService.Log
+      StoreService.Names.Abi
       StoreService.Options
       StoreService.Orders
       StoreService.Poller
@@ -780,6 +781,7 @@ test-suite simplex-chat-test
       StoreService.Group
       StoreService.Group.Command
       StoreService.Log
+      StoreService.Names.Abi
       StoreService.Names.Chain
       StoreService.Names.Registration
       StoreService.Options

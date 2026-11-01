@@ -9,6 +9,8 @@ module Bots.StoreService.WebTests (badgeWebTests) where
 
 import StoreService.Catalog (catalogCurrency, defaultCatalog)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..))
+import StoreService.Log (logInfo)
+import StoreService.Names.Abi (hex)
 import StoreService.Orders (codeLifetime, settleOrder)
 import StoreService.Poller
 import StoreService.Providers
@@ -1069,7 +1071,7 @@ setVerifyThrows :: IORef StubState -> Bool -> IO ()
 setVerifyThrows ref throws = atomicModifyIORef' ref $ \s -> (s {ssVerifyThrows = throws}, ())
 
 sampleDraft :: OrderDraft
-sampleDraft = OrderDraft {odAmount = CurrencyAmount 500, odCurrency = "usd"}
+sampleDraft = OrderDraft {odAmount = CurrencyAmount 500, odCurrency = "usd", odReference = "badge:0x01"}
 
 sampleProviderInvoice :: ProviderInvoice
 sampleProviderInvoice = ProviderInvoice {piProviderRef = "pref-1", piDestination = SPDCrypto CCBtc "bc1qexampleaddress" "0.00050000"}
@@ -1814,6 +1816,7 @@ testCreateInvoice = bounded "create invoice" $ withCheckout $ \ref env client ->
       method `shouldBe` SPMCrypto CCBtc
       odAmount draft `shouldBe` CurrencyAmount 500
       odCurrency draft `shouldBe` "usd"
+      odReference draft `shouldBe` "badge:" <> hex (codeDigest sampleCode)
     other -> expectationFailure ("provider calls: " <> show other)
 
 testXmrReachesTheProviderAsXmr :: IO ()
