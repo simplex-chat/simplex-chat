@@ -23,6 +23,7 @@ where
 
 import StoreService.Catalog (PricedOffer (..), priceOffer)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultExpiryMinutes, defaultSessionMinutes)
+import StoreService.Names.Abi (hex)
 import StoreService.Poller (ReadHints, queueReadHint)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderError (..), ProviderInvoice (..), WebhookError (..))
 import StoreService.Store.Invoices (CreateError (..), InvoicePayment (..), InvoiceRow (..), NewInvoice (..), cancelOpenInvoice, codeHashExists, createInvoiceRows, cryptoCurrencyText, getInvoice, getInvoiceByProviderRef, invoiceStatusText, newInvoiceId, paymentHolds, readCatalogRows, textToInvoiceStatus, truncateToSecond)
@@ -546,7 +547,7 @@ createAtProvider WebEnv {weStore, weConfig} provider CreateRequest {crPriceId, c
       -- truncate once, so the response, the row and the provider get the same value
       now <- truncateToSecond <$> getCurrentTime
       let expiresAt = addUTCTime (invoiceWindow weConfig crMethod) now
-          draft = OrderDraft {odAmount = poAmount priced, odCurrency = poCurrency priced}
+          draft = OrderDraft {odAmount = poAmount priced, odCurrency = poCurrency priced, odReference = "badge:" <> hex crCodeHash}
       pCreateInvoice provider crMethod draft >>= \case
         Left (ProviderError e) -> failed ("provider refused to create an invoice: " <> e) providerUnavailable
         Right ProviderInvoice {piProviderRef, piDestination} -> do
