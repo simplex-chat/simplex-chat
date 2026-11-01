@@ -53,6 +53,7 @@ import Test.Hspec hiding (it)
 import Database.PostgreSQL.Simple (Only (..))
 #else
 import Database.SQLite.Simple (Only (..), Query (..))
+import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Options.DB
 import Simplex.Messaging.Agent.Store.Common (withConnection)
 #endif
@@ -1982,9 +1983,9 @@ testUsersUnreadCountQueryPlans ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
     alice ##> "/users"
     alice <## "alice (Alice) (active)"
-    executedQueries <- withConnection (chatStore $ chatController alice) $ readTVarIO . DB.slow
-    let unreadCountQueries = filter isUnreadCountQuery $ M.keys executedQueries
-    plans <- withCCTransaction alice $ \db -> mapM (queryPlan db) unreadCountQueries
+    plans <- withConnection (chatStore $ chatController alice) $ \db -> do
+      executedQueries <- readTVarIO $ DB.slow db
+      mapM (queryPlan $ DB.conn db) $ filter isUnreadCountQuery $ M.keys executedQueries
     plans
       `shouldBe` [ [ "SEARCH i USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)",
                      "SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)"
@@ -1995,7 +1996,7 @@ testUsersUnreadCountQueryPlans ps =
                  ]
   where
     isUnreadCountQuery q = any (`T.isInfixOf` fromQuery q) ["JOIN contacts ct USING (contact_id)", "JOIN groups g USING (group_id)"]
-    queryPlan db q = map (\(_, _, _, detail) -> detail) <$> (DB.query_ db ("EXPLAIN QUERY PLAN " <> q) :: IO [(Int, Int, Int, T.Text)])
+    queryPlan db q = map (\(_, _, _, detail) -> detail) <$> (SQL.query_ db ("EXPLAIN QUERY PLAN " <> q) :: IO [(Int, Int, Int, T.Text)])
 #endif
 
 testCreateSecondUser :: HasCallStack => TestParams -> IO ()
