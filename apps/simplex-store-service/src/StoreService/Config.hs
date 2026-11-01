@@ -34,6 +34,7 @@ import qualified Data.ByteArray as BA
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import qualified Data.ByteString.Char8 as B
 import Data.Ini (Ini, iniGlobals, iniParser, keys, lookupValue, sections)
+import Data.List (intercalate)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe, isJust)
@@ -55,11 +56,16 @@ import Text.Read (readMaybe)
 
 data ListenerConfig = ListenerConfig
   { lHost :: Text,
-    lPort :: Int,
-    lStaticDir :: FilePath,
+    lBadgesPort :: Int,
+    lBadgesStaticDir :: FilePath,
     lServeWebapp :: Bool,
-    lWebappExportDir :: Maybe FilePath,
-    lTrustForwardedFor :: Bool
+    lBadgesExportDir :: Maybe FilePath,
+    lTrustForwardedFor :: Bool,
+    -- | @Nothing@ without @[names]@.
+    lNamesStaticDir :: Maybe FilePath,
+    lNamesExportDir :: Maybe FilePath,
+    -- | @Nothing@ unless the names site is served, which takes @[names]@ and @serve_webapp@ on.
+    lNamesPort :: Maybe Int
   }
   deriving (Eq, Show)
 
@@ -232,6 +238,28 @@ minNameYears = 2
 defaultTermStart :: String
 defaultTermStart = "2027-01-01T00:00:00Z"
 
+-- | The builds' paths in the Docker image; a run outside it sets both.
+defaultBadgesStaticDir, defaultNamesStaticDir :: FilePath
+defaultBadgesStaticDir = "/srv/badges"
+defaultNamesStaticDir = "/srv/names"
+
+defaultBadgesPort, defaultNamesPort :: Int
+defaultBadgesPort = 8080
+defaultNamesPort = 8081
+
+-- | Keys of earlier releases, each refused with what replaced it.
+retiredListenerKeys :: [(Text, String)]
+retiredListenerKeys =
+  [ ("port", "listener.port is now listener.badges_port"),
+    ("static_dir", "listener.static_dir is now listener.badges_static_dir"),
+    ("webapp_export_dir", "listener.webapp_export_dir is now listener.badges_export_dir"),
+    ("names_hosts", "listener.names_hosts is replaced by listener.names_port: serve the names site on its own port")
+  ]
+
+-- | The [listener] keys only the names site reads.
+namesListenerKeys :: [Text]
+namesListenerKeys = ["names_static_dir", "names_export_dir", "names_port"]
+
 serviceKeyBytes :: Int
 serviceKeyBytes = 32
 
@@ -268,7 +296,8 @@ trailingNoise = skipSpace *> skipMany (comment *> skipSpace)
 
 knownSettings :: [(Text, [Text])]
 knownSettings =
-  [ ("listener", ["host", "port", "static_dir", "serve_webapp", "webapp_export_dir", "trust_forwarded_for"]),
+  -- The retired keys are known, so parseConfig refuses them rather than a warning calling them ignored.
+  [ ("listener", ["host", "badges_port", "badges_static_dir", "serve_webapp", "badges_export_dir", "trust_forwarded_for"] <> namesListenerKeys <> map fst retiredListenerKeys),
     ("btcpay", ["host", "api_key", "store_id", "webhook_secret", "expiry_minutes", "speed_policy", "payment_tolerance"]),
     ("stripe", ["secret_key", "publishable_key", "webhook_secret", "session_minutes"]),
     ("poll", ["waiting_seconds", "idle_seconds"]),
@@ -295,14 +324,16 @@ unknownKeys ini = beforeAnySection <> unknownSections <> settings
 
 parseConfig :: Ini -> Either String ServiceConfig
 parseConfig ini = do
-  lStaticDir <- T.unpack <$> required "listener" "static_dir"
+  case [e | (k, e) <- retiredListenerKeys, isJust (look "listener" k)] of
+    [] -> pure ()
+    es -> Left (intercalate "; " es)
   lHost <- optional "listener" "host" "127.0.0.1"
-  lPort <- do
-    p <- num "listener" "port" 8080
-    if 1 <= p && p <= 65535 then Right p else Left "listener.port must be between 1 and 65535"
+  lBadgesPort <- listenerPort "badges_port" defaultBadgesPort
+  let lBadgesStaticDir = maybe defaultBadgesStaticDir T.unpack (present "listener" "badges_static_dir")
   lServeWebapp <- bool "listener" "serve_webapp" True
-  let lWebappExportDir = T.unpack <$> present "listener" "webapp_export_dir"
+  let lBadgesExportDir = T.unpack <$> present "listener" "badges_export_dir"
   lTrustForwardedFor <- bool "listener" "trust_forwarded_for" False
+  (lNamesStaticDir, lNamesExportDir, lNamesPort) <- namesSite lServeWebapp lBadgesPort
   btc <- btcpaySection
   str <- stripeSection
   iss <- issuerSection
@@ -322,7 +353,7 @@ parseConfig ini = do
     Left "[dev] check_store_during_coverage needs accept_unverified_store_receipts or credit_test_purchases = on, as only a dev deployment may ask a store while coverage runs"
   pure
     ServiceConfig
-      { listener = ListenerConfig {lHost, lPort, lStaticDir, lServeWebapp, lWebappExportDir, lTrustForwardedFor},
+      { listener = ListenerConfig {lHost, lBadgesPort, lBadgesStaticDir, lServeWebapp, lBadgesExportDir, lTrustForwardedFor, lNamesStaticDir, lNamesExportDir, lNamesPort},
         btcpay = btc,
         stripe = str,
         poll = PollConfig {pWaitingSeconds, pIdleSeconds},
@@ -341,6 +372,20 @@ parseConfig ini = do
     present s k = mfilter (not . T.null) (T.strip <$> look s k)
     required s k = maybe (Left (T.unpack s <> "." <> T.unpack k <> " is required")) Right (present s k)
     optional s k d = Right (fromMaybe d (present s k))
+    listenerPort k d = do
+      p <- num "listener" k d
+      if 1 <= p && p <= 65535 then Right p else Left ("listener." <> T.unpack k <> " must be between 1 and 65535")
+    unusedListenerKey k why = Left ("listener." <> T.unpack k <> " is set but " <> why <> ", so nothing would use it")
+    namesSite serve badgesPort
+      | not (hasSection "names") = case filter (isJust . look "listener") namesListenerKeys of
+          k : _ -> unusedListenerKey k "[names] is absent"
+          [] -> Right (Nothing, Nothing, Nothing)
+      | otherwise = do
+          when (not serve && isJust (look "listener" "names_port")) $ unusedListenerKey "names_port" "serve_webapp is off"
+          namesPort <- if serve then Just <$> listenerPort "names_port" defaultNamesPort else Right Nothing
+          when (namesPort == Just badgesPort) $ Left "listener.names_port must differ from listener.badges_port"
+          let staticDir = maybe defaultNamesStaticDir T.unpack (present "listener" "names_static_dir")
+          Right (Just staticDir, T.unpack <$> present "listener" "names_export_dir", namesPort)
     -- Integer, because readMaybe at Int wraps silently, reading 2^64+4 as 4.
     num s k d = case look s k of
       Nothing -> Right d

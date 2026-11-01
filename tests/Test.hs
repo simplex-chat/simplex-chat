@@ -14,6 +14,10 @@ import Bots.StoreService.NamesChainTests
 import Bots.StoreService.NamesCodesTests
 import Bots.StoreService.NamesContractsTests
 import Bots.StoreService.NamesLabelTests
+import Bots.StoreService.NamesLinksTests
+import Bots.StoreService.NamesProfilesTests
+import Bots.StoreService.NamesSearchTests
+import Bots.StoreService.NamesWiringTests
 import Bots.StoreService.StoreVerifierTests
 import Bots.StoreService.StripeTests
 import Bots.StoreService.WaitersTests
@@ -97,6 +101,10 @@ main = do
       namesCodesTests
       namesContractsTests
       namesLabelTests
+      namesLinksTests
+      namesProfilesTests
+      namesSearchTests
+      namesWiringTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "Member relations" memberRelationsTests
@@ -127,7 +135,9 @@ main = do
           describe "SimpleX store service e2e" $ do
             storeServiceTests
             describe "managed group" badgeGroupIntegrationTests
+          describe "StoreService names: boot" namesBootTests
           namesCodesChatTests
+          namesProfilesChatTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
           sequential $ xdescribe'' "Save query plans" saveQueryPlans

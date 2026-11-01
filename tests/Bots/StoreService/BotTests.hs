@@ -2401,7 +2401,7 @@ walkPlayMonthEnd :: HasCallStack => TestParams -> Text -> Integer -> Int -> IO (
 walkPlayMonthEnd ps planId planMonths months =
   withFakePlay $ \fake@FakePlay {fpConfig} -> do
     let ini = takeDirectory (gServiceAccountFile fpConfig) </> "store_service.ini"
-    writeFile ini "[listener]\nstatic_dir = /srv/badges\n"
+    writeFile ini "[listener]\nbadges_static_dir = /srv/badges\n"
     Right cfg <- readServiceConfig ini
     ServiceState {storeVerifier} <- newServiceState >>= configureStoreVerifier (Just cfg {playStore = Just fpConfig})
     withStoreServiceVerifier ps (const storeVerifier) $ \env@StoreServiceEnv {bsClock, bsController = cc} -> do
@@ -5160,7 +5160,7 @@ testAppleSubscriptionWithoutApiKey ps = do
   createDirectoryIfMissing True "tests/tmp"
   withTempDirectory "tests/tmp" "apple-no-api-key" $ \d -> do
     B.writeFile (d </> "root.cer") (encodeSignedObject $ rootCert chain)
-    writeFile (d </> "store_service.ini") "[listener]\nstatic_dir = /srv/badges\n"
+    writeFile (d </> "store_service.ini") "[listener]\nbadges_static_dir = /srv/badges\n"
     Right cfg <- readServiceConfig (d </> "store_service.ini")
     let apple = AppleStoreConfig {aBundleId = ourBundleId, aRootCertificates = (d </> "root.cer") :| [], aServerApi = Nothing}
     ServiceState {storeVerifier} <- newServiceState >>= configureStoreVerifier (Just cfg {appleStore = Just apple})
@@ -5217,7 +5217,7 @@ testPlaySubscriptionThroughPlay :: HasCallStack => TestParams -> IO ()
 testPlaySubscriptionThroughPlay ps =
   withFakePlay $ \fake@FakePlay {fpConfig} -> do
     let ini = takeDirectory (gServiceAccountFile fpConfig) </> "store_service.ini"
-    writeFile ini "[listener]\nstatic_dir = /srv/badges\n"
+    writeFile ini "[listener]\nbadges_static_dir = /srv/badges\n"
     Right cfg <- readServiceConfig ini
     ServiceState {storeVerifier = withoutPlay} <- newServiceState >>= configureStoreVerifier (Just cfg)
     ServiceState {storeVerifier} <- newServiceState >>= configureStoreVerifier (Just cfg {playStore = Just fpConfig})
@@ -5882,7 +5882,7 @@ testStoreChecksConfigured :: HasCallStack => TestParams -> IO ()
 testStoreChecksConfigured _ = do
   createDirectoryIfMissing True "tests/tmp"
   withTempDirectory "tests/tmp" "store-checks" $ \d -> do
-    writeFile (d </> "store_service.ini") "[listener]\nstatic_dir = /srv/badges\n"
+    writeFile (d </> "store_service.ini") "[listener]\nbadges_static_dir = /srv/badges\n"
     Right cfg <- readServiceConfig (d </> "store_service.ini")
     let checksFor c = (\ServiceState {storeVerifier} -> storeChecks storeVerifier) <$> (newServiceState >>= configureStoreVerifier c)
         creditsFor c = (\ServiceState {storeVerifier} -> creditTestPurchases storeVerifier) <$> (newServiceState >>= configureStoreVerifier c)
