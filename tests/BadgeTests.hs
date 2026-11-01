@@ -9,9 +9,9 @@
 
 module BadgeTests (badgeTests) where
 
-import BadgeService.Service (NotGranted (..), badgeErrorRetryAfter, grantableCharge, shownServiceRequest, survive)
-import BadgeService.StoreReceipts (StoreCharge (..), StoreChecks (..), StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), SubscriptionCheck (..), VerifiedStoreTransaction (..), toStoreReceipt)
-import BadgeService.StoreReceipts.Mock (newMockStoreVerifier)
+import StoreService.Service (NotGranted (..), badgeErrorRetryAfter, grantableCharge, shownServiceRequest, survive)
+import StoreService.StoreReceipts (StoreCharge (..), StoreChecks (..), StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), SubscriptionCheck (..), VerifiedStoreTransaction (..), toStoreReceipt)
+import StoreService.StoreReceipts.Mock (newMockStoreVerifier)
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically)
@@ -36,12 +36,12 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Code
 import Simplex.Chat.Badges.Ledger
-import Simplex.Chat.Badges.Service
+import Simplex.Chat.StoreService
 import Simplex.Chat.Badges.Types (BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeSubscription (..))
 import qualified Simplex.Chat.Badges.Types as BT
 import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller (BadgeRedeemError (..), ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
-import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRenewal, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval, boundedSubscriptionState, derivedBadgeAlert, resumableCharge, resumeHoldEnded, storeTransactionRef)
+import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRenewal, badgeRetryAfter, badgeStalledInterval, boundedSubscriptionState, derivedBadgeAlert, resumableCharge, resumeHoldEnded, storeServiceErrorText, storeTransactionRef)
 import Simplex.Chat.PaymentService (AppleTransactionFacts (..), ServicePayment (..), appleTransactionFacts, appleTransactionRef)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..), StoreTransactionRef (..))
 import qualified Simplex.Chat.Store.Badges as SB
@@ -134,7 +134,7 @@ badgeTests = do
     it "refuses for good a Play product id that could name another purchase, before any verifier" testGoogleProductIdPath
     it "does not send a Play token that could name another purchase, and leaves it retryable" testGoogleTokenPath
     it "has the dev mock vouch for the transaction its claim names, as a production purchase" testMockVouchesForClaim
-  describe "badge service request loop" $ do
+  describe "store service request loop" $ do
     it "survives a request that throws, and still stops when cancelled" testSurviveRequestFailure
 
 proofOf :: BadgeProof -> BBSProof
@@ -907,7 +907,7 @@ testRetryClassification = do
   -- terminal: the same request would fail the same way, and repeating it would spin
   retryFor (AGENT (A_SERVICE ASEBadSignature)) `shouldBe` False
   retryFor (AGENT (A_SERVICE (ASERejected "no"))) `shouldBe` False
-  badgeErrorRetry (ChatError (CECommandError "unexpected badge service response")) `shouldBe` False
+  badgeErrorRetry (ChatError (CECommandError "unexpected store service response")) `shouldBe` False
 
 -- A failure that never clears is repeated for as long as the balance funds a month, so the wait
 -- has to grow: at a fixed interval an annual code would ask hundreds of times a day, all year.
@@ -946,15 +946,15 @@ testServiceRetryFloor = do
 -- schedule, so the set is the protocol's and not a judgement to make per call site.
 testServiceRetryAfter :: IO ()
 testServiceRetryAfter = do
-  badgeErrorRetryAfter BSEPaymentPending `shouldBe` Just 300
-  badgeErrorRetryAfter BSEProviderUnavailable `shouldBe` Just 300
-  badgeErrorRetryAfter BSERateLimited `shouldBe` Just 60
+  badgeErrorRetryAfter STEPaymentPending `shouldBe` Just 300
+  badgeErrorRetryAfter STEProviderUnavailable `shouldBe` Just 300
+  badgeErrorRetryAfter STERateLimited `shouldBe` Just 60
   -- internal is the one most likely to clear on its own, and is still terminal: repeating it on
   -- the service's cadence presses a service already failing, and the client has its own floor
-  badgeErrorRetryAfter BSEInternal `shouldBe` Nothing
+  badgeErrorRetryAfter STEInternal `shouldBe` Nothing
   mapM_
     (\code -> badgeErrorRetryAfter code `shouldBe` Nothing)
-    [BSEBadRequest, BSEUnsupportedVersion, BSEUnknownPurchaseKey, BSECodeInvalid, BSECodeUsed, BSECodeExpired, BSEProviderNotConfigured, BSETestPurchase, BSETransferLimited, BSEUnknown "future_code"]
+    [STEBadRequest, STEUnsupportedVersion, STEUnknownPurchaseKey, STECodeInvalid, STECodeUsed, STECodeExpired, STEProviderNotConfigured, STETestPurchase, STETransferLimited, STEUnknown "future_code"]
 
 -- The app shows the recorded failure in a sentence, so an agent error is stored as the agent
 -- error and not as the chat error wrapping it, whether or not it can clear on its own.
@@ -966,7 +966,7 @@ testIssueFailureClassification = do
   failureFor (AGENT (A_SERVICE ASETimeout)) `shouldBe` BIFServiceTimeout
   failureFor timeout `shouldBe` BIFNetwork {agentError = tshow timeout}
   failureFor auth `shouldBe` BIFUnexpected {message = tshow auth}
-  badgeIssueFailure (ChatError (CECommandError "unexpected badge service response")) `shouldBe` BIFUnexpected {message = "unexpected badge service response"}
+  badgeIssueFailure (ChatError (CECommandError "unexpected store service response")) `shouldBe` BIFUnexpected {message = "unexpected store service response"}
   badgeIssueFailure (ChatError (CEBadgeRedeemError BREUnknownKeyIndex)) `shouldBe` BIFInvalidCredential
   badgeIssueFailure (ChatError (CEBadgeRedeemError BRECredentialNotVerified)) `shouldBe` BIFInvalidCredential
 
@@ -975,11 +975,11 @@ testIssueFailureClassification = do
 -- final, so it waits the same way; any other refusal is told at once.
 testServiceErrorTransience :: IO ()
 testServiceErrorTransience = do
-  badgeFailureTransient BIFServiceError {code = BSERateLimited, retryable = True} `shouldBe` True
-  badgeFailureTransient BIFServiceError {code = BSEInternal, retryable = False} `shouldBe` True
-  badgeFailureTransient BIFServiceError {code = BSEUnknownPurchaseKey, retryable = False} `shouldBe` False
-  badgeFailureTransient BIFServiceError {code = BSEUnknown "future_code", retryable = False} `shouldBe` False
-  badgeFailureTransient BIFServiceError {code = BSEUnknown "future_code", retryable = True} `shouldBe` True
+  badgeFailureTransient BIFServiceError {code = STERateLimited, retryable = True} `shouldBe` True
+  badgeFailureTransient BIFServiceError {code = STEInternal, retryable = False} `shouldBe` True
+  badgeFailureTransient BIFServiceError {code = STEUnknownPurchaseKey, retryable = False} `shouldBe` False
+  badgeFailureTransient BIFServiceError {code = STEUnknown "future_code", retryable = False} `shouldBe` False
+  badgeFailureTransient BIFServiceError {code = STEUnknown "future_code", retryable = True} `shouldBe` True
 
 -- The failure is stored as text and read back by getBadgePurchase, so every value this version
 -- writes must read back as itself, and any other value must still read: a row it cannot parse
@@ -988,20 +988,20 @@ testIssueFailureEncoding :: IO ()
 testIssueFailureEncoding = do
   mapM_
     (\f -> strDecode (strEncode f) `shouldBe` Right f)
-    [ BIFServiceError {code = BSEUnknownPurchaseKey, retryable = False},
-      BIFServiceError {code = BSERateLimited, retryable = True},
-      BIFServiceError {code = BSEUnknown "future_code", retryable = True},
-      BIFServiceError {code = BSEUnknown "code with spaces", retryable = False},
-      BIFServiceError {code = BSEUnknown "", retryable = False},
+    [ BIFServiceError {code = STEUnknownPurchaseKey, retryable = False},
+      BIFServiceError {code = STERateLimited, retryable = True},
+      BIFServiceError {code = STEUnknown "future_code", retryable = True},
+      BIFServiceError {code = STEUnknown "code with spaces", retryable = False},
+      BIFServiceError {code = STEUnknown "", retryable = False},
       BIFServiceTimeout,
       BIFNetwork {agentError = "BROKER \"smp://x\" NETWORK"},
       BIFInvalidCredential,
-      BIFUnexpected {message = "unexpected badge service response"},
+      BIFUnexpected {message = "unexpected store service response"},
       BIFUnexpected {message = "several words and : punctuation"}
     ]
   -- the row the CLI prints, and what a reader of the database sees
-  strEncode BIFServiceError {code = BSECodeUsed, retryable = False} `shouldBe` "service_error final code_used"
-  strEncode BIFServiceError {code = BSERateLimited, retryable = True} `shouldBe` "service_error retry rate_limited"
+  strEncode BIFServiceError {code = STECodeUsed, retryable = False} `shouldBe` "service_error final code_used"
+  strEncode BIFServiceError {code = STERateLimited, retryable = True} `shouldBe` "service_error retry rate_limited"
   strEncode BIFServiceTimeout `shouldBe` "service_timeout"
   -- a row a later version wrote, or one edited by hand, still reads - as the text it holds
   strDecode "future_failure with text" `shouldBe` Right BIFUnexpected {message = "future_failure with text"}
@@ -1012,11 +1012,11 @@ testIssueFailureEncoding = do
 -- a sentence of its own - so it is bounded and stripped of anything but a code before it is stored.
 testServiceErrorCodeBounded :: IO ()
 testServiceErrorCodeBounded = do
-  badgeServiceErrorText BSECodeUsed `shouldBe` "code_used"
-  badgeServiceErrorText (BSEUnknown "future_code") `shouldBe` "future_code"
-  badgeServiceErrorText (BSEUnknown "two words") `shouldBe` "twowords"
-  badgeServiceErrorText (BSEUnknown (T.replicate 100 "a")) `shouldBe` T.replicate 32 "a"
-  badgeServiceErrorText (BSEUnknown "Visit evil.example.com!") `shouldBe` "isitevilexamplecom"
+  storeServiceErrorText STECodeUsed `shouldBe` "code_used"
+  storeServiceErrorText (STEUnknown "future_code") `shouldBe` "future_code"
+  storeServiceErrorText (STEUnknown "two words") `shouldBe` "twowords"
+  storeServiceErrorText (STEUnknown (T.replicate 100 "a")) `shouldBe` T.replicate 32 "a"
+  storeServiceErrorText (STEUnknown "Visit evil.example.com!") `shouldBe` "isitevilexamplecom"
 
 -- The client replicates entry_credit_type / entry_debit_type verbatim, so a stored tag that
 -- disagreed with the wire tag would put a different row on each side.
@@ -1072,7 +1072,7 @@ testRedeemRequestJSON = do
   mk <- generateMasterKey drg
   (k, _) <- atomically $ C.generateKeyPair drg :: IO (C.KeyPair 'C.Ed25519)
   code <- randomBadgeCode drg
-  let req = BadgeServiceRequest {version = Version 1, purchaseKey = Just k, request = BSCRedeemBadgeCode {masterKey = mk, code = badgeCodeText code}}
+  let req = StoreServiceRequest {version = Version 1, purchaseKey = Just k, request = STCRedeemBadgeCode {masterKey = mk, code = badgeCodeText code}}
   J.toJSON req
     `shouldBe` J.object
       [ "version" J..= (1 :: Int),
@@ -1080,7 +1080,7 @@ testRedeemRequestJSON = do
         "request" J..= J.object ["type" J..= ("redeemBadgeCode" :: T.Text), "masterKey" J..= mk, "code" J..= badgeCodeText code]
       ]
   -- purchaseKey is optional in the schema, and a nullary command is a bare tagged object
-  J.toJSON BadgeServiceRequest {version = Version 1, purchaseKey = Nothing, request = BSCGetBadgeCatalog}
+  J.toJSON StoreServiceRequest {version = Version 1, purchaseKey = Nothing, request = STCGetBadgeCatalog}
     `shouldBe` J.object ["version" J..= (1 :: Int), "request" J..= J.object ["type" J..= ("getBadgeCatalog" :: T.Text)]]
   roundTrips req
 
@@ -1090,7 +1090,7 @@ testPurchaseRequestJSON = do
   mk <- generateMasterKey drg
   (k, _) <- atomically $ C.generateKeyPair drg :: IO (C.KeyPair 'C.Ed25519)
   let payment = SPGoogle {productId = "badge_supporter_01", token = "token"}
-      req = BadgeServiceRequest {version = Version 1, purchaseKey = Just k, request = BSCPurchaseBadge {masterKey = mk, payment, upgrade = Nothing}}
+      req = StoreServiceRequest {version = Version 1, purchaseKey = Just k, request = STCPurchaseBadge {masterKey = mk, payment, upgrade = Nothing}}
   -- the client states its master key and the store's evidence, and nothing a receipt already decides
   J.toJSON req
     `shouldBe` J.object
@@ -1204,13 +1204,13 @@ testShownServiceRequest = do
   drg <- C.newRandom
   mk <- generateMasterKey drg
   (k, _) <- atomically $ C.generateKeyPair drg :: IO (C.KeyPair 'C.Ed25519)
-  let shown request = case J.toJSON BadgeServiceRequest {version = Version 1, purchaseKey = Just k, request} of
+  let shown request = case J.toJSON StoreServiceRequest {version = Version 1, purchaseKey = Just k, request} of
         J.Object o -> J.Object (shownServiceRequest o)
         _ -> J.Null
       typeOnly t = J.object ["request" J..= J.object ["type" J..= (t :: T.Text)]]
-  shown BSCPurchaseBadge {masterKey = mk, payment = SPApple {jws = "a.b.c"}, upgrade = Nothing} `shouldBe` typeOnly "purchaseBadge"
-  shown BSCRedeemBadgeCode {masterKey = mk, code = "SB-00000-00000-00000-00001"} `shouldBe` typeOnly "redeemBadgeCode"
-  shown BSCTransferBadge {masterKey = mk, payment = SPApple {jws = "a.b.c"}} `shouldBe` typeOnly "transferBadge"
+  shown STCPurchaseBadge {masterKey = mk, payment = SPApple {jws = "a.b.c"}, upgrade = Nothing} `shouldBe` typeOnly "purchaseBadge"
+  shown STCRedeemBadgeCode {masterKey = mk, code = "SB-00000-00000-00000-00001"} `shouldBe` typeOnly "redeemBadgeCode"
+  shown STCTransferBadge {masterKey = mk, payment = SPApple {jws = "a.b.c"}} `shouldBe` typeOnly "transferBadge"
 
 testGoogleProductIdPath :: IO ()
 testGoogleProductIdPath = do
@@ -1269,7 +1269,7 @@ testCredentialResponseJSON = do
   mk <- generateMasterKey drg
   let info = BadgeInfo {badgeType = BTSupporter, badgeExpiry = futureTime, badgeExtra = ""}
   Right cred <- issueBadge testKeyIdx sk (VerifiedBadgeRequest BadgeRequest {masterKey = mk, badgeInfo = info})
-  let resp = BSPBadgeCredential {credential = Just cred, receipt = Nothing, statement = BadgeStatement {entries = [], previousEntryId = Nothing}, subscription = Nothing}
+  let resp = STPBadgeCredential {credential = Just cred, receipt = Nothing, statement = BadgeStatement {entries = [], previousEntryId = Nothing}, subscription = Nothing}
   J.toJSON resp
     `shouldBe` J.object
       [ "type" J..= ("badgeCredential" :: T.Text),
@@ -1284,7 +1284,7 @@ testCredentialSubscriptionJSON = do
   mapM_ (\(s, t) -> (J.toJSON s, J.fromJSON (J.String t)) `shouldBe` (J.String t, J.Success s)) states
   let response subscription_ = J.object $ ["type" J..= ("badgeCredential" :: T.Text), "statement" J..= J.object ["entries" J..= ([] :: [J.Value])]] <> maybe [] (\s -> ["subscription" J..= (s :: T.Text)]) subscription_
       subscriptionOf v = case J.fromJSON v of
-        J.Success BSPBadgeCredential {subscription} -> Right subscription
+        J.Success STPBadgeCredential {subscription} -> Right subscription
         J.Success _ -> Left "not a badgeCredential"
         J.Error e -> Left e
   subscriptionOf (response Nothing) `shouldBe` Right Nothing
@@ -1292,7 +1292,7 @@ testCredentialSubscriptionJSON = do
   -- a state added by a newer service does not fail the response, and is not read as ended
   subscriptionOf (response (Just "paused")) `shouldBe` Right (Just (SSUnknown "paused"))
   J.toJSON (SSUnknown "paused") `shouldBe` J.String "paused"
-  let resp = BSPBadgeCredential {credential = Nothing, receipt = Nothing, statement = BadgeStatement {entries = [], previousEntryId = Nothing}, subscription = Just SSRenewing}
+  let resp = STPBadgeCredential {credential = Nothing, receipt = Nothing, statement = BadgeStatement {entries = [], previousEntryId = Nothing}, subscription = Just SSRenewing}
   J.toJSON resp `shouldBe` response (Just "renewing")
   roundTrips resp
 
@@ -1336,7 +1336,7 @@ testSubscriptionAlertDerivation = do
       ends = addMonths 1 start
       balance = grant start 1 (newBalance start)
       failedAt = at 2026 3 20
-      failure = BadgeIssueError {failedSince = failedAt, lastAttemptAt = failedAt, reason = BIFServiceError {code = BSEUnknownPurchaseKey, retryable = False}}
+      failure = BadgeIssueError {failedSince = failedAt, lastAttemptAt = failedAt, reason = BIFServiceError {code = STEUnknownPurchaseKey, retryable = False}}
       early = addUTCTime (-10 * nominalDay) ends
       soon = addUTCTime (-nominalDay) ends
       past = addUTCTime nominalDay ends
@@ -1390,9 +1390,9 @@ testSubscriptionAlertDerivation = do
 
 testErrorResponseJSON :: IO ()
 testErrorResponseJSON = do
-  let resp = BSPError {code = BSECodeInvalid, message = Nothing, retryAfter = Nothing}
+  let resp = STPError {code = STECodeInvalid, message = Nothing, retryAfter = Nothing}
   J.toJSON resp `shouldBe` J.object ["type" J..= ("error" :: T.Text), "code" J..= ("code_invalid" :: T.Text)]
-  J.toJSON BSPError {code = BSERateLimited, message = Just "slow down", retryAfter = Just 30}
+  J.toJSON STPError {code = STERateLimited, message = Just "slow down", retryAfter = Just 30}
     `shouldBe` J.object ["type" J..= ("error" :: T.Text), "code" J..= ("rate_limited" :: T.Text), "message" J..= ("slow down" :: T.Text), "retryAfter" J..= (30 :: Int)]
 
 testStatementJSON :: IO ()

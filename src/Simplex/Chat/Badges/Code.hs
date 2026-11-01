@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Badge redemption codes, shared by the client, the badge service and the checkout site.
+-- | Badge redemption codes, shared by the client, the store service and the checkout site.
 --
 -- A code is "SB-" and 20 Crockford base32 characters in four groups of five:
 -- 19 payload characters and a final check character.

@@ -73,8 +73,8 @@ import Data.Time.Clock (UTCTime, addUTCTime, nominalDay)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Ledger
-import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
-import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure (..), BadgePurchaseStatus (..), BadgeServiceErrorCode (..), BadgeSubscription (..), OpenStorePurchase (..), StoreReceiptOrigin (..), SubscriptionState (..))
+import Simplex.Chat.StoreService (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
+import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure (..), BadgePurchaseStatus (..), StoreServiceErrorCode (..), BadgeSubscription (..), OpenStorePurchase (..), StoreReceiptOrigin (..), SubscriptionState (..))
 import Simplex.Chat.PaymentService (AppleTransactionFacts (..), ServicePayment (..), appleTransactionFacts)
 import Simplex.Chat.PaymentService.Types (StoreTransactionRef (..))
 import Simplex.Chat.Store.Shared (StoreError, insertedRowId)
@@ -256,7 +256,7 @@ holdStoreTransfer db g user@User {userId} txRef payment now =
               (userId, SHKTransfer, now, receiptId, SHKPurchase)
         Just _ -> pure False
     Just BadgeReceiptRecord {receiptId, status = RSRefused {refusal = Just BIFServiceError {code}}}
-      | code == BSEReceiptUsed || code == BSETransferLimited -> (code == BSETransferLimited) <$ holdTransfer receiptId
+      | code == STEReceiptUsed || code == STETransferLimited -> (code == STETransferLimited) <$ holdTransfer receiptId
     Just BadgeReceiptRecord {receiptId, ownerId, status = RSCredited {badgePurchaseId}} ->
       movesHere ownerId badgePurchaseId >>= \case
         False -> pure False
@@ -267,7 +267,7 @@ holdStoreTransfer db g user@User {userId} txRef payment now =
           DB.execute db "UPDATE badge_store_receipts SET purchase_key = ?, purchase_priv_key = ?, master_key = ? WHERE badge_store_receipt_id = ? AND payment IS NULL" (purchaseKey, purchasePrivKey, Binary mk, receiptId)
           holdTransfer receiptId
           pure $ case join lastRefusal of
-            Just BIFServiceError {code = BSETransferLimited} -> True
+            Just BIFServiceError {code = STETransferLimited} -> True
             _ -> False
     _ -> pure False
   where
@@ -337,7 +337,7 @@ getReceiptRecord db StoreTransactionRef {provider, transactionRef} =
           _ -> maybe (RSRefused refusal) (\badgePurchaseId -> RSCredited {badgePurchaseId, refusalRecorded = maybe False ownRefusal refusal}) purchaseId_
         -- only a move is refused transfer_limited, and a refused move must not hold off the purchase's own resume or tier change
         ownRefusal = \case
-          BIFServiceError {code = BSETransferLimited} -> False
+          BIFServiceError {code = STETransferLimited} -> False
           _ -> True
 
 -- | The record made when Buy is tapped, before any receipt: the store echoes its invoice id.
