@@ -36,10 +36,11 @@ data Received = Received {rcvAmount :: CurrencyAmount, rcvCrypto :: Maybe Text, 
 data Funded = PaidInFull | PaidInPart
   deriving (Eq, Show)
 
+-- | A closed invoice's Funded says whether the whole amount reached it, late or not.
 data PaymentSignal
   = SigFunded Received Funded
   | SigSettled Received UTCTime
-  | SigClosed Received
+  | SigClosed Received Funded
   deriving (Eq, Show)
 
 data ProviderInvoice = ProviderInvoice
