@@ -33,7 +33,7 @@ import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XInfo), ContactShortLinkData (ContactShortLinkData), LinkOwnerSig, MsgChatLink (..), MsgContent (..), encodeChatBinding)
 import Simplex.Chat.Store.Groups (getGroupMembers)
 import Simplex.Chat.Store.Shared (createContact, getGroupInfoKeys)
-import Simplex.Chat.Types (AgentConnId (..), ChatPeerType (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), Profile (..), GroupRejectionReason (..), fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
+import Simplex.Chat.Types (AgentConnId (..), ChatPeerType (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), ImageData (..), Profile (..), GroupRejectionReason (..), User (..), fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, BBSSecretKey, bbsKeyGen)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -1217,13 +1217,15 @@ testSetProfileImageFromFile ps = testChat aliceProfile test ps
     missingPath = tmp <> "/missing.png"
     emptyPath = tmp <> "/empty.png"
     test alice = do
-      B.writeFile pngPath "fake png bytes" -- content is not validated, only the extension
-      -- set profile image from a .png file
-      alice ##> ("/set profile image file " <> pngPath)
+      -- set profile image from a .jpg file
+      alice ##> "/set profile image file ./tests/fixtures/test.jpg"
       alice <## "profile image updated"
-      alice ##> "/show profile image"
-      alice <## "Profile image:"
-      alice <##. "data:image/png;base64,"
+      Profile {image = Just (ImageData img)} <- withCCUser alice $ \User {profile} -> pure $ fromLocalProfile profile
+      T.length img `shouldSatisfy` (<= 12500)
+      img `shouldSatisfy` ("data:image/jpg;base64," `T.isPrefixOf`)
+      B.writeFile pngPath "fake png bytes"
+      alice ##> ("/set profile image file " <> pngPath)
+      alice <##. "bad chat command: image file cannot be resized"
       -- unsupported extension is rejected
       B.writeFile gifPath "GIF89a"
       alice ##> ("/set profile image file " <> gifPath)
