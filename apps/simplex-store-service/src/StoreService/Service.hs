@@ -46,6 +46,7 @@ import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Options
 import StoreService.Poller (newPollerEnv, newReadHints, runPoller)
+import StoreService.Providers (Provider)
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers.Stripe (stripeProvider)
 import StoreService.Store
@@ -218,7 +219,7 @@ storeService opts serviceCfg cfg env = do
               | isJust groupCfg -> forM_ (groupEvent ev) $ atomically . writeTQueue (groupEventQ env)
             _ -> pure ()
       startLanes cc = do
-        lanes <- maybe (pure []) (serviceLanes waiters cc) serviceCfg
+        lanes <- maybe (pure []) (serviceLanes waiters turns cc) serviceCfg
         -- The group is resolved before the other lanes start, so a failed lookup exits at once rather than waiting for them to end.
         groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc turns namesOn (groupEventQ env) <$> ensureManagedGroup cc gc
         raceAny_ $ processQueuedRequests key trackerQ_ requestEnv : maybeToList groupLane_ <> lanes
@@ -231,27 +232,29 @@ storeService opts serviceCfg cfg env = do
   -- The reader runs from the start and must not block, since outputQ carries every chat event and a full queue stalls the core.
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc -> raceAny_ [readEvents cc, startLanes cc]
   where
-    serviceLanes :: Waiters -> ChatController -> ServiceConfig -> IO [IO ()]
-    serviceLanes ws cc@ChatController {chatStore} sc = do
+    serviceLanes :: Waiters -> Turns -> ChatController -> ServiceConfig -> IO [IO ()]
+    serviceLanes ws turns cc@ChatController {chatStore} sc = do
       -- Seed before the listener accepts anything, since every checkout is priced from these.
       seedServiceCatalog chatStore
       btc <- maybe (pure []) (fmap (: []) . btcpayProvider) (btcpay sc)
       str <- maybe (pure []) (fmap (: []) . stripeProvider) (stripe sc)
       let providers = btc <> str
       hints <- newReadHints
-      namesEnv <- forM (names sc) (startNames cc)
+      namesEnv <- forM (names sc) (startNames cc turns ws providers)
       webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
       exportWebapp sc
-      pollerEnv <- newPollerEnv chatStore ws hints providers (poll sc)
+      pollerEnv <- newPollerEnv chatStore ws (nePhases <$> namesEnv) hints providers (poll sc)
       pure [runWebListeners webEnv, runPoller pollerEnv]
 
-startNames :: ChatController -> NamesConfig -> IO NamesEnv
-startNames cc nc@NamesConfig {nTLD, nChain = ChainConfig {cChainId}} =
+startNames :: ChatController -> Turns -> Waiters -> [Provider] -> NamesConfig -> IO NamesEnv
+startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig {nTLD, nCodesOnly, nChain = ChainConfig {cChainId}} =
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
     Just User {userId} -> do
-      logNote $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId
-      newNamesEnv cc userId nc
+      logNote $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId <> codesOnlyNote
+      newNamesEnv cc userId nc chatStore turns waiters providers
+  where
+    codesOnlyNote = if nCodesOnly then ", codes only: registration needs a prepaid code" else ""
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do

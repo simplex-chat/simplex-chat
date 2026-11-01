@@ -465,10 +465,14 @@ executable simplex-store-service
       StoreService.Names.Codes
       StoreService.Names.Contracts
       StoreService.Names.Env
+      StoreService.Names.Label
       StoreService.Names.Links
+      StoreService.Names.Orders
+      StoreService.Names.Phases
       StoreService.Names.Profiles
       StoreService.Names.Registration
       StoreService.Names.Revert
+      StoreService.Names.Signatures
       StoreService.Names.Store
       StoreService.Names.Turns
       StoreService.Names.View
@@ -478,6 +482,7 @@ executable simplex-store-service
       StoreService.Providers
       StoreService.Providers.BTCPay
       StoreService.Providers.Stripe
+      StoreService.Safely
       StoreService.Service
       StoreService.Store
       StoreService.Store.Invoices
@@ -489,6 +494,9 @@ executable simplex-store-service
       StoreService.Waiters
       StoreService.Web.Http
       StoreService.Web.Names
+      StoreService.Web.Names.Codes
+      StoreService.Web.Names.Orders
+      StoreService.Web.Names.Registration
       StoreService.Web.Names.Search
       StoreService.Web.Server
       Paths_simplex_chat
@@ -788,8 +796,12 @@ test-suite simplex-chat-test
       Bots.StoreService.NamesContractsTests
       Bots.StoreService.NamesLabelTests
       Bots.StoreService.NamesLinksTests
+      Bots.StoreService.NamesOrdersTests
+      Bots.StoreService.NamesPhasesTests
       Bots.StoreService.NamesProfilesTests
       Bots.StoreService.NamesSearchTests
+      Bots.StoreService.NamesSignatureTests
+      Bots.StoreService.NamesStoreTests
       Bots.StoreService.NamesWiringTests
       Bots.StoreService.StoreVerifierTests
       Bots.StoreService.StripeTests
@@ -819,9 +831,12 @@ test-suite simplex-chat-test
       StoreService.Names.Env
       StoreService.Names.Label
       StoreService.Names.Links
+      StoreService.Names.Orders
+      StoreService.Names.Phases
       StoreService.Names.Profiles
       StoreService.Names.Registration
       StoreService.Names.Revert
+      StoreService.Names.Signatures
       StoreService.Names.Store
       StoreService.Names.Turns
       StoreService.Names.View
@@ -831,6 +846,7 @@ test-suite simplex-chat-test
       StoreService.Providers
       StoreService.Providers.BTCPay
       StoreService.Providers.Stripe
+      StoreService.Safely
       StoreService.Service
       StoreService.Store
       StoreService.Store.Invoices
@@ -842,6 +858,9 @@ test-suite simplex-chat-test
       StoreService.Waiters
       StoreService.Web.Http
       StoreService.Web.Names
+      StoreService.Web.Names.Codes
+      StoreService.Web.Names.Orders
+      StoreService.Web.Names.Registration
       StoreService.Web.Names.Search
       StoreService.Web.Server
       Paths_simplex_chat
