@@ -80,6 +80,34 @@ Note that a secret passed as a flag is visible to every user on the machine thro
 in the ini is only as readable as the file: `store_service.ini` is gitignored and already holds the
 provider API keys and webhook secrets.
 
+For a local run, where no client key's secret is at hand, `[issuer] dev_keys` lists keys the service
+trusts beside the clients' keys, as `<index>:<secret>` entries separated by commas, each secret from
+`simplex-chat badge keygen`:
+
+```ini
+[issuer]
+index = 999
+private_key = <secret>
+dev_keys = 999:<secret>
+```
+
+With `dev_keys`, the service refuses to start:
+
+- unless `[names]` is on and `[chain] chain_id` is 31337, anvil's local chain;
+- unless the node at `rpc_url` answers `eth_chainId` with 31337 as the service starts;
+- when `[stripe]` holds a live key: `secret_key` must be a test key (`sk_test_` or `rk_test_`), and
+  `publishable_key` too (`pk_test_`);
+- when `[btcpay]`'s `host` is not on loopback (`127.0.0.1`, `::1` or `localhost`);
+- when a dev key has the index of a key clients trust.
+
+So a run with dev keys takes test payments only: Stripe in test mode, and a BTCPay on the same machine,
+such as one on regtest. `host` must still be https, so put a TLS proxy in front of a local BTCPay and
+have the service trust the proxy's certificate authority with `SYSTEM_CERTIFICATE_PATH`.
+
+It logs a warning naming the dev keys' indexes at every start. Clients never trust a dev key, but the
+service's own chat core does, for the badges it receives, so a contact's badge signed by a dev key is
+accepted in that run. Leave `dev_keys` out everywhere else.
+
 Other options:
 
 - `--service-config INI_FILE`: path to `store_service.ini`. Omit it to run the chat/RPC side
@@ -460,7 +488,8 @@ badge without paying.
 ## Deployment
 
 `scripts/store-service/` holds the production deployment: the image (`Dockerfile`, built from
-the repository root), `compose.yml` and the ini template `store_service.ini.example`. The service
+the repository root), `compose.yml` and the ini template `store_service.ini.example`; `dev/` holds
+the scripts of the dev setup and the webapp's cases. The service
 runs with `+client_postgres` and host networking; one Caddy serves both sites from the folders the
 service exports at boot and proxies the API to it.
 
@@ -509,14 +538,27 @@ migrations applied out of the order it lists. Recreate such a database.
 
 ### Two sites
 
-The image carries the badges build at `/srv/badges`, the default of `badges_static_dir`. The names
-site (simplex.domains) is configured beside it in `[listener]`. The image does not build the names
-site yet, so mount a names build into the container at `/srv/names`, the default of
-`names_static_dir`, until it does; a run outside the image sets both.
+The image carries the badges build at `/srv/badges` and the names build at `/srv/names`, the
+defaults of `badges_static_dir` and `names_static_dir`; a run outside the image sets both. The names
+site (simplex.domains) comes from the `apps/simplex-domains` submodule, the simplex.domains
+repository, and is configured beside the badges site in `[listener]`. Fetch the submodule before
+building the image:
+
+```
+git submodule update --init apps/simplex-domains
+```
+
+A new names site ships by moving the submodule to its commit and committing that here:
+
+```
+git -C apps/simplex-domains fetch origin
+git -C apps/simplex-domains checkout <commit>
+git add apps/simplex-domains
+```
 
 The names site is on when, and only when, the ini has `[names]`. Its `[listener]` keys:
 
-- `names_static_dir`: the names build, by default `/srv/names`;
+- `names_static_dir`: the names build, by default `/srv/names`, the image's;
 - `names_export_dir`: where the service writes the names site at boot, with the Stripe
   publishable key in its shell, as `badges_export_dir` is for the badges site. `compose.yml`
   bind-mounts `./names` there (`/srv/names-export`), and `./badges` at `/srv/badges-export`;
@@ -532,6 +574,71 @@ own site: every path outside `/api/` and `/webhooks/` is a file of that site, `/
 its shell. Both ports answer `/api/` and `/webhooks/`, whatever the `Host`. A reverse proxy sends
 each domain to its own port, as the all-in-one example in [Caddy](#caddy) does. With
 `serve_webapp = off`, the service listens on `badges_port` alone, for the API and the webhooks.
+
+### Development with a local chain
+
+`compose.dev.yml` adds two containers, so a dev deployment needs nothing on the host but Docker:
+
+- `chain`: an anvil chain on `127.0.0.1:8545` (chain id 31337) with the names contracts, deployed
+  on its first start. Its state is kept in `./data/chain`, so restarts keep the contracts, balances
+  and registered names. Its keys are anvil's public test keys, so never use it beside a real chain.
+- `postgres`: PostgreSQL 17 on `127.0.0.1:5433`, user `simplex`, database `store_service`, without a
+  password, kept in `./data/postgres`. The service uses it in place of `BADGE_DB_CONN`.
+
+From a fresh clone:
+
+```
+git clone https://github.com/simplex-chat/simplex-chat && cd simplex-chat
+git checkout sh/store-service && git submodule update --init apps/simplex-domains
+cd scripts/store-service
+echo "COMPOSE_FILE=compose.yml:compose.dev.yml" > .env
+docker compose up -d --build
+```
+
+The names site is then on `http://127.0.0.1:8081` and the badges site on `http://127.0.0.1:8080`.
+
+On its first start, the chain writes `config/store_service.ini` for its deployment, unless the file
+exists; it never rewrites it, so edits there are kept. The file serves both sites all in one, with
+`[names]` on the `.simplex` TLD, `[chain]` at the local chain with 1 confirmation, and `[issuer]`
+signing with a public test key at index 999, which no client trusts, through `dev_keys`. That key is
+in `dev/chain.sh`, as public as anvil's: never use it elsewhere. The service starts once the chain
+and the database are healthy. `USER_UID` and `USER_GID` in `.env` (by default 1000) own the file,
+mode 600, and its folder, mode 700.
+
+Names are paid for with prepaid codes, so no payment provider is needed. To issue one, stop the
+service and run its console against the dev database:
+
+```
+docker compose stop store-service
+docker compose run --rm store-service -d postgresql://simplex@127.0.0.1:5433/store_service --run-cli --service-config /etc/simplex-store-service/store_service.ini
+```
+
+There, `//issue name 6` prints a code for one name of 6 letters or more (see
+[From the command line](#from-the-command-line)). Leave with `/quit`, then
+`docker compose start store-service`.
+
+The service key's account starts with 10,000 ETH and a sponsor allowance. To top it up, or set any
+account's balance:
+
+```
+docker compose exec chain chain.sh topup [address] [eth]
+```
+
+Registrations wait 10 seconds after their commit (`MIN_COMMITMENT_AGE` in `compose.dev.yml`).
+
+Card payments in Stripe's test mode: uncomment `[stripe]` in `config/store_service.ini` (as the
+`USER_UID` user, or with `sudo`), put in the test keys and the webhook secret, which
+`stripe listen --forward-to 127.0.0.1:8080/webhooks/stripe` prints, and run
+`docker compose restart store-service`. With `dev_keys`, the service refuses live keys, and a
+BTCPay that is not on loopback.
+
+To start over, delete the containers and every dev state together, since orders in the database
+point at names on the chain. `./data` belongs to root and to Postgres's user, so:
+
+```
+docker compose down
+sudo rm -rf data config
+```
 
 ### Caddy
 
@@ -1163,3 +1270,61 @@ expiry unless money reached the invoice:
 The command also answers when the reference matches no order, when the order has no balance, and
 when the cents are not the balance. A refunded balance shows `amount` 0 and its `refunded` total in
 Your names; a later late payment credits it again, and a second refund adds to `refunded`.
+
+## Running the webapp's cases against the service
+
+`scripts/store-service/dev/contract-run.sh` runs the names webapp's end-to-end cases that need no
+payment against this service in Chromium, as they run against the webapp's mock. It:
+
+1. starts anvil on 8545 and deploys the contracts with the webapp's `dev/deploy.ts`, with a commitment
+   age of 5 seconds;
+2. builds the names site (`vite build`) into the run's folder;
+3. writes an ini for that deployment with `[names]` and `[chain]` and no `[btcpay]` or `[stripe]`,
+   with the terms version `2026-10-23` and the one community name `bakers`, which the webapp's
+   community cases search for,
+   serving the names site all in one on `SERVICE_PORT` and the badges site, from an empty folder, on
+   `BADGES_PORT`, and signing with the test suite's
+   public issuer secret (`issuerSecret` in `tests/Bots/StoreService/ConfigTests.hs`), trusted through
+   `[issuer] dev_keys`. That secret is public: never use it outside this script;
+4. starts the service once to make its database, stops it, and issues the prepaid codes the cases
+   need with `//issue name` in `--run-cli`;
+5. starts the service on 8180 (the names site) and 8181 (the badges site) and a code server on 8199,
+   and runs the cases with `BASE_URL` at the names site and `MOCK_URL` at the code server.
+
+The code server answers the cases' `POST /control/code` with the issued codes, the reset of
+`/control/search` that `search.spec.ts` sends after each case as done, and any other `/control/` with
+`501`, which fails the case that sends it. It passes `/api/` to the service with the case's
+`X-Forwarded-For`.
+
+It needs bash 5.1 or later (for `wait -n -p`), `cabal` (for the default `STORE_SERVICE_BIN`),
+Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts` as TypeScript, as its
+`dev/start.sh` does), `jq`, `curl` and `python3`; the webapp with its packages and
+Playwright's Chromium (`npm install`, `npx playwright install chromium`); and an `ens-contracts` checkout
+compiled as the webapp's `dev/start.sh` needs. The cases read the chain's addresses from the webapp's
+`dev/local-chain-0.json`, so the script stops when its deployment differs from it; run the webapp's
+`SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8180, 8181 and 8199 must be free:
+the script stops before starting anything when one of them answers, and stops at once when anvil,
+the service or the code server exits before it answers.
+
+```
+cabal build exe:simplex-store-service
+ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/dev/contract-run.sh
+```
+
+- `WEBAPP_DIR`: the names webapp (default: the `apps/simplex-domains` submodule's `webapp/`).
+- `STORE_SERVICE_BIN`: the service binary (default: `cabal list-bin exe:simplex-store-service`).
+- `SERVICE_PORT`, `BADGES_PORT`, `CODES_PORT`: the service's names and badges ports and the code
+  server's (8180, 8181 and 8199).
+- Arguments, if given, are passed to `playwright test` in place of the default cases' title filter.
+
+The default cases cover search answers for an available name, Check your code and its rate-limit
+countdown, code orders to `registered` with and without links, a code order's name code restored and
+revealed in another browser, Edit links on a name registered with a code (the other Edit links case
+answers its own name and record requests in the page), a link whose data cannot be read now, and a
+community name's marker and its Check your order wording. "search answers every kind of name" is not among them: it takes the chain down
+with `/control/search`.
+
+Each case sends its own `X-Forwarded-For`, and the ini sets `trust_forwarded_for = on`, so each case
+is its own client for the service's per-client limits, as for the mock's code limit. The script stops
+everything it started, deletes its folder when the cases pass, and keeps it with the logs, the ini and
+Playwright's results when they fail.
