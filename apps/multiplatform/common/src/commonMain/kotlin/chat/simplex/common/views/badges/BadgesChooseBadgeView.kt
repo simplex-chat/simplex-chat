@@ -24,7 +24,6 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingActionButton
 import chat.simplex.common.views.onboarding.TextButtonBelowOnboardingButton
 import chat.simplex.common.views.onboarding.WEFUNDER_URL
-import chat.simplex.common.views.onboarding.crowdfundingAvailable
 import chat.simplex.res.*
 
 // TODO [badges]: replace with types produced by the badge purchase API when it lands.
@@ -132,7 +131,6 @@ fun BadgesChooseBadgeView(modalManager: ModalManager, unwindToDepth: Int) {
 
 @Composable
 fun BadgeInvestorOffer(level: BadgeLevel, shown: Boolean = true) {
-  if (!crowdfundingAvailable()) return
   val uriHandler = LocalUriHandler.current
   Column(Modifier.alpha(if (shown) 1f else 0f), horizontalAlignment = Alignment.CenterHorizontally) {
     Text(

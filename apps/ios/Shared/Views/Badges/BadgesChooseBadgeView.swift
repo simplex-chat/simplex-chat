@@ -187,19 +187,17 @@ struct BadgeInvestorOffer: View {
     let level: BadgeLevel
 
     var body: some View {
-        if isInUS {
-            VStack(spacing: 4) {
-                Text(level.investorOffer)
-                    .font(.footnote)
-                Link(destination: wefunderURL) {
-                    Text("Learn more on Wefunder")
-                        .font(.subheadline)
-                        .foregroundColor(theme.colors.primary)
-                }
+        VStack(spacing: 4) {
+            Text(level.investorOffer)
+                .font(.footnote)
+            Link(destination: wefunderURL) {
+                Text("Learn more on Wefunder")
+                    .font(.subheadline)
+                    .foregroundColor(theme.colors.primary)
             }
-            .multilineTextAlignment(.center)
-            .fixedSize(horizontal: false, vertical: true)
         }
+        .multilineTextAlignment(.center)
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 
