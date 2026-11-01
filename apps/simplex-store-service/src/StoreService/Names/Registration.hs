@@ -11,16 +11,23 @@ module StoreService.Names.Registration
     contactRecordKey,
     channelRecordKey,
     sponsorDomain,
+    resolverDomain,
     makeCommitment,
     commitCalldata,
     registerWithCreditCalldata,
     registerIntentDigest,
     verifyRegisterIntent,
+    setTextDigest,
+    clearRecordsDigest,
+    setTextWithSigCalldata,
+    clearRecordsWithSigCalldata,
+    multicallCalldata,
   )
 where
 
 import Control.Monad (unless, when)
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
+import Crypto.Number.Serialize (os2ip)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Maybe (catMaybes)
@@ -66,6 +73,9 @@ data RegisterIntent = RegisterIntent
 sponsorDomain :: Word64 -> Address -> Eip712Domain
 sponsorDomain edChainId edVerifyingContract = Eip712Domain {edName = "SimplexSponsor", edVersion = "1", edChainId, edVerifyingContract}
 
+resolverDomain :: Word64 -> Address -> Eip712Domain
+resolverDomain edChainId edVerifyingContract = Eip712Domain {edName = "SimplexResolver", edVersion = "1", edChainId, edVerifyingContract}
+
 makeCommitment :: Registration -> ByteString
 makeCommitment r = keccak256 $ abiTuple [Dynamic $ registrationTuple r]
 
@@ -102,6 +112,44 @@ verifyRegisterIntent domain now RegisterIntent {riRegistration = r@Registration 
   when (now > riDeadline) $ throwError "intent expired"
   signer <- ExceptT $ recoverAddress riSignature $ registerIntentDigest domain r riNonce riDeadline
   unless (signer == rOwner) $ throwError "intent is not signed by the owner"
+
+setTextDigest :: Eip712Domain -> Node -> Text -> Text -> Word64 -> Word64 -> ByteString
+setTextDigest domain node key value nonce deadline =
+  hashTypedData
+    domain
+    "SetText(bytes32 node,string key,string value,uint256 nonce,uint256 deadline)"
+    [bytes32 node, VBytes $ encodeUtf8 key, VBytes $ encodeUtf8 value, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
+
+clearRecordsDigest :: Eip712Domain -> Node -> Word64 -> Word64 -> ByteString
+clearRecordsDigest domain node nonce deadline =
+  hashTypedData
+    domain
+    "ClearRecords(bytes32 node,uint256 nonce,uint256 deadline)"
+    [bytes32 node, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
+
+setTextWithSigCalldata :: Node -> Text -> Text -> Word64 -> Word64 -> RecoverableSignature -> ByteString
+setTextWithSigCalldata (Node node) key value nonce deadline sig =
+  selector "setTextWithSig(bytes32,string,string,uint256,uint256,bytes)"
+    <> abiTuple
+      [ Static node,
+        Dynamic $ abiBytes $ encodeUtf8 key,
+        Dynamic $ abiBytes $ encodeUtf8 value,
+        Static $ uint256 nonce,
+        Static $ uint256 deadline,
+        Dynamic $ abiBytes $ serializeSignature sig
+      ]
+
+clearRecordsWithSigCalldata :: Node -> Word64 -> Word64 -> RecoverableSignature -> ByteString
+clearRecordsWithSigCalldata (Node node) nonce deadline sig =
+  selector "clearRecordsWithSig(bytes32,uint256,uint256,bytes)"
+    <> abiTuple [Static node, Static $ uint256 nonce, Static $ uint256 deadline, Dynamic $ abiBytes $ serializeSignature sig]
+
+-- | The resolver runs each call on itself in order, and reverts all of them when one fails.
+multicallCalldata :: [ByteString] -> ByteString
+multicallCalldata calls = selector "multicall(bytes[])" <> abiTuple [Dynamic $ abiArray $ map abiBytes calls]
+
+bytes32 :: Node -> Eip712Value
+bytes32 (Node node) = VUint $ fromInteger $ os2ip node
 
 registrationTuple :: Registration -> ByteString
 registrationTuple r@Registration {rLabel, rOwner, rDuration, rSecret, rResolver} =
