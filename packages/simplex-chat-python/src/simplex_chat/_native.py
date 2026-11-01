@@ -277,17 +277,30 @@ def lib() -> ctypes.CDLL:
     return _lib
 
 
-QUEUE_SIZE_UNSUPPORTED = (
-    "loaded libsimplex does not export chat_migrate_init_queue; queue size needs a newer libsimplex"
-)
+def _optional_export(name: str, feature: str, argtypes: list[Any]) -> Any:
+    try:
+        fn = getattr(lib(), name)
+    except AttributeError as e:
+        raise RuntimeError(
+            f"loaded libsimplex does not export {name}; {feature} needs a newer libsimplex"
+        ) from e
+    fn.argtypes = argtypes
+    fn.restype = c_void_p
+    return fn
 
 
 def migrate_init_queue() -> Any:
     """`chat_migrate_init_queue`, which older libsimplex releases do not export."""
-    try:
-        fn = lib().chat_migrate_init_queue
-    except AttributeError as e:
-        raise RuntimeError(QUEUE_SIZE_UNSUPPORTED) from e
-    fn.argtypes = [c_char_p, c_char_p, c_char_p, c_int, POINTER(c_void_p)]
-    fn.restype = c_void_p
-    return fn
+    return _optional_export(
+        "chat_migrate_init_queue",
+        "queue size",
+        [c_char_p, c_char_p, c_char_p, c_int, POINTER(c_void_p)],
+    )
+
+
+def resize_image() -> Any:
+    return _optional_export("chat_resize_image", "image resizing", [c_char_p, c_int, c_int, c_int])
+
+
+def resize_image_uri() -> Any:
+    return _optional_export("chat_resize_image_uri", "image resizing", [c_char_p, c_int, c_int])

@@ -15,7 +15,7 @@ struct MarkdownHelp: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("You can use markdown to format messages:")
                 .padding(.bottom)
-            mdFormat("*bold*", Text("bold").bold())
+            mdFormat(Text(verbatim: "**") + Text("bold") + Text(verbatim: "**"), Text("bold").bold())
             mdFormat("_italic_", Text("italic").italic())
             mdFormat("~strike~", Text("strike").strikethrough())
             mdFormat("`a + b`", Text("`a + b`").font(.body.monospaced()))
@@ -32,8 +32,12 @@ struct MarkdownHelp: View {
 }
 
 private func mdFormat(_ format: LocalizedStringKey, _ example: Text) -> some View {
+    mdFormat(Text(format), example)
+}
+
+private func mdFormat(_ format: Text, _ example: Text) -> some View {
     HStack {
-        Text(format).frame(width: 120, alignment: .leading)
+        format.frame(width: 120, alignment: .leading)
         example
     }
 }

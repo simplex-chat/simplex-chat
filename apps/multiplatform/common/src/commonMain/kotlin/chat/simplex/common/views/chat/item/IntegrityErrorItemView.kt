@@ -1,15 +1,14 @@
 package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -51,27 +50,15 @@ fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, showTimestamp: 
 
 @Composable
 fun CIMsgError(ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, onClick: () -> Unit) {
-  val receivedColor = MaterialTheme.appColors.receivedMessage
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = false, showTimestamp = showTimestamp) }) { inlineMeta ->
-    Surface(
-      Modifier.clickable(onClick = onClick),
-      shape = RoundedCornerShape(18.dp),
-      color = receivedColor,
-      contentColor = LocalContentColor.current
-    ) {
-      Row(
-        Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.Bottom
-      ) {
-        Text(
-          buildAnnotatedString {
-            withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
-          },
-          style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
-          modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp)
-        )
-        inlineMeta?.invoke()
-      }
+    ItemTextCard(ci, 16.sp, inlineMeta, Modifier.clickable(onClick = onClick)) {
+      Text(
+        buildAnnotatedString {
+          withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
+        },
+        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleTextStyle(16.sp, Color.Red)),
+        modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp).alignBy(LastBaseline)
+      )
     }
   }
 }
@@ -94,13 +81,16 @@ fun RcvMsgErrorItemView(rcvMsgError: RcvMsgError, ci: ChatItem, showTimestamp: B
   name = "Dark Mode"
 )*/
 @Composable
-fun IntegrityErrorItemViewPreview() {
+fun IntegrityErrorItemViewPreview() = BubblePreview {
   SimpleXTheme {
-    IntegrityErrorItemView(
-      MsgErrorType.MsgBadHash(),
-      ChatItem.getDeletedContentSampleData(ts = previewDate),
-      showTimestamp = true,
-      null,
-    )
+    val ci = ChatItem.getDeletedContentSampleData(ts = previewDate)
+    Box(Modifier.clipChatItem(ci)) {
+      IntegrityErrorItemView(
+        MsgErrorType.MsgBadHash(),
+        ci,
+        showTimestamp = true,
+        null,
+      )
+    }
   }
 }

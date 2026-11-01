@@ -20,13 +20,18 @@ struct MarkedDeletedItemView: View {
     var chatItem: ChatItem
 
     var body: some View {
-        (Text(mergedMarkedDeletedText).italic() + textSpace + chatItem.timestampText)
-        .font(.caption)
-        .foregroundColor(theme.colors.secondary)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
-        .textSelection(.disabled)
+        ItemWithMeta {
+            CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
+        } content: { inlineMeta in
+            (inlineMeta == nil ? Text(mergedMarkedDeletedText).italic() : Text(mergedMarkedDeletedText).italic() + textSpace + chatItem.timestampText)
+            .font(.caption)
+            .foregroundColor(theme.colors.secondary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
+            .if(inlineMeta == nil) { $0.modifier(ChatItemClipped(chatItem, tailVisible: false)) }
+            .textSelection(.disabled)
+        }
     }
 
     var mergedMarkedDeletedText: LocalizedStringKey {

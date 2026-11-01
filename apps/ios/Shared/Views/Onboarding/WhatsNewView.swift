@@ -698,20 +698,36 @@ private let versionDescriptions: [VersionDescription] = [
             ))
         ]
     ),
-    // TODO [badges] restore when badges ship, with final copy and the Read more link.
-    /*
     VersionDescription(
-        version: "v7.1",
+        version: "v7.1-beta.8",
         post: nil,
         features: [
             .view(FeatureView(
                 icon: nil,
-                title: "Supporter badge",
+                title: "Supporter badges",
                 view: { SupporterBadgeWhatsNew() }
-            ))
+            )),
+            .feature(Description(
+                icon: nil,
+                title: "Safer channels",
+                description: nil,
+                subfeatures: [
+                    ("flag", "Promote contributors to moderators."),
+                    ("checkmark.seal", "Opt in to sign all channel messages."),
+                ]
+            )),
+            .feature(Description(
+                icon: "terminal",
+                title: "Flat (\"terminal\") chat layout",
+                description: "And full markdown support."
+            )),
+            .feature(Description(
+                icon: "phone",
+                title: "Better calls",
+                description: "Reconnect after dropped connection."
+            )),
         ]
     ),
-    */
 ]
 
 private let lastVersion = versionDescriptions.last!.version
@@ -731,19 +747,17 @@ fileprivate struct SupporterBadgeWhatsNew: View {
     @EnvironmentObject var theme: AppTheme
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Supporter badge ❤️")
-                    .font(.title3)
-                    .bold()
-                Text("Help keep the network running — send files up to 2 GB.")
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(10)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            heroThumbnail()
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Supporter badges 🚀")
+                .font(.title3)
+                .bold()
+            Text("Send larger files\navailable for longer.")
+                .multilineTextAlignment(.leading)
+                .lineLimit(10)
         }
+        .padding(.trailing, 96)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(alignment: .topTrailing) { heroThumbnail() }
     }
 
     @ViewBuilder
@@ -752,7 +766,8 @@ fileprivate struct SupporterBadgeWhatsNew: View {
         Image(colorScheme == .light ? "phone-supporter" : "phone-supporter-light")
             .resizable()
             .scaledToFit()
-            .frame(width: 110, height: 110)
+            .frame(width: 115, height: 144)
+            .offset(x: 23, y: -24)
         #else
         Image("badge-supporter")
             .resizable()
