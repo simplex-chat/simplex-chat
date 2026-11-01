@@ -15,6 +15,8 @@ module StoreService.Config
     PlayStoreConfig (..),
     BadgeIssuerKey (..),
     GroupConfig (..),
+    NamesConfig (..),
+    ChainConfig (..),
     ServiceConfig (..),
     defaultExpiryMinutes,
     defaultSessionMinutes,
@@ -28,6 +30,8 @@ import qualified Control.Exception as E
 import StoreService.Log (logWarn)
 import Control.Monad (mfilter, unless, when)
 import Data.Attoparsec.Text (Parser, endOfInput, isEndOfLine, parseOnly, satisfy, skipMany, skipSpace, skipWhile)
+import qualified Data.ByteArray as BA
+import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import qualified Data.ByteString.Char8 as B
 import Data.Ini (Ini, iniGlobals, iniParser, keys, lookupValue, sections)
 import Data.List.NonEmpty (NonEmpty)
@@ -35,10 +39,17 @@ import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Text.IO as TIO
+import Data.Time.Clock (UTCTime)
+import Data.Time.Format.ISO8601 (iso8601ParseM)
+import Data.Word (Word64)
 import Simplex.Chat.Library.Commands (mkValidName)
 import Simplex.Messaging.Crypto.BBS (BBSSecretKey)
+import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, mkPrivateKey)
 import Simplex.Messaging.Encoding.String (strDecode)
+import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import System.IO.Error (ioeGetErrorString)
 import Text.Read (readMaybe)
 
@@ -137,6 +148,31 @@ data GroupConfig = GroupConfig
   }
   deriving (Eq, Show)
 
+data NamesConfig = NamesConfig
+  { nTLD :: SimplexTLD,
+    nYears :: Int,
+    nTermStart :: UTCTime,
+    nTermSlackSeconds :: Int,
+    nChain :: ChainConfig
+  }
+  deriving (Eq, Show)
+
+data ChainConfig = ChainConfig
+  { cRpcUrl :: String,
+    cChainId :: Word64,
+    cController :: Address,
+    cSponsor :: Address,
+    cBaseRegistrar :: Address,
+    cResolver :: Address,
+    cServiceKey :: Secp256k1PrivateKey,
+    cGasLimitCap :: Word64
+  }
+  deriving (Eq)
+
+-- The RPC URL can carry a provider's API key, so neither it nor the service key is shown.
+instance Show ChainConfig where
+  show ChainConfig {cChainId} = "chain " <> show cChainId
+
 data ServiceConfig = ServiceConfig
   { listener :: ListenerConfig,
     btcpay :: Maybe BTCPayConfig,
@@ -146,6 +182,7 @@ data ServiceConfig = ServiceConfig
     playStore :: Maybe PlayStoreConfig,
     issuer :: Maybe BadgeIssuerKey,
     group :: Maybe GroupConfig,
+    names :: Maybe NamesConfig,
     -- Local testing only; anyone who can reach the service can mint badges with any well-formed receipt.
     devAcceptUnverifiedStoreReceipts :: Bool,
     -- Local testing only; every issue request for a subscription asks its store and banks the months it charges.
@@ -192,6 +229,12 @@ requireHttps u
 minNameYears :: Int
 minNameYears = 2
 
+defaultTermStart :: String
+defaultTermStart = "2027-01-01T00:00:00Z"
+
+serviceKeyBytes :: Int
+serviceKeyBytes = 32
+
 -- | Well below 100, where BTCPay settles an invoice for one satoshi.
 maxTolerance :: Double
 maxTolerance = 10
@@ -233,7 +276,9 @@ knownSettings =
     ("google", ["package_name", "service_account_file"]),
     ("group", ["display_name", "description"]),
     ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage", "credit_test_purchases"]),
-    ("issuer", ["index", "private_key"])
+    ("issuer", ["index", "private_key"]),
+    ("names", ["tld", "years", "term_start", "term_slack_seconds"]),
+    ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "gas_limit_cap"])
   ]
 
 unknownKeys :: Ini -> [Text]
@@ -262,6 +307,7 @@ parseConfig ini = do
   str <- stripeSection
   iss <- issuerSection
   grp <- groupSection
+  nms <- namesSection
   pWaitingSeconds <- cadence "waiting_seconds" 3
   pIdleSeconds <- cadence "idle_seconds" 60
   apple <- appleSection
@@ -284,6 +330,7 @@ parseConfig ini = do
         playStore = google,
         issuer = iss,
         group = grp,
+        names = nms,
         devAcceptUnverifiedStoreReceipts = devUnverifiedReceipts,
         devCheckStoreDuringCoverage,
         devCreditTestPurchases
@@ -403,6 +450,60 @@ parseConfig ini = do
           gPackageName <- required "google" "package_name"
           gServiceAccountFile <- T.unpack <$> required "google" "service_account_file"
           pure (Just PlayStoreConfig {gPackageName, gServiceAccountFile, gApiHost = defaultPlayApiHost, gTokenUrl = defaultPlayTokenUrl})
+    namesSection
+      | not (hasSection "names") = case filter hasSection ["chain"] of
+          s : _ -> Left ("[" <> T.unpack s <> "] is set but [names] is absent, so nothing would use it")
+          [] -> Right Nothing
+      | not (hasSection "chain") = Left "[names] needs a [chain] section"
+      | otherwise = do
+          nTLD <- tldSetting
+          nYears <- num "names" "years" minNameYears
+          when (nYears < minNameYears) $ Left ("names.years must be at least " <> show minNameYears)
+          nTermStart <- termStart
+          nTermSlackSeconds <- atLeast 0 "names" "term_slack_seconds" 3600
+          nChain <- chainSection
+          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nChain})
+    tldSetting =
+      required "names" "tld" >>= \case
+        "simplex" -> Right TLDSimplex
+        "testing" -> Right TLDTesting
+        other -> Left ("names.tld must be simplex or testing, not " <> T.unpack other)
+    termStart =
+      maybe (Left ("names.term_start must be an ISO 8601 UTC time such as " <> defaultTermStart)) Right $
+        iso8601ParseM (maybe defaultTermStart T.unpack (present "names" "term_start"))
+    atLeast lowest s k d = do
+      v <- num s k d
+      if v >= lowest then Right v else Left (T.unpack s <> "." <> T.unpack k <> " must be at least " <> show lowest)
+    -- No error below quotes a value, since the URL and the key are secrets.
+    chainSection = do
+      cRpcUrl <- rpcUrl
+      cChainId <- positiveWord "chain_id" Nothing
+      cController <- address "controller"
+      cSponsor <- address "sponsor"
+      cBaseRegistrar <- address "base_registrar"
+      cResolver <- address "resolver"
+      cServiceKey <- serviceKey
+      cGasLimitCap <- positiveWord "gas_limit_cap" (Just 8000000)
+      pure ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cGasLimitCap}
+    rpcUrl = do
+      v <- required "chain" "rpc_url"
+      unless (any (`T.isPrefixOf` v) ["http://", "https://"]) $ Left "chain.rpc_url must be an http or https URL"
+      Right (T.unpack v)
+    positiveWord k d = case (present "chain" k, d) of
+      (Nothing, Just v) -> Right v
+      (Nothing, Nothing) -> Left ("chain." <> T.unpack k <> " is required")
+      (Just v, _) -> case readMaybe (T.unpack v) :: Maybe Integer of
+        Just n | n >= 1, n <= toInteger (maxBound :: Word64) -> Right (fromInteger n)
+        _ -> Left ("chain." <> T.unpack k <> " must be a positive whole number")
+    address k = do
+      v <- required "chain" k
+      either (const (Left ("chain." <> T.unpack k <> " is not an Ethereum address"))) Right (strDecode (encodeUtf8 v) :: Either String Address)
+    serviceKey = do
+      v <- required "chain" "service_key"
+      let bad = Left "chain.service_key must be 0x and 64 hex digits of a valid secp256k1 key"
+      case T.stripPrefix "0x" v of
+        Just h | T.length h == 2 * serviceKeyBytes, Right bytes <- convertFromBase Base16 (encodeUtf8 h) -> either (const bad) Right (mkPrivateKey (BA.convert (bytes :: B.ByteString)))
+        _ -> bad
     sessionMinutes = do
       v <- num "stripe" "session_minutes" defaultSessionMinutes
       if v >= minSessionMinutes && v <= maxSessionMinutes
