@@ -2791,7 +2791,7 @@
     <string name="show_signature">Aláírás megjelenítése</string>
     <string name="show_encryption">Titkosítás megjelenítése</string>
     <string name="signature_missing_alert_title">Hiányzik az aláírás</string>
-    <string name="signature_missing_alert_desc">Az üzenetet azelőtt küldték el, mielőtt a csatorna elkezdte volna aláírni az üzeneteket, vagy hamis.</string>
+    <string name="signature_missing_alert_desc">A csatorna aláírásának bevezetése előtt küldték, vagy hamis.</string>
     <string name="channel_simplex_name">Csatorna SimpleX-neve</string>
     <string name="get_simplex_name_beta">SimpleX-név beszerzése (béta)</string>
     <string name="register_test_name">Útmutató egy név regisztrálásához tesztelési céllal</string>
@@ -2875,7 +2875,7 @@
     <string name="badges_error_rate_limited">Túl sok próbálkozás. Próbálja meg később.</string>
     <string name="badges_error_bad_service_response">A kitűzőszolgáltatás váratlan választ küldött: %1$s</string>
     <string name="badges_error_credential_not_verified">Az alkalmazás ezen verziója nem tudja ellenőrizni ezt a kitűzőt. Frissítse az alkalmazást.</string>
-    <string name="badges_error_unsupported_version">Az alkalmazás ezen verziója túl régi a kitűzőszolgáltatáshoz. Frissítse az alkalmazást.</string>
+    <string name="badges_error_unsupported_version">Frissítse az alkalmazást a kitűzők használatához.</string>
     <string name="badges_error_badge_ended">A kód el lett fogadva, de az általa biztosított kitűző már lejárt.</string>
     <string name="badges_error_unknown">Nem sikerült beváltani a kódot.</string>
     <string name="badges_code_you_scanned_is_not_badge_code">A beolvasott kód nem egy kitűző kódja.</string>
@@ -2890,7 +2890,7 @@
     <string name="supporter_perks">A támogatással járó előnyök</string>
     <string name="v7_1_supporter_badge_title">Támogatói kitűző ❤️</string>
     <string name="v7_1_supporter_badge_body">Segítsen fenntartani a hálózat működését és küldjön akár 2 GB méretű fájlokat.</string>
-    <string name="app_link_not_supported">Ezt a hivatkozást nem támogatja az alkalmazás ezen verziója. Ellenőrizze, hogy van-e elérhető alkalmazásfrissítés.</string>
+    <string name="app_link_not_supported">Frissítse az alkalmazást a hivatkozás megnyitásához.</string>
     <string name="server_has_too_many_hosts">A(z) %1$s kiszolgálónak több mint két neve van.</string>
     <string name="service_request_timeout_desc">A szolgáltatás nem válaszolt. Próbálja meg újra.</string>
     <string name="error_saving_profile">Hiba történt a profil mentésekor</string>
@@ -2955,8 +2955,8 @@
     <string name="badges_error_unknown_purchase">A kitűzőszolgáltatás nem ismeri fel ezt a kitűzőt.</string>
     <string name="badges_error_service_internal">A kitűzőszolgáltatás belső hibát jelzett.</string>
     <string name="badges_error_receipt_invalid">Az áruház nem erősítette meg ezt a vásárlást.</string>
-    <string name="badges_error_receipt_used">Ezt a vásárlást már jóváírták egy kitűzőhöz egy másik eszközön vagy profilon.</string>
-    <string name="badges_error_test_purchase">A tesztvásárlások nem lesznek jóváírva. Kitűzőt csak valódi vásárlással lehet venni.</string>
+    <string name="badges_error_receipt_used">Ezt a vásárlást már egy másik profilon használják.</string>
+    <string name="badges_error_test_purchase">A tesztvásárlások nem adnak kitűzőt.</string>
     <string name="badges_error_payment_pending">A fizetés még nem lett megerősítve.</string>
     <string name="badges_error_provider_unavailable">Az áruház nem volt elérhető.</string>
     <string name="badges_error_provider_not_configured">A kitűzők még nem vásárolhatók meg az alkalmazásban.</string>
@@ -3007,7 +3007,7 @@
     <string name="badges_subscription">Előfizetés</string>
     <string name="badges_subscription_cancelled_title">Előfizetés megszakítva</string>
     <string name="sign_messages_question">Biztosan aláírja az üzeneteket?</string>
-    <string name="sign_messages_alert_desc">A korábban elküldött üzeneteknél a később csatlakozó feliratkozók számára hiányzó aláírás fog megjelenni.</string>
+    <string name="sign_messages_alert_desc">Az új feliratkozók a korábbi üzeneteket aláíratlanként látják.</string>
     <string name="badges_error_store_purchase_open">Egy vásárlás hozzáadása folyamatban van ehhez a profilhoz. Próbálja újra később.</string>
     <string name="badges_error_store_purchase_open_purchase">Egy áruházi vásárlás hozzáadása folyamatban van ehhez a profilhoz.</string>
     <string name="badges_error_transfer_limited">Ezt a vásárlást nemrég egy másik eszközre vagy profilra helyezték át.</string>
@@ -3027,14 +3027,14 @@
     <string name="badges_payment_problem_footer">A fizetés sikertelen. Frissítse a fizetési eljárást a Google Play-ben.</string>
     <string name="badges_payment_problem_footer_store">A fizetés sikertelen. Frissítse a fizetési eljárást az áruházban.</string>
     <string name="badges_subscription_cancelled_footer">Az előfizetése törölve lett. A kitűző eddig marad meg: %1$s.</string>
-    <string name="badges_subscription_ended_footer">Az előfizetése lejárt. A kitűző el lesz távolítva a profiljáról.</string>
+    <string name="badges_subscription_ended_footer">Az előfizetés lejárt. A kitűző el lesz távolítva.</string>
     <string name="badges_subscription_renewing">Megújítás</string>
     <string name="badges_subscription_renewing_footer">Megújul, amint a Google Play kiszámlázza az előfizetését.</string>
     <string name="badges_subscription_renewing_footer_store">Megújul, amint az áruház kiszámlázza az előfizetését.</string>
     <string name="badges_subscription_renews_price">Megújul ekkor: %1$s · %2$s</string>
     <string name="badges_subscription_renews">Megújul ekkor: %1$s</string>
-    <string name="badges_subscription_renews_footer">Az előfizetése automatikusan megújul. A Google Play áruházban bármikor lemondhatja.</string>
-    <string name="badges_subscription_renews_footer_store">Az előfizetése automatikusan megújul. Az áruházban bármikor lemondhatja.</string>
+    <string name="badges_subscription_renews_footer">Automatikusan megújul, amíg le nem mondja a Google Play-ben.</string>
+    <string name="badges_subscription_renews_footer_store">Automatikusan megújul, amíg le nem mondja az áruházban.</string>
     <string name="badges_subscription_ended_title">Az előfizetése lejárt</string>
     <string name="badges_subscription_ended_on">A kitűző-előfizetése lejárt ekkor: %1$s.</string>
     <string name="badges_payment_problem_title">Kitűzőfizetési probléma</string>

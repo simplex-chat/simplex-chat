@@ -3310,7 +3310,7 @@ public enum MsgVerified: Decodable, Equatable, Hashable {
         switch self {
         case .sigMissing: return (
                 NSLocalizedString("Signature missing", comment: "alert title"),
-                NSLocalizedString("The message was sent before the channel started signing messages, or it is fake.", comment: "alert message")
+                NSLocalizedString("Sent before the channel started signing, or fake.", comment: "alert message")
             )
         default: return nil
         }

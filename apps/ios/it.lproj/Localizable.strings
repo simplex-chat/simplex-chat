@@ -6761,7 +6761,7 @@ server test failure */
 "This app version cannot verify this badge. Please update the app." = "Questa versione dell'app non può verificare questo distintivo. Aggiorna l'app.";
 
 /* alert message */
-"This app version is too old for the badge service. Please update the app." = "Questa versione dell'app è troppo vecchia per il servizio distintivi. Aggiorna l'app.";
+"Update the app to use badges." = "Aggiorna l'app per usare i distintivi.";
 
 /* badge alert */
 "This badge could not be verified and may not be genuine." = "Non è stato possibile verificare questa targhetta e potrebbe non essere autentica.";
@@ -6819,7 +6819,7 @@ alert subtitle */
 "This is your link for channel %@!" = "Questo è il tuo link per il canale %@!";
 
 /* No comment provided by engineer. */
-"This link is not supported by this app version. Please check for app updates." = "Questo link non è supportato da questa versione dell'app. Controlla gli aggiornamenti dell'app.";
+"Update the app to open this link." = "Aggiorna l'app per aprire questo link.";
 
 /* No comment provided by engineer. */
 "This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." = "Questo link richiede una versione più recente dell'app. Aggiornala o chiedi al tuo contatto di inviare un link compatibile.";
@@ -6837,7 +6837,7 @@ alert subtitle */
 "This profile already has a badge. Redeem the code on another profile, or once this badge ends." = "Questo profilo ha già un distintivo. Riscatta il codice su un altro profilo, o una volta che questo distintivo scade.";
 
 /* alert message */
-"This purchase was already credited to a badge on another device or profile." = "Questo acquisto era già accreditato a un distintivo su un altro dispositivo o profilo.";
+"This purchase is already used on another profile." = "Questo acquisto è già usato su un altro profilo.";
 
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Questa impostazione si applica ai messaggi del profilo di chat attuale **%@**.";

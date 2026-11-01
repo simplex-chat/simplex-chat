@@ -2794,7 +2794,7 @@
     <string name="sign_message_desc">签名证明你写了这则消息，之后无法否认。</string>
     <string name="sign_message">签署消息</string>
     <string name="sign_messages">签署消息</string>
-    <string name="signature_missing_alert_desc">频道要求签署此消息，但签名缺失。</string>
+    <string name="signature_missing_alert_desc">在频道开始签名之前发送，或是伪造的。</string>
     <string name="to_verify_channel_member_key">要验证此订阅者的密钥，比较（或扫描）设备上的代码。</string>
     <string name="add_description">添加描述</string>
     <string name="profile_description__field">描述</string>
@@ -2839,7 +2839,7 @@
     <string name="v7_1_supporter_badge_body">帮助保持网络运行— 发送最大 2 GB 的文件。</string>
     <string name="badges_error_badge_ended">代码被接受，但其授予的徽章已过期。</string>
     <string name="badges_price_monthly">%1$s/月</string>
-    <string name="badges_error_unsupported_version">此应用版本对于徽章服务太旧了。请更新应用。</string>
+    <string name="badges_error_unsupported_version">请更新应用以使用徽章。</string>
     <string name="badges_error_credential_not_verified">此应用版本无法验证该徽章。请更新应用。</string>
     <string name="badges_price_annual">%1$s/年</string>
     <string name="badges_period_one_month">1个月</string>

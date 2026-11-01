@@ -2794,7 +2794,7 @@
     <string name="show_signature">Mostrar firma</string>
     <string name="show_encryption">Mostrar cifrado</string>
     <string name="signature_missing_alert_title">Falta la firma</string>
-    <string name="signature_missing_alert_desc">El canal requiere que el mensaje esté firmado, pero falta la firma.</string>
+    <string name="signature_missing_alert_desc">Enviado antes de que el canal empezara a firmar, o es falso.</string>
     <string name="channel_simplex_name">Nombre SimpleX del canal</string>
     <string name="register_test_name">Cómo registrar un nombre de prueba</string>
     <string name="add_description">Añadir descripción</string>
@@ -2876,7 +2876,7 @@
     <string name="badges_code_you_scanned_is_not_badge_code">El código escaneado no es código de insignia.</string>
     <string name="badges_error_service_not_configured">Esta versión no puede canjear códigos de insignia.</string>
     <string name="badges_error_credential_not_verified">Esta versión no puede verificar la insignia. Por favor, actualiza la aplicación.</string>
-    <string name="badges_error_unsupported_version">Esta versión es anticuada para el servicio de insignias. Por favor, actualiza la aplicación.</string>
+    <string name="badges_error_unsupported_version">Actualiza la aplicación para usar insignias.</string>
     <string name="badges_error_code_used">El código ya ha sido usado.</string>
     <string name="badges_error_code_expired">El código ha caducado.</string>
     <string name="badges_error_invalid_code">El código no es válido.</string>

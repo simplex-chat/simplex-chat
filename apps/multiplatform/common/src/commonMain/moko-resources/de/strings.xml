@@ -2873,7 +2873,7 @@
     <string name="sign_message_desc">Die Signatur bestätigt, dass Sie diese Nachricht verfasst haben und sie später nicht abstreiten können.</string>
     <string name="sign_message">Nachricht signieren</string>
     <string name="sign_messages">Nachrichten signieren</string>
-    <string name="signature_missing_alert_desc">Die Nachricht wurde gesendet, bevor der Kanal mit dem Signieren von Nachrichten begonnen hat, oder sie ist gefälscht.</string>
+    <string name="signature_missing_alert_desc">Gesendet, bevor der Kanal mit dem Signieren begann, oder gefälscht.</string>
     <string name="channel_simplex_name">Im Kanal genutzter SimpleX-Name</string>
     <string name="get_simplex_name_beta">Einen SimpleX-Namen erhalten (BETA)</string>
     <string name="register_test_name">Wie man einen Test-Namen registriert</string>
@@ -2960,7 +2960,7 @@
     <string name="badges_code_you_scanned_is_not_badge_code">Der eingescannte Code ist kein Badge-Code.</string>
     <string name="badges_error_service_not_configured">Diese App-Version kann keine Badge-Codes einlösen.</string>
     <string name="badges_error_credential_not_verified">Diese App-Version kann diesen Badge nicht überprüfen. Bitte aktualisieren Sie die App.</string>
-    <string name="badges_error_unsupported_version">Diese App-Version ist für den Badge-Dienst zu alt. Bitte aktualisieren Sie die App.</string>
+    <string name="badges_error_unsupported_version">Aktualisieren Sie die App, um Badges zu verwenden.</string>
     <string name="badges_error_code_used">Dieser Code wurde bereits verwendet.</string>
     <string name="badges_error_code_expired">Dieser Code ist abgelaufen.</string>
     <string name="badges_error_invalid_code">Dieser Code ist nicht gültig.</string>
@@ -3049,7 +3049,7 @@
     <string name="emoji_category_symbols">Symbole</string>
     <string name="keystore_key_storage_tee">TEE</string>
     <string name="chat_layout_terminal">Terminal</string>
-    <string name="badges_error_test_purchase">Testkäufe werden nicht angerechnet. Badges können nur durch einen echten Kauf erworben werden.</string>
+    <string name="badges_error_test_purchase">Testkäufe fügen keine Badges hinzu.</string>
     <string name="markdown_text_view">Text-Ansicht</string>
     <string name="badges_error_credential_invalid">Der vom Dienst ausgestellte Badge kann nicht verifiziert werden.</string>
     <string name="badges_error_unreachable">Der Badge-Dienst konnte nicht erreicht werden.</string>
@@ -3068,9 +3068,9 @@
     <string name="badges_error_service_not_configured_purchase">Diese App-Version kann keine Badges kaufen.</string>
     <string name="badges_error_product_unavailable">Dieser Badge steht nicht zum Verkauf.</string>
     <string name="markdown_file_bidi_warning">Diese Datei enthält Zeichen zur Steuerung der Textrichtung. Dadurch kann der Text in einer anderen Reihenfolge angezeigt werden, als er geschrieben wurde.</string>
-    <string name="app_link_not_supported">Dieser Link wird von dieser App-Version nicht unterstützt. Bitte prüfen Sie, ob ein App-Update verfügbar ist.</string>
+    <string name="app_link_not_supported">Aktualisieren Sie die App, um diesen Link zu öffnen.</string>
     <string name="badges_error_already_active_purchase">Dieses Profil hat bereits einen Badge.</string>
-    <string name="badges_error_receipt_used">Dieser Kauf wurde bereits einem Badge auf einem anderen Gerät oder Profil gutgeschrieben.</string>
+    <string name="badges_error_receipt_used">Dieser Kauf wird bereits auf einem anderen Profil verwendet.</string>
     <string name="badges_ledger_to_purchase_key">Zum Einkaufs-Schlüssel</string>
     <string name="storage_total">Gesamt</string>
     <string name="badges_order_total">Gesamt</string>
@@ -3090,7 +3090,7 @@
     <string name="badges_subscription_ends">Endet am %1$s</string>
     <string name="badges_payment_problem_footer">Zahlung fehlgeschlagen. Aktualisieren Sie Ihre Zahlungsmethode in Google Play.</string>
     <string name="badges_manage_subscription">Abonnement verwalten</string>
-    <string name="sign_messages_alert_desc">Zuvor gesendete Nachrichten zeigen bei Abonnenten, die später beitreten, den Hinweis „Signatur fehlt“ an.</string>
+    <string name="sign_messages_alert_desc">Neue Abonnenten sehen frühere Nachrichten als nicht signiert.</string>
     <string name="member_info_section_title_moderator">Moderator</string>
     <string name="badges_nothing_to_restore_desc">Es wurde kein ausstehender Google Play-Kauf gefunden, der hinzugefügt werden kann.</string>
     <string name="badges_nothing_to_restore">Nichts zum Wiederherstellen vorhanden</string>
@@ -3121,8 +3121,8 @@
     <string name="badges_stays_until">Ihr Badge bleibt bis %1$s aktiv.</string>
     <string name="badges_subscription_ended_on">Ihr Abonnement für den Badge endete am %1$s.</string>
     <string name="badges_subscription_ended_title">Ihr Abonnement ist abgelaufen</string>
-    <string name="badges_subscription_ended_footer">Ihr Abonnement ist abgelaufen. Der Badge wird aus Ihrem Profil entfernt.</string>
+    <string name="badges_subscription_ended_footer">Abonnement beendet. Der Badge wird entfernt.</string>
     <string name="badges_subscription_cancelled_footer">Ihr Abonnement wurde gekündigt. Der Badge bleibt bis %1$s aktiv.</string>
-    <string name="badges_subscription_renews_footer">Ihr Abonnement verlängert sich automatisch. Sie können es in Google Play kündigen.</string>
-    <string name="badges_subscription_renews_footer_store">Ihr Abonnement verlängert sich automatisch. Sie können es im Store kündigen.</string>
+    <string name="badges_subscription_renews_footer">Verlängert sich automatisch, bis Sie es in Google Play kündigen.</string>
+    <string name="badges_subscription_renews_footer_store">Verlängert sich automatisch, bis Sie es im Store kündigen.</string>
 </resources>

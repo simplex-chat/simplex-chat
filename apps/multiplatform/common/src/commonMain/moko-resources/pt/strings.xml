@@ -1187,7 +1187,7 @@
     <string name="connect_plan_you_are_owner">É proprietário</string>
     <string name="error_parsing_uri_title">Link inválido</string>
     <string name="error_parsing_uri_desc">Verifique se o link SimpleX está correto.</string>
-    <string name="app_link_not_supported">Este link não é suportado por esta versão da aplicação. Verifique se há atualizações da aplicação.</string>
+    <string name="app_link_not_supported">Atualize a aplicação para abrir este link.</string>
     <string name="opening_database">A abrir a base de dados…</string>
     <string name="non_content_uri_alert_title">Caminho de ficheiro inválido</string>
     <string name="app_was_crashed">A visualização falhou</string>
@@ -1623,7 +1623,7 @@
     <string name="show_signature">Mostrar assinatura</string>
     <string name="show_encryption">Mostrar encriptação</string>
     <string name="signature_missing_alert_title">Assinatura em falta</string>
-    <string name="signature_missing_alert_desc">A mensagem foi enviada antes do canal começar a assinar mensagens, ou é falsa.</string>
+    <string name="signature_missing_alert_desc">Enviada antes de o canal começar a assinar, ou falsa.</string>
     <string name="reset_verb">Redefinir</string>
     <string name="no_details">sem detalhes</string>
     <string name="tap_to_scan">Toque para ler</string>
@@ -2941,12 +2941,12 @@
     <string name="badges_error_rate_limited">Demasiadas tentativas. Tente novamente mais tarde.</string>
     <string name="badges_error_bad_service_response">O serviço de distintivos enviou uma resposta inesperada: %1$s</string>
     <string name="badges_error_credential_not_verified">Esta versão da aplicação não consegue verificar este distintivo. Atualize a aplicação.</string>
-    <string name="badges_error_unsupported_version">Esta versão da aplicação é demasiado antiga para o serviço de distintivos. Atualize a aplicação.</string>
+    <string name="badges_error_unsupported_version">Atualize a aplicação para usar distintivos.</string>
     <string name="badges_error_unknown_purchase">O serviço de distintivos não reconhece este distintivo.</string>
     <string name="badges_error_service_internal">O serviço de distintivos comunicou um erro interno.</string>
     <string name="badges_error_receipt_invalid">A loja não confirmou esta compra.</string>
-    <string name="badges_error_receipt_used">Esta compra já foi creditada a um distintivo noutro dispositivo ou perfil.</string>
-    <string name="badges_error_test_purchase">As compras de teste não são creditadas. Os distintivos só podem ser comprados com uma compra real.</string>
+    <string name="badges_error_receipt_used">Esta compra já é usada noutro perfil.</string>
+    <string name="badges_error_test_purchase">As compras de teste não adicionam distintivos.</string>
     <string name="badges_error_payment_pending">O pagamento ainda não foi confirmado.</string>
     <string name="badges_error_provider_unavailable">Não foi possível contactar a loja.</string>
     <string name="badges_error_provider_not_configured">Ainda não é possível comprar distintivos na aplicação.</string>
@@ -3016,7 +3016,7 @@
     <string name="badges_subscription_renewing">A renovar</string>
     <string name="badges_subscription_renews">Renova %1$s</string>
     <string name="badges_restore_purchases_footnote">Move um distintivo pago para este perfil.</string>
-    <string name="sign_messages_alert_desc">As mensagens enviadas antes vão mostrar que falta a assinatura aos subscritores que se juntem mais tarde.</string>
+    <string name="sign_messages_alert_desc">Os novos subscritores verão as mensagens anteriores como não assinadas.</string>
     <string name="badges_subscription_renews_price">Renova %1$s · %2$s</string>
     <string name="badges_renews_on">Renova em %1$s.</string>
     <string name="badges_renews_on_for">Renova em %1$s por %2$s.</string>
@@ -3038,8 +3038,8 @@
     <string name="badges_stays_until">O seu distintivo ficará até %1$s.</string>
     <string name="badges_subscription_ended_on">A subscrição do seu distintivo terminou em %1$s.</string>
     <string name="badges_subscription_ended_title">A sua subscrição terminou</string>
-    <string name="badges_subscription_ended_footer">A sua subscrição terminou. O distintivo será removido do seu perfil.</string>
+    <string name="badges_subscription_ended_footer">A subscrição terminou. O distintivo será removido.</string>
     <string name="badges_subscription_cancelled_footer">A sua subscrição foi cancelada. O distintivo permanecerá até %1$s.</string>
-    <string name="badges_subscription_renews_footer">A sua subscrição renova automaticamente. Pode cancelar na Google Play.</string>
-    <string name="badges_subscription_renews_footer_store">A sua subscrição renova automaticamente. Pode cancelar na loja.</string>
+    <string name="badges_subscription_renews_footer">Renova automaticamente até que a cancele na Google Play.</string>
+    <string name="badges_subscription_renews_footer_store">Renova automaticamente até que a cancele na loja.</string>
 </resources>
