@@ -18,6 +18,8 @@ module StoreService.Names.Chain
     ethCall,
     ethCallAt,
     latestBlock,
+    blockAt,
+    confirmedNumber,
     transactionReceipt,
     transactionByHash,
     transactionCount,
@@ -140,6 +142,14 @@ ethCallAt c tag to calldata = rpc c "eth_call" [J.object ["to" .= to, "data" .= 
 
 latestBlock :: ChainClient -> IO (Either ChainError Block)
 latestBlock c = blockByNumber c "latest"
+
+-- | A block the node does not have is a failed read.
+blockAt :: ChainClient -> Word64 -> IO (Either ChainError Block)
+blockAt c = blockByNumber c . blockTagParam . AtBlock
+
+-- | The newest block at the configured confirmation depth below this latest one, as the sender counts it.
+confirmedNumber :: ChainClient -> Word64 -> Word64
+confirmedNumber ChainClient {ccConfig = ChainConfig {cConfirmations}} latest = latest - min latest (fromIntegral (max 1 cConfirmations) - 1)
 
 blockByNumber :: ChainClient -> J.Value -> IO (Either ChainError Block)
 blockByNumber c tag =
