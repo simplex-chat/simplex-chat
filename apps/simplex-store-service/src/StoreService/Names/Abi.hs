@@ -17,6 +17,8 @@ module StoreService.Names.Abi
     decodeWord64,
     decodeAddress,
     decodeBool,
+    decodeBytes32,
+    decodeBytes,
     decodeString,
   )
 where
@@ -112,6 +114,9 @@ decodeBool ret =
     0 -> Right False
     1 -> Right True
     _ -> Left AENotBool
+
+decodeBytes32 :: ByteString -> Either AbiError ByteString
+decodeBytes32 = wordAt 0
 
 decodeBytes :: ByteString -> Either AbiError ByteString
 decodeBytes ret = offsetAt 0 ret >>= bytesAt ret
