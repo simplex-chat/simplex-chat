@@ -48,6 +48,16 @@
                ReferencedContainer = "container:SimpleX.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "E5CA11082F9C000100270665"
+               BuildableName = "SimpleX Calls.xctest"
+               BlueprintName = "SimpleX Calls"
+               ReferencedContainer = "container:SimpleX.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction
