@@ -854,6 +854,9 @@ swipe action */
 "Appearance" = "Darstellung";
 
 /* No comment provided by engineer. */
+"Apple did not sign this purchase, so it cannot be verified." = "Apple hat diesen Kauf nicht signiert, daher kann er nicht verifiziert werden.";
+
+/* No comment provided by engineer. */
 "Apply" = "Anwenden";
 
 /* No comment provided by engineer. */
@@ -1120,6 +1123,9 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "Businesses" = "Unternehmen";
+
+/* alert message */
+"Buy badges in the App Store version of the app." = "Kaufen Sie Badges in der App-Store-Version der App.";
 
 /* No comment provided by engineer. */
 "Buy in browser" = "Im Browser kaufen";
@@ -1921,9 +1927,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Crowdfunding on Wefunder" = "Crowdfunding auf Wefunder";
-
-/* No comment provided by engineer. */
-"Crowdfunding on Wefunder." = "Crowdfunding auf Wefunder.";
 
 /* No comment provided by engineer. */
 "Current conditions text couldn't be loaded, you can review conditions via this link:" = "Der Text der aktuellen Nutzungsbedingungen konnte nicht geladen werden. Sie können die Nutzungsbedingungen unter diesem Link einsehen:";
@@ -3400,9 +3403,6 @@ servers warning */
 "Help admins moderating their groups." = "Helfen Sie Administratoren bei der Moderation ihrer Gruppen.";
 
 /* No comment provided by engineer. */
-"Help keep the network running — send files up to 2 GB." = "Unterstützen Sie den Betrieb des Netzwerks und senden Sie Dateien bis zu 2 GB.";
-
-/* No comment provided by engineer. */
 "Hidden" = "Verborgen";
 
 /* No comment provided by engineer. */
@@ -4491,6 +4491,9 @@ servers warning */
 /* No comment provided by engineer. */
 "No relays" = "Keine Relais";
 
+/* No comment provided by engineer. */
+"No renewal: the badge ends when the prepaid months run out." = "Keine Verlängerung: Der Badge endet, wenn die vorausbezahlten Monate aufgebraucht sind.";
+
 /* servers error */
 "No servers for private message routing." = "Keine Router für privates Nachrichten-Routing.";
 
@@ -4967,9 +4970,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Port" = "Port";
-
-/* No comment provided by engineer. */
-"No renewal: the badge ends when the prepaid months run out." = "Keine Verlängerung: Der Badge endet, wenn die vorausbezahlten Monate aufgebraucht sind.";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Den letzten Nachrichtenentwurf, auch mit seinen Anhängen, aufbewahren.";
@@ -5570,9 +5570,6 @@ swipe action */
 
 /* alert title */
 "Sandbox purchase" = "Test-Kauf";
-
-/* alert message */
-"Buy badges in the App Store version of the app." = "Kaufen Sie Badges in der App-Store-Version der App.";
 
 /* alert action
 alert button
@@ -6436,12 +6433,6 @@ alert title */
 "supporter badge" = "Unterstützer-Badge";
 
 /* No comment provided by engineer. */
-"Supporter badge ❤️" = "Unterstützer-Badge ❤️";
-
-/* No comment provided by engineer. */
-"Supporter perks" = "Vorteile für Unterstützer";
-
-/* No comment provided by engineer. */
 "Supporter: 2 GB files available for 7 days." = "Unterstützer: Dateien bis 2 GB sind 7 Tage lang verfügbar.";
 
 /* No comment provided by engineer. */
@@ -6713,9 +6704,6 @@ server test failure */
 "The store did not confirm this purchase." = "Der Store hat diesen Kauf nicht bestätigt.";
 
 /* No comment provided by engineer. */
-"Apple did not sign this purchase, so it cannot be verified." = "Apple hat diesen Kauf nicht signiert, daher kann er nicht verifiziert werden.";
-
-/* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Der von Ihnen eingefügte Text ist kein SimpleX-Link.";
 
 /* No comment provided by engineer. */
@@ -6759,9 +6747,6 @@ server test failure */
 
 /* alert message */
 "This app version cannot verify this badge. Please update the app." = "Diese App-Version kann diesen Badge nicht überprüfen. Bitte aktualisieren Sie die App.";
-
-/* alert message */
-"Update the app to use badges." = "Aktualisieren Sie die App, um Badges zu verwenden.";
 
 /* badge alert */
 "This badge could not be verified and may not be genuine." = "Dieser Badge konnte nicht verifiziert werden und ist möglicherweise nicht echt.";
@@ -6819,9 +6804,6 @@ alert subtitle */
 "This is your link for channel %@!" = "Dies ist Ihr Link für den Kanal %@!";
 
 /* No comment provided by engineer. */
-"Update the app to open this link." = "Aktualisieren Sie die App, um diesen Link zu öffnen.";
-
-/* No comment provided by engineer. */
 "This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." = "Für diesen Link wird eine neuere App-Version benötigt. Bitte aktualisieren Sie die App oder bitten Sie Ihren Kontakt einen kompatiblen Link zu senden.";
 
 /* No comment provided by engineer. */
@@ -6832,9 +6814,6 @@ alert subtitle */
 
 /* alert message */
 "This profile already has a badge." = "Dieses Profil hat bereits einen Badge.";
-
-/* alert message */
-"This profile already has a badge. Redeem the code on another profile, or once this badge ends." = "Dieses Profil verfügt bereits über einen Badge. Lösen Sie den Code in einem anderen Profil ein oder warten Sie, bis dieser Badge abgelaufen ist.";
 
 /* alert message */
 "This purchase is already used on another profile." = "Dieser Kauf wird bereits auf einem anderen Profil verwendet.";
@@ -7086,7 +7065,13 @@ alert subtitle */
 "Update settings?" = "Einstellungen aktualisieren?";
 
 /* No comment provided by engineer. */
+"Update the app to open this link." = "Aktualisieren Sie die App, um diesen Link zu öffnen.";
+
+/* No comment provided by engineer. */
 "Update the app to register a SimpleX domain" = "Aktualisieren Sie die App, um eine SimpleX-Domain registrieren zu können";
+
+/* alert message */
+"Update the app to use badges." = "Aktualisieren Sie die App, um Badges zu verwenden.";
 
 /* rcv group event chat item */
 "updated channel profile" = "Kanalprofil aktualisiert";
@@ -7586,12 +7571,6 @@ alert title */
 
 /* notification body */
 "You can now chat with %@" = "Sie können nun Nachrichten an %@ versenden";
-
-/* No comment provided by engineer. */
-"You can now invest in SimpleX Chat" = "Sie können nun in SimpleX-Chat investieren";
-
-/* No comment provided by engineer. */
-"You can now invest in SimpleX Chat! 🚀" = "Sie können nun in SimpleX-Chat investieren! 🚀";
 
 /* No comment provided by engineer. */
 "You can send messages to %@ from Archived contacts." = "Sie können aus den archivierten Kontakten heraus Nachrichten an %@ versenden.";
