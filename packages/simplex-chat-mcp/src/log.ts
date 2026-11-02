@@ -68,6 +68,8 @@ function chatErrorTypeText(error: T.ChatErrorType): string | undefined {
         ? `No valid link: The SimpleX name ${name} is registered, but it has no valid link.`
         : `Unconfirmed name: The SimpleX name ${name} is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.`
     }
+    case "fileNotApproved":
+      return `Unknown servers! Without Tor or VPN, your IP address will be visible to these XFTP relays: ${[...new Set(error.unknownServers.map(serverHostname))].sort().join(", ")}.`
     default:
       return undefined
   }

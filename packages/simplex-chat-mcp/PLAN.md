@@ -411,7 +411,7 @@ Servers: `a.example.com`, `b.example.com`, unknown: downloading shows them this 
 ```
 
 - Known servers are the user's XFTP servers from `apiGetUserServers`, disabled ones included, except those of a disabled operator; addresses are compared without their password. This is the core's rule for approving relays (`getKnownAgentServers`, `Library/Internal.hs:898-904`; `agentServerCfgs`, `Operators.hs:455-465`), except that the preset servers used when the user has none count as unknown.
-- The download itself approves the relays (`apiReceiveFile`, `approvedRelays` true), as the owner approved the card that names them.
+- In mode requests the download approves the relays (`apiReceiveFile`, `approvedRelays` true): a file on unknown servers is downloaded only after `/approve` or `/receive` of the card that names them. In mode host `approvedRelays` is false, and the core downloads a file on unknown servers only when the IP address is protected (`receiveViaCompleteFD`, `Library/Internal.hs:859-868`); otherwise the download fails with `fileNotApproved`.
 
 ```
 message type   card
@@ -421,7 +421,7 @@ voice, file    a text message
 ```
 
 - The preview counts against 15000 bytes with the card's largest text form (section Card size); a larger preview is resized by `core.chatResizeImageUri` to the bytes left; when resizing fails, the card is a text message.
-- Under the files approval of the chat, and in mode host, a download posts no card and no outcome.
+- Under the files approval of the chat, a download of a file on known servers posts no card and no outcome; a file on unknown servers gets a card, and its commands leave out `/'approve CHAT files'`. In mode host, a download posts no card and no outcome.
 
 ### Outcomes
 
@@ -467,7 +467,7 @@ command             result
 /reject [CHAT] N    the card is edited
 /approve CHAT all   the standing approval of CHAT by the sender; its pending sends are approved
 /revoke CHAT        the standing approval of CHAT is removed
-/approve CHAT files the files approval of CHAT by the sender; its pending downloads are approved
+/approve CHAT files the files approval of CHAT by the sender; its pending downloads of files on known servers are approved
 /revoke CHAT files  the files approval of CHAT is removed
 /receive [CHAT] N   the server downloads the file of download N and posts it as a reply to the card; the card stays pending
 /leave CHAT         at once, the agent leaves group CHAT or deletes contact CHAT, as the leave tool does; its pending actions for CHAT are rejected by the sender
@@ -785,6 +785,7 @@ error invalidConnReq                                     Invalid connection link
 error unsupportedConnReq                                 Unsupported connection link: This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.
 error simplexDomainNotReady noValidLink                  No valid link: The SimpleX name NAME is registered, but it has no valid link.
 error simplexDomainNotReady unknownDomain                Unconfirmed name: The SimpleX name NAME is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.
+error fileNotApproved                                    Unknown servers! Without Tor or VPN, your IP address will be visible to these XFTP relays: HOST, HOST.   (the hosts sorted, each once)
 errorAgent NO_NAME_SERVERS                               SimpleX name error: None of your servers are set to resolve SimpleX names. Use a connection link.
 errorAgent SMP NAME NOT_FOUND                            Name not found: This SimpleX name is not registered. Please check the name.
 errorAgent SMP NAME NO_RESOLVER                          SimpleX name error: Server SERVER does not support name resolution. Use a connection link.
@@ -1048,7 +1049,7 @@ action(tool, input, ctx):
     N = nextAction; nextAction = N + 1; create action N; log "Action N: ..."
     /_set custom #group {simplexMcp: {control: true, nextAction}}, queued after earlier writes, awaited
     mode requests, a send to a chat whose approval applies: standing; decidedBy = approvedBy; start perform(N); its end posts the outcome card
-    mode requests, a download from a chat whose files approval applies: standing; decidedBy = approvedBy; start perform(N); no card
+    mode requests, a download of a file on known servers from a chat whose files approval applies: standing; decidedBy = approvedBy; start perform(N); no card
     mode requests otherwise: /_send #group text <card>; card = its item ID; post failed: state failed, error "SimpleX error"
     mode host: start perform(N); its end posts the outcome card, except for downloads
   open += 1
@@ -1133,7 +1134,8 @@ send(input, ctx):
   mention, chat a contact chat: tool error "mention not a member"
   mention m: /_members <chat> has no member m: tool error "mention not a member"; two members with the same display name: tool error "mention of equal names"
   file: attachment(file, as)
-  action(send, input, ctx)
+  /_get chat <chat> count=0 again: the chat's approval of messages at this point
+  action(send, input, ctx), standing under that approval
   return responses(action, wait, idle, limit, ctx) with {action, status: "done"}
 
 attachment(file, as):
@@ -1219,7 +1221,8 @@ download(input, ctx):
     wait for rcvFileDescrReady, then read again; progress "The sender is uploading the file of item N in CHAT; waiting until <time>."
     none at the end of wait: tool error "upload not finished within wait"
   unknownServers = servers not among /_servers <user> (section Download card)
-  action(download, input, ctx), standing under the chat's files approval
+  no unknownServers: /_get chat <chat> count=0 again, the chat's files approval at this point
+  action(download, input, ctx), standing under that approval
   until = wait seconds after startedAt, or after the call when the action is performing at the call
   result at until, still performing: {action, status: "performing"}; the action stays in memory
   done: {action, status: "done", chat, item, path}; the file ID leaves rejected files; the action is deleted from memory
@@ -1234,7 +1237,7 @@ downloadFile(chat, item, file), also run by /receive:
   otherwise a new promise in memory, then /_get chat <chat> around=<item> count=0, the item's file:
     rcvComplete              resolved with fileSource.filePath
     failed, as in file       rejected with its error
-    rcvInvitation            mkdir DIR/files/CHAT, mode 0700; /freceive <fileId> approved_relays=on DIR/files/CHAT   # apiReceiveFile; the core makes the name unique (getRcvFilePath, Library/Internal.hs:946-970)
+    rcvInvitation            mkdir DIR/files/CHAT, mode 0700; /freceive <fileId> approved_relays=on DIR/files/CHAT, without approved_relays=on in mode host   # apiReceiveFile; the core makes the name unique (getRcvFilePath, Library/Internal.hs:946-970)
     other                    the events below settle it
 ```
 

@@ -299,6 +299,10 @@ export class Actions {
   }
 }
 
+export function hasUnknownServers({unknownServers}: Pick<DownloadAction, "unknownServers">): boolean {
+  return unknownServers !== undefined && unknownServers.length > 0
+}
+
 export function isDecided(state: State): boolean {
   return state === "done" || state === "failed" || state === "rejected" || state === "expired"
 }

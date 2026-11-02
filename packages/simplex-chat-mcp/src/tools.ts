@@ -6,7 +6,7 @@ import {basename, dirname, extname, isAbsolute, join, sep} from "path"
 import {CallToolResult, JsonSchemaType, McpServer, ServerContext, fromJsonSchema} from "@modelcontextprotocol/server"
 import {CEvt, CR, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
-import {Action, Actions, Attachment, ConnRef, ConnectAction, DownloadAction, LeaveAction, Mode, SendAction, Standing, Subject, ToolError, isDecided} from "./actions"
+import {Action, Actions, Attachment, ConnRef, ConnectAction, DownloadAction, LeaveAction, Mode, SendAction, Standing, Subject, ToolError, hasUnknownServers, isDecided} from "./actions"
 import {chatErrorOf, chatErrorText, errorText, fileStatusError, fullDomainName, logError, oneLine} from "./log"
 import {
   Changes,
@@ -718,8 +718,9 @@ export class AgentTools {
     const file = input.file === undefined ? undefined : await this.attachment(input.file, input.as, chatInfo, chat)
     const subject = chatSubject(chatInfo)
     const responses = new Collected()
+    const approver = this.agent.standingApprover((await this.knownChat(chat)).chatInfo, "messages")
     if (call.signal.aborted) return undefined
-    const action = this.agent.actions.find(key) ?? this.agent.actions.create(key, {tool: "send", input, subject, chat, file, replyTo, mentions, responses}, this.agent.standingApprover(chatInfo, "messages"))
+    const action = this.agent.actions.find(key) ?? this.agent.actions.create(key, {tool: "send", input, subject, chat, file, replyTo, mentions, responses}, approver)
     return this.sendResult(action as SendAction, input, call)
   }
 
@@ -854,10 +855,11 @@ export class AgentTools {
     const deadline = Date.now() + (input.wait ?? downloadWait) * 1000
     const servers = file.fileProtocol === T.FileProtocol.XFTP ? await this.fileServers(chat, item, deadline, call) : undefined
     const unknownServers = servers === undefined ? undefined : await this.unknownServers(servers)
+    const approver = hasUnknownServers({unknownServers}) ? undefined : this.agent.standingApprover((await this.knownChat(chat)).chatInfo, "files")
     if (call.signal.aborted) return undefined
     const from = chatDir.type === "groupRcv" ? chatDir.groupMember.memberProfile.displayName : undefined
     const subject = chatSubject(chatInfo)
-    const action = this.agent.actions.find(key) ?? this.agent.actions.create(key, {tool: "download", input, subject, chat, item, from, file: fileOffer(content.msgContent, file), unknownServers}, this.agent.standingApprover(chatInfo, "files"))
+    const action = this.agent.actions.find(key) ?? this.agent.actions.create(key, {tool: "download", input, subject, chat, item, from, file: fileOffer(content.msgContent, file), unknownServers}, approver)
     return this.downloadResult(action as DownloadAction, input, call)
   }
 
@@ -909,7 +911,7 @@ export class AgentTools {
     if (file.fileStatus.type !== "rcvInvitation") return
     const folder = join(this.agent.data, "files", chat)
     mkdirSync(folder, {recursive: true, mode: 0o700})
-    await this.agent.chat.apiReceiveFile(fileId, folder)
+    await this.agent.chat.apiReceiveFile(fileId, folder, this.mode === "requests")
   }
 
   private settleDownload(fileId: number, settle: (download: Download) => void): void {

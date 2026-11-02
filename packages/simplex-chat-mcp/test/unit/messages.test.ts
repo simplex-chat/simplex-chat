@@ -314,6 +314,8 @@ describe("receive", () => {
 })
 
 describe("send", () => {
+  const flushed = (): Promise<void> => new Promise(resolve => setImmediate(resolve))
+
   it("returns the responses received after the sent item", async () => {
     jest.useFakeTimers()
     const chat = new FakeChat()
@@ -498,7 +500,7 @@ describe("send", () => {
     const {tools} = agentTools(chat, actions)
     fake.hooks.perform = (action, signal) => tools.perform(action, signal)
     const sending = tools.call("send", {chat: "#15", text: "hello", wait: 0}, signal().call)
-    await settled()
+    await flushed()
     const action = actions.get(1)!
     actions.approve(action, "Alice")
     const error = 'SimpleX error: error: groupUserRole: {"requiredRole":"author"}'
@@ -515,7 +517,7 @@ describe("send", () => {
     const {tools} = agentTools(chat, actions)
     fake.hooks.perform = (action, signal) => tools.perform(action, signal)
     const sending = tools.call("send", {chat: "#15", text: "hi @Switchback, any news?", mention: [44, 45], wait: 0}, signal().call)
-    await settled()
+    await flushed()
     actions.approve(actions.get(1)!, "Alice")
     expect((await sending)!.structuredContent).toMatchObject({status: "done", responses: [], more: 0})
     expect(chat.sent[0].messages[0]).toEqual({msgContent: {type: "text", text: "@'Ana Lu' hi @Switchback, any news?"}, mentions: {Switchback: 44, "Ana Lu": 45}, quotedItemId: undefined})

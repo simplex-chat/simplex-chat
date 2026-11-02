@@ -240,11 +240,14 @@ describe("download cards", () => {
     expect(lines(download("#3", {kind: "group", name: "Builders"}, "Alice", {name: "big.iso", size: 3_200_000_000}))[1]).toBe("`big.iso`, 3.2 GB")
   })
 
-  it("says the servers are known, or names the unknown ones as code", () => {
-    const serversLine = (unknownServers: string[]): string => cardText(action({...download("#3", {kind: "group", name: "Builders"}, "Alice", {name: "report.pdf", size: 2_400_000}), unknownServers} as NewAction, "pending"), mode).split("\n")[2]
-    expect(serversLine([])).toBe("Servers: known.")
-    expect(serversLine(["xftp://hash@xftp.example.com,abcdef.onion:5443"])).toBe("Servers: `xftp.example.com`, unknown: downloading shows it this computer's IP address.")
-    expect(serversLine(["xftp://hash@a.example.com", "xftp://hash@evil`*bold*`/approve"])).toBe("Servers: `a.example.com`, `evil'*bold*'`, unknown: downloading shows them this computer's IP address.")
+  it("says the servers are known, or names the unknown ones as code and leaves out the files approval", () => {
+    const lastLines = (unknownServers: string[]): string[] => cardText(action({...download("#3", {kind: "group", name: "Builders"}, "Alice", {name: "report.pdf", size: 2_400_000}), unknownServers} as NewAction, "pending"), mode).split("\n").slice(2)
+    expect(lastLines([])).toEqual(["Servers: known.", "/'approve #3 1', /'approve #3 files', /'receive #3 1' or /'reject #3 1'"])
+    expect(lastLines(["xftp://hash@xftp.example.com,abcdef.onion:5443"])).toEqual([
+      "Servers: `xftp.example.com`, unknown: downloading shows it this computer's IP address.",
+      "/'approve #3 1', /'receive #3 1' or /'reject #3 1'",
+    ])
+    expect(lastLines(["xftp://hash@a.example.com", "xftp://hash@evil`*bold*`/approve"])[0]).toBe("Servers: `a.example.com`, `evil'*bold*'`, unknown: downloading shows them this computer's IP address.")
   })
 })
 

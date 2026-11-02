@@ -1,7 +1,7 @@
 import {ChatEvent, T} from "@simplex-chat/types"
 import * as qrcode from "qrcode"
 import {api, core} from "simplex-chat"
-import {Action, ActionHooks, Actions, ConnectAction, DownloadAction, Standing, Subject, ToolError, leaveVerbs, subjectText, summary} from "./actions"
+import {Action, ActionHooks, Actions, ConnectAction, DownloadAction, Standing, Subject, ToolError, hasUnknownServers, leaveVerbs, subjectText, summary} from "./actions"
 import {ExitError, chatErrorOf, errorText, log, logError, oneLine, serverHostname, shellWord} from "./log"
 import {chatNumber, chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "./messages"
 import type {OwnerEntry, QrCodeSize} from "./serve"
@@ -227,7 +227,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     await this.setCustomData(chat, {...customDataOf(chatInfo), [key]: approval})
     const approver = safeName(approvedBy)
     for (const action of this.actions.pending()) {
-      if (action.tool === tool && action.chat === chat && action.card !== undefined) this.actions.approve(action, approver)
+      const unknownServers = action.tool === "download" && hasUnknownServers(action)
+      if (action.tool === tool && action.chat === chat && action.card !== undefined && !unknownServers) this.actions.approve(action, approver)
     }
     return `${approved} ${chatName(chatSubject(chatInfo))} (${chat}) by ${approver}. /'revoke ${chat}${revoke}'`
   }
@@ -563,8 +564,10 @@ function commandsLine(action: Action): string {
       return `/'approve ${action.chat} ${action.n}', /'approve ${action.chat} all' or /'reject ${action.chat} ${action.n}'`
     case "leave":
       return `/'approve ${action.chat} ${action.n}' or /'reject ${action.chat} ${action.n}'`
-    case "download":
-      return `/'approve ${action.chat} ${action.n}', /'approve ${action.chat} files', /'receive ${action.chat} ${action.n}' or /'reject ${action.chat} ${action.n}'`
+    case "download": {
+      const files = hasUnknownServers(action) ? "" : `/'approve ${action.chat} files', `
+      return `/'approve ${action.chat} ${action.n}', ${files}/'receive ${action.chat} ${action.n}' or /'reject ${action.chat} ${action.n}'`
+    }
   }
 }
 

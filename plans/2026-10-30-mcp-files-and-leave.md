@@ -226,7 +226,7 @@ Owner commands:
 ```
 command              effect
 /approve CHAT N      downloads the file for the agent
-/approve CHAT files  approves this and all later downloads in CHAT; later downloads post no card
+/approve CHAT files  approves this and all later downloads in CHAT of files on known servers; these post no card
 /receive CHAT N      the server downloads the file and sends it into the agent control chat; the card stays pending
 /reject CHAT N       the call returns status rejected
 /revoke CHAT files   downloads in CHAT need a card again; /revoke CHAT keeps covering messages only
@@ -235,9 +235,11 @@ command              effect
 - The "files" approval is stored in the chat's custom data, next to the standing approval of messages (`approvalOf`, `control.ts:554-557`).
 - `/list` shows it per chat.
 - Mode host: the host confirms the call (`anthropic/requiresUserInteraction`, `tools.ts:361`); no card.
+- A file on unknown servers gets a card under the files approval too; the card leaves out `/'approve CHAT files'`, and `/approve CHAT files` leaves it pending.
+- The files approval and the approval of messages are read again just before the action is created.
 
 Perform:
-- `apiReceiveFile(fileId, "DATA/files/<chat>/")`, which approves unknown servers (`api.ts:546-547` on `ep/bot-api`)
+- `apiReceiveFile(fileId, "DATA/files/<chat>/", approvedRelays)`: true in mode requests, false in mode host, where the core then downloads a file on unknown servers only when the IP address is protected
 - `rcvFileComplete` for the file ends it with its path; `rcvFileError` or `rcvFileSndCancelled` fail it
 
 Restart: undecided cards show "Cancelled: the server stopped"; their files stay offered.
