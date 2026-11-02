@@ -11,6 +11,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class ChatItemsLoaderTest {
 
@@ -135,7 +136,24 @@ class ChatItemsLoaderTest {
       val pageReadBeforeDeletion = opening.copy(chatItems = opening.chatItems + received)
       processLoadedChat(chatsCtx, pageReadBeforeDeletion, NavigationInfo(), ChatPagination.Initial(3), openAroundItemId = null, itemUpdates)
     }
-    assertEquals(true, chatsCtx.chatItems.value.firstOrNull { it.id == 103L }?.meta?.itemDeleted != null)
+    assertNotNull(chatsCtx.chatItems.value.firstOrNull { it.id == 103L }?.meta?.itemDeleted)
+  }
+
+  @Test
+  fun itemDeletedBeforeItsAdditionWhileChatOpensIsNotShown() = runBlocking {
+    val chatsCtx = ChatModel.ChatsContext(null)
+    val opening = groupChat(groupId = 8, itemIds = listOf(101, 102))
+    withContext(Dispatchers.Main) {
+      chatModel.currentUser.value = User.sampleData
+      chatModel.chatId.value = null
+    }
+    val received = receivedItem(103)
+    recordItemUpdatesWhileLoading(chatsCtx) { itemUpdates ->
+      withContext(Dispatchers.Main) { chatsCtx.removeChatItem(null, opening.chatInfo, received) }
+      chatsCtx.addChatItem(null, opening.chatInfo, received)
+      processLoadedChat(chatsCtx, opening, NavigationInfo(), ChatPagination.Initial(2), openAroundItemId = null, itemUpdates)
+    }
+    assertEquals(listOf(101L, 102L), itemIds(chatsCtx))
   }
 
   @Test

@@ -578,6 +578,7 @@ object ChatModel {
     }
 
     class ItemUpdatesWhileLoading {
+      val additions = ArrayList<() -> Unit>()
       val updates = ArrayList<() -> Unit>()
     }
 
@@ -592,6 +593,7 @@ object ChatModel {
     }
 
     fun applyItemUpdatesWhileLoading(record: ItemUpdatesWhileLoading) {
+      record.additions.forEach { it() }
       record.updates.forEach { it() }
     }
 
@@ -673,7 +675,7 @@ object ChatModel {
       }
       // add to current scope
       withContext(Dispatchers.Main) {
-        updateAndRecord {
+        val addition = {
           if (chatItemBelongsToScope(cInfo, cItem)) {
             // Prevent situation when chat item already in the list received from backend
             if (chatItems.value.none { it.id == cItem.id }) {
@@ -685,6 +687,8 @@ object ChatModel {
             }
           }
         }
+        itemUpdateRecords.forEach { it.additions.add(addition) }
+        addition()
       }
     }
 
