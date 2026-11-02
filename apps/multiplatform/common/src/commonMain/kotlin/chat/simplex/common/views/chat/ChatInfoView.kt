@@ -1496,7 +1496,7 @@ private fun setChatTTL(
 
 private suspend fun afterSetChatTTL(chatsCtx: ChatModel.ChatsContext, rhId: Long?, chatInfo: ChatInfo, progressIndicator: MutableState<Boolean>) {
   try {
-    recordItemsAddedWhileLoading(chatsCtx) { addedWhileLoading ->
+    recordItemUpdatesWhileLoading(chatsCtx) { itemUpdates ->
       val pagination = ChatPagination.Initial(ChatPagination.INITIAL_COUNT)
       val (chat, navInfo) = controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, scope = null, contentTag = null, pagination) ?: return
       if (chat.chatItems.isEmpty()) {
@@ -1515,7 +1515,7 @@ private suspend fun afterSetChatTTL(chatsCtx: ChatModel.ChatsContext, rhId: Long
         navInfo,
         pagination = pagination,
         openAroundItemId = null,
-        addedWhileLoading = addedWhileLoading
+        itemUpdates = itemUpdates
       )
     }
   } catch (e: Exception) {

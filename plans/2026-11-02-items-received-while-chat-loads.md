@@ -6,25 +6,38 @@ A message received while its chat is being opened is missing from the open chat 
 
 ## Cause
 
-`processLoadedChat` (`ChatItemsLoader.kt`) installs a list built before the main-thread block that installs it: the page that `apiGetChat` read (Initial, and Around when it opens at an item), or the other paginations' page merged with the items read at the start of `processLoadedChat`.
+`processLoadedChat` (`ChatItemsLoader.kt`) installs a page that `apiGetChat` read before the install.
 
-`addChatItem` (`ChatModel.kt`) adds a received item to the list of the open chat only when `chatModel.chatId` is the item's chat. An item handled between the read and the install is dropped:
-- when the chat is opening, `chatId` is set in the install block, so the item is not added;
-- when the chat is open, the item is added and then overwritten by the installed list.
+`addChatItem` and the other item updates of `ChatsContext` (`ChatModel.kt`) change the open list only when `chatModel.chatId` is the item's chat. An update handled between the read and the install is lost:
+- when the chat is opening, `chatId` is set in the install, so the update is not applied;
+- when the chat is open, the update is applied to the list that the install replaces (Initial, Around at an item) or that was read before a main-thread dispatch (other paginations).
 
-`addChatItem` increments the row's unread count for that item, and the Initial page then overwrites the row's stats with the stats it read.
+The Initial page also overwrites the row's stats with the stats it read.
 
 ## Fix
 
-`ChatsContext` keeps a list of `ItemsAddedWhileLoading` records; `addChatItem` appends each item passed to it, with its `ChatInfo`, to every active record on the main thread.
+`processLoadedChat` runs on the main thread from reading the current list to the install, so the merging paginations (Before, After, Around in the open chat, Last) read every update applied before.
 
-`recordItemsAddedWhileLoading` (`ChatItemsLoader.kt`) starts a record before `apiGetChat` and stops it after the page is installed or the load ends:
+While a page loads, `ChatsContext` records the list part of each item update in every active `ItemUpdatesWhileLoading`:
+- `addChatItem`;
+- `upsertChatItem`;
+- `updateChatItem`;
+- `removeChatItem`;
+- `removeMemberItems`;
+- `clearChat`;
+- `markChatItemsRead`;
+- `upsertGroupMember`;
+- `groupChatItemsDeleted` (`SimpleXAPI.kt`), with `recordItemUpdate` for an item that is not in the list.
+
+Counter updates run once, outside the recorded part.
+
+`recordItemUpdatesWhileLoading` starts a record before `apiGetChat` and stops it when the load ends:
 - `apiLoadMessages`, for every pagination;
-- `afterSetChatTTL` (`ChatInfoView.kt`), which loads an Initial page without `apiLoadMessages`.
+- `afterSetChatTTL` (`ChatInfoView.kt`).
 
-`processLoadedChat` takes the record:
-- each install block ends with `applyItemsAddedWhileLoading`, which adds the recorded items that belong to the context's scope and are not in the list, in the same way as `addChatItem`;
-- the Initial page overwrites the row's stats only when the record has no item of the loaded chat.
+The pages that replace the list (Initial, Around at an item) re-run the recorded updates after the install, in order.
+
+The Initial page keeps the row's stats when they changed while it loaded.
 
 ## Scope
 

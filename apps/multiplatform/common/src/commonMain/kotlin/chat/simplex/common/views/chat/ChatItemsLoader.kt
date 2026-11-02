@@ -2,7 +2,7 @@ package chat.simplex.common.views.chat
 
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.ChatsContext.ItemsAddedWhileLoading
+import chat.simplex.common.model.ChatModel.ChatsContext.ItemUpdatesWhileLoading
 import chat.simplex.common.platform.chatModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.StateFlow
@@ -33,23 +33,24 @@ suspend fun apiLoadMessages(
   openAroundItemId: Long? = null,
   visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
 ) = coroutineScope {
-  recordItemsAddedWhileLoading(chatsCtx) { addedWhileLoading ->
+  recordItemUpdatesWhileLoading(chatsCtx) { itemUpdates ->
     val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, chatsCtx.groupScopeInfo?.toChatScope(), contentTag ?: chatsCtx.contentTag, pagination, search) ?: return@coroutineScope
     // For .initial allow the chatItems to be empty, as well as for .last that is used for searching
     val allowEmptyItems = pagination is ChatPagination.Initial || pagination is ChatPagination.Last || openAroundItemId != null
     if (chatWasSwitched(chat, pagination, openAroundItemId)
       || (!allowEmptyItems && chat.chatItems.isEmpty())
       || !isActive) return@coroutineScope
-    processLoadedChat(chatsCtx, chat, navInfo, pagination, openAroundItemId, addedWhileLoading, visibleItemIndexesNonReversed)
+    processLoadedChat(chatsCtx, chat, navInfo, pagination, openAroundItemId, itemUpdates, visibleItemIndexesNonReversed)
   }
 }
 
-suspend inline fun <T> recordItemsAddedWhileLoading(chatsCtx: ChatModel.ChatsContext, load: (ItemsAddedWhileLoading) -> T): T {
-  val addedWhileLoading = withContext(Dispatchers.Main) { chatsCtx.startRecordingAddedItems() }
+suspend inline fun recordItemUpdatesWhileLoading(chatsCtx: ChatModel.ChatsContext, load: (ItemUpdatesWhileLoading) -> Unit) {
+  val itemUpdates = ItemUpdatesWhileLoading()
   try {
-    return load(addedWhileLoading)
+    withContext(Dispatchers.Main) { chatsCtx.startRecordingItemUpdates(itemUpdates) }
+    load(itemUpdates)
   } finally {
-    withContext(NonCancellable + Dispatchers.Main) { chatsCtx.stopRecordingAddedItems(addedWhileLoading) }
+    withContext(NonCancellable + Dispatchers.Main) { chatsCtx.stopRecordingItemUpdates(itemUpdates) }
   }
 }
 
@@ -66,32 +67,32 @@ suspend fun processLoadedChat(
   navInfo: NavigationInfo,
   pagination: ChatPagination,
   openAroundItemId: Long?,
-  addedWhileLoading: ItemsAddedWhileLoading,
+  itemUpdates: ItemUpdatesWhileLoading,
   visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
 ) {
-  val chatState = chatsCtx.chatState
-  val (splits, unreadAfterItemId, totalAfter, unreadTotal, unreadAfter, unreadAfterNewestLoaded) = chatState
-  val oldItems = chatsCtx.chatItems.value
-  val newItems = SnapshotStateList<ChatItem>()
-  when (pagination) {
-    is ChatPagination.Initial -> {
-      val newSplits = if (chat.chatItems.isNotEmpty() && navInfo.afterTotal > 0) listOf(chat.chatItems.last().id) else emptyList()
-      if (chatsCtx.secondaryContextFilter == null) {
-        // update main chats, not content tagged
-        withContext(Dispatchers.Main) {
+  withContext(Dispatchers.Main) {
+    val chatState = chatsCtx.chatState
+    val (splits, unreadAfterItemId, totalAfter, unreadTotal, unreadAfter, unreadAfterNewestLoaded) = chatState
+    val oldItems = chatsCtx.chatItems.value
+    val newItems = SnapshotStateList<ChatItem>()
+    when (pagination) {
+      is ChatPagination.Initial -> {
+        val newSplits = if (chat.chatItems.isNotEmpty() && navInfo.afterTotal > 0) listOf(chat.chatItems.last().id) else emptyList()
+        if (chatsCtx.secondaryContextFilter == null) {
+          // update main chats, not content tagged
           val oldChat = chatModel.chatsContext.getChat(chat.id)
           if (oldChat == null) {
             chatModel.chatsContext.addChat(chat)
           } else {
             chatModel.chatsContext.updateChatInfo(chat.remoteHostId, chat.chatInfo)
-            if (addedWhileLoading.items.none { (cInfo, _) -> cInfo.id == chat.id }) {
+            val statsAtStart = itemUpdates.chatsAtStart.firstOrNull { it.id == chat.id }?.chatStats
+            val statsChangedWhileLoading = statsAtStart != null && statsAtStart != oldChat.chatStats
+            if (!statsChangedWhileLoading) {
               // unreadChat is currently not actual in getChat query (always false)
               chatModel.chatsContext.updateChatStats(chat.remoteHostId, chat.id, chat.chatStats.copy(unreadChat = oldChat.chatStats.unreadChat))
             }
           }
         }
-      }
-      withContext(Dispatchers.Main) {
         chatsCtx.chatItems.replaceAll(chat.chatItems)
         chatModel.chatId.value = chat.id
         splits.value = newSplits
@@ -102,43 +103,38 @@ suspend fun processLoadedChat(
         unreadTotal.value = chat.chatStats.unreadCount
         unreadAfter.value = navInfo.afterUnread
         unreadAfterNewestLoaded.value = navInfo.afterUnread
-        chatsCtx.applyItemsAddedWhileLoading(addedWhileLoading)
+        chatsCtx.applyItemUpdatesWhileLoading(itemUpdates)
       }
-    }
-    is ChatPagination.Before -> {
-      newItems.addAll(oldItems)
-      val indexInCurrentItems: Int = oldItems.indexOfFirst { it.id == pagination.chatItemId }
-      if (indexInCurrentItems == -1) return
-      val (newIds, _) = mapItemsToIds(chat.chatItems)
-      val wasSize = newItems.size
-      val (oldUnreadSplitIndex, newUnreadSplitIndex, trimmedIds, newSplits) = removeDuplicatesAndModifySplitsOnBeforePagination(
-        unreadAfterItemId, newItems, newIds, splits, visibleItemIndexesNonReversed,
-        selectionActive = chatState.selectionActive
-      )
-      val insertAt = (indexInCurrentItems - (wasSize - newItems.size) + trimmedIds.size).coerceAtLeast(0)
-      newItems.addAll(insertAt, chat.chatItems)
-      withContext(Dispatchers.Main) {
+      is ChatPagination.Before -> {
+        newItems.addAll(oldItems)
+        val indexInCurrentItems: Int = oldItems.indexOfFirst { it.id == pagination.chatItemId }
+        if (indexInCurrentItems == -1) return@withContext
+        val (newIds, _) = mapItemsToIds(chat.chatItems)
+        val wasSize = newItems.size
+        val (oldUnreadSplitIndex, newUnreadSplitIndex, trimmedIds, newSplits) = removeDuplicatesAndModifySplitsOnBeforePagination(
+          unreadAfterItemId, newItems, newIds, splits, visibleItemIndexesNonReversed,
+          selectionActive = chatState.selectionActive
+        )
+        val insertAt = (indexInCurrentItems - (wasSize - newItems.size) + trimmedIds.size).coerceAtLeast(0)
+        newItems.addAll(insertAt, chat.chatItems)
         if (chatWasSwitched(chat, pagination, openAroundItemId)) return@withContext
         chatsCtx.chatItems.replaceAll(newItems)
         splits.value = newSplits
         chatState.moveUnreadAfterItem(oldUnreadSplitIndex, newUnreadSplitIndex, oldItems)
-        chatsCtx.applyItemsAddedWhileLoading(addedWhileLoading)
       }
-    }
-    is ChatPagination.After -> {
-      newItems.addAll(oldItems)
-      val indexInCurrentItems: Int = oldItems.indexOfFirst { it.id == pagination.chatItemId }
-      if (indexInCurrentItems == -1) return
+      is ChatPagination.After -> {
+        newItems.addAll(oldItems)
+        val indexInCurrentItems: Int = oldItems.indexOfFirst { it.id == pagination.chatItemId }
+        if (indexInCurrentItems == -1) return@withContext
 
-      val mappedItems = mapItemsToIds(chat.chatItems)
-      val newIds = mappedItems.first
-      val (newSplits, unreadInLoaded) = removeDuplicatesAndModifySplitsOnAfterPagination(
-        mappedItems.second, pagination.chatItemId, newItems, newIds, chat, splits
-      )
-      val indexToAdd = min(indexInCurrentItems + 1, newItems.size)
-      val indexToAddIsLast = indexToAdd == newItems.size
-      newItems.addAll(indexToAdd, chat.chatItems)
-      withContext(Dispatchers.Main) {
+        val mappedItems = mapItemsToIds(chat.chatItems)
+        val newIds = mappedItems.first
+        val (newSplits, unreadInLoaded) = removeDuplicatesAndModifySplitsOnAfterPagination(
+          mappedItems.second, pagination.chatItemId, newItems, newIds, chat, splits
+        )
+        val indexToAdd = min(indexInCurrentItems + 1, newItems.size)
+        val indexToAddIsLast = indexToAdd == newItems.size
+        newItems.addAll(indexToAdd, chat.chatItems)
         if (chatWasSwitched(chat, pagination, openAroundItemId)) return@withContext
         chatsCtx.chatItems.replaceAll(newItems)
         splits.value = newSplits
@@ -147,22 +143,19 @@ suspend fun processLoadedChat(
         if (indexToAddIsLast) {
           unreadAfterNewestLoaded.value -= unreadInLoaded
         }
-        chatsCtx.applyItemsAddedWhileLoading(addedWhileLoading)
       }
-    }
-    is ChatPagination.Around -> {
-      val newSplits: ArrayList<Long> = if (openAroundItemId == null) {
-        newItems.addAll(oldItems)
-        ArrayList(removeDuplicatesAndUpperSplits(newItems, chat, splits, visibleItemIndexesNonReversed))
-      } else {
-        arrayListOf()
-      }
-      val (itemIndex, splitIndex) = indexToInsertAround(chat.chatInfo.chatType, chat.chatItems.lastOrNull(), to = newItems, newSplits.toSet())
-      //indexToInsertAroundTest()
-      newItems.addAll(itemIndex, chat.chatItems)
-      newSplits.add(splitIndex, chat.chatItems.last().id)
+      is ChatPagination.Around -> {
+        val newSplits: ArrayList<Long> = if (openAroundItemId == null) {
+          newItems.addAll(oldItems)
+          ArrayList(removeDuplicatesAndUpperSplits(newItems, chat, splits, visibleItemIndexesNonReversed))
+        } else {
+          arrayListOf()
+        }
+        val (itemIndex, splitIndex) = indexToInsertAround(chat.chatInfo.chatType, chat.chatItems.lastOrNull(), to = newItems, newSplits.toSet())
+        //indexToInsertAroundTest()
+        newItems.addAll(itemIndex, chat.chatItems)
+        newSplits.add(splitIndex, chat.chatItems.last().id)
 
-      withContext(Dispatchers.Main) {
         if (chatWasSwitched(chat, pagination, openAroundItemId)) return@withContext
         chatsCtx.chatItems.replaceAll(newItems)
         splits.value = newSplits
@@ -175,24 +168,21 @@ suspend fun processLoadedChat(
           unreadAfterNewestLoaded.value = navInfo.afterUnread
           chatModel.openAroundItemId.value = openAroundItemId
           chatModel.chatId.value = chat.id
+          chatsCtx.applyItemUpdatesWhileLoading(itemUpdates)
         } else {
           // no need to set it, count will be wrong
           // unreadAfterNewestLoaded.value = navInfo.afterUnread
         }
-        chatsCtx.applyItemsAddedWhileLoading(addedWhileLoading)
       }
-    }
-    is ChatPagination.Last -> {
-      newItems.addAll(oldItems)
-      val newSplits = removeDuplicatesAndUnusedSplits(newItems, chat, chatState.splits.value)
-      removeDuplicates(newItems, chat)
-      newItems.addAll(chat.chatItems)
-      withContext(Dispatchers.Main) {
+      is ChatPagination.Last -> {
+        newItems.addAll(oldItems)
+        val newSplits = removeDuplicatesAndUnusedSplits(newItems, chat, chatState.splits.value)
+        removeDuplicates(newItems, chat)
+        newItems.addAll(chat.chatItems)
         if (chatWasSwitched(chat, pagination, openAroundItemId)) return@withContext
         chatsCtx.chatItems.replaceAll(newItems)
         chatState.splits.value = newSplits
         unreadAfterNewestLoaded.value = 0
-        chatsCtx.applyItemsAddedWhileLoading(addedWhileLoading)
       }
     }
   }

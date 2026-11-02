@@ -3767,11 +3767,23 @@ object ChatController {
       return
     }
     val cInfo = ChatInfo.Group(r.groupInfo, groupChatScope = null) // TODO [knocking] get scope from items?
+    fun markedDeleted(cItem: ChatItem): ChatItem {
+      val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
+        CIDeleted.Moderated(Clock.System.now(), r.member_)
+      } else {
+        CIDeleted.Deleted(Clock.System.now())
+      }
+      return cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted))
+    }
     withContext(Dispatchers.Main) {
       val chatsCtx = chatModel.chatsContext
       r.chatItemIDs.forEach { itemId ->
         chatsCtx.decreaseGroupReportsCounter(rhId, cInfo.id)
-        val cItem = chatsCtx.chatItems.value.lastOrNull { it.id == itemId } ?: return@forEach
+        val cItem = chatsCtx.chatItems.value.lastOrNull { it.id == itemId }
+        if (cItem == null) {
+          chatsCtx.recordItemUpdate(cInfo, itemId) { markedDeleted(it) }
+          return@forEach
+        }
         if (chatModel.chatId.value != null) {
           // Stop voice playback only inside a chat, allow to play in a chat list
           AudioPlayer.stop(cItem)
@@ -3786,29 +3798,23 @@ object ChatController {
             generalGetString(MR.strings.marked_deleted_description)
           )
         }
-        val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
-          CIDeleted.Moderated(Clock.System.now(), r.member_)
-        } else {
-          CIDeleted.Deleted(Clock.System.now())
-        }
-        chatsCtx.upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
+        chatsCtx.upsertChatItem(rhId, cInfo, markedDeleted(cItem))
       }
     }
     withContext(Dispatchers.Main) {
       val chatsCtx = chatModel.secondaryChatsContext.value
       if (chatsCtx != null) {
         r.chatItemIDs.forEach { itemId ->
-          val cItem = chatsCtx.chatItems.value.lastOrNull { it.id == itemId } ?: return@forEach
+          val cItem = chatsCtx.chatItems.value.lastOrNull { it.id == itemId }
+          if (cItem == null) {
+            chatsCtx.recordItemUpdate(cInfo, itemId) { markedDeleted(it) }
+            return@forEach
+          }
           if (chatModel.chatId.value != null) {
             // Stop voice playback only inside a chat, allow to play in a chat list
             AudioPlayer.stop(cItem)
           }
-          val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
-            CIDeleted.Moderated(Clock.System.now(), r.member_)
-          } else {
-            CIDeleted.Deleted(Clock.System.now())
-          }
-          chatsCtx.upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
+          chatsCtx.upsertChatItem(rhId, cInfo, markedDeleted(cItem))
         }
       }
     }
