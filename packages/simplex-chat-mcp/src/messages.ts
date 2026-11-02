@@ -1,3 +1,4 @@
+import {extname, join} from "path"
 import {T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {fileStatusError} from "./log"
@@ -161,7 +162,7 @@ export function isLive({meta}: T.ChatItem): boolean {
   return meta.itemLive === true
 }
 
-export function toMessage(chatInfo: T.ChatInfo, item: T.ChatItem, self: Sender, rejectedFiles: ReadonlySet<number>): Message {
+export function toMessage(chatInfo: T.ChatInfo, item: T.ChatItem, self: Sender, rejectedFiles: ReadonlySet<number>, data: string): Message {
   const chat = chatRef(chatInfo) ?? ""
   const {meta, content, quotedItem} = item
   const text = content.type === "rcvMsgContent" || content.type === "sndMsgContent" ? content.msgContent.text : ""
@@ -174,22 +175,28 @@ export function toMessage(chatInfo: T.ChatInfo, item: T.ChatItem, self: Sender, 
     ...(sender.type === undefined ? {} : {from_type: sender.type}),
     time: meta.itemTs,
     text,
-    ...(content.type === "rcvMsgContent" && item.file !== undefined ? {file: messageFile(content.msgContent, item.file, rejectedFiles)} : {}),
+    ...(content.type === "rcvMsgContent" && item.file !== undefined ? {file: messageFile(chat, content.msgContent, item.file, rejectedFiles, data)} : {}),
     new: isNew(item),
     ...(quotedItem?.itemId === undefined ? {} : {reply_to: {chat, item: quotedItem.itemId}}),
     mentions_me: meta.userMention,
   }
 }
 
-function messageFile(msgContent: T.MsgContent, ciFile: T.CIFile, rejectedFiles: ReadonlySet<number>): MessageFile {
+function messageFile(chat: string, msgContent: T.MsgContent, ciFile: T.CIFile, rejectedFiles: ReadonlySet<number>, data: string): MessageFile {
   const {name, size, type} = fileOffer(msgContent, ciFile)
   const file = {name, size, type}
   const {fileId, fileSource, fileStatus} = ciFile
   const error = fileStatusError(fileStatus)
+  const path = downloadPath(data, chat, fileId, name)
   if (rejectedFiles.has(fileId)) return {...file, status: "rejected"}
   if (error !== undefined) return {...file, status: "failed", error}
-  if (fileStatus.type === "rcvComplete") return {...file, status: "received", ...(fileSource === undefined ? {} : {path: fileSource.filePath})}
+  if (fileStatus.type === "rcvComplete") return {...file, status: "received", ...(fileSource?.filePath === path ? {path} : {})}
   return {...file, status: "offered"}
+}
+
+export function downloadPath(data: string, chat: string, fileId: number, name: string): string {
+  const extension = extname(name)
+  return join(data, "files", chat, `${fileId}${/^\.[A-Za-z0-9]{1,16}$/.test(extension) ? extension : ""}`)
 }
 
 export function fileOffer(msgContent: T.MsgContent, {fileId, fileName, fileSize}: T.CIFile): FileOffer {

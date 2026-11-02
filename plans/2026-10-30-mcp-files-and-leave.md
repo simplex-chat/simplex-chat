@@ -22,7 +22,7 @@ Phases:
 4. `download` is a new action tool; the owner approves each download, or all files of one chat.
 5. A download card shows the file's own preview and names the file's servers.
 6. `/receive CHAT N` makes the server download the file and forward it into the agent control chat; the card stays pending.
-7. Downloads go to `DATA/files/<chat>/`, one folder per chat; the core picks unique names.
+7. Downloads go to `DATA/files/<chat>/<file ID><extension>`, one folder per chat; the extension of the file's name is kept when it has only letters and digits. The file field has a path only for a file downloaded there.
 8. `send` takes `file`, an absolute path; `text` becomes the caption.
 9. Images are sent with a core-made preview and a core-resized copy; other files unchanged.
 10. Paths of private keys and of the server's own secrets are refused; the refusal is posted to the agent control chat.
@@ -140,7 +140,7 @@ name      fileName of the item's CIFile
 size      bytes
 type      image | video | voice | file, from the msgContent type
 status    offered | received | rejected | failed
-path      full path; with status received
+path      full path; with status received, for a file downloaded to its download path
 error     with status failed
 ```
 
@@ -239,7 +239,7 @@ command              effect
 - The files approval and the approval of messages are read again just before the action is created.
 
 Perform:
-- `apiReceiveFile(fileId, "DATA/files/<chat>/", approvedRelays)`: true in mode requests, false in mode host, where the core then downloads a file on unknown servers only when the IP address is protected
+- `apiReceiveFile(fileId, "DATA/files/<chat>/<file ID><extension>", approvedRelays)`: true in mode requests, false in mode host, where the core then downloads a file on unknown servers only when the IP address is protected
 - `rcvFileComplete` for the file ends it with its path; `rcvFileError` or `rcvFileSndCancelled` fail it
 
 Restart: undecided cards show "Cancelled: the server stopped"; their files stay offered.
@@ -285,17 +285,17 @@ performing   wait passed after the approval; the download continues; the same ca
 ```
 a download of the file ID in memory: its promise
 otherwise a new promise in memory, then:
-  folder DATA/files/CHAT/, created with mode 0700
+  path DATA/files/CHAT/<file ID><extension>; the folder created with mode 0700
   the item's file status:
-    rcvComplete              resolved with fileSource.filePath
+    rcvComplete              resolved with fileSource.filePath when it is the path; otherwise rejected
     rcvAccepted, rcvTransfer the events settle it
-    other                    apiReceiveFile(fileId, folder); the core makes the name unique (getRcvFilePath, Library/Internal.hs:946-970)
+    other                    apiReceiveFile(fileId, path); the core creates the file at that path (getRcvFilePath, Library/Internal.hs:958-965)
 ```
 
 `onFile`:
 ```
 event                                        promise of the file ID
-rcvFileComplete                              resolved with chatItem.file.fileSource.filePath
+rcvFileComplete                              as rcvComplete above
 rcvFileError                                 rejected: the item's file status, else the agent error (Library/Subscriber.hs:440-446)
 rcvFileSndCancelled                          rejected: "The file was cancelled."
 chatItemUpdated, file rcvError or rcvAborted rejected: file digest, relays not approved (Library/Subscriber.hs:415-439)

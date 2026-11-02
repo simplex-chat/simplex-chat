@@ -250,7 +250,7 @@ Commands:
 | `/revoke #9` | Ends that approval: each message to #9 needs approval again. |
 | `/approve #3 files` | Approves all the agent's downloads from chat #3 of files on its XFTP servers: the pending ones and later ones. |
 | `/revoke #3 files` | Ends that approval: each download from #3 needs approval again. |
-| `/receive #3 7` | Downloads the file of action 7 and sends it to you in the agent control chat, as a reply to the card. The card stays pending, and the agent gets no access to the file until you approve. |
+| `/receive #3 7` | Downloads the file of action 7 and sends it to you in the agent control chat, as a reply to the card. The card stays pending; the agent's messages show the file as received, with its path. |
 | `/leave #9`, `/leave @4` | Makes the agent leave group #9, or delete contact @4, at once, in both approval modes, and rejects the agent's pending actions for that chat. The reply, for example `Left business Ridgeline (#9), requested by Alice.`, is logged too. |
 | `/pending` | Lists pending actions. |
 | `/list` | Lists the agent's 100 most recent chats, one line each, and which of them are approved for all messages; a last line counts the older chats. |
@@ -296,7 +296,7 @@ Six tools:
 
 A `send` to a chat that `list` shows with `connected: false` is refused before any card. A `send` is refused with `text: too long for its approval card; shorten it.` when its card, in its longest outcome form, would exceed 15000 bytes in the SimpleX message, which holds at most 15602; a text of many lines or multi-byte characters reaches it below 12000 characters.
 
-A received message with a file has a `file` field: its name, size, type (image, video, voice or file) and status. Status `offered` means `download` can fetch it; `received` comes with the path; `rejected` means you rejected its download, or it expired; `failed` comes with the error. `download` first waits, up to `wait` seconds, for the sender to finish the upload; when it has not finished by then, the call returns an error that asks to call again later. A `download` that runs past its `wait` after the approval returns status `performing`, and the same call again picks it up.
+A received message with a file has a `file` field: its name, size, type (image, video, voice or file) and status. Status `offered` means `download` can fetch it; `received` comes with the path when `download` or `/receive` downloaded the file; `rejected` means you rejected its download, or it expired; `failed` comes with the error. A downloaded file is named by its file ID and the extension of its name, when the extension has only letters and digits: the name the sender gave stays in the `name` field. `download` first waits, up to `wait` seconds, for the sender to finish the upload; when it has not finished by then, the call returns an error that asks to call again later. A `download` that runs past its `wait` after the approval returns status `performing`, and the same call again picks it up.
 
 `send` with `file`, an absolute path, sends that file with `text` as its caption:
 - `.jpg`, `.jpeg` and `.png` as an image, resized by the SimpleX core to the size the apps send, with a preview the core makes;
@@ -390,7 +390,7 @@ register options:
   server.json        name, port and expiry of the server, read by register
   lock               PID of the running server
   tmp/               the SimpleX core's work folder for files in transfer
-  files/#3/          files downloaded from chat #3; the core makes each name unique
+  files/#3/          files downloaded from chat #3, each named by its file ID and the extension of its name, such as 12.pdf
   files/sent/        resized copies of the images the agent sends, each deleted when its upload completes or fails
 ```
 

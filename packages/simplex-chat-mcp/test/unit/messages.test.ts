@@ -30,7 +30,7 @@ describe("message fields", () => {
     const switchback = member(44, "Switchback")
     switchback.memberProfile.peerType = T.ChatPeerType.Bot
     const chatInfo = groupChat(group(15, "Trail"))
-    expect(toMessage(chatInfo, item(31, "Ridgecrest, $142", {type: "groupRcv", groupMember: switchback}, {quoted: 30, mention: true, ts: "2026-10-17T11:00:00Z"}), self, noRejections)).toEqual({
+    expect(toMessage(chatInfo, item(31, "Ridgecrest, $142", {type: "groupRcv", groupMember: switchback}, {quoted: 30, mention: true, ts: "2026-10-17T11:00:00Z"}), self, noRejections, data)).toEqual({
       chat: "#15",
       item: 31,
       from: "Switchback",
@@ -46,8 +46,8 @@ describe("message fields", () => {
 
   it("describes direct, channel and sent messages", () => {
     const directory = direct(contact(4, "SimpleX Directory", {peerType: "bot"}))
-    expect(toMessage(directory, item(21, "found 3", {type: "directRcv"}, {status: "rcvRead"}), self, noRejections)).toMatchObject({chat: "@4", from: "SimpleX Directory", from_type: "bot", new: false})
-    expect(toMessage(directory, item(20, "shoes", {type: "directSnd"}), self, noRejections)).toEqual({
+    expect(toMessage(directory, item(21, "found 3", {type: "directRcv"}, {status: "rcvRead"}), self, noRejections, data)).toMatchObject({chat: "@4", from: "SimpleX Directory", from_type: "bot", new: false})
+    expect(toMessage(directory, item(20, "shoes", {type: "directSnd"}), self, noRejections, data)).toEqual({
       chat: "@4",
       item: 20,
       from: "agent",
@@ -57,27 +57,28 @@ describe("message fields", () => {
       new: false,
       mentions_me: false,
     })
-    const channel = toMessage(groupChat(group(12, "Ridgeline News")), item(40, "post", {type: "channelRcv"}), self, noRejections)
+    const channel = toMessage(groupChat(group(12, "Ridgeline News")), item(40, "post", {type: "channelRcv"}), self, noRejections, data)
     expect(channel).toMatchObject({chat: "#12", from: "Ridgeline News"})
     expect(channel).not.toHaveProperty("from_member")
   })
 
   it("describes the file of a received message by its status", () => {
     const chatInfo = direct(contact(4, "Ridgeline"))
+    const downloaded = join(data, "files", "@4", "7.pdf")
     const fileOf = (msgType: string, fileStatus: object, fileSource?: object, rejected: Set<number> = noRejections) =>
-      toMessage(chatInfo, fileItem(30, {type: msgType, text: "report"}, fileStatus, {fileSource}), self, rejected).file
+      toMessage(chatInfo, fileItem(30, {type: msgType, text: "report"}, fileStatus, {fileSource}), self, rejected, data).file
     expect(fileOf("file", {type: "rcvInvitation"})).toEqual({name: "report.pdf", size: 2400000, type: "file", status: "offered"})
-    expect(fileOf("file", {type: "rcvComplete"}, {filePath: "/data/files/@4/report.pdf"}, new Set([7]))).toEqual({name: "report.pdf", size: 2400000, type: "file", status: "rejected"})
+    expect(fileOf("file", {type: "rcvComplete"}, {filePath: downloaded}, new Set([7]))).toEqual({name: "report.pdf", size: 2400000, type: "file", status: "rejected"})
     expect(fileOf("image", {type: "rcvTransfer", rcvProgress: 1, rcvTotal: 2})).toEqual({name: "report.pdf", size: 2400000, type: "image", status: "offered"})
-    expect(fileOf("video", {type: "rcvComplete"}, {filePath: "/data/files/@4/report.pdf"})).toEqual({name: "report.pdf", size: 2400000, type: "video", status: "received", path: "/data/files/@4/report.pdf"})
+    expect(fileOf("video", {type: "rcvComplete"}, {filePath: downloaded})).toEqual({name: "report.pdf", size: 2400000, type: "video", status: "received", path: downloaded})
     expect(fileOf("voice", {type: "rcvCancelled"})).toMatchObject({type: "voice", status: "failed", error: "The file was cancelled."})
     expect(fileOf("text", {type: "rcvAborted"})).toMatchObject({type: "file", status: "failed", error: "The download was aborted."})
     expect(fileOf("file", {type: "rcvError", rcvFileError: {type: "blocked", server: "xftp://k@xftp.example.com", blockInfo: {reason: "spam"}}})!.error).toBe("File is blocked by server operator: Spam.")
     expect(fileOf("file", {type: "rcvError", rcvFileError: {type: "relay", srvError: {type: "host"}}})!.error).toBe("File server error: Server address is incompatible with network settings.")
     expect(fileOf("file", {type: "rcvError", rcvFileError: {type: "other", fileError: "file digest"}})!.error).toBe("Error: file digest")
     expect(fileOf("file", {type: "invalid", text: "bad\nstatus"})!.error).toBe("Invalid file: bad status")
-    expect(toMessage(chatInfo, fileItem(31, {type: "file", text: "report"}, {type: "sndComplete"}, {chatDir: {type: "directSnd"}, fileSource: {filePath: "/home/alice/report.pdf"}}), self, noRejections)).not.toHaveProperty("file")
-    expect(toMessage(chatInfo, item(32, "no file"), self, noRejections)).not.toHaveProperty("file")
+    expect(toMessage(chatInfo, fileItem(31, {type: "file", text: "report"}, {type: "sndComplete"}, {chatDir: {type: "directSnd"}, fileSource: {filePath: "/home/alice/report.pdf"}}), self, noRejections, data)).not.toHaveProperty("file")
+    expect(toMessage(chatInfo, item(32, "no file"), self, noRejections, data)).not.toHaveProperty("file")
   })
 })
 
@@ -958,6 +959,7 @@ describe("download", () => {
   const switchback = member(44, "Switchback")
   const trail = groupChat(group(15, "Trail", member(1, "agent")))
   const folder = join(data, "files", "#15")
+  const downloaded = join(folder, "7.pdf")
   const flushed = (): Promise<void> => new Promise(resolve => setImmediate(resolve))
 
   function downloadTools(chat: FakeChat, standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined): {tools: AgentTools; actions: Actions} {
@@ -973,7 +975,7 @@ describe("download", () => {
   function offeredIn(chat: FakeChat, fileStatus: object = {type: "rcvInvitation"}, fileSource?: object): T.ChatItem {
     const offered = fileItem(30, image, fileStatus, {chatDir: {type: "groupRcv", groupMember: switchback}, fileSource})
     chat.chats.set("#15", {chatInfo: trail, items: [offered]})
-    chat.responses.set(`/freceive 7 approved_relays=on ${folder}`, {type: "rcvFileAccepted", user, chatItem: event(trail, offered)})
+    chat.responses.set(`/freceive 7 approved_relays=on ${downloaded}`, {type: "rcvFileAccepted", user, chatItem: event(trail, offered)})
     fileServersIn(chat, [knownServer])
     chat.responses.set("/_servers 1", {
       type: "userServers",
@@ -1007,9 +1009,9 @@ describe("download", () => {
     actions.approve(action, "Alice")
     await flushed()
     expect(existsSync(folder)).toBe(true)
-    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 approved_relays=on ${folder}`])
-    tools.onFile(completed(join(folder, "report.pdf")))
-    expect((await downloading)!.structuredContent).toEqual({action: 1, status: "done", chat: "#15", item: 30, path: join(folder, "report.pdf")})
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 approved_relays=on ${downloaded}`])
+    tools.onFile(completed(downloaded))
+    expect((await downloading)!.structuredContent).toEqual({action: 1, status: "done", chat: "#15", item: 30, path: downloaded})
   })
 
   it("returns performing when the download outlasts wait, and the path to the call that attaches again", async () => {
@@ -1030,19 +1032,19 @@ describe("download", () => {
     expect(actions.get(1)).toMatchObject({state: "performing", open: 0})
     const attaching = tools.call("download", {chat: "#15", item: 30}, signal().call)
     await jest.advanceTimersByTimeAsync(0)
-    tools.onFile(completed(join(folder, "report.pdf")))
-    expect((await attaching)!.structuredContent).toEqual({action: 1, status: "done", chat: "#15", item: 30, path: join(folder, "report.pdf")})
+    tools.onFile(completed(downloaded))
+    expect((await attaching)!.structuredContent).toEqual({action: 1, status: "done", chat: "#15", item: 30, path: downloaded})
     expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toHaveLength(1)
   })
 
   it("returns the path of a file already downloaded, without downloading it again", async () => {
     const chat = new FakeChat()
-    offeredIn(chat, {type: "rcvComplete"}, {filePath: join(folder, "report.pdf")})
+    offeredIn(chat, {type: "rcvComplete"}, {filePath: downloaded})
     const {tools, actions} = downloadTools(chat)
     const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
     await flushed()
     actions.approve(actions.get(1)!, "Alice")
-    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: join(folder, "report.pdf")})
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
     expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([])
   })
 
@@ -1084,8 +1086,8 @@ describe("download", () => {
     await flushed()
     expect(actions.get(1)).toMatchObject({state: "performing", standing: true, decidedBy: "Alice"})
     expect(actions.get(1)!.card).toBeUndefined()
-    tools.onFile(completed(join(folder, "report.pdf")))
-    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: join(folder, "report.pdf")})
+    tools.onFile(completed(downloaded))
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
   })
 
   it("waits for the file description before it asks, and names the unknown servers on the card", async () => {

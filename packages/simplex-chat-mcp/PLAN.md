@@ -159,7 +159,8 @@ DIR/headers.json   {"Authorization": "Bearer <token>"}, written 0600
 DIR/server.json    {name, port, expireHours} of the server      0600
 DIR/lock           PID of the running server                    0600
 DIR/tmp/           the core's temp folder: files in transfer    0700, set before startChat
-DIR/files/CHAT/    files downloaded from CHAT                   0700, created at the first download from CHAT
+DIR/files/CHAT/    files downloaded from CHAT, each named by    0700, created at the first download from CHAT
+                   its file ID and the extension of its name
 DIR/files/sent/    resized copies of sent images, one folder    0700; a copy 0600
                    per send, deleted at sndFileCompleteXFTP
                    or sndFileError
@@ -509,7 +510,7 @@ other one-line text starting with "/"       Commands: /approve, /reject, /receiv
 ```
 
 - CHAT is optional in `/approve N`, `/reject N` and `/receive N` as typed; the cards include it for sends, downloads and leaves.
-- The file of `/receive` has the message's type and the sender's preview, with no text. The agent gets no path from it: its download waits for `/approve`.
+- The file of `/receive` has the message's type and the sender's preview, with no text. The agent's messages then show the file as received, with its path; the card stays pending.
 - A files approval covers downloads only, and ends as a standing approval does.
 - `/leave CHAT` applies in both modes. Its reply is logged, with names on one line.
 - A standing approval covers sends only. It ends at `/revoke`, when the chat is deleted, or when member `approvedById` is no longer an approver. It applies in mode `requests` only: in mode `host`, `list` and `/list` show no approvals, and `/approve CHAT all` stores none.
@@ -580,7 +581,7 @@ name     fileName
 size     fileSize, bytes
 type     image | video | voice from content.msgContent.type; file otherwise
 status   rejected: the file ID is in rejected files; otherwise from fileStatus: offered (rcvInvitation, rcvAccepted, rcvTransfer, rcvWarning), received (rcvComplete), failed (rcvCancelled, rcvAborted, rcvError, invalid)
-path     received: fileSource.filePath
+path     received, when fileSource.filePath is the download path of the file (section download): that path
 error    failed: "The file was cancelled.", "The download was aborted.", the apps' words for the FileError of rcvError (fileErrorText, log.ts), "Invalid file: TEXT"
 ```
 
@@ -1234,16 +1235,17 @@ perform download:
 
 downloadFile(chat, item, file), also run by /receive:
   a download of the file ID in memory: its promise
-  otherwise a new promise in memory, then /_get chat <chat> around=<item> count=0, the item's file:
-    rcvComplete              resolved with fileSource.filePath
+  otherwise a new promise in memory, with the download path DIR/files/CHAT/<fileId><extension>   # extension: of file.name when it is "." and 1 to 16 ASCII letters and digits, otherwise none
+  then /_get chat <chat> around=<item> count=0, the item's file:
+    rcvComplete              resolved with fileSource.filePath when it is the download path; otherwise rejected, "The file was received outside the agent's files folder."
     failed, as in file       rejected with its error
-    rcvInvitation            mkdir DIR/files/CHAT, mode 0700; /freceive <fileId> approved_relays=on DIR/files/CHAT, without approved_relays=on in mode host   # apiReceiveFile; the core makes the name unique (getRcvFilePath, Library/Internal.hs:946-970)
+    rcvInvitation            mkdir DIR/files/CHAT, mode 0700; /freceive <fileId> approved_relays=on <download path>, without approved_relays=on in mode host   # apiReceiveFile; the core creates the file at that path (getRcvFilePath, Library/Internal.hs:958-965)
     other                    the events below settle it
 ```
 
 ```
 event                                     the promise of the file ID
-rcvFileComplete                           resolved with chatItem.file.fileSource.filePath
+rcvFileComplete                           as rcvComplete above, from chatItem.file
 rcvFileError                              rejected: the item's file error, or the agent error without an item (Library/Subscriber.hs:440-446)
 rcvFileSndCancelled                       rejected: "The file was cancelled."
 chatItemUpdated, file rcvError, rcvAborted rejected: a bad digest, relays not approved (Library/Subscriber.hs:411-439)

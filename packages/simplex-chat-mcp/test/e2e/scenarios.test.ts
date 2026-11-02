@@ -1,7 +1,7 @@
 import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "fs"
 import {createServer} from "net"
 import {tmpdir} from "os"
-import {join} from "path"
+import {basename, dirname, join} from "path"
 import {T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {readServerFile} from "../../src/files"
@@ -308,7 +308,9 @@ test("files: a received image downloaded after the approval, /receive, /reject a
   expect(copy.chatItem.quotedItem?.itemId).toBe(card.chatItem.meta.itemId)
   await ownerSends(`/approve ${group} ${n}`)
   const downloaded = (await downloading).result
-  expect(downloaded).toEqual({action: n, status: "done", chat: group, item: first.item, path: join(dir, "files", "agent", "files", group, "trail.png")})
+  expect(downloaded).toEqual({action: n, status: "done", chat: group, item: first.item, path: expect.any(String)})
+  expect(dirname(downloaded.path)).toBe(join(dir, "files", "agent", "files", group))
+  expect(basename(downloaded.path)).toMatch(/^\d+\.png$/)
   expect(readFileSync(downloaded.path)).toEqual(readFileSync(image))
 
   const second = await fileFromAlice({type: "file", text: ""})
