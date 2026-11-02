@@ -5551,7 +5551,7 @@ enum class FormatColor(val color: String) {
 @Serializable(with = ReportReasonSerializer::class)
 sealed class ReportReason {
   @Serializable @SerialName("spam") object Spam: ReportReason()
-  @Serializable @SerialName("illegal") object Illegal: ReportReason()
+  @Serializable @SerialName("content") object Illegal: ReportReason()
   @Serializable @SerialName("community") object Community: ReportReason()
   @Serializable @SerialName("profile") object Profile: ReportReason()
   @Serializable @SerialName("other") object Other: ReportReason()
@@ -5578,7 +5578,7 @@ object ReportReasonSerializer : KSerializer<ReportReason> {
   override fun deserialize(decoder: Decoder): ReportReason {
     return when (val value = decoder.decodeString()) {
       "spam" -> ReportReason.Spam
-      "illegal" -> ReportReason.Illegal
+      "content", "illegal" -> ReportReason.Illegal
       "community" -> ReportReason.Community
       "profile" -> ReportReason.Profile
       "other" -> ReportReason.Other
@@ -5589,7 +5589,7 @@ object ReportReasonSerializer : KSerializer<ReportReason> {
   override fun serialize(encoder: Encoder, value: ReportReason) {
     val stringValue = when (value) {
       is ReportReason.Spam -> "spam"
-      is ReportReason.Illegal -> "illegal"
+      is ReportReason.Illegal -> "content"
       is ReportReason.Community -> "community"
       is ReportReason.Profile -> "profile"
       is ReportReason.Other -> "other"
