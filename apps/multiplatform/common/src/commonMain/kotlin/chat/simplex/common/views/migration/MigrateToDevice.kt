@@ -642,11 +642,10 @@ private fun MutableState<MigrationToState?>.importArchive(archivePath: String, n
       if (!ChatController.hasChatCtrl()) {
         chatInitControllerRemovingDatabases()
       }
-      controller.apiDeleteStorage()
-      wallpapersDir.mkdirs()
       try {
-        val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
+        val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString(), replaceStorage = true)
         val archiveErrors = controller.apiImportArchive(config)
+        wallpapersDir.mkdirs()
         if (archiveErrors.isNotEmpty()) {
           showArchiveImportedWithErrorsAlert(archiveErrors)
         }

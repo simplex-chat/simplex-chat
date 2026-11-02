@@ -544,11 +544,10 @@ struct MigrateToDevice: View {
                     // cannot delete storage if chat is running
                     try await stopChatAsync()
                 }
-                try await apiDeleteStorage()
-                try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
                 do {
-                    let config = ArchiveConfig(archivePath: archivePath)
+                    let config = ArchiveConfig(archivePath: archivePath, replaceStorage: true)
                     let archiveErrors = try await apiImportArchive(config: config)
+                    try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
                     if !archiveErrors.isEmpty {
                         alert = .chatImportedWithErrors()
                     }

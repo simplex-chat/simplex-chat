@@ -330,7 +330,8 @@ Defined at [SimpleXAPI.kt#L4162](../common/src/commonMain/kotlin/chat/simplex/co
 class ArchiveConfig(
   val archivePath: String,              // Full path to the ZIP archive
   val disableCompression: Boolean?,     // Skip compression for speed
-  val parentTempDirectory: String?      // Temp directory for extraction
+  val parentTempDirectory: String?,     // Temp directory for extraction
+  val replaceStorage: Boolean?          // Import: remove current databases, backups, files and wallpapers first
 )
 ```
 
@@ -346,8 +347,8 @@ class ArchiveConfig(
 
 1. User selects an archive file.
 2. UI copies it into `databaseExportDir` and constructs an `ArchiveConfig`. The destination is confined to that folder: `getFileName` returns a bare file name on every platform, and `saveArchiveFromURI` checks the canonical destination before copying.
-3. Calls `apiImportArchive(config)` which sends `CC.ApiImportArchive` to the Haskell core.
-4. The core extracts and replaces both databases.
+3. Calls `apiImportArchive(config)` with `replaceStorage = true`, which sends `CC.ApiImportArchive` to the Haskell core.
+4. The core extracts the archive and checks that it contains both databases; otherwise it fails before the current data is touched. Then it removes the current storage and copies the archive contents.
 5. Returns `CR.ArchiveImported` with a list of `ArchiveError` (non-fatal issues during import).
 6. UI triggers re-initialization via `initChatController`.
 

@@ -112,6 +112,7 @@ chatDirectTests = do
 #if !defined(dbPostgres)
     it "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
+    it "import of a non-archive keeps chat data" testImportNonArchiveKeepsData
     it "encrypt/decrypt database" testDatabaseEncryption
 #endif
   describe "connections synchronization" $ do
@@ -1591,6 +1592,49 @@ testMaintenanceModeWithFiles ps = withXFTPServer ps $ do
   where
     aliceFiles = tmpFile ps "alice_files"
     archive = tmpFile ps "alice-chat.zip"
+
+testImportNonArchiveKeepsData :: HasCallStack => TestParams -> IO ()
+testImportNonArchiveKeepsData ps = do
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
+    withNewTestChatOpts ps testOpts {coreOptions = testCoreOpts {maintenance = True}} "alice" aliceProfile $ \alice -> do
+      alice ##> "/_start"
+      alice <## "chat started"
+      alice ##> ("/_files_folder " <> aliceFiles)
+      alice <## "ok"
+      connectUsers alice bob
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      alice ##> ("/_db export {\"archivePath\": \"" <> archive <> "\"}")
+      alice <## "ok"
+      B.writeFile notArchive "this is not a zip archive"
+      B.writeFile emptyZip $ "PK\5\6" <> B.replicate 18 '\0'
+      B.writeFile oldFile "old file"
+      forM_ backupDBs $ \f -> B.writeFile f ""
+      alice ##> importCmd notArchive
+      alice <##. "exception: Parsing of archive structure failed"
+      alice <##. "Cannot locate end of central directory"
+      alice <##. "in "
+      alice ##> importCmd emptyZip
+      alice <## "exception: user error (not a chat archive: no simplex_v1_chat.db)"
+      doesFileExist oldFile `shouldReturn` True
+      alice ##> "/_start"
+      alice <### ["chat started", "subscribed 1 connections on server localhost"]
+      testChatMessages alice bob
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      alice ##> importCmd archive
+      alice <## "ok"
+      doesFileExist oldFile `shouldReturn` False
+      forM_ backupDBs $ \f -> doesFileExist f `shouldReturn` False
+    withTestChat ps "alice" $ \alice -> testChatWorking alice bob
+  where
+    aliceFiles = tmpFile ps "alice_files"
+    archive = tmpFile ps "alice-chat.zip"
+    notArchive = tmpFile ps "notes.txt"
+    emptyZip = tmpFile ps "photos.zip"
+    oldFile = aliceFiles </> "old-photo.jpg"
+    backupDBs = [tmpPath ps <> "/alice_chat.db.bak", tmpPath ps <> "/alice_agent.db.bak"]
+    importCmd f = "/_db import {\"archivePath\": \"" <> f <> "\", \"replaceStorage\": true}"
 
 #if !defined(dbPostgres)
 testDatabaseEncryption :: HasCallStack => TestParams -> IO ()

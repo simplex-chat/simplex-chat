@@ -677,7 +677,7 @@ processChatCommand cxt nm = \case
   ExportArchive -> do
     ts <- liftIO getCurrentTime
     let filePath = "simplex-chat." <> formatTime defaultTimeLocale "%FT%H%M%SZ" ts <> ".zip"
-    processChatCommand cxt nm $ APIExportArchive $ ArchiveConfig filePath Nothing Nothing
+    processChatCommand cxt nm $ APIExportArchive $ ArchiveConfig filePath Nothing Nothing Nothing
   APIImportArchive cfg -> checkChatStopped $ do
     fileErrs <- lift $ importArchive cfg
     setStoreChanged
