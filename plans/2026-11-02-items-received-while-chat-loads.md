@@ -6,9 +6,9 @@ A message received while its chat is being opened is missing from the open chat 
 
 ## Cause
 
-`processLoadedChat` (`ChatItemsLoader.kt`) installs a list built before the main-thread block that installs it: the Initial page that `apiGetChat` read, or the other paginations' page merged with the items read at the start of `processLoadedChat`.
+`processLoadedChat` (`ChatItemsLoader.kt`) installs a list built before the main-thread block that installs it: the page that `apiGetChat` read (Initial, and Around when it opens at an item), or the other paginations' page merged with the items read at the start of `processLoadedChat`.
 
-`addChatItem` (`ChatModel.kt`) adds a received item to the list of the open chat only when `chatModel.chatId` is the item's chat. An item handled before the install is dropped:
+`addChatItem` (`ChatModel.kt`) adds a received item to the list of the open chat only when `chatModel.chatId` is the item's chat. An item handled between the read and the install is dropped:
 - when the chat is opening, `chatId` is set in the install block, so the item is not added;
 - when the chat is open, the item is added and then overwritten by the installed list.
 
