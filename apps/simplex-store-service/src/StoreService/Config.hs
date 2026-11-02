@@ -23,6 +23,7 @@ module StoreService.Config
     defaultSessionMinutes,
     defaultLogLevel,
     minNameYears,
+    isLoopbackHost,
     readServiceConfig,
     unknownKeys,
   )
@@ -259,6 +260,9 @@ defaultPlayTokenUrl = "https://oauth2.googleapis.com/token"
 minSessionMinutes, maxSessionMinutes :: Int
 minSessionMinutes = 1
 maxSessionMinutes = 1440
+
+isLoopbackHost :: Text -> Bool
+isLoopbackHost h = h `elem` ["127.0.0.1", "::1", "localhost"]
 
 -- | An http host would carry the API key in the clear on every call.
 requireHttps :: Text -> Either String Text
