@@ -6,17 +6,17 @@ A message received while its chat is being opened is missing from the open chat 
 
 ## Cause
 
-`processLoadedChat` (`ChatItemsLoader.kt`) replaces the chat's items with a page that `apiGetChat` read before the main-thread block that installs it.
+`processLoadedChat` (`ChatItemsLoader.kt`) installs a list built before the main-thread block that installs it: the Initial page that `apiGetChat` read, or the other paginations' page merged with the items read at the start of `processLoadedChat`.
 
-`addChatItem` (`ChatModel.kt`) adds a received item to the list of the open chat only when `chatModel.chatId` is the item's chat. An item handled between the read and the install is dropped:
+`addChatItem` (`ChatModel.kt`) adds a received item to the list of the open chat only when `chatModel.chatId` is the item's chat. An item handled before the install is dropped:
 - when the chat is opening, `chatId` is set in the install block, so the item is not added;
-- when the chat is open, the item is added and then replaced by the loaded page.
+- when the chat is open, the item is added and then overwritten by the installed list.
 
 `addChatItem` increments the row's unread count for that item, and the Initial page then overwrites the row's stats with the stats it read.
 
 ## Fix
 
-`ChatsContext` keeps a list of `ItemsAddedWhileLoading` records; `addChatItem` appends each item and its `ChatInfo` to every active record on the main thread.
+`ChatsContext` keeps a list of `ItemsAddedWhileLoading` records; `addChatItem` appends each item passed to it, with its `ChatInfo`, to every active record on the main thread.
 
 `recordItemsAddedWhileLoading` (`ChatItemsLoader.kt`) starts a record before `apiGetChat` and stops it after the page is installed or the load ends:
 - `apiLoadMessages`, for every pagination;
