@@ -391,7 +391,10 @@ realpath fails                                    file: no file at PATH.
 not a regular file                                file: PATH is not a file.
 not readable                                      file: PATH can't be read.
 refused path, on the real path                    file: PATH is refused: private keys and the server's own files are not sent.
+empty file                                        file: PATH is empty.
 text and file both absent                         text: required without file.
+as without file                                   as: applies only with file.
+the message over 15602 bytes                      text: too long for a message with this image; shorten it.
 ```
 - The refusal is posted: ``Refused to send `PATH` to bot SimpleX Directory (@4): private keys and the server's own files are not sent.``; the same line goes to the log.
 - The card and the message carry the real path.

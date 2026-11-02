@@ -764,11 +764,14 @@ reply_to not a message             reply_to: item 31 in #15 is not a message.
 mention not a member               mention: #15 has no member 45. (in a contact chat: mention: @4 is a contact chat; mentions apply to groups and channels.)
 mention of equal names             mention: members 44 and 45 have the same name.
 no text and no file                text: required without file.
+as without file                    as: applies only with file.
 file not absolute                  file: an absolute path is expected.
 no file at the path                file: no file at /home/alice/trail.jpg.
 not a regular file                 file: /home/alice/trails is not a file.
 not readable                       file: /home/alice/trail.jpg can't be read.
 refused path, by its real path     file: /home/alice/.ssh/id_ed25519 is refused: private keys and the server's own files are not sent.
+empty file                         file: /home/alice/empty.txt is empty.
+message with a file over 15602     text: too long for a message with this image; shorten it. (video, voice, file: its type)
 item not in chat                   item: #3 has no item 999.
 item without a received file       item: item 31 in #3 has no received file.
 upload not finished within wait    item: the sender has not uploaded the file of item 31 in #3 yet; call download again later.
@@ -1127,6 +1130,7 @@ newChatItems        wake the waiting send and receive calls of that chat
 send(input, ctx):
   an action in memory with tool send and the same action fields: action(send, input, ctx); go to result
   no text and no file: tool error "no text and no file"
+  as without file: tool error "as without file"
   chat is the agent control chat: tool error "unknown chat"
   r = /_get chat <chat> count=0; a store error: tool error "unknown chat"
   r.chat.chatInfo not connected (as connected in list()): tool error "chat not connected"
@@ -1134,7 +1138,7 @@ send(input, ctx):
   reply_to i: /_get chat <chat> around=<i> count=0 fails or has no item i: tool error "reply_to not in chat"; item i not a message: tool error "reply_to not a message"
   mention, chat a contact chat: tool error "mention not a member"
   mention m: /_members <chat> has no member m: tool error "mention not a member"; two members with the same display name: tool error "mention of equal names"
-  file: attachment(file, as)
+  file: attachment(file, as); the message over 15602 bytes (section Card size): tool error "message with a file over 15602"
   /_get chat <chat> count=0 again: the chat's approval of messages at this point
   action(send, input, ctx), standing under that approval
   return responses(action, wait, idle, limit, ctx) with {action, status: "done"}
@@ -1142,6 +1146,7 @@ send(input, ctx):
 attachment(file, as):
   not absolute: tool error "file not absolute"; realpath fails: "no file at the path"; not a regular file: "not a regular file"; not readable: "not readable"
   the real path refused (below): post and log the refusal; tool error "refused path"
+  size 0: tool error "empty file"   # the receiver's validateFileInvitation, Library/Subscriber.hs:2063-2064
   type, preview and duration by the extension of the real path, or type file when as is file (section send of the tools)
   {path: the real path, name, size, inode, changedAt: ctime, type, resize: JPEG or PNG sent as an image, preview, duration}
 
@@ -1186,7 +1191,11 @@ chat message, JSON           15602   maxEncodedMsgLength (Protocol.hs:929-930), 
 x.msg.new envelope           114     measured with core 7.1.0.11; 128 with a 30-day ttl
 x.msg.update envelope        168     measured; 182 with a 30-day ttl
 card text, JSON-escaped      15000   the server's limit: 420 below the strictest measured case, 15602 - 182
+x.msg.new with a file        600     the server's allowance for the envelope, the file invitation (fileDescr of an XFTP file, Types.hs:1607-1617),
+                                     the quote's msgRef (Library/Internal.hs:372-398) and the mentions' member IDs
 ```
+
+- A send with a file is refused when 600 plus the UTF-8 length of the JSON of [msgContent, file name, quoted text, mentioned names] exceeds 15602; msgContent has the text with the added mentions and the preview (14000 bytes at most, `packages/simplex-chat-nodejs/src/core.ts:136`).
 
 - Group member connections are created with PQ off (`Store/Groups.hs:1837`, `:2201`, `:2726`), so `deliverMessagesB` compresses to the same 15602 bytes (`Internal.hs:2578`).
 - The library posts a card with `/_send #G json ...` without `sign=on`, and edits it with `/_update item #G <item> json ...` (`api.js`, `apiSendMessages`, `apiUpdateChatItem`): the body has no signature prefix.

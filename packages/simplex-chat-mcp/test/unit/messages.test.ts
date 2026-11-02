@@ -677,6 +677,16 @@ describe("send with a file", () => {
     expect(await sending).toBeUndefined()
   })
 
+  it("refuses an empty file, as without file, and a text too long for a message with the file's preview", async () => {
+    jest.spyOn(core, "resizeImage").mockResolvedValue(`data:image/jpg;base64,${"A".repeat(13_978)}`)
+    const {tools, actions} = sendTools()
+    const text = async (args: object): Promise<string> => textOf(await tools.call("send", {chat: "@4", ...args}, signal().call))
+    expect(await text({file: fileIn("empty.txt", "")})).toBe(`file: ${join(files, "empty.txt")} is empty.`)
+    expect(await text({text: "x", as: "file"})).toBe("as: applies only with file.")
+    expect(await text({text: "x".repeat(1100), file: fileIn("photo.jpg")})).toBe("text: too long for a message with this image; shorten it.")
+    expect(actions.all()).toEqual([])
+  })
+
   it("fails when the file changed after the request, and deletes the copy when the send fails", async () => {
     jest.spyOn(core, "resizeImage").mockImplementation(async (_image, size) => (size === core.ImageSize.MessagePreview ? preview : resized))
     const photo = fileIn("photo.png")

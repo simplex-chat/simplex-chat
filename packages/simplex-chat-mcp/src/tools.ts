@@ -140,6 +140,8 @@ const defaultIdle = 30
 const defaultLimit = 50
 const messagesOnConnect = 50
 const mediaTimeout = 30_000
+const maxMessageLength = 15_602
+const messageEnvelope = 600
 const maxOutputBytes = 64 * 1024 * 1024
 const fixedPreview = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAJCAAAAAAeQfPuAAAAD0lEQVR42mNoQAMMg0QAAIXUSAG1CN3UAAAAAElFTkSuQmCC"
 const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
@@ -722,6 +724,7 @@ export class AgentTools {
     const attached = this.agent.actions.find(key)
     if (attached !== undefined) return this.sendResult(attached as SendAction, input, call)
     if (input.text === undefined && input.file === undefined) throw new ToolError("text: required without file.")
+    if (input.as !== undefined && input.file === undefined) throw new ToolError("as: applies only with file.")
     const {chatInfo} = await this.knownChat(chat)
     if (!isConnected(chatInfo)) throw new ToolError(`The agent is not connected to ${chat} and can't post; list shows connected: false.`)
     if (chatInfo.type === "group") {
@@ -731,6 +734,9 @@ export class AgentTools {
     const replyTo = input.reply_to === undefined ? undefined : await this.quotedItem(chat, input.reply_to)
     const mentions = input.mention === undefined ? [] : await this.mentionedMembers(chatInfo, chat, input.mention)
     const file = input.file === undefined ? undefined : await this.attachment(input.file, input.as, chatInfo, chat)
+    if (file !== undefined && messageLength(fileContent(file, messageText(input.text, mentions)), file.name, replyTo, mentions) > maxMessageLength) {
+      throw new ToolError(`text: too long for a message with this ${file.type}; shorten it.`)
+    }
     const subject = chatSubject(chatInfo)
     const responses = new Collected()
     const approver = this.agent.standingApprover((await this.knownChat(chat)).chatInfo, "messages")
@@ -764,8 +770,7 @@ export class AgentTools {
     const filePath = file === undefined ? undefined : await this.fileToSend(file)
     action.stopCollecting = this.agent.watch.collect(chat, responses, ({meta}) => action.item === undefined || meta.itemId > action.item)
     try {
-      const missing = mentions.filter(({name}) => !mentionedIn(input.text ?? "", name)).map(({name}) => `@${viewName(name)}`)
-      const text = [...missing, input.text ?? ""].filter(part => part !== "").join(" ")
+      const text = messageText(input.text, mentions)
       const [sent] = await this.agent.chat.apiSendMessages([chatType(chat), chatNumber(chat)], [
         {
           ...(filePath === undefined ? {} : {fileSource: {filePath}}),
@@ -800,6 +805,7 @@ export class AgentTools {
       this.agent.refusedFile(path, chatInfo, chat)
       throw new ToolError(`file: ${path} is refused: ${refusedFileReason}.`)
     }
+    if (size === 0) throw new ToolError(`file: ${path} is empty.`)
     const {type, resize} = as === "file" ? otherFile : (attachmentTypes[extname(path).toLowerCase()] ?? otherFile)
     return {path, name: basename(path), size, inode, changedAt, type, resize, ...(await attachmentMedia(path, type, resize))}
   }
@@ -1266,6 +1272,15 @@ function commandsOf(commands: T.ChatBotCommand[] | undefined): Command[] | undef
       ? {keyword: command.keyword, label: command.label, ...defined({params: command.params})}
       : {label: command.label, commands: commandsOf(command.commands) ?? []},
   )
+}
+
+function messageText(text: string | undefined, mentions: {name: string}[]): string {
+  const missing = mentions.filter(({name}) => !mentionedIn(text ?? "", name)).map(({name}) => `@${viewName(name)}`)
+  return [...missing, text ?? ""].filter(part => part !== "").join(" ")
+}
+
+function messageLength(content: T.MsgContent, fileName: string, replyTo: {text: string} | undefined, mentions: {name: string}[]): number {
+  return messageEnvelope + Buffer.byteLength(JSON.stringify([content, fileName, replyTo?.text ?? "", mentions.map(({name}) => name)]))
 }
 
 function mentionedIn(text: string, name: string): boolean {
