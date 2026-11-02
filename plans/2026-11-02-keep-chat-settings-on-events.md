@@ -9,7 +9,7 @@ Right after joining a group, or while many messages of a group or contact arrive
 - The core reads a chat's GroupInfo or Contact when it starts processing an agent event and includes that copy in the events it emits for that chat (`Subscriber.hs` `processAgentMessage`).
 - `APISetChatSettings` writes the settings without the chat's lock, so an event's copy can be read before the write.
 - The app processes events one at a time, separately from command replies, so an event emitted before the write can also be processed after the reply.
-- `updateChatInfo` (Kotlin `ChatsContext`, iOS `ChatModel`) replaces the whole chat info, settings included. The events that update a listed chat use it: `updateGroup`, `updateContact`, `addChatItem`, `ChatInfoUpdated`.
+- `updateChatInfo` (Kotlin `ChatsContext`, iOS `ChatModel`) replaces the chat info, settings included. The events that update a listed chat use it: `updateGroup`, `updateContact`, `addChatItem`, `ChatInfoUpdated`.
 - iOS `receivedContactRequest` replaces a listed chat that is not open with the event's chat (`replaceChat`), settings included.
 - `notifyMessageReceived` decides with the event's copy, so a chat just muted or set to Mentions can still notify.
 
@@ -18,7 +18,7 @@ Right after joining a group, or while many messages of a group or contact arrive
 - `updateChatInfo` keeps the listed chat's current `chatSettings` for direct and group chats.
 - iOS `receivedContactRequest` keeps them when it replaces a listed chat: `ChatInfo.keepingChatSettings(of:)`, which `updateChatInfo` uses too.
 - New `setChatSettings` (Kotlin `(rhId, chatId, chatSettings)`, iOS `(chatId, chatSettings)`) sets the settings of a listed chat.
-- `ChatInfo.withChatSettings` (both apps) returns a direct or group chat info with the given settings; `updateChatInfo`, `keepingChatSettings` and `setChatSettings` use it.
+- `ChatInfo.withChatSettings` (both apps) returns a direct or group chat info with the given settings; `updateChatInfo`, `setChatSettings` and iOS `keepingChatSettings` use it.
 - The app's own settings writes use `setChatSettings`:
   - `updateChatSettings` (notifications, favorite, send receipts);
   - clearing the receipts overrides in Settings → Your privacy → More privacy, which now clears every override, as the core does.
