@@ -662,6 +662,10 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "names a [names] or [chain] setting nothing reads, and still boots" testNamesUnknownKeys
   it "reads codes_only on and off as a known setting, off when absent, and refuses any other value" testNamesCodesOnly
   it "reads record_edits_per_year as a known setting, 3 when absent, and refuses a value outside 1-100" testNamesRecordEdits
+  it "accepts [issuer] dev_keys on chain 31337 only, with [names] on" testDevKeysLocalChain
+  it "refuses a malformed dev_keys entry or an index named twice, quoting no secret" testDevKeysMalformed
+  it "accepts [issuer] dev_keys beside Stripe test keys and a BTCPay on loopback" testDevKeysTestPayments
+  it "refuses [issuer] dev_keys beside a live Stripe key or a remote BTCPay, naming which and quoting no key" testDevKeysLivePayments
 
 rpcUrl :: T.Text
 rpcUrl = "https://eth.example.org/v2/rpc-token-value"
@@ -887,3 +891,74 @@ testNamesRecordEdits = do
   forM_ ["0", "101", "-3"] $ \v ->
     namesRefusal (namesSection <> ["record_edits_per_year = " <> v]) chainSection `shouldReturn` "names.record_edits_per_year must be between 1 and 100"
   namesRefusal (namesSection <> ["record_edits_per_year = three"]) chainSection `shouldReturn` "record_edits_per_year must be a whole number"
+
+-- | Names on the local chain with no payment provider, as a run with dev keys has.
+localNamesIni :: [T.Text] -> T.Text
+localNamesIni cs = T.unlines (["[listener]"] <> namesSection <> cs)
+
+devKeysIssuer :: T.Text -> [T.Text]
+devKeysIssuer keys = ["[issuer]", "index = 1", "private_key = " <> issuerSecret, "dev_keys = " <> keys]
+
+withChainId :: T.Text -> [T.Text]
+withChainId v = map (\l -> if "chain_id =" `T.isPrefixOf` l then "chain_id = " <> v else l) chainSection
+
+testDevKeysLocalChain :: IO ()
+testDevKeysLocalChain = do
+  Right sk <- pure (strDecode (B.pack (T.unpack issuerSecret)))
+  Right local <- parseIni (localNamesIni chainSection <> T.unlines (devKeysIssuer ("9:" <> issuerSecret <> ", 12:" <> issuerSecret)))
+  devIssuerKeys local `shouldBe` [BadgeIssuerKey {keyIdx = 9, secretKey = sk}, BadgeIssuerKey {keyIdx = 12, secretKey = sk}]
+  Right without <- parseIni (namesIni namesSection chainSection)
+  devIssuerKeys without `shouldBe` []
+  let refused = "issuer.dev_keys is accepted only with [names] on the local chain, [chain] chain_id = 31337" :: String
+  forM_ ["1", "11155111", "31338"] $ \chainId ->
+    parseIni (localNamesIni (withChainId chainId) <> T.unlines (devKeysIssuer ("9:" <> issuerSecret))) `shouldReturn` Left refused
+  parseIni (T.unlines ["[listener]"] <> T.unlines (devKeysIssuer ("9:" <> issuerSecret))) `shouldReturn` Left refused
+
+testDevKeysMalformed :: IO ()
+testDevKeysMalformed = do
+  forM_ [issuerSecret, "9=" <> issuerSecret] $ \keys -> do
+    e <- refusal keys
+    e `shouldBe` "issuer.dev_keys must be <index>:<secret> entries separated by commas"
+    e `shouldNotContain` T.unpack issuerSecret
+  refusal ("0:" <> issuerSecret) `shouldReturn` "issuer.dev_keys index must be a positive whole number"
+  refusal "9:not-a-key" `shouldReturn` "issuer.dev_keys secret is not a valid issuer secret; use the value from `simplex-chat badge keygen`"
+  refusal ("9:" <> issuerSecret <> ",9:" <> issuerSecret) `shouldReturn` "issuer.dev_keys names an index twice"
+  where
+    refusal :: T.Text -> IO String
+    refusal keys =
+      parseIni (localNamesIni chainSection <> T.unlines (devKeysIssuer keys))
+        >>= either pure (\_ -> "" <$ expectationFailure (T.unpack keys <> " must not boot"))
+
+devKeysBTCPay :: T.Text -> [T.Text]
+devKeysBTCPay host = ["[btcpay]", "host = " <> host, "api_key = token-value", "store_id = store-value", "webhook_secret = secret-value"]
+
+devKeysStripe :: T.Text -> T.Text -> [T.Text]
+devKeysStripe secret publishable = ["[stripe]", "secret_key = " <> secret, "publishable_key = " <> publishable, "webhook_secret = whsec_x"]
+
+devKeysWith :: [T.Text] -> IO (Either String ServiceConfig)
+devKeysWith provider = parseIni (localNamesIni (chainSection <> provider) <> T.unlines (devKeysIssuer ("9:" <> issuerSecret)))
+
+testDevKeysTestPayments :: IO ()
+testDevKeysTestPayments = do
+  let loopbacks = ["https://127.0.0.1:8443", "https://localhost/", "https://[::1]:8443/btcpay", "https://LOCALHOST"]
+      stripes = [devKeysStripe "sk_test_x" "pk_test_x", devKeysStripe "rk_test_x" "pk_test_x"]
+  forM_ (map devKeysBTCPay loopbacks <> stripes <> [devKeysBTCPay "https://127.0.0.1" <> devKeysStripe "rk_test_x" "pk_test_x"]) $ \provider ->
+    devKeysWith provider >>= \case
+      Right cfg -> length (devIssuerKeys cfg) `shouldBe` 1
+      Left e -> expectationFailure (show provider <> " must boot with dev_keys, got: " <> e)
+  parseIni (localNamesIni (withChainId "1" <> devKeysStripe "rk_test_x" "pk_test_x") <> T.unlines (devKeysIssuer ("9:" <> issuerSecret)))
+    `shouldReturn` Left "issuer.dev_keys is accepted only with [names] on the local chain, [chain] chain_id = 31337"
+
+testDevKeysLivePayments :: IO ()
+testDevKeysLivePayments = do
+  let liveSecret = "issuer.dev_keys is refused with a live Stripe key: stripe.secret_key must be a test key, sk_test_ or rk_test_" :: String
+      livePublishable = "issuer.dev_keys is refused with a live Stripe key: stripe.publishable_key must be a test key, pk_test_" :: String
+      remote = "issuer.dev_keys is refused with a remote BTCPay: btcpay.host must be on loopback, 127.0.0.1, ::1 or localhost" :: String
+  forM_ ["sk_live_secretvalue", "rk_live_secretvalue", "sk_test", "pk_test_x"] $ \secret ->
+    devKeysWith (devKeysStripe secret "pk_test_x") `shouldReturn` Left liveSecret
+  devKeysWith (devKeysStripe "rk_test_x" "pk_live_x") `shouldReturn` Left livePublishable
+  forM_ ["https://btcpay.example.org", "https://127.0.0.2", "https://localhost.example.org", "https://user@btcpay.example.org", "https://[::2]:8443"] $ \host ->
+    devKeysWith (devKeysBTCPay host) `shouldReturn` Left remote
+  devKeysWith (devKeysBTCPay "https://127.0.0.1" <> devKeysStripe "sk_live_secretvalue" "pk_test_x") `shouldReturn` Left liveSecret
+  devKeysWith (devKeysStripe "sk_live_secretvalue" "pk_test_x") >>= either (`shouldNotContain` "secretvalue") (const (expectationFailure "a live key must not boot"))
+  parseIni (localNamesIni (chainSection <> devKeysBTCPay "https://btcpay.example.org" <> devKeysStripe "sk_live_x" "pk_live_x")) >>= (`shouldSatisfy` either (const False) (const True))
