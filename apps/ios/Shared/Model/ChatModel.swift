@@ -1425,7 +1425,7 @@ extension ChatInfo {
         case var .direct(contact):
             contact.chatSettings = chatSettings
             return .direct(contact: contact)
-        case var .group(groupInfo, groupChatScope):
+        case .group(var groupInfo, let groupChatScope):
             groupInfo.chatSettings = chatSettings
             return .group(groupInfo: groupInfo, groupChatScope: groupChatScope)
         default:

@@ -29,9 +29,10 @@ class ChatSettingsEventTest {
     val groupInfo = GroupInfo.sampleData
     val chatsCtx = chatsWith(ChatInfo.Group(groupInfo.copy(chatSettings = changedSettings), groupChatScope = null))
     withContext(Dispatchers.Main) {
-      chatsCtx.updateGroup(null, groupInfo)
+      chatsCtx.updateGroup(null, groupInfo.copy(localDisplayName = "Book Club"))
     }
     assertEquals(changedSettings, chatsCtx.chats.value.single().chatInfo.chatSettings)
+    assertEquals("Book Club", chatsCtx.chats.value.single().chatInfo.localDisplayName)
   }
 
   @Test
@@ -39,9 +40,10 @@ class ChatSettingsEventTest {
     val contact = Contact.sampleData
     val chatsCtx = chatsWith(ChatInfo.Direct(contact.copy(chatSettings = changedSettings)))
     withContext(Dispatchers.Main) {
-      chatsCtx.updateContact(null, contact)
+      chatsCtx.updateContact(null, contact.copy(localDisplayName = "Carol"))
     }
     assertEquals(changedSettings, chatsCtx.chats.value.single().chatInfo.chatSettings)
+    assertEquals("Carol", chatsCtx.chats.value.single().chatInfo.localDisplayName)
   }
 
   @Test
