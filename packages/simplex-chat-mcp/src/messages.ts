@@ -1,7 +1,7 @@
 import {extname, join} from "path"
 import {T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
-import {fileStatusError} from "./log"
+import {fileError} from "./log"
 
 const progressInterval = 60_000
 const maxTimer = 2_147_483_647
@@ -186,7 +186,7 @@ function messageFile(chat: string, msgContent: T.MsgContent, ciFile: T.CIFile, r
   const {name, size, type} = fileOffer(msgContent, ciFile)
   const file = {name, size, type}
   const {fileId, fileSource, fileStatus} = ciFile
-  const error = fileStatusError(fileStatus)
+  const error = fileError(ciFile)
   const path = downloadPath(data, chat, fileId, name)
   if (rejectedFiles.has(fileId)) return {...file, status: "rejected"}
   if (error !== undefined) return {...file, status: "failed", error}

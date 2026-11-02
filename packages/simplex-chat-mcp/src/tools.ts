@@ -7,7 +7,7 @@ import {CallToolResult, JsonSchemaType, McpServer, ServerContext, fromJsonSchema
 import {CEvt, CR, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
 import {Action, Actions, Attachment, ConnRef, ConnectAction, DownloadAction, LeaveAction, Mode, SendAction, Standing, Subject, ToolError, hasUnknownServers, isDecided} from "./actions"
-import {chatErrorOf, chatErrorText, errorText, fileStatusError, fullDomainName, logError, oneLine} from "./log"
+import {chatErrorOf, chatErrorText, errorText, fileError, fullDomainName, logError, oneLine} from "./log"
 import {
   Changes,
   ChatItemsWatch,
@@ -512,7 +512,7 @@ export class AgentTools {
   onFile(file: T.CIFile | undefined): void {
     if (file === undefined) return
     const {fileId, fileSource, fileStatus} = file
-    const error = fileStatusError(fileStatus)
+    const error = fileError(file)
     if (fileStatus.type === "rcvComplete") this.settleDownload(fileId, download => (fileSource?.filePath === download.path ? download.resolve(download.path) : download.reject(new Error(receivedElsewhere))))
     else if (error !== undefined) this.failDownload(fileId, error)
   }
@@ -865,7 +865,7 @@ export class AgentTools {
     if (message === undefined) throw new ToolError(`item: ${chat} has no item ${item}.`)
     const {chatDir, content, file} = message
     if (content.type !== "rcvMsgContent" || file === undefined) throw new ToolError(`item: item ${item} in ${chat} has no received file.`)
-    const failure = fileStatusError(file.fileStatus)
+    const failure = fileError(file)
     if (failure !== undefined) throw new ToolError(`item: the file of item ${item} in ${chat} failed: ${failure}`)
     const deadline = Date.now() + (input.wait ?? downloadWait) * 1000
     const servers = file.fileProtocol === T.FileProtocol.XFTP ? await this.fileServers(chat, item, deadline, call) : undefined
@@ -922,8 +922,7 @@ export class AgentTools {
   private async startDownload(chat: string, item: number, fileId: number, path: string): Promise<void> {
     const file = (await this.readItem(chat, item))?.file
     if (file === undefined) return this.failDownload(fileId, deletedItem)
-    this.onFile(file)
-    if (file.fileStatus.type !== "rcvInvitation") return
+    if (file.fileStatus.type !== "rcvInvitation" || fileError(file) !== undefined) return this.onFile(file)
     mkdirSync(dirname(path), {recursive: true, mode: 0o700})
     await this.agent.chat.apiReceiveFile(fileId, path, this.mode === "requests")
   }

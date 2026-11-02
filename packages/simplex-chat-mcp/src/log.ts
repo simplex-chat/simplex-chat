@@ -7,6 +7,13 @@ const blockingReasons: {[reason in T.BlockingReason]: string} = {
   [T.BlockingReason.Spam]: "Spam",
   [T.BlockingReason.Content]: "Content violates conditions of use",
 }
+const badgeIssues: {[status in T.BadgeStatus]: string} = {
+  [T.BadgeStatus.Active]: "",
+  [T.BadgeStatus.Expired]: " Sender's badge expired.",
+  [T.BadgeStatus.ExpiredOld]: " Sender's badge expired.",
+  [T.BadgeStatus.Failed]: " Sender's badge verification failed.",
+  [T.BadgeStatus.UnknownKey]: " No key to verify sender's badge.",
+}
 
 export class ExitError extends Error {
   constructor(message: string, readonly code: number) {
@@ -187,7 +194,13 @@ function storeErrorText(error: T.StoreError): string | undefined {
   }
 }
 
-export function fileStatusError(status: T.CIFileStatus): string | undefined {
+export function fileError({fileStatus, fileProhibited}: T.CIFile): string | undefined {
+  if (fileProhibited === undefined) return fileStatusError(fileStatus)
+  const {maxSize, badgeStatus} = fileProhibited
+  return `Large file! The file is above the limit of ${maxSize} bytes for its sender.${badgeStatus === undefined ? "" : badgeIssues[badgeStatus]}`
+}
+
+function fileStatusError(status: T.CIFileStatus): string | undefined {
   switch (status.type) {
     case "rcvCancelled":
       return "The file was cancelled."

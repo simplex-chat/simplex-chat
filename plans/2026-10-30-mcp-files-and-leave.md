@@ -177,6 +177,7 @@ rcvCancelled                       failed: "The file was cancelled."
 rcvAborted                         failed: "The download was aborted."
 rcvError                           failed: fileErrorText
 invalid                            failed: "Invalid file: TEXT"
+fileProhibited set                 failed: "Large file! The file is above the limit of N bytes for its sender.", and the badge issue; before the rows above
 file ID in rejectedFiles           rejected, before the rows above
 ```
 
