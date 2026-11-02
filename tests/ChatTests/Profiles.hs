@@ -200,6 +200,7 @@ shortLinkTests = do
   it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
   it "connect to group with welcome message via short link" testGroupShortLinkWelcome
   it "retry connecting to group via short link" testShortLinkGroupRetry
+  it "full group link plan while joining prepared group, host offline" testShortLinkGroupFullLinkPlanHostOffline
   it "connect to prepared contact incognito (via invitation)" testShortLinkInvitationConnectPreparedContactIncognito
   it "connect to prepared contact incognito (via address)" testShortLinkAddressConnectPreparedContactIncognito
   it "change prepared contact user" testShortLinkChangePreparedContactUser
@@ -4841,6 +4842,29 @@ testShortLinkGroupRetry ps = testChatOpts2 opts' aliceProfile bobProfile test ps
               { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
               }
         }
+
+testShortLinkGroupFullLinkPlanHostOffline :: HasCallStack => TestParams -> IO ()
+testShortLinkGroupFullLinkPlanHostOffline ps = do
+  (shortLink, fullLink) <- withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice ##> "/create link #team"
+    getGroupLinks alice "team" GRMember True
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
+    bob ##> ("/_connect plan 1 " <> shortLink)
+    bob <## "group link: ok to connect directly"
+    groupSLinkData <- getTermLine bob
+    bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
+    bob <## "#team: group is prepared"
+    bob ##> "/_connect group #1"
+    bob <## "#team: connection started"
+    bob ##> ("/_connect plan 1 " <> fullLink)
+    bob <## "group link: connecting to group #team"
+    bob ##> ("/_connect plan 1 " <> linkAnotherSchema fullLink)
+    bob <## "group link: connecting to group #team"
+    bob ##> ("/c " <> fullLink)
+    bob <## "group link: connecting to group #team"
 
 testShortLinkInvitationConnectPreparedContactIncognito :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitationConnectPreparedContactIncognito = testChat2 aliceProfile bobProfile test
