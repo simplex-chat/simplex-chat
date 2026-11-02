@@ -114,21 +114,40 @@ class ChatItemsLoaderTest {
   }
 
   @Test
-  fun itemModeratedWhileChatOpensIsShownModerated() = runBlocking {
-    val chatsCtx = ChatModel.ChatsContext(null)
+  fun itemDeletedByModeratorWhileChatOpensIsShownDeleted() = runBlocking {
+    val chatsCtx = chatModel.chatsContext
+    val user = User.sampleData
     val opening = groupChat(groupId = 5, itemIds = listOf(101, 102))
-    withContext(Dispatchers.Main) { chatModel.chatId.value = null }
-    val received = receivedItem(103)
-    recordItemUpdatesWhileLoading(chatsCtx) { itemUpdates ->
-      withContext(Dispatchers.Main) {
-        chatsCtx.recordItemUpdate(opening.chatInfo, 103) {
-          it.copy(meta = it.meta.copy(itemDeleted = CIDeleted.Moderated(null, GroupMember.sampleData)))
-        }
-      }
-      val pageReadBeforeModeration = opening.copy(chatItems = opening.chatItems + received)
-      processLoadedChat(chatsCtx, pageReadBeforeModeration, NavigationInfo(), ChatPagination.Initial(3), openAroundItemId = null, itemUpdates)
+    withContext(Dispatchers.Main) {
+      chatModel.currentUser.value = user
+      chatModel.chatId.value = null
     }
-    assertEquals(true, chatsCtx.chatItems.value.firstOrNull { it.id == 103L }?.meta?.itemDeleted is CIDeleted.Moderated)
+    val received = receivedItem(103)
+    val deleted = CR.GroupChatItemsDeleted(
+      UserRef(user.userId, user.localDisplayName, activeUser = true, showNtfs = true),
+      (opening.chatInfo as ChatInfo.Group).groupInfo,
+      chatItemIDs = listOf(103),
+      byUser = false,
+      member_ = GroupMember.sampleData
+    )
+    recordItemUpdatesWhileLoading(chatsCtx) { itemUpdates ->
+      chatModel.controller.groupChatItemsDeleted(null, deleted)
+      val pageReadBeforeDeletion = opening.copy(chatItems = opening.chatItems + received)
+      processLoadedChat(chatsCtx, pageReadBeforeDeletion, NavigationInfo(), ChatPagination.Initial(3), openAroundItemId = null, itemUpdates)
+    }
+    assertEquals(true, chatsCtx.chatItems.value.firstOrNull { it.id == 103L }?.meta?.itemDeleted != null)
+  }
+
+  @Test
+  fun itemReceivedWhileChatOpensAtItemIsShown() = runBlocking {
+    val chatsCtx = ChatModel.ChatsContext(null)
+    val opening = groupChat(groupId = 7, itemIds = listOf(101, 102))
+    withContext(Dispatchers.Main) { chatModel.chatId.value = null }
+    recordItemUpdatesWhileLoading(chatsCtx) { itemUpdates ->
+      chatsCtx.addChatItem(null, opening.chatInfo, receivedItem(103))
+      processLoadedChat(chatsCtx, opening, NavigationInfo(), ChatPagination.Around(101, 2), openAroundItemId = 101, itemUpdates)
+    }
+    assertEquals(listOf(101L, 102L, 103L), itemIds(chatsCtx))
   }
 
   @Test

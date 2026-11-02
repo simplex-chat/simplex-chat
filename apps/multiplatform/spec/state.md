@@ -208,8 +208,7 @@ The secondary context is used for:
 - `hasChat(rhId, id)` / `getChat(id)` -- lookup methods
 - `startRecordingItemUpdates(record)` / `stopRecordingItemUpdates(record)` -- record the list part of each item update while a page of items loads (`recordItemUpdatesWhileLoading` in `ChatItemsLoader.kt`)
 - `recordItemUpdate(cInfo, itemId, update)` -- record an update of an item that is not in the list
-- `applyItemUpdatesWhileLoading(record)` -- re-run the recorded updates on a page that replaced the list (Initial, Around at an item) and contains the newest item
-- `addUnreadChanges(rhId, chatId, loadedItems, items)` -- add to the row's unread count and mentions the difference between the unread items of the list and of the loaded page
+- `applyItemUpdatesWhileLoading(record)` -- re-run the recorded updates, in order
 
 ### ActiveChatState
 

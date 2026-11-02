@@ -16,12 +16,11 @@ The Initial page also overwrites the row's stats with the stats it read.
 
 ## Fix
 
-`processLoadedChat` runs on the main thread from reading the current list to the install, so the merging paginations (Before, After, Around to a quoted item, Last) keep every item the list held before the merge.
+`processLoadedChat` runs on the main thread from reading the current list to the install, so the merging paginations (Before, After, Around to a quoted item, Last) merge the page into a list that includes every update applied during the load.
 
 While a page loads, `ChatsContext` records the list part of each item update in every active `ItemUpdatesWhileLoading`:
 - `addChatItem`;
-- `upsertChatItem`, as an update of an item in the list;
-- `updateChatItem`;
+- `upsertChatItem` and `updateChatItem`, as an update of an item in the list that keeps its read status and deletion;
 - `removeChatItem`;
 - `removeMemberItems`;
 - `clearChat`;
@@ -35,9 +34,9 @@ Chat-list counter updates (row stats, total unread, reports) run once, outside t
 - `apiLoadMessages`, for every pagination;
 - `afterSetChatTTL` (`ChatInfoView.kt`).
 
-The pages that replace the list (Initial, Around at an item) and contain the newest item (`afterTotal == 0`) re-run the recorded updates after the install, in order. Older pages are followed by After pagination, which loads the newer items.
+The pages that replace the list (Initial, Around at an item), contain the newest item (`afterTotal == 0`) and belong to the current remote host re-run the recorded updates after the install, in order. Older pages are completed by After pagination when the list is scrolled toward newer items.
 
-After the re-run, the Initial page adds to the row's unread count and mentions the difference between the unread items of the list and of the page (`addUnreadChanges`).
+After the re-run, the Initial page sets the row's stats to the page's stats plus the difference between the unread items (and mentions) of the list and of the page, and only then adds a missing row.
 
 ## Scope
 

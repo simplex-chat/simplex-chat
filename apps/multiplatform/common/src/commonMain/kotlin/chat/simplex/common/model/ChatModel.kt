@@ -502,19 +502,6 @@ object ChatModel {
       }
     }
 
-    fun addUnreadChanges(rhId: Long?, chatId: ChatId, loadedItems: List<ChatItem>, items: List<ChatItem>) {
-      fun unread(list: List<ChatItem>) = list.count { it.isRcvNew }
-      fun unreadMentions(list: List<ChatItem>) = list.count { it.isRcvNew && it.meta.userMention }
-      val i = getChatIndex(rhId, chatId)
-      if (i >= 0) {
-        val stats = chats[i].chatStats
-        chats[i] = chats[i].copy(chatStats = stats.copy(
-          unreadCount = stats.unreadCount + unread(items) - unread(loadedItems),
-          unreadMentions = stats.unreadMentions + unreadMentions(items) - unreadMentions(loadedItems)
-        ))
-      }
-    }
-
     suspend fun updateContactConnection(rhId: Long?, contactConnection: PendingContactConnection) = updateChat(rhId, ChatInfo.ContactConnection(contactConnection))
 
     suspend fun updateContact(rhId: Long?, contact: Contact) = updateChat(rhId, ChatInfo.Direct(contact), addMissing = contact.directOrUsed)
@@ -742,7 +729,7 @@ object ChatModel {
       withContext(Dispatchers.Main) {
         recordUpdate {
           if (chatItemBelongsToScope(cInfo, cItem)) {
-            replaceItemInScope(cItem)
+            replaceKeepingReadAndDeleted(cItem)
           }
         }
         if (chatItemBelongsToScope(cInfo, cItem)) {
@@ -753,6 +740,13 @@ object ChatModel {
         }
       }
       return  itemAdded
+    }
+
+    private fun replaceKeepingReadAndDeleted(cItem: ChatItem) {
+      val current = chatItems.value.firstOrNull { it.id == cItem.id } ?: return
+      val itemStatus = if (current.meta.itemStatus is CIStatus.RcvRead && cItem.meta.itemStatus is CIStatus.RcvNew) current.meta.itemStatus else cItem.meta.itemStatus
+      val itemDeleted = cItem.meta.itemDeleted ?: current.meta.itemDeleted
+      replaceItemInScope(cItem.copy(meta = cItem.meta.copy(itemStatus = itemStatus, itemDeleted = itemDeleted)))
     }
 
     private fun replaceItemInScope(cItem: ChatItem): Boolean {
@@ -775,13 +769,16 @@ object ChatModel {
 
     suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null) {
       withContext(Dispatchers.Main) {
-        updateAndRecord {
+        recordUpdate {
           if (chatItemBelongsToScope(cInfo, cItem)) {
-            val items = chatItems.value
-            val itemIndex = items.indexOfFirst { it.id == cItem.id }
-            if (itemIndex >= 0) {
-              items[itemIndex] = cItem
-            }
+            replaceKeepingReadAndDeleted(cItem)
+          }
+        }
+        if (chatItemBelongsToScope(cInfo, cItem)) {
+          val items = chatItems.value
+          val itemIndex = items.indexOfFirst { it.id == cItem.id }
+          if (itemIndex >= 0) {
+            items[itemIndex] = cItem
           }
         }
       }

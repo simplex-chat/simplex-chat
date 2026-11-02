@@ -61,6 +61,18 @@ private fun chatWasSwitched(chat: Chat, pagination: ChatPagination, openAroundIt
   pagination !is ChatPagination.Initial && openAroundItemId == null &&
       (chatModel.chatId.value != chat.id || chatModel.remoteHostId() != chat.remoteHostId)
 
+private fun isNewestPageOfCurrentHost(chat: Chat, navInfo: NavigationInfo): Boolean =
+  navInfo.afterTotal == 0 && chatModel.remoteHostId() == chat.remoteHostId
+
+private fun Chat.ChatStats.withUnreadChanges(loadedItems: List<ChatItem>, items: List<ChatItem>): Chat.ChatStats {
+  fun countUnread(list: List<ChatItem>) = list.count { it.isRcvNew }
+  fun countUnreadMentions(list: List<ChatItem>) = list.count { it.isRcvNew && it.meta.userMention }
+  return copy(
+    unreadCount = unreadCount + countUnread(items) - countUnread(loadedItems),
+    unreadMentions = unreadMentions + countUnreadMentions(items) - countUnreadMentions(loadedItems)
+  )
+}
+
 suspend fun processLoadedChat(
   chatsCtx: ChatModel.ChatsContext,
   chat: Chat,
@@ -78,17 +90,6 @@ suspend fun processLoadedChat(
     when (pagination) {
       is ChatPagination.Initial -> {
         val newSplits = if (chat.chatItems.isNotEmpty() && navInfo.afterTotal > 0) listOf(chat.chatItems.last().id) else emptyList()
-        if (chatsCtx.secondaryContextFilter == null) {
-          // update main chats, not content tagged
-          val oldChat = chatModel.chatsContext.getChat(chat.id)
-          if (oldChat == null) {
-            chatModel.chatsContext.addChat(chat)
-          } else {
-            chatModel.chatsContext.updateChatInfo(chat.remoteHostId, chat.chatInfo)
-            // unreadChat is currently not actual in getChat query (always false)
-            chatModel.chatsContext.updateChatStats(chat.remoteHostId, chat.id, chat.chatStats.copy(unreadChat = oldChat.chatStats.unreadChat))
-          }
-        }
         chatsCtx.chatItems.replaceAll(chat.chatItems)
         chatModel.chatId.value = chat.id
         splits.value = newSplits
@@ -99,10 +100,20 @@ suspend fun processLoadedChat(
         unreadTotal.value = chat.chatStats.unreadCount
         unreadAfter.value = navInfo.afterUnread
         unreadAfterNewestLoaded.value = navInfo.afterUnread
-        if (navInfo.afterTotal == 0) {
+        val updatesReRun = isNewestPageOfCurrentHost(chat, navInfo)
+        if (updatesReRun) {
           chatsCtx.applyItemUpdatesWhileLoading(itemUpdates)
-          if (chatsCtx.secondaryContextFilter == null) {
-            chatModel.chatsContext.addUnreadChanges(chat.remoteHostId, chat.id, chat.chatItems, chatsCtx.chatItems.value)
+        }
+        if (chatsCtx.secondaryContextFilter == null) {
+          // update main chats, not content tagged
+          val chatStats = if (updatesReRun) chat.chatStats.withUnreadChanges(chat.chatItems, chatsCtx.chatItems.value) else chat.chatStats
+          val oldChat = chatModel.chatsContext.getChat(chat.id)
+          if (oldChat == null) {
+            chatModel.chatsContext.addChat(chat.copy(chatStats = chatStats))
+          } else {
+            chatModel.chatsContext.updateChatInfo(chat.remoteHostId, chat.chatInfo)
+            // unreadChat is currently not actual in getChat query (always false)
+            chatModel.chatsContext.updateChatStats(chat.remoteHostId, chat.id, chatStats.copy(unreadChat = oldChat.chatStats.unreadChat))
           }
         }
       }
@@ -169,7 +180,7 @@ suspend fun processLoadedChat(
           unreadAfterNewestLoaded.value = navInfo.afterUnread
           chatModel.openAroundItemId.value = openAroundItemId
           chatModel.chatId.value = chat.id
-          if (navInfo.afterTotal == 0) {
+          if (isNewestPageOfCurrentHost(chat, navInfo)) {
             chatsCtx.applyItemUpdatesWhileLoading(itemUpdates)
           }
         } else {
