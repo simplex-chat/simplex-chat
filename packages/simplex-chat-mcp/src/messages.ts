@@ -187,10 +187,9 @@ function messageFile(chat: string, msgContent: T.MsgContent, ciFile: T.CIFile, r
   const file = {name, size, type}
   const {fileId, fileSource, fileStatus} = ciFile
   const error = fileError(ciFile)
-  const path = downloadPath(data, chat, fileId, name)
   if (rejectedFiles.has(fileId)) return {...file, status: "rejected"}
   if (error !== undefined) return {...file, status: "failed", error}
-  if (fileStatus.type === "rcvComplete") return {...file, status: "received", ...(fileSource?.filePath === path ? {path} : {})}
+  if (fileStatus.type === "rcvComplete") return {...file, status: "received", ...(fileSource?.filePath === downloadPath(data, chat, fileId, name) ? {path: fileSource.filePath} : {})}
   return {...file, status: "offered"}
 }
 
