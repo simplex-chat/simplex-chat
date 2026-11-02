@@ -33,6 +33,11 @@ module StoreService.Names.Store
     TxStatus (..),
     NameTransaction (..),
     NewTransaction (..),
+    RecordChange (..),
+    SignedChange (..),
+    EditState (..),
+    RecordEdit (..),
+    NewRecordEdit (..),
     findLimit,
     orderHash,
     orderLive,
@@ -47,6 +52,7 @@ module StoreService.Names.Store
     getLiveOrders,
     closeOverdue,
     updateRegistration,
+    retargetRegistration,
     findRegistrations,
     isLabelRegistering,
     activeRegistrations,
@@ -82,6 +88,16 @@ module StoreService.Names.Store
     recordTransactionOutcome,
     pendingTransactions,
     registrationTransactions,
+    editTransactions,
+    insertRecordEdit,
+    getRecordEdit,
+    getRecordEditByBody,
+    getRecordEditByNonce,
+    settleRecordEdit,
+    pendingEditIds,
+    deleteUnsentEdit,
+    relayedEditTimes,
+    countedEditTimes,
   )
 where
 
@@ -92,6 +108,8 @@ import Data.ByteArray.Encoding (Base (Base16), convertToBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Int (Int64)
+import Data.List.NonEmpty (NonEmpty (..))
+import qualified Data.List.NonEmpty as L
 import Data.Maybe (isJust, listToMaybe)
 import Data.String (fromString)
 import Data.Text (Text)
@@ -387,7 +405,7 @@ data NewPrepaidCode = NewPrepaidCode
 data CodeHashTaken = CodeHashTaken
   deriving (Eq, Show)
 
-data TxFor = TxCommit RegistrationId | TxRegister RegistrationId
+data TxFor = TxCommit RegistrationId | TxRegister RegistrationId | TxEdit Int64
   deriving (Eq, Show)
 
 -- | A dropped transaction has no receipt and its registrar nonce is used.
@@ -422,6 +440,41 @@ data NewTransaction = NewTransaction
   { ntxRaw :: ByteString,
     ntxHash :: TxHash,
     ntxNonce :: Word64
+  }
+
+-- | A text record set to a value, "" removing it, or every record cleared.
+data RecordChange = RCSetText Text Text | RCClear
+  deriving (Eq, Show)
+
+data EditState = ESPending | ESMined (Maybe TxHash) | ESReverted (Maybe Text)
+  deriving (Eq, Show)
+
+-- | A change the owner signed for the resolver's nonce it names.
+data SignedChange = SignedChange
+  { scChange :: RecordChange,
+    scNonce :: Word64,
+    scDeadline :: Word64,
+    scSignature :: RecoverableSignature
+  }
+  deriving (Eq, Show)
+
+-- | One request's changes, relayed in one transaction, their nonces consecutive in this order.
+data RecordEdit = RecordEdit
+  { reId :: Int64,
+    reLabelHash :: LabelHash,
+    reOwner :: Address,
+    reChanges :: NonEmpty SignedChange,
+    reBodyHash :: ByteString,
+    reState :: EditState,
+    reCreatedAt :: UTCTime
+  }
+  deriving (Eq, Show)
+
+data NewRecordEdit = NewRecordEdit
+  { nreLabelHash :: LabelHash,
+    nreOwner :: Address,
+    nreChanges :: NonEmpty SignedChange,
+    nreBodyHash :: ByteString
   }
 
 findLimit :: Int
@@ -724,6 +777,34 @@ updateRegistration db r now = do
       DB.query db "SELECT version, live FROM sx_badge_service_name_registrations WHERE registration_id = ?" (Only rid) >>= \case
         [(version, BI storedLive)] | version == nrVersion -> pure $ if storedLive then LiveOrderExists else NotLive
         _ -> pure VersionChanged
+
+-- | Another name, or other links, with the terms agreed for it: queued again with the reveal, transactions, reveal times and link refusal cleared.
+-- The order hash stays the original order's, so a resend of that order still finds it.
+retargetRegistration :: DB.Connection -> NameRegistration -> OrderFields -> Int -> UTCTime -> IO VersionWrite
+retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} price =
+  updateRegistration
+    db
+    r
+      { nrLabelHash = ofLabelHash,
+        nrLength = ofLength,
+        nrDuration = ofDuration,
+        nrCommitment = ofCommitment,
+        nrSealed = ofSealed,
+        nrAgreedTerms = ofAgreedTerms,
+        nrPrice = price,
+        nrPhase = PQueued,
+        nrMoves = nrMoves r + 1,
+        nrReveal = Nothing,
+        nrCommitTx = Nothing,
+        nrCommitBlock = Nothing,
+        nrRegisterTx = Nothing,
+        nrRegisterBlock = Nothing,
+        nrRevealAfter = Nothing,
+        nrRevealBefore = Nothing,
+        nrLinksRefusedAt = Nothing,
+        nrFailedAt = Nothing,
+        nrError = Nothing
+      }
 
 -- | Newest first: findLimit of them, then every older one holding a balance above 0, since a balance never expires.
 -- Each with the order holding its balance, as getBalance reads the hold at the given time.
@@ -1269,23 +1350,24 @@ revokePrepaidCode db codeHash now = do
       | isJust pcRevokedAt = AlreadyRevoked pcId
       | otherwise = AlreadyRedeemed
 
-txKind :: TxFor -> (Text, Text)
+txKind :: TxFor -> (Text, Maybe Text, Maybe Int64)
 txKind = \case
-  TxCommit (RegistrationId rid) -> ("commit", rid)
-  TxRegister (RegistrationId rid) -> ("register", rid)
+  TxCommit (RegistrationId rid) -> ("commit", Just rid, Nothing)
+  TxRegister (RegistrationId rid) -> ("register", Just rid, Nothing)
+  TxEdit editId -> ("edit", Nothing, Just editId)
 
 -- | Saved once signed and before it is sent, so a restart can rebroadcast it.
 insertTransaction :: DB.Connection -> TxFor -> NewTransaction -> UTCTime -> IO Int64
 insertTransaction db for NewTransaction {ntxRaw, ntxHash, ntxNonce} now = do
-  let (kind, rid) = txKind for
+  let (kind, rid, editId) = txKind for
   DB.execute
     db
     [sql|
       INSERT INTO sx_badge_service_name_transactions
-        (registration_id, kind, raw, tx_hash, registrar_nonce, sent_at, status)
-      VALUES (?,?,?,?,?,?,?)
+        (registration_id, name_record_edit_id, kind, raw, tx_hash, registrar_nonce, sent_at, status)
+      VALUES (?,?,?,?,?,?,?,?)
     |]
-    (rid, kind, Binary ntxRaw, txHashField ntxHash, int64 ntxNonce, truncateToSecond now, TSPending)
+    (rid, editId, kind, Binary ntxRaw, txHashField ntxHash, int64 ntxNonce, truncateToSecond now, TSPending)
   insertedRowId db
 
 -- | Moves a transaction on from the status the caller read, so an outcome is never overwritten unseen; False when it is not in that status.
@@ -1300,17 +1382,18 @@ recordTransactionOutcome db hash from status block =
 transactionColumns :: Query
 transactionColumns =
   [sql|
-    SELECT name_transaction_id, kind, registration_id, raw, tx_hash, registrar_nonce, sent_at, mined_block, status
+    SELECT name_transaction_id, kind, registration_id, name_record_edit_id, raw, tx_hash, registrar_nonce, sent_at, mined_block, status
     FROM sx_badge_service_name_transactions
   |]
 
-type TransactionRow = (Int64, Text, Maybe Text, Binary ByteString, Binary ByteString, Int64, UTCTime, Maybe Int64, TxStatus)
+type TransactionRow = (Int64, Text, Maybe Text, Maybe Int64, Binary ByteString, Binary ByteString, Int64, UTCTime, Maybe Int64, TxStatus)
 
 toTransaction :: TransactionRow -> Either Text NameTransaction
-toTransaction (ntId, kind, rid_, Binary ntRaw, hash, nonce, ntSentAt, block, ntStatus) = do
-  ntFor <- case (kind, rid_) of
-    ("commit", Just rid) -> Right $ TxCommit $ RegistrationId rid
-    ("register", Just rid) -> Right $ TxRegister $ RegistrationId rid
+toTransaction (ntId, kind, rid_, editId_, Binary ntRaw, hash, nonce, ntSentAt, block, ntStatus) = do
+  ntFor <- case (kind, rid_, editId_) of
+    ("commit", Just rid, Nothing) -> Right $ TxCommit $ RegistrationId rid
+    ("register", Just rid, Nothing) -> Right $ TxRegister $ RegistrationId rid
+    ("edit", Nothing, Just editId) -> Right $ TxEdit editId
     _ -> Left $ "name_transactions.kind: " <> kind
   pure NameTransaction {ntId, ntFor, ntRaw, ntHash = txHash hash, ntNonce = word64 nonce, ntSentAt, ntMinedBlock = word64 <$> block, ntStatus}
 
@@ -1324,6 +1407,152 @@ registrationTransactions :: DB.Connection -> RegistrationId -> IO [NameTransacti
 registrationTransactions db (RegistrationId rid) =
   DB.query db (transactionColumns <> " WHERE registration_id = ? ORDER BY name_transaction_id") (Only rid)
     >>= decodeAll toTransaction
+
+editTransactions :: DB.Connection -> Int64 -> IO [NameTransaction]
+editTransactions db editId =
+  DB.query db (transactionColumns <> " WHERE name_record_edit_id = ? ORDER BY name_transaction_id") (Only editId)
+    >>= decodeAll toTransaction
+
+pendingEdit :: Text
+pendingEdit = "pending"
+
+minedEdit :: Text
+minedEdit = "mined"
+
+revertedEdit :: Text
+revertedEdit = "reverted"
+
+-- | Nothing when a pending or mined edit already starts at the owner's first nonce.
+insertRecordEdit :: DB.Connection -> NewRecordEdit -> UTCTime -> IO (Maybe Int64)
+insertRecordEdit db NewRecordEdit {nreLabelHash = LabelHash lh, nreOwner, nreChanges, nreBodyHash} now = do
+  inserted <-
+    executeChanging
+      db
+      [sql|
+        INSERT INTO sx_badge_service_name_record_edits (label_hash, owner, nonce, body_hash, state, created_at)
+        VALUES (?,?,?,?,?,?)
+        ON CONFLICT DO NOTHING
+      |]
+      (Binary lh, Binary $ unAddress nreOwner, int64 $ scNonce $ L.head nreChanges, Binary nreBodyHash, pendingEdit, truncateToSecond now)
+  if inserted > 0
+    then do
+      editId <- insertedRowId db
+      mapM_ (insertChange editId) nreChanges
+      pure $ Just editId
+    else pure Nothing
+  where
+    insertChange editId SignedChange {scChange, scNonce, scDeadline, scSignature} =
+      DB.execute
+        db
+        "INSERT INTO sx_badge_service_name_record_changes (name_record_edit_id, nonce, record_key, record_value, deadline, signature) VALUES (?,?,?,?,?,?)"
+        (editId, int64 scNonce, key, value, int64 scDeadline, Binary $ serializeSignature scSignature)
+      where
+        (key, value) = case scChange of
+          RCSetText k v -> (Just k, Just v)
+          RCClear -> (Nothing, Nothing)
+
+recordEditColumns :: Query
+recordEditColumns =
+  [sql|
+    SELECT name_record_edit_id, label_hash, owner, body_hash, state, revert, mined_tx, created_at
+    FROM sx_badge_service_name_record_edits
+  |]
+
+type RecordEditRow = (Int64, Binary ByteString, Binary ByteString, Binary ByteString, Text, Maybe Text, Maybe (Binary ByteString), UTCTime)
+
+type ChangeRow = (Int64, Maybe Text, Maybe Text, Int64, Binary ByteString)
+
+-- | An edit's row with its changes, in nonce order.
+readRecordEdit :: DB.Connection -> RecordEditRow -> IO RecordEdit
+readRecordEdit db row@(reId, _, _, _, _, _, _, _) = do
+  changes <- DB.query db "SELECT nonce, record_key, record_value, deadline, signature FROM sx_badge_service_name_record_changes WHERE name_record_edit_id = ? ORDER BY nonce" (Only reId)
+  either (E.throwIO . StoreDecodeError) pure $ toRecordEdit row changes
+
+toRecordEdit :: RecordEditRow -> [ChangeRow] -> Either Text RecordEdit
+toRecordEdit (reId, Binary lh, Binary owner, Binary reBodyHash, state, revert, minedTx, reCreatedAt) changeRows = do
+  reOwner <- decodeAddress owner
+  reChanges <- note ("name_record_edits changes: " <> tshow reId) . L.nonEmpty =<< mapM toChange changeRows
+  reState <- decodeState
+  pure RecordEdit {reId, reLabelHash = LabelHash lh, reOwner, reChanges, reBodyHash, reState, reCreatedAt}
+  where
+    toChange (nonce, key_, value_, deadline, Binary sig) = do
+      scSignature <- decodeSignature sig
+      scChange <- case (key_, value_) of
+        (Just key, Just value) -> Right $ RCSetText key value
+        (Nothing, Nothing) -> Right RCClear
+        _ -> Left $ "name_record_changes record: " <> tshow reId
+      pure SignedChange {scChange, scNonce = word64 nonce, scDeadline = word64 deadline, scSignature}
+    decodeState
+      | state == pendingEdit = Right ESPending
+      | state == minedEdit = Right $ ESMined $ txHash <$> minedTx
+      | state == revertedEdit = Right $ ESReverted revert
+      | otherwise = Left $ "name_record_edits.state: " <> state
+
+firstRecordEdit :: DB.Connection -> IO [RecordEditRow] -> IO (Maybe RecordEdit)
+firstRecordEdit db rows = rows >>= mapM (readRecordEdit db) . listToMaybe
+
+getRecordEdit :: DB.Connection -> Int64 -> IO (Maybe RecordEdit)
+getRecordEdit db editId =
+  firstRecordEdit db $ DB.query db (recordEditColumns <> " WHERE name_record_edit_id = ?") (Only editId)
+
+-- | The newest edit sent with this signed body.
+getRecordEditByBody :: DB.Connection -> ByteString -> IO (Maybe RecordEdit)
+getRecordEditByBody db bodyHash =
+  firstRecordEdit db $
+    DB.query db (recordEditColumns <> " WHERE body_hash = ? ORDER BY name_record_edit_id DESC LIMIT 1") (Only $ Binary bodyHash)
+
+-- | The pending or mined edit holding the owner's nonce among its changes.
+getRecordEditByNonce :: DB.Connection -> Address -> Word64 -> IO (Maybe RecordEdit)
+getRecordEditByNonce db owner nonce =
+  firstRecordEdit db $
+    DB.query
+      db
+      ( recordEditColumns
+          <> " WHERE owner = ? AND state IN (?,?) AND name_record_edit_id IN (SELECT name_record_edit_id FROM sx_badge_service_name_record_changes WHERE nonce = ?)"
+      )
+      (Binary $ unAddress owner, pendingEdit, minedEdit, int64 nonce)
+
+-- | Settles a pending edit; False when it was settled already.
+settleRecordEdit :: DB.Connection -> Int64 -> EditState -> IO Bool
+settleRecordEdit db editId state =
+  (> 0)
+    <$> executeChanging
+      db
+      "UPDATE sx_badge_service_name_record_edits SET state = ?, revert = ?, mined_tx = ? WHERE name_record_edit_id = ? AND state = ?"
+      (stateText, revert, txHashField <$> minedTx, editId, pendingEdit)
+  where
+    (stateText, revert, minedTx) = case state of
+      ESPending -> (pendingEdit, Nothing, Nothing)
+      ESMined tx -> (minedEdit, Nothing, tx)
+      ESReverted name -> (revertedEdit, name, Nothing)
+
+pendingEditIds :: DB.Connection -> IO [Int64]
+pendingEditIds db = map fromOnly <$> DB.query db "SELECT name_record_edit_id FROM sx_badge_service_name_record_edits WHERE state = ? ORDER BY name_record_edit_id" (Only pendingEdit)
+
+deleteUnsentEdit :: DB.Connection -> Int64 -> IO ()
+deleteUnsentEdit db editId =
+  DB.execute
+    db
+    "DELETE FROM sx_badge_service_name_record_edits WHERE name_record_edit_id = ? AND state = ? AND NOT EXISTS (SELECT 1 FROM sx_badge_service_name_transactions WHERE name_record_edit_id = ?)"
+    (editId, pendingEdit, editId)
+
+-- | When each edit relayed for the name since the given time was sent, oldest first.
+relayedEditTimes :: DB.Connection -> LabelHash -> UTCTime -> IO [UTCTime]
+relayedEditTimes db (LabelHash lh) since =
+  map fromOnly
+    <$> DB.query
+      db
+      "SELECT created_at FROM sx_badge_service_name_record_edits WHERE label_hash = ? AND created_at > ? ORDER BY created_at"
+      (Binary lh, truncateToSecond since)
+
+-- | When each pending or mined edit of the name was made since the given time, oldest first: the edits its yearly limit counts.
+countedEditTimes :: DB.Connection -> LabelHash -> UTCTime -> IO [UTCTime]
+countedEditTimes db (LabelHash lh) since =
+  map fromOnly
+    <$> DB.query
+      db
+      "SELECT created_at FROM sx_badge_service_name_record_edits WHERE label_hash = ? AND created_at > ? AND state IN (?,?) ORDER BY created_at"
+      (Binary lh, truncateToSecond since, pendingEdit, minedEdit)
 
 int64 :: Word64 -> Int64
 int64 = fromIntegral

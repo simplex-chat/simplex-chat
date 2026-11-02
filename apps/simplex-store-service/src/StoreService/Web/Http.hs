@@ -19,6 +19,8 @@ module StoreService.Web.Http
     searchLimit,
     previewLimit,
     codeLimit,
+    findLimit,
+    recordsLimit,
     holdMicros,
     jsonResponse,
     jsonError,
@@ -92,12 +94,14 @@ type Respond = Response -> IO ResponseReceived
 holdMicros :: Int
 holdMicros = 30 * 1000000
 
-readLimit, createLimit, searchLimit, previewLimit, codeLimit :: Limit
+readLimit, createLimit, searchLimit, previewLimit, codeLimit, findLimit, recordsLimit :: Limit
 readLimit = Limit {lmName = "read", lmPerMinute = 60}
 createLimit = Limit {lmName = "create", lmPerMinute = 5}
 searchLimit = Limit {lmName = "search", lmPerMinute = 30}
 previewLimit = Limit {lmName = "preview", lmPerMinute = 20}
 codeLimit = Limit {lmName = "code", lmPerMinute = 10}
+findLimit = Limit {lmName = "find", lmPerMinute = 5}
+recordsLimit = Limit {lmName = "records", lmPerMinute = 10}
 
 maxBodyBytes :: Int
 maxBodyBytes = 8192
