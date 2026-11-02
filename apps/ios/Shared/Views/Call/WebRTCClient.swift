@@ -1087,16 +1087,16 @@ extension WebRTCClient {
             do {
                 let hasExternalAudioDevice = self.rtcAudioSession.session.hasExternalAudioDevice()
                 if enabled {
-                    try self.rtcAudioSession.setCategory(AVAudioSession.Category.playAndRecord.rawValue, with: [.defaultToSpeaker, .allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
-                    try self.rtcAudioSession.setMode(AVAudioSession.Mode.videoChat.rawValue)
+                    try self.rtcAudioSession.setCategory(.playAndRecord, with: [.defaultToSpeaker, .allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
+                    try self.rtcAudioSession.setMode(.videoChat)
                     if hasExternalAudioDevice && !skipExternalDevice, let preferred = self.rtcAudioSession.session.preferredInputDevice() {
                         try self.rtcAudioSession.setPreferredInput(preferred)
                     } else {
                         try self.rtcAudioSession.overrideOutputAudioPort(.speaker)
                     }
                 } else {
-                    try self.rtcAudioSession.setCategory(AVAudioSession.Category.playAndRecord.rawValue, with: [.allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
-                    try self.rtcAudioSession.setMode(AVAudioSession.Mode.voiceChat.rawValue)
+                    try self.rtcAudioSession.setCategory(.playAndRecord, with: [.allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
+                    try self.rtcAudioSession.setMode(.voiceChat)
                     try self.rtcAudioSession.overrideOutputAudioPort(.none)
                 }
                 if hasExternalAudioDevice && !skipExternalDevice {
@@ -1119,8 +1119,8 @@ extension WebRTCClient {
                 self.rtcAudioSession.unlockForConfiguration()
             }
             do {
-                try self.rtcAudioSession.setCategory(AVAudioSession.Category.ambient.rawValue)
-                try self.rtcAudioSession.setMode(AVAudioSession.Mode.default.rawValue)
+                try self.rtcAudioSession.setCategory(.ambient)
+                try self.rtcAudioSession.setMode(.default)
                 try self.rtcAudioSession.overrideOutputAudioPort(.none)
                 try self.rtcAudioSession.setActive(false)
                 logger.debug("WebRTCClient: audioSession to defaults success")
