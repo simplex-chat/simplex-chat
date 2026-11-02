@@ -20,7 +20,7 @@ The Initial page also overwrites the row's stats with the stats it read.
 
 While a page loads, `ChatsContext` records the list part of each item update in every active `ItemUpdatesWhileLoading`:
 - `addChatItem`;
-- `upsertChatItem` and `updateChatItem`, as an update of an item in the list that keeps its read status and deletion;
+- `upsertChatItem` and `updateChatItem`, as an update of an item in the list that keeps its read status and is skipped when the item is already deleted;
 - `removeChatItem`;
 - `removeMemberItems`;
 - `clearChat`;

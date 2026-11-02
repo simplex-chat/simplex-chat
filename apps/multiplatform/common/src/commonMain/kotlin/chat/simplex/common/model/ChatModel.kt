@@ -748,9 +748,9 @@ object ChatModel {
 
     private fun replaceKeepingReadAndDeleted(cItem: ChatItem) {
       val current = chatItems.value.firstOrNull { it.id == cItem.id } ?: return
+      if (current.meta.itemDeleted != null && cItem.meta.itemDeleted == null) return
       val itemStatus = if (current.meta.itemStatus is CIStatus.RcvRead && cItem.meta.itemStatus is CIStatus.RcvNew) current.meta.itemStatus else cItem.meta.itemStatus
-      val itemDeleted = cItem.meta.itemDeleted ?: current.meta.itemDeleted
-      replaceItemInScope(cItem.copy(meta = cItem.meta.copy(itemStatus = itemStatus, itemDeleted = itemDeleted)))
+      replaceItemInScope(cItem.copy(meta = cItem.meta.copy(itemStatus = itemStatus)))
     }
 
     private fun replaceItemInScope(cItem: ChatItem): Boolean {
