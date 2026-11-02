@@ -19,6 +19,14 @@ SimpleX name ([Subscribe to a channel](./channels.md#subscribe-to-a-channel)).
 
 ## 1-time links
 
+<a href="https://youtu.be/2iIibhaoMhI"><img src="./images/making-connections-video-invite.jpg" alt="Video: how to invite someone with a 1-time link sent by email" width="330"></a>
+
+Watch how to create a 1-time link and send it by email. Only one person can
+connect via the link: after your friend connects, nobody else can use it. If
+someone intercepts the email and connects first, your friend cannot connect, so
+confirm with your friend that the connection worked, or compare security codes
+(see [Security code verification](./privacy-security.md#security-code-verification)).
+
 You use a 1-time link to connect with one person. Share it with somebody you
 know, or let them scan its QR code in person or during a video call.
 
@@ -46,6 +54,16 @@ After the other person uses the link, you are connected when their device is
 online. The link can be used only once.
 
 ## Your SimpleX contact address
+
+<a href="https://youtu.be/erIXBmYJUO8"><img src="./images/making-connections-video-address.jpg" alt="Video: how to create your SimpleX address" width="330"></a>
+
+Watch how to create your SimpleX address and share it as a link or a QR code.
+People who use the address send you a contact request, and you accept or reject
+it, unless you turn on **Auto-accept** (see [Contact requests](#contact-requests)).
+The address is used only for new requests, not to deliver messages: you can
+delete it and create a new one, and the contacts made via it stay connected. If
+you registered a SimpleX name, add the new address to the name and claim it
+again (see [Registering a SimpleX name](./register-simplex-name.md)).
 
 Your SimpleX address is a long-term link that many people can use to connect
 with you. You can share it online, for example in social media profiles, on a
@@ -171,6 +189,13 @@ of atoms in the visible universe). See [Security code
 verification](./privacy-security.md#security-code-verification).
 
 ## Connect via a link or a name
+
+<a href="https://youtu.be/gHCpFG8UsmM"><img src="./images/making-connections-video-join.jpg" alt="Video: how to connect by scanning a QR code" width="330"></a>
+
+Watch how to connect by scanning a QR code. Before you connect, the app shows the
+profile included in a short link, and you choose which of your profiles, or a
+new random profile, to connect with (see [Incognito mode](./chat-profiles.md#incognito-mode)).
+A QR code that you scan in person cannot be replaced on the way to you.
 
 To connect via a 1-time link or a SimpleX address that you received:
 

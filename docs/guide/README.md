@@ -38,6 +38,11 @@ desktop (Windows, macOS and Linux).
 
 ### Create your first chat profile
 
+<a href="https://youtu.be/MjZFHTLeOrE"><img src="./images/readme-video-get-started.jpg" alt="Video: how to create your SimpleX Chat profile" width="330"></a>
+
+Watch how to create your profile and add a profile image. The app creates the
+profile on your device, without an account, a phone number or an email.
+
 On iOS and Android:
 
 1. Open the app and tap **Get started**.
