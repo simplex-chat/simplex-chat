@@ -6,6 +6,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.window.WindowState
+import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.usersettings.*
 import org.junit.Rule
 import kotlin.test.Test
@@ -16,6 +18,7 @@ class AddressAutoReplyTest {
   val rule = createComposeRule()
 
   private fun setContent(state: MutableState<AddressSettingsState>, saved: MutableList<AddressSettingsState>) {
+    simplexWindowState.windowState = WindowState()
     rule.setContent {
       Column {
         AutoAcceptToggle(state) { saved.add(it) }
