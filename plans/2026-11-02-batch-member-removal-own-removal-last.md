@@ -9,7 +9,7 @@ When an admin removes several members at once, every removed member except one s
 The admin's client sends one batch with an `XGrpMemDel` for each removed member to all current members, including the removed ones (`APIRemoveMembers`).
 A removed member's client processes the batch in order.
 On its own `XGrpMemDel`, the client deletes all its group connections (`deleteGroupConnections`), including the connection on which the batch was received.
-For each later event of the batch, the client inserts a `msg_deliveries` row that references the deleted connection; the insert fails, and the event is not processed.
+For each later direct (not forwarded) event of the batch, the client inserts a `msg_deliveries` row that references the deleted connection; the insert fails, and the event is not processed.
 
 ## Fix
 
