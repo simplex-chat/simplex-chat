@@ -1827,9 +1827,6 @@ server test step */
 "Crowdfunding on Wefunder" = "Crowdfunding en Wefunder";
 
 /* No comment provided by engineer. */
-"Crowdfunding on Wefunder." = "Crowdfunding en Wefunder.";
-
-/* No comment provided by engineer. */
 "Current conditions text couldn't be loaded, you can review conditions via this link:" = "El texto con las condiciones actuales no se ha podido cargar, puedes revisar las condiciones en el siguiente enlace:";
 
 /* No comment provided by engineer. */
@@ -7129,12 +7126,6 @@ alert title */
 
 /* notification body */
 "You can now chat with %@" = "Ya puedes chatear con %@";
-
-/* No comment provided by engineer. */
-"You can now invest in SimpleX Chat" = "Ahora puedes invertir en SimpleX Chat";
-
-/* No comment provided by engineer. */
-"You can now invest in SimpleX Chat! 🚀" = "Ahora puedes invertir en SimpleX Chat! 🚀";
 
 /* No comment provided by engineer. */
 "You can send messages to %@ from Archived contacts." = "Puedes enviar mensajes a %@ desde Contactos archivados.";

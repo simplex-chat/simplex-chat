@@ -2794,7 +2794,7 @@
     <string name="sign_message_desc">签名证明你写了这则消息，之后无法否认。</string>
     <string name="sign_message">签署消息</string>
     <string name="sign_messages">签署消息</string>
-    <string name="signature_missing_alert_desc">频道要求签署此消息，但签名缺失。</string>
+    <string name="signature_missing_alert_desc">在频道开始签名之前发送，或是伪造的。</string>
     <string name="to_verify_channel_member_key">要验证此订阅者的密钥，比较（或扫描）设备上的代码。</string>
     <string name="add_description">添加描述</string>
     <string name="profile_description__field">描述</string>
@@ -2831,15 +2831,15 @@
     <string name="large_file_requires_badge">你需要一枚 %1$s 来发送超过 %2$s 的文件。</string>
     <string name="your_badge_expired">你的徽章过期了。</string>
     <string name="badges_how_it_works_p1">徽章是存储在你设备上个人资料中的匿名凭证。此凭证永远不会发送给任何人。</string>
-    <string name="badges_prepaid_footer">预付费月份没有付款日期。系统从您已经支付的余额中每个月重新发放徽章，当余额用尽时不再发放。</string>
+    <string name="badges_prepaid_footer">不会续订：预付费月份用完后徽章到期。</string>
     <string name="badges_how_it_works_p3">任何人都无法将两个不同的证明相互关联，也无法将其与购买关联。</string>
     <string name="badges_support_simplex_body">获取徽章即可发送更大的文件（2-5 GB），文件保留时间更长（7-21 天），并可在个人资料上展示徽章。</string>
     <string name="badges_how_it_works_p2">为了向联系人或服务器证明你拥有徽章，应用会生成一个新的证明，该证明只透露徽章类型和精确到周的到期日期。</string>
-    <string name="badges_error_already_active">此个人资料已有徽章。在其他个人资料中兑换这个代码，或者等这个徽章到期后兑换。</string>
+    <string name="badges_error_already_active">此个人资料已有徽章。</string>
     <string name="v7_1_supporter_badge_body">帮助保持网络运行— 发送最大 2 GB 的文件。</string>
     <string name="badges_error_badge_ended">代码被接受，但其授予的徽章已过期。</string>
     <string name="badges_price_monthly">%1$s/月</string>
-    <string name="badges_error_unsupported_version">此应用版本对于徽章服务太旧了。请更新应用。</string>
+    <string name="badges_error_unsupported_version">请更新应用以使用徽章。</string>
     <string name="badges_error_credential_not_verified">此应用版本无法验证该徽章。请更新应用。</string>
     <string name="badges_price_annual">%1$s/年</string>
     <string name="badges_period_one_month">1个月</string>
