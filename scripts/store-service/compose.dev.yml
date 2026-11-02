@@ -1,0 +1,66 @@
+# Development: compose.yml plus a local chain with the names contracts, kept in ./data/chain across restarts, which
+# writes ./config/store_service.ini for them on its first start, and a local database.
+# Enable it with COMPOSE_FILE=compose.yml:compose.dev.yml in .env; unlike a compose.override.yml, it is never
+# picked up on its own.
+services:
+  chain:
+    build:
+      context: ../../apps/simplex-domains
+      dockerfile: webapp/dev/Dockerfile
+    image: simplex-names-dev-chain
+    restart: on-failure:5
+    # root, so the bind mount compose creates for ./data/chain is writable without preparing it
+    user: root
+    network_mode: host
+    environment:
+      # seconds a registration waits after its commit; the contracts' production value is 60
+      MIN_COMMITMENT_AGE: "10"
+      # the owner of the config it writes, the store service's user
+      USER_UID: ${USER_UID:-1000}
+      USER_GID: ${USER_GID:-1000}
+    volumes:
+      - ./data/chain:/chain
+      - ./config:/config
+      - ./dev/chain.sh:/usr/local/bin/chain.sh:ro
+    command: chain.sh
+    healthcheck:
+      test: ["CMD", "test", "-f", "/chain/ready"]
+      interval: 5s
+      retries: 60
+      start_period: 30s
+    stop_grace_period: 20s
+
+  # on 5433 so it never meets a host's own Postgres on 5432; trust is safe only because it listens on loopback
+  postgres:
+    image: postgres:17
+    restart: on-failure:5
+    network_mode: host
+    environment:
+      POSTGRES_USER: simplex
+      POSTGRES_DB: store_service
+      POSTGRES_HOST_AUTH_METHOD: trust
+    command: ["postgres", "-c", "listen_addresses=127.0.0.1", "-c", "port=5433"]
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-p", "5433", "-U", "simplex", "-d", "store_service"]
+      interval: 5s
+      retries: 30
+      start_period: 10s
+
+  # compose replaces a command whole, so this is compose.yml's with the dev database in place of BADGE_DB_CONN
+  store-service:
+    command:
+      - "-d"
+      - "postgresql://simplex@127.0.0.1:5433/store_service"
+      - "--create-schema"
+      - "--yes-migrate"
+      - "--service-config"
+      - "/etc/simplex-store-service/store_service.ini"
+    volumes:
+      # compose creates every container before it starts any, so compose.yml's create_host_path: false would refuse a
+      # first start before the chain writes ./config; this entry replaces that one by its target
+      - ./config:/etc/simplex-store-service:ro
+    depends_on:
+      chain: { condition: service_healthy }
+      postgres: { condition: service_healthy }
