@@ -661,7 +661,7 @@ internal fun AutoAcceptToggle(addressSettingsState: MutableState<AddressSettings
         businessAddress = addressSettingsState.value.businessAddress,
         autoAccept = true,
         autoAcceptIncognito = false,
-        autoReply = "",
+        autoReply = addressSettingsState.value.autoReply,
         chatLayout = addressSettingsState.value.chatLayout
       )
     else
@@ -766,7 +766,7 @@ private fun AcceptIncognitoToggle(addressSettingsState: MutableState<AddressSett
 
 @Composable
 internal fun AutoReplyEditor(addressSettingsState: MutableState<AddressSettingsState>) {
-  val autoReply = rememberSaveable { mutableStateOf(addressSettingsState.value.autoReply) }
+  val autoReply = rememberSaveable(addressSettingsState.value.autoAccept) { mutableStateOf(addressSettingsState.value.autoReply) }
   TextEditor(
     autoReply,
     Modifier.height(100.dp),
