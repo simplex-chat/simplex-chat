@@ -1,6 +1,7 @@
 import XCTest
 import SwiftUI
 import UIKit
+import AVFoundation
 @testable import SimpleX
 @testable import SimpleXChat
 
@@ -158,11 +159,13 @@ private struct SnapshotScene {
     var name: String
     var height: CGFloat? = nil
     var allSizes: Bool
+    var device: Bool
     var view: AnyView
 
-    init<P: PreviewProvider>(_ preview: P.Type, allSizes: Bool = false) {
+    init<P: PreviewProvider>(_ preview: P.Type, allSizes: Bool = false, device: Bool = false) {
         name = String(describing: preview).replacingOccurrences(of: "_Previews", with: "")
         self.allSizes = allSizes
+        self.device = device
         view = AnyView(preview.previews)
     }
 }
@@ -170,23 +173,23 @@ private struct SnapshotScene {
 private func previewScenes() -> [SnapshotScene] {
     [
         SnapshotScene(ActiveCallOverlay_Previews.self),
-        SnapshotScene(AddChannelView_Previews.self),
+        SnapshotScene(AddChannelView_Previews.self, device: true),
         SnapshotScene(AddContactLearnMore_Previews.self),
         SnapshotScene(AddGroupMembersView_Previews.self),
-        SnapshotScene(AddGroupView_Previews.self),
-        SnapshotScene(AdvancedNetworkSettings_Previews.self),
+        SnapshotScene(AddGroupView_Previews.self, device: true),
+        SnapshotScene(AdvancedNetworkSettings_Previews.self, device: true),
         SnapshotScene(BadgesCheckOrderView_Previews.self),
         SnapshotScene(BadgesHowItWorksView_Previews.self),
         SnapshotScene(BadgesHowLongView_Previews.self),
-        SnapshotScene(BadgesRedeemCodeView_Previews.self),
-        SnapshotScene(BadgesSupportSimplexView_Previews.self),
-        SnapshotScene(CallSettings_Previews.self),
+        SnapshotScene(BadgesRedeemCodeView_Previews.self, device: true),
+        SnapshotScene(BadgesSupportSimplexView_Previews.self, device: true),
+        SnapshotScene(CallSettings_Previews.self, device: true),
         SnapshotScene(ChannelMembersView_Previews.self),
         SnapshotScene(ChannelRelaysView_Previews.self),
         SnapshotScene(ChatHelp_Previews.self),
         SnapshotScene(ChatInfoImage_Previews.self),
         SnapshotScene(ChatInfoToolbar_Previews.self),
-        SnapshotScene(ChatInfoView_Previews.self),
+        SnapshotScene(ChatInfoView_Previews.self, device: true),
         SnapshotScene(ChatItemForwardingView_Previews.self),
         SnapshotScene(ChatItemInfoView_Previews.self),
         SnapshotScene(ChatItemView_NonMsgContentDeleted_Previews.self, allSizes: true),
@@ -194,7 +197,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ChatListNavLink_Previews.self),
         SnapshotScene(ChatListView_Previews.self),
         SnapshotScene(ChatPreviewView_Previews.self),
-        SnapshotScene(ChatView_Previews.self),
+        SnapshotScene(ChatView_Previews.self, device: true),
         SnapshotScene(CIChatFeatureView_Previews.self, allSizes: true),
         SnapshotScene(CIEventView_Previews.self, allSizes: true),
         SnapshotScene(CIFeaturePreferenceView_Previews.self, allSizes: true),
@@ -209,22 +212,22 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ClassicOverviewDirect_Previews.self),
         SnapshotScene(ClassicOverviewGroup_Previews.self),
         SnapshotScene(ComposeVoiceView_Previews.self),
-        SnapshotScene(ConnectDesktopView_Previews.self),
+        SnapshotScene(ConnectDesktopView_Previews.self, device: true),
         SnapshotScene(ContactConnectionInfo_Previews.self),
         SnapshotScene(ContactConnectionView_Previews.self),
-        SnapshotScene(ContactPreferencesView_Previews.self),
+        SnapshotScene(ContactPreferencesView_Previews.self, device: true),
         SnapshotScene(ContactRequestView_Previews.self),
         SnapshotScene(ContextContactRequestActionsView_Previews.self),
         SnapshotScene(ContextItemView_Previews.self),
         SnapshotScene(ContextMemberContactActionsView_Previews.self),
         SnapshotScene(ContextPendingMemberActionsView_Previews.self),
         SnapshotScene(ContextProfilePickerView_Previews.self),
-        SnapshotScene(CreateProfile_Previews.self),
+        SnapshotScene(CreateProfile_Previews.self, device: true),
         SnapshotScene(CreateSimpleXAddress_Previews.self),
         SnapshotScene(CustomTimePicker_Previews.self),
-        SnapshotScene(DatabaseEncryptionView_Previews.self),
+        SnapshotScene(DatabaseEncryptionView_Previews.self, device: true),
         SnapshotScene(DatabaseErrorView_Previews.self),
-        SnapshotScene(DatabaseView_Previews.self),
+        SnapshotScene(DatabaseView_Previews.self, device: true),
         SnapshotScene(DeletedItemView_Previews.self, allSizes: true),
         SnapshotScene(DetermineWidth_Previews.self),
         SnapshotScene(DeveloperView_Previews.self),
@@ -234,11 +237,11 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(FramedItemView_Edited_Previews.self, allSizes: true),
         SnapshotScene(FramedItemView_Previews.self, allSizes: true),
         SnapshotScene(GetStakeBanner_Previews.self),
-        SnapshotScene(GroupChatInfoView_Previews.self),
+        SnapshotScene(GroupChatInfoView_Previews.self, device: true),
         SnapshotScene(GroupLinkView_Previews.self),
-        SnapshotScene(GroupMemberInfoView_Previews.self),
-        SnapshotScene(GroupPreferencesView_Previews.self),
-        SnapshotScene(GroupProfileView_Previews.self),
+        SnapshotScene(GroupMemberInfoView_Previews.self, device: true),
+        SnapshotScene(GroupPreferencesView_Previews.self, device: true),
+        SnapshotScene(GroupProfileView_Previews.self, device: true),
         SnapshotScene(GroupWelcomeView_Previews.self),
         SnapshotScene(IncognitoHelp_Previews.self),
         SnapshotScene(IncomingCallView_Previews.self),
@@ -250,7 +253,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(MemberAdmissionView_Previews.self),
         SnapshotScene(MemberSupportChatToolbar_Previews.self),
         SnapshotScene(MemberSupportView_Previews.self),
-        SnapshotScene(MigrateToDevice_Previews.self),
+        SnapshotScene(MigrateToDevice_Previews.self, device: true),
         SnapshotScene(MigrateToGroupView_Previews.self),
         SnapshotScene(MsgContentView_Previews.self, allSizes: true),
         SnapshotScene(NativeTextEditor_Previews.self),
@@ -258,7 +261,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(NewChatMenuButton_Previews.self),
         SnapshotScene(NewFeaturesView_Previews.self),
         SnapshotScene(NewServerView_Previews.self),
-        SnapshotScene(NotificationsModeView_Previews.self),
+        SnapshotScene(NotificationsModeView_Previews.self, device: true),
         SnapshotScene(NotificationsView_Previews.self),
         SnapshotScene(OnboardingConditionsView_Previews.self),
         SnapshotScene(OnboardingStepsView_Previews.self),
@@ -269,7 +272,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(PreferencesView_Previews.self),
         SnapshotScene(PrivacySettings_Previews.self),
         SnapshotScene(ProfileImage_Previews.self),
-        SnapshotScene(ProfilePrivacyView_Previews.self),
+        SnapshotScene(ProfilePrivacyView_Previews.self, device: true),
         SnapshotScene(ProtocolServerView_Previews.self),
         SnapshotScene(QRCode_Previews.self),
         SnapshotScene(RTCServers_Previews.self),
@@ -279,8 +282,8 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(SendMessageView_Previews.self),
         SnapshotScene(SetAppPasscodeView_Previews.self),
         SnapshotScene(SetDeliveryReceiptsView_Previews.self),
-        SnapshotScene(SettingsView_Previews.self),
-        SnapshotScene(SimpleXInfo_Previews.self),
+        SnapshotScene(SettingsView_Previews.self, device: true),
+        SnapshotScene(SimpleXInfo_Previews.self, device: true),
         SnapshotScene(SmallLinkPreview_Previews.self),
         SnapshotScene(SupportSimpleXBanner_Previews.self),
         SnapshotScene(TerminalAvatars_Previews.self, allSizes: true),
@@ -294,7 +297,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(UserAddressLearnMore_Previews.self),
         SnapshotScene(UserAddressView_Previews.self),
         SnapshotScene(UserPicker_Previews.self),
-        SnapshotScene(VerifyCodeView_Previews.self),
+        SnapshotScene(VerifyCodeView_Previews.self, device: true),
         SnapshotScene(VersionView_Previews.self),
         SnapshotScene(WhySimpleX_Previews.self),
         SnapshotScene(YourServersView_Previews.self)
@@ -325,7 +328,7 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
         .frame(width: width, height: scene.height)
     let host = UIHostingController(rootView: AnyView(root))
     if #available(iOS 16.4, *) {
-        host.safeAreaRegions = []
+        host.safeAreaRegions = scene.device ? .container : []
     }
     let window = UIWindow(windowScene: windowScene)
     window.overrideUserInterfaceStyle = dark ? .dark : .light
@@ -333,7 +336,7 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
     window.frame = CGRect(x: 0, y: 0, width: width, height: scene.height ?? screen.bounds.height)
     window.isHidden = false
     settle()
-    if scene.height == nil {
+    if scene.height == nil && !scene.device {
         for _ in 0..<2 {
             let fit = host.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
             let fill = host.sizeThatFits(in: screen.bounds.size)
@@ -349,10 +352,29 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
     format.opaque = true
     let image = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { _ in
         _ = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        if scene.device {
+            drawStatusBar(dark: dark)
+        }
     }
     window.isHidden = true
     window.rootViewController = nil
     return image
+}
+
+private func drawStatusBar(dark: Bool) {
+    let color: UIColor = dark ? .white : .black
+    let time = NSAttributedString(string: "9:41", attributes: [.font: UIFont.systemFont(ofSize: 17, weight: .semibold), .foregroundColor: color])
+    let timeSize = time.size()
+    time.draw(at: CGPoint(x: 74 - timeSize.width / 2, y: 32.5 - timeSize.height / 2))
+    let icons = [
+        ("cellularbars", CGRect(x: 288.5, y: 26.5, width: 19, height: 12)),
+        ("wifi", CGRect(x: 315, y: 26.5, width: 17, height: 12)),
+        ("battery.100", CGRect(x: 339.5, y: 26, width: 27, height: 13))
+    ]
+    for (symbol, box) in icons {
+        let icon = UIImage(systemName: symbol)!.withTintColor(color, renderingMode: .alwaysOriginal)
+        icon.draw(in: AVMakeRect(aspectRatio: icon.size, insideRect: box))
+    }
 }
 
 private func removeAnimations(_ layer: CALayer) {
