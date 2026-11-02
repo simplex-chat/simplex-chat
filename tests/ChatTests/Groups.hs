@@ -88,8 +88,8 @@ chatGroupTests = do
     it "re-add member in status invited, change role" testGroupReAddInvitedChangeRole
     it "delete contact before they accept group invitation, contact joins group" testGroupDeleteInvitedContact
     it "member profile is kept when deleting group if other groups have this member" testDeleteGroupMemberProfileKept
-    it "remove contact from group and add again" testGroupRemoveAdd
     it "remove several members at once" testGroupRemoveMembers
+    it "remove contact from group and add again" testGroupRemoveAdd
     it "list groups containing group invitations" testGroupList
     it "group message quoted replies" testGroupMessageQuotedReply
     it "group message update" testGroupMessageUpdate
