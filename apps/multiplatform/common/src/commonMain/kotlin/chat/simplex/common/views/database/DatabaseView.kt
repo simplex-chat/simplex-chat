@@ -717,7 +717,6 @@ suspend fun importArchive(
     try {
       val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString(), replaceStorage = true)
       val archiveErrors = m.controller.apiImportArchive(config)
-      wallpapersDir.mkdirs()
       appPrefs.shouldImportAppSettings.set(true)
       DatabaseUtils.ksDatabasePassword.remove()
       appFilesCountAndSize.value = directoryFileCountAndSize(appFilesDir.absolutePath)
@@ -740,6 +739,7 @@ suspend fun importArchive(
         AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_importing_database), e.toString())
       }
     } finally {
+      wallpapersDir.mkdirs()
       File(archivePath).delete()
     }
   } else {

@@ -122,10 +122,10 @@ copyValidDirectoryFiles isFileError fromDir toDir = do
       whenM (doesFileExist f') $ copyFile f' $ toDir </> fn
 
 deleteStorage :: CM ()
-deleteStorage = lift $ do
-  fs <- storageFiles
+deleteStorage = do
+  fs <- lift storageFiles
   liftIO $ closeDBStore `withStores` fs
-  removeStorage fs
+  lift $ removeStorage fs
 
 removeStorage :: StorageFiles -> CM' ()
 removeStorage fs = do

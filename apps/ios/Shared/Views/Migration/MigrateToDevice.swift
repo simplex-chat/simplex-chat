@@ -545,9 +545,9 @@ struct MigrateToDevice: View {
                     try await stopChatAsync()
                 }
                 do {
+                    defer { try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true) }
                     let config = ArchiveConfig(archivePath: archivePath, replaceStorage: true)
                     let archiveErrors = try await apiImportArchive(config: config)
-                    try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
                     if !archiveErrors.isEmpty {
                         alert = .chatImportedWithErrors()
                     }

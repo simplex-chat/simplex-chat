@@ -645,7 +645,6 @@ private fun MutableState<MigrationToState?>.importArchive(archivePath: String, n
       try {
         val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString(), replaceStorage = true)
         val archiveErrors = controller.apiImportArchive(config)
-        wallpapersDir.mkdirs()
         if (archiveErrors.isNotEmpty()) {
           showArchiveImportedWithErrorsAlert(archiveErrors)
         }
@@ -655,6 +654,7 @@ private fun MutableState<MigrationToState?>.importArchive(archivePath: String, n
         state = MigrationToState.ArchiveImportFailed(archivePath, netCfg, networkProxy)
         AlertManager.shared.showAlertMsg (generalGetString(MR.strings.error_importing_database), e.stackTraceToString())
       }
+      wallpapersDir.mkdirs()
     } catch (e: Exception) {
       state = MigrationToState.ArchiveImportFailed(archivePath, netCfg, networkProxy)
       AlertManager.shared.showAlertMsg (generalGetString(MR.strings.error_deleting_database), e.stackTraceToString())

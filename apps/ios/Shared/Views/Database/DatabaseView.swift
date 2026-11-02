@@ -503,9 +503,9 @@ struct DatabaseView: View {
                 progressIndicator.wrappedValue = true
             }
             do {
+                defer { try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true) }
                 let config = ArchiveConfig(archivePath: archivePath.path, replaceStorage: true)
                 let archiveErrors = try await apiImportArchive(config: config)
-                try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
                 shouldImportAppSettingsDefault.set(true)
                 _ = kcDatabasePassword.remove()
                 if archiveErrors.isEmpty {

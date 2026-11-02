@@ -1604,24 +1604,22 @@ testImportNonArchiveKeepsData ps = do
       connectUsers alice bob
       alice ##> "/_stop"
       alice <## "chat stopped"
-      alice ##> ("/_db export {\"archivePath\": \"" <> archive <> "\"}")
-      alice <## "ok"
       B.writeFile notArchive "this is not a zip archive"
       B.writeFile emptyZip $ "PK\5\6" <> B.replicate 18 '\0'
-      B.writeFile oldFile "old file"
       forM_ backupDBs $ \f -> B.writeFile f ""
       alice ##> importCmd notArchive
       alice <##. "exception: Parsing of archive structure failed"
-      alice <##. "Cannot locate end of central directory"
-      alice <##. "in "
       alice ##> importCmd emptyZip
       alice <## "exception: user error (not a chat archive: no simplex_v1_chat.db)"
-      doesFileExist oldFile `shouldReturn` True
+      forM_ backupDBs $ \f -> doesFileExist f `shouldReturn` True
       alice ##> "/_start"
       alice <### ["chat started", "subscribed 1 connections on server localhost"]
       testChatMessages alice bob
       alice ##> "/_stop"
       alice <## "chat stopped"
+      alice ##> ("/_db export {\"archivePath\": \"" <> archive <> "\"}")
+      alice <## "ok"
+      B.writeFile oldFile "old file"
       alice ##> importCmd archive
       alice <## "ok"
       doesFileExist oldFile `shouldReturn` False
