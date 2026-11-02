@@ -115,7 +115,7 @@ class ChatItemsLoaderTest {
   }
 
   @Test
-  fun groupItemDeletedWhileChatOpensIsShownDeleted() = runBlocking {
+  fun groupItemDeletedWhileChatOpensIsShownDeleted() = runBlocking<Unit> {
     val chatsCtx = chatModel.chatsContext
     val user = User.sampleData
     val opening = groupChat(groupId = 5, itemIds = listOf(101, 102))
