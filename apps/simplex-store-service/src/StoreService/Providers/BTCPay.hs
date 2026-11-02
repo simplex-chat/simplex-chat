@@ -437,13 +437,13 @@ paymentMethodsSignal now ref status additional policy body =
 -- Complete is the old API's status name and never matches, so it has no case here.
 invoiceSignal :: UTCTime -> Text -> Text -> Maybe Text -> Maybe Text -> [GPaymentMethod] -> Either ProviderError (Maybe PaymentSignal)
 invoiceSignal now ref status additional policy ms = do
-  (m@GPaymentMethod {gpmRate, gpmPaid, gpmDue, gpmPayments, gpmSettledThreshold}, cc) <- chooseMethod ref ms
+  (m@GPaymentMethod {gpmAmount, gpmRate, gpmPaid, gpmDue, gpmPayments, gpmSettledThreshold}, cc) <- chooseMethod ref ms
   rate <- priced "rate" gpmRate
   paid <- priced "paymentMethodPaid" gpmPaid
   let decimals = unitDecimals cc
       confirming = maybe False (`elem` map speedPolicyName confirmingPolicies) policy
       shown = cc /= CCXmr || maybe False (>= 1) gpmSettledThreshold
-      received = receivedOf decimals confirming shown (status == "Settled") rate paid gpmDue gpmPayments
+      received = receivedOf decimals confirming shown (status == "Settled") rate paid gpmAmount gpmDue gpmPayments
       -- BTCPay never settles an invoice it has closed, so only these tell that the whole amount reached it
       closedFunded
         | maybe False (`elem` closedInFullStatuses) additional = PaidInFull
@@ -490,13 +490,15 @@ findMethod what ref methodId body = do
 
 -- | The confirmed crypto shares paymentMethodPaid's basis, whatever it nets out: all of it once the invoice or every payment is Settled,
 -- else the Settled payments' value capped at it. An amount with a non-zero digit past its unit leaves every figure in units out.
-receivedOf :: Int -> Bool -> Bool -> Bool -> WireNum -> WireNum -> Maybe WireNum -> [GPayment] -> Received
-receivedOf decimals confirming shown invoiceSettled rate paid due payments =
+-- The invoiced units are the method's amount, with the network fee BTCPay adds to it.
+receivedOf :: Int -> Bool -> Bool -> Bool -> WireNum -> WireNum -> Maybe WireNum -> Maybe WireNum -> [GPayment] -> Received
+receivedOf decimals confirming shown invoiceSettled rate paid invoiced due payments =
   Received
     { rcvAmount = toMinorUnits (wnValue paid * wnValue rate),
       rcvCrypto = if wnValue paid > 0 then Just (wnText paid) else Nothing,
       rcvDue = nonNegative <$> due,
       rcvUnits = fst <$> counted,
+      rcvInvoicedUnits = toUnits . wnValue =<< invoiced,
       rcvRate = Just (wnText rate),
       rcvConfirmed = case uncreditable of
         Nothing -> Confirmed {cfCents = toMinorUnits (scientific (maybe 0 (toInteger . snd) counted) (negate decimals) * wnValue rate), cfUnits = snd <$> counted}
