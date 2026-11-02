@@ -577,6 +577,19 @@ object ChatModel {
       }
     }
 
+    class ItemsAddedWhileLoading {
+      val items = ArrayList<Pair<ChatInfo, ChatItem>>()
+    }
+
+    private val itemsAddedWhileLoading = ArrayList<ItemsAddedWhileLoading>()
+
+    fun startRecordingAddedItems(): ItemsAddedWhileLoading =
+      ItemsAddedWhileLoading().also { itemsAddedWhileLoading.add(it) }
+
+    fun stopRecordingAddedItems(added: ItemsAddedWhileLoading) {
+      itemsAddedWhileLoading.remove(added)
+    }
+
     suspend fun addChatItem(rhId: Long?, chatInfo: ChatInfo, cItem: ChatItem) {
       // updates membersRequireAttention
       val cInfo = if (chatInfo is ChatInfo.Direct && chatInfo.chatDeleted) {
@@ -637,14 +650,23 @@ object ChatModel {
       }
       // add to current scope
       withContext(Dispatchers.Main) {
-        if (chatItemBelongsToScope(cInfo, cItem)) {
-          // Prevent situation when chat item already in the list received from backend
-          if (chatItems.value.none { it.id == cItem.id }) {
-            if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-              addToChatItems(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
-            } else {
-              addToChatItems(cItem)
-            }
+        itemsAddedWhileLoading.forEach { it.items.add(cInfo to cItem) }
+        addToCurrentScope(cInfo, cItem)
+      }
+    }
+
+    fun applyItemsAddedWhileLoading(added: ItemsAddedWhileLoading) {
+      added.items.forEach { (cInfo, cItem) -> addToCurrentScope(cInfo, cItem) }
+    }
+
+    private fun addToCurrentScope(cInfo: ChatInfo, cItem: ChatItem) {
+      if (chatItemBelongsToScope(cInfo, cItem)) {
+        // Prevent situation when chat item already in the list received from backend
+        if (chatItems.value.none { it.id == cItem.id }) {
+          if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+            addToChatItems(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
+          } else {
+            addToChatItems(cItem)
           }
         }
       }

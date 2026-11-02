@@ -2,6 +2,7 @@ package chat.simplex.common.views.chat
 
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.ChatsContext.ItemsAddedWhileLoading
 import chat.simplex.common.platform.chatModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.StateFlow
@@ -32,13 +33,24 @@ suspend fun apiLoadMessages(
   openAroundItemId: Long? = null,
   visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
 ) = coroutineScope {
-  val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, chatsCtx.groupScopeInfo?.toChatScope(), contentTag ?: chatsCtx.contentTag, pagination, search) ?: return@coroutineScope
-  // For .initial allow the chatItems to be empty, as well as for .last that is used for searching
-  val allowEmptyItems = pagination is ChatPagination.Initial || pagination is ChatPagination.Last || openAroundItemId != null
-  if (chatWasSwitched(chat, pagination, openAroundItemId)
-    || (!allowEmptyItems && chat.chatItems.isEmpty())
-    || !isActive) return@coroutineScope
-  processLoadedChat(chatsCtx, chat, navInfo, pagination, openAroundItemId, visibleItemIndexesNonReversed)
+  recordItemsAddedWhileLoading(chatsCtx) { addedWhileLoading ->
+    val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, chatsCtx.groupScopeInfo?.toChatScope(), contentTag ?: chatsCtx.contentTag, pagination, search) ?: return@coroutineScope
+    // For .initial allow the chatItems to be empty, as well as for .last that is used for searching
+    val allowEmptyItems = pagination is ChatPagination.Initial || pagination is ChatPagination.Last || openAroundItemId != null
+    if (chatWasSwitched(chat, pagination, openAroundItemId)
+      || (!allowEmptyItems && chat.chatItems.isEmpty())
+      || !isActive) return@coroutineScope
+    processLoadedChat(chatsCtx, chat, navInfo, pagination, openAroundItemId, addedWhileLoading, visibleItemIndexesNonReversed)
+  }
+}
+
+suspend inline fun <T> recordItemsAddedWhileLoading(chatsCtx: ChatModel.ChatsContext, load: (ItemsAddedWhileLoading) -> T): T {
+  val addedWhileLoading = withContext(Dispatchers.Main) { chatsCtx.startRecordingAddedItems() }
+  try {
+    return load(addedWhileLoading)
+  } finally {
+    withContext(NonCancellable + Dispatchers.Main) { chatsCtx.stopRecordingAddedItems(addedWhileLoading) }
+  }
 }
 
 /** .initial pagination and opening around item set [ChatModel.chatId] themselves after the items are loaded.
@@ -54,6 +66,7 @@ suspend fun processLoadedChat(
   navInfo: NavigationInfo,
   pagination: ChatPagination,
   openAroundItemId: Long?,
+  addedWhileLoading: ItemsAddedWhileLoading,
   visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
 ) {
   val chatState = chatsCtx.chatState
@@ -71,8 +84,10 @@ suspend fun processLoadedChat(
             chatModel.chatsContext.addChat(chat)
           } else {
             chatModel.chatsContext.updateChatInfo(chat.remoteHostId, chat.chatInfo)
-            // unreadChat is currently not actual in getChat query (always false)
-            chatModel.chatsContext.updateChatStats(chat.remoteHostId, chat.id, chat.chatStats.copy(unreadChat = oldChat.chatStats.unreadChat))
+            if (addedWhileLoading.items.none { (cInfo, _) -> cInfo.id == chat.id }) {
+              // unreadChat is currently not actual in getChat query (always false)
+              chatModel.chatsContext.updateChatStats(chat.remoteHostId, chat.id, chat.chatStats.copy(unreadChat = oldChat.chatStats.unreadChat))
+            }
           }
         }
       }
@@ -87,6 +102,7 @@ suspend fun processLoadedChat(
         unreadTotal.value = chat.chatStats.unreadCount
         unreadAfter.value = navInfo.afterUnread
         unreadAfterNewestLoaded.value = navInfo.afterUnread
+        chatsCtx.applyItemsAddedWhileLoading(addedWhileLoading)
       }
     }
     is ChatPagination.Before -> {
@@ -106,6 +122,7 @@ suspend fun processLoadedChat(
         chatsCtx.chatItems.replaceAll(newItems)
         splits.value = newSplits
         chatState.moveUnreadAfterItem(oldUnreadSplitIndex, newUnreadSplitIndex, oldItems)
+        chatsCtx.applyItemsAddedWhileLoading(addedWhileLoading)
       }
     }
     is ChatPagination.After -> {
@@ -130,6 +147,7 @@ suspend fun processLoadedChat(
         if (indexToAddIsLast) {
           unreadAfterNewestLoaded.value -= unreadInLoaded
         }
+        chatsCtx.applyItemsAddedWhileLoading(addedWhileLoading)
       }
     }
     is ChatPagination.Around -> {
@@ -161,6 +179,7 @@ suspend fun processLoadedChat(
           // no need to set it, count will be wrong
           // unreadAfterNewestLoaded.value = navInfo.afterUnread
         }
+        chatsCtx.applyItemsAddedWhileLoading(addedWhileLoading)
       }
     }
     is ChatPagination.Last -> {
@@ -173,6 +192,7 @@ suspend fun processLoadedChat(
         chatsCtx.chatItems.replaceAll(newItems)
         chatState.splits.value = newSplits
         unreadAfterNewestLoaded.value = 0
+        chatsCtx.applyItemsAddedWhileLoading(addedWhileLoading)
       }
     }
   }

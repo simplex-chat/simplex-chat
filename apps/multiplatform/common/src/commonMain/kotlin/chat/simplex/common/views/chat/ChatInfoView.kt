@@ -1496,25 +1496,28 @@ private fun setChatTTL(
 
 private suspend fun afterSetChatTTL(chatsCtx: ChatModel.ChatsContext, rhId: Long?, chatInfo: ChatInfo, progressIndicator: MutableState<Boolean>) {
   try {
-    val pagination = ChatPagination.Initial(ChatPagination.INITIAL_COUNT)
-    val (chat, navInfo) = controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, scope = null, contentTag = null, pagination) ?: return
-    if (chat.chatItems.isEmpty()) {
-      // replacing old chat with the same old chat but without items. Less intrusive way of clearing a preview
-      withContext(Dispatchers.Main) {
-        val oldChat = chatModel.chatsContext.getChat(chat.id)
-        if (oldChat != null) {
-          chatModel.chatsContext.replaceChat(oldChat.remoteHostId, oldChat.id, oldChat.copy(chatItems = emptyList()))
+    recordItemsAddedWhileLoading(chatsCtx) { addedWhileLoading ->
+      val pagination = ChatPagination.Initial(ChatPagination.INITIAL_COUNT)
+      val (chat, navInfo) = controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, scope = null, contentTag = null, pagination) ?: return
+      if (chat.chatItems.isEmpty()) {
+        // replacing old chat with the same old chat but without items. Less intrusive way of clearing a preview
+        withContext(Dispatchers.Main) {
+          val oldChat = chatModel.chatsContext.getChat(chat.id)
+          if (oldChat != null) {
+            chatModel.chatsContext.replaceChat(oldChat.remoteHostId, oldChat.id, oldChat.copy(chatItems = emptyList()))
+          }
         }
       }
+      if (chat.remoteHostId != chatModel.remoteHostId() || chat.id != chatModel.chatId.value) return
+      processLoadedChat(
+        chatsCtx,
+        chat,
+        navInfo,
+        pagination = pagination,
+        openAroundItemId = null,
+        addedWhileLoading = addedWhileLoading
+      )
     }
-    if (chat.remoteHostId != chatModel.remoteHostId() || chat.id != chatModel.chatId.value) return
-    processLoadedChat(
-      chatsCtx,
-      chat,
-      navInfo,
-      pagination = pagination,
-      openAroundItemId = null
-    )
   } catch (e: Exception) {
     Log.e(TAG, "apiGetChat error: ${e.stackTraceToString()}")
   } finally {
