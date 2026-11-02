@@ -3,225 +3,320 @@ title: App settings
 ---
 # App settings
 
+This page is ordered as the app's menus: the profile menu, **Settings** and its screens, **Advanced settings**, and the app version screen with **Developer tools**. Settings of a task are described on the task's page, and linked from here.
+
 ## Opening the app settings
 
-To open app settings:
+1. Tap your profile image in the chat list toolbar. The toolbar is at the bottom of the screen by default, and at the top when the reachable toolbar is off in [Appearance](#appearance).
+2. Tap **Settings** in the profile menu.
 
-- Open the app.
-- Tap on your user profile image in the upper left-hand of the screen.
-- If you have more than one profile, tap the current profile again or choose Settings.
+The layout of the chat list is described in [Your chats](./README.md#your-chats).
 
-## Your profile settings
+## Profile menu
 
-This section is labelled **"You"** in the app settings.
+Tap your profile image to open the profile menu.
 
-### Your active profile
+| Row | Details |
+|---|---|
+| Your profiles | Your current profile and your other visible profiles. Tap your current profile to edit it ([Edit your profile](./chat-profiles.md#edit-your-profile)). Tap another profile to switch to it ([Switching between profiles](./chat-profiles.md#switching-between-profiles)). |
+| **Create SimpleX address** or **Your SimpleX address** | [Your SimpleX contact address](#your-simplex-contact-address) |
+| **Chat preferences** | [Chat preferences](#chat-preferences) |
+| **Your chat profiles** | Adding, hiding, muting and deleting profiles: [Chat profiles](./chat-profiles.md). |
+| **Use from desktop** (iOS, Android), **Link a mobile** or **Linked mobiles** (desktop) | [Linked devices](./linked-devices.md) |
+| **Settings** | [Settings](#settings) |
 
-Tap on your avatar/name to update your current profile names and avatar.
+On desktop, your other profiles are listed after **Chat preferences**.
 
-Display name cannot have any spaces and it is recommended to use latin characters and numbers to make it easier to type these names to the users who use [SimpleX Chat for the terminal](../CLI.md) (CLI).
-
-**Please note**: When you save your profile, the update will be sent to all your contacts (excluding the contacts with whom your incognito profiles were shared). If you have a large number of contacts it can take several seconds.
-
-### Your chat profiles
-
-This page allows adding and configuring your chat profiles. Please see [Your chat profiles](./chat-profiles.md) for more details.
-
-### Incognito
-
-This feature is unique to SimpleX Chat – it is independent from chat profiles.
-
-When "Incognito” is turned on, your current profile name and image are NOT shared with your new contacts. It allows connections with other people without any shared data – when you make new connections or join groups via a link a new random profile name will be generated for each contact or group.
-
-Please read more in [this post](../../blog/20220901-simplex-chat-v3.2-incognito-mode.md#incognito-mode).
+Tap the sun or moon icon next to **Settings** to switch between light and dark mode. Long press it, or right-click it on desktop, to follow the system mode.
 
 ### Your SimpleX contact address
 
-<img src="../../blog/images/20221108-address1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221108-address2.png" width="288">
-
-This page allows you to create a long term address that can be used by other people to connect with you. Unlike 1-time invitation links, these addresses can be used many times, that makes them good to share online, e.g. on other social media platforms.
-
-When people connect to you via this address, you will receive a connection request that you can accept or reject. You can configure an automatic acceptance of connection request and an automatic welcome message that will be sent to the new contacts.
-
-If you start receiving too many requests via this address it is always safe to remove it – all the connections you created via this address will remain active, as this address is not used to deliver the messages.
-
-See the comparison with [1-time invitation links](./making-connections.md#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).
-
-Read more in [this post](../../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#auto-accept-contact-requests).
+Tap **Create SimpleX address**, or **Your SimpleX address** once you have one, to open your SimpleX address: a link that people can use to connect to you, which you can share publicly. How to create, share and set it up is described in [Your SimpleX contact address](./making-connections.md#your-simplex-contact-address).
 
 ### Chat preferences
 
-This page allows to configure the chat preferences that would apply to all contacts - they can be changed separately for each contact:
+Tap **Chat preferences** to open **Your preferences**: the preferences for all contacts of the current profile, such as disappearing messages and voice messages. Preferences can also be set for each contact. The preferences and their defaults are described in [Contact preferences](./send-messages.md#contact-preferences).
 
-- _disappearing messages_ - to allow disappearing messages in the conversations with you, only if your contacts allow them.
-- _delete for everyone_ - to allow irreversible message deletion (by default messages are marked as deleted, not fully deleted). "Yes" setting would allow it only if they allow it for you, and "Always" - even if they don't allow.
-- _voice messages_ - to allow sending voice messages.
+## Settings
 
-To set chat preferences in each contact, tap contact name on top of the conversation and then choose "Contact preferences".
+Tap **Settings** to open **Your settings**.
 
-Group owners can set similar preferences for their groups, when the group is created or later: tap group name on top of the conversation and then choose "Group preferences".
+<img src="./images/app-settings-settings.png" alt="Your settings on iOS" width="300">
 
-## Your app settings
+| Row | Platforms | Described in |
+|---|---|---|
+| **Appearance** | all | [Appearance](#appearance) |
+| **Your privacy** | all | [Your privacy](#your-privacy) |
+| **Help & support** | all | [Help and support](#help-and-support) |
+| **Chat data** | all | [Managing data](./managing-data.md) |
+| **Migrate to another device** | all | [Migrate to another device](./managing-data.md#migrate-to-another-device) |
+| **Support SimpleX**, **Your badge** or **Your legend badge** | all | [Supporter badge](#supporter-badge) |
+| **Network & servers** | all | [Network and servers](#network-and-servers) |
+| **Notifications** | iOS, Android | [Notifications](#notifications) |
+| **Audio & video calls** | all | [Audio and video calls](#audio-and-video-calls) |
+| **Shutdown** | Android | [Shut down the app](#shut-down-the-app) |
+| App version, for example **v7.1** | all | [App version](#app-version) |
+| **Crowdfunding on Wefunder** | see [Crowdfunding](#crowdfunding) | [Crowdfunding](#crowdfunding) |
 
-This section is labelled **"Settings"** in the app settings.
+The rows from **Network & servers** to the app version are in the section **Advanced settings**.
 
-### Notifications
+iOS shows **Appearance** on devices that support alternate app icons.
 
-This page allows to configure the notifications mode: instant, periodic or only when the app is running. There are some differences in how these options work on iOS and Android. Please read more in [this post](../../blog/20220404-simplex-chat-instant-notifications.md) about how notifications work.
-
-You can also configure whether the message preview is shown when the message arrives.
-
-**Please note**: For instant and periodic notifications to work on Android, you need to disable power optimization when prompted by the app, or later via the settings. Also, some variants of Android system require additional settings, for example MIU system on Xiaomi phones requires to enable "Auto start" for the app for the notification service to work. Please read [Don't kill my app](https://dontkillmyapp.com/) guide for any settings that may be required on your device.
-
-Also, currently instant notifications have the highest battery consumption - we are working to reduce it to be less or the same as for periodic notifications.
-
-### Network & servers
-
-This page allows to configure your own SMP relays and change other network settings.
-
-<img src="../../blog/images/20230204-transport.png" width="288">
-
-#### SMP servers
-
-<img src="../../blog/images/20221206-server1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221206-server2.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221206-server3.png" width="288">
-
-By default, the app has preset relays configured – you can change them to your own.
-
-This page also allows testing the connection with the servers.
-
-Read more in [this post](../../blog/20221206-simplex-chat-v4.3-voice-messages.md#smp-servers-configuration-and-password).
-
-#### Use SOCKS proxy (Android only)
-
-This option makes the app connect via a SOCKS proxy that should be provided by some other app running on your device.
-
-The most typical use for this is to run Orbot app that provides a SOCKS proxy to connect via Tor network, but it can be some other app and it can proxy connections via some other overlay network.
-
-#### Use .onion hosts
-
-##### Android
-
-**Use .onion hosts** option is only available when **Use SOCKS proxy** is enabled. You can choose:
-
-- _no_: never use .onion hosts. Choose this option if your SOCKS proxy does not connect via Tor network.
-- _when available_ (default): when SOCKS proxy is enabled the app assumes that it provides connections via Tor network and use .onion host addresses when SMP relays include them in their configuration.
-- _required_: always use .onion hosts. Choose this option if your SOCKS proxy connects via Tor network and you want to avoid connections without Tor. In this case, if the SMP relay address does not include .onion host, the connection will fail.
-
-##### iOS
-
-<img src="../../blog/images/20220901-onion1.png" width="330"> &nbsp; <img src="../../blog/images/20220901-onion2.png" width="330">
-
-While iOS does not support SOCKS proxies, you can install Orbot app that works as VPN provider. You can choose:
-
-- _no_ (default): do not use .onion hosts. Choose this option if you do not use Orbot or if you use VPN that proxies connections via some other overlay network.
-- _when available_: use .onion host addresses when SMP relays include them in their configuration. Orbot VPN must be enabled for this option to work.
-- _required_: always use .onion hosts. Choose this option if you use Orbot VPN and you want to avoid connections without Tor. In this case, if the SMP relay address does not include .onion host, the connection will fail. If you use this option, you can enable "Disable Orbot for non-onion traffic" option in Orbot settings making the rest of your device traffic to not use Tor.
-
-**Please note** VPN on iOS can send some traffic to the usual network, if, for example, VPN app crashes. You can configure enable always-on VPN mode on managed iOS devices, but this is not applicable to most individual devices.
-
-#### Transport isolation (BETA)
-
-This option is only available if you have enabled developer tools.
-
-Please read the details in [this post](../../blog/20230204-simplex-chat-v4-5-user-chat-profiles.md#transport-isolation).
-
-#### Advanced network settings
-
-<img src="../../blog/images/20220808-network.png" width="330">
-
-If your network is slow, and connections to the servers keep failing (you would see a spinner on your contacts), please increase TCP and protocol timeouts in this page.
-
-### Privacy and security
-
-#### SimpleX Lock
-
-SimpleX Lock when enabled requires to pass the device authentication when you open the app or use some security- or privacy-sensitive features.
-
-You will be offered to enable it after you open the app a few times.
-
-To enable it later:
-
-- [Open the app settings](#opening-the-app-settings).
-- Tap on "Privacy & security".
-- Toggle on "SimpleX Lock" slider.
-- Confirm your phone credentials.
-
-Done! Now you will be required to authenticate when you start or resume the app after 30 seconds in background.
-
-#### Protect app screen
-
-<img src="../../blog/images/20221206-protect.png" width="330">
-
-This option hides the app screen in recent apps - it is enabled by default. On Android it also prevents screenshots.
-
-#### Auto Accept Images
-
-Auto-accepting images may reduce privacy – your contacts will know you are online.
-
-- [Open the app settings](#opening-the-app-settings).
-- Tap on "Privacy & security".
-- Toggle on "Auto-accept images".
-
-#### Send Link Previews
-
-Enabling sending link previews may reduce privacy – your app will be loading link preview from the website.
-
-- [Open the app settings](#opening-the-app-settings).
-- Tap on "Privacy & security".
-- Toggle on "Send link previews".
-
-#### SimpleX Links
-
-This option affects how the links to connect to other SimpleX users or to join groups are shown in the conversations. You can choose between:
-
-- _description_ (default): only the link description and server host name are shown. The link won't be opened in the browser.
-- _full link_: the full link is shown. The link will still not be opened in the browser.
-- _via browser_: the full link is shown, and it will be opened in the browser. In this case, if the link domain is different from simplex.chat, the link will be shown in red color, as it might be malicious.
-
-Read more about [SimpleX Links security](../../blog/20221206-simplex-chat-v4.3-voice-messages.md#privacy-and-security-of-simplex-invitation-links).
+While the chat is stopped, a red mark is shown on **Chat data**, and **Your privacy**, **Network & servers**, **Notifications** and **Audio & video calls** are not available. How to stop and start the chat is described in [Managing data](./managing-data.md).
 
 ### Appearance
 
-This page allows configuring:
+| Setting | Details |
+|---|---|
+| **Language** | iOS shows the app language: tap **Change** to open the iOS settings of the app. Android and desktop: **System** or a language. |
+| **Reachable chat toolbar** (iOS) | The chat list toolbar is at the bottom of the screen. On by default. |
+| **Reachable app toolbars** (Android, desktop) | The app toolbars are at the bottom of the screen. On by default. |
+| **Reachable chat toolbar** (Android, desktop) | The toolbar inside a chat is at the bottom, while **Reachable app toolbars** is on. On by default. Desktop shows this row only while it is off. |
+| **Toolbar opacity** (iOS) | **System**, **Ultra thin**, **Thin**, **Regular** (default), **Thick** or **Ultra thick**. |
+| **App toolbars** (Android, desktop) | **Transparency** and **Blur** of the toolbars. **Blur** is shown on devices that support it. |
+| **Apply to** | The theme settings below are applied to all profiles (iOS **All profiles**, Android and desktop **App theme**) or to the current profile only. |
+| **Chat layout** | **Classic** (default) or **Flat**. |
+| Wallpaper | A preset wallpaper or your own image. Tap **Remove image** to remove your image. |
+| **Color mode** | **System** (default), **Light** or **Dark**. |
+| **Dark mode colors** | **Dark** (default), **SimpleX** or **Black**. iOS lists **Black** when the Black theme is used or was customized. |
+| **Customize theme** | Interface and chat colors, wallpaper settings, **Reset colors**, **Export theme** and **Import theme**. |
+| Message shape | **Corner**: how round messages are. **Tail**: messages with a tail. |
+| **Profile images** | How round profile images are. |
+| **App icon** (iOS, Android) | A light or a dark app icon. |
+| **Font size** (Android, desktop) | The size of the text in the app. |
+| **Zoom** (desktop) | The size of everything in the app window. |
+| **Close to tray** (desktop) | The app keeps running in the system tray when you close the window: "Runs in background to receive messages". Shown when the system tray is available. |
 
-- interface language
-- app icon
-- accent color
+To set the theme, wallpaper or chat layout of one chat, open its chat info and tap **Chat theme**.
 
-### Database passphrase & export
+On desktop, the first time you close the window, the app asks **Minimize to tray?** with **Close the app** and **Minimize to tray**. How the desktop app notifies you about messages is described in [Notifications](./notifications.md).
 
-This page allows to change the database passphrase, export and import the database and configure the message retention period.
+### Your privacy
 
-Read more in [Managing Your Data](./managing-data.md) page.
+**Your privacy** is divided into the sections **Device**, **Chats**, **Files** and **Auto-accept**, with the row **More privacy** at the end.
 
-## Help & feedback
+#### SimpleX Lock
 
-This section has information on how to use the app and the links to connect to the team. Please use [Send questions and ideas](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion) to connect to us via the chat to ask any questions, make any suggestions and report any issues.
+With SimpleX Lock on, the app asks you to authenticate when you open it, and when you return to it after it was in the background longer than **Lock after**.
 
-## Support SimpleX Chat
+To turn it on:
 
-- contribute - the link to the information about how to contribute and to donate to the project.
-- rate the app - rate and review it on the App Store or Play Store - your feedback helps a lot.
-- star on GitHub - that also helps us grow very much.
+1. Open **Settings**, then **Your privacy**, then **SimpleX Lock**.
+2. Turn on **Enable lock**.
+3. Authenticate with your device, or set a passcode when the lock mode is **Passcode**.
 
-Thank you for your support!
+| Setting | Details |
+|---|---|
+| **Lock mode** (iOS, Android) | **System** (default): the device authentication, with biometrics or the device passcode. **Passcode**: a passcode for the app. Desktop uses a passcode. |
+| **Lock after** | 10 seconds, 30 seconds (default), 1 minute, 3 minutes, 10 minutes or **Immediately**. |
+| **Change passcode** | Shown in the **Passcode** mode. |
+| **Allow sharing** (iOS, section **Share to SimpleX**) | While SimpleX Lock is on, you can share from other apps to SimpleX only when this is on. Off by default. See [Share from other apps](./send-messages.md#share-from-other-apps). |
 
-## Developer tools
+The app offers to turn on SimpleX Lock once, with the alert **SimpleX Lock** and the button **Turn on**: on iOS when your chat list has more than 2 chats, on Android and desktop when it has more than 3 chats.
 
-This page has options that normally are only needed for app developers and can be used to debug the app in case something is not working.
+#### Self-destruct passcode
 
-### Chat console
+In the **Passcode** mode, turn on **Enable self-destruct** in the section **Self-destruct passcode**, and set a second passcode and a **New display name**. The app explains what happens if you enter the self-destruct passcode while opening the app:
 
-Here you can see and use console command with the chat core. None of this information is sent over the network, this is an internal communication between different parts of the app.
+1. All app data is deleted.
+2. App passcode is replaced with self-destruct passcode.
+3. An empty chat profile with the provided name is created, and the app opens as usual.
 
-Please be careful - some of the commands can disrupt app functioning, only use them if you know what you are doing or were instructed by the team.
+Tap **Change self-destruct passcode** to set a new one.
 
-**Please note**: the log in console can contain what looks like errors. Unless you experience any issues in the app UI, these errors should not be considered as the app malfunction - they are likely to be normal and expected behavior.
+#### Protect app screen
 
-### Confirm database upgrades
+With **Protect app screen** (iOS, Android) on, the app screen is hidden in the recent apps. On iOS it is off by default. On Android it is on by default, and screenshots of the app are prevented as well.
 
-This option is off by default - the app database is migrated to the new version without any confirmations. Starting from v4.6.2 these migrations are reversible - you can rollback to the previous version(s) of the app (not earlier than v4.6.1). If you want to be asked a confirmation every time database is upgraded you may enable this option - this is not recommended, as it happens almost on every app update, and should not cause any concerns.
+#### Chats and files
 
-### Show developer options
+| Setting | Details |
+|---|---|
+| **Send link previews** | The app loads a preview of the links you send. The app warns: "Sending a link preview may reveal your IP address to the website." On by default. The first time you type a link, the app asks **Enable link previews?**. |
+| **Remove link tracking** | The app removes tracking parameters from the links you type. Off by default. |
+| **Auto-accept images** | The app receives images, small videos and short voice messages without asking. On by default. |
+| **Blur media** | **Off** (default), **Soft**, **Medium** or **Strong**: images, videos and link previews are blurred until you tap them. |
+| **Contact requests in groups** (section **Auto-accept**) | The app accepts the requests of group members to talk to you directly. Off by default. |
+| **Group invitations** (section **Auto-accept**) | The app joins the groups you are invited to. Off by default. |
 
-This option currently enables [Transport isolation mode](#transport-isolation-beta) option and also enables showing database IDs in contacts, groups and group members to simplify debugging via console commands.
+The **Auto-accept** settings, and the delivery receipts in **More privacy**, are set for your current profile.
+
+#### More privacy
+
+| Setting | Details |
+|---|---|
+| **Show last messages** | The last message of each chat is shown in the chat list. On by default. |
+| **Message draft** | The message you started is kept when you leave the chat. On by default. |
+| **Verify SimpleX names** | When on, the app verifies the SimpleX name of a contact or a channel when you open its chat info. When off, tap **Verify name** there. Off by default. See [Registering a SimpleX name](./register-simplex-name.md). |
+| **Encrypt local files** | The files you receive are stored encrypted on your device. On by default. |
+| **Protect IP address** | The app asks you to confirm downloads from unknown file servers while your IP address is not protected. It is protected while a SOCKS proxy is used, and for servers reached by a .onion address. On by default. |
+| **Show encryption** | A lock icon is shown on files: closed when the file is stored encrypted, open when it is not. Off after a new installation. |
+| **Show preview** (section **Notifications**) | What notifications show: [Notification previews](./notifications.md#notification-previews). |
+| **Contacts** and **Small groups (max 20)** (section **Send delivery receipts to**) | Delivery receipts are sent. This can be overridden for each contact and group. See [Message status and errors](./send-messages.md#message-status-and-errors). |
+
+### Help and support
+
+| Row | Opens |
+|---|---|
+| **How to use it** | Short help on using the app. |
+| **What's new** | The new features of each version. |
+| **About SimpleX Chat** | What SimpleX Chat is: "Private and secure messaging. The first network where you own your contacts and groups." |
+| **Follow SimpleX Network News** | The SimpleX Network News channel. |
+| **Send questions and ideas** | The contact address of the SimpleX Chat team: [https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw](https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw). |
+| **Send us email** | An email to chat@simplex.chat. |
+| **Contribute** | The contribution section of the SimpleX Chat repository on GitHub. Shown in the iOS and desktop apps, and in Android builds outside Google Play. |
+| **Rate the app** (iOS, Android) | The rating of the app in the App Store (iOS) or in Google Play (Android). |
+| **Star on GitHub** | The SimpleX Chat repository on GitHub. |
+
+### Supporter badge
+
+This row is **Support SimpleX** when your current profile has no badge, and **Your badge** or **Your legend badge** when it has one. Below the row, the app shows the benefits: "Larger files available for longer." without a badge, "Files up to 2 GB, stored for 7 days." with a supporter badge, and "Files up to 5 GB, stored for 21 days." with a legend badge. Badges are described in [Supporter badges](./supporter-badges.md).
+
+## Advanced settings
+
+### Network and servers
+
+| Section | iOS | Android and desktop |
+|---|---|---|
+| **Preset servers** | The server operators, and **Review conditions** or **Accepted conditions** | the same |
+| **Messages & files** (iOS), **Messages and files** (Android, desktop) | **Your servers**, **Advanced network settings** | **Your servers**, **Use SOCKS proxy**, **SOCKS proxy settings**, **Advanced network settings** |
+| Saving | **Save servers** | **Save servers** |
+| **Calls** | | **WebRTC ICE servers** |
+| **Network connection** | The network type, with a green dot when the device is online | Android only, the same |
+
+Changes to the servers are saved with **Save servers**. If you leave with unsaved changes, the app offers to save them.
+
+The WebRTC ICE servers are also in **Audio & video calls** on all platforms: see [Audio & video calls](./audio-video-calls.md).
+
+#### Server operators
+
+The app has two preset server operators: SimpleX Chat and Flux. In onboarding, under **How it helps privacy**, the app explains: "The app protects your privacy by using different operators in each conversation. When more than one operator is enabled, none of them has metadata to learn who communicates with whom." When the app chooses a server, it prefers servers of operators that the conversation does not use yet.
+
+Tap an operator to open its servers:
+
+| Row | Details |
+|---|---|
+| Operator logo | **Network operator**: who runs the servers, and the operator's website. |
+| **Use servers** | The operator's servers are used. If the operator's conditions of use are not accepted yet, the app shows them with **Accept conditions**. |
+| **Chat relays** | The operator's chat relays. "Chat relays forward messages in channels you create." See [Chat relays](./channels.md#chat-relays). |
+| **Use for messages** | The roles of the operator's message servers: **To receive**, **For private routing** and **To resolve names**. |
+| **Message servers** | The operator's message servers. |
+| **Use for files** | The role of the operator's file servers: **To send**. |
+| **Media & file servers** | The operator's media and file servers. |
+| **Test servers** | A test of the connection to each server. |
+
+When the conditions of use changed, **Review conditions** is shown. Tap it to see them, with **Accept conditions** and, when set, the date when they will be accepted automatically for the enabled operators. Tap **Accepted conditions** to see the conditions you accepted.
+
+Server operators can block a link or a file that violates their conditions of use. When a link is blocked, the app shows **Connection blocked** with the reason given by the operator. For a blocked file, the app shows "File is blocked by server operator" with the reason. Tap **How it works** to read [an explanation on the SimpleX blog](../../blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.md#preventing-server-abuse-without-compromising-e2e-encryption).
+
+#### Your servers
+
+In **Your servers**, the app shows the servers you added: **Chat relays**, **Message servers** and **Media & file servers**. The message and file servers are "the servers for new connections" and "for new files" of your current chat profile.
+
+- Tap **Add server** and choose **Enter server manually**, **Scan server QR code** (iOS, Android) or **Chat relay**.
+- Tap a server to test it with **Test server**, or to turn **Use for new connections** on or off. For a message server you added and use, you can also set **To receive**, **For private routing** and **To resolve names**. For a server you added, a QR code is shown under **Add to another device**.
+- Tap **Test servers** to test all servers.
+- Tap **How to use your servers** to open the guide to [hosting your own server](../SERVER.md).
+
+#### SOCKS proxy
+
+The app can connect to servers through a SOCKS proxy, for example a proxy to the Tor network provided by the Orbot app.
+
+| | iOS | Android and desktop |
+|---|---|---|
+| Where | **Advanced network settings**, section **SOCKS proxy** | **Network & servers**: **Use SOCKS proxy** and **SOCKS proxy settings** |
+| Address | **IP address** and **Port**. The host must be an IP address. | **Host** (default localhost) and **Port** (default 9050) |
+| Credentials | **Proxy requires password**, with **Username** and **Password** | **Proxy authentication**: **Use random credentials** (default), or a username and a password |
+
+On Android and desktop, when you turn on **Use SOCKS proxy**, the app asks **Use SOCKS proxy?** and notes that the proxy must be started before you enable this option. If the network timeouts are at their defaults, the app sets longer timeouts for the proxy. While the proxy is used, the app notes: "message and file relays are connected via SOCKS proxy. Calls use direct connection." When you turn it off, the app asks **Use direct Internet connection?**: "If you confirm, the messaging servers will be able to see your IP address, and your provider - which servers you are connecting to."
+
+#### Use onion hosts
+
+With **Use .onion hosts**, you choose whether the app connects to the .onion addresses of servers: **No**, **When available** or **Required**. With **Required**, the app connects only to servers that have a .onion address.
+
+- iOS: in **Advanced network settings**. **No** by default. The app notes that **When available** and **Required** need a compatible VPN.
+- Android and desktop: in **SOCKS proxy settings**. **When available** by default. It can be changed while the SOCKS proxy is on and **Use random credentials** is on; otherwise the app does not use .onion hosts. The app notes: "Set Use .onion hosts to No if SOCKS proxy does not support them."
+
+#### Private message routing
+
+In **Advanced network settings**, section **Private message routing**. The app explains: "To protect your IP address, private routing uses your SMP servers to deliver messages."
+
+| Setting | Options |
+|---|---|
+| **Private routing** | **Always** (default): always use private routing. **Unknown servers**: use private routing with unknown servers. **Unprotected**: use private routing with unknown servers when IP address is not protected. **Never**: do not use private routing. |
+| **Allow downgrade** | **Yes**: send messages directly when your or destination server does not support private routing. **When IP hidden** (default): only when your IP address is protected. **No**. |
+| **Show message status** | An arrow → is shown on messages sent via private routing. Off by default. |
+
+iOS shows the options in lowercase: **always**, **unknown servers**, **unprotected**, **never**; **yes**, **when IP hidden**, **no**.
+
+#### Transport isolation
+
+With **Transport isolation**, you choose when the app uses separate TCP connections:
+
+| Mode | Details |
+|---|---|
+| **Chat profile** | A separate TCP connection (and SOCKS credential) for each chat profile you have in the app. |
+| **App session** (default) | As **Chat profile**, and new SOCKS credentials every time you start the app. |
+| **Server** | As **Chat profile**, and new SOCKS credentials for each server. |
+| **Connection** | A separate TCP connection (and SOCKS credential) for each contact and group member. The app warns: "if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." |
+
+iOS shows **Transport isolation** in **Advanced network settings** after you turn on **Show developer options** in [Developer tools](#developer-tools). Android and desktop always show it there, and offer **Connection** after you turn on **Show developer options**.
+
+#### Advanced network settings
+
+<img src="./images/app-settings-advanced-network-settings.png" alt="Advanced network settings on iOS" width="300">
+
+Besides the settings above, **Advanced network settings** contains:
+
+- **TCP port for messaging**: **Use web port** with **All servers**, **Preset servers** (default) or **Off**. With **Preset servers**, the app uses TCP port 443 for preset servers only. With **All servers**, it uses port 443 for servers without a port, and with **Off** it uses port 5223.
+- **TCP connection**: **TCP connection timeout**, **TCP connection bg timeout**, **Protocol timeout**, **Protocol background timeout**, **Protocol timeout per KB**, **PING interval**, **PING count**, **Enable TCP keep-alive** with **TCP_KEEPIDLE**, **TCP_KEEPINTVL** and **TCP_KEEPCNT**.
+- **Reset to defaults**.
+- **Set timeouts for proxy/VPN** (iOS): longer timeouts for connections through a proxy or VPN. On Android and desktop, the app sets them when you turn on the SOCKS proxy.
+- **Save and reconnect**: the app asks **Update settings?**, as the app then reconnects to all servers.
+
+### Notifications
+
+In **Notifications** (iOS and Android), you choose how the app receives messages while it is in the background. The modes and their effect on privacy and battery are described in [Notifications](./notifications.md).
+
+### Audio and video calls
+
+The WebRTC ICE servers, **Always use relay** and the call settings of each platform are in **Audio & video calls**. See [Audio & video calls](./audio-video-calls.md).
+
+### Shut down the app
+
+On Android, when you tap **Shutdown**, the app asks **Shutdown?**: "Notifications will stop working until you re-launch the app". Tap **Restart** to restart the app, or **Shutdown** to stop it.
+
+### App version
+
+The last row of **Advanced settings** is the app version: for example **v7.1** on iOS, and the version with the build number on Android and desktop. Tap it to open **App version**, with the app version, app build, core version and simplexmq version, and then:
+
+- **Developer** (iOS) or **Developer tools** (Android, desktop): [Developer tools](#developer-tools).
+- **Check for updates** (desktop): **Disabled** (default), **Stable** or **Beta**.
+
+With **Stable** or **Beta**, the desktop app checks the releases of SimpleX Chat on GitHub when it starts and then once a day. When a newer version is available, it shows **Update available**, the release notes, and **Download**, **Skip this version** and **Remind later**. When the download is complete, it offers **Install update**, **Open file location** and **Cancel**; you install .deb packages yourself from the file location. Once, when you have more than 3 chats, the app asks **Check for updates** with **Stable**, **Beta** and **Disable**.
+
+### Developer tools
+
+| Row | Details |
+|---|---|
+| **Install SimpleX Chat for terminal** | The SimpleX Chat repository on GitHub. See [SimpleX Chat for the terminal](../CLI.md). |
+| **Chat console** | The commands that the app sends to the chat core, and their responses. You can send commands there; they are run on your chats and data. With SimpleX Lock on, the app asks you to authenticate first. |
+| **Reset all hints** | The app's hints and notices are shown again. |
+| **Show developer options** | Database IDs and the transport isolation option are shown. |
+
+With **Show developer options** on, the section **Developer options** contains:
+
+- **Confirm database upgrades**: before the database is upgraded for a new app version, the app shows **Database upgrade** and waits until you tap **Upgrade and open chat**. Off by default: the database is upgraded without asking.
+- **Storage**: the space used by the app's folders.
+- Android and desktop: **Enable logs**, **Show internal errors** and **Show slow API calls**.
+- Desktop: **Show console in new window**.
+
+The section **Deprecated options** contains **SimpleX links**. **Description** (default): the type of a SimpleX link and its server are shown instead of the link. **Full link**: the whole link is shown.
+
+## Crowdfunding
+
+The section **Own a part of SimpleX Chat** contains the row **Crowdfunding on Wefunder**. Tap it to open **Invest in SimpleX Chat**, with a link to the SimpleX Chat crowdfunding on Wefunder. The row is shown:
+
+- on iOS, when the App Store country is the United States or is not known;
+- in the Android app from Google Play, when the Google Play country is the United States or is not known;
+- in the desktop app and in other Android builds, in every country.
