@@ -622,22 +622,19 @@ final class ChatModel: ObservableObject {
     // Spec: spec/state.md#updateChatInfo
     func updateChatInfo(_ cInfo: ChatInfo) {
         if let i = getChatIndex(cInfo.id) {
-            chats[i].chatInfo = cInfo.keepingChatSettings(of: chats[i].chatInfo)
+            let cInfo = cInfo.keepingChatSettings(of: chats[i].chatInfo)
+            if case let .group(groupInfo, groupChatScope) = cInfo, groupChatScope != nil {
+                chats[i].chatInfo = .group(groupInfo: groupInfo, groupChatScope: nil)
+            } else {
+                chats[i].chatInfo = cInfo
+            }
             chats[i].created = Date.now
         }
     }
 
     func setChatSettings(_ chatId: ChatId, _ chatSettings: ChatSettings) {
         if let i = getChatIndex(chatId) {
-            switch chats[i].chatInfo {
-            case var .direct(contact):
-                contact.chatSettings = chatSettings
-                chats[i].chatInfo = .direct(contact: contact)
-            case var .group(groupInfo, groupChatScope):
-                groupInfo.chatSettings = chatSettings
-                chats[i].chatInfo = .group(groupInfo: groupInfo, groupChatScope: groupChatScope)
-            default: ()
-            }
+            chats[i].chatInfo = chats[i].chatInfo.withChatSettings(chatSettings)
         }
     }
 
@@ -1423,17 +1420,21 @@ struct NTFContactRequest {
 }
 
 extension ChatInfo {
-    func keepingChatSettings(of current: ChatInfo) -> ChatInfo {
-        switch (current, self) {
-        case (.direct(let currentContact), .direct(var contact)):
-            contact.chatSettings = currentContact.chatSettings
+    func withChatSettings(_ chatSettings: ChatSettings) -> ChatInfo {
+        switch self {
+        case var .direct(contact):
+            contact.chatSettings = chatSettings
             return .direct(contact: contact)
-        case (.group(let currentGroupInfo, _), .group(var groupInfo, _)):
-            groupInfo.chatSettings = currentGroupInfo.chatSettings
-            return .group(groupInfo: groupInfo, groupChatScope: nil)
+        case var .group(groupInfo, groupChatScope):
+            groupInfo.chatSettings = chatSettings
+            return .group(groupInfo: groupInfo, groupChatScope: groupChatScope)
         default:
             return self
         }
+    }
+
+    func keepingChatSettings(of current: ChatInfo) -> ChatInfo {
+        current.chatSettings.map { withChatSettings($0) } ?? self
     }
 }
 

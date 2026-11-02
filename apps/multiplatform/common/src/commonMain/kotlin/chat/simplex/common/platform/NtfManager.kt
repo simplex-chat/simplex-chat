@@ -37,9 +37,10 @@ abstract class NtfManager {
   )
 
   fun notifyMessageReceived(rhId: Long?, user: UserLike, cInfo: ChatInfo, cItem: ChatItem) {
+    val listedCInfo = if (chatModel.controller.activeUser(rhId, user)) chatModel.getChat(cInfo.id)?.chatInfo else null
     if (
       cItem.showNotification &&
-      cInfo.ntfsEnabled(cItem) &&
+      (listedCInfo ?: cInfo).ntfsEnabled(cItem) &&
       (
           allowedToShowNotification() ||
               chatModel.chatId.value != cInfo.id ||

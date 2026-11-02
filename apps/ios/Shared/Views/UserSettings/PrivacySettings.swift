@@ -379,7 +379,7 @@ struct PrivacySettings: View {
                             m.chats.forEach { chat in
                                 if var contact = chat.chatInfo.contact {
                                     let sendRcpts = contact.chatSettings.sendRcpts
-                                    if sendRcpts != nil && sendRcpts != enable {
+                                    if sendRcpts != nil {
                                         contact.chatSettings.sendRcpts = nil
                                         m.setChatSettings(chat.id, contact.chatSettings)
                                     }
@@ -427,7 +427,7 @@ struct PrivacySettings: View {
                             m.chats.forEach { chat in
                                 if var groupInfo = chat.chatInfo.groupInfo {
                                     let sendRcpts = groupInfo.chatSettings.sendRcpts
-                                    if sendRcpts != nil && sendRcpts != enable {
+                                    if sendRcpts != nil {
                                         groupInfo.chatSettings.sendRcpts = nil
                                         m.setChatSettings(chat.id, groupInfo.chatSettings)
                                     }

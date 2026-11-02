@@ -210,7 +210,7 @@ fun MorePrivacyView(chatModel: ChatModel) {
                 if (chat.chatInfo is ChatInfo.Direct) {
                   var contact = chat.chatInfo.contact
                   val sendRcpts = contact.chatSettings.sendRcpts
-                  if (sendRcpts != null && sendRcpts != enable) {
+                  if (sendRcpts != null) {
                     contact = contact.copy(chatSettings = contact.chatSettings.copy(sendRcpts = null))
                     chatModel.chatsContext.setChatSettings(currentUser.remoteHostId, chat.id, contact.chatSettings)
                   }
@@ -235,7 +235,7 @@ fun MorePrivacyView(chatModel: ChatModel) {
                 if (chat.chatInfo is ChatInfo.Group) {
                   var groupInfo = chat.chatInfo.groupInfo
                   val sendRcpts = groupInfo.chatSettings.sendRcpts
-                  if (sendRcpts != null && sendRcpts != enable) {
+                  if (sendRcpts != null) {
                     groupInfo = groupInfo.copy(chatSettings = groupInfo.chatSettings.copy(sendRcpts = null))
                     chatModel.chatsContext.setChatSettings(currentUser.remoteHostId, chat.id, groupInfo.chatSettings)
                   }

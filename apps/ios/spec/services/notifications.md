@@ -86,7 +86,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
 | [`processNotificationResponse(_:)`](../../Shared/Model/NtfManager.swift#L54) | Handles user interaction with notification | [54](../../Shared/Model/NtfManager.swift#L54) |
 | [`notifyContactRequest(_:)`](../../Shared/Model/NtfManager.swift#L239) | Shows contact request notification | [239](../../Shared/Model/NtfManager.swift#L239) |
 | [`notifyCallInvitation(_:)`](../../Shared/Model/NtfManager.swift#L258) | Shows incoming call notification | [258](../../Shared/Model/NtfManager.swift#L258) |
-| [`notifyMessageReceived(_:)`](../../Shared/Model/NtfManager.swift#L250) | Shows message received notification | [250](../../Shared/Model/NtfManager.swift#L250) |
+| [`notifyMessageReceived(_:)`](../../Shared/Model/NtfManager.swift#L250) | Shows message received notification when `ntfsEnabled` (of the listed chat for the active user) allows it | [250](../../Shared/Model/NtfManager.swift#L250) |
 
 ### [Notification Response Processing](../../Shared/Model/NtfManager.swift#L40)
 

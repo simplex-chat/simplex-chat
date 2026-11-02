@@ -2715,7 +2715,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 }
             }
             if cItem.showNotification {
-                NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+                await NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
             }
         }
     case let .chatItemsStatusesUpdated(user, chatItems):
@@ -3208,7 +3208,7 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     if active(user) {
         if await MainActor.run(body: { m.upsertChatItem(cInfo, cItem) }) {
             if cItem.showNotification {
-                NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+                await NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
             }
         }
     }
