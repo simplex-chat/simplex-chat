@@ -27,6 +27,7 @@ chatNamesTests = do
   it "verify channel name, fail on re-point, retain status on refresh" testChannelDomainVerify
   it "connect by channel name" testConnectByChannelName
   it "channel name is verified when the channel is prepared with it" testPrepareChannelWithName
+  it "channel name plan while joining via link, relay offline" testChannelNamePlanWhileJoining
   it "connect by name resolving to channel (primary) and direct contact" testConnectByNameChannelAndContact
   it "connect by name resolving to direct contact (primary) and channel" testConnectByNameContactAndChannel
   it "connect by name resolving to business (primary) and channel" testConnectByNameBusinessAndChannel
@@ -345,6 +346,32 @@ testPrepareChannelWithName ps = withSmpServerAndNames ps $ \reg ->
         bob ##> ("/_connect plan 1 " <> shortLink)
         bob <## "group link: known prepared group #team"
         bob <## "SimpleX name: #team (verified)"
+  where
+    teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
+
+testChannelNamePlanWhileJoining :: HasCallStack => TestParams -> IO ()
+testChannelNamePlanWhileJoining ps = withSmpServerAndNames ps $ \reg -> do
+  (shortLink, fullLink) <- withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath -> do
+      mapM_ enableNamesRole [alice, cath]
+      links@(shortLink, _) <- prepareChannel1Relay "team" alice cath
+      registerName reg teamName (channelNameRecord "team.simplex" (T.pack shortLink))
+      alice ##> "/public group access #team domain=team.simplex"
+      alice <## "updated public group access: domain=team.simplex"
+      cath <## "alice updated group #team: (signed)"
+      cath <## "updated public group access: domain=team.simplex"
+      pure links
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
+    enableNamesRole bob
+    bob ##> ("/_connect plan 1 " <> shortLink)
+    bob <## "group link: ok to connect via relays"
+    groupSLinkData <- getTermLine bob
+    bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " direct=off " <> groupSLinkData)
+    bob <## "#team: group is prepared"
+    bob ##> "/_connect group #1"
+    bob <## "#team: connection started"
+    bob ##> "/_connect plan 1 #team.simplex"
+    bob <## "group link: connecting to group #team"
   where
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 

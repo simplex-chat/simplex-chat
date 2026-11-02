@@ -15,10 +15,10 @@ A user joins a group via its short link while the host is offline. The user then
 
 ## Fix
 
-`getGroupInfoByGroupLinkHash` excludes only `GSMemRemoved`, `GSMemLeft` and `GSMemGroupDeleted`. `groupPlan` returns `GLPConnectingProhibit` for a `GSMemUnknown` membership.
+`getGroupInfoByGroupLinkHash` excludes only `GSMemRemoved`, `GSMemLeft` and `GSMemGroupDeleted`. `groupPlan`, unchanged, then returns `GLPConnectingProhibit` for a `GSMemUnknown` membership.
 
 ## Scope
 
-- `src/Simplex/Chat/Store/Groups.hs`: `getGroupInfoByGroupLinkHash`. Its caller `groupJoinRequestPlan` also answers short-link and name plans of a group that `knownLinkPlans` does not find.
+- `src/Simplex/Chat/Store/Groups.hs`: `getGroupInfoByGroupLinkHash`. Its caller `groupJoinRequestPlan` also computes the plan of a short link or name whose group `knownLinkPlans` does not find.
 - `chat_query_plans.txt`: the changed query text.
-- Test `testShortLinkGroupFullLinkPlanHostOffline`.
+- Tests `testShortLinkGroupFullLinkPlanHostOffline` (full link) and `testChannelNamePlanWhileJoining` (channel name).
