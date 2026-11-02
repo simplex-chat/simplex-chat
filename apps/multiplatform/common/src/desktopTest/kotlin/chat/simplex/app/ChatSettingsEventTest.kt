@@ -49,6 +49,16 @@ class ChatSettingsEventTest {
   @Test
   fun messageEventWithEarlierCopyFollowsChangedSettings() = runBlocking {
     val groupInfo = GroupInfo.sampleData
+    assertEquals(emptyList(), notifiedChatIds(listed = groupInfo.copy(chatSettings = changedSettings), event = groupInfo))
+  }
+
+  @Test
+  fun messageEventWithMutedCopyDoesNotNotifyStaleListedChat() = runBlocking {
+    val groupInfo = GroupInfo.sampleData
+    assertEquals(emptyList(), notifiedChatIds(listed = groupInfo, event = groupInfo.copy(chatSettings = changedSettings)))
+  }
+
+  private suspend fun notifiedChatIds(listed: GroupInfo, event: GroupInfo): List<String> {
     val user = User.sampleData
     val ntfs = RecordingNtfManager()
     val item = ChatItem.getSampleData(1, CIDirection.GroupRcv(GroupMember.sampleData))
@@ -56,10 +66,10 @@ class ChatSettingsEventTest {
     try {
       withContext(Dispatchers.Main) {
         chatModel.currentUser.value = user
-        chatModel.chatsContext.chats.replaceAll(listOf(Chat(remoteHostId = null, chatInfo = ChatInfo.Group(groupInfo.copy(chatSettings = changedSettings), groupChatScope = null), chatItems = emptyList())))
+        chatModel.chatsContext.chats.replaceAll(listOf(Chat(remoteHostId = null, chatInfo = ChatInfo.Group(listed, groupChatScope = null), chatItems = emptyList())))
       }
-      ntfs.notifyMessageReceived(null, user, ChatInfo.Group(groupInfo, groupChatScope = null), item)
-      assertEquals(emptyList(), ntfs.shownChatIds)
+      ntfs.notifyMessageReceived(null, user, ChatInfo.Group(event, groupChatScope = null), item)
+      return ntfs.shownChatIds
     } finally {
       withContext(Dispatchers.Main) {
         chatModel.chatsContext.chats.replaceAll(emptyList())
