@@ -2550,7 +2550,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     receiveInlineMode FileInvitation {fileSize, fileInline, fileDescr} mc_ chSize = case (fileInline, fileDescr) of
       (Just mode, Nothing) -> do
         InlineFilesConfig {receiveChunks, receiveInstant} <- asks $ inlineFiles . config
-        pure $ if fileSize <= receiveChunks * chSize then inline' receiveInstant else Nothing
+        filesFolderSet <- isJust <$> chatReadVar filesFolder
+        pure $ if fileSize <= receiveChunks * chSize then inline' (receiveInstant && filesFolderSet) else Nothing
         where
           inline' receiveInstant = if mode == IFMOffer || (receiveInstant && maybe False isVoice mc_) then fileInline else Nothing
       _ -> pure Nothing
