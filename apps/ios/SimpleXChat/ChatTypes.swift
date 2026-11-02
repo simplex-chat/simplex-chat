@@ -6161,7 +6161,7 @@ extension ReportReason: Decodable {
         let type = try container.decode(String.self)
         switch type {
         case "spam": self = .spam
-        case "content", "illegal": self = .illegal
+        case "content": self = .illegal
         case "community": self = .community
         case "profile": self = .profile
         case "other": self = .other
