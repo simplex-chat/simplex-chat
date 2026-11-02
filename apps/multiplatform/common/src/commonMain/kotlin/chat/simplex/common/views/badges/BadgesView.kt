@@ -1,6 +1,5 @@
 package chat.simplex.common.views.badges
 
-import androidx.compose.animation.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -12,29 +11,25 @@ import chat.simplex.common.views.helpers.ModalView
 import chat.simplex.common.views.helpers.ModalViewId
 import chat.simplex.res.*
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun BadgesView(modalManager: ModalManager, close: () -> Unit) {
   val shownBadge = currentShownBadge()
+  val purchaseState = BadgeStore.purchaseState(chatModel.currentUser.value?.userId)
   val unwindToDepth = remember { modalManager.openModalCount() }
 
   // the card look is a modal setting, so the modal is composed here to follow the screen shown
   ModalView(close, cardScreen = shownBadge != null) {
-    AnimatedContent(
-      targetState = Triple(shownBadge, BadgeStore.purchaseState(chatModel.currentUser.value?.userId), BadgeStore.checkingPurchases),
-      transitionSpec = { fadeIn() with fadeOut() },
-      contentKey = { (badgeState, purchaseState, checkingPurchases) -> Triple(badgeState != null, purchaseState, checkingPurchases) }
-    ) { (badgeState, purchaseState, checkingPurchases) ->
-      if (badgeState != null) {
-        BadgesYourBadgeView(badgeState, modalManager)
-      } else if (purchaseState != null) {
-        // holds the purchase screens' slot, so a consumable cannot be bought twice
-        BadgesPurchaseStateView(purchaseState.title, purchaseState.message, BadgeStore.creditError(chatModel.currentUser.value?.userId), onDismiss = close)
-      } else if (checkingPurchases) {
-        BadgesPurchaseStateView(MR.strings.badges_checking_purchases_title, null, onDismiss = close)
-      } else {
-        BadgesSupportSimplexView(modalManager, unwindToDepth)
-      }
+    // one page at a time: each page draws itself through this modal's one app bar layer (copyViewToAppBar),
+    // so two pages composed together, as in a cross-fade, can leave the screen showing the page that left
+    if (shownBadge != null) {
+      BadgesYourBadgeView(shownBadge, modalManager)
+    } else if (purchaseState != null) {
+      // holds the purchase screens' slot, so a consumable cannot be bought twice
+      BadgesPurchaseStateView(purchaseState.title, purchaseState.message, BadgeStore.creditError(chatModel.currentUser.value?.userId), onDismiss = close)
+    } else if (BadgeStore.checkingPurchases) {
+      BadgesPurchaseStateView(MR.strings.badges_checking_purchases_title, null, onDismiss = close)
+    } else {
+      BadgesSupportSimplexView(modalManager, unwindToDepth)
     }
   }
 }

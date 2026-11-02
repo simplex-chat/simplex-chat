@@ -496,7 +496,7 @@ data ChatCommand
   | APIDeleteGroupLink {groupId :: GroupId}
   | APIGetGroupLink {groupId :: GroupId}
   | APIAddGroupShortLink GroupId
-  | APICreateMemberContact GroupId GroupMemberId
+  | APICreateMemberContact {groupId :: GroupId, groupMemberId :: GroupMemberId}
   | APISendMemberContactInvitation {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
   | APIAcceptMemberContact ContactId
   | GetUserProtoServers AProtocolType
@@ -511,7 +511,7 @@ data ChatCommand
   | APIGetServerOperators
   | APISetServerOperators (NonEmpty ServerOperator)
   | SetServerOperators (NonEmpty ServerOperatorRoles)
-  | APIGetUserServers UserId
+  | APIGetUserServers {userId :: UserId}
   | APISetUserServers UserId (NonEmpty UpdatedUserOperatorServers)
   | APIValidateServers UserId [UpdatedUserOperatorServers] -- response is CRUserServersValidation
   | APIGetUsageConditions
@@ -524,7 +524,7 @@ data ChatCommand
   | APISetChatTTL {userId :: UserId, chatRef :: ChatRef, seconds :: Maybe Int64}
   | SetChatTTL ChatName (Maybe Int64)
   | GetChatTTL ChatName
-  | APISetNetworkConfig NetworkConfig
+  | APISetNetworkConfig {networkConfig :: NetworkConfig}
   | APIGetNetworkConfig
   | SetNetworkConfig SimpleNetCfg
   | APISetNetworkInfo UserNetworkInfo
@@ -532,7 +532,7 @@ data ChatCommand
   | ReconnectServer UserId SMPServer
   | APISetChatSettings {chatRef :: ChatRef, chatSettings :: ChatSettings}
   | APISetMemberSettings GroupId GroupMemberId GroupMemberSettings
-  | APIContactInfo ContactId
+  | APIContactInfo {contactId :: ContactId}
   | APIGroupInfo GroupId
   | APIGetUpdatedGroupLinkData {groupId :: GroupId}
   | APIGroupMemberInfo GroupId GroupMemberId
@@ -577,8 +577,8 @@ data ChatCommand
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
   | APIConnectPlan {userId :: UserId, connectTarget :: Maybe AConnectTarget, resolveMode :: PlanResolveMode, linkOwnerSig :: Maybe LinkOwnerSig} -- Maybe AConnectTarget is used to report parsing failure as special error
-  | APIPrepareContact UserId ACreatedConnLink (Maybe SimplexDomain) ContactShortLinkData
-  | APIPrepareGroup UserId CreatedLinkContact DirectLink (Maybe SimplexDomain) GroupShortLinkData
+  | APIPrepareContact {userId :: UserId, connLink :: ACreatedConnLink, verifiedDomain :: Maybe (StrJSON "SimplexDomain" SimplexDomain), contactSLinkData :: ContactShortLinkData}
+  | APIPrepareGroup {userId :: UserId, connLinkContact :: CreatedLinkContact, direct :: DirectLink, verifiedDomain :: Maybe (StrJSON "SimplexDomain" SimplexDomain), groupSLinkData :: GroupShortLinkData}
   | APIChangePreparedContactUser ContactId UserId
   | APIChangePreparedGroupUser GroupId UserId
   | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}
@@ -587,7 +587,7 @@ data ChatCommand
   | Connect {incognito :: IncognitoEnabled, connTarget_ :: Maybe AConnectTarget}
   | APIVerifyContactDomain {contactId :: ContactId}
   | APIVerifyGroupDomain {groupId :: GroupId}
-  | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
+  | APIConnectContactViaAddress {userId :: UserId, incognito :: IncognitoEnabled, contactId :: ContactId}
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
   | DeleteContact ContactName ChatDeleteMode
   | ClearContact ContactName
@@ -1160,11 +1160,11 @@ data SendRef
   deriving (Eq, Show)
 
 data ChatPagination
-  = CPLast Int
-  | CPAfter ChatItemId Int
-  | CPBefore ChatItemId Int
-  | CPAround ChatItemId Int
-  | CPInitial Int
+  = CPLast {count :: Int}
+  | CPAfter {chatItemId :: ChatItemId, count :: Int}
+  | CPBefore {chatItemId :: ChatItemId, count :: Int}
+  | CPAround {chatItemId :: ChatItemId, count :: Int}
+  | CPInitial {count :: Int}
   deriving (Show)
 
 data PaginationByTime

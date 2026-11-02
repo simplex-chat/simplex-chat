@@ -72,6 +72,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
 import Simplex.Chat.Files
+import Simplex.Chat.Image (cropToSquare, decodeResizable, resizeImageDataUri)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.Batch (BatchMode, encodeBatchElement)
@@ -177,6 +178,9 @@ maxImageSize = 261120 * 2 -- auto-receive on mobiles
 maxProfileImageSize :: Int
 maxProfileImageSize = 12500
 
+maxImagePreviewSize :: Int64
+maxImagePreviewSize = 14000
+
 checkProfileImageSize :: Maybe ImageData -> CM ()
 checkProfileImageSize = mapM_ $ \(ImageData t) ->
   let size = T.length t
@@ -205,27 +209,35 @@ imageExtensions = [".jpg", ".jpeg", ".png", ".gif"]
 -- read a .png/.jpg/.jpeg image file and encode it as a data: URL ImageData, or return an error message
 loadImageData :: FilePath -> IO (Either String ImageData)
 loadImageData path = case map toLower (takeExtension path) of
-  ".png" -> readImage "image/png"
-  ".jpg" -> readImage "image/jpg"
-  ".jpeg" -> readImage "image/jpg"
+  ext | ext `elem` ([".png", ".jpg", ".jpeg"] :: [String]) -> readImage
   _ -> pure $ Left $ "unsupported image extension in " <> path <> " (only .png, .jpg, .jpeg)"
   where
-    readImage mime = do
+    readImage = do
       exists <- doesFileExist path
       if not exists
         then pure $ Left $ "image file not found: " <> path
         else do
           bs <- B.readFile path
-          pure $
-            if B.null bs
-              then Left $ "image file is empty: " <> path
-              else Right $ ImageData $ "data:" <> mime <> ";base64," <> safeDecodeUtf8 (B64.encode bs)
+          if B.null bs
+            then pure $ Left $ "image file is empty: " <> path
+            else first (\e -> "image file cannot be resized: " <> path <> " (" <> e <> ")") <$> (runExceptT (resize bs) `catchAll` (pure . Left . show))
+    resize bs = do
+      (img, profile) <- ExceptT $ decodeResizable bs
+      ImageData . safeDecodeUtf8 . LB.toStrict <$> ExceptT (resizeImageDataUri (fromIntegral maxProfileImageSize) (cropToSquare img) profile)
 
 readProfileImageFile :: FilePath -> CM ImageData
 readProfileImageFile path = liftIO (loadImageData path) >>= either throwCmdError pure
 
 fixedImagePreview :: ImageData
 fixedImagePreview = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="
+
+imagePreview :: CryptoFile -> IO ImageData
+imagePreview f = either (const fixedImagePreview) (ImageData . safeDecodeUtf8 . LB.toStrict) <$> (runExceptT preview `catchAll` (pure . Left . show))
+  where
+    preview = do
+      s <- withExceptT show $ CF.readFile f
+      (img, profile) <- ExceptT $ decodeResizable $ LB.toStrict s
+      ExceptT $ resizeImageDataUri maxImagePreviewSize img profile
 
 imageFilePrefix :: String
 imageFilePrefix = "IMG_"
@@ -1987,8 +1999,9 @@ processChatCommand cxt nm = \case
   APIGetUpdatedGroupLinkData groupId -> withUser $ \user -> do
     gInfo@GroupInfo {groupProfile = p} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     case p of
-      GroupProfile {publicGroup = Just PublicGroupProfile {groupLink = sLnk}} | useRelays' gInfo -> do
-        (_, cData@(ContactLinkData _ UserContactData {relays = currentRelayLinks}), _) <- getShortLinkConnReq' nm user sLnk
+      GroupProfile {publicGroup = Just PublicGroupProfile {groupLink = sLnk, publicGroupId}} | useRelays' gInfo -> do
+        (FixedLinkData {linkEntityId}, cData@(ContactLinkData _ UserContactData {relays = currentRelayLinks}), _) <- getShortLinkConnReq' nm user sLnk
+        unless ((B64UrlByteString <$> linkEntityId) == Just publicGroupId) $ throwChatError CEInvalidConnReq
         groupSLinkData_ <- liftIO $ decodeLinkUserData cData
         gInfo' <- case groupSLinkData_ of
           Just sLinkData -> (\(g, _, _) -> g) <$> updateGroupFromLinkData user gInfo sLinkData Nothing
@@ -2215,7 +2228,8 @@ processChatCommand cxt nm = \case
   APIConnectPlan _ Nothing _ _ -> throwChatError CEInvalidConnReq
   APIPrepareContact userId accLink verifiedDomain contactSLinkData -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile = profile@Profile {contactDomain}, message, business, chatLayout} = contactSLinkData
-        domain_ = if verifiedDomain == (claimDomain <$> contactDomain) then verifiedDomain else Nothing
+        vDomain = unStrJSON <$> verifiedDomain
+        domain_ = if vDomain == (claimDomain <$> contactDomain) then vDomain else Nothing
     welcomeSharedMsgId <- forM message $ \_ -> getSharedMsgId
     case accLink of
       ACCL SCMContact ccLink
@@ -2258,7 +2272,8 @@ processChatCommand cxt nm = \case
         pure $ CRNewPreparedChat user $ AChat SCTDirect chat
   APIPrepareGroup userId ccLink direct verifiedDomain groupSLinkData -> withUserId userId $ \user -> do
     let GroupShortLinkData {groupProfile = gp@GroupProfile {description}} = groupSLinkData
-        domain_ = if verifiedDomain == groupClaim gp then verifiedDomain else Nothing
+        vDomain = unStrJSON <$> verifiedDomain
+        domain_ = if vDomain == groupClaim gp then vDomain else Nothing
     welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
     (gInfo, hostMember_) <- preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId domain_
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
@@ -2355,8 +2370,8 @@ processChatCommand cxt nm = \case
         groupSLinkData_ <- liftIO $ decodeLinkUserData cData
         -- Validate link entity ID matches group profile's publicGroupId (relay groups must have both)
         case groupSLinkData_ of
-          Just GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {publicGroupId}}}
-            | (B64UrlByteString <$> linkEntityId) == Just publicGroupId -> pure ()
+          Just sLinkData@GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {publicGroupId}}}
+            | (B64UrlByteString <$> linkEntityId) == Just publicGroupId -> void $ updateGroupFromLinkData user gInfo sLinkData Nothing
           _ -> throwChatError CEInvalidConnReq
         let publicGroupData_ = groupSLinkData_ >>= \GroupShortLinkData {publicGroupData} -> publicGroupData
             publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
@@ -3584,8 +3599,8 @@ processChatCommand cxt nm = \case
       unless (any (`isSuffixOf` map toLower fPath) imageExtensions) $ throwChatError CEFileImageType {filePath}
       fileSize <- getFileSize filePath
       unless (fileSize <= maxImageSize) $ throwChatError CEFileImageSize {filePath}
-      -- TODO include file description for preview
-      processChatCommand cxt nm $ APISendMessages sendRef False Nothing False [composedMessage (Just f) (MCImage "" fixedImagePreview)]
+      preview <- liftIO $ imagePreview (f {filePath} :: CryptoFile)
+      processChatCommand cxt nm $ APISendMessages sendRef False Nothing False [composedMessage (Just f) (MCImage "" preview)]
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
   SendFileDescription _chatName _f -> throwCmdError "TODO"
@@ -4796,7 +4811,7 @@ processChatCommand cxt nm = \case
             _ -> processChatCommand cxt nm $ APIConnect userId incognito $ Just ccLink
       | otherwise = pure $ CRConnectionPlan user ccLink planSimplexName otherSimplexName plan
       where
-        vName = nameDomain <$> planSimplexName
+        vName = StrJSON . nameDomain <$> planSimplexName
         joinChannelViaRelays :: CreatedLinkContact -> GroupShortLinkData -> CM ChatResponse
         joinChannelViaRelays ccl gld = do
           GroupInfo {groupId} <- prepareChannelGroup
@@ -7077,8 +7092,8 @@ chatCommandP =
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
       "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> ((Just <$> strP) <|> A.takeTill (== ' ') $> Nothing) <*> ((" resolve=" *> planResolveModeP) <|> pure PRMUnknown) <*> optional (" sig=" *> jsonP)),
-      "/_prepare contact " *> (APIPrepareContact <$> A.decimal <* A.space <*> connLinkP <*> optional (" domain=" *> strP) <* A.space <*> jsonP),
-      "/_prepare group " *> (APIPrepareGroup <$> A.decimal <* A.space <*> connLinkP' <*> (" direct=" *> onOffP <|> pure True) <*> optional (" domain=" *> strP) <* A.space <*> jsonP),
+      "/_prepare contact " *> (APIPrepareContact <$> A.decimal <* A.space <*> connLinkP <*> optional (" domain=" *> (StrJSON <$> strP)) <* A.space <*> jsonP),
+      "/_prepare group " *> (APIPrepareGroup <$> A.decimal <* A.space <*> connLinkP' <*> (" direct=" *> onOffP <|> pure True) <*> optional (" domain=" *> (StrJSON <$> strP)) <* A.space <*> jsonP),
       "/_set contact user @" *> (APIChangePreparedContactUser <$> A.decimal <* A.space <*> A.decimal),
       "/_set group user #" *> (APIChangePreparedGroupUser <$> A.decimal <* A.space <*> A.decimal),
       "/_connect contact @" *> (APIConnectPreparedContact <$> A.decimal <*> incognitoOnOffP <*> optional (A.space *> msgContentP)),

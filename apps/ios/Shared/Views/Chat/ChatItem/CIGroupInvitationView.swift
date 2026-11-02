@@ -28,58 +28,63 @@ struct CIGroupInvitationView: View {
 
     var body: some View {
         let action = !chatItem.chatDir.sent && groupInvitation.status == .pending
-        let v = ZStack(alignment: .bottomTrailing) {
-            ZStack {
-                VStack(alignment: .leading) {
-                    groupInfoView(action)
-                        .padding(.horizontal, 2)
-                        .padding(.top, 8)
-                        .padding(.bottom, 6)
-                        .overlay(DetermineWidth())
-
-                    Divider().frame(width: frameWidth)
-
-                    if chat.chatInfo.groupInfo != nil {
-                        Text(chatItem.chatDir.sent ? String.localizedStringWithFormat(NSLocalizedString("For %@ only", comment: ""), groupInvitation.localDisplayName) : NSLocalizedString("For you only", comment: ""))
-                            .font(.caption)
-                            .foregroundColor(theme.colors.secondary)
+        let v = ItemWithMeta {
+            CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary, showStatus: false, showEdited: false)
+        } content: { inlineMeta in
+            ZStack(alignment: Alignment(horizontal: .trailing, vertical: .lastTextBaseline)) {
+                ZStack {
+                    VStack(alignment: .leading) {
+                        groupInfoView(action)
+                            .padding(.horizontal, 2)
+                            .padding(.top, 8)
+                            .padding(.bottom, 6)
                             .overlay(DetermineWidth())
-                    }
 
-                    if action {
-                        VStack(alignment: .leading, spacing: 2) {
-                            groupInvitationText()
+                        Divider().frame(width: frameWidth)
+
+                        if chat.chatInfo.groupInfo != nil {
+                            Text(chatItem.chatDir.sent ? String.localizedStringWithFormat(NSLocalizedString("For %@ only", comment: ""), groupInvitation.localDisplayName) : NSLocalizedString("For you only", comment: ""))
+                                .font(.caption)
+                                .foregroundColor(theme.colors.secondary)
                                 .overlay(DetermineWidth())
+                        }
+
+                        if action {
+                            VStack(alignment: .leading, spacing: 2) {
+                                groupInvitationText()
+                                    .overlay(DetermineWidth())
+                                (
+                                    Text(chatIncognito ? "Tap to join incognito" : "Tap to join")
+                                        .foregroundColor(inProgress ? theme.colors.secondary : chatIncognito ? .indigo : theme.colors.primary)
+                                        .font(.callout)
+                                    + metaReserve(inlineMeta)
+                                )
+                                .overlay(DetermineWidth())
+                            }
+                        } else {
                             (
-                                Text(chatIncognito ? "Tap to join incognito" : "Tap to join")
-                                    .foregroundColor(inProgress ? theme.colors.secondary : chatIncognito ? .indigo : theme.colors.primary)
-                                    .font(.callout)
-                                + Text(verbatim: "   ")
-                                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, colorMode: .transparent, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
+                                groupInvitationText()
+                                + metaReserve(inlineMeta)
                             )
                             .overlay(DetermineWidth())
                         }
-                    } else {
-                        (
-                            groupInvitationText()
-                            + Text(verbatim: "   ")
-                            + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, colorMode: .transparent, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
-                        )
-                        .overlay(DetermineWidth())
+                    }
+                    .padding(.bottom, 2)
+
+                    if progressByTimeout {
+                        ProgressView().scaleEffect(2)
                     }
                 }
-                .padding(.bottom, 2)
 
-                if progressByTimeout {
-                    ProgressView().scaleEffect(2)
+                if let inlineMeta {
+                    inlineMeta
                 }
             }
-
-            CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary, showStatus: false, showEdited: false)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
+            .if(inlineMeta == nil) { $0.modifier(ChatItemClipped(chatItem, tailVisible: false)) }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
         .textSelection(.disabled)
         .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
         .onChange(of: inProgress) { inProgress in
@@ -134,6 +139,12 @@ struct CIGroupInvitationView: View {
     private func groupInvitationText() -> Text {
         Text(groupInvitationStr())
             .font(.callout)
+    }
+
+    private func metaReserve(_ inlineMeta: CIMetaView?) -> Text {
+        inlineMeta == nil
+        ? Text(verbatim: "")
+        : Text(verbatim: "   ") + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, colorMode: .transparent, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
     }
 
     private func groupInvitationStr() -> LocalizedStringKey {

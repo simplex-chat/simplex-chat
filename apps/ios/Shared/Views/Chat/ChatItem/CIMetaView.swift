@@ -113,10 +113,13 @@ func ciMetaText(
     showTimesamp: Bool,
     signedFileVerified: Bool? = nil,
     showSignature: Bool = true,
-    showFileEncryption: Bool = true
+    showFileEncryption: Bool = true,
+    unbreakable: Bool = false
 ) -> Text {
     var r = Text("")
     var space: Text? = nil
+    let separator = unbreakable ? Text(verbatim: "\u{00A0}") : textSpace
+    let joiner = Text(verbatim: unbreakable ? "\u{2060}" : "")
     let appendSpace = {
         if let sp = space {
             r = r + sp
@@ -125,19 +128,19 @@ func ciMetaText(
     }
     let resolved = colorMode.resolve(color)
     if showEdited, meta.itemEdited {
-        r = r + statusIconText("pencil", resolved)
+        r = r + statusIconText("pencil", resolved) + joiner
     }
     if meta.disappearing {
-        r = r + statusIconText("timer", resolved).font(.caption2)
+        r = r + statusIconText("timer", resolved).font(.caption2) + joiner
         let ttl = meta.itemTimed?.ttl
         if ttl != chatTTL {
             r = r + colored(Text(shortTimeText(ttl)), resolved)
         }
-        space = textSpace
+        space = separator
     }
     if showViaProxy, meta.sentViaProxy == true {
         appendSpace()
-        r = r + statusIconText("arrow.forward", resolved?.opacity(0.67)).font(.caption2)
+        r = r + statusIconText("arrow.forward", resolved?.opacity(0.67)).font(.caption2) + joiner
     }
     if showStatus {
         appendSpace()
@@ -151,25 +154,25 @@ func ciMetaText(
         } else if !meta.disappearing {
             r = r + colorMode.statusSpacer(meta.itemStatus.sent)
         }
-        space = textSpace
+        space = separator
     }
     if let enc = encrypted, showFileEncryption {
         appendSpace()
         r = r + statusIconText(enc ? "lock" : "lock.open", resolved)
-        space = textSpace
+        space = separator
     }
     if showSignature, meta.msgVerified?.verified == true && signedFileVerified != false {
         appendSpace()
         r = r + colored(Text(Image(systemName: "checkmark.seal")), resolved)
-        space = textSpace
+        space = separator
     } else if meta.msgVerified == .sigMissing {
         appendSpace()
         r = r + colored(Text(Image(systemName: "xmark.seal")), colorMode.resolve(.red))
-        space = textSpace
+        space = separator
     }
     if showTimesamp {
         appendSpace()
-        r = r + colored(meta.timestampText, resolved)
+        r = r + colored(unbreakable ? Text(verbatim: formatTimestampMeta(meta.itemTs).replacingOccurrences(of: " ", with: "\u{00A0}")) : meta.timestampText, resolved)
     }
     return r.font(.caption)
 }
