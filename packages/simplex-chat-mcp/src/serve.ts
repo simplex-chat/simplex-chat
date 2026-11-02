@@ -1,4 +1,4 @@
-import {mkdirSync} from "fs"
+import {mkdirSync, rmSync} from "fs"
 import {Server} from "http"
 import {join} from "path"
 import {McpServer, McpServerFactory} from "@modelcontextprotocol/server"
@@ -91,6 +91,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
   const networkConfig = await chat.apiGetNetworkConfig()
   await chat.apiSetNetworkConfig({...networkConfig, smpProxyMode: T.SMPProxyMode.Always, smpProxyFallback: T.SMPProxyFallback.AllowProtected})
   await setTempFolder(chat, join(data, "tmp"))
+  rmSync(join(data, "files", "sent"), {recursive: true, force: true})
   const events = bufferEvents(chat)
   await chat.startChat()
   const user = await updatedUser(chat, created, options.displayName)

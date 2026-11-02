@@ -163,7 +163,7 @@ DIR/files/CHAT/    files downloaded from CHAT, each named by    0700, created at
                    its file ID and the extension of its name
 DIR/files/sent/    resized copies of sent images, one folder    0700; a copy 0600
                    per send, deleted at sndFileCompleteXFTP
-                   or sndFileError
+                   or sndFileError; the folder deleted at start
 ```
 
 - DIR is `~/.simplex-mcp/NAME` unless `--data` sets it.
@@ -856,6 +856,7 @@ serve(NAME, options):
   profile = the user, or created: /_create user {profile: {displayName: <--display-name or NAME>, fullName: "", peerType: agent}, pastTimestamp: false}
   cfg = /network; /_network {cfg with smpProxyMode: always, smpProxyFallback: allowProtected}   # the apps' defaults, SimpleXAPI.kt:5427-5447
   mkdir DIR/tmp, mode 0700; /_temp_folder DIR/tmp   # SetTempFolder, Commands.hs:650-653; the XFTP work folder, read by startChat (Commands.hs:290-291)
+  delete DIR/files/sent/, the resized copies of the last run
   buffer events; chat.startChat()
   --display-name differs from profile.displayName, or peerType is not agent: /_profile <user> {the profile with displayName and peerType agent}       # APIUpdateProfile, parser Commands.hs:6399; before startChat the core returns chatNotStarted
   group = /_groups <user> -> the group with customData.simplexMcp.control, or createControlChat()

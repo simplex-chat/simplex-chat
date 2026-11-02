@@ -354,7 +354,7 @@ extension            type    preview                        file sent
 other                file    none                           unchanged
 ```
 
-- A copy in `DATA/files/sent/` is deleted after `sndFileCompleteXFTP` or `sndFileError`.
+- A copy in `DATA/files/sent/` is deleted after `sndFileCompleteXFTP` or `sndFileError`; the folder is deleted at start.
 - The send card adds the file's name, size and full path; an image card is an image message with the preview.
 
 Refused paths, checked after resolving symbolic links, each folder by its real path:

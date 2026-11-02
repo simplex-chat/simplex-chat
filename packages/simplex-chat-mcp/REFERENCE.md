@@ -393,7 +393,7 @@ register options:
   lock               PID of the running server
   tmp/               the SimpleX core's work folder for files in transfer
   files/#3/          files downloaded from chat #3, each named by its file ID and the extension of its name, such as 12.pdf
-  files/sent/        resized copies of the images the agent sends, each deleted when its upload completes or fails
+  files/sent/        resized copies of the images the agent sends, each deleted when its upload completes or fails, and all at start
 ```
 
 The folder is readable only by the user: every start sets its mode to 0700, except on Windows.
