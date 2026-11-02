@@ -158,6 +158,7 @@ DIR/headers.json   {"Authorization": "Bearer <token>"}, written 0600
                    at every start
 DIR/server.json    {name, port, expireHours} of the server      0600
 DIR/lock           PID of the running server                    0600
+DIR/tmp/           the core's temp folder: files in transfer    0700, set before startChat
 DIR/files/CHAT/    files downloaded from CHAT                   0700, created at the first download from CHAT
 DIR/files/sent/    resized copies of sent images, one folder    0700; a copy 0600
                    per send, deleted at sndFileCompleteXFTP
@@ -846,6 +847,7 @@ serve(NAME, options):
   chat = ChatApi.init({type: "sqlite", filePrefix: DIR/simplex})
   profile = the user, or created: /_create user {profile: {displayName: <--display-name or NAME>, fullName: "", peerType: agent}, pastTimestamp: false}
   cfg = /network; /_network {cfg with smpProxyMode: always, smpProxyFallback: allowProtected}   # the apps' defaults, SimpleXAPI.kt:5427-5447
+  mkdir DIR/tmp, mode 0700; /_temp_folder DIR/tmp   # SetTempFolder, Commands.hs:650-653; the XFTP work folder, read by startChat (Commands.hs:290-291)
   buffer events; chat.startChat()
   --display-name differs from profile.displayName, or peerType is not agent: /_profile <user> {the profile with displayName and peerType agent}       # APIUpdateProfile, parser Commands.hs:6399; before startChat the core returns chatNotStarted
   group = /_groups <user> -> the group with customData.simplexMcp.control, or createControlChat()

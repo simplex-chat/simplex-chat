@@ -1,3 +1,4 @@
+import {mkdirSync} from "fs"
 import {Server} from "http"
 import {join} from "path"
 import {McpServer, McpServerFactory} from "@modelcontextprotocol/server"
@@ -89,6 +90,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
   const created = (await chat.apiGetActiveUser()) ?? (await chat.apiCreateActiveUser({displayName: options.displayName ?? name, fullName: "", peerType: T.ChatPeerType.Agent}))
   const networkConfig = await chat.apiGetNetworkConfig()
   await chat.apiSetNetworkConfig({...networkConfig, smpProxyMode: T.SMPProxyMode.Always, smpProxyFallback: T.SMPProxyFallback.AllowProtected})
+  await setTempFolder(chat, join(data, "tmp"))
   const events = bufferEvents(chat)
   await chat.startChat()
   const user = await updatedUser(chat, created, options.displayName)
@@ -193,6 +195,12 @@ export async function waitForCancelledCards(stopped: Action[], seconds: number, 
     if (endWait.aborted) end()
     else endWait.addEventListener("abort", end, {once: true})
   })
+}
+
+async function setTempFolder(chat: api.ChatApi, folder: string): Promise<void> {
+  mkdirSync(folder, {recursive: true, mode: 0o700})
+  const r = await chat.sendChatCmd(`/_temp_folder ${folder}`)
+  if (r.type !== "cmdOk") throw new api.ChatCommandError("error setting the temp folder", r)
 }
 
 async function updatedUser(chat: api.ChatApi, user: T.User, displayName: string | undefined): Promise<T.User> {

@@ -257,6 +257,7 @@ tools.ts      download            new: attach; knownChat; the item and its file;
               downloadFile        new, public: one download per file ID, a promise settled by onFile
               onFile              new: settles the promise of the file's download
 serve.ts      startAgent          Agent.data: the data folder
+                                  /_temp_folder DATA/tmp, mode 0700, before startChat
               events              rcvFileComplete, rcvFileError, rcvFileSndCancelled, chatItemUpdated: tools.onFile
 control.ts    ownerRequest        /receive [CHAT] N; /approve CHAT files; /revoke CHAT files
               standings           new: messages and files, with the custom data key, the tool and the reply words

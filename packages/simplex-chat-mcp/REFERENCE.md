@@ -388,6 +388,7 @@ register options:
   headers.json       the token as the Authorization header for Claude Code, readable only by the user
   server.json        name, port and expiry of the server, read by register
   lock               PID of the running server
+  tmp/               the SimpleX core's work folder for files in transfer
   files/#3/          files downloaded from chat #3; the core makes each name unique
   files/sent/        resized copies of the images the agent sends, each deleted when its upload completes or fails
 ```
