@@ -357,6 +357,7 @@ namesRefundChatTests = describe "StoreService names: operator refund" $ do
   it "refuses a balance held by an order whose invoice holds money, before its expiry and past it" testRefundFundedHolder
   it "lists every order of a chain of three that the balance came through" testRefundChain
   it "stops the chain of a late-paid difference order at itself, its cents marked late" testRefundLateChain
+  it "marks the extra credited to an order its invoice paid as overpaid" testRefundOverpaidChain
   it "is not a group command" $ \_ -> groupCmdAction GROwner "/refund s 10000" `shouldBe` IgnoreMsg
 
 refundRaw :: HasCallStack => ChatController -> Text -> IO (Either Text Text)
@@ -473,6 +474,16 @@ testRefundLateChain ps = withStoreService ps $ \_ _ cc -> do
   refundRaw cc "inv-d" `shouldReturn` Right ("Order d: balance $24.00 (credited $24.00, refunded $0.00). Paid by: " <> paidBy <> ". To record its refund: //refund inv-d 2400")
   refundRaw cc "inv-d 2400" `shouldReturn` Right ("Recorded a refund of $24.00 for order d. Refund it now, by: " <> paidBy <> ".")
   Balances.figures st "s" t0 `shouldReturn` Just (15000, 15000, 0, Nothing)
+
+testRefundOverpaidChain :: HasCallStack => TestParams -> IO ()
+testRefundOverpaidChain ps = withStoreService ps $ \_ _ cc -> do
+  let st = chatStore cc
+      paidBy = "order o: $200.00 by btc on invoice inv-o, $24.00 overpaid by btc on invoice inv-o"
+  Balances.placeOrderRow st "o" False 20000 t0
+  queued <- reg st "o"
+  write st queued {nrPhase = PQueued} `shouldReturn` Written (nrVersion queued + 1)
+  Balances.creditLate st (Balances.lateCredit "o" 1 (Just 40000) 2400) `shouldReturn` True
+  refundRaw cc "inv-o" `shouldReturn` Right ("Order o: balance $24.00 (credited $24.00, refunded $0.00). Paid by: " <> paidBy <> ". To record its refund: //refund inv-o 2400")
 
 data TurnHolder a = TurnHolder {thAction :: Async a, thRelease :: MVar ()}
 
