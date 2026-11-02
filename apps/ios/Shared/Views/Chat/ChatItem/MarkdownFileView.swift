@@ -60,8 +60,8 @@ private let lessThanStandIn = "\u{1}"
 
 private func htmlShowingTagsAsText(_ text: String) -> String {
     MarkdownParser(modifiers: [imagesWithinBudget()])
-        .html(from: text.replacingOccurrences(of: "<", with: lessThanStandIn))
-        .replacingOccurrences(of: lessThanStandIn, with: "&lt;")
+        .html(from: text.replacingOccurrences(of: "<", with: lessThanStandIn, options: .literal))
+        .replacingOccurrences(of: lessThanStandIn, with: "&lt;", options: .literal)
 }
 
 private func withinMarkdownLimits(_ lines: [String]) -> Bool {
