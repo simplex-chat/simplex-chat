@@ -1142,10 +1142,10 @@ attachment(file, as):
   type, preview and duration by the extension of the real path, or type file when as is file (section send of the tools)
   {path: the real path, name, size, type, resize: JPEG or PNG sent as an image, preview, duration}
 
-refused real paths:
-  under ~/.ssh/ or ~/.gnupg/, the home folder by its real path
+refused real paths, each folder below by its real path:
+  under ~/.ssh/ or ~/.gnupg/
   file names id_*, *.pem, *.key, *.p12, *.pfx, in any case
-  under DIR, except DIR/files/
+  under DIR or ~/.simplex-mcp/, except DIR/files/
 
 perform send:
   file: its real path and size read again; another real path or size: failed, "file: PATH changed after the request."

@@ -303,7 +303,7 @@ A received message with a file has a `file` field: its name, size, type (image, 
 - `.mp4` and `.mov` as a video, unchanged, with the first frame as its preview and its duration when `ffmpeg` and `ffprobe` are installed, otherwise a gray preview;
 - other files as a file, unchanged; `as: "file"` sends an image or video this way too.
 
-The server checks the file by its real path, after symbolic links, and refuses files under `~/.ssh` and `~/.gnupg`, files named `id_*`, `*.pem`, `*.key`, `*.p12` and `*.pfx`, and the files of its data folder except downloads. The card and the message show the real path. A file whose real path or size changed before the approval is not sent: the action fails.
+The server checks the file by its real path, after symbolic links, and refuses files under `~/.ssh`, `~/.gnupg` and `~/.simplex-mcp`, each folder taken by its real path too, files named `id_*`, `*.pem`, `*.key`, `*.p12` and `*.pfx`, and the files of its data folder except those under `files/`. The card and the message show the real path. A file whose real path or size changed before the approval is not sent: the action fails.
 
 Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in [`PLAN.md`](PLAN.md), section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
 
@@ -409,7 +409,7 @@ One server runs per data folder: a second one exits, because two processes on on
 - Without `--owners`, whoever opens the link first becomes an owner. The link works once.
 - With `--owners`, only the listed owners approve.
 - After `/approve #N all`, the agent sends to that chat without asking, files included; `/revoke #N` ends it.
-- The server refuses to send private keys and its own files; other files the agent can read are sent after approval.
+- The server refuses to send private keys, its own files and the files under `~/.simplex-mcp`, where agents keep their data; other files the agent can read are sent after approval.
 - After `/approve #N files`, the agent downloads every file sent to that chat without asking; `/revoke #N files` ends it.
 - Peers of a chat connected as the agent see its profile; peers of an incognito chat see a random profile made for that chat only.
 - The agent has no address, so nobody can contact it first.

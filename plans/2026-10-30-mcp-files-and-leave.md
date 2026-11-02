@@ -352,13 +352,13 @@ other                file    none                           unchanged
 - A copy in `DATA/files/sent/` is deleted after `sndFileCompleteXFTP` or `sndFileError`.
 - The send card adds the file's name, size and full path; an image card is an image message with the preview.
 
-Refused paths, checked after resolving symbolic links:
+Refused paths, checked after resolving symbolic links, each folder by its real path:
 ```
 path
 ~/.ssh/**
 ~/.gnupg/**
 files named id_*, *.pem, *.key, *.p12, *.pfx
-the server's data folder, except DATA/files/
+the server's data folder and ~/.simplex-mcp/**, except DATA/files/
 ```
 
 - The refusal is posted to the agent control chat and returned to the agent as a tool error.
