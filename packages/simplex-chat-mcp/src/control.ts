@@ -1,8 +1,8 @@
-import {ChatEvent, T} from "@simplex-chat/types"
+import {CEvt, ChatEvent, T} from "@simplex-chat/types"
 import * as qrcode from "qrcode"
 import {api, core} from "simplex-chat"
 import {Action, ActionHooks, Actions, ConnectAction, DownloadAction, Standing, Subject, ToolError, hasUnknownServers, leaveVerbs, subjectText, summary} from "./actions"
-import {ExitError, chatErrorOf, errorText, log, logError, oneLine, serverHostname, shellWord} from "./log"
+import {ExitError, chatErrorOf, errorText, fileError, log, logError, oneLine, serverHostname, shellWord} from "./log"
 import {chatNumber, chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "./messages"
 import type {OwnerEntry, QrCodeSize} from "./serve"
 import {AgentTools, chatSubject, isActive, isConnected, memberCurrent, refusedFileReason} from "./tools"
@@ -154,6 +154,17 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (!this.actions.lost) this.post(refused(inChat, codeSpan(oneLine(path)))).catch(error => logError("refused file", error))
   }
 
+  fileNotSent({chatItem_, errorMessage}: CEvt.SndFileError): void {
+    const file = chatItem_?.chatItem.file
+    const chat = chatItem_ === undefined ? undefined : chatRef(chatItem_.chatInfo)
+    if (chatItem_ === undefined || file === undefined || chat === undefined) return logError("file not sent", errorMessage)
+    const {chatInfo} = chatItem_
+    const reason = fileError(file) ?? errorMessage
+    const notSent = (shown: Shown, name: string, error: string): string => `The file ${name} was not sent to ${chatName(chatSubject(chatInfo), shown.name)} (${chat}): ${error}.`
+    log(notSent(inLog, oneLine(file.fileName), oneLine(reason)))
+    if (!this.actions.lost) this.post(notSent(inChat, codeSpan(oneLine(file.fileName)), codeSpan(oneLine(reason)))).catch(error => logError("file not sent", error))
+  }
+
   onMessage(ci: T.AChatItem): void {
     const {chatItem} = ci
     if (this.actions.lost || chatItem.chatDir.type !== "groupRcv" || chatItem.content.type !== "rcvMsgContent") return
@@ -245,10 +256,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   private receive(action: DownloadAction): void {
     this.tools
       .downloadFile(action)
-      .then(
-        path => this.postMessage({fileSource: {filePath: path}, msgContent: fileContent(action.file, ""), quotedItemId: action.card, mentions: {}}),
-        error => this.post(`Action ${action.n}: the file was not received: ${codeSpan(oneLine(errorText(error)))}.`),
-      )
+      .then(path => this.postMessage({fileSource: {filePath: path}, msgContent: fileContent(action.file, ""), quotedItemId: action.card, mentions: {}}))
+      .catch(error => this.post(`Action ${action.n}: the file was not received: ${codeSpan(oneLine(errorText(error)))}.`))
       .catch(error => logError(`action ${action.n} file`, error))
   }
 

@@ -330,7 +330,7 @@ command                 reply
                         Files from #9 have no standing approval.
 /receive [CHAT] N       none; the file arrives as a reply to the card
                         Action N has no file.
-                        Action N: the file was not received: `<error>`.
+                        Action N: the file was not received: `<error>`.   (the download or the post of the file failed)
 ```
 - The files approval: custom data key `simplexMcpFiles`, `{approvedBy, approvedById, approvedAt}`; the approval of messages keeps `simplexMcp`.
 - The file posted by `/receive` has the item's type and the sender's preview, with no caption.
@@ -380,7 +380,7 @@ tools.ts      sendSchema      file, as; text optional
               onSentFile      new: the copy in DATA/files/sent/ deleted
 control.ts    refusedFile     new: the refusal posted and logged
               requestLines    send: the attaching line
-serve.ts      events          sndFileCompleteXFTP, sndFileError: tools.onSentFile
+serve.ts      events          sndFileCompleteXFTP, sndFileError: tools.onSentFile; sndFileError: control.fileNotSent, posted and logged
 ```
 
 `attachment(file, as)`, at the call, before the action:

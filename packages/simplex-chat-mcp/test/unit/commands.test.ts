@@ -407,6 +407,20 @@ describe("downloads in the agent control chat", () => {
     const send = (await setup()).control
     expect(await send.ownerCommand(alice, {keyword: "receive", params: "@4 5"})).toBe("Action 5 has no file.")
   })
+
+  it("replies when the received file can't be posted", async () => {
+    const {chat, action, control} = await downloadSetup()
+    const path = join(data, "files", "#2", "7.pdf")
+    chat.chats.get("#2")!.items.push(fileItem(30, {type: "file", text: "report"}, {type: "rcvComplete"}, {chatDir: {type: "groupRcv", groupMember: bob}, fileSource: {filePath: path}}))
+    const send = chat.apiSendMessages.bind(chat)
+    chat.apiSendMessages = async (target, messages) => {
+      if (messages[0].fileSource !== undefined) throw new Error("file too large")
+      return send(target, messages)
+    }
+    await control.ownerCommand(alice, {keyword: "receive", params: `${action.n}`})
+    await flushed()
+    expect(chat.sent.at(-1)!.messages[0].msgContent.text).toBe("Action 1: the file was not received: `file too large`.")
+  })
 })
 
 describe("files sent by the agent in the agent control chat", () => {
@@ -432,6 +446,19 @@ describe("files sent by the agent in the agent control chat", () => {
     await flushed()
     expect(lines.at(-1)).toBe(`Refused to send ${key} to bot SimpleX Directory (@4): ${refusal}`)
     expect(chat.sent.map(({chat: [, id], messages: [{msgContent}]}) => [id, msgContent.text])).toEqual([[10, `Refused to send \`${key}\` to bot SimpleX Directory (@4): ${refusal}`]])
+  })
+
+  it("posts and logs the failed upload of a sent file", async () => {
+    const lines: string[] = []
+    jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
+    const chat = agentChats()
+    const {control} = await controlWith(chat, actionsWith("requests", fakeHooks()))
+    const sentFile = fileItem(40, {type: "file", text: ""}, {type: "sndError", sndFileError: {type: "auth"}}, {chatDir: {type: "directSnd"}})
+    control.fileNotSent({type: "sndFileError", user, chatItem_: event(chatInfoOf(chat, "@4"), sentFile), fileTransferMeta: {fileId: 7}, errorMessage: "XFTP AUTH"} as unknown as Parameters<Control["fileNotSent"]>[0])
+    await flushed()
+    const reason = "Wrong key or unknown file chunk address - most likely file is deleted."
+    expect(lines.at(-1)).toBe(`The file report.pdf was not sent to bot SimpleX Directory (@4): ${reason}.`)
+    expect(chat.sent.map(({chat: [, id], messages: [{msgContent}]}) => [id, msgContent.text])).toEqual([[10, `The file \`report.pdf\` was not sent to bot SimpleX Directory (@4): \`${reason}\`.`]])
   })
 
   it("shows the image's preview on the send card", async () => {

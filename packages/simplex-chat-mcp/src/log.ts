@@ -208,6 +208,8 @@ function fileStatusError(status: T.CIFileStatus): string | undefined {
       return "The download was aborted."
     case "rcvError":
       return fileErrorText(status.rcvFileError)
+    case "sndError":
+      return fileErrorText(status.sndFileError)
     case "invalid":
       return oneLine(`Invalid file: ${status.text}`)
     default:

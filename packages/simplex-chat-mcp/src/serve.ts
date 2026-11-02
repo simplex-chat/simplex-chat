@@ -152,8 +152,10 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
       case "rcvFileDescrReady":
         return tools.onFileDescription()
       case "sndFileCompleteXFTP":
-      case "sndFileError":
         return tools.onSentFile(event.fileTransferMeta)
+      case "sndFileError":
+        tools.onSentFile(event.fileTransferMeta)
+        return control.fileNotSent(event)
     }
     if (isControlEvent(event, control.groupId)) {
       controlEvents = controlEvents.then(() => control.onEvent(event)).catch(error => logError(`${event.type} in the agent control chat`, error))

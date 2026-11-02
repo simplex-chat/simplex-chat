@@ -299,6 +299,7 @@ action created                  Action 2: send to bot SimpleX Directory (@4)
 action created                  Action 1: connect to bot SimpleX Directory, as itself
 action created                  Action 7: download report.pdf from group Builders (#3)
 file refused                    Refused to send /home/alice/.ssh/id_ed25519 to bot SimpleX Directory (@4): private keys and the server's own files are not sent.
+upload failed                   The file trail.jpg was not sent to group Builders (#3): <error>.
 action decided                  Action 2 approved by Alice: sent. | Action 1 approved by Alice: connected. | Action 5 approved by Alice: connection requested. | Action 7 approved by Alice: downloaded. | Action 2 approved by Alice: failed: <error>.
 action decided                  Action 2 rejected by Alice. | Action 2 expired.
 mode host                       Action 2: performed without approval (mode host). | ...; failed: <error>.
@@ -370,6 +371,7 @@ mentioning @Switchback                       mention
 
 - The card of a send with an image or video is an image or video message with the file's preview, fitted as on download cards.
 - A refused file is posted, with the same line in the log: ``Refused to send `/home/alice/.ssh/id_ed25519` to bot SimpleX Directory (@4): private keys and the server's own files are not sent.``
+- A failed upload (`sndFileError`) is posted, with the same line in the log: ``The file `trail.jpg` was not sent to group Builders (#3): `<error>`.``, the error in the apps' words for the item's `sndError` (fileErrorText, log.ts), otherwise the event's `errorMessage`; an event without an item of a chat is logged only.
 
 - Cards show no expiry; `/pending` shows it.
 - The commands of sends and leaves name the chat, and `/'approve @4 all'` approves all sends to it (section Commands).
@@ -502,7 +504,8 @@ CHAT not the action's chat                  Action 10 is not for #3.
 /revoke CHAT files, no files approval       Files from #3 have no standing approval.
 /receive [CHAT] N                           none; the file is a reply to the card
 /receive [CHAT] N, N not a download         Action 10 has no file.
-/receive [CHAT] N, the download fails       Action 7: the file was not received: `<error>`.
+/receive [CHAT] N, the download or the post Action 7: the file was not received: `<error>`.
+of the file fails
 /leave CHAT                                 Left business Ridgeline (#9), requested by Alice. (a contact: Deleted bot SimpleX Directory (@4), requested by Alice.)
 /leave CHAT, CHAT not the agent's           No chat #13. /list shows the agent's chats.
 /list, no chats                             No chats.
@@ -1181,7 +1184,7 @@ result {chat, item, responses: messages, more}
 - Responses come from events, not from reads after the sent item: group items are ordered by `item_ts`, the sender's time, so a response can sort before the sent item (`getChatItemIDs`, `Store/Messages.hs:1533-1607`). Item IDs are `AUTOINCREMENT` (`chat_schema.sql:476`), so a response has an ID above the sent item's.
 - The library delivers each event to the handler in order (`api.js:113-142`); a response that arrives before `/_send` returns is kept, and an item received before the sent one has a lower ID and is dropped.
 - `wait` starts when the message is sent; when the call attaches to an action already done, at the call.
-- `sndFileCompleteXFTP` and `sndFileError` delete the folder of a copy in `DIR/files/sent/` (`fileTransferMeta.filePath`). The core emits `sndFileCompleteXFTP` for a group message after the file descriptions are sent (Library/Subscriber.hs:312), for a contact when the description message is sent (`checkSndInlineFTComplete`, :694, :2603-2613), and `sndFileError` at an upload error (:364).
+- `sndFileCompleteXFTP` and `sndFileError` delete the folder of a copy in `DIR/files/sent/` (`fileTransferMeta.filePath`). The core emits `sndFileCompleteXFTP` for a group message after the file descriptions are sent (Library/Subscriber.hs:312), for a contact when the description message is sent (`checkSndInlineFTComplete`, :694, :2603-2613), and `sndFileError` at an upload error (:364), which the agent control chat and the log also get (section What the owner sees).
 
 ### Card size
 
