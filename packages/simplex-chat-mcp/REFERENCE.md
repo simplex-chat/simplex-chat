@@ -9,13 +9,13 @@ What it isn't:
 - **Not a push channel into the agent.** An MCP server can't start a turn of the agent, so news reaches it only as results of calls it makes: waits inside `send` and `receive`, or polling.
 - **Not an always-on service.** The agent acts while its session runs; services that must always be up should be bots.
 - **Not hosted.** It runs on your machine, one process per agent.
-- **Not in v0.1:**
+- **Not in v0.2:**
   - an address for the agent: nobody can contact it first;
   - your approval of incoming messages;
   - a Claude Code plugin or channel;
   - registration in other hosts.
 
-Status: v0.1. [`TESTING.md`](TESTING.md) describes a local build and test. The design, the tools and the scenarios are in [`PLAN.md`](PLAN.md).
+Status: v0.2. [`TESTING.md`](TESTING.md) describes a local build and test. The design, the tools and the scenarios are in [`PLAN.md`](PLAN.md).
 
 - [Requirements](#requirements)
 - [Quick start](#quick-start)
@@ -54,7 +54,7 @@ At its first start the server downloads the SimpleX core library, 29 to 50 MB de
    The first start prints, after two lines about downloading the SimpleX core library and the Node.js add-on:
 
    ```
-   SimpleX MCP server 0.1.1, agent "my-agent"
+   SimpleX MCP server 0.2.0, agent "my-agent"
    Data folder: /home/alice/.simplex-mcp/my-agent
    Approval mode: requests
    Agent control chat "My Agent" created.
@@ -68,7 +68,7 @@ At its first start the server downloads the SimpleX core library, 29 to 50 MB de
 
    `-y` answers npm's prompt to install the package. The server asks no questions: every choice is an option. The QR code of such a link is 37 columns wide and 19 lines high; `--qr-code large` draws it twice as wide and twice as high.
 
-2. In the SimpleX app, scan the QR code or open the link, and tap Join. The chat "My Agent" appears in the chat list, and the agent writes: `I'm your agent. I ask here before I connect or send.` The terminal prints:
+2. In the SimpleX app, scan the QR code or open the link, and tap Join. The chat "My Agent" appears in the chat list, and the agent writes: `I'm your agent. I ask here before I connect, send, download a file or leave a chat.` The terminal prints:
 
    ```
    Alice joined (member 3) and is now an owner. The link is deleted.
@@ -306,7 +306,7 @@ A received message with a file has a `file` field: its name, size, type (image, 
 
 An empty file is refused, and so is `as` without `file`. A message with a file holds at most 15602 bytes with the file's name, its preview, the quoted text of `reply_to` and the mentioned names: a `send` over it is refused with `text: too long for a message with this image; shorten it.` An image's preview takes up to 14000 bytes, so its text has about 1 KB.
 
-The server checks the file by its real path, after symbolic links, and refuses files under `~/.ssh`, `~/.gnupg` and `~/.simplex-mcp`, each folder taken by its real path too, files named `id_*`, `*.pem`, `*.key`, `*.p12` and `*.pfx`, and the files of its data folder except those under `files/`. The card and the message show the real path. A file whose real path, size, inode or change time differs at the send from the request is not sent: the action fails.
+The server checks the file by its real path, after symbolic links, and refuses files under `~/.ssh`, `~/.gnupg` and `~/.simplex-mcp`, each folder taken by its real path too, files named `id_*`, `*.pem`, `*.key`, `*.p12` and `*.pfx`, and the files of its data folder except those under `files/`. The card shows the real path. A file whose real path, size, inode or change time differs at the send from the request is not sent: the action fails.
 
 Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in [`PLAN.md`](PLAN.md), section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
 
@@ -360,7 +360,8 @@ serve options:
   --data DIR             data folder (default: ~/.simplex-mcp/NAME)
   --display-name TEXT    the agent's name in SimpleX (default at the first start: NAME)
   --approve MODE         what the owner approves in the agent control chat:
-                           requests  the agent's connections and messages (default)
+                           requests  the agent's connections, messages, downloads
+                                     and leaving chats (default)
                            host      nothing; the MCP host asks
   --owners [ID:NAME,...] only these owners approve; without a list, the link
                          adds an observer and its ID is printed at the join.

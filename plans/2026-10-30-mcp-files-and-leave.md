@@ -37,7 +37,7 @@ Phases:
 ```
 place                       now                                     method
 serve.ts:90                 /network socks=off smp-proxy=always …    apiGetNetworkConfig, apiSetNetworkConfig
-serve.ts:170-188            /sql chat, /sql agent                    removed: wait on item status events
+serve.ts:170-188            /sql chat, /sql agent                    removed: a fixed wait at stop, decision 15
 messages.ts:178-180         /_get chat REF PAGINATION                apiGetChat with ChatPagination
 messages.ts:182-184         /_read chat items REF IDS                apiChatItemsRead
 tools.ts:471                /_connect plan USER TARGET               apiConnectPlan, whole response
@@ -89,10 +89,7 @@ now                                                                after
 - `incognito=off` and `pcc=off` are the parser defaults (`Library/Commands.hs:7110`, `:6750`); the query is `clqNoFilters` (`Controller.hs:1169`), the default at `:6752`.
 - `/network socks=off …` sets every field of `SimpleNetCfg` except the timeout (`netCfgP`, `Library/Commands.hs:7324-7335`). The library starts the core with the same values (`defaultSimpleNetCfg`, `Controller.hs:1329-1340`; `Mobile.hs:292`; `Chat.hs:274`), except `hostMode`: onionViaSocks in place of public. Without a SOCKS proxy, both select the same hosts (simplexmq `8bc4d3601`, `Client.hs:531-543`, `Agent/Client.hs:1263-1265`).
 
-Wait at stop, C4:
-- An edit of a card already sent emits no status event: the SENT of the edit's message reaches `updateGroupItemsStatus` (`Library/Subscriber.hs:4152-4172`) through `insertChatItemMessage_` (`Store/Messages.hs:2818`), and `updateGroupMemSndStatus'` reports no change for a member already at `sent`.
-- (a) a core command for the pending deliveries of a group's connections, documented in the bot API; `stop` polls it, at most 10 s, as `deliveryTimeout` now (`serve.ts:16`)
-- (b) after the outcome edits, `stop` posts "The server stopped." in the agent control chat and waits for `chatItemsStatusesUpdated` with group status `sent` for every member, at most 10 s; the agent sends a queue's messages oldest first, one at a time (`getPendingQueueMsg`, simplexmq `Agent/Store/AgentStore.hs:1115-1131`), so the edits before it are sent
+Wait at stop, decision 15: `waitForCancelledCards` (`serve.ts`) waits `--stop-wait` seconds after the cards of the stopped actions are edited or posted, and a second signal ends the wait.
 
 ## /leave CHAT
 
@@ -397,7 +394,7 @@ as without file                                   as: applies only with file.
 the message over 15602 bytes                      text: too long for a message with this image; shorten it.
 ```
 - The refusal is posted: ``Refused to send `PATH` to bot SimpleX Directory (@4): private keys and the server's own files are not sent.``; the same line goes to the log.
-- The card and the message carry the real path.
+- The card shows the real path.
 
 Previews:
 ```

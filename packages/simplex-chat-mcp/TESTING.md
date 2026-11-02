@@ -1,4 +1,4 @@
-# Testing @simplex-chat/mcp v0.1
+# Testing @simplex-chat/mcp v0.2
 
 Node.js 22. Claude Code runs on the same computer as `serve`: the server listens on 127.0.0.1 only.
 
@@ -28,7 +28,7 @@ Until the package is published, the printed hint `npx -y @simplex-chat/mcp regis
 ## Start, join, register
 
 1. `node dist/cli.js serve my-agent --display-name "My Agent"`. NAME, here `my-agent`, names the data folder and the Claude Code entry; `--display-name` is the name people see in SimpleX. It prints the data folder (`~/.simplex-mcp/my-agent`), creates the agent control chat "My Agent", and prints a QR code and a link that works once. For a short link the QR code has 33 modules and takes 37 columns × 19 lines; `--qr-code large` prints it at 74 × 37. Keep it running; Ctrl-C stops it. `node dist/cli.js --help` lists the options.
-2. In the SimpleX app, scan the QR code, or paste the link into "Connect via link". If the code does not scan, restart with `--qr-code large`. The chat "My Agent" appears with `I'm your agent. I ask here before I connect or send.` The terminal prints `Alice joined (member N) and is now an owner. The link is deleted.` and the register hint.
+2. In the SimpleX app, scan the QR code, or paste the link into "Connect via link". If the code does not scan, restart with `--qr-code large`. The chat "My Agent" appears with `I'm your agent. I ask here before I connect, send, download a file or leave a chat.` The terminal prints `Alice joined (member N) and is now an owner. The link is deleted.` and the register hint.
 3. `node dist/cli.js register my-agent`. It prints `Added to Claude Code: scope user, server simplex-my-agent.` Run it in a terminal with the same `CLAUDE_CONFIG_DIR` as the one where `claude` runs: `claude mcp add-json` writes to the config of its own environment.
 4. Add `"mcp__simplex-my-agent"` to `permissions.allow` in `~/.claude/settings.json`, so Claude Code does not prompt for each call; approval happens in the SimpleX app.
 5. Start `claude`. `/mcp` shows `simplex-my-agent` connected with 6 tools. A session started before `register` does not load the entry; start a new one.
@@ -72,7 +72,7 @@ Files, in a group of yours:
 2. Send a photo to the group from the app. `Check for new messages in that group.` The message has `file` with `type: image` and `status: offered`.
 3. `Download that photo.` Card: `I want to download a file from Alice in group <name> (#N):`, with the photo's preview, the file name, its size, and `Servers: known.` when the app uploaded it to servers the agent also has. For a large video asked for right after sending it, the call waits until the upload finishes, and only then the card appears.
 4. Tap `/receive #N A`: the photo arrives in the agent control chat as a reply to the card, and the card stays pending.
-5. Tap `/approve #N A`: the call returns `status: done` and the path, in `~/.simplex-mcp/my-agent/files/#N/`.
+5. Tap `/approve #N A`: the call returns `status: done` and the path, `~/.simplex-mcp/my-agent/files/#N/<file ID>.jpg`.
 6. Send a document, `Download that file.`, and tap `/approve #N files` on its card: the reply is `Files approved for group <name> (#N) by Alice. /revoke #N files`, and the download completes. The next file downloads with no card; `/list` shows `, files approved by Alice`. Tap `/revoke #N files`.
 7. Send another file, `Download it.`, and tap `/reject #N A`: the call returns `status: rejected`.
 8. `Send the photo /home/alice/trail.jpg to that group, with the text "trail map".` Card: `I want to send a message to group <name>:`, `` `trail map` `` and ``attaching image `/home/alice/trail.jpg`, SIZE``, with the photo's preview. Approve it: the group gets the photo, resized to at most 261120 bytes, with its preview.

@@ -125,8 +125,8 @@ npm name       @simplex-chat/mcp
 binary         simplex-mcp -> dist/cli.js
 licence        AGPL-3.0
 Node.js        22
-chat library   simplex-chat 7.1.0-beta.6.4
-types          @simplex-chat/types ^7.1.0-beta.6.1
+chat library   simplex-chat ^7.1.0-beta.6.6
+types          @simplex-chat/types ^7.1.0-beta.6.2
 MCP SDK        @modelcontextprotocol/server 2.3.1, @modelcontextprotocol/node 2.1.1
 QR code        qrcode ^1.5
 tests          jest with ts-jest, as packages/simplex-chat-nodejs; end to end with a local smp-server (SMP_SERVER), as steward test/e2e, and a local xftp-server (XFTP_SERVER)
@@ -323,7 +323,7 @@ Names written by peers and members (contacts, groups, members, approvers) are fo
 At the owner's join:
 
 ```
-My Agent: I'm your agent. I ask here before I connect or send.
+My Agent: I'm your agent. I ask here before I connect, send, download a file or leave a chat.
 ```
 
 ### Connect card
@@ -1329,7 +1329,7 @@ sequenceDiagram
   S->>P: link and QR code of the agent control chat "My Agent"
   O->>S: joins "My Agent" by the link
   S->>S: owner role for Alice; link deleted
-  S->>O: My Agent: "I'm your agent. I ask here before I connect or send."
+  S->>O: My Agent: "I'm your agent. I ask here before I connect, send, download a file or leave a chat."
   S->>P: "Alice joined (member 3) and is now an owner." + register hint
   P->>P: npx -y @simplex-chat/mcp register my-agent: claude mcp remove; claude mcp add-json --scope user simplex-my-agent {...}
 ```
