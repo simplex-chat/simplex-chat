@@ -101,7 +101,7 @@ fun BannerDismissButton(modifier: Modifier, onDismiss: () -> Unit) {
   Icon(
     painterResource(MR.images.ic_close),
     contentDescription = stringResource(MR.strings.icon_descr_close_button),
-    tint = if (isInDarkTheme()) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary,
+    tint = if (isInDarkTheme()) MaterialTheme.colors.background else MaterialTheme.colors.secondary,
     modifier = modifier
       .padding(end = 4.dp, top = 4.dp)
       .clip(CircleShape)

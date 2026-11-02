@@ -94,7 +94,7 @@ struct BannerDismissButton: View {
 
     var body: some View {
         Image(systemName: "multiply")
-            .foregroundColor(colorScheme == .dark ? theme.colors.onBackground : theme.colors.secondary)
+            .foregroundColor(colorScheme == .dark ? theme.colors.background : theme.colors.secondary)
             .frame(width: 12, height: 12)
             .padding(.top, 12)
             .padding(.bottom, 4)
