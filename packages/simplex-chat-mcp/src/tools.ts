@@ -1280,12 +1280,12 @@ async function messagePreview(image: Promise<Buffer>): Promise<string> {
 }
 
 function videoFrame(path: string): Promise<Buffer> {
-  return commandOutput("ffmpeg", ["-v", "error", "-i", path, "-frames:v", "1", "-f", "image2pipe", "-vcodec", "mjpeg", "-"])
+  return commandOutput("ffmpeg", ["-nostdin", "-v", "error", "-protocol_whitelist", "file", "-i", path, "-frames:v", "1", "-f", "image2pipe", "-vcodec", "mjpeg", "-"])
 }
 
 async function videoDuration(path: string): Promise<number> {
   try {
-    const output = await commandOutput("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path])
+    const output = await commandOutput("ffprobe", ["-v", "error", "-protocol_whitelist", "file", "-show_entries", "format=duration", "-of", "csv=p=0", path])
     const seconds = Math.round(Number(output.toString().trim()))
     return Number.isFinite(seconds) ? seconds : 0
   } catch {

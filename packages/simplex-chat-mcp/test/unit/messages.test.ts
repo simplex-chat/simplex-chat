@@ -632,8 +632,8 @@ describe("send with a file", () => {
     expect(chat.sent[0].messages[0].msgContent).toEqual({type: "video", text: "ride", image: preview, duration: 13})
     expect(resizeCalls(resize)).toEqual([["frame", "messagePreview"]])
     expect(commands.mock.calls.map(([command, args, options]) => [command, args, options])).toEqual([
-      ["ffmpeg", ["-v", "error", "-i", video, "-frames:v", "1", "-f", "image2pipe", "-vcodec", "mjpeg", "-"], {encoding: "buffer", timeout: 30_000, maxBuffer: 64 * 1024 * 1024}],
-      ["ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", video], {encoding: "buffer", timeout: 30_000, maxBuffer: 64 * 1024 * 1024}],
+      ["ffmpeg", ["-nostdin", "-v", "error", "-protocol_whitelist", "file", "-i", video, "-frames:v", "1", "-f", "image2pipe", "-vcodec", "mjpeg", "-"], {encoding: "buffer", timeout: 30_000, maxBuffer: 64 * 1024 * 1024}],
+      ["ffprobe", ["-v", "error", "-protocol_whitelist", "file", "-show_entries", "format=duration", "-of", "csv=p=0", video], {encoding: "buffer", timeout: 30_000, maxBuffer: 64 * 1024 * 1024}],
     ])
   })
 

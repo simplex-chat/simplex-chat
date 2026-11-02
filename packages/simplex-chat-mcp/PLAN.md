@@ -664,7 +664,7 @@ other              file      none                                               
 ```
 
 - The fixed preview is a 16 × 9 mid-gray PNG. It replaces a preview that the core can't make, and ffmpeg's frame when ffmpeg is absent or fails; the duration is then 0. A resizing error sends the file unchanged. The errors of the preview and of the resizing are logged.
-- `ffmpeg -v error -i PATH -frames:v 1 -f image2pipe -vcodec mjpeg -` and `ffprobe -v error -show_entries format=duration -of csv=p=0 PATH`, 30 s each, at most 64 MB of output.
+- `ffmpeg -nostdin -v error -protocol_whitelist file -i PATH -frames:v 1 -f image2pipe -vcodec mjpeg -` and `ffprobe -v error -protocol_whitelist file -show_entries format=duration -of csv=p=0 PATH`, 30 s each, at most 64 MB of output: both open local files only, and ffmpeg takes no commands from standard input.
 - Responses are marked read; the ones over `limit` stay unread for `receive`.
 - Hosts with a fixed tool-call limit (60 s to 300 s) need `wait` below it.
 

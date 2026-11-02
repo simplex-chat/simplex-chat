@@ -401,7 +401,7 @@ video         ffmpeg's first frame, then core.resizeImage(frame, MessagePreview)
               ffmpeg absent or failing: logged, the fixed preview                       absent or failing: 0
 ```
 - The fixed preview: a 16 × 9 mid-gray PNG data URI.
-- `ffmpeg -v error -i PATH -frames:v 1 -f image2pipe -vcodec mjpeg -` and `ffprobe -v error -show_entries format=duration -of csv=p=0 PATH`, 30 s each.
+- `ffmpeg -nostdin -v error -protocol_whitelist file -i PATH -frames:v 1 -f image2pipe -vcodec mjpeg -` and `ffprobe -v error -protocol_whitelist file -show_entries format=duration -of csv=p=0 PATH`, 30 s each.
 
 `performSend` with a file:
 ```
