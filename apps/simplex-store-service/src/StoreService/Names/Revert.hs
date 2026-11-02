@@ -1,12 +1,15 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module StoreService.Names.Revert (RevertName (..), decodeRevert) where
+module StoreService.Names.Revert (RevertName (..), decodeRevert, revertText) where
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as BC
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import Data.Text (Text)
+import Data.Text.Encoding (decodeLatin1)
 import StoreService.Names.Abi (selector)
 
 -- | The custom errors of SimplexController, SimplexSponsor, BaseRegistrarImplementation and SimplexResolver.
@@ -106,6 +109,10 @@ revertSignature = \case
   RNUnexpiredCommitmentExists -> Just "UnexpiredCommitmentExists(bytes32)"
   RNZeroAddress -> Just "ZeroAddress()"
   RNWithoutData -> Nothing
+
+-- | The error's name as the contracts declare it, Nothing for a revert without data.
+revertText :: RevertName -> Maybe Text
+revertText = fmap (decodeLatin1 . BC.takeWhile (/= '(')) . revertSignature
 
 revertSelectors :: Map ByteString RevertName
 revertSelectors = M.fromList [(selector signature, n) | n <- [minBound .. maxBound], Just signature <- [revertSignature n]]
