@@ -2,7 +2,7 @@
 
 ## Problem
 
-Settings → Chat data → Database passphrase & export → Import database, with a file that is not a chat archive, deletes every profile, contact and message, and the database backups. On desktop and Android the "Error importing chat database" alert is not shown; "Error starting chat" follows.
+Settings → Chat data → Database passphrase & export → Import database, with a file that is not a chat archive, deletes every profile, contact and message, and the database backups. On desktop and Android the "Error importing chat database" alert is not shown. When the chat was running, the app restarts it and "Error starting chat" is shown; when it was stopped, no alert is shown and the progress indicator stays on.
 
 ## Cause
 
@@ -10,16 +10,16 @@ Settings → Chat data → Database passphrase & export → Import database, wit
   - Kotlin `importArchive` in `DatabaseView.kt`;
   - Kotlin `importArchive` in `MigrateToDevice.kt`;
   - iOS `DatabaseView.importArchive`;
-  - iOS `MigrateToDeviceView.importArchive`.
+  - iOS `MigrateToDevice.importArchive`.
 - `deleteStorage` (`Archive.hs`) removes both databases, their `.bak` and `.exported` copies, the files folder, the assets folder and the temp folder.
 - `importArchive` opens the archive only afterwards, so a file that is not a zip fails after the data is gone.
-- Kotlin `DatabaseView.importArchive` catches `Error`, while `apiImportArchive` throws `Exception`: the alert is skipped and the exception reaches `stopChatRunBlockStartChat`, which starts the chat on the deleted storage.
+- Kotlin `DatabaseView.importArchive` catches `Error`, while `apiImportArchive` throws `Exception`: the alert is skipped, and when the chat was running, `stopChatRunBlockStartChat` tries to start it, which fails because the core marked the store as changed.
 
 ## Fix
 
 - `ArchiveConfig` has a new optional field `replaceStorage`.
 - Core `importArchive`:
-  1. unpacks the archive into the temp folder;
+  1. unpacks the archive into a new temporary directory (under `parentTempDirectory`, else the system temp directory);
   2. fails with `not a chat archive: no <file>` when `simplex_v1_chat.db` or `simplex_v1_agent.db` is missing;
   3. closes the stores;
   4. with `replaceStorage = true`, runs `removeStorage` (the removal steps of `deleteStorage`, now shared); otherwise backs up the databases as before;
@@ -33,5 +33,6 @@ Settings → Chat data → Database passphrase & export → Import database, wit
 - Core: `Archive.hs`, `Controller.hs` (`ArchiveConfig`), `Commands.hs` (`ExportArchive`).
 - Kotlin: `DatabaseView.kt`, `MigrateToDevice.kt`, `SimpleXAPI.kt` (`ArchiveConfig`).
 - iOS: `DatabaseView.swift`, `MigrateToDevice.swift`, `AppAPITypes.swift` (`ArchiveConfig`).
+- Specs: `apps/ios/spec/database.md`, `apps/multiplatform/spec/api.md`, `apps/multiplatform/spec/database.md`.
 - `MigrateToAppGroupView.swift` imports without `replaceStorage`, as before.
 - Test: `testImportNonArchiveKeepsData` in `tests/ChatTests/Direct.hs`.

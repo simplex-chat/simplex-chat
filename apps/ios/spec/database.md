@@ -252,7 +252,7 @@ ChatCommand.apiImportArchive(config: ArchiveConfig)
 // Response: ChatResponse2.archiveImported(archiveErrors: [ArchiveError])
 ```
 
-Import replaces the current databases with the archive contents. The core first checks that the archive contains both databases; a file that is not a chat archive is rejected before the current data is touched. The app passes `replaceStorage: true`. The app must be restarted after import.
+Import replaces the current databases with the archive contents. The core first checks that the archive contains both databases; a file that is not a chat archive is rejected before the current data is touched. The Import database and Migrate to device screens pass `replaceStorage: true`. The app must be restarted after import.
 
 ### Archive Errors
 
