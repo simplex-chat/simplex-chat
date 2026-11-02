@@ -303,7 +303,7 @@ A received message with a file has a `file` field: its name, size, type (image, 
 - `.mp4` and `.mov` as a video, unchanged, with the first frame as its preview and its duration when `ffmpeg` and `ffprobe` are installed, otherwise a gray preview;
 - other files as a file, unchanged; `as: "file"` sends an image or video this way too.
 
-The server checks the file by its real path, after symbolic links, and refuses files under `~/.ssh`, `~/.gnupg` and `~/.simplex-mcp`, each folder taken by its real path too, files named `id_*`, `*.pem`, `*.key`, `*.p12` and `*.pfx`, and the files of its data folder except those under `files/`. The card and the message show the real path. A file whose real path or size changed before the approval is not sent: the action fails.
+The server checks the file by its real path, after symbolic links, and refuses files under `~/.ssh`, `~/.gnupg` and `~/.simplex-mcp`, each folder taken by its real path too, files named `id_*`, `*.pem`, `*.key`, `*.p12` and `*.pfx`, and the files of its data folder except those under `files/`. The card and the message show the real path. A file whose real path, size, inode or change time differs at the send from the request is not sent: the action fails.
 
 Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in [`PLAN.md`](PLAN.md), section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
 

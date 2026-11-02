@@ -1140,7 +1140,7 @@ attachment(file, as):
   not absolute: tool error "file not absolute"; realpath fails: "no file at the path"; not a regular file: "not a regular file"; not readable: "not readable"
   the real path refused (below): post and log the refusal; tool error "refused path"
   type, preview and duration by the extension of the real path, or type file when as is file (section send of the tools)
-  {path: the real path, name, size, type, resize: JPEG or PNG sent as an image, preview, duration}
+  {path: the real path, name, size, inode, changedAt: ctime, type, resize: JPEG or PNG sent as an image, preview, duration}
 
 refused real paths, each folder below by its real path:
   under ~/.ssh/ or ~/.gnupg/
@@ -1148,7 +1148,7 @@ refused real paths, each folder below by its real path:
   under DIR or ~/.simplex-mcp/, except DIR/files/
 
 perform send:
-  file: its real path and size read again; another real path or size: failed, "file: PATH changed after the request."
+  file: its real path, size, inode and change time (ctime) read again; any of them different: failed, "file: PATH changed after the request."
   file to resize: core.resizeImage(file, Image) -> DIR/files/sent/send-XXXXXX/NAME with .png for a PNG result, else .jpg; an error: logged, the file unchanged
   text' = text with @name for each mention it lacks
   action.responses = []; from now until the action is deleted, each newChatItems of chat adds its received message items (content.type rcvMsgContent) to action.responses

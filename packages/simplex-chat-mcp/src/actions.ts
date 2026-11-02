@@ -68,6 +68,8 @@ export interface Attachment {
   readonly path: string
   readonly name: string
   readonly size: number
+  readonly inode: number
+  readonly changedAt: number
   readonly type: FileType
   readonly resize: boolean
   readonly preview?: string

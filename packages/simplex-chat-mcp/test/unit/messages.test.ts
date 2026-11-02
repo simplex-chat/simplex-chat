@@ -579,7 +579,7 @@ describe("send with a file", () => {
     const photo = fileIn("Trail.PNG", "photo")
     const {chat, tools, action, result} = await sent({text: "trail map", file: photo})
     expect(result).toMatchObject({status: "done"})
-    expect(action.file).toEqual({path: photo, name: "Trail.PNG", size: 5, type: "image", resize: true, preview})
+    expect(action.file).toEqual({path: photo, name: "Trail.PNG", size: 5, inode: expect.any(Number), changedAt: expect.any(Number), type: "image", resize: true, preview})
     const [message] = chat.sent[0].messages
     const copy = message.fileSource!.filePath
     expect(dirname(dirname(copy))).toBe(join(data, "files", "sent"))

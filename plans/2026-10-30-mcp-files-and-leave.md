@@ -366,7 +366,7 @@ the server's data folder and ~/.simplex-mcp/**, except DATA/files/
 Phase 2 changes:
 ```
 file          function        change
-actions.ts    Attachment      new: path, name, size, type, preview, duration
+actions.ts    Attachment      new: path, name, size, inode, changedAt, type, preview, duration
               SendAction      file: Attachment; cardImage
 tools.ts      sendSchema      file, as; text optional
               send            attach check first; attachment before the action
@@ -405,7 +405,7 @@ video         ffmpeg's first frame, then core.resizeImage(frame, MessagePreview)
 
 `performSend` with a file:
 ```
-the real path checked again; a change or a refusal: failed
+the real path, size, inode and change time read again; a difference: failed
 JPEG and PNG: core.resizeImage(file, Image) written to DATA/files/sent/send-XXXXXX/NAME, .jpg or .png by the result's format (Image.hs:47-57); an error: logged, the file unchanged
 apiSendMessages with fileSource {filePath}, msgContent {type, text, image, duration}
 an error of the send: the copy deleted

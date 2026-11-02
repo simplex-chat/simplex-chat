@@ -779,13 +779,13 @@ export class AgentTools {
   }
 
   private async attachment(file: string, as: SendInput["as"], chatInfo: T.ChatInfo, chat: string): Promise<Attachment> {
-    const {path, size} = await realFile(file)
+    const {path, size, inode, changedAt} = await realFile(file)
     if (this.isRefused(path)) {
       this.agent.refusedFile(path, chatInfo, chat)
       throw new ToolError(`file: ${path} is refused: ${refusedFileReason}.`)
     }
     const {type, resize} = as === "file" ? otherFile : (attachmentTypes[extname(path).toLowerCase()] ?? otherFile)
-    return {path, name: basename(path), size, type, resize, ...(await attachmentMedia(path, type, resize))}
+    return {path, name: basename(path), size, inode, changedAt, type, resize, ...(await attachmentMedia(path, type, resize))}
   }
 
   private isRefused(path: string): boolean {
@@ -797,7 +797,8 @@ export class AgentTools {
 
   private async fileToSend(file: Attachment): Promise<string> {
     const current = await realFile(file.path).catch(() => undefined)
-    if (current?.path !== file.path || current.size !== file.size) throw new Error(`file: ${file.path} changed after the request.`)
+    const changed = current?.path !== file.path || current.size !== file.size || current.inode !== file.inode || current.changedAt !== file.changedAt
+    if (changed) throw new Error(`file: ${file.path} changed after the request.`)
     return file.resize ? this.resizedCopy(file) : file.path
   }
 
@@ -1235,7 +1236,7 @@ function unknownChat(chat: string): ToolError {
   return new ToolError(`No chat ${chat}. list shows the agent's chats.`)
 }
 
-async function realFile(file: string): Promise<{path: string; size: number}> {
+async function realFile(file: string): Promise<{path: string; size: number; inode: number; changedAt: number}> {
   if (!isAbsolute(file)) throw new ToolError("file: an absolute path is expected.")
   const path = await realpath(file).catch(() => {
     throw new ToolError(`file: no file at ${file}.`)
@@ -1245,7 +1246,7 @@ async function realFile(file: string): Promise<{path: string; size: number}> {
   await access(path, constants.R_OK).catch(() => {
     throw new ToolError(`file: ${path} can't be read.`)
   })
-  return {path, size: stats.size}
+  return {path, size: stats.size, inode: stats.ino, changedAt: stats.ctimeMs}
 }
 
 function realFolder(folder: string): string {
