@@ -34,6 +34,7 @@ import Simplex.Messaging.Util (safeDecodeUtf8)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain (TxHash (..))
+import StoreService.Names.Community (communityJSON)
 import StoreService.Names.Contracts (Contracts, sponsorNonce)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Store (Balance (..), BalanceHold (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), RegistrationPayment (..), getBalance, getRegistration, heldBy, lateWait)
@@ -67,7 +68,7 @@ readViewChain ct NameRegistration {nrPhase, nrOwner} = case nrPhase of
     none = ViewReads {vrIntentNonce = Nothing, vrUnread = []}
 
 viewJSON :: NamesConfig -> NameRegistration -> Maybe Balance -> Maybe LateWait -> ViewReads -> J.Value
-viewJSON NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSponsor}} r balance late ViewReads {vrIntentNonce, vrUnread} =
+viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSponsor}} r balance late ViewReads {vrIntentNonce, vrUnread} =
   J.object
     [ "id" .= rid,
       "version" .= nrVersion,
@@ -96,11 +97,13 @@ viewJSON NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSponsor}
       "intentNonce" .= vrIntentNonce,
       "unread" .= vrUnread,
       "expiresAt" .= nrExpiresAt,
-      "error" .= nrError
+      "error" .= nrError,
+      "community" .= communityJSON cfg (nrLabelHash r),
+      "terms" .= (if T.null nrAgreedTerms then Nothing else Just nrAgreedTerms)
     ]
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLinksRefusedAt, nrPhase, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
-    NameRegistration {nrYears, nrDuration, nrPrice, nrBalanceUsed, nrCommitTx, nrRegisterTx, nrRevealAfter, nrRevealBefore, nrExpiresAt, nrError} = r
+    NameRegistration {nrYears, nrDuration, nrPrice, nrBalanceUsed, nrCommitTx, nrRegisterTx, nrRevealAfter, nrRevealBefore, nrExpiresAt, nrError, nrAgreedTerms} = r
     txText (TxHash h) = hex h
     waitingText :: LateWait -> Text
     waitingText = \case

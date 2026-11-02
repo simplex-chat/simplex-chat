@@ -28,6 +28,7 @@ module StoreService.Names.Orders
     codeOrderInsert,
     checkTimestamp,
     checkDuration,
+    checkTerms,
     checkNameFree,
     checkPrice,
     versionWritten,
@@ -43,6 +44,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
+import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import Data.Int (Int64)
 import Data.Maybe (catMaybes)
 import Data.Scientific (toBoundedInteger)
@@ -60,6 +62,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveRefusal, spendLandedCode)
+import StoreService.Names.Community (communityJSON, termsFor, termsJSON)
 import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
@@ -98,6 +101,8 @@ data OrderRefusal
   | ORCatalogChanged Int
   | ORCode CodeRefusal
   | ORBalanceChanged (Maybe Balance)
+  | -- | the current terms and the name's community entry, as the answer carries them
+    ORTermsChanged J.Value J.Value
   | ORCodesOnly
   deriving (Eq, Show)
 
@@ -124,6 +129,10 @@ data Landing = LNotLanded | LRegistered Int64 | LChanged | LUnread
 maxSealedChars :: Int
 maxSealedChars = 11095
 
+-- | The terms version, of up to 32 characters, and a suffix such as /community.
+maxAgreedTermsChars :: Int
+maxAgreedTermsChars = 48
+
 -- | How far a signed request's timestamp may be from the service's clock.
 signedRequestSeconds :: Integer
 signedRequestSeconds = 600
@@ -144,9 +153,16 @@ parseOrderFields o = do
   ofCommitment <- bytes32FromHex =<< textField o "commitment"
   ofSealed <- textField o "sealed"
   unless (T.length ofSealed <= maxSealedChars) Nothing
+  ofAgreedTerms <- textField o "terms"
+  unless (agreedTermsFormat ofAgreedTerms) Nothing
   timestamp <- integerField =<< KM.lookup "timestamp" o
   signature <- either (const Nothing) Just . parseSignature =<< textField o "signature"
-  pure (OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed}, timestamp, signature)
+  pure (OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms}, timestamp, signature)
+
+agreedTermsFormat :: Text -> Bool
+agreedTermsFormat t = not (T.null t) && T.length t <= maxAgreedTermsChars && T.all termsChar t
+  where
+    termsChar c = isAsciiUpper c || isAsciiLower c || isDigit c || c `elem` ("._/-" :: String)
 
 textField :: J.Object -> J.Key -> Maybe Text
 textField o k = case KM.lookup k o of
@@ -248,6 +264,11 @@ checkDuration NamesConfig {nTermStart, nTermSlackSeconds} now years duration = d
   let free = toInteger duration - toInteger years * secondsPerYear
       expected = max 0 (unixSeconds nTermStart - unixSeconds now)
   when (free < 0 || abs (free - expected) > toInteger nTermSlackSeconds) $ Left ORBadRequest
+
+-- | The terms the order signed must be the current ones for its name, the community variant for a listed name.
+checkTerms :: NamesConfig -> OrderFields -> Either OrderRefusal ()
+checkTerms cfg OrderFields {ofLabelHash, ofAgreedTerms} =
+  unless (ofAgreedTerms == termsFor cfg ofLabelHash) $ Left $ ORTermsChanged (termsJSON cfg) (communityJSON cfg ofLabelHash)
 
 -- | A name being registered here searches as available, so it is checked here too.
 checkNameFree :: Contracts -> DBStore -> LabelHash -> IO (Either OrderRefusal ())
