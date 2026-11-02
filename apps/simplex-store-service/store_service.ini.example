@@ -20,7 +20,7 @@ trust_forwarded_for = on
 ; the names site (simplex.domains), with [names] only: its build directory (the default, /srv/names,
 ; is the Docker image's path), the directory it is exported to for a reverse proxy, and its port in
 ; the all-in-one deployment, which also answers the API and the webhooks
-; names_static_dir = /srv/names
+; names_static_dir = ./apps/simplex-domains/webapp/dist
 ; names_export_dir = /srv/names-export
 ; names_port = 8081
 
