@@ -1033,7 +1033,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           (userRemovalMsgs, otherMsgs) = partition removesUser aChatMsgs
           removesUser :: Either String AParsedMsg -> Bool
           removesUser = \case
-            Right (APMsg _ (ParsedMsg _ _ ChatMessage {chatMsgEvent = XGrpMemDel memId _ _})) -> memId == memberId' membership
+            Right (APMsg _ (ParsedMsg _ _ ChatMessage {chatMsgEvent = XGrpMemDel memId _ _})) -> sameMemberId memId membership
             _ -> False
           brokerTs = metaBrokerTs msgMeta
           processAChatMsg ::
