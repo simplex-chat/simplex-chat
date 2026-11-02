@@ -24,7 +24,7 @@ import StoreService.Service (ServiceState (..), newServiceState, storeService)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Waiters (newWaiters)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
-import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection)
+import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, termsVersion)
 import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), answerCall, awaitSent, withFakeEthNode)
 import Bots.StoreService.WebTests (capturingStderr, digestFixture)
 import Bots.StoreService.NamesSearchTests (aliceHex)
@@ -186,6 +186,7 @@ testNamesBoot ps = do
               "sealed" J..= ("sealed" :: Text),
               "price" J..= (10000 :: Int),
               "balance" J..= (10000 :: Int),
+              "terms" J..= termsVersion,
               "timestamp" J..= (1792574100 :: Int),
               "signature" J..= ("0x" <> T.replicate 32 "11" <> T.replicate 32 "22" <> "1b")
             ]
