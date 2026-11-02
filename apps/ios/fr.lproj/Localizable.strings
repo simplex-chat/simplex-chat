@@ -3751,7 +3751,7 @@ servers warning */
 "It can happen when you or your connection used the old database backup." = "Cela peut se produire lorsque vous ou votre contact avez utilisé une ancienne sauvegarde de base de données.";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Cela peut arriver quand :\n1. Les messages ont expiré dans le client expéditeur après 2 jours ou sur le serveur après 30 jours.\n2. Le déchiffrement du message a échoué, car vous ou votre contact avez utilisé une ancienne sauvegarde de base de données.\n3. La connexion a été compromise.";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 21 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Cela peut arriver quand :\n1. Les messages ont expiré dans le client expéditeur après 2 jours ou sur le serveur après 21 jours.\n2. Le déchiffrement du message a échoué, car vous ou votre contact avez utilisé une ancienne sauvegarde de base de données.\n3. La connexion a été compromise.";
 
 /* No comment provided by engineer. */
 "It protects your IP address and connections." = "Il protège votre adresse IP et vos connexions.";

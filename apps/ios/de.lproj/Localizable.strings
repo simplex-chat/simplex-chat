@@ -3751,7 +3751,7 @@ servers warning */
 "It can happen when you or your connection used the old database backup." = "Dies kann passieren, falls Sie oder Ihre Verbindung ein altes Datenbank-Backup genutzt haben.";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Dies kann unter folgenden Umständen passieren:\n1. Die Nachrichten verfallen auf dem sendenden Client-System nach 2 Tagen oder auf dem Server nach 30 Tagen.\n2. Die Nachrichten-Entschlüsselung ist fehlgeschlagen, da von Ihnen oder Ihrem Kontakt ein altes Datenbank-Backup genutzt wurde.\n3. Die Verbindung wurde kompromittiert.";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 21 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Dies kann unter folgenden Umständen passieren:\n1. Die Nachrichten verfallen auf dem sendenden Client-System nach 2 Tagen oder auf dem Server nach 21 Tagen.\n2. Die Nachrichten-Entschlüsselung ist fehlgeschlagen, da von Ihnen oder Ihrem Kontakt ein altes Datenbank-Backup genutzt wurde.\n3. Die Verbindung wurde kompromittiert.";
 
 /* No comment provided by engineer. */
 "It protects your IP address and connections." = "Ihre IP-Adresse und Verbindungen werden geschützt.";

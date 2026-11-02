@@ -3538,7 +3538,7 @@ servers warning */
 "It can happen when you or your connection used the old database backup." = "Это может произойти, когда Вы или Ваш контакт используете старую копию базы данных.";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Это может произойти, когда:\n1. Клиент отправителя удалил неотправленные сообщения через 2 дня, или сервер – через 30 дней.\n2. Расшифровка сообщения была невозможна, когда Вы или Ваш контакт использовали старую копию базы данных.\n3. Соединение компроментировано.";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 21 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Это может произойти, когда:\n1. Клиент отправителя удалил неотправленные сообщения через 2 дня, или сервер – через 21 день.\n2. Расшифровка сообщения была невозможна, когда Вы или Ваш контакт использовали старую копию базы данных.\n3. Соединение компроментировано.";
 
 /* No comment provided by engineer. */
 "It protects your IP address and connections." = "Защищает ваш IP-адрес и соединения.";

@@ -437,7 +437,7 @@
     <string name="message_deletion_prohibited">La eliminación irreversible de mensajes no está permitida en este chat.</string>
     <string name="message_deletion_prohibited_in_chat">Eliminación irreversible no permitida.</string>
     <string name="v4_3_improved_server_configuration">Configuración del servidor mejorada</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Esto puede ocurrir cuando: \n1. Los mensajes hayan caducado en el cliente saliente tras 2 días o en el servidor tras 30 días. \n2. El descifrado ha fallado porque tu o tu contacto estáis usando una copia de seguridad antigua de la base de datos. \n3. La conexión ha sido comprometida.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Esto puede ocurrir cuando: \n1. Los mensajes hayan caducado en el cliente saliente tras 2 días o en el servidor tras 21 días. \n2. El descifrado ha fallado porque tu o tu contacto estáis usando una copia de seguridad antigua de la base de datos. \n3. La conexión ha sido comprometida.</string>
     <string name="notification_preview_mode_message">Contacto y texto</string>
     <string name="member_info_section_title_member">Miembro</string>
     <string name="chat_item_ttl_none">nunca</string>

@@ -1920,7 +1920,7 @@
     <string name="rcv_msg_error_parse">erro: %s</string>
     <string name="alert_title_msg_error">Erro de mensagem</string>
     <string name="alert_text_msg_reception_error">A aplicação removeu esta mensagem após %1$d tentativas de a receber.</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Pode acontecer quando:\n1. As mensagens expiraram no cliente remetente após 2 dias ou no servidor após 30 dias.\n2. A desencriptação da mensagem falhou porque o utilizador usou uma cópia de segurança antiga da base de dados ou o seu contacto o fez.\n3. A ligação foi comprometida.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Pode acontecer quando:\n1. As mensagens expiraram no cliente remetente após 2 dias ou no servidor após 21 dias.\n2. A desencriptação da mensagem falhou porque o utilizador usou uma cópia de segurança antiga da base de dados ou o seu contacto o fez.\n3. A ligação foi comprometida.</string>
     <string name="alert_text_msg_bad_hash">O hash da mensagem anterior é diferente.</string>
     <string name="alert_text_msg_bad_id">O ID da mensagem seguinte está incorreto (menor ou igual ao anterior).\nPode acontecer devido a algum erro ou quando a ligação está comprometida.</string>
     <string name="alert_text_encryption_renegotiation_failed">A renegociação da encriptação falhou.</string>

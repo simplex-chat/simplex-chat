@@ -5759,13 +5759,13 @@ More improvements are coming soon!</target>
         <target>It can happen when you or your connection used the old database backup.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
+      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 21 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
         <source>It can happen when:
-1. The messages expired in the sending client after 2 days or on the server after 30 days.
+1. The messages expired in the sending client after 2 days or on the server after 21 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</source>
         <target>It can happen when:
-1. The messages expired in the sending client after 2 days or on the server after 30 days.
+1. The messages expired in the sending client after 2 days or on the server after 21 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</target>
         <note>No comment provided by engineer.</note>

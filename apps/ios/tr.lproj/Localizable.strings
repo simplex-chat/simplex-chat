@@ -3101,7 +3101,7 @@ servers warning */
 "It can happen when you or your connection used the old database backup." = "Siz veya bağlantınız eski veritabanı yedeğini kullandığında bu durum ortaya çıkabilir.";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Şu durumlarda ortaya çıkabilir:\n1. Mesajların gönderici istemcide 2 gün sonra veya sunucuda 30 gün sonra süresi dolmuştur.\n2. Siz veya kişi eski veritabanı yedeği kullandığı için mesaj şifre çözme işlemi başarısız olmuştur.\n3. Bağlantı tehlikeye girmiştir.";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 21 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Şu durumlarda ortaya çıkabilir:\n1. Mesajların gönderici istemcide 2 gün sonra veya sunucuda 21 gün sonra süresi dolmuştur.\n2. Siz veya kişi eski veritabanı yedeği kullandığı için mesaj şifre çözme işlemi başarısız olmuştur.\n3. Bağlantı tehlikeye girmiştir.";
 
 /* No comment provided by engineer. */
 "It protects your IP address and connections." = "IP adresinizi ve bağlantılarınızı korur.";

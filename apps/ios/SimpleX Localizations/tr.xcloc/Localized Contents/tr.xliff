@@ -4641,13 +4641,13 @@ Daha fazla iyileştirme yakında geliyor!</target>
         <target>Siz veya bağlantınız eski veritabanı yedeğini kullandığında bu durum ortaya çıkabilir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
+      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 21 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
         <source>It can happen when:
-1. The messages expired in the sending client after 2 days or on the server after 30 days.
+1. The messages expired in the sending client after 2 days or on the server after 21 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</source>
         <target>Şu durumlarda ortaya çıkabilir:
-1. Mesajların gönderici istemcide 2 gün sonra veya sunucuda 30 gün sonra süresi dolmuştur.
+1. Mesajların gönderici istemcide 2 gün sonra veya sunucuda 21 gün sonra süresi dolmuştur.
 2. Siz veya kişi eski veritabanı yedeği kullandığı için mesaj şifre çözme işlemi başarısız olmuştur.
 3. Bağlantı tehlikeye girmiştir.</target>
         <note>No comment provided by engineer.</note>
