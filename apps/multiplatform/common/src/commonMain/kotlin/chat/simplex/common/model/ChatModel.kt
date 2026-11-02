@@ -502,6 +502,19 @@ object ChatModel {
       }
     }
 
+    fun addUnreadChanges(rhId: Long?, chatId: ChatId, loadedItems: List<ChatItem>, items: List<ChatItem>) {
+      fun unread(list: List<ChatItem>) = list.count { it.isRcvNew }
+      fun unreadMentions(list: List<ChatItem>) = list.count { it.isRcvNew && it.meta.userMention }
+      val i = getChatIndex(rhId, chatId)
+      if (i >= 0) {
+        val stats = chats[i].chatStats
+        chats[i] = chats[i].copy(chatStats = stats.copy(
+          unreadCount = stats.unreadCount + unread(items) - unread(loadedItems),
+          unreadMentions = stats.unreadMentions + unreadMentions(items) - unreadMentions(loadedItems)
+        ))
+      }
+    }
+
     suspend fun updateContactConnection(rhId: Long?, contactConnection: PendingContactConnection) = updateChat(rhId, ChatInfo.ContactConnection(contactConnection))
 
     suspend fun updateContact(rhId: Long?, contact: Contact) = updateChat(rhId, ChatInfo.Direct(contact), addMissing = contact.directOrUsed)
@@ -578,35 +591,37 @@ object ChatModel {
     }
 
     class ItemUpdatesWhileLoading {
-      var chatsAtStart: List<Chat> = emptyList()
       val updates = ArrayList<() -> Unit>()
     }
 
-    private val itemUpdatesWhileLoading = ArrayList<ItemUpdatesWhileLoading>()
+    private val itemUpdateRecords = ArrayList<ItemUpdatesWhileLoading>()
 
     fun startRecordingItemUpdates(record: ItemUpdatesWhileLoading) {
-      record.chatsAtStart = chats.value.toList()
-      itemUpdatesWhileLoading.add(record)
+      itemUpdateRecords.add(record)
     }
 
     fun stopRecordingItemUpdates(record: ItemUpdatesWhileLoading) {
-      itemUpdatesWhileLoading.remove(record)
+      itemUpdateRecords.remove(record)
     }
 
     fun applyItemUpdatesWhileLoading(record: ItemUpdatesWhileLoading) {
       record.updates.forEach { it() }
     }
 
-    private fun <T> updateItems(update: () -> T): T {
-      itemUpdatesWhileLoading.forEach { it.updates.add { update() } }
-      return update()
+    private fun recordUpdate(update: () -> Unit) {
+      itemUpdateRecords.forEach { it.updates.add(update) }
+    }
+
+    private fun updateAndRecord(update: () -> Unit) {
+      recordUpdate(update)
+      update()
     }
 
     fun recordItemUpdate(cInfo: ChatInfo, itemId: Long, update: (ChatItem) -> ChatItem) {
-      itemUpdatesWhileLoading.forEach { record ->
-        record.updates.add {
-          val cItem = chatItems.value.lastOrNull { it.id == itemId }
-          if (cItem != null) upsertItemInScope(cInfo, update(cItem))
+      recordUpdate {
+        val cItem = chatItems.value.lastOrNull { it.id == itemId }
+        if (cItem != null && chatItemBelongsToScope(cInfo, cItem)) {
+          replaceItemInScope(update(cItem))
         }
       }
     }
@@ -671,7 +686,7 @@ object ChatModel {
       }
       // add to current scope
       withContext(Dispatchers.Main) {
-        updateItems {
+        updateAndRecord {
           if (chatItemBelongsToScope(cInfo, cItem)) {
             // Prevent situation when chat item already in the list received from backend
             if (chatItems.value.none { it.id == cItem.id }) {
@@ -725,40 +740,42 @@ object ChatModel {
       }
       // update current scope
       withContext(Dispatchers.Main) {
-        if (updateItems { upsertItemInScope(cInfo, cItem) }) {
-          itemAdded = true
+        recordUpdate {
+          if (chatItemBelongsToScope(cInfo, cItem)) {
+            replaceItemInScope(cItem)
+          }
+        }
+        if (chatItemBelongsToScope(cInfo, cItem)) {
+          if (!replaceItemInScope(cItem)) {
+            addToChatItems(cItem)
+            itemAdded = true
+          }
         }
       }
       return  itemAdded
     }
 
-    private fun upsertItemInScope(cInfo: ChatInfo, cItem: ChatItem): Boolean {
-      if (chatItemBelongsToScope(cInfo, cItem)) {
-        if (cItem.isDeletedContent || cItem.meta.itemDeleted != null) {
-          AudioPlayer.stop(cItem)
-        }
-        val items = chatItems.value
-        val itemIndex = items.indexOfFirst { it.id == cItem.id }
-        if (itemIndex >= 0) {
-          val oldStatus = items[itemIndex].meta.itemStatus
-          val newStatus = cItem.meta.itemStatus
-          val ci = if (shouldKeepOldSndCIStatus(oldStatus, newStatus)) {
-            cItem.copy(meta = cItem.meta.copy(itemStatus = oldStatus))
-          } else {
-            cItem
-          }
-          items[itemIndex] = ci
-        } else {
-          addToChatItems(cItem)
-          return true
-        }
+    private fun replaceItemInScope(cItem: ChatItem): Boolean {
+      if (cItem.isDeletedContent || cItem.meta.itemDeleted != null) {
+        AudioPlayer.stop(cItem)
       }
-      return false
+      val items = chatItems.value
+      val itemIndex = items.indexOfFirst { it.id == cItem.id }
+      if (itemIndex < 0) return false
+      val oldStatus = items[itemIndex].meta.itemStatus
+      val newStatus = cItem.meta.itemStatus
+      val ci = if (shouldKeepOldSndCIStatus(oldStatus, newStatus)) {
+        cItem.copy(meta = cItem.meta.copy(itemStatus = oldStatus))
+      } else {
+        cItem
+      }
+      items[itemIndex] = ci
+      return true
     }
 
     suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null) {
       withContext(Dispatchers.Main) {
-        updateItems {
+        updateAndRecord {
           if (chatItemBelongsToScope(cInfo, cItem)) {
             val items = chatItems.value
             val itemIndex = items.indexOfFirst { it.id == cItem.id }
@@ -788,7 +805,7 @@ object ChatModel {
         }
       }
       // remove from current scope
-      updateItems {
+      updateAndRecord {
         if (chatItemBelongsToScope(cInfo, cItem)) {
           chatItems.removeAllAndNotify {
             // We delete taking into account meta.createdAt to make sure we will not be in situation when two items with the same id will be deleted
@@ -852,7 +869,7 @@ object ChatModel {
           }
         }
       }
-      updateItems {
+      updateAndRecord {
         if (chatId.value == groupInfo.id) {
           if (fullDelete) {
             chatItems.removeAllAndNotify { item ->
@@ -882,7 +899,7 @@ object ChatModel {
         markChatTagRead(chatBefore)
       }
       // clear current chat
-      updateItems {
+      updateAndRecord {
         if (chatId.value == cInfo.id) {
           chatItems.clearAndNotify()
         }
@@ -941,7 +958,10 @@ object ChatModel {
     }
 
     fun markChatItemsRead(remoteHostId: Long?, id: ChatId, itemIds: List<Long>? = null) {
-      val (markedRead, mentionsMarkedRead) = updateItems { markItemsReadInCurrentChat(id, itemIds) }
+      if (itemIds != null) {
+        recordUpdate { markItemsReadInCurrentChat(id, itemIds) }
+      }
+      val (markedRead, mentionsMarkedRead) = markItemsReadInCurrentChat(id, itemIds)
       // update preview
       val chatIdx = getChatIndex(remoteHostId, id)
       if (chatIdx >= 0) {
@@ -1040,7 +1060,7 @@ object ChatModel {
         updateGroup(rhId, groupInfo)
         return false
       }
-      updateItems {
+      updateAndRecord {
         if (chatId.value == groupInfo.id || creatingChannelId.value == groupInfo.id) {
           val updated = chatItems.value.map {
             // Take into account only specific changes, not all. Other member updates are not important and can be skipped

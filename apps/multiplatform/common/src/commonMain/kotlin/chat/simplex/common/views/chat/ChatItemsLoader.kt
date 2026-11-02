@@ -85,12 +85,8 @@ suspend fun processLoadedChat(
             chatModel.chatsContext.addChat(chat)
           } else {
             chatModel.chatsContext.updateChatInfo(chat.remoteHostId, chat.chatInfo)
-            val statsAtStart = itemUpdates.chatsAtStart.firstOrNull { it.id == chat.id }?.chatStats
-            val statsChangedWhileLoading = statsAtStart != null && statsAtStart != oldChat.chatStats
-            if (!statsChangedWhileLoading) {
-              // unreadChat is currently not actual in getChat query (always false)
-              chatModel.chatsContext.updateChatStats(chat.remoteHostId, chat.id, chat.chatStats.copy(unreadChat = oldChat.chatStats.unreadChat))
-            }
+            // unreadChat is currently not actual in getChat query (always false)
+            chatModel.chatsContext.updateChatStats(chat.remoteHostId, chat.id, chat.chatStats.copy(unreadChat = oldChat.chatStats.unreadChat))
           }
         }
         chatsCtx.chatItems.replaceAll(chat.chatItems)
@@ -103,7 +99,12 @@ suspend fun processLoadedChat(
         unreadTotal.value = chat.chatStats.unreadCount
         unreadAfter.value = navInfo.afterUnread
         unreadAfterNewestLoaded.value = navInfo.afterUnread
-        chatsCtx.applyItemUpdatesWhileLoading(itemUpdates)
+        if (navInfo.afterTotal == 0) {
+          chatsCtx.applyItemUpdatesWhileLoading(itemUpdates)
+          if (chatsCtx.secondaryContextFilter == null) {
+            chatModel.chatsContext.addUnreadChanges(chat.remoteHostId, chat.id, chat.chatItems, chatsCtx.chatItems.value)
+          }
+        }
       }
       is ChatPagination.Before -> {
         newItems.addAll(oldItems)
@@ -168,7 +169,9 @@ suspend fun processLoadedChat(
           unreadAfterNewestLoaded.value = navInfo.afterUnread
           chatModel.openAroundItemId.value = openAroundItemId
           chatModel.chatId.value = chat.id
-          chatsCtx.applyItemUpdatesWhileLoading(itemUpdates)
+          if (navInfo.afterTotal == 0) {
+            chatsCtx.applyItemUpdatesWhileLoading(itemUpdates)
+          }
         } else {
           // no need to set it, count will be wrong
           // unreadAfterNewestLoaded.value = navInfo.afterUnread

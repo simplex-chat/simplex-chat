@@ -8,7 +8,7 @@ A message received while its chat is being opened is missing from the open chat 
 
 `processLoadedChat` (`ChatItemsLoader.kt`) installs a page that `apiGetChat` read before the install.
 
-`addChatItem` and the other item updates of `ChatsContext` (`ChatModel.kt`) change the open list only when `chatModel.chatId` is the item's chat. An update handled between the read and the install is lost:
+`addChatItem` and the other item updates of `ChatsContext` (`ChatModel.kt`) change the open list only when `chatModel.chatId` is the item's chat (for member updates, also the channel being created). An update handled between the read and the install is lost:
 - when the chat is opening, `chatId` is set in the install, so the update is not applied;
 - when the chat is open, the update is applied to the list that the install replaces (Initial, Around at an item) or that was read before a main-thread dispatch (other paginations).
 
@@ -16,28 +16,28 @@ The Initial page also overwrites the row's stats with the stats it read.
 
 ## Fix
 
-`processLoadedChat` runs on the main thread from reading the current list to the install, so the merging paginations (Before, After, Around in the open chat, Last) read every update applied before.
+`processLoadedChat` runs on the main thread from reading the current list to the install, so the merging paginations (Before, After, Around to a quoted item, Last) keep every item the list held before the merge.
 
 While a page loads, `ChatsContext` records the list part of each item update in every active `ItemUpdatesWhileLoading`:
 - `addChatItem`;
-- `upsertChatItem`;
+- `upsertChatItem`, as an update of an item in the list;
 - `updateChatItem`;
 - `removeChatItem`;
 - `removeMemberItems`;
 - `clearChat`;
-- `markChatItemsRead`;
+- `markChatItemsRead` of listed items;
 - `upsertGroupMember`;
 - `groupChatItemsDeleted` (`SimpleXAPI.kt`), with `recordItemUpdate` for an item that is not in the list.
 
-Counter updates run once, outside the recorded part.
+Chat-list counter updates (row stats, total unread, reports) run once, outside the recorded part; the open chat's counters change with the list.
 
 `recordItemUpdatesWhileLoading` starts a record before `apiGetChat` and stops it when the load ends:
 - `apiLoadMessages`, for every pagination;
 - `afterSetChatTTL` (`ChatInfoView.kt`).
 
-The pages that replace the list (Initial, Around at an item) re-run the recorded updates after the install, in order.
+The pages that replace the list (Initial, Around at an item) and contain the newest item (`afterTotal == 0`) re-run the recorded updates after the install, in order. Older pages are followed by After pagination, which loads the newer items.
 
-The Initial page keeps the row's stats when they changed while it loaded.
+After the re-run, the Initial page adds to the row's unread count and mentions the difference between the unread items of the list and of the page (`addUnreadChanges`).
 
 ## Scope
 

@@ -103,24 +103,57 @@ class ChatItemsLoaderTest {
       chatModel.currentUser.value = User.sampleData
       chatModel.chatId.value = null
     }
+    val received = receivedItem(103)
     recordItemUpdatesWhileLoading(chatsCtx) { itemUpdates ->
-      val received = receivedItem(103)
       chatsCtx.addChatItem(null, opening.chatInfo, received)
       withContext(Dispatchers.Main) { chatsCtx.removeChatItem(null, opening.chatInfo, received) }
-      processLoadedChat(chatsCtx, opening, NavigationInfo(), ChatPagination.Initial(2), openAroundItemId = null, itemUpdates)
+      val pageReadBeforeDeletion = opening.copy(chatItems = opening.chatItems + received)
+      processLoadedChat(chatsCtx, pageReadBeforeDeletion, NavigationInfo(), ChatPagination.Initial(3), openAroundItemId = null, itemUpdates)
     }
     assertEquals(listOf(101L, 102L), itemIds(chatsCtx))
+  }
+
+  @Test
+  fun itemModeratedWhileChatOpensIsShownModerated() = runBlocking {
+    val chatsCtx = ChatModel.ChatsContext(null)
+    val opening = groupChat(groupId = 5, itemIds = listOf(101, 102))
+    withContext(Dispatchers.Main) { chatModel.chatId.value = null }
+    val received = receivedItem(103)
+    recordItemUpdatesWhileLoading(chatsCtx) { itemUpdates ->
+      withContext(Dispatchers.Main) {
+        chatsCtx.recordItemUpdate(opening.chatInfo, 103) {
+          it.copy(meta = it.meta.copy(itemDeleted = CIDeleted.Moderated(null, GroupMember.sampleData)))
+        }
+      }
+      val pageReadBeforeModeration = opening.copy(chatItems = opening.chatItems + received)
+      processLoadedChat(chatsCtx, pageReadBeforeModeration, NavigationInfo(), ChatPagination.Initial(3), openAroundItemId = null, itemUpdates)
+    }
+    assertEquals(true, chatsCtx.chatItems.value.firstOrNull { it.id == 103L }?.meta?.itemDeleted is CIDeleted.Moderated)
   }
 
   @Test
   fun itemReadWhileOpenedChatReloadsStaysRead() = runBlocking {
     val (chatsCtx, opened) = openChatWithItems(listOf(101, 102))
     withContext(Dispatchers.Main) { chatModel.currentUser.value = User.sampleData }
+    val received = receivedItem(103)
     recordItemUpdatesWhileLoading(chatsCtx) { itemUpdates ->
-      chatsCtx.addChatItem(null, opened.chatInfo, receivedItem(103))
+      chatsCtx.addChatItem(null, opened.chatInfo, received)
       withContext(Dispatchers.Main) { chatsCtx.markChatItemsRead(null, opened.id, listOf(103)) }
-      processLoadedChat(chatsCtx, opened, NavigationInfo(), ChatPagination.Initial(2), openAroundItemId = null, itemUpdates)
+      val pageReadBeforeMark = opened.copy(chatItems = opened.chatItems + received)
+      processLoadedChat(chatsCtx, pageReadBeforeMark, NavigationInfo(), ChatPagination.Initial(3), openAroundItemId = null, itemUpdates)
     }
     assertEquals(false, chatsCtx.chatItems.value.firstOrNull { it.id == 103L }?.isRcvNew)
+  }
+
+  @Test
+  fun itemReceivedWhileChatOpensAtOlderPageIsNotAdded() = runBlocking {
+    val chatsCtx = ChatModel.ChatsContext(null)
+    val opening = groupChat(groupId = 6, itemIds = listOf(101, 102))
+    withContext(Dispatchers.Main) { chatModel.chatId.value = null }
+    recordItemUpdatesWhileLoading(chatsCtx) { itemUpdates ->
+      chatsCtx.addChatItem(null, opening.chatInfo, receivedItem(104))
+      processLoadedChat(chatsCtx, opening, NavigationInfo(afterUnread = 2, afterTotal = 2), ChatPagination.Initial(2), openAroundItemId = null, itemUpdates)
+    }
+    assertEquals(listOf(101L, 102L), itemIds(chatsCtx))
   }
 }
