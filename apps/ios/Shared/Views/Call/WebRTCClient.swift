@@ -13,10 +13,7 @@ import SimpleXChat
 final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDelegate, RTCFrameDecryptorDelegate {
     private static let factory: RTCPeerConnectionFactory = {
         RTCInitializeSSL()
-        let videoEncoderFactory = RTCDefaultVideoEncoderFactory()
-        let videoDecoderFactory = RTCDefaultVideoDecoderFactory()
-        videoEncoderFactory.preferredCodec = RTCVideoCodecInfo(name: kRTCVp8CodecName)
-        return RTCPeerConnectionFactory(encoderFactory: videoEncoderFactory, decoderFactory: videoDecoderFactory)
+        return RTCPeerConnectionFactory(encoderFactory: VP8EncoderFactory(), decoderFactory: VP8DecoderFactory())
     }()
     private static let ivTagBytes: Int = 28
     private static let enableEncryption: Bool = true
@@ -1318,4 +1315,18 @@ extension RTCSignalingState {
         default: return nil // unknown
         }
     }
+}
+
+// The frame encryption leaves only VP8's header in the clear for WebRTC's packetizer, so calls send and receive VP8 alone:
+// with the default factories two apps on WebRTC M156 chose H.264, and no video arrived.
+private final class VP8EncoderFactory: NSObject, RTCVideoEncoderFactory {
+    func createEncoder(_ info: RTCVideoCodecInfo) -> RTCVideoEncoder? { RTCVideoEncoderVP8.vp8Encoder() }
+
+    func supportedCodecs() -> [RTCVideoCodecInfo] { RTCVideoEncoderVP8.supportedCodecs() }
+}
+
+private final class VP8DecoderFactory: NSObject, RTCVideoDecoderFactory {
+    func createDecoder(_ info: RTCVideoCodecInfo) -> RTCVideoDecoder? { RTCVideoDecoderVP8.vp8Decoder() }
+
+    func supportedCodecs() -> [RTCVideoCodecInfo] { RTCVideoDecoderVP8.supportedCodecs() }
 }
