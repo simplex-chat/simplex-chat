@@ -302,7 +302,7 @@ Card size: the image field of a card counts against 15000 bytes with its text:
 ```
 image budget = 15000 - the largest card text, as aeson encodes it - the JSON of the image and duration fields
 preview within budget   used
-preview over budget     core.chatResizeImageUri(preview bytes, budget); an error: a text card
+preview over budget     core.chatResizeImageUri(preview bytes, budget); an error: logged, a text card
 ```
 
 Card text:
@@ -393,11 +393,11 @@ text and file both absent                         text: required without file.
 Previews:
 ```
 type          preview                                                                   duration
-image JPEG    core.resizeImage(file, MessagePreview); an error: the fixed preview
+image JPEG    core.resizeImage(file, MessagePreview); an error: logged, the fixed preview
 image PNG     as JPEG
 GIF, WebP     the fixed preview
 video         ffmpeg's first frame, then core.resizeImage(frame, MessagePreview);       ffprobe's format duration, rounded;
-              ffmpeg absent or failing: the fixed preview                               absent or failing: 0
+              ffmpeg absent or failing: logged, the fixed preview                       absent or failing: 0
 ```
 - The fixed preview: a 16 × 9 mid-gray PNG data URI.
 - `ffmpeg -v error -i PATH -frames:v 1 -f image2pipe -vcodec mjpeg -` and `ffprobe -v error -show_entries format=duration -of csv=p=0 PATH`, 30 s each.
@@ -405,7 +405,7 @@ video         ffmpeg's first frame, then core.resizeImage(frame, MessagePreview)
 `performSend` with a file:
 ```
 the real path checked again; a change or a refusal: failed
-JPEG and PNG: core.resizeImage(file, Image) written to DATA/files/sent/send-XXXXXX/NAME, .jpg or .png by the result's format (Image.hs:47-57); an error: the file unchanged
+JPEG and PNG: core.resizeImage(file, Image) written to DATA/files/sent/send-XXXXXX/NAME, .jpg or .png by the result's format (Image.hs:47-57); an error: logged, the file unchanged
 apiSendMessages with fileSource {filePath}, msgContent {type, text, image, duration}
 an error of the send: the copy deleted
 ```

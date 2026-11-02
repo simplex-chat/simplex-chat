@@ -409,7 +409,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (encodedLength(image) <= budget) return image
     try {
       return await core.chatResizeImageUri(Buffer.from(image.slice(image.indexOf(",") + 1), "base64"), budget)
-    } catch {
+    } catch (error) {
+      logError(`action ${action.n} card image`, error)
       return ""
     }
   }

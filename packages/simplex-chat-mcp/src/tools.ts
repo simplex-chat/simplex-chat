@@ -7,7 +7,7 @@ import {CallToolResult, JsonSchemaType, McpServer, ServerContext, fromJsonSchema
 import {CEvt, CR, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
 import {Action, Actions, Attachment, ConnRef, ConnectAction, DownloadAction, LeaveAction, Mode, SendAction, Standing, Subject, ToolError, isDecided} from "./actions"
-import {chatErrorOf, chatErrorText, errorText, fileStatusError, fullDomainName} from "./log"
+import {chatErrorOf, chatErrorText, errorText, fileStatusError, fullDomainName, logError, oneLine} from "./log"
 import {
   Changes,
   ChatItemsWatch,
@@ -810,7 +810,8 @@ export class AgentTools {
       const copy = join(mkdtempSync(join(sent, "send-")), `${basename(name, extname(name))}${extension}`)
       writeFileSync(copy, image, {mode: 0o600})
       return copy
-    } catch {
+    } catch (error) {
+      logError(`resizing ${oneLine(path)}`, error)
       return path
     }
   }
@@ -1271,7 +1272,8 @@ async function attachmentMedia(path: string, type: FileType, resize: boolean): P
 async function messagePreview(image: Promise<Buffer>): Promise<string> {
   try {
     return await core.resizeImage(await image, core.ImageSize.MessagePreview)
-  } catch {
+  } catch (error) {
+    logError("preview", error)
     return fixedPreview
   }
 }

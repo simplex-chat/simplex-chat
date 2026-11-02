@@ -612,11 +612,16 @@ describe("send with a file", () => {
     expect(commands.mock.calls.map(([command]) => command)).toEqual(["ffmpeg", "ffprobe"])
   })
 
-  it("sends an image unchanged with the fixed preview when the core can't resize it", async () => {
+  it("sends an image unchanged with the fixed preview when the core can't resize it, and logs the errors", async () => {
     jest.spyOn(core, "resizeImage").mockRejectedValue(new Error("image cannot be decoded or does not fit maxSize"))
+    const errors = jest.spyOn(process.stderr, "write").mockImplementation(() => true)
     const photo = fileIn("photo.jpeg")
     const {chat} = await sent({text: "trail", file: photo})
     expect(chat.sent[0].messages[0]).toMatchObject({fileSource: {filePath: photo}, msgContent: {type: "image", text: "trail", image: fixedPreview}})
+    expect(errors.mock.calls.map(([line]) => line)).toEqual([
+      "preview: image cannot be decoded or does not fit maxSize\n",
+      `resizing ${photo}: image cannot be decoded or does not fit maxSize\n`,
+    ])
   })
 
   it("takes a video's preview from the first frame of ffmpeg and its duration from ffprobe", async () => {

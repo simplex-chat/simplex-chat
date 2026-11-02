@@ -358,8 +358,10 @@ describe("downloads in the agent control chat", () => {
     expect(Buffer.from(bytes as Uint8Array).toString("base64")).toBe("A".repeat(14000))
     expect(budget).toBeLessThan(14000)
     resize.mockRejectedValue(new Error("image cannot be decoded or does not fit maxSize"))
+    const errors = jest.spyOn(process.stderr, "write").mockImplementation(() => true)
     const text = await downloadSetup({type: "image", preview})
     expect(text.cards[0].msgContent.type).toBe("text")
+    expect(errors).toHaveBeenCalledWith("action 1 card image: image cannot be decoded or does not fit maxSize\n")
   })
 
   it("posts no card for a download in mode host or under the files approval", async () => {

@@ -662,7 +662,7 @@ extension          message   preview                                            
 other              file      none                                                  unchanged
 ```
 
-- The fixed preview is a 16 × 9 mid-gray PNG. It replaces a preview that the core can't make, and ffmpeg's frame when ffmpeg is absent or fails; the duration is then 0. A resizing error sends the file unchanged.
+- The fixed preview is a 16 × 9 mid-gray PNG. It replaces a preview that the core can't make, and ffmpeg's frame when ffmpeg is absent or fails; the duration is then 0. A resizing error sends the file unchanged. The errors of the preview and of the resizing are logged.
 - `ffmpeg -v error -i PATH -frames:v 1 -f image2pipe -vcodec mjpeg -` and `ffprobe -v error -show_entries format=duration -of csv=p=0 PATH`, 30 s each, at most 64 MB of output.
 - Responses are marked read; the ones over `limit` stay unread for `receive`.
 - Hosts with a fixed tool-call limit (60 s to 300 s) need `wait` below it.
@@ -1147,7 +1147,7 @@ refused real paths:
 
 perform send:
   file: its real path and size read again; another real path or size: failed, "file: PATH changed after the request."
-  file to resize: core.resizeImage(file, Image) -> DIR/files/sent/send-XXXXXX/NAME with .png for a PNG result, else .jpg; an error: the file unchanged
+  file to resize: core.resizeImage(file, Image) -> DIR/files/sent/send-XXXXXX/NAME with .png for a PNG result, else .jpg; an error: logged, the file unchanged
   text' = text with @name for each mention it lacks
   action.responses = []; from now until the action is deleted, each newChatItems of chat adds its received message items (content.type rcvMsgContent) to action.responses
   /_send <chat> json [{fileSource: {filePath}, msgContent: {type: "text", text: text'} or the file's {type, text: text', image: preview, duration}, mentions: {name: m}, quotedItemId: reply_to}] -> S     # parser Commands.hs:6353
@@ -1188,7 +1188,7 @@ card text, JSON-escaped      15000   the server's limit: 420 below the strictest
 - History sends the edited card to a later owner as `x.msg.new` in a forward element, within 15763 bytes (`maxForwardBatchLength`, `batchElements`, `Internal.hs:1425`).
 - At `send` and `connect`, before the action is created, the server builds the card forms of the action, with its text, reply and mentions, or with its message: pending, done (the standing form under a standing approval) and failed. The approver is the action's own (a standing send) or the longest name of the current approvers, the error 600 three-byte characters (`chatErrorText` keeps 500 characters of details). Each form is measured as aeson encodes it: `"`, `\`, `\n`, `\r` and `\t` 2 bytes, other characters below U+0020 6 bytes, the rest their UTF-8 length.
 - A connect card quotes the link's description and welcome in the bytes that its largest form leaves without them: lines are kept while they fit, the next one is cut to the bytes left and ends in "…", and the later ones are left out. The tool result keeps both texts whole. A connect whose largest form exceeds 15000 bytes without them is refused with the `message` error.
-- A download card of an image or video keeps the sender's preview within 15000 bytes minus its largest text form minus the JSON of the `image` and `duration` fields; a preview over that is resized by `core.chatResizeImageUri(preview bytes, bytes left)`, and the card is a text message when resizing fails. The fitted preview is kept on the action for the outcome edit. A download whose largest text form exceeds 15000 bytes is refused with the `item` error.
+- A download card of an image or video keeps the sender's preview within 15000 bytes minus its largest text form minus the JSON of the `image` and `duration` fields; a preview over that is resized by `core.chatResizeImageUri(preview bytes, bytes left)`, and the card is a text message when resizing fails, with the error logged. The fitted preview is kept on the action for the outcome edit. A download whose largest text form exceeds 15000 bytes is refused with the `item` error.
 
 ### leave
 
