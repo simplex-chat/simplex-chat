@@ -146,10 +146,12 @@ The scope commands run in build-linux after the core tests, with Node 22 and Pyt
 
 ## MCP server
 
-The workflow `mcp` (mcp.yml) tests packages/simplex-chat-mcp in one job, test (ubuntu-22.04), apart from build.yml: on a pull request that changes it, and on a dispatch.
+The workflow `mcp` (mcp.yml) tests packages/simplex-chat-mcp in one job, test (ubuntu-22.04), apart from build.yml: on a pull request that changes it or the libraries it uses, and on a dispatch.
 
 - Globs:
   - packages/simplex-chat-mcp/**
+  - packages/simplex-chat-nodejs/**
+  - packages/simplex-chat-client/types/typescript/**
   - .github/workflows/mcp.yml
 - CI, in test:
   - the types package and the Node.js library built from the branch without the add-on, as package-tests.sh builds them (step "Build the types and the Node.js library");

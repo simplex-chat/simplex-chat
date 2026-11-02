@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - "packages/simplex-chat-mcp/**"
+      - "packages/simplex-chat-nodejs/**"
+      - "packages/simplex-chat-client/types/typescript/**"
       - ".github/workflows/mcp.yml"
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
