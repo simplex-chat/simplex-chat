@@ -27,7 +27,8 @@ schemaMigrations =
     ("20261022_name_balances", m20261022_name_balances, Just down_m20261022_name_balances),
     ("20261022_name_late_wait", m20261022_name_late_wait, Just down_m20261022_name_late_wait),
     ("20261023_name_terms", m20261023_name_terms, Just down_m20261023_name_terms),
-    ("20261027_name_invoiced_units", m20261027_name_invoiced_units, Just down_m20261027_name_invoiced_units)
+    ("20261027_name_invoiced_units", m20261027_name_invoiced_units, Just down_m20261027_name_invoiced_units),
+    ("20261029_name_record_changes", m20261029_name_record_changes, Just down_m20261029_name_record_changes)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -620,6 +621,57 @@ down_m20261027_name_invoiced_units =
 DROP INDEX @idx_payments_overpaid;
 
 ALTER TABLE @payments DROP COLUMN invoiced_units;
+|]
+
+-- An edit is one request of the page, relayed as one transaction; its signed changes are its rows here, one per nonce.
+m20261029_name_record_changes :: Query
+m20261029_name_record_changes =
+  withPrefix
+    servicePrefix
+    [sql|
+CREATE TABLE @name_record_changes(
+  name_record_edit_id INTEGER NOT NULL REFERENCES @name_record_edits ON DELETE CASCADE,
+  nonce INTEGER NOT NULL,
+  record_key TEXT,
+  record_value TEXT,
+  deadline INTEGER NOT NULL,
+  signature BLOB NOT NULL,
+  PRIMARY KEY (name_record_edit_id, nonce)
+) STRICT;
+
+INSERT INTO @name_record_changes (name_record_edit_id, nonce, record_key, record_value, deadline, signature)
+SELECT name_record_edit_id, nonce, record_key, record_value, deadline, signature FROM @name_record_edits;
+
+ALTER TABLE @name_record_edits DROP COLUMN record_key;
+
+ALTER TABLE @name_record_edits DROP COLUMN record_value;
+
+ALTER TABLE @name_record_edits DROP COLUMN deadline;
+
+ALTER TABLE @name_record_edits DROP COLUMN signature;
+|]
+
+-- An edit of two changes keeps only its first, the one its nonce names.
+down_m20261029_name_record_changes :: Query
+down_m20261029_name_record_changes =
+  withPrefix
+    servicePrefix
+    [sql|
+ALTER TABLE @name_record_edits ADD COLUMN record_key TEXT;
+
+ALTER TABLE @name_record_edits ADD COLUMN record_value TEXT;
+
+ALTER TABLE @name_record_edits ADD COLUMN deadline INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE @name_record_edits ADD COLUMN signature BLOB NOT NULL DEFAULT x'';
+
+UPDATE @name_record_edits SET
+  record_key = (SELECT c.record_key FROM @name_record_changes c WHERE c.name_record_edit_id = @name_record_edits.name_record_edit_id AND c.nonce = @name_record_edits.nonce),
+  record_value = (SELECT c.record_value FROM @name_record_changes c WHERE c.name_record_edit_id = @name_record_edits.name_record_edit_id AND c.nonce = @name_record_edits.nonce),
+  deadline = (SELECT c.deadline FROM @name_record_changes c WHERE c.name_record_edit_id = @name_record_edits.name_record_edit_id AND c.nonce = @name_record_edits.nonce),
+  signature = (SELECT c.signature FROM @name_record_changes c WHERE c.name_record_edit_id = @name_record_edits.name_record_edit_id AND c.nonce = @name_record_edits.nonce);
+
+DROP TABLE @name_record_changes;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.
