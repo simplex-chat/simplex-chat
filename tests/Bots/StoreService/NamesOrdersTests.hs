@@ -327,7 +327,9 @@ testNamesConfig node =
       nTermStart = termStart,
       nTermSlackSeconds = slackSeconds,
       nRevealMarginSeconds = 900,
+      nMaxOrderMoves = 3,
       nCodesOnly = False,
+      nRecordEditsPerYear = 3,
       nTerms = TermsConfig {tVersion = termsVersion, tUrl = termsUrl},
       nCommunity = M.empty,
       nChain = fakeChainConfig node
