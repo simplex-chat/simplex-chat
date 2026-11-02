@@ -488,8 +488,21 @@ object ChatModel {
               )
             )
           }
-        } else if (currentCInfo is ChatInfo.Group && newCInfo is ChatInfo.Group && newCInfo.groupChatScope != null) {
-          newCInfo = newCInfo.copy(groupInfo = newCInfo.groupInfo, groupChatScope = null)
+          newCInfo = newCInfo.copy(contact = newCInfo.contact.copy(chatSettings = currentCInfo.contact.chatSettings))
+        } else if (currentCInfo is ChatInfo.Group && newCInfo is ChatInfo.Group) {
+          newCInfo = newCInfo.copy(groupInfo = newCInfo.groupInfo.copy(chatSettings = currentCInfo.groupInfo.chatSettings), groupChatScope = null)
+        }
+        chats[i] = chats[i].copy(chatInfo = newCInfo)
+      }
+    }
+
+    fun setChatSettings(rhId: Long?, chatId: ChatId, chatSettings: ChatSettings) {
+      val i = getChatIndex(rhId, chatId)
+      if (i >= 0) {
+        val newCInfo = when (val cInfo = chats[i].chatInfo) {
+          is ChatInfo.Direct -> cInfo.copy(contact = cInfo.contact.copy(chatSettings = chatSettings))
+          is ChatInfo.Group -> cInfo.copy(groupInfo = cInfo.groupInfo.copy(chatSettings = chatSettings))
+          else -> cInfo
         }
         chats[i] = chats[i].copy(chatInfo = newCInfo)
       }

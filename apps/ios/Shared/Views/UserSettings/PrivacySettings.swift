@@ -381,7 +381,7 @@ struct PrivacySettings: View {
                                     let sendRcpts = contact.chatSettings.sendRcpts
                                     if sendRcpts != nil && sendRcpts != enable {
                                         contact.chatSettings.sendRcpts = nil
-                                        m.updateContact(contact)
+                                        m.setChatSettings(chat.id, contact.chatSettings)
                                     }
                                 }
                             }
@@ -429,7 +429,7 @@ struct PrivacySettings: View {
                                     let sendRcpts = groupInfo.chatSettings.sendRcpts
                                     if sendRcpts != nil && sendRcpts != enable {
                                         groupInfo.chatSettings.sendRcpts = nil
-                                        m.updateGroup(groupInfo)
+                                        m.setChatSettings(chat.id, groupInfo.chatSettings)
                                     }
                                 }
                             }

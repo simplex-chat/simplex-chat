@@ -622,12 +622,31 @@ final class ChatModel: ObservableObject {
     // Spec: spec/state.md#updateChatInfo
     func updateChatInfo(_ cInfo: ChatInfo) {
         if let i = getChatIndex(cInfo.id) {
-            if case let .group(groupInfo, groupChatScope) = cInfo, groupChatScope != nil {
+            switch (chats[i].chatInfo, cInfo) {
+            case (.direct(let currentContact), .direct(var contact)):
+                contact.chatSettings = currentContact.chatSettings
+                chats[i].chatInfo = .direct(contact: contact)
+            case (.group(let currentGroupInfo, _), .group(var groupInfo, _)):
+                groupInfo.chatSettings = currentGroupInfo.chatSettings
                 chats[i].chatInfo = .group(groupInfo: groupInfo, groupChatScope: nil)
-            } else {
+            default:
                 chats[i].chatInfo = cInfo
             }
             chats[i].created = Date.now
+        }
+    }
+
+    func setChatSettings(_ chatId: ChatId, _ chatSettings: ChatSettings) {
+        if let i = getChatIndex(chatId) {
+            switch chats[i].chatInfo {
+            case var .direct(contact):
+                contact.chatSettings = chatSettings
+                chats[i].chatInfo = .direct(contact: contact)
+            case var .group(groupInfo, groupChatScope):
+                groupInfo.chatSettings = chatSettings
+                chats[i].chatInfo = .group(groupInfo: groupInfo, groupChatScope: groupChatScope)
+            default: ()
+            }
         }
     }
 

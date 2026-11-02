@@ -3371,15 +3371,7 @@ func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
                 let wasFavorite = chat.chatInfo.chatSettings?.favorite ?? false
                 ChatTagsModel.shared.updateChatFavorite(favorite: chatSettings.favorite, wasFavorite: wasFavorite)
                 let wasUnread = chat.unreadTag
-                switch chat.chatInfo {
-                case var .direct(contact):
-                    contact.chatSettings = chatSettings
-                    ChatModel.shared.updateContact(contact)
-                case var .group(groupInfo, _):
-                    groupInfo.chatSettings = chatSettings
-                    ChatModel.shared.updateGroup(groupInfo)
-                default: ()
-                }
+                ChatModel.shared.setChatSettings(chat.id, chatSettings)
                 ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
             }
         } catch let error {
