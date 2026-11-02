@@ -69,6 +69,17 @@ enum BadgePeriod: String, CaseIterable, Identifiable {
 }
 
 struct BadgesHowLongView: View {
+    let level: BadgeLevel
+    var startDate = Date()
+    var priceList: BadgePriceList? = nil
+
+    var body: some View {
+        BadgesHowLongLayout(level: level, startDate: startDate, priceList: priceList)
+            .task { await BadgeStore.shared.load() }
+    }
+}
+
+struct BadgesHowLongLayout: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var store = BadgeStore.shared
     // store.forSale reads the active profile's badge
@@ -118,7 +129,7 @@ struct BadgesHowLongView: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                     if !prices.forSale(.monthly) && prices.subscribedBefore {
-                        Text("This Apple ID already has a badge subscription. Only the profile that bought it can continue it.")
+                        Text("Subscribed on another profile.")
                             .font(.footnote)
                             .foregroundColor(theme.colors.secondary)
                             .multilineTextAlignment(.center)
@@ -131,6 +142,7 @@ struct BadgesHowLongView: View {
                         continueButton()
                             .padding(.vertical, 10)
                         BadgeBillingFooter(period: selectedPeriod, startDate: startDate)
+                        BadgeInvestorOffer(level: level)
                     }
                     .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }
@@ -142,7 +154,6 @@ struct BadgesHowLongView: View {
         }
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
-        .task { await store.load() }
     }
 
     private func periodCard(_ period: BadgePeriod) -> some View {
@@ -239,7 +250,7 @@ struct BadgeBillingFooter: View {
 struct BadgesHowLongView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesHowLongView(
+            BadgesHowLongLayout(
                 level: .supporter,
                 startDate: previewDate,
                 priceList: BadgePriceList(oneMonth: .price("$7"), monthly: .price("$7"), annual: .price("$42"), monthlyAmount: 7, annualAmount: 42, subscriptionsForSale: true, subscribedBefore: false)

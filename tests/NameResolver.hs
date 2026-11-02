@@ -56,7 +56,7 @@ withNameResolver action = do
       send $ responseLBS st [(hContentType, "application/json")] body
     answer (Just AnswerFails) = (internalServerError500, "{}")
     answer (Just (AnswerRegistration registration)) = (ok200, J.encode NameResponse {lastBlockTs = Nothing, registration})
-    answer Nothing = (ok200, J.encode NameResponse {lastBlockTs = Nothing, registration = NRAvailable {pricing = NamePricing {registrationPrices = M.empty, basePrice = USDCents 1000, minLabelLength = 1}}})
+    answer Nothing = (ok200, J.encode NameResponse {lastBlockTs = Nothing, registration = NRAvailable {pricing = NamePricing {registrationPrices = M.empty, basePrice = USDCents 1000, minLabelLength = 1}, nameTerms = Nothing}})
 
 -- | Register a name's domain to resolve to the given record.
 registerName :: NameRegistry -> SimplexNameInfo -> NameRecord -> IO ()

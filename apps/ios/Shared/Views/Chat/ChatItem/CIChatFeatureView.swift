@@ -14,6 +14,7 @@ import SimpleXChat
 struct CIChatFeatureView: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.revealed) var revealed: Bool
+    @Environment(\.terminalLayout) private var terminal
     @ObservedObject var chat: Chat
     @ObservedObject var im: ItemsModel
     @EnvironmentObject var theme: AppTheme
@@ -27,8 +28,8 @@ struct CIChatFeatureView: View {
             HStack {
                 ForEach(fs, content: featureIconView)
             }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 6)
+            .if(terminal) { $0.frame(height: terminalLineHeight(UIFont.preferredFont(forTextStyle: .caption1), theme.colors.secondary, theme)) }
+            .padding(terminal ? terminalEventPadding : EdgeInsets(top: 6, leading: 6, bottom: 6, trailing: 6))
         } else {
             fullFeatureView
         }
@@ -93,15 +94,18 @@ struct CIChatFeatureView: View {
     }
 
     private var fullFeatureView: some View {
-        HStack(alignment: .bottom, spacing: 4) {
-            Image(systemName: icon ?? feature.iconFilled)
-                .foregroundColor(iconColor)
-                .scaleEffect(feature.iconScale)
-            chatEventText(chatItem, theme.colors.secondary)
+        ChatEventWithMeta(chatItem: chatItem) { ts in
+            HStack(alignment: terminal ? .center : .bottom, spacing: 4) {
+                Image(systemName: icon ?? feature.iconFilled)
+                    .foregroundColor(iconColor)
+                    .scaleEffect(feature.iconScale)
+                    .if(terminal) { $0.frame(height: 0) }
+                chatEventText(chatItem, theme.colors.secondary, ts: terminal ? ts : textSpace + ts)
+                    .if(terminal) { $0.modifier(terminalLineBox(UIFont.preferredFont(forTextStyle: .caption1), theme.colors.secondary, theme)) }
+            }
+            .padding(terminal ? terminalEventPadding : EdgeInsets(top: 4, leading: 6, bottom: 4, trailing: 6))
+            .textSelection(.disabled)
         }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 4)
-        .textSelection(.disabled)
     }
 }
 

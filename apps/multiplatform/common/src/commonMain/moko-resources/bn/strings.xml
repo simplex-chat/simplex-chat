@@ -8,7 +8,7 @@
     <string name="about_simplex">SimpleX সম্পর্কে</string>
     <string name="learn_more_about_address">SimpleX ঠিকানা সম্পর্কে জানুন</string>
     <string name="abort_switch_receiving_address_confirm">থামুন</string>
-    <string name="abort_switch_receiving_address_question">ঠিকানা পরিবর্তন বাতিল করতে চান\?</string>
+    <string name="abort_switch_receiving_address_question">ঠিকানা পরিবর্তন বাতিল করতে চান?</string>
     <string name="send_disappearing_message_5_minutes">৫ মিনিট</string>
     <string name="above_then_preposition_continuation">উপরে, তারপর</string>
     <string name="accept">গ্রহণ করুন</string>
@@ -19,7 +19,7 @@
     <string name="chat_item_ttl_week">১ সপ্তাহ</string>
     <string name="about_simplex_chat">About SimpleX Chat</string>
     <string name="accept_contact_button">গ্রহণ করুন</string>
-    <string name="accept_connection_request__question">সংযোগের অনুরোধটি গ্রহণ করবেন কি\?</string>
+    <string name="accept_connection_request__question">সংযোগের অনুরোধটি গ্রহণ করবেন কি?</string>
     <string name="callstatus_accepted">কলটি গৃহীত হয়েছে</string>
     <string name="group_member_role_admin">অ্যাডমিন</string>
     <string name="connect_plan_you_are_admin">আপনি একজন অ্যাডমিন</string>
@@ -37,9 +37,9 @@
     <string name="v5_1_self_destruct_passcode_descr">এটি প্রবেশ করালে সকল তথ্য মুছে ফেলা হবে।</string>
     <string name="network_settings">অগ্রবর্তী নেটওয়ার্ক সেটিংস</string>
     <string name="thousand_abbreviation">হাজার</string>
-    <string name="connect_via_invitation_link">আমন্ত্রণের সংযোগ-সূত্র দ্বারা যুক্ত হতে চান\?</string>
-    <string name="connect_via_contact_link">যোগাযোগের সংযোগ-সূত্র দ্বারা যুক্ত হতে চান\?</string>
-    <string name="connect_via_group_link">গ্রুপের সংযোগ-সূত্র দ্বারা যুুক্ত হতে চান\?</string>
+    <string name="connect_via_invitation_link">আমন্ত্রণের সংযোগ-সূত্র দ্বারা যুক্ত হতে চান?</string>
+    <string name="connect_via_contact_link">যোগাযোগের সংযোগ-সূত্র দ্বারা যুক্ত হতে চান?</string>
+    <string name="connect_via_group_link">গ্রুপের সংযোগ-সূত্র দ্বারা যুুক্ত হতে চান?</string>
     <string name="accept_contact_incognito_button">গুপ্ত-পরিচয় গ্রহণ করুন</string>
     <string name="search_verb">সার্চ</string>
     <string name="la_mode_off">বন্ধ আছে</string>

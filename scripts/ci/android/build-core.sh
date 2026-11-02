@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Builds the arm64 Android core (libsimplex.so with the libraries it needs, and libsupport.so) with Nix, as
+# Builds the aarch64 or armv7a Android core (libsimplex.so with the libraries it needs, and libsupport.so) with Nix, as
 # scripts/android/build-android.sh does, and packs them as scripts/android/download-libs.sh lays them out.
-# Usage: scripts/ci/android/build-core.sh <output .tar.gz>
+# Usage: scripts/ci/android/build-core.sh <output .tar.gz> [aarch64|armv7a]
 # Installs the Nix version that build-android.sh pins, in single-user mode, with the zw3rk Hydra's cache, which
 # builds these jobs for master: without it, the toolchain and every dependency would be compiled too.
 
@@ -10,7 +10,8 @@ set -euo pipefail
 
 nix_ver=nix-2.22.0
 nix_hash=4fed7db867186c01ce2a2077da4a6950ed16232efbf78d0cd19700cff80559f9
-jobs=(".#hydraJobs.x86_64-linux.aarch64-android:lib:simplex-chat" ".#hydraJobs.x86_64-linux.aarch64-android:lib:support")
+arch=${2:-aarch64}
+jobs=(".#hydraJobs.x86_64-linux.$arch-android:lib:simplex-chat" ".#hydraJobs.x86_64-linux.$arch-android:lib:support")
 
 install_nix() {
   local tmp

@@ -71,20 +71,26 @@ fun BadgesSupportSimplexView(modalManager: ModalManager, unwindToDepth: Int) {
         } else {
           RedeemCodeButton(modalManager, unwindToDepth)
         }
-        RestorePurchasesButton()
-        Text(
-          stringResource(MR.strings.badges_restore_purchases_footnote),
-          Modifier.padding(top = DEFAULT_PADDING_HALF),
-          style = MaterialTheme.typography.body2,
-          color = MaterialTheme.colors.secondary,
-          textAlign = TextAlign.Center
-        )
+        RestorePurchasesRows()
       } else {
         BuyInBrowserButton(modalManager, unwindToDepth)
         RedeemCodeButton(modalManager, unwindToDepth)
+        BadgeInvestorOffer(BadgeLevel.Supporter, shown = false)
       }
     }
   }
+}
+
+@Composable
+fun RestorePurchasesRows(enabled: Boolean = true) {
+  RestorePurchasesButton(enabled)
+  Text(
+    stringResource(MR.strings.badges_restore_purchases_footnote),
+    Modifier.padding(top = DEFAULT_PADDING_HALF),
+    style = MaterialTheme.typography.body2,
+    color = MaterialTheme.colors.secondary,
+    textAlign = TextAlign.Center
+  )
 }
 
 @Composable

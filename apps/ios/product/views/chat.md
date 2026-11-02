@@ -118,6 +118,12 @@ For groups with member support enabled:
 - `SecondaryChatView` for scoped group chat views (reports, member support)
 - User knocking state: `userMemberKnockingTitleBar()` shown when user is pending admission
 
+### Terminal Layout
+
+A chat with the terminal layout shows messages as full-width rows without bubbles, starting at one edge for sent and received messages, with the sender's name above each group of messages and the time at the end of the last line. Groups and channels show the sender's avatar beside its name; other chats have no avatar column. The wallpaper is drawn as its colour without the image.
+
+A chat uses the user's choice for that chat, otherwise the layout set by the group owner or by the address the contact came from, otherwise the user's choice for the profile and then the app setting, otherwise classic. The choice for a chat is made in its theme screen; the choices for the app and the profile are made in Settings › Appearance.
+
 ## Loading / Error States
 
 | State | Behavior |
@@ -156,6 +162,7 @@ For groups with member support enabled:
 - `Shared/Views/Chat/ComposeMessage/ContextProfilePickerView.swift` -- Profile picker for incognito
 - `Shared/Views/Chat/ChatItem/FramedItemView.swift` -- Framed message bubble rendering
 - `Shared/Views/Chat/ChatItem/MsgContentView.swift` -- Text message content with markdown
+- `Shared/Views/Chat/ChatItem/TerminalItemView.swift` -- Terminal layout rows, sender rows and the time at the row end
 - `Shared/Views/Chat/ChatItem/CIImageView.swift` -- Image message view
 - `Shared/Views/Chat/ChatItem/CIVideoView.swift` -- Video message view
 - `Shared/Views/Chat/ChatItem/CIVoiceView.swift` -- Voice message view

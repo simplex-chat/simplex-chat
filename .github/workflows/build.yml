@@ -655,7 +655,7 @@ jobs:
           TESTS: ${{ github.event_name == 'workflow_dispatch' && inputs.tests || '' }}
           PR_BODY: ${{ github.event.pull_request.draft == true && github.event.pull_request.body || '' }}
           ATTEMPTS: ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) && 3 || 1 }}
-        run: scripts/ci/run-tests.sh ./simplex-chat-test
+        run: scripts/ci/run-tests.sh timeout 35m ./simplex-chat-test
 
       # Compiling the desktop and Android targets of :common in parallel exceeds the 2 GB Kotlin daemon heap.
       # cmakeBuildAndCopy links the JNI library against libsimplex, which this job does not build.
@@ -1499,8 +1499,8 @@ jobs:
         if: steps.restore-build.outcome == 'success' && steps.restore-build.outputs.cache-matched-key == ''
         run: echo "::warning title=Cache miss::${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}"
 
-      # rm -rf dist-newstyle/src/{direct-sq,simplexmq}* is here because of the bug in cabal's dependency which prevents second build from finishing
-      # (simplexmq is removed because cabal cannot delete its read-only git submodule pack files - blst, libbbs - on Windows)
+      # rm -rf dist-newstyle/src/{direct-sq,simplexmq,hs-jpeg-t,JuicyPixe}* is here because of the bug in cabal's dependency which prevents second build from finishing
+      # (simplexmq, hs-jpeg-turbo and JuicyPixels-stbir are removed because cabal cannot delete their read-only git submodule pack files - blst, libbbs, mozjpeg, stb - on Windows)
       - name: Build CLI
         id: windows_cli_build
         shell: msys2 {0}
@@ -1516,10 +1516,10 @@ jobs:
           echo "    extra-lib-dirs: $openssl_windows_style_path" >> cabal.project.local
 
           scripts/ci/prune-old-builds.sh dist-newstyle
-          rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq*
+          rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq* dist-newstyle/src/hs-jpeg-t* dist-newstyle/src/JuicyPixe*
           sed -i "s/, unix /--, unix /" simplex-chat.cabal
           cabal build -j --enable-tests ${{ env.ghc_options }}
-          rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq*
+          rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq* dist-newstyle/src/hs-jpeg-t* dist-newstyle/src/JuicyPixe*
           path=$(cabal list-bin simplex-chat | tail -n 1)
           echo "bin_path=$path" >> $GITHUB_OUTPUT
           echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
@@ -1642,7 +1642,7 @@ jobs:
           scripts/desktop/build-lib-windows.sh
           cd apps/multiplatform
           ./gradlew -Psimplex.assets.dir=../../assets packageMsi
-          rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq*
+          rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq* dist-newstyle/src/hs-jpeg-t* dist-newstyle/src/JuicyPixe*
           path=$(echo $PWD/release/main/msi/*imple*.msi | sed 's#/\([a-z]\)#\1:#' | sed 's#/#\\#g')
           echo "package_path=$path" >> $GITHUB_OUTPUT
           echo "package_hash=$(echo SHA2-256\(${{ matrix.desktop_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
@@ -1684,9 +1684,9 @@ jobs:
           export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
           scripts/desktop/prepare-openssl-windows.sh
           scripts/ci/prune-old-builds.sh dist-newstyle
-          rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq*
+          rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq* dist-newstyle/src/hs-jpeg-t* dist-newstyle/src/JuicyPixe*
           cabal build -j --enable-tests --ghc-options=-O0
-          rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq*
+          rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq* dist-newstyle/src/hs-jpeg-t* dist-newstyle/src/JuicyPixe*
 
       - name: Save -O0 build directory to cache
         if: ${{ !cancelled() && steps.build-o0.outcome == 'success' && steps.restore-build-o0.outputs.cache-hit != 'true' }}

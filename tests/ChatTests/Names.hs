@@ -36,6 +36,7 @@ chatNamesTests = do
   it "channel name is not verified just by joining via link" testChannelDomainLinkJoinUnverified
   it "verify channel name, fail on re-point, retain status on refresh" testChannelDomainVerify
   it "connect by channel name" testConnectByChannelName
+  it "channel name is verified when the channel is prepared with it" testPrepareChannelWithName
   it "connect by name resolving to channel (primary) and direct contact" testConnectByNameChannelAndContact
   it "connect by name resolving to direct contact (primary) and channel" testConnectByNameContactAndChannel
   it "connect by name resolving to business (primary) and channel" testConnectByNameBusinessAndChannel
@@ -362,6 +363,29 @@ testConnectByChannelName ps = withSmpServerAndNames ps $ \reg ->
         bob <## "group link: known group #team"
         bob <## "SimpleX name: #team (verified)"
         bob <## "use #team <message> to send messages"
+  where
+    teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
+
+testPrepareChannelWithName :: HasCallStack => TestParams -> IO ()
+testPrepareChannelWithName ps = withSmpServerAndNames ps $ \reg ->
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+      withNewTestChat ps "bob" bobProfile $ \bob -> do
+        mapM_ enableNamesRole [alice, cath, bob]
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice cath
+        registerName reg teamName (channelNameRecord "team.simplex" (T.pack shortLink))
+        alice ##> "/public group access #team domain=team.simplex"
+        alice <## "updated public group access: domain=team.simplex"
+        cath <## "alice updated group #team: (signed)"
+        cath <## "updated public group access: domain=team.simplex"
+        bob ##> ("/_connect plan 1 " <> shortLink)
+        bob <## "group link: ok to connect via relays"
+        groupSLinkData <- getTermLine bob
+        bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " direct=off domain=team.simplex " <> groupSLinkData)
+        bob <## "#team: group is prepared"
+        bob ##> ("/_connect plan 1 " <> shortLink)
+        bob <## "group link: known prepared group #team"
+        bob <## "SimpleX name: #team (verified)"
   where
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
@@ -1055,9 +1079,9 @@ testNameRecordOrWarning = do
   recordOrWarning (registered (Just 900) (Just 2000) record) `shouldBe` Left (NWExpired (utc 900) (Just $ utc 2000))
   recordOrWarning (registered (Just 900) Nothing record) `shouldBe` Left (NWExpired (utc 900) Nothing)
   recordOrWarning (registered (Just 800) (Just 900) record) `shouldBe` Left (NWExpired (utc 800) Nothing)
-  recordOrWarning (NRAvailable $ pricing 5 M.empty) `shouldBe` Left (NWAvailable $ NamePrice (USDCents 2000) 2)
-  recordOrWarning (NRAvailable $ pricing 3 (M.fromList [(5, USDCents 5000)])) `shouldBe` Left (NWAvailable $ NamePrice (USDCents 10000) 2)
-  recordOrWarning (NRAvailable $ pricing 6 M.empty) `shouldBe` Left NWNotRegistered
+  recordOrWarning (NRAvailable (pricing 5 M.empty) Nothing) `shouldBe` Left (NWAvailable $ NamePrice (USDCents 2000) 2)
+  recordOrWarning (NRAvailable (pricing 3 (M.fromList [(5, USDCents 5000)])) Nothing) `shouldBe` Left (NWAvailable $ NamePrice (USDCents 10000) 2)
+  recordOrWarning (NRAvailable (pricing 6 M.empty) Nothing) `shouldBe` Left NWNotRegistered
   recordOrWarning (NRReserved NRRCommunity) `shouldBe` Left NWReservedForCommunity
   recordOrWarning (NRReserved NRRTrademark) `shouldBe` Left NWNotRegistered
   where
