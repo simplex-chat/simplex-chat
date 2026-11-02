@@ -4,11 +4,16 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.TextFieldValue
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.chat.item.markedDeletedText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -41,15 +46,18 @@ fun ExportChatView(rhId: Long?, chatInfo: ChatInfo) {
   val fromDate = remember { mutableStateOf<LocalDate?>(null) }
   val toDate = remember { mutableStateOf<LocalDate?>(null) }
   val imagePreviews = remember { mutableStateOf(true) }
+  val anonymous = remember { mutableStateOf(false) }
+  val search = remember { mutableStateOf(TextFieldValue()) }
   val written = remember { mutableStateOf<Int?>(null) }
   val export = remember { mutableStateOf<Job?>(null) }
   DisposableEffect(Unit) { onDispose { export.value?.cancel() } }
   val saveLauncher = rememberFileChooserLauncher(false) { file: URI? ->
     if (file != null) {
       written.value = 0
+      val options = ExportChatOptions(fromDate.value, toDate.value, imagePreviews.value && !anonymous.value, anonymous.value, search.value.text.trim())
       export.value = withLongRunningApi {
         try {
-          exportChatToFile(rhId, chatInfo, fromDate.value, toDate.value, imagePreviews.value, file) { written.value = it }
+          exportChatToFile(rhId, chatInfo, options, file) { written.value = it }
         } finally {
           written.value = null
         }
@@ -62,7 +70,13 @@ fun ExportChatView(rhId: Long?, chatInfo: ChatInfo) {
     SectionView {
       ExportDateRow(stringResource(MR.strings.export_chat_from), fromDate, enabled = count == null)
       ExportDateRow(stringResource(MR.strings.export_chat_to), toDate, enabled = count == null)
-      PreferenceToggle(stringResource(MR.strings.export_chat_image_previews), disabled = count != null, checked = imagePreviews.value) { imagePreviews.value = it }
+      PreferenceToggle(stringResource(MR.strings.export_chat_without_names), disabled = count != null, checked = anonymous.value) { anonymous.value = it }
+      PreferenceToggle(stringResource(MR.strings.export_chat_image_previews), disabled = count != null || anonymous.value, checked = imagePreviews.value && !anonymous.value) { imagePreviews.value = it }
+    }
+    SectionTextFooter(stringResource(MR.strings.export_chat_without_names_footer))
+    SectionDividerSpaced()
+    SectionView {
+      DefaultConfigurableTextField(search, stringResource(MR.strings.export_chat_only_with_text), Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING), isValid = { true })
     }
     SectionDividerSpaced()
     SectionView {
@@ -110,10 +124,12 @@ private fun ExportDateRow(title: String, date: MutableState<LocalDate?>, enabled
   }
 }
 
-private suspend fun exportChatToFile(rhId: Long?, chatInfo: ChatInfo, from: LocalDate?, to: LocalDate?, imagePreviews: Boolean, file: URI, onWritten: (Int) -> Unit) {
+private class ExportChatOptions(val from: LocalDate?, val to: LocalDate?, val imagePreviews: Boolean, val anonymous: Boolean, val search: String)
+
+private suspend fun exportChatToFile(rhId: Long?, chatInfo: ChatInfo, options: ExportChatOptions, file: URI, onWritten: (Int) -> Unit) {
   var saved = false
   try {
-    saved = file.outputStream().bufferedWriter().use { writeChatMarkdown(rhId, chatInfo, from, to, imagePreviews, it, onWritten) }
+    saved = file.outputStream().bufferedWriter().use { writeChatMarkdown(rhId, chatInfo, options, it, onWritten) }
   } catch (e: IOException) {
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_file), e.toString())
   } finally {
@@ -121,27 +137,33 @@ private suspend fun exportChatToFile(rhId: Long?, chatInfo: ChatInfo, from: Loca
   }
 }
 
-private suspend fun writeChatMarkdown(rhId: Long?, chatInfo: ChatInfo, from: LocalDate?, to: LocalDate?, imagePreviews: Boolean, out: Writer, onWritten: (Int) -> Unit): Boolean {
-  out.write(exportHeaderMarkdown(exportChatName(chatInfo), from, to, Clock.System.now()))
+private suspend fun writeChatMarkdown(rhId: Long?, chatInfo: ChatInfo, options: ExportChatOptions, out: Writer, onWritten: (Int) -> Unit): Boolean {
+  out.write(exportHeaderMarkdown(exportChatName(chatInfo), options, Clock.System.now()))
   val group = chatInfo.chatType == ChatType.Group
   val pageSize = if (group) 200 else 500
-  val end = to?.plusDays(1)?.let(::startOfDay)
-  var pagination: ChatPagination = ChatPagination.From(from?.let(::startOfDay) ?: Instant.fromEpochSeconds(0), pageSize)
+  val end = options.to?.plusDays(1)?.let(::startOfDay)
+  var pagination: ChatPagination = ChatPagination.From(options.from?.let(::startOfDay) ?: Instant.fromEpochSeconds(0), pageSize)
   var day: String? = null
   var written = 0
   while (true) {
-    val items = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, null, pagination = pagination, log = false)?.first?.chatItems ?: return false
+    val items = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, null, pagination = pagination, search = options.search, log = false)?.first?.chatItems ?: return false
     for (ci in items) {
       if (ci.id <= 0) continue
       val orderTs = if (group) ci.meta.itemTs else ci.meta.createdAt
       if (end != null && orderTs >= end) return true
-      val md = chatItemMarkdown(ci, chatInfo, imagePreviews) ?: continue
-      val itemDay = localDate(ci.meta.itemTs)
-      if (itemDay != day) {
-        out.write("## $itemDay\n\n")
-        day = itemDay
+      if (options.anonymous) {
+        val md = anonymousMarkdown(ci) ?: continue
+        if (written > 0) out.write("---\n\n")
+        out.write(md)
+      } else {
+        val md = chatItemMarkdown(ci, chatInfo, options.imagePreviews) ?: continue
+        val itemDay = localDate(ci.meta.itemTs)
+        if (itemDay != day) {
+          out.write("## $itemDay\n\n")
+          day = itemDay
+        }
+        out.write(md)
       }
-      out.write(md)
       written++
     }
     onWritten(written)
@@ -172,14 +194,25 @@ private fun exportSenderName(chatDir: CIDirection, asGroup: Boolean, chatInfo: C
   is CIDirection.GroupRcv -> chatDir.groupMember.memberProfile.displayName
 }
 
-private fun exportHeaderMarkdown(chatName: String, from: LocalDate?, to: LocalDate?, now: Instant): String {
+private fun exportHeaderMarkdown(chatName: String, options: ExportChatOptions, now: Instant): String {
+  val title = "# ${safeMarkdown(chatName)}\n\n"
+  if (options.anonymous) return title
   val exported = localTimestamp(now)
+  val from = options.from
+  val to = options.to
   val summary = when {
     from != null -> generalGetString(MR.strings.export_chat_header_from_to).format(exported, localDate(startOfDay(from)), localDate(to?.let(::startOfDay) ?: now))
     to != null -> generalGetString(MR.strings.export_chat_header_until).format(exported, localDate(startOfDay(to)))
     else -> generalGetString(MR.strings.export_chat_header_all).format(exported)
   }
-  return "# ${safeMarkdown(chatName)}\n\n$summary\n\n"
+  val filter = if (options.search.isEmpty()) "" else generalGetString(MR.strings.export_chat_header_search).format(safeMarkdown(options.search)) + "\n\n"
+  return "$title$summary\n\n$filter"
+}
+
+private fun anonymousMarkdown(ci: ChatItem): String? {
+  val mc = ci.content.msgContent
+  return if (mc == null || mc is MsgContent.MCReport || ci.meta.itemTimed != null || ci.meta.itemDeleted != null || ci.isDeletedContent) null
+  else mc.text.ifBlank { null }?.let { safeMarkdown(it) + "\n\n" }
 }
 
 private fun chatItemMarkdown(ci: ChatItem, chatInfo: ChatInfo, imagePreviews: Boolean): String? {
