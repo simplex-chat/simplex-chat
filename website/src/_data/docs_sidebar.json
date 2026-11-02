@@ -4,6 +4,7 @@
             "menu": "Guide",
             "data": [
                 "README.md",
+                "making-connections.md",
                 "send-messages.md",
                 "secret-groups.md",
                 "channels.md",
@@ -16,8 +17,7 @@
                 "notifications.md",
                 "privacy-security.md",
                 "app-settings.md",
-                "supporter-badges.md",
-                "making-connections.md"
+                "supporter-badges.md"
             ]
         },
         {

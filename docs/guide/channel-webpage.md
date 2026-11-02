@@ -15,11 +15,16 @@ You'll also need somewhere to publish an HTML page. Your own site works, but any
 
 ## Step 1. Open the channel webpage settings
 
-Open the channel and tap its name in the chat toolbar to open the chat info. The chat toolbar is at the top on iOS and at the bottom by default on Android and desktop. Scroll down to **Advanced options** and tap **Channel webpage**. This button is only shown to channel owners.
+Open the channel and tap its name in the chat toolbar to open the chat info. The
+chat toolbar is at the top on iOS and at the bottom by default on Android and
+desktop. Scroll down to **Advanced options** and tap **Channel webpage**. This
+button is only shown to channel owners.
 
 ## Step 2. Allow embedding while you build the page
 
-Turn on **Allow anyone to embed** and tap **Save and notify subscribers** (iOS) or **Save** (Android and desktop). On Android and desktop, the app closes the screen after **Save**: tap **Channel webpage** again for the next step.
+Turn on **Allow anyone to embed** and tap **Save and notify subscribers** (iOS)
+or **Save** (Android and desktop). On Android and desktop, the app closes the
+screen after **Save**: tap **Channel webpage** again for the next step.
 
 With this on, the relay serves your channel preview to any page, so you can build and test from wherever the page lives without it being tied to one domain yet. Leave the webpage URL empty for now; nothing is shown to your subscribers until you set it.
 
@@ -79,7 +84,9 @@ Once the page works, go back to **Channel webpage** in the app:
 - Turn **Allow anyone to embed** off if you don't want other sites to be able to show your channel preview. Leave it on if you're happy for anyone to embed it.
 - Tap **Save and notify subscribers** (iOS) or **Save** (Android and desktop).
 
-The URL now appears as a link in your channel info that every subscriber can see. If you turned embedding off, the relays also let only pages at the origin of this URL (its scheme, host and port) load the preview.
+The URL now appears as a link in your channel info that every subscriber can
+see. If you turned embedding off, the relays also let only pages at the origin
+of this URL (its scheme, host and port) load the preview.
 
 ## Customizing the preview
 
@@ -121,9 +128,15 @@ If your channel is served by more than one relay, all of them are listed in `dat
 
 ## If something doesn't work
 
-If "Failed to load channel preview." appears in the preview area, no relay returned the preview to your page. Check that the page is at the same origin (scheme, host and port) as the URL you set in Step 5, or turn **Allow anyone to embed** back on while you sort it out. With embedding off, the relays let only that origin load the preview.
+If "Failed to load channel preview." appears in the preview area, no relay
+returned the preview to your page. Check that the page is at the same origin
+(scheme, host and port) as the URL you set in Step 5, or turn **Allow anyone to
+embed** back on while you sort it out. With embedding off, the relays let only
+that origin load the preview.
 
-If "All relays returned a different channel link from specified in the page." appears in the preview area, the `data-channel-link` value differs from the channel link that the relays serve. Copy the code from the app again.
+If "All relays returned a different channel link from specified in the page."
+appears in the preview area, the `data-channel-link` value differs from the
+channel link that the relays serve. Copy the code from the app again.
 
 If the app says "Used chat relays do not support webpages.", the relays hosting your channel don't support this feature yet, so no code can be generated.
 

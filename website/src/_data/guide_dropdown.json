@@ -5,6 +5,10 @@
             "url": "/docs/guide/readme.html"
         },
         {
+            "title": "guide-dropdown-9",
+            "url": "/docs/guide/making-connections.html"
+        },
+        {
             "title": "guide-dropdown-2",
             "url": "/docs/guide/send-messages.html"
         },
@@ -55,10 +59,6 @@
         {
             "title": "guide-dropdown-15",
             "url": "/docs/guide/supporter-badges.html"
-        },
-        {
-            "title": "guide-dropdown-9",
-            "url": "/docs/guide/making-connections.html"
         }
     ]
 }
