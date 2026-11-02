@@ -26,7 +26,7 @@ Settings → Chat data → Database passphrase & export → Import database, wit
   5. copies the archive contents.
 - The four app call sites pass `replaceStorage = true` and no longer call `apiDeleteStorage`; the wallpapers folder is created after the import, whether it succeeds or fails, instead of after the deletion.
 - Kotlin `DatabaseView.importArchive` catches `Exception` and shows "Error importing chat database"; its "Error deleting chat database" branch is removed with the deletion. iOS `DatabaseView.importArchive` loses the same branch.
-- `/_db import` without `replaceStorage` (CLI) keeps its behaviour: backup, then overwrite.
+- `/_db import` without `replaceStorage` (CLI) backs up, then overwrites, as before; a file without both databases is now rejected there too.
 
 ## Scope
 

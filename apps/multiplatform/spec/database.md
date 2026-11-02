@@ -331,7 +331,7 @@ class ArchiveConfig(
   val archivePath: String,              // Full path to the ZIP archive
   val disableCompression: Boolean?,     // Skip compression for speed
   val parentTempDirectory: String?,     // Temp directory for extraction
-  val replaceStorage: Boolean?          // Import: remove current databases, backups, files and wallpapers first
+  val replaceStorage: Boolean?          // Import: after the archive check, remove the current storage
 )
 ```
 

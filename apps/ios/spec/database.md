@@ -241,7 +241,7 @@ ChatCommand.apiExportArchive(config: ArchiveConfig)
 `ArchiveConfig` specifies:
 - `archivePath: String` -- destination path for the archive
 - `disableCompression: Bool?` -- optional flag to skip compression
-- `replaceStorage: Bool?` -- import only: remove the current databases, backups, files and wallpapers before copying the archive contents
+- `replaceStorage: Bool?` -- import only: after the archive check, remove the current databases with their `.bak` and `.exported` copies, the files, assets and temp folders, then copy the archive contents
 
 The archive contains both databases and optionally files. The Haskell core handles the actual export, creating a ZIP archive.
 
@@ -252,7 +252,7 @@ ChatCommand.apiImportArchive(config: ArchiveConfig)
 // Response: ChatResponse2.archiveImported(archiveErrors: [ArchiveError])
 ```
 
-Import replaces the current databases with the archive contents. The core first checks that the archive contains both databases; a file that is not a chat archive is rejected before the current data is touched. The Import database and Migrate to device screens pass `replaceStorage: true`. The app must be restarted after import.
+Import replaces the current databases with the archive contents. The core first checks that the archive contains both databases; a file without both databases is rejected before the current data is touched. The Import database and Migrate to device screens pass `replaceStorage: true`. The app must be restarted after import.
 
 ### Archive Errors
 
