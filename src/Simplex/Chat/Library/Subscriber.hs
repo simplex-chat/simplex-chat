@@ -29,7 +29,7 @@ import Data.Either (isLeft, lefts, partitionEithers, rights)
 import Data.Foldable (foldr', foldrM)
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, foldl')
+import Data.List (find, foldl', partition)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import qualified Data.IntSet as IS
@@ -1017,7 +1017,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           -- possible improvement is to choose scope based on event (some events specify scope)
           (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
           checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchAllErrors` \_ -> pure ()
-          newDeliveryTasks <- reverse <$> foldM (processAChatMsg gInfo' scopeInfo m' tags eInfo) [] aChatMsgs
+          newDeliveryTasks <- reverse <$> foldM (processAChatMsg gInfo' scopeInfo m' tags eInfo) [] (otherMsgs <> userRemovalMsgs)
           shouldDelConns <-
             if isUserGrpFwdRelay gInfo' && not (blockedByAdmin m)
               then
@@ -1030,6 +1030,11 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           pure (withRcpt, shouldDelConns)
         where
           aChatMsgs = parseChatMessages msgBody
+          (userRemovalMsgs, otherMsgs) = partition removesUser aChatMsgs
+          removesUser :: Either String AParsedMsg -> Bool
+          removesUser = \case
+            Right (APMsg _ (ParsedMsg _ _ ChatMessage {chatMsgEvent = XGrpMemDel memId _ _})) -> memId == memberId' membership
+            _ -> False
           brokerTs = metaBrokerTs msgMeta
           processAChatMsg ::
             GroupInfo ->

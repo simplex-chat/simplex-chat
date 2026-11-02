@@ -89,6 +89,7 @@ chatGroupTests = do
     it "delete contact before they accept group invitation, contact joins group" testGroupDeleteInvitedContact
     it "member profile is kept when deleting group if other groups have this member" testDeleteGroupMemberProfileKept
     it "remove contact from group and add again" testGroupRemoveAdd
+    it "remove several members at once" testGroupRemoveMembers
     it "list groups containing group invitations" testGroupList
     it "group message quoted replies" testGroupMessageQuotedReply
     it "group message update" testGroupMessageUpdate
@@ -1151,6 +1152,27 @@ testDeleteGroupMemberProfileKept =
       bob <# "#club alice> checking connection"
       bob #> "#club received"
       alice <# "#club bob> received"
+
+testGroupRemoveMembers :: HasCallStack => TestParams -> IO ()
+testGroupRemoveMembers =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+
+      threadDelay 100000
+
+      alice ##> "/rm team bob,cath"
+      concurrentlyN_
+        [ alice <## "#team: you removed 2 members from the group (signed)",
+          do
+            bob <## "#team: alice removed cath from the group (signed)"
+            bob <## "#team: alice removed you from the group (signed)"
+            bob <## "use /d #team to delete the group",
+          do
+            cath <## "#team: alice removed bob from the group (signed)"
+            cath <## "#team: alice removed you from the group (signed)"
+            cath <## "use /d #team to delete the group"
+        ]
 
 testGroupRemoveAdd :: HasCallStack => TestParams -> IO ()
 testGroupRemoveAdd =
