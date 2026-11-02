@@ -1246,12 +1246,15 @@ getDirectChat db cxt user contactId contentFilter pagination search_ = do
   ct <- getContact db cxt user contactId
   case pagination of
     CPLast count -> (,Nothing) <$> getDirectChatLast_ db user ct contentFilter count search
-    CPAfter afterId count -> (,Nothing) <$> getDirectChatAfter_ db user ct contentFilter afterId count search
+    CPAfter afterId count -> do
+      afterCI <- getDirectChatItem db user contactId afterId
+      (,Nothing) <$> getDirectChatAfter_ db user ct contentFilter (ciCreatedAt afterCI) (cChatItemId afterCI) count search
     CPBefore beforeId count -> (,Nothing) <$> getDirectChatBefore_ db user ct contentFilter beforeId count search
     CPAround aroundId count -> getDirectChatAround_ db user ct contentFilter aroundId count search
     CPInitial count -> do
       unless (T.null search) $ throwError $ SEInternalError "initial chat pagination doesn't support search"
       getDirectChatInitial_ db user ct contentFilter count
+    CPFrom fromTs count -> (,Nothing) <$> getDirectChatAfter_ db user ct contentFilter fromTs 0 count search
 
 -- the last items in reverse order (the last item in the conversation is the first in the returned list)
 getDirectChatLast_ :: DB.Connection -> User -> Contact -> Maybe MsgContentTag -> Int -> Text -> ExceptT StoreError IO (Chat 'CTDirect)
@@ -1310,11 +1313,10 @@ getDirectChatItemLast db user@User {userId} contactId = do
         (userId, contactId)
   getDirectChatItem db user contactId chatItemId
 
-getDirectChatAfter_ :: DB.Connection -> User -> Contact -> Maybe MsgContentTag -> ChatItemId -> Int -> Text -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChatAfter_ db user ct@Contact {contactId} contentFilter afterId count search = do
-  afterCI <- getDirectChatItem db user contactId afterId
+getDirectChatAfter_ :: DB.Connection -> User -> Contact -> Maybe MsgContentTag -> UTCTime -> ChatItemId -> Int -> Text -> ExceptT StoreError IO (Chat 'CTDirect)
+getDirectChatAfter_ db user ct contentFilter afterTs afterId count search = do
   let cInfo = DirectChat ct
-      range = CRAfter (ciCreatedAt afterCI) (cChatItemId afterCI)
+      range = CRAfter afterTs afterId
   ciIds <- getChatItemIDs db user cInfo contentFilter range count search
   ts <- liftIO getCurrentTime
   cis <- liftIO $ mapM (safeGetDirectItem db user ct ts) ciIds
@@ -1468,12 +1470,15 @@ getGroupChat db cxt user groupId scope_ contentFilter pagination search_ = do
   scopeInfo <- mapM (getCreateGroupChatScopeInfo db cxt user g) scope_
   case pagination of
     CPLast count -> (,Nothing) <$> getGroupChatLast_ db user g scopeInfo contentFilter count search emptyChatStats
-    CPAfter afterId count -> (,Nothing) <$> getGroupChatAfter_ db user g scopeInfo contentFilter afterId count search
+    CPAfter afterId count -> do
+      afterCI <- getGroupChatItem db user groupId afterId
+      (,Nothing) <$> getGroupChatAfter_ db user g scopeInfo contentFilter (chatItemTs afterCI) (cChatItemId afterCI) count search
     CPBefore beforeId count -> (,Nothing) <$> getGroupChatBefore_ db user g scopeInfo contentFilter beforeId count search
     CPAround aroundId count -> getGroupChatAround_ db user g scopeInfo contentFilter aroundId count search
     CPInitial count -> do
       unless (T.null search) $ throwError $ SEInternalError "initial chat pagination doesn't support search"
       getGroupChatInitial_ db user g scopeInfo contentFilter count
+    CPFrom fromTs count -> (,Nothing) <$> getGroupChatAfter_ db user g scopeInfo contentFilter fromTs 0 count search
 
 getCreateGroupChatScopeInfo :: DB.Connection -> StoreCxt -> User -> GroupInfo -> GroupChatScope -> ExceptT StoreError IO GroupChatScopeInfo
 getCreateGroupChatScopeInfo db cxt user GroupInfo {membership} = \case
@@ -1657,11 +1662,10 @@ getGroupMemberChatItemLast db user@User {userId} groupId groupMemberId = do
         (userId, groupId, groupMemberId)
   getGroupChatItem db user groupId chatItemId
 
-getGroupChatAfter_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> ChatItemId -> Int -> Text -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatAfter_ db user g@GroupInfo {groupId} scopeInfo contentFilter afterId count search = do
-  afterCI <- getGroupChatItem db user groupId afterId
+getGroupChatAfter_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> UTCTime -> ChatItemId -> Int -> Text -> ExceptT StoreError IO (Chat 'CTGroup)
+getGroupChatAfter_ db user g scopeInfo contentFilter afterTs afterId count search = do
   let cInfo = GroupChat g scopeInfo
-      range = CRAfter (chatItemTs afterCI) (cChatItemId afterCI)
+      range = CRAfter afterTs afterId
   ciIds <- getChatItemIDs db user cInfo contentFilter range count search
   ts <- liftIO getCurrentTime
   cis <- liftIO $ mapM (safeGetGroupItem db user g ts) ciIds
@@ -1835,12 +1839,15 @@ getLocalChat db user folderId contentFilter pagination search_ = do
   nf <- getNoteFolder db user folderId
   case pagination of
     CPLast count -> (,Nothing) <$> getLocalChatLast_ db user nf contentFilter count search
-    CPAfter afterId count -> (,Nothing) <$> getLocalChatAfter_ db user nf contentFilter afterId count search
+    CPAfter afterId count -> do
+      afterCI <- getLocalChatItem db user folderId afterId
+      (,Nothing) <$> getLocalChatAfter_ db user nf contentFilter (ciCreatedAt afterCI) (cChatItemId afterCI) count search
     CPBefore beforeId count -> (,Nothing) <$> getLocalChatBefore_ db user nf contentFilter beforeId count search
     CPAround aroundId count -> getLocalChatAround_ db user nf contentFilter aroundId count search
     CPInitial count -> do
       unless (T.null search) $ throwError $ SEInternalError "initial chat pagination doesn't support search"
       getLocalChatInitial_ db user nf contentFilter count
+    CPFrom fromTs count -> (,Nothing) <$> getLocalChatAfter_ db user nf contentFilter fromTs 0 count search
 
 getLocalChatLast_ :: DB.Connection -> User -> NoteFolder -> Maybe MsgContentTag -> Int -> Text -> ExceptT StoreError IO (Chat 'CTLocal)
 getLocalChatLast_ db user nf contentFilter count search = do
@@ -1878,11 +1885,10 @@ safeToLocalItem currentTs itemId = \case
                 file = Nothing
               }
 
-getLocalChatAfter_ :: DB.Connection -> User -> NoteFolder -> Maybe MsgContentTag -> ChatItemId -> Int -> Text -> ExceptT StoreError IO (Chat 'CTLocal)
-getLocalChatAfter_ db user nf@NoteFolder {noteFolderId} contentFilter afterId count search = do
-  afterCI <- getLocalChatItem db user noteFolderId afterId
+getLocalChatAfter_ :: DB.Connection -> User -> NoteFolder -> Maybe MsgContentTag -> UTCTime -> ChatItemId -> Int -> Text -> ExceptT StoreError IO (Chat 'CTLocal)
+getLocalChatAfter_ db user nf contentFilter afterTs afterId count search = do
   let cInfo = LocalChat nf
-      range = CRAfter (ciCreatedAt afterCI) (cChatItemId afterCI)
+      range = CRAfter afterTs afterId
   ciIds <- getChatItemIDs db user cInfo contentFilter range count search
   ts <- liftIO getCurrentTime
   cis <- liftIO $ mapM (safeGetLocalItem db user nf ts) ciIds
@@ -2460,6 +2466,7 @@ getAllChatItems db cxt user@User {userId} pagination search_ = do
         liftIO getFirstUnreadItemId_ >>= \case
           Just itemId -> liftIO . getAllChatItemsAround_ itemId count . aChatItemTs =<< getAChatItem_ itemId
           Nothing -> liftIO $ getAllChatItemsLast_ count
+      CPFrom fromTs count -> liftIO $ getAllChatItemsAfter_ 0 count fromTs
   mapM (uncurry (getAChatItem db cxt user)) itemRefs
   where
     search = fromMaybe "" search_

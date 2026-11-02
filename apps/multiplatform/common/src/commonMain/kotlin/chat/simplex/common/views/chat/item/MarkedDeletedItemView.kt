@@ -79,17 +79,17 @@ private fun MergedMarkedDeletedText(chatsCtx: ChatModel.ChatsContext, chatItem: 
   )
 }
 
-fun markedDeletedText(cItem: ChatItem, chatInfo: ChatInfo): String =
+fun markedDeletedText(cItem: ChatItem, chatInfo: ChatInfo, memberName: (GroupMember) -> String = { it.displayName }): String =
   if (cItem.meta.itemDeleted != null && cItem.isReport) {
     if (cItem.meta.itemDeleted is CIDeleted.Moderated && cItem.meta.itemDeleted.byGroupMember.groupMemberId != (chatInfo as? ChatInfo.Group)?.groupInfo?.membership?.groupMemberId) {
-      generalGetString(MR.strings.report_item_archived_by).format(cItem.meta.itemDeleted.byGroupMember.displayName)
+      generalGetString(MR.strings.report_item_archived_by).format(memberName(cItem.meta.itemDeleted.byGroupMember))
     } else {
       generalGetString(MR.strings.report_item_archived)
     }
   }
   else when (cItem.meta.itemDeleted) {
     is CIDeleted.Moderated ->
-      String.format(generalGetString(MR.strings.moderated_item_description), cItem.meta.itemDeleted.byGroupMember.displayName)
+      String.format(generalGetString(MR.strings.moderated_item_description), memberName(cItem.meta.itemDeleted.byGroupMember))
     is CIDeleted.Blocked ->
       generalGetString(MR.strings.blocked_item_description)
     is CIDeleted.BlockedByAdmin ->

@@ -175,6 +175,7 @@ suspend fun processLoadedChat(
         unreadAfterNewestLoaded.value = 0
       }
     }
+    is ChatPagination.From -> {}
   }
 }
 

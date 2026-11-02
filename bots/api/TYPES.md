@@ -1700,18 +1700,23 @@ Initial:
 - type: "initial"
 - count: int
 
+From:
+- type: "from"
+- fromTs: UTCTime
+- count: int
+
 **Syntax**:
 
 ```
-count=<count>|after=<chatItemId> count=<count>|before=<chatItemId> count=<count>|around=<chatItemId> count=<count>|initial=<count>
+count=<count>|after=<chatItemId> count=<count>|before=<chatItemId> count=<count>|around=<chatItemId> count=<count>|from=<fromTs> count=<count>|initial=<count>
 ```
 
 ```javascript
-type == 'last' ? 'count=' + count : type == 'after' ? 'after=' + chatItemId + ' count=' + count : type == 'before' ? 'before=' + chatItemId + ' count=' + count : type == 'around' ? 'around=' + chatItemId + ' count=' + count : 'initial=' + count // JavaScript
+type == 'last' ? 'count=' + count : type == 'after' ? 'after=' + chatItemId + ' count=' + count : type == 'before' ? 'before=' + chatItemId + ' count=' + count : type == 'around' ? 'around=' + chatItemId + ' count=' + count : type == 'from' ? 'from=' + fromTs + ' count=' + count : 'initial=' + count // JavaScript
 ```
 
 ```python
-'count=' + str(count) if str(type) == 'last' else 'after=' + str(chatItemId) + ' count=' + str(count) if str(type) == 'after' else 'before=' + str(chatItemId) + ' count=' + str(count) if str(type) == 'before' else 'around=' + str(chatItemId) + ' count=' + str(count) if str(type) == 'around' else 'initial=' + str(count) # Python
+'count=' + str(count) if str(type) == 'last' else 'after=' + str(chatItemId) + ' count=' + str(count) if str(type) == 'after' else 'before=' + str(chatItemId) + ' count=' + str(count) if str(type) == 'before' else 'around=' + str(chatItemId) + ' count=' + str(count) if str(type) == 'around' else 'from=' + str(fromTs) + ' count=' + str(count) if str(type) == 'from' else 'initial=' + str(count) # Python
 ```
 
 

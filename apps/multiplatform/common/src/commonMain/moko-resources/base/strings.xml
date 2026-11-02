@@ -3369,4 +3369,17 @@
   <string name="v7_1_channels_descr">Add moderators and sign every message.</string>
   <string name="v7_1_flat_layout">Flat layout and markdown</string>
   <string name="v7_1_flat_layout_descr">Enable in Appearance settings.</string>
+  <string name="export_chat">Export chat</string>
+  <string name="export_chat_from">From</string>
+  <string name="export_chat_to">To</string>
+  <string name="export_chat_image_previews">Image previews</string>
+  <string name="export_verb">Export</string>
+  <string name="export_chat_messages_written">%d messages written</string>
+  <string name="export_chat_file_not_encrypted">The exported file is not encrypted.</string>
+  <string name="export_chat_header_all">Exported %s. All messages.</string>
+  <string name="export_chat_header_from_to">Exported %1$s. From %2$s to %3$s.</string>
+  <string name="export_chat_header_until">Exported %1$s. Until %2$s.</string>
+  <string name="export_chat_you">You</string>
+  <string name="export_chat_file">file: %s</string>
+  <string name="export_chat_voice_message">voice message, %s</string>
 </resources>
