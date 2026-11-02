@@ -660,10 +660,11 @@ restart, search each listed name on the names site and check that it shows as a 
 
 Every order signs the terms the buyer agreed to: `terms_version`, followed by `/community` for a
 listed name. The service stores them with the order, so an open order keeps the terms it signed
-after an edit. An order signed with any other value answers `409 terms_changed` with the current terms and
+after an edit, and every move signs the current terms for the name it moves to, and stores them. An
+order or a move signed with any other value answers `409 terms_changed` with the current terms and
 the name's community entry, and the page asks again. An exact resend is still answered after the version changed.
 
-**Upgrading:** a page that sends no `terms` gets `bad_request` on every order and spend, so the
+**Upgrading:** a page that sends no `terms` gets `bad_request` on every order, spend and move, so the
 page and the service are deployed together.
 
 ### Codes-only launch
@@ -677,18 +678,42 @@ who hold them before anyone can pay. It is `off` by default. While it is on:
 - `POST /api/invoice` for a name and `POST /api/registration/:id/spend` answer
   `403 {"error": "codes_only"}`, before they read the order, so no order takes money for a name;
 - search, link previews, code checks, code orders (`POST /api/name/register`), the registration
-  view, the reveal and Try again work as before. Webhooks and the poller still settle the invoices already open, and badges sell as before.
+  view, `find`, the reveal, Try again, another name and record edits work as before. Webhooks and the
+  poller still settle the invoices already open, and badges sell as before.
 
 The setting is read at startup, and the export is written then, so switching it is an edit of the
 ini and a restart, with the same build. Codes for investors come from the group (needs `[group]`, see
 [From the group](#from-the-group)) or from `//issue name` in `--run-cli` (see
 [From the command line](#from-the-command-line)).
 
+### Link edits
+
+Each "Edit links" save is one request, relayed by the service as one transaction whose gas it pays
+(see [The gas key](#the-gas-key)): one changed link as `setTextWithSig` (or `clearRecordsWithSig`),
+both links as the resolver's `multicall` of two `setTextWithSig` calls, which lands both or neither.
+`[names] record_edits_per_year` (default 3, from 1 to 100, read at startup) bounds them per name in
+any 365 days:
+
+- each accepted request counts once, from when it is stored to be sent, whether it changes one link
+  or both, or clears them;
+- links set at registration ride on the register transaction and count nothing;
+- a request refused before any transaction, a dry run that reverts, a send the chain fails, and an
+  edit that reverts on chain (or expires) count nothing, the last once it settles. A pending edit
+  counts until then;
+- an exact resend of an accepted request is answered as before and counts nothing more.
+
+When a name has none left, `POST /api/name/records` answers
+`429 {"error": "edit_limit", "nextAt": <unix seconds>}` before any chain read, and the search answer
+for the name carries `recordEdits: {"left": 0, "nextAt": …}`, from which the page shows when the
+owner can edit again. Lowering the setting keeps the edits already counted. The hourly cap of 10
+relayed requests per name still applies, and still counts reverted ones.
+
 ### The gas key
 
 `[chain] service_key` is the registrar key: an Ethereum account (EOA) that sends every names
-transaction, `commit` to the controller and `registerWithCredit` to the sponsor. It pays only
-their gas, in ETH. The names' rent is spent from its allowance on the sponsor, in USD, which the
+transaction, `commit` to the controller, `registerWithCredit` to the sponsor, and the owners' record
+edits (`setTextWithSig`, `clearRecordsWithSig`, or a `multicall` of two) to the resolver. It pays
+only their gas, in ETH. The names' rent is spent from its allowance on the sponsor, in USD, which the
 guardian sets. It holds no names.
 
 The commands run from `scripts/store-service/` on the service host, with Foundry's `cast`
@@ -817,14 +842,23 @@ The gas below was measured on a local anvil deployment of the contracts (the nam
 | `registerWithCredit`, no links | 568,116 | 504,408 | 0.0568 ETH |
 | `registerWithCredit`, one link | 3,673,412 | 3,489,551 | 0.3673 ETH |
 | `registerWithCredit`, two links | 6,791,417 | 6,467,815 | 0.6791 ETH |
+| `setTextWithSig`, a new link | 3,026,449 | 3,026,449 | 0.3026 ETH |
+| `setTextWithSig`, a link replacing one | 462,289 | 462,289 | 0.0462 ETH |
+| `setTextWithSig`, a link removed | 698,644 | 558,916 | 0.0699 ETH |
+| `clearRecordsWithSig` | 80,312 | 80,312 | 0.0080 ETH |
+| `multicall`, two new links | 6,054,042 | 6,008,868 | 0.6054 ETH |
 
 - The service sets each transaction's gas limit to its estimate and its max fee to at most
   `max_fee_per_gas` (default 100 gwei). The node accepts a transaction only while the balance covers
   its limit × max fee, so the last column is what each one needs held. What it is charged is gas
   used × the block's base fee plus tip, usually far less.
 - An order is one commit and one register: 0.6850 ETH at the cap with two links, 0.0627 ETH with
-  none. The expected orders × 0.6850 ETH pays for all of them even at the cap. The figures scale
-  with `max_fee_per_gas`.
+  none. The expected orders × 0.6850 ETH, plus 0.6054 ETH per expected Save of both links (0.3026 ETH
+  for one), pays for all of them even at the cap. A name's link edits are at most
+  `record_edits_per_year` (3) a year, see [Link edits](#link-edits). The figures scale with
+  `max_fee_per_gas`.
+- A Save of both links in one `multicall` uses 26,906 gas less than the same two edits sent as two
+  transactions with links of 4096 bytes, and 28,082 less with short links.
 - `gas_limit_cap` (default 8,000,000) must stay above 6,791,417: a transaction whose estimate is
   above it is not sent.
 
@@ -909,7 +943,7 @@ minute after its commit.
    ```
 
    With a cap of 1 wei the service signs no new transaction. Each new one waits and logs the fee
-   warning. The saved transactions are still
+   warning, and an owner's link edit is answered as unavailable. The saved transactions are still
    followed and settle. They are not bumped above the cap, so one that stays pending for long needs
    the old ini back (`sudo cp prev/store_service.ini config/store_service.ini` and a restart) to be
    replaced. Step 3 puts the full cap back, since `next/` was copied before.
@@ -1077,7 +1111,7 @@ them later is logged as not applied and changes nothing.
 ## Refunding a name balance
 
 A paid name order keeps its money as a balance when it ends `taken` (another buyer registered the
-name first), when a payment reaches its invoice
+name first), when it moves to a cheaper name (the difference), when a payment reaches its invoice
 after the invoice closed, and when its invoice was paid more crypto than it asked (the extra). The
 buyer spends a balance on another name from Your names, or asks for it back: the page tells them to
 write to chat@simplex.chat with the order's reference, which is its invoice id, or its registration
