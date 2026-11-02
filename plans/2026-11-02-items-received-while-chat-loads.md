@@ -16,7 +16,7 @@ The Initial page also overwrites the row's stats with the stats it read.
 
 ## Fix
 
-`processLoadedChat` runs on the main thread from reading the current list to the install, so the merging paginations (Before, After, Around to a quoted item, Last) merge the page into a list that includes every update applied during the load.
+`processLoadedChat` runs on the main thread from reading the current list to the install, so the merging paginations (Before, After, Around to a quoted item, Last) read a list that includes every update applied to it during the load.
 
 While a page loads, `ChatsContext` records the list part of each item update in every active `ItemUpdatesWhileLoading`:
 - `addChatItem`;
@@ -24,19 +24,19 @@ While a page loads, `ChatsContext` records the list part of each item update in 
 - `removeChatItem`;
 - `removeMemberItems`;
 - `clearChat`;
-- `markChatItemsRead` of listed items;
+- `markChatItemsRead` with item ids; a mark of the whole chat as read is not recorded;
 - `upsertGroupMember`;
 - `groupChatItemsDeleted` (`SimpleXAPI.kt`), with `recordItemUpdate` for an item that is not in the list.
 
-Chat-list counter updates (row stats, total unread, reports) run once, outside the recorded part; the open chat's counters change with the list.
+Chat-list counter updates (row stats, total unread, reports) run once, outside the recorded part (the Initial page then sets the row's stats, below); the open chat's counters change with the list.
 
 `recordItemUpdatesWhileLoading` starts a record before `apiGetChat` and stops it when the load ends:
 - `apiLoadMessages`, for every pagination;
 - `afterSetChatTTL` (`ChatInfoView.kt`).
 
-The pages that replace the list (Initial, Around at an item), contain the newest item (`afterTotal == 0`) and belong to the current remote host re-run the recorded updates after the install, in order. Older pages are completed by After pagination when the list is scrolled toward newer items.
+The pages that replace the list (Initial, Around at an item) re-run the recorded updates after the install, in order, when they contain the newest item (`afterTotal == 0`) and belong to the current remote host. On an older page, items received during the load are loaded by After pagination; updates of its items are not re-run.
 
-After the re-run, the Initial page sets the row's stats to the page's stats plus the difference between the unread items (and mentions) of the list and of the page, and only then adds a missing row.
+In the primary context, the Initial page sets the row's stats after the re-run: the page's stats plus the difference between the unread items (and mentions) of the list and of the page, or the page's stats when updates are not re-run. A missing row is added with these stats.
 
 ## Scope
 
