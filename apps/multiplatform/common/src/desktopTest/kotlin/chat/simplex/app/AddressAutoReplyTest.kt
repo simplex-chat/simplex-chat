@@ -50,7 +50,6 @@ class AddressAutoReplyTest {
     setContent(state, saved)
 
     rule.onNode(hasSetTextAction()).performTextInput("Typed while off")
-    rule.waitForIdle()
     rule.onNode(isToggleable()).performClick()
     rule.waitForIdle()
 
