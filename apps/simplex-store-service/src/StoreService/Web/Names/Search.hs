@@ -26,6 +26,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Log (logWarn)
 import StoreService.Names.Abi (bytes32FromHex)
+import StoreService.Names.Community (communityJSON, termsJSON)
 import StoreService.Names.Contracts
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
@@ -51,7 +52,7 @@ searchHandler cfg@NamesConfig {nYears} st ct ps hashText req respond = case Labe
     Just len -> do
       registering <- withTransaction st (`isLabelRegistering` lh)
       timeout (ctDeadline ct) (runExceptT $ found lh len registering) >>= \case
-        Just (Right f) -> respond =<< searchAnswer cfg ps f
+        Just (Right f) -> respond =<< searchAnswer cfg ps lh f
         Just (Left e) -> unavailable $ tshow e
         Nothing -> unavailable "timed out"
   where
@@ -76,13 +77,14 @@ queryLength req = case join $ lookup "length" $ queryString req of
       | n >= toInteger minNameLength && n <= toInteger maxNameLength = Just $ fromInteger n
       | otherwise = Nothing
 
-searchAnswer :: NamesConfig -> Profiles -> Found -> IO Response
-searchAnswer NamesConfig {nTLD, nYears, nTermStart, nChain = ChainConfig {cChainId, cResolver, cSponsor}} ps = \case
+searchAnswer :: NamesConfig -> Profiles -> LabelHash -> Found -> IO Response
+searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nChain = ChainConfig {cChainId, cResolver, cSponsor}} ps lh = \case
   FAvailable price ->
     ok $
       ["status" .= ("available" :: Text), "price" .= price, "currency" .= ("usd" :: Text), "years" .= nYears, "termStart" .= termStart]
         <> ["resolver" .= addressText cResolver, "sponsor" .= addressText cSponsor]
         <> chain
+        <> ["terms" .= termsJSON cfg]
   FRegistering -> ok ["status" .= ("registered" :: Text), "entities" .= ([] :: [Entity]), "tld" .= tldText nTLD]
   FReserved -> ok ["status" .= ("reserved" :: Text)]
   FRegistered RegisteredName {rnOwner, rnResolver, rnExpiresAt, rnGracePeriod} records_ -> do
@@ -94,7 +96,7 @@ searchAnswer NamesConfig {nTLD, nYears, nTermStart, nChain = ChainConfig {cChain
         <> chain
   where
     ok :: [JT.Pair] -> IO Response
-    ok = pure . jsonResponse status200 . J.object
+    ok fields = pure $ jsonResponse status200 $ J.object $ fields <> ["community" .= communityJSON cfg lh]
     chain = ["chainId" .= cChainId, "tld" .= tldText nTLD]
     termStart = floor (utcTimeToPOSIXSeconds nTermStart) :: Integer
     recordsJSON NameRecords {rdContact, rdChannel} = J.object ["contact" .= rdContact, "channel" .= rdChannel]
