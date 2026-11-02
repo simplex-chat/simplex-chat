@@ -2,14 +2,14 @@
 
 ## Problem
 
-When an admin removes several members at once, every removed member except one sees "chat db error … FOREIGN KEY constraint failed", and in their copy of the group the other removed members stay connected.
+When an admin removes several members at once, every removed member except one sees "chat db error … FOREIGN KEY constraint failed", and in their copy of the group the removed members whose removals follow their own in the batch stay connected.
 
 ## Cause
 
 The admin's client sends one batch with an `XGrpMemDel` for each removed member to all current members, including the removed ones (`APIRemoveMembers`).
 A removed member's client processes the batch in order.
 On its own `XGrpMemDel`, the client deletes all its group connections (`deleteGroupConnections`), including the connection on which the batch was received.
-Each later event of the batch is saved with a `msg_deliveries` row that references the deleted connection, and the insert fails.
+For each later event of the batch, the client inserts a `msg_deliveries` row that references the deleted connection; the insert fails, and the event is not processed.
 
 ## Fix
 
@@ -22,5 +22,5 @@ The order of the other events is unchanged.
 - Unchanged: the sender (`APIRemoveMembers`).
 - Not covered:
   - an own removal wrapped in a legacy `XGrpMsgForward` event;
-  - removals split across several messages (`batchMessages` limits), where removals in messages after the own one are not received.
+  - removals split across several messages (`batchMessages` limits), where removals in messages after the own one are not processed.
 - Test: `testGroupRemoveMembers` in `tests/ChatTests/Groups.hs`.
