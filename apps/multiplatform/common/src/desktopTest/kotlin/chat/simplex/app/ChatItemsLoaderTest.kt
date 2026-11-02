@@ -99,7 +99,10 @@ class ChatItemsLoaderTest {
   fun itemDeletedWhileChatOpensIsNotShown() = runBlocking {
     val chatsCtx = ChatModel.ChatsContext(null)
     val opening = groupChat(groupId = 4, itemIds = listOf(101, 102))
-    withContext(Dispatchers.Main) { chatModel.chatId.value = null }
+    withContext(Dispatchers.Main) {
+      chatModel.currentUser.value = User.sampleData
+      chatModel.chatId.value = null
+    }
     recordItemUpdatesWhileLoading(chatsCtx) { itemUpdates ->
       val received = receivedItem(103)
       chatsCtx.addChatItem(null, opening.chatInfo, received)
@@ -112,6 +115,7 @@ class ChatItemsLoaderTest {
   @Test
   fun itemReadWhileOpenedChatReloadsStaysRead() = runBlocking {
     val (chatsCtx, opened) = openChatWithItems(listOf(101, 102))
+    withContext(Dispatchers.Main) { chatModel.currentUser.value = User.sampleData }
     recordItemUpdatesWhileLoading(chatsCtx) { itemUpdates ->
       chatsCtx.addChatItem(null, opened.chatInfo, receivedItem(103))
       withContext(Dispatchers.Main) { chatsCtx.markChatItemsRead(null, opened.id, listOf(103)) }
