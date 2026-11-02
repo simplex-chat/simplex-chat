@@ -134,6 +134,8 @@ const editWindow = 24 * 3_600_000 - 10 * 60_000
 const connectWait = 60
 const sendWait = 60
 const downloadWait = 60
+const downloadCheck = 60_000
+const downloadStall = 10 * 60_000
 const defaultIdle = 30
 const defaultLimit = 50
 const messagesOnConnect = 50
@@ -144,6 +146,8 @@ const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
 const refusedName = /^id_|\.(pem|key|p12|pfx)$/i
 export const refusedFileReason = "private keys and the server's own files are not sent"
 const receivedElsewhere = "The file was received outside the agent's files folder."
+const deletedItem = "The message or its chat was deleted."
+const stalledDownload = `The download made no progress for ${downloadStall / 60_000} minutes and was cancelled.`
 
 const attachmentTypes: {[extension: string]: {type: FileType; resize: boolean}} = {
   ".jpg": {type: "image", resize: true},
@@ -447,8 +451,10 @@ class Download {
     this.resolve = resolve
     this.reject = reject
   })
+  received = 0
+  receivedAt = Date.now()
 
-  constructor(readonly path: string) {}
+  constructor(readonly path: string, readonly check: NodeJS.Timeout) {}
 }
 
 export class AgentTools {
@@ -496,7 +502,8 @@ export class AgentTools {
   downloadFile({chat, item, file: {fileId, name}}: Pick<DownloadAction, "chat" | "item" | "file">): Promise<string> {
     const started = this.downloads.get(fileId)
     if (started !== undefined) return started.promise
-    const download = new Download(downloadPath(this.agent.data, chat, fileId, name))
+    const check = setInterval(() => this.checkDownload(chat, item, fileId).catch(error => logError(`download of file ${fileId}`, error)), downloadCheck).unref()
+    const download = new Download(downloadPath(this.agent.data, chat, fileId, name), check)
     this.downloads.set(fileId, download)
     this.startDownload(chat, item, fileId, download.path).catch(error => this.settleDownload(fileId, ({reject}) => reject(error)))
     return download.promise
@@ -507,13 +514,17 @@ export class AgentTools {
     const {fileId, fileSource, fileStatus} = file
     const error = fileStatusError(fileStatus)
     if (fileStatus.type === "rcvComplete") this.settleDownload(fileId, download => (fileSource?.filePath === download.path ? download.resolve(download.path) : download.reject(new Error(receivedElsewhere))))
-    else if (error !== undefined) this.settleDownload(fileId, ({reject}) => reject(new Error(error)))
+    else if (error !== undefined) this.failDownload(fileId, error)
   }
 
   onFileError({chatItem_, agentError, rcvFileTransfer}: CEvt.RcvFileError): void {
     const file = chatItem_?.chatItem.file
     if (file !== undefined) return this.onFile(file)
-    this.settleDownload(rcvFileTransfer.fileId, ({reject}) => reject(new Error(chatErrorText({type: "errorAgent", agentError} as T.ChatError))))
+    this.failDownload(rcvFileTransfer.fileId, chatErrorText({type: "errorAgent", agentError} as T.ChatError))
+  }
+
+  onFileCancelled({rcvFileTransfer}: CEvt.RcvFileSndCancelled): void {
+    this.failDownload(rcvFileTransfer.fileId, "The sender cancelled the file.")
   }
 
   onFileDescription(): void {
@@ -850,7 +861,7 @@ export class AgentTools {
     const attached = this.agent.actions.find(key)
     if (attached !== undefined) return this.downloadResult(attached as DownloadAction, input, call)
     const {chatInfo} = await this.knownChat(chat)
-    const message = (await getChat(this.agent.chat, chat, {type: "around", chatItemId: item, count: 0}).catch(() => undefined))?.chatItems.find(({meta}) => meta.itemId === item)
+    const message = await this.readItem(chat, item)
     if (message === undefined) throw new ToolError(`item: ${chat} has no item ${item}.`)
     const {chatDir, content, file} = message
     if (content.type !== "rcvMsgContent" || file === undefined) throw new ToolError(`item: item ${item} in ${chat} has no received file.`)
@@ -909,19 +920,45 @@ export class AgentTools {
   }
 
   private async startDownload(chat: string, item: number, fileId: number, path: string): Promise<void> {
-    const file = (await getChat(this.agent.chat, chat, {type: "around", chatItemId: item, count: 0})).chatItems.find(({meta}) => meta.itemId === item)?.file
-    if (file === undefined) throw new Error(`${chat} has no item ${item} with a file.`)
+    const file = (await this.readItem(chat, item))?.file
+    if (file === undefined) return this.failDownload(fileId, deletedItem)
     this.onFile(file)
     if (file.fileStatus.type !== "rcvInvitation") return
     mkdirSync(dirname(path), {recursive: true, mode: 0o700})
     await this.agent.chat.apiReceiveFile(fileId, path, this.mode === "requests")
   }
 
+  private async checkDownload(chat: string, item: number, fileId: number): Promise<void> {
+    const file = (await this.readItem(chat, item))?.file
+    if (file === undefined) return this.failDownload(fileId, deletedItem)
+    this.onFile(file)
+    const download = this.downloads.get(fileId)
+    if (download === undefined) return
+    const {fileStatus} = file
+    if (fileStatus.type === "rcvTransfer" && fileStatus.rcvProgress > download.received) {
+      download.received = fileStatus.rcvProgress
+      download.receivedAt = Date.now()
+    } else if (Date.now() - download.receivedAt >= downloadStall) {
+      this.failDownload(fileId, stalledDownload)
+      await this.agent.chat.apiCancelFile(fileId)
+    }
+  }
+
+  private failDownload(fileId: number, error: string): void {
+    this.settleDownload(fileId, ({reject}) => reject(new Error(error)))
+  }
+
   private settleDownload(fileId: number, settle: (download: Download) => void): void {
     const download = this.downloads.get(fileId)
     if (download === undefined) return
     this.downloads.delete(fileId)
+    clearInterval(download.check)
     settle(download)
+  }
+
+  private async readItem(chat: string, item: number): Promise<T.ChatItem | undefined> {
+    const read = await getChat(this.agent.chat, chat, {type: "around", chatItemId: item, count: 0}).catch(() => undefined)
+    return read?.chatItems.find(({meta}) => meta.itemId === item)
   }
 
   private async receive(input: ReceiveInput, call: ToolCall): Promise<object | undefined> {

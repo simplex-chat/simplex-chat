@@ -297,7 +297,9 @@ otherwise a new promise in memory, then:
 event                                        promise of the file ID
 rcvFileComplete                              as rcvComplete above
 rcvFileError                                 rejected: the item's file status, else the agent error (Library/Subscriber.hs:440-446)
-rcvFileSndCancelled                          rejected: "The file was cancelled."
+rcvFileSndCancelled                          rejected: "The sender cancelled the file.", by rcvFileTransfer.fileId
+every 60 s, the item read again              gone: rejected, "The message or its chat was deleted."; its file as the events above
+10 minutes without rcvTransfer progress      rejected, "The download made no progress for 10 minutes and was cancelled."; apiCancelFile
 chatItemUpdated, file rcvError or rcvAborted rejected: file digest, relays not approved (Library/Subscriber.hs:415-439)
 ```
 

@@ -133,6 +133,7 @@ export class FakeChat {
   apiConnectContactViaAddress = library.apiConnectContactViaAddress
   apiConnectPreparedLink = library.apiConnectPreparedLink
   apiReceiveFile = library.apiReceiveFile
+  apiCancelFile = library.apiCancelFile
   apiGetChatItemInfo = library.apiGetChatItemInfo
   apiGetUserServers = library.apiGetUserServers
   commands: string[] = []

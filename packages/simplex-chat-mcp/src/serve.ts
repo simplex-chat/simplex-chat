@@ -144,8 +144,9 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
       case "userJoinedGroup":
         return tools.onUserJoinedGroup(event)
       case "rcvFileComplete":
-      case "rcvFileSndCancelled":
         return tools.onFile(event.chatItem.chatItem.file)
+      case "rcvFileSndCancelled":
+        return tools.onFileCancelled(event)
       case "rcvFileError":
         return tools.onFileError(event)
       case "rcvFileDescrReady":

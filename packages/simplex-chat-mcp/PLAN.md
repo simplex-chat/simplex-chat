@@ -1247,11 +1247,24 @@ downloadFile(chat, item, file), also run by /receive:
 event                                     the promise of the file ID
 rcvFileComplete                           as rcvComplete above, from chatItem.file
 rcvFileError                              rejected: the item's file error, or the agent error without an item (Library/Subscriber.hs:440-446)
-rcvFileSndCancelled                       rejected: "The file was cancelled."
+rcvFileSndCancelled                       rejected: "The sender cancelled the file.", by rcvFileTransfer.fileId: in a group the event's item is read before the cancel (Library/Subscriber.hs:2662-2671)
 chatItemUpdated, file rcvError, rcvAborted rejected: a bad digest, relays not approved (Library/Subscriber.hs:411-439)
 ```
 
-- A settled promise leaves memory; a later `downloadFile` reads the item's file again.
+Every 60 s while the promise is unsettled:
+
+```
+step                                        result
+/_get chat <chat> around=<item> count=0     the message or its chat gone: rejected, "The message or its chat was deleted."
+                                            otherwise the item's file settles the promise as rcvComplete and failed above
+rcvTransfer, rcvProgress above the          the time of progress: now
+largest one seen
+10 minutes since the start or the time      rejected, "The download made no progress for 10 minutes and was cancelled."; /fcancel <fileId>
+of progress                                 (an XFTP file returns to rcvInvitation, an inline file ends cancelled: CancelFile, Library/Commands.hs:3609-3624)
+```
+
+- The check ends a download whose message is deleted or moderated, whose chat is deleted by `leave` or `/leave`, whose file server stays unreachable (`RFWARN` only, Library/Subscriber.hs:429-433), or whose inline chunks do not arrive.
+- A settled promise leaves memory and its check stops; a later `downloadFile` reads the item's file again.
 - `rcvFileDescrReady` of any file makes the waiting calls read their item again; the server counts these events, so that one arriving during a read is not missed.
 
 ### receive and list

@@ -1048,7 +1048,7 @@ describe("download", () => {
     expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([])
   })
 
-  it("fails when the file fails, the sender cancels it, or its item is gone", async () => {
+  it("fails when the file fails, the sender cancels it, its item is gone, or it is received without its path", async () => {
     const chat = new FakeChat()
     offeredIn(chat)
     const {tools, actions} = downloadTools(chat)
@@ -1062,8 +1062,44 @@ describe("download", () => {
     }
     expect(await download(() => tools.onFile(fileItem(30, image, {type: "rcvError", rcvFileError: {type: "noFile"}}).file))).toMatchObject({status: "failed", error: "File not found - most likely file was deleted or cancelled."})
     expect(await download(() => tools.onFile(fileItem(30, image, {type: "rcvCancelled"}).file))).toMatchObject({status: "failed", error: "The file was cancelled."})
+    const cancelled = {type: "rcvFileSndCancelled", user, chatItem: event(trail, fileItem(30, image, {type: "rcvTransfer", rcvProgress: 1, rcvTotal: 2})), rcvFileTransfer: {fileId: 7}} as unknown as Parameters<AgentTools["onFileCancelled"]>[0]
+    expect(await download(() => tools.onFileCancelled(cancelled))).toMatchObject({status: "failed", error: "The sender cancelled the file."})
     const gone = {type: "rcvFileError", user, agentError: {type: "FILE", fileErr: {type: "NO_FILE"}}, rcvFileTransfer: {fileId: 7}} as unknown as Parameters<AgentTools["onFileError"]>[0]
     expect(await download(() => tools.onFileError(gone))).toMatchObject({status: "failed", error: "SimpleX error: errorAgent: FILE: NO_FILE"})
+    expect(await download(() => tools.onFile(fileItem(30, image, {type: "rcvComplete"}).file))).toMatchObject({status: "failed", error: "The file was received outside the agent's files folder."})
+  })
+
+  it("fails when no part of the file arrives for 10 minutes, and cancels the file", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    const offered = offeredIn(chat)
+    chat.responses.set("/fcancel 7", {type: "rcvFileCancelled", user, rcvFileTransfer: {fileId: 7}})
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30, wait: 3600}, signal().call)
+    await jest.advanceTimersByTimeAsync(0)
+    actions.approve(actions.get(1)!, "Alice")
+    await jest.advanceTimersByTimeAsync(0)
+    offered.file!.fileStatus = {type: "rcvTransfer", rcvProgress: 1000, rcvTotal: 4000}
+    await jest.advanceTimersByTimeAsync(10 * 60_000)
+    expect(actions.get(1)!.state).toBe("performing")
+    expect(chat.commands).not.toContain("/fcancel 7")
+    await jest.advanceTimersByTimeAsync(60_000)
+    expect((await downloading)!.structuredContent).toEqual({action: 1, status: "failed", error: "The download made no progress for 10 minutes and was cancelled."})
+    expect(chat.commands).toContain("/fcancel 7")
+  })
+
+  it("fails when its message or chat is deleted", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30, wait: 3600}, signal().call)
+    await jest.advanceTimersByTimeAsync(0)
+    actions.approve(actions.get(1)!, "Alice")
+    await jest.advanceTimersByTimeAsync(0)
+    chat.chats.delete("#15")
+    await jest.advanceTimersByTimeAsync(60_000)
+    expect((await downloading)!.structuredContent).toEqual({action: 1, status: "failed", error: "The message or its chat was deleted."})
   })
 
   it("shows a rejected file in the messages that follow", async () => {
