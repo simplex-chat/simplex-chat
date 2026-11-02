@@ -2,7 +2,7 @@
 
 ## Problem
 
-The apps send the "Inappropriate content" report reason as `illegal`. The core parses `illegal` as an unknown reason, so CLI moderators, bots and the directory service see `report illegal`. A report with reason `content`, sent from the CLI or a bot, is shown in the apps as the raw word `content`.
+The apps send the "Inappropriate content" report reason as `illegal`. The core parses `illegal` as an unknown reason, so CLI moderators and bots see `report illegal`. A report with reason `content`, sent from the CLI or a bot, is shown in the apps as the raw word `content`.
 
 ## Cause
 
