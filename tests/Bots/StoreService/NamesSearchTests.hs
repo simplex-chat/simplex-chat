@@ -6,6 +6,7 @@
 
 module Bots.StoreService.NamesSearchTests (namesSearchTests, aliceHex) where
 
+import Bots.StoreService.ConfigTests (termsUrl, termsVersion)
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests
   ( answerRegistered,
@@ -33,9 +34,11 @@ import Control.Monad (forM_, replicateM_)
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
+import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -51,8 +54,8 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import Simplex.Messaging.Transport.Client (TransportHost (..))
-import StoreService.Config (ListenerConfig (..), NamesConfig (..))
-import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, uint256)
+import StoreService.Config (ListenerConfig (..), NamesConfig (..), TermsConfig (..))
+import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, uint256)
 import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (ChatKind (..), HostResolver, LinkProfile (..), ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
@@ -70,6 +73,7 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "answers a reserved name" $ testReserved g
     it "answers a name the chain has available as registered while its register here is sent, without a price" $ testRegistering g
     it "answers a registered name with its entities, raw records, owner, resolver, nonce, expiry and grace period" $ testRegistered g
+    it "answers a listed name's community entry when available, reserved, being registered here and registered" $ testCommunity g
     it "makes one entity per short link of its record's kind, splitting on ';', and none from other values" $ testRecordLinks g
     it "makes entities of the first 5 short links of a record only, fetching no other" $ testRecordLinksCap g
     it "reads no records from another resolver" $ testOtherResolver g
@@ -115,8 +119,25 @@ namesConfig node =
       nTermSlackSeconds = 3600,
       nRevealMarginSeconds = 900,
       nCodesOnly = False,
+      nTerms = TermsConfig {tVersion = termsVersion, tUrl = termsUrl},
+      nCommunity = M.empty,
       nChain = fakeChainConfig node
     }
+
+aliceCommunity :: Text
+aliceCommunity = "bakers and bakeries in Lisbon"
+
+listAlice :: NamesConfig -> NamesConfig
+listAlice cfg = cfg {nCommunity = M.singleton (fromJust $ bytes32FromHex aliceHex) aliceCommunity}
+
+-- | The answer as it reads for a name on the community list.
+listed :: Answer -> Answer
+listed (status, answer) = (status, withEntry <$> answer)
+  where
+    withEntry :: J.Value -> J.Value
+    withEntry = \case
+      J.Object o -> J.Object $ KM.insert "community" (J.object ["for" .= aliceCommunity]) o
+      v -> v
 
 fetchMicros :: Int
 fetchMicros = 500000
@@ -234,7 +255,9 @@ availableAnswer price =
       "resolver" .= resolverText,
       "sponsor" .= sponsorText,
       "chainId" .= fakeChainId,
-      "tld" .= str "simplex"
+      "tld" .= str "simplex",
+      "community" .= J.Null,
+      "terms" .= J.object ["version" .= termsVersion, "url" .= termsUrl]
     ]
 
 registeredAnswer :: [J.Value] -> J.Value -> Text -> J.Value -> Answer
@@ -249,12 +272,13 @@ registeredAnswer entities records resolver nonce =
       "expiresAt" .= (now + year),
       "gracePeriod" .= gracePeriod,
       "chainId" .= fakeChainId,
-      "tld" .= str "simplex"
+      "tld" .= str "simplex",
+      "community" .= J.Null
     ]
 
 reservedAnswer, registeringAnswer :: Answer
-reservedAnswer = ok ["status" .= str "reserved"]
-registeringAnswer = ok ["status" .= str "registered", "entities" .= ([] :: [J.Value]), "tld" .= str "simplex"]
+reservedAnswer = ok ["status" .= str "reserved", "community" .= J.Null]
+registeringAnswer = ok ["status" .= str "registered", "entities" .= ([] :: [J.Value]), "tld" .= str "simplex", "community" .= J.Null]
 
 recordsOf :: Text -> Text -> J.Value
 recordsOf contact channel = J.object ["contact" .= contact, "channel" .= channel]
@@ -338,6 +362,21 @@ testRegistered g = withSearch g id id $ \s@Search {node} -> do
       (recordsOf bakeryLink newsLink)
       resolverText
       (J.toJSON (0 :: Int))
+
+testCommunity :: TVar ChaChaDRG -> IO ()
+testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
+  available node
+  answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
+  searchAlice s 12 `shouldReturn` listed (availableAnswer 10000)
+  reserved node
+  searchAlice s 12 `shouldReturn` listed reservedAnswer
+  available node
+  code <- issue store 1 usable
+  placeCode store "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
+  setPhase store PRegistering
+  searchAlice s 12 `shouldReturn` listed registeringAnswer
+  registeredWith node fullLink ""
+  searchAlice s 12 `shouldReturn` listed (registeredAnswer [] (recordsOf fullLink "") resolverText (J.toJSON (0 :: Int)))
 
 testRecordLinks :: TVar ChaChaDRG -> IO ()
 testRecordLinks g = withSearch g id id $ \s@Search {node} -> do
