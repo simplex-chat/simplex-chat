@@ -100,13 +100,12 @@ suspend fun processLoadedChat(
         unreadTotal.value = chat.chatStats.unreadCount
         unreadAfter.value = navInfo.afterUnread
         unreadAfterNewestLoaded.value = navInfo.afterUnread
-        val updatesReRun = isNewestPageOfCurrentHost(chat, navInfo)
-        if (updatesReRun) {
+        if (isNewestPageOfCurrentHost(chat, navInfo)) {
           chatsCtx.applyItemUpdatesWhileLoading(itemUpdates)
         }
         if (chatsCtx.secondaryContextFilter == null) {
           // update main chats, not content tagged
-          val chatStats = if (updatesReRun) chat.chatStats.withUnreadChanges(chat.chatItems, chatsCtx.chatItems.value) else chat.chatStats
+          val chatStats = chat.chatStats.withUnreadChanges(chat.chatItems, chatsCtx.chatItems.value)
           val oldChat = chatModel.chatsContext.getChat(chat.id)
           if (oldChat == null) {
             chatModel.chatsContext.addChat(chat.copy(chatStats = chatStats))

@@ -11,7 +11,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
+import kotlin.test.assertIs
 
 class ChatItemsLoaderTest {
 
@@ -115,7 +115,7 @@ class ChatItemsLoaderTest {
   }
 
   @Test
-  fun itemDeletedByModeratorWhileChatOpensIsShownDeleted() = runBlocking {
+  fun groupItemDeletedWhileChatOpensIsShownDeleted() = runBlocking {
     val chatsCtx = chatModel.chatsContext
     val user = User.sampleData
     val opening = groupChat(groupId = 5, itemIds = listOf(101, 102))
@@ -136,7 +136,7 @@ class ChatItemsLoaderTest {
       val pageReadBeforeDeletion = opening.copy(chatItems = opening.chatItems + received)
       processLoadedChat(chatsCtx, pageReadBeforeDeletion, NavigationInfo(), ChatPagination.Initial(3), openAroundItemId = null, itemUpdates)
     }
-    assertNotNull(chatsCtx.chatItems.value.firstOrNull { it.id == 103L }?.meta?.itemDeleted)
+    assertIs<CIDeleted.Deleted>(chatsCtx.chatItems.value.firstOrNull { it.id == 103L }?.meta?.itemDeleted)
   }
 
   @Test

@@ -36,7 +36,7 @@ Chat-list counter updates (row stats, total unread, reports) run once, outside t
 
 The pages that replace the list (Initial, Around at an item) re-run the recorded additions and then the other recorded updates after the install, each in order, when they contain the newest item (`afterTotal == 0`) and belong to the current remote host. On an older page, items received during the load are loaded by After pagination; updates of its items are not re-run.
 
-In the primary context, the Initial page sets the row's stats after the re-run: the page's stats plus the difference between the unread items (and mentions) of the list and of the page, or the page's stats when updates are not re-run. A missing row is added with these stats.
+In the primary context, the Initial page sets the row's stats after the re-run: the page's stats plus the difference between the unread items (and mentions) of the list and of the page. A missing row is added with these stats.
 
 ## Scope
 
