@@ -10,7 +10,8 @@ import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, setRates,
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (reservedNamesCall)
 import Bots.StoreService.ConfigTests (termsVersion)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, bumpedTerms, codesOnly, commitmentOf, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyB, listName, malformedTerms, olderTerms, orderTime, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, termsChanged, withOrdersOn, yearsDuration)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, bumpedTerms, codesOnly, commitmentOf, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyA, keyB, listName, malformedTerms, olderTerms, orderTime, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, termsChanged, withOrdersOn, yearsDuration)
+import Bots.StoreService.NamesOwnerTests (findBody, postFind)
 import Bots.StoreService.NamesStoreTests (at, order, ownerA, placePaid, reg, t0, write)
 import Bots.StoreService.WebTests (StubCall (..), capturingStderr, StubState (..), jsonObject, rcv, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores)
 import ChatTests.DBUtils (TestParams)
@@ -57,9 +58,11 @@ import StoreService.Providers (Funded (..), OrderDraft (..), PaymentSignal (..),
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Names.Turns (balanceTurnCount, labelTurnCount, withBalanceTurn)
 import StoreService.Store.Invoices (InvoiceRow (..), getInvoice)
+import qualified StoreService.Web.Http as Http (findLimit)
 import StoreService.Web.Http (createLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Orders (spendHandler)
+import StoreService.Web.Names.Owner (findHandler)
 import StoreService.Web.Names.Registration (registrationHandler)
 import StoreService.Web.Server (WebEnv (..), webApp)
 import System.Timeout (timeout)
@@ -128,11 +131,12 @@ withSpendHook action = do
 withSpendOn :: IO DBStore -> (Provider -> Provider) -> (Ctx -> IO a) -> IO a
 withSpendOn open via action = withOrdersOn open via (`serveSpend` action)
 
--- | The spend route beside the registration poll and the service's routes, over the context's settings.
+-- | The spend route beside find, the registration poll and the service's routes, over the context's settings.
 serveSpend :: Ctx -> (Ctx -> IO a) -> IO a
 serveSpend ctx@Ctx {cOrders, cWeb} action = do
   let routes :: [Text] -> Maybe Route
       routes = \case
+        ["api", "registration", "find"] -> Just Route {rMethod = "POST", rLimit = Http.findLimit, rHandler = findHandler cOrders}
         ["api", "registration", rid, "spend"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = spendHandler cOrders (weConfig cWeb) (weProviders cWeb) (weWaiters cWeb) rid}
         ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders holdMicros rid}
         _ -> Nothing
@@ -729,6 +733,17 @@ takenNow ctx@Ctx {cStore, cClock} rid = do
   withTransaction cStore (\db -> updateRegistration db r {nrPhase = PTaken} now >>= \w -> w <$ creditBalance db rid (nrPrice r) now)
     `shouldReturn` Written (nrVersion r + 1)
 
+-- | Owner A's orders as find lists them: each one's id, the order whose balance paid it, and the order holding its balance.
+links :: Ctx -> IO [(Text, Maybe Text, Maybe Text)]
+links ctx@Ctx {cClock} = do
+  now <- readIORef cClock
+  findBody ctx keyA ownerAText (seconds now) >>= postFind ctx >>= \case
+    (200, Just v) | Just found <- JT.parseMaybe (\o -> o J..: "registrations" >>= mapM entry) v -> pure (sort found)
+    other -> error $ "find refused: " <> show other
+  where
+    entry :: J.Value -> JT.Parser (Text, Maybe Text, Maybe Text)
+    entry = J.withObject "registration" $ \r -> (,,) <$> r J..: "registrationId" <*> r J..: "balanceSource" <*> r J..: "heldBy"
+
 balanceView :: Ctx -> RegistrationId -> IO (Maybe J.Value)
 balanceView ctx rid = field "balance" <$> viewOf ctx rid
 
@@ -760,9 +775,12 @@ testSpendEndToEnd ps = withBTCPaySpend ps $ \cc fake poller ctx@Ctx {cClock} -> 
   (200, held) <- spend ctx src (dynamisAgain 2)
   let firstInv = invoiceIdOf held
   first <- orderOf firstInv
+  let f = ridText first
+  links ctx `shouldReturn` sort [(s, Nothing, Just f), (f, Just s, Nothing)]
   report "InvoiceExpired" firstInv ["status" J..= ("Expired" :: Text)]
   (\r -> (nrPhase r, nrLive r)) <$> registrationById ctx first `shouldReturn` (PUnpaid, False)
   balanceView ctx src `shouldReturn` balanceObject 10000 0
+  links ctx `shouldReturn` sort [(s, Nothing, Nothing), (f, Just s, Nothing)]
   -- money paid into the expired invoice: the poller's read cannot credit it while the rate read fails, and its next credit pass does
   setRates fake ratesDown
   report "InvoicePaymentSettled" firstInv latePaid
@@ -776,9 +794,11 @@ testSpendEndToEnd ps = withBTCPaySpend ps $ \cc fake poller ctx@Ctx {cClock} -> 
   let dearerInv@(InvoiceId dearerInvText) = invoiceIdOf again
   dearer <- orderOf dearerInv
   let d = ridText dearer
+  links ctx `shouldReturn` sort [(s, Nothing, Just d), (f, Just s, Nothing), (d, Just s, Nothing)]
   report "InvoiceSettled" dearerInv settledState
   (\r -> (nrPhase r, nrPrice r, nrBalanceSource r, nrBalanceUsed r)) <$> registrationById ctx dearer `shouldReturn` (PQueued, 20000, Just src, 10000)
   balanceView ctx src `shouldReturn` balanceObject 0 0
+  links ctx `shouldReturn` sort [(s, Nothing, Nothing), (f, Just s, Nothing), (d, Just s, Nothing)]
   -- that order taken in turn keeps its whole price; a covered spend of alicebakery takes half, and support refunds the rest
   takenNow ctx dearer
   covering <- registrationAnswer . snd <$> spend ctx dearer (timedAt now $ (covered 20000) {sbOrder = aliceOrder {oCommitment = commitmentOf 4}})

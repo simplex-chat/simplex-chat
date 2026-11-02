@@ -349,6 +349,7 @@ orderRefusalResponse = \case
   ORNameCheckUnavailable -> jsonError status503 "name_check_unavailable"
   ORCatalogChanged price -> jsonResponse status409 $ J.object ["error" .= ("catalog_changed" :: Text), "price" .= price]
   ORCode refusal -> codeRefusalResponse refusal
+  ORPriceTooHigh price -> jsonResponse status409 $ J.object ["error" .= ("price_too_high" :: Text), "price" .= price]
   ORBalanceChanged balance -> jsonResponse status409 $ J.object ["error" .= ("balance_changed" :: Text), "balance" .= (balanceJSON <$> balance)]
   ORTermsChanged terms community -> jsonResponse status409 $ J.object ["error" .= ("terms_changed" :: Text), "terms" .= terms, "community" .= community]
   ORCodesOnly -> jsonError status403 "codes_only"

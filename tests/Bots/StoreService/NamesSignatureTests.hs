@@ -31,6 +31,10 @@ namesSignatureTests = describe "StoreService names: signatures" $ do
       makeCommitment dynamis `shouldBe` commitment
     it "hashes RegisterName" $
       registerIntentDigest (sponsorDomain chainId sponsor) dynamis 0 1800000000 `shouldBe` hx "0x4b0bcc282db581446f6c25e0e3fbe2839409acbc011bb3e082523dd9eab85a6a"
+    it "hashes SetText" $
+      setTextDigest (resolverDomain chainId resolver) (namehash TLDSimplex "dynamis") "simplex.contact" "https://x" 3 99 `shouldBe` hx "0xa62d4320889eed3713462d725dc298cd96885572b8e6b424e93a205a96b96fb5"
+    it "hashes ClearRecords" $
+      clearRecordsDigest (resolverDomain chainId resolver) (namehash TLDSimplex "dynamis") 4 99 `shouldBe` hx "0xca4bd243288f27f38e3b45384ba36ce685ff155352cf8125f031e6fb189a46dd"
   describe "EIP-191 messages" $ do
     -- the contract's Appendix C, which the webapp computed with viem and pins in test/terms-vectors.test.ts
     it "signs an order with the terms version" $
@@ -45,6 +49,24 @@ namesSignatureTests = describe "StoreService names: signatures" $ do
         "simplex.domains order 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 2026-10-23/community 1792828800"
         "0xf8521525761939c4cef8979cb54217e9e32b1a57999fc2f03e486f4eb1903802"
         "0x03eccb591b79ab4e3e6f22ccbeb77a6ac32c6dad8cb318557836258c390bc31d78852a3279c6c8cc2ef8d1025641d45ba4101f54dfd84c264deb2ab391c1cbc61c"
+    it "signs find with the owner in lowercase" $
+      testMessage
+        (findMessage owner timestamp)
+        "simplex.domains find 0x014f9c09cceedef1b713110d04d3a07d5b5d9b73 1792574100"
+        "0x08a989fbf0457984c062b44d7237be9c7948f2cf23d48410609777a09b515646"
+        "0xfa0908260c3f21c8e47bd37e2c3cf3bd6bc62966591ab1a2c4e31695646548f47d2e79b34413be27b4b07330682de642f48a8f5e641449d7d79728eeb4ab14da1c"
+    it "signs another name for an order with the terms version" $
+      testMessage
+        (retargetMessage registrationId termsOrder termsTimestamp)
+        "simplex.domains name t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 2026-10-23 1792828800"
+        "0x01eda78f875428396a940b658b910b6eb6dc0bce82860c17d59f8f16e7767d25"
+        "0x1d29abf2489da963d59d0982074b5af770efbaf96be3c756afbd6a7fea672b507e756944da0901724e2a5d7cfe2419ccb7573310ae65e65f4fd35d7c6fe494b51c"
+    it "signs another name for an order with the community terms" $
+      testMessage
+        (retargetMessage registrationId communityOrder termsTimestamp)
+        "simplex.domains name t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 2026-10-23/community 1792828800"
+        "0x4f1af02904f9f8863e92169f6e1a1d6733a3a25c5d22ffde7ac00f09a660c022"
+        "0x30d027224b85cd9ac638edec1266748f21f46279eda72e68448f97b8fce73ca06c401035ad5416fc1e48f39646d0637fcaad1588ec74562ff842821b33e299361b"
     it "signs a spend from an order's balance with the terms version" $
       testMessage
         (spendMessage registrationId termsOrder termsTimestamp)
@@ -152,6 +174,9 @@ node :: ByteString
 node = hx "0x833cc73a7eae1ddee67ec8845ec3d39799406c7bc87fab7c504a7e0ab5cb89bb"
 
 -- 21 October 2026 09:15 UTC
+timestamp :: Word64
+timestamp = 1792574100
+
 -- 24 October 2026 08:00 UTC
 termsTimestamp :: Word64
 termsTimestamp = 1792828800
