@@ -63,6 +63,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
 
     private let rtcAudioSession =  RTCAudioSession.sharedInstance()
     private let audioQueue = DispatchQueue(label: "chat.simplex.app.audio")
+    private let endCallLock = NSLock()
     private var sendCallResponse: (WVAPIMessage) async -> Void
     var activeCall: Call?
     var notConnectedCall: NotConnectedCall?
@@ -761,7 +762,13 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
 
     private func _endCall() {
         (notConnectedCall?.localCameraAndTrack?.0 as? RTCCameraVideoCapturer)?.stopCapture()
-        guard let call = activeCall else { return }
+        // The end command and the call view ending it on disappearing both end the call: closing the connection from
+        // both at once froze the app (CI run 41311546712), so only the first takes the call.
+        endCallLock.lock()
+        let call = activeCall
+        activeCall = nil
+        endCallLock.unlock()
+        guard let call else { return }
         logger.debug("WebRTCClient: ending the call")
         call.reconnection?.cancel()
         call.iceRestarts?.cancel()
@@ -771,7 +778,6 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         call.frameDecryptor?.delegate = nil
         (call.localCamera as? RTCCameraVideoCapturer)?.stopCapture()
         audioSessionToDefaults()
-        activeCall = nil
     }
 
     func untilIceComplete(timeoutMs: UInt64, stepMs: UInt64, action: @escaping () async -> Void) async {
