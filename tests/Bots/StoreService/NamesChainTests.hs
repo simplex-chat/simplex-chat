@@ -28,6 +28,7 @@ namesChainTests = describe "StoreService names: chain" $ do
   g <- runIO C.newRandom
   describe "reverts" $ do
     it "names every contract error by the selector viem encodes it with" testRevertSelectors
+    it "writes a revert's name as the contracts declare it, none for a revert without data" testRevertText
     it "reads a dry run's revert with data by its name" $ testDryRunRevertNamed g
     it "reads an eth_call revert with data by its name" $ testCallRevertNamed g
     it "reads ownerOf of a name nobody holds as a revert" $ testOwnerOfRevert g
@@ -106,6 +107,12 @@ testRevertSelectors = do
   [(n, decodeRevert $ unhex sel <> uint256 (0 :: Int)) | (sel, n) <- viemSelectors] `shouldBe` [(n, Just n) | (_, n) <- viemSelectors]
   decodeRevert (B.take 3 $ unhex "74480cc9") `shouldBe` Nothing
   decodeRevert "" `shouldBe` Just RNWithoutData
+
+testRevertText :: IO ()
+testRevertText = do
+  revertText RNInvalidNonce `shouldBe` Just "InvalidNonce"
+  revertText RNSignatureExpired `shouldBe` Just "SignatureExpired"
+  revertText RNWithoutData `shouldBe` Nothing
 
 testDryRunRevertNamed :: TVar ChaChaDRG -> IO ()
 testDryRunRevertNamed g = withChain g $ \node c -> do

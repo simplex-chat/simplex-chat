@@ -147,7 +147,7 @@ badgeGroupIntegrationTests = do
 namesBootTests :: SpecWith TestParams
 namesBootTests = do
   it "boots codes-only, refusing paid name orders 403 codes_only and answering code orders and code checks, the badges shell as built" testNamesBootCodesOnly
-  it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, registrations to GET, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, code checks and orders under one limit, and spends and retries under another" testNamesBoot
+  it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, code checks and orders under one limit, and another name and retries under another" testNamesBoot
 
 testNamesBoot :: HasCallStack => TestParams -> IO ()
 testNamesBoot ps = do
@@ -161,6 +161,8 @@ testNamesBoot ps = do
         refused tag = (400, Just $ J.object ["error" J..= (tag :: Text)])
     unknown <- request "/api/names/unknown"
     statusCode . responseStatus <$> httpLbs unknown mgr `shouldReturn` 404
+    records <- request "/api/name/records"
+    answer records {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refused "bad_request"
     register <- request "/api/name/register"
     answer register {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refused "bad_request"
     search <- request $ "/api/name/" <> T.unpack aliceHex <> "?length=5"
@@ -169,6 +171,12 @@ testNamesBoot ps = do
     answer registration `shouldReturn` (404, Just $ J.object ["error" J..= ("not_found" :: Text)])
     posted <- httpLbs registration {method = "POST"} mgr
     (statusCode $ responseStatus posted, lookup "Allow" $ responseHeaders posted) `shouldBe` (405, Just "GET")
+    found <- request "/api/registration/find"
+    answer found {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refused "bad_request"
+    foundByGet <- httpLbs found mgr
+    (statusCode $ responseStatus foundByGet, lookup "Allow" $ responseHeaders foundByGet) `shouldBe` (405, Just "POST")
+    owned <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/name"
+    answer owned {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refused "bad_request"
     coded <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/code"
     answer coded {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` (404, Just $ J.object ["error" J..= ("not_found" :: Text)])
     revealed <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/reveal"
@@ -197,8 +205,8 @@ testNamesBoot ps = do
     answer retried {method = "POST"} `shouldReturn` (404, Just $ J.object ["error" J..= ("not_found" :: Text)])
     retriedByGet <- httpLbs retried mgr
     (statusCode $ responseStatus retriedByGet, lookup "Allow" $ responseHeaders retriedByGet) `shouldBe` (405, Just "POST")
-    -- the spend and the retry above took 2 of this client's 5 create requests a minute
-    replicateM_ 3 $ statusCode . responseStatus <$> httpLbs retried {method = "POST"} mgr `shouldReturn` 404
+    -- another name, the spend and the retry above took 3 of this client's 5 create requests a minute
+    replicateM_ 2 $ statusCode . responseStatus <$> httpLbs retried {method = "POST"} mgr `shouldReturn` 404
     statusCode . responseStatus <$> httpLbs retried {method = "POST"} mgr `shouldReturn` 429
     -- the register above took the first of this client's 10 code requests a minute, which the code check shares
     let codeRequest path = request path >>= \r -> statusCode . responseStatus <$> httpLbs r {method = "POST", requestBody = RequestBodyLBS "{}"} mgr
