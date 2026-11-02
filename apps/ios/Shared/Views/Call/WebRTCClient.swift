@@ -558,7 +558,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         }
     }
 
-    func addLocalRenderer(_ renderer: RTCEAGLVideoView) {
+    func addLocalRenderer(_ renderer: RTCMTLVideoView) {
         if let activeCall {
             if let track = activeCall.localVideoTrack {
                 track.add(renderer)
@@ -572,7 +572,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         renderer.delegate = self
     }
 
-    func removeLocalRenderer(_ renderer: RTCEAGLVideoView) {
+    func removeLocalRenderer(_ renderer: RTCMTLVideoView) {
         if let activeCall {
             if let track = activeCall.localVideoTrack {
                 track.remove(renderer)
