@@ -154,8 +154,10 @@ private suspend fun writeChatMarkdown(rhId: Long?, chatInfo: ChatInfo, from: Loc
 private fun startOfDay(date: LocalDate): Instant =
   Instant.fromEpochSeconds(date.atStartOfDay(ZoneId.systemDefault()).toEpochSecond())
 
+private val fileNameUnsafe = Regex("""[\\/:*?"<>|\p{Cntrl}]""")
+
 private fun exportFileName(chatInfo: ChatInfo): String =
-  "${exportChatName(chatInfo).replace(Regex("""[\\/:*?"<>|\p{Cntrl}]"""), "")} ${LocalDate.now()}.md"
+  exportChatName(chatInfo).replace(fileNameUnsafe, "") + " ${LocalDate.now()}.md"
 
 private fun exportChatName(chatInfo: ChatInfo): String = when (chatInfo) {
   is ChatInfo.Direct -> chatInfo.contact.profile.displayName
