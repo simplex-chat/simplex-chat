@@ -649,7 +649,7 @@ private fun BusinessAddressToggle(addressSettingsState: MutableState<AddressSett
 }
 
 @Composable
-private fun AutoAcceptToggle(addressSettingsState: MutableState<AddressSettingsState>, saveAddressSettings: (AddressSettingsState) -> Unit) {
+internal fun AutoAcceptToggle(addressSettingsState: MutableState<AddressSettingsState>, saveAddressSettings: (AddressSettingsState) -> Unit) {
   PreferenceToggleWithIcon(
     stringResource(MR.strings.auto_accept_contact),
     painterResource(MR.images.ic_check),
@@ -687,7 +687,7 @@ private fun DeleteAddressButton(onClick: () -> Unit) {
   )
 }
 
-private class AddressSettingsState {
+internal class AddressSettingsState {
   var businessAddress: Boolean = false
     private set
   var autoAccept: Boolean = false
@@ -765,7 +765,7 @@ private fun AcceptIncognitoToggle(addressSettingsState: MutableState<AddressSett
 }
 
 @Composable
-private fun AutoReplyEditor(addressSettingsState: MutableState<AddressSettingsState>) {
+internal fun AutoReplyEditor(addressSettingsState: MutableState<AddressSettingsState>) {
   val autoReply = rememberSaveable { mutableStateOf(addressSettingsState.value.autoReply) }
   TextEditor(
     autoReply,
