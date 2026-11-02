@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -101,7 +102,7 @@ fun BannerDismissButton(modifier: Modifier, onDismiss: () -> Unit) {
   Icon(
     painterResource(MR.images.ic_close),
     contentDescription = stringResource(MR.strings.icon_descr_close_button),
-    tint = if (isInDarkTheme()) MaterialTheme.colors.background else MaterialTheme.colors.secondary,
+    tint = if (isInDarkTheme()) Color.Black else MaterialTheme.colors.secondary,
     modifier = modifier
       .padding(end = 4.dp, top = 4.dp)
       .clip(CircleShape)
