@@ -87,7 +87,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     private group: T.GroupInfo,
     private readonly options: ControlOptions,
     private readonly actions: Actions,
-    private readonly tools: Pick<AgentTools, "knownChat" | "agentChats" | "leaveChat" | "downloadFile" | "copyForSending" | "chatFiles" | "deleteChatFiles">,
+    private readonly tools: Pick<AgentTools, "knownChat" | "agentChats" | "leaveChat" | "downloadFile" | "copyForSending" | "deleteSentCopy" | "chatFiles" | "deleteChatFiles">,
   ) {}
 
   get groupId(): number {
@@ -261,7 +261,12 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     this.tools
       .downloadFile(action)
       .then(path => this.tools.copyForSending(path, action.file.name))
-      .then(copy => this.postMessage({fileSource: {filePath: copy}, msgContent: fileContent(action.file, ""), quotedItemId: action.card, mentions: {}}))
+      .then(copy =>
+        this.postMessage({fileSource: {filePath: copy}, msgContent: fileContent(action.file, ""), quotedItemId: action.card, mentions: {}}).catch(error => {
+          this.tools.deleteSentCopy(copy)
+          throw error
+        }),
+      )
       .catch(error => this.post(`Action ${action.n}: the file was not received: ${codeSpan(oneLine(errorText(error)))}.`))
       .catch(error => logError(`action ${action.n} file`, error))
   }

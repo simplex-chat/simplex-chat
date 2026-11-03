@@ -527,7 +527,7 @@ Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agen
 - The count and the size are of the files directly in the folder; sizes as on download cards.
 
 - CHAT is optional in `/approve N`, `/reject N` and `/receive N` as typed; the cards include it for sends, downloads and leaves.
-- The file of `/receive` has the message's type and the sender's preview, with no text. It is posted from a copy under the file's name, in `DIR/files/sent/`, deleted as resized copies are. The agent's messages then show the file as received, with its path; the card stays pending.
+- The file of `/receive` has the message's type and the sender's preview, with no text. It is posted from a copy under the file's name, in `DIR/files/sent/`, deleted as resized copies are, and when its post fails. The agent's messages then show the file as received, with its path; the card stays pending.
 - A files approval covers downloads only, and ends as a standing approval does.
 - `/leave CHAT` applies in both modes. Its reply is logged, with names on one line.
 - A standing approval covers sends only. It ends at `/revoke`, when the chat is deleted, or when member `approvedById` is no longer an approver. It applies in mode `requests` only: in mode `host`, `list` and `/list` show no approvals, and `/approve CHAT all` stores none.
@@ -982,7 +982,7 @@ revoke CHAT:      no approval in the chat's custom data: reply "Messages to CHAT
 approve CHAT files: as approve CHAT all, with the key simplexMcpFiles and the pending downloads of CHAT; reply "Files approved for ... /'revoke CHAT files'"
 revoke CHAT files: as revoke CHAT, with the key simplexMcpFiles; replies "Files from CHAT have no standing approval.", "Files from ... need approval again."
 receive [CHAT] N: action N not a download: reply "Action N has no file."; otherwise downloadFile(action N), not awaited; then a copy under the file's name in DIR/files/sent/; then /_send #group json [{fileSource: {filePath: the copy}, msgContent: the file's type and preview, no text, quotedItemId: card}];
-                  an error of the download, the copy or the post: post "Action N: the file was not received: `<error>`."; no reply
+                  an error of the download, the copy or the post: post "Action N: the file was not received: `<error>`."; a failed post deletes the copy; no reply
 leave CHAT:       CHAT not a chat of the agent: reply "No chat CHAT. ..."; otherwise the steps of perform leave for CHAT; log "Left ... (CHAT), requested by NAME.";
                   each pending action of CHAT with its card set: reject as above; reply with the logged line; DIR/files/CHAT/ with files: after the reply, post "Files from ... are kept in ..."
 delete CHAT files: count and size of the files in DIR/files/CHAT/; delete the folder; reply "Deleted K files from CHAT, SIZE." or "No files from CHAT."

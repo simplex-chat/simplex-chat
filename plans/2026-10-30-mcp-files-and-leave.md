@@ -355,7 +355,7 @@ command                 reply
                         Action N: the file was not received: `<error>`.   (the download or the post of the file failed)
 ```
 - The files approval: custom data key `simplexMcpFiles`, `{approvedBy, approvedById, approvedAt}`; the approval of messages keeps `simplexMcp`.
-- The file posted by `/receive` has the item's type and the sender's preview, with no caption; it is a copy under the file's name in `DATA/files/sent/`, deleted as resized copies are.
+- The file posted by `/receive` has the item's type and the sender's preview, with no caption; it is a copy under the file's name in `DATA/files/sent/`, deleted as resized copies are, and when its post fails.
 
 ## Sending files
 

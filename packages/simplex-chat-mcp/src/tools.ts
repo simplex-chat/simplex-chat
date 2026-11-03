@@ -799,13 +799,17 @@ export class AgentTools {
       if (kept.length === 0) responses.lastAt = undefined
     } catch (error) {
       action.stopCollecting()
-      if (filePath !== undefined && this.isSentCopy(filePath)) rmSync(dirname(filePath), {recursive: true, force: true})
+      if (filePath !== undefined && this.isSentCopy(filePath)) this.deleteSentCopy(filePath)
       throw error
     }
   }
 
   onSentFile({filePath}: T.FileTransferMeta): void {
-    if (this.isSentCopy(filePath)) rmSync(dirname(filePath), {recursive: true, force: true})
+    if (this.isSentCopy(filePath)) this.deleteSentCopy(filePath)
+  }
+
+  deleteSentCopy(copy: string): void {
+    rmSync(dirname(copy), {recursive: true, force: true})
   }
 
   private isSentCopy(filePath: string): boolean {

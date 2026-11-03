@@ -1,4 +1,4 @@
-import {existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync} from "fs"
+import {existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {basename, dirname, join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
@@ -411,11 +411,12 @@ describe("downloads in the agent control chat", () => {
     expect(await send.ownerCommand(alice, {keyword: "receive", params: "@4 5"})).toBe("Action 5 has no file.")
   })
 
-  it("replies when the received file can't be posted", async () => {
+  it("replies when the received file can't be posted, and deletes its copy", async () => {
     const {chat, action, control} = await downloadSetup()
     const path = join(data, "files", "#2", "7.pdf")
     mkdirSync(dirname(path), {recursive: true})
     writeFileSync(path, "report")
+    rmSync(join(data, "files", "sent"), {recursive: true, force: true})
     chat.chats.get("#2")!.items.push(fileItem(30, {type: "file", text: "report"}, {type: "rcvComplete"}, {chatDir: {type: "groupRcv", groupMember: bob}, fileSource: {filePath: path}}))
     const send = chat.apiSendMessages.bind(chat)
     chat.apiSendMessages = async (target, messages) => {
@@ -425,6 +426,7 @@ describe("downloads in the agent control chat", () => {
     await control.ownerCommand(alice, {keyword: "receive", params: `${action.n}`})
     while (chat.sent.length < 2) await flushed()
     expect(chat.sent[1].messages[0].msgContent.text).toBe("Action 1: the file was not received: `file too large`.")
+    expect(readdirSync(join(data, "files", "sent"))).toEqual([])
   })
 })
 
