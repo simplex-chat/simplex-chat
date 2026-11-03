@@ -154,7 +154,9 @@ connProbeHashVersion :: VersionChat
 connProbeHashVersion = VersionChat 23
 
 bindProbeHash :: ContactOrMember -> ContactOrMember -> Bool
-bindProbeHash cgm cgm' = any (maybe False ((>= connProbeHashVersion) . connChatVersion) . contactOrMemberConn) [cgm, cgm']
+bindProbeHash cgm cgm' = connProbeHashSupported cgm || connProbeHashSupported cgm'
+  where
+    connProbeHashSupported = maybe False ((>= connProbeHashVersion) . connChatVersion) . contactOrMemberConn
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
