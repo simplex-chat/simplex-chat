@@ -13,7 +13,7 @@ const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "leave", label: "Leave a chat", params: "<chat ID>"},
 ]
 
-const commandsReply = "Commands: /approve, /reject, /receive, /revoke, /leave, /pending, /list. Each card shows its commands."
+const commandsReply = "Commands: /approve, /reject, /receive, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
 const cardTooLong = {
   send: "text: too long for its approval card; shorten it.",
   connect: "message: too long for its approval card; shorten it.",
@@ -66,7 +66,7 @@ interface ChatApproval {
 type OwnerRequest =
   | {type: "approve" | "reject" | "receive"; action: number; chat?: string}
   | {type: "approveChat" | "revoke"; chat: string; standing: Standing}
-  | {type: "leave"; chat: string}
+  | {type: "leave" | "deleteFiles"; chat: string}
   | {type: "pending" | "list"}
 
 interface Shown {
@@ -87,7 +87,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     private group: T.GroupInfo,
     private readonly options: ControlOptions,
     private readonly actions: Actions,
-    private readonly tools: Pick<AgentTools, "knownChat" | "agentChats" | "leaveChat" | "downloadFile" | "copyForSending">,
+    private readonly tools: Pick<AgentTools, "knownChat" | "agentChats" | "leaveChat" | "downloadFile" | "copyForSending" | "chatFiles" | "deleteChatFiles">,
   ) {}
 
   get groupId(): number {
@@ -146,6 +146,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const content = await this.cardContent(action)
     if (action.card === undefined) await this.postMessage({msgContent: content, mentions: {}})
     else await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, action.card, content, false)
+    const kept = action.tool === "leave" && action.state === "done" ? this.keptFilesNote(action.chat, action.subject) : undefined
+    if (kept !== undefined) await this.post(kept)
   }
 
   refusedFile(path: string, chatInfo: T.ChatInfo, chat: string): void {
@@ -213,6 +215,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         return this.revoke(request.chat, request.standing)
       case "leave":
         return this.leave(sender, request.chat)
+      case "deleteFiles":
+        return this.deleteFiles(request.chat)
       case "approve":
       case "reject":
       case "receive": {
@@ -273,7 +277,23 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     for (const action of this.actions.pending()) {
       if (action.chat === chat && action.card !== undefined) this.actions.reject(action, approver)
     }
+    const kept = this.keptFilesNote(chat, chatSubject(chatInfo))
+    if (kept !== undefined) this.queueAfterReplies(() => this.post(kept))
     return left(inChat)
+  }
+
+  private keptFilesNote(chat: string, subject: Subject): string | undefined {
+    const {folder, count, bytes} = this.tools.chatFiles(chat)
+    return count === 0 ? undefined : `Files from ${chatName(subject)} (${chat}) are kept in ${codeSpan(oneLine(folder))}: ${filesText(count)}, ${sizeText(bytes)}. /'delete ${chat} files'`
+  }
+
+  private deleteFiles(chat: string): string {
+    const {count, bytes} = this.tools.deleteChatFiles(chat)
+    return count === 0 ? `No files from ${chat}.` : `Deleted ${filesText(count)} from ${chat}, ${sizeText(bytes)}.`
+  }
+
+  private queueAfterReplies(post: () => Promise<unknown>): void {
+    this.ownerCommands = this.ownerCommands.then(post).catch(error => logError("control chat command", error))
   }
 
   private async chatsText(): Promise<string> {
@@ -638,6 +658,10 @@ function sizeText(bytes: number): string {
   return exponent === 0 ? `${bytes} bytes` : `${(bytes / 1000 ** exponent).toFixed(1)} ${["KB", "MB", "GB"][exponent - 1]}`
 }
 
+function filesText(count: number): string {
+  return `${count} file${count === 1 ? "" : "s"}`
+}
+
 function codeLines(text: string | undefined): string[] {
   return text === undefined ? [] : text.split("\n").map(line => (line.trim() === "" ? "" : codeSpan(line)))
 }
@@ -679,6 +703,7 @@ function ownerRequest({keyword, params}: Command): OwnerRequest | undefined {
   if (keyword === "revoke" && chat !== undefined && value === "files") return {type: "revoke", chat, standing: "files"}
   if (keyword === "revoke" && chat === undefined && value !== undefined && isChatRef(value)) return {type: keyword, chat: value, standing: "messages"}
   if (keyword === "leave" && chat === undefined && value !== undefined && isChatRef(value)) return {type: keyword, chat: value}
+  if (keyword === "delete" && chat !== undefined && value === "files") return {type: "deleteFiles", chat}
   if ((keyword === "pending" || keyword === "list") && words.length === 0) return {type: keyword}
   return undefined
 }

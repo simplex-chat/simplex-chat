@@ -1,4 +1,4 @@
-import {mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync} from "fs"
+import {existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {basename, dirname, join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
@@ -19,7 +19,7 @@ afterEach(() => jest.restoreAllMocks())
 
 afterAll(() => rmSync(data, {recursive: true, force: true}))
 
-const commandsReply = "Commands: /approve, /reject, /receive, /revoke, /leave, /pending, /list. Each card shows its commands."
+const commandsReply = "Commands: /approve, /reject, /receive, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
 
 const alice = member(3, "Alice", T.GroupMemberRole.Owner)
 const bob = member(7, "Bob", T.GroupMemberRole.Member)
@@ -178,7 +178,7 @@ describe("owner commands", () => {
 
   it("answers other commands with the list", async () => {
     const {control} = await setup()
-    const others = ["help", "approve five", "approve", "approve all", "approve #2", "approve 5 6", "approve #2 5 6", "reject #2 all", "reject #2 files", "revoke", "revoke 2", "revoke #2 all", "revoke files", "receive", "receive #2 files", "leave", "leave 2", "leave #2 now", "pending 5", "list all"]
+    const others = ["help", "approve five", "approve", "approve all", "approve #2", "approve 5 6", "approve #2 5 6", "reject #2 all", "reject #2 files", "revoke", "revoke 2", "revoke #2 all", "revoke files", "receive", "receive #2 files", "leave", "leave 2", "leave #2 now", "delete", "delete #2", "delete files", "delete #2 all", "pending 5", "list all"]
     for (const text of others) {
       expect(await control.ownerCommand(bob, parseCommand(`/${text}`)!)).toBe(commandsReply)
     }
@@ -536,6 +536,57 @@ describe("leaving a chat at an owner's command", () => {
     expect(await control.ownerCommand(bob, {keyword: "leave", params: "@4"})).toBe("Only owners approve actions.")
     expect(chat.deleted).toEqual([])
     expect(chat.left).toEqual([])
+  })
+})
+
+describe("files of a chat", () => {
+  const flushed = (): Promise<void> => new Promise(resolve => setImmediate(resolve))
+  const kept = (chat: string, name: string, files: string): string => `Files from ${name} (${chat}) are kept in \`${join(data, "files", chat)}\`: ${files}. /'delete ${chat} files'`
+
+  function filesIn(chat: string, sizes: number[]): void {
+    const folder = join(data, "files", chat)
+    rmSync(folder, {recursive: true, force: true})
+    mkdirSync(folder, {recursive: true})
+    sizes.forEach((size, i) => writeFileSync(join(folder, `${i + 1}.pdf`), "x".repeat(size)))
+  }
+
+  it("are kept when an owner's /leave leaves the chat, with a message after the reply", async () => {
+    const {control, chat} = await setup()
+    filesIn("#2", [1500, 600])
+    expect(await control.ownerCommand(alice, {keyword: "leave", params: "#2"})).toBe("Left business ep (#2), requested by Alice.")
+    await flushed()
+    expect(chat.sent.at(-1)!.messages[0].msgContent.text).toBe(kept("#2", "business ep", "2 files, 2.1 KB"))
+    filesIn("@4", [])
+    const before = chat.sent.length
+    await control.ownerCommand(alice, {keyword: "leave", params: "@4"})
+    await flushed()
+    expect(chat.sent).toHaveLength(before)
+  })
+
+  it("are kept when an approved leave leaves the chat, with a message after its card", async () => {
+    const fake = fakeHooks()
+    const actions: Actions = new Actions("requests", 23, 1, {...fake.hooks, refusal: action => control.refusal(action), postCard: action => control.postCard(action), outcome: action => control.outcome(action), perform: (action, signal) => tools.perform(action, signal)})
+    const chat = agentChats()
+    const {control, tools} = await controlWith(chat, actions)
+    filesIn("#2", [120])
+    const leave = actions.create("l", {tool: "leave", input: {chat: "#2"}, subject: {kind: "business", name: "ep", incognito: false}, chat: "#2"})
+    await flushed()
+    actions.approve(leave, "Alice")
+    while (chat.sent.length < 2) await flushed()
+    expect(chat.updates.at(-1)!.text).toBe("I left business ep (#2).\nApproved by Alice.")
+    expect(chat.sent[1].messages[0].msgContent.text).toBe(kept("#2", "business ep", "1 file, 120 bytes"))
+  })
+
+  it("are deleted by /delete CHAT files, for a current or a left chat", async () => {
+    const {control} = await setup()
+    filesIn("#9", [])
+    expect(await control.ownerCommand(alice, {keyword: "delete", params: "#9 files"})).toBe("No files from #9.")
+    filesIn("#9", [1500, 600])
+    expect(await control.ownerCommand(alice, {keyword: "delete", params: "#9 files"})).toBe("Deleted 2 files from #9, 2.1 KB.")
+    expect(existsSync(join(data, "files", "#9"))).toBe(false)
+    filesIn("@4", [120])
+    expect(await control.ownerCommand(alice, {keyword: "delete", params: "@4 files"})).toBe("Deleted 1 file from @4, 120 bytes.")
+    expect(await control.ownerCommand(bob, {keyword: "delete", params: "@4 files"})).toBe("Only owners approve actions.")
   })
 })
 

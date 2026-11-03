@@ -124,9 +124,32 @@ tools.leaveChat(CHAT)
 log the line, names on one line
 each pending action of CHAT with a card: reject, decidedBy the sender
 reply the line, names as in cards
+DATA/files/CHAT/ with files: after the reply, post "Files from business Ridgeline (#9) are kept in `FOLDER`: 3 files, 2.1 MB. /'delete #9 files'"
 ```
 - An error of `leaveChat` is logged to stderr, as the errors of other owner commands; no reply.
-- `Commands: /approve, /reject, /revoke, /leave, /pending, /list. Each card shows its commands.`
+- `Commands: /approve, /reject, /receive, /revoke, /leave, /delete, /pending, /list. Each card shows its commands.`
+- A leave action in state done posts the same message after its outcome card.
+
+`/delete CHAT files`, an approving owner, for a current or a left chat:
+```
+DATA/files/CHAT/ with files   the folder deleted; reply "Deleted 3 files from #9, 2.1 MB."
+no files                      reply "No files from #9."
+```
+
+```mermaid
+sequenceDiagram
+  participant O as Owner
+  participant C as Control
+  participant T as AgentTools
+  O->>C: /leave #9
+  C->>T: leaveChat(#9)
+  C->>O: Left business Ridgeline (#9), requested by Alice.
+  C->>T: chatFiles(#9)
+  C->>O: Files from business Ridgeline (#9) are kept in `FOLDER`: 3 files, 2.1 MB. /'delete #9 files'
+  O->>C: /delete #9 files
+  C->>T: deleteChatFiles(#9)
+  C->>O: Deleted 3 files from #9, 2.1 MB.
+```
 
 ## Received files
 

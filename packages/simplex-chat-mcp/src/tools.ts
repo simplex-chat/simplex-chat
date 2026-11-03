@@ -1,5 +1,5 @@
 import {execFile} from "child_process"
-import {constants, copyFileSync, existsSync, mkdirSync, mkdtempSync, realpathSync, renameSync, rmSync, writeFileSync} from "fs"
+import {constants, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeFileSync} from "fs"
 import {access, copyFile, readFile, realpath, stat} from "fs/promises"
 import {homedir} from "os"
 import {basename, dirname, extname, isAbsolute, join, sep} from "path"
@@ -853,6 +853,19 @@ export class AgentTools {
     const copy = this.sentCopyPath(basename(name))
     await copyFile(path, copy, constants.COPYFILE_FICLONE)
     return copy
+  }
+
+  chatFiles(chat: string): {folder: string; count: number; bytes: number} {
+    const folder = join(this.agent.data, "files", chat)
+    const entries = existsSync(folder) ? readdirSync(folder, {withFileTypes: true}) : []
+    const sizes = entries.filter(entry => entry.isFile()).map(({name}) => statSync(join(folder, name)).size)
+    return {folder, count: sizes.length, bytes: sizes.reduce((sum, size) => sum + size, 0)}
+  }
+
+  deleteChatFiles(chat: string): {count: number; bytes: number} {
+    const files = this.chatFiles(chat)
+    rmSync(files.folder, {recursive: true, force: true})
+    return files
   }
 
   private sentCopyPath(name: string): string {

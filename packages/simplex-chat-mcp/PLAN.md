@@ -477,6 +477,7 @@ command             result
 /revoke CHAT files  the files approval of CHAT is removed
 /receive [CHAT] N   the server downloads the file of download N and posts it as a reply to the card; the card stays pending
 /leave CHAT         at once, the agent leaves group CHAT or deletes contact CHAT, as the leave tool does; its pending actions for CHAT are rejected by the sender
+/delete CHAT files  DIR/files/CHAT/ deleted, for a current or a left chat
 /pending            one line per pending action: "2  send to bot SimpleX Directory  expires 2026-10-18 09:15 UTC"; "No pending actions." when none
 /list               one line per chat of the agent, as list returns them: the 100 most recent chats, each line cut to 100 bytes as encoded in the message, "…" included; then "K older chats are not shown." ("1 older chat is not shown.") when more exist
 ```
@@ -511,9 +512,19 @@ CHAT not the action's chat                  Action 10 is not for #3.
 of the file fails
 /leave CHAT                                 Left business Ridgeline (#9), requested by Alice. (a contact: Deleted bot SimpleX Directory (@4), requested by Alice.)
 /leave CHAT, CHAT not the agent's           No chat #13. /list shows the agent's chats.
+/delete CHAT files                          Deleted 3 files from #9, 2.1 MB. ("1 file")
+/delete CHAT files, no files                No files from #9.
 /list, no chats                             No chats.
-other one-line text starting with "/"       Commands: /approve, /reject, /receive, /revoke, /leave, /pending, /list. Each card shows its commands.
+other one-line text starting with "/"       Commands: /approve, /reject, /receive, /revoke, /leave, /delete, /pending, /list. Each card shows its commands.
 ```
+
+After `/leave CHAT`, after its reply, and after the outcome of a leave action in state done, when DIR/files/CHAT/ has files:
+
+```
+Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/#9`: 3 files, 2.1 MB. /'delete #9 files'
+```
+
+- The count and the size are of the files directly in the folder; sizes as on download cards.
 
 - CHAT is optional in `/approve N`, `/reject N` and `/receive N` as typed; the cards include it for sends, downloads and leaves.
 - The file of `/receive` has the message's type and the sender's preview, with no text. It is posted from a copy under the file's name, in `DIR/files/sent/`, deleted as resized copies are. The agent's messages then show the file as received, with its path; the card stays pending.
@@ -959,7 +970,7 @@ newChatItems, groupRcv, main scope       text starts with "/"                   
 
 ```
 command = parseCommand(text)                      # steward src/commands.ts; undefined: ignore
-not one of the commands below: reply "Commands: /approve, /reject, /receive, /revoke, /leave, /pending, /list. Each card shows its commands."
+not one of the commands below: reply "Commands: /approve, /reject, /receive, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
 sender not an approver: reply "Only owners approve actions." (--owners: "Only the owners listed in --owners approve actions.")
 approve [CHAT] N | reject [CHAT] N | receive [CHAT] N, action N not pending in memory, or its card unset: reply "Action N is not pending."
 approve CHAT N | reject CHAT N | receive CHAT N, action N a connect or for another chat: reply "Action N is not for CHAT."
@@ -970,10 +981,11 @@ approve CHAT all: mode host: reply "Approvals apply in mode requests; this serve
 revoke CHAT:      no approval in the chat's custom data: reply "Messages to CHAT have no standing approval."; otherwise remove simplexMcp from it; reply "Messages to ... need approval again."
 approve CHAT files: as approve CHAT all, with the key simplexMcpFiles and the pending downloads of CHAT; reply "Files approved for ... /'revoke CHAT files'"
 revoke CHAT files: as revoke CHAT, with the key simplexMcpFiles; replies "Files from CHAT have no standing approval.", "Files from ... need approval again."
-receive [CHAT] N: action N not a download: reply "Action N has no file."; otherwise downloadFile(action N), not awaited; then /_send #group json [{fileSource: {filePath}, msgContent: the file's type and preview, no text, quotedItemId: card}];
-                  a download error: post "Action N: the file was not received: `<error>`."; no reply
+receive [CHAT] N: action N not a download: reply "Action N has no file."; otherwise downloadFile(action N), not awaited; then a copy under the file's name in DIR/files/sent/; then /_send #group json [{fileSource: {filePath: the copy}, msgContent: the file's type and preview, no text, quotedItemId: card}];
+                  an error of the download, the copy or the post: post "Action N: the file was not received: `<error>`."; no reply
 leave CHAT:       CHAT not a chat of the agent: reply "No chat CHAT. ..."; otherwise the steps of perform leave for CHAT; log "Left ... (CHAT), requested by NAME.";
-                  each pending action of CHAT with its card set: reject as above; reply with the logged line
+                  each pending action of CHAT with its card set: reject as above; reply with the logged line; DIR/files/CHAT/ with files: after the reply, post "Files from ... are kept in ..."
+delete CHAT files: count and size of the files in DIR/files/CHAT/; delete the folder; reply "Deleted K files from CHAT, SIZE." or "No files from CHAT."
 pending:          reply with the pending actions
 list:             reply with one line per chat of list(), the 100 most recent: CHAT, the type and name, ", approved for this chat by NAME" while the approval applies, ", not connected";
                   each line cut to 100 encoded bytes with "…"; then "K older chats are not shown." when more exist (worst case about 10.3 KB, below the 15602-byte message)

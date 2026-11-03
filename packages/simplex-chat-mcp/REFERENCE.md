@@ -252,8 +252,11 @@ Commands:
 | `/revoke #3 files` | Ends that approval: each download from #3 needs approval again. |
 | `/receive #3 7` | Downloads the file of action 7 and sends it to you in the agent control chat, as a reply to the card. The card stays pending; the agent's messages show the file as received, with its path. |
 | `/leave #9`, `/leave @4` | Makes the agent leave group #9, or delete contact @4, at once, in both approval modes, and rejects the agent's pending actions for that chat. The reply, for example `Left business Ridgeline (#9), requested by Alice.`, is logged too. |
+| `/delete #9 files` | Deletes the files of chat #9 in the data folder, for a current or a left chat: `Deleted 3 files from #9, 2.1 MB.` or `No files from #9.` |
 | `/pending` | Lists pending actions. |
 | `/list` | Lists the agent's 100 most recent chats, one line each, and which of them are approved for all messages; a last line counts the older chats. |
+
+After `/leave #9` or an approved leave, when the chat's folder has files, the agent posts ``Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/#9`: 3 files, 2.1 MB. /delete #9 files``.
 
 `/pending`, `/list` and `/leave` are in the chat's command menu, and the cards carry the others. Tapping `/leave` in the menu puts `/leave <chat ID>` into the entry field: replace `<chat ID>` with the chat's ID from `/list`, such as `#9`, and send it. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](PLAN.md), section "What the owner sees: the agent control chat".
 
