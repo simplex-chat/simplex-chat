@@ -1546,7 +1546,7 @@ alias             a 20-digit reference that the core reads as the agent control 
 port in use       serve on a bound port: exit before server.json is written and before a link is printed
 leave command     /leave #N with a pending send for #N: the send rejected; the reply and the log line; the group's owner sees the agent leave
 files             an image from a group member: status offered; the download card with the preview and "Servers: known."; /receive: the file as a reply to the card; /approve: the path, the same bytes; /reject: rejected; /approve #N files: a later download posts nothing
-send file         a PNG sent to a group: the card with the attaching line and a preview; the member receives an image with a preview and its file; a private key refused, posted and logged
+send file         a 600 × 600 PNG of random pixels sent to a group: the card with the attaching line and the core's preview, not the fixed one; the member receives an image with the core's preview and a file smaller than the PNG, at most 261120 bytes; a private key refused, posted and logged
 ```
 
 Claude Code checks, by hand (TESTING.md):

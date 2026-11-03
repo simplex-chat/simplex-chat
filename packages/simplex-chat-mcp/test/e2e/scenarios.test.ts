@@ -1,7 +1,9 @@
+import {randomBytes} from "crypto"
 import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "fs"
 import {createServer} from "net"
 import {tmpdir} from "os"
 import {basename, dirname, join} from "path"
+import {crc32, deflateSync} from "zlib"
 import {T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {readServerFile} from "../../src/files"
@@ -111,6 +113,23 @@ async function approve(owner: Person, controlId: number, card: Promise<T.AChatIt
   const ci = await card
   await owner.chat.apiSendTextMessage([T.ChatType.Group, controlId], `/approve ${cardNumber(ci)}`)
   return ci
+}
+
+function noisePng(width: number, height: number): Buffer {
+  const chunk = (type: string, data: Buffer): Buffer => {
+    const length = Buffer.alloc(4)
+    length.writeUInt32BE(data.length)
+    const body = Buffer.concat([Buffer.from(type, "ascii"), data])
+    const crc = Buffer.alloc(4)
+    crc.writeUInt32BE(crc32(body))
+    return Buffer.concat([length, body, crc])
+  }
+  const header = Buffer.alloc(13)
+  header.writeUInt32BE(width, 0)
+  header.writeUInt32BE(height, 4)
+  header.set([8, 2], 8)
+  const rows = Buffer.concat(Array.from({length: height}, () => Buffer.concat([Buffer.from([0]), randomBytes(width * 3)])))
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk("IHDR", header), chunk("IDAT", deflateSync(rows)), chunk("IEND", Buffer.alloc(0))])
 }
 
 test("--owners: an observer joins, the restart lists it, a second owner can't approve", async () => {
@@ -334,7 +353,7 @@ test("files: a received image downloaded after the approval, /receive, /reject a
   expect(await lastControlItem()).toBe(beforeThird)
 }, 600_000)
 
-test("send with a file: a PNG reaches the group as an image with a preview, and a private key is refused", async () => {
+test("send with a file: a PNG reaches the group resized, with the core's preview, and a private key is refused", async () => {
   const alice = await personIn("send-file", "Alice")
   const agent = await agentIn("send-file")
   await agent.start()
@@ -346,22 +365,27 @@ test("send with a file: a PNG reaches the group as an image with a preview, and 
   await approve(alice, controlId, joinCard)
   const group = (await joining).result.chat as string
 
-  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAABAAAAAJCAAAAAAeQfPuAAAAD0lEQVR42mNoQAMMg0QAAIXUSAG1CN3UAAAAAElFTkSuQmCC", "base64")
+  const png = noisePng(600, 600)
   const image = join(dir, "send-file", "trail.png")
   writeFileSync(image, png)
+  const preview = expect.stringMatching(/^data:image\/(jpg|png);base64,/)
+  const fixedPreview = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAJCAAAAAAeQfPuAAAAD0lEQVR42mNoQAMMg0QAAIXUSAG1CN3UAAAAAElFTkSuQmCC"
   const sendCard = received(alice.chat, textStarts("I want to send a message to group Trail:"))
   const delivered = received(alice.chat, ci => ci.chatInfo.type === "group" && ci.chatInfo.groupInfo.groupId === trail.groupId && ci.chatItem.file !== undefined)
   const sending = agent.client.tool("send", {chat: group, text: "trail map", file: image, idle: 1, wait: 2})
   const card = await sendCard
   const n = cardNumber(card)
-  expect(lines(card)).toEqual(["I want to send a message to group Trail:", "`trail map`", `attaching image \`${image}\`, ${png.length} bytes`, `/'approve ${group} ${n}', /'approve ${group} all' or /'reject ${group} ${n}'`])
-  expect(card.chatItem.content).toMatchObject({msgContent: {type: "image", image: expect.stringMatching(/^data:image\/(jpg|png);base64,/)}})
+  expect(lines(card)).toEqual(["I want to send a message to group Trail:", "`trail map`", `attaching image \`${image}\`, ${(png.length / 1e6).toFixed(1)} MB`, `/'approve ${group} ${n}', /'approve ${group} all' or /'reject ${group} ${n}'`])
+  expect(card.chatItem.content).toMatchObject({msgContent: {type: "image", image: preview}})
+  expect(card.chatItem.content).not.toMatchObject({msgContent: {image: fixedPreview}})
   await alice.chat.apiSendTextMessage([T.ChatType.Group, controlId], `/approve ${group} ${n}`)
   expect((await sending).result).toMatchObject({action: n, status: "done", chat: group})
   const message = await delivered
-  expect(message.chatItem.content).toMatchObject({msgContent: {type: "image", text: "trail map", image: expect.stringMatching(/^data:image\/(jpg|png);base64,/)}})
+  expect(message.chatItem.content).toMatchObject({msgContent: {type: "image", text: "trail map", image: preview}})
+  expect(message.chatItem.content).not.toMatchObject({msgContent: {image: fixedPreview}})
   const {fileId, fileSize} = message.chatItem.file!
   expect(fileSize).toBeLessThanOrEqual(261120)
+  expect(fileSize).toBeLessThan(png.length)
   const copy = join(dir, "send-file", "received.png")
   const complete = alice.chat.wait("rcvFileComplete", ({chatItem}) => chatItem.chatItem.file?.fileId === fileId, timeout)
   await alice.chat.apiReceiveFile(fileId, copy)
