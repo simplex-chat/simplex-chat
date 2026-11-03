@@ -1,6 +1,6 @@
-# SimpleX MCP server v0.1: plan
+# SimpleX MCP server 0.2: plan
 
-Status: draft · 2026-10-17 · person-facing manual: `README.md`, in full `REFERENCE.md`. Code references: master `139ce5f8c` (`/code/simplex-chat-6`), unless marked `9711dcfc9` (core 7.1.0.11, which `simplex-chat` 7.1.0-beta.6.x loads). Pending decisions: section Open.
+Status: draft · 2026-10-17, files and leave 2026-10-30 (`plans/2026-10-30-mcp-files-and-leave.md`) · person-facing manual: `README.md`, in full `REFERENCE.md`. Code references: master `139ce5f8c` (`/code/simplex-chat-6`), unless marked `9711dcfc9` (core 7.1.0.11); `simplex-chat` 7.1.0-beta.10.1 loads core 7.1.0.18. Pending decisions: section Open.
 
 ## Scope
 
@@ -14,7 +14,7 @@ In:
 - connections to contact addresses, one-time links, groups, channels and SimpleX names, as the agent's profile or incognito;
 - bots as services: the commands a bot advertises are returned by `connect`.
 
-Out of v0.1:
+Out of scope:
 
 - an address of the agent: nobody can contact it first;
 - the owner's approval of messages to the agent;
@@ -107,7 +107,7 @@ layer                         who                                      what
 listener                      http.ts                                  127.0.0.1:PORT; Node limits lifted for hours-long calls: requestTimeout 0, timeout 0, headersTimeout 60 s, keepAliveTimeout 5 s
 bearer token                  http.ts, before the SDK                  Authorization: Bearer <DIR/token>, compared in constant time; otherwise 401
 path                          http.ts                                  /mcp only; otherwise 404, a request target that is not a URL included
-start                         http.ts                                  until the owner setup at start ends: 503 with Retry-After: 1
+start                         http.ts                                  until the agent control chat is started: 503 with Retry-After: 1
 Origin, Host                  SDK middleware                           localhostOriginValidation (no Origin, or a localhost origin on any port), localhostHostValidation; otherwise 403
 protocol                      SDK                                      both eras, header and version errors, 405, body limit, cache hints (ttlMs, cacheScope), JSON or SSE per call, SSE keep-alive
 cancellation                  SDK                                      the client closing the response stream aborts ctx.mcpReq.signal (toNodeHandler ties the Request signal to res "close")
@@ -125,8 +125,8 @@ npm name       @simplex-chat/mcp
 binary         simplex-mcp -> dist/cli.js
 licence        AGPL-3.0
 Node.js        22
-chat library   simplex-chat ^7.1.0-beta.6.6
-types          @simplex-chat/types ^7.1.0-beta.6.2
+chat library   simplex-chat ^7.1.0-beta.10.1
+types          @simplex-chat/types ^7.1.0-beta.9.1
 MCP SDK        @modelcontextprotocol/server 2.3.1, @modelcontextprotocol/node 2.1.1
 QR code        qrcode ^1.5
 tests          jest with ts-jest, as packages/simplex-chat-nodejs; end to end with a local smp-server (SMP_SERVER), as steward test/e2e, and a local xftp-server (XFTP_SERVER)
@@ -231,9 +231,9 @@ NAME not ^[a-z0-9](-?[a-z0-9])*-?$,   NAME: 1 to 32 lowercase letters, digits an
 
 ```
 $ npx -y @simplex-chat/mcp serve my-agent --display-name "My Agent"
-Downloading libsimplex from https://github.com/simplex-chat/simplex-chat-libs/releases/download/core-7.1.0.12/simplex-chat-libs-linux-x86_64.zip ...
-Downloading the Node.js add-on from https://github.com/simplex-chat/simplex-chat-libs/releases/download/... ...
-SimpleX MCP server 0.1.1, agent "my-agent"
+Downloading libsimplex from https://github.com/simplex-chat/simplex-chat-libs/releases/download/core-7.1.0.18/simplex-chat-libs-linux-x86_64.zip ...
+Downloading the Node.js add-on from https://github.com/simplex-chat/simplex-chat-libs/releases/download/nodejs-addon-cce06d8/simplex-chat-nodejs-linux-x86_64.node ...
+SimpleX MCP server 0.2.0, agent "my-agent"
 Data folder: /home/alice/.simplex-mcp/my-agent
 Approval mode: requests
 Agent control chat "My Agent" created.
@@ -1505,8 +1505,8 @@ sequenceDiagram
 
 ```
 scenario                 person (CLI)                         owner (agent control chat)                        agent (call -> result)                                  peers
-mode host                serve my-agent --approve host        outcome cards with "Performed without approval    connect, send, leave: performed without approval;      as in mode requests
-                                                              (mode host)."                                      Claude Code prompts for each call
+mode host                serve my-agent --approve host        outcome cards with "Performed without approval    connect, send, download, leave: performed without      as in mode requests
+                                                              (mode host).", none for downloads                 approval; Claude Code prompts for each call
                                                                                                                 (requiresUserInteraction)
 mention                  none                                 send card with "mentioning @Switchback"           send {chat: "#15", text, mention: [44]}                 Switchback's item has the mention
 bot command              none                                 send card with the command text                   send {chat: "@4", text: "/help"}: responses             the bot answers the command
@@ -1518,12 +1518,12 @@ crash                    start serve                          the run's cards ke
                                                               gets "Action N is not pending."
 second agent             serve my-agent-2 --port 5227;        a second agent control chat "my-agent-2"          the tools of simplex-my-agent-2                         the profile my-agent-2
                          register my-agent-2
-reset owners             serve my-agent --reset-owners        the agent control chat deleted; join the new      connect, send, leave: the no-approver error until an   none
-                         [--owners]                           link                                              approver exists
+reset owners             serve my-agent --reset-owners        the agent control chat deleted; join the new      connect, send, download, leave: the no-approver error  none
+                         [--owners]                           link                                              until an approver exists
 new token                serve my-agent --new-token           none                                              open calls fail; the reconnection reads the new token   none
                                                                                                                 from headers.json
 session before server    start serve; /mcp reconnect all      none                                              the tools appear after the reconnect                     none
-no approver              no --owners: "No owners in the       --owners LIST: "... No owners remain: restart     connect, send, leave: the no-approver error              none
+no approver              no --owners: "No owners in the       --owners LIST: "... No owners remain: restart     connect, send, download, leave: the no-approver error    none
                          agent control chat." and a new       the server with --reset-owners --owners"
                          link
 ```
@@ -1547,7 +1547,7 @@ files       lock: exclusive create, a running PID, a stale PID; folder mode at e
 log         every SimpleX error shape worded by the apps, in its JSON shape from @simplex-chat/types; the chain for other errors
 ```
 
-End to end, with the preset SimpleX servers; the owner is a scripted profile in its own database; the agent's calls come from an MCP client in the test:
+End to end, with a local smp-server and xftp-server; the owner is a scripted profile in its own database; the agent's calls come from an MCP client in the test:
 
 ```
 test              steps
@@ -1592,7 +1592,7 @@ C6      Claude Code closes the request stream when a call times out or its task 
 
 ## Open
 
-- A convention for services that agents use (MCP within MCP), "Ask SimpleX Team" as a service for agents, the `#agents.simplex` name and the directory's own SimpleX name: after v0.1 is tested.
+- A convention for services that agents use (MCP within MCP), "Ask SimpleX Team" as a service for agents, the `#agents.simplex` name and the directory's own SimpleX name: after 0.2.0 is tested.
 - C3 to C6.
 
 ## Decisions of 2026-10-18
