@@ -151,7 +151,6 @@ const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
 const refusedName = /^id_|\.(pem|key|p12|pfx)$/i
 export const refusedFileReason = "private keys and the server's own files are not sent"
 const receivedWithoutPath = "The file was received without a path."
-const notMoved = "The received file could not be moved to the agent's files folder."
 const deletedItem = "The message or its chat was deleted."
 const notFoundErrors: T.StoreError["type"][] = ["chatItemNotFound", "contactNotFound", "groupNotFound"]
 const stalledDownload = `The download made no progress for ${downloadStall / 60_000} minutes and was cancelled.`
@@ -462,7 +461,7 @@ class Download {
   receivedAt = Date.now()
   source: string
 
-  constructor(readonly chat: string, readonly item: number, readonly fileId: number, readonly path: string, readonly check: NodeJS.Timeout) {
+  constructor(readonly chat: string, readonly item: number, readonly fileId: number, readonly size: number, readonly path: string, readonly check: NodeJS.Timeout) {
     this.source = path
   }
 }
@@ -509,11 +508,11 @@ export class AgentTools {
     }
   }
 
-  downloadFile({chat, item, file: {fileId, name}}: Pick<DownloadAction, "chat" | "item" | "file">): Promise<string> {
+  downloadFile({chat, item, file: {fileId, name, size}}: Pick<DownloadAction, "chat" | "item" | "file">): Promise<string> {
     const started = this.downloads.get(fileId)
     if (started !== undefined) return started.promise
     const check = setInterval(() => this.checkDownload(download).catch(error => logError(`download of file ${fileId}`, error)), downloadCheck).unref()
-    const download: Download = new Download(chat, item, fileId, downloadPath(this.agent.data, chat, fileId, name), check)
+    const download: Download = new Download(chat, item, fileId, size, downloadPath(this.agent.data, chat, fileId, name), check)
     this.downloads.set(fileId, download)
     this.startDownload(download).catch(error => this.settleDownload(fileId, ({reject}) => reject(error)))
     return download.promise
@@ -534,15 +533,23 @@ export class AgentTools {
     if (chat !== undefined && content.type === "rcvMsgContent" && file !== undefined) this.settleFile(chat, file)
   }
 
+  onFileComplete({chatInfo, chatItem: {content, file}}: T.AChatItem): void {
+    const chat = chatRef(chatInfo)
+    if (chat === undefined || content.type !== "rcvMsgContent" || file === undefined) return
+    this.moveReceived(chat, file)
+    this.settleFile(chat, file)
+  }
+
   onFileError({chatItem_, agentError, rcvFileTransfer}: CEvt.RcvFileError): void {
     if (chatItem_?.chatItem.file !== undefined) return this.onFile(chatItem_)
     this.failDownload(rcvFileTransfer.fileId, chatErrorText({type: "errorAgent", agentError} as T.ChatError))
   }
 
   onFileCancelled({chatItem, rcvFileTransfer}: CEvt.RcvFileSndCancelled): void {
-    const source = chatItem.chatItem.file?.fileSource
-    if (source !== undefined) rmSync(source.filePath, {force: true})
-    this.failDownload(rcvFileTransfer.fileId, "The sender cancelled the file.")
+    this.settleDownload(rcvFileTransfer.fileId, ({reject, size}) => {
+      reject(new Error("The sender cancelled the file."))
+      deletePartial(chatItem.chatItem.file?.fileSource?.filePath, size)
+    })
   }
 
   onFileDescription(): void {
@@ -980,16 +987,17 @@ export class AgentTools {
   private async checkDownload(download: Download): Promise<void> {
     const file = await this.currentFile(download)
     if (file === undefined) return
+    const {fileStatus} = file
+    if (fileStatus.type === "rcvComplete") this.moveReceived(download.chat, file)
     this.settleFile(download.chat, file)
     if (this.downloads.get(download.fileId) !== download) return
-    const {fileStatus} = file
     if (fileStatus.type === "rcvTransfer" && fileStatus.rcvProgress > download.receivedBytes) {
       download.receivedBytes = fileStatus.rcvProgress
       download.receivedAt = Date.now()
     } else if (Date.now() - download.receivedAt >= downloadStall) {
       this.failDownload(download.fileId, stalledDownload)
       await this.agent.chat.apiCancelFile(download.fileId)
-      rmSync(download.source, {force: true})
+      deletePartial(download.source, download.size)
     }
   }
 
@@ -997,8 +1005,8 @@ export class AgentTools {
     const file = (await this.readItem(download.chat, download.item))?.file
     if (this.downloads.get(download.fileId) !== download) return undefined
     if (file === undefined) {
-      rmSync(download.source, {force: true})
       this.failDownload(download.fileId, deletedItem)
+      deletePartial(download.source, download.size)
     } else if (file.fileSource !== undefined) download.source = file.fileSource.filePath
     return file
   }
@@ -1008,20 +1016,27 @@ export class AgentTools {
     const error = fileError(file)
     if (fileStatus.type === "rcvComplete") this.settleReceived(chat, file)
     else if (error !== undefined) {
-      if (fileSource !== undefined) rmSync(fileSource.filePath, {force: true})
-      this.failDownload(fileId, error)
+      this.settleDownload(fileId, ({reject, size}) => {
+        reject(new Error(error))
+        deletePartial(fileSource?.filePath, size)
+      })
     }
   }
 
   private settleReceived(chat: string, {fileId, fileName, fileSource}: T.CIFile): void {
     if (fileSource === undefined) return this.failDownload(fileId, receivedWithoutPath)
     const path = downloadPath(this.agent.data, chat, fileId, fileName)
+    this.settleDownload(fileId, ({resolve}) => resolve(path))
+  }
+
+  private moveReceived(chat: string, {fileId, fileName, fileSize, fileSource}: T.CIFile): void {
+    const path = downloadPath(this.agent.data, chat, fileId, fileName)
+    const source = fileSource?.filePath
+    if (source === undefined || source === path || existsSync(path) || fileBytes(source) !== fileSize) return
     try {
-      if (fileSource.filePath !== path && !existsSync(path)) moveFile(fileSource.filePath, path)
-      this.settleDownload(fileId, ({resolve}) => resolve(path))
+      moveFile(source, path)
     } catch (error) {
       logError(`moving file ${fileId}`, error)
-      this.failDownload(fileId, notMoved)
     }
   }
 
@@ -1416,6 +1431,14 @@ function realFolder(folder: string): string {
   } catch {
     return folder
   }
+}
+
+function deletePartial(path: string | undefined, size: number): void {
+  if (path !== undefined && (fileBytes(path) ?? Infinity) <= size) rmSync(path)
+}
+
+function fileBytes(path: string): number | undefined {
+  return existsSync(path) ? statSync(path).size : undefined
 }
 
 function moveFile(from: string, to: string): void {

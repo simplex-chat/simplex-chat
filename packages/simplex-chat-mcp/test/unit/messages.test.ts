@@ -1196,13 +1196,19 @@ describe("download", () => {
       rmSync(downloaded, {force: true})
     })
 
+    function receivedIn(chat: FakeChat, content: string): {source: string; received: T.ChatItem} {
+      const source = join(elsewhere, "report.pdf")
+      writeFileSync(source, content)
+      const received = offeredIn(chat, {type: "rcvComplete"}, {filePath: source})
+      received.file!.fileSize = content.length
+      return {source, received}
+    }
+
     it("is moved into the chat's folder when it is received, and a download returns it there", async () => {
       const chat = new FakeChat()
-      const source = join(elsewhere, "report.pdf")
-      writeFileSync(source, "voice")
-      const received = offeredIn(chat, {type: "rcvComplete"}, {filePath: source})
+      const {source, received} = receivedIn(chat, "voice")
       const {tools, actions} = downloadTools(chat)
-      tools.onFile(event(trail, received))
+      tools.onFileComplete(event(trail, received))
       expect([existsSync(source), readFileSync(downloaded, "utf8")]).toEqual([false, "voice"])
       const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
       await flushed()
@@ -1212,14 +1218,12 @@ describe("download", () => {
 
     it("is copied and then deleted when the rename crosses file systems", () => {
       const chat = new FakeChat()
-      const source = join(elsewhere, "report.pdf")
-      writeFileSync(source, "voice")
-      const received = offeredIn(chat, {type: "rcvComplete"}, {filePath: source})
+      const {source, received} = receivedIn(chat, "voice")
       const {tools} = downloadTools(chat)
       const rename = jest.spyOn(fs, "renameSync").mockImplementationOnce(() => {
         throw Object.assign(new Error("EXDEV: cross-device link not permitted"), {code: "EXDEV"})
       })
-      tools.onFile(event(trail, received))
+      tools.onFileComplete(event(trail, received))
       expect([existsSync(source), readFileSync(downloaded, "utf8"), existsSync(`${downloaded}.part`)]).toEqual([false, "voice", false])
       expect(rename).toHaveBeenCalledTimes(2)
     })
@@ -1228,16 +1232,19 @@ describe("download", () => {
       jest.useFakeTimers()
       jest.spyOn(process.stderr, "write").mockImplementation(() => true)
       const chat = new FakeChat()
-      const cancelled = join(elsewhere, "cancelled.pdf")
-      writeFileSync(cancelled, "part")
       const {tools} = downloadTools(chat)
-      tools.onFileCancelled({chatItem: event(trail, fileItem(30, image, {type: "rcvTransfer", rcvProgress: 0, rcvTotal: 1}, {fileSource: {filePath: cancelled}})), rcvFileTransfer: {fileId: 7}} as unknown as Parameters<AgentTools["onFileCancelled"]>[0])
-      expect(existsSync(cancelled)).toBe(false)
       const partial = join(elsewhere, "report.pdf")
-      writeFileSync(partial, "part")
-      const incoming = offeredIn(chat, {type: "rcvAccepted"}, {filePath: partial})
-      tools.onNewItems([event(trail, incoming)])
-      await jest.advanceTimersByTimeAsync(0)
+      const track = async (): Promise<T.ChatItem> => {
+        writeFileSync(partial, "part")
+        const incoming = offeredIn(chat, {type: "rcvAccepted"}, {filePath: partial})
+        tools.onNewItems([event(trail, incoming)])
+        await jest.advanceTimersByTimeAsync(0)
+        return incoming
+      }
+      const cancelled = await track()
+      tools.onFileCancelled({chatItem: event(trail, cancelled), rcvFileTransfer: {fileId: 7}} as unknown as Parameters<AgentTools["onFileCancelled"]>[0])
+      expect(existsSync(partial)).toBe(false)
+      await track()
       chat.chats.delete("#15")
       await jest.advanceTimersByTimeAsync(60_000)
       expect(existsSync(partial)).toBe(false)

@@ -1268,34 +1268,42 @@ downloadFile(chat, item, file), also run by /receive, and by newChatItems for ea
   otherwise a new promise in memory, with the download path DIR/files/CHAT/<fileId><extension>   # extension: of file.name when it is "." and 1 to 16 ASCII letters and digits, otherwise none
   then /_get chat <chat> around=<item> count=0, the item's file:
     rcvComplete              settle received (below)
-    failed, as in file       fileSource deleted; rejected with its error
+    failed, as in file       delete partial at fileSource (below); rejected with its error
     rcvInvitation            mkdir DIR/files/CHAT, mode 0700; /freceive <fileId> approved_relays=on <download path>, without approved_relays=on in mode host   # apiReceiveFile; the core creates the file at that path (getRcvFilePath, Library/Internal.hs:958-965)
     other                    the events below settle it
 
-settle received, for a received file in status rcvComplete, with or without a promise:
+settle received, for a received file in status rcvComplete with a promise:
   no fileSource: rejected, "The file was received without a path."
-  fileSource.filePath is not the download path and the download path has no file: the file moved there   # a rename; on EXDEV a copy to <download path>.part, a rename of it and a delete of the source
-  resolved with the download path; a failed move: logged, rejected, "The received file could not be moved to the agent's files folder."
+  otherwise resolved with the download path
+
+move received, at rcvFileComplete with or without a promise, and at a check that reads rcvComplete:
+  fileSource.filePath is not the download path, the download path has no file, and the file at fileSource.filePath has fileSize bytes: the file moved there   # a rename; on EXDEV a copy to <download path>.part, a rename of it and a delete of the source
+  a failed move: logged
+
+delete partial at PATH, for a file with a promise:
+  the file at PATH has at most fileSize bytes: deleted
 ```
 
 ```
 event                                     the received file of the event's item
-rcvFileComplete                           as rcvComplete above
+rcvFileComplete                           move received, then as rcvComplete above
 rcvFileError                              rejected: the item's file error, or the agent error without an item (Library/Subscriber.hs:440-446)
-rcvFileSndCancelled                       the item's fileSource deleted; rejected: "The sender cancelled the file.", by rcvFileTransfer.fileId: in a group the event's item is read before the cancel (Library/Subscriber.hs:2662-2671)
+rcvFileSndCancelled                       delete partial at the item's fileSource; rejected: "The sender cancelled the file.", by rcvFileTransfer.fileId: in a group the event's item is read before the cancel (Library/Subscriber.hs:2662-2671)
 chatItemUpdated                           as the item's file above: rcvComplete, or failed: a bad digest, relays not approved (Library/Subscriber.hs:411-439)
 ```
+
+- An event settles or deletes only a file with a promise; rcvFileComplete also moves a file without one, for example one whose transfer completes after a restart.
 
 Every 60 s while the promise is unsettled:
 
 ```
 step                                        result
-/_get chat <chat> around=<item> count=0     the message or its chat gone (errorStore chatItemNotFound, contactNotFound, groupNotFound): the last fileSource seen deleted; rejected, "The message or its chat was deleted."
+/_get chat <chat> around=<item> count=0     the message or its chat gone (errorStore chatItemNotFound, contactNotFound, groupNotFound): delete partial at the last fileSource seen; rejected, "The message or its chat was deleted."
                                             another error: logged; the download continues
-                                            otherwise the item's file settles the promise as rcvComplete and failed above
+                                            otherwise the item's file settles the promise as rcvComplete and failed above; rcvComplete: move received first
 rcvTransfer, rcvProgress above the          the time of progress: now
 largest one seen
-30 minutes since the start or the time      rejected, "The download made no progress for 30 minutes and was cancelled."; /fcancel <fileId>; the last fileSource seen deleted
+30 minutes since the start or the time      rejected, "The download made no progress for 30 minutes and was cancelled."; /fcancel <fileId>; delete partial at the last fileSource seen
 of progress                                 (an XFTP file returns to rcvInvitation, an inline file ends cancelled: CancelFile, Library/Commands.hs:3609-3624)
 ```
 
