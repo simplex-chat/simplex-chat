@@ -1111,8 +1111,8 @@ swipe action</note>
         <target>Разрешить необратимо удалять отправленные сообщения. (24 часа)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to report messsages to moderators." xml:space="preserve">
-        <source>Allow to report messsages to moderators.</source>
+      <trans-unit id="Allow to report messages to moderators." xml:space="preserve">
+        <source>Allow to report messages to moderators.</source>
         <target>Разрешить отправлять сообщения о нарушениях модераторам.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -5716,8 +5716,8 @@ This is your link for group %@!</source>
         <target>Члены могут необратимо удалять отправленные сообщения. (24 часа)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Members can report messsages to moderators." xml:space="preserve">
-        <source>Members can report messsages to moderators.</source>
+      <trans-unit id="Members can report messages to moderators." xml:space="preserve">
+        <source>Members can report messages to moderators.</source>
         <target>Члены группы могут пожаловаться модераторам.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -9160,8 +9160,8 @@ report reason</note>
         <target>Подписчики могут необратимо удалять отправленные сообщения. (24 часа)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Subscribers can report messsages to moderators." xml:space="preserve">
-        <source>Subscribers can report messsages to moderators.</source>
+      <trans-unit id="Subscribers can report messages to moderators." xml:space="preserve">
+        <source>Subscribers can report messages to moderators.</source>
         <target>Подписчики могут отправлять сообщения о нарушениях модераторам.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

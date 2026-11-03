@@ -1191,9 +1191,9 @@ swipe action</note>
         <target>Allow to irreversibly delete sent messages. (24 hours)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to report messsages to moderators." xml:space="preserve">
-        <source>Allow to report messsages to moderators.</source>
-        <target>Allow to report messsages to moderators.</target>
+      <trans-unit id="Allow to report messages to moderators." xml:space="preserve">
+        <source>Allow to report messages to moderators.</source>
+        <target>Allow to report messages to moderators.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send SimpleX links." xml:space="preserve">
@@ -6222,9 +6222,9 @@ This is your link for group %@!</target>
         <target>Members can irreversibly delete sent messages. (24 hours)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Members can report messsages to moderators." xml:space="preserve">
-        <source>Members can report messsages to moderators.</source>
-        <target>Members can report messsages to moderators.</target>
+      <trans-unit id="Members can report messages to moderators." xml:space="preserve">
+        <source>Members can report messages to moderators.</source>
+        <target>Members can report messages to moderators.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Members can send SimpleX links." xml:space="preserve">
@@ -9956,9 +9956,9 @@ report reason</note>
         <target>Subscribers can irreversibly delete sent messages. (24 hours)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Subscribers can report messsages to moderators." xml:space="preserve">
-        <source>Subscribers can report messsages to moderators.</source>
-        <target>Subscribers can report messsages to moderators.</target>
+      <trans-unit id="Subscribers can report messages to moderators." xml:space="preserve">
+        <source>Subscribers can report messages to moderators.</source>
+        <target>Subscribers can report messages to moderators.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Subscribers can send SimpleX links." xml:space="preserve">

@@ -987,8 +987,8 @@ swipe action</note>
         <target>Gönderilen mesajların kalıcı olarak silinmesine izin ver. (24 saat içinde)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to report messsages to moderators." xml:space="preserve">
-        <source>Allow to report messsages to moderators.</source>
+      <trans-unit id="Allow to report messages to moderators." xml:space="preserve">
+        <source>Allow to report messages to moderators.</source>
         <target>Mesajları moderatörlere bildirmeye izin ver.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4979,8 +4979,8 @@ Bu senin grup için bağlantın %@!</target>
         <target>Grup üyeleri, gönderilen mesajları kalıcı olarak silebilir. (24 saat içinde)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Members can report messsages to moderators." xml:space="preserve">
-        <source>Members can report messsages to moderators.</source>
+      <trans-unit id="Members can report messages to moderators." xml:space="preserve">
+        <source>Members can report messages to moderators.</source>
         <target>Üyeler mesajları moderatörlere bildirebilir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

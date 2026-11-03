@@ -710,7 +710,7 @@ swipe action */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Разрешить необратимо удалять отправленные сообщения. (24 часа)";
 
 /* No comment provided by engineer. */
-"Allow to report messsages to moderators." = "Разрешить отправлять сообщения о нарушениях модераторам.";
+"Allow to report messages to moderators." = "Разрешить отправлять сообщения о нарушениях модераторам.";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Разрешить посылать файлы и медиа.";
@@ -3799,7 +3799,7 @@ servers warning */
 "Members can irreversibly delete sent messages. (24 hours)" = "Члены могут необратимо удалять отправленные сообщения. (24 часа)";
 
 /* No comment provided by engineer. */
-"Members can report messsages to moderators." = "Члены группы могут пожаловаться модераторам.";
+"Members can report messages to moderators." = "Члены группы могут пожаловаться модераторам.";
 
 /* No comment provided by engineer. */
 "Members can send direct messages." = "Члены могут посылать личные сообщения.";
@@ -6048,7 +6048,7 @@ report reason */
 "Subscribers can irreversibly delete sent messages. (24 hours)" = "Подписчики могут необратимо удалять отправленные сообщения. (24 часа)";
 
 /* No comment provided by engineer. */
-"Subscribers can report messsages to moderators." = "Подписчики могут отправлять сообщения о нарушениях модераторам.";
+"Subscribers can report messages to moderators." = "Подписчики могут отправлять сообщения о нарушениях модераторам.";
 
 /* No comment provided by engineer. */
 "Subscribers can send direct messages." = "Подписчики могут отправлять личные сообщения.";

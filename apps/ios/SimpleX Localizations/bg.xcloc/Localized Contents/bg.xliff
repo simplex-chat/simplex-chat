@@ -902,8 +902,8 @@ swipe action</note>
         <target>Позволи необратимо изтриване на изпратените съобщения. (24 часа)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to report messsages to moderators." xml:space="preserve">
-        <source>Allow to report messsages to moderators.</source>
+      <trans-unit id="Allow to report messages to moderators." xml:space="preserve">
+        <source>Allow to report messages to moderators.</source>
         <target>Позволи докладването на съобщения на модераторите.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

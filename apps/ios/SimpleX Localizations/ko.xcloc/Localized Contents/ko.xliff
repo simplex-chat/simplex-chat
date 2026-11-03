@@ -1913,8 +1913,8 @@ This is your own SimpleX address!</source>
         <source>All</source>
         <target state="translated">모두</target>
       </trans-unit>
-      <trans-unit id="Allow to report messsages to moderators." xml:space="preserve" approved="no">
-        <source>Allow to report messsages to moderators.</source>
+      <trans-unit id="Allow to report messages to moderators." xml:space="preserve" approved="no">
+        <source>Allow to report messages to moderators.</source>
         <target state="translated">메시지를 신고하는것을 허용합니다.</target>
       </trans-unit>
       <trans-unit id="Another reason" xml:space="preserve" approved="no">

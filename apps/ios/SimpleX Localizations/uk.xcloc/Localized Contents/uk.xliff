@@ -1086,8 +1086,8 @@ swipe action</note>
         <target>Дозволяє безповоротно видаляти надіслані повідомлення. (24 години)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to report messsages to moderators." xml:space="preserve">
-        <source>Allow to report messsages to moderators.</source>
+      <trans-unit id="Allow to report messages to moderators." xml:space="preserve">
+        <source>Allow to report messages to moderators.</source>
         <target>Дозволити надсилати скаргу на повідомлення модераторам.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -5053,8 +5053,8 @@ This is your link for group %@!</source>
         <target>Учасники групи можуть безповоротно видаляти надіслані повідомлення. (24 години)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Members can report messsages to moderators." xml:space="preserve">
-        <source>Members can report messsages to moderators.</source>
+      <trans-unit id="Members can report messages to moderators." xml:space="preserve">
+        <source>Members can report messages to moderators.</source>
         <target>Учасники можуть повідомляти повідомлення модераторам.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

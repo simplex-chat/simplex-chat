@@ -887,8 +887,8 @@ swipe action</note>
         <target>Sta toe om verzonden berichten definitief te verwijderen. (24 uur)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to report messsages to moderators." xml:space="preserve">
-        <source>Allow to report messsages to moderators.</source>
+      <trans-unit id="Allow to report messages to moderators." xml:space="preserve">
+        <source>Allow to report messages to moderators.</source>
         <target>Hiermee kunt u berichten rapporteren aan moderators.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4749,8 +4749,8 @@ Dit is jouw link voor groep %@!</target>
         <target>Groepsleden kunnen verzonden berichten onherroepelijk verwijderen. (24 uur)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Members can report messsages to moderators." xml:space="preserve">
-        <source>Members can report messsages to moderators.</source>
+      <trans-unit id="Members can report messages to moderators." xml:space="preserve">
+        <source>Members can report messages to moderators.</source>
         <target>Leden kunnen berichten melden bij moderators.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

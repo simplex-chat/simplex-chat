@@ -704,7 +704,7 @@ swipe action */
 "Allow to irreversibly delete sent messages. (24 hours)" = "允许不可撤回地删除已发送消息";
 
 /* No comment provided by engineer. */
-"Allow to report messsages to moderators." = "允许向 moderators 举报消息。";
+"Allow to report messages to moderators." = "允许向 moderators 举报消息。";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "允许发送文件和媒体。";
@@ -3745,7 +3745,7 @@ servers warning */
 "Members can irreversibly delete sent messages. (24 hours)" = "群组成员可以不可撤回地删除已发送的消息";
 
 /* No comment provided by engineer. */
-"Members can report messsages to moderators." = "成员可以向 moderators 举报消息。";
+"Members can report messages to moderators." = "成员可以向 moderators 举报消息。";
 
 /* No comment provided by engineer. */
 "Members can send direct messages." = "群组成员可以私信。";
@@ -5942,7 +5942,7 @@ report reason */
 "Subscribers can irreversibly delete sent messages. (24 hours)" = "订阅者可以删除已发送的消息，且无法撤消。（24 小时）";
 
 /* No comment provided by engineer. */
-"Subscribers can report messsages to moderators." = "订阅者可以向审核员举报消息。";
+"Subscribers can report messages to moderators." = "订阅者可以向审核员举报消息。";
 
 /* No comment provided by engineer. */
 "Subscribers can send direct messages." = "订阅者可以发送直接消息。";
