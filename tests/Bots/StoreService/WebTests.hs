@@ -270,6 +270,7 @@ badgeWebTests = do
     it "cancels at most a pass-sized batch, leaving the rest for the next pass" testSweepCapsCancelsPerPass
     it "reports a skipped invoice once, and again only after the interval" testSkipWarningsAreRateLimited
     it "warns once for a provider that stays down, not once a pass" testOutageWarnsOnceNotEveryPass
+    it "warns of a failed read once per invoice, naming it" testReadFailureWarnsPerInvoice
     it "holds the skip log under its cap when every reason is fresh" testSkipReasonsStayBounded
     it "warns once for all the invoices it did not sell, not once per invoice" testStrangerSkipsShareOneWarning
     it "raises a skip naming an invoice this service sold" testSkipNamingOurInvoiceIsRaised
@@ -3087,6 +3088,18 @@ testSkipNamingOurInvoiceIsRaised = bounded "skip ownership" $ withStubPoller rac
   setSignals ref [("p-2", settledSignal)]
   runOnePass poller
   invoiceStatus (weStore env) iid `shouldReturn` ISPaid
+
+testReadFailureWarnsPerInvoice :: IO ()
+testReadFailureWarnsPerInvoice = bounded "read warnings" $ withStubPoller raceHold $ \ref poller env _ -> do
+  now <- getCurrentTime
+  seedBadgePrice (weStore env) "price1"
+  forM_ [(1, "p-a"), (2, "p-b")] $ \(i, providerRef) -> seedOpenRef (weStore env) i providerRef (addUTCTime 3600 now)
+  failRead ref (Just (ProviderError "read refused"))
+  firstPass <- capturingStderr (runOnePass poller)
+  secondPass <- capturingStderr (runOnePass poller)
+  let warned providerRef = length . filter (\l -> "[WARN " `T.isPrefixOf` l && ("invoice " <> providerRef <> " failed; it waits for the next pass: read refused") `T.isInfixOf` l) . T.lines
+  map (`warned` firstPass) ["p-a", "p-b"] `shouldBe` [1, 1]
+  map (`warned` secondPass) ["p-a", "p-b"] `shouldBe` [0, 0]
 
 testSkipReasonsStayBounded :: IO ()
 testSkipReasonsStayBounded = bounded "skip reasons bounded" $ withStubPoller raceHold $ \_ poller _ _ -> do

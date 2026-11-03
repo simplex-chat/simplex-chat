@@ -166,8 +166,8 @@ readRows env now rows =
     readOne p ref =
       pReadInvoice p ref >>= \case
         Left (ProviderError e) -> do
-          due <- dueToWarn env now ("read failed: " <> tshow (pProvider p))
-          when due $ logWarn ("badge poller: " <> tshow (pProvider p) <> " reads are failing; every invoice waits for the next pass: " <> e)
+          due <- dueToWarn env now ("read failed: " <> tshow (pProvider p) <> " invoice " <> ref)
+          when due $ logWarn ("badge poller: reading " <> tshow (pProvider p) <> " invoice " <> ref <> " failed; it waits for the next pass: " <> e)
           pure False
         Right Nothing -> pure True
         Right (Just signal) -> True <$ settleMoved env (pProvider p) now (ref, signal)
