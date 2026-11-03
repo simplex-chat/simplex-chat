@@ -677,7 +677,7 @@ private let versionDescriptions: [VersionDescription] = [
         features: (isInUS ? [
             .view(FeatureView(
                 icon: nil,
-                title: "Own a part of SimpleX Chat",
+                title: "You can now invest in SimpleX Chat",
                 view: { InvestInSimpleXChat() }
             ))
         ] : []) + [
@@ -705,7 +705,7 @@ private let versionDescriptions: [VersionDescription] = [
         features: (isInUS ? [
             .view(FeatureView(
                 icon: nil,
-                title: "Own a part of SimpleX Chat",
+                title: "You can now invest in SimpleX Chat",
                 view: { InvestInSimpleXChat() }
             ))
         ] : []) + [
@@ -839,24 +839,27 @@ fileprivate struct CreateUpdateAddressShortLink: View {
 
 fileprivate struct InvestInSimpleXChat: View {
     @EnvironmentObject var theme: AppTheme
+    @State private var showGetStakeSheet = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Own a part of SimpleX Chat! 🚀").font(.title3).bold()
+            Text("You can now invest in SimpleX Chat! 🚀").font(.title3).bold()
+            (Text("Crowdfunding on Wefunder.") + Text(verbatim: " ") + Text("Learn more").foregroundColor(theme.colors.primary))
+                .multilineTextAlignment(.leading)
+                .onTapGesture { showGetStakeSheet = true }
             #if SIMPLEX_ASSETS
             Image("crowdfunding_1")
                 .resizable()
                 .scaledToFit()
                 .cornerRadius(12)
-                .padding(.top, 4)
-                .padding(.bottom, 8)
-                .onTapGesture { UIApplication.shared.open(wefunderURL) }
+                .padding(.vertical, 4)
+                .onTapGesture { showGetStakeSheet = true }
             #endif
-            Text("Learn more on Wefunder.")
-                .foregroundColor(theme.colors.primary)
-                .onTapGesture { UIApplication.shared.open(wefunderURL) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .sheet(isPresented: $showGetStakeSheet) {
+            GetStakeView(fromSettings: false, showFirstImage: false)
+        }
     }
 }
 
@@ -889,8 +892,13 @@ fileprivate let getStakeSlides: [(image: String, heading: String, info: String?,
 
 let wefunderURL = URL(string: "https://wefunder.com/simplex.chat?utm_source=app_ios")!
 
+private let simplexCrowdfundingURL = URL(string: "simplex:/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo?h=smp11.simplex.im")!
+
 struct GetStakeView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
+    @EnvironmentObject var chatModel: ChatModel
     var fromSettings: Bool
+    var showFirstImage: Bool
 
     var body: some View {
         ZoomablePageView {
@@ -900,7 +908,9 @@ struct GetStakeView: View {
                     .bold()
                     .fixedSize(horizontal: false, vertical: true)
                     .if(!fromSettings) { $0.padding(.top) }
-                slideImage(getStakeSlides[0])
+                if showFirstImage {
+                    slideImage(getStakeSlides[0])
+                }
                 (Text(verbatim: getStakeSlides[0].text) + Text(verbatim: " Learn more and invest on Wefunder.").bold().foregroundColor(.accentColor))
                     .multilineTextAlignment(.leading)
                     .onTapGesture {
@@ -921,7 +931,18 @@ struct GetStakeView: View {
                     Text(verbatim: "Learn more on Wefunder")
                 }
                 .buttonStyle(OnboardingButtonStyle())
-                .padding(.bottom)
+
+                Button {
+                    dismiss()
+                    DispatchQueue.main.async {
+                        ChatModel.shared.appOpenUrl = simplexCrowdfundingURL
+                    }
+                } label: {
+                    Text(verbatim: "or ask SimpleX team")
+                        .font(.callout)
+                }
+                .disabled(chatModel.chatRunning != true)
+                .frame(maxWidth: .infinity)
             }
             .padding()
         }
