@@ -16,7 +16,7 @@ On Android, images decoded by `base64ToBitmap` are kept in an `android.util.LruC
 - key: the base64 string;
 - size: 2 bytes per key character + `Bitmap.byteCount` per entry;
 - limit: 1/8 of `Runtime.maxMemory()`;
-- error bitmaps are not cached.
+- error bitmaps and entries larger than the limit are not cached.
 
 ## Scope
 
@@ -24,3 +24,4 @@ On Android, images decoded by `base64ToBitmap` are kept in an `android.util.LruC
 - The cache is used by every Android caller of `base64ToBitmap`: avatars (also in calls), image, video and link previews (chat, chat list), video previews in the full-screen viewer, chat-link cards, quotes, compose previews, theme wallpaper, contact-request and call notification icons.
 - test: `android/src/androidTest/.../Base64ToBitmapTest.kt`
 - `android/build.gradle.kts`: `testInstrumentationRunner` = `androidx.test.runner.AndroidJUnitRunner`.
+- `ExampleInstrumentedTest`: the expected package is `BuildConfig.APPLICATION_ID`.

@@ -25,8 +25,10 @@ import kotlin.math.min
 
 private const val MAX_IMAGE_DIMENSION = 4320
 
+private fun base64BitmapSize(key: String, value: ImageBitmap): Int = 2 * key.length + value.asAndroidBitmap().byteCount
+
 private val base64BitmapCache = object : LruCache<String, ImageBitmap>((Runtime.getRuntime().maxMemory() / 8).toInt()) {
-  override fun sizeOf(key: String, value: ImageBitmap): Int = 2 * key.length + value.asAndroidBitmap().byteCount
+  override fun sizeOf(key: String, value: ImageBitmap): Int = base64BitmapSize(key, value)
 }
 
 actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
@@ -42,7 +44,7 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
       return errorBitmap.asImageBitmap()
     }
     BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size).asImageBitmap().also {
-      base64BitmapCache.put(base64ImageString, it)
+      if (base64BitmapSize(base64ImageString, it) <= base64BitmapCache.maxSize()) base64BitmapCache.put(base64ImageString, it)
     }
   } catch (e: Exception) {
     Log.e(TAG, "base64ToBitmap error: $e")
