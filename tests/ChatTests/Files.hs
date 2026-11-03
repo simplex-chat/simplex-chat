@@ -181,12 +181,12 @@ testSendImagePreview =
   testChat2 aliceProfile bobProfile $
     \alice bob -> withXFTPServer alice $ do
       connectUsers alice bob
-      alice ##> "/img @bob ./tests/fixtures/test.jpg"
-      alice <# "/f @bob ./tests/fixtures/test.jpg"
+      alice ##> "/img @bob ./tests/fixtures/logo.jpg"
+      alice <# "/f @bob ./tests/fixtures/logo.jpg"
       alice <## "use /fc 1 to cancel sending"
-      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <# "alice> sends file logo.jpg (31.3 KiB / 32080 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      alice <## "completed uploading file 1 (test.jpg) for bob"
+      alice <## "completed uploading file 1 (logo.jpg) for bob"
       preview <- lastImagePreview bob 2
       T.length preview `shouldSatisfy` (<= 14000)
       preview `shouldSatisfy` ("data:image/jpg;base64," `T.isPrefixOf`)
