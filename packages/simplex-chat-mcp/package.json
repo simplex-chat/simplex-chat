@@ -1,6 +1,6 @@
 {
   "name": "@simplex-chat/mcp",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "MCP server that gives an AI agent its own SimpleX profile",
   "bin": {
     "simplex-mcp": "dist/cli.js"
@@ -24,9 +24,9 @@
   "dependencies": {
     "@modelcontextprotocol/node": "^2.1.1",
     "@modelcontextprotocol/server": "^2.3.1",
-    "@simplex-chat/types": "^7.1.0-beta.6.2",
+    "@simplex-chat/types": "^7.1.0-beta.9.1",
     "qrcode": "^1.5",
-    "simplex-chat": "^7.1.0-beta.6.6"
+    "simplex-chat": "^7.1.0-beta.10.1"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
