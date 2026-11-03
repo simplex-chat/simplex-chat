@@ -65,7 +65,7 @@ describe("message fields", () => {
 
   it("describes the file of a received message by its status", () => {
     const chatInfo = direct(contact(4, "Ridgeline"))
-    const downloaded = join(data, "files", "@4", "7.pdf")
+    const downloaded = join(data, "files", "contact-4", "7.pdf")
     const fileOf = (msgType: string, fileStatus: object, fileSource?: object, rejected: Set<number> = noRejections) =>
       toMessage(chatInfo, fileItem(30, {type: msgType, text: "report"}, fileStatus, {fileSource}), self, rejected, data).file
     expect(fileOf("file", {type: "rcvInvitation"})).toEqual({name: "report.pdf", size: 2400000, type: "file", status: "offered"})
@@ -653,10 +653,10 @@ describe("send with a file", () => {
     const home = join(files, "home")
     mkdirSync(join(home, ".ssh"), {recursive: true})
     jest.spyOn(os, "homedir").mockReturnValue(home)
-    mkdirSync(join(data, "files", "#4"), {recursive: true})
+    mkdirSync(join(data, "files", "contact-4"), {recursive: true})
     const token = join(realpathSync(data), "token")
     writeFileSync(token, "secret")
-    const received = join(realpathSync(data), "files", "#4", "report.pdf")
+    const received = join(realpathSync(data), "files", "contact-4", "report.pdf")
     writeFileSync(received, "report")
     const config = join(home, ".ssh", "config")
     writeFileSync(config, "")
@@ -1022,7 +1022,7 @@ describe("download", () => {
   const image = {type: "image", text: "trail map", image: preview}
   const switchback = member(44, "Switchback")
   const trail = groupChat(group(15, "Trail", member(1, "agent")))
-  const folder = join(data, "files", "#15")
+  const folder = join(data, "files", "group-15")
   const downloaded = join(folder, "7.pdf")
   const flushed = (): Promise<void> => new Promise(resolve => setImmediate(resolve))
 

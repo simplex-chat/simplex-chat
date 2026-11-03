@@ -311,6 +311,15 @@ describe("approval of all files of a chat", () => {
     expect(customDataOf(chat, "@4")).toEqual({other: 1})
   })
 
+  it("leaves downloads from unknown servers pending, and says so in its reply", async () => {
+    const {control, actions} = await setup()
+    const known = actions.create("d1", downloadFields("@4"))
+    const unknown = actions.create("d2", {...downloadFields("@4", {fileId: 8}), item: 31, unknownServers: ["xftp://hash2@xftp.example.com"]} as NewAction)
+    await settled()
+    expect(await control.ownerCommand(alice, {keyword: "approve", params: "@4 files"})).toBe("Files approved for bot SimpleX Directory (@4) by Alice, except downloads from unknown servers. /'revoke @4 files'")
+    expect([known.state, unknown.state]).toEqual(["performing", "pending"])
+  })
+
   it("applies in mode requests only", async () => {
     const chat = agentChats()
     const {control} = await controlWith(chat, actionsWith("host", fakeHooks()), undefined, "host")
@@ -383,7 +392,7 @@ describe("downloads in the agent control chat", () => {
 
   it("receives the file into the agent control chat as a reply to its card, which stays pending", async () => {
     const {chat, tools, action, cards, control} = await downloadSetup()
-    const path = join(data, "files", "#2", "7.pdf")
+    const path = join(data, "files", "group-2", "7.pdf")
     const offered = fileItem(30, {type: "file", text: "report"}, {type: "rcvInvitation"}, {chatDir: {type: "groupRcv", groupMember: bob}})
     chat.chats.get("#2")!.items.push(offered)
     chat.responses.set(`/freceive 7 approved_relays=on ${path}`, {type: "rcvFileAccepted", user, chatItem: event(chatInfoOf(chat, "#2"), offered)})
@@ -413,7 +422,7 @@ describe("downloads in the agent control chat", () => {
 
   it("replies when the received file can't be posted, and deletes its copy", async () => {
     const {chat, action, control} = await downloadSetup()
-    const path = join(data, "files", "#2", "7.pdf")
+    const path = join(data, "files", "group-2", "7.pdf")
     mkdirSync(dirname(path), {recursive: true})
     writeFileSync(path, "report")
     rmSync(join(data, "files", "sent"), {recursive: true, force: true})
@@ -427,6 +436,23 @@ describe("downloads in the agent control chat", () => {
     while (chat.sent.length < 2) await flushed()
     expect(chat.sent[1].messages[0].msgContent.text).toBe("Action 1: the file was not received: `file too large`.")
     expect(readdirSync(join(data, "files", "sent"))).toEqual([])
+  })
+
+  it("fails and cancels the running downloads of a chat when /delete CHAT files deletes its folder", async () => {
+    const {chat, action, control} = await downloadSetup()
+    const folder = join(data, "files", "group-2")
+    const offered = fileItem(30, {type: "file", text: "report"}, {type: "rcvInvitation"}, {chatDir: {type: "groupRcv", groupMember: bob}})
+    chat.chats.get("#2")!.items.push(offered)
+    chat.responses.set(`/freceive 7 approved_relays=on ${join(folder, "7.pdf")}`, {type: "rcvFileAccepted", user, chatItem: event(chatInfoOf(chat, "#2"), offered)})
+    chat.responses.set("/fcancel 7", {type: "rcvFileCancelled", user, rcvFileTransfer: {fileId: 7}})
+    await control.ownerCommand(alice, {keyword: "receive", params: `${action.n}`})
+    await flushed()
+    writeFileSync(join(folder, "3.pdf"), "x".repeat(120))
+    expect(await control.ownerCommand(alice, {keyword: "delete", params: "#2 files"})).toBe("Deleted 1 file from #2, 120 bytes.")
+    await flushed()
+    expect(chat.commands).toContain("/fcancel 7")
+    expect(chat.sent.at(-1)!.messages[0].msgContent.text).toBe("Action 1: the file was not received: `Your owner deleted the files of this chat.`.")
+    expect(existsSync(folder)).toBe(false)
   })
 })
 
@@ -543,10 +569,10 @@ describe("leaving a chat at an owner's command", () => {
 
 describe("files of a chat", () => {
   const flushed = (): Promise<void> => new Promise(resolve => setImmediate(resolve))
-  const kept = (chat: string, name: string, files: string): string => `Files from ${name} (${chat}) are kept in \`${join(data, "files", chat)}\`: ${files}. /'delete ${chat} files'`
+  const kept = (chat: string, name: string, folder: string, files: string): string => `Files from ${name} (${chat}) are kept in \`${join(data, "files", folder)}\`: ${files}. /'delete ${chat} files'`
 
-  function filesIn(chat: string, sizes: number[]): void {
-    const folder = join(data, "files", chat)
+  function filesIn(name: string, sizes: number[]): void {
+    const folder = join(data, "files", name)
     rmSync(folder, {recursive: true, force: true})
     mkdirSync(folder, {recursive: true})
     sizes.forEach((size, i) => writeFileSync(join(folder, `${i + 1}.pdf`), "x".repeat(size)))
@@ -554,11 +580,11 @@ describe("files of a chat", () => {
 
   it("are kept when an owner's /leave leaves the chat, with a message after the reply", async () => {
     const {control, chat} = await setup()
-    filesIn("#2", [1500, 600])
+    filesIn("group-2", [1500, 600])
     expect(await control.ownerCommand(alice, {keyword: "leave", params: "#2"})).toBe("Left business ep (#2), requested by Alice.")
     await flushed()
-    expect(chat.sent.at(-1)!.messages[0].msgContent.text).toBe(kept("#2", "business ep", "2 files, 2.1 KB"))
-    filesIn("@4", [])
+    expect(chat.sent.at(-1)!.messages[0].msgContent.text).toBe(kept("#2", "business ep", "group-2", "2 files, 2.1 KB"))
+    filesIn("contact-4", [])
     const before = chat.sent.length
     await control.ownerCommand(alice, {keyword: "leave", params: "@4"})
     await flushed()
@@ -570,23 +596,23 @@ describe("files of a chat", () => {
     const actions: Actions = new Actions("requests", 23, 1, {...fake.hooks, refusal: action => control.refusal(action), postCard: action => control.postCard(action), outcome: action => control.outcome(action), perform: (action, signal) => tools.perform(action, signal)})
     const chat = agentChats()
     const {control, tools} = await controlWith(chat, actions)
-    filesIn("#2", [120])
+    filesIn("group-2", [120])
     const leave = actions.create("l", {tool: "leave", input: {chat: "#2"}, subject: {kind: "business", name: "ep", incognito: false}, chat: "#2"})
     await flushed()
     actions.approve(leave, "Alice")
     while (chat.sent.length < 2) await flushed()
     expect(chat.updates.at(-1)!.text).toBe("I left business ep (#2).\nApproved by Alice.")
-    expect(chat.sent[1].messages[0].msgContent.text).toBe(kept("#2", "business ep", "1 file, 120 bytes"))
+    expect(chat.sent[1].messages[0].msgContent.text).toBe(kept("#2", "business ep", "group-2", "1 file, 120 bytes"))
   })
 
   it("are deleted by /delete CHAT files, for a current or a left chat", async () => {
     const {control} = await setup()
-    filesIn("#9", [])
+    filesIn("group-9", [])
     expect(await control.ownerCommand(alice, {keyword: "delete", params: "#9 files"})).toBe("No files from #9.")
-    filesIn("#9", [1500, 600])
+    filesIn("group-9", [1500, 600])
     expect(await control.ownerCommand(alice, {keyword: "delete", params: "#9 files"})).toBe("Deleted 2 files from #9, 2.1 KB.")
-    expect(existsSync(join(data, "files", "#9"))).toBe(false)
-    filesIn("@4", [120])
+    expect(existsSync(join(data, "files", "group-9"))).toBe(false)
+    filesIn("contact-4", [120])
     expect(await control.ownerCommand(alice, {keyword: "delete", params: "@4 files"})).toBe("Deleted 1 file from @4, 120 bytes.")
     expect(await control.ownerCommand(bob, {keyword: "delete", params: "@4 files"})).toBe("Only owners approve actions.")
   })

@@ -241,11 +241,13 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const approval: ChatApproval = {approvedBy, approvedById: sender.groupMemberId, approvedAt: new Date().toISOString()}
     await this.setCustomData(chat, {...customDataOf(chatInfo), [key]: approval})
     const approver = safeName(approvedBy)
-    for (const action of this.actions.pending()) {
-      const fromUnknownServers = action.tool === "download" && hasUnknownServers(action)
-      if (action.tool === tool && action.chat === chat && action.card !== undefined && !fromUnknownServers) this.actions.approve(action, approver)
+    const pending = this.actions.pending().filter(action => action.tool === tool && action.chat === chat && action.card !== undefined)
+    const fromUnknownServers = pending.filter(action => action.tool === "download" && hasUnknownServers(action))
+    for (const action of pending) {
+      if (!fromUnknownServers.includes(action)) this.actions.approve(action, approver)
     }
-    return `${approved} ${chatName(chatSubject(chatInfo))} (${chat}) by ${approver}. /'revoke ${chat}${revoke}'`
+    const except = fromUnknownServers.length > 0 ? ", except downloads from unknown servers" : ""
+    return `${approved} ${chatName(chatSubject(chatInfo))} (${chat}) by ${approver}${except}. /'revoke ${chat}${revoke}'`
   }
 
   private async revoke(chat: string, standing: Standing): Promise<string> {
@@ -292,8 +294,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return count === 0 ? undefined : `Files from ${chatName(subject)} (${chat}) are kept in ${codeSpan(oneLine(folder))}: ${filesText(count)}, ${sizeText(bytes)}. /'delete ${chat} files'`
   }
 
-  private deleteFiles(chat: string): string {
-    const {count, bytes} = this.tools.deleteChatFiles(chat)
+  private async deleteFiles(chat: string): Promise<string> {
+    const {count, bytes} = await this.tools.deleteChatFiles(chat)
     return count === 0 ? `No files from ${chat}.` : `Deleted ${filesText(count)} from ${chat}, ${sizeText(bytes)}.`
   }
 

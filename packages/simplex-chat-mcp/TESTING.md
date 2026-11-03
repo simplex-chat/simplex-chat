@@ -72,13 +72,13 @@ Files, in a group of yours:
 2. Send a photo to the group from the app. `Check for new messages in that group.` The message has `file` with `type: image` and `status: offered`.
 3. `Download that photo.` Card: `I want to download a file from Alice in group <name> (#N):`, with the photo's preview, the file name, its size, and `Servers: known.` when the app uploaded it to servers the agent also has. For a large video asked for right after sending it, the call waits until the upload finishes, and only then the card appears.
 4. Tap `/receive #N A`: the photo arrives in the agent control chat as a reply to the card, and the card stays pending.
-5. Tap `/approve #N A`: the call returns `status: done` and the path, `~/.simplex-mcp/my-agent/files/#N/<file ID>.jpg`.
+5. Tap `/approve #N A`: the call returns `status: done` and the path, `~/.simplex-mcp/my-agent/files/group-N/<file ID>.jpg`.
 6. Send a document, `Download that file.`, and tap `/approve #N files` on its card: the reply is `Files approved for group <name> (#N) by Alice. /revoke #N files`, and the download completes. The next file downloads with no card; `/list` shows `, files approved by Alice`. Tap `/revoke #N files`.
 7. Send another file, `Download it.`, and tap `/reject #N A`: the call returns `status: rejected`.
 8. `Send the photo /home/alice/trail.jpg to that group, with the text "trail map".` Card: `I want to send a message to group <name>:`, `` `trail map` `` and ``attaching image `/home/alice/trail.jpg`, SIZE``, with the photo's preview. Approve it: the group gets the photo, resized to at most 261120 bytes, with its preview.
 9. `Send ~/.ssh/id_ed25519 to that group.` The call returns the error `file: /home/alice/.ssh/id_ed25519 is refused: ...`, and the agent control chat gets ``Refused to send `/home/alice/.ssh/id_ed25519` to group <name> (#N): ...``. A symbolic link to the key gets the same refusal, with the key's real path.
 10. With `ffmpeg` installed, `Send /home/alice/ride.mp4 to that group.`: the card and the message show the video's first frame and its duration; without `ffmpeg`, a gray preview and duration 0.
-11. Tap `/leave #N`: after the reply, the agent posts ``Files from group <name> (#N) are kept in `~/.simplex-mcp/my-agent/files/#N`: K files, SIZE. /delete #N files``. Tap `/delete #N files`: `Deleted K files from #N, SIZE.`; again: `No files from #N.`
+11. Tap `/leave #N`: after the reply, the agent posts ``Files from group <name> (#N) are kept in `~/.simplex-mcp/my-agent/files/group-N`: K files, SIZE. /delete #N files``. Tap `/delete #N files`: `Deleted K files from #N, SIZE.`; again: `No files from #N.`
 
 Incognito, as a second agent, because the first one already knows the directory:
 

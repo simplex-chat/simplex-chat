@@ -159,10 +159,11 @@ DIR/headers.json   {"Authorization": "Bearer <token>"}, written 0600
 DIR/server.json    {name, port, expireHours} of the server      0600
 DIR/lock           PID of the running server                    0600
 DIR/tmp/           the core's temp folder: files in transfer    0700, set before startChat
-DIR/files/CHAT/    files downloaded from CHAT, and files the    0700, created at the first file from CHAT
+DIR/files/FOLDER/  files downloaded from a chat, and files the  0700, created at the first file from the chat
                    core received there without a request,
                    each named by its file ID and the
-                   extension of its name
+                   extension of its name; FOLDER: group-N
+                   for #N, contact-N for @N
 DIR/files/sent/    resized copies of sent images, and copies    0700; a copy 0600, a copy of /receive with
                    of the files /receive posts, one folder      the mode of its file
                    per copy, deleted at sndFileCompleteXFTP
@@ -477,7 +478,7 @@ command             result
 /revoke CHAT files  the files approval of CHAT is removed
 /receive [CHAT] N   the server downloads the file of download N and posts it as a reply to the card; the card stays pending
 /leave CHAT         at once, the agent leaves group CHAT or deletes contact CHAT, as the leave tool does; its pending actions for CHAT are rejected by the sender
-/delete CHAT files  DIR/files/CHAT/ deleted, for a current or a left chat
+/delete CHAT files  the running downloads of CHAT failed and cancelled, then the folder of CHAT deleted, for a current or a left chat
 /pending            one line per pending action: "2  send to bot SimpleX Directory  expires 2026-10-18 09:15 UTC"; "No pending actions." when none
 /list               one line per chat of the agent, as list returns them: the 100 most recent chats, each line cut to 100 bytes as encoded in the message, "…" included; then "K older chats are not shown." ("1 older chat is not shown.") when more exist
 ```
@@ -500,6 +501,8 @@ N unknown, decided or from an earlier run   Action 9 is not pending.
 CHAT not the action's chat                  Action 10 is not for #3.
 /approve CHAT all                           Approved for business Ridgeline (#9) by Alice. /'revoke #9'
 /approve CHAT files                         Files approved for group Builders (#3) by Alice. /'revoke #3 files'
+/approve CHAT files, downloads from unknown Files approved for group Builders (#3) by Alice, except downloads from unknown servers. /'revoke #3 files'
+servers stay pending
 /approve CHAT all | files, CHAT not the agent's   No chat #13. /list shows the agent's chats.
 /approve CHAT all | files, mode host        Approvals apply in mode requests; this server runs in mode host.
 /revoke CHAT                                Messages to business Ridgeline (#9) need approval again.
@@ -518,10 +521,10 @@ of the file fails
 other one-line text starting with "/"       Commands: /approve, /reject, /receive, /revoke, /leave, /delete, /pending, /list. Each card shows its commands.
 ```
 
-After `/leave CHAT`, after its reply, and after the outcome of a leave action in state done, when DIR/files/CHAT/ has files:
+After `/leave CHAT`, after its reply, and after the outcome of a leave action in state done, when the folder of CHAT has files:
 
 ```
-Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/#9`: 3 files, 2.1 MB. /'delete #9 files'
+Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/group-9`: 3 files, 2.1 MB. /'delete #9 files'
 ```
 
 - The count and the size are of the files directly in the folder; sizes as on download cards.
@@ -980,13 +983,15 @@ reject [CHAT] N:  decidedBy = sender; state rejected; edit the card
 approve CHAT all: mode host: reply "Approvals apply in mode requests; this server runs in mode host."; CHAT not a chat of the agent: reply "No chat CHAT. ..."; otherwise set the chat's custom data simplexMcp = {approvedBy: sender name, approvedById: sender groupMemberId, approvedAt}, keeping its other keys
                   (/_set custom @C or #G); each pending send of CHAT: approve as above; reply "Approved for ... /'revoke CHAT'"
 revoke CHAT:      no approval in the chat's custom data: reply "Messages to CHAT have no standing approval."; otherwise remove simplexMcp from it; reply "Messages to ... need approval again."
-approve CHAT files: as approve CHAT all, with the key simplexMcpFiles and the pending downloads of CHAT; reply "Files approved for ... /'revoke CHAT files'"
+approve CHAT files: as approve CHAT all, with the key simplexMcpFiles and the pending downloads of CHAT on known servers; reply "Files approved for ... by NAME. /'revoke CHAT files'",
+                  with ", except downloads from unknown servers" after NAME while pending downloads of CHAT have unknown servers
 revoke CHAT files: as revoke CHAT, with the key simplexMcpFiles; replies "Files from CHAT have no standing approval.", "Files from ... need approval again."
 receive [CHAT] N: action N not a download: reply "Action N has no file."; otherwise downloadFile(action N), not awaited; then a copy under the file's name in DIR/files/sent/; then /_send #group json [{fileSource: {filePath: the copy}, msgContent: the file's type and preview, no text, quotedItemId: card}];
                   an error of the download, the copy or the post: post "Action N: the file was not received: `<error>`."; a failed post deletes the copy; no reply
 leave CHAT:       CHAT not a chat of the agent: reply "No chat CHAT. ..."; otherwise the steps of perform leave for CHAT; log "Left ... (CHAT), requested by NAME.";
-                  each pending action of CHAT with its card set: reject as above; reply with the logged line; DIR/files/CHAT/ with files: after the reply, post "Files from ... are kept in ..."
-delete CHAT files: count and size of the files in DIR/files/CHAT/; delete the folder; reply "Deleted K files from CHAT, SIZE." or "No files from CHAT."
+                  each pending action of CHAT with its card set: reject as above; reply with the logged line; the folder of CHAT with files: after the reply, post "Files from ... are kept in ..."
+delete CHAT files: each download of CHAT in memory: rejected, "Your owner deleted the files of this chat."; /fcancel <fileId>, an error logged; delete partial at the last fileSource seen;
+                  then count and size of the files in the folder of CHAT; delete the folder; reply "Deleted K files from CHAT, SIZE." or "No files from CHAT."
 pending:          reply with the pending actions
 list:             reply with one line per chat of list(), the 100 most recent: CHAT, the type and name, ", approved for this chat by NAME" while the approval applies, ", not connected";
                   each line cut to 100 encoded bytes with "…"; then "K older chats are not shown." when more exist (worst case about 10.3 KB, below the 15602-byte message)
@@ -1266,11 +1271,11 @@ perform download:
 
 downloadFile(chat, item, file), also run by /receive, and by newChatItems for each received file in status rcvAccepted (a voice file the core receives without a request: Library/Subscriber.hs:2047-2053, :2550-2556):
   a download of the file ID in memory: its promise
-  otherwise a new promise in memory, with the download path DIR/files/CHAT/<fileId><extension>   # extension: of file.name when it is "." and 1 to 16 ASCII letters and digits, otherwise none
+  otherwise a new promise in memory, with the download path DIR/files/FOLDER/<fileId><extension>   # FOLDER: group-N for #N, contact-N for @N; extension: of file.name when it is "." and 1 to 16 ASCII letters and digits, otherwise none
   then /_get chat <chat> around=<item> count=0, the item's file:
     rcvComplete              settle received (below)
     failed, as in file       delete partial at fileSource (below); rejected with its error
-    rcvInvitation            mkdir DIR/files/CHAT, mode 0700; /freceive <fileId> approved_relays=on <download path>, without approved_relays=on in mode host   # apiReceiveFile; the core creates the file at that path (getRcvFilePath, Library/Internal.hs:958-965)
+    rcvInvitation            mkdir DIR/files/FOLDER, mode 0700; /freceive <fileId> approved_relays=on <download path>, without approved_relays=on in mode host   # apiReceiveFile; the core creates the file at that path (getRcvFilePath, Library/Internal.hs:958-965)
     other                    the events below settle it
 
 settle received, for a received file in status rcvComplete with a promise:
@@ -1294,7 +1299,7 @@ chatItemUpdated                           as the item's file above: rcvComplete,
 ```
 
 - An event settles or deletes only a file with a promise; rcvFileComplete also moves a file without one, for example one whose transfer completes after a restart.
-- rcvFileComplete in a member chat of a group (groupChatScope) moves the file into the group's folder, DIR/files/#<groupId>; newChatItems runs downloadFile only for the main conversation.
+- rcvFileComplete in a member chat of a group (groupChatScope) moves the file into the group's folder, DIR/files/group-<groupId>; newChatItems runs downloadFile only for the main conversation.
 
 Every 60 s while the promise is unsettled:
 

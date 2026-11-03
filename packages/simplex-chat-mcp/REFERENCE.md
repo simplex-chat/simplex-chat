@@ -248,15 +248,15 @@ Commands:
 | `/reject N`, `/reject #9 N` | Rejects action N. |
 | `/approve #9 all` | Approves all the agent's messages to chat #9: the pending ones and later ones. |
 | `/revoke #9` | Ends that approval: each message to #9 needs approval again. |
-| `/approve #3 files` | Approves all the agent's downloads from chat #3 of files on its XFTP servers: the pending ones and later ones. |
+| `/approve #3 files` | Approves all the agent's downloads from chat #3 of files on its XFTP servers: the pending ones and later ones. When downloads from other servers stay pending, the reply says `..., except downloads from unknown servers.` |
 | `/revoke #3 files` | Ends that approval: each download from #3 needs approval again. |
 | `/receive #3 7` | Downloads the file of action 7 and sends it to you in the agent control chat, as a reply to the card. The card stays pending; the agent's messages show the file as received, with its path. |
 | `/leave #9`, `/leave @4` | Makes the agent leave group #9, or delete contact @4, at once, in both approval modes, and rejects the agent's pending actions for that chat. The reply, for example `Left business Ridgeline (#9), requested by Alice.`, is logged too. |
-| `/delete #9 files` | Deletes the files of chat #9 in the data folder, for a current or a left chat: `Deleted 3 files from #9, 2.1 MB.` or `No files from #9.` |
+| `/delete #9 files` | Cancels the running downloads from chat #9, which then fail, and deletes the chat's files in the data folder, for a current or a left chat: `Deleted 3 files from #9, 2.1 MB.` or `No files from #9.` |
 | `/pending` | Lists pending actions. |
 | `/list` | Lists the agent's 100 most recent chats, one line each, and which of them are approved for all messages; a last line counts the older chats. |
 
-After `/leave #9`, or after the agent's `leave` of #9 is performed in either mode, when the chat's folder has files, the agent posts ``Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/#9`: 3 files, 2.1 MB. /delete #9 files``.
+After `/leave #9`, or after the agent's `leave` of #9 is performed in either mode, when the chat's folder has files, the agent posts ``Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/group-9`: 3 files, 2.1 MB. /delete #9 files``.
 
 `/pending`, `/list` and `/leave` are in the chat's command menu, and the cards carry the others. Tapping `/leave` in the menu puts `/leave <chat ID>` into the entry field: replace `<chat ID>` with the chat's ID from `/list`, such as `#9`, and send it. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](PLAN.md), section "What the owner sees: the agent control chat".
 
@@ -398,8 +398,8 @@ register options:
   server.json        name, port and expiry of the server, read by register
   lock               PID of the running server
   tmp/               the SimpleX core's work folder for files in transfer
-  files/#3/          files downloaded from chat #3, and files received there without a download, each named by its file ID
-                     and the extension of its name, such as 12.pdf
+  files/group-3/     files downloaded from chat #3, and files received there without a download, each named by its file ID
+                     and the extension of its name, such as 12.pdf; files/contact-4/ for contact @4
   files/sent/        resized copies of the images the agent sends, and copies of the files /receive sends you under their names;
                      each is deleted when its upload completes or fails, and all at start
 ```

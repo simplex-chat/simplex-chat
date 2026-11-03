@@ -328,7 +328,7 @@ test("files: a received image downloaded after the approval, /receive, /reject a
   await ownerSends(`/approve ${group} ${n}`)
   const downloaded = (await downloading).result
   expect(downloaded).toEqual({action: n, status: "done", chat: group, item: first.item, path: expect.any(String)})
-  expect(dirname(downloaded.path)).toBe(join(dir, "files", "agent", "files", group))
+  expect(dirname(downloaded.path)).toBe(join(dir, "files", "agent", "files", `group-${group.slice(1)}`))
   expect(basename(downloaded.path)).toMatch(/^\d+\.png$/)
   expect(readFileSync(downloaded.path)).toEqual(readFileSync(image))
 

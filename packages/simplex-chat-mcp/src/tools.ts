@@ -18,6 +18,7 @@ import {
   ToolCall,
   anyScopeChatRef,
   awaitResponses,
+  chatFolder,
   chatNumber,
   chatRef,
   chatType,
@@ -154,6 +155,7 @@ const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
 const refusedName = /^id_|\.(pem|key|p12|pfx)$/i
 export const refusedFileReason = "private keys and the server's own files are not sent"
 const deletedItem = "The message or its chat was deleted."
+const deletedFiles = "Your owner deleted the files of this chat."
 const notFoundErrors: T.StoreError["type"][] = ["chatItemNotFound", "contactNotFound", "groupNotFound"]
 const stalledDownload = `The download made no progress for ${downloadStall / 60_000} minutes and was cancelled.`
 
@@ -874,13 +876,18 @@ export class AgentTools {
   }
 
   chatFiles(chat: string): {folder: string; count: number; bytes: number} {
-    const folder = join(this.agent.data, "files", chat)
+    const folder = chatFolder(this.agent.data, chat)
     const entries = existsSync(folder) ? readdirSync(folder, {withFileTypes: true}) : []
     const sizes = entries.filter(entry => entry.isFile()).map(({name}) => statSync(join(folder, name)).size)
     return {folder, count: sizes.length, bytes: sizes.reduce((sum, size) => sum + size, 0)}
   }
 
-  deleteChatFiles(chat: string): {count: number; bytes: number} {
+  async deleteChatFiles(chat: string): Promise<{count: number; bytes: number}> {
+    for (const download of [...this.downloads.values()].filter(download => download.chat === chat)) {
+      this.failDownload(download.fileId, deletedFiles)
+      await this.agent.chat.apiCancelFile(download.fileId).catch(error => logError(`cancelling file ${download.fileId}`, error))
+      deletePartial(download.source, download.size)
+    }
     const files = this.chatFiles(chat)
     rmSync(files.folder, {recursive: true, force: true})
     return files

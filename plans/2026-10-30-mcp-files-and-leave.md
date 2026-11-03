@@ -22,7 +22,7 @@ Phases:
 4. `download` is a new action tool; the owner approves each download, or all files of one chat.
 5. A download card shows the file's own preview and names the file's servers.
 6. `/receive CHAT N` makes the server download the file and forward it into the agent control chat; the card stays pending.
-7. Downloads go to `DATA/files/<chat>/<file ID><extension>`, one folder per chat; the extension of the file's name is kept when it has only letters and digits. The file field has a path only for a file downloaded there. A file the core receives without a request is moved there when it is received in full.
+7. Downloads go to `DATA/files/<folder>/<file ID><extension>`, one folder per chat, `group-N` for #N and `contact-N` for @N; commands keep the chat ID, as in `/delete #3 files`; the extension of the file's name is kept when it has only letters and digits. The file field has a path only for a file downloaded there. A file the core receives without a request is moved there when it is received in full.
 8. `send` takes `file`, an absolute path; `text` becomes the caption.
 9. Images are sent with a core-made preview and a core-resized copy; other files unchanged.
 10. Paths of private keys and of the server's own secrets are refused; the refusal is posted to the agent control chat.
@@ -114,6 +114,9 @@ control.ts   OwnerRequest    {type: "leave", chat}
              chatName        showName parameter, safeName by default
              commandsReply   /leave added
 tools.ts     leaveChat       performLeave, public, by chat reference; perform calls it
+             chatFiles       new: the folder of a chat, its file count and bytes
+             deleteChatFiles new: fails and cancels the chat's downloads, then deletes its folder
+messages.ts  chatFolder      new: DATA/files/group-N for #N, DATA/files/contact-N for @N
 actions.ts   leaveVerbs      input: {chat}
 ```
 
@@ -124,7 +127,7 @@ tools.leaveChat(CHAT)
 log the line, names on one line
 each pending action of CHAT with a card: reject, decidedBy the sender
 reply the line, names as in cards
-DATA/files/CHAT/ with files: after the reply, post "Files from business Ridgeline (#9) are kept in `FOLDER`: 3 files, 2.1 MB. /'delete #9 files'"
+the folder of CHAT with files: after the reply, post "Files from business Ridgeline (#9) are kept in `FOLDER`: 3 files, 2.1 MB. /'delete #9 files'"
 ```
 - An error of `leaveChat` is logged to stderr, as the errors of other owner commands; no reply.
 - `Commands: /approve, /reject, /receive, /revoke, /leave, /delete, /pending, /list. Each card shows its commands.`
@@ -132,7 +135,9 @@ DATA/files/CHAT/ with files: after the reply, post "Files from business Ridgelin
 
 `/delete CHAT files`, an approving owner, for a current or a left chat:
 ```
-DATA/files/CHAT/ with files   the folder deleted; reply "Deleted 3 files from #9, 2.1 MB."
+step                          effect
+each download of CHAT         rejected, "Your owner deleted the files of this chat."; apiCancelFile, an error logged; its partial file deleted
+the folder of CHAT with files the folder deleted; reply "Deleted 3 files from #9, 2.1 MB."
 no files                      reply "No files from #9."
 ```
 
@@ -148,6 +153,8 @@ sequenceDiagram
   C->>O: Files from business Ridgeline (#9) are kept in `FOLDER`: 3 files, 2.1 MB. /'delete #9 files'
   O->>C: /delete #9 files
   C->>T: deleteChatFiles(#9)
+  T->>T: each download of #9: failDownload, apiCancelFile, its partial file deleted
+  T->>T: the folder of #9 deleted
   C->>O: Deleted 3 files from #9, 2.1 MB.
 ```
 
@@ -258,11 +265,11 @@ command              effect
 - The "files" approval is stored in the chat's custom data, next to the standing approval of messages (`approvalOf`, `control.ts:554-557`).
 - `/list` shows it per chat.
 - Mode host: the host confirms the call (`anthropic/requiresUserInteraction`, `tools.ts:361`); no card.
-- A file on unknown servers gets a card under the files approval too; the card leaves out `/'approve CHAT files'`, and `/approve CHAT files` leaves it pending.
+- A file on unknown servers gets a card under the files approval too; the card leaves out `/'approve CHAT files'`, and `/approve CHAT files` leaves it pending, with the reply "Files approved for group Builders (#3) by Alice, except downloads from unknown servers. /'revoke #3 files'".
 - The files approval and the approval of messages are read again just before the action is created.
 
 Perform:
-- `apiReceiveFile(fileId, "DATA/files/<chat>/<file ID><extension>", approvedRelays)`: true in mode requests, false in mode host, where the core then downloads a file on unknown servers only when the IP address is protected
+- `apiReceiveFile(fileId, "DATA/files/<folder>/<file ID><extension>", approvedRelays)`: true in mode requests, false in mode host, where the core then downloads a file on unknown servers only when the IP address is protected
 - `rcvFileComplete` for the file ends it with its path; `rcvFileError` or `rcvFileSndCancelled` fail it
 
 Restart: undecided cards show "Cancelled: the server stopped"; their files stay offered.
@@ -315,7 +322,7 @@ performing   wait passed after the approval; the download continues; the same ca
 ```
 a download of the file ID in memory: its promise
 otherwise a new promise in memory, then:
-  path DATA/files/CHAT/<file ID><extension>; the folder created with mode 0700
+  path DATA/files/<folder>/<file ID><extension>; the folder created with mode 0700
   the item's file status:
     rcvComplete              resolved with path; path has no file: rejected, "The received file is not in the agent's files folder."
     failed                   partial file deleted; rejected

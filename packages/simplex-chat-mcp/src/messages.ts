@@ -207,7 +207,11 @@ export function receivedFileError(data: string, chat: string, file: T.CIFile): s
 
 export function downloadPath(data: string, chat: string, fileId: number, name: string): string {
   const extension = extname(name)
-  return join(data, "files", chat, `${fileId}${/^\.[A-Za-z0-9]{1,16}$/.test(extension) ? extension : ""}`)
+  return join(chatFolder(data, chat), `${fileId}${/^\.[A-Za-z0-9]{1,16}$/.test(extension) ? extension : ""}`)
+}
+
+export function chatFolder(data: string, chat: string): string {
+  return join(data, "files", `${chatType(chat) === T.ChatType.Direct ? "contact" : "group"}-${chatNumber(chat)}`)
 }
 
 export function fileOffer(msgContent: T.MsgContent, {fileId, fileName, fileSize}: T.CIFile): FileOffer {
