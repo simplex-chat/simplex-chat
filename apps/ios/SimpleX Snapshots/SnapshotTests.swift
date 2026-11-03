@@ -197,6 +197,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ChatListNavLink_Previews.self),
         SnapshotScene(ChatListView_Previews.self),
         SnapshotScene(ChatPreviewView_Previews.self),
+        SnapshotScene(ChatView_Group_Previews.self, device: true),
         SnapshotScene(ChatView_Previews.self, device: true),
         SnapshotScene(CIChatFeatureView_Previews.self, allSizes: true),
         SnapshotScene(CIEventView_Previews.self, allSizes: true),
@@ -294,6 +295,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(TerminalOverviewGroup_Previews.self),
         SnapshotScene(TerminalQuoteThumbnail_Previews.self, allSizes: true),
         SnapshotScene(TerminalRuleOnly_Previews.self, allSizes: true),
+        SnapshotScene(UserAddressCreated_Previews.self, device: true),
         SnapshotScene(UserAddressLearnMore_Previews.self),
         SnapshotScene(UserAddressView_Previews.self),
         SnapshotScene(UserPicker_Previews.self),
@@ -443,6 +445,24 @@ struct TerminalOverviewGroup_Previews: PreviewProvider {
 struct ClassicOverviewGroup_Previews: PreviewProvider {
     static var previews: some View {
         SnapshotFixtures().overviewGroup(terminal: false)
+    }
+}
+
+struct ChatView_Group_Previews: PreviewProvider {
+    static var previews: some View {
+        let rows = SnapshotFixtures().overviewGroup(terminal: false)
+        var theme = CurrentColors
+        theme.wallpaper = AppWallpaper(background: nil, tint: nil, type: PresetWallpaper.school.toType(theme.base))
+        return NavigationView {
+            ChatView(
+                theme: theme.toAppTheme(),
+                chat: rows.chat,
+                im: rows.im,
+                mergedItems: BoxedValue(rows.mergedItems),
+                floatingButtonModel: FloatingButtonModel(im: rows.im),
+                scrollToItemId: .constant(nil)
+            )
+        }
     }
 }
 
@@ -688,6 +708,7 @@ private final class SnapshotFixtures {
         m.memberRole = role
         m.localDisplayName = name
         m.memberProfile = LocalProfile(profileId: id, displayName: name, fullName: "", image: image, localAlias: "")
+        m.memberContactProfileId = id
         return m
     }
 
@@ -832,11 +853,11 @@ private final class SnapshotFixtures {
     func overviewGroup(terminal: Bool) -> ChatRows {
         chatRows(teamChat, [
             event(.groupRcv(groupMember: carol), .rcvGroupEvent(rcvGroupEvent: .memberConnected), -130),
-            msg(.groupRcv(groupMember: alice), "Welcome, carol!", -120, reactions: [reaction(.heart, 2, mine: true)]),
+            msg(.groupRcv(groupMember: alice), "Welcome, carol!", -120),
             msg(.groupRcv(groupMember: carol), "Thanks! Glad to be here", -118),
             msg(.groupRcv(groupMember: bob), "", -100, content: .image(text: "", image: landscape), file: imageFile("view.jpg")),
             msg(.groupSnd, "nice view", -95, quote: quote(.groupRcv(groupMember: bob), "", image: landscape)),
-            msg(.groupRcv(groupMember: alice), "Plan for today:\n1. review\n2. **release**", -90),
+            msg(.groupRcv(groupMember: alice), "Plan for today:\n1. review\n2. **release**", -90, reactions: [reaction(.heart, 2, mine: true)]),
             msg(.groupRcv(groupMember: bob), "", -80, content: .voice(text: "", duration: 21), file: CIFile.getSample(fileId: id(), fileName: "voice.m4a", fileSize: 30_720, filePath: nil, fileStatus: .rcvInvitation)),
             msg(.groupRcv(groupMember: carol), "", -70, content: .file(""), file: CIFile.getSample(fileId: id(), fileName: "notes.txt", fileSize: 2_048, filePath: nil, fileStatus: .rcvInvitation))
         ], terminal: terminal)
