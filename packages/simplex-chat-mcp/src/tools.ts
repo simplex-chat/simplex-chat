@@ -458,7 +458,7 @@ class Download {
     this.resolve = resolve
     this.reject = reject
   })
-  received = 0
+  receivedBytes = 0
   receivedAt = Date.now()
   source: string
 
@@ -983,8 +983,8 @@ export class AgentTools {
     this.settleFile(download.chat, file)
     if (this.downloads.get(download.fileId) !== download) return
     const {fileStatus} = file
-    if (fileStatus.type === "rcvTransfer" && fileStatus.rcvProgress > download.received) {
-      download.received = fileStatus.rcvProgress
+    if (fileStatus.type === "rcvTransfer" && fileStatus.rcvProgress > download.receivedBytes) {
+      download.receivedBytes = fileStatus.rcvProgress
       download.receivedAt = Date.now()
     } else if (Date.now() - download.receivedAt >= downloadStall) {
       this.failDownload(download.fileId, stalledDownload)
@@ -1006,14 +1006,14 @@ export class AgentTools {
   private settleFile(chat: string, file: T.CIFile): void {
     const {fileId, fileSource, fileStatus} = file
     const error = fileError(file)
-    if (fileStatus.type === "rcvComplete") this.keepFile(chat, file)
+    if (fileStatus.type === "rcvComplete") this.settleReceived(chat, file)
     else if (error !== undefined) {
       if (fileSource !== undefined) rmSync(fileSource.filePath, {force: true})
       this.failDownload(fileId, error)
     }
   }
 
-  private keepFile(chat: string, {fileId, fileName, fileSource}: T.CIFile): void {
+  private settleReceived(chat: string, {fileId, fileName, fileSource}: T.CIFile): void {
     if (fileSource === undefined) return this.failDownload(fileId, receivedWithoutPath)
     const path = downloadPath(this.agent.data, chat, fileId, fileName)
     try {

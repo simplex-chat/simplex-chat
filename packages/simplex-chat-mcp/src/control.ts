@@ -146,8 +146,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const content = await this.cardContent(action)
     if (action.card === undefined) await this.postMessage({msgContent: content, mentions: {}})
     else await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, action.card, content, false)
-    const kept = action.tool === "leave" && action.state === "done" ? this.keptFilesNote(action.chat, action.subject) : undefined
-    if (kept !== undefined) await this.post(kept)
+    const filesNote = action.tool === "leave" && action.state === "done" ? this.leftChatFilesNote(action.chat, action.subject) : undefined
+    if (filesNote !== undefined) await this.post(filesNote)
   }
 
   refusedFile(path: string, chatInfo: T.ChatInfo, chat: string): void {
@@ -242,8 +242,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     await this.setCustomData(chat, {...customDataOf(chatInfo), [key]: approval})
     const approver = safeName(approvedBy)
     for (const action of this.actions.pending()) {
-      const unknownServers = action.tool === "download" && hasUnknownServers(action)
-      if (action.tool === tool && action.chat === chat && action.card !== undefined && !unknownServers) this.actions.approve(action, approver)
+      const fromUnknownServers = action.tool === "download" && hasUnknownServers(action)
+      if (action.tool === tool && action.chat === chat && action.card !== undefined && !fromUnknownServers) this.actions.approve(action, approver)
     }
     return `${approved} ${chatName(chatSubject(chatInfo))} (${chat}) by ${approver}. /'revoke ${chat}${revoke}'`
   }
@@ -282,12 +282,12 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     for (const action of this.actions.pending()) {
       if (action.chat === chat && action.card !== undefined) this.actions.reject(action, approver)
     }
-    const kept = this.keptFilesNote(chat, chatSubject(chatInfo))
-    if (kept !== undefined) this.queueAfterReplies(() => this.post(kept))
+    const filesNote = this.leftChatFilesNote(chat, chatSubject(chatInfo))
+    if (filesNote !== undefined) this.queueAfterReplies(() => this.post(filesNote))
     return left(inChat)
   }
 
-  private keptFilesNote(chat: string, subject: Subject): string | undefined {
+  private leftChatFilesNote(chat: string, subject: Subject): string | undefined {
     const {folder, count, bytes} = this.tools.chatFiles(chat)
     return count === 0 ? undefined : `Files from ${chatName(subject)} (${chat}) are kept in ${codeSpan(oneLine(folder))}: ${filesText(count)}, ${sizeText(bytes)}. /'delete ${chat} files'`
   }

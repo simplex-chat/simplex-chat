@@ -1267,12 +1267,12 @@ downloadFile(chat, item, file), also run by /receive, and by newChatItems for ea
   a download of the file ID in memory: its promise
   otherwise a new promise in memory, with the download path DIR/files/CHAT/<fileId><extension>   # extension: of file.name when it is "." and 1 to 16 ASCII letters and digits, otherwise none
   then /_get chat <chat> around=<item> count=0, the item's file:
-    rcvComplete              keep (below)
+    rcvComplete              settle received (below)
     failed, as in file       fileSource deleted; rejected with its error
     rcvInvitation            mkdir DIR/files/CHAT, mode 0700; /freceive <fileId> approved_relays=on <download path>, without approved_relays=on in mode host   # apiReceiveFile; the core creates the file at that path (getRcvFilePath, Library/Internal.hs:958-965)
     other                    the events below settle it
 
-keep, for a received file in status rcvComplete, with or without a promise:
+settle received, for a received file in status rcvComplete, with or without a promise:
   no fileSource: rejected, "The file was received without a path."
   fileSource.filePath is not the download path and the download path has no file: the file moved there   # a rename; on EXDEV a copy to <download path>.part, a rename of it and a delete of the source
   resolved with the download path; a failed move: logged, rejected, "The received file could not be moved to the agent's files folder."
