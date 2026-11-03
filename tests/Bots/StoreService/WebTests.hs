@@ -23,7 +23,7 @@ import Bots.StoreService.BotTests (codeCounts, newPurchaseKeys)
 import Bots.StoreService.CatalogTests (WebOffer (..), WebPrice (..), parseCatalogSource)
 import Bots.StoreService.FakeBTCPay
 import Bots.StoreService.FakeStripe (FakeStripe (..), fakeIntentStatus, setIntentState, stripeEvent, stripeSigHeader, withFakeStripe)
-import Control.Concurrent (forkIO, threadDelay)
+import Control.Concurrent (forkIO, forkOn, getNumCapabilities, threadDelay)
 import Control.Concurrent.Async (async, wait)
 import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.MVar (MVar, newEmptyMVar, newMVar, putMVar, takeMVar, withMVar)
@@ -2865,12 +2865,29 @@ capturingStderr action = withMVar stderrCaptureLock $ \_ -> do
       fd <- handleToFd h
       hFlush stderr
       saved <- IODevice.dup FD.stderr
-      (IODevice.dup2 fd FD.stderr >> setLogLevel defaultLogLevel >> action >> threadDelay fastLoggerFlushDelay)
+      (IODevice.dup2 fd FD.stderr >> setLogLevel defaultLogLevel >> action >> flushServiceLog)
         `E.finally` (setLogLevel suiteLogLevel >> hFlush stderr >> IODevice.dup2 saved FD.stderr >> IODevice.close saved)
-    uncolored <$> T.readFile path
+    T.unlines . filter (not . (flushRecordTag `T.isInfixOf`)) . T.lines . uncolored <$> T.readFile path
 
-fastLoggerFlushDelay :: Int
-fastLoggerFlushDelay = 2000000
+-- | fast-logger buffers per capability and writes a record over its buffer at once, with that buffer first,
+-- so one such record on every capability puts every earlier record in the file.
+flushServiceLog :: IO ()
+flushServiceLog = do
+  n <- getNumCapabilities
+  forM_ [0 .. n - 1] $ \i -> do
+    done <- newEmptyMVar
+    _ <- forkOn i $ logNote flushRecord `E.finally` putMVar done ()
+    takeMVar done
+
+flushRecordTag :: Text
+flushRecordTag = "store log capture flush"
+
+-- | fast-logger's defaultBufSize, the buffer simple-logger's stderr logger gets.
+fastLoggerBufSize :: Int
+fastLoggerBufSize = 4096
+
+flushRecord :: Text
+flushRecord = flushRecordTag <> T.replicate fastLoggerBufSize "."
 
 -- | tests/Test.hs sets it, and simple-logger cannot read a level back.
 suiteLogLevel :: LogLevel
