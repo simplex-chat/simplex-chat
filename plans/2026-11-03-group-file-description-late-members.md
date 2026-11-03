@@ -8,23 +8,22 @@ In a regular group, a received file can stay forever on "Waiting for file" ("Fil
 
 The sender sends the description of a group XFTP file to existing members once, when the upload completes (`SFDONE`, `Subscriber.hs`). It goes only to members with a transfer record and a ready connection (`memberFTs`); transfer records are created only for members whose connection was ready when the file was sent (`saveMemberFD`, `Commands.hs`).
 
-A member whose file message was forwarded by the host, or queued as pending, gets the description only if the host forwards it. The host stops forwarding when the two members connect (`x.grp.mem.con`). If they connect before the upload completes, the description is never delivered.
+A member whose file message was forwarded depends on the host forwarding the description, and the host stops forwarding when the two members connect (`x.grp.mem.con`). A member whose file message was queued as pending has no transfer record and gets no description.
 
 ## Fix
 
-On upload completion the sender also sends the description to each member that:
+While the user is a current member, on upload completion the sender also sends the description to each member that:
 - has a send status for the item other than an error,
 - is not among the members with a transfer record and a ready connection,
-- has not left or been removed, and has no ended connection (`connEnded`, extracted from `memberSendAction`).
+- has not left, been removed or rejected, and has no ended connection (`connEnded`, extracted from `memberSendAction`).
 
 Delivery:
-- forwarded member (`snd_forwarded`): the same messages as its forwarding member (`forwardingMemberId`, extracted from `memberSendAction`), if that member gets a description; otherwise a spare description;
-- other member: a spare description;
-- sent now when the connection is ready and the member has no pending messages; otherwise saved as a pending group message, sent by `sendPendingGroupMessages` when the connection becomes ready or resumes.
+- forwarded member (`snd_forwarded`): the description text of its forwarding member (`forwardingMemberId`, extracted from `memberSendAction`) if that member gets one, otherwise a spare description; sent now when its connection is ready, otherwise saved as a pending group message;
+- other member: a spare description; sent now when its connection is ready and it has no pending messages, otherwise saved as a pending group message.
 
-Recipients of the same description text share its messages. Remaining spares are saved in `extra_xftp_file_descriptions` as before.
+Pending group messages are sent by `sendPendingGroupMessages` when the connection becomes ready or resumes. Forwarded members sharing a text share one set of messages, separate from the forwarding member's messages. Remaining spares are saved in `extra_xftp_file_descriptions` as before.
 
 ## Scope
 
 - Regular and relay groups; direct chats unchanged.
-- Members who join later get the file through group history only with its complete description (`invCompleteDescr`).
+- Members who joined after the send: unchanged.

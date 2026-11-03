@@ -29,7 +29,7 @@ import Data.Either (isLeft, lefts, partitionEithers, rights)
 import Data.Foldable (foldr', foldrM)
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, foldl', partition)
+import Data.List (find, foldl')
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import qualified Data.IntSet as IS
@@ -291,19 +291,20 @@ processAgentMsgSndFile _corrId aFileId msg = do
                           Left e -> eToView e
                         Nothing -> eToView $ ChatError $ CEInternalError "SFDONE, sendFileDescriptions: expected at least 1 result"
                       lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
-                    (_, _, SMDSnd, GroupChat g@GroupInfo {groupId} _scope) -> do
+                    (_, _, SMDSnd, GroupChat g@GroupInfo {groupId, membership} _scope) -> do
                       -- TODO [relays] single description for all recipients
                       ms <- getRecipients
                       sndStatuses <- withStore' (`getGroupSndStatuses` itemId)
                       let mFTs = memberFTs ms
                           statuses = M.fromList $ map (\MemberDeliveryStatus {groupMemberId, memberDeliveryStatus} -> (groupMemberId, memberDeliveryStatus)) sndStatuses
-                          (fwdMs, lateMs) = partition ((Just GSSForwarded ==) . (`M.lookup` statuses) . groupMemberId') $ filter (lateMember mFTs statuses) ms
+                          (fwdMs, lateMs)
+                            | memberCurrent membership = partitionEithers $ mapMaybe (lateMember mFTs statuses) ms
+                            | otherwise = ([], [])
                       lateRcps <- mapM lateRecipient lateMs
-                      let ownRcps = [(gmId, DRConn conn (Just sft)) | (gmId, (conn, sft)) <- M.toList mFTs] <> zip (map groupMemberId' lateMs) lateRcps
-                          (fwdAttached, fwdOwnMs) = partitionEithers $ map (fwdOwner $ S.fromList $ map fst ownRcps) fwdMs
-                          owners = ownRcps <> map (\m -> (groupMemberId' m, fwdRecipient m)) fwdOwnMs
-                          ownerDescrs = M.fromList $ zipWith (\(gmId, rcp) rfd -> (gmId, (fileDescrText rfd, rcp :| []))) owners rfds
-                          rcpsDescrs = M.elems $ foldr (\(fId, rcp) -> M.adjust (fmap (L.cons rcp)) fId) ownerDescrs fwdAttached
+                      let ownRcps = M.map (\(conn, sft) -> DRConn conn (Just sft)) mFTs <> M.fromList (zip (map groupMemberId' lateMs) lateRcps)
+                          (fwdAttached, fwdOwners) = partitionEithers $ map (fwdOwner ownRcps) fwdMs
+                          owners = M.toList ownRcps <> fwdOwners
+                          rcpsDescrs = concat $ zipWith (ownerDescrs $ M.fromListWith (<>) fwdAttached) owners rfds
                           extraRFDs = drop (length owners) rfds
                           FileTransferMeta {fileSize} = ft
                       needsBadge <- fileNeedsBadge fileSize
@@ -330,14 +331,14 @@ processAgentMsgSndFile _corrId aFileId msg = do
                           where
                             mConns' = mapMaybe readyMemberConn ms
                             sfts' = mapMaybe (\sft@SndFileTransfer {groupMemberId} -> (,sft) <$> groupMemberId) sfts
-                        lateMember :: Map GroupMemberId (Connection, SndFileTransfer) -> Map GroupMemberId GroupSndStatus -> GroupMember -> Bool
-                        lateMember mFTs statuses m@GroupMember {groupMemberId} =
-                          groupMemberId `M.notMember` mFTs
-                            && not (memberRemoved m)
-                            && maybe True (not . connEnded) (memberConn m)
-                            && case M.lookup groupMemberId statuses of
-                              Just (GSSError _) -> False
-                              status_ -> isJust status_
+                        lateMember :: Map GroupMemberId (Connection, SndFileTransfer) -> Map GroupMemberId GroupSndStatus -> GroupMember -> Maybe (Either GroupMember GroupMember)
+                        lateMember mFTs statuses m@GroupMember {groupMemberId}
+                          | groupMemberId `M.member` mFTs || memberRemoved m || any connEnded (memberConn m) = Nothing
+                          | otherwise = case M.lookup groupMemberId statuses of
+                              Just GSSForwarded -> Just $ Left m
+                              Just GSSError {} -> Nothing
+                              Just _ -> Just $ Right m
+                              Nothing -> Nothing
                         lateRecipient :: GroupMember -> CM DescrRecipient
                         lateRecipient m@GroupMember {groupMemberId} = case readyMemberConn m of
                           Just (_, conn) -> do
@@ -346,10 +347,14 @@ processAgentMsgSndFile _corrId aFileId msg = do
                           Nothing -> pure $ DRPending groupMemberId
                         fwdRecipient :: GroupMember -> DescrRecipient
                         fwdRecipient m = maybe (DRPending $ groupMemberId' m) (\(_, conn) -> DRConn conn Nothing) (readyMemberConn m)
-                        fwdOwner :: S.Set GroupMemberId -> GroupMember -> Either (GroupMemberId, DescrRecipient) GroupMember
-                        fwdOwner ownerIds m = case forwardingMemberId g m of
-                          Just fId | fId `S.member` ownerIds -> Left (fId, fwdRecipient m)
-                          _ -> Right m
+                        fwdOwner :: Map GroupMemberId DescrRecipient -> GroupMember -> Either (GroupMemberId, NonEmpty DescrRecipient) (GroupMemberId, DescrRecipient)
+                        fwdOwner ownRcps m = case forwardingMemberId g m of
+                          Just fId | fId `M.member` ownRcps -> Left (fId, fwdRecipient m :| [])
+                          _ -> Right (groupMemberId' m, fwdRecipient m)
+                        ownerDescrs :: Map GroupMemberId (NonEmpty DescrRecipient) -> (GroupMemberId, DescrRecipient) -> ValidFileDescription 'FRecipient -> [(RcvFileDescrText, NonEmpty DescrRecipient)]
+                        ownerDescrs fwdByOwner (gmId, rcp) rfd = (rfdText, rcp :| []) : maybe [] (\rcps -> [(rfdText, rcps)]) (M.lookup gmId fwdByOwner)
+                          where
+                            rfdText = fileDescrText rfd
                     _ -> pure ()
                 _ -> pure () -- TODO error?
         SFWARN e -> do
@@ -371,7 +376,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
           let rcpsIdsEvts = rcpsDescrEvents partSize
           sndMsgs_ <- lift $ createSndMessages $ L.map snd rcpsIdsEvts
           let (errs, rcpsMsgs) = partitionEithers . L.toList $ L.zipWith (\(rcps, _) -> fmap (rcps,)) rcpsIdsEvts sndMsgs_
-              (msgReqs, pendingMsgs) = partitionEithers [toMsgReq rcp msg | (rcps, msg) <- rcpsMsgs, rcp <- L.toList rcps]
+              (msgReqs, pendingMsgs) = partitionEithers [toMsgReq rcp sndMsg | (rcps, sndMsg) <- rcpsMsgs, rcp <- L.toList rcps]
           unless (null pendingMsgs) $ withStore' $ \db -> forM_ pendingMsgs $ uncurry (createPendingGroupMessage db)
           delivered <- mapM deliverMessages (L.nonEmpty msgReqs)
           let errs' = errs <> maybe [] (lefts . L.toList) delivered
@@ -385,9 +390,8 @@ processAgentMsgSndFile _corrId aFileId msg = do
                 splitText (rfdText, rcps) =
                   map (\fileDescr@FileDescr {fileDescrComplete} -> (rcps, (connOrGroupId, Nothing, XMsgFileDescr {msgId = sharedMsgId, fileDescr, fileExpires, fileBadge = if fileDescrComplete then descrBadge else Nothing}))) (L.toList $ splitFileDescr partSize (maybe partSize (const badgeDescrPartSize) descrBadge) rfdText)
             toMsgReq :: DescrRecipient -> SndMessage -> Either ChatMsgReq (GroupMemberId, MessageId)
-            toMsgReq rcp SndMessage {msgId, msgBody} = case rcp of
-              DRConn conn _ -> Left (conn, MsgFlags {notification = hasNotification XMsgFileDescr_}, (vrValue msgBody, [msgId]))
-              DRPending gmId -> Right (gmId, msgId)
+            toMsgReq (DRConn conn _) SndMessage {msgId, msgBody} = Left (conn, MsgFlags {notification = hasNotification XMsgFileDescr_}, (vrValue msgBody, [msgId]))
+            toMsgReq (DRPending gmId) SndMessage {msgId} = Right (gmId, msgId)
         sendFileError :: FileError -> Text -> StoreCxt -> FileTransferMeta -> CM ()
         sendFileError ferr err cxt ft = do
           logError $ "Sent file error: " <> err
