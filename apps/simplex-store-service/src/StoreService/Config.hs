@@ -1,0 +1,405 @@
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
+module StoreService.Config
+  ( ListenerConfig (..),
+    BTCPayConfig (..),
+    StripeConfig (..),
+    SpeedPolicy (..),
+    speedPolicyName,
+    PollConfig (..),
+    AppleStoreConfig (..),
+    AppleServerApi (..),
+    PlayStoreConfig (..),
+    BadgeIssuerKey (..),
+    GroupConfig (..),
+    ServiceConfig (..),
+    defaultExpiryMinutes,
+    defaultSessionMinutes,
+    readServiceConfig,
+    unknownKeys,
+  )
+where
+
+import qualified Control.Exception as E
+import StoreService.Log (logWarn)
+import Control.Monad (mfilter, unless, when)
+import Data.Attoparsec.Text (Parser, endOfInput, isEndOfLine, parseOnly, satisfy, skipMany, skipSpace, skipWhile)
+import qualified Data.ByteString.Char8 as B
+import Data.Ini (Ini, iniGlobals, iniParser, keys, lookupValue, sections)
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as L
+import Data.Maybe (fromMaybe, isJust)
+import Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
+import Simplex.Chat.Library.Commands (mkValidName)
+import Simplex.Messaging.Crypto.BBS (BBSSecretKey)
+import Simplex.Messaging.Encoding.String (strDecode)
+import System.IO.Error (ioeGetErrorString)
+import Text.Read (readMaybe)
+
+data ListenerConfig = ListenerConfig
+  { lHost :: Text,
+    lPort :: Int,
+    lStaticDir :: FilePath,
+    lServeWebapp :: Bool,
+    lWebappExportDir :: Maybe FilePath,
+    lTrustForwardedFor :: Bool
+  }
+  deriving (Eq, Show)
+
+-- | Sent by name, since BTCPay's numbering is not in speed order.
+data SpeedPolicy = HighSpeed | MediumSpeed | LowMediumSpeed | LowSpeed
+  deriving (Bounded, Enum, Eq, Show)
+
+speedPolicies :: [SpeedPolicy]
+speedPolicies = [minBound .. maxBound]
+
+speedPolicyName :: SpeedPolicy -> Text
+speedPolicyName = \case
+  HighSpeed -> "HighSpeed"
+  MediumSpeed -> "MediumSpeed"
+  LowMediumSpeed -> "LowMediumSpeed"
+  LowSpeed -> "LowSpeed"
+
+data BTCPayConfig = BTCPayConfig
+  { bHost :: Text,
+    bApiKey :: Text,
+    bStoreId :: Text,
+    bWebhookSecret :: Text,
+    bExpiryMinutes :: Int,
+    bSpeedPolicy :: SpeedPolicy,
+    bPaymentTolerance :: Double
+  }
+  deriving (Eq)
+
+-- Hand-written to keep the api key and webhook secret out of logs.
+instance Show BTCPayConfig where
+  show BTCPayConfig {bHost, bStoreId} = "btcpay " <> T.unpack bHost <> " store " <> T.unpack bStoreId
+
+data StripeConfig = StripeConfig
+  { sSecretKey :: Text,
+    sPublishableKey :: Text,
+    sWebhookSecret :: Text,
+    sSessionMinutes :: Int,
+    sHost :: Text
+  }
+  deriving (Eq)
+
+-- Hand-written to keep the restricted key and signing secret out of logs.
+instance Show StripeConfig where
+  show StripeConfig {sHost} = "stripe " <> T.unpack sHost
+
+data PollConfig = PollConfig {pWaitingSeconds :: Int, pIdleSeconds :: Int}
+  deriving (Eq, Show)
+
+data AppleStoreConfig = AppleStoreConfig
+  { aBundleId :: Text,
+    aRootCertificates :: NonEmpty FilePath,
+    aServerApi :: Maybe AppleServerApi -- without it, App Store subscriptions are not verified
+  }
+  deriving (Eq, Show)
+
+-- | The App Store Server API key, which subscription checks sign their requests with.
+data AppleServerApi = AppleServerApi
+  { aKeyId :: Text,
+    aIssuerId :: Text,
+    aPrivateKeyFile :: FilePath,
+    aApiHost :: Text
+  }
+  deriving (Eq, Show)
+
+data PlayStoreConfig = PlayStoreConfig
+  { gPackageName :: Text,
+    gServiceAccountFile :: FilePath,
+    gApiHost :: Text,
+    gTokenUrl :: Text
+  }
+  deriving (Eq, Show)
+
+data BadgeIssuerKey = BadgeIssuerKey
+  { keyIdx :: Int,
+    secretKey :: BBSSecretKey
+  }
+  deriving (Eq)
+
+-- BBSSecretKey derives Show, so this is written out to keep the secret out of logs and errors
+instance Show BadgeIssuerKey where
+  show BadgeIssuerKey {keyIdx} = "issuer key " <> show keyIdx
+
+data GroupConfig = GroupConfig
+  { gDisplayName :: Text,
+    gDescription :: Maybe Text
+  }
+  deriving (Eq, Show)
+
+data ServiceConfig = ServiceConfig
+  { listener :: ListenerConfig,
+    btcpay :: Maybe BTCPayConfig,
+    stripe :: Maybe StripeConfig,
+    poll :: PollConfig,
+    appleStore :: Maybe AppleStoreConfig,
+    playStore :: Maybe PlayStoreConfig,
+    issuer :: Maybe BadgeIssuerKey,
+    group :: Maybe GroupConfig,
+    -- Local testing only; anyone who can reach the service can mint badges with any well-formed receipt.
+    devAcceptUnverifiedStoreReceipts :: Bool,
+    -- Local testing only; every issue request for a subscription asks its store and banks the months it charges.
+    devCheckStoreDuringCoverage :: Bool,
+    -- Local testing only; credits a purchase the store itself calls a test, which no real buyer pays for.
+    devCreditTestPurchases :: Bool
+  }
+  deriving (Eq, Show)
+
+defaultExpiryMinutes :: Int
+defaultExpiryMinutes = 60
+
+defaultStripeHost :: Text
+defaultStripeHost = "https://api.stripe.com"
+
+defaultSessionMinutes :: Int
+defaultSessionMinutes = 60
+
+defaultPlayApiHost :: Text
+defaultPlayApiHost = "https://androidpublisher.googleapis.com"
+
+-- | Production: it answers 404 for a Sandbox transaction, which a test deployment reaches through api_host.
+defaultAppleApiHost :: Text
+defaultAppleApiHost = "https://api.storekit.itunes.apple.com"
+
+appleSandboxHost :: Text
+appleSandboxHost = "https://api.storekit-sandbox.itunes.apple.com"
+
+defaultPlayTokenUrl :: Text
+defaultPlayTokenUrl = "https://oauth2.googleapis.com/token"
+
+-- | At most one day, so a card order expires long before the poller stops checking it at 72 hours.
+minSessionMinutes, maxSessionMinutes :: Int
+minSessionMinutes = 1
+maxSessionMinutes = 1440
+
+-- | An http host would carry the API key in the clear on every call.
+requireHttps :: Text -> Either String Text
+requireHttps u
+  | "https://" `T.isPrefixOf` u = Right u
+  | otherwise = Left "btcpay.host must be an absolute https URL"
+
+-- | Well below 100, where BTCPay settles an invoice for one satoshi.
+maxTolerance :: Double
+maxTolerance = 10
+
+-- | A Sandbox receipt verifies like a real one, offline too, so test purchases are credited only beside the Sandbox's
+-- server API; and the Sandbox charges no one, so without them only the production host can credit a subscription.
+checkAppleHost :: Bool -> AppleStoreConfig -> Either String ()
+checkAppleHost creditTestPurchases AppleStoreConfig {aServerApi} = case (creditTestPurchases, aApiHost <$> aServerApi) of
+  (False, Nothing) -> Right ()
+  (False, Just h) | h == defaultAppleApiHost -> Right ()
+  (True, Just h) | h == appleSandboxHost -> Right ()
+  (False, _) -> Left $ "apple.api_host must be " <> T.unpack defaultAppleApiHost <> " unless [dev] credit_test_purchases = on, as no other host credits a real subscription"
+  (True, _) -> Left $ "[dev] credit_test_purchases = on needs [apple]'s server API key with api_host = " <> T.unpack appleSandboxHost <> ", as a Sandbox receipt would otherwise be credited as a real purchase"
+
+readServiceConfig :: FilePath -> IO (Either String ServiceConfig)
+readServiceConfig path =
+  E.try (TIO.readFile path) >>= \case
+    Left (e :: E.IOException) -> pure (Left (ioeGetErrorString e))
+    -- Data.Ini stops at the first unparseable line and keeps what it has, so a missing `=` silently drops every section below.
+    Right text -> case parseOnly (iniParser <* trailingNoise <* endOfInput) text of
+      Left _ -> pure (Left "could not be read as an ini file: a line is malformed")
+      Right ini -> do
+        mapM_ (\k -> logWarn (T.pack path <> ": nothing reads " <> k <> ", so it was ignored")) (unknownKeys ini)
+        pure (parseConfig ini)
+
+-- | iniParser stops before a trailing comment, so endOfInput alone would reject a valid file.
+trailingNoise :: Parser ()
+trailingNoise = skipSpace *> skipMany (comment *> skipSpace)
+  where
+    comment = satisfy (\c -> c == ';' || c == '#') *> skipWhile (not . isEndOfLine)
+
+knownSettings :: [(Text, [Text])]
+knownSettings =
+  [ ("listener", ["host", "port", "static_dir", "serve_webapp", "webapp_export_dir", "trust_forwarded_for"]),
+    ("btcpay", ["host", "api_key", "store_id", "webhook_secret", "expiry_minutes", "speed_policy", "payment_tolerance"]),
+    ("stripe", ["secret_key", "publishable_key", "webhook_secret", "session_minutes"]),
+    ("poll", ["waiting_seconds", "idle_seconds"]),
+    ("apple", ["bundle_id", "root_certificates", "api_key_id", "api_issuer_id", "api_private_key_file", "api_host"]),
+    ("google", ["package_name", "service_account_file"]),
+    ("group", ["display_name", "description"]),
+    ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage", "credit_test_purchases"]),
+    ("issuer", ["index", "private_key"])
+  ]
+
+unknownKeys :: Ini -> [Text]
+unknownKeys ini = beforeAnySection <> unknownSections <> settings
+  where
+    beforeAnySection = [k <> ", written above the first section header" | (k, _) <- iniGlobals ini]
+    unknownSections = ["[" <> s <> "]" | s <- sections ini, T.strip s `notElem` map fst knownSettings]
+    settings =
+      [ section <> "." <> key
+        | (section, known) <- knownSettings,
+          key <- either (const []) id (keys section ini),
+          T.strip key `notElem` known
+      ]
+
+parseConfig :: Ini -> Either String ServiceConfig
+parseConfig ini = do
+  lStaticDir <- T.unpack <$> required "listener" "static_dir"
+  lHost <- optional "listener" "host" "127.0.0.1"
+  lPort <- do
+    p <- num "listener" "port" 8080
+    if 1 <= p && p <= 65535 then Right p else Left "listener.port must be between 1 and 65535"
+  lServeWebapp <- bool "listener" "serve_webapp" True
+  let lWebappExportDir = T.unpack <$> present "listener" "webapp_export_dir"
+  lTrustForwardedFor <- bool "listener" "trust_forwarded_for" False
+  btc <- btcpaySection
+  str <- stripeSection
+  iss <- issuerSection
+  grp <- groupSection
+  pWaitingSeconds <- cadence "waiting_seconds" 3
+  pIdleSeconds <- cadence "idle_seconds" 60
+  apple <- appleSection
+  google <- googleSection
+  devUnverifiedReceipts <- bool "dev" "accept_unverified_store_receipts" False
+  when (devUnverifiedReceipts && (isJust apple || isJust google)) $
+    Left "[dev] accept_unverified_store_receipts must be off where [apple] or [google] verifies store receipts"
+  devCheckStoreDuringCoverage <- bool "dev" "check_store_during_coverage" False
+  devCreditTestPurchases <- bool "dev" "credit_test_purchases" False
+  mapM_ (checkAppleHost devCreditTestPurchases) apple
+  when (devCheckStoreDuringCoverage && not (devUnverifiedReceipts || devCreditTestPurchases)) $
+    Left "[dev] check_store_during_coverage needs accept_unverified_store_receipts or credit_test_purchases = on, as only a dev deployment may ask a store while coverage runs"
+  pure
+    ServiceConfig
+      { listener = ListenerConfig {lHost, lPort, lStaticDir, lServeWebapp, lWebappExportDir, lTrustForwardedFor},
+        btcpay = btc,
+        stripe = str,
+        poll = PollConfig {pWaitingSeconds, pIdleSeconds},
+        appleStore = apple,
+        playStore = google,
+        issuer = iss,
+        group = grp,
+        devAcceptUnverifiedStoreReceipts = devUnverifiedReceipts,
+        devCheckStoreDuringCoverage,
+        devCreditTestPurchases
+      }
+  where
+    hasSection s = s `elem` sections ini
+    look s k = either (const Nothing) Just (lookupValue s k ini)
+    present s k = mfilter (not . T.null) (T.strip <$> look s k)
+    required s k = maybe (Left (T.unpack s <> "." <> T.unpack k <> " is required")) Right (present s k)
+    optional s k d = Right (fromMaybe d (present s k))
+    -- Integer, because readMaybe at Int wraps silently, reading 2^64+4 as 4.
+    num s k d = case look s k of
+      Nothing -> Right d
+      Just v -> case readMaybe (T.unpack (T.strip v)) of
+        Just n | n >= toInteger (minBound :: Int), n <= toInteger (maxBound :: Int) -> Right (fromInteger n)
+        _ -> Left (T.unpack k <> " must be a whole number")
+    bool s k d = case fmap (T.toLower . T.strip) (look s k) of
+      Nothing -> Right d
+      Just "on" -> Right True
+      Just "off" -> Right False
+      Just other -> Left (T.unpack k <> " must be on or off, not " <> T.unpack other)
+    -- num accepts 0 and negatives, and a zero cadence is a busy loop.
+    cadence k d = do
+      v <- num "poll" k d
+      if v >= 1 then Right v else Left ("poll." <> T.unpack k <> " must be at least 1 second")
+    issuerSection
+      | not (hasSection "issuer") = Right Nothing
+      | otherwise = do
+          keyIdx <- issuerIndex
+          secretKey <- issuerSecret
+          pure (Just BadgeIssuerKey {keyIdx, secretKey})
+    issuerIndex = do
+      v <- required "issuer" "index"
+      case readMaybe (T.unpack v) of
+        Just n | n >= 1, n <= toInteger (maxBound :: Int) -> Right (fromInteger n)
+        _ -> Left "issuer.index must be a positive whole number"
+    issuerSecret = do
+      v <- required "issuer" "private_key"
+      either (const (Left "issuer.private_key is not a valid issuer secret; use the value from `simplex-chat badge keygen`")) Right $
+        strDecode (B.pack (T.unpack v))
+    btcpaySection
+      | not (hasSection "btcpay") = Right Nothing
+      | otherwise = do
+          bHost <- required "btcpay" "host" >>= requireHttps
+          bApiKey <- required "btcpay" "api_key"
+          bStoreId <- required "btcpay" "store_id"
+          bWebhookSecret <- required "btcpay" "webhook_secret"
+          bExpiryMinutes <- expiryMinutes
+          bSpeedPolicy <- speedPolicy
+          bPaymentTolerance <- tolerance
+          pure (Just BTCPayConfig {bHost, bApiKey, bStoreId, bWebhookSecret, bExpiryMinutes, bSpeedPolicy, bPaymentTolerance})
+    -- A negative window puts BTCPay's startDate in the future, so every poll comes back empty.
+    expiryMinutes = do
+      v <- num "btcpay" "expiry_minutes" defaultExpiryMinutes
+      if v >= 1 then Right v else Left "btcpay.expiry_minutes must be at least 1 minute"
+    speedPolicy = case look "btcpay" "speed_policy" of
+      Nothing -> Right MediumSpeed
+      Just v -> case lookup (T.strip v) [(speedPolicyName p, p) | p <- speedPolicies] of
+        Just p -> Right p
+        Nothing ->
+          Left
+            ( "btcpay.speed_policy must be one of "
+                <> T.unpack (T.intercalate ", " (map speedPolicyName speedPolicies))
+                <> ", not "
+                <> T.unpack (T.strip v)
+            )
+    tolerance = case look "btcpay" "payment_tolerance" of
+      Nothing -> Right 0.5
+      Just v -> case readMaybe (T.unpack (T.strip v)) of
+        Just d | d >= 0 && d <= maxTolerance -> Right d
+        _ -> Left ("btcpay.payment_tolerance must be a percentage between 0 and " <> show maxTolerance)
+    groupSection
+      | not (hasSection "group") = Right Nothing
+      | otherwise = do
+          gDisplayName <- required "group" "display_name" >>= validGroupName
+          pure (Just GroupConfig {gDisplayName, gDescription = present "group" "description"})
+    -- The core refuses a group name that mkValidName would change, so it is rejected here.
+    validGroupName n =
+      let valid = T.pack (mkValidName (T.unpack n))
+       in if n == valid
+            then Right n
+            else Left ("group.display_name \"" <> T.unpack n <> "\" is not a valid group name" <> closest valid)
+    closest valid
+      | T.null valid = ""
+      | otherwise = ", the closest valid name is \"" <> T.unpack valid <> "\""
+    stripeSection
+      | not (hasSection "stripe") = Right Nothing
+      | otherwise = do
+          sSecretKey <- required "stripe" "secret_key"
+          sPublishableKey <- required "stripe" "publishable_key"
+          sWebhookSecret <- required "stripe" "webhook_secret"
+          sSessionMinutes <- sessionMinutes
+          let sHost = defaultStripeHost
+          pure (Just StripeConfig {sSecretKey, sPublishableKey, sWebhookSecret, sSessionMinutes, sHost})
+    appleSection
+      | not (hasSection "apple") = Right Nothing
+      | otherwise = do
+          aBundleId <- required "apple" "bundle_id"
+          aRootCertificates <- rootCertificates
+          aServerApi <- appleServerApi
+          pure (Just AppleStoreConfig {aBundleId, aRootCertificates, aServerApi})
+    rootCertificates = do
+      v <- required "apple" "root_certificates"
+      maybe (Left "apple.root_certificates must list at least one file") Right $
+        L.nonEmpty $ map T.unpack $ filter (not . T.null) $ map T.strip $ T.splitOn "," v
+    -- the key is three settings, and one or two of them would leave subscriptions silently unverified
+    appleServerApi = case (present "apple" "api_key_id", present "apple" "api_issuer_id", present "apple" "api_private_key_file") of
+      (Nothing, Nothing, Nothing) -> Right Nothing
+      (Just aKeyId, Just aIssuerId, Just keyFile) -> do
+        aApiHost <- T.toLower . T.dropWhileEnd (== '/') <$> optional "apple" "api_host" defaultAppleApiHost
+        unless ("https://" `T.isPrefixOf` aApiHost) $ Left "apple.api_host must be an absolute https URL"
+        pure (Just AppleServerApi {aKeyId, aIssuerId, aPrivateKeyFile = T.unpack keyFile, aApiHost})
+      _ -> Left "apple.api_key_id, apple.api_issuer_id and apple.api_private_key_file are required together"
+    googleSection
+      | not (hasSection "google") = Right Nothing
+      | otherwise = do
+          gPackageName <- required "google" "package_name"
+          gServiceAccountFile <- T.unpack <$> required "google" "service_account_file"
+          pure (Just PlayStoreConfig {gPackageName, gServiceAccountFile, gApiHost = defaultPlayApiHost, gTokenUrl = defaultPlayTokenUrl})
+    sessionMinutes = do
+      v <- num "stripe" "session_minutes" defaultSessionMinutes
+      if v >= minSessionMinutes && v <= maxSessionMinutes
+        then Right v
+        else Left ("stripe.session_minutes must be between " <> show minSessionMinutes <> " and " <> show maxSessionMinutes <> " minutes")
