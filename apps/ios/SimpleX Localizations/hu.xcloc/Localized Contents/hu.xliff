@@ -1748,9 +1748,9 @@ a saját hálózatában</target>
         <target>Kitűzőt az alkalmazás App Store-verziójában vásárolhat.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Buy in browser" xml:space="preserve">
+      <trans-unit id="Buy in browser" xml:space="preserve" approved="no">
         <source>Buy in browser</source>
-        <target>Vásárlás a böngészőben</target>
+        <target state="translated">Vásárlás böngészőben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
@@ -4734,14 +4734,14 @@ server test error</note>
         <target>Nem lehet %@ méretnél nagyobb fájlokat küldeni az inkognitó csevegésekben.</target>
         <note>file alert</note>
       </trans-unit>
-      <trans-unit id="Files up to 2 GB" xml:space="preserve">
+      <trans-unit id="Files up to 2 GB" xml:space="preserve" approved="no">
         <source>Files up to 2 GB</source>
-        <target>Legfeljebb 2 GB méretű fájlok</target>
+        <target state="translated">Legfeljebb 2 GB méretű fájlok küldése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Files up to 5 GB" xml:space="preserve">
+      <trans-unit id="Files up to 5 GB" xml:space="preserve" approved="no">
         <source>Files up to 5 GB</source>
-        <target>Legfeljebb 5 GB méretű fájlok</target>
+        <target state="translated">Legfeljebb 5 GB méretű fájlok küldése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Filter" xml:space="preserve">
@@ -13195,6 +13195,266 @@ utoljára fogadott üzenet: %2$@</target>
         <source>⚠️ Signature verification failed: %@.</source>
         <target>⚠️ Nem sikerült ellenőrizni az aláírást: %@.</target>
         <note>owner verification</note>
+      </trans-unit>
+      <trans-unit id="(chat)" xml:space="preserve" approved="no">
+        <source>(chat)</source>
+        <target state="translated">(csevegés)</target>
+      </trans-unit>
+      <trans-unit id="(default)" xml:space="preserve" approved="no">
+        <source>(default)</source>
+        <target state="translated">(alapértelmezett)</target>
+      </trans-unit>
+      <trans-unit id="A purchase is being added to this profile. Try again later." xml:space="preserve" approved="no">
+        <source>A purchase is being added to this profile. Try again later.</source>
+        <target state="translated">Egy vásárlás hozzáadása folyamatban van ehhez a profilhoz. Próbálja újra később.</target>
+      </trans-unit>
+      <trans-unit id="A store purchase is being added to this profile." xml:space="preserve" approved="no">
+        <source>A store purchase is being added to this profile.</source>
+        <target state="translated">Egy áruházi vásárlás hozzáadása folyamatban van ehhez a profilhoz.</target>
+      </trans-unit>
+      <trans-unit id="Add moderators and sign every message." xml:space="preserve" approved="no">
+        <source>Add moderators and sign every message.</source>
+        <target state="translated">Moderátorok hozzáadása a csatornákhoz és minden üzenet aláírása.</target>
+      </trans-unit>
+      <trans-unit id="Badge payment problem" xml:space="preserve" approved="no">
+        <source>Badge payment problem</source>
+        <target state="translated">Kitűzőfizetési probléma</target>
+      </trans-unit>
+      <trans-unit id="Benefits" xml:space="preserve" approved="no">
+        <source>Benefits</source>
+        <target state="translated">Előnyök</target>
+      </trans-unit>
+      <trans-unit id="Chat layout" xml:space="preserve" approved="no">
+        <source>Chat layout</source>
+        <target state="translated">Csevegés elrendezése</target>
+      </trans-unit>
+      <trans-unit id="Classic" xml:space="preserve" approved="no">
+        <source>Classic</source>
+        <target state="translated">Klasszikus</target>
+      </trans-unit>
+      <trans-unit id="Contributor" xml:space="preserve" approved="no">
+        <source>Contributor</source>
+        <target state="translated">Közreműködő</target>
+      </trans-unit>
+      <trans-unit id="Enable in Appearance settings." xml:space="preserve" approved="no">
+        <source>Enable in Appearance settings.</source>
+        <target state="translated">Engedélyezheti a megjelenési beállításokban.</target>
+      </trans-unit>
+      <trans-unit id="Ended" xml:space="preserve" approved="no">
+        <source>Ended</source>
+        <target state="translated">Lejárt</target>
+      </trans-unit>
+      <trans-unit id="Files up to 2 GB, stored for 7 days." xml:space="preserve" approved="no">
+        <source>Files up to 2 GB, stored for 7 days.</source>
+        <target state="translated">Legfeljebb 2 GB méretű fájlok küldése 7 napos tárolással.</target>
+      </trans-unit>
+      <trans-unit id="Files up to 5 GB, stored for 21 days." xml:space="preserve" approved="no">
+        <source>Files up to 5 GB, stored for 21 days.</source>
+        <target state="translated">Legfeljebb 5 GB méretű fájlok küldése 21 napos tárolással.</target>
+      </trans-unit>
+      <trans-unit id="Flat" xml:space="preserve" approved="no">
+        <source>Flat</source>
+        <target state="translated">Lapos</target>
+      </trans-unit>
+      <trans-unit id="Flat layout and markdown" xml:space="preserve" approved="no">
+        <source>Flat layout and markdown</source>
+        <target state="translated">Lapos elrendezés és markdown formázás</target>
+      </trans-unit>
+      <trans-unit id="Invest $100+ and get a free badge." xml:space="preserve" approved="no">
+        <source>Invest $100+ and get a free badge.</source>
+        <target state="translated">Fektessen be legalább 100 dollárt, és szerezzen egy ingyenes kitűzőt.</target>
+      </trans-unit>
+      <trans-unit id="Invest $1000+ and get a free legend badge." xml:space="preserve" approved="no">
+        <source>Invest $1000+ and get a free legend badge.</source>
+        <target state="translated">Fektessen be legalább 1000 dollárt, és szerezzen egy ingyenes legendás kitűzőt.</target>
+      </trans-unit>
+      <trans-unit id="Larger files available for longer." xml:space="preserve" approved="no">
+        <source>Larger files available for longer.</source>
+        <target state="translated">A nagyméretű fájlok hosszabb ideig érhetők el az átjátszókon.</target>
+      </trans-unit>
+      <trans-unit id="Learn more on Wefunder" xml:space="preserve" approved="no">
+        <source>Learn more on Wefunder</source>
+        <target state="translated">Tudjon meg többet a Wefunder oldalon</target>
+      </trans-unit>
+      <trans-unit id="Learn more on Wefunder." xml:space="preserve" approved="no">
+        <source>Learn more on Wefunder.</source>
+        <target state="translated">Tudjon meg többet a Wefunder oldalon.</target>
+      </trans-unit>
+      <trans-unit id="Learn more." xml:space="preserve" approved="no">
+        <source>Learn more.</source>
+        <target state="translated">Tudjon meg többet.</target>
+      </trans-unit>
+      <trans-unit id="Manage subscription" xml:space="preserve" approved="no">
+        <source>Manage subscription</source>
+        <target state="translated">Előfizetés kezelése</target>
+      </trans-unit>
+      <trans-unit id="Moderator" xml:space="preserve" approved="no">
+        <source>Moderator</source>
+        <target state="translated">Moderátor</target>
+      </trans-unit>
+      <trans-unit id="New subscribers will see earlier messages as unsigned." xml:space="preserve" approved="no">
+        <source>New subscribers will see earlier messages as unsigned.</source>
+        <target state="translated">Az új feliratkozók a korábbi üzeneteket aláíratlanként látják.</target>
+      </trans-unit>
+      <trans-unit id="Nothing to restore" xml:space="preserve" approved="no">
+        <source>Nothing to restore</source>
+        <target state="translated">Nincs helyreállítható elem</target>
+      </trans-unit>
+      <trans-unit id="Own a part of SimpleX Chat! 🚀" xml:space="preserve" approved="no">
+        <source>Own a part of SimpleX Chat! 🚀</source>
+        <target state="translated">Legyen az Öné a SimpleX egy része! 🚀</target>
+      </trans-unit>
+      <trans-unit id="Own a part of SimpleX Chat" xml:space="preserve" approved="no">
+        <source>Own a part of SimpleX Chat</source>
+        <target state="translated">Legyen az Öné a SimpleX egy része</target>
+      </trans-unit>
+      <trans-unit id="Payment problem" xml:space="preserve" approved="no">
+        <source>Payment problem</source>
+        <target state="translated">Fizetési probléma</target>
+      </trans-unit>
+      <trans-unit id="Renewing" xml:space="preserve" approved="no">
+        <source>Renewing</source>
+        <target state="translated">Megújítás</target>
+      </trans-unit>
+      <trans-unit id="Restore purchases" xml:space="preserve" approved="no">
+        <source>Restore purchases</source>
+        <target state="translated">Vásárlások helyreállítása</target>
+      </trans-unit>
+      <trans-unit id="Safer channels" xml:space="preserve" approved="no">
+        <source>Safer channels</source>
+        <target state="translated">Biztonságosabb csatornák</target>
+      </trans-unit>
+      <trans-unit id="Sale starts on December 12." xml:space="preserve" approved="no">
+        <source>Sale starts on December 12.</source>
+        <target state="translated">Az akció december 12-én kezdődik.</target>
+      </trans-unit>
+      <trans-unit id="Sent before the channel started signing, or fake." xml:space="preserve" approved="no">
+        <source>Sent before the channel started signing, or fake.</source>
+        <target state="translated">A csatorna aláírásának bevezetése előtt küldték, vagy hamis.</target>
+      </trans-unit>
+      <trans-unit id="Sign messages?" xml:space="preserve" approved="no">
+        <source>Sign messages?</source>
+        <target state="translated">Biztosan aláírja az üzeneteket?</target>
+      </trans-unit>
+      <trans-unit id="SimpleX public names" xml:space="preserve" approved="no">
+        <source>SimpleX public names</source>
+        <target state="translated">Nyilvános SimpleX-nevek</target>
+      </trans-unit>
+      <trans-unit id="Subscription" xml:space="preserve" approved="no">
+        <source>Subscription</source>
+        <target state="translated">Előfizetés</target>
+      </trans-unit>
+      <trans-unit id="Subscription cancelled" xml:space="preserve" approved="no">
+        <source>Subscription cancelled</source>
+        <target state="translated">Előfizetés megszakítva</target>
+      </trans-unit>
+      <trans-unit id="Subscription ended. The badge will be removed." xml:space="preserve" approved="no">
+        <source>Subscription ended. The badge will be removed.</source>
+        <target state="translated">Lejárt az előfizetés. A kitűző el lesz távolítva.</target>
+      </trans-unit>
+      <trans-unit id="Support SimpleX and get a badge." xml:space="preserve" approved="no">
+        <source>Support SimpleX and get a badge.</source>
+        <target state="translated">Támogassa a SimpleXet és szerezzen egy kitűzőt.</target>
+      </trans-unit>
+      <trans-unit id="Supporter badges" xml:space="preserve" approved="no">
+        <source>Supporter badges</source>
+        <target state="translated">Támogatói kitűzők</target>
+      </trans-unit>
+      <trans-unit id="The store could not charge your payment method." xml:space="preserve" approved="no">
+        <source>The store could not charge your payment method.</source>
+        <target state="translated">Az áruháznak nem sikerült kiegyenlítenie a számlát a beállított fizetési eljárással.</target>
+      </trans-unit>
+      <trans-unit id="This purchase was moved to another device or profile recently." xml:space="preserve" approved="no">
+        <source>This purchase was moved to another device or profile recently.</source>
+        <target state="translated">Ezt a vásárlást nemrég egy másik eszközre vagy profilra helyezték át.</target>
+      </trans-unit>
+      <trans-unit id="You already have a badge!" xml:space="preserve" approved="no">
+        <source>You already have a badge!</source>
+        <target state="translated">Önnek már van egy kitűzője!</target>
+      </trans-unit>
+      <trans-unit id="Your badge could not be renewed." xml:space="preserve" approved="no">
+        <source>Your badge could not be renewed.</source>
+        <target state="translated">Nem sikerült megújítani a kitűzőt.</target>
+      </trans-unit>
+      <trans-unit id="Your badge renews soon" xml:space="preserve" approved="no">
+        <source>Your badge renews soon</source>
+        <target state="translated">Hamarosan megújul a kitűzője</target>
+      </trans-unit>
+      <trans-unit id="Your legend badge" xml:space="preserve" approved="no">
+        <source>Your legend badge</source>
+        <target state="translated">Saját legendás kitűző</target>
+      </trans-unit>
+      <trans-unit id="Your subscription ended" xml:space="preserve" approved="no">
+        <source>Your subscription ended</source>
+        <target state="translated">Lejárt az előfizetése</target>
+      </trans-unit>
+      <trans-unit id="Ends %@" xml:space="preserve" approved="no">
+        <source>Ends %@</source>
+        <target state="translated">Lejár ekkor: %@</target>
+      </trans-unit>
+      <trans-unit id="Renews %@" xml:space="preserve" approved="no">
+        <source>Renews %@</source>
+        <target state="translated">Megújul ekkor: %@</target>
+      </trans-unit>
+      <trans-unit id="Renews %@ · %@" xml:space="preserve" approved="no">
+        <source>Renews %@ · %@</source>
+        <target state="translated">Megújul ekkor: %@ · %@</target>
+      </trans-unit>
+      <trans-unit id="Renews on %@ for %@." xml:space="preserve" approved="no">
+        <source>Renews on %@ for %@.</source>
+        <target state="translated">Megújul ekkor: %@, ára: %@.</target>
+      </trans-unit>
+      <trans-unit id="Renews on %@." xml:space="preserve" approved="no">
+        <source>Renews on %@.</source>
+        <target state="translated">Megújul ekkor: %@.</target>
+      </trans-unit>
+      <trans-unit id="Restore failed" xml:space="preserve" approved="no">
+        <source>Restore failed</source>
+        <target state="translated">Nem sikerült a helyreállítás</target>
+      </trans-unit>
+      <trans-unit id="Your badge stays until %@." xml:space="preserve" approved="no">
+        <source>Your badge stays until %@.</source>
+        <target state="translated">A kitűzője megmarad eddig: %@.</target>
+      </trans-unit>
+      <trans-unit id="Your badge subscription ended on %@." xml:space="preserve" approved="no">
+        <source>Your badge subscription ended on %@.</source>
+        <target state="translated">A kitűző-előfizetése lejárt ekkor: %@.</target>
+      </trans-unit>
+      <trans-unit id="Your subscription is cancelled. The badge stays until %@." xml:space="preserve" approved="no">
+        <source>Your subscription is cancelled. The badge stays until %@.</source>
+        <target state="translated">Az előfizetése meg lett szakítva. A kitűző eddig marad meg: %@.</target>
+      </trans-unit>
+      <trans-unit id="No App Store purchase waiting to be added was found." xml:space="preserve" approved="no">
+        <source>No App Store purchase waiting to be added was found.</source>
+        <target state="translated">Nem található hozzáadásra váró App Store-vásárlás.</target>
+      </trans-unit>
+      <trans-unit id="Payment failed. Update your payment method in the App Store." xml:space="preserve" approved="no">
+        <source>Payment failed. Update your payment method in the App Store.</source>
+        <target state="translated">Sikertelen fizetés. Frissítse a fizetési eljárást az App Store-ban.</target>
+      </trans-unit>
+      <trans-unit id="Renews at %@ a month until you cancel it in the App Store." xml:space="preserve" approved="no">
+        <source>Renews at %@ a month until you cancel it in the App Store.</source>
+        <target state="translated">Havonta megújul %1$s áron, amíg le nem mondja az App Store-ban.</target>
+      </trans-unit>
+      <trans-unit id="Renews at %@ a year until you cancel it in the App Store." xml:space="preserve" approved="no">
+        <source>Renews at %@ a year until you cancel it in the App Store.</source>
+        <target state="translated">Évente megújul %1$s áron, amíg le nem mondja az App Store-ban.</target>
+      </trans-unit>
+      <trans-unit id="Renews automatically until you cancel it in the App Store." xml:space="preserve" approved="no">
+        <source>Renews automatically until you cancel it in the App Store.</source>
+        <target state="translated">Automatikusan megújul, amíg le nem mondja az App Store-ban.</target>
+      </trans-unit>
+      <trans-unit id="Renews once the App Store charges your subscription." xml:space="preserve" approved="no">
+        <source>Renews once the App Store charges your subscription.</source>
+        <target state="translated">Megújul, amint az App Store kiszámlázza az előfizetését.</target>
+      </trans-unit>
+      <trans-unit id="Purchases are off on this device." xml:space="preserve" approved="no">
+        <source>Purchases are off on this device.</source>
+        <target state="translated">Ezen az eszközön a vásárlások ki vannak kapcsolva.</target>
+      </trans-unit>
+      <trans-unit id="Subscribed on another profile." xml:space="preserve" approved="no">
+        <source>Subscribed on another profile.</source>
+        <target state="translated">Másik profilon fizetett elő.</target>
       </trans-unit>
     </body>
   </file>
