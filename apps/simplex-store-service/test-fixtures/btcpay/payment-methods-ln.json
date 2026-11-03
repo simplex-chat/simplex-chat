@@ -1,0 +1,31 @@
+{
+  "_fixture": "GET /api/v1/stores/{storeId}/invoices/{invoiceId}/payment-methods -- InvoicePaymentMethodDataModel[] for BTC-LN, from the documented shape and BTCPay v2.4.4 Payments/Lightning/LightningLikePaymentHandler.cs (amounts to 11 decimals, the BOLT11 as destination). NOT captured from a live instance; replace `response` with a recorded body and rewrite this line. The amount is not a whole number of satoshi, so a reader counting satoshi cannot pass. `totalPaid` is deliberately NOT equal to `paymentMethodPaid`. `paymentMethodFee` is non-zero only so that it differs from `due`.",
+  "response": [
+    {
+      "paymentMethodId": "BTC-LN",
+      "currency": "BTC",
+      "destination": "lnbc499999440p1pfakeinvoicedestinationforthetestsonly",
+      "paymentLink": "lightning:lnbc499999440p1pfakeinvoicedestinationforthetestsonly",
+      "rate": "108000.12",
+      "paymentMethodPaid": "0.00049999944",
+      "totalPaid": "9.99999999",
+      "due": "0.00000000000",
+      "amount": "0.00049999944",
+      "paymentMethodFee": "0.00000000100",
+      "activated": true,
+      "payments": [
+        {
+          "id": "7a1c2b3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9",
+          "receivedDate": 1700003600,
+          "value": "0.00049999944",
+          "fee": "0.00000000000",
+          "status": "Settled",
+          "destination": "lnbc499999440p1pfakeinvoicedestinationforthetestsonly"
+        }
+      ],
+      "additionalData": {
+        "paymentHash": "7a1c2b3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9"
+      }
+    }
+  ]
+}

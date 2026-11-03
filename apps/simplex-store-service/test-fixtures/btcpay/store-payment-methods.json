@@ -16,6 +16,13 @@
       "config": {
         "accountIndex": 0
       }
+    },
+    {
+      "paymentMethodId": "BTC-LN",
+      "enabled": true,
+      "config": {
+        "internalNodeRef": "Internal Node"
+      }
     }
   ]
 }

@@ -83,7 +83,7 @@ import Network.HTTP.Types (Header, Method, Status, hCacheControl, hContentType, 
 import Network.Socket (SockAddr (..), hostAddress6ToTuple, hostAddressToTuple)
 import Network.Wai
 import Numeric (readHex, showHex)
-import Simplex.Chat.PaymentService.Types (CardProvider (..), CurrencyAmount (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
+import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency (..), CurrencyAmount (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, stateTVar', tshow)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultExpiryMinutes, defaultSessionMinutes)
 import StoreService.Providers (Provider (..))
@@ -452,7 +452,8 @@ destinationPairs confirmations = \case
       "cryptoAmount" .= cryptoAmount,
       "cryptoCurrency" .= cryptoCurrencyText currency
     ]
-      <> maybe [] (\n -> ["requiredConfirmations" .= n]) confirmations
+      -- a Lightning payment is final once paid, with no confirmations to wait for
+      <> [("requiredConfirmations" .= n) | Just n <- [confirmations], currency /= CCLn]
 
 amountJSON :: CurrencyAmount -> J.Value
 amountJSON (CurrencyAmount a) = J.toJSON a

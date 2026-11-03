@@ -22,7 +22,7 @@ trust_forwarded_for = on
 ; Prometheus metrics of the store, on 127.0.0.1 whatever host is
 ; metrics_port = 9300
 
-; omit this whole section to disable Bitcoin and Monero (the browser shows the provider-unavailable screen)
+; omit this whole section to disable Bitcoin, Monero and Lightning (the browser shows the provider-unavailable screen)
 [btcpay]
 host = https://btcpay.example.org
 api_key = replace-me

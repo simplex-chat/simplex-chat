@@ -1,5 +1,5 @@
 {
-  "_fixture": "The same list response carrying an invoice paid over Lightning (BTC-LN), which this build does not know: switching Lightning on at the store is all it takes. Hand-written from the documented schema. The alien entry must be SKIPPED and the healthy one in the SAME response must still settle.",
+  "_fixture": "The same list response carrying an invoice paid by LNURL-pay (BTC-LNURL), which this build does not know: switching LNURL on at the store is all it takes. Hand-written from the documented schema. The alien entry must be SKIPPED and the healthy one in the SAME response must still settle.",
   "response": [
     {
       "metadata": {},
@@ -22,12 +22,12 @@
         "showQR": null,
         "showPayments": null
       },
-      "id": "LightningInvoiceRefDD",
+      "id": "LnurlInvoiceRefDD",
       "storeId": "BqZKtkeSN9JgLLdCJRJfXQjLwCLDNCVLdxLTTdMzTHnT",
       "amount": "54.00",
       "currency": "USD",
       "type": "Standard",
-      "checkoutLink": "https://btcpay.example.org/i/LightningInvoiceRefDD",
+      "checkoutLink": "https://btcpay.example.org/i/LnurlInvoiceRefDD",
       "createdTime": 1700000000,
       "expirationTime": 1700003600,
       "monitoringExpiration": 1700259200,
@@ -40,10 +40,10 @@
       "archived": false,
       "paymentMethods": [
         {
-          "paymentMethodId": "BTC-LN",
+          "paymentMethodId": "BTC-LNURL",
           "currency": "BTC",
-          "destination": "lnbc500u1pexampleinvoicebolt11string",
-          "paymentLink": "lightning:lnbc500u1pexampleinvoicebolt11string",
+          "destination": "lnurl1dp68gurn8ghj7exampleinvoicelnurlstring",
+          "paymentLink": "lightning:LNURL1DP68GURN8GHJ7EXAMPLEINVOICELNURLSTRING",
           "rate": "108000.12",
           "paymentMethodPaid": "0.00050000",
           "totalPaid": "9.99999999",
