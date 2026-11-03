@@ -1,7 +1,7 @@
 # SimpleX badge codes — web
 
 The buyer-facing page for badge codes: choose a tier and duration, pay by
-card, BTC or XMR, and receive a code. Design and rationale are in
+card, BTC, Lightning or XMR, and receive a code. Design and rationale are in
 [`plans/badges-codes/2026-08-27-badge-codes.md`](../../../plans/badges-codes/2026-08-27-badge-codes.md);
 the implementation plan for this app is
 [`plans/badges-codes/2026-08-28-web-implementation.md`](../../../plans/badges-codes/2026-08-28-web-implementation.md).
@@ -86,7 +86,7 @@ cp store_service.ini.example store_service.ini
 cd ../..
 #   badges_static_dir = ./apps/simplex-store-service/web/dist   <- the build above
 #   [btcpay]   = a real store's host, api_key, store_id and webhook_secret,
-#                or delete the whole section to disable BTC and XMR (the provider-unavailable screen)
+#                or delete the whole section to disable BTC, Lightning and XMR (the provider-unavailable screen)
 #   [issuer]   = uncomment the section and put a real issuer secret in private_key,
 #                with its index in index. It has to be a key whose public half already
 #                ships in the apps: startup checks the secret against `badgePublicKeys`
@@ -156,7 +156,7 @@ It serves `public/` and `dist/`, and adds:
 | `POST /api/invoice/:id/cancel` | Expires an open invoice. Refuses a settled one with `409 not_open` and a funded one with `409 funded`, as the service does. |
 | `POST /control/settle/:id` | Marks the invoice paid — stands in for a provider webhook. |
 | `POST /control/expire/:id` | Marks it expired. |
-| `POST /control/partial/:id` | Records a partial payment, half the amount due, and the remainder the provider would still ask for. |
+| `POST /control/partial/:id` | Records a partial payment, half the amount due, and the remainder the provider would still ask for. Refused with `400` for a Lightning invoice, which is paid in full or not at all. |
 | `POST /control/confirming/:id` | Records the full amount as arrived with the invoice still open — the screen that waits for confirmations. |
 | `POST /control/verdict/:id` | Records the provider's verdict alone, with no figure — how Monero reports a payment it is still confirming. |
 
@@ -181,7 +181,8 @@ instant `/control/settle` (or `/control/expire`, `/control/partial`) fires,
 which is what the page's own wait loop relies on — no polling on a timer.
 
 Card invoices (`"method":"card"`) get a `clientSecret` in the response
-instead of an address; BTC and XMR get `address` and `cryptoAmount`.
+instead of an address; BTC and XMR get `address` and `cryptoAmount`. Lightning (`"method":"ln"`)
+gets a made-up BOLT11 as `address`, its BTC amount to 11 decimals, and no `requiredConfirmations`.
 
 ### Opening the page as the app does
 

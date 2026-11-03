@@ -3,8 +3,8 @@ import { oneOf } from "./parse.js";
 export const STEPS = ["tier", "months", "checkout"] as const;
 export const THEMES = ["light", "dark", "system"] as const;
 const ORDER_STATUSES = ["open", "paid", "expired"] as const;
-const METHODS = ["card", "btc", "xmr"] as const;
-const CHAINS = ["btc", "xmr"] as const;
+const METHODS = ["card", "btc", "ln", "xmr"] as const;
+const CHAINS = ["btc", "ln", "xmr"] as const;
 const APPS = ["mobile", "desktop"] as const;
 
 export type Step = (typeof STEPS)[number];

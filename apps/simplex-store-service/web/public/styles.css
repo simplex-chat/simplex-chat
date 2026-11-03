@@ -775,7 +775,7 @@ p.row-line { margin: 16px 0 0; }
   .badge-art { max-width: 56px; }
 }
 
-/* the order summary's method row: the same three-across grid, with a 30px mark sitting almost
+/* the order summary's method row: the same four-across grid, with a 30px mark sitting almost
    on its label, the line box's own half-leading being most of the gap. */
 .choice.method { padding: 18px 6px 19px; }
 .mark { display: block; width: 30px; height: 30px; margin: 0 auto 2px; }
@@ -1237,6 +1237,9 @@ p.row-line { margin: 16px 0 0; }
   .choice .name { font-size: .875rem; }
   .choice .badge-art + .name { font-size: 1rem; }
   .choice .badge-art ~ .price { font-size: .875rem; }
+  /* On a 360px phone a quarter of the column is narrower than "Lightning" or "unavailable" at .875rem. */
+  .choice.method { padding: 14px 2px 16px; }
+  .choice.method .name, .choice.method .feature { font-size: .75rem; }
 
   /* `.choice .price` is not the selector to step here: `.choice.term .price`
      and `.choice .badge-art ~ .price` both out-specify it, so the rule that

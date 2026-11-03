@@ -100,6 +100,7 @@ const BITCOIN = "M23.638 14.904c-1.602 6.43-8.113 10.34-14.542 8.736C2.67 22.05-
 const MONERO_TOP = "M127.998 0C57.318 0 0 57.317 0 127.999c0 14.127 2.29 27.716 6.518 40.43H44.8V60.733l83.2 83.2 83.198-83.2v107.695h38.282c4.231-12.714 6.521-26.303 6.521-40.43C256 57.314 198.681 0 127.998 0";
 const MONERO_BASE = "M108.867 163.062l-36.31-36.311v67.765H18.623c22.47 36.863 63.051 61.48 109.373 61.48s86.907-24.617 109.374-61.48h-53.933V126.75l-36.31 36.31-19.13 19.129-19.128-19.128h-.002z";
 const MONERO_SCALE = "scale(0.09375)";
+const LIGHTNING = "M12 0a12 12 0 1 0 0 24a12 12 0 1 0 0-24zM13.6 3.8L6.9 13.3H11.3L10.4 20.2L17.1 10.7H12.7z";
 
 const CARD_STROKE = "currentColor";
 
@@ -120,6 +121,8 @@ export function methodMark(method: Method): SVGElement {
   switch (method) {
     case "btc":
       return svg(box, shape("path", { fill: "#F7931A", d: BITCOIN }));
+    case "ln":
+      return svg(box, shape("path", { fill: "#F7931A", "fill-rule": "evenodd", d: LIGHTNING }));
     case "xmr": {
       const glyph = shape("g", { transform: MONERO_SCALE });
       glyph.append(shape("path", { fill: "#F60", d: MONERO_TOP }), shape("path", { fill: "#4C4C4C", d: MONERO_BASE }));

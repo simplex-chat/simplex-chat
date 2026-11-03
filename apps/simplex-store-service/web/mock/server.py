@@ -10,7 +10,7 @@ Environment:
                             served index.html. Public by design, but still not
                             committed: unset, the page has NO card form and
                             choosing Card reaches "The card form did not load",
-                            so drive a purchase with btc or xmr and settle it
+                            so drive a purchase with btc, ln or xmr and settle it
                             with POST /control/settle/<invoiceId> below.
                             Set it to a `pk_test_...` key to drive the real
                             Stripe path; a secret key here is refused at start.
@@ -38,9 +38,16 @@ OFFERS = {
 }
 MIME = {".html": "text/html", ".css": "text/css", ".js": "text/javascript",
         ".svg": "image/svg+xml", ".json": "application/json", ".webmanifest": "application/manifest+json"}
-# BTCPay's default speed policy asks for one confirmation.
+# BTCPay's default speed policy asks for one confirmation; a Lightning payment needs none.
 REQUIRED_CONFIRMATIONS = 1
-ADDRESSES = {"btc": "bc1qexampleaddress0k3jq2wvcgmqz", "xmr": "48HqK2XmVexampleAddress9fRtWc"}
+CHAINS = ("btc", "ln", "xmr")
+# The Lightning destination is a made-up BOLT11 of a typical length, not one a wallet can pay.
+ADDRESSES = {
+    "btc": "bc1qexampleaddress0k3jq2wvcgmqz",
+    "ln": "lnbc499999440p1" + ("qpzry9x8gf2tvdw0s3jn54khce6mua7l" * 12)[:345],
+    "xmr": "48HqK2XmVexampleAddress9fRtWc",
+}
+CRYPTO_AMOUNTS = {"btc": "1.482", "ln": "0.00049999944", "xmr": "1.482"}
 
 LOCK = threading.Lock()
 INVOICES = {}
@@ -104,7 +111,8 @@ def public_view(inv):
         view["address"] = inv["address"]
         view["cryptoAmount"] = inv["cryptoAmount"]
         view["cryptoCurrency"] = inv["method"]
-        view["requiredConfirmations"] = REQUIRED_CONFIRMATIONS
+        if inv["method"] != "ln":
+            view["requiredConfirmations"] = REQUIRED_CONFIRMATIONS
     return view
 
 
@@ -179,6 +187,9 @@ class Handler(BaseHTTPRequestHandler):
                 elif action == "verdict":
                     # Monero reports the payment as paid in full while its figures are still zero.
                     inv["paidInFull"] = True
+                elif action == "partial" and inv["method"] == "ln":
+                    # A BOLT11 invoice is paid in full or not at all.
+                    return self._send(400, {"error": "bad_request"})
                 elif action == "partial":
                     inv["amountPaid"] = inv["amount"] // 2
                     inv["paidInFull"] = False
@@ -215,7 +226,7 @@ class Handler(BaseHTTPRequestHandler):
             body = self._read_json()
             if not body or not isinstance(body.get("codeHash"), str) or not body["codeHash"]:
                 return self._send(400, {"error": "bad_request"})
-            if body.get("method") not in ("card", "btc", "xmr"):
+            if body.get("method") not in ("card", *CHAINS):
                 return self._send(400, {"error": "bad_request"})
             with LOCK:
                 if body["codeHash"] in HASHES:
@@ -233,7 +244,7 @@ class Handler(BaseHTTPRequestHandler):
                         .replace(microsecond=0).isoformat().replace("+00:00", "Z"),
                     "clientSecret": f"cs_test_{secrets.token_hex(12)}" if is_card else None,
                     "address": None if is_card else ADDRESSES[body["method"]],
-                    "cryptoAmount": None if is_card else "1.482",
+                    "cryptoAmount": None if is_card else CRYPTO_AMOUNTS[body["method"]],
                 }
                 INVOICES[invoice_id] = inv
                 HASHES[body["codeHash"]] = invoice_id
@@ -314,7 +325,7 @@ def main():
     print(f"mock store service on http://localhost:{port}", flush=True)
     print("stripe: " + (f"publishable key {STRIPE_PUBLISHABLE_KEY[:11]}… — the real card form"
                         if STRIPE_PUBLISHABLE_KEY
-                        else "no STRIPE_PUBLISHABLE_KEY — no card form; pay with btc or xmr"),
+                        else "no STRIPE_PUBLISHABLE_KEY — no card form; pay with btc, ln or xmr"),
           flush=True)
     server.serve_forever()
 

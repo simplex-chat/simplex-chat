@@ -1,3 +1,5 @@
+import type { Chain } from "./domain.js";
+
 const MODE_BYTE = 0b0100;
 const ECC_LEVEL_M_BITS = 0b00;
 const MIN_VERSION = 1;
@@ -371,12 +373,15 @@ export function encodeQr(payload: string): QrSymbol | null {
   return { version, size: matrix.size, mask: best, modules: matrix.modules };
 }
 
-export function paymentUri(method: "btc" | "xmr", address: string, amount: string): string | null {
+export function paymentUri(method: Chain, address: string, amount: string): string | null {
   if (address === "" || amount === "") return null;
+  // The address is percent-encoded so that a `?`, `&`, or `#` in it cannot add its own parameters to the URI.
+  const destination = encodeURIComponent(address);
+  // A BOLT11 invoice carries its own amount, so the URI adds none.
+  if (method === "ln") return `lightning:${destination}`;
   const scheme = method === "btc" ? "bitcoin" : "monero";
   const parameter = method === "btc" ? "amount" : "tx_amount";
-  // The address is percent-encoded so that a `?`, `&`, or `#` in it cannot add its own parameters to the URI.
-  return `${scheme}:${encodeURIComponent(address)}?${parameter}=${encodeURIComponent(amount)}`;
+  return `${scheme}:${destination}?${parameter}=${encodeURIComponent(amount)}`;
 }
 
 const SVG_NS = "http://www.w3.org/2000/svg";
