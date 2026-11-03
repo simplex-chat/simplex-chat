@@ -48,6 +48,12 @@ const openXmr: View = {
   currency: "usd", expiresAt: "2026-08-28T12:58:12Z",
   address: "48HqK2XmVexampleAddress9fRtWc", cryptoAmount: "1.482", cryptoCurrency: "xmr",
 };
+const BOLT11 = "lnbc499999440p1pfakeinvoicedestinationforthetestsonly";
+const openLn: View = {
+  status: "open", badgeType: "supporter", months: 1, amount: 700,
+  currency: "usd", expiresAt: "2026-08-28T12:58:12Z",
+  address: BOLT11, cryptoAmount: "0.00049999944", cryptoCurrency: "ln",
+};
 const NOW = Date.parse("2026-08-28T12:00:00Z");
 const HELD_CODE = "SB-YDC8A-YGQTM-PUYZ9-2TUXP";
 
@@ -156,13 +162,13 @@ domTest("screens: the order summary is the summary and the method row, with the 
     onSelect: noop, onPay: noop, onBack: noop,
   }));
   for (const line of ["Check your order", "Your badge", "Legend", "Duration", "12 months", "Total", "$420.00",
-    "Pay with", "Bitcoin", "Monero", "Card", "Pay $420.00 with Monero",
+    "Pay with", "Bitcoin", "Lightning", "Monero", "Card", "Pay $420.00 with Monero",
     "Back"]) {
     assert.ok(p.textContent.includes(line), `the order summary is missing: ${line}`);
   }
   assert.ok(!p.textContent.includes("Stripe"), "with a coin chosen, the processor note is not shown");
   assert.equal(p.all("div.notes.slot").length, 1, "but its slot is, so the line's absence moves nothing");
-  assert.deepEqual(p.all("button.choice").map((c) => c.textContent), ["Card", "Bitcoin", "Monero"]);
+  assert.deepEqual(p.all("button.choice").map((c) => c.textContent), ["Card", "Bitcoin", "Lightning", "Monero"]);
   const card = render(screens.orderSummary({ canKeepTheCode: true,
     badgeType: "legend", months: 12, total: "$420.00", selected: "card",
     onSelect: noop, onPay: noop, onBack: noop,
@@ -226,7 +232,7 @@ domTest("screens: the provider-unavailable screen shows the unavailable method d
   const monero = p.all("button.choice").find((c) => c.textContent.startsWith("Monero"))!;
   assert.ok(monero.hasAttribute("disabled"));
   assert.ok(monero.textContent.includes("unavailable"));
-  assert.equal(p.all("button.choice").length, 3, "the method is shown, not dropped");
+  assert.equal(p.all("button.choice").length, 4, "the method is shown, not dropped");
 });
 
 domTest("screens: the order summary links to an order already waiting for payment", () => {
@@ -520,6 +526,109 @@ domTest("screens: the payment screen offers the amount and a wallet link, both c
   assert.ok(p.textContent.includes("Amount in XMR"), p.textContent);
   for (const b of p.all("button.secondary")) b.click();
   assert.deepEqual(copied, ["1.482", "48HqK2XmVexampleAddress9fRtWc"]);
+});
+
+domTest("screens: the order summary offers Lightning, and choosing it pays with Lightning", () => {
+  const chosen: string[] = [];
+  const p = render(screens.orderSummary({ canKeepTheCode: true,
+    badgeType: "supporter", months: 1, total: "$7.00", selected: "xmr",
+    onSelect: (m) => { chosen.push(m); }, onPay: noop, onBack: noop,
+  }));
+  const lightning = p.all("button.choice").find((c) => c.textContent === "Lightning");
+  assert.ok(lightning !== undefined, "Lightning is its own option, not folded into Bitcoin");
+  assert.equal(lightning.all("svg.mark").length, 1, "with a mark like the others");
+  lightning.click();
+  assert.deepEqual(chosen, ["ln"]);
+  const selected = render(screens.orderSummary({ canKeepTheCode: true,
+    badgeType: "supporter", months: 1, total: "$7.00", selected: "ln",
+    onSelect: noop, onPay: noop, onBack: noop,
+  }));
+  assert.ok(selected.textContent.includes("Pay $7.00 with Lightning"), selected.textContent);
+  const pressed = selected.all("button.choice").filter((c) => c.getAttribute("aria-pressed") === "true");
+  assert.deepEqual(pressed.map((c) => c.textContent), ["Lightning"]);
+});
+
+domTest("screens: a Lightning payment screen offers the BOLT11 as a lightning: link, and never mentions confirmations", () => {
+  copied.length = 0;
+  const p = renderAwaitingPayment({
+    order: unpaidRecord(), invoice: openLn, method: "ln", nowMs: NOW, resumed: false, onCancel: noopAsync,
+  });
+  const link = p.all("a.wallet-link")[0];
+  assert.ok(link !== undefined, "the Lightning payment screen has no wallet link");
+  assert.equal(link.getAttribute("href"), `lightning:${BOLT11}`, "the amount is inside the invoice, so the URI adds none");
+  for (const line of ["Send 0.00049999944 BTC", "Amount in BTC", "Lightning invoice", BOLT11,
+    "Waiting for the payment", "Bookmark this page — the invoice and the countdown both live on this URL."]) {
+    assert.ok(p.textContent.includes(line), `the Lightning payment screen is missing: ${line}`);
+  }
+  assert.ok(!/confirm/i.test(p.textContent), `a Lightning payment has no confirmations to wait for: ${p.textContent}`);
+  assert.ok(!p.textContent.includes("Lightning address"), "a BOLT11 is an invoice, not a Lightning address");
+  for (const b of p.all("button.secondary")) b.click();
+  assert.deepEqual(copied, ["0.00049999944", BOLT11]);
+});
+
+domTest("screens: a Lightning invoice that reports part of the amount asks for no remainder", () => {
+  const part = { ...openLn, cryptoAmountPaid: "0.00020000000", cryptoAmountDue: "0.00029999944" };
+  const p = renderAwaitingPayment({
+    order: unpaidRecord(), invoice: part, method: "ln", nowMs: NOW, resumed: false, onCancel: noopAsync,
+  });
+  assert.ok(p.textContent.includes("We have seen 0.00020000000 BTC of 0.00049999944 BTC."), p.textContent);
+  assert.ok(p.textContent.includes(screens.LIGHTNING_NO_REST), p.textContent);
+  assert.ok(!p.textContent.includes("Send the r"), `a BOLT11 cannot take a second payment: ${p.textContent}`);
+  assert.equal(p.all("a.wallet-link").length, 0, "nothing invites a second payment of the same invoice");
+  assert.equal(p.all("svg.qr").length, 0);
+  assert.ok(!p.textContent.includes("Waiting for the rest"), p.textContent);
+});
+
+domTest("screens: a fully paid Lightning invoice still open waits for it to settle, not to confirm", () => {
+  const covered = { ...openLn, cryptoAmountPaid: "0.00049999944", cryptoAmountDue: "0.00000000000" };
+  const p = renderAwaitingPayment({
+    order: unpaidRecord(), invoice: covered, method: "ln", nowMs: NOW, resumed: false, onCancel: noopAsync,
+  });
+  assert.ok(p.textContent.includes(screens.PAID_IN_FULL_TITLE), p.textContent);
+  assert.ok(p.textContent.includes("The invoice stays open until the payment settles."), p.textContent);
+  assert.ok(!/confirm/i.test(p.textContent), p.textContent);
+});
+
+domTest("screens: the Lightning confirming screen waits for settlement, and prints no confirmation count even if one is sent", () => {
+  const paid = { ...openLn, amountPaid: 700, cryptoAmountPaid: "0.00049999944", paidInFull: true, requiredConfirmations: 1 };
+  const p = render(screens.awaitingConfirmation({
+    order: smuggled(), invoice: paid, method: "ln", gaveUp: false, onCheckAgain: noop,
+  }));
+  for (const line of ["Payment received", "Waiting for the Lightning payment to settle.",
+    "This usually takes a few seconds. The page updates itself.", "0.00049999944 BTC"]) {
+    assert.ok(p.textContent.includes(line), `the Lightning confirming screen is missing: ${line}`);
+  }
+  for (const leak of ["confirmation", "blockchain", "block,", "network to confirm"]) {
+    assert.ok(!p.textContent.includes(leak), `the Lightning confirming screen leaked "${leak}": ${p.textContent}`);
+  }
+  assertNoCode(p, "the Lightning confirming screen");
+});
+
+domTest("screens: an expired Lightning order says the invoice can no longer be paid", () => {
+  const nothing = render(screens.windowClosed({ onNewInvoice: noop,
+    order: unpaidRecord({ status: "expired", method: "ln" }),
+    invoice: { status: "expired", amount: 700, currency: "usd" },
+  }));
+  assert.ok(nothing.textContent.includes("Nothing was received, and nothing was charged."), nothing.textContent);
+  assert.ok(nothing.textContent.includes(screens.LIGHTNING_EXPIRED), "read from the order, since a closed view drops the destination");
+
+  const onChain = render(screens.windowClosed({ onNewInvoice: noop,
+    order: unpaidRecord({ status: "expired", method: "btc" }),
+    invoice: { status: "expired", amount: 700, currency: "usd" },
+  }));
+  assert.ok(!onChain.textContent.includes("Lightning"), onChain.textContent);
+
+  const funded = render(screens.windowClosed({ onNewInvoice: noop,
+    order: smuggled({ status: "expired" }),
+    invoice: { ...openLn, status: "expired", amountPaid: 700, cryptoAmountPaid: "0.00049999944", paidInFull: true },
+  }));
+  assert.ok(funded.textContent.includes("0.00049999944 BTC arrived, but the Lightning invoice expired before it settled"),
+    funded.textContent);
+  for (const leak of ["window closed", "not the full amount", "shortfall"]) {
+    assert.ok(!funded.textContent.includes(leak), `a BOLT11 is paid in full or not at all, and expires with the order: "${leak}"`);
+  }
+  assert.ok(funded.textContent.includes("inv_9f3a"), "and the reference support works from");
+  assertNoCode(funded, "the expired Lightning order");
 });
 
 domTest("screens: the confirming screen waits, and promises not to expire while it does", () => {

@@ -3,7 +3,7 @@ import { badgeIcon, chevronLeft, hamburger, hasBadgeArt, methodMark, wefunderMar
 import { paymentUri, qrSvg } from "./qr.js";
 import type { HistoryRow, UnpaidOrder } from "./order.js";
 import type { InvoiceView } from "./api.js";
-import { THEMES, type App, type Method, type Theme } from "./domain.js";
+import { THEMES, type App, type Chain, type Method, type Theme } from "./domain.js";
 import type { CardFailure } from "./stripe.js";
 import { CROWDFUNDING_ACTIVE, WEFUNDER_URL, dollars } from "./crowdfunding.js";
 
@@ -54,6 +54,8 @@ export const KEEPS_WAITING = "This page keeps checking. The invoice will not exp
 export class CancelRefused extends Error {}
 
 export const PAID_IN_FULL_TITLE = "The full amount has arrived";
+export const LIGHTNING_NO_REST = "A Lightning invoice is paid in full or not at all, so it cannot take the rest.";
+export const LIGHTNING_EXPIRED = "The Lightning invoice expired with the order, so a wallet can no longer pay it.";
 export const CANCEL_NOT_OPEN = "This invoice is no longer open, so there is nothing to cancel.";
 export const CANCEL_HAS_FUNDS = "This invoice has a payment on it, so it cannot be cancelled.";
 export const CANCEL_STILL_OPEN = "This invoice was cancelled, but the service still shows it open. Do not send anything more to the address.";
@@ -396,8 +398,8 @@ export function durations(o: DurationsOptions): HTMLElement {
   return withInvest(p, investPanel(o.perk));
 }
 
-const METHOD_NAMES: Readonly<Record<Method, string>> = { btc: "Bitcoin", xmr: "Monero", card: "Card" };
-export const METHOD_ORDER: readonly Method[] = ["card", "btc", "xmr"];
+const METHOD_NAMES: Readonly<Record<Method, string>> = { btc: "Bitcoin", ln: "Lightning", xmr: "Monero", card: "Card" };
+export const METHOD_ORDER: readonly Method[] = ["card", "btc", "ln", "xmr"];
 
 export const NOT_KEPT_TITLE = "This browser will not keep your code";
 
@@ -558,8 +560,9 @@ function offlineNote(): HTMLElement {
   return el("p", { class: "muted offline", role: "status" }, OFFLINE_NOTE);
 }
 
-const CRYPTO_NAMES: Readonly<Record<"btc" | "xmr", string>> = { btc: "Bitcoin", xmr: "Monero" };
-const CRYPTO_TICKERS: Readonly<Record<"btc" | "xmr", string>> = { btc: "BTC", xmr: "XMR" };
+const CRYPTO_NAMES: Readonly<Record<Chain, string>> = { btc: "Bitcoin", ln: "Lightning", xmr: "Monero" };
+const CRYPTO_TICKERS: Readonly<Record<Chain, string>> = { btc: "BTC", ln: "BTC", xmr: "XMR" };
+const DESTINATIONS: Readonly<Record<Chain, string>> = { btc: "address", ln: "invoice", xmr: "address" };
 
 function cancelControl(onCancel: () => Promise<void>, notice: string | undefined): Node[] {
   const status = el("p", { class: "muted cancel-status", role: "status" }, notice ?? "");
@@ -583,7 +586,7 @@ function cancelControl(onCancel: () => Promise<void>, notice: string | undefined
 export interface AwaitingPaymentOptions {
   order: UnpaidOrder;
   invoice: InvoiceView;
-  method: "btc" | "xmr";
+  method: Chain;
   nowMs: number;
   now?: () => number;
   resumed: boolean;
@@ -613,8 +616,11 @@ export function awaitingPayment(o: AwaitingPaymentOptions): { node: HTMLElement;
   const left: Outstanding = paidSoFar === undefined
     ? { kind: "owed", amount }
     : outstanding(o.invoice.cryptoAmountDue);
-  const owed = left.kind === "owed" ? left.amount : undefined;
+  // A BOLT11 invoice is paid in full or not at all, so a Lightning payment is never asked to send the rest.
+  const lightning = o.method === "ln";
+  const owed = left.kind === "owed" && (paidSoFar === undefined || !lightning) ? left.amount : undefined;
   const ticker = CRYPTO_TICKERS[o.method];
+  const destination = DESTINATIONS[o.method];
   const rate = el("p", { class: "lede rate", "aria-live": "off" }, rateLine);
   p.append(
     el("h1", { class: "tight" }, owed !== undefined ? `Send ${owed} ${ticker}`
@@ -626,8 +632,10 @@ export function awaitingPayment(o: AwaitingPaymentOptions): { node: HTMLElement;
     p.append(owed !== undefined
       ? warning(PART_PAID_TITLE, seen, `Send the remaining ${owed} ${ticker} to the same address below.`)
       : left.kind === "covered"
-        ? warning(seen, "Nothing more is owed. The invoice stays open until the payment confirms.")
-        : warning(seen, "Send the rest to the same address below. The invoice stays open until it is paid in full."));
+        ? warning(seen, `Nothing more is owed. The invoice stays open until the payment ${lightning ? "settles" : "confirms"}.`)
+        : lightning
+          ? warning(seen, LIGHTNING_NO_REST, "Quote the reference below and we will sort it out.")
+          : warning(seen, "Send the rest to the same address below. The invoice stays open until it is paid in full."));
   }
   const uri = owed === undefined ? null : paymentUri(o.method, o.invoice.address ?? "", owed);
   const qr = uri === null ? null : qrFigure(uri, `${CRYPTO_NAMES[o.method]} payment code`);
@@ -640,7 +648,7 @@ export function awaitingPayment(o: AwaitingPaymentOptions): { node: HTMLElement;
   const amountCopy = copyControl("Copy", owed ?? "", "secondary inline");
   const details = el("div", { class: "details" },
     ...(owed === undefined ? [] : [copyableField(`Amount in ${ticker}`, owed, amountCopy.control, amountCopy.status)]),
-    copyableField(`${CRYPTO_NAMES[o.method]} address`, o.invoice.address ?? "",
+    copyableField(`${CRYPTO_NAMES[o.method]} ${destination}`, o.invoice.address ?? "",
       address.control, address.status),
     reference(o.order.orderId),
   );
@@ -648,14 +656,14 @@ export function awaitingPayment(o: AwaitingPaymentOptions): { node: HTMLElement;
   if (qr !== null) split.append(qr);
   split.append(details);
 
-  const partly = paidSoFar !== undefined && left.kind !== "covered";
+  const partly = paidSoFar !== undefined && left.kind !== "covered" && !lightning;
   const waiting = el("p", { class: "awaiting", role: "status" },
     el("span", { class: "pulse", "aria-hidden": "true" }),
-    partly ? "Waiting for the rest of the payment" : "Waiting for the payment to confirm");
+    partly ? "Waiting for the rest of the payment" : lightning ? "Waiting for the payment" : "Waiting for the payment to confirm");
   p.append(split, waiting);
   if (o.offline === true) p.append(offlineNote());
   p.append(
-    el("p", { class: "muted" }, "Bookmark this page — the address and the countdown both live on this URL."),
+    el("p", { class: "muted" }, `Bookmark this page — the ${destination} and the countdown both live on this URL.`),
   );
   p.append(...cancelControl(o.onCancel, o.notice));
 
@@ -690,6 +698,10 @@ const CONFIRMING: Readonly<Record<Method, { status: string; wait: string }>> = {
     status: "Waiting for the Bitcoin network to confirm.",
     wait: "This takes a block, usually about ten minutes. The page updates itself.",
   },
+  ln: {
+    status: "Waiting for the Lightning payment to settle.",
+    wait: "This usually takes a few seconds. The page updates itself.",
+  },
   xmr: {
     status: "Waiting for the Monero network to confirm.",
     wait: "This takes a block, usually a couple of minutes. The page updates itself.",
@@ -714,7 +726,7 @@ export function awaitingConfirmation(o: AwaitingConfirmationOptions): HTMLElemen
     notice("Still processing", CONFIRMING[method].wait),
   );
   const needed = o.invoice?.requiredConfirmations;
-  if (needed !== undefined && needed > 0 && method !== "card") {
+  if (needed !== undefined && needed > 0 && method !== "card" && method !== "ln") {
     p.append(el("p", { class: "muted" },
       `This is settled once the payment has ${needed === 1 ? "1 confirmation" : `${needed} confirmations`} on the ${CRYPTO_NAMES[method]} blockchain.`));
   }
@@ -758,6 +770,7 @@ export function windowClosed(o: WindowClosedOptions): HTMLElement {
   // A payment can land after the window closes, so this screen must count any crypto figure as money
   // and not tell the buyer nothing arrived.
   const funded = o.invoice?.paidInFull === true || o.invoice?.cryptoAmountPaid !== undefined;
+  const lightning = (o.invoice?.cryptoCurrency ?? o.order.method) === "ln";
   const p = panel(el("h1", { class: "tight" }, "This invoice expired"));
   if (funded || (paid !== undefined && paid > 0)) {
     const crypto = o.invoice?.cryptoAmountPaid;
@@ -767,15 +780,19 @@ export function windowClosed(o: WindowClosedOptions): HTMLElement {
       : "A payment";
     const total = o.invoice?.amount;
     const short = o.invoice?.paidInFull !== true && (paid === undefined || total === undefined || paid < total);
-    p.append(warning(
-      short ? `${arrived} arrived, which is not the full amount` : `${arrived} arrived after the window closed`,
-      short
-        ? "The rate window has closed, so the shortfall is no longer meaningful."
-        : "The rate window had already closed when it arrived.",
-      "Quote the reference below and we will sort it out."));
+    p.append(lightning
+      ? warning(`${arrived} arrived, but the Lightning invoice expired before it settled`,
+        "Quote the reference below and we will sort it out.")
+      : warning(
+        short ? `${arrived} arrived, which is not the full amount` : `${arrived} arrived after the window closed`,
+        short
+          ? "The rate window has closed, so the shortfall is no longer meaningful."
+          : "The rate window had already closed when it arrived.",
+        "Quote the reference below and we will sort it out."));
     p.append(reference(o.order.orderId));
   } else {
     p.append(el("p", { class: "lede" }, "Nothing was received, and nothing was charged."));
+    if (lightning) p.append(el("p", { class: "muted" }, LIGHTNING_EXPIRED));
   }
   if (o.offline === true) p.append(offlineNote());
   p.append(buyNewCode);

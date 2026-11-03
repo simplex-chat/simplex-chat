@@ -170,6 +170,21 @@ storeTest("store: a session or theme outside the known set falls back to the def
     "a good step keeps what reads beside it, and only that");
 });
 
+storeTest("store: a Lightning order and its BOLT11 destination survive a reload, as do the session's method", () => {
+  const mem = new MemoryStorage();
+  const s = new Store(mem);
+  const bolt11 = "lnbc499999440p1pfakeinvoicedestinationforthetestsonly";
+  s.saveOrder(order("1", { method: "ln", address: bolt11, cryptoAmount: "0.00049999944", cryptoCurrency: "ln" }));
+  s.saveSession({ step: "checkout", method: "ln" });
+  const reloaded = new Store(mem);
+  const o = reloaded.order("1")!;
+  assert.equal(o.method, "ln", "a dropped method would leave the reopened order on no payment screen");
+  assert.equal(o.cryptoCurrency, "ln");
+  assert.equal(o.address, bolt11);
+  assert.equal(o.cryptoAmount, "0.00049999944", "the millisatoshi digits are kept as sent");
+  assert.equal(reloaded.session().method, "ln");
+});
+
 storeTest("store: saveOrder replaces the stored entry rather than merging into it", () => {
   const s = new Store(new MemoryStorage());
   s.saveOrder(order("1", { address: "48HqK2Xm", cryptoAmountPaid: "1.482", paidInFull: true, amount: 42000 }));

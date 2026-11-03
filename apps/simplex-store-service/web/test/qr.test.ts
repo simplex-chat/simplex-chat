@@ -454,6 +454,8 @@ const MONERO_ADDRESS = "48HqK2XmVexampleAddress9fRtWcExampleAddress2nQyVXaLbEEXa
 const MONERO_INTEGRATED = "4LEXampleIntegratedAddress9fRtWcExampleAddress2nQyVXaLbEEXampleAddr9SDFGHJK9fRtWcQ8Uv7VJj3mExampleAddr9fRt";
 const BITCOIN_ADDRESS = "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq";
 const BADGE_CODE = "SB-YDC8A-YGQTM-PUYZ9-2TUXP";
+// BOLT11 is lowercase bech32, and one carrying route hints runs to about 400 characters.
+const BOLT11_400 = "lnbc499999440p1" + "qpzry9x8gf2tvdw0s3jn54khce6mua7l".repeat(13).slice(0, 385);
 
 function roundTrip(payload: string, what: string): Decoded {
   const symbol = symbolOf(payload);
@@ -484,6 +486,15 @@ qrTest("qr: a Bitcoin BIP-21 URI round-trips", () => {
   const uri = paymentUri("btc", BITCOIN_ADDRESS, "0.00412")!;
   assert.equal(uri, `bitcoin:${BITCOIN_ADDRESS}?amount=0.00412`);
   roundTrip(uri, "the Bitcoin URI");
+});
+
+qrTest("qr: a 400-character BOLT11 as a lightning: URI round-trips, at a version the payment screen can still draw", () => {
+  assert.equal(BOLT11_400.length, 400);
+  const uri = paymentUri("ln", BOLT11_400, "0.00049999944")!;
+  assert.equal(uri, `lightning:${BOLT11_400}`, "the amount is inside the invoice, so the URI carries none");
+  const decoded = roundTrip(uri, "the Lightning URI");
+  // 410 bytes fills version 15 (412 at level M): 77 modules, 85 with the quiet zone, about 2.3px each in a 196px symbol.
+  assert.equal(decoded.version, 15);
 });
 
 qrTest("qr: a badge code round-trips exactly, hyphens and all", () => {
@@ -521,6 +532,7 @@ qrTest("qr: paymentUri refuses half a destination", () => {
   assert.equal(paymentUri("xmr", "", "1.482"), null, "no address is nothing to scan");
   assert.equal(paymentUri("xmr", MONERO_ADDRESS, ""), null, "and a bare address does not prefill an amount");
   assert.equal(paymentUri("btc", BITCOIN_ADDRESS, "0.5"), `bitcoin:${BITCOIN_ADDRESS}?amount=0.5`);
+  assert.equal(paymentUri("ln", "", "0.00049999944"), null, "no invoice is nothing to scan");
 });
 
 // A fresh regex each time, since matchAll and replace share lastIndex on one object.
@@ -615,7 +627,7 @@ const xmrInvoice: View = {
   address: MONERO_ADDRESS, cryptoAmount: "1.482", cryptoCurrency: "xmr",
 };
 
-function awaitingPayment(invoice: View = xmrInvoice, method: "btc" | "xmr" = "xmr"): StubElement {
+function awaitingPayment(invoice: View = xmrInvoice, method: import("../src/domain.js").Chain = "xmr"): StubElement {
   const built = screens.awaitingPayment({
     order: record({ code: BADGE_CODE }), invoice, method, nowMs: NOW,
     resumed: false, onCancel: noopAsync,
@@ -639,6 +651,14 @@ qrTest("the payment screen: Bitcoin gets BIP-21 with `amount`, Monero `tx_amount
   const btc = awaitingPayment({ ...xmrInvoice, address: BITCOIN_ADDRESS, cryptoAmount: "0.00412", cryptoCurrency: "btc" }, "btc");
   const decoded = decodeQr(modulesOfSvg(btc.querySelector("svg.qr")!));
   assert.equal(decoded.payload, `bitcoin:${BITCOIN_ADDRESS}?amount=0.00412`);
+});
+
+qrTest("the payment screen: Lightning gets lightning: and the BOLT11 alone, with no amount parameter", () => {
+  const ln = awaitingPayment({ ...xmrInvoice, address: BOLT11_400, cryptoAmount: "0.00049999944", cryptoCurrency: "ln" }, "ln");
+  const decoded = decodeQr(modulesOfSvg(ln.querySelector("svg.qr")!));
+  assert.equal(decoded.payload, `lightning:${BOLT11_400}`, "a wallet reading anything else pays nothing, or the wrong invoice");
+  assert.equal(ln.all("a.wallet-link")[0]!.getAttribute("href"), decoded.payload, "the link opens what the symbol encodes");
+  assert.equal(ln.querySelector("svg.qr")!.getAttribute("aria-label"), "Lightning payment code");
 });
 
 qrTest("the payment screen: with no address there is no QR, and the screen keeps its text", () => {

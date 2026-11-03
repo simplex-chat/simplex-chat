@@ -5,7 +5,7 @@ import { once } from "node:events";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createServer, connect } from "node:net";
 import { fileURLToPath } from "node:url";
-import { createInvoice, waitForChange, inferMethod, parseInvoiceView, ApiError, AbortedError } from "../src/api.js";
+import { createInvoice, waitForChange, inferMethod, parseInvoiceView, readInvoice, ApiError, AbortedError } from "../src/api.js";
 import { generate, display, normalise, checkChar, hash } from "../src/codes.js";
 import { Store } from "../src/store.js";
 
@@ -48,6 +48,11 @@ const fullCreated = {
   amount: 4200, currency: "usd", expiresAt: "2026-08-28T12:00:00Z",
   address: "48HqK2XmVexampleAddress9fRtWc", cryptoAmount: "1.482", cryptoCurrency: "xmr" as const,
 };
+const lnCreated = {
+  invoiceId: "inv_ln01", badgeType: "supporter", months: 1,
+  amount: 700, currency: "usd", expiresAt: "2026-08-28T12:00:00Z",
+  address: "lnbc499999440p1pfakeinvoicedestinationforthetestsonly", cryptoAmount: "0.00049999944", cryptoCurrency: "ln" as const,
+};
 const cardCreated = {
   invoiceId: "inv_card1", badgeType: "supporter", months: 1,
   amount: 700, currency: "usd", expiresAt: "2026-08-28T12:00:00Z",
@@ -81,6 +86,32 @@ apiTest("api: createInvoice accepts a card-shaped 200 for a card request", async
   const { fn } = fetchReturning({ status: 200, body: cardCreated });
   const got = await createInvoice({ priceId: "p", method: "card", codeHash: "h" }, fn);
   assert.deepEqual(got, cardCreated);
+});
+
+apiTest("api: createInvoice sends method ln and accepts the Lightning invoice it gets back", async () => {
+  const { fn, calls } = fetchReturning({ status: 200, body: lnCreated });
+  const got = await createInvoice({ priceId: "p", method: "ln", codeHash: "h" }, fn);
+  assert.equal(JSON.parse(String(calls[0]!.init!.body)).method, "ln");
+  assert.deepEqual(got, lnCreated, "the BOLT11 and the 11-decimal amount are kept as sent");
+});
+
+apiTest("api: createInvoice refuses a Lightning invoice for an on-chain request, and the reverse", async () => {
+  const cases = [
+    ["btc", lnCreated],
+    ["xmr", lnCreated],
+    ["ln", { ...lnCreated, cryptoCurrency: "btc" }],
+    ["ln", fullCreated],
+    ["ln", cardCreated],
+    ["card", lnCreated],
+  ] as const;
+  for (const [method, body] of cases) {
+    const { fn } = fetchReturning({ status: 200, body });
+    await assert.rejects(
+      () => createInvoice({ priceId: "p", method, codeHash: "h" }, fn),
+      (e: unknown) => e instanceof ApiError && e.code === "invalid_response",
+      `a ${method} request answered with ${JSON.stringify(body)} must be refused`,
+    );
+  }
 });
 
 apiTest("api: createInvoice maps error codes to typed errors", async () => {
@@ -162,6 +193,11 @@ apiTest("api: a read keeps every well-typed field and reads null as not sent", (
     paidInFull: true, requiredConfirmations: 6,
   };
   assert.deepEqual(parseInvoiceView(full), full, "nothing well-typed may be dropped on the way in");
+  const lightning = {
+    status: "open", address: lnCreated.address, cryptoAmount: "0.00049999944", cryptoCurrency: "ln",
+    cryptoAmountPaid: "0.00049999944", cryptoAmountDue: "0.00000000000", paidInFull: true,
+  };
+  assert.deepEqual(parseInvoiceView(lightning), lightning, "a Lightning view reads, with no requiredConfirmations");
   assert.deepEqual(parseInvoiceView({ status: "open", amount: null, currency: null }), { status: "open" },
     "Aeson encodes an absent Maybe as null, which is not a malformed field");
 });
@@ -203,6 +239,7 @@ apiTest("api: inferMethod reads the wire's own signal, not a session the second 
   assert.equal(inferMethod({ clientSecret: "cs_test_x" }), "card");
   assert.equal(inferMethod({ cryptoCurrency: "btc" }), "btc");
   assert.equal(inferMethod({ cryptoCurrency: "xmr" }), "xmr");
+  assert.equal(inferMethod({ cryptoCurrency: "ln" }), "ln");
   assert.equal(inferMethod({}), undefined);
 });
 
@@ -779,6 +816,23 @@ e2eTest("e2e: a repeated code hash is refused with code_conflict, not merely ref
         assert.equal(e.status, 409);
         return true;
       });
+  });
+});
+
+e2eTest("e2e: a Lightning invoice is a BOLT11 with no confirmations, and cannot be part-paid", async () => {
+  await withServer(async (f) => {
+    const inv = await createInvoice(
+      { priceId: "price_supporter", method: "ln", codeHash: await hash(generate()) }, f);
+    assert.equal(inv.cryptoCurrency, "ln");
+    assert.match(inv.address ?? "", /^lnbc[0-9a-z]{250,}$/, "a lowercase BOLT11 of realistic length");
+    assert.match(inv.cryptoAmount ?? "", /^\d+\.\d{11}$/, "BTC to the millisatoshi");
+    const open = await readInvoice(inv.invoiceId, f);
+    assert.equal(open.requiredConfirmations, undefined, "a Lightning payment is final once paid");
+    assert.equal((await control(f, "partial", inv.invoiceId)).status, 400, "a BOLT11 is paid in full or not at all");
+    assert.equal((await control(f, "settle", inv.invoiceId)).status, 200);
+    const paid = await waitForChange(inv.invoiceId, "open", f);
+    assert.equal(paid.status, "paid");
+    assert.equal(paid.cryptoAmountPaid, inv.cryptoAmount);
   });
 });
 
