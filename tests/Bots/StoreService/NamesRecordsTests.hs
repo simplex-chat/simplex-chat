@@ -24,6 +24,7 @@ import qualified Data.ByteString as B
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import qualified Data.ByteString.Lazy as LB
+import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -218,14 +219,21 @@ relay Setup {records} = async . relayEdit records
 
 -- | Mines the n-th transaction sent with this status, one block deeper, then runs the sender's round and the lane's.
 mineSent :: Setup -> Int -> Bool -> IO TxHash
-mineSent Setup {node, sender, records} n ok = do
-  raws <- within $ awaitSent node n
+mineSent s@Setup {node, sender, records} n ok = do
+  raws <- sentBy s n
   let h = C.keccak256 $ raws !! (n - 1)
   _ <- mine node [(h, ok)]
   _ <- mine node []
   followTransactions sender
   recordsRound records
   pure $ TxHash h
+
+-- | The transactions sent, once the request that sent the n-th has let go of its edit, since until then a round skips the edit.
+sentBy :: Setup -> Int -> IO [ByteString]
+sentBy Setup {node, records} n = within $ do
+  raws <- awaitSent node n
+  atomically $ readTVar (rsClaimed records) >>= check . S.null
+  pure raws
 
 answerOf :: Async EditAnswer -> IO EditAnswer
 answerOf = within . wait
@@ -353,10 +361,10 @@ testHighS = do
 -- relay
 
 testRelayMined :: TVar ChaChaDRG -> IO ()
-testRelayMined g = withSetup g $ \s@Setup {node} -> do
+testRelayMined g = withSetup g $ \s -> do
   req <- ownerEdit s viemChannelLink
   r <- relay s req
-  [raw] <- within $ awaitSent node 1
+  [raw] <- sentBy s 1
   fmap (\TxRequest {trTo, trData} -> (trTo, trData)) (decodeSignedTx raw) `shouldBe` Right (fakeResolver, viemSetCall)
   h <- mineSent s 1 True
   answerOf r `shouldReturn` EAApplied (Just h)
@@ -385,12 +393,12 @@ testRefusedNameState g = withSetup g $ \s@Setup {node, records} -> do
   sentTransactions node `shouldReturn` []
 
 testNonOwnerCap :: TVar ChaChaDRG -> IO ()
-testNonOwnerCap g = withSetup g $ \s@Setup {node, records} -> do
+testNonOwnerCap g = withSetup g $ \s@Setup {records} -> do
   other <- newEphemeralWallet g
   forM_ [0 .. 9] $ \n -> (relayEdit records =<< signEdit s other (channel viemChannelLink) n deadline) `shouldReturn` EARefused
   editRows s `shouldReturn` 0
   r <- relay s =<< ownerEdit s viemChannelLink
-  _ <- within $ awaitSent node 1
+  _ <- sentBy s 1
   h <- mineSent s 1 True
   answerOf r `shouldReturn` EAApplied (Just h)
 
@@ -475,7 +483,7 @@ testConcurrentTwin g = withSetup g $ \s@Setup {node, records} -> do
   -- both pass the repeat lookup before either inserts
   setFault node "eth_getBlockByNumber" $ Slow 300000
   answers <- async $ concurrently (relayEdit records req) (relayEdit records req)
-  _ <- within $ awaitSent node 1
+  _ <- sentBy s 1
   clearFault node "eth_getBlockByNumber"
   h <- mineSent s 1 True
   within (wait answers) `shouldReturn` (EAApplied (Just h), EAApplied (Just h))
@@ -509,7 +517,7 @@ testChainStopsAfterSend :: TVar ChaChaDRG -> IO ()
 testChainStopsAfterSend g = withSetup g $ \s@Setup {node, records} -> do
   req <- ownerEdit s viemChannelLink
   r <- relay s req
-  _ <- within $ awaitSent node 1
+  _ <- sentBy s 1
   setFault node "eth_getBlockByNumber" HttpFailure
   recordsRound records
   answerOf r `shouldReturn` EAPending
@@ -524,7 +532,7 @@ testTwoMined :: TVar ChaChaDRG -> IO ()
 testTwoMined g = withSetup g $ \s@Setup {node} -> do
   req <- ownerTwo s 0 viemContactLink viemChannelLink
   r <- relay s req
-  [raw] <- within $ awaitSent node 1
+  [raw] <- sentBy s 1
   fmap (\TxRequest {trTo, trData} -> (trTo, trData)) (decodeSignedTx raw) `shouldBe` Right (fakeResolver, viemMulticall)
   h <- mineSent s 1 True
   answerOf r `shouldReturn` EAApplied (Just h)
@@ -614,7 +622,7 @@ testTwoExpired g = withSetup g $ \s@Setup {node, records, owner} -> do
   second <- signChange s owner (channel viemChannelLink) 1 deadline
   let req = editOf $ first :| [second]
   relayEdit records {rsPendingAfter = shortWait} req `shouldReturn` EAPending
-  _ <- within $ awaitSent node 1
+  _ <- sentBy s 1
   -- the second edit's deadline, the earlier one, is passed at the latest block but not yet two confirmations deep
   setBlock node 300 deadline
   setBlock node 301 $ deadline + 1
@@ -627,10 +635,10 @@ testTwoExpired g = withSetup g $ \s@Setup {node, records, owner} -> do
 
 testTwoAppliedByAnother :: TVar ChaChaDRG -> IO ()
 testTwoAppliedByAnother g =
-  forM_ [(viemChannelLink, EAApplied Nothing), ("https://smp9.simplex.im/c#other", EAReverted $ Just "InvalidNonce")] $ \(held, answer) -> withSetup g $ \s@Setup {node} -> do
+  forM_ [(viemChannelLink, EAApplied Nothing), ("https://smp9.simplex.im/c#other", EAReverted $ Just "InvalidNonce")] $ \(held, answer) -> withSetup g $ \s -> do
     req <- ownerTwo s 0 viemContactLink viemChannelLink
     r <- relay s req
-    _ <- within $ awaitSent node 1
+    _ <- sentBy s 1
     -- another relayer's transaction used both nonces first
     setNonce s 2
     setRecord s contactKey viemContactLink
@@ -639,10 +647,10 @@ testTwoAppliedByAnother g =
     answerOf r `shouldReturn` answer
 
 testTwoFirstNonceTaken :: TVar ChaChaDRG -> IO ()
-testTwoFirstNonceTaken g = withSetup g $ \s@Setup {node} -> do
+testTwoFirstNonceTaken g = withSetup g $ \s -> do
   req <- ownerTwo s 0 viemContactLink viemChannelLink
   r <- relay s req
-  _ <- within $ awaitSent node 1
+  _ <- sentBy s 1
   -- the records happen to hold both values, but only the first nonce moved, so the request cannot land
   setNonce s 1
   setRecord s contactKey viemContactLink
@@ -658,10 +666,10 @@ editsLeftNow Setup {store, clock} = readTVarIO clock >>= \now -> withTransaction
 -- outcomes
 
 testAppliedByAnother :: TVar ChaChaDRG -> IO ()
-testAppliedByAnother g = withSetup g $ \s@Setup {node, records} -> do
+testAppliedByAnother g = withSetup g $ \s@Setup {records} -> do
   req <- ownerEdit s viemChannelLink
   r <- relay s req
-  _ <- within $ awaitSent node 1
+  _ <- sentBy s 1
   -- another relayer's transaction with the same signed edit mined first
   setNonce s 1
   setRecord s channelKey viemChannelLink
@@ -686,7 +694,7 @@ testExpiredAppliedByAnother :: TVar ChaChaDRG -> IO ()
 testExpiredAppliedByAnother g = withSetup g $ \s@Setup {node} -> do
   req <- ownerEdit s viemChannelLink
   r <- relay s req
-  _ <- within $ awaitSent node 1
+  _ <- sentBy s 1
   setBlock node 300 deadline
   setNonce s 1
   setRecord s channelKey viemChannelLink
@@ -696,10 +704,10 @@ testExpiredAppliedByAnother g = withSetup g $ \s@Setup {node} -> do
   stateOf s req `shouldReturn` Just (ESMined Nothing)
 
 testNonceTakenByAnother :: TVar ChaChaDRG -> IO ()
-testNonceTakenByAnother g = withSetup g $ \s@Setup {node} -> do
+testNonceTakenByAnother g = withSetup g $ \s -> do
   req <- ownerEdit s viemChannelLink
   r <- relay s req
-  _ <- within $ awaitSent node 1
+  _ <- sentBy s 1
   setNonce s 1
   setRecord s channelKey "https://smp9.simplex.im/c#other"
   _ <- mineSent s 1 False
@@ -725,17 +733,17 @@ testClearNonceTaken g = forM_ [contactKey, channelKey] $ \held -> withSetup g $ 
 
 -- | viem's clear edit, with nonce 1, sent; then the owner's nonce moves past it.
 relayClear :: Setup -> IO (Async EditAnswer)
-relayClear s@Setup {node, owner} = do
+relayClear s@Setup {owner} = do
   setNonce s 1
   req <- signEdit s owner RCClear 1 deadline
   r <- relay s req
-  [raw] <- within $ awaitSent node 1
+  [raw] <- sentBy s 1
   fmap trData (decodeSignedTx raw) `shouldBe` Right viemClearCall
   setNonce s 2
   pure r
 
 testRevertFreesNonce :: TVar ChaChaDRG -> IO ()
-testRevertFreesNonce g = withSetup g $ \s@Setup {node, records} -> do
+testRevertFreesNonce g = withSetup g $ \s@Setup {records} -> do
   first <- ownerEdit s viemChannelLink
   r <- relay s first
   -- reverted before the deadline with the nonce unused, so the revert has no name
@@ -743,7 +751,7 @@ testRevertFreesNonce g = withSetup g $ \s@Setup {node, records} -> do
   answerOf r `shouldReturn` EAReverted Nothing
   second <- ownerEdit s "https://smp9.simplex.im/c#second"
   r' <- relay s second
-  _ <- within $ awaitSent node 2
+  _ <- sentBy s 2
   relayEdit records first `shouldReturn` EAReverted Nothing
   stateOf s second `shouldReturn` Just ESPending
   h <- mineSent s 2 True
@@ -753,7 +761,7 @@ testFailedReRead :: TVar ChaChaDRG -> IO ()
 testFailedReRead g = withSetup g $ \s@Setup {node, records} -> do
   req <- ownerEdit s viemChannelLink
   r <- relay s req
-  _ <- within $ awaitSent node 1
+  _ <- sentBy s 1
   setFault node "eth_call" HttpFailure
   _ <- mineSent s 1 False
   answerOf r `shouldReturn` EAPending
@@ -776,7 +784,7 @@ testResume g = withSetup g $ \s@Setup {node, owner} -> do
   setNonce s 1
   sent <- signEdit s owner (channel "https://smp9.simplex.im/c#next") 1 deadline
   _ <- relayEdit (records s') {rsPendingAfter = shortWait} sent
-  [_, raw] <- within $ awaitSent node 2
+  [_, raw] <- sentBy s' 2
   dropTransaction node $ C.keccak256 raw
   s'' <- restart s'
   followTransactions (sender s'')
@@ -837,7 +845,7 @@ testRestartExpiredApplied :: TVar ChaChaDRG -> IO ()
 testRestartExpiredApplied g = withSetup g $ \s@Setup {node} -> do
   req <- ownerEdit s viemChannelLink
   relayEdit (records s) {rsPendingAfter = shortWait} req `shouldReturn` EAPending
-  _ <- within $ awaitSent node 1
+  _ <- sentBy s 1
   -- while the service is down the deadline passes, and another relayer applies the edit
   setBlock node 300 $ deadline + 1
   setBlock node 301 $ deadline + 2
@@ -852,7 +860,7 @@ testExpiryFreesNonce :: TVar ChaChaDRG -> IO ()
 testExpiryFreesNonce g = withSetup g $ \s@Setup {node, records, sender} -> do
   req <- ownerEdit s viemChannelLink
   relayEdit records {rsPendingAfter = shortWait} req `shouldReturn` EAPending
-  [raw] <- within $ awaitSent node 1
+  [raw] <- sentBy s 1
   -- the latest block is past the deadline, but not yet the block two confirmations deep
   setBlock node 300 deadline
   setBlock node 301 $ deadline + 1

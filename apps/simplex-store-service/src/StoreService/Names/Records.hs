@@ -6,7 +6,7 @@
 
 -- | Record edits signed by a name's owner, each request relayed as one transaction through the registrar key's sender and followed to its outcome.
 module StoreService.Names.Records
-  ( Records (rsPendingAfter, rsEditsPerYear),
+  ( Records (rsPendingAfter, rsEditsPerYear, rsClaimed),
     EditRequest (..),
     EditAnswer (..),
     EditsLeft (..),
