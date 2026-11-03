@@ -164,9 +164,9 @@ absent `[btcpay]` does for Bitcoin and Monero. Its keys:
   it expired and logs an error. Check such orders in the Stripe Dashboard. After a restart, the
   hour starts again.
 
-The service creates each payment intent with `metadata[order]`, the order's reference:
-`badge:0x<code hash>` (`code_hash` in `sx_badge_service_badge_codes`). It is not a secret,
-and support finds an intent's order from it in the Dashboard.
+The service creates each payment intent with `metadata[order]`, the order's id, which the page
+shows the buyer as "Reference" (`invoice_id` in `sx_badge_service_invoices`). It is not a secret,
+and support finds the intent of the reference a buyer quotes from it in the Dashboard.
 
 The service fills `publishable_key` into the shell at boot: the built `index.html` ships
 with an empty `<meta id="stripe-publishable-key" name="stripe-publishable-key" content="">`

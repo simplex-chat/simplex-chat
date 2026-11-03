@@ -59,7 +59,7 @@ expiresItself = \case
 settleWindow :: NominalDiffTime
 settleWindow = 72 * 3600
 
--- | odReference names the order, the same on every retry of it, and is not secret.
+-- | odReference names the order at the provider, so support can find it there, and is not secret.
 data OrderDraft = OrderDraft
   { odAmount :: CurrencyAmount,
     odCurrency :: Text,

@@ -35,7 +35,6 @@ import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Key as K
 import qualified Data.Aeson.KeyMap as KM
-import Data.ByteArray.Encoding (Base (Base16), convertToBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64.URL as B64U
@@ -51,7 +50,7 @@ import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes, isJust, isNothing, fromMaybe, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeLatin1, encodeUtf8)
+import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Text.IO as T
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime, picosecondsToDiffTime, secondsToDiffTime)
@@ -1831,7 +1830,7 @@ testCreateInvoice = bounded "create invoice" $ withCheckout $ \ref env client ->
       method `shouldBe` SPMCrypto CCBtc
       odAmount draft `shouldBe` CurrencyAmount 500
       odCurrency draft `shouldBe` "usd"
-      odReference draft `shouldBe` "badge:0x" <> decodeLatin1 (convertToBase Base16 (codeDigest sampleCode))
+      InvoiceId (odReference draft) `shouldBe` invId
     other -> expectationFailure ("provider calls: " <> show other)
 
 testXmrReachesTheProviderAsXmr :: IO ()

@@ -75,7 +75,7 @@ fiftyFourDollars :: OrderDraft
 fiftyFourDollars = OrderDraft {odAmount = CurrencyAmount 5400, odCurrency = "usd", odReference = sampleReference}
 
 sampleReference :: Text
-sampleReference = "badge:0x6a3c0f1e9b2d4c5a8e7f60192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d"
+sampleReference = "Xq3v9TzK2mB7wR4yLp8cNd"
 
 fiftyFourDollarsReceived :: Received
 fiftyFourDollarsReceived = Received {rcvAmount = CurrencyAmount 5400, rcvCrypto = Nothing, rcvDue = Nothing}
