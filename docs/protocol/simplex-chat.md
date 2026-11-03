@@ -264,6 +264,8 @@ Currently members can have one of four roles - `owner`, `admin`, `member` and `o
 
 `x.grp.info` message is sent to all members by the member who updated group profile. Only group owners can update group profiles. Clients MAY implement some conflict resolution strategy - it is currently not implemented by SimpleX Chat client. This message MUST only be sent by members with `owner` role. Receiving clients MUST ignore this message if it is received from member other than with `owner` role.
 
+Group profile can include optional `chatLayout` property (`classic` or `terminal`) set by a group owner. Clients use it as the layout of the group chat, also after it is changed by `x.grp.info`, unless the user chose another layout for this chat. Clients MUST treat unknown values as absent.
+
 `x.grp.direct.inv` message is sent to a group member to propose establishing a direct connection between members, thus creating a contact with another member.
 
 `x.grp.msg.forward` message is sent by inviting member to forward messages between introduced members, while they are connecting. This message MUST NOT contain another `x.grp.msg.forward` message.

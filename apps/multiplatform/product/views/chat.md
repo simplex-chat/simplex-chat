@@ -45,7 +45,7 @@ Rendered by `LazyColumnWithScrollBar` with pagination:
 | Merged items | Adjacent messages grouped with `ItemSeparation` (timestamp, large gap, date separators) |
 | Floating buttons | Scroll-to-bottom button with unread count |
 | Date separators | Date headers between messages from different days |
-| Wallpaper | Per-chat themed background via `perChatTheme` from contact/group `uiThemes` |
+| Wallpaper | Per-chat themed background via `perChatTheme` from contact/group `uiThemes`; terminal layout: background colour without the image |
 | Content filter | Filter messages by type via `ContentFilter` (images, files, links, etc.) |
 
 ### Message Types
@@ -125,6 +125,12 @@ Shown when `selectedChatItems != null`:
 ### Timed/Disappearing Messages
 
 When `timedMessageAllowed` is true, compose bar includes a timer icon for setting message disappear time via `customDisappearingMessageTimePref`.
+
+### Terminal Layout
+
+On Android and desktop, a chat with the terminal layout shows messages as full-width rows without bubbles, starting at one edge for sent and received messages, with the sender's name above each group of messages and the time at the end of the last line. The wallpaper is drawn as its colour without the image.
+
+A chat uses the user's choice for that chat, otherwise the layout set by the group owner or by the address the contact came from, otherwise the user's choice for the profile and then the app setting, otherwise classic.
 
 ## Source Files
 

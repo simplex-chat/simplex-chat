@@ -14,6 +14,9 @@
 "Cannot forward message" = "Impossible de transférer le message";
 
 /* No comment provided by engineer. */
+"Cannot generate random database passphrase" = "Impossible de générer une phrase secrète aléatoire pour la base de données";
+
+/* No comment provided by engineer. */
 "Comment" = "Commenter";
 
 /* No comment provided by engineer. */

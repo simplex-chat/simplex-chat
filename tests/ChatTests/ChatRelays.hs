@@ -221,7 +221,7 @@ testChatRelayTest ps =
         bob <## "Your chat address is deleted - accepted contacts will remain connected."
         bob <## "To create a new chat address use /ad"
         alice ##> ("/relay test " <> bobSLink)
-        alice <##. "relay test failed at RTSGetLink, error: "
+        alice <##.. ["relay test failed at RTSGetLink, error: ", "relay test failed at RTSConnect, error: "]
 
 testRelayProfileUpdateInAddress :: HasCallStack => TestParams -> IO ()
 testRelayProfileUpdateInAddress ps =

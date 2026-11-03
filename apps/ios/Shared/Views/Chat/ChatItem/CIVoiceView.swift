@@ -14,6 +14,7 @@ import SimpleXChat
 struct CIVoiceView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.terminalLayout) private var terminal
     var chatItem: ChatItem
     let recordingFile: CIFile?
     let duration: Int
@@ -36,7 +37,7 @@ struct CIVoiceView: View {
                         playbackSlider()
                     }
                 }
-            } else if chatItem.chatDir.sent {
+            } else if chatItem.chatDir.sent && !terminal {
                 VStack (alignment: .trailing, spacing: 6) {
                     HStack {
                         if .playing == playbackState || (playbackTime ?? 0) > 0 || !allowMenu {
@@ -49,21 +50,28 @@ struct CIVoiceView: View {
                     metaView().padding(.trailing, 10)
                 }
             } else {
-                VStack (alignment: .leading, spacing: 6) {
-                    HStack {
-                        player()
-                        playerTime()
-                        if .playing == playbackState || (playbackTime ?? 0) > 0 || !allowMenu {
-                            playbackSlider()
+                ItemWithMeta {
+                    metaView()
+                } content: { inlineMeta in
+                    VStack (alignment: .leading, spacing: 6) {
+                        HStack {
+                            player()
+                            playerTime()
+                            if .playing == playbackState || (playbackTime ?? 0) > 0 || !allowMenu {
+                                playbackSlider()
+                            }
+                        }
+                        .frame(alignment: .leading)
+                        if let inlineMeta {
+                            inlineMeta.padding(.leading, -6)
                         }
                     }
-                    .frame(alignment: .leading)
-                    metaView().padding(.leading, -6)
                 }
             }
         }
-        .padding(.top, 4)
-        .padding(.bottom, 8)
+        .padding(.top, terminal ? terminalGap(4) : 4)
+        .padding(.bottom, terminal ? terminalGap(6) : 8)
+        .padding(.leading, terminal ? chatItemTextPadding : 0)
     }
 
     private func player() -> some View {
@@ -142,6 +150,7 @@ struct VoiceMessagePlayer: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.terminalLayout) private var terminal
     var chatItem: ChatItem
     var recordingFile: CIFile?
     var recordingTime: TimeInterval
@@ -291,7 +300,7 @@ struct VoiceMessagePlayer: View {
                 .foregroundColor(color)
                 .padding(.leading, image == "play.fill" ? 4 : 0)
                 .frame(width: 56 * sizeMultiplier, height: 56 * sizeMultiplier)
-                .background(showBackground ? chatItemFrameColor(chatItem, theme) : .clear)
+                .background(showBackground ? backgroundColor : .clear)
                 .clipShape(Circle())
             if recordingTime > 0 {
                 ProgressCircle(length: recordingTime, progress: $playbackTime)
@@ -341,6 +350,10 @@ struct VoiceMessagePlayer: View {
         }
     }
 
+    private var backgroundColor: Color {
+        terminal ? chatItemFrameContextColor(chatItem, theme) : chatItemFrameColor(chatItem, theme)
+    }
+
     private func fileStatusIcon(_ image: String, _ size: CGFloat) -> some View {
         Image(systemName: image)
             .resizable()
@@ -348,7 +361,7 @@ struct VoiceMessagePlayer: View {
             .frame(width: size * sizeMultiplier, height: size * sizeMultiplier)
             .foregroundColor(Color(uiColor: .tertiaryLabel))
             .frame(width: 56 * sizeMultiplier, height: 56 * sizeMultiplier)
-            .background(showBackground ? chatItemFrameColor(chatItem, theme) : .clear)
+            .background(showBackground ? backgroundColor : .clear)
             .clipShape(Circle())
     }
 
@@ -356,7 +369,7 @@ struct VoiceMessagePlayer: View {
         ProgressView()
             .frame(width: 30 * sizeMultiplier, height: 30 * sizeMultiplier)
             .frame(width: 56 * sizeMultiplier, height: 56 * sizeMultiplier)
-            .background(showBackground ? chatItemFrameColor(chatItem, theme) : .clear)
+            .background(showBackground ? backgroundColor : .clear)
             .clipShape(Circle())
     }
 
@@ -445,30 +458,34 @@ struct CIVoiceView_Previews: PreviewProvider {
         let im = ItemsModel.shared
         let sentVoiceMessage: ChatItem = ChatItem(
             chatDir: .directSnd,
-            meta: CIMeta.getSample(1, .now, "", .sndSent(sndProgress: .complete), itemEdited: true),
+            meta: CIMeta.getSample(1, previewDate, "", .sndSent(sndProgress: .complete), itemEdited: true),
             content: .sndMsgContent(msgContent: .voice(text: "", duration: 30)),
             quotedItem: nil,
             file: CIFile.getSample(fileStatus: .sndComplete)
         )
         let voiceMessageWtFile = ChatItem(
             chatDir: .directRcv,
-            meta: CIMeta.getSample(1, .now, "", .rcvRead),
+            meta: CIMeta.getSample(1, previewDate, "", .rcvRead),
             content: .rcvMsgContent(msgContent: .voice(text: "", duration: 30)),
             quotedItem: nil,
             file: nil
         )
         Group {
+            let ci1 = previewDated(ChatItem.getVoiceMsgContentSample())
             CIVoiceView(
                 chat: Chat.sampleData,
-                chatItem: ChatItem.getVoiceMsgContentSample(),
+                chatItem: ci1,
                 recordingFile: CIFile.getSample(fileName: "voice.m4a", fileSize: 65536, fileStatus: .rcvComplete),
                 duration: 30,
                 allowMenu: Binding.constant(true)
             )
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: sentVoiceMessage, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: .constant(true))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getVoiceMsgContentSample(), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: .constant(true))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: .constant(true))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: voiceMessageWtFile, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: .constant(true))
+            .modifier(ChatItemClipped(ci1, tailVisible: true))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: sentVoiceMessage, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: .constant(true)).modifier(ChatItemClipped(sentVoiceMessage, tailVisible: true))
+            let ci2 = previewDated(ChatItem.getVoiceMsgContentSample())
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci2, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: .constant(true)).modifier(ChatItemClipped(ci2, tailVisible: true))
+            let ci3 = previewDated(ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci3, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: .constant(true)).modifier(ChatItemClipped(ci3, tailVisible: true))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: voiceMessageWtFile, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: .constant(true)).modifier(ChatItemClipped(voiceMessageWtFile, tailVisible: true))
         }
         .previewLayout(.fixed(width: 360, height: 360))
     }

@@ -17,13 +17,23 @@ struct EmojiItemView: View {
     var chatItem: ChatItem
 
     var body: some View {
-        VStack(spacing: 1) {
-            emojiText(chatItem.content.text)
-                .padding(.top, 8)
-                .padding(.horizontal, 6)
+        ItemWithMeta(metaReserved: true) {
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
-                .padding(.bottom, 8)
-                .padding(.horizontal, 12)
+        } content: { inlineMeta in
+            if let inlineMeta {
+                VStack(spacing: 1) {
+                    emojiText(chatItem.content.text)
+                        .padding(.top, 8)
+                        .padding(.horizontal, 6)
+                    inlineMeta
+                        .padding(.bottom, 8)
+                        .padding(.horizontal, 12)
+                }
+            } else {
+                emojiText(chatItem.content.text)
+                    .modifier(MessageLastLine())
+                    .padding(EdgeInsets(top: terminalEmojiTopGap, leading: chatItemTextPadding, bottom: terminalEmojiBottomGap, trailing: chatItemTextPadding))
+            }
         }
     }
 }
@@ -36,8 +46,8 @@ func emojiText(_ text: String) -> Text {
 struct EmojiItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group{
-            EmojiItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂", .sndSent(sndProgress: .complete)))
-            EmojiItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(2, .directRcv, .now, "👍"))
+            EmojiItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, previewDate, "🙂", .sndSent(sndProgress: .complete)))
+            EmojiItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(2, .directRcv, previewDate, "👍"))
         }
         .previewLayout(.fixed(width: 360, height: 70))
     }

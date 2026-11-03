@@ -3,15 +3,30 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Bots.BadgeService.StoreVerifierTests (badgeStoreVerifierTests) where
+module Bots.BadgeService.StoreVerifierTests
+  ( badgeStoreVerifierTests,
+    TestChain (..),
+    trustedChain,
+    signedBy,
+    subscriptionPayload,
+    transactionPayload,
+    ourBundleId,
+    purchaseRecord,
+    subscriptionRecord,
+    lineItem,
+    basePlan,
+  )
+where
 
-import BadgeService.Config (PlayStoreConfig (..), ServiceConfig (..), readServiceConfig)
+import BadgeService.Config (AppleServerApi (..), AppleStoreConfig (..), PlayStoreConfig (..), ServiceConfig (..), readServiceConfig)
 import BadgeService.Service (ServiceState (..), configureStoreVerifier, newServiceState)
 import BadgeService.StoreReceipts
-import BadgeService.StoreReceipts.Apple (readAppleRoot, verifyAppleTransaction)
-import BadgeService.StoreReceipts.Google (playStoreVerifier)
+import BadgeService.StoreReceipts.Apple (appleSubscriptionChecker, readAppleRoot, verifyAppleTransaction)
+import BadgeService.StoreReceipts.Google (PlayVerifier (..), playStoreVerifier)
+import Bots.BadgeService.FakeAppStore
 import Bots.BadgeService.FakePlay
 import Control.Concurrent.STM (readTVarIO)
+import Control.Exception (throwIO)
 import Control.Monad (forM_)
 import Crypto.Hash.Algorithms (SHA256 (..))
 import Crypto.Number.Serialize (i2osp, i2ospOf_)
@@ -27,13 +42,17 @@ import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Lazy as LB
 import Data.Either (isRight)
 import Data.Hourglass (Date (..), DateTime (..), Month (..), TimeOfDay (..))
-import Data.List (isInfixOf)
+import Data.List (isInfixOf, nub)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
+import Data.Time.Calendar (fromGregorian)
+import Data.Time.Clock (UTCTime (..))
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.X509
-import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionId, googlePurchaseRef)
+import Simplex.Chat.Badges.Service (SubscriptionState (..))
+import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionRef, googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..))
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath (takeDirectory, (</>))
@@ -44,6 +63,7 @@ badgeStoreVerifierTests :: Spec
 badgeStoreVerifierTests = describe "badge store verifiers" $ do
   describe "App Store signed transactions" $ do
     it "vouches for a transaction a chain to the trusted root signed, naming the transaction it was claimed by" testAppleVerdict
+    it "vouches for a subscription renewal by its original transaction id, the ref it is claimed by" testAppleRenewalVerdict
     it "verifies a transaction under any of the trusted roots" testAppleAnyTrustedRoot
     it "fails, rather than refuses, an intermediate the trusted root did not sign, since the root may be misconfigured" testAppleRootNotTrusted
     it "refuses a leaf the intermediate did not sign, though the intermediate is genuine" testAppleForgedLeaf
@@ -60,6 +80,16 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
     it "records the price in the currency's minor units, or not at all" testApplePrice
     it "reads the trusted root from a DER file, and reports one it cannot read or that is not a root" testReadAppleRoot
     it "has nothing to acknowledge" testAppleNoAcknowledgement
+  describe "App Store subscriptions" $ do
+    it "maps each status, renewing or cancelled by autoRenewStatus, and the charge to the latest transaction, with one token reused" testAppleSubscriptionStatuses
+    it "reads the subscription asked about from an answer that lists another one first" testAppleSubscriptionAmongOthers
+    it "reports a revoked charge and one in an offer, refuses a family-shared one, and names a Sandbox one a test purchase" testAppleSubscriptionCharges
+    it "fails, rather than refuses, a status Apple did not sign or that was changed after signing" testAppleSubscriptionUnsigned
+    it "fails on a verifier that cannot place what the store signed, and is unreachable on any other throw" testSubscriptionCheckThrows
+    it "refuses a check the store marks as a test, and passes it through only with credit_test_purchases on" testSubscriptionCheckCreditsTest
+    it "fails on 401 and 403, and is unreachable on 404, 429, 5xx, no answer and an answer naming no such subscription" testAppleSubscriptionHttp
+    it "fails on a key Apple refuses, and at boot on a key file it cannot read" testAppleSubscriptionKey
+    it "checks subscriptions only where [apple] sets the API key, and one-time purchases either way" testAppleConfiguredSubscriptions
   describe "Google Play purchases" $ do
     it "vouches for a purchased token, asking Play about that token in this app" testPlayPurchased
     it "reports a license tester's purchase as a test purchase, and a promo code's as paid" testPlayTestAndPromo
@@ -77,6 +107,16 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
     it "reads a purchase once to verify and acknowledge it, and acknowledges only what that read found unacknowledged" testPlayReadsPurchaseOnce
     it "reports an acknowledgement Play refuses or does not answer" testPlayAcknowledgementFails
     it "acknowledges through the verifier a [google] section configures" testPlayConfiguredAcknowledges
+  describe "Google Play subscriptions" $ do
+    it "maps each state, renewing or cancelled by autoRenewEnabled, asking Play by the token alone" testPlaySubscriptionStates
+    it "answers a pending subscription as pending, and a license tester's as a test purchase" testPlaySubscriptionPendingOrTest
+    it "reads the charge from the line item, its period starting the plan's length before it ends" testPlaySubscriptionCharge
+    it "flags a charge in a free trial or an introductory price, and not one bought on an offer now at its base price" testPlaySubscriptionOffer
+    it "fails on a record it cannot read, an unknown state, or a charge without its period or plan" testPlaySubscriptionUnreadable
+    it "fails on 401 and 403, is unreachable on 404, 429, 5xx and no answer, and ended on 410" testPlaySubscriptionHttp
+    it "acknowledges a subscription once, through the subscriptions endpoint, unless Play reports it acknowledged" testPlaySubscriptionAcknowledges
+    it "reports a subscription acknowledgement Play refuses or does not answer" testPlaySubscriptionAcknowledgementFails
+    it "checks Play subscriptions only where [google] is configured, beside the App Store's" testPlayConfiguredSubscriptions
 
 -- * App Store
 
@@ -178,7 +218,6 @@ certifyWith alg issuerKey issuerName subjectName subjectKey markers =
         }
     sign tbs = (\(ECDSA.Signature r s) -> (derSignature r s, alg)) <$> ECDSA.sign issuerKey SHA256 tbs
     derSignature r s = der 0x30 (der 0x02 (unsigned r) <> der 0x02 (unsigned s))
-    der tag content = B.pack [tag, fromIntegral (B.length content)] <> content
     unsigned n = let bs = i2osp n in if B.head bs >= 0x80 then B.cons 0 bs else bs
 
 transactionPayload :: [(J.Key, J.Value)] -> [J.Key] -> J.Value
@@ -227,7 +266,19 @@ testAppleVerdict = do
   jws <- signedBy chain $ transactionPayload [] []
   appleVerdict (rootCert chain) jws
     `shouldReturn` Right VerifiedStoreTransaction {transactionRef = "2000000900000001", productId = "BADGE_SUPPORTER_01", quantity = 1, testPurchase = False, paid = Just (CurrencyAmount 700, "USD"), alreadyAcknowledged = False}
-  appleTransactionId jws `shouldBe` Just "2000000900000001"
+  appleTransactionRef jws `shouldBe` Just "2000000900000001"
+
+-- the service answers internal when the verified ref is not the claimed one, so a renewal must be vouched for by the claim's own ref
+testAppleRenewalVerdict :: IO ()
+testAppleRenewalVerdict = do
+  chain <- trustedChain
+  jws <- signedBy chain $ transactionPayload [("transactionId", "2000000900000002"), ("type", "Auto-Renewable Subscription"), ("productId", "SUBSCR_BADGE_SUPPORTER_MONTH_01")] []
+  r <- appleVerdict (rootCert chain) jws
+  fmap transactionRef r `shouldBe` Right "2000000900000001"
+  appleTransactionRef jws `shouldBe` Just "2000000900000001"
+  -- an auto-renewable transaction without its original id names no subscription
+  noOriginal <- signedBy chain $ transactionPayload [("type", "Auto-Renewable Subscription")] ["originalTransactionId"]
+  outcome <$> appleVerdict (rootCert chain) noOriginal `shouldReturn` Invalid
 
 testAppleAnyTrustedRoot :: IO ()
 testAppleAnyTrustedRoot = do
@@ -379,20 +430,265 @@ testAppleNoAcknowledgement = do
     verifier <- playVerifier fake
     acknowledgement verifier {verifyApple = Just (verifyAppleTransaction (rootCert chain :| []) ourBundleId)} SPApple {jws} `shouldReturn` Nothing
 
+-- * App Store subscriptions
+
+subscriptionId :: Text
+subscriptionId = "2000000900000001"
+
+periodStartMs, periodEndMs :: Int
+periodStartMs = 1790000000000
+periodEndMs = periodStartMs + 30 * 86400000
+
+-- | A renewal of the subscription subscriptionId names: a transaction of its own, under the original one.
+subscriptionPayload :: [(J.Key, J.Value)] -> [J.Key] -> J.Value
+subscriptionPayload overrides =
+  transactionPayload $
+    [ ("transactionId", "2000000900000002"),
+      ("type", "Auto-Renewable Subscription"),
+      ("productId", "SUBSCR_BADGE_SUPPORTER_MONTH_01"),
+      ("purchaseDate", J.toJSON periodStartMs),
+      ("expiresDate", J.toJSON periodEndMs),
+      ("transactionReason", "RENEWAL")
+    ]
+      <> overrides
+
+renewalPayload :: [(J.Key, J.Value)] -> J.Value
+renewalPayload overrides =
+  J.Object $
+    KM.fromList $
+      [ ("originalTransactionId", J.String subscriptionId),
+        ("autoRenewStatus", J.toJSON (1 :: Int)),
+        ("autoRenewProductId", "SUBSCR_BADGE_SUPPORTER_MONTH_01"),
+        ("productId", "SUBSCR_BADGE_SUPPORTER_MONTH_01"),
+        ("environment", "Production"),
+        ("signedDate", J.toJSON (1790000001000 :: Int))
+      ]
+        <> overrides
+
+-- | Get All Subscription Statuses as Apple answers it, with the subscription's latest transaction.
+statusBody :: Int -> Text -> Text -> J.Value
+statusBody status signedTx signedRenewal = statusListing [lastTransaction subscriptionId status signedTx signedRenewal]
+
+-- | Get All Subscription Statuses listing these subscriptions, all in one subscription group.
+statusListing :: [J.Value] -> J.Value
+statusListing lastTransactions =
+  J.object
+    [ "environment" J..= ("Production" :: Text),
+      "bundleId" J..= ourBundleId,
+      "data"
+        J..= [ J.object
+                 [ "subscriptionGroupIdentifier" J..= ("21000000" :: Text),
+                   "lastTransactions" J..= lastTransactions
+                 ]
+             ]
+    ]
+
+lastTransaction :: Text -> Int -> Text -> Text -> J.Value
+lastTransaction originalId status signedTx signedRenewal =
+  J.object ["originalTransactionId" J..= originalId, "status" J..= status, "signedTransactionInfo" J..= signedTx, "signedRenewalInfo" J..= signedRenewal]
+
+-- | The check the service runs, through the same runner as a purchase and a renewal.
+withAppleChecker :: TestChain -> (FakeAppStore -> (Text -> IO (Either StoreRefusal SubscriptionCheck)) -> IO a) -> IO a
+withAppleChecker chain action = withFakeAppStore ourBundleId $ \fake -> do
+  check <- appleChecker chain (fasApi fake)
+  action fake $ \originalId -> checkStoreSubscription noStoreVerifier {checkSubscription = Just (\ref _ -> check ref), verifyTimeout = 2000000} (SubscriptionApple originalId) Nothing
+
+appleChecker :: TestChain -> AppleServerApi -> IO (SubscriptionRef -> IO (Either StoreRefusal SubscriptionCheck))
+appleChecker chain serverApi =
+  appleSubscriptionChecker (rootCert chain :| []) ourBundleId serverApi >>= \case
+    Right check -> pure $ \case
+      SubscriptionApple originalId -> check originalId
+      SubscriptionGoogle _ -> pure $ Left SRNotConfigured
+    Left e -> expectationFailure e >> undefined
+
+-- | Signs the transaction and the renewal info with the given chain, and serves them as the subscription's status.
+serveStatus :: FakeAppStore -> TestChain -> Int -> J.Value -> J.Value -> IO ()
+serveStatus fake chain status transaction renewal = do
+  signedTx <- signedBy chain transaction
+  signedRenewal <- signedBy chain renewal
+  answerStatus fake subscriptionId $ AppStoreBody $ statusBody status signedTx signedRenewal
+
+stateOf :: Either StoreRefusal SubscriptionCheck -> Either StoreRefusal SubscriptionState
+stateOf = fmap $ \SubscriptionCheck {subscriptionState} -> subscriptionState
+
+chargeOf :: Either StoreRefusal SubscriptionCheck -> Either StoreRefusal (Maybe (Text, Text, UTCTime, UTCTime, Maybe (CurrencyAmount, Text), Bool, Bool))
+chargeOf = fmap $ \SubscriptionCheck {latestCharge} ->
+  (\StoreCharge {chargeRef, planId, periodStart, periodEnd, chargePaid, revoked, offer} -> (chargeRef, planId, periodStart, periodEnd, chargePaid, revoked, offer)) <$> latestCharge
+
+testAppleSubscriptionStatuses :: IO ()
+testAppleSubscriptionStatuses = do
+  chain <- trustedChain
+  withAppleChecker chain $ \fake check -> do
+    let stateFor status autoRenew = do
+          serveStatus fake chain status (subscriptionPayload [] []) (renewalPayload [("autoRenewStatus", J.toJSON (autoRenew :: Int))])
+          stateOf <$> check subscriptionId
+    stateFor 1 1 `shouldReturn` Right SSRenewing
+    stateFor 1 0 `shouldReturn` Right SSCancelled
+    stateFor 3 1 `shouldReturn` Right SSBillingRetry
+    stateFor 4 1 `shouldReturn` Right SSBillingRetry
+    stateFor 2 0 `shouldReturn` Right SSEnded
+    stateFor 5 0 `shouldReturn` Right SSEnded
+    outcome <$> stateFor 6 1 `shouldReturn` Failed
+    -- the charge is the latest transaction: its own id, its product as the plan, and its period
+    serveStatus fake chain 1 (subscriptionPayload [] []) (renewalPayload [])
+    chargeOf <$> check subscriptionId
+      `shouldReturn` Right (Just ("2000000900000002", "SUBSCR_BADGE_SUPPORTER_MONTH_01", millis periodStartMs, millis periodEndMs, Just (CurrencyAmount 700, "USD"), False, False))
+    -- each call carried a token the fake accepted, signed once and reused
+    tokens <- readTVarIO (fasTokens fake)
+    length tokens `shouldBe` 8
+    length (nub tokens) `shouldBe` 1
+  where
+    millis ms = posixSecondsToUTCTime $ fromIntegral ms / 1000
+
+-- | Apple lists every subscription the customer holds in the app, a family member's shared one included.
+testAppleSubscriptionAmongOthers :: IO ()
+testAppleSubscriptionAmongOthers = do
+  chain <- trustedChain
+  withAppleChecker chain $ \fake check -> do
+    let sharedId = "2000000900000011"
+    sharedTx <- signedBy chain $ subscriptionPayload [("originalTransactionId", J.String sharedId), ("transactionId", "2000000900000012"), ("inAppOwnershipType", "FAMILY_SHARED")] []
+    sharedRenewal <- signedBy chain $ renewalPayload [("originalTransactionId", J.String sharedId)]
+    ownTx <- signedBy chain $ subscriptionPayload [] []
+    ownRenewal <- signedBy chain $ renewalPayload []
+    answerStatus fake subscriptionId $ AppStoreBody $ statusListing [lastTransaction sharedId 1 sharedTx sharedRenewal, lastTransaction subscriptionId 1 ownTx ownRenewal]
+    stateOf <$> check subscriptionId `shouldReturn` Right SSRenewing
+
+testAppleSubscriptionCharges :: IO ()
+testAppleSubscriptionCharges = do
+  chain <- trustedChain
+  withAppleChecker chain $ \fake check -> do
+    let answerFor transaction = serveStatus fake chain 1 transaction (renewalPayload []) >> check subscriptionId
+        flags = fmap (fmap (\(_, _, _, _, _, revoked, offer) -> (revoked, offer))) . chargeOf
+    flags <$> answerFor (subscriptionPayload [("revocationDate", J.toJSON (1790000500000 :: Int))] []) `shouldReturn` Right (Just (True, False))
+    flags <$> answerFor (subscriptionPayload [("offerType", J.toJSON (1 :: Int))] []) `shouldReturn` Right (Just (False, True))
+    -- family sharing is off, so a family-shared transaction is no purchase of this badge
+    outcome <$> answerFor (subscriptionPayload [("inAppOwnershipType", "FAMILY_SHARED")] []) `shouldReturn` Invalid
+    -- a defence: the production host never answers about a Sandbox transaction
+    outcome <$> answerFor (subscriptionPayload [("environment", "Sandbox")] []) `shouldReturn` TestPurchase
+    outcome <$> answerFor (subscriptionPayload [("bundleId", "com.example.other")] []) `shouldReturn` Failed
+    outcome <$> answerFor (subscriptionPayload [("originalTransactionId", "2000000900000009")] []) `shouldReturn` Failed
+    outcome <$> answerFor (subscriptionPayload [] ["expiresDate"]) `shouldReturn` Failed
+
+-- | Apple answered, and no client presented any of it, so a status that fails the chain check is this
+-- service's failure: never a refusal, which would drop a buyer's keys.
+testAppleSubscriptionUnsigned :: IO ()
+testAppleSubscriptionUnsigned = do
+  chain@TestChain {rootCert, intermediateCert} <- trustedChain
+  withAppleChecker chain $ \fake check -> do
+    let failsOn transaction renewal = do
+          answerStatus fake subscriptionId $ AppStoreBody $ statusBody 1 transaction renewal
+          outcome <$> check subscriptionId `shouldReturn` Failed
+    signedRenewal <- signedBy chain $ renewalPayload []
+    signedTx <- signedBy chain $ subscriptionPayload [] []
+    untrusted <- newChain otherRootName [intermediateMarker] [receiptLeafMarker]
+    signedBy untrusted (subscriptionPayload [] []) >>= \tx -> failsOn tx signedRenewal
+    (forgedKey, forgedPub) <- newKeyPair
+    forgedLeaf <- certify forgedKey intermediateName leafName forgedPub [receiptLeafMarker]
+    signedTransaction chain {leafKey = forgedKey} [forgedLeaf, intermediateCert, rootCert] es256 (subscriptionPayload [] []) >>= \tx -> failsOn tx signedRenewal
+    failsOn (tampered signedTx $ subscriptionPayload [("productId", "SUBSCR_BADGE_LEGEND_YEAR_01")] []) signedRenewal
+    failsOn signedTx (tampered signedRenewal $ renewalPayload [("autoRenewStatus", J.toJSON (0 :: Int))])
+  where
+    tampered jws payload = case T.splitOn "." jws of
+      [header, _, signature] -> T.intercalate "." [header, decodeUtf8 $ segment payload, signature]
+      _ -> jws
+
+-- | A verifier that cannot place what the store signed throws StoreVerifierFailure, which is its own
+-- failure; any other throw is the network's, as for Play.
+testSubscriptionCheckThrows :: IO ()
+testSubscriptionCheckThrows = do
+  let throwing act = checkStoreSubscription noStoreVerifier {checkSubscription = Just (\_ _ -> act), verifyTimeout = 2000000} (SubscriptionApple subscriptionId) Nothing
+  outcome <$> throwing (throwIO $ StoreVerifierFailure "apple verifier: a chain it cannot place") `shouldReturn` Failed
+  outcome <$> throwing (ioError $ userError "connection reset") `shouldReturn` Unreachable
+
+testSubscriptionCheckCreditsTest :: IO ()
+testSubscriptionCheckCreditsTest = do
+  let testCheck = SubscriptionCheck {subscriptionState = SSRenewing, testSubscription = True, latestCharge = Nothing}
+      checkCrediting credit = checkStoreSubscription noStoreVerifier {checkSubscription = Just (\_ _ -> pure (Right testCheck)), creditTestPurchases = credit} (SubscriptionApple subscriptionId) Nothing
+  outcome <$> checkCrediting False `shouldReturn` TestPurchase
+  fmap (\SubscriptionCheck {subscriptionState, testSubscription} -> (subscriptionState, testSubscription)) <$> checkCrediting True `shouldReturn` Right (SSRenewing, True)
+
+testAppleSubscriptionHttp :: IO ()
+testAppleSubscriptionHttp = do
+  chain <- trustedChain
+  withAppleChecker chain $ \fake check -> do
+    let answeredWith answer = answerStatus fake subscriptionId answer >> (outcome <$> check subscriptionId)
+    answeredWith (AppStoreStatus 401) `shouldReturn` Failed
+    answeredWith (AppStoreStatus 403) `shouldReturn` Failed
+    forM_ [404, 429, 500, 503] $ \code -> answeredWith (AppStoreStatus code) `shouldReturn` Unreachable
+    answeredWith AppStoreHang `shouldReturn` Unreachable
+    answeredWith (AppStoreBody $ J.object ["data" J..= ([] :: [J.Value])]) `shouldReturn` Unreachable
+    -- an id that is not one names no App Store transaction, and is not sent
+    tokens <- length <$> readTVarIO (fasTokens fake)
+    outcome <$> check "2000000900000001/../x" `shouldReturn` Failed
+    length <$> readTVarIO (fasTokens fake) `shouldReturn` tokens
+
+testAppleSubscriptionKey :: IO ()
+testAppleSubscriptionKey = do
+  chain <- trustedChain
+  withFakeAppStore ourBundleId $ \fake@FakeAppStore {fasApi = api@AppleServerApi {aPrivateKeyFile}} -> do
+    serveStatus fake chain 1 (subscriptionPayload [] []) (renewalPayload [])
+    -- a key App Store Connect did not issue for this account is refused, and is this service's failure
+    let otherKeyFile = takeDirectory aPrivateKeyFile </> "OtherKey.p8"
+    _ <- writeApiKey otherKeyFile
+    otherKey <- appleChecker chain api {aPrivateKeyFile = otherKeyFile}
+    outcome <$> otherKey (SubscriptionApple subscriptionId) `shouldReturn` Failed
+    readTVarIO (fasTokens fake) `shouldReturn` []
+    appleSubscriptionChecker (rootCert chain :| []) ourBundleId api {aPrivateKeyFile = takeDirectory aPrivateKeyFile </> "absent.p8"}
+      >>= either (`shouldContain` "could not be read") (const $ expectationFailure "an absent key file must fail at boot")
+    B.writeFile otherKeyFile "-----BEGIN PRIVATE KEY-----\n-----END PRIVATE KEY-----\n"
+    appleSubscriptionChecker (rootCert chain :| []) ourBundleId api {aPrivateKeyFile = otherKeyFile}
+      >>= either (`shouldContain` "P-256") (const $ expectationFailure "a file holding no key must fail at boot")
+
+-- | Without the API key [apple] verifies one-time purchases as before, and no subscription.
+testAppleConfiguredSubscriptions :: IO ()
+testAppleConfiguredSubscriptions = do
+  chain <- trustedChain
+  withFakeAppStore ourBundleId $ \fake@FakeAppStore {fasApi} -> do
+    let dir = takeDirectory (aPrivateKeyFile fasApi)
+        rootFile = dir </> "root.cer"
+        ini = dir </> "badge_service.ini"
+        apple serverApi = Just AppleStoreConfig {aBundleId = ourBundleId, aRootCertificates = rootFile :| [], aServerApi = serverApi}
+    B.writeFile rootFile (encodeSignedObject $ rootCert chain)
+    writeFile ini "[listener]\nstatic_dir = /srv/badges\n"
+    Right cfg <- readServiceConfig ini
+    ServiceState {storeVerifier = withKey} <- newServiceState >>= configureStoreVerifier (Just cfg {appleStore = apple (Just fasApi)})
+    ServiceState {storeVerifier = withoutKey} <- newServiceState >>= configureStoreVerifier (Just cfg {appleStore = apple Nothing})
+    serveStatus fake chain 1 (subscriptionPayload [] []) (renewalPayload [])
+    stateOf <$> checkStoreSubscription withKey (SubscriptionApple subscriptionId) Nothing `shouldReturn` Right SSRenewing
+    outcome <$> checkStoreSubscription withoutKey (SubscriptionApple subscriptionId) Nothing `shouldReturn` NotConfigured
+    jws <- signedBy chain $ transactionPayload [] []
+    outcome <$> seamVerdict withoutKey SPApple {jws} `shouldReturn` Verdict
+
 -- * Google Play
 
 playVerifier :: FakePlay -> IO StoreVerifier
 playVerifier fake =
   playStoreVerifier (fpConfig fake) >>= \case
-    Right (verify, acknowledge) -> pure noStoreVerifier {verifyGoogle = Just verify, acknowledgeGoogle = Just acknowledge, verifyTimeout = 2000000}
+    Right PlayVerifier {verifyPlayPurchase, acknowledgePlayPurchase, checkPlaySubscription, acknowledgePlaySubscription} ->
+      pure
+        noStoreVerifier
+          { verifyGoogle = Just verifyPlayPurchase,
+            acknowledgeGoogle = Just acknowledgePlayPurchase,
+            acknowledgeGoogleSubscription = Just acknowledgePlaySubscription,
+            checkSubscription = Just $ \ref _ -> case ref of
+              SubscriptionGoogle token -> checkPlaySubscription token
+              SubscriptionApple _ -> pure $ Left SRNotConfigured,
+            verifyTimeout = 2000000
+          }
     Left e -> expectationFailure e >> undefined
 
 acknowledgement :: StoreVerifier -> ServicePayment -> IO (Maybe (Either StoreRefusal ()))
-acknowledgement verifier payment = case toStoreReceipt verifier payment of
-  Just (Right StoreReceipt {verifyReceipt, acknowledgeReceipt}) ->
-    verifyReceipt >>= \case
-      Right tx -> traverse ($ tx) acknowledgeReceipt
-      Left refusal -> expectationFailure ("not verified: " <> show refusal) >> undefined
+acknowledgement = acknowledgementBy $ \StoreReceipt {verifyReceipt, acknowledgeReceipt} ->
+  verifyReceipt >>= \case
+    Right tx -> traverse ($ tx) acknowledgeReceipt
+    Left refusal -> expectationFailure ("not verified: " <> show refusal) >> undefined
+
+subscriptionAcknowledgement :: StoreVerifier -> ServicePayment -> IO (Maybe (Either StoreRefusal ()))
+subscriptionAcknowledgement = acknowledgementBy $ \StoreReceipt {acknowledgeSubscription} -> sequence acknowledgeSubscription
+
+acknowledgementBy :: (StoreReceipt -> IO (Maybe (Either StoreRefusal ()))) -> StoreVerifier -> ServicePayment -> IO (Maybe (Either StoreRefusal ()))
+acknowledgementBy acknowledge verifier payment = case toStoreReceipt verifier payment of
+  Just (Right receipt) -> acknowledge receipt
   _ -> expectationFailure "not a store receipt" >> undefined
 
 playVerdict :: StoreVerifier -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)
@@ -589,4 +885,209 @@ testPlayConfiguredAcknowledges = withFakePlay $ \fake@FakePlay {fpConfig} -> do
   answerPurchase fake testToken $ PlayRecord $ purchaseRecord 0 []
   acknowledgement storeVerifier SPGoogle {productId = "badge_supporter_01", token = testToken} `shouldReturn` Just (Right ())
   readTVarIO (fpAcknowledged fake) `shouldReturn` [testToken]
+
+-- * Google Play subscriptions
+
+subscriptionToken :: Text
+subscriptionToken = "fake-play-subscription-token.AO-J1Oz9x2kqE7wYt4"
+
+subscriptionProductId :: Text
+subscriptionProductId = "subscr_badge_supporter_01"
+
+-- | purchases.subscriptionsv2 as Play answers it, unacknowledged.
+subscriptionRecord :: Text -> [(J.Key, J.Value)] -> [J.Value] -> J.Value
+subscriptionRecord state overrides items =
+  J.Object $
+    KM.fromList overrides
+      `KM.union` KM.fromList
+        [ ("kind", "androidpublisher#subscriptionPurchaseV2"),
+          ("regionCode", "US"),
+          ("startTime", "2026-09-14T10:00:00.123456789Z"),
+          ("subscriptionState", J.String state),
+          ("latestOrderId", "GPA.3312-4521-8899-01234..1"),
+          ("acknowledgementState", "ACKNOWLEDGEMENT_STATE_PENDING"),
+          ("lineItems", J.toJSON items)
+        ]
+
+-- | A monthly supporter plan's line item, renewing at the base price.
+lineItem :: [(J.Key, J.Value)] -> [J.Key] -> J.Value
+lineItem overrides removed =
+  J.Object $ foldr KM.delete (KM.fromList overrides `KM.union` base) removed
+  where
+    base =
+      KM.fromList
+        [ ("productId", J.String subscriptionProductId),
+          ("expiryTime", "2026-11-14T10:00:00.123456789Z"),
+          ("autoRenewingPlan", J.object ["autoRenewEnabled" J..= True]),
+          ("offerDetails", J.object ["basePlanId" J..= ("subscr-badge-supporter-month-02" :: Text)]),
+          ("latestSuccessfulOrderId", "GPA.3312-4521-8899-01234..1"),
+          ("offerPhase", J.object ["basePrice" J..= J.object []])
+        ]
+
+basePlan :: Text -> (J.Key, J.Value)
+basePlan planId = ("offerDetails", J.object ["basePlanId" J..= planId])
+
+answerSubscription :: FakePlay -> J.Value -> IO ()
+answerSubscription fake = answerPurchase fake subscriptionToken . PlayRecord
+
+-- | Through the same runner as a purchase and a renewal; every reason reaches the service's log, which must never hold the token.
+playCheck :: StoreVerifier -> IO (Either StoreRefusal SubscriptionCheck)
+playCheck verifier = do
+  r <- checkStoreSubscription verifier (SubscriptionGoogle subscriptionToken) Nothing
+  reason r `shouldNotSatisfy` (subscriptionToken `T.isInfixOf`)
+  pure r
+
+testPlaySubscriptionStates :: IO ()
+testPlaySubscriptionStates = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  let stateFor state autoRenew = do
+        answerSubscription fake $ subscriptionRecord state [] [lineItem [("autoRenewingPlan", J.object ["autoRenewEnabled" J..= autoRenew])] []]
+        stateOf <$> playCheck verifier
+  stateFor "SUBSCRIPTION_STATE_ACTIVE" True `shouldReturn` Right SSRenewing
+  stateFor "SUBSCRIPTION_STATE_ACTIVE" False `shouldReturn` Right SSCancelled
+  stateFor "SUBSCRIPTION_STATE_PAUSED" True `shouldReturn` Right SSRenewing
+  stateFor "SUBSCRIPTION_STATE_PAUSED" False `shouldReturn` Right SSCancelled
+  stateFor "SUBSCRIPTION_STATE_IN_GRACE_PERIOD" True `shouldReturn` Right SSBillingRetry
+  stateFor "SUBSCRIPTION_STATE_ON_HOLD" True `shouldReturn` Right SSBillingRetry
+  stateFor "SUBSCRIPTION_STATE_CANCELED" False `shouldReturn` Right SSCancelled
+  stateFor "SUBSCRIPTION_STATE_EXPIRED" False `shouldReturn` Right SSEnded
+  stateFor "SUBSCRIPTION_STATE_PENDING_PURCHASE_CANCELED" False `shouldReturn` Right SSEnded
+  -- a plan that does not renew itself, as a prepaid one
+  answerSubscription fake $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [] ["autoRenewingPlan"]]
+  stateOf <$> playCheck verifier `shouldReturn` Right SSCancelled
+  paths <- readTVarIO (fpPurchasePaths fake)
+  length paths `shouldBe` 10
+  nub paths `shouldBe` [["androidpublisher", "v3", "applications", fakePackageName, "purchases", "subscriptionsv2", "tokens", subscriptionToken]]
+
+testPlaySubscriptionPendingOrTest :: IO ()
+testPlaySubscriptionPendingOrTest = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  answerSubscription fake $ subscriptionRecord "SUBSCRIPTION_STATE_PENDING" [] [lineItem [] []]
+  outcome <$> playCheck verifier `shouldReturn` Pending
+  answerSubscription fake $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [("testPurchase", J.object [])] [lineItem [] []]
+  outcome <$> playCheck verifier `shouldReturn` TestPurchase
+
+testPlaySubscriptionCharge :: IO ()
+testPlaySubscriptionCharge = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  let chargeFor item = answerSubscription fake (subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [item]) >> (chargeOf <$> playCheck verifier)
+      at y m d = UTCTime (fromGregorian y m d)
+      orderRef = googlePurchaseRef "GPA.3312-4521-8899-01234..1"
+  chargeFor (lineItem [] [])
+    `shouldReturn` Right (Just (orderRef, "subscr-badge-supporter-month-02", at 2026 10 14 36000.123456789, at 2026 11 14 36000.123456789, Nothing, False, False))
+  chargeFor (lineItem [("productId", "subscr_badge_legend_01"), basePlan "subscr-badge-legend-year-01", ("expiryTime", "2027-10-14T10:00:00Z")] [])
+    `shouldReturn` Right (Just (orderRef, "subscr-badge-legend-year-01", at 2026 10 14 36000, at 2027 10 14 36000, Nothing, False, False))
+  -- a plan this service does not sell has no length, so its charge is given no period, and is never granted
+  chargeFor (lineItem [basePlan "subscr-badge-supporter-month-99"] [])
+    `shouldReturn` Right (Just (orderRef, "subscr-badge-supporter-month-99", at 2026 11 14 36000.123456789, at 2026 11 14 36000.123456789, Nothing, False, False))
+  chargeFor (lineItem [] ["latestSuccessfulOrderId"]) `shouldReturn` Right Nothing
+
+testPlaySubscriptionOffer :: IO ()
+testPlaySubscriptionOffer = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  let offerFor item = do
+        answerSubscription fake $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [item]
+        fmap (fmap (\(_, _, _, _, _, _, offer) -> offer)) . chargeOf <$> playCheck verifier
+      offerIn phase = offerFor $ lineItem [offerDetails, ("offerPhase", J.object [phase J..= J.object []])] []
+      offerDetails = ("offerDetails", J.object ["basePlanId" J..= ("subscr-badge-supporter-month-02" :: Text), "offerId" J..= ("intro-3-months" :: Text)])
+  offerIn "freeTrial" `shouldReturn` Right (Just True)
+  offerIn "introductoryPrice" `shouldReturn` Right (Just True)
+  -- offerDetails names the offer it was bought with for its whole life, so a full-price renewal still carries it
+  offerIn "basePrice" `shouldReturn` Right (Just False)
+  offerIn "prorationPeriod" `shouldReturn` Right (Just False)
+  offerFor (lineItem [] ["offerPhase"]) `shouldReturn` Right (Just False)
+
+testPlaySubscriptionUnreadable :: IO ()
+testPlaySubscriptionUnreadable = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  forM_
+    [ PlayBody "<html>not json</html>",
+      PlayRecord $ J.object ["lineItems" J..= [lineItem [] []]],
+      PlayRecord $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [],
+      PlayRecord $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [] [], lineItem [] []],
+      PlayRecord $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [] ["expiryTime"]],
+      PlayRecord $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [] ["offerDetails"]],
+      PlayRecord $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [("expiryTime", "next month")] []],
+      PlayBody $ J.encode (subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [] []]) <> LB.replicate (1024 * 1024) 32
+    ]
+    $ \answer -> do
+      answerPurchase fake subscriptionToken answer
+      outcome <$> playCheck verifier `shouldReturn` Failed
+  -- a state Play may yet add is this service's to learn, and its name is not logged
+  answerSubscription fake $ subscriptionRecord "SUBSCRIPTION_STATE_PAUSED_FOREVER" [] [lineItem [] []]
+  r <- playCheck verifier
+  outcome r `shouldBe` Failed
+  reason r `shouldNotSatisfy` ("PAUSED_FOREVER" `T.isInfixOf`)
+
+testPlaySubscriptionHttp :: IO ()
+testPlaySubscriptionHttp = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  let answeredWith answer = answerPurchase fake subscriptionToken answer >> (outcome <$> playCheck verifier)
+  answeredWith (PlayStatus 401) `shouldReturn` Failed
+  answeredWith (PlayStatus 403) `shouldReturn` Failed
+  forM_ [400, 404, 429, 500, 503] $ \code -> answeredWith (PlayStatus code) `shouldReturn` Unreachable
+  -- Play no longer answers about a subscription that expired long ago
+  answerPurchase fake subscriptionToken (PlayStatus 410)
+  ended <- playCheck verifier
+  (stateOf ended, chargeOf ended) `shouldBe` (Right SSEnded, Right Nothing)
+  answerPurchase fake subscriptionToken PlayHang
+  r <- playCheck verifier
+  (outcome r, reason r) `shouldBe` (Unreachable, "subscription check timed out")
+
+testPlaySubscriptionAcknowledges :: IO ()
+testPlaySubscriptionAcknowledges = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  let acknowledging = subscriptionAcknowledgement verifier SPGoogle {productId = subscriptionProductId, token = subscriptionToken}
+  answerSubscription fake $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [] []]
+  acknowledging `shouldReturn` Just (Right ())
+  readTVarIO (fpSubscriptionAcknowledged fake) `shouldReturn` [(subscriptionProductId, subscriptionToken)]
+  answerSubscription fake $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [("acknowledgementState", "ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED")] [lineItem [] []]
+  acknowledging `shouldReturn` Just (Right ())
+  readTVarIO (fpSubscriptionAcknowledged fake) `shouldReturn` [(subscriptionProductId, subscriptionToken)]
+  readTVarIO (fpAcknowledged fake) `shouldReturn` []
+
+testPlaySubscriptionAcknowledgementFails :: IO ()
+testPlaySubscriptionAcknowledgementFails = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  let acknowledgedAs expected = do
+        r <- subscriptionAcknowledgement verifier SPGoogle {productId = subscriptionProductId, token = subscriptionToken}
+        outcome <$> r `shouldBe` Just expected
+        maybe "" reason r `shouldSatisfy` ("acknowledging: " `T.isPrefixOf`)
+        maybe "" reason r `shouldNotSatisfy` (subscriptionToken `T.isInfixOf`)
+  answerSubscription fake $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [] []]
+  answerAcknowledgements fake $ Just $ PlayStatus 403
+  acknowledgedAs Failed
+  answerAcknowledgements fake $ Just $ PlayStatus 503
+  acknowledgedAs Unreachable
+  answerAcknowledgements fake Nothing
+  answerPurchase fake subscriptionToken PlayHang
+  acknowledgedAs Unreachable
+  readTVarIO (fpSubscriptionAcknowledged fake) `shouldReturn` []
+
+-- | Without [google] a Play subscription is not configured, whether or not [apple] checks the App Store's.
+testPlayConfiguredSubscriptions :: IO ()
+testPlayConfiguredSubscriptions = do
+  chain <- trustedChain
+  withFakePlay $ \play@FakePlay {fpConfig} -> withFakeAppStore ourBundleId $ \appStore@FakeAppStore {fasApi} -> do
+    let dir = takeDirectory (gServiceAccountFile fpConfig)
+        rootFile = dir </> "root.cer"
+        ini = dir </> "badge_service.ini"
+        apple = Just AppleStoreConfig {aBundleId = ourBundleId, aRootCertificates = rootFile :| [], aServerApi = Just fasApi}
+        configured c = (\ServiceState {storeVerifier} -> storeVerifier) <$> (newServiceState >>= configureStoreVerifier (Just c))
+        outcomes v = (,) <$> (outcome <$> checkStoreSubscription v (SubscriptionGoogle subscriptionToken) Nothing) <*> (outcome <$> checkStoreSubscription v (SubscriptionApple subscriptionId) Nothing)
+        acknowledging v = subscriptionAcknowledgement v SPGoogle {productId = subscriptionProductId, token = subscriptionToken}
+    B.writeFile rootFile (encodeSignedObject $ rootCert chain)
+    writeFile ini "[listener]\nstatic_dir = /srv/badges\n"
+    Right cfg <- readServiceConfig ini
+    both <- configured cfg {appleStore = apple, playStore = Just fpConfig}
+    playOnly <- configured cfg {playStore = Just fpConfig}
+    appleOnly <- configured cfg {appleStore = apple}
+    answerSubscription play $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [] []]
+    serveStatus appStore chain 1 (subscriptionPayload [] []) (renewalPayload [])
+    outcomes both `shouldReturn` (Verdict, Verdict)
+    outcomes playOnly `shouldReturn` (Verdict, NotConfigured)
+    outcomes appleOnly `shouldReturn` (NotConfigured, Verdict)
+    acknowledging appleOnly `shouldReturn` Nothing
+    acknowledging playOnly `shouldReturn` Just (Right ())
+    readTVarIO (fpSubscriptionAcknowledged play) `shouldReturn` [(subscriptionProductId, subscriptionToken)]
 

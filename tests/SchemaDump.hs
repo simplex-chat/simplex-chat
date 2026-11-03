@@ -103,7 +103,7 @@ testSchemaMigrations = do
 
 testVerifyStrict :: IO ()
 testVerifyStrict = do
-  Right st <- createDBStore (DBOpts testDB chatDBFunctions "" False True TQOff) Store.migrations (MigrationConfig MCConsole Nothing)
+  Right st <- createDBStore (DBOpts testDB chatDBFunctions "" False True TQOff) Store.migrations (MigrationConfig MCError Nothing)
   withConnection st (`DB.query_` "SELECT name FROM sqlite_master WHERE type = 'table' AND name != 'sqlite_sequence' AND sql NOT LIKE '% STRICT'")
     `shouldReturn` ([] :: [Only Text])
 

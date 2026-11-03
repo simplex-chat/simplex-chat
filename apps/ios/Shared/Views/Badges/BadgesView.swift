@@ -16,9 +16,7 @@ struct BadgesView: View {
     var showsAsSheet: Bool = false
 
     private var shownBadge: BadgeState? {
-        guard badgeModel.userId == chatModel.currentUser?.userId else { return nil }
-        if let badgeState = badgeModel.badgeState, badgeState.shown { return badgeState }
-        return nil
+        currentShownBadge()
     }
 
     var body: some View {
@@ -61,6 +59,12 @@ func openBadgesView() {
                 .modifier(ThemedBackground())
         }
     }
+}
+
+func currentShownBadge() -> BadgeState? {
+    guard BadgeModel.shared.userId == ChatModel.shared.currentUser?.userId else { return nil }
+    if let badgeState = BadgeModel.shared.badgeState, badgeState.shown { return badgeState }
+    return nil
 }
 
 // false until the badge state is loaded for the current profile, so a supporter is never pitched to

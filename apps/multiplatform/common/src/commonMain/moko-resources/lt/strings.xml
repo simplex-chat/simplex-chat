@@ -26,7 +26,7 @@
     <string name="allow_irreversible_message_deletion_only_if">Leisti negrįžtamą žinučių ištrynimą tik tuo atveju, jei jūsų kontaktas jums tai leidžia. (24 valandas)</string>
     <string name="allow_voice_messages_only_if">Leisti balso žinutes tik tuo atveju, jei jūsų kontaktas jas leidžia.</string>
     <string name="allow_verb">Leisti</string>
-    <string name="allow_voice_messages_question">Leisti balso žinutes\?</string>
+    <string name="allow_voice_messages_question">Leisti balso žinutes?</string>
     <string name="bold_text">pusjuodis</string>
     <string name="callstatus_ended">skambutis baigtas %1$s</string>
     <string name="icon_descr_audio_call">garso skambutis</string>
@@ -67,8 +67,8 @@
     <string name="network_session_mode_entity">Ryšys</string>
     <string name="database_passphrase_will_be_updated">Duomenų bazės šifravimo slaptafrazė bus atnaujinta.</string>
     <string name="core_version">Branduolio versija: v%s</string>
-    <string name="delete_address__question">Ištrinti adresą\?</string>
-    <string name="save_preferences_question">Įrašyti nuostatas\?</string>
+    <string name="delete_address__question">Ištrinti adresą?</string>
+    <string name="save_preferences_question">Įrašyti nuostatas?</string>
     <string name="create_profile">Sukurti profilį</string>
     <string name="callstatus_rejected">atmestas skambutis</string>
     <string name="callstate_ended">užbaigtas</string>
@@ -102,7 +102,7 @@
     <string name="notification_display_mode_hidden_desc">Slėpti kontaktą ir žinutę</string>
     <string name="copy_verb">Kopijuoti</string>
     <string name="reply_verb">Atsakyti</string>
-    <string name="delete_message__question">Ištrinti žinutę\?</string>
+    <string name="delete_message__question">Ištrinti žinutę?</string>
     <string name="icon_descr_file">Failas</string>
     <string name="maximum_supported_file_size">Šiuo metu didžiausias palaikomas failo dydis yra %1$s.</string>
     <string name="file_not_found">Failas nerastas</string>
@@ -122,10 +122,10 @@
     <string name="save_servers_button">Įrašyti</string>
     <string name="files_and_media_section">Failai ir medija</string>
     <string name="delete_files_and_media_all">Ištrinti visus failus</string>
-    <string name="delete_files_and_media_question">Ištrinti failus ir mediją\?</string>
+    <string name="delete_files_and_media_question">Ištrinti failus ir mediją?</string>
     <string name="snd_group_event_group_profile_updated">grupės profilis atnaujintas</string>
     <string name="info_row_group">Grupė</string>
-    <string name="users_delete_question">Ištrinti pokalbio profilį\?</string>
+    <string name="users_delete_question">Ištrinti pokalbio profilį?</string>
     <string name="network_options_save">Įrašyti</string>
     <string name="feature_enabled">įjungta</string>
     <string name="delete_after">Ištrinti po</string>
@@ -149,7 +149,7 @@
     <string name="reject_contact_button">Atmesti</string>
     <string name="incorrect_code">Neteisingas saugumo kodas!</string>
     <string name="smp_servers_save">Įrašyti serverius</string>
-    <string name="smp_save_servers_question">Įrašyti serverius\?</string>
+    <string name="smp_save_servers_question">Įrašyti serverius?</string>
     <string name="create_address">Sukurti adresą</string>
     <string name="delete_address">Ištrinti adresą</string>
     <string name="error_saving_user_password">Klaida įrašant naudotojo slaptažodį</string>
@@ -166,10 +166,10 @@
     <string name="set_password_to_export_desc">Duomenų bazė yra šifruota naudojant atsitiktinę slaptafrazę. Prieš eksportuodami duomenų bazę, pakeiskite slaptafrazę.</string>
     <string name="error_exporting_chat_database">Klaida eksportuojant pokalbio duomenų bazę</string>
     <string name="error_stopping_chat">Klaida sustabdant pokalbį</string>
-    <string name="import_database_question">Importuoti pokalbio duomenų bazę\?</string>
+    <string name="import_database_question">Importuoti pokalbio duomenų bazę?</string>
     <string name="current_passphrase">Dabartinė slaptafrazė…</string>
     <string name="encrypted_with_random_passphrase">Duomenų bazė yra šifruota naudojant atsitiktinę slaptafrazę, kurią galite pakeisti.</string>
-    <string name="encrypt_database_question">Šifruoti duomenų bazę\?</string>
+    <string name="encrypt_database_question">Šifruoti duomenų bazę?</string>
     <string name="error_with_info">Klaida: %s</string>
     <string name="button_edit_group_profile">Taisyti grupės profilį</string>
     <string name="group_link">Grupės nuoroda</string>
@@ -191,7 +191,7 @@
     <string name="v4_4_french_interface">Sąsaja prancūzų kalba</string>
     <string name="v4_3_improved_privacy_and_security">Patobulintas privatumas ir saugumas</string>
     <string name="num_contacts_selected">Pažymėta kontaktų: %d</string>
-    <string name="delete_chat_profile_question">Ištrinti pokalbio profilį\?</string>
+    <string name="delete_chat_profile_question">Ištrinti pokalbio profilį?</string>
     <string name="error_importing_database">Klaida importuojant pokalbio duomenų bazę</string>
     <string name="delete_messages_after">Ištrinti žinutes po</string>
     <string name="database_will_be_encrypted">Duomenų bazė bus šifruota.</string>
@@ -209,11 +209,11 @@
     <string name="restore_database_alert_confirm">Atkurti</string>
     <string name="create_group_link">Sukurti grupės nuorodą</string>
     <string name="delete_link">Ištrinti nuorodą</string>
-    <string name="delete_link_question">Ištrinti nuorodą\?</string>
+    <string name="delete_link_question">Ištrinti nuorodą?</string>
     <string name="error_creating_link_for_group">Klaida kuriant grupės nuorodą</string>
     <string name="database_encrypted">Duomenų bazė šifruota!</string>
     <string name="group_member_status_creator">kūrėjas</string>
-    <string name="delete_group_question">Ištrinti grupę\?</string>
+    <string name="delete_group_question">Ištrinti grupę?</string>
     <string name="user_hide">Slėpti</string>
     <string name="error_saving_file">Klaida įrašant failą</string>
     <string name="hide_dev_options">Slėpti:</string>
@@ -226,7 +226,7 @@
     <string name="delete_profile">Ištrinti profilį</string>
     <string name="delete_contact_menu_action">Ištrinti</string>
     <string name="save_and_notify_contact">Įrašyti ir pranešti kontaktui</string>
-    <string name="enable_automatic_deletion_question">Įjungti automatinį žinučių ištrynimą\?</string>
+    <string name="enable_automatic_deletion_question">Įjungti automatinį žinučių ištrynimą?</string>
     <string name="error_deleting_database">Klaida ištrinant pokalbio duomenų bazę</string>
     <string name="error_starting_chat">Klaida pradedant pokalbį</string>
     <string name="hide_profile">Slėpti profilį</string>
@@ -250,10 +250,10 @@
     <string name="icon_descr_settings">Nustatymai</string>
     <string name="show_QR_code">Rodyti QR kodą</string>
     <string name="share_invitation_link">Bendrinti pakvietimo nuorodą</string>
-    <string name="use_simplex_chat_servers__question">Naudoti SimpleX Chat serverius\?</string>
-    <string name="network_disable_socks">Naudoti tiesioginį interneto ryšį\?</string>
+    <string name="use_simplex_chat_servers__question">Naudoti SimpleX Chat serverius?</string>
+    <string name="network_disable_socks">Naudoti tiesioginį interneto ryšį?</string>
     <string name="update_network_settings_confirmation">Atnaujinti</string>
-    <string name="update_network_settings_question">Atnaujinti tinklo nustatymus\?</string>
+    <string name="update_network_settings_question">Atnaujinti tinklo nustatymus?</string>
     <string name="ntf_channel_messages">SimpleX Chat žinutės</string>
     <string name="ntf_channel_calls">SimpleX Chat skambučiai</string>
     <string name="notification_preview_mode_message_desc">Rodyti kontaktą ir žinutę</string>
@@ -263,7 +263,7 @@
     <string name="use_camera_button">Fotoaparatas</string>
     <string name="thank_you_for_installing_simplex">Dėkojame, kad įdiegėte SimpleX Chat!</string>
     <string name="smp_servers_use_server">Naudoti serverį</string>
-    <string name="network_enable_socks">Naudoti SOCKS įgaliotąjį serverį\?</string>
+    <string name="network_enable_socks">Naudoti SOCKS įgaliotąjį serverį?</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="share_link">Bendrinti nuorodą</string>
     <string name="tap_to_activate_profile">Bakstelėkite, norėdami aktyvuoti profilį.</string>
@@ -287,7 +287,7 @@
     <string name="your_privacy">Jūsų privatumas</string>
     <string name="settings_section_title_you">Jūs</string>
     <string name="wrong_passphrase_title">Neteisinga slaptafrazė!</string>
-    <string name="app_name">SimpleX</string>
+    <string name="app_name" translatable="false">SimpleX</string>
     <string name="sender_you_pronoun">jūs</string>
     <string name="description_via_group_link">per grupės nuorodą</string>
     <string name="description_via_contact_address_link">per kontakto adreso nuorodą</string>
@@ -396,7 +396,7 @@
     <string name="copied">Nukopijuota į iškarpinę</string>
     <string name="choose_file">Failas</string>
     <string name="above_then_preposition_continuation">aukščiau, o tuomet:</string>
-    <string name="clear_chat_question">Išvalyti pokalbį\?</string>
+    <string name="clear_chat_question">Išvalyti pokalbį?</string>
     <string name="mark_unread">Žymėti kaip neskaitytą</string>
     <string name="invalid_contact_link">Neteisinga nuoroda!</string>
     <string name="smp_servers_check_address">Patikrinkite serverio adresą ir bandykite dar kartą.</string>
@@ -405,7 +405,7 @@
     <string name="profile_is_only_shared_with_your_contacts">Profilis yra bendrinamas tik su jūsų kontaktais.</string>
     <string name="save_passphrase_and_open_chat">Įrašyti slaptafrazę ir atverti pokalbį</string>
     <string name="restore_database">Atkurti atsarginę duomenų bazės kopiją</string>
-    <string name="restore_database_alert_title">Atkurti atsarginę duomenų bazės kopiją\?</string>
+    <string name="restore_database_alert_title">Atkurti atsarginę duomenų bazės kopiją?</string>
     <string name="group_invitation_item_description">pakvietimas į %1$s grupę</string>
     <string name="leave_group_button">Išeiti</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">keičiamas adresas…</string>
@@ -431,7 +431,7 @@
     <string name="callstatus_missed">praleistas skambutis</string>
     <string name="enable_lock">Įjungti užraktą</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Norėdami sukurti naują pokalbio profilį, paleiskite programėlę iš naujo.</string>
-    <string name="join_group_question">Prisijungti prie grupės\?</string>
+    <string name="join_group_question">Prisijungti prie grupės?</string>
     <string name="database_restore_error">Duomenų bazės atkūrimo klaida</string>
     <string name="alert_message_no_group">Šios grupės daugiau nebėra.</string>
     <string name="network_option_seconds_label">sek.</string>
@@ -460,7 +460,7 @@
     <string name="la_immediately">Nedelsiant</string>
     <string name="network_socks_proxy_settings">SOCKS įgaliotojo serverio nustatymai</string>
     <string name="alert_text_msg_bad_hash">Skiriasi ankstesnės žinutės maiša.</string>
-    <string name="change_database_passphrase_question">Keisti duomenų bazės slaptafrazę\?</string>
+    <string name="change_database_passphrase_question">Keisti duomenų bazės slaptafrazę?</string>
     <string name="network_proxy_port">prievadas %d</string>
     <string name="stop_rcv_file__message">Failo gavimas bus sustabdytas.</string>
     <string name="network_socks_toggle_use_socks_proxy">Naudoti SOCKS įgaliotąjį serverį</string>
@@ -473,8 +473,8 @@
     <string name="stop_snd_file__message">Failo siuntimas bus sustabdytas.</string>
     <string name="stop_file__confirm">Sustabdyti</string>
     <string name="stop_file__action">Stabdyti failą</string>
-    <string name="stop_rcv_file__title">Stabdyti failo gavimą\?</string>
-    <string name="stop_snd_file__title">Stabdyti failo siuntimą\?</string>
+    <string name="stop_rcv_file__title">Stabdyti failo gavimą?</string>
+    <string name="stop_snd_file__title">Stabdyti failo siuntimą?</string>
     <string name="calls_prohibited_with_this_contact">Garso/vaizdo skambučiai yra uždrausti.</string>
     <string name="both_you_and_your_contact_can_make_calls">Tiek jūs, tiek ir jūsų kontaktas gali skambinti.</string>
     <string name="v4_5_message_draft">Žinutės juodraštis</string>
@@ -483,7 +483,7 @@
     <string name="lock_after">Užrakinti po</string>
     <string name="alert_title_group_invitation_expired">Pakvietimas nebegalioja!</string>
     <string name="icon_descr_add_members">Pakviesti narius</string>
-    <string name="leave_group_question">Išeiti iš grupės\?</string>
+    <string name="leave_group_question">Išeiti iš grupės?</string>
     <string name="unknown_database_error_with_info">Nežinoma duomenų bazės klaida: %s</string>
     <string name="users_delete_with_connections">Profilis ir ryšiai su serveriu</string>
     <string name="direct_messages_are_prohibited_in_group">Tiesioginės žinutės tarp narių šioje grupėje yra uždraustos.</string>
@@ -571,7 +571,7 @@
     <string name="invite_prohibited">Nepavyko pakviesti kontakto!</string>
     <string name="v4_5_transport_isolation_descr">Pagal pokalbių profilį (numatytieji nustatymai) arba pagal ryšį (BETA).</string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Naudoja daugiau baterijos</b>! Fono paslauga veikia visada - pranešimai rodomi, kai tik atsiranda žinučių.]]></string>
-    <string name="cannot_access_keychain">Negalima pasiekti "Keystore", kad išsaugotumėte duomenų bazės slaptažodį</string>
+    <string name="cannot_access_keychain">Negalima pasiekti Keystore, kad išsaugotumėte duomenų bazės slaptažodį</string>
     <string name="icon_descr_cancel_file_preview">Atšaukti failo peržiūrą</string>
     <string name="icon_descr_cancel_image_preview">Atšaukti vaizdo peržiūrą</string>
     <string name="share_text_database_id">Duomenų bazės ID: %d</string>
@@ -653,9 +653,7 @@
     <string name="invite_friends">Pakviesti draugus</string>
     <string name="only_you_can_make_calls">Tik jūs galite skambinti.</string>
     <string name="v5_0_polish_interface">Naudotojo sąsaja lenkų kalba</string>
-    <string name="v5_2_more_things_descr">- stabilesnis žinučių pristatymas.
-\n- šiek tiek geresnės grupės.
-\n- ir daugiau!</string>
+    <string name="v5_2_more_things_descr">- stabilesnis žinučių pristatymas. \n- šiek tiek geresnės grupės. \n- ir daugiau!</string>
     <string name="only_your_contact_can_make_calls">Tik jūsų kontaktas gali skambinti.</string>
     <string name="contact_developers">Atnaujinkite programėlę ir susisiekite su plėtotojais.</string>
     <string name="open_verb">Atverti</string>
@@ -743,10 +741,7 @@
     <string name="invalid_name">Netinkamas vardas!</string>
     <string name="create_your_profile">Sukurti savo profilį</string>
     <string name="onboarding_notifications_mode_subtitle">Tai gali būti pakeista vėliau nustatymuose.</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Tai gali įvykti kai:
-\n1. Žinutės galiojimo laikas baigėsi siuntėjo programoje po 2 dienų arba serveryje po 30 dienų.
-\n2. Žinutės atšifravimas nepavyko, nes jūs ar jūsų kontaktas naudojo seną duomenų bazės atsarginę kopiją.
-\n3. Prisijungimas buvo kompromisuotas.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Tai gali įvykti kai: \n1. Žinutės galiojimo laikas baigėsi siuntėjo programoje po 2 dienų arba serveryje po 30 dienų. \n2. Žinutės atšifravimas nepavyko, nes jūs ar jūsų kontaktas naudojo seną duomenų bazės atsarginę kopiją. \n3. Prisijungimas buvo kompromisuotas.</string>
     <string name="passcode_changed">Prieigos kodas pakeistas!</string>
     <string name="confirm_new_passphrase">Patvirtinti naują slaptafrazę…</string>
     <string name="enter_correct_current_passphrase">Prašome įvesti tinkamą dabartinę slaptafrazę.</string>
@@ -775,10 +770,7 @@
     <string name="custom_time_picker_custom">pasirinktinis</string>
     <string name="desktop_device">Darbastalis</string>
     <string name="invalid_file_link">Netinkama nuoroda</string>
-    <string name="agent_critical_error_desc">Prašome pranešti tai kūrėjams:
-\n%s
-\n
-\nRekomenduojama paleisti programėlę iš naujo.</string>
+    <string name="agent_critical_error_desc">Prašome pranešti tai kūrėjams: \n%s \n \nRekomenduojama paleisti programėlę iš naujo.</string>
     <string name="migrate_to_device_database_init">Ruošiamas atsiuntimas</string>
     <string name="migrate_to_device_import_failed">Importas nepavyko</string>
     <string name="migrate_to_device_apply_onion">Taikyti</string>
@@ -836,17 +828,14 @@
     <string name="permissions_required">Suteikti leidimus</string>
     <string name="group_profile_is_stored_on_members_devices">Grupės profilis yra saugomas narių įrenginiuose, ne serveriuose.</string>
     <string name="icon_descr_video_asked_to_receive">Paprašyta gauti vaizdo įrašą</string>
-    <string name="email_invite_body">Labas!
-\nPrisijunk prie manęs per SimpleX Chat: %s</string>
+    <string name="email_invite_body">Labas! \nPrisijunk prie manęs per SimpleX Chat: %s</string>
     <string name="share_text_created_at">Sukurta: %s</string>
     <string name="group_member_status_intro_invitation">jungiamasi (supažindinimo pakvietimas)</string>
     <string name="how_to_use_markdown">Kaip naudoti markdown</string>
     <string name="self_destruct_passcode_changed">Savaiminio susinaikinimo prieigos kodas pakeistas!</string>
     <string name="keep_unused_invitation_question">Pasilikti nepanaudotą pakvietimą?</string>
     <string name="keep_invitation_link">Pasilikti</string>
-    <string name="v5_4_more_things_descr">- pasirinktinai praneškite ištrintiems kontaktams.
-\n- profilių vardai su tarpais.
-\n- ir daugiau!</string>
+    <string name="v5_4_more_things_descr">- pasirinktinai praneškite ištrintiems kontaktams. \n- profilių vardai su tarpais. \n- ir daugiau!</string>
     <string name="paste_archive_link">Įklijuoti archyvo nuorodą</string>
     <string name="ttl_days">%d dienos</string>
     <string name="image_descr">Nuotrauka</string>
@@ -863,8 +852,7 @@
     <string name="callstatus_connecting">jungiamas skambutis…</string>
     <string name="developer_options">Duomenų bazės ID ir transporto izoliacijos parinktis.</string>
     <string name="italic_text">kursyvinis</string>
-    <string name="you_can_change_it_later">Atsitiktinė slaptafrazė yra saugoma nustatymuose kaip paprastas tekstas.
-\nJūs galite tai pakeisti vėliau.</string>
+    <string name="you_can_change_it_later">Atsitiktinė slaptafrazė yra saugoma nustatymuose kaip paprastas tekstas. \nJūs galite tai pakeisti vėliau.</string>
     <string name="chat_is_running">Pokalbiai veikia</string>
     <string name="chat_is_stopped_you_should_transfer_database">Pokalbiai sustabdyti. Jei jau naudojote šią duomenų bazę kitame įrenginyje, turėtumėte perkelti ją atgal prieš pradedant pokalbius.</string>
     <string name="rcv_group_event_member_blocked">užblokavo %s</string>
@@ -910,8 +898,7 @@
     <string name="v4_6_hidden_chat_profiles">Paslėpti pokalbių profiliai</string>
     <string name="v5_2_favourites_filter_descr">Filtruokite neperskaitytus ir mėgstamus pokalbius.</string>
     <string name="v5_2_favourites_filter">Raskite pokalbius greičiau</string>
-    <string name="database_migration_in_progress">Duomenų bazės perkėlimas yra vykdomas.
-\nTai gali užtrukti kelias minutes.</string>
+    <string name="database_migration_in_progress">Duomenų bazės perkėlimas yra vykdomas. \nTai gali užtrukti kelias minutes.</string>
     <string name="auth_confirm_credential">Patvirtinkite savo kredencialus</string>
     <string name="icon_descr_image_snd_complete">Nuotrauka išsiųsta</string>
     <string name="image_will_be_received_when_contact_completes_uploading">Nuotrauka bus gauta kai jūsų kontaktas užbaigs jos įkėlimą.</string>
@@ -977,9 +964,7 @@
     <string name="desktop_app_version_is_incompatible">Darbastalio programėlės versija %s nėra suderinama su šia programėle.</string>
     <string name="group_member_role_author">autorius</string>
     <string name="send_receipts_disabled_alert_title">Kvitai yra išjungti</string>
-    <string name="v5_3_discover_join_groups_descr">- prisijunkite prie katalogo tarnybos (BETA)!
-\n- pristatymo kvitai (iki 20 narių).
-\n- greičiau ir stabiliau.</string>
+    <string name="v5_3_discover_join_groups_descr">- prisijunkite prie katalogo tarnybos (BETA)! \n- pristatymo kvitai (iki 20 narių). \n- greičiau ir stabiliau.</string>
     <string name="moderated_items_description">%1$d žinutė buvo moderuota %2$s</string>
     <string name="found_desktop">Rastas darbastalis</string>
     <string name="store_passphrase_securely">Prašome saugoti slaptafrazę saugiai, jūs NEGALĖSITE jos pakeisti, jei ją prarasite.</string>
@@ -1051,8 +1036,7 @@
     <string name="new_desktop"><![CDATA[<i>(naujas)</i>]]></string>
     <string name="open_port_in_firewall_title">Atidarykite prievadą ugniasienėje</string>
     <string name="or_paste_archive_link">Arba įklijuokite archyvo nuorodą</string>
-    <string name="agent_internal_error_desc">Prašome pranešti tai kūrėjams:
-\n%s</string>
+    <string name="agent_internal_error_desc">Prašome pranešti tai kūrėjams: \n%s</string>
     <string name="random_port">Atsitiktinis</string>
     <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Pasirinkite <i>Persikelti iš kito įrenginio</i> naujame įrenginyje ir nuskanuokite QR kodą.]]></string>
     <string name="migrate_to_device_confirm_network_settings">Patvirtinti tinklo nustatymus</string>
@@ -1149,8 +1133,7 @@
     <string name="send_us_an_email">Siųsti mums el. laišką</string>
     <string name="terminal_always_visible">Rodyti konsolę naujame lange</string>
     <string name="send_link_previews">Siųsti nuorodų peržiūras</string>
-    <string name="alert_text_msg_bad_id">Sekančios žinutės ID yra neteisingas (mažesnis arba lygus ankstesniam).
-\nTaip gali nutikti dėl tam tikros klaidos arba kai ryšys yra sukompromisuotas.</string>
+    <string name="alert_text_msg_bad_id">Sekančios žinutės ID yra neteisingas (mažesnis arba lygus ankstesniam). \nTaip gali nutikti dėl tam tikros klaidos arba kai ryšys yra sukompromisuotas.</string>
     <string name="settings_shutdown">Išjungti</string>
     <string name="theme_simplex">SimpleX</string>
     <string name="accept_feature_set_1_day">Nustatyti 1 dieną</string>
@@ -1411,8 +1394,7 @@
     <string name="v5_6_safer_groups">Saugesnės grupės</string>
     <string name="rcv_group_event_1_member_connected">%s prisijungė</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Jūs jau prašėte prisijungimo per šį adresą!</string>
-    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Jūsų kontaktas turi būti prisijungęs, kad užbaigti prisijungimą.
-\nJūs galite atšaukti šį prisijungimą ir pašalinti kontaktą (ir vėliau bandyti su nauja nuoroda).</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Jūsų kontaktas turi būti prisijungęs, kad užbaigti prisijungimą. \nJūs galite atšaukti šį prisijungimą ir pašalinti kontaktą (ir vėliau bandyti su nauja nuoroda).</string>
     <string name="your_contacts_will_remain_connected">Jūsų kontaktai išliks prisijungę.</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Prisijungsite kai jūsų prisijungimo užklausa bus patvirtinta, palaukite arba patikrinkite vėliau!</string>
     <string name="remote_host_error_busy"><![CDATA[Mobilusis <b>%s</b> yra užsiėmęs]]></string>
@@ -1421,9 +1403,7 @@
     <string name="message_delivery_error_desc">Tikriausiai šis kontaktas ištrynė prisijungimą su jumis.</string>
     <string name="user_mute">Nutildyti</string>
     <string name="no_info_on_delivery">Nėra pristatymo informacijos</string>
-    <string name="v4_6_group_moderation_descr">Dabar administratoriai gali:
-\n- ištrinti narių žinutes.
-\n- išjungti narius ("stebėtojas" rolė)</string>
+    <string name="v4_6_group_moderation_descr">Dabar administratoriai gali: \n- ištrinti narių žinutes. \n- išjungti narius (stebėtojas rolė)</string>
     <string name="chat_preferences_on">įj.</string>
     <string name="unfavorite_chat">Nebemėgti</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Nustatymų atnaujinimas perjungs klientą iš naujo prie visų serverių.</string>
@@ -1505,8 +1485,7 @@
     <string name="network_use_onion_hosts_no_desc">Onion serveriai nebus naudojami.</string>
     <string name="self_destruct">Savaiminis susinaikinimas</string>
     <string name="old_database_archive">Senas duomenų bazės archyvas</string>
-    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Jūsų pokalbių duomenų bazė bus IŠTRINTA ir PAKEISTA su importuojama.
-\nŠis veiksmas negali būti atšauktas - jūsų profilis, kontaktai, žinutės ir failai bus negrįžtamai prarasti.</string>
+    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Jūsų pokalbių duomenų bazė bus IŠTRINTA ir PAKEISTA su importuojama. \nŠis veiksmas negali būti atšauktas - jūsų profilis, kontaktai, žinutės ir failai bus negrįžtamai prarasti.</string>
     <string name="save_passphrase_in_settings">Išsaugoti slaptafrazę nustatymuose</string>
     <string name="notifications_will_be_hidden">Pranešimai bus pristatyti tik iki tol kol programėlė bus sustabdyta!</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Galite bendrinti nuorodą ar QR kodą - bet kas galės prisijungti prie grupės. Neprarasite grupės narių jei vėliau tai ištrinsite.</string>
@@ -1514,25 +1493,21 @@
     <string name="receiving_via">Gaunama per</string>
     <string name="v4_5_private_filenames_descr">Kad apsaugoti laiko juostą, nuotraukos/balso failai naudoja UTC.</string>
     <string name="v5_2_message_delivery_receipts">Žinučių pristatymo kvitai!</string>
-    <string name="v5_1_better_messages_descr">- balso žinutės iki 5 minučių.
-\n- pasirinktinis laikas išnykimui.
-\n- istorijos redagavimas.</string>
+    <string name="v5_1_better_messages_descr">- balso žinutės iki 5 minučių. \n- pasirinktinis laikas išnykimui. \n- istorijos redagavimas.</string>
     <string name="v5_2_disappear_one_message">Padarykite, kad viena žinutė išnyktų</string>
     <string name="v5_2_disappear_one_message_descr">Net jei tai išjungta pokalbyje.</string>
     <string name="moderated_item_description">moderuota %s</string>
     <string name="app_was_crashed">Rodinys sudužo</string>
     <string name="description_you_shared_one_time_link">pasidalinote vienkartine nuoroda</string>
     <string name="description_you_shared_one_time_link_incognito">pasidalinote vienkartine nuoroda inkognito režimu</string>
-    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Kad apsaugoti savo informaciją, įjunkite SimpleX užraktą.
-\nJūs būsite prašomi užbaigti autentifikaciją prieš įjungiant šią galimybę.</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Kad apsaugoti savo informaciją, įjunkite SimpleX užraktą. \nJūs būsite prašomi užbaigti autentifikaciją prieš įjungiant šią galimybę.</string>
     <string name="icon_descr_waiting_for_image">Laukiama nuotraukos</string>
     <string name="compose_send_direct_message_to_connect">Siųsti tiesioginę žinutę, kad prisijungti</string>
     <string name="waiting_for_image">Laukiama nuotraukos</string>
     <string name="you_can_view_invitation_link_again">Galite peržiūrėti pakvietimo nuorodą vėl, prisijungimo detalėse.</string>
     <string name="markdown_in_messages">Markdown žinutėse</string>
     <string name="to_verify_compare">Norėdami patvirtinti visapusį šifravimą su savo kontaktu, palyginkite (ar nuskanuokite) kodą ant savo įrenginių.</string>
-    <string name="network_use_onion_hosts_required_desc">Onion serveriai bus reikalingi ryšiui.
-\nAtkreipkite dėmesį: negalėsite prisijungti prie serverių be .onion adreso.</string>
+    <string name="network_use_onion_hosts_required_desc">Onion serveriai bus reikalingi ryšiui. \nAtkreipkite dėmesį: negalėsite prisijungti prie serverių be .onion adreso.</string>
     <string name="save_settings_question">Išsaugoti nustatymus?</string>
     <string name="to_reveal_profile_enter_password">Norėdami atskleisti paslėptą profilį, įveskite visą slaptažodį į paieškos laukelį puslapyje Jūsų pokalbių profiliai.</string>
     <string name="no_contacts_selected">Nepasirinkti jokie kontaktai</string>

@@ -82,12 +82,14 @@ struct MemberAdmissionView: View {
     }
 }
 
-#Preview {
-    MemberAdmissionView(
-        groupInfo: Binding.constant(GroupInfo.sampleData),
-        admission: Binding.constant(GroupMemberAdmission.sampleData),
-        currentAdmission: GroupMemberAdmission.sampleData,
-        creatingGroup: false,
-        saveAdmission: {}
-    )
+struct MemberAdmissionView_Previews: PreviewProvider {
+    static var previews: some View {
+        MemberAdmissionView(
+            groupInfo: Binding.constant(GroupInfo.sampleData),
+            admission: Binding.constant(GroupMemberAdmission.sampleData),
+            currentAdmission: GroupMemberAdmission.sampleData,
+            creatingGroup: false,
+            saveAdmission: {}
+        )
+    }
 }

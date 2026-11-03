@@ -8,7 +8,7 @@
 
 > **reactionText**(`reaction`): `string`
 
-Defined in: [src/util.ts:89](../util.ts#L89)
+Defined in: [src/util.ts:90](../util.ts#L90)
 
 ## Parameters
 

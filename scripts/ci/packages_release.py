@@ -10,7 +10,8 @@ publish-release   publish a draft release that has every asset
 check-pins        check the pins of the packages against the published releases
 download          download a release asset and check its digest
 download-pinned   download a pinned asset and check its pin
-changes           print whether the changes since a commit touch the chat core, the add-on and each build of build.yml
+changes           print whether the changes since a commit touch the chat core, the add-on, each build of build.yml and each scope of scope-tests.sh
+scopes            print every scope of scope-tests.sh
 build-plan        print the platforms to test the packages on, none when build.yml builds the core for the pull request
 prepare           update pins and versions of the packages
 publish-plan      print the package versions that are not published yet
@@ -47,7 +48,7 @@ RELEASE_FILE = f"{NODEJS_DIR}/src/release.ts"
 PYTHON_VERSION_FILE = f"{PYTHON_DIR}/src/simplex_chat/_version.py"
 ADDON_SOURCES = [f"{NODEJS_DIR}/binding.gyp", f"{NODEJS_DIR}/cpp"]
 CORE_SOURCES = ["src", "simplex-chat.cabal", "cabal.project"]
-# The pull_request paths of build.yml are the union of these globs; ":!" excludes a path from its build.
+# The pull_request paths of build.yml are the union of the globs of BUILD_CHANGES and SCOPE_CHANGES; ":!" excludes a path from its build.
 BUILD_CHANGES = {
     "haskell": [
         "src/**",
@@ -62,13 +63,25 @@ BUILD_CHANGES = {
         "simplex-chat.cabal",
         "cabal.project",
         "Dockerfile*",
-        "scripts/ci/**",
+        "scripts/ci/*.sh",
         ":!scripts/ci/ios-stub-libs.sh",
         "scripts/desktop/**",
-        ".github/**",
+        ".github/workflows/build.yml",
+        ".github/actions/**",
+        ".github/changelog_conf.json",
     ],
-    "kotlin": ["apps/multiplatform/**", "Dockerfile*", ".github/**"],
-    "ios": ["apps/ios/**", "scripts/ci/ios-stub-libs.sh", ".github/**"],
+    "kotlin": ["apps/multiplatform/**", "Dockerfile*", ".github/workflows/build.yml", ".github/actions/**"],
+    "ios": ["apps/ios/**", "scripts/ci/ios-stub-libs.sh"],
+    "packages": [
+        "packages/simplex-chat-nodejs/**",
+        "packages/simplex-chat-client/types/typescript/**",
+        "packages/simplex-chat-python/**",
+        "scripts/ci/package-tests.sh",
+    ],
+}
+SCOPE_CHANGES = {
+    "badge-web": ["apps/simplex-badge-service/web/**"],
+    "ci-scripts": ["scripts/ci/packages_release.py", "scripts/ci/test_packages_release.py"],
 }
 CABAL_FILE = "simplex-chat.cabal"
 CABAL_VERSION = re.compile(r"^(version:\s*)(\S+)", re.M)
@@ -496,7 +509,7 @@ def changed_since(base: str, sources: list[str]) -> bool:
 
 
 def build_pathspecs(build: str) -> list[str]:
-    return [path if path.startswith(":") else f":(glob){path}" for path in BUILD_CHANGES[build]]
+    return [path if path.startswith(":") else f":(glob){path}" for path in (BUILD_CHANGES | SCOPE_CHANGES)[build]]
 
 
 def changes(base: str) -> None:
@@ -504,6 +517,7 @@ def changes(base: str) -> None:
     print(f"addon={'true' if changed_since(base, ADDON_SOURCES) else ''}")
     for build in BUILD_CHANGES:
         print(f"{build}={'true' if changed_since(base, build_pathspecs(build)) else ''}")
+    print(f"scopes={' '.join(scope for scope in SCOPE_CHANGES if changed_since(base, build_pathspecs(scope)))}")
 
 
 def print_build_plan(args: argparse.Namespace) -> None:
@@ -959,6 +973,7 @@ def main(argv: list[str]) -> None:
     download_pinned_parser.add_argument("directory")
     changes_parser = commands.add_parser("changes")
     changes_parser.add_argument("base", help="the commit to compare with")
+    commands.add_parser("scopes")
     build_parser = commands.add_parser("build-plan")
     build_parser.add_argument("--base", required=True, help="the base commit of the pull request")
     prepare_parser = commands.add_parser("prepare")
@@ -996,6 +1011,8 @@ def main(argv: list[str]) -> None:
         download_pinned(args.asset, args.directory)
     elif args.command == "changes":
         changes(args.base)
+    elif args.command == "scopes":
+        print(f"scopes={' '.join(SCOPE_CHANGES)}")
     elif args.command == "build-plan":
         print_build_plan(args)
     elif args.command == "prepare":
