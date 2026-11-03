@@ -61,6 +61,7 @@ export const CANCEL_HAS_FUNDS = "This invoice has a payment on it, so it cannot 
 export const CANCEL_STILL_OPEN = "This invoice was cancelled, but the service still shows it open. Do not send anything more to the address.";
 export const CANCEL_INVOICE = "Cancel this invoice";
 export const CANCEL_CONFIRM = "Cancel this invoice? The address stops accepting payment, and anything sent to it afterwards is lost.";
+export const CANCEL_CONFIRM_LIGHTNING = "Cancel this invoice? Its Lightning invoice stays payable until it expires, so do not pay it afterwards: such a payment goes through, and only support can sort it out.";
 export const CANCEL_PENDING = "Cancelling\u2026";
 export const CANCEL_FAILED = "Could not cancel it. Check the invoice before sending anything more.";
 
@@ -564,6 +565,10 @@ const CRYPTO_NAMES: Readonly<Record<Chain, string>> = { btc: "Bitcoin", ln: "Lig
 const CRYPTO_TICKERS: Readonly<Record<Chain, string>> = { btc: "BTC", ln: "BTC", xmr: "XMR" };
 const DESTINATIONS: Readonly<Record<Chain, string>> = { btc: "address", ln: "invoice", xmr: "address" };
 
+export function cancelConfirmation(method: Method): string {
+  return method === "ln" ? CANCEL_CONFIRM_LIGHTNING : CANCEL_CONFIRM;
+}
+
 function cancelControl(onCancel: () => Promise<void>, notice: string | undefined): Node[] {
   const status = el("p", { class: "muted cancel-status", role: "status" }, notice ?? "");
   const control = button(CANCEL_INVOICE, () => {
@@ -712,7 +717,8 @@ export function awaitingConfirmation(o: AwaitingConfirmationOptions): HTMLElemen
   if (o.gaveUp) {
     return panel(
       el("h1", { class: "tight" }, "This is taking longer than expected"),
-      el("p", { class: "lede" }, "The payment has not been confirmed. This page keeps working: come back to it later, or quote the reference below."),
+      el("p", { class: "lede" },
+        `${o.method === "ln" ? "The payment has not settled." : "The payment has not been confirmed."} This page keeps working: come back to it later, or quote the reference below.`),
       reference(o.order.orderId),
       button("Check again", o.onCheckAgain),
     );
@@ -947,6 +953,8 @@ const ENTRY_STATES: Readonly<Record<HistoryRow["kind"], { text: string; tone: st
   expired: { text: "this invoice expired", tone: "lost" },
 };
 
+const LIGHTNING_PROCESSING: { text: string; tone: string } = { text: "payment received, waiting to settle", tone: "pending" };
+
 function entryMeta(o: UnpaidOrder): HTMLElement {
   const meta = el("div", { class: "meta" });
   if (o.method !== undefined) {
@@ -965,7 +973,7 @@ function entryLine(row: HistoryRow, onOpen: (orderId: string) => void): HTMLElem
   const head = el("div", { class: "entry-head" });
   if (hasBadgeArt(o.badgeType)) head.append(badgeIcon(o.badgeType));
   const main = el("div", { class: "entry-main" });
-  const state = ENTRY_STATES[row.kind];
+  const state = row.kind === "processing" && o.method === "ln" ? LIGHTNING_PROCESSING : ENTRY_STATES[row.kind];
 
   const titleRow = el("div", { class: "entry-row" });
   const title = orderTitle(o.badgeType, o.months);
