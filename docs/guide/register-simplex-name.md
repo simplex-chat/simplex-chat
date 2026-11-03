@@ -9,6 +9,10 @@ a long link. You register the name on a website and add your SimpleX link to it,
 then claim the name in the app, to connect it with your SimpleX address or
 channel.
 
+A name is optional. It is useful for those who want to be found, such as
+channels and businesses. When the app looks up a name, the server sees only a
+hash of the name and cannot link the lookup with the address.
+
 > Names currently run on a testing network. The registration page is
 > [testing-names.simplex.chat](https://testing-names.simplex.chat) and names end
 > in `.testing`. The steps stay the same when the main names launch.

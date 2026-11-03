@@ -92,7 +92,7 @@ a SOCKS proxy or the .onion address of the server. It is on by default.
 To connect to SMP relays (messaging servers) via Tor you need to install Orbot
 app or another app that provides a SOCKS proxy to Tor network.
 
-Android: use Orbot app as SOCKS proxy on port 9050 (default) and enable [Use SOCKS proxy](./app-settings.md#use-socks-proxy-android-only).
+Android: use Orbot app as SOCKS proxy on port 9050 (default) and enable [Use SOCKS proxy](./app-settings.md#use-socks-proxy).
 
 Desktop: use a SOCKS proxy to Tor network in the same way.
 

@@ -118,7 +118,7 @@ This page also allows testing the connection with the servers.
 
 Read how to host your own servers in [this guide](../SERVER.md).
 
-#### Use SOCKS proxy (Android only)
+#### Use SOCKS proxy
 
 This option makes the app connect via a SOCKS proxy that should be provided by some other app running on your device.
 

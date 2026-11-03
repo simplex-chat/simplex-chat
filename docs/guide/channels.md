@@ -72,9 +72,10 @@ New channels have **Visible history** on and **Chat with admins** off. See
    a name](./making-connections.md#connect-via-a-link-or-a-name).
 2. The app shows the channel's name, image and number of subscribers. Tap **Open
    channel**.
-3. The app opens the channel with its welcome message, if it has one. To join
-   with another chat profile or incognito, choose it in **Your profile** above
-   the button. See [Incognito mode](./chat-profiles.md#incognito-mode).
+3. The app opens the channel with its welcome message, if it has one. The chat
+   relays, the owner and moderators see the profile you join with. To join with
+   another chat profile or incognito, choose it in **Your profile** above the
+   button. See [Incognito mode](./chat-profiles.md#incognito-mode).
 4. Tap **Join channel**.
 
 The app connects to each of the channel's relays through messaging servers, and

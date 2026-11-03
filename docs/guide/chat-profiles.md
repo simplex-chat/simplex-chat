@@ -6,7 +6,9 @@ title: Chat profiles
 ## Creating additional chat profiles
 
 SimpleX Chat allows creating as many chat profiles as you like. Same as the first
-profile, they are stored on your device and shared only with your contacts.
+profile, they are stored on your device and shared only with your contacts. You
+can use different profiles, for example for family and work, or one with a
+pseudonym. All of them receive messages at the same time.
 
 To create an additional SimpleX Chat profile:
 
