@@ -1122,9 +1122,8 @@ fun crowdfundingAvailable(): Boolean {
   return isInUs()
 }
 
-@Composable
-fun crowdfundingBannerAvailable(): Boolean =
-  crowdfundingAvailable() && (!platform.androidIsPlayStoreBuild || androidPlayStoreCountry.value != null)
+fun playStoreCountryUnknown(): Boolean =
+  platform.androidIsPlayStoreBuild && androidPlayStoreCountry.value == null
 
 fun isInUs(): Boolean =
   androidPlayStoreCountry.value == "US"
