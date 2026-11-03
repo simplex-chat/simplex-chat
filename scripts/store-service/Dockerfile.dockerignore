@@ -18,8 +18,9 @@ apps/*
 
 # Build output, caches, local state, and anything holding a secret. The ini is
 # mounted at run time and must never be baked into an image: it holds the issuer
-# secret, and with [btcpay] the API key and webhook secret too.
-store_service.ini
+# secret, and with [btcpay] the API key and webhook secret too. A bare name would
+# match only at the context root, so every ini is excluded at any depth.
+**/*.ini
 **/dist
 **/dist-newstyle
 **/node_modules
