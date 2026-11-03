@@ -6123,7 +6123,7 @@ testGroupMsgForwardFileConnectedBeforeUpload =
       setupGroupForwardingVectors alice bob cath
 
       bob #> "/f #team ./tests/fixtures/test.jpg"
-      bob `skipUntil` "use /fc 1 to cancel sending"
+      bob <## "use /fc 1 to cancel sending"
       concurrentlyN_
         [ do
             alice <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
@@ -6138,7 +6138,7 @@ testGroupMsgForwardFileConnectedBeforeUpload =
       updateGroupForwardingVectors alice "bob" "cath" MRConnected
 
       withXFTPServer alice $ do
-        bob `skipUntil` "completed uploading file 1 (test.jpg) for #team"
+        bob `skipUploadWarnings` "completed uploading file 1 (test.jpg) for #team"
         cath ##> ("/fr 1 " <> tmpDir cath)
         cath
           <### [ ConsoleString $ "saving file 1 from bob to " <> tmpFile cath "test.jpg",
@@ -6158,9 +6158,11 @@ testGroupMsgForwardFileConnectedBeforeUpload =
             WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
           |]
           (status :: String, memberName :: String)
-    skipUntil cc line = do
+    skipUploadWarnings cc line = do
       l <- getTermLine cc
-      when (l /= line) $ skipUntil cc line
+      if l == "warning:  uploading file 1 (test.jpg) for #team"
+        then getTermLine cc >> skipUploadWarnings cc line
+        else l `shouldBe` line
 
 testGroupMsgForwardChangeRole :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardChangeRole =
