@@ -29,6 +29,7 @@ import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.MVar (MVar, newEmptyMVar, newMVar, putMVar, takeMVar, withMVar)
 import Control.Concurrent.STM (atomically, modifyTVar', readTVarIO)
 import qualified Control.Exception as E
+import Control.Logger.Simple (LogLevel (..), logNote, setLogLevel)
 import Control.Monad (forM_, join, replicateM, replicateM_, void, when)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
@@ -184,6 +185,8 @@ badgeWebTests = do
     it "constructs a Provider record and records every call, in order" testStubProviderRecordsCalls
     it "makes pCreateInvoice fail on demand, so provider_unavailable is exercisable" testStubProviderCreateFailsOnDemand
     it "records nothing when the caller never reaches the provider" testStubProviderNotCalledWhenSkipped
+  describe "store service log capture" $
+    it "captures a note as a plain record, though the suite logs at error only" testCaptureSeesNotes
   describe "store service web" $ do
     it "serves the shell at / and a hashed asset under /assets" testServesTheBuild
     it "fills the shell's publishable key from the ini at boot" testShellCarriesPublishableKey
@@ -2862,11 +2865,29 @@ capturingStderr action = withMVar stderrCaptureLock $ \_ -> do
       fd <- handleToFd h
       hFlush stderr
       saved <- IODevice.dup FD.stderr
-      (IODevice.dup2 fd FD.stderr >> action >> threadDelay fastLoggerFlushDelay) `E.finally` (hFlush stderr >> IODevice.dup2 saved FD.stderr >> IODevice.close saved)
-    T.readFile path
+      (IODevice.dup2 fd FD.stderr >> setLogLevel defaultLogLevel >> action >> threadDelay fastLoggerFlushDelay)
+        `E.finally` (setLogLevel suiteLogLevel >> hFlush stderr >> IODevice.dup2 saved FD.stderr >> IODevice.close saved)
+    uncolored <$> T.readFile path
 
 fastLoggerFlushDelay :: Int
 fastLoggerFlushDelay = 2000000
+
+-- | tests/Test.hs sets it, and simple-logger cannot read a level back.
+suiteLogLevel :: LogLevel
+suiteLogLevel = LogError
+
+-- | simple-logger colors each stderr record and writes its reset after the newline.
+uncolored :: Text -> Text
+uncolored t = case T.splitOn "\ESC[" t of
+  [] -> t
+  plain : coded -> T.concat (plain : map (T.drop 1 . T.dropWhile (/= 'm')) coded)
+
+testCaptureSeesNotes :: IO ()
+testCaptureSeesNotes = do
+  logs <- capturingStderr $ logNote "store capture probe"
+  filter ("store capture probe" `T.isInfixOf`) (T.lines logs) `shouldSatisfy` \case
+    [ln] -> "[NOTE " `T.isPrefixOf` ln
+    _ -> False
 
 loggedError :: Text -> Text -> Bool
 loggedError message = any (\l -> "[ERROR " `T.isInfixOf` l && message `T.isInfixOf` l) . T.lines
