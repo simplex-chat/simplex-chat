@@ -227,12 +227,12 @@ describe("download cards", () => {
     expect(lines(download("#3", {kind: "group", name: "Builders"}, "Alice", {name: "report.pdf", size: 2_400_000}))).toEqual([
       "I want to download a file from Alice in group Builders (#3):",
       "`report.pdf`, 2.4 MB",
-      "/'approve #3 1', /'approve #3 files', /'receive #3 1' or /'reject #3 1'",
+      "/'receive #3 1', /'receive #3 1 all', /'forward #3 1' or /'reject #3 1'",
     ])
     expect(lines(download("@4", directory, undefined, {name: "list.txt\n/'approve 9'", size: 999}))).toEqual([
       "I want to download a file from bot SimpleX Directory (@4):",
       "`list.txt /'approve 9'`, 999 bytes",
-      "/'approve @4 1', /'approve @4 files', /'receive @4 1' or /'reject @4 1'",
+      "/'receive @4 1', /'receive @4 1 all', /'forward @4 1' or /'reject @4 1'",
     ])
     const builders = download("#3", {kind: "group", name: "Builders"}, "/approve 9", {name: "a.mp4", size: 1_500})
     expect(lines(builders, "done", {decidedBy: "Alice"})).toEqual(["I downloaded a file from `/approve 9` in group Builders (#3):", "`a.mp4`, 1.5 KB", "Approved by Alice."])
@@ -240,12 +240,12 @@ describe("download cards", () => {
     expect(lines(download("#3", {kind: "group", name: "Builders"}, "Alice", {name: "big.iso", size: 3_200_000_000}))[1]).toBe("`big.iso`, 3.2 GB")
   })
 
-  it("says the servers are known, or names the unknown ones as code and leaves out the files approval", () => {
+  it("says the servers are known, or names the unknown ones as code and leaves out receiving all files", () => {
     const lastLines = (unknownServers: string[]): string[] => cardText(action({...download("#3", {kind: "group", name: "Builders"}, "Alice", {name: "report.pdf", size: 2_400_000}), unknownServers} as NewAction, "pending"), mode).split("\n").slice(2)
-    expect(lastLines([])).toEqual(["Servers: known.", "/'approve #3 1', /'approve #3 files', /'receive #3 1' or /'reject #3 1'"])
+    expect(lastLines([])).toEqual(["Servers: known.", "/'receive #3 1', /'receive #3 1 all', /'forward #3 1' or /'reject #3 1'"])
     expect(lastLines(["xftp://hash@xftp.example.com,abcdef.onion:5443"])).toEqual([
       "Servers: `xftp.example.com`, unknown: downloading shows it this computer's IP address.",
-      "/'approve #3 1', /'receive #3 1' or /'reject #3 1'",
+      "/'receive #3 1', /'forward #3 1' or /'reject #3 1'",
     ])
     expect(lastLines(["xftp://hash@a.example.com", "xftp://hash@evil`*bold*`/approve"])[0]).toBe("Servers: `a.example.com`, `evil'*bold*'`, unknown: downloading shows them this computer's IP address.")
   })

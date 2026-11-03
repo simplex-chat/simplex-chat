@@ -54,7 +54,7 @@ no --owners           every human owner
 identifier       form                 assigned by                         seen by           used for
 agent name       NAME                 person, serve                       person            data folder; Claude Code entry simplex-NAME
 display name     DISPLAY              person, --display-name, else NAME   owner, peers      the agent's profile; the agent control chat's name
-action           N                    server: counter in the custom data  owner, agent      /approve [CHAT] N, /reject [CHAT] N, /receive [CHAT] N; tool results; list
+action           N                    server: counter in the custom data  owner, agent      /approve [CHAT] N, /reject [CHAT] N, /receive [CHAT] N, /forward [CHAT] N; tool results; list
                                       of the agent control chat
 chat             @N contact, #N group SimpleX core                        agent, owner      tool inputs and results; CHAT in commands and cards
 item             N                    SimpleX core                        agent             reply_to; download; messages
@@ -164,10 +164,14 @@ DIR/files/FOLDER/  files downloaded from a chat, and files the  0700, created at
                    each named by its file ID and the
                    extension of its name; FOLDER: group-N
                    for #N, contact-N for @N
-DIR/files/sent/    resized copies of sent images, and copies    0700; a copy 0600, a copy of /receive with
-                   of the files /receive posts, one folder      the mode of its file
+DIR/files/sent/    resized copies of sent images, and copies    0700; a copy 0600, a copy of /forward with
+                   of the files /forward posts, one folder      the mode of its file
                    per copy, deleted at sndFileCompleteXFTP
                    or sndFileError; the folder deleted at start
+DIR/forwarded/     files /forward downloaded, until /receive    0700, created at the first forward from the chat
+  FOLDER/          moves them to DIR/files/FOLDER/; deleted
+                   when the agent leaves the chat, and by
+                   /delete CHAT files
 ```
 
 - DIR is `~/.simplex-mcp/NAME` unless `--data` sets it.
@@ -183,6 +187,7 @@ files approval custom data of the contact or group: {simplexMcpFiles: {approvedB
 actions       memory: they end with the process
 open calls    memory
 downloads     memory: one per file ID, until the file is received or fails
+forwarding    memory: the /forward of a file ID until its copy for posting is made
 rejected files memory: file IDs whose download call returned rejected or expired; a done download removes its ID
 ```
 
@@ -398,7 +403,7 @@ My Agent: I want to delete bot SimpleX Directory (@4).
 My Agent: I want to download a file from Alice in group Builders (#3):
           `report.pdf`, 2.4 MB
           Servers: known.
-          /'approve #3 7', /'approve #3 files', /'receive #3 7' or /'reject #3 7'
+          /'receive #3 7', /'receive #3 7 all', /'forward #3 7' or /'reject #3 7'
 ```
 
 ```
@@ -418,7 +423,7 @@ Servers: `a.example.com`, `b.example.com`, unknown: downloading shows them this 
 ```
 
 - Known servers are the user's XFTP servers from `apiGetUserServers`, disabled ones included, except those of a disabled operator; addresses are compared without their password. This is the core's rule for approving relays (`getKnownAgentServers`, `Library/Internal.hs:898-904`; `agentServerCfgs`, `Operators.hs:455-465`), except that the preset servers used when the user has none count as unknown.
-- In mode requests the download approves the relays (`apiReceiveFile`, `approvedRelays` true): a file on unknown servers is downloaded only after `/approve` or `/receive` of the card that names them. In mode host `approvedRelays` is false, and the core downloads a file on unknown servers only when the IP address is protected (`receiveViaCompleteFD`, `Library/Internal.hs:859-868`); otherwise the download fails with `fileNotApproved`.
+- In mode requests the download approves the relays (`apiReceiveFile`, `approvedRelays` true): a file on unknown servers is downloaded only after `/receive` or `/forward` of the card that names them. In mode host `approvedRelays` is false, and the core downloads a file on unknown servers only when the IP address is protected (`receiveViaCompleteFD`, `Library/Internal.hs:859-868`); otherwise the download fails with `fileNotApproved`.
 
 ```
 message type   card
@@ -428,7 +433,7 @@ voice, file    a text message
 ```
 
 - The preview counts against 15000 bytes with the card's largest text form (section Card size); a larger preview is resized by `core.chatResizeImageUri` to the bytes left; when resizing fails, the card is a text message.
-- Under the files approval of the chat, a download of a file on known servers posts no card and no outcome; a file on unknown servers gets a card, and its commands leave out `/'approve CHAT files'`. In mode host, a download posts no card and no outcome.
+- Under the files approval of the chat, a download of a file on known servers posts no card and no outcome; a file on unknown servers gets a card, and its commands leave out `/'receive CHAT N all'`. In mode host, a download posts no card and no outcome.
 
 ### Outcomes
 
@@ -470,13 +475,14 @@ menu entry   keyword   label                 params      tapped
 
 ```
 command             result
-/approve [CHAT] N   the action is performed; the card is edited
+/approve [CHAT] N   a connect, send or leave action is performed; the card is edited
 /reject [CHAT] N    the card is edited
 /approve CHAT all   the standing approval of CHAT by the sender; its pending sends are approved
 /revoke CHAT        the standing approval of CHAT is removed
-/approve CHAT files the files approval of CHAT by the sender; its pending downloads of files on known servers are approved
-/revoke CHAT files  the files approval of CHAT is removed
-/receive [CHAT] N   the server downloads the file of download N and posts it as a reply to the card; the card stays pending
+/receive [CHAT] N   download N is performed: the agent receives the file; the card is edited
+/receive CHAT N all download N is performed, and the files approval of CHAT by the sender; its other pending downloads of files on known servers are performed
+/receive CHAT off   the files approval of CHAT is removed
+/forward [CHAT] N   the server downloads the file of download N into DIR/forwarded/FOLDER/ and posts it as a reply to the card; the card stays pending
 /leave CHAT         at once, the agent leaves group CHAT or deletes contact CHAT, as the leave tool does; its pending actions for CHAT are rejected by the sender
 /delete CHAT files  the running downloads of CHAT failed and cancelled, then the folder of CHAT deleted, for a current or a left chat
 /pending            one line per pending action: "2  send to bot SimpleX Directory  expires 2026-10-18 09:15 UTC"; "No pending actions." when none
@@ -500,25 +506,29 @@ sender is not an approver                   Only owners approve actions. (--owne
 N unknown, decided or from an earlier run   Action 9 is not pending.
 CHAT not the action's chat                  Action 10 is not for #3.
 /approve CHAT all                           Approved for business Ridgeline (#9) by Alice. /'revoke #9'
-/approve CHAT files                         Files approved for group Builders (#3) by Alice. /'revoke #3 files'
-/approve CHAT files, downloads from unknown Files approved for group Builders (#3) by Alice, except downloads from unknown servers. /'revoke #3 files'
-servers stay pending
-/approve CHAT all | files, CHAT not the agent's   No chat #13. /list shows the agent's chats.
-/approve CHAT all | files, mode host        Approvals apply in mode requests; this server runs in mode host.
+/approve [CHAT] N, N a download             Action 7 is a download: /'receive #3 7', /'receive #3 7 all', /'forward #3 7' or /'reject #3 7'.
+/receive [CHAT] N                           none; the card is edited at the outcome
+/receive CHAT N all                         Files approved for group Builders (#3) by Alice. /'receive #3 off'
+/receive CHAT N all, other downloads from   Files approved for group Builders (#3) by Alice, except downloads from unknown servers. /'receive #3 off'
+unknown servers stay pending
+/approve CHAT all | /receive CHAT N all,    No chat #13. /list shows the agent's chats.
+CHAT not the agent's
+/approve CHAT all, mode host                Approvals apply in mode requests; this server runs in mode host.
 /revoke CHAT                                Messages to business Ridgeline (#9) need approval again.
 /revoke CHAT, no standing approval          Messages to #9 have no standing approval.
-/revoke CHAT files                          Files from group Builders (#3) need approval again.
-/revoke CHAT files, no files approval       Files from #3 have no standing approval.
-/receive [CHAT] N                           none; the file is a reply to the card
-/receive [CHAT] N, N not a download         Action 10 has no file.
-/receive [CHAT] N, the download or the post Action 7: the file was not received: `<error>`.
+/receive CHAT off                           Files from group Builders (#3) need approval again.
+/receive CHAT off, no files approval        Files from #3 have no standing approval.
+/forward [CHAT] N                           none; the file is a reply to the card
+/receive | /forward [CHAT] N, N not a       Action 10 has no file.
+download
+/forward [CHAT] N, the download or the post Action 7: the file was not received: `<error>`.
 of the file fails
 /leave CHAT                                 Left business Ridgeline (#9), requested by Alice. (a contact: Deleted bot SimpleX Directory (@4), requested by Alice.)
 /leave CHAT, CHAT not the agent's           No chat #13. /list shows the agent's chats.
 /delete CHAT files                          Deleted 3 files from #9, 2.1 MB. ("1 file")
 /delete CHAT files, no files                No files from #9.
 /list, no chats                             No chats.
-other one-line text starting with "/"       Commands: /approve, /reject, /receive, /revoke, /leave, /delete, /pending, /list. Each card shows its commands.
+other one-line text starting with "/"       Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands.
 ```
 
 After `/leave CHAT`, after its reply, and after the outcome of a leave action in state done, when the folder of CHAT has files:
@@ -529,8 +539,8 @@ Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agen
 
 - The count and the size are of the files directly in the folder; sizes as on download cards.
 
-- CHAT is optional in `/approve N`, `/reject N` and `/receive N` as typed; the cards include it for sends, downloads and leaves.
-- The file of `/receive` has the message's type and the sender's preview, with no text. It is posted from a copy under the file's name, in `DIR/files/sent/`, deleted as resized copies are, and when its post fails. The agent's messages then show the file as received, with its path; the card stays pending.
+- CHAT is optional in `/approve N`, `/reject N`, `/receive N` and `/forward N` as typed; the cards include it for sends, downloads and leaves.
+- The file of `/forward` has the message's type and the sender's preview, with no text. It is posted from a copy under the file's name, in `DIR/files/sent/`, deleted as resized copies are, and when its post fails. The downloaded file stays in `DIR/forwarded/FOLDER/`, so the agent's messages show it as offered, without a path; the card stays pending. A later `/receive` moves it into `DIR/files/FOLDER/`, after the copy for the post is made, when it has the file's size.
 - A files approval covers downloads only, and ends as a standing approval does.
 - `/leave CHAT` applies in both modes. Its reply is logged, with names on one line.
 - A standing approval covers sends only. It ends at `/revoke`, when the chat is deleted, or when member `approvedById` is no longer an approver. It applies in mode `requests` only: in mode `host`, `list` and `/list` show no approvals, and `/approve CHAT all` stores none.
@@ -601,7 +611,7 @@ name     fileName
 size     fileSize, bytes
 type     image | video | voice from content.msgContent.type; file otherwise
 status   rejected: the file ID is in rejected files; failed: fileProhibited is set (the core refuses to receive it, Library/Internal.hs:783); otherwise from fileStatus: offered (rcvInvitation, rcvAccepted, rcvTransfer, rcvWarning), failed (rcvCancelled, rcvAborted, rcvError, invalid), rcvComplete as below
-         rcvComplete: failed when the download path of the file (section download) has no file; received when fileSource.filePath is the download path; offered otherwise
+         rcvComplete: failed when neither the download path of the file (section download) nor its forwarded path has a file; received when the download path has a file and fileSource.filePath is the download path or the forwarded path; offered otherwise
 path     received: the download path
 error    failed: "The received file is not in the agent's files folder.", "Large file! The file is above the limit of N bytes for its sender." with a badge issue in the apps' words, "sender's" in place of "Contact's" (strings.xml: "Contact's badge expired."; here "Sender's badge expired.", "Sender's badge verification failed.", "No key to verify sender's badge."), "The file was cancelled.", "The download was aborted.", the apps' words for the FileError of rcvError (fileErrorText, log.ts), "Invalid file: TEXT"
 ```
@@ -760,7 +770,7 @@ error         string    failed
 
 - An XFTP file has servers only after its sender finishes the upload: the sender's description of the file arrives then (`dummyFileDescr` until then, `Library/Internal.hs:448`). The call waits for it before it creates the action, so that the card names the servers; at the end of `wait` it returns a tool error, and a later call waits again.
 - `performing`: `wait` passed and the download runs; the action stays in memory, and the same call attaches to it.
-- A file already received, by `/receive` or by an earlier action, returns its path after the approval.
+- A file already received, by `/forward` or by an earlier action, returns its path after the approval.
 
 ### Errors
 
@@ -974,24 +984,27 @@ newChatItems, groupRcv, main scope       text starts with "/"                   
 
 ```
 command = parseCommand(text)                      # steward src/commands.ts; undefined: ignore
-not one of the commands below: reply "Commands: /approve, /reject, /receive, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
+not one of the commands below: reply "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
 sender not an approver: reply "Only owners approve actions." (--owners: "Only the owners listed in --owners approve actions.")
-approve [CHAT] N | reject [CHAT] N | receive [CHAT] N, action N not pending in memory, or its card unset: reply "Action N is not pending."
-approve CHAT N | reject CHAT N | receive CHAT N, action N a connect or for another chat: reply "Action N is not for CHAT."
-approve [CHAT] N: decidedBy = sender; state performing; start perform(N) without awaiting it in the event handler; its end edits the card
+approve | reject | receive | forward [CHAT] N, receive CHAT N all, action N not pending in memory, or its card unset: reply "Action N is not pending."
+the same with CHAT, action N a connect or for another chat: reply "Action N is not for CHAT."
+approve [CHAT] N: action N a download: reply "Action N is a download: " + its commands line + "."; otherwise decidedBy = sender; state performing; start perform(N) without awaiting it in the event handler; its end edits the card
 reject [CHAT] N:  decidedBy = sender; state rejected; edit the card
+receive | forward [CHAT] N, receive CHAT N all, action N not a download: reply "Action N has no file."
+receive [CHAT] N: as approve, for a download
 approve CHAT all: mode host: reply "Approvals apply in mode requests; this server runs in mode host."; CHAT not a chat of the agent: reply "No chat CHAT. ..."; otherwise set the chat's custom data simplexMcp = {approvedBy: sender name, approvedById: sender groupMemberId, approvedAt}, keeping its other keys
                   (/_set custom @C or #G); each pending send of CHAT: approve as above; reply "Approved for ... /'revoke CHAT'"
 revoke CHAT:      no approval in the chat's custom data: reply "Messages to CHAT have no standing approval."; otherwise remove simplexMcp from it; reply "Messages to ... need approval again."
-approve CHAT files: as approve CHAT all, with the key simplexMcpFiles and the pending downloads of CHAT on known servers; reply "Files approved for ... by NAME. /'revoke CHAT files'",
-                  with ", except downloads from unknown servers" after NAME while pending downloads of CHAT have unknown servers
-revoke CHAT files: as revoke CHAT, with the key simplexMcpFiles; replies "Files from CHAT have no standing approval.", "Files from ... need approval again."
-receive [CHAT] N: action N not a download: reply "Action N has no file."; otherwise downloadFile(action N), not awaited; then a copy under the file's name in DIR/files/sent/; then /_send #group json [{fileSource: {filePath: the copy}, msgContent: the file's type and preview, no text, quotedItemId: card}];
+receive CHAT N all: as approve CHAT all, with the key simplexMcpFiles, action N and the pending downloads of CHAT on known servers; reply "Files approved for ... by NAME. /'receive CHAT off'",
+                  with ", except downloads from unknown servers" after NAME while other pending downloads of CHAT have unknown servers
+receive CHAT off: as revoke CHAT, with the key simplexMcpFiles; replies "Files from CHAT have no standing approval.", "Files from ... need approval again."
+forward [CHAT] N: forwardFile(action N), not awaited: downloadFile to DIR/forwarded/FOLDER/<fileId><extension>, or the file already received; then a copy under the file's name in DIR/files/sent/;
+                  then /_send #group json [{fileSource: {filePath: the copy}, msgContent: the file's type and preview, no text, quotedItemId: card}];
                   an error of the download, the copy or the post: post "Action N: the file was not received: `<error>`."; a failed post deletes the copy; no reply
 leave CHAT:       CHAT not a chat of the agent: reply "No chat CHAT. ..."; otherwise the steps of perform leave for CHAT; log "Left ... (CHAT), requested by NAME.";
                   each pending action of CHAT with its card set: reject as above; reply with the logged line; the folder of CHAT with files: after the reply, post "Files from ... are kept in ..."
 delete CHAT files: each download of CHAT in memory: rejected, "Your owner deleted the files of this chat."; /fcancel <fileId>, an error logged; delete partial at the last fileSource seen;
-                  then count and size of the files in the folder of CHAT; delete the folder; reply "Deleted K files from CHAT, SIZE." or "No files from CHAT."
+                  then count and size of the files in the folder of CHAT and in DIR/forwarded/FOLDER/; delete both; reply "Deleted K files from CHAT, SIZE." or "No files from CHAT."
 pending:          reply with the pending actions
 list:             reply with one line per chat of list(), the 100 most recent: CHAT, the type and name, ", approved for this chat by NAME" while the approval applies, ", not connected";
                   each line cut to 100 encoded bytes with "…"; then "K older chats are not shown." when more exist (worst case about 10.3 KB, below the 15602-byte message)
@@ -1023,9 +1036,9 @@ send call, mode requests, -           performing
   standing approval
 download call, mode       -           performing
   requests, files approval
-/approve N                pending     performing
+/approve N, /receive N    pending     performing
 /approve CHAT all         pending     performing    (the sends of CHAT)
-/approve CHAT files       pending     performing    (the downloads of CHAT)
+/receive CHAT N all       pending     performing    (N and the downloads of CHAT on known servers)
 perform(N) ends           performing  done | failed
 /reject N                 pending     rejected
 /leave CHAT               pending     rejected      (the actions of CHAT)
@@ -1269,21 +1282,31 @@ perform download:
   startedAt = now
   path = downloadFile(chat, item, file)
 
-downloadFile(chat, item, file), also run by /receive, and by newChatItems for each received file in status rcvAccepted (a voice file the core receives without a request: Library/Subscriber.hs:2047-2053, :2550-2556):
+downloadFile(chat, item, file), also run by newChatItems for each received file in status rcvAccepted (a voice file the core receives without a request: Library/Subscriber.hs:2047-2053, :2550-2556):
+  path = DIR/files/FOLDER/<fileId><extension>   # FOLDER: group-N for #N, contact-N for @N; extension: of file.name when it is "." and 1 to 16 ASCII letters and digits, otherwise none
+  found = file download to path (below)
+  found is the forwarded path: after the /forward of the file ID makes its copy, moved to path when path has no file and found has file.size bytes; otherwise rejected, "The received file is not in the agent's files folder."
+  resolved with path
+
+forwardFile(chat, item, file), run by /forward:
+  found = file download to DIR/forwarded/FOLDER/<fileId><extension>, the forwarded path
+  then a copy of found for the post, kept in memory as the forwarding of the file ID until it is made
+
+file download to TARGET:
   a download of the file ID in memory: its promise
-  otherwise a new promise in memory, with the download path DIR/files/FOLDER/<fileId><extension>   # FOLDER: group-N for #N, contact-N for @N; extension: of file.name when it is "." and 1 to 16 ASCII letters and digits, otherwise none
+  otherwise a new promise in memory, with TARGET
   then /_get chat <chat> around=<item> count=0, the item's file:
     rcvComplete              settle received (below)
     failed, as in file       delete partial at fileSource (below); rejected with its error
-    rcvInvitation            mkdir DIR/files/FOLDER, mode 0700; /freceive <fileId> approved_relays=on <download path>, without approved_relays=on in mode host   # apiReceiveFile; the core creates the file at that path (getRcvFilePath, Library/Internal.hs:958-965)
+    rcvInvitation            mkdir the folder of TARGET, mode 0700; /freceive <fileId> approved_relays=on TARGET, without approved_relays=on in mode host   # apiReceiveFile; the core creates the file at that path (getRcvFilePath, Library/Internal.hs:958-965)
     other                    the events below settle it
 
 settle received, for a received file in status rcvComplete with a promise:
-  the download path has no file: rejected, "The received file is not in the agent's files folder."
-  otherwise resolved with the download path
+  the download path or the forwarded path has a file, in this order: resolved with it
+  otherwise rejected, "The received file is not in the agent's files folder."
 
 move received, at rcvFileComplete with or without a promise, and at a check that reads rcvComplete:
-  fileSource.filePath is not the download path, the download path has no file, and the file at fileSource.filePath has fileSize bytes: the file moved there   # a rename; on EXDEV a copy to <download path>.part, a rename of it and a delete of the source
+  fileSource.filePath is neither the download path nor the forwarded path, the download path has no file, and the file at fileSource.filePath has fileSize bytes: the file moved there   # a rename; on EXDEV a copy to <download path>.part, a rename of it and a delete of the source
   a failed move: logged
 
 delete partial at PATH, for a file with a promise:
@@ -1317,7 +1340,8 @@ of progress                                 (an XFTP file returns to rcvInvitati
 - The check ends a download whose message is deleted or moderated, whose chat is deleted by `leave` or `/leave`, whose file server stays unreachable (`RFWARN` only, Library/Subscriber.hs:429-433), or whose inline chunks do not arrive.
 - The last fileSource seen is the download path until a read shows the item's fileSource.
 - XFTP reports progress once per chunk, of up to 4 MiB (simplexmq `FileTransfer/Chunks.hs:31-33`): a 4 MiB chunk takes 30 minutes at about 19 kbit/s.
-- A file received without a request keeps the core's path in the database; the file field shows it as offered once it is moved, and `download` and `/receive` return the download path.
+- A file received without a request keeps the core's path in the database; the file field shows it as offered once it is moved, and `download` and `/forward` use the file at the download path.
+- A forwarded file keeps the forwarded path in the database; after `/receive` moves it, the file field shows it as received with the download path.
 - A settled promise leaves memory and its check stops; a later `downloadFile` reads the item's file again.
 - `rcvFileDescrReady` of any file makes the waiting calls read their item again; the server counts these events, so that one arriving during a read is not missed.
 
@@ -1537,10 +1561,10 @@ Unit:
 ```
 test        covers
 options     defaults, ranges, --stop-wait from 0 to 60, NAME, --display-name at the first and a later start, --owners with and without a list, names with commas, rejected arguments, --help text
-commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; the wait at stop with cancelled cards, skipped without them, and ended by a second signal; /approve CHAT files and /revoke CHAT files beside the approval of messages; /receive with its reply and failure; download cards with the preview, resized to fit 15000 bytes; a refused file posted and logged; an image send card with its preview
+commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; the wait at stop with cancelled cards, skipped without them, and ended by a second signal; /receive CHAT N all and /receive CHAT off beside the approval of messages; /approve of a download and /receive or /forward of other actions refused; /forward with its reply and failure, the file outside the chat's folder; download cards with the preview, resized to fit 15000 bytes; a refused file posted and logged; an image send card with its preview
 actions     every transition; attach rule; open counts; counter written before the card; a failed counter write or card post logged; stop edits pending and performing cards, aborts the performs' signal, and an interrupted perform logs no line; standing approval: performed at once, outcome card posted; 20 pending; 20 performing; decided actions deleted after expires
 cards       every card form and outcome; quoting; names and errors on one line; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form; link texts cut to the bytes left; the reply quote cut by characters; download forms with sizes and the servers line; the attaching line of sends
-messages    message fields; responses with idle and wait; overflow IDs removed at deletion; receive with new messages under a concurrent call, stopping at limit + 1, a store error of a page read as its error; leave of @N and #N, pending membership included; approved in list; all chats in one read; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; reply_to of an item other than a message refused; mentions of equal names refused; the connect wait cap; the connect wait ended by the stop; the file field of each file status and rejected; download: attach, performing at wait, a received file, failures by events, a files approval, the wait for the file description and its end at wait, unknown servers without passwords and of disabled operators; send with file: the type and preview by extension, the resized copy deleted at sndFileCompleteXFTP and after a failed send, the fixed preview when the core can't resize or ffmpeg is absent, ffmpeg and ffprobe output, refused paths with symbolic links, a file changed after the request
+messages    message fields; responses with idle and wait; overflow IDs removed at deletion; receive with new messages under a concurrent call, stopping at limit + 1, a store error of a page read as its error; leave of @N and #N, pending membership included; approved in list; all chats in one read; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; reply_to of an item other than a message refused; mentions of equal names refused; the connect wait cap; the connect wait ended by the stop; the file field of each file status and rejected, a forwarded file offered and then received; download: attach, performing at wait, a received file, a forwarded file kept outside the chat's folder and moved there at the approval, failures by events, a files approval, the wait for the file description and its end at wait, unknown servers without passwords and of disabled operators; send with file: the type and preview by extension, the resized copy deleted at sndFileCompleteXFTP and after a failed send, the fixed preview when the core can't resize or ffmpeg is absent, ffmpeg and ffprobe output, refused paths with symbolic links, a file changed after the request
 http        401 without token; 403 with another Origin; 404 for other paths and for a request target that is not a URL, the server serving on; 503 with Retry-After until ready; SDK validation errors
 register    entry JSON with headersHelper and no token; timeout from server.json; remove before add; errors; on Windows, claude through cmd.exe after ENOENT, with cmd.exe quoting
 files       lock: exclusive create, a running PID, a stale PID; folder mode at every start; headers.json; file modes set again on existing files
@@ -1564,7 +1588,7 @@ peer text         groups named "\n/approve 1" and "x\n/approve 1" by SQL, their 
 alias             a 20-digit reference that the core reads as the agent control chat: receive, send and leave refuse it
 port in use       serve on a bound port: exit before server.json is written and before a link is printed
 leave command     /leave #N with a pending send for #N: the send rejected; the reply and the log line; the group's owner sees the agent leave
-files             an image from a group member: status offered; the download card with the preview and "Servers: known."; /receive: the file as a reply to the card; /approve: the path, the same bytes; /reject: rejected; /approve #N files: a later download posts nothing
+files             an image from a group member: status offered; the download card with the preview and "Servers: known."; /forward: the file as a reply to the card, outside the chat's folder; /receive: the path, the same bytes; /reject: rejected; /receive #N A all: the reply, and a later download posts nothing
 send file         a 600 × 600 PNG of random pixels sent to a group: the card with the attaching line and the core's preview, not the fixed one; the member receives an image with the core's preview and a file smaller than the PNG, at most 261120 bytes; a private key refused, posted and logged
 ```
 

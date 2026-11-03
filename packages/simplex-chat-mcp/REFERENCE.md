@@ -184,7 +184,7 @@ The token is created at the agent's first start and saved in its data folder; ev
 
 | Mode | The agent's actions: connect, send, download, leave | Messages to the agent |
 |---|---|---|
-| `requests` (default) | Performed after `/approve N`; a send to a chat approved for all messages at once, with a copy posted in the agent control chat; a download from a chat approved for all files at once, with no post, when the file is on the agent's XFTP servers. | Passed to the agent. |
+| `requests` (default) | Performed after `/approve N`, or `/receive N` for a download; a send to a chat approved for all messages at once, with a copy posted in the agent control chat; a download from a chat approved for all files at once, with no post, when the file is on the agent's XFTP servers. | Passed to the agent. |
 | `host` | Performed at once; a copy is posted in the agent control chat, except for downloads. A download of a file on other servers fails. | Passed to the agent. |
 
 Claude Code's own permission check applies to every tool call too. In mode `requests`, add the agent's server, for example `"mcp__simplex-my-agent"`, to `permissions.allow` in `~/.claude/settings.json`; otherwise Claude Code prompts for each call, or in auto mode its classifier decides it.
@@ -218,10 +218,10 @@ My Agent: I want to leave business Ridgeline (#9).
 My Agent: I want to download a file from Alice in group Builders (#3):
           `report.pdf`, 2.4 MB
           Servers: `xftp.example.com`, unknown: downloading shows it this computer's IP address.
-          /approve #3 7, /receive #3 7 or /reject #3 7
+          /receive #3 7, /forward #3 7 or /reject #3 7
 ```
 
-The download card of an image or a video shows the sender's preview. Its servers line says `Servers: known.` when the file is on the agent's XFTP servers; otherwise it names the other servers, which see this computer's IP address during the download, and the card leaves out `/approve #3 files`. The agent waits until the sender finishes the upload before it asks, because the file's servers are known only then. A send with a file names the file's type, full path and size after the text, and shows an image's or video's preview:
+The download card of an image or a video shows the sender's preview. Its servers line says `Servers: known.` when the file is on the agent's XFTP servers; otherwise it names the other servers, which see this computer's IP address during the download, and the card leaves out `/receive #3 7 all`. The agent waits until the sender finishes the upload before it asks, because the file's servers are known only then. A send with a file names the file's type, full path and size after the text, and shows an image's or video's preview:
 
 ```
 My Agent: I want to send a message to group Builders:
@@ -244,19 +244,20 @@ Commands:
 
 | Command | Effect |
 |---|---|
-| `/approve N`, `/approve #9 N` | Performs action N; the cards of sends, downloads and leaves name the chat. |
+| `/approve N`, `/approve #9 N` | Performs a connect, send or leave action N; the cards of sends and leaves name the chat. |
 | `/reject N`, `/reject #9 N` | Rejects action N. |
 | `/approve #9 all` | Approves all the agent's messages to chat #9: the pending ones and later ones. |
 | `/revoke #9` | Ends that approval: each message to #9 needs approval again. |
-| `/approve #3 files` | Approves all the agent's downloads from chat #3 of files on its XFTP servers: the pending ones and later ones. When downloads from other servers stay pending, the reply says `..., except downloads from unknown servers.` |
-| `/revoke #3 files` | Ends that approval: each download from #3 needs approval again. |
-| `/receive #3 7` | Downloads the file of action 7 and sends it to you in the agent control chat, as a reply to the card. The card stays pending; the agent's messages show the file as received, with its path. |
+| `/receive #3 7` | The agent receives the file of download 7: the server downloads it, and the agent's call returns its path. |
+| `/receive #3 7 all` | The same, and the agent receives all its downloads from chat #3 of files on its XFTP servers without asking: the pending ones and later ones. When downloads from other servers stay pending, the reply says `..., except downloads from unknown servers.` |
+| `/receive #3 off` | Ends that: each download from #3 needs approval again. |
+| `/forward #3 7` | Downloads the file of action 7 and sends it to you in the agent control chat, as a reply to the card. The card stays pending, and the agent gets nothing: its messages show the file as offered, without a path. The server keeps the file outside the chat's folder until `/receive #3 7`, which then uses it. |
 | `/leave #9`, `/leave @4` | Makes the agent leave group #9, or delete contact @4, at once, in both approval modes, and rejects the agent's pending actions for that chat. The reply, for example `Left business Ridgeline (#9), requested by Alice.`, is logged too. |
-| `/delete #9 files` | Cancels the running downloads from chat #9, which then fail, and deletes the chat's files in the data folder, for a current or a left chat: `Deleted 3 files from #9, 2.1 MB.` or `No files from #9.` |
+| `/delete #9 files` | Cancels the running downloads from chat #9, which then fail, and deletes the chat's files in the data folder, forwarded ones included, for a current or a left chat: `Deleted 3 files from #9, 2.1 MB.` or `No files from #9.` |
 | `/pending` | Lists pending actions. |
 | `/list` | Lists the agent's 100 most recent chats, one line each, and which of them are approved for all messages; a last line counts the older chats. |
 
-After `/leave #9`, or after the agent's `leave` of #9 is performed in either mode, when the chat's folder has files, the agent posts ``Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/group-9`: 3 files, 2.1 MB. /delete #9 files``.
+After `/leave #9`, or after the agent's `leave` of #9 is performed in either mode, when the chat's folder has files, the agent posts ``Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/group-9`: 3 files, 2.1 MB. /delete #9 files``. The files forwarded from #9 are deleted when the agent leaves it.
 
 `/pending`, `/list` and `/leave` are in the chat's command menu, and the cards carry the others. Tapping `/leave` in the menu puts `/leave <chat ID>` into the entry field: replace `<chat ID>` with the chat's ID from `/list`, such as `#9`, and send it. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](PLAN.md), section "What the owner sees: the agent control chat".
 
@@ -275,13 +276,13 @@ My Agent: I sent a message to business Ridgeline, where I am incognito:
 - With it, the agent can send anything it can read, without asking, to everyone in that chat.
 - It applies in mode `requests` only: in mode `host`, `list` and `/list` show no approvals.
 
-### Approval of all files from a chat
+### Receiving all files from a chat
 
-After `/approve #3 files`, the agent's downloads from #3 are performed at once, and nothing is posted in the agent control chat.
+After `/receive #3 7 all`, the agent's downloads from #3 are performed at once, and nothing is posted in the agent control chat.
 
-- It covers files on the agent's XFTP servers. A download of a file on other servers gets a card, as without the approval.
-- It covers downloads only, and the approval of messages covers no downloads: each is approved and revoked by its own command.
-- It lasts as the approval of messages does, and is kept next to it in the chat's custom data.
+- It covers files on the agent's XFTP servers. A download of a file on other servers gets a card, as without it.
+- It covers downloads only, and the approval of messages covers no downloads: each is given and ended by its own command.
+- It lasts as the approval of messages does, until `/receive #3 off`, and is kept next to it in the chat's custom data.
 - `/list` shows it as `, files approved by Alice`.
 
 ## What the agent sees
@@ -299,7 +300,7 @@ Six tools:
 
 A `send` to a chat that `list` shows with `connected: false` is refused before any card. A `send` is refused with `text: too long for its approval card; shorten it.` when its card, in its longest outcome form, would exceed 15000 bytes in the SimpleX message, which holds at most 15602; a text of many lines or multi-byte characters reaches it below 12000 characters.
 
-A received message with a file has a `file` field: its name, size, type (image, video, voice or file) and status. Status `offered` means `download` can fetch it; `received` comes with the path of the file that `download` or `/receive` downloaded; `rejected` means you rejected its download, or it expired; `failed` comes with the error, also for a file above the size its sender may send, and for a received file that is not in the chat's folder, for example after `/delete #3 files`. A downloaded file is named by its file ID and the extension of its name, when the extension has only letters and digits: the name the sender gave stays in the `name` field. `download` first waits, up to `wait` seconds, for the sender to finish the upload; when it has not finished by then, the call returns an error that asks to call again later. A `download` that runs past its `wait` after the approval returns status `performing`, and the same call again picks it up. A download fails when the sender cancels the file, when the message or its chat is deleted, or when no part of the file arrives for 30 minutes; the server then cancels it.
+A received message with a file has a `file` field: its name, size, type (image, video, voice or file) and status. Status `offered` means `download` can fetch it; `received` comes with the path of the file that `download` downloaded; a file `/forward` sent to you stays `offered`; `rejected` means you rejected its download, or it expired; `failed` comes with the error, also for a file above the size its sender may send, and for a received file that is not in the chat's folder, for example after `/delete #3 files`. A downloaded file is named by its file ID and the extension of its name, when the extension has only letters and digits: the name the sender gave stays in the `name` field. `download` first waits, up to `wait` seconds, for the sender to finish the upload; when it has not finished by then, the call returns an error that asks to call again later. A `download` that runs past its `wait` after the approval returns status `performing`, and the same call again picks it up. A download fails when the sender cancels the file, when the message or its chat is deleted, or when no part of the file arrives for 30 minutes; the server then cancels it.
 
 A short voice message can arrive with its file already received. The server moves such a file into the chat's folder under the same naming when it is received in full, and its message shows it as `offered`; `download` returns its path there after the approval. A partial file of a download, or of a short voice message that arrives while the server runs, is deleted when its transfer fails or is cancelled.
 
@@ -400,8 +401,10 @@ register options:
   tmp/               the SimpleX core's work folder for files in transfer
   files/group-3/     files downloaded from chat #3, and files received there without a download, each named by its file ID
                      and the extension of its name, such as 12.pdf; files/contact-4/ for contact @4
-  files/sent/        resized copies of the images the agent sends, and copies of the files /receive sends you under their names;
+  files/sent/        resized copies of the images the agent sends, and copies of the files /forward sends you under their names;
                      each is deleted when its upload completes or fails, and all at start
+  forwarded/group-3/ files /forward downloaded from chat #3, until /receive moves them into files/group-3/; deleted when the agent
+                     leaves the chat, and by /delete #3 files
 ```
 
 The folder is readable only by the user: every start sets its mode to 0700, except on Windows.
@@ -421,7 +424,7 @@ One server runs per data folder: a second one exits, because two processes on on
 - With `--owners`, only the listed owners approve.
 - After `/approve #N all`, the agent sends to that chat without asking, files included; `/revoke #N` ends it.
 - The server refuses to send private keys, its own files and the files under `~/.simplex-mcp`, where agents keep their data, except the files under `files/` of its own data folder; other files the agent can read are sent after approval.
-- After `/approve #N files`, the agent downloads every file sent to that chat on its XFTP servers without asking; `/revoke #N files` ends it. A file on other servers is downloaded only by `/approve` or `/receive` of the card that names them; in mode `host`, its download fails.
+- After `/receive #N 7 all`, the agent downloads every file sent to that chat on its XFTP servers without asking; `/receive #N off` ends it. A file on other servers is downloaded only by `/receive` or `/forward` of the card that names them; in mode `host`, its download fails.
 - Peers of a chat connected as the agent see its profile; peers of an incognito chat see a random profile made for that chat only.
 - The agent has no address, so nobody can contact it first.
 - The agent uses private message routing: the SMP server that holds a contact's queue does not see the agent's IP address.

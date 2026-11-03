@@ -28,6 +28,8 @@ export interface Message {
 
 export type FileType = "image" | "video" | "voice" | "file"
 
+export type FilesRoot = "files" | "forwarded"
+
 export interface MessageFile {
   name: string
   size: number
@@ -194,24 +196,28 @@ function messageFile(chat: string, msgContent: T.MsgContent, ciFile: T.CIFile, r
   const {fileId, fileSource, fileStatus} = ciFile
   const error = receivedFileError(data, chat, ciFile)
   const path = downloadPath(data, chat, fileId, name)
+  const sources = [path, downloadPath(data, chat, fileId, name, "forwarded")]
   if (rejectedFiles.has(fileId)) return {...file, status: "rejected"}
   if (error !== undefined) return {...file, status: "failed", error}
-  if (fileStatus.type === "rcvComplete" && fileSource?.filePath === path) return {...file, status: "received", path}
+  if (fileStatus.type === "rcvComplete" && existsSync(path) && sources.includes(fileSource?.filePath ?? "")) return {...file, status: "received", path}
   return {...file, status: "offered"}
 }
 
 export function receivedFileError(data: string, chat: string, file: T.CIFile): string | undefined {
-  const {fileId, fileName, fileStatus} = file
-  return fileError(file) ?? (fileStatus.type === "rcvComplete" && !existsSync(downloadPath(data, chat, fileId, fileName)) ? missingFile : undefined)
+  return fileError(file) ?? (file.fileStatus.type === "rcvComplete" && receivedPath(data, chat, file) === undefined ? missingFile : undefined)
 }
 
-export function downloadPath(data: string, chat: string, fileId: number, name: string): string {
+export function receivedPath(data: string, chat: string, {fileId, fileName}: T.CIFile): string | undefined {
+  return [downloadPath(data, chat, fileId, fileName), downloadPath(data, chat, fileId, fileName, "forwarded")].find(path => existsSync(path))
+}
+
+export function downloadPath(data: string, chat: string, fileId: number, name: string, root: FilesRoot = "files"): string {
   const extension = extname(name)
-  return join(chatFolder(data, chat), `${fileId}${/^\.[A-Za-z0-9]{1,16}$/.test(extension) ? extension : ""}`)
+  return join(chatFolder(data, chat, root), `${fileId}${/^\.[A-Za-z0-9]{1,16}$/.test(extension) ? extension : ""}`)
 }
 
-export function chatFolder(data: string, chat: string): string {
-  return join(data, "files", `${chatType(chat) === T.ChatType.Direct ? "contact" : "group"}-${chatNumber(chat)}`)
+export function chatFolder(data: string, chat: string, root: FilesRoot = "files"): string {
+  return join(data, root, `${chatType(chat) === T.ChatType.Direct ? "contact" : "group"}-${chatNumber(chat)}`)
 }
 
 export function fileOffer(msgContent: T.MsgContent, {fileId, fileName, fileSize}: T.CIFile): FileOffer {

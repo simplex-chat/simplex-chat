@@ -19,7 +19,7 @@ afterEach(() => jest.restoreAllMocks())
 
 afterAll(() => rmSync(data, {recursive: true, force: true}))
 
-const commandsReply = "Commands: /approve, /reject, /receive, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
+const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
 
 const alice = member(3, "Alice", T.GroupMemberRole.Owner)
 const bob = member(7, "Bob", T.GroupMemberRole.Member)
@@ -178,7 +178,7 @@ describe("owner commands", () => {
 
   it("answers other commands with the list", async () => {
     const {control} = await setup()
-    const others = ["help", "approve five", "approve", "approve all", "approve #2", "approve 5 6", "approve #2 5 6", "reject #2 all", "reject #2 files", "revoke", "revoke 2", "revoke #2 all", "revoke files", "receive", "receive #2 files", "leave", "leave 2", "leave #2 now", "delete", "delete #2", "delete files", "delete #2 all", "pending 5", "list all"]
+    const others = ["help", "approve five", "approve", "approve all", "approve #2", "approve 5 6", "approve #2 5 6", "reject #2 all", "reject #2 files", "revoke", "revoke 2", "revoke #2 all", "revoke files", "receive", "receive #2 files", "receive #2 all", "receive 5 all", "receive #2 5 files", "receive off", "forward", "forward #2 all", "forward #2 5 all", "leave", "leave 2", "leave #2 now", "delete", "delete #2", "delete files", "delete #2 all", "pending 5", "list all"]
     for (const text of others) {
       expect(await control.ownerCommand(bob, parseCommand(`/${text}`)!)).toBe(commandsReply)
     }
@@ -290,40 +290,59 @@ function downloadFields(chat = "#2", file: object = {}): NewAction {
   }
 }
 
-describe("approval of all files of a chat", () => {
-  it("approves the downloads of a chat apart from its messages, and revokes them apart", async () => {
+describe("receiving all files of a chat", () => {
+  it("receives a download and the later ones of its chat, apart from its messages, until /receive CHAT off", async () => {
     const {control, actions, chat} = await setup()
     const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
     directory.customData = {other: 1}
-    const download = actions.create("d", downloadFields("@4"))
+    const download = actions.create("d1", downloadFields("@4"))
+    const second = actions.create("d2", {...downloadFields("@4", {fileId: 8}), item: 31} as NewAction)
     await settled()
-    expect(await control.ownerCommand(alice, {keyword: "approve", params: "@4 files"})).toBe("Files approved for bot SimpleX Directory (@4) by Alice. /'revoke @4 files'")
-    expect(download).toMatchObject({state: "performing", decidedBy: "Alice"})
+    expect(await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${download.n} all`})).toBe("Files approved for bot SimpleX Directory (@4) by Alice. /'receive @4 off'")
+    expect([download, second].map(({state, decidedBy}) => [state, decidedBy])).toEqual([["performing", "Alice"], ["performing", "Alice"]])
     expect(actions.get(5)).toMatchObject({state: "pending"})
     expect(customDataOf(chat, "@4")).toEqual({other: 1, simplexMcpFiles: {approvedBy: "Alice", approvedById: 3, approvedAt: expect.any(String)}})
     expect([control.standingApprover(chatInfoOf(chat, "@4"), "files"), control.standingApprover(chatInfoOf(chat, "@4"), "messages")]).toEqual(["Alice", undefined])
     await control.ownerCommand(alice, {keyword: "approve", params: "@4 all"})
     expect((await control.ownerCommand(alice, {keyword: "list", params: ""}))!.split("\n")[0]).toBe("@4  bot SimpleX Directory, approved for this chat by Alice, files approved by Alice")
-    expect(await control.ownerCommand(alice, {keyword: "revoke", params: "@4 files"})).toBe("Files from bot SimpleX Directory (@4) need approval again.")
+    expect(await control.ownerCommand(alice, {keyword: "receive", params: "@4 off"})).toBe("Files from bot SimpleX Directory (@4) need approval again.")
     expect(customDataOf(chat, "@4")).toEqual({other: 1, simplexMcp: {approvedBy: "Alice", approvedById: 3, approvedAt: expect.any(String)}})
-    expect(await control.ownerCommand(alice, {keyword: "revoke", params: "@4 files"})).toBe("Files from @4 have no standing approval.")
+    expect(await control.ownerCommand(alice, {keyword: "receive", params: "@4 off"})).toBe("Files from @4 have no standing approval.")
     expect(await control.ownerCommand(alice, {keyword: "revoke", params: "@4"})).toBe("Messages to bot SimpleX Directory (@4) need approval again.")
     expect(customDataOf(chat, "@4")).toEqual({other: 1})
   })
 
-  it("leaves downloads from unknown servers pending, and says so in its reply", async () => {
+  it("leaves other downloads from unknown servers pending, and says so in its reply", async () => {
     const {control, actions} = await setup()
     const known = actions.create("d1", downloadFields("@4"))
     const unknown = actions.create("d2", {...downloadFields("@4", {fileId: 8}), item: 31, unknownServers: ["xftp://hash2@xftp.example.com"]} as NewAction)
     await settled()
-    expect(await control.ownerCommand(alice, {keyword: "approve", params: "@4 files"})).toBe("Files approved for bot SimpleX Directory (@4) by Alice, except downloads from unknown servers. /'revoke @4 files'")
+    expect(await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${known.n} all`})).toBe("Files approved for bot SimpleX Directory (@4) by Alice, except downloads from unknown servers. /'receive @4 off'")
     expect([known.state, unknown.state]).toEqual(["performing", "pending"])
+    expect(await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${unknown.n} all`})).toBe("Files approved for bot SimpleX Directory (@4) by Alice. /'receive @4 off'")
+    expect(unknown).toMatchObject({state: "performing", decidedBy: "Alice"})
   })
 
-  it("applies in mode requests only", async () => {
-    const chat = agentChats()
-    const {control} = await controlWith(chat, actionsWith("host", fakeHooks()), undefined, "host")
-    expect(await control.ownerCommand(alice, {keyword: "approve", params: "@4 files"})).toBe("Approvals apply in mode requests; this server runs in mode host.")
+  it("takes /receive and /forward for downloads only, and /approve for the other actions only", async () => {
+    const {control, actions, action, chat} = await setup()
+    const download = actions.create("d1", downloadFields("@4"))
+    await settled()
+    expect(await control.ownerCommand(alice, {keyword: "approve", params: `@4 ${download.n}`})).toBe(`Action ${download.n} is a download: /'receive @4 ${download.n}', /'receive @4 ${download.n} all', /'forward @4 ${download.n}' or /'reject @4 ${download.n}'.`)
+    for (const params of [`${action.n}`, `@4 ${action.n}`]) {
+      expect(await control.ownerCommand(alice, {keyword: "receive", params})).toBe(`Action ${action.n} has no file.`)
+      expect(await control.ownerCommand(alice, {keyword: "forward", params})).toBe(`Action ${action.n} has no file.`)
+    }
+    expect(await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${action.n} all`})).toBe(`Action ${action.n} has no file.`)
+    expect([action.state, download.state]).toEqual(["pending", "pending"])
+    expect(await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${download.n}`})).toBeUndefined()
+    expect(download).toMatchObject({state: "performing", decidedBy: "Alice"})
+    expect(chat.customData).toEqual([])
+  })
+
+  it("answers /approve CHAT files and /revoke CHAT files with the command list", async () => {
+    const {control, chat} = await setup()
+    expect(await control.ownerCommand(alice, {keyword: "approve", params: "@4 files"})).toBe(commandsReply)
+    expect(await control.ownerCommand(alice, {keyword: "revoke", params: "@4 files"})).toBe(commandsReply)
     expect(chat.customData).toEqual([])
   })
 })
@@ -331,6 +350,11 @@ describe("approval of all files of a chat", () => {
 describe("downloads in the agent control chat", () => {
   const preview = `data:image/jpg;base64,${"A".repeat(14000)}`
   const flushed = (): Promise<void> => new Promise(resolve => setImmediate(resolve))
+
+  afterEach(() => {
+    rmSync(join(data, "forwarded"), {recursive: true, force: true})
+    rmSync(join(data, "files", "group-2"), {recursive: true, force: true})
+  })
 
   async function downloadSetup(file: object = {}) {
     const fake = fakeHooks()
@@ -348,7 +372,7 @@ describe("downloads in the agent control chat", () => {
     expect(cards.map(({msgContent}) => msgContent)).toEqual([
       {
         type: "text",
-        text: "I want to download a file from Bob in business ep (#2):\n`report.pdf`, 2.4 MB\n/'approve #2 1', /'approve #2 files', /'receive #2 1' or /'reject #2 1'",
+        text: "I want to download a file from Bob in business ep (#2):\n`report.pdf`, 2.4 MB\n/'receive #2 1', /'receive #2 1 all', /'forward #2 1' or /'reject #2 1'",
       },
     ])
     actions.reject(action, "Alice")
@@ -390,37 +414,36 @@ describe("downloads in the agent control chat", () => {
     }
   })
 
-  it("receives the file into the agent control chat as a reply to its card, which stays pending", async () => {
+  it("forwards the file into the agent control chat as a reply to its card, which stays pending, and keeps it outside the chat's folder", async () => {
     const {chat, tools, action, cards, control} = await downloadSetup()
-    const path = join(data, "files", "group-2", "7.pdf")
+    const forwarded = join(data, "forwarded", "group-2", "7.pdf")
     const offered = fileItem(30, {type: "file", text: "report"}, {type: "rcvInvitation"}, {chatDir: {type: "groupRcv", groupMember: bob}})
     chat.chats.get("#2")!.items.push(offered)
-    chat.responses.set(`/freceive 7 approved_relays=on ${path}`, {type: "rcvFileAccepted", user, chatItem: event(chatInfoOf(chat, "#2"), offered)})
-    expect(await control.ownerCommand(alice, {keyword: "receive", params: `#2 ${action.n}`})).toBeUndefined()
+    chat.responses.set(`/freceive 7 approved_relays=on ${forwarded}`, {type: "rcvFileAccepted", user, chatItem: event(chatInfoOf(chat, "#2"), offered)})
+    expect(await control.ownerCommand(alice, {keyword: "forward", params: `#2 ${action.n}`})).toBeUndefined()
     await flushed()
-    writeFileSync(path, "report")
-    tools.onFile(event(chatInfoOf(chat, "#2"), fileItem(30, {type: "file", text: "report"}, {type: "rcvComplete"}, {fileSource: {filePath: path}})))
+    writeFileSync(forwarded, "report")
+    tools.onFile(event(chatInfoOf(chat, "#2"), fileItem(30, {type: "file", text: "report"}, {type: "rcvComplete"}, {fileSource: {filePath: forwarded}})))
     while (chat.sent.length < 2) await flushed()
     const copy = chat.sent[1].messages[0].fileSource!.filePath
     expect(chat.sent[1]).toEqual({chat: [T.ChatType.Group, 10], messages: [{fileSource: {filePath: copy}, msgContent: {type: "file", text: ""}, quotedItemId: action.card, mentions: {}}]})
     expect([dirname(dirname(copy)), basename(copy), readFileSync(copy, "utf8")]).toEqual([join(data, "files", "sent"), "report.pdf", "report"])
+    expect([existsSync(forwarded), existsSync(join(data, "files", "group-2", "7.pdf"))]).toEqual([true, false])
     expect(action.state).toBe("pending")
     expect(cards).toHaveLength(1)
   })
 
-  it("replies when the file is not received, and refuses /receive of an action without a file", async () => {
+  it("replies when the file is not forwarded", async () => {
     const {chat, tools, action, control} = await downloadSetup()
     chat.chats.get("#2")!.items.push(fileItem(30, {type: "file", text: "report"}, {type: "rcvTransfer", rcvProgress: 1, rcvTotal: 2}, {chatDir: {type: "groupRcv", groupMember: bob}}))
-    await control.ownerCommand(alice, {keyword: "receive", params: `${action.n}`})
+    await control.ownerCommand(alice, {keyword: "forward", params: `${action.n}`})
     await flushed()
     tools.onFile(event(chatInfoOf(chat, "#2"), fileItem(30, {type: "file", text: "report"}, {type: "rcvError", rcvFileError: {type: "auth"}})))
     await flushed()
     expect(chat.sent.at(-1)!.messages[0].msgContent.text).toBe("Action 1: the file was not received: `Wrong key or unknown file chunk address - most likely file is deleted.`.")
-    const send = (await setup()).control
-    expect(await send.ownerCommand(alice, {keyword: "receive", params: "@4 5"})).toBe("Action 5 has no file.")
   })
 
-  it("replies when the received file can't be posted, and deletes its copy", async () => {
+  it("replies when the forwarded file can't be posted, and deletes its copy", async () => {
     const {chat, action, control} = await downloadSetup()
     const path = join(data, "files", "group-2", "7.pdf")
     mkdirSync(dirname(path), {recursive: true})
@@ -432,27 +455,30 @@ describe("downloads in the agent control chat", () => {
       if (messages[0].fileSource !== undefined) throw new Error("file too large")
       return send(target, messages)
     }
-    await control.ownerCommand(alice, {keyword: "receive", params: `${action.n}`})
+    await control.ownerCommand(alice, {keyword: "forward", params: `${action.n}`})
     while (chat.sent.length < 2) await flushed()
     expect(chat.sent[1].messages[0].msgContent.text).toBe("Action 1: the file was not received: `file too large`.")
     expect(readdirSync(join(data, "files", "sent"))).toEqual([])
   })
 
-  it("fails and cancels the running downloads of a chat when /delete CHAT files deletes its folder", async () => {
+  it("fails and cancels the running downloads of a chat when /delete CHAT files deletes its files, forwarded ones included", async () => {
     const {chat, action, control} = await downloadSetup()
     const folder = join(data, "files", "group-2")
+    const forwarded = join(data, "forwarded", "group-2")
     const offered = fileItem(30, {type: "file", text: "report"}, {type: "rcvInvitation"}, {chatDir: {type: "groupRcv", groupMember: bob}})
     chat.chats.get("#2")!.items.push(offered)
-    chat.responses.set(`/freceive 7 approved_relays=on ${join(folder, "7.pdf")}`, {type: "rcvFileAccepted", user, chatItem: event(chatInfoOf(chat, "#2"), offered)})
+    chat.responses.set(`/freceive 7 approved_relays=on ${join(forwarded, "7.pdf")}`, {type: "rcvFileAccepted", user, chatItem: event(chatInfoOf(chat, "#2"), offered)})
     chat.responses.set("/fcancel 7", {type: "rcvFileCancelled", user, rcvFileTransfer: {fileId: 7}})
-    await control.ownerCommand(alice, {keyword: "receive", params: `${action.n}`})
+    await control.ownerCommand(alice, {keyword: "forward", params: `${action.n}`})
     await flushed()
+    mkdirSync(folder, {recursive: true})
     writeFileSync(join(folder, "3.pdf"), "x".repeat(120))
-    expect(await control.ownerCommand(alice, {keyword: "delete", params: "#2 files"})).toBe("Deleted 1 file from #2, 120 bytes.")
+    writeFileSync(join(forwarded, "4.pdf"), "x".repeat(80))
+    expect(await control.ownerCommand(alice, {keyword: "delete", params: "#2 files"})).toBe("Deleted 2 files from #2, 200 bytes.")
     await flushed()
     expect(chat.commands).toContain("/fcancel 7")
     expect(chat.sent.at(-1)!.messages[0].msgContent.text).toBe("Action 1: the file was not received: `Your owner deleted the files of this chat.`.")
-    expect(existsSync(folder)).toBe(false)
+    expect([existsSync(folder), existsSync(forwarded)]).toEqual([false, false])
   })
 })
 
@@ -578,12 +604,16 @@ describe("files of a chat", () => {
     sizes.forEach((size, i) => writeFileSync(join(folder, `${i + 1}.pdf`), "x".repeat(size)))
   }
 
-  it("are kept when an owner's /leave leaves the chat, with a message after the reply", async () => {
+  it("are kept when an owner's /leave leaves the chat, with a message after the reply; forwarded files are deleted", async () => {
     const {control, chat} = await setup()
     filesIn("group-2", [1500, 600])
+    const forwarded = join(data, "forwarded", "group-2")
+    mkdirSync(forwarded, {recursive: true})
+    writeFileSync(join(forwarded, "3.pdf"), "x")
     expect(await control.ownerCommand(alice, {keyword: "leave", params: "#2"})).toBe("Left business ep (#2), requested by Alice.")
     await flushed()
     expect(chat.sent.at(-1)!.messages[0].msgContent.text).toBe(kept("#2", "business ep", "group-2", "2 files, 2.1 KB"))
+    expect(existsSync(forwarded)).toBe(false)
     filesIn("contact-4", [])
     const before = chat.sent.length
     await control.ownerCommand(alice, {keyword: "leave", params: "@4"})

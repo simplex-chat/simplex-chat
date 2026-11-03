@@ -34,6 +34,7 @@ import {
   missingFile,
   nextChange,
   receivedFileError,
+  receivedPath,
   reportProgress,
   toMessage,
   unreadItems,
@@ -472,6 +473,7 @@ class Download {
 
 export class AgentTools {
   private readonly downloads = new Map<number, Download>()
+  private readonly forwarding = new Map<number, Promise<string>>()
   private readonly rejectedFiles = new Set<number>()
   private readonly fileDescriptions = new Changes()
   private describedFiles = 0
@@ -512,11 +514,31 @@ export class AgentTools {
     }
   }
 
-  downloadFile({chat, item, file: {fileId, name, size}}: Pick<DownloadAction, "chat" | "item" | "file">): Promise<string> {
+  private async downloadFile(action: Pick<DownloadAction, "chat" | "item" | "file">): Promise<string> {
+    const {chat, file: {fileId, name, size}} = action
+    const path = downloadPath(this.agent.data, chat, fileId, name)
+    const found = await this.fileDownload(action, path)
+    if (found === path) return path
+    await this.forwarding.get(fileId)?.catch(() => undefined)
+    if (existsSync(path) || fileBytes(found) !== size) throw new Error(missingFile)
+    moveFile(found, path)
+    return path
+  }
+
+  forwardFile(action: Pick<DownloadAction, "chat" | "item" | "file">): Promise<string> {
+    const {chat, file: {fileId, name}} = action
+    const copy = this.fileDownload(action, downloadPath(this.agent.data, chat, fileId, name, "forwarded")).then(found => this.copyForSending(found, name))
+    this.forwarding.set(fileId, copy)
+    return copy.finally(() => {
+      if (this.forwarding.get(fileId) === copy) this.forwarding.delete(fileId)
+    })
+  }
+
+  private fileDownload({chat, item, file: {fileId, size}}: Pick<DownloadAction, "chat" | "item" | "file">, path: string): Promise<string> {
     const started = this.downloads.get(fileId)
     if (started !== undefined) return started.promise
     const check = setInterval(() => this.checkDownload(download).catch(error => logError(`download of file ${fileId}`, error)), downloadCheck).unref()
-    const download: Download = new Download(chat, item, fileId, size, downloadPath(this.agent.data, chat, fileId, name), check)
+    const download: Download = new Download(chat, item, fileId, size, path, check)
     this.downloads.set(fileId, download)
     this.startDownload(download).catch(error => this.settleDownload(fileId, ({reject}) => reject(error)))
     return download.promise
@@ -869,7 +891,7 @@ export class AgentTools {
     }
   }
 
-  async copyForSending(path: string, name: string): Promise<string> {
+  private async copyForSending(path: string, name: string): Promise<string> {
     const copy = this.sentCopyPath(basename(name))
     await copyFile(path, copy, constants.COPYFILE_FICLONE)
     return copy
@@ -877,9 +899,7 @@ export class AgentTools {
 
   chatFiles(chat: string): {folder: string; count: number; bytes: number} {
     const folder = chatFolder(this.agent.data, chat)
-    const entries = existsSync(folder) ? readdirSync(folder, {withFileTypes: true}) : []
-    const sizes = entries.filter(entry => entry.isFile()).map(({name}) => statSync(join(folder, name)).size)
-    return {folder, count: sizes.length, bytes: sizes.reduce((sum, size) => sum + size, 0)}
+    return {folder, ...folderFiles(folder)}
   }
 
   async deleteChatFiles(chat: string): Promise<{count: number; bytes: number}> {
@@ -888,9 +908,10 @@ export class AgentTools {
       await this.agent.chat.apiCancelFile(download.fileId).catch(error => logError(`cancelling file ${download.fileId}`, error))
       deletePartial(download.source, download.size)
     }
-    const files = this.chatFiles(chat)
-    rmSync(files.folder, {recursive: true, force: true})
-    return files
+    const folders = [chatFolder(this.agent.data, chat), chatFolder(this.agent.data, chat, "forwarded")]
+    const files = folders.map(folderFiles)
+    for (const folder of folders) rmSync(folder, {recursive: true, force: true})
+    return {count: files.reduce((sum, {count}) => sum + count, 0), bytes: files.reduce((sum, {bytes}) => sum + bytes, 0)}
   }
 
   private sentCopyPath(name: string): string {
@@ -915,10 +936,13 @@ export class AgentTools {
   }
 
   async leaveChat(chat: string): Promise<void> {
-    if (chat.startsWith("@")) return this.agent.chat.apiDeleteChat(T.ChatType.Direct, chatNumber(chat), {type: "full", notify: true})
-    const {groupInfo} = (await getChat(this.agent.chat, chat, 0)).chatInfo as T.ChatInfo.Group
-    if (memberCurrentOrPending(groupInfo.membership)) await this.agent.chat.apiLeaveGroup(groupInfo.groupId)
-    await this.agent.chat.apiDeleteChat(T.ChatType.Group, groupInfo.groupId, {type: "full", notify: true})
+    if (chat.startsWith("@")) await this.agent.chat.apiDeleteChat(T.ChatType.Direct, chatNumber(chat), {type: "full", notify: true})
+    else {
+      const {groupInfo} = (await getChat(this.agent.chat, chat, 0)).chatInfo as T.ChatInfo.Group
+      if (memberCurrentOrPending(groupInfo.membership)) await this.agent.chat.apiLeaveGroup(groupInfo.groupId)
+      await this.agent.chat.apiDeleteChat(T.ChatType.Group, groupInfo.groupId, {type: "full", notify: true})
+    }
+    rmSync(chatFolder(this.agent.data, chat, "forwarded"), {recursive: true, force: true})
   }
 
   private async download(input: DownloadInput, call: ToolCall): Promise<object | undefined> {
@@ -1032,16 +1056,17 @@ export class AgentTools {
     }
   }
 
-  private settleReceived(chat: string, {fileId, fileName}: T.CIFile): void {
-    const path = downloadPath(this.agent.data, chat, fileId, fileName)
-    if (!existsSync(path)) return this.failDownload(fileId, missingFile)
-    this.settleDownload(fileId, ({resolve}) => resolve(path))
+  private settleReceived(chat: string, file: T.CIFile): void {
+    const path = receivedPath(this.agent.data, chat, file)
+    if (path === undefined) return this.failDownload(file.fileId, missingFile)
+    this.settleDownload(file.fileId, ({resolve}) => resolve(path))
   }
 
   private moveReceived(chat: string, {fileId, fileName, fileSize, fileSource}: T.CIFile): void {
     const path = downloadPath(this.agent.data, chat, fileId, fileName)
     const source = fileSource?.filePath
-    if (source === undefined || source === path || existsSync(path) || fileBytes(source) !== fileSize) return
+    const forwarded = downloadPath(this.agent.data, chat, fileId, fileName, "forwarded")
+    if (source === undefined || source === path || source === forwarded || existsSync(path) || fileBytes(source) !== fileSize) return
     try {
       moveFile(source, path)
     } catch (error) {
@@ -1448,6 +1473,12 @@ function deletePartial(path: string | undefined, size: number): void {
 
 function fileBytes(path: string): number | undefined {
   return existsSync(path) ? statSync(path).size : undefined
+}
+
+function folderFiles(folder: string): {count: number; bytes: number} {
+  const entries = existsSync(folder) ? readdirSync(folder, {withFileTypes: true}) : []
+  const sizes = entries.filter(entry => entry.isFile()).map(({name}) => statSync(join(folder, name)).size)
+  return {count: sizes.length, bytes: sizes.reduce((sum, size) => sum + size, 0)}
 }
 
 function moveFile(from: string, to: string): void {

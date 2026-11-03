@@ -1,5 +1,5 @@
 import {randomBytes} from "crypto"
-import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "fs"
+import {existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync} from "fs"
 import {createServer} from "net"
 import {tmpdir} from "os"
 import {basename, dirname, join} from "path"
@@ -285,7 +285,7 @@ test("/leave: the owner makes the agent leave a group at once, and the pending s
   expect((await agent.client.tool("list", {})).result.chats).not.toContainEqual(expect.objectContaining({chat: group}))
 }, 600_000)
 
-test("files: a received image downloaded after the approval, /receive, /reject and the files approval of a chat", async () => {
+test("files: a received image forwarded to the owner, then received by the agent, /reject and receiving all files of a chat", async () => {
   const alice = await personIn("files", "Alice")
   const agent = await agentIn("files")
   await agent.start()
@@ -318,19 +318,23 @@ test("files: a received image downloaded after the approval, /receive, /reject a
     `I want to download a file from Alice in group Trail (${group}):`,
     `\`trail.png\`, ${Buffer.from(png, "base64").length} bytes`,
     "Servers: known.",
-    `/'approve ${group} ${n}', /'approve ${group} files', /'receive ${group} ${n}' or /'reject ${group} ${n}'`,
+    `/'receive ${group} ${n}', /'receive ${group} ${n} all', /'forward ${group} ${n}' or /'reject ${group} ${n}'`,
   ])
+  const folder = join(dir, "files", "agent", "files", `group-${group.slice(1)}`)
+  const forwardedFolder = join(dir, "files", "agent", "forwarded", `group-${group.slice(1)}`)
   const forwarded = received(alice.chat, ci => ci.chatItem.file !== undefined && ci.chatInfo.type === "group" && ci.chatInfo.groupInfo.groupId === controlId)
-  await ownerSends(`/receive ${group} ${n}`)
+  await ownerSends(`/forward ${group} ${n}`)
   const copy = await forwarded
   expect(copy.chatItem.file!.fileName).toBe("trail.png")
   expect(copy.chatItem.quotedItem?.itemId).toBe(card.chatItem.meta.itemId)
-  await ownerSends(`/approve ${group} ${n}`)
+  expect([existsSync(folder), readdirSync(forwardedFolder)]).toEqual([false, [expect.stringMatching(/^\d+\.png$/)]])
+  await ownerSends(`/receive ${group} ${n}`)
   const downloaded = (await downloading).result
   expect(downloaded).toEqual({action: n, status: "done", chat: group, item: first.item, path: expect.any(String)})
-  expect(dirname(downloaded.path)).toBe(join(dir, "files", "agent", "files", `group-${group.slice(1)}`))
+  expect(dirname(downloaded.path)).toBe(folder)
   expect(basename(downloaded.path)).toMatch(/^\d+\.png$/)
   expect(readFileSync(downloaded.path)).toEqual(readFileSync(image))
+  expect(readdirSync(forwardedFolder)).toEqual([])
 
   const second = await fileFromAlice({type: "file", text: ""})
   const secondCard = received(alice.chat, textStarts("I want to download a file from Alice in group Trail"))
@@ -339,18 +343,23 @@ test("files: a received image downloaded after the approval, /receive, /reject a
   await ownerSends(`/reject ${group} ${n2}`)
   expect((await rejecting).result).toEqual({action: n2, status: "rejected"})
 
-  const approvedFiles = received(alice.chat, textStarts("Files approved for group Trail"))
-  await ownerSends(`/approve ${group} files`)
-  expect((await approvedFiles).chatItem.meta.itemText).toBe(`Files approved for group Trail (${group}) by Alice. /'revoke ${group} files'`)
   const third = await fileFromAlice({type: "file", text: "notes"})
+  const thirdCard = received(alice.chat, textStarts("I want to download a file from Alice in group Trail"))
+  const receiving = agent.client.tool("download", {chat: group, item: third.item})
+  const n3 = cardNumber(await thirdCard)
+  const approvedFiles = received(alice.chat, textStarts("Files approved for group Trail"))
+  await ownerSends(`/receive ${group} ${n3} all`)
+  expect((await approvedFiles).chatItem.meta.itemText).toBe(`Files approved for group Trail (${group}) by Alice. /'receive ${group} off'`)
+  expect((await receiving).result).toMatchObject({action: n3, status: "done", chat: group, item: third.item})
+  const fourth = await fileFromAlice({type: "file", text: "map"})
   const {server} = agent
   const agentControlId = (await controlGroupOf(server.chat, server.user.userId)).groupId
   const lastControlItem = async (): Promise<number | undefined> => (await server.chat.apiGetChat(T.ChatType.Group, agentControlId, 1)).chatItems.at(-1)?.meta.itemId
-  const beforeThird = await lastControlItem()
-  const thirdDownload = (await agent.client.tool("download", {chat: group, item: third.item})).result
-  expect(thirdDownload).toMatchObject({status: "done", chat: group, item: third.item})
-  expect(readFileSync(thirdDownload.path)).toEqual(readFileSync(image))
-  expect(await lastControlItem()).toBe(beforeThird)
+  const beforeFourth = await lastControlItem()
+  const fourthDownload = (await agent.client.tool("download", {chat: group, item: fourth.item})).result
+  expect(fourthDownload).toMatchObject({status: "done", chat: group, item: fourth.item})
+  expect(readFileSync(fourthDownload.path)).toEqual(readFileSync(image))
+  expect(await lastControlItem()).toBe(beforeFourth)
 }, 600_000)
 
 test("send with a file: a PNG reaches the group resized, with the core's preview, and a private key is refused", async () => {

@@ -76,7 +76,13 @@ describe("message fields", () => {
     writeFileSync(downloaded, "report")
     expect(fileOf("video", {type: "rcvComplete"}, {filePath: downloaded})).toEqual({name: "report.pdf", size: 2400000, type: "video", status: "received", path: downloaded})
     expect(fileOf("voice", {type: "rcvComplete"}, {filePath: join(data, "report.pdf")})).toEqual({name: "report.pdf", size: 2400000, type: "voice", status: "offered"})
+    const forwarded = join(data, "forwarded", "contact-4", "7.pdf")
+    expect(fileOf("file", {type: "rcvComplete"}, {filePath: forwarded})).toEqual({name: "report.pdf", size: 2400000, type: "file", status: "received", path: downloaded})
     rmSync(downloaded)
+    mkdirSync(dirname(forwarded), {recursive: true})
+    writeFileSync(forwarded, "report")
+    expect(fileOf("file", {type: "rcvComplete"}, {filePath: forwarded})).toEqual({name: "report.pdf", size: 2400000, type: "file", status: "offered"})
+    rmSync(forwarded)
     expect(fileOf("voice", {type: "rcvCancelled"})).toMatchObject({type: "voice", status: "failed", error: "The file was cancelled."})
     expect(fileOf("text", {type: "rcvAborted"})).toMatchObject({type: "file", status: "failed", error: "The download was aborted."})
     expect(fileOf("file", {type: "rcvError", rcvFileError: {type: "blocked", server: "xftp://k@xftp.example.com", blockInfo: {reason: "spam"}}})!.error).toBe("File is blocked by server operator: Spam.")
@@ -1060,7 +1066,10 @@ describe("download", () => {
     return {serverId: 1, server, preset: false, enabled: true, roles: {}, deleted: false}
   }
 
-  afterEach(() => rmSync(folder, {recursive: true, force: true}))
+  afterEach(() => {
+    rmSync(folder, {recursive: true, force: true})
+    rmSync(join(data, "forwarded"), {recursive: true, force: true})
+  })
 
   function completed(path: string): T.AChatItem {
     mkdirSync(dirname(path), {recursive: true})
@@ -1082,6 +1091,31 @@ describe("download", () => {
     expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 approved_relays=on ${downloaded}`])
     tools.onFile(completed(downloaded))
     expect((await downloading)!.structuredContent).toEqual({action: 1, status: "done", chat: "#15", item: 30, path: downloaded})
+  })
+
+  it("keeps a forwarded file outside the chat's folder and offered, and moves it there when the download is approved", async () => {
+    const chat = new FakeChat()
+    const offered = offeredIn(chat)
+    offered.file!.fileSize = 6
+    const forwarded = join(data, "forwarded", "group-15", "7.pdf")
+    chat.responses.set(`/freceive 7 approved_relays=on ${forwarded}`, {type: "rcvFileAccepted", user, chatItem: event(trail, offered)})
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    const action = actions.get(1) as DownloadAction
+    const forwarding = tools.forwardFile(action)
+    await flushed()
+    writeFileSync(forwarded, "report")
+    Object.assign(offered.file!, {fileStatus: {type: "rcvComplete"}, fileSource: {filePath: forwarded}})
+    tools.onFile(event(trail, offered))
+    expect(readFileSync(await forwarding, "utf8")).toBe("report")
+    expect(existsSync(downloaded)).toBe(false)
+    const {messages} = (await tools.call("receive", {chat: "#15"}, signal().call))!.structuredContent as {messages: {file: object}[]}
+    expect(messages[0].file).toEqual({name: "report.pdf", size: 6, type: "image", status: "offered"})
+    actions.approve(action, "Alice")
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
+    expect([existsSync(forwarded), readFileSync(downloaded, "utf8")]).toEqual([false, "report"])
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 approved_relays=on ${forwarded}`])
   })
 
   it("returns performing when the download outlasts wait, and the path to the call that attaches again", async () => {
