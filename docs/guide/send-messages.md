@@ -76,7 +76,7 @@ owner to enable them (they are enabled by default).
 - Tap "Contact preferences".
 - Under "Disappearing messages", make sure that the "You allow" slider is on (it
   is on by default).
-- Choose how long until messages are deleted in "Delete after": on your device,
+- Choose how long until messages are deleted in "Delete after". On your device,
   the time counts from when the message is sent, and on your contact's device,
   from when it is read.
 - Tap "Save and notify contact".
@@ -138,6 +138,6 @@ lower.
 To remove a message of another member, tap and hold the message (right-click on
 desktop) and choose "Moderate".
 
-Members can report a message to the group moderators: tap and hold the message
-(right-click on desktop) and choose "Report". Moderators see the reports on the
+Members can report a message to the group moderators. To report it, tap and hold
+the message (right-click on desktop) and choose "Report". Moderators see the reports on the
 group page, in "Member reports".

@@ -122,7 +122,7 @@ When a contact or a channel has a SimpleX name, its chat info shows the name. A
 check mark next to the name means that the app verified it, and a red cross
 means that the verification failed. To verify a name, tap **Verify name** next
 to it. To verify names automatically when you open the chat info, turn on
-**Verify SimpleX names** in **Your privacy** > **More privacy**; it is off by
+**Verify SimpleX names** in **Your privacy** > **More privacy**. It is off by
 default.
 
 ## If something doesn't work

@@ -32,11 +32,11 @@ passphrase…** and **Confirm new passphrase…**, and tap **Update database
 passphrase**. To change a passphrase that you set before, also enter it in
 **Current passphrase…**.
 
-The app saves the passphrase on the device: in iOS Keychain, in Android
-Keystore, or in the app settings as plaintext on desktop. After you set your own
+The app saves the passphrase on the device, in iOS Keychain, in Android Keystore,
+or in the app settings as plaintext on desktop. After you set your own
 passphrase, you can turn off **Save passphrase in Keychain** (iOS), **Save
-passphrase in Keystore** (Android) or **Save passphrase in settings** (desktop);
-on desktop, a passphrase that you set at the first start is not saved. The app
+passphrase in Keystore** (Android) or **Save passphrase in settings** (desktop).
+On desktop, a passphrase that you set at the first start is not saved. The app
 then asks for the passphrase each time it starts, and notifications on iOS and
 Android are limited (see
 [Notifications](./notifications.md#notifications-and-the-database-passphrase)).
@@ -51,7 +51,7 @@ the app. To keep a copy of your data, [export the database](#export-database).
 
 Here you can export the chat database to a file. The file also contains your
 files and the app settings. The app stops the chat to export the database, and
-the chat stays stopped after the export: to start it again, turn on the toggle
+the chat stays stopped after the export. To start it again, turn on the toggle
 under **Run chat**.
 
 ### Import database
@@ -76,8 +76,8 @@ profiles**.
 ## Migrate to another device
 
 You can move all your chat profiles, contacts, messages and files to a new
-device. The app explains: "All your contacts, conversations and files will be
-securely encrypted and uploaded in chunks to configured XFTP relays."
+device. The app encrypts them and uploads them in chunks to your XFTP file
+servers.
 
 1. On the old device, open [the app
    settings](./app-settings.md#opening-the-app-settings) and tap **Migrate to
@@ -92,5 +92,5 @@ securely encrypted and uploaded in chunks to configured XFTP relays."
 3. When the new device shows **Chat migrated!**, tap **Finalize migration** on
    the old device, then **Delete database from this device**.
 
-You must not use the same database on two devices: the app warns that it "will
-break the decryption of messages from your connections".
+Do not use the same database on two devices. It breaks the decryption of
+messages from your connections.

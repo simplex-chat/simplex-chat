@@ -95,7 +95,8 @@ post](../../blog/20220404-simplex-chat-instant-notifications.md) about how
 notifications work.
 
 You can also configure whether the message preview is shown when the message
-arrives: tap **Your privacy**, then **More privacy** and **Show preview**.
+arrives. To do it, tap **Your privacy**, then **More privacy** and **Show
+preview**.
 
 **Please note**: For instant and periodic notifications to work on Android, you need to disable power optimization when prompted by the app, or later via the settings. Also, some variants of Android system require additional settings, for example MIU system on Xiaomi phones requires to enable "Autostart" for the app for the notification service to work. Please read [Don't kill my app](https://dontkillmyapp.com/) guide for any settings that may be required on your device.
 
@@ -109,9 +110,8 @@ change other network settings.
 #### SMP servers
 
 By default, the app uses the servers of two preset operators, SimpleX Chat and
-Flux – you can disable them and add your own servers in **Your servers**. In the
-app setup, **How it helps privacy** explains: "The app protects your privacy by
-using different operators in each conversation."
+Flux. You can disable them and add your own servers in **Your servers**. The app
+uses different operators in each conversation to protect your privacy.
 
 This page also allows testing the connection with the servers.
 
@@ -123,9 +123,9 @@ This option makes the app connect via a SOCKS proxy that should be provided by s
 
 The most typical use for this is to run Orbot app that provides a SOCKS proxy to connect via Tor network, but it can be some other app and it can proxy connections via some other overlay network.
 
-The option is available on all platforms: on Android and desktop in **Network &
-servers** (the default port is 9050), and on iOS in **Advanced network
-settings**, where you enter the IP address and the port of the proxy.
+The option is available on all platforms. On Android and desktop, it is in
+**Network & servers**, and the default port is 9050. On iOS, it is in **Advanced
+network settings**, where you enter the IP address and the port of the proxy.
 
 #### Use .onion hosts
 
@@ -156,14 +156,14 @@ devices, but this is not applicable to most individual devices.
 
 This option sets how the app isolates your traffic. With **Chat profile**, **App
 session** (default) and **Server**, the app uses a separate TCP connection for
-each chat profile; with **App session**, it also uses new SOCKS credentials
-every time you start the app, and with **Server**, for each server. With
+each chat profile. **App session** also uses new SOCKS credentials every time
+you start the app, and **Server** uses them for each server. With
 **Connection**, the app uses a separate TCP connection for each contact and
 group member.
 
-The option is in **Advanced network settings**. On iOS, it is only available if
-you have enabled [developer options](#show-developer-options); on Android and
-desktop, the **Connection** mode is only available with developer options.
+The option is in **Advanced network settings**. On iOS, it is available after
+you enable [developer options](#show-developer-options). On Android and desktop,
+the **Connection** mode is available with developer options.
 
 #### Advanced network settings
 

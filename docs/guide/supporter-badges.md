@@ -3,14 +3,12 @@ title: Supporter badges
 ---
 # Supporter badges
 
-A supporter badge is shown next to your name on your chat profile, and with it
-you can send larger files that are stored longer. The app explains: "Get a badge
-to send larger files (2-5GB) that stay available longer (7-21 days), and to show
-it on your profile."
+A supporter badge is shown next to your name on your chat profile. With a badge,
+you can send larger files, from 2 to 5 GB, that stay available for 7 to 21 days.
 
 A badge is added to one chat profile. It is shown to your contacts, and to the
-members of groups and channels where you use this profile. It is never shown
-with an incognito profile.
+members of groups and channels where you use this profile. It is not shown with
+an incognito profile.
 
 <img src="./images/supporter-badges-support-simplex.png" alt="Support SimpleX screen on iOS" width="300"> &nbsp;&nbsp; <img src="./images/supporter-badges-redeem-code.png" alt="Redeem code screen on iOS" width="300">
 
@@ -30,9 +28,8 @@ In incognito chats, you can send files up to 1 GB.
 
 - **Settings**, then **Support SimpleX**. With a badge, this row is **Your
   badge** or **Your legend badge**.
-- The **Support SimpleX** banner in the chat list, "Get badge + better files",
-  shown when you have more than 3 chats and no badge. After you tap it once, you
-  can dismiss it: "You can support SimpleX later in Settings."
+- The **Support SimpleX** banner in the chat list, shown when you have more than
+  3 chats and no badge. After you tap it once, you can dismiss it.
 - The **Large file!** alert, when you have no badge and choose a file larger
   than 1 GB and up to 5 GB, outside incognito chats. It has the button **Support
   SimpleX**.
@@ -66,12 +63,11 @@ The iOS and Android apps are registered to open these links. When the desktop
 app is not registered to open them, it opens **Redeem code** next to the
 browser.
 
-If the profile already has a badge, the app shows **Profile already has a
-badge**: "A badge can be added to another profile, or here once this badge
-ends."
+A profile has one badge at a time. If it already has a badge, you can add the
+new badge to another profile, or to this profile after the current badge ends.
 
-A badge bought on the badge page is not renewed: "No renewal: the badge ends
-when the prepaid months run out."
+A badge bought on the badge page is not renewed. It ends when the prepaid months
+run out.
 
 ### Buy in the app with Google Play
 
@@ -80,13 +76,13 @@ In the Android app from Google Play:
 1. Open **Settings**, then **Support SimpleX**, and tap **Choose your badge**.
 2. Choose **Supporter** or **Legend**, and tap **Continue**.
 3. Choose **1 month**, **Monthly** or **Annual**, and tap **Continue**.
-   **Monthly** and **Annual** are subscriptions: "Renews on [date]. Cancel
-   anytime."
+   **Monthly** and **Annual** are subscriptions that renew until you cancel
+   them.
 4. Check your order and tap **Pay**. Complete the payment in Google Play.
 
-While the badge is added, the app shows **Issuing your badge**: "Your payment is
-complete. The badge will be added to this profile." When the payment needs
-approval, the app shows **Waiting for approval**: "Nothing has been charged."
+While the badge is being added, the app shows **Issuing your badge**. When the
+payment needs approval, the app shows **Waiting for approval**, and nothing is
+charged until it is approved.
 
 ### Redeem a badge code
 
@@ -120,10 +116,10 @@ On the **Your badge** screen are:
 
 | Subscription state | What the app shows |
 |---|---|
-| Renewing | **Renews** with the date, and the price when known: "Renews automatically until you cancel it". |
-| Cancelled | **Ends** with the date: "Your subscription is cancelled. The badge stays until [date]." |
-| Payment failed | **Payment problem**: "Payment failed. Update your payment method". |
-| Ended | **Ended**: "Subscription ended. The badge will be removed." |
+| Renewing | **Renews** with the date, and the price when it is known. |
+| Cancelled | **Ends** with the date until which the badge stays. |
+| Payment failed | **Payment problem**, with a request to update your payment method. |
+| Ended | **Ended**. The badge will be removed. |
 
 Tap **Manage subscription** to open your subscriptions in the App Store (iOS) or
 in Google Play (the Android app from Google Play).
@@ -140,9 +136,9 @@ open **Your badge**, or **Support SimpleX** when the badge has ended.
 |---|---|
 | **Your badge expired** | A badge without renewal has ended. |
 | **Your subscription ended** | The subscription has ended. |
-| **Badge payment problem** | "The store could not charge your payment method." |
+| **Badge payment problem** | The store could not charge your payment method. |
 | **Badge renewal failed** | The badge could not be renewed. |
-| **Subscription cancelled** | "Your badge stays until [date]." |
+| **Subscription cancelled** | The subscription was cancelled, and the badge stays until its end date. |
 | **Your badge renews soon** | 3 days before an annual subscription is renewed. |
 
 To close a banner, tap its close button and choose **Remind me later**, to see
@@ -150,19 +146,13 @@ it again after one day, or **Dismiss**.
 
 ## How badges protect your privacy
 
-The app explains:
+A badge is an anonymous credential stored in your profile on your device.
+SimpleX Chat has no user accounts, so the badge is not attached to an account.
+The credential itself is not sent to anyone.
 
-> A badge is an anonymous credential stored in your profile on your device. This
-> credential is never sent to anyone.
->
-> To prove to a contact or a server that you have a badge, the app generates a
-> new proof that reveals only the badge type and the expiry date, rounded to a
-> week.
->
-> Nobody can link two different proofs to each other or to the purchase.
-
-SimpleX Chat has no user accounts, so a badge is not attached to an account: the
-app keeps the credential in your profile on your device.
+To show a contact or a server that you have a badge, the app generates a new
+proof each time. A proof contains the badge type and the expiry date, rounded to
+a week. Two proofs cannot be linked to each other or to the purchase.
 
 The app sends a new proof with your profile each time it sends the profile: to a
 new contact, in your SimpleX address and 1-time links, to the groups and
@@ -187,7 +177,6 @@ means:
 - "[name] supported SimpleX Chat. The badge expired on [date]." for a recently
   expired badge.
 
-When the app could not verify a badge, a warning sign is shown instead of it.
-Tap it to see **Unverified badge** ("This badge could not be verified and may
-not be genuine.") or **Badge cannot be verified**, when the badge is signed with
-a key that this version of the app does not recognize.
+When the app cannot verify a badge, it shows a warning sign in its place.
+Tapping it shows **Unverified badge**, or **Badge cannot be verified** when the
+badge is signed with a key that this version of the app does not recognize.

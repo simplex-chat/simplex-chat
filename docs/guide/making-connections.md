@@ -96,13 +96,12 @@ To connect via a 1-time link or a SimpleX address that you received:
   (Android) or "Paste link" (desktop), and paste the link, or scan its QR code
   on iOS and Android. You can also paste the link into the search field of the
   chat list, or tap the link in a message.
-- The app shows the profile included in the link: tap "Open new chat".
-- In the new chat, "Your profile" shows the profile you will connect with: tap
+- The app shows the profile included in the link. Tap "Open new chat".
+- In the new chat, "Your profile" shows the profile you will connect with. Tap
   it to choose another chat profile or "Incognito", see [Incognito
   mode](./chat-profiles.md#incognito-mode).
-- Tap "Connect". For an address, you can also type a message and send it with
-  your contact request; you can send more messages only after the request is
-  accepted.
+- Tap "Connect". For an address, you can also send a message with your contact
+  request. More messages can be sent after the request is accepted.
 
 For some links, the app shows no profile and asks you to choose "Use current
 profile" or "Use new incognito profile".

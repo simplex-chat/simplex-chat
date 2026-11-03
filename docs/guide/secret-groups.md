@@ -18,7 +18,7 @@ audiences, use [channels](./channels.md).
 - Enter group display name.
 - Tap on "Create group".
 
-Unless Incognito is on, the app then shows your contacts: select the ones to
+Unless Incognito is on, the app then shows your contacts. Select the ones to
 invite and tap "Invite to group", or skip this step and [add
 members](#adding-members) later.
 

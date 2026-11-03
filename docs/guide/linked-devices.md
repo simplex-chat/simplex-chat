@@ -4,8 +4,8 @@ title: Linked devices
 # Linked devices
 
 You can use the chat profiles of the SimpleX app on your mobile (iOS or Android)
-from the desktop app. The mobile app keeps your profiles, contacts and messages;
-the desktop app shows them, and the mobile app performs the actions that you
+from the desktop app. Your profiles, contacts and messages stay on the mobile.
+The desktop app shows them, and the mobile app performs the actions that you
 take on the desktop. The mobile connects to the desktop over the local network.
 
 To link the devices:
@@ -24,10 +24,8 @@ On the desktop:
 
 1. Open the profile menu and click **Link a mobile** (**Linked mobiles** after
    the first link).
-2. Optionally, change **This device name**: "The device name will be shared with
-   the connected mobile client."
-3. Click **Link a mobile** under **Devices**. The desktop shows a QR code and
-   asks: "Open Use from desktop in mobile app and scan QR code."
+2. Optionally, change **This device name**. The mobile will see this name.
+3. Click **Link a mobile** under **Devices**. The desktop shows a QR code.
 
 On a new desktop, the first screen also offers **Link a mobile**, next to
 **Create your profile**, so you can link a mobile without creating a profile on
@@ -109,9 +107,8 @@ uses for the connection.
 - If the computer has several network interfaces, choose the address from the
   list.
 - The port is random by default (**Random**). To use a fixed port, enter a
-  number above 1023. If a firewall runs on the desktop, open this port in it:
-  "To allow a mobile app to connect to the desktop, open this port in your
-  firewall, if you have it enabled".
+  number above 1023. If a firewall runs on the desktop, open this port in it so
+  that the mobile can connect.
 
 After you change the address or the port, click **Refresh** to show a new QR
 code. The address and the port that you choose are saved for that mobile.
@@ -133,11 +130,11 @@ On the mobile:
 
 - The screen **Connected to desktop** shows the name and version of the desktop,
   the session code and **Disconnect**.
-- On iOS, the session ends when the app goes to the background: "Keep the app
-  open to use it from desktop". The screen of the iPhone stays on while the
-  session is active.
-- On Android, closing the screen asks **Disconnect desktop?**: "Only one device
-  can work at the same time".
+- On iOS, keep the app open while you use it from the desktop. The session ends
+  when the app goes to the background, and the screen of the iPhone stays on
+  while the session is active.
+- On Android, closing the screen asks **Disconnect desktop?**, because only one
+  device can work at a time.
 
 The database of the mobile, its passphrase and its network settings are managed
 on the mobile.

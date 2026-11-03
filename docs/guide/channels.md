@@ -14,17 +14,18 @@ default on Android and desktop.
 ## How channels work
 
 Chat relays deliver the messages of a channel. Each message is sent to the
-channel's chat relays, and the relays forward it to the subscribers. Subscribers
-connect only to the relays, not to the owner or to each other.
+channel's chat relays, and the relays forward it to the subscribers through
+messaging servers. Subscribers do not connect directly to the chat relays, to
+the owner or to each other, so the relays and the owner do not see their IP
+addresses.
 
 A channel can have several chat relays, and its messages are delivered while at
 least one of them is active. See [Chat relays](#chat-relays).
 
 Channel messages are not end-to-end encrypted, and chat relays can see them. The
-app shows this at the start of each channel: "Messages in this channel are not
-end-to-end encrypted. Chat relays can see these messages." For private
-conversations, use a [group](./secret-groups.md): group messages are end-to-end
-encrypted.
+app shows a notice about this at the start of each channel. Group messages are
+end-to-end encrypted, so use a [group](./secret-groups.md) for private
+conversations.
 
 The channel profile is stored on subscribers' devices and on the chat relays.
 The owner's chat profile is shared with the relays and the subscribers.
@@ -32,7 +33,7 @@ The owner's chat profile is shared with the relays and the subscribers.
 The owner holds the channel's keys. Changes to the channel's profile,
 preferences, relays and roles, and removals of members, are signed with the
 owner's key, and subscribers' apps reject such changes without a valid
-signature. Messages can be signed too: see [Message signing](#message-signing).
+signature. Messages can also be signed, see [Message signing](#message-signing).
 
 ## Create a channel
 
@@ -43,16 +44,13 @@ signature. Messages can be signed too: see [Message signing](#message-signing).
 3. Tap **Create public channel**.
 
 **Configure relays** opens **Network & servers**, where you choose the chat
-relays that the app can use. When no chat relay is enabled, **Configure relays**
-is shown in orange, and the app shows "Enable at least one chat relay in Network
-& Servers." (iOS) or "Enable at least one chat relay to create a channel."
-(Android and desktop).
+relays that the app can use. If no chat relay is enabled, **Configure relays**
+is shown in orange, and the app asks you to enable at least one chat relay.
 
-The channel is created with your current chat profile, and the app shows below
-the button: "Your profile … will be shared with channel relays and subscribers.
-Relays can access channel messages." The app picks up to 3 of your enabled chat
-relays at random, preferring one of your own relays and relays of different
-server operators.
+The channel is created with your current chat profile, which is shared with the
+chat relays and subscribers. The app picks up to 3 of your enabled chat relays
+at random, preferring one of your own relays and relays of different server
+operators.
 
 On the **Creating channel** screen, the app shows how many relays are active,
 for example "2/3 relays active", and moves on when all of them are active. To
@@ -63,7 +61,7 @@ Then the app shows the channel link and its QR code on the **Channel link**
 screen. Share the link now or later, and tap **Continue** to open the channel.
 On desktop, the app opens the channel and shows the channel link next to it.
 
-New channels have **Visible history** on and **Chat with admins** off: see
+New channels have **Visible history** on and **Chat with admins** off. See
 [Channel preferences](#channel-preferences).
 
 ## Subscribe to a channel
@@ -179,13 +177,13 @@ servers](./app-settings.md#smp-servers).
 The owner and moderators see the members in **Subscribers** in the chat info.
 Other members see **Owners & contributors**.
 
-Only the owner changes roles, between subscriber, contributor and moderator:
+The owner can change a member's role to subscriber, contributor or moderator:
 
 1. In the chat info, tap **Subscribers**, then tap the member.
 2. Choose the new role in **Change role**.
 3. Tap **Change** to confirm. All subscribers are notified.
 
-A channel has one owner: the member who created it. The owner role cannot be
+A channel has one owner, the member who created it. The owner role cannot be
 given to other members. A channel can have up to 256 contributors and
 moderators.
 
@@ -196,14 +194,14 @@ owner can **Remove subscriber**.
 
 When the owner turns on **Sign messages** in [Channel
 preferences](#channel-preferences), the apps of all members who post sign every
-message, and subscribers' apps verify the signatures. When the owner turns it
-on, the app warns: "New subscribers will see earlier messages as unsigned."
+message, and subscribers' apps verify the signatures. New subscribers see
+earlier messages as unsigned.
 
 A seal icon is shown next to the time of a signed and verified message. Its
 **Info** has the line "Signed & verified", or "Signed" for your own messages.
 
 While signing is on, a red seal icon is shown on a message without a signature.
-Tap the message to see why: "Sent before the channel started signing, or fake."
+Such a message was sent before the channel started signing, or it may be fake.
 
 A message with an invalid signature, or an unsigned edit or deletion of a signed
 message, is rejected, and "message rejected: bad signature" is shown in the
@@ -211,7 +209,7 @@ chat.
 
 ## Channel preferences
 
-Only the owner changes channel preferences. Tap **Channel preferences** in the
+The owner changes channel preferences. Tap **Channel preferences** in the
 chat info, change them, and tap **Save and notify subscribers** (iOS) or **Save
 and notify channel subscribers** (Android and desktop). Other members see the
 preferences without the switches.
@@ -220,14 +218,13 @@ preferences without the switches.
 |---|---|---|
 | **Sign messages** | Messages are signed: see [Message signing](#message-signing). | off |
 | **Disappearing messages** | New messages are deleted after the time set in **Delete after**. | off |
-| **Delete for everyone** | Messages deleted by their senders are removed for all subscribers, not marked as deleted. | off |
+| **Delete for everyone** | Messages deleted by their senders are deleted for all subscribers. | off |
 | **Message reactions** | All members, including subscribers, can react to messages. | on |
 | **Visible history** | Up to 100 last messages are sent to new subscribers. | on |
 | **Chat with admins** | Subscribers and contributors can chat with the owner and moderators. | off |
 
-Chats with admins in channels are not end-to-end encrypted. When the owner turns
-**Chat with admins** on, the app warns: "Chats with admins in public channels
-have no E2E encryption - use only with trusted chat relays."
+Chats with admins in channels are not end-to-end encrypted, so turn them on only
+with chat relays you trust.
 
 The owner also edits the channel's name, image and short description with
 **Edit channel profile**, and the message for new subscribers with **Add welcome
@@ -240,7 +237,7 @@ subscribers.
   info to leave. You stop receiving messages from the channel, and the chat
   history stays on your device. After that, tap **Delete channel** to delete it
   for you.
-- The owner deletes the channel instead of leaving it: tap **Delete channel** to
-  delete it for all subscribers. This cannot be undone.
+- The owner can delete the channel for all subscribers with **Delete channel**.
+  This cannot be undone.
 
 See also [Leaving a group](./secret-groups.md#leaving-a-group).
