@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import android.graphics.drawable.AnimatedImageDrawable
 import android.os.Build
 import android.util.Base64
+import android.util.LruCache
 import android.webkit.MimeTypeMap
 import androidx.compose.ui.graphics.*
 import androidx.core.graphics.applyCanvas
@@ -24,7 +25,12 @@ import kotlin.math.min
 
 private const val MAX_IMAGE_DIMENSION = 4320
 
+private val base64BitmapCache = object : LruCache<String, ImageBitmap>((Runtime.getRuntime().maxMemory() / 8).toInt()) {
+  override fun sizeOf(key: String, value: ImageBitmap): Int = value.asAndroidBitmap().byteCount
+}
+
 actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
+  base64BitmapCache.get(base64ImageString)?.let { return it }
   val imageString = base64ImageString
     .removePrefix("data:image/png;base64,")
     .removePrefix("data:image/jpg;base64,")
@@ -35,7 +41,9 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
     if (options.outWidth <= 0 || options.outHeight <= 0 || options.outWidth > MAX_IMAGE_DIMENSION || options.outHeight > MAX_IMAGE_DIMENSION || options.outHeight > options.outWidth * 256) {
       return errorBitmap.asImageBitmap()
     }
-    BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size).asImageBitmap()
+    BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size).asImageBitmap().also {
+      base64BitmapCache.put(base64ImageString, it)
+    }
   } catch (e: Exception) {
     Log.e(TAG, "base64ToBitmap error: $e")
     errorBitmap.asImageBitmap()
