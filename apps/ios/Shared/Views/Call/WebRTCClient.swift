@@ -491,7 +491,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         }
     }
 
-    func addLocalRenderer(_ renderer: RTCEAGLVideoView) {
+    func addLocalRenderer(_ renderer: RTCMTLVideoView) {
         if let activeCall {
             if let track = activeCall.localVideoTrack {
                 track.add(renderer)
@@ -505,7 +505,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         renderer.delegate = self
     }
 
-    func removeLocalRenderer(_ renderer: RTCEAGLVideoView) {
+    func removeLocalRenderer(_ renderer: RTCMTLVideoView) {
         if let activeCall {
             if let track = activeCall.localVideoTrack {
                 track.remove(renderer)
@@ -810,7 +810,7 @@ extension WebRTC.RTCPeerConnection {
     }
 
     private func processSDP(_ cont: CheckedContinuation<(RTCSessionDescription?, Error?), Never>, _ sdp: RTCSessionDescription?, _ error: Error?) {
-        if let sdp = sdp?.restrictedToCodecs(["vp8", "opus"]) {
+        if let sdp = sdp {
             self.setLocalDescription(sdp, completionHandler: { (error) in
                 if let error = error {
                     cont.resume(returning: (nil, error))
@@ -821,34 +821,6 @@ extension WebRTC.RTCPeerConnection {
         } else {
             cont.resume(returning: (nil, error))
         }
-    }
-}
-
-extension WebRTC.RTCSessionDescription {
-    func restrictedToCodecs(_ codecs: Set<String>) -> RTCSessionDescription {
-        let sections = sdp.components(separatedBy: "\r\nm=")
-        let restricted = [sections[0]] + sections.dropFirst().map { restrictSectionCodecs($0, codecs) }
-        return RTCSessionDescription(type: type, sdp: restricted.joined(separator: "\r\nm="))
-    }
-
-    private func restrictSectionCodecs(_ section: String, _ codecs: Set<String>) -> String {
-        let lines = section.components(separatedBy: "\r\n")
-        let payloadTypes = Set(lines.compactMap { codecPayloadType($0, codecs) })
-        let mLine = lines[0].split(separator: " ")
-        let restrictedMLine = (mLine.prefix(3) + mLine.dropFirst(3).filter { payloadTypes.contains($0) }).joined(separator: " ")
-        let attributes = lines.dropFirst().filter { line in attributePayloadType(line).map { payloadTypes.contains($0) } ?? true }
-        return ([restrictedMLine] + attributes).joined(separator: "\r\n")
-    }
-
-    private func codecPayloadType(_ line: String, _ codecs: Set<String>) -> Substring? {
-        let fields = line.split(whereSeparator: { " :/".contains($0) })
-        return fields.count > 2 && fields[0] == "a=rtpmap" && codecs.contains(fields[2].lowercased()) ? fields[1] : nil
-    }
-
-    private func attributePayloadType(_ line: String) -> Substring? {
-        ["a=rtpmap:", "a=fmtp:", "a=rtcp-fb:"]
-            .first { line.hasPrefix($0) }
-            .flatMap { line.dropFirst($0.count).split(separator: " ").first }
     }
 }
 
@@ -1042,16 +1014,16 @@ extension WebRTCClient {
             do {
                 let hasExternalAudioDevice = self.rtcAudioSession.session.hasExternalAudioDevice()
                 if enabled {
-                    try self.rtcAudioSession.setCategory(AVAudioSession.Category.playAndRecord.rawValue, with: [.defaultToSpeaker, .allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
-                    try self.rtcAudioSession.setMode(AVAudioSession.Mode.videoChat.rawValue)
+                    try self.rtcAudioSession.setCategory(AVAudioSession.Category.playAndRecord, with: [.defaultToSpeaker, .allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
+                    try self.rtcAudioSession.setMode(AVAudioSession.Mode.videoChat)
                     if hasExternalAudioDevice && !skipExternalDevice, let preferred = self.rtcAudioSession.session.preferredInputDevice() {
                         try self.rtcAudioSession.setPreferredInput(preferred)
                     } else {
                         try self.rtcAudioSession.overrideOutputAudioPort(.speaker)
                     }
                 } else {
-                    try self.rtcAudioSession.setCategory(AVAudioSession.Category.playAndRecord.rawValue, with: [.allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
-                    try self.rtcAudioSession.setMode(AVAudioSession.Mode.voiceChat.rawValue)
+                    try self.rtcAudioSession.setCategory(AVAudioSession.Category.playAndRecord, with: [.allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
+                    try self.rtcAudioSession.setMode(AVAudioSession.Mode.voiceChat)
                     try self.rtcAudioSession.overrideOutputAudioPort(.none)
                 }
                 if hasExternalAudioDevice && !skipExternalDevice {
@@ -1074,8 +1046,8 @@ extension WebRTCClient {
                 self.rtcAudioSession.unlockForConfiguration()
             }
             do {
-                try self.rtcAudioSession.setCategory(AVAudioSession.Category.ambient.rawValue)
-                try self.rtcAudioSession.setMode(AVAudioSession.Mode.default.rawValue)
+                try self.rtcAudioSession.setCategory(AVAudioSession.Category.ambient)
+                try self.rtcAudioSession.setMode(AVAudioSession.Mode.default)
                 try self.rtcAudioSession.overrideOutputAudioPort(.none)
                 try self.rtcAudioSession.setActive(false)
                 logger.debug("WebRTCClient: audioSession to defaults success")
