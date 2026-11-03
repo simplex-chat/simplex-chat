@@ -202,7 +202,9 @@ runs; at startup the service logs an error for each of `BTC-CHAIN`, `XMR-CHAIN` 
 store has not enabled, since BTCPay refuses every checkout on it. A settled Lightning payment is
 final, so it is credited whatever `speed_policy` says, the invoice view carries no
 `requiredConfirmations` for it, and the logs count it in millisatoshi. The BOLT11 invoice expires
-with the order, so no Lightning money arrives late. The node needs inbound channel capacity of at
+with the order, so no Lightning money arrives after the window. A cancel does not stop it: BTCPay
+2.4.4 marks the invoice `Invalid` but leaves the BOLT11 payable at the node until it expires, and
+records a payment to it as it does late on-chain money. The node needs inbound channel capacity of at
 least the largest order: without it the buyer's wallet finds no route and the payment fails there.
 
 Give the service a BTCPay store of its own, and a Stripe account of its own if card payments are
