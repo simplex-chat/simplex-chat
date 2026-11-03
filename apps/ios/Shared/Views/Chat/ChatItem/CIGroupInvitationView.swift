@@ -166,6 +166,7 @@ struct CIGroupInvitationView_Previews: PreviewProvider {
         Group {
             let ci = previewDated(ChatItem.getGroupInvitationSample())
             CIGroupInvitationView(chat: Chat.sampleData, chatItem: ci, groupInvitation: CIGroupInvitation.getSample(groupProfile: GroupProfile(displayName: "team", fullName: "team")), memberRole: .admin).modifier(ChatItemClipped(ci, tailVisible: true))
+            CIGroupInvitationView(chat: Chat.sampleData, chatItem: ci, groupInvitation: CIGroupInvitation.getSample(status: .accepted), memberRole: .admin).modifier(ChatItemClipped(ci, tailVisible: true))
         }
     }
 }
