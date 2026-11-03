@@ -875,12 +875,12 @@
       </trans-unit>
       <trans-unit id="# %@" xml:space="preserve" approved="no">
         <source># %@</source>
-        <target state="needs-translation"># %@</target>
+        <target state="translated"># %@</target>
         <note>copied message info title, # &lt;title&gt;</note>
       </trans-unit>
       <trans-unit id="%@:" xml:space="preserve" approved="no">
         <source>%@:</source>
-        <target state="needs-translation">%@:</target>
+        <target state="translated">%@:</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="%@ (current)" xml:space="preserve" approved="no">
@@ -892,6 +892,82 @@
         <source>%@ (current):</source>
         <target state="translated">%@ (atual):</target>
         <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="%1$@ supported SimpleX Chat. The badge expired on %2$@." xml:space="preserve" approved="no">
+        <source>%1$@ supported SimpleX Chat. The badge expired on %2$@.</source>
+        <target state="translated">%1$@ Simplex Chat apoiado. O dístico expirou a%2$@.</target>
+      </trans-unit>
+      <trans-unit id="%02d hrs %02d min %02d sec" xml:space="preserve" approved="no">
+        <source>%1$02d hrs %2$02d min %3$02d sec</source>
+        <target state="translated">%1$02d hrs %2$02d min %3$02d seg</target>
+      </trans-unit>
+      <trans-unit id="%@ accepted the call without end-to-end encryption." xml:space="preserve" approved="no">
+        <source>%@ accepted the call without end-to-end encryption.</source>
+        <target state="translated">%@ aceitou a chamada sem cifragem ponta-a-ponta.</target>
+      </trans-unit>
+      <trans-unit id="%@ invested in SimpleX Chat crowdfunding." xml:space="preserve" approved="no">
+        <source>%@ invested in SimpleX Chat crowdfunding.</source>
+        <target state="translated">%@ investiu no Simplex Chat através da angariação de fundos colectiva.</target>
+      </trans-unit>
+      <trans-unit id="%@ server" xml:space="preserve" approved="no">
+        <source>%@ server</source>
+        <target state="translated">%@ servidor</target>
+      </trans-unit>
+      <trans-unit id="%@ supports SimpleX Chat." xml:space="preserve" approved="no">
+        <source>%@ supports SimpleX Chat.</source>
+        <target state="translated">%@ apoia o Simplex Chat.</target>
+      </trans-unit>
+      <trans-unit id="%@, %@" xml:space="preserve" approved="no">
+        <source>%1$@, %2$@</source>
+        <target state="translated">%1$@, %2$@</target>
+      </trans-unit>
+      <trans-unit id="%@/month" xml:space="preserve" approved="no">
+        <source>%@/month</source>
+        <target state="translated">%@/mês</target>
+      </trans-unit>
+      <trans-unit id="%@/year" xml:space="preserve" approved="no">
+        <source>%@/year</source>
+        <target state="translated">%@/ano</target>
+      </trans-unit>
+      <trans-unit id="%d day" xml:space="preserve" approved="no">
+        <source>%d day</source>
+        <target state="translated">%d dia</target>
+      </trans-unit>
+      <trans-unit id="%d file(s) are still being downloaded." xml:space="preserve" approved="no">
+        <source>%d file(s) are still being downloaded.</source>
+        <target state="translated">%d ficheiros ainda a serem transferidos.</target>
+      </trans-unit>
+      <trans-unit id="%d file(s) failed to download." xml:space="preserve" approved="no">
+        <source>%d file(s) failed to download.</source>
+        <target state="translated">%d ficheiros que falhou a transferência.</target>
+      </trans-unit>
+      <trans-unit id="%d file(s) were deleted." xml:space="preserve" approved="no">
+        <source>%d file(s) were deleted.</source>
+        <target state="translated">%d ficheiros foram eliminados.</target>
+      </trans-unit>
+      <trans-unit id="%d file(s) were not downloaded." xml:space="preserve" approved="no">
+        <source>%d file(s) were not downloaded.</source>
+        <target state="translated">%d ficheiro(s) não transferido(s).</target>
+      </trans-unit>
+      <trans-unit id="%d messages not forwarded" xml:space="preserve" approved="no">
+        <source>%d messages not forwarded</source>
+        <target state="translated">%d mensagens não reencaminhadas</target>
+      </trans-unit>
+      <trans-unit id="%d month" xml:space="preserve" approved="no">
+        <source>%d month</source>
+        <target state="translated">%d mês</target>
+      </trans-unit>
+      <trans-unit id="%d owner" xml:space="preserve" approved="no">
+        <source>%d owner</source>
+        <target state="translated">%d dono</target>
+      </trans-unit>
+      <trans-unit id="%d owners" xml:space="preserve" approved="no">
+        <source>%d owners</source>
+        <target state="translated">%d donos</target>
+      </trans-unit>
+      <trans-unit id="%d owners &amp; contributors" xml:space="preserve" approved="no">
+        <source>%d owners &amp; contributors</source>
+        <target state="translated">%d donos &amp; contribuidores</target>
       </trans-unit>
     </body>
   </file>
