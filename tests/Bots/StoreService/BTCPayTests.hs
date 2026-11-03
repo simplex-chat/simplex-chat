@@ -169,7 +169,6 @@ methodsBody = J.encode
 signalOf :: Text -> [J.Value] -> Either ProviderError (Maybe PaymentSignal)
 signalOf status methods = paymentMethodsSignal readTime ref status Nothing (methodsBody methods)
 
--- | Read from an invoice with the additional status given.
 signalWith :: Text -> Text -> [J.Value] -> Either ProviderError (Maybe PaymentSignal)
 signalWith additional status methods = paymentMethodsSignal readTime ref status (Just additional) (methodsBody methods)
 

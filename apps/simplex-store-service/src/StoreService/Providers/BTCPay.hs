@@ -81,7 +81,6 @@ xmrMethodId = "XMR-CHAIN"
 knownMethodIds :: [Text]
 knownMethodIds = [btcMethodId, xmrMethodId]
 
--- | BTCPay's additional statuses of a closed invoice that the whole amount reached, late or above it.
 closedInFullStatuses :: [Text]
 closedInFullStatuses = ["PaidLate", "PaidOver"]
 
@@ -381,7 +380,6 @@ logAdditionalStatus ref = \case
   Just s | s /= "None" -> logNote ("btcpay: invoice " <> ref <> " additionalStatus " <> s)
   _ -> pure ()
 
--- | The status and additional status are the invoice's, the body its payment methods.
 paymentMethodsSignal :: UTCTime -> Text -> Text -> Maybe Text -> LB.ByteString -> Either ProviderError (Maybe PaymentSignal)
 paymentMethodsSignal now ref status additional body =
   decodeGreenfield "read invoice" body >>= invoiceSignal now ref status additional

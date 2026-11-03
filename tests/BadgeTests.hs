@@ -1569,7 +1569,6 @@ testServiceWireTags = do
       STEInternal -> "internal"
       STEUnknown t -> t
 
--- the tag is checked in both encodings, and decoding must land on the constructor the tag names
 pinsTypeTag :: (HasCallStack, J.ToJSON a, J.FromJSON a) => (a -> T.Text) -> a -> IO ()
 pinsTypeTag tagOf x = do
   let tag = J.String $ tagOf x

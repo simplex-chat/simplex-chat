@@ -156,7 +156,6 @@ coveringProvider env@PollerEnv {peProviders} now (provider, ref) =
 rowIsCovered :: PollerEnv -> UTCTime -> (Text, Text) -> IO Bool
 rowIsCovered env now row = isJust <$> coveringProvider env now row
 
--- | The refs whose read or settlement failed.
 readRows :: PollerEnv -> UTCTime -> [(Text, Text)] -> IO (Set Text)
 readRows env now rows =
   S.fromList . map snd <$> filterM (\r -> not <$> safelyWith (readWhat r) False (readRow r)) rows
@@ -232,7 +231,6 @@ readHint env@PollerEnv {peStore, peProviders} now ref =
           Right Nothing -> pure ()
           Right (Just signal) -> settleMoved env irProvider now (ref, signal)
 
--- | Leaves out the invoices whose read or settlement failed this pass.
 sweepExpired :: PollerEnv -> UTCTime -> Set Text -> IO ()
 sweepExpired env@PollerEnv {peStore, peWaiters, peCancelFailed} now missed = do
   let cutoff = addUTCTime (negate expiryGrace) now
