@@ -6,7 +6,7 @@ import {basename, dirname, join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
-import {Action, Actions, DownloadAction, SendAction, Standing} from "../../src/actions"
+import {Action, Actions, DownloadAction, Mode, SendAction, Standing} from "../../src/actions"
 import {cardText} from "../../src/control"
 import {ChatItemsWatch, Collected, awaitResponses, toMessage} from "../../src/messages"
 import {AgentTools, classifyPlan} from "../../src/tools"
@@ -176,7 +176,7 @@ function textOf(result: CallToolResult | undefined): string {
 
 function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined): {tools: AgentTools; watch: ChatItemsWatch} {
   const watch = new ChatItemsWatch()
-  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, refusedFile: () => undefined, data}, "requests"), watch}
+  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, refusedFile: () => undefined, data}, actions.mode), watch}
 }
 
 describe("receive", () => {
@@ -703,6 +703,36 @@ describe("send with a file", () => {
     expect(await sending).toBeUndefined()
   })
 
+  it("refuses files in a key folder reached through a symbolic link, and in other agents' data folders", async () => {
+    const home = join(files, "home")
+    const keys = join(files, "keys")
+    mkdirSync(keys, {recursive: true})
+    mkdirSync(join(home, ".simplex-mcp", "other"), {recursive: true})
+    symlinkSync(keys, join(home, ".ssh"))
+    jest.spyOn(os, "homedir").mockReturnValue(home)
+    const config = join(keys, "config")
+    writeFileSync(config, "Host *")
+    const token = join(home, ".simplex-mcp", "other", "token")
+    writeFileSync(token, "secret")
+    const {tools, actions} = sendTools()
+    const text = async (file: string): Promise<string> => textOf(await tools.call("send", {chat: "@4", file}, signal().call))
+    const refused = (path: string): string => `file: ${path} is refused: private keys and the server's own files are not sent.`
+    expect(await text(join(home, ".ssh", "config"))).toBe(refused(config))
+    expect(await text(token)).toBe(refused(token))
+    expect(actions.all()).toEqual([])
+  })
+
+  it("fails when the file changed after the request, also at the same size", async () => {
+    const notes = fileIn("notes.txt", "first")
+    const {tools, actions} = sendTools()
+    const sending = tools.call("send", {chat: "@4", file: notes, wait: 0}, signal().call)
+    const action = await created(actions)
+    await new Promise(resolve => setTimeout(resolve, 50))
+    writeFileSync(notes, "other")
+    actions.approve(action, "Alice")
+    expect((await sending)!.structuredContent).toEqual({action: 1, status: "failed", error: `file: ${notes} changed after the request.`})
+  })
+
   it("fails when the file changed after the request, and deletes the copy when the send fails", async () => {
     jest.spyOn(core, "resizeImage").mockImplementation(async (_image, size) => (size === core.ImageSize.MessagePreview ? preview : resized))
     const photo = fileIn("photo.png")
@@ -991,9 +1021,9 @@ describe("download", () => {
   const downloaded = join(folder, "7.pdf")
   const flushed = (): Promise<void> => new Promise(resolve => setImmediate(resolve))
 
-  function downloadTools(chat: FakeChat, standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined): {tools: AgentTools; actions: Actions} {
+  function downloadTools(chat: FakeChat, standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined, mode: Mode = "requests"): {tools: AgentTools; actions: Actions} {
     const fake = fakeHooks()
-    const actions = actionsWith("requests", fake)
+    const actions = actionsWith(mode, fake)
     const {tools} = agentTools(chat, actions, standingApprover)
     fake.hooks.perform = (action, signal) => tools.perform(action, signal)
     return {tools, actions}
@@ -1234,6 +1264,51 @@ describe("download", () => {
     await flushed()
     expect(actions.get(1)).toMatchObject({state: "performing", standing: true, decidedBy: "Alice"})
     expect(actions.get(1)!.card).toBeUndefined()
+    tools.onFile(completed(downloaded))
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
+  })
+
+  it("asks the owner for a file on unknown servers under the files approval of the chat", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    fileServersIn(chat, ["xftp://hash2@xftp.example.com"])
+    const {tools, actions} = downloadTools(chat, (_, standing) => (standing === "files" ? "Alice" : undefined))
+    const {controller, call} = signal()
+    const downloading = tools.call("download", {chat: "#15", item: 30}, call)
+    await flushed()
+    expect(actions.get(1)).toMatchObject({state: "pending", standing: false, unknownServers: ["xftp://hash2@xftp.example.com"]})
+    controller.abort()
+    expect(await downloading).toBeUndefined()
+  })
+
+  it("reads the files approval of the chat just before it creates the action", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    chat.chats.get("#15")!.chatInfo = structuredClone(trail)
+    fileServersIn(chat, [])
+    const approved = (chatInfo: T.ChatInfo): boolean => (chatInfo as T.ChatInfo.Group).groupInfo.customData !== undefined
+    const {tools, actions} = downloadTools(chat, (chatInfo, standing) => (standing === "files" && approved(chatInfo) ? "Alice" : undefined))
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    expect(actions.all()).toEqual([])
+    ;(chat.chats.get("#15")!.chatInfo as T.ChatInfo.Group).groupInfo.customData = {simplexMcpFiles: {}}
+    fileServersIn(chat, [knownServer])
+    tools.onFileDescription()
+    await flushed()
+    expect(actions.get(1)).toMatchObject({state: "performing", standing: true, decidedBy: "Alice"})
+    tools.onFile(completed(downloaded))
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done"})
+  })
+
+  it("downloads without approving unknown servers in mode host", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    chat.responses.set(`/freceive 7 ${downloaded}`, {type: "rcvFileAccepted", user, chatItem: event(trail, chat.chats.get("#15")!.items[0])})
+    const {tools} = downloadTools(chat, () => undefined, "host")
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    await flushed()
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 ${downloaded}`])
     tools.onFile(completed(downloaded))
     expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
   })
