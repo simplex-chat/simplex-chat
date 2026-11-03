@@ -3143,22 +3143,22 @@ testOutageWarnsOnceNotEveryPass = bounded "outage warnings" $ withStubPoller rac
   warnKeys poller `shouldReturn` 1
 
 testOneBadInvoiceDoesNotStopThePass :: IO ()
-testOneBadInvoiceDoesNotStopThePass = bounded "one bad invoice" $ withStubPoller raceHold $ \ref poller env _ -> do
+testOneBadInvoiceDoesNotStopThePass = bounded "one bad invoice" $ withStubPollerOf throwingRead raceHold $ \ref poller env _ -> do
   now <- getCurrentTime
   seedBadgePrice (weStore env) "price1"
-  InvoiceId badId <- seedOpenRef (weStore env) 1 "p-bad" (addUTCTime 3600 now)
+  let overdueAt = addUTCTime (negate (expiryGrace + 60)) now
+  bad <- seedOpenRef (weStore env) 1 "p-bad" overdueAt
   good <- seedOpenRef (weStore env) 2 "p-good" (addUTCTime 3600 now)
-  overdue <- seedOpenRef (weStore env) 3 "p-overdue" (addUTCTime (negate (expiryGrace + 60)) now)
-  -- Setting the provider to a value this build does not know makes reading the row throw rather
-  -- than answer.
-  withConnection (weStore env) $ \db ->
-    DB.execute db "UPDATE sx_badge_service_invoices SET provider = ? WHERE invoice_id = ?" ("nonsense" :: Text, badId)
-
-  setSignals ref [("p-bad", settledSignal), ("p-good", settledSignal)]
+  overdue <- seedOpenRef (weStore env) 3 "p-overdue" overdueAt
+  setSignals ref [("p-good", settledSignal)]
   runOnePass poller
   invoiceStatus (weStore env) good `shouldReturn` ISPaid
-  -- only the invoice that failed is kept out of the sweep
   invoiceStatus (weStore env) overdue `shouldReturn` ISExpired
+  invoiceStatus (weStore env) bad `shouldReturn` ISOpen
+  where
+    throwingRead r =
+      let p = stubProvider r
+       in p {pReadInvoice = \providerRef -> if providerRef == "p-bad" then E.throwIO (userError "p-bad cannot be read") else pReadInvoice p providerRef}
 
 testSweepWaitsForAPassThatSawEverything :: IO ()
 testSweepWaitsForAPassThatSawEverything = bounded "sweep guards" $ withStubPoller raceHold $ \ref poller env _ -> do
