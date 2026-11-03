@@ -26,7 +26,7 @@ import kotlin.math.min
 private const val MAX_IMAGE_DIMENSION = 4320
 
 private val base64BitmapCache = object : LruCache<String, ImageBitmap>((Runtime.getRuntime().maxMemory() / 8).toInt()) {
-  override fun sizeOf(key: String, value: ImageBitmap): Int = key.length + value.asAndroidBitmap().byteCount
+  override fun sizeOf(key: String, value: ImageBitmap): Int = 2 * key.length + value.asAndroidBitmap().byteCount
 }
 
 actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {

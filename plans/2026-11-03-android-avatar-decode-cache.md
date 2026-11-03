@@ -14,13 +14,13 @@ A row that scrolls off is disposed, and its avatar is decoded again when it retu
 
 Android `base64ToBitmap` keeps decoded images in an `android.util.LruCache`:
 - key: the base64 string;
-- size: key length + `Bitmap.byteCount` per entry;
+- size: 2 bytes per key character + `Bitmap.byteCount` per entry;
 - limit: 1/8 of `Runtime.maxMemory()`;
 - error bitmaps are not cached.
 
 ## Scope
 
 - `common/src/androidMain/.../platform/Images.android.kt`
-- Android callers of `base64ToBitmap` read the cache: avatars (also in calls), image, video and link previews (chat, chat list, full-screen viewer), chat-link cards, quotes, compose previews, theme wallpaper, message and call notification icons.
+- Android callers of `base64ToBitmap` read the cache: avatars (also in calls), image, video and link previews (chat, chat list), video previews in the full-screen viewer, chat-link cards, quotes, compose previews, theme wallpaper, contact-request and call notification icons.
 - test: `android/src/androidTest/.../Base64ToBitmapTest.kt`
 - `android/build.gradle.kts`: `testInstrumentationRunner` = `androidx.test.runner.AndroidJUnitRunner`.
