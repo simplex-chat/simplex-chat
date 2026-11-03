@@ -20,7 +20,7 @@ The agent downloads and decrypts the file into `xftp.decrypted` in its work fold
 
 ## Fix
 
-In the `RFDONE` handler, on an error from `renameFile xftpPath fsTargetPath`, the file is copied with `copyFile`. The source is not removed at this call site: after the file status is updated, the agent's work folder is deleted by `agentXFTPDeleteRcvFile` or, if the agent has not yet marked the download complete, the download is marked for the agent's periodic cleanup.
+In the `RFDONE` handler, on an error from `renameFile xftpPath fsTargetPath`, the file is copied with `copyFile`, and then the source is removed with `removeFile`, whose error is ignored. After the file status is updated, the agent's work folder is deleted by `agentXFTPDeleteRcvFile` or, if the agent has not yet marked the download complete, the download is marked for the agent's periodic cleanup.
 
 With `copyFile`, the data is written to a temporary file in the destination folder, which is then renamed over the destination. On an exception during the copy (for example, a full disk), that temporary file is removed and the destination is left unchanged.
 
