@@ -390,7 +390,7 @@ describe("downloads in the agent control chat", () => {
     expect(await control.ownerCommand(alice, {keyword: "receive", params: `#2 ${action.n}`})).toBeUndefined()
     await flushed()
     writeFileSync(path, "report")
-    tools.onFile(fileItem(30, {type: "file", text: "report"}, {type: "rcvComplete"}, {fileSource: {filePath: path}}).file)
+    tools.onFile(event(chatInfoOf(chat, "#2"), fileItem(30, {type: "file", text: "report"}, {type: "rcvComplete"}, {fileSource: {filePath: path}})))
     while (chat.sent.length < 2) await flushed()
     const copy = chat.sent[1].messages[0].fileSource!.filePath
     expect(chat.sent[1]).toEqual({chat: [T.ChatType.Group, 10], messages: [{fileSource: {filePath: copy}, msgContent: {type: "file", text: ""}, quotedItemId: action.card, mentions: {}}]})
@@ -404,7 +404,7 @@ describe("downloads in the agent control chat", () => {
     chat.chats.get("#2")!.items.push(fileItem(30, {type: "file", text: "report"}, {type: "rcvTransfer", rcvProgress: 1, rcvTotal: 2}, {chatDir: {type: "groupRcv", groupMember: bob}}))
     await control.ownerCommand(alice, {keyword: "receive", params: `${action.n}`})
     await flushed()
-    tools.onFile(fileItem(30, {type: "file", text: "report"}, {type: "rcvError", rcvFileError: {type: "auth"}}).file)
+    tools.onFile(event(chatInfoOf(chat, "#2"), fileItem(30, {type: "file", text: "report"}, {type: "rcvError", rcvFileError: {type: "auth"}})))
     await flushed()
     expect(chat.sent.at(-1)!.messages[0].msgContent.text).toBe("Action 1: the file was not received: `Wrong key or unknown file chunk address - most likely file is deleted.`.")
     const send = (await setup()).control

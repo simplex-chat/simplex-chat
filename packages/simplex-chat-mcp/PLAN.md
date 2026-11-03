@@ -159,8 +159,10 @@ DIR/headers.json   {"Authorization": "Bearer <token>"}, written 0600
 DIR/server.json    {name, port, expireHours} of the server      0600
 DIR/lock           PID of the running server                    0600
 DIR/tmp/           the core's temp folder: files in transfer    0700, set before startChat
-DIR/files/CHAT/    files downloaded from CHAT, each named by    0700, created at the first download from CHAT
-                   its file ID and the extension of its name
+DIR/files/CHAT/    files downloaded from CHAT, and files the    0700, created at the first file from CHAT
+                   core received there without a request,
+                   each named by its file ID and the
+                   extension of its name
 DIR/files/sent/    resized copies of sent images, and copies    0700; a copy 0600, a copy of /receive with
                    of the files /receive posts, one folder      the mode of its file
                    per copy, deleted at sndFileCompleteXFTP
@@ -1247,37 +1249,44 @@ perform download:
   startedAt = now
   path = downloadFile(chat, item, file)
 
-downloadFile(chat, item, file), also run by /receive:
+downloadFile(chat, item, file), also run by /receive, and by newChatItems for each received file in status rcvAccepted (a voice file the core receives without a request: Library/Subscriber.hs:2047-2053, :2550-2556):
   a download of the file ID in memory: its promise
   otherwise a new promise in memory, with the download path DIR/files/CHAT/<fileId><extension>   # extension: of file.name when it is "." and 1 to 16 ASCII letters and digits, otherwise none
   then /_get chat <chat> around=<item> count=0, the item's file:
-    rcvComplete              resolved with fileSource.filePath when it is the download path; otherwise rejected, "The file was received outside the agent's files folder."
-    failed, as in file       rejected with its error
+    rcvComplete              keep (below)
+    failed, as in file       fileSource deleted; rejected with its error
     rcvInvitation            mkdir DIR/files/CHAT, mode 0700; /freceive <fileId> approved_relays=on <download path>, without approved_relays=on in mode host   # apiReceiveFile; the core creates the file at that path (getRcvFilePath, Library/Internal.hs:958-965)
     other                    the events below settle it
+
+keep, for a received file in status rcvComplete, with or without a promise:
+  no fileSource: rejected, "The file was received without a path."
+  fileSource.filePath is not the download path and the download path has no file: the file moved there   # a rename; on EXDEV a copy to <download path>.part, a rename of it and a delete of the source
+  resolved with the download path; a failed move: logged, rejected, "The received file could not be moved to the agent's files folder."
 ```
 
 ```
-event                                     the promise of the file ID
-rcvFileComplete                           as rcvComplete above, from chatItem.file
+event                                     the received file of the event's item
+rcvFileComplete                           as rcvComplete above
 rcvFileError                              rejected: the item's file error, or the agent error without an item (Library/Subscriber.hs:440-446)
-rcvFileSndCancelled                       rejected: "The sender cancelled the file.", by rcvFileTransfer.fileId: in a group the event's item is read before the cancel (Library/Subscriber.hs:2662-2671)
-chatItemUpdated, file rcvError, rcvAborted rejected: a bad digest, relays not approved (Library/Subscriber.hs:411-439)
+rcvFileSndCancelled                       the item's fileSource deleted; rejected: "The sender cancelled the file.", by rcvFileTransfer.fileId: in a group the event's item is read before the cancel (Library/Subscriber.hs:2662-2671)
+chatItemUpdated                           as the item's file above: rcvComplete, or failed: a bad digest, relays not approved (Library/Subscriber.hs:411-439)
 ```
 
 Every 60 s while the promise is unsettled:
 
 ```
 step                                        result
-/_get chat <chat> around=<item> count=0     the message or its chat gone: rejected, "The message or its chat was deleted."
+/_get chat <chat> around=<item> count=0     the message or its chat gone: the last fileSource seen deleted; rejected, "The message or its chat was deleted."
                                             otherwise the item's file settles the promise as rcvComplete and failed above
 rcvTransfer, rcvProgress above the          the time of progress: now
 largest one seen
-10 minutes since the start or the time      rejected, "The download made no progress for 10 minutes and was cancelled."; /fcancel <fileId>
+10 minutes since the start or the time      rejected, "The download made no progress for 10 minutes and was cancelled."; /fcancel <fileId>; the last fileSource seen deleted
 of progress                                 (an XFTP file returns to rcvInvitation, an inline file ends cancelled: CancelFile, Library/Commands.hs:3609-3624)
 ```
 
 - The check ends a download whose message is deleted or moderated, whose chat is deleted by `leave` or `/leave`, whose file server stays unreachable (`RFWARN` only, Library/Subscriber.hs:429-433), or whose inline chunks do not arrive.
+- The last fileSource seen is the download path until a read shows the item's fileSource.
+- A file received without a request keeps the core's path in the database; the file field shows it as received without a path, and `download` and `/receive` return the download path.
 - A settled promise leaves memory and its check stops; a later `downloadFile` reads the item's file again.
 - `rcvFileDescrReady` of any file makes the waiting calls read their item again; the server counts these events, so that one arriving during a read is not missed.
 

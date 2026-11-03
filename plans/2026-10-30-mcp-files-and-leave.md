@@ -22,7 +22,7 @@ Phases:
 4. `download` is a new action tool; the owner approves each download, or all files of one chat.
 5. A download card shows the file's own preview and names the file's servers.
 6. `/receive CHAT N` makes the server download the file and forward it into the agent control chat; the card stays pending.
-7. Downloads go to `DATA/files/<chat>/<file ID><extension>`, one folder per chat; the extension of the file's name is kept when it has only letters and digits. The file field has a path only for a file downloaded there.
+7. Downloads go to `DATA/files/<chat>/<file ID><extension>`, one folder per chat; the extension of the file's name is kept when it has only letters and digits. The file field has a path only for a file downloaded there. A file the core receives without a request is moved there when it is received.
 8. `send` takes `file`, an absolute path; `text` becomes the caption.
 9. Images are sent with a core-made preview and a core-resized copy; other files unchanged.
 10. Paths of private keys and of the server's own secrets are refused; the refusal is posted to the agent control chat.
@@ -279,27 +279,29 @@ status       meaning
 performing   wait passed after the approval; the download continues; the same call again attaches to the action
 ```
 
-`downloadFile(chat, item, file)`:
+`downloadFile(chat, item, file)`, also for each received file that `newChatItems` shows in status rcvAccepted:
 ```
 a download of the file ID in memory: its promise
 otherwise a new promise in memory, then:
   path DATA/files/CHAT/<file ID><extension>; the folder created with mode 0700
   the item's file status:
-    rcvComplete              resolved with fileSource.filePath when it is the path; otherwise rejected
+    rcvComplete              moved to path when its fileSource differs and path has no file; resolved with path
+    failed                   fileSource deleted; rejected
     rcvAccepted, rcvTransfer the events settle it
     other                    apiReceiveFile(fileId, path); the core creates the file at that path (getRcvFilePath, Library/Internal.hs:958-965)
 ```
 
-`onFile`:
+`onFile`, for every received file of an event's item, with or without a download:
 ```
-event                                        promise of the file ID
+event                                        file and promise of the file ID
 rcvFileComplete                              as rcvComplete above
-rcvFileError                                 rejected: the item's file status, else the agent error (Library/Subscriber.hs:440-446)
-rcvFileSndCancelled                          rejected: "The sender cancelled the file.", by rcvFileTransfer.fileId
-every 60 s, the item read again              gone: rejected, "The message or its chat was deleted."; its file as the events above
-10 minutes without rcvTransfer progress      rejected, "The download made no progress for 10 minutes and was cancelled."; apiCancelFile
-chatItemUpdated, file rcvError or rcvAborted rejected: file digest, relays not approved (Library/Subscriber.hs:415-439)
+rcvFileError                                 as failed above, else rejected with the agent error (Library/Subscriber.hs:440-446)
+rcvFileSndCancelled                          fileSource deleted; rejected: "The sender cancelled the file.", by rcvFileTransfer.fileId
+every 60 s, the item read again              gone: the last fileSource deleted; rejected, "The message or its chat was deleted."; its file as the events above
+10 minutes without rcvTransfer progress      rejected, "The download made no progress for 10 minutes and was cancelled."; apiCancelFile; the last fileSource deleted
+chatItemUpdated                              as rcvComplete and failed above: file digest, relays not approved (Library/Subscriber.hs:415-439)
 ```
+- A move is a rename; across file systems (EXDEV), a copy to `<path>.part`, its rename to path and a delete of the source.
 
 Card size: the image field of a card counts against 15000 bytes with its text:
 ```

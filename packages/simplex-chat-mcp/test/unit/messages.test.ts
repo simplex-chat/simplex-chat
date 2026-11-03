@@ -1,4 +1,5 @@
 import * as childProcess from "child_process"
+import * as fs from "fs"
 import {chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync} from "fs"
 import * as os from "os"
 import {basename, dirname, join} from "path"
@@ -1009,7 +1010,7 @@ describe("download", () => {
     return {serverId: 1, server, preset: false, enabled: true, roles: {}, deleted: false}
   }
 
-  const completed = (path: string): T.CIFile => fileItem(30, image, {type: "rcvComplete"}, {fileSource: {filePath: path}}).file!
+  const completed = (path: string): T.AChatItem => event(trail, fileItem(30, image, {type: "rcvComplete"}, {fileSource: {filePath: path}}))
 
   it("downloads an offered file after the approval and returns its path", async () => {
     const chat = new FakeChat()
@@ -1073,13 +1074,13 @@ describe("download", () => {
       settle()
       return (await downloading)!.structuredContent!
     }
-    expect(await download(() => tools.onFile(fileItem(30, image, {type: "rcvError", rcvFileError: {type: "noFile"}}).file))).toMatchObject({status: "failed", error: "File not found - most likely file was deleted or cancelled."})
-    expect(await download(() => tools.onFile(fileItem(30, image, {type: "rcvCancelled"}).file))).toMatchObject({status: "failed", error: "The file was cancelled."})
+    expect(await download(() => tools.onFile(event(trail, fileItem(30, image, {type: "rcvError", rcvFileError: {type: "noFile"}}))))).toMatchObject({status: "failed", error: "File not found - most likely file was deleted or cancelled."})
+    expect(await download(() => tools.onFile(event(trail, fileItem(30, image, {type: "rcvCancelled"}))))).toMatchObject({status: "failed", error: "The file was cancelled."})
     const cancelled = {type: "rcvFileSndCancelled", user, chatItem: event(trail, fileItem(30, image, {type: "rcvTransfer", rcvProgress: 1, rcvTotal: 2})), rcvFileTransfer: {fileId: 7}} as unknown as Parameters<AgentTools["onFileCancelled"]>[0]
     expect(await download(() => tools.onFileCancelled(cancelled))).toMatchObject({status: "failed", error: "The sender cancelled the file."})
     const gone = {type: "rcvFileError", user, agentError: {type: "FILE", fileErr: {type: "NO_FILE"}}, rcvFileTransfer: {fileId: 7}} as unknown as Parameters<AgentTools["onFileError"]>[0]
     expect(await download(() => tools.onFileError(gone))).toMatchObject({status: "failed", error: "SimpleX error: errorAgent: FILE: NO_FILE"})
-    expect(await download(() => tools.onFile(fileItem(30, image, {type: "rcvComplete"}).file))).toMatchObject({status: "failed", error: "The file was received outside the agent's files folder."})
+    expect(await download(() => tools.onFile(event(trail, fileItem(30, image, {type: "rcvComplete"}))))).toMatchObject({status: "failed", error: "The file was received without a path."})
   })
 
   it("fails when no part of the file arrives for 10 minutes, and cancels the file", async () => {
@@ -1113,6 +1114,67 @@ describe("download", () => {
     chat.chats.delete("#15")
     await jest.advanceTimersByTimeAsync(60_000)
     expect((await downloading)!.structuredContent).toEqual({action: 1, status: "failed", error: "The message or its chat was deleted."})
+  })
+
+  describe("a file received without a download", () => {
+    let elsewhere: string
+
+    beforeEach(() => {
+      elsewhere = realpathSync(mkdtempSync(join(os.tmpdir(), "simplex-mcp-received-")))
+      rmSync(downloaded, {force: true})
+    })
+
+    afterEach(() => {
+      rmSync(elsewhere, {recursive: true, force: true})
+      rmSync(downloaded, {force: true})
+    })
+
+    it("is moved into the chat's folder when it is received, and a download returns it there", async () => {
+      const chat = new FakeChat()
+      const source = join(elsewhere, "report.pdf")
+      writeFileSync(source, "voice")
+      const received = offeredIn(chat, {type: "rcvComplete"}, {filePath: source})
+      const {tools, actions} = downloadTools(chat)
+      tools.onFile(event(trail, received))
+      expect([existsSync(source), readFileSync(downloaded, "utf8")]).toEqual([false, "voice"])
+      const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+      await flushed()
+      actions.approve(actions.get(1)!, "Alice")
+      expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
+    })
+
+    it("is copied and then deleted when the rename crosses file systems", () => {
+      const chat = new FakeChat()
+      const source = join(elsewhere, "report.pdf")
+      writeFileSync(source, "voice")
+      const received = offeredIn(chat, {type: "rcvComplete"}, {filePath: source})
+      const {tools} = downloadTools(chat)
+      const rename = jest.spyOn(fs, "renameSync").mockImplementationOnce(() => {
+        throw Object.assign(new Error("EXDEV: cross-device link not permitted"), {code: "EXDEV"})
+      })
+      tools.onFile(event(trail, received))
+      expect([existsSync(source), readFileSync(downloaded, "utf8"), existsSync(`${downloaded}.part`)]).toEqual([false, "voice", false])
+      expect(rename).toHaveBeenCalledTimes(2)
+    })
+
+    it("leaves no partial file when the sender cancels it or its message is deleted", async () => {
+      jest.useFakeTimers()
+      jest.spyOn(process.stderr, "write").mockImplementation(() => true)
+      const chat = new FakeChat()
+      const cancelled = join(elsewhere, "cancelled.pdf")
+      writeFileSync(cancelled, "part")
+      const {tools} = downloadTools(chat)
+      tools.onFileCancelled({chatItem: event(trail, fileItem(30, image, {type: "rcvTransfer", rcvProgress: 0, rcvTotal: 1}, {fileSource: {filePath: cancelled}})), rcvFileTransfer: {fileId: 7}} as unknown as Parameters<AgentTools["onFileCancelled"]>[0])
+      expect(existsSync(cancelled)).toBe(false)
+      const partial = join(elsewhere, "report.pdf")
+      writeFileSync(partial, "part")
+      const incoming = offeredIn(chat, {type: "rcvAccepted"}, {filePath: partial})
+      tools.onNewItems([event(trail, incoming)])
+      await jest.advanceTimersByTimeAsync(0)
+      chat.chats.delete("#15")
+      await jest.advanceTimersByTimeAsync(60_000)
+      expect(existsSync(partial)).toBe(false)
+    })
   })
 
   it("shows a rejected file in the messages that follow", async () => {

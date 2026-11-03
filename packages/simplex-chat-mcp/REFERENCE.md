@@ -298,6 +298,8 @@ A `send` to a chat that `list` shows with `connected: false` is refused before a
 
 A received message with a file has a `file` field: its name, size, type (image, video, voice or file) and status. Status `offered` means `download` can fetch it; `received` comes with the path when `download` or `/receive` downloaded the file; `rejected` means you rejected its download, or it expired; `failed` comes with the error, also for a file above the size its sender may send. A downloaded file is named by its file ID and the extension of its name, when the extension has only letters and digits: the name the sender gave stays in the `name` field. `download` first waits, up to `wait` seconds, for the sender to finish the upload; when it has not finished by then, the call returns an error that asks to call again later. A `download` that runs past its `wait` after the approval returns status `performing`, and the same call again picks it up. A download fails when the sender cancels the file, when the message or its chat is deleted, or when no part of the file arrives for 10 minutes; the server then cancels it.
 
+A short voice message can arrive with its file already received. The server moves such a file into the chat's folder under the same naming when it is received, and its message shows it as `received` without a path; `download` returns its path there after the approval. A partial file of a transfer that fails or is cancelled is deleted.
+
 `send` with `file`, an absolute path, sends that file with `text` as its caption:
 - `.jpg`, `.jpeg` and `.png` as an image, resized by the SimpleX core to the size the apps send, with a preview the core makes;
 - `.gif` and `.webp` as an image, unchanged, with a gray preview;
@@ -393,7 +395,8 @@ register options:
   server.json        name, port and expiry of the server, read by register
   lock               PID of the running server
   tmp/               the SimpleX core's work folder for files in transfer
-  files/#3/          files downloaded from chat #3, each named by its file ID and the extension of its name, such as 12.pdf
+  files/#3/          files downloaded from chat #3, and files received there without a download, each named by its file ID
+                     and the extension of its name, such as 12.pdf
   files/sent/        resized copies of the images the agent sends, and copies of the files /receive sends you under their names;
                      each is deleted when its upload completes or fails, and all at start
 ```

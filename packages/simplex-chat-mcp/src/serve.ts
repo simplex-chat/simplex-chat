@@ -133,10 +133,11 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
         for (const ci of event.chatItems) {
           if (ci.chatInfo.type === "group" && ci.chatInfo.groupInfo.groupId === control.groupId && ci.chatInfo.groupChatScope === undefined) control.onMessage(ci)
         }
+        tools.onNewItems(event.chatItems)
         watch.deliver(event.chatItems)
         return
       case "chatItemUpdated":
-        tools.onFile(event.chatItem.chatItem.file)
+        tools.onFile(event.chatItem)
         return watch.update(event.chatItem)
       case "chatItemsDeleted":
         return watch.remove(event.chatItemDeletions.map(({deletedChatItem}) => deletedChatItem))
@@ -145,7 +146,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
       case "userJoinedGroup":
         return tools.onUserJoinedGroup(event)
       case "rcvFileComplete":
-        return tools.onFile(event.chatItem.chatItem.file)
+        return tools.onFile(event.chatItem)
       case "rcvFileSndCancelled":
         return tools.onFileCancelled(event)
       case "rcvFileError":
