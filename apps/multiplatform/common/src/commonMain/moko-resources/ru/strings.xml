@@ -2858,7 +2858,7 @@
     <string name="show_signature">Показывать подпись</string>
     <string name="show_encryption">Показывать шифрование</string>
     <string name="signature_missing_alert_title">Подпись отсутствует</string>
-    <string name="signature_missing_alert_desc">Канал требует подпись сообщений, но у этого сообщения подпись отсутствует.</string>
+    <string name="signature_missing_alert_desc">Отправлено до того, как канал начал подписывать сообщения, или подделано.</string>
     <string name="verify_simplex_name_action">Проверить имя</string>
     <string name="verify_simplex_names">Проверять SimpleX имена</string>
     <string name="simplex_name_not_verified">SimpleX имя не проверено</string>

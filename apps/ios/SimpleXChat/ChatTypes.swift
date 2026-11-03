@@ -275,7 +275,7 @@ public enum ChatLayout: Hashable {
     public var displayName: String {
         switch self {
         case .classic: NSLocalizedString("Classic", comment: "chat layout")
-        case .terminal: NSLocalizedString("Terminal", comment: "chat layout")
+        case .terminal: NSLocalizedString("Flat", comment: "chat layout")
         case let .unknown(text): text
         }
     }
@@ -1130,9 +1130,9 @@ public struct ContactUserPreferences: Decodable, Hashable {
 
     public static let sampleData = ContactUserPreferences(
         timedMessages: ContactUserPreference<TimedMessagesPreference>(
-            enabled: FeatureEnabled(forUser: false, forContact: false),
+            enabled: FeatureEnabled(forUser: true, forContact: true),
             userPreference: ContactUserPref<TimedMessagesPreference>.user(preference: TimedMessagesPreference(allow: .yes)),
-            contactPreference: TimedMessagesPreference(allow: .no)
+            contactPreference: TimedMessagesPreference(allow: .yes)
         ),
         fullDelete: ContactUserPreference<SimplePreference>(
             enabled: FeatureEnabled(forUser: false, forContact: false),
@@ -1702,7 +1702,7 @@ public struct ContactFeaturesAllowed: Equatable, Hashable {
     }
 
     public static let sampleData = ContactFeaturesAllowed(
-        timedMessagesAllowed: false,
+        timedMessagesAllowed: true,
         timedMessagesTTL: nil,
         fullDelete: ContactFeatureAllowed.userDefault(.no),
         reactions: ContactFeatureAllowed.userDefault(.yes),
@@ -3310,7 +3310,7 @@ public enum MsgVerified: Decodable, Equatable, Hashable {
         switch self {
         case .sigMissing: return (
                 NSLocalizedString("Signature missing", comment: "alert title"),
-                NSLocalizedString("The message was sent before the channel started signing messages, or it is fake.", comment: "alert message")
+                NSLocalizedString("Sent before the channel started signing, or fake.", comment: "alert message")
             )
         default: return nil
         }

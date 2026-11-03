@@ -1341,6 +1341,11 @@ swipe action</note>
         <target>Apparence</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Apple did not sign this purchase, so it cannot be verified." xml:space="preserve">
+        <source>Apple did not sign this purchase, so it cannot be verified.</source>
+        <target>Apple n’a pas signé cet achat, il ne peut donc pas être vérifié.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Apply" xml:space="preserve">
         <source>Apply</source>
         <target>Appliquer</target>
@@ -1737,6 +1742,11 @@ au sein de votre réseau</target>
         <source>Businesses</source>
         <target>Entreprises</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Buy badges in the App Store version of the app." xml:space="preserve">
+        <source>Buy badges in the App Store version of the app.</source>
+        <target>Achetez des badges dans la version App Store de l’application.</target>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Buy in browser" xml:space="preserve">
         <source>Buy in browser</source>
@@ -2893,11 +2903,6 @@ Il s'agit de votre propre lien unique !</target>
       <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve">
         <source>Crowdfunding on Wefunder</source>
         <target>Financement participatif sur Wefunder</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Crowdfunding on Wefunder." xml:space="preserve">
-        <source>Crowdfunding on Wefunder.</source>
-        <target>Financement participatif sur Wefunder.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current Passcode" xml:space="preserve">
@@ -5165,11 +5170,6 @@ Erreur : %2$@</target>
         <target>Aidez les admins à modérer leurs groupes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Help keep the network running — send files up to 2 GB." xml:space="preserve">
-        <source>Help keep the network running — send files up to 2 GB.</source>
-        <target>Contribuez au fonctionnement du réseau — envoyez des fichiers jusqu’à 2 Go.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Hidden" xml:space="preserve">
         <source>Hidden</source>
         <target>Caché</target>
@@ -6796,6 +6796,11 @@ Le chiffrement le plus sûr.</target>
         <target>Aucun relais</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="No renewal: the badge ends when the prepaid months run out." xml:space="preserve">
+        <source>No renewal: the badge ends when the prepaid months run out.</source>
+        <target>Pas de renouvellement : le badge expire à la fin des mois prépayés.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="No servers for private message routing." xml:space="preserve">
         <source>No servers for private message routing.</source>
         <target>Pas de serveurs pour le routage privé des messages.</target>
@@ -7522,11 +7527,6 @@ Erreur : %@</target>
       <trans-unit id="Port" xml:space="preserve">
         <source>Port</source>
         <target>Port</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out." xml:space="preserve">
-        <source>Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out.</source>
-        <target>Les mois prépayés n’ont pas de date de facturation. Le badge est renouvelé chaque mois à partir du solde déjà payé et expire lorsque celui-ci est épuisé.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
@@ -8428,11 +8428,6 @@ swipe action</note>
         <source>Sandbox purchase</source>
         <target>Achat test</target>
         <note>alert title</note>
-      </trans-unit>
-      <trans-unit id="Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app." xml:space="preserve">
-        <source>Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app.</source>
-        <target>Les achats de test ne sont pas crédités. Les badges ne peuvent être achetés que dans la version de l’application disponible sur l’App Store.</target>
-        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
         <source>Save</source>
@@ -9779,16 +9774,6 @@ alert title</note>
         <target>Supporter</target>
         <note>badge type</note>
       </trans-unit>
-      <trans-unit id="Supporter badge ❤️" xml:space="preserve">
-        <source>Supporter badge ❤️</source>
-        <target>Badge de supporter ❤️</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Supporter perks" xml:space="preserve">
-        <source>Supporter perks</source>
-        <target>Avantages des supporters</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Supporter: 2 GB files available for 7 days." xml:space="preserve">
         <source>Supporter: 2 GB files available for 7 days.</source>
         <target>Supporter : fichiers de 2 Go disponibles pendant 7 jours.</target>
@@ -10244,11 +10229,6 @@ vos contacts et vos groupes.</target>
         <target>La boutique n’a pas confirmé cet achat.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store." xml:space="preserve">
-        <source>The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store.</source>
-        <target>La boutique a renvoyé une transaction qui n’a pas été signée par Apple. SimpleX ne peut pas vérifier cet achat auprès de l’App Store.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve">
         <source>The text you pasted is not a SimpleX link.</source>
         <target>Le texte collé n'est pas un lien SimpleX.</target>
@@ -10327,11 +10307,6 @@ vos contacts et vos groupes.</target>
       <trans-unit id="This app version cannot verify this badge. Please update the app." xml:space="preserve">
         <source>This app version cannot verify this badge. Please update the app.</source>
         <target>Cette version de l’application ne permet pas de vérifier ce badge. Veuillez mettre à jour l’application.</target>
-        <note>alert message</note>
-      </trans-unit>
-      <trans-unit id="This app version is too old for the badge service. Please update the app." xml:space="preserve">
-        <source>This app version is too old for the badge service. Please update the app.</source>
-        <target>Cette version de l’application est trop ancienne pour le service des badges. Veuillez mettre à jour l’application.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This badge could not be verified and may not be genuine." xml:space="preserve">
@@ -10420,11 +10395,6 @@ alert subtitle</note>
         <target>Voici votre lien pour le canal %@ !</target>
         <note>new chat action</note>
       </trans-unit>
-      <trans-unit id="This link is not supported by this app version. Please check for app updates." xml:space="preserve">
-        <source>This link is not supported by this app version. Please check for app updates.</source>
-        <target>Ce lien n’est pas pris en charge par cette version de l’application. Veuillez vérifier si des mises à jour sont disponibles.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." xml:space="preserve">
         <source>This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</source>
         <target>Ce lien nécessite une version plus récente. Mettez l'application à jour ou demandez à votre contact d'envoyer un lien compatible.</target>
@@ -10445,14 +10415,9 @@ alert subtitle</note>
         <target>Ce profil possède déjà un badge.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="This profile already has a badge. Redeem the code on another profile, or once this badge ends." xml:space="preserve">
-        <source>This profile already has a badge. Redeem the code on another profile, or once this badge ends.</source>
-        <target>Ce profil possède déjà un badge. Utilisez le code sur un autre profil ou lorsque ce badge aura expiré.</target>
-        <note>alert message</note>
-      </trans-unit>
-      <trans-unit id="This purchase was already credited to a badge on another device or profile." xml:space="preserve">
-        <source>This purchase was already credited to a badge on another device or profile.</source>
-        <target>Cet achat a déjà été crédité sur un badge associé à un autre appareil ou profil.</target>
+      <trans-unit id="This purchase is already used on another profile." xml:space="preserve">
+        <source>This purchase is already used on another profile.</source>
+        <target>Cet achat est déjà utilisé sur un autre profil.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
@@ -10832,10 +10797,20 @@ Une authentification vous sera demandée avant que cette fonctionnalité ne soit
         <target>Mettre à jour les paramètres ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Update the app to open this link." xml:space="preserve">
+        <source>Update the app to open this link.</source>
+        <target>Mettez à jour l’application pour ouvrir ce lien.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Update the app to register a SimpleX domain" xml:space="preserve">
         <source>Update the app to register a SimpleX domain</source>
         <target>Mettez à jour l’application pour enregistrer un domaine SimpleX</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Update the app to use badges." xml:space="preserve">
+        <source>Update the app to use badges.</source>
+        <target>Mettez à jour l’application pour utiliser les badges.</target>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Updated conditions" xml:space="preserve">
         <source>Updated conditions</source>
@@ -11559,16 +11534,6 @@ Répéter la demande d'adhésion ?</target>
         <source>You can now chat with %@</source>
         <target>Vous pouvez maintenant envoyer des messages à %@</target>
         <note>notification body</note>
-      </trans-unit>
-      <trans-unit id="You can now invest in SimpleX Chat" xml:space="preserve">
-        <source>You can now invest in SimpleX Chat</source>
-        <target>Vous pouvez désormais investir dans SimpleX Chat</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You can now invest in SimpleX Chat! 🚀" xml:space="preserve">
-        <source>You can now invest in SimpleX Chat! 🚀</source>
-        <target>Vous pouvez désormais investir dans SimpleX Chat ! 🚀</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can send messages to %@ from Archived contacts." xml:space="preserve">
         <source>You can send messages to %@ from Archived contacts.</source>
