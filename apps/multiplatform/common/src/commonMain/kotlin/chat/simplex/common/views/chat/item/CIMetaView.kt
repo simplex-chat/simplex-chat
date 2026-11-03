@@ -27,7 +27,6 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.appPreferences
 import chat.simplex.common.ui.theme.isInDarkTheme
 import chat.simplex.res.*
-import kotlinx.datetime.Clock
 
 @Composable
 fun CIMetaView(
@@ -51,7 +50,7 @@ fun CIMetaView(
   showViaProxy: Boolean,
   lineHeightColor: Color = metaColor,
 ) {
-  val timeStyle = LocalTextStyle.current.merge(terminalTextStyle(12.sp, lineHeightColor))
+  val timeStyle = LocalTextStyle.current.merge(chatTextStyle(12.sp, lineHeightColor))
   Row(Modifier.padding(start = 3.dp), verticalAlignment = Alignment.CenterVertically) {
     if (chatItem.isDeletedContent) {
       Text(
@@ -225,7 +224,7 @@ private fun reserveSpaceForMeta(
 }
 
 @Composable
-fun terminalReserveSpaceForMeta(
+fun metaReserveCopy(
   meta: CIMeta,
   chatTTL: Int?,
   encrypted: Boolean?,
@@ -234,16 +233,18 @@ fun terminalReserveSpaceForMeta(
   showStatus: Boolean = true,
   showEdited: Boolean = true,
   showViaProxy: Boolean,
-  showTimestamp: Boolean
+  showTimestamp: Boolean,
+  breakBefore: Boolean = false
 ): AnnotatedString =
-  terminalReserveSpaceForMeta(
+  metaReserveCopy(
     meta, chatTTL, encrypted, signedFileVerified, secondaryColor, showStatus, showEdited, showViaProxy, showTimestamp,
     density = LocalDensity.current,
     bodyFontSize = MaterialTheme.typography.body1.fontSize,
-    direction = LocalLayoutDirection.current
+    direction = LocalLayoutDirection.current,
+    breakBefore = breakBefore
   )
 
-fun terminalReserveSpaceForMeta(
+fun metaReserveCopy(
   meta: CIMeta,
   chatTTL: Int?,
   encrypted: Boolean?,
@@ -255,12 +256,13 @@ fun terminalReserveSpaceForMeta(
   showTimestamp: Boolean,
   density: Density,
   bodyFontSize: TextUnit,
-  direction: LayoutDirection
+  direction: LayoutDirection,
+  breakBefore: Boolean = false
 ): AnnotatedString {
   val spaceStyle = SpanStyle(fontSize = with(density) { bodyFontSize.value.dp.toSp() }, fontWeight = FontWeight.Normal)
   val textStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Normal)
   return buildAnnotatedString {
-    append(if (direction == LayoutDirection.Ltr) "\u2060\u200E" else "\u2060\u200F")
+    append((if (breakBefore) " " else "\u2060") + if (direction == LayoutDirection.Ltr) "\u200E" else "\u200F")
     reserveSpaceForMeta(
       meta, chatTTL, encrypted, secondaryColor, showStatus, showEdited, showViaProxy, showTimestamp, signedFileVerified, tallIconSpace = "\u00A0",
       spaces = { withStyle(spaceStyle) { append(it.replace(' ', '\u00A0')) } },
@@ -279,10 +281,10 @@ private fun StatusIconText(icon: Painter, color: Color) {
 
 @Preview
 @Composable
-fun PreviewCIMetaView() {
+fun PreviewCIMetaView() = BubblePreview {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
+      1, CIDirection.DirectSnd(), previewDate, "hello"
     ),
     null,
     showViaProxy = false,
@@ -292,10 +294,10 @@ fun PreviewCIMetaView() {
 
 @Preview
 @Composable
-fun PreviewCIMetaViewUnread() {
+fun PreviewCIMetaViewUnread() = BubblePreview {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
+      1, CIDirection.DirectSnd(), previewDate, "hello",
       status = CIStatus.RcvNew()
     ),
     null,
@@ -306,10 +308,10 @@ fun PreviewCIMetaViewUnread() {
 
 @Preview
 @Composable
-fun PreviewCIMetaViewSendFailed() {
+fun PreviewCIMetaViewSendFailed() = BubblePreview {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
+      1, CIDirection.DirectSnd(), previewDate, "hello",
       status = CIStatus.CISSndError(SndError.Other("CMD SYNTAX"))
     ),
     null,
@@ -320,10 +322,10 @@ fun PreviewCIMetaViewSendFailed() {
 
 @Preview
 @Composable
-fun PreviewCIMetaViewSendNoAuth() {
+fun PreviewCIMetaViewSendNoAuth() = BubblePreview {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndErrorAuth()
+      1, CIDirection.DirectSnd(), previewDate, "hello", status = CIStatus.SndErrorAuth()
     ),
     null,
     showViaProxy = false,
@@ -333,10 +335,10 @@ fun PreviewCIMetaViewSendNoAuth() {
 
 @Preview
 @Composable
-fun PreviewCIMetaViewSendSent() {
+fun PreviewCIMetaViewSendSent() = BubblePreview {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndSent(SndCIStatusProgress.Complete)
+      1, CIDirection.DirectSnd(), previewDate, "hello", status = CIStatus.SndSent(SndCIStatusProgress.Complete)
     ),
     null,
     showViaProxy = false,
@@ -346,10 +348,10 @@ fun PreviewCIMetaViewSendSent() {
 
 @Preview
 @Composable
-fun PreviewCIMetaViewEdited() {
+fun PreviewCIMetaViewEdited() = BubblePreview {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
+      1, CIDirection.DirectSnd(), previewDate, "hello",
       itemEdited = true
     ),
     null,
@@ -360,10 +362,10 @@ fun PreviewCIMetaViewEdited() {
 
 @Preview
 @Composable
-fun PreviewCIMetaViewEditedUnread() {
+fun PreviewCIMetaViewEditedUnread() = BubblePreview {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectRcv(), Clock.System.now(), "hello",
+      1, CIDirection.DirectRcv(), previewDate, "hello",
       itemEdited = true,
       status= CIStatus.RcvNew()
     ),
@@ -375,10 +377,10 @@ fun PreviewCIMetaViewEditedUnread() {
 
 @Preview
 @Composable
-fun PreviewCIMetaViewEditedSent() {
+fun PreviewCIMetaViewEditedSent() = BubblePreview {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
+      1, CIDirection.DirectSnd(), previewDate, "hello",
       itemEdited = true,
       status= CIStatus.SndSent(SndCIStatusProgress.Complete)
     ),
@@ -390,9 +392,9 @@ fun PreviewCIMetaViewEditedSent() {
 
 @Preview
 @Composable
-fun PreviewCIMetaViewDeletedContent() {
+fun PreviewCIMetaViewDeletedContent() = BubblePreview {
   CIMetaView(
-    chatItem = ChatItem.getDeletedContentSampleData(),
+    chatItem = ChatItem.getDeletedContentSampleData(ts = previewDate),
     null,
     showViaProxy = false,
     showTimestamp = true

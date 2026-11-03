@@ -17,10 +17,10 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.item.previewDate
 import chat.simplex.common.views.helpers.ProfileImage
 import chat.simplex.common.views.usersettings.ProfilePreview
 import chat.simplex.res.*
-import kotlinx.datetime.Clock
 
 // Spec: spec/services/calls.md#IncomingCallAlertView
 @Composable
@@ -117,7 +117,7 @@ fun PreviewIncomingCallAlertLayout() {
         callType = CallType(media = CallMediaType.Audio, capabilities = CallCapabilities(encryption = false)),
         sharedKey = null,
         callUUID = "",
-        callTs = Clock.System.now()
+        callTs = previewDate
       ),
       chatModel = ChatModel,
       rejectCall = {},

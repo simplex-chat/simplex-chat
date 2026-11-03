@@ -101,60 +101,68 @@ fun CIGroupInvitationView(
           .padding(start = 8.dp, end = 12.dp, top = 8.dp, bottom = 4.dp),
         contentAlignment = Alignment.BottomEnd
       ) {
-        Box(
-          contentAlignment = Alignment.Center
-        ) {
-          Column(
-            Modifier
-              .defaultMinSize(minWidth = 220.dp)
-              .padding(bottom = 4.dp),
+        @Composable
+        fun invitationCard() {
+          Box(
+            contentAlignment = Alignment.Center
           ) {
-            groupInfoView()
-            val secondaryColor = MaterialTheme.colors.secondary
-            Divider(Modifier.fillMaxWidth().padding(top = 8.dp))
-            Column(Modifier.padding(top = 8.dp, bottom = 4.dp, start = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-              if (groupChat) {
-                Text(if (sent) String.format(stringResource(MR.strings.group_invitation_for_member_only), groupInvitation.localDisplayName) else stringResource(MR.strings.group_invitation_for_you_only), fontSize = 12.sp, color = secondaryColor)
-              }
-              if (action) {
-                Text(groupInvitationStr(), fontSize = 13.sp, lineHeight = 18.sp)
-                Text(
-                  buildAnnotatedString {
-                    append(generalGetString(if (chatIncognito) MR.strings.group_invitation_tap_to_join_incognito else MR.strings.group_invitation_tap_to_join))
-                    if (inlineMeta != null) {
-                      withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, timedMessagesTTL, encrypted = null, showStatus = false, showEdited = false, secondaryColor = secondaryColor, showTimestamp = showTimestamp)) }
-                    }
-                  },
-                  color = if (inProgress.value)
-                    MaterialTheme.colors.secondary
-                  else
-                    if (chatIncognito) Indigo else MaterialTheme.colors.primary
-                )
-              } else {
-                Text(
-                  buildAnnotatedString {
-                    append(groupInvitationStr())
-                    if (inlineMeta != null) {
-                      withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, timedMessagesTTL, encrypted = null, showStatus = false, showEdited = false, secondaryColor = secondaryColor, showTimestamp = showTimestamp)) }
-                    }
-                  },
-                  fontSize = 13.sp,
-                  lineHeight = 18.sp,
-                )
+            Column(
+              Modifier
+                .defaultMinSize(minWidth = 220.dp)
+                .padding(bottom = 4.dp),
+            ) {
+              groupInfoView()
+              val secondaryColor = MaterialTheme.colors.secondary
+              Divider(Modifier.fillMaxWidth().padding(top = 8.dp))
+              Column(Modifier.padding(top = 8.dp, bottom = 4.dp, start = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                if (groupChat) {
+                  Text(if (sent) String.format(stringResource(MR.strings.group_invitation_for_member_only), groupInvitation.localDisplayName) else stringResource(MR.strings.group_invitation_for_you_only), fontSize = 12.sp, color = secondaryColor)
+                }
+                if (action) {
+                  Text(groupInvitationStr(), fontSize = 13.sp, lineHeight = 18.sp)
+                  Text(
+                    buildAnnotatedString {
+                      append(generalGetString(if (chatIncognito) MR.strings.group_invitation_tap_to_join_incognito else MR.strings.group_invitation_tap_to_join))
+                      if (inlineMeta != null) {
+                        withStyle(reserveTimestampStyle) { append(metaReserveCopy(ci.meta, timedMessagesTTL, encrypted = null, signedFileVerified = null, secondaryColor = secondaryColor, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = showTimestamp)) }
+                      }
+                    },
+                    color = if (inProgress.value)
+                      MaterialTheme.colors.secondary
+                    else
+                      if (chatIncognito) Indigo else MaterialTheme.colors.primary,
+                    style = LocalTextStyle.current.merge(bubbleLineHeight(16.sp * INTER_LINE_HEIGHT))
+                  )
+                } else {
+                  Text(
+                    buildAnnotatedString {
+                      append(groupInvitationStr())
+                      if (inlineMeta != null) {
+                        withStyle(reserveTimestampStyle) { append(metaReserveCopy(ci.meta, timedMessagesTTL, encrypted = null, signedFileVerified = null, secondaryColor = secondaryColor, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = showTimestamp)) }
+                      }
+                    },
+                    fontSize = 13.sp,
+                    style = LocalTextStyle.current.copy(lineHeight = 18.sp).merge(bubbleLineHeight(18.sp)),
+                  )
+                }
               }
             }
-          }
 
-          if (progressByTimeout) {
-            CircularProgressIndicator(
-              Modifier.size(32.dp),
-              color = if (isInDarkTheme()) FileDark else FileLight,
-              strokeWidth = 3.dp
-            )
+            if (progressByTimeout) {
+              CircularProgressIndicator(
+                Modifier.size(32.dp),
+                color = if (isInDarkTheme()) FileDark else FileLight,
+                strokeWidth = 3.dp
+              )
+            }
           }
         }
 
-        inlineMeta?.invoke()
+        if (inlineMeta != null) {
+          MetaOnLastBaseline(inlineMeta) { invitationCard() }
+        } else {
+          invitationCard()
+        }
       }
     }
   }
@@ -165,10 +173,10 @@ fun CIGroupInvitationView(
   name = "Dark Mode"
 )*/
 @Composable
-fun PendingCIGroupInvitationViewPreview() {
+fun PendingCIGroupInvitationViewPreview() = BubblePreview {
   SimpleXTheme {
     CIGroupInvitationView(
-      ci = ChatItem.getGroupInvitationSample(),
+      ci = previewDated(ChatItem.getGroupInvitationSample()),
       groupInvitation = CIGroupInvitation.getSample(),
       memberRole = GroupMemberRole.Admin,
       joinGroup = { _, _ -> },
@@ -183,10 +191,10 @@ fun PendingCIGroupInvitationViewPreview() {
   name = "Dark Mode"
 )*/
 @Composable
-fun CIGroupInvitationViewAcceptedPreview() {
+fun CIGroupInvitationViewAcceptedPreview() = BubblePreview {
   SimpleXTheme {
     CIGroupInvitationView(
-      ci = ChatItem.getGroupInvitationSample(),
+      ci = previewDated(ChatItem.getGroupInvitationSample()),
       groupInvitation = CIGroupInvitation.getSample(status = CIGroupInvitationStatus.Accepted),
       memberRole = GroupMemberRole.Admin,
       joinGroup = { _, _ -> },
@@ -198,10 +206,10 @@ fun CIGroupInvitationViewAcceptedPreview() {
 
 @Preview
 @Composable
-fun CIGroupInvitationViewLongNamePreview() {
+fun CIGroupInvitationViewLongNamePreview() = BubblePreview {
   SimpleXTheme {
     CIGroupInvitationView(
-      ci = ChatItem.getGroupInvitationSample(),
+      ci = previewDated(ChatItem.getGroupInvitationSample()),
       groupInvitation = CIGroupInvitation.getSample(
         groupProfile = GroupProfile("group_with_a_really_really_really_long_name", "Group With A Really Really Really Long Name", shortDescr = null),
         status = CIGroupInvitationStatus.Accepted

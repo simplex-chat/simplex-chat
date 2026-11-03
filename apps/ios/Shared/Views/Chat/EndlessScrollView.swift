@@ -55,7 +55,7 @@ struct ScrollRepresentable<Content: View, ScrollItem>: UIViewControllerRepresent
             }
             cell.isHidden = false
             cell.backgroundColor = .clear
-            let size = cell.systemLayoutSizeFitting(CGSizeMake(scrollView.bounds.width, CGFloat.greatestFiniteMagnitude))
+            let size = cell.systemLayoutSizeFitting(CGSizeMake(scrollView.bounds.width, CGFloat.greatestFiniteMagnitude), withHorizontalFittingPriority: .required, verticalFittingPriority: .fittingSizeLevel)
             cell.frame.size.width = scrollView.bounds.width
             cell.frame.size.height = size.height
             return cell
@@ -74,7 +74,7 @@ struct ScrollRepresentable<Content: View, ScrollItem>: UIViewControllerRepresent
                     fatalError("Unexpected Cell Type for: \(item)")
                 }
             }
-            let size = cell.systemLayoutSizeFitting(CGSizeMake(scrollView.bounds.width, CGFloat.greatestFiniteMagnitude))
+            let size = cell.systemLayoutSizeFitting(CGSizeMake(scrollView.bounds.width, CGFloat.greatestFiniteMagnitude), withHorizontalFittingPriority: .required, verticalFittingPriority: .fittingSizeLevel)
             cell.frame.size.width = scrollView.bounds.width
             cell.frame.size.height = size.height
             cell.setNeedsLayout()

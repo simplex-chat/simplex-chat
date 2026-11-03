@@ -22,12 +22,6 @@
         "badgeExpiry": {"type": "timestamp"}
       }
     },
-    "badgeRequest": {
-      "properties": {
-        "masterKey": {"ref": "base64url"},
-        "badgeInfo": {"ref": "badgeInfo"}
-      }
-    },
     "credential": {
       "properties": {
         "badgeKeyIdx": {"type": "uint16"},
@@ -230,7 +224,8 @@
           "metadata": {"comment": "a redeemed code; its invoice belongs to the buyer, not the redeemer"}
         },
         "charge": {
-          "properties": {"chargeId": {"type": "string"}}
+          "properties": {"chargeId": {"type": "string"}},
+          "metadata": {"comment": "a store subscription's charge, dated (createdAt) to the store's billing period start, or to the previous entry's createdAt when that is later"}
         },
         "support": {
           "optionalProperties": {}
@@ -321,15 +316,20 @@
         },
         "upgradeBadgeSubscription": {
           "properties": {
-            "badgeRequest": {
-              "ref": "badgeRequest",
-              "metadata": {"comment": "known wrong: to be dropped when implemented, see badges-rpc.md"}
-            },
             "payment": {
               "ref": "payment",
-              "metadata": {"comment": "store payments only"}
+              "metadata": {"comment": "apple only: a transaction of the purchase's own subscription"}
             },
             "balance": {"ref": "balance"}
+          }
+        },
+        "transferBadge": {
+          "properties": {
+            "masterKey": {"ref": "base64url"},
+            "payment": {
+              "ref": "payment",
+              "metadata": {"comment": "a store subscription's receipt, credited to another key"}
+            }
           }
         },
         "issueBadge": {
@@ -375,6 +375,10 @@
             "receipt": {
               "type": "string",
               "metadata": {"comment": "not provided for lifetime badges"}
+            },
+            "subscription": {
+              "type": "string",
+              "metadata": {"comment": "SubscriptionState: renewing, cancelled, billingRetry, ended; any other value is read as not ended. Present exactly when a store subscription funds the purchase"}
             }
           }
         },

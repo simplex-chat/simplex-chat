@@ -4,10 +4,11 @@ import androidx.compose.runtime.Composable
 import chat.simplex.common.platform.Log
 import chat.simplex.common.platform.TAG
 import chat.simplex.common.platform.desktopPlatform
+import chat.simplex.common.platform.systemThemeDetector
 import com.jthemedetecor.OsThemeDetector
 
-private val detector: OsThemeDetector = OsThemeDetector.getDetector()
-  .apply {
+private val detector: OsThemeDetector? = systemThemeDetector
+  ?.apply {
     registerListener(::reactOnDarkThemeChanges)
     if (desktopPlatform.isLinux()) Runtime.getRuntime().addShutdownHook(Thread(::stopGsettingsMonitor))
   }
@@ -23,7 +24,7 @@ private fun stopGsettingsMonitor() =
 
 @Composable
 actual fun isSystemInDarkTheme(): Boolean = try {
-  detector.isDark
+  detector?.isDark ?: false
 }
 catch (e: Exception) {
   Log.e(TAG, e.stackTraceToString())
