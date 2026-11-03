@@ -1912,10 +1912,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     sendProbeHashes _ [] _ _ = pure ()
     sendProbeHashes probeCgm cgms probe probeId = do
       connCode <- getConnCodes (probeCgm : cgms)
-      forM_ (connCode probeCgm) $ \probeConnCode -> do
-        let probeHash = connProbeHash probeConnCode probe
-        forM_ cgms $ \cgm ->
-          forM_ (connCode cgm) (sendProbeHash cgm . (`connProbeCheckHash` probeHash)) `catchAllErrors` \_ -> pure ()
+      forM_ cgms $ \cgm ->
+        forM_ (probeCheckHash connCode probeCgm probe cgm) (sendProbeHash cgm) `catchAllErrors` \_ -> pure ()
       where
         sendProbeHash :: ContactOrMember -> ProbeHash -> CM ()
         sendProbeHash cgm@(COMContact c) checkHash = do
@@ -1937,9 +1935,12 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       codes <- withAgent (`getConnectionsVerifyCodes` mapMaybe cgmConnId cgms)
       pure $ \cgm -> codeAD <$> (cgmConnId cgm >>= (`M.lookup` codes))
       where
-        cgmConnId = \case
-          COMContact ct -> contactConnId ct
-          COMGroupMember m -> memberConnId m
+        cgmConnId = fmap aConnId . contactOrMemberConn
+
+    probeCheckHash :: (ContactOrMember -> Maybe ByteString) -> ContactOrMember -> Probe -> ContactOrMember -> Maybe ProbeHash
+    probeCheckHash connCode probeCgm probe cgm
+      | bindProbeHash probeCgm cgm = connProbeCheckHash <$> connCode cgm <*> (connProbeHash <$> connCode probeCgm <*> pure probe)
+      | otherwise = Just $ ProbeHash $ C.sha256Hash $ unProbe probe
 
     messageWarning :: Text -> CM ()
     messageWarning = toView . CEvtMessageError user "warning"
@@ -3007,9 +3008,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         cgms <- withStore' (`getMatchingContactsOrMembers` cgm2)
         connCode <- getConnCodes (cgm2 : cgms)
         forM_ (connCode cgm2) $ \probeConnCode -> do
-          let probeHash = connProbeHash probeConnCode probe
-              cgmCheckHashes = mapMaybe (\cgm -> (cgm,) . (`connProbeCheckHash` probeHash) <$> connCode cgm) cgms
-          cgm1s <- withStore' $ \db -> matchReceivedProbe db user cgm2 probe probeHash cgmCheckHashes
+          let cgmCheckHashes = mapMaybe (\cgm -> (cgm,) <$> probeCheckHash connCode cgm2 probe cgm) cgms
+          cgm1s <- withStore' $ \db -> matchReceivedProbe db user cgm2 probe (connProbeHash probeConnCode probe) cgmCheckHashes
           let cgm1s' = filter (not . contactOrMemberIncognito) cgm1s
           probeMatches cgm1s' cgm2
       where

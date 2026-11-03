@@ -90,12 +90,13 @@ import Simplex.Messaging.Version hiding (version)
 -- 20 - p2p group member keys for signing (2026-07-26)
 -- 21 - command keywords with any characters (2026-09-27)
 -- 22 - owner-signed relay invitations, group invitations via member connections (2026-10-10)
+-- 23 - contact merge probe hashes bound to connections (2026-11-03)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 22
+currentChatVersion = VersionChat 23
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -148,6 +149,12 @@ anyTextCommandsVersion = VersionChat 21
 
 groupInvVersion :: VersionChat
 groupInvVersion = VersionChat 22
+
+connProbeHashVersion :: VersionChat
+connProbeHashVersion = VersionChat 23
+
+bindProbeHash :: ContactOrMember -> ContactOrMember -> Bool
+bindProbeHash cgm cgm' = any (maybe False ((>= connProbeHashVersion) . connChatVersion) . contactOrMemberConn) [cgm, cgm']
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}

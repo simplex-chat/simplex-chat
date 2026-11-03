@@ -382,6 +382,11 @@ contactOrMemberIncognito = \case
   COMContact ct -> contactConnIncognito ct
   COMGroupMember m -> memberIncognito m
 
+contactOrMemberConn :: ContactOrMember -> Maybe Connection
+contactOrMemberConn = \case
+  COMContact ct -> contactConn ct
+  COMGroupMember m -> memberConn m
+
 data UserContact = UserContact
   { userContactLinkId :: Int64,
     connReqContact :: ConnReqContact,

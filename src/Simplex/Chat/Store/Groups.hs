@@ -3077,7 +3077,11 @@ matchReceivedProbeHash db User {userId} from checkConnCode checkHash cgms = do
           db
           "SELECT probe, probe_hash FROM received_probes WHERE user_id = ? AND probe IS NOT NULL AND (contact_id = ? OR group_member_id = ?)"
           (userId, ctId, gmId)
-      pure [(cgm, Probe probe) | (probe, probeHash) <- probes, connProbeCheckHash checkConnCode (ProbeHash probeHash) == checkHash]
+      pure [(cgm, Probe probe) | (probe, probeHash) <- probes, probeCheckHash cgm probe probeHash == checkHash]
+    probeCheckHash :: ContactOrMember -> ByteString -> ByteString -> ProbeHash
+    probeCheckHash cgm probe probeHash
+      | bindProbeHash cgm from = connProbeCheckHash checkConnCode (ProbeHash probeHash)
+      | otherwise = ProbeHash $ C.sha256Hash probe
 
 matchSentProbe :: DB.Connection -> StoreCxt -> User -> ContactOrMember -> Probe -> IO (Maybe ContactOrMember)
 matchSentProbe db cxt user@User {userId} _from (Probe probe) = do
