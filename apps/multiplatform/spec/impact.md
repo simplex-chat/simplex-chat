@@ -259,7 +259,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/onboarding/SetNotificationsMode.kt` | PC18 | Medium | Notification permission and mode setup |
 | `views/onboarding/SetupDatabasePassphrase.kt` | PC23 | Medium | Initial database passphrase setup |
 | `views/onboarding/ChooseServerOperators.kt` | PC25 | Medium | Initial server operator selection |
-| `views/onboarding/WhatsNewView.kt` | — | Low | Release notes display |
+| `views/onboarding/WhatsNewView.kt` | PC1 | Low | Release notes display; the crowdfunding conditions of the chat list banner |
 | `views/onboarding/HowItWorks.kt` | — | Low | Educational content |
 | `views/onboarding/LinkAMobileView.kt` | PC27 | Low | Mobile linking onboarding |
 

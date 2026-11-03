@@ -330,7 +330,7 @@ Uses `AnimatedViewState` (`GONE`, `VISIBLE`, `HIDING`) with a `MutableStateFlow`
 fun GetStakeBanner(showDismiss: Boolean, onTap: () -> Unit, onDismiss: () -> Unit)
 ```
 
-Gradient card inviting the user to invest on Wefunder. Shown only when `crowdfundingAvailable()` and not `playStoreCountryUnknown()` — always outside Play Store builds, and in Play builds only once the store country is known and is the US (or empty) — and only while `getStakeBannerDismissed` is false.
+Gradient card inviting the user to invest on Wefunder. Shown only when `crowdfundingAvailable()` and not `playStoreCountryUnknown()` — always outside Play Store builds, and in Play builds only once the store country is known and is the US (or empty) — and only while `getStakeBannerDismissed` is false. [GAP] What's New and Settings show the crowdfunding entries while the store country is unknown ([GAP-11](../../product/gaps.md#gap-11-crowdfunding-an-unknown-play-country-counts-differently)).
 
 ### Placement
 
