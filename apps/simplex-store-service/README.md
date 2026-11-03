@@ -137,9 +137,9 @@ The BTCPay API key needs four permissions, each scoped to the one store:
 rather than only in this store.
 
 BTCPay keeps an invoice it has closed `Expired` (or `Invalid` after a cancel) when money arrives late.
-The invoice view reports `paidInFull` on such an invoice once BTCPay reads it `PaidLate` or
-`PaidOver`, or its due is 0 or less, and reports an overpaid invoice's `cryptoAmountDue` as `0`,
-never below.
+The invoice view reports `paidInFull` on such an invoice only once BTCPay reads it `PaidLate` or
+`PaidOver`: BTCPay's paid amount counts unconfirmed payments too, so a due of 0 or less is not
+enough. It reports an overpaid invoice's `cryptoAmountDue` as `0`, never below.
 
 Give the service a BTCPay store of its own, and a Stripe account of its own if card payments are
 on. The poller lists every invoice and payment intent of the last three days or so, and one it did

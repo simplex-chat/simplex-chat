@@ -55,7 +55,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "falls back to the read time when a Settled invoice was marked by hand" testSettledManuallyMarked
     it "funds on Processing" testProcessing
     it "closes on Expired and on Invalid" testClosed
-    it "reports a closed invoice paid in full on PaidLate, PaidOver or a due at 0 or less, and in part otherwise" testClosedPaidInFull
+    it "reports a closed invoice paid in full only on PaidLate or PaidOver, whatever its due" testClosedPaidInFull
     it "reads an overpaid invoice's negative due as 0" testOverpaidDueIsZero
     it "funds on New with something received" testNewWithPayment
     it "funds on New with a payment worth less than a minor unit" testNewWithDust
@@ -97,7 +97,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "is refused when the api key is wrong, rather than passing silently" testFakeWrongApiKey
     it "sends the documented create body, and no redirectURL" testFakeCreateBody
     it "walks New to Processing to Settled, two calls per read" testFakeLifecycle
-    it "closes on Expired and on Invalid, in full once the whole amount or BTCPay's PaidLate says so" testFakeClosed
+    it "closes on Expired and on Invalid, in full only once BTCPay's PaidLate says so" testFakeClosed
     it "names a status the provider invented" testFakeUnknownStatus
     it "reads paymentMethodPaid over the wire, never totalPaid" testFakePaymentMethodPaid
     it "makes a 500 at checkout a ProviderError" testFakeCreate500
@@ -197,18 +197,19 @@ testProcessing =
 testClosed :: IO ()
 testClosed = do
   signalOf "Expired" [btcPaid "0.00050000" [payment "Processing" 1700000000]]
-    `shouldBe` Right (Just (SigClosed halfMilliBtc PaidInFull))
+    `shouldBe` Right (Just (SigClosed halfMilliBtc PaidInPart))
   signalOf "Invalid" [btcPaid "0.00000000" []]
     `shouldBe` Right (Just (SigClosed (nothingReceived "0.00050000") PaidInPart))
 
--- | BTCPay keeps a late-paid invoice Expired, or Invalid after a cancel, and says the whole amount arrived only by these.
+-- | BTCPay keeps a late-paid invoice Expired, or Invalid after a cancel, and says the whole amount arrived only by these;
+-- its paid amount counts unconfirmed payments, so a due at 0 or less alone is in part.
 testClosedPaidInFull :: IO ()
 testClosedPaidInFull = do
   let verdict additional status paid = (\case Right (Just (SigClosed _ f)) -> Just f; _ -> Nothing) (signalWith additional status [btcPaid paid [payment "Settled" 1700000000]])
   verdict "PaidLate" "Expired" "0.00025000" `shouldBe` Just PaidInFull
   verdict "PaidOver" "Invalid" "0.00025000" `shouldBe` Just PaidInFull
-  verdict "None" "Expired" "0.00050000" `shouldBe` Just PaidInFull
-  verdict "Marked" "Invalid" "0.00080000" `shouldBe` Just PaidInFull
+  verdict "None" "Expired" "0.00050000" `shouldBe` Just PaidInPart
+  verdict "Marked" "Invalid" "0.00080000" `shouldBe` Just PaidInPart
   verdict "PaidPartial" "Expired" "0.00025000" `shouldBe` Just PaidInPart
   verdict "None" "Invalid" "0.00025000" `shouldBe` Just PaidInPart
   verdict "None" "Expired" "0.00000000" `shouldBe` Just PaidInPart
@@ -649,7 +650,7 @@ testFakeClosed :: IO ()
 testFakeClosed = withProvider $ \fake p -> do
   ProviderInvoice {piProviderRef = invRef} <- createdInvoice p (SPMCrypto CCBtc)
   setInvoiceState fake invRef ["status" .= ("Expired" :: Text), "paymentMethodPaid" .= ("0.00050000" :: Text)]
-  pReadInvoice p invRef `shouldReturn` Right (Just (SigClosed halfMilliBtc PaidInFull))
+  pReadInvoice p invRef `shouldReturn` Right (Just (SigClosed halfMilliBtc PaidInPart))
   setInvoiceState fake invRef ["status" .= ("Invalid" :: Text), "paymentMethodPaid" .= ("0.00000000" :: Text)]
   pReadInvoice p invRef `shouldReturn` Right (Just (SigClosed (nothingReceived "0.00050000") PaidInPart))
   setInvoiceState fake invRef ["status" .= ("Expired" :: Text), "additionalStatus" .= ("PaidLate" :: Text), "paymentMethodPaid" .= ("0.00025000" :: Text), "due" .= ("0.00025000" :: Text)]

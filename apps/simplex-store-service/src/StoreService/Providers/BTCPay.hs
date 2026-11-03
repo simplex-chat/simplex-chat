@@ -393,11 +393,9 @@ invoiceSignal now ref status additional ms = do
   rate <- priced "rate" gpmRate
   paid <- priced "paymentMethodPaid" gpmPaid
   let received = receivedOf rate paid gpmDue
-      -- BTCPay never settles an invoice it has closed, so only these tell that the whole amount reached it
-      closedFunded
-        | maybe False (`elem` closedInFullStatuses) additional = PaidInFull
-        | wnValue paid > 0 && maybe False ((<= 0) . wnValue) gpmDue = PaidInFull
-        | otherwise = PaidInPart
+      -- BTCPay never settles an invoice it has closed, so only its additional status tells that the whole amount reached it.
+      -- Its paid amount counts unconfirmed payments too, so a due at 0 or less does not.
+      closedFunded = if maybe False (`elem` closedInFullStatuses) additional then PaidInFull else PaidInPart
   case status of
     "Settled" -> Right (Just (SigSettled received (fromMaybe now (latestSettledAt m))))
     "Processing" -> Right (Just (SigFunded received PaidInFull))
