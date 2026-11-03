@@ -3,11 +3,11 @@ title: Groups
 ---
 # Groups
 
-Secret groups are anonymous and private, they are designed to be hard to track
-by outsiders. Every message gets sent separately to every member in the group,
-which makes secret groups only fit for smaller groups. Files are uploaded to
-file servers once, and each member can download them from there. For large
-audiences, use [channels](./channels.md).
+Groups are decentralized: the group profile and the member list are stored on
+members' devices, and servers have no information about the group. Every
+message gets sent separately to every member in the group, which suits smaller
+groups. Files are uploaded to file servers once, and each member can download
+them from there. For large audiences, use [channels](./channels.md).
 
 ## Creating a group
 
@@ -62,8 +62,9 @@ group" without leaving, to delete the group for all members.
 
 Open a group and tap on group's name to view members list, there you can tap on a member and change their role.
 
-- Observer: can only read messages and add reactions (and delete or mark deleted
-  the messages they sent before their role was changed).
+- Observer: can only read messages, add reactions and use "Chat with admins"
+  (and delete or mark deleted the messages they sent before their role was
+  changed).
 - Member: can send messages and delete own messages.
 - Moderator: Same as member, but can delete the messages of others and block
   members for all.

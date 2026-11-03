@@ -3,12 +3,13 @@ title: Supporter badges
 ---
 # Supporter badges
 
-A supporter badge is shown next to your name on your chat profile. With a badge,
-you can send larger files, from 2 to 5 GB, that stay available for 7 to 21 days.
+A supporter badge, bought to support SimpleX Chat, is shown next to your name on
+your chat profile. With a badge, you can send larger files, from 2 to 5 GB, that
+stay available for 7 to 21 days.
 
-A badge is added to one chat profile. It is shown to your contacts, and to the
-members of groups and channels where you use this profile. It is not shown with
-an incognito profile.
+A badge is added to one chat profile. It is shown to your contacts, and in the
+groups and channels where you use this profile. It is not shown with an
+incognito profile.
 
 <img src="./images/supporter-badges-support-simplex.png" alt="Support SimpleX screen on iOS" width="300"> &nbsp;&nbsp; <img src="./images/supporter-badges-redeem-code.png" alt="Redeem code screen on iOS" width="300">
 
@@ -121,8 +122,7 @@ On the **Your badge** screen are:
 | Payment failed | **Payment problem**, with a request to update your payment method. |
 | Ended | **Ended**. The badge will be removed. |
 
-Tap **Manage subscription** to open your subscriptions in the App Store (iOS) or
-in Google Play (the Android app from Google Play).
+Tap **Manage subscription** to open your subscriptions in Google Play.
 
 The app updates the badge every month while paid months remain, with no action
 from you.

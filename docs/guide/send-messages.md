@@ -139,5 +139,5 @@ To remove a message of another member, tap and hold the message (right-click on
 desktop) and choose "Moderate".
 
 Members can report a message to the group moderators. To report it, tap and hold
-the message (right-click on desktop) and choose "Report". Moderators see the reports on the
-group page, in "Member reports".
+the message (right-click on desktop) and choose "Report". Moderators see the
+reports on the group page, in "Member reports".

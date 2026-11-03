@@ -5,13 +5,18 @@ title: Channel webpage
 
 A channel webpage shows a preview of your channel on the web: its name, description, recent messages and subscriber count. Visitors can see what the channel is about before they subscribe, and the page gives them a "Join" button along with links to download the app.
 
-You don't have to build the preview yourself. The chat relays that host your channel publish its content as a small file, and a ready-made script renders it on your page. All it takes is to copy the code the app generates and paste it into a web page you host.
+The chat relays of your channel publish its content as a small file, and a
+ready-made script renders it on your page. To set it up, copy the code the app
+generates and paste it into a web page you host.
 
 ## What you need
 
-A channel webpage can be set up by the **owner** of the channel, as long as the channel is hosted on chat relays that support webpages. If they don't, the app shows "Used chat relays do not support webpages." and no code is generated.
+A channel webpage can be set up by the **owner** of the channel, as long as the
+channel's chat relays support webpages. If they don't, the app shows "Used chat
+relays do not support webpages." and no code is generated.
 
-You'll also need somewhere to publish an HTML page. Your own site works, but any static hosting will do.
+You'll also need somewhere to publish an HTML page: your own site or any static
+hosting.
 
 ## Step 1. Open the channel webpage settings
 
@@ -122,7 +127,9 @@ The preview updates on its own. The relays republish channel content periodicall
 
 Only what the channel already shows publicly is included: recent messages, member display names and avatars, reactions, and the subscriber count. Deleted and disappearing messages are never published.
 
-If your channel is served by more than one relay, all of them are listed in `data-relay-domains`. The script tries them in order, so the preview still loads when one relay is unavailable.
+If more than one relay of your channel supports webpages, all of them are listed
+in `data-relay-domains`. The script tries them in order, so the preview still
+loads when one relay is unavailable.
 
 ## If something doesn't work
 
@@ -131,6 +138,8 @@ is hosted on the same domain as the URL you set in Step 5, or turn **Allow anyon
 to embed** back on while you sort it out. The relay only lets that domain load
 the preview.
 
-If the app says "Used chat relays do not support webpages.", the relays hosting your channel don't support this feature yet, so no code can be generated.
+If the app says "Used chat relays do not support webpages.", the relays of your
+channel don't support this feature yet, so no code can be generated.
 
-If there's no **Channel webpage** button, remember that it only appears for channel owners on channels hosted on relays.
+If there's no **Channel webpage** button, remember that it only appears for
+channel owners.

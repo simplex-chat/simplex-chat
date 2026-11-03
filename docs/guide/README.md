@@ -3,7 +3,7 @@ title: Quick start
 ---
 # SimpleX Chat User Guide
 
-The first messaging platform that has no user identifiers of any kind — 100% private by design.
+The first messaging network that has no user identifiers of any kind.
 
 ## Contents
 
@@ -33,8 +33,8 @@ After downloading SimpleX Chat via the links at https://simplex.chat:
 - Create a new profile by inputting your profile name.
 - Tap on "Create profile".
 
-This profile is local to the device, it is not stored on any servers and it is
-only shared with your contacts.
+This profile is stored on your device and shared only with your contacts.
+SimpleX servers cannot see it.
 
 On desktop, the app then asks you to set a database passphrase or to use a
 random one, see [Database passphrase](./managing-data.md#database-passphrase).

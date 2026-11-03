@@ -27,7 +27,10 @@ messages." See [How channels work](./channels.md#how-channels-work).
 
 <img src="./images/privacy-security-verify-code.png" alt="Security code on iOS" width="288">
 
-While SimpleX Chat always establishes connection via link passed via an independent channel, so it is already more protected than other apps, there are scenarios when the invitation links can be substituted in transit (MITM attack). To protect against such attacks, you should verify the security code with your contacts:
+SimpleX Chat always establishes connection via link passed via an independent
+channel, so servers cannot substitute the encryption keys. In some scenarios,
+the invitation links can be substituted in transit (MITM attack). To protect
+against such attacks, you should verify the security code with your contacts:
 
 - open the conversation with the contact
 - tap the contact name in the chat toolbar
@@ -53,10 +56,10 @@ Read more in [this post](../../blog/20230103-simplex-chat-v4.4-disappearing-mess
 When installed, the app generates a random passphrase for the chat database and
 stores it securely in Keychain (iOS) or using Keystore (Android, secure hardware
 is used when available). The desktop app offers to set your own passphrase when
-you create your first profile, and stores the random passphrase in the app
-settings as plaintext. You can set your own passphrase and also remove it from
-the device, in which case you will need to enter it every time you start the
-app, and notifications may be limited, in the [Database
+you create your first profile and, if you skip it, stores the random passphrase
+in the app settings as plaintext. You can set your own passphrase and also
+remove it from the device, in which case you will need to enter it every time
+you start the app, and notifications may be limited, in the [Database
 passphrase & export](./managing-data.md#database-passphrase) settings.
 
 ## Incognito mode
@@ -73,7 +76,8 @@ This feature allows to hide some of your chat profiles with the password. Read m
 
 [Transport isolation (BETA)](./app-settings.md#transport-isolation-beta) allows
 to isolate the traffic of each chat profile (by default) or your traffic with
-each contact in a different TCP connection (and Tor circuit).
+each contact in a different TCP connection (and Tor circuit, on Android and
+desktop).
 
 [Private message routing](./app-settings.md#advanced-network-settings) is used
 by default: "To protect your IP address, private routing uses your SMP servers

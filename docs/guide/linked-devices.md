@@ -6,7 +6,9 @@ title: Linked devices
 You can use the chat profiles of the SimpleX app on your mobile (iOS or Android)
 from the desktop app. Your profiles, contacts and messages stay on the mobile.
 The desktop app shows them, and the mobile app performs the actions that you
-take on the desktop. The mobile connects to the desktop over the local network.
+take on the desktop. The mobile connects to the desktop over the local network,
+without a server, and the connection is protected by quantum resistant
+encryption.
 
 To link the devices:
 

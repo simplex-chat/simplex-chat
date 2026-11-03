@@ -37,7 +37,7 @@ This page allows adding and configuring your chat profiles. Please see [Your cha
 This feature is unique to SimpleX Chat – it is independent from chat profiles.
 
 When you choose "Incognito" for a new connection, your current profile name and
-image are NOT shared with this contact or group. It allows connections with
+image are not shared with this contact or group. It allows connections with
 other people without any shared data – when you make new connections or join
 groups via a link a new random profile name will be generated for each contact
 or group.
@@ -110,8 +110,9 @@ change other network settings.
 #### SMP servers
 
 By default, the app uses the servers of two preset operators, SimpleX Chat and
-Flux. You can disable them and add your own servers in **Your servers**. The app
-uses different operators in each conversation to protect your privacy.
+Flux. You can disable them and add your own servers in **Your servers**. When
+more than one operator is enabled, the app uses different operators in each
+conversation to protect your privacy.
 
 This page also allows testing the connection with the servers.
 
@@ -156,10 +157,10 @@ devices, but this is not applicable to most individual devices.
 
 This option sets how the app isolates your traffic. With **Chat profile**, **App
 session** (default) and **Server**, the app uses a separate TCP connection for
-each chat profile. **App session** also uses new SOCKS credentials every time
-you start the app, and **Server** uses them for each server. With
-**Connection**, the app uses a separate TCP connection for each contact and
-group member.
+each chat profile. On Android and desktop, **App session** also uses new SOCKS
+credentials every time you start the app, and **Server** uses them for each
+server. With **Connection**, the app uses a separate TCP connection for each
+contact and group member.
 
 The option is in **Advanced network settings**. On iOS, it is available after
 you enable [developer options](#show-developer-options). On Android and desktop,

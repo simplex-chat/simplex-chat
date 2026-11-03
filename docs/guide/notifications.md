@@ -4,9 +4,11 @@ title: Notifications
 # Notifications
 
 The app shows notifications for new messages, contact requests, new contacts and
-calls. How it receives messages in the background depends on the platform. The
-iOS app can use a push server, the Android app runs a notification service on
-your device, and the desktop app receives messages while it runs.
+calls. How it receives messages in the background depends on the platform. iOS
+does not allow apps to run a background service, so the iOS app can use the
+SimpleX Chat push server, which sends notifications through Apple's push
+service. The Android app receives messages itself, without a push server. The
+desktop app receives messages while it runs.
 
 When you create your first profile on iOS or Android, you can choose the
 notification mode with **Setup notifications** on the **Your network** screen,

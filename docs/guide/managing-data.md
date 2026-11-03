@@ -36,16 +36,18 @@ The app saves the passphrase on the device, in iOS Keychain, in Android Keystore
 or in the app settings as plaintext on desktop. After you set your own
 passphrase, you can turn off **Save passphrase in Keychain** (iOS), **Save
 passphrase in Keystore** (Android) or **Save passphrase in settings** (desktop).
-On desktop, a passphrase that you set at the first start is not saved. The app
-then asks for the passphrase each time it starts, and notifications on iOS and
-Android are limited (see
+The app then asks for the passphrase each time it starts, and notifications on
+iOS and Android are limited (see
 [Notifications](./notifications.md#notifications-and-the-database-passphrase)).
-A lost passphrase cannot be recovered.
+On desktop, a passphrase that you set at the first start is not saved. A lost
+passphrase cannot be recovered.
 
 ### App data backup
 
 The app data is not saved in iOS backups, and Android backup is turned off for
-the app. To keep a copy of your data, [export the database](#export-database).
+the app. To keep a copy of your data, [export the database](#export-database)
+regularly: importing an old copy may disrupt your conversations with some
+contacts.
 
 ### Export database
 
@@ -62,7 +64,8 @@ asks for the passphrase of the imported database.
 
 ### Delete database
 
-Here you can delete your chat database. WARNING: Results in a loss of all your SimpleX Chat data! Unless you have just exported the chat database.
+Here you can delete your chat database. All your SimpleX Chat data will be lost,
+unless you have just exported the chat database.
 
 ## Delete files and media
 

@@ -5,7 +5,8 @@ title: Chat profiles
 
 ## Creating additional chat profiles
 
-SimpleX Chat allows creating as many chat profiles as you like. Same as the first profile, they are only stored locally on your device.
+SimpleX Chat allows creating as many chat profiles as you like. Same as the first
+profile, they are stored on your device and shared only with your contacts.
 
 To create an additional SimpleX Chat profile:
 
@@ -45,7 +46,9 @@ This feature is unique to SimpleX Chat – it is independent from chat profiles.
 When you choose "Incognito" for a new connection, your currently chosen profile
 name and image are hidden from this contact, group or channel. It allows
 anonymous connections with other people without any shared data – a new random
-profile name will be generated for each connection.
+profile name will be generated for each connection. When you share an incognito
+profile with somebody, this profile will also be used for the groups they invite
+you to.
 
 To choose incognito mode:
 
@@ -73,7 +76,8 @@ To edit your profile:
 
 ## Move your chat profiles to another device
 
-SimpleX Chat stores all user data only on client devices using a portable encrypted database format that can be exported and transferred to any supported device.
+SimpleX Chat stores all user data on client devices using a portable encrypted
+database format that can be exported and transferred to any supported device.
 
 You can move all profiles with "Migrate to another device" in the app settings:
 the app uploads the encrypted database, and the new device downloads it after
@@ -114,6 +118,6 @@ To import your SimpleX Chat data in the app on another device:
 
 1. Currently you cannot move some of the profiles, only the whole database containing all profiles can be moved.
 
-2. You must NOT use the exported database on more than one device at a time, as it may disrupt some of the connections. You also must always use the latest version of the chat database - using the old one is also likely to disrupt your connections.
+2. You must not use the exported database on more than one device at a time, as it may disrupt some of the connections. You also must always use the latest version of the chat database - using the old one is also likely to disrupt your connections.
 
 3. There is no way to recover lost passphrase - make sure to store it securely.

@@ -22,10 +22,10 @@ addresses.
 A channel can have several chat relays, and its messages are delivered while at
 least one of them is active. See [Chat relays](#chat-relays).
 
-Channel messages are not end-to-end encrypted, and chat relays can see them. The
-app shows a notice about this at the start of each channel. Group messages are
-end-to-end encrypted, so use a [group](./secret-groups.md) for private
-conversations.
+Because anyone with the link can join a channel, channel messages are not
+end-to-end encrypted, and chat relays can see them. The app shows a notice about
+this at the start of each channel. Group messages are end-to-end encrypted, so
+use a [group](./secret-groups.md) for private conversations.
 
 The channel profile is stored on subscribers' devices and on the chat relays.
 The owner's chat profile is shared with the relays and the subscribers.
@@ -77,9 +77,10 @@ New channels have **Visible history** on and **Chat with admins** off. See
    the button. See [Incognito mode](./chat-profiles.md#incognito-mode).
 4. Tap **Join channel**.
 
-The app connects to each of the channel's relays, and you are subscribed when at
-least one relay connects. Until all relays connect, the app shows the progress
-in a bar above the message field, for example "1/2 relays connected".
+The app connects to each of the channel's relays through messaging servers, and
+you are subscribed when at least one relay connects. Until all relays connect,
+the app shows the progress in a bar above the message field, for example "1/2
+relays connected".
 
 A channel card shared by the owner is marked "Channel link (from owner)". When
 you open such a card, the app shows "Link signature verified." in the channel
