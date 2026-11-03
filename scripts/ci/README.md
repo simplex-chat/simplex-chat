@@ -97,12 +97,12 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 
 #### badge-web
 
-- Globs: apps/simplex-badge-service/web/**. These paths are also in the core globs (apps/simplex-badge-service/**), and web/src/catalog.ts is read by core tests (tests/Bots/BadgeService/CatalogTests.hs, WebTests.hs).
+- Globs: apps/simplex-store-service/web/**. These paths are also in the core globs (apps/simplex-store-service/**), and web/src/catalog.ts is read by core tests (tests/Bots/StoreService/CatalogTests.hs, WebTests.hs).
 - CI, in build-linux: core build and tests, then `scope-tests.sh badge-web` (step "Test changed scopes").
 - Selected core tests: `/SimpleX badge service/` and `/SimpleX badge service e2e/`.
 - Local:
   ```sh
-  cd apps/simplex-badge-service/web
+  cd apps/simplex-store-service/web
   npm ci
   npm test
   ```
