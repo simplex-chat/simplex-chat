@@ -37,7 +37,6 @@ import chat.simplex.common.views.chatlist.GetStakeBanner
 import chat.simplex.common.views.chatlist.openGetStake
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.crowdfundingAvailable
-import chat.simplex.common.views.onboarding.playStoreCountryUnknown
 import chat.simplex.common.views.usersettings.UserAddressView
 import chat.simplex.res.*
 import kotlinx.coroutines.launch
@@ -431,7 +430,7 @@ fun ConnectOnboardingView() {
   }
 
   val getStakeBannerDismissed = remember { appPrefs.getStakeBannerDismissed.state }
-  val showGetStakeBanner = chatModel.bannerSlotFree(ChatListBanner.GetStake) && crowdfundingAvailable() && !playStoreCountryUnknown() && !getStakeBannerDismissed.value
+  val showGetStakeBanner = chatModel.bannerSlotFree(ChatListBanner.GetStake) && crowdfundingAvailable() && !getStakeBannerDismissed.value
   // on desktop the pages span the window, but the banner keeps the width it has in the chat list
   val bannerMaxWidth = if (appPlatform.isDesktop) DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier else Dp.Unspecified
   val content = @Composable {

@@ -16,7 +16,6 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 8. [Desktop: App Link Registration](#gap-08-desktop-app-link-registration)
 9. [Desktop: Emoji Picker Without Skin Tones and Localized Search](#gap-09-desktop-emoji-picker-without-skin-tones-and-localized-search)
 10. [Badges: Limits on Moving a Badge to a New Device or Profile](#gap-10-badges-limits-on-moving-a-badge-to-a-new-device-or-profile)
-11. [Crowdfunding: an Unknown Play Country Counts Differently](#gap-11-crowdfunding-an-unknown-play-country-counts-differently)
 
 ---
 
@@ -378,28 +377,3 @@ A subscriber who moves the badge again before the previous key's credential expi
 1. Restore by a receipt code for Stripe and crypto purchases, shared with iOS.
 2. Announce a limited move on the first Restore.
 3. Before a Play plan change becomes possible, credit its new token without waiting for Restore.
-
----
-
-## GAP-11: Crowdfunding: an Unknown Play Country Counts Differently
-
-**Severity:** Low
-**Category:** UI / Consistency
-**Platforms:** Android (Play builds)
-
-### Description
-
-Play builds offer crowdfunding only in the US. The chat list banner waits until the Play account's country is known (`playStoreCountryUnknown()`), while What's New and the Invest item in Settings use `crowdfundingAvailable()`, which counts an unknown country as the US (`isInUs()`). The country stays unknown when Play is unavailable or the user is not signed in, and until the request made when the chat list is first shown has returned.
-
-### Affected Locations
-
-- `common/src/commonMain/kotlin/chat/simplex/common/views/onboarding/WhatsNewView.kt` -- `crowdfundingAvailable()`, `isInUs()`, `InvestInSimpleXChatView()`
-- `common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/SettingsView.kt` -- the Invest section
-
-### Impact
-
-Outside the US, What's New can show its Invest section and remove it while open if the country arrives after the 1 s it waits, and Settings can show the Invest item until the country arrives. Play users whose country can't be read see the Invest entries in What's New and Settings but not the banner.
-
-### Recommendation
-
-1. Decide whether What's New and Settings should also wait for a known country, as the banner does.

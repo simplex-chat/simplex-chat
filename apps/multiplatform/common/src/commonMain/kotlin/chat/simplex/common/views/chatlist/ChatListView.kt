@@ -1005,7 +1005,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val getStakeBannerTapped = remember { appPrefs.getStakeBannerTapped.state }
   val getStakeBannerDismissed = remember { appPrefs.getStakeBannerDismissed.state }
   // read here rather than in the LazyColumn: it launches an effect, so it needs a composable scope
-  val crowdfunding = crowdfundingAvailable() && !playStoreCountryUnknown()
+  val crowdfunding = crowdfundingAvailable()
   val activeFilter = remember { chatModel.activeChatTagFilter }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {

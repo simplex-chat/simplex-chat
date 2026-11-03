@@ -330,7 +330,7 @@ Uses `AnimatedViewState` (`GONE`, `VISIBLE`, `HIDING`) with a `MutableStateFlow`
 fun GetStakeBanner(showDismiss: Boolean, onTap: () -> Unit, onDismiss: () -> Unit)
 ```
 
-Gradient card inviting the user to invest on Wefunder. Shown only when `crowdfundingAvailable()` and not `playStoreCountryUnknown()` — always outside Play Store builds, and in Play builds only once the store country is known and is the US (or empty) — and only while `getStakeBannerDismissed` is false. [GAP] What's New and Settings show the crowdfunding entries while the store country is unknown ([GAP-11](../../product/gaps.md#gap-11-crowdfunding-an-unknown-play-country-counts-differently)).
+Gradient card inviting the user to invest on Wefunder. Shown only when `crowdfundingAvailable()` — always outside Play Store builds, and in Play builds only once the store country is known and is the US (or empty) — and only while `getStakeBannerDismissed` is false.
 
 ### Placement
 
@@ -341,7 +341,7 @@ Gradient card inviting the user to invest on Wefunder. Shown only when `crowdfun
 
 The list has a single banner slot, filled by an `if`/`else if` chain in priority order: the badge alert banner, the pitch, then the Wefunder banner. The badge alert banner shows `bannerBadgeAlert()` (`views/newchat/OnboardingCards.kt`), the current profile's alert when its kind has a banner (support ended, renewal failed, subscription ended, payment problem, subscription cancelled, renewal soon; not prepaid ending or a kind from a newer core), and one `when` over the kind at the banner site picks its title, subtitle and warning colour; its X leads to the same remind-later or dismiss alert for every kind. The renewal-failed subtitle is `renewalFailure()`: the reason in `BadgeModel.badgeState`'s `issueError` (`BadgeIssueFailure.text`), or `badges_renewal_failed_unknown` ("Your badge could not be renewed.") when the state carries none, as after an alert that arrives without a new state; the payment-problem subtitle is `badges_payment_problem_subtitle` ("The store could not charge your payment method."), not `issueError`, which in billing retry is a failed renewal request rather than the payment's reason. Each banner's `item` records itself in `ChatModel.chatListBanner` (`BadgeAlert`, `BadgePitch`, `GetStake`) in a `SideEffect`, and the pitch and Wefunder conditions start with `chatModel.bannerSlotFree(banner)` — true only while nothing else was shown this app session — so dismissing a banner never puts another in its place until restart. The alerts have no such check: an alert takes the slot whenever present, and once shown it holds it. The pitch also requires `noShownBadge()` (`views/newchat/OnboardingCards.kt`), false until `BadgeModel.isCurrent` for the current user, so it cannot take the slot from a supporter whose badge loads a moment later. `ConnectOnboardingView` applies the same `bannerSlotFree` check and records `GetStake`.
 
-`crowdfundingAvailable()` launches an effect to load the store country, so both call sites read it in the composable body rather than inside the `LazyColumn` builder, and evaluate it before `playStoreCountryUnknown()`, which turns false only once that load has set the country.
+`crowdfundingAvailable()` launches an effect to load the store country, so both call sites read it in the composable body rather than inside the `LazyColumn` builder.
 
 ### Dismissal
 

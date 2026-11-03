@@ -1119,11 +1119,8 @@ fun crowdfundingAvailable(): Boolean {
       if (androidPlayStoreCountry.value == null) platform.androidLoadPlayStoreCountry()
     }
   }
-  return isInUs()
+  return androidPlayStoreCountry.value != null && isInUs()
 }
-
-fun playStoreCountryUnknown(): Boolean =
-  platform.androidIsPlayStoreBuild && androidPlayStoreCountry.value == null
 
 fun isInUs(): Boolean =
   androidPlayStoreCountry.value == "US"
