@@ -218,14 +218,14 @@ Input:
 field   value
 chat    chat reference
 item    item ID of a message with a file
-wait    seconds to wait for the download after approval; default 60
+wait    seconds to wait for the sender's upload before the action, and for the download after the approval; default 60
 ```
 
 Output:
 ```
 field    value
 action   action number
-status   done | failed | rejected | expired
+status   done | performing | failed | rejected | expired
 path     with done
 error    with failed
 ```
@@ -241,7 +241,7 @@ Card in the agent control chat, mode requests:
   Servers: known.
   /'approve #3 7', /'approve #3 files', /'receive #3 7' or /'reject #3 7'
   ```
-- unknown servers: `Servers: xftp.example.com, unknown: downloading shows it this computer's IP address.`
+- unknown servers: ``Servers: `xftp.example.com`, unknown: downloading shows it this computer's IP address.``; the commands leave out `/'approve #3 files'`
 
 Owner commands:
 ```

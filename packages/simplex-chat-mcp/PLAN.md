@@ -599,7 +599,7 @@ size     fileSize, bytes
 type     image | video | voice from content.msgContent.type; file otherwise
 status   rejected: the file ID is in rejected files; failed: fileProhibited is set (the core refuses to receive it, Library/Internal.hs:783); otherwise from fileStatus: offered (rcvInvitation, rcvAccepted, rcvTransfer, rcvWarning), received (rcvComplete), failed (rcvCancelled, rcvAborted, rcvError, invalid)
 path     received, when fileSource.filePath is the download path of the file (section download): that path
-error    failed: "Large file! The file is above the limit of N bytes for its sender." with the apps' words for a badge issue ("Sender's badge expired.", "Sender's badge verification failed.", "No key to verify sender's badge."), "The file was cancelled.", "The download was aborted.", the apps' words for the FileError of rcvError (fileErrorText, log.ts), "Invalid file: TEXT"
+error    failed: "Large file! The file is above the limit of N bytes for its sender." with a badge issue in the apps' words, "sender's" in place of "Contact's" (strings.xml: "Contact's badge expired."; here "Sender's badge expired.", "Sender's badge verification failed.", "No key to verify sender's badge."), "The file was cancelled.", "The download was aborted.", the apps' words for the FileError of rcvError (fileErrorText, log.ts), "Invalid file: TEXT"
 ```
 
 ### connect

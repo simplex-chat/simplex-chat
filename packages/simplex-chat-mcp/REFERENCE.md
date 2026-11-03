@@ -256,7 +256,7 @@ Commands:
 | `/pending` | Lists pending actions. |
 | `/list` | Lists the agent's 100 most recent chats, one line each, and which of them are approved for all messages; a last line counts the older chats. |
 
-After `/leave #9` or an approved leave, when the chat's folder has files, the agent posts ``Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/#9`: 3 files, 2.1 MB. /delete #9 files``.
+After `/leave #9`, or after the agent's `leave` of #9 is performed in either mode, when the chat's folder has files, the agent posts ``Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/#9`: 3 files, 2.1 MB. /delete #9 files``.
 
 `/pending`, `/list` and `/leave` are in the chat's command menu, and the cards carry the others. Tapping `/leave` in the menu puts `/leave <chat ID>` into the entry field: replace `<chat ID>` with the chat's ID from `/list`, such as `#9`, and send it. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](PLAN.md), section "What the owner sees: the agent control chat".
 
@@ -311,7 +311,7 @@ A short voice message can arrive with its file already received. The server move
 
 An empty file is refused, and so is `as` without `file`. A message holds at most 15602 bytes with its text, the file's name and preview, the message `reply_to` quotes and the mentioned names. The quote is the quoted text when the message is an image or video; otherwise it is the quoted content, an image's preview included. A `send` over it is refused with `text: too long for a message with this image; shorten it.`, or without a file `text: too long for the message with its quote; shorten it.` An image's preview takes up to 14000 bytes, so its text has about 1 KB.
 
-The server checks the file by its real path, after symbolic links, and refuses files under `~/.ssh`, `~/.gnupg` and `~/.simplex-mcp`, each folder taken by its real path too, files named `id_*`, `*.pem`, `*.key`, `*.p12` and `*.pfx`, and the files of its data folder except those under `files/`. The card shows the real path. A file whose real path, size, inode or change time differs at the send from the request is not sent: the action fails.
+The server checks the file by its real path, after symbolic links, and refuses files under `~/.ssh` and `~/.gnupg`, files named `id_*`, `*.pem`, `*.key`, `*.p12` and `*.pfx`, and the files under its data folder and under `~/.simplex-mcp`, except those under `files/` of its own data folder; each folder is taken by its real path too. The card shows the real path. A file whose real path, size, inode or change time differs at the send from the request is not sent: the action fails.
 
 Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in [`PLAN.md`](PLAN.md), section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
 
@@ -420,7 +420,7 @@ One server runs per data folder: a second one exits, because two processes on on
 - Without `--owners`, whoever opens the link first becomes an owner. The link works once.
 - With `--owners`, only the listed owners approve.
 - After `/approve #N all`, the agent sends to that chat without asking, files included; `/revoke #N` ends it.
-- The server refuses to send private keys, its own files and the files under `~/.simplex-mcp`, where agents keep their data; other files the agent can read are sent after approval.
+- The server refuses to send private keys, its own files and the files under `~/.simplex-mcp`, where agents keep their data, except the files under `files/` of its own data folder; other files the agent can read are sent after approval.
 - After `/approve #N files`, the agent downloads every file sent to that chat on its XFTP servers without asking; `/revoke #N files` ends it. A file on other servers is downloaded only by `/approve` or `/receive` of the card that names them; in mode `host`, its download fails.
 - Peers of a chat connected as the agent see its profile; peers of an incognito chat see a random profile made for that chat only.
 - The agent has no address, so nobody can contact it first.

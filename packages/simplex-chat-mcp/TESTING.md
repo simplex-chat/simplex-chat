@@ -78,8 +78,7 @@ Files, in a group of yours:
 8. `Send the photo /home/alice/trail.jpg to that group, with the text "trail map".` Card: `I want to send a message to group <name>:`, `` `trail map` `` and ``attaching image `/home/alice/trail.jpg`, SIZE``, with the photo's preview. Approve it: the group gets the photo, resized to at most 261120 bytes, with its preview.
 9. `Send ~/.ssh/id_ed25519 to that group.` The call returns the error `file: /home/alice/.ssh/id_ed25519 is refused: ...`, and the agent control chat gets ``Refused to send `/home/alice/.ssh/id_ed25519` to group <name> (#N): ...``. A symbolic link to the key gets the same refusal, with the key's real path.
 10. With `ffmpeg` installed, `Send /home/alice/ride.mp4 to that group.`: the card and the message show the video's first frame and its duration; without `ffmpeg`, a gray preview and duration 0.
-11. Send a short voice message to the group from the app: its file is in `~/.simplex-mcp/my-agent/files/#N/` once received, before any download.
-12. Tap `/leave #N`: after the reply, the agent posts ``Files from group <name> (#N) are kept in `~/.simplex-mcp/my-agent/files/#N`: K files, SIZE. /delete #N files``. Tap `/delete #N files`: `Deleted K files from #N, SIZE.`; again: `No files from #N.`
+11. Tap `/leave #N`: after the reply, the agent posts ``Files from group <name> (#N) are kept in `~/.simplex-mcp/my-agent/files/#N`: K files, SIZE. /delete #N files``. Tap `/delete #N files`: `Deleted K files from #N, SIZE.`; again: `No files from #N.`
 
 Incognito, as a second agent, because the first one already knows the directory:
 
