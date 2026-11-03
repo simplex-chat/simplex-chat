@@ -1130,9 +1130,9 @@ public struct ContactUserPreferences: Decodable, Hashable {
 
     public static let sampleData = ContactUserPreferences(
         timedMessages: ContactUserPreference<TimedMessagesPreference>(
-            enabled: FeatureEnabled(forUser: false, forContact: false),
+            enabled: FeatureEnabled(forUser: true, forContact: true),
             userPreference: ContactUserPref<TimedMessagesPreference>.user(preference: TimedMessagesPreference(allow: .yes)),
-            contactPreference: TimedMessagesPreference(allow: .no)
+            contactPreference: TimedMessagesPreference(allow: .yes)
         ),
         fullDelete: ContactUserPreference<SimplePreference>(
             enabled: FeatureEnabled(forUser: false, forContact: false),
@@ -1702,7 +1702,7 @@ public struct ContactFeaturesAllowed: Equatable, Hashable {
     }
 
     public static let sampleData = ContactFeaturesAllowed(
-        timedMessagesAllowed: false,
+        timedMessagesAllowed: true,
         timedMessagesTTL: nil,
         fullDelete: ContactFeatureAllowed.userDefault(.no),
         reactions: ContactFeatureAllowed.userDefault(.yes),
