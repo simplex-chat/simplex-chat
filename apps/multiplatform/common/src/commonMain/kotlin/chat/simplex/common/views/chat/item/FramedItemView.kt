@@ -53,9 +53,10 @@ fun FramedItemView(
   val sent = ci.chatDir.sent
   val chatTTL = chatInfo.timedMessagesTTL
   val terminal = LocalTerminalLayout.current
-  val mediaModifier = if (terminal) Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, top = TERMINAL_BLOCK_TOP_GAP.toDp()).clipChatItem(ci, revealed = true) else Modifier
+  val mediaModifier = if (terminal) Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, top = TERMINAL_BLOCK_TOP_GAP.toDp(), end = CHAT_ITEM_TEXT_PADDING).clipChatItem(ci, revealed = true) else Modifier
   val quoteColor = if (sent) MaterialTheme.appColors.sentQuote else MaterialTheme.appColors.receivedQuote
   val cardModifier = mediaModifier.background(quoteColor)
+  val thumbnailInset = if (terminal) Modifier.padding(end = CHAT_ITEM_TEXT_PADDING) else Modifier
   val thumbnailClip = if (terminal) Modifier.clipChatItem(ci, revealed = true) else Modifier
   val quoteBaseStyle = MaterialTheme.typography.body1
 
@@ -188,7 +189,7 @@ fun FramedItemView(
             imageBitmap,
             contentDescription = stringResource(MR.strings.image_descr),
             contentScale = ContentScale.Crop,
-            modifier = Modifier.size(68.dp).then(thumbnailClip).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
+            modifier = thumbnailInset.size(68.dp).then(thumbnailClip).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
           )
         }
         is MsgContent.MCVideo -> {
@@ -198,7 +199,7 @@ fun FramedItemView(
             imageBitmap,
             contentDescription = stringResource(MR.strings.video_descr),
             contentScale = ContentScale.Crop,
-            modifier = Modifier.size(68.dp).then(thumbnailClip).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
+            modifier = thumbnailInset.size(68.dp).then(thumbnailClip).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
           )
         }
         is MsgContent.MCFile, is MsgContent.MCVoice -> {
@@ -270,7 +271,7 @@ fun FramedItemView(
     var metaColor = MaterialTheme.colors.secondary
     ItemWithMeta(
       meta = { CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp) },
-      overlayMeta = if (captionlessMedia) { { CIMetaView(ci, chatTTL, Color.White, showViaProxy = showViaProxy, showTimestamp = showTimestamp, lineHeightColor = messageTextColor()) } } else null,
+      overlayMeta = if (captionlessMedia) { { Box(Modifier.padding(end = CHAT_ITEM_TEXT_PADDING)) { CIMetaView(ci, chatTTL, Color.White, showViaProxy = showViaProxy, showTimestamp = showTimestamp, lineHeightColor = messageTextColor()) } } } else null,
       metaReserved = metaReserved,
       endButton = endButton
     ) { inlineMeta ->
