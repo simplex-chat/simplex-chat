@@ -1237,6 +1237,14 @@ describe("download", () => {
       expect(rename).toHaveBeenCalledTimes(2)
     })
 
+    it("is moved into the group's folder also from a member chat of the group", () => {
+      const chat = new FakeChat()
+      const {source, received} = receivedIn(chat, "voice")
+      const {tools} = downloadTools(chat)
+      tools.onFileComplete(event({...trail, groupChatScope: {type: "memberSupport"}} as T.ChatInfo, received))
+      expect([existsSync(source), readFileSync(downloaded, "utf8")]).toEqual([false, "voice"])
+    })
+
     it("leaves no partial file when the sender cancels it or its message is deleted", async () => {
       jest.useFakeTimers()
       jest.spyOn(process.stderr, "write").mockImplementation(() => true)

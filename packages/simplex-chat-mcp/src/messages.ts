@@ -130,11 +130,15 @@ export class ChatItemsWatch {
 }
 
 export function chatRef(chatInfo: T.ChatInfo): string | undefined {
+  return chatInfo.type === "group" && chatInfo.groupChatScope !== undefined ? undefined : anyScopeChatRef(chatInfo)
+}
+
+export function anyScopeChatRef(chatInfo: T.ChatInfo): string | undefined {
   switch (chatInfo.type) {
     case "direct":
       return `@${chatInfo.contact.contactId}`
     case "group":
-      return chatInfo.groupChatScope === undefined ? `#${chatInfo.groupInfo.groupId}` : undefined
+      return `#${chatInfo.groupInfo.groupId}`
     default:
       return undefined
   }

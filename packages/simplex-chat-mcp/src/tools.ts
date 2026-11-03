@@ -16,6 +16,7 @@ import {
   Message,
   Sender,
   ToolCall,
+  anyScopeChatRef,
   awaitResponses,
   chatNumber,
   chatRef,
@@ -535,7 +536,7 @@ export class AgentTools {
   }
 
   onFileComplete({chatInfo, chatItem: {content, file}}: T.AChatItem): void {
-    const chat = chatRef(chatInfo)
+    const chat = anyScopeChatRef(chatInfo)
     if (chat === undefined || content.type !== "rcvMsgContent" || file === undefined) return
     this.moveReceived(chat, file)
     this.settleFile(chat, file)

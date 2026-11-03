@@ -276,12 +276,14 @@ actions.ts    DownloadAction      new: input, subject, chat, item, from, file, s
               decided             until: the latest time to wait, Infinity by default
               summary             download: "download NAME from <chat>"
               performedText       download: "downloaded."
+messages.ts   anyScopeChatRef     new: @N or #N, also for a member chat of a group
+              chatRef             undefined for a member chat of a group, otherwise anyScopeChatRef
 tools.ts      download            new: attach; knownChat; the item and its file; action
               actionResult        until; an action still performing at until: {action, status: "performing"}, kept in memory
               performDownload     new: startedAt; downloadFile; path
               downloadFile        new, public: one download per file ID, a promise settled by onFile
               onFile              new: settles the promise of the file's download
-              onFileComplete      new: moves the received file; settles as onFile
+              onFileComplete      new: moves the received file, also of a member chat of a group; settles as onFile
               onFileCancelled     new: deletes the partial file of a download; rejects it
 serve.ts      startAgent          Agent.data: the data folder
                                   /_temp_folder DATA/tmp, mode 0700, before startChat
@@ -331,7 +333,7 @@ every 60 s, the item read again              gone: the partial file at the last 
 30 minutes without rcvTransfer progress      rejected, "The download made no progress for 30 minutes and was cancelled."; apiCancelFile; the partial file at the last fileSource deleted
 chatItemUpdated                              as rcvComplete and failed above: file digest, relays not approved (Library/Subscriber.hs:415-439)
 ```
-- Moved to path: when fileSource differs, path has no file and the file at fileSource has fileSize bytes; also without a download.
+- Moved to path: when fileSource differs, path has no file and the file at fileSource has fileSize bytes; also without a download, and from a member chat of a group into the group's folder.
 - A move is a rename; across file systems (EXDEV), a copy to `<path>.part`, its rename to path and a delete of the source.
 - Partial file deleted: only for a file with a download, when the file has at most fileSize bytes.
 - Every other row changes only a file with a download.

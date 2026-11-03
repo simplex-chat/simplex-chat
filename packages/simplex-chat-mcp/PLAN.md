@@ -1294,6 +1294,7 @@ chatItemUpdated                           as the item's file above: rcvComplete,
 ```
 
 - An event settles or deletes only a file with a promise; rcvFileComplete also moves a file without one, for example one whose transfer completes after a restart.
+- rcvFileComplete in a member chat of a group (groupChatScope) moves the file into the group's folder, DIR/files/#<groupId>; newChatItems runs downloadFile only for the main conversation.
 
 Every 60 s while the promise is unsettled:
 
