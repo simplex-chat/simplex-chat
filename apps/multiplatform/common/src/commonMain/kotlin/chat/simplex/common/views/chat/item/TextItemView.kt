@@ -215,12 +215,13 @@ fun MarkdownText (
   if (blockLayout && formattedText != null && markdownBlocks != null && range == null) {
     val direction = LocalLayoutDirection.current
     val terminal = LocalTerminalLayout.current
+    val trailingEmptyLines = trailingEmptyLines(text, formattedText, markdownBlocks)
     val ruleMinWidth = if (terminal && metaCopy != null && markdownBlocks.isNotEmpty() && markdownBlocks.all { it is MarkdownBlock.Rule }) {
       with(LocalDensity.current) { rememberTextMeasurer().measure(metaCopy, style).size.width.toDp() }
     } else 0.dp
     CompositionLocalProvider(LocalLayoutDirection provides textLayoutDirection) {
       MarkdownBlocks(
-        formattedText, markdownBlocks, style, modifier, cardColor ?: MaterialTheme.appColors.receivedQuote,
+        formattedText, markdownBlocks, trailingEmptyLines, style, modifier, cardColor ?: MaterialTheme.appColors.receivedQuote,
         blockText = { index, r, blockStyle, blockModifier, blockSoftWrap, last ->
           MarkdownText(
             text, formattedText, markdownBlocks, sender = if (index == 0) sender else null, meta = if (last) meta else null, chatTTL = chatTTL,
@@ -231,7 +232,7 @@ fun MarkdownText (
             selection = selection, textIndex = index, range = r.from until r.to, softWrap = blockSoftWrap, parentDirection = direction
           )
         },
-        metaLine = if (terminal && meta?.isLive != true) null else {
+        metaLine = if (terminal && meta?.isLive != true && trailingEmptyLines == 0) null else {
           {
             MarkdownText(
               text, formattedText, markdownBlocks, meta = meta, chatTTL = chatTTL, encrypted = encrypted, signedFileVerified = signedFileVerified, toggleSecrets = toggleSecrets, style = style,

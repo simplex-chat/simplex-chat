@@ -626,6 +626,36 @@ private final class SnapshotFixtures {
                 .quote(content: SegmentRange(from: 11, to: 12))
             ]
         ),
+        "### Gaps\n\none empty line above\n\n\ntwo empty lines above\n\n### After one empty line\n- list entry\n\n- after one empty line\n\n": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "### ", format: .markup(token: .headingMark(level: 3))),
+                FormattedText(text: "Gaps"),
+                FormattedText(text: "\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 2))),
+                FormattedText(text: "one empty line above"),
+                FormattedText(text: "\n\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 3))),
+                FormattedText(text: "two empty lines above"),
+                FormattedText(text: "\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 2))),
+                FormattedText(text: "### ", format: .markup(token: .headingMark(level: 3))),
+                FormattedText(text: "After one empty line"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "- ", format: .markup(token: .listMark(number: nil))),
+                FormattedText(text: "list entry"),
+                FormattedText(text: "\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 2))),
+                FormattedText(text: "- ", format: .markup(token: .listMark(number: nil))),
+                FormattedText(text: "after one empty line"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak))
+            ],
+            markdownBlocks: [
+                .heading(level: 3, content: SegmentRange(from: 1, to: 2)),
+                .paragraph(content: SegmentRange(from: 3, to: 4)),
+                .paragraph(content: SegmentRange(from: 5, to: 6)),
+                .heading(level: 3, content: SegmentRange(from: 8, to: 9)),
+                .list(items: [
+                    ListEntry(number: nil, content: SegmentRange(from: 11, to: 12), items: []),
+                    ListEntry(number: nil, content: SegmentRange(from: 14, to: 15), items: [])
+                ])
+            ]
+        ),
         "Plan for today:\n1. review\n2. **release**": ParsedMarkdown(
             formattedText: [
                 FormattedText(text: "Plan for today:"),
@@ -822,6 +852,7 @@ private final class SnapshotFixtures {
             msg(.directRcv, "Hi! Did you see the **new release**?", -60),
             msg(.directSnd, "Yes, *great* changes 🎉", -58, reactions: [reaction(.thumbsup, 1)]),
             msg(.directRcv, "# Release notes\n- terminal layout\n- `code` blocks\n\n> quoted line", -50),
+            msg(.directRcv, "### Gaps\n\none empty line above\n\n\ntwo empty lines above\n\n### After one empty line\n- list entry\n\n- after one empty line\n\n", -48),
             msg(.directSnd, "Thanks for the summary", -45, quote: quote(.directRcv, "Release notes")),
             msg(.directRcv, "", -40, content: .image(text: "", image: landscape), file: imageFile("photo.jpg")),
             msg(.directRcv, "", -35, content: .file(""), file: CIFile.getSample(fileId: id(), fileName: "report.pdf", fileSize: 245_760, filePath: nil, fileStatus: .rcvInvitation)),

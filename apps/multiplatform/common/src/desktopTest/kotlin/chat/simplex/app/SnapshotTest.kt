@@ -85,6 +85,8 @@ private val previewScenes = listOf(
   SnapshotScene("CIMetaView.PreviewCIMetaViewEditedSent", chatItemFontScales) { SimpleXTheme { PreviewCIMetaViewEditedSent() } },
   SnapshotScene("CIMetaView.PreviewCIMetaViewDeletedContent", chatItemFontScales) { SimpleXTheme { PreviewCIMetaViewDeletedContent() } },
   SnapshotScene("ChatItemView.PreviewChatItemView", chatItemFontScales) { SimpleXTheme { PreviewChatItemView() } },
+  SnapshotScene("ChatItemView.PreviewChatItemViewEmptyLines", chatItemFontScales) { SimpleXTheme { PreviewChatItemViewEmptyLines() } },
+  SnapshotScene("ChatItemView.PreviewChatItemViewEmptyLinesTerminal", chatItemFontScales) { SimpleXTheme { PreviewChatItemViewEmptyLinesTerminal() } },
   SnapshotScene("ChatItemView.PreviewChatItemViewDeletedContent", chatItemFontScales) { PreviewChatItemViewDeletedContent() },
   SnapshotScene("DeletedItemView.PreviewDeletedItemView", chatItemFontScales) { PreviewDeletedItemView() },
   SnapshotScene("IntegrityErrorItemView.IntegrityErrorItemViewPreview", chatItemFontScales) { IntegrityErrorItemViewPreview() },

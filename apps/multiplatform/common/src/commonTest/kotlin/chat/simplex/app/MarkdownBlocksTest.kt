@@ -1,8 +1,11 @@
 package chat.simplex.app
 
 import chat.simplex.common.model.*
+import chat.simplex.common.views.chat.item.MAX_EMPTY_LINES
+import chat.simplex.common.views.chat.item.emptyLines
 import chat.simplex.common.views.chat.item.itemDisplay
 import chat.simplex.common.views.chat.item.segmentDisplayText
+import chat.simplex.common.views.chat.item.trailingEmptyLines
 import chat.simplex.common.views.helpers.ParsedFormattedText
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -21,6 +24,12 @@ class MarkdownBlocksTest {
   private val tableAligned = parsed("""{"formattedText":[{"format":{"type":"markup","token":{"type":"rowMark"}},"text":"| "},{"text":"a"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" | "},{"text":"b"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" | "},{"text":"c"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" | "},{"text":"d"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" |"},{"format":{"type":"markup","token":{"type":"hardBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"delimiterRow","columns":["none","left","right","center"]}},"text":"|---|:--|--:|:-:|"},{"format":{"type":"markup","token":{"type":"hardBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"rowMark"}},"text":"| "},{"text":"xxx"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" | "},{"format":{"type":"bold","singleStar":false},"text":"yyy"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" | "},{"text":"zzz"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" |"}],"markdownBlocks":[{"type":"table","columns":["none","left","right","center"],"header":[{"from":1,"to":2},{"from":3,"to":4},{"from":5,"to":6},{"from":7,"to":8}],"rows":[[{"from":13,"to":14},{"from":15,"to":16},{"from":17,"to":18}]]}]}""")
 
   private val gaps = parsed("""{"formattedText":[{"format":{"type":"markup","token":{"type":"paragraphBreak","lineBreaks":2}},"text":"\n\n"},{"text":"a"},{"format":{"type":"markup","token":{"type":"paragraphBreak","lineBreaks":3}},"text":"\n\n\n"},{"format":{"type":"markup","token":{"type":"headingMark","level":1}},"text":"# "},{"text":"h"},{"format":{"type":"markup","token":{"type":"lineBreak"}},"text":"\n"}],"markdownBlocks":[{"type":"paragraph","content":{"from":1,"to":2}},{"type":"heading","level":1,"content":{"from":4,"to":5}}]}""")
+
+  private val looseList = parsed("""{"formattedText":[{"format":{"type":"markup","token":{"type":"listMark"}},"text":"- "},{"text":"a"},{"format":{"type":"markup","token":{"type":"paragraphBreak","lineBreaks":2}},"text":"\n\n"},{"format":{"type":"markup","token":{"type":"listMark"}},"text":"- "},{"text":"b"},{"format":{"type":"markup","token":{"type":"paragraphBreak","lineBreaks":3}},"text":"\n\n\n"},{"format":{"type":"markup","token":{"type":"listMark"}},"text":"- "},{"text":"c"}],"markdownBlocks":[{"type":"list","items":[{"content":{"from":1,"to":2},"items":[]},{"content":{"from":4,"to":5},"items":[]},{"content":{"from":7,"to":8},"items":[]}]}]}""")
+
+  private val trailingSpaces = parsed("""{"formattedText":[{"format":{"type":"markup","token":{"type":"headingMark","level":1}},"text":"# "},{"text":"a"},{"format":{"type":"markup","token":{"type":"paragraphBreak","lineBreaks":1}},"text":"\n  "}],"markdownBlocks":[{"type":"heading","level":1,"content":{"from":1,"to":2}}]}""")
+
+  private val emptyLineAndSpaces = parsed("""{"formattedText":[{"format":{"type":"markup","token":{"type":"headingMark","level":1}},"text":"# "},{"text":"a"},{"format":{"type":"markup","token":{"type":"paragraphBreak","lineBreaks":2}},"text":"\n\n  "}],"markdownBlocks":[{"type":"heading","level":1,"content":{"from":1,"to":2}}]}""")
 
   private val escapes = parsed("""{"formattedText":[{"text":"text "},{"format":{"type":"escape"},"text":"\\"},{"text":"*not"},{"format":{"type":"escape"},"text":"\\"},{"text":"*\nmore"}]}""")
 
@@ -80,6 +89,22 @@ class MarkdownBlocksTest {
   fun testListEntryLevels() {
     val list = assertIs<MarkdownBlock.ItemList>(nestedList.markdownBlocks!!.single())
     assertEquals(listOf(1 to 0, 7 to 1, 10 to 0), listEntries(list.items, 0).map { (entry, level) -> entry.content.from to level })
+  }
+
+  @Test
+  fun testEmptyLines() {
+    val gapTokens = gaps.formattedText!!
+    assertEquals(2, emptyLines(gapTokens, 0, 1, between = false))
+    assertEquals(2, emptyLines(gapTokens, 2, 4, between = true))
+    assertEquals(0, emptyLines(headingAndParagraph.formattedText!!, 3, 4, between = true))
+    assertEquals(0, emptyLines(nestedList.formattedText!!, 5, 7, between = true))
+    assertEquals(MAX_EMPTY_LINES, emptyLines(listOf(FormattedText("\n".repeat(5000), Format.Markup(BlockToken.ParagraphBreak(5000)))), 0, 1, between = true))
+    val entries = listEntries(assertIs<MarkdownBlock.ItemList>(looseList.markdownBlocks!!.single()).items, 0).map { it.first.content }
+    assertEquals(listOf(1, 2), entries.zipWithNext { a, b -> emptyLines(looseList.formattedText!!, a.to, b.from, between = true) })
+    assertEquals(1, trailingEmptyLines("\n\na\n\n\n# h\n\n", gapTokens, gaps.markdownBlocks!!))
+    assertEquals(0, trailingEmptyLines("# a\n  ", trailingSpaces.formattedText!!, trailingSpaces.markdownBlocks!!))
+    assertEquals(1, trailingEmptyLines("# a\n\n  ", emptyLineAndSpaces.formattedText!!, emptyLineAndSpaces.markdownBlocks!!))
+    assertEquals(0, trailingEmptyLines("# Title *x*\nPara a\nb  \nc\n", headingAndParagraph.formattedText!!, headingAndParagraph.markdownBlocks!!))
   }
 
   @Test
