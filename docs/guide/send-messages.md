@@ -147,8 +147,6 @@ or drag files and images into the chat window.
 When files are not allowed in a group, the app shows **Files and media
 prohibited!** when you tap the paperclip.
 
-<img src="./images/send-messages-files.png" alt="Files in a chat in different states: sent, received, waiting to download, downloading and cancelled" width="300">
-
 ### Receive files
 
 Small images, videos and voice messages are downloaded automatically when
@@ -180,8 +178,6 @@ formatted documents.
 You can also hold the microphone while you speak: when you hold it for more than
 a second, the app stops recording when you release it. A voice message can be up
 to 5 minutes long; the app stops recording at 5 minutes.
-
-<img src="./images/send-messages-voice.png" alt="Voice messages in a chat, with play buttons and durations" width="300">
 
 When the microphone is grey, voice messages are not allowed in this chat: tap it
 to see why. When you do not allow voice messages to a contact who allows them,
@@ -221,8 +217,6 @@ you send are deleted only when you send them as disappearing messages.
 
 This option is available in chats where disappearing messages are allowed.
 
-<img src="./images/send-messages-custom-time.png" alt="The custom time picker with a number and a time unit" width="300">
-
 ### Default for new contacts
 
 In the profile menu, in **Chat preferences**, you set whether you allow
@@ -252,8 +246,6 @@ The app updates a live message for the recipients as you type it.
 The app marks live messages **LIVE** until you finish them. If you leave the
 chat, the message is sent as it is. Live messages are not available in Private
 notes.
-
-<img src="./images/send-messages-live.png" alt="Messages in a chat: emoji, a deleted message, a message marked deleted and two live messages" width="300">
 
 ## Message drafts
 
@@ -340,8 +332,6 @@ line), quotes (`>`), lists (`-`, `*`, `+`, or a number with `.` or `)`), code
 blocks (between lines of ```` ``` ````), tables (lines with `|` and a delimiter
 row such as `|---|---|`) and horizontal rules (`---`).
 
-<img src="./images/send-messages-markdown.png" alt="The markdown examples shown in the app's help" width="300">
-
 The main formats are shown in the app's help: **Settings** → **Help & support**
 → **How to use it**.
 
@@ -412,8 +402,6 @@ The app shows the status of the messages that you send next to the time:
 
 The app marks a received message that you have not read yet with a filled
 circle.
-
-<img src="./images/send-messages-status.png" alt="Message status marks next to the time: one and two check marks, pale check marks and the private routing arrow" width="300">
 
 ### Delivery receipts
 

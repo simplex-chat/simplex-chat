@@ -115,8 +115,6 @@ You choose incognito mode for each connection, in these places:
   the app uses the same random profile in the group and offers **Join
   incognito**.
 
-<img src="./images/chat-profiles-your-profile-picker.png" alt="Your profile picker shown above the message field in a chat opened from a link" width="300">
-
 The app keeps your last choice: after you choose **Incognito**, it is selected
 again the next time you create a 1-time link, open a link with a preview or
 create a group.
