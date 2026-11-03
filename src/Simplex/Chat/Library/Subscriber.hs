@@ -220,6 +220,8 @@ processAgentMessageNoConn = \case
     errsEvent :: [(ConnId, AgentErrorType)] -> CM ()
     errsEvent = toView . CEvtChatErrors . map (\(cId, e) -> ChatErrorAgent e (AgentConnId cId) Nothing)
 
+data DescrRecipient = DRConn Connection (Maybe SndFileTransfer) | DRPending GroupMemberId
+
 processAgentMsgSndFile :: ACorrId -> SndFileId -> AEvent 'AESndFile -> CM ()
 processAgentMsgSndFile _corrId aFileId msg = do
   (cRef_, fileId) <- withStore (`getXFTPSndFileDBIds` AgentSndFileId aFileId)
@@ -264,7 +266,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
                     -- we have 1 chunk - use it as URI whether it is redirect or not
                     ft' <- maybe (pure ft) (\fId -> withStore $ \db -> getFileTransferMeta db user fId) xftpRedirectFor
                     toView $ CEvtSndStandaloneFileComplete user ft' $ map (decodeLatin1 . strEncode . FD.fileDescriptionURI) rfds'
-            Just (AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted, showGroupAsSender}}) ->
+            Just (AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemId, itemSharedMsgId = msgId_, itemDeleted, showGroupAsSender}}) ->
               case (msgId_, itemDeleted) of
                 (Just sharedMsgId, Nothing) -> do
                   when (length rfds < length sfts) $ throwChatError $ CEInternalError "not enough XFTP file descriptions to send"
@@ -281,7 +283,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
                       withStore' $ \db -> do
                         createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
                         forM_ descrBadge $ createFileBadgeProof db fileId BPKDescription
-                      sendFileDescriptions (ConnectionId connId) ((conn, sft, fileDescrText rfd) :| []) sharedMsgId fileExpires descrBadge >>= \case
+                      sendFileDescriptions (ConnectionId connId) ((DRConn conn (Just sft), fileDescrText rfd) :| []) sharedMsgId fileExpires descrBadge >>= \case
                         Just rs -> case L.last rs of
                           Right ([msgDeliveryId], _) ->
                             withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
@@ -292,8 +294,21 @@ processAgentMsgSndFile _corrId aFileId msg = do
                     (_, _, SMDSnd, GroupChat g@GroupInfo {groupId} _scope) -> do
                       -- TODO [relays] single description for all recipients
                       ms <- getRecipients
-                      let rfdsMemberFTs = zipWith (\rfd (conn, sft) -> (conn, sft, fileDescrText rfd)) rfds (memberFTs ms)
+                      sndStatuses <- withStore' (`getGroupSndStatuses` itemId)
+                      let mFTs = memberFTs ms
+                          rfdsMemberFTs = zipWith (\rfd (gmId, (conn, sft)) -> (gmId, (DRConn conn (Just sft), fileDescrText rfd))) rfds (M.toList mFTs)
+                          sentDescrs = M.fromList $ map (\(gmId, (_, rfdText)) -> (gmId, rfdText)) rfdsMemberFTs
+                          statuses = M.fromList $ map (\MemberDeliveryStatus {groupMemberId, memberDeliveryStatus} -> (groupMemberId, memberDeliveryStatus)) sndStatuses
+                          (fwdDescrs, spareMs) = partitionEithers $ mapMaybe lateMemberDescr ms
+                          lateMemberDescr m@GroupMember {groupMemberId = gmId}
+                            | gmId `M.member` mFTs = Nothing
+                            | otherwise = case M.lookup gmId statuses of
+                                Nothing -> Nothing
+                                Just GSSForwarded | Just rfdText <- forwardingMemberId g m >>= (`M.lookup` sentDescrs) -> Just $ Left (m, rfdText)
+                                Just _ -> Just $ Right m
                           extraRFDs = drop (length rfdsMemberFTs) rfds
+                          spareDescrs = zipWith (\m rfd -> (m, fileDescrText rfd)) spareMs extraRFDs
+                          lateDescrs = map (\(m, rfdText) -> (lateRecipient m, rfdText)) (fwdDescrs <> spareDescrs)
                           FileTransferMeta {fileSize} = ft
                       needsBadge <- fileNeedsBadge fileSize
                       let binding_ = if needsBadge && not (incognitoMembership g) then sndGroupChatBinding g showGroupAsSender else Nothing
@@ -301,10 +316,10 @@ processAgentMsgSndFile _corrId aFileId msg = do
                         let FD.ValidFileDescription fd = sndDescr
                          in sndBadgeProof user PHFileDescr {chatBinding, fileSize = fromInteger fileSize, descrHash = FD.sharedDescriptionHash fd, fileExpires}
                       withStore' $ \db -> do
-                        createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
+                        createExtraSndFTDescrs db user fileId (map fileDescrText $ drop (length spareDescrs) extraRFDs)
                         forM_ descrBadge $ createFileBadgeProof db fileId BPKDescription
-                      forM_ (L.nonEmpty rfdsMemberFTs) $ \rfdsMemberFTs' ->
-                        sendFileDescriptions (GroupId groupId) rfdsMemberFTs' sharedMsgId fileExpires descrBadge
+                      forM_ (L.nonEmpty $ map snd rfdsMemberFTs <> lateDescrs) $ \rcpsDescrs ->
+                        sendFileDescriptions (GroupId groupId) rcpsDescrs sharedMsgId fileExpires descrBadge
                       ci' <- withStore $ \db -> do
                         liftIO $ updateCIFileStatus db user fileId CIFSSndComplete
                         getChatItemByFileId db cxt user fileId
@@ -314,11 +329,13 @@ processAgentMsgSndFile _corrId aFileId msg = do
                         getRecipients
                           | useRelays' g = withStore' $ \db -> getGroupRelayMembers db cxt user g
                           | otherwise = withStore' $ \db -> getGroupMembers db cxt user g
-                        memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
-                        memberFTs ms = M.elems $ M.intersectionWith (,) (M.fromList mConns') (M.fromList sfts')
+                        memberFTs :: [GroupMember] -> Map GroupMemberId (Connection, SndFileTransfer)
+                        memberFTs ms = M.intersectionWith (,) (M.fromList mConns') (M.fromList sfts')
                           where
                             mConns' = mapMaybe readyMemberConn ms
                             sfts' = mapMaybe (\sft@SndFileTransfer {groupMemberId} -> (,sft) <$> groupMemberId) sfts
+                        lateRecipient :: GroupMember -> DescrRecipient
+                        lateRecipient m = maybe (DRPending $ groupMemberId' m) (\(_, conn) -> DRConn conn Nothing) (readyMemberConn m)
                     _ -> pure ()
                 _ -> pure () -- TODO error?
         SFWARN e -> do
@@ -333,27 +350,28 @@ processAgentMsgSndFile _corrId aFileId msg = do
       where
         fileDescrText :: FilePartyI p => ValidFileDescription p -> T.Text
         fileDescrText = safeDecodeUtf8 . strEncode
-        sendFileDescriptions :: ConnOrGroupId -> NonEmpty (Connection, SndFileTransfer, RcvFileDescrText) -> SharedMsgId -> Maybe UTCTime -> Maybe BadgeProof -> CM (Maybe (NonEmpty (Either ChatError ([Int64], PQEncryption))))
-        sendFileDescriptions connOrGroupId connsTransfersDescrs sharedMsgId fileExpires descrBadge = do
-          lift . void . withStoreBatch' $ \db -> L.map (\(_, sft, rfdText) -> updateSndFTDescrXFTP db user sft rfdText) connsTransfersDescrs
+        sendFileDescriptions :: ConnOrGroupId -> NonEmpty (DescrRecipient, RcvFileDescrText) -> SharedMsgId -> Maybe UTCTime -> Maybe BadgeProof -> CM (Maybe (NonEmpty (Either ChatError ([Int64], PQEncryption))))
+        sendFileDescriptions connOrGroupId rcpsDescrs sharedMsgId fileExpires descrBadge = do
+          lift . void . withStoreBatch' $ \db -> [updateSndFTDescrXFTP db user sft rfdText | (DRConn _ (Just sft), rfdText) <- L.toList rcpsDescrs]
           partSize <- asks $ xftpDescrPartSize . config
-          let connsIdsEvts = connDescrEvents partSize
-          sndMsgs_ <- lift $ createSndMessages $ L.map snd connsIdsEvts
-          let (errs, msgReqs) = partitionEithers . L.toList $ L.zipWith (fmap . toMsgReq) connsIdsEvts sndMsgs_
+          let rcpsIdsEvts = rcpDescrEvents partSize
+          sndMsgs_ <- lift $ createSndMessages $ L.map snd rcpsIdsEvts
+          let (errs, rcpsMsgs) = partitionEithers . L.toList $ L.zipWith (\(rcp, _) -> fmap (rcp,)) rcpsIdsEvts sndMsgs_
+              msgReqs = [(conn, MsgFlags {notification = hasNotification XMsgFileDescr_}, (vrValue msgBody, [msgId])) | (DRConn conn _, SndMessage {msgId, msgBody}) <- rcpsMsgs]
+          withStore' $ \db -> forM_ rcpsMsgs $ \case
+            (DRPending gmId, SndMessage {msgId}) -> createPendingGroupMessage db gmId msgId
+            _ -> pure ()
           delivered <- mapM deliverMessages (L.nonEmpty msgReqs)
           let errs' = errs <> maybe [] (lefts . L.toList) delivered
           unless (null errs') $ toView $ CEvtChatErrors errs'
           pure delivered
           where
-            connDescrEvents :: Int -> NonEmpty (Connection, (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json))
-            connDescrEvents partSize = L.fromList $ concatMap splitText (L.toList connsTransfersDescrs)
+            rcpDescrEvents :: Int -> NonEmpty (DescrRecipient, (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json))
+            rcpDescrEvents partSize = L.fromList $ concatMap splitText (L.toList rcpsDescrs)
               where
-                splitText :: (Connection, SndFileTransfer, RcvFileDescrText) -> [(Connection, (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json))]
-                splitText (conn, _, rfdText) =
-                  map (\fileDescr@FileDescr {fileDescrComplete} -> (conn, (connOrGroupId, Nothing, XMsgFileDescr {msgId = sharedMsgId, fileDescr, fileExpires, fileBadge = if fileDescrComplete then descrBadge else Nothing}))) (L.toList $ splitFileDescr partSize (maybe partSize (const badgeDescrPartSize) descrBadge) rfdText)
-            toMsgReq :: (Connection, (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json)) -> SndMessage -> ChatMsgReq
-            toMsgReq (conn, _) SndMessage {msgId, msgBody} =
-              (conn, MsgFlags {notification = hasNotification XMsgFileDescr_}, (vrValue msgBody, [msgId]))
+                splitText :: (DescrRecipient, RcvFileDescrText) -> [(DescrRecipient, (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json))]
+                splitText (rcp, rfdText) =
+                  map (\fileDescr@FileDescr {fileDescrComplete} -> (rcp, (connOrGroupId, Nothing, XMsgFileDescr {msgId = sharedMsgId, fileDescr, fileExpires, fileBadge = if fileDescrComplete then descrBadge else Nothing}))) (L.toList $ splitFileDescr partSize (maybe partSize (const badgeDescrPartSize) descrBadge) rfdText)
         sendFileError :: FileError -> Text -> StoreCxt -> FileTransferMeta -> CM ()
         sendFileError ferr err cxt ft = do
           logError $ "Sent file error: " <> err
