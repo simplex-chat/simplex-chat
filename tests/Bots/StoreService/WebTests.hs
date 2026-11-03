@@ -266,6 +266,7 @@ badgeWebTests = do
     it "expires an invoice past the settle window once its cancel has failed for an hour, and reports it" testSweepGivesUpPastTheWindow
     it "cancels overdue invoices oldest first, keeping the failures of those left for later" testSweepKeepsFailuresBeyondTheCap
     it "expires an old invoice whose provider is gone, without a call" testSweepExpiresWithoutItsProvider
+    it "sweeps around an overdue invoice whose provider this build does not know, leaving it open" testSweepSkipsAnUnknownProvider
     it "warns once per order while a cancel keeps failing" testSweepWarnsOncePerOrder
     it "cancels at most a pass-sized batch, leaving the rest for the next pass" testSweepCapsCancelsPerPass
     it "reports a skipped invoice once, and again only after the interval" testSkipWarningsAreRateLimited
@@ -3002,6 +3003,19 @@ testSweepExpiresWithoutItsProvider = bounded "sweep without provider" $ withStub
   invoiceStatus (weStore env) iid `shouldReturn` ISExpired
   loggedError "no provider is configured for it" logged `shouldBe` True
   stubCalls ref `shouldReturn` []
+
+testSweepSkipsAnUnknownProvider :: IO ()
+testSweepSkipsAnUnknownProvider = bounded "sweep around an unknown provider" $ withStubPoller raceHold $ \_ poller env _ -> do
+  now <- getCurrentTime
+  seedBadgePrice (weStore env) "price1"
+  unknown@(InvoiceId unknownId) <- seedPastWindow (weStore env) 1 "p-unknown" PPCrypto
+  overdue <- seedOpenRef (weStore env) 2 "p-overdue" (addUTCTime (negate (expiryGrace + 60)) now)
+  withConnection (weStore env) $ \db ->
+    DB.execute db "UPDATE sx_badge_service_invoices SET provider = ? WHERE invoice_id = ?" ("nonsense" :: Text, unknownId)
+  logged <- capturingStderr (runOnePass poller)
+  invoiceStatus (weStore env) overdue `shouldReturn` ISExpired
+  independentStatus (weStore env) unknown `shouldReturn` Just "open"
+  logged `shouldSatisfy` loggedError ("store: overdue invoice " <> unknownId <> " names provider nonsense")
 
 testSweepKeepsFailuresBeyondTheCap :: IO ()
 testSweepKeepsFailuresBeyondTheCap = bounded "sweep keeps failures past the cap" $ withPayableStubPoller raceHold $ \ref poller env _ -> do
