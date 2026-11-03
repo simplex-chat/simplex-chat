@@ -1,3 +1,4 @@
+import {existsSync} from "fs"
 import {extname, join} from "path"
 import {T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
@@ -9,6 +10,7 @@ const pageSize = 100
 const maxCollected = 100
 const prohibitedNameChars = ".,;/\\#@'\"`~"
 const maxNameLength = 50
+export const missingFile = "The received file is not in the agent's files folder."
 
 export interface Message {
   chat: string
@@ -186,11 +188,17 @@ function messageFile(chat: string, msgContent: T.MsgContent, ciFile: T.CIFile, r
   const {name, size, type} = fileOffer(msgContent, ciFile)
   const file = {name, size, type}
   const {fileId, fileSource, fileStatus} = ciFile
-  const error = fileError(ciFile)
+  const error = receivedFileError(data, chat, ciFile)
+  const path = downloadPath(data, chat, fileId, name)
   if (rejectedFiles.has(fileId)) return {...file, status: "rejected"}
   if (error !== undefined) return {...file, status: "failed", error}
-  if (fileStatus.type === "rcvComplete") return {...file, status: "received", ...(fileSource?.filePath === downloadPath(data, chat, fileId, name) ? {path: fileSource.filePath} : {})}
+  if (fileStatus.type === "rcvComplete" && fileSource?.filePath === path) return {...file, status: "received", path}
   return {...file, status: "offered"}
+}
+
+export function receivedFileError(data: string, chat: string, file: T.CIFile): string | undefined {
+  const {fileId, fileName, fileStatus} = file
+  return fileError(file) ?? (fileStatus.type === "rcvComplete" && !existsSync(downloadPath(data, chat, fileId, fileName)) ? missingFile : undefined)
 }
 
 export function downloadPath(data: string, chat: string, fileId: number, name: string): string {

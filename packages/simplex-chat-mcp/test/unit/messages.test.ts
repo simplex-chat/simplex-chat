@@ -71,7 +71,12 @@ describe("message fields", () => {
     expect(fileOf("file", {type: "rcvInvitation"})).toEqual({name: "report.pdf", size: 2400000, type: "file", status: "offered"})
     expect(fileOf("file", {type: "rcvComplete"}, {filePath: downloaded}, new Set([7]))).toEqual({name: "report.pdf", size: 2400000, type: "file", status: "rejected"})
     expect(fileOf("image", {type: "rcvTransfer", rcvProgress: 1, rcvTotal: 2})).toEqual({name: "report.pdf", size: 2400000, type: "image", status: "offered"})
+    expect(fileOf("video", {type: "rcvComplete"}, {filePath: downloaded})).toEqual({name: "report.pdf", size: 2400000, type: "video", status: "failed", error: "The received file is not in the agent's files folder."})
+    mkdirSync(dirname(downloaded), {recursive: true})
+    writeFileSync(downloaded, "report")
     expect(fileOf("video", {type: "rcvComplete"}, {filePath: downloaded})).toEqual({name: "report.pdf", size: 2400000, type: "video", status: "received", path: downloaded})
+    expect(fileOf("voice", {type: "rcvComplete"}, {filePath: join(data, "report.pdf")})).toEqual({name: "report.pdf", size: 2400000, type: "voice", status: "offered"})
+    rmSync(downloaded)
     expect(fileOf("voice", {type: "rcvCancelled"})).toMatchObject({type: "voice", status: "failed", error: "The file was cancelled."})
     expect(fileOf("text", {type: "rcvAborted"})).toMatchObject({type: "file", status: "failed", error: "The download was aborted."})
     expect(fileOf("file", {type: "rcvError", rcvFileError: {type: "blocked", server: "xftp://k@xftp.example.com", blockInfo: {reason: "spam"}}})!.error).toBe("File is blocked by server operator: Spam.")
@@ -1055,7 +1060,13 @@ describe("download", () => {
     return {serverId: 1, server, preset: false, enabled: true, roles: {}, deleted: false}
   }
 
-  const completed = (path: string): T.AChatItem => event(trail, fileItem(30, image, {type: "rcvComplete"}, {fileSource: {filePath: path}}))
+  afterEach(() => rmSync(folder, {recursive: true, force: true}))
+
+  function completed(path: string): T.AChatItem {
+    mkdirSync(dirname(path), {recursive: true})
+    writeFileSync(path, "report")
+    return event(trail, fileItem(30, image, {type: "rcvComplete"}, {fileSource: {filePath: path}}))
+  }
 
   it("downloads an offered file after the approval and returns its path", async () => {
     const chat = new FakeChat()
@@ -1099,6 +1110,8 @@ describe("download", () => {
   it("returns the path of a file already downloaded, without downloading it again", async () => {
     const chat = new FakeChat()
     offeredIn(chat, {type: "rcvComplete"}, {filePath: downloaded})
+    mkdirSync(folder, {recursive: true})
+    writeFileSync(downloaded, "report")
     const {tools, actions} = downloadTools(chat)
     const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
     await flushed()
@@ -1107,7 +1120,7 @@ describe("download", () => {
     expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([])
   })
 
-  it("fails when the file fails, the sender cancels it, its item is gone, or it is received without its path", async () => {
+  it("fails when the file fails, the sender cancels it, its item is gone, or the received file is not in its folder", async () => {
     const chat = new FakeChat()
     offeredIn(chat)
     const {tools, actions} = downloadTools(chat)
@@ -1125,7 +1138,7 @@ describe("download", () => {
     expect(await download(() => tools.onFileCancelled(cancelled))).toMatchObject({status: "failed", error: "The sender cancelled the file."})
     const gone = {type: "rcvFileError", user, agentError: {type: "FILE", fileErr: {type: "NO_FILE"}}, rcvFileTransfer: {fileId: 7}} as unknown as Parameters<AgentTools["onFileError"]>[0]
     expect(await download(() => tools.onFileError(gone))).toMatchObject({status: "failed", error: "SimpleX error: errorAgent: FILE: NO_FILE"})
-    expect(await download(() => tools.onFile(event(trail, fileItem(30, image, {type: "rcvComplete"}))))).toMatchObject({status: "failed", error: "The file was received without a path."})
+    expect(await download(() => tools.onFile(event(trail, fileItem(30, image, {type: "rcvComplete"}))))).toMatchObject({status: "failed", error: "The received file is not in the agent's files folder."})
   })
 
   it("fails when no part of the file arrives for 30 minutes, and cancels the file", async () => {
@@ -1188,13 +1201,9 @@ describe("download", () => {
 
     beforeEach(() => {
       elsewhere = realpathSync(mkdtempSync(join(os.tmpdir(), "simplex-mcp-received-")))
-      rmSync(downloaded, {force: true})
     })
 
-    afterEach(() => {
-      rmSync(elsewhere, {recursive: true, force: true})
-      rmSync(downloaded, {force: true})
-    })
+    afterEach(() => rmSync(elsewhere, {recursive: true, force: true}))
 
     function receivedIn(chat: FakeChat, content: string): {source: string; received: T.ChatItem} {
       const source = join(elsewhere, "report.pdf")

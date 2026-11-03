@@ -192,7 +192,9 @@ Status, completed:
 fileStatus                         status
 rcvInvitation, rcvWarning          offered
 rcvAccepted, rcvTransfer           offered
-rcvComplete                        received
+rcvComplete                        failed: "The received file is not in the agent's files folder.", when the download path has no file
+                                   received, when fileSource is the download path
+                                   offered otherwise: a file moved there without a download
 rcvCancelled                       failed: "The file was cancelled."
 rcvAborted                         failed: "The download was aborted."
 rcvError                           failed: fileErrorText
@@ -313,7 +315,7 @@ a download of the file ID in memory: its promise
 otherwise a new promise in memory, then:
   path DATA/files/CHAT/<file ID><extension>; the folder created with mode 0700
   the item's file status:
-    rcvComplete              resolved with path
+    rcvComplete              resolved with path; path has no file: rejected, "The received file is not in the agent's files folder."
     failed                   partial file deleted; rejected
     rcvAccepted, rcvTransfer the events settle it
     other                    apiReceiveFile(fileId, path); the core creates the file at that path (getRcvFilePath, Library/Internal.hs:958-965)

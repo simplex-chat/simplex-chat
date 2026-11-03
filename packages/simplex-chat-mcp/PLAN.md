@@ -597,9 +597,10 @@ field    source
 name     fileName
 size     fileSize, bytes
 type     image | video | voice from content.msgContent.type; file otherwise
-status   rejected: the file ID is in rejected files; failed: fileProhibited is set (the core refuses to receive it, Library/Internal.hs:783); otherwise from fileStatus: offered (rcvInvitation, rcvAccepted, rcvTransfer, rcvWarning), received (rcvComplete), failed (rcvCancelled, rcvAborted, rcvError, invalid)
-path     received, when fileSource.filePath is the download path of the file (section download): that path
-error    failed: "Large file! The file is above the limit of N bytes for its sender." with a badge issue in the apps' words, "sender's" in place of "Contact's" (strings.xml: "Contact's badge expired."; here "Sender's badge expired.", "Sender's badge verification failed.", "No key to verify sender's badge."), "The file was cancelled.", "The download was aborted.", the apps' words for the FileError of rcvError (fileErrorText, log.ts), "Invalid file: TEXT"
+status   rejected: the file ID is in rejected files; failed: fileProhibited is set (the core refuses to receive it, Library/Internal.hs:783); otherwise from fileStatus: offered (rcvInvitation, rcvAccepted, rcvTransfer, rcvWarning), failed (rcvCancelled, rcvAborted, rcvError, invalid), rcvComplete as below
+         rcvComplete: failed when the download path of the file (section download) has no file; received when fileSource.filePath is the download path; offered otherwise
+path     received: the download path
+error    failed: "The received file is not in the agent's files folder.", "Large file! The file is above the limit of N bytes for its sender." with a badge issue in the apps' words, "sender's" in place of "Contact's" (strings.xml: "Contact's badge expired."; here "Sender's badge expired.", "Sender's badge verification failed.", "No key to verify sender's badge."), "The file was cancelled.", "The download was aborted.", the apps' words for the FileError of rcvError (fileErrorText, log.ts), "Invalid file: TEXT"
 ```
 
 ### connect
@@ -1273,7 +1274,7 @@ downloadFile(chat, item, file), also run by /receive, and by newChatItems for ea
     other                    the events below settle it
 
 settle received, for a received file in status rcvComplete with a promise:
-  no fileSource: rejected, "The file was received without a path."
+  the download path has no file: rejected, "The received file is not in the agent's files folder."
   otherwise resolved with the download path
 
 move received, at rcvFileComplete with or without a promise, and at a check that reads rcvComplete:
@@ -1310,7 +1311,7 @@ of progress                                 (an XFTP file returns to rcvInvitati
 - The check ends a download whose message is deleted or moderated, whose chat is deleted by `leave` or `/leave`, whose file server stays unreachable (`RFWARN` only, Library/Subscriber.hs:429-433), or whose inline chunks do not arrive.
 - The last fileSource seen is the download path until a read shows the item's fileSource.
 - XFTP reports progress once per chunk, of up to 4 MiB (simplexmq `FileTransfer/Chunks.hs:31-33`): a 4 MiB chunk takes 30 minutes at about 19 kbit/s.
-- A file received without a request keeps the core's path in the database; the file field shows it as received without a path, and `download` and `/receive` return the download path.
+- A file received without a request keeps the core's path in the database; the file field shows it as offered once it is moved, and `download` and `/receive` return the download path.
 - A settled promise leaves memory and its check stops; a later `downloadFile` reads the item's file again.
 - `rcvFileDescrReady` of any file makes the waiting calls read their item again; the server counts these events, so that one arriving during a read is not missed.
 
