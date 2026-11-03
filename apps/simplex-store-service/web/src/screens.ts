@@ -1,6 +1,6 @@
 import { money, countdown, outstanding, startedAgo, type Outstanding } from "./format.js";
 import { badgeIcon, chevronLeft, hamburger, hasBadgeArt, methodMark, wefunderMark } from "./icons.js";
-import { paymentUri, qrSvg } from "./qr.js";
+import { paymentQrPayload, paymentUri, qrSvg } from "./qr.js";
 import type { HistoryRow, UnpaidOrder } from "./order.js";
 import type { InvoiceView } from "./api.js";
 import { THEMES, type App, type Chain, type Method, type Theme } from "./domain.js";
@@ -638,7 +638,7 @@ export function awaitingPayment(o: AwaitingPaymentOptions): { node: HTMLElement;
           : warning(seen, "Send the rest to the same address below. The invoice stays open until it is paid in full."));
   }
   const uri = owed === undefined ? null : paymentUri(o.method, o.invoice.address ?? "", owed);
-  const qr = uri === null ? null : qrFigure(uri, `${CRYPTO_NAMES[o.method]} payment code`);
+  const qr = uri === null ? null : qrFigure(paymentQrPayload(o.method, uri), `${CRYPTO_NAMES[o.method]} payment code`);
   if (qr !== null && uri !== null) {
     const open = el("a", { class: "secondary inline wallet-link", href: uri }, "Open in wallet");
     // This uses .wallet-line rather than .copy-line, which is absolutely positioned inside
