@@ -881,7 +881,7 @@ fileprivate let getStakeSlides: [(image: String, heading: String, info: String?,
     ),
     (
         "crowdfunding_4",
-        "Revenue plan: free for users, channels & businesses pay",
+        "Revenue plan: businesses & channels pay",
         "SimpleX Chat plans to earn from the infrastructure and services that creators, businesses and large communities need as they grow.",
         "Read about how we plan to make SimpleX Chat and network profitable, and about all the investment terms on Wefunder."
     ),

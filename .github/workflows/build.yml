@@ -1219,7 +1219,7 @@ jobs:
         shell: bash
         run: |
           disk=$(hdiutil attach -nomount ram://4194304 | tr -d '[:space:]')
-          diskutil erasevolume HFS+ tests "$disk"
+          diskutil erasevolume APFS tests "$disk"
           ln -s /Volumes/tests tests/tmp
 
       - name: Run tests
