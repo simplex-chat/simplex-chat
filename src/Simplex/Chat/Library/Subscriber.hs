@@ -291,20 +291,19 @@ processAgentMsgSndFile _corrId aFileId msg = do
                           Left e -> eToView e
                         Nothing -> eToView $ ChatError $ CEInternalError "SFDONE, sendFileDescriptions: expected at least 1 result"
                       lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
-                    (_, _, SMDSnd, GroupChat g@GroupInfo {groupId, membership} _scope) -> do
+                    (_, _, SMDSnd, GroupChat g@GroupInfo {groupId} _scope) -> do
                       -- TODO [relays] single description for all recipients
                       ms <- getRecipients
-                      sndStatuses <- withStore' (`getGroupSndStatuses` itemId)
+                      statuses <- M.fromList . map (\MemberDeliveryStatus {groupMemberId, memberDeliveryStatus} -> (groupMemberId, memberDeliveryStatus)) <$> withStore' (`getGroupSndStatuses` itemId)
                       let mFTs = memberFTs ms
-                          statuses = M.fromList $ map (\MemberDeliveryStatus {groupMemberId, memberDeliveryStatus} -> (groupMemberId, memberDeliveryStatus)) sndStatuses
                           (fwdMs, lateMs)
-                            | memberCurrent membership = partitionEithers $ mapMaybe (lateMember mFTs statuses) ms
-                            | otherwise = ([], [])
+                            | memberRemoved (membership g) = ([], [])
+                            | otherwise = partitionEithers $ mapMaybe (lateMember mFTs statuses) ms
                       lateRcps <- mapM lateRecipient lateMs
                       let ownRcps = M.map (\(conn, sft) -> DRConn conn (Just sft)) mFTs <> M.fromList (zip (map groupMemberId' lateMs) lateRcps)
                           (fwdAttached, fwdOwners) = partitionEithers $ map (fwdOwner ownRcps) fwdMs
                           owners = M.toList ownRcps <> fwdOwners
-                          rcpsDescrs = concat $ zipWith (ownerDescrs $ M.fromListWith (<>) fwdAttached) owners rfds
+                          rcpsDescrs = concat $ zipWith (ownerDescrs $ M.fromListWith (<>) fwdAttached) owners (map fileDescrText rfds)
                           extraRFDs = drop (length owners) rfds
                           FileTransferMeta {fileSize} = ft
                       needsBadge <- fileNeedsBadge fileSize
@@ -334,16 +333,14 @@ processAgentMsgSndFile _corrId aFileId msg = do
                         lateMember :: Map GroupMemberId (Connection, SndFileTransfer) -> Map GroupMemberId GroupSndStatus -> GroupMember -> Maybe (Either GroupMember GroupMember)
                         lateMember mFTs statuses m@GroupMember {groupMemberId}
                           | groupMemberId `M.member` mFTs || memberRemoved m || any connEnded (memberConn m) = Nothing
-                          | otherwise = case M.lookup groupMemberId statuses of
-                              Just GSSForwarded -> Just $ Left m
-                              Just GSSError {} -> Nothing
-                              Just _ -> Just $ Right m
-                              Nothing -> Nothing
+                          | otherwise =
+                              M.lookup groupMemberId statuses >>= \case
+                                GSSForwarded -> Just $ Left m
+                                GSSError {} -> Nothing
+                                _ -> Just $ Right m
                         lateRecipient :: GroupMember -> CM DescrRecipient
                         lateRecipient m@GroupMember {groupMemberId} = case readyMemberConn m of
-                          Just (_, conn) -> do
-                            pendingMsgs <- withStore' (`getPendingGroupMessages` groupMemberId)
-                            pure $ if null pendingMsgs then DRConn conn Nothing else DRPending groupMemberId
+                          Just (_, conn) -> ifM (null <$> withStore' (`getPendingGroupMessages` groupMemberId)) (pure $ DRConn conn Nothing) (pure $ DRPending groupMemberId)
                           Nothing -> pure $ DRPending groupMemberId
                         fwdRecipient :: GroupMember -> DescrRecipient
                         fwdRecipient m = maybe (DRPending $ groupMemberId' m) (\(_, conn) -> DRConn conn Nothing) (readyMemberConn m)
@@ -351,10 +348,8 @@ processAgentMsgSndFile _corrId aFileId msg = do
                         fwdOwner ownRcps m = case forwardingMemberId g m of
                           Just fId | fId `M.member` ownRcps -> Left (fId, fwdRecipient m :| [])
                           _ -> Right (groupMemberId' m, fwdRecipient m)
-                        ownerDescrs :: Map GroupMemberId (NonEmpty DescrRecipient) -> (GroupMemberId, DescrRecipient) -> ValidFileDescription 'FRecipient -> [(RcvFileDescrText, NonEmpty DescrRecipient)]
-                        ownerDescrs fwdByOwner (gmId, rcp) rfd = (rfdText, rcp :| []) : maybe [] (\rcps -> [(rfdText, rcps)]) (M.lookup gmId fwdByOwner)
-                          where
-                            rfdText = fileDescrText rfd
+                        ownerDescrs :: Map GroupMemberId (NonEmpty DescrRecipient) -> (GroupMemberId, DescrRecipient) -> RcvFileDescrText -> [(RcvFileDescrText, NonEmpty DescrRecipient)]
+                        ownerDescrs fwdByOwner (gmId, rcp) rfdText = map (rfdText,) $ (rcp :| []) : maybe [] pure (M.lookup gmId fwdByOwner)
                     _ -> pure ()
                 _ -> pure () -- TODO error?
         SFWARN e -> do
