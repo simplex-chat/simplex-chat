@@ -124,7 +124,7 @@ Other options:
 ### Running the web checkout
 
 `store_service.ini` holds the listener bind address, its ports and `badges_static_dir`, an optional
-`[btcpay]` section (omitting it disables Bitcoin and Monero), an optional `[stripe]`
+`[btcpay]` section (omitting it disables Bitcoin, Monero and Lightning), an optional `[stripe]`
 section (omitting it disables card payments), an optional `[group]` section (omitting it
 turns off the group's commands, though a group created earlier still has its code messages updated),
 the poll cadence, optional `[apple]` and `[google]` sections that verify store purchases (see
@@ -196,6 +196,15 @@ credited as late bitcoin is. Left unset (the plugin's default) or at 0,
 every late Monero payment stays pending and goes to support, as under `HighSpeed`. Each invoice
 keeps the threshold it was made with, so raising it later credits nothing already paid.
 
+**Lightning** is BTCPay's `BTC-LN` method: the buyer pays a BOLT11 invoice made by the store's
+Lightning node, for the whole amount or not at all. Enable it on the store with the node BTCPay
+runs; at startup the service logs an error for each of `BTC-CHAIN`, `XMR-CHAIN` and `BTC-LN` the
+store has not enabled, since BTCPay refuses every checkout on it. A settled Lightning payment is
+final, so it is credited whatever `speed_policy` says, the invoice view carries no
+`requiredConfirmations` for it, and the logs count it in millisatoshi. The BOLT11 invoice expires
+with the order, so no Lightning money arrives late. The node needs inbound channel capacity of at
+least the largest order: without it the buyer's wallet finds no route and the payment fails there.
+
 Give the service a BTCPay store of its own, and a Stripe account of its own if card payments are
 on. The poller lists every invoice and payment intent of the last three days or so, and one it did
 not create and cannot read is reported in a warning once an hour until it falls out of that window.
@@ -204,7 +213,7 @@ not create and cannot read is reported in a warning once an hour until it falls 
 
 An optional `[stripe]` section enables the card lane; omitting it disables card payments
 and `POST /api/invoice` answers `provider_unavailable` for a card order, the same as an
-absent `[btcpay]` does for Bitcoin and Monero. Its keys:
+absent `[btcpay]` does for Bitcoin, Monero and Lightning. Its keys:
 
 - `secret_key` — a **restricted** key (`rk_...`), never a full secret key (`sk_...`). Grant it
   **PaymentIntents: write**, to create and cancel intents, plus **Charges: read** — the poller

@@ -70,11 +70,13 @@ unitDecimals :: CryptoCurrency -> Int
 unitDecimals = \case
   CCBtc -> 8
   CCXmr -> 12
+  CCLn -> 11
 
 unitName :: CryptoCurrency -> Text
 unitName = \case
   CCBtc -> "satoshi"
   CCXmr -> "piconero"
+  CCLn -> "millisatoshi"
 
 -- The provider applies its own tolerance, so this cannot be recomputed from the amounts.
 data Funded = PaidInFull | PaidInPart

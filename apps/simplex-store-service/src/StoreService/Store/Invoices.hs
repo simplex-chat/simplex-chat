@@ -364,10 +364,12 @@ qSeedBadgeOffer =
 cryptoCurrencyText :: CryptoCurrency -> Text
 cryptoCurrencyText CCBtc = "btc"
 cryptoCurrencyText CCXmr = "xmr"
+cryptoCurrencyText CCLn = "ln"
 
 textToCryptoCurrency :: Text -> Maybe CryptoCurrency
 textToCryptoCurrency "btc" = Just CCBtc
 textToCryptoCurrency "xmr" = Just CCXmr
+textToCryptoCurrency "ln" = Just CCLn
 textToCryptoCurrency _ = Nothing
 
 invoiceStatusText :: InvoiceStatus -> Text

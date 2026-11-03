@@ -507,9 +507,10 @@ methodText = \case
   SPMCard CPStripe -> "card"
   SPMCrypto CCBtc -> "btc"
   SPMCrypto CCXmr -> "xmr"
+  SPMCrypto CCLn -> "ln"
 
 textMethod :: Text -> Maybe ServicePaymentMethod
-textMethod t = lookup t [(methodText m, m) | m <- [SPMCard CPStripe, SPMCrypto CCBtc, SPMCrypto CCXmr]]
+textMethod t = lookup t [(methodText m, m) | m <- [SPMCard CPStripe, SPMCrypto CCBtc, SPMCrypto CCXmr, SPMCrypto CCLn]]
 
 -- | A difference order (OTBalance) holds all of the balance seen while its invoice is open. The hold is written after the registration,
 -- so the registration's row is locked before the balance's.

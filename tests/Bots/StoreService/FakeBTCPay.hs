@@ -223,13 +223,15 @@ invoiceFixture = \case
 methodsFixture :: Text -> Text
 methodsFixture methodId
   | methodId == xmrMethod = "payment-methods-xmr"
+  | methodId == lnMethod = "payment-methods-ln"
   | otherwise = "payment-methods-btc"
 
 -- The adapter's own ids are restated rather than imported, so a fake sharing the constant cannot
 -- agree with a wrong change to it.
-btcMethod, xmrMethod :: Text
+btcMethod, xmrMethod, lnMethod :: Text
 btcMethod = "BTC-CHAIN"
 xmrMethod = "XMR-CHAIN"
+lnMethod = "BTC-LN"
 
 patchInvoice :: Text -> InvoiceState -> J.Value -> J.Value
 patchInvoice invId InvoiceState {isStatus, isAdditionalStatus, isSpeedPolicy} v =
@@ -457,7 +459,7 @@ fakeApp stv req respond = do
         Nothing -> refuse notFound404 ("no invoice " <> invId <> " on the fake btcpay")
 
     createInvoice body = case J.decode body >>= chosenMethod of
-      Nothing -> refuse badRequest400 "checkout.paymentMethods must name exactly one of BTC-CHAIN, XMR-CHAIN"
+      Nothing -> refuse badRequest400 "checkout.paymentMethods must name exactly one of BTC-CHAIN, XMR-CHAIN, BTC-LN"
       Just methodId -> do
         (invId, inv) <- atomically $ do
           st <- readTVar stv
@@ -499,7 +501,7 @@ unknownKeys known o = case filter (`notElem` known) (KM.keys o) of
 chosenMethod :: J.Value -> Maybe Text
 chosenMethod v = case objectField "checkout" v >>= objectField "paymentMethods" of
   Just (J.Array ms) -> case foldr (:) [] ms of
-    [J.String m] | m `elem` [btcMethod, xmrMethod] -> Just m
+    [J.String m] | m `elem` [btcMethod, xmrMethod, lnMethod] -> Just m
     _ -> Nothing
   _ -> Nothing
 

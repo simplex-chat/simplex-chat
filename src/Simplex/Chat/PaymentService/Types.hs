@@ -86,7 +86,7 @@ data StoreTransactionRef = StoreTransactionRef {provider :: PaymentProvider, tra
 data CardProvider = CPStripe
   deriving (Eq, Show)
 
-data CryptoCurrency = CCBtc | CCXmr
+data CryptoCurrency = CCBtc | CCXmr | CCLn
   deriving (Eq, Show)
 
 data ServicePaymentMethod

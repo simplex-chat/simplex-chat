@@ -21,7 +21,7 @@ import StoreService.Providers
     WebhookError (..),
     settleWindow,
   )
-import StoreService.Providers.BTCPay (btcMethodId, btcpayProvider, listSignals, minorToDecimal, paymentMethodsSignal, verifyBTCPaySig, xmrMethodId)
+import StoreService.Providers.BTCPay (btcMethodId, btcpayProvider, listSignals, lnMethodId, minorToDecimal, paymentMethodsSignal, verifyBTCPaySig, xmrMethodId)
 import StoreService.Config (SpeedPolicy (..))
 import Bots.StoreService.FakeBTCPay
 import Control.Exception (evaluate)
@@ -86,6 +86,8 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "counts BTC in satoshi and XMR in piconero" testConfirmedUnits
     it "confirms XMR only when the invoice's settled-confirmation threshold is at least 1, never with 0 or none" testXmrConfirmations
     it "confirms nothing under HighSpeed, or with no or an unknown speed policy, an invoice-level Settled included" testHighSpeedConfirmsNothing
+    it "confirms a settled Lightning payment under every speed policy, counted in millisatoshi" testLnConfirmedUnderEveryPolicy
+    it "confirms nothing of a Lightning payment not yet settled" testLnUnsettledConfirmsNothing
     it "accepts trailing zeros past the unit" testTrailingZeros
     it "drops only the units of an amount with a non-zero digit past its unit, the signal and its cents as before" testDigitPastUnit
   describe "the list pass" $ do
@@ -108,6 +110,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
   describe "against the fake Greenfield" $ do
     it "creates a bitcoin invoice and reads back where to pay" testFakeCreatesBtc
     it "creates a monero invoice and reads back where to pay" testFakeCreatesXmr
+    it "creates a Lightning invoice and reads back its BOLT11" testFakeCreatesLn
     it "sends the api key as `token <key>` on every call it makes" testFakeSendsApiKey
     it "is refused when the api key is wrong, rather than passing silently" testFakeWrongApiKey
     it "sends the documented create body, and no redirectURL" testFakeCreateBody
@@ -127,6 +130,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "keeps due distinguishable from paymentMethodFee, so the wrong field cannot be read" testFixturesGuardDue
   describe "rates and speed policies against the fake Greenfield" $ do
     it "reads the store's rate for the coin against the catalog's currency" testFakeRate
+    it "reads Bitcoin's rate for Lightning" testFakeRateLn
     it "refuses a failed read, a missing pair, a rate with errors, a null rate and a rate at or below 0" testFakeRateRefusals
     it "reads the speed policy an invoice was made under, whatever the configuration says now" testFakeInvoicePolicy
   describe "the list pass against the fake Greenfield" $ do
@@ -198,6 +202,46 @@ testXmrConfirmations = do
   settledWith (Just 0) `shouldBe` settled xmrReceived
   settledWith Nothing `shouldBe` settled xmrReceived
   mapM_ (\n -> settledWith (Just n) `shouldBe` settled xmrConfirmed) [1, 10]
+
+lnPaid :: Text -> [J.Value] -> J.Value
+lnPaid paid payments =
+  J.object
+    [ "paymentMethodId" .= lnMethodId,
+      "destination" .= lnInvoice,
+      "amount" .= ("0.00049999944" :: Text),
+      "rate" .= ("108000.12" :: Text),
+      "paymentMethodPaid" .= paid,
+      "due" .= ("0.00000000000" :: Text),
+      "payments" .= payments
+    ]
+
+lnInvoice :: Text
+lnInvoice = "lnbc499999440p1pfakeinvoicedestinationforthetestsonly"
+
+-- | 0.00049999944 BTC is 49999944 millisatoshi, 53.9999995 dollars at the rate the bodies carry.
+lnReceived :: Received
+lnReceived =
+  Received
+    { rcvAmount = CurrencyAmount 5400,
+      rcvCrypto = Just "0.00049999944",
+      rcvDue = Just "0.00000000000",
+      rcvUnits = Just 49999944,
+      rcvInvoicedUnits = Just 49999944,
+      rcvRate = Just "108000.12",
+      rcvConfirmed = Confirmed {cfCents = CurrencyAmount 5400, cfUnits = Just 49999944},
+      rcvUncreditable = Nothing
+    }
+
+testLnConfirmedUnderEveryPolicy :: IO ()
+testLnConfirmedUnderEveryPolicy =
+  forM_ [Just "HighSpeed", Just "MediumSpeed", Just "LowSpeed", Nothing] $ \policy ->
+    (policy, signalUnder policy "Settled" [lnPaid "0.00049999944" [paymentOf "Settled" "0.00049999944"]])
+      `shouldBe` (policy, Right (Just (SigSettled lnReceived (posixSecondsToUTCTime 1700000000))))
+
+testLnUnsettledConfirmsNothing :: IO ()
+testLnUnsettledConfirmsNothing =
+  signalUnder (Just "HighSpeed") "Processing" [lnPaid "0.00049999944" [paymentOf "Processing" "0.00049999944"]]
+    `shouldBe` Right (Just (SigFunded lnReceived {rcvConfirmed = Confirmed {cfCents = CurrencyAmount 0, cfUnits = Just 0}} PaidInFull))
 
 rcvUnitsOf :: PaymentSignal -> Maybe Int64
 rcvUnitsOf = \case
@@ -498,7 +542,7 @@ testListSkipsUnknownMethod :: IO ()
 testListSkipsUnknownMethod = do
   let ltc =
         J.object
-          [ "paymentMethodId" .= ("BTC-LN" :: Text),
+          [ "paymentMethodId" .= ("BTC-LNURL" :: Text),
             "rate" .= ("108000.12" :: Text),
             "paymentMethodPaid" .= ("0.00050000" :: Text),
             "payments" .= ([] :: [J.Value])
@@ -506,7 +550,7 @@ testListSkipsUnknownMethod = do
       alien = listEntry "SOMEONEELSESINVOICE" "Settled" (Just [ltc])
       r = listSignals readTime (J.encode [alien, oursSettled])
   lpMoved <$> r `shouldBe` Right [oursSettledSignal]
-  skippedReason r >>= (`shouldSatisfy` T.isInfixOf "BTC-LN")
+  skippedReason r >>= (`shouldSatisfy` T.isInfixOf "BTC-LNURL")
 
 testListFailsWithoutPaymentMethods :: IO ()
 testListFailsWithoutPaymentMethods = do
@@ -719,6 +763,16 @@ testFakeCreatesXmr = withProvider $ \fake p -> do
     _ -> expectationFailure ("expected one create, got " <> show (length posts))
   fakeInvoiceIds fake `shouldReturn` [piProviderRef]
 
+testFakeCreatesLn :: IO ()
+testFakeCreatesLn = withProvider $ \fake p -> do
+  ProviderInvoice {piProviderRef, piDestination} <- createdInvoice p (SPMCrypto CCLn)
+  piDestination `shouldBe` SPDCrypto CCLn lnInvoice "0.00049999944"
+  posts <- apiRequests fake "POST" ["invoices"]
+  case posts of
+    [created] -> chosenPaymentMethods (frBody created) `shouldBe` Just ["BTC-LN"]
+    _ -> expectationFailure ("expected one create, got " <> show (length posts))
+  fakeInvoiceIds fake `shouldReturn` [piProviderRef]
+
 chosenPaymentMethods :: LB.ByteString -> Maybe [Text]
 chosenPaymentMethods body = case J.decode body of
   Just (J.Object o) | Just (J.Object c) <- KM.lookup "checkout" o -> case KM.lookup "paymentMethods" c of
@@ -899,7 +953,7 @@ testFixturesGuardTotalPaid :: IO ()
 testFixturesGuardTotalPaid =
   mapM_
     totalPaidStaysDistinguishable
-    ["payment-methods-btc", "payment-methods-xmr", "invoice-list", "invoice-list-alien-status", "invoice-list-alien-method"]
+    ["payment-methods-btc", "payment-methods-xmr", "payment-methods-ln", "invoice-list", "invoice-list-alien-status", "invoice-list-alien-method"]
 
 -- | With due equal to paymentMethodFee a fixture cannot tell which field the adapter reads, and
 -- reading the fee would report a part-paid invoice as covered.
@@ -918,7 +972,7 @@ testFixturesGuardDue :: IO ()
 testFixturesGuardDue =
   mapM_
     dueStaysDistinguishable
-    ["payment-methods-btc", "payment-methods-xmr", "invoice-list", "invoice-list-alien-status", "invoice-list-alien-method"]
+    ["payment-methods-btc", "payment-methods-xmr", "payment-methods-ln", "invoice-list", "invoice-list-alien-status", "invoice-list-alien-method"]
 
 testFakeRate :: IO ()
 testFakeRate = withProvider $ \fake p -> do
@@ -927,6 +981,12 @@ testFakeRate = withProvider $ \fake p -> do
   setRates fake (J.toJSON [rateEntry "XMR_USD" [] (Just "168.25")])
   readRate CCXmr `shouldReturn` Right (Rate "168.25" 168.25)
   map (lookup "currencyPair" . frQuery) <$> apiRequests fake "GET" ["rates"] `shouldReturn` [Just (Just "BTC_USD"), Just (Just "XMR_USD")]
+
+testFakeRateLn :: IO ()
+testFakeRateLn = withProvider $ \fake p -> do
+  readRate <- maybe (failWith "btcpay offers no current rate") pure (pCurrentRate p)
+  readRate CCLn `shouldReturn` Right (Rate "108000.12" 108000.12)
+  map (lookup "currencyPair" . frQuery) <$> apiRequests fake "GET" ["rates"] `shouldReturn` [Just (Just "BTC_USD")]
 
 rateEntry :: Text -> [Text] -> Maybe Text -> J.Value
 rateEntry pair errors rate = J.object ["currencyPair" .= pair, "errors" .= errors, "rate" .= rate]
@@ -992,7 +1052,7 @@ testFakeListAlienMethod = withProvider $ \fake p -> do
   useListFixture fake "invoice-list-alien-method"
   r <- pListOpen p
   lpMoved <$> r `shouldBe` Right [(listSettledRef, SigSettled halfMilliBtc fixtureSettledAt)]
-  skippedReason r >>= (`shouldSatisfy` T.isInfixOf "BTC-LN")
+  skippedReason r >>= (`shouldSatisfy` T.isInfixOf "BTC-LNURL")
 
 testFakeListNoPaymentMethods :: IO ()
 testFakeListNoPaymentMethods = withProvider $ \fake p -> do

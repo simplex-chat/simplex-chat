@@ -24,7 +24,7 @@ trust_forwarded_for = on
 ; names_export_dir = /srv/names-export
 ; names_port = 8081
 
-; omit this whole section to disable Bitcoin and Monero (the browser shows the provider-unavailable screen)
+; omit this whole section to disable Bitcoin, Monero and Lightning (the browser shows the provider-unavailable screen)
 [btcpay]
 host = https://btcpay.example.org
 api_key = replace-me

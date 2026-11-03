@@ -240,6 +240,7 @@ badgeWebTests = do
     it "answers the read fields, with cryptoCurrency lowercase" testInvoiceView
     it "names the confirmations settlement needs, from the speed policy" testViewNamesTheConfirmationsSettlementNeeds
     it "omits the confirmations where no provider is configured" testViewOmitsConfirmationsWithoutBTCPay
+    it "shows a Lightning invoice's BOLT11, with no confirmations to wait for" testViewShowsALightningInvoice
     it "carries the provider's paid-in-full verdict, which the amounts cannot give" testViewCarriesTheProvidersPaidVerdict
     it "never withdraws a paid-in-full verdict on a later read" testPaidVerdictIsNotWithdrawnByALaterRead
     it "carries a closed invoice's paid-in-full verdict, the status staying expired" testViewCarriesAClosedPaidVerdict
@@ -3999,6 +4000,20 @@ testViewOmitsConfirmationsWithoutBTCPay = bounded "no confirmations" $ withWebAp
   iid <- seedOpenInvoice env
   r <- webGet client (invoicePath iid)
   o <- jsonObject r
+  fieldOf o "requiredConfirmations" `shouldBe` Nothing
+
+testViewShowsALightningInvoice :: IO ()
+testViewShowsALightningInvoice = bounded "lightning invoice" $ withCheckout $ \_ env client -> do
+  let bolt11 = "lnbc499999440p1pfakeinvoicedestinationforthetestsonly"
+      inv = sampleInvoice {niDestination = SPDCrypto CCLn bolt11 "0.00049999944"}
+  seedBadgePrice (weStore env) "price1"
+  createInvoiceRows (weStore env) inv `shouldReturn` Right ()
+  r <- webGet client (invoicePath (niInvoiceId inv))
+  statusOf r `shouldBe` 200
+  o <- jsonObject r
+  fieldOf o "cryptoCurrency" `shouldBe` Just (J.String "ln")
+  fieldOf o "address" `shouldBe` Just (J.String bolt11)
+  fieldOf o "cryptoAmount" `shouldBe` Just (J.String "0.00049999944")
   fieldOf o "requiredConfirmations" `shouldBe` Nothing
 
 testHeldWaitWakesOnAPaymentThatDoesNotSettle :: IO ()

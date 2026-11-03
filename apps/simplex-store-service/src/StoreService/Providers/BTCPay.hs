@@ -7,6 +7,7 @@ module StoreService.Providers.BTCPay
   ( btcpayProvider,
     btcMethodId,
     xmrMethodId,
+    lnMethodId,
     minorToDecimal,
     paymentMethodsSignal,
     listSignals,
@@ -92,13 +93,16 @@ import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 --   additionalData (Payments/MoneroLikeOnChainPaymentMethodDetails.cs, camel-cased by Data/BlobSerializer.cs) carries the invoice's
 --   invoiceSettledConfirmationThreshold, so a Settled XMR payment shows a confirmation only when it is at least 1;
 -- - the store's rates, GET stores/{storeId}/rates?currencyPair=BTC_USD: Controllers/GreenField/GreenfieldStoreRatesController.cs and
---   Models/StoreRateResult.cs, a list of {currencyPair, errors, rate}, rate null when errors is not empty; it needs canviewstoresettings.
-btcMethodId, xmrMethodId :: Text
+--   Models/StoreRateResult.cs, a list of {currencyPair, errors, rate}, rate null when errors is not empty; it needs canviewstoresettings;
+-- - a Lightning method, BTC-LN: Payments/Lightning/LightningLikePaymentHandler.cs, its amounts in BTC to 11 decimals (millisatoshi),
+--   its destination the BOLT11 invoice, which expires with the BTCPay invoice.
+btcMethodId, xmrMethodId, lnMethodId :: Text
 btcMethodId = "BTC-CHAIN"
 xmrMethodId = "XMR-CHAIN"
+lnMethodId = "BTC-LN"
 
 methodCurrencies :: [(Text, CryptoCurrency)]
-methodCurrencies = [(btcMethodId, CCBtc), (xmrMethodId, CCXmr)]
+methodCurrencies = [(btcMethodId, CCBtc), (xmrMethodId, CCXmr), (lnMethodId, CCLn)]
 
 knownMethodIds :: [Text]
 knownMethodIds = map fst methodCurrencies
@@ -145,6 +149,7 @@ cryptoTarget :: ServicePaymentMethod -> Either ProviderError (Text, CryptoCurren
 cryptoTarget = \case
   SPMCrypto CCBtc -> Right (btcMethodId, CCBtc)
   SPMCrypto CCXmr -> Right (xmrMethodId, CCXmr)
+  SPMCrypto CCLn -> Right (lnMethodId, CCLn)
   SPMCard _ -> Left (ProviderError "btcpay offers no card payment method")
 
 -- BTCPay sends numbers as JSON strings; keep the exact text as sent, plus a decimal to compute with.
@@ -441,7 +446,8 @@ invoiceSignal now ref status additional policy ms = do
   rate <- priced "rate" gpmRate
   paid <- priced "paymentMethodPaid" gpmPaid
   let decimals = unitDecimals cc
-      confirming = maybe False (`elem` map speedPolicyName confirmingPolicies) policy
+      -- a settled Lightning payment is final, so the speed policy does not apply to it
+      confirming = cc == CCLn || maybe False (`elem` map speedPolicyName confirmingPolicies) policy
       shown = cc /= CCXmr || maybe False (>= 1) gpmSettledThreshold
       received = receivedOf decimals confirming shown (status == "Settled") rate paid gpmAmount gpmDue gpmPayments
       -- BTCPay never settles an invoice it has closed, so only these tell that the whole amount reached it
@@ -532,6 +538,7 @@ currentRate env cc = (>>= rateOf) <$> greenfield env what methodGet ["rates"] [(
     coinCode = case cc of
       CCBtc -> "BTC"
       CCXmr -> "XMR"
+      CCLn -> "BTC"
     rateOf body = do
       rates :: [GRate] <- decodeGreenfield what body
       GRate {grErrors, grRate} <- maybe (failed "the answer has no such pair") Right (find ((== pair) . grPair) rates)
