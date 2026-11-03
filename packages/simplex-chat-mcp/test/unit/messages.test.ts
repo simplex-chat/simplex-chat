@@ -1083,7 +1083,7 @@ describe("download", () => {
     expect(await download(() => tools.onFile(event(trail, fileItem(30, image, {type: "rcvComplete"}))))).toMatchObject({status: "failed", error: "The file was received without a path."})
   })
 
-  it("fails when no part of the file arrives for 10 minutes, and cancels the file", async () => {
+  it("fails when no part of the file arrives for 30 minutes, and cancels the file", async () => {
     jest.useFakeTimers()
     const chat = new FakeChat()
     const offered = offeredIn(chat)
@@ -1094,11 +1094,11 @@ describe("download", () => {
     actions.approve(actions.get(1)!, "Alice")
     await jest.advanceTimersByTimeAsync(0)
     offered.file!.fileStatus = {type: "rcvTransfer", rcvProgress: 1000, rcvTotal: 4000}
-    await jest.advanceTimersByTimeAsync(10 * 60_000)
+    await jest.advanceTimersByTimeAsync(30 * 60_000)
     expect(actions.get(1)!.state).toBe("performing")
     expect(chat.commands).not.toContain("/fcancel 7")
     await jest.advanceTimersByTimeAsync(60_000)
-    expect((await downloading)!.structuredContent).toEqual({action: 1, status: "failed", error: "The download made no progress for 10 minutes and was cancelled."})
+    expect((await downloading)!.structuredContent).toEqual({action: 1, status: "failed", error: "The download made no progress for 30 minutes and was cancelled."})
     expect(chat.commands).toContain("/fcancel 7")
   })
 

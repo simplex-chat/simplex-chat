@@ -1292,12 +1292,13 @@ step                                        result
                                             otherwise the item's file settles the promise as rcvComplete and failed above
 rcvTransfer, rcvProgress above the          the time of progress: now
 largest one seen
-10 minutes since the start or the time      rejected, "The download made no progress for 10 minutes and was cancelled."; /fcancel <fileId>; the last fileSource seen deleted
+30 minutes since the start or the time      rejected, "The download made no progress for 30 minutes and was cancelled."; /fcancel <fileId>; the last fileSource seen deleted
 of progress                                 (an XFTP file returns to rcvInvitation, an inline file ends cancelled: CancelFile, Library/Commands.hs:3609-3624)
 ```
 
 - The check ends a download whose message is deleted or moderated, whose chat is deleted by `leave` or `/leave`, whose file server stays unreachable (`RFWARN` only, Library/Subscriber.hs:429-433), or whose inline chunks do not arrive.
 - The last fileSource seen is the download path until a read shows the item's fileSource.
+- XFTP reports progress once per chunk, of up to 4 MiB (simplexmq `FileTransfer/Chunks.hs:31-33`): a 4 MiB chunk takes 30 minutes at about 19 kbit/s.
 - A file received without a request keeps the core's path in the database; the file field shows it as received without a path, and `download` and `/receive` return the download path.
 - A settled promise leaves memory and its check stops; a later `downloadFile` reads the item's file again.
 - `rcvFileDescrReady` of any file makes the waiting calls read their item again; the server counts these events, so that one arriving during a read is not missed.

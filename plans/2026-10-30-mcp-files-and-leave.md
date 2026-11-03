@@ -321,7 +321,7 @@ rcvFileComplete                              as rcvComplete above
 rcvFileError                                 as failed above, else rejected with the agent error (Library/Subscriber.hs:440-446)
 rcvFileSndCancelled                          fileSource deleted; rejected: "The sender cancelled the file.", by rcvFileTransfer.fileId
 every 60 s, the item read again              gone: the last fileSource deleted; rejected, "The message or its chat was deleted."; its file as the events above
-10 minutes without rcvTransfer progress      rejected, "The download made no progress for 10 minutes and was cancelled."; apiCancelFile; the last fileSource deleted
+30 minutes without rcvTransfer progress      rejected, "The download made no progress for 30 minutes and was cancelled."; apiCancelFile; the last fileSource deleted
 chatItemUpdated                              as rcvComplete and failed above: file digest, relays not approved (Library/Subscriber.hs:415-439)
 ```
 - A move is a rename; across file systems (EXDEV), a copy to `<path>.part`, its rename to path and a delete of the source.
