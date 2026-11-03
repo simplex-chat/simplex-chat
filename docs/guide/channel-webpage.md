@@ -15,10 +15,10 @@ You'll also need somewhere to publish an HTML page. Your own site works, but any
 
 ## Step 1. Open the channel webpage settings
 
-Open the channel and tap its name in the chat toolbar to open the chat info. The
-chat toolbar is at the top on iOS and at the bottom by default on Android and
-desktop. Scroll down to **Advanced options** and tap **Channel webpage**. This
-button is only shown to channel owners.
+Open the channel and tap its name in the chat toolbar to open the channel
+information. The chat toolbar is at the top on iOS, and at the bottom on Android
+and desktop by default. Scroll down to **Advanced options** and tap **Channel
+webpage**. This button is only shown to channel owners.
 
 ## Step 2. Allow embedding while you build the page
 
@@ -84,9 +84,7 @@ Once the page works, go back to **Channel webpage** in the app:
 - Turn **Allow anyone to embed** off if you don't want other sites to be able to show your channel preview. Leave it on if you're happy for anyone to embed it.
 - Tap **Save and notify subscribers** (iOS) or **Save** (Android and desktop).
 
-The URL now appears as a link in your channel info that every subscriber can
-see. If you turned embedding off, the relays also let only pages at the origin
-of this URL (its scheme, host and port) load the preview.
+The URL now appears as a link in your channel info that every subscriber can see. If you turned embedding off, the relay also restricts the preview to your own domain.
 
 ## Customizing the preview
 
@@ -102,7 +100,7 @@ You can add optional `data-*` attributes to the `<div>` to change how it looks. 
 | `data-light-background` | CSS color | `#ffffff` | Background color in light mode. |
 | `data-dark-background` | CSS color | `#000832` | Background color in dark mode. |
 | `data-relay-scheme` | `https`, `http` | `https` | Protocol used to load the preview from the relays. Leave it as `https`. |
-| `data-top-offset` | number of pixels | `0` | Space kept above the preview, for example for a fixed header of your page. The rest of the window height is used for the preview. |
+| `data-top-offset` | number of pixels | `0` | Space kept above the preview, for example for a fixed header of your page. |
 
 For example, here's a dark theme with a custom background and the download buttons hidden:
 
@@ -128,15 +126,10 @@ If your channel is served by more than one relay, all of them are listed in `dat
 
 ## If something doesn't work
 
-If "Failed to load channel preview." appears in the preview area, no relay
-returned the preview to your page. Check that the page is at the same origin
-(scheme, host and port) as the URL you set in Step 5, or turn **Allow anyone to
-embed** back on while you sort it out. With embedding off, the relays let only
-that origin load the preview.
-
-If "All relays returned a different channel link from specified in the page."
-appears in the preview area, the `data-channel-link` value differs from the
-channel link that the relays serve. Copy the code from the app again.
+If the preview area shows "Failed to load channel preview.", check that the page
+is hosted on the same domain as the URL you set in Step 5, or turn **Allow anyone
+to embed** back on while you sort it out. The relay only lets that domain load
+the preview.
 
 If the app says "Used chat relays do not support webpages.", the relays hosting your channel don't support this feature yet, so no code can be generated.
 

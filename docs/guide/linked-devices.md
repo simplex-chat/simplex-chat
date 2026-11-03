@@ -6,7 +6,7 @@ title: Linked devices
 You can use the chat profiles of the SimpleX app on your mobile (iOS or Android)
 from the desktop app. The mobile app keeps your profiles, contacts and messages;
 the desktop app shows them, and the mobile app performs the actions that you
-take on the desktop. The desktop connects to the mobile over the local network.
+take on the desktop. The mobile connects to the desktop over the local network.
 
 To link the devices:
 
@@ -146,10 +146,8 @@ on the mobile.
 
 - On the desktop, open **Linked mobiles** and right-click the mobile, then click
   **Delete**. The files of that mobile that the desktop loaded are deleted too.
+  While you use the profiles of the mobile, the menu has **Disconnect** in place
+  of **Delete**.
 - On the mobile, open **Use from desktop** > **Linked desktops**. On iOS, swipe
   the desktop to the left and confirm **Unlink**. On Android, tap and hold the
   desktop, then tap **Delete**.
-
-With developer tools on, the desktop also offers **Share link** below the QR
-code, and the mobile offers **Paste desktop address** and **Connect to
-desktop**, to connect by the link instead of the QR code.

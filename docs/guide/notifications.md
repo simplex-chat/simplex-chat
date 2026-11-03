@@ -9,9 +9,9 @@ platform: the iOS app can use a push server, the Android app runs a notification
 service on your device, and the desktop app receives messages while it runs.
 
 When you create your first profile on iOS or Android, **Setup notifications** on
-the **Your network** screen lets you choose how notifications work, see [Your
-network](./README.md#your-network). **Instant** is chosen by default. You can
-change it later in the settings.
+the **Your network** screen lets you choose how notifications work, see [Choose
+notifications mode](./README.md#choose-notifications-mode). **Instant** is
+chosen by default. You can change it later in the settings.
 
 ## Notifications on iOS
 

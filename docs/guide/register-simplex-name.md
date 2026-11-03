@@ -9,17 +9,15 @@ a long link. You register the name on a website and add your SimpleX link to it,
 then claim the name in the app, to connect it with your SimpleX address or
 channel.
 
-> Names currently run on a testing network, and test names end in `.testing`.
-> The registration page is
-> [testing-names.simplex.chat](https://testing-names.simplex.chat). In the app,
-> **How to register a test name** on the SimpleX name screen of [Step
-> 4](#step-4-claim-the-name-in-the-app) opens
-> [simplex.domains/#testing](https://simplex.domains/#testing), with links to
-> the registration page and to this guide.
+> Names currently run on a testing network. The registration page is
+> [testing-names.simplex.chat](https://testing-names.simplex.chat) and names end
+> in `.testing`. The steps stay the same when the main names launch.
 >
-> Test names can be used in the app until the SimpleX name sale starts, on 12
-> December 2026 at 18:00 UTC. The app counts down to the sale under **SimpleX
-> name sale starts in**.
+> In the app, **How to register a test name** on the SimpleX name screen of [Step
+> 4](#step-4-claim-the-name-in-the-app) opens
+> [simplex.domains/#testing](https://simplex.domains/#testing). Test names stop
+> working in the app when the SimpleX name sale starts, on 12 December 2026 at
+> 18:00 UTC. The app counts down to it under **SimpleX name sale starts in**.
 
 ## What you need
 
@@ -85,8 +83,7 @@ name before you.
 ## Step 3. Check what the app sees
 
 Copy your `#name.testing` (or `@name.testing`). Paste the name into the search
-field of the chat list, or type it, and tap **Connect to …**. When you type a
-name of 5 or more characters without a dot, the app adds `.testing` to it.
+field, or simply type it, and tap **Connect to …**.
 
 The app reports that the name is registered but not yet added to your profile:
 
@@ -100,38 +97,33 @@ finishes the setup.
 
 Set the name on the same profile the record points at.
 
-- For your **contact address**, open [your SimpleX
-  address](./making-connections.md#your-simplex-contact-address), tap **Get
-  SimpleX name (BETA)**, enter the full name, for example `@name.testing`, and
-  tap **Save**. The app sends the profile update to your contacts.
-- For your **channel**, open the channel's chat info, tap **Get SimpleX name
-  (BETA)** below the channel link, enter the full name, for example
-  `#name.testing`, and tap **Save**. This button is shown to the channel owner.
+- For your **contact address**, open your SimpleX address, tap **Get SimpleX
+  name (BETA)**, enter the full name, for example `@name.testing`, and save.
+- For your **channel**, open the channel information, tap **Get SimpleX name
+  (BETA)** (under **Channel link**), enter the full name, for example
+  `#name.testing`, and save.
 
-Enter the name with `.testing`: a name entered without a dot is saved with
-`.simplex`. The saved name is then shown under **Your SimpleX name** in your
-address, or under **Channel SimpleX name** in the channel's chat info.
+A name entered without a dot is saved with `.simplex`, so enter it with
+`.testing`.
 
 This proves to people who connect to you that `#name.testing` (or `@name.testing`) is your name.
 
 ## Step 5. Connect by name
 
 On another device, copy `#name.testing` (or `@name.testing`). Paste the name
-into the search field, or type it, and tap **Connect to …**. This time the app
-shows the channel or the contact: tap **Open channel** or **Open new chat**. A
-check mark is shown next to the name.
+into the search field, or simply type it, and tap **Connect to …**. This time
+the app connects, and the name shows a check mark next to it.
 
 You can paste the name in your own device too - the app will warn you that it is your own name.
 
 Anyone can now reach you by name, and their app confirms it is really you.
 
-A contact's or channel's SimpleX name can be shown in its chat info. A check
-mark next to the name means that the app verified that the name is registered
-with this contact's address or this channel's link. Next to a name that is not
-verified yet, tap **Verify name** to check it; a red cross is shown when the
-name is not registered with this address or link. To verify names whenever you
-open the chat info, turn on **Verify SimpleX names** in **Settings** > **Your
-privacy** > **More privacy**; it is off by default.
+When a contact or a channel has a SimpleX name, its chat info shows the name. A
+check mark next to the name means that the app verified it, and a red cross
+means that the verification failed. To verify a name, tap **Verify name** next
+to it. To verify names automatically when you open the chat info, turn on
+**Verify SimpleX names** in **Your privacy** > **More privacy**; it is off by
+default.
 
 ## If something doesn't work
 
@@ -141,11 +133,10 @@ privacy** > **More privacy**; it is off by default.
 | Name not found | No name is registered. | Check the spelling, or register it (step 2). |
 | No valid link | The name has no contact or channel link. | Add a link to the name on the website, on its **Records** tab. |
 | Error saving name | You tried to claim a name that has no matching link on the website. | Add your contact address or channel link to the name, then set the name again. |
-| None of your servers are set to resolve SimpleX names | No server in the app is set to resolve names. | In **Network & servers**, open a server operator and turn on **To resolve names** under **Use for messages**, or set **To resolve names** for one of the servers in **Your servers**. |
+| None of your servers are set to resolve SimpleX names | No server in the app is set to resolve names. | In **Network & servers**, open a server operator and turn on **To resolve names**. |
 
 ## See also
 
 - [Making connections](./making-connections.md)
 - [Chat profiles](./chat-profiles.md)
-- [Channels](./channels.md)
 - [Channel webpage](./channel-webpage.md)

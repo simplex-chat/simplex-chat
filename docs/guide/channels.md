@@ -38,8 +38,7 @@ signature. Messages can be signed too: see [Message signing](#message-signing).
 
 <img src="./images/channels-create.png" alt="Create public channel screen with the channel name field, Configure relays and Create public channel" width="300">
 
-1. Tap the pencil button in the [chat list toolbar](./README.md#your-chats),
-   then tap **Create public channel**.
+1. Tap the pencil button in the chat list, then tap **Create public channel**.
 2. Tap the picture to add a channel image, and enter the channel name.
 3. Tap **Create public channel**.
 
@@ -104,8 +103,8 @@ marked "channel".
 Contributors and moderators post with their own chat profiles, and subscribers
 see their names.
 
-Writing and sending messages is described in [Messages and
-media](./send-messages.md#send-a-message).
+Writing and sending messages is described in [Sending
+messages](./send-messages.md#sending-messages).
 
 The owner and moderators have **Delete from history** (iOS) or **From history**
 (Android and desktop) in place of **Delete for me**. It deletes the message on
@@ -165,8 +164,8 @@ The relays that the app can use are in **Network & servers**: in the **Chat
 relays** section of a server operator, and in **Your servers**. To add your own
 relay, open **Your servers**, tap **Add server**, then **Chat relay**, paste the
 relay address, tap **Test relay**, and save with **Save servers**. A relay is
-turned on or off with **Use for new channels**. See [Network and
-servers](./app-settings.md#network-and-servers).
+turned on or off with **Use for new channels**. See [Network &
+servers](./app-settings.md#smp-servers).
 
 ## Subscribers and roles
 
@@ -191,8 +190,7 @@ given to other members. A channel can have up to 256 contributors and
 moderators.
 
 In the member's info, moderators and the owner can **Block for all**, and the
-owner can **Remove subscriber**. See
-[Moderation](./secret-groups.md#moderation).
+owner can **Remove subscriber**.
 
 ## Message signing
 
@@ -229,12 +227,12 @@ preferences without the switches.
 
 Chats with admins in channels are not end-to-end encrypted. When the owner turns
 **Chat with admins** on, the app warns: "Chats with admins in public channels
-have no E2E encryption - use only with trusted chat relays." See [Chat with
-admins](./secret-groups.md#chat-with-admins).
+have no E2E encryption - use only with trusted chat relays."
 
-The owner also edits the channel's name, image and description with **Edit
-channel profile**, and the message for new subscribers with **Add welcome
-message**. Profile changes are sent to subscribers.
+The owner also edits the channel's name, image and short description with
+**Edit channel profile**, and the message for new subscribers with **Add welcome
+message** (**Welcome message** once it is added). Profile changes are sent to
+subscribers.
 
 ## Leave or delete a channel
 
@@ -245,4 +243,4 @@ message**. Profile changes are sent to subscribers.
 - The owner deletes the channel instead of leaving it: tap **Delete channel** to
   delete it for all subscribers. This cannot be undone.
 
-See also [Leave or delete a group](./secret-groups.md#leave-or-delete-a-group).
+See also [Leaving a group](./secret-groups.md#leaving-a-group).

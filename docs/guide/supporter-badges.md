@@ -125,16 +125,16 @@ On the **Your badge** screen are:
 | Payment failed | **Payment problem**: "Payment failed. Update your payment method". |
 | Ended | **Ended**: "Subscription ended. The badge will be removed." |
 
-Tap **Manage subscription** to open the subscriptions of your store account: on
-iOS in the App Store, in the Android app from Google Play in Google Play.
+Tap **Manage subscription** to open your subscriptions in the App Store (iOS) or
+in Google Play (the Android app from Google Play).
 
-The app renews the badge every month while paid months remain, with no action
+The app updates the badge every month while paid months remain, with no action
 from you.
 
 ## Badge alerts
 
 The chat list shows a banner about your badge in these cases. Tap the banner to
-open your badge.
+open **Your badge**, or **Support SimpleX** when the badge has ended.
 
 | Banner | When |
 |---|---|
