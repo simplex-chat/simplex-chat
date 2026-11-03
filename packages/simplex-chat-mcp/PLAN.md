@@ -161,8 +161,9 @@ DIR/lock           PID of the running server                    0600
 DIR/tmp/           the core's temp folder: files in transfer    0700, set before startChat
 DIR/files/CHAT/    files downloaded from CHAT, each named by    0700, created at the first download from CHAT
                    its file ID and the extension of its name
-DIR/files/sent/    resized copies of sent images, one folder    0700; a copy 0600
-                   per send, deleted at sndFileCompleteXFTP
+DIR/files/sent/    resized copies of sent images, and copies    0700; a copy 0600, a copy of /receive with
+                   of the files /receive posts, one folder      the mode of its file
+                   per copy, deleted at sndFileCompleteXFTP
                    or sndFileError; the folder deleted at start
 ```
 
@@ -513,7 +514,7 @@ other one-line text starting with "/"       Commands: /approve, /reject, /receiv
 ```
 
 - CHAT is optional in `/approve N`, `/reject N` and `/receive N` as typed; the cards include it for sends, downloads and leaves.
-- The file of `/receive` has the message's type and the sender's preview, with no text. The agent's messages then show the file as received, with its path; the card stays pending.
+- The file of `/receive` has the message's type and the sender's preview, with no text. It is posted from a copy under the file's name, in `DIR/files/sent/`, deleted as resized copies are. The agent's messages then show the file as received, with its path; the card stays pending.
 - A files approval covers downloads only, and ends as a standing approval does.
 - `/leave CHAT` applies in both modes. Its reply is logged, with names on one line.
 - A standing approval covers sends only. It ends at `/revoke`, when the chat is deleted, or when member `approvedById` is no longer an approver. It applies in mode `requests` only: in mode `host`, `list` and `/list` show no approvals, and `/approve CHAT all` stores none.

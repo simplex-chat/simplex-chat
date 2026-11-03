@@ -1,6 +1,6 @@
-import {mkdtempSync, realpathSync, rmSync, writeFileSync} from "fs"
+import {mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
-import {join} from "path"
+import {basename, dirname, join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {ChatEvent, T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
@@ -389,9 +389,12 @@ describe("downloads in the agent control chat", () => {
     chat.responses.set(`/freceive 7 approved_relays=on ${path}`, {type: "rcvFileAccepted", user, chatItem: event(chatInfoOf(chat, "#2"), offered)})
     expect(await control.ownerCommand(alice, {keyword: "receive", params: `#2 ${action.n}`})).toBeUndefined()
     await flushed()
+    writeFileSync(path, "report")
     tools.onFile(fileItem(30, {type: "file", text: "report"}, {type: "rcvComplete"}, {fileSource: {filePath: path}}).file)
-    await flushed()
-    expect(chat.sent.at(-1)).toEqual({chat: [T.ChatType.Group, 10], messages: [{fileSource: {filePath: path}, msgContent: {type: "file", text: ""}, quotedItemId: action.card, mentions: {}}]})
+    while (chat.sent.length < 2) await flushed()
+    const copy = chat.sent[1].messages[0].fileSource!.filePath
+    expect(chat.sent[1]).toEqual({chat: [T.ChatType.Group, 10], messages: [{fileSource: {filePath: copy}, msgContent: {type: "file", text: ""}, quotedItemId: action.card, mentions: {}}]})
+    expect([dirname(dirname(copy)), basename(copy), readFileSync(copy, "utf8")]).toEqual([join(data, "files", "sent"), "report.pdf", "report"])
     expect(action.state).toBe("pending")
     expect(cards).toHaveLength(1)
   })
@@ -411,6 +414,8 @@ describe("downloads in the agent control chat", () => {
   it("replies when the received file can't be posted", async () => {
     const {chat, action, control} = await downloadSetup()
     const path = join(data, "files", "#2", "7.pdf")
+    mkdirSync(dirname(path), {recursive: true})
+    writeFileSync(path, "report")
     chat.chats.get("#2")!.items.push(fileItem(30, {type: "file", text: "report"}, {type: "rcvComplete"}, {chatDir: {type: "groupRcv", groupMember: bob}, fileSource: {filePath: path}}))
     const send = chat.apiSendMessages.bind(chat)
     chat.apiSendMessages = async (target, messages) => {
@@ -418,8 +423,8 @@ describe("downloads in the agent control chat", () => {
       return send(target, messages)
     }
     await control.ownerCommand(alice, {keyword: "receive", params: `${action.n}`})
-    await flushed()
-    expect(chat.sent.at(-1)!.messages[0].msgContent.text).toBe("Action 1: the file was not received: `file too large`.")
+    while (chat.sent.length < 2) await flushed()
+    expect(chat.sent[1].messages[0].msgContent.text).toBe("Action 1: the file was not received: `file too large`.")
   })
 })
 

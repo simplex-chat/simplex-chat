@@ -1,6 +1,6 @@
 import {execFile} from "child_process"
 import {constants, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync} from "fs"
-import {access, readFile, realpath, stat} from "fs/promises"
+import {access, copyFile, readFile, realpath, stat} from "fs/promises"
 import {homedir} from "os"
 import {basename, dirname, extname, isAbsolute, join, sep} from "path"
 import {CallToolResult, JsonSchemaType, McpServer, ServerContext, fromJsonSchema} from "@modelcontextprotocol/server"
@@ -827,16 +827,26 @@ export class AgentTools {
   private async resizedCopy({path, name}: Attachment): Promise<string> {
     try {
       const image = await core.resizeImage(await readFile(path), core.ImageSize.Image)
-      const sent = join(this.agent.data, "files", "sent")
-      mkdirSync(sent, {recursive: true, mode: 0o700})
       const extension = image.subarray(0, pngSignature.length).equals(pngSignature) ? ".png" : ".jpg"
-      const copy = join(mkdtempSync(join(sent, "send-")), `${basename(name, extname(name))}${extension}`)
+      const copy = this.sentCopyPath(`${basename(name, extname(name))}${extension}`)
       writeFileSync(copy, image, {mode: 0o600})
       return copy
     } catch (error) {
       logError(`resizing ${oneLine(path)}`, error)
       return path
     }
+  }
+
+  async copyForSending(path: string, name: string): Promise<string> {
+    const copy = this.sentCopyPath(basename(name))
+    await copyFile(path, copy, constants.COPYFILE_FICLONE)
+    return copy
+  }
+
+  private sentCopyPath(name: string): string {
+    const sent = join(this.agent.data, "files", "sent")
+    mkdirSync(sent, {recursive: true, mode: 0o700})
+    return join(mkdtempSync(join(sent, "send-")), name)
   }
 
   private async leave(input: LeaveInput, call: ToolCall): Promise<object | undefined> {
