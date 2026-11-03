@@ -1116,6 +1116,28 @@ describe("download", () => {
     expect((await downloading)!.structuredContent).toEqual({action: 1, status: "failed", error: "The message or its chat was deleted."})
   })
 
+  it("keeps the download running when a check can't read its message", async () => {
+    jest.useFakeTimers()
+    const errors = jest.spyOn(process.stderr, "write").mockImplementation(() => true)
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30, wait: 3600}, signal().call)
+    await jest.advanceTimersByTimeAsync(0)
+    actions.approve(actions.get(1)!, "Alice")
+    await jest.advanceTimersByTimeAsync(0)
+    const getChat = chat.apiGetChat
+    chat.apiGetChat = async () => {
+      throw new Error("database busy")
+    }
+    await jest.advanceTimersByTimeAsync(60_000)
+    expect(actions.get(1)!.state).toBe("performing")
+    expect(errors).toHaveBeenCalledWith("download of file 7: database busy\n")
+    chat.apiGetChat = getChat
+    tools.onFile(completed(downloaded))
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
+  })
+
   describe("a file received without a download", () => {
     let elsewhere: string
 

@@ -1288,7 +1288,8 @@ Every 60 s while the promise is unsettled:
 
 ```
 step                                        result
-/_get chat <chat> around=<item> count=0     the message or its chat gone: the last fileSource seen deleted; rejected, "The message or its chat was deleted."
+/_get chat <chat> around=<item> count=0     the message or its chat gone (errorStore chatItemNotFound, contactNotFound, groupNotFound): the last fileSource seen deleted; rejected, "The message or its chat was deleted."
+                                            another error: logged; the download continues
                                             otherwise the item's file settles the promise as rcvComplete and failed above
 rcvTransfer, rcvProgress above the          the time of progress: now
 largest one seen

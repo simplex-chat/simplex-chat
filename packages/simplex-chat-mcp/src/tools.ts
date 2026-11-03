@@ -150,6 +150,7 @@ export const refusedFileReason = "private keys and the server's own files are no
 const receivedWithoutPath = "The file was received without a path."
 const notMoved = "The received file could not be moved to the agent's files folder."
 const deletedItem = "The message or its chat was deleted."
+const notFoundErrors: T.StoreError["type"][] = ["chatItemNotFound", "contactNotFound", "groupNotFound"]
 const stalledDownload = `The download made no progress for ${downloadStall / 60_000} minutes and was cancelled.`
 
 const attachmentTypes: {[extension: string]: {type: FileType; resize: boolean}} = {
@@ -1029,8 +1030,12 @@ export class AgentTools {
   }
 
   private async readItem(chat: string, item: number): Promise<T.ChatItem | undefined> {
-    const read = await getChat(this.agent.chat, chat, {type: "around", chatItemId: item, count: 0}).catch(() => undefined)
-    return read?.chatItems.find(({meta}) => meta.itemId === item)
+    try {
+      return (await getChat(this.agent.chat, chat, {type: "around", chatItemId: item, count: 0})).chatItems.find(({meta}) => meta.itemId === item)
+    } catch (error) {
+      if (isNotFound(error)) return undefined
+      throw error
+    }
   }
 
   private async receive(input: ReceiveInput, call: ToolCall): Promise<object | undefined> {
@@ -1357,6 +1362,11 @@ function mentionedIn(text: string, name: string): boolean {
 
 function unknownChat(chat: string): ToolError {
   return new ToolError(`No chat ${chat}. list shows the agent's chats.`)
+}
+
+function isNotFound(error: unknown): boolean {
+  const chatError = chatErrorOf(error)
+  return chatError?.type === "errorStore" && notFoundErrors.includes(chatError.storeError.type)
 }
 
 async function realFile(file: string): Promise<{path: string; size: number; inode: number; changedAt: number}> {
