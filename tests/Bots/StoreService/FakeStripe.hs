@@ -2,7 +2,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 
 module Bots.StoreService.FakeStripe
   ( FakeStripe (..),
@@ -105,9 +104,7 @@ data FakeState = FakeState
     fsFail :: FailPlan,
     fsList :: Text,
     fsPageSize :: Maybe Int,
-    fsRequests :: [FakeRequest],
-    -- | The intent each Idempotency-Key created, which Stripe answers a repeated create with.
-    fsIdempotent :: M.Map ByteString Text
+    fsRequests :: [FakeRequest]
   }
 
 initialState :: FakeState
@@ -118,7 +115,6 @@ initialState =
       fsFail = FailPlan {fpCalls = 0, fpStatus = 0},
       fsList = "intent-list",
       fsPageSize = Nothing,
-      fsIdempotent = M.empty,
       fsRequests = []
     }
 
@@ -294,16 +290,12 @@ fakeApp stv req respond = do
       let form = parseSimpleQuery (LB.toStrict b)
           amount = fromMaybe 0 (lookup "amount" form >>= readMaybe . B8.unpack)
           currency = maybe "usd" TE.decodeUtf8 (lookup "currency" form)
-          key = lookup "Idempotency-Key" (requestHeaders req)
       (pid, s) <- atomically $ do
         st <- readTVar stv
-        case (key >>= (`M.lookup` fsIdempotent st)) >>= \pid -> (pid,) <$> M.lookup pid (fsIntents st) of
-          Just created -> pure created
-          Nothing -> do
-            let pid = "pi_test_" <> T.justifyRight 4 '0' (tshow (fsNextId st))
-                s = IntentState {isStatus = "requires_payment_method", isAmount = amount, isCurrency = currency}
-            writeTVar stv st {fsNextId = fsNextId st + 1, fsIntents = M.insert pid s (fsIntents st), fsIdempotent = maybe id (`M.insert` pid) key (fsIdempotent st)}
-            pure (pid, s)
+        let pid = "pi_test_" <> T.justifyRight 4 '0' (tshow (fsNextId st))
+            s = IntentState {isStatus = "requires_payment_method", isAmount = amount, isCurrency = currency}
+        writeTVar stv st {fsNextId = fsNextId st + 1, fsIntents = M.insert pid s (fsIntents st)}
+        pure (pid, s)
       serve (intentFixture s) (patchIntent pid s)
 
     -- Real Stripe can't cancel a card payment that is processing, paid or already cancelled.

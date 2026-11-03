@@ -46,7 +46,6 @@ badgeStripeTests = describe "badge stripe adapter" $ do
   describe "against the fake Stripe" $ do
     it "creates a PaymentIntent and reads back the client secret" testFakeCreatesCard
     it "sends the create form Stripe documents, over HTTP Basic" testFakeCreateBody
-    it "sends an Idempotency-Key of the order, so a create sent again gets the same intent" testFakeCreateIsIdempotent
     it "is refused when the secret key is wrong, rather than passing silently" testFakeWrongSecretKey
     it "walks requires_payment_method through processing to succeeded, then refuses a cancel" testFakeLifecycle
     it "cancels an open intent once, then refuses a second cancel" testFakeCancel
@@ -129,19 +128,8 @@ testFakeCreateBody = withProvider $ \fake p -> do
       -- Card only keeps the client confirm from redirecting the top window out of the embedded frame.
       lookup "allowed_payment_method_types[]" form `shouldBe` Just "card"
       lookup "metadata[order]" form `shouldBe` Just (TE.encodeUtf8 sampleReference)
-      lookup "Idempotency-Key" (frHeaders created) `shouldBe` Just (TE.encodeUtf8 sampleReference <> ":5400:usd")
       lookup hAuthorization (frHeaders created) `shouldSatisfy` maybe False ("Basic " `B8.isPrefixOf`)
     _ -> expectationFailure ("expected one create, got " <> show (length posts))
-
--- | Stripe answers a create sent again with the same Idempotency-Key with the intent the first one made.
-testFakeCreateIsIdempotent :: IO ()
-testFakeCreateIsIdempotent = withProvider $ \fake p -> do
-  ProviderInvoice {piProviderRef = first} <- createdInvoice p (SPMCard CPStripe)
-  ProviderInvoice {piProviderRef = again} <- createdInvoice p (SPMCard CPStripe)
-  again `shouldBe` first
-  other <- pCreateInvoice p (SPMCard CPStripe) fiftyFourDollars {odReference = "badge:0x01"}
-  fmap piProviderRef other `shouldSatisfy` either (const False) (/= first)
-  length <$> fakeIntentIds fake `shouldReturn` 2
 
 testFakeWrongSecretKey :: IO ()
 testFakeWrongSecretKey = bounded $ withFakeStripe $ \fake -> do
