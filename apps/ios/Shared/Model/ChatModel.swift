@@ -384,8 +384,7 @@ class BadgeModel: ObservableObject {
 }
 
 enum ChatListBanner {
-    case badgeExpired
-    case badgeIssueFailed
+    case badgeAlert
     case badgePitch
     case getStake
 }
@@ -1466,6 +1465,10 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
     }
 
     public static var sampleData: Chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
+}
+
+func profileChatLayout(_ user: User?, _ appLayout: ChatLayout = chatLayoutDefault.get()) -> ChatLayout {
+    user?.uiThemes?.chatLayout?.known ?? appLayout.known ?? .classic
 }
 
 final class GMember: ObservableObject, Identifiable {

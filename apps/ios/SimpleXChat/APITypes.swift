@@ -830,6 +830,7 @@ public enum BadgeRedeemError: Decodable, Hashable {
     case invalidReceipt
     case serviceNotConfigured
     case badgeActive
+    case storePurchaseOpen
     case serviceError(serviceError: BadgeServiceErrorCode)
     case invalidResponse(message: String)
     case unknownKeyIndex
@@ -856,6 +857,7 @@ public enum BadgeServiceErrorCode: Decodable, Hashable {
     case receiptInvalid
     case receiptUsed
     case testPurchase
+    case transferLimited
     case internalError
     case unknown(String)
 
@@ -879,6 +881,7 @@ public enum BadgeServiceErrorCode: Decodable, Hashable {
         case .receiptInvalid: "receipt_invalid"
         case .testPurchase: "test_purchase"
         case .receiptUsed: "receipt_used"
+        case .transferLimited: "transfer_limited"
         case .internalError: "internal"
         case let .unknown(s): s
         }
@@ -904,6 +907,7 @@ public enum BadgeServiceErrorCode: Decodable, Hashable {
         case "receipt_invalid": self = .receiptInvalid
         case "test_purchase": self = .testPurchase
         case "receipt_used": self = .receiptUsed
+        case "transfer_limited": self = .transferLimited
         case "internal": self = .internalError
         case let s: self = .unknown(s)
         }
@@ -916,12 +920,13 @@ public func badgeServiceErrorText(_ code: BadgeServiceErrorCode) -> String? {
     case .codeUsed: NSLocalizedString("This code has already been used.", comment: "alert message")
     case .codeExpired: NSLocalizedString("This code has expired.", comment: "alert message")
     case .rateLimited: NSLocalizedString("Too many attempts. Please try again later.", comment: "alert message")
-    case .unsupportedVersion: NSLocalizedString("This app version is too old for the badge service. Please update the app.", comment: "alert message")
+    case .unsupportedVersion: NSLocalizedString("Update the app to use badges.", comment: "alert message")
     case .unknownPurchaseKey: NSLocalizedString("The badge service does not recognize this badge.", comment: "alert message")
     case .internalError: NSLocalizedString("The badge service reported an internal error.", comment: "alert message")
     case .receiptInvalid: NSLocalizedString("The store did not confirm this purchase.", comment: "alert message")
-    case .testPurchase: NSLocalizedString("Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app.", comment: "alert message")
-    case .receiptUsed: NSLocalizedString("This purchase was already credited to a badge on another device or profile.", comment: "alert message")
+    case .testPurchase: NSLocalizedString("Buy badges in the App Store version of the app.", comment: "alert message")
+    case .receiptUsed: NSLocalizedString("This purchase is already used on another profile.", comment: "alert message")
+    case .transferLimited: NSLocalizedString("This purchase was moved to another device or profile recently.", comment: "alert message")
     case .paymentPending: NSLocalizedString("The payment has not been confirmed yet.", comment: "alert message")
     case .providerUnavailable: NSLocalizedString("The store could not be reached.", comment: "alert message")
     case .providerNotConfigured: NSLocalizedString("Badges cannot be bought in the app yet.", comment: "alert message")

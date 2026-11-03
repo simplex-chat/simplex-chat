@@ -39,12 +39,25 @@ external fun chatWriteFile(ctrl: ChatCtrl, path: String, buffer: ByteBuffer): St
 external fun chatReadFile(path: String, key: String, nonce: String): Array<Any>
 external fun chatEncryptFile(ctrl: ChatCtrl, fromPath: String, toPath: String): String
 external fun chatDecryptFile(fromPath: String, key: String, nonce: String, toPath: String): String
+external fun chatResizeImageUri(buffer: ByteBuffer, maxSize: Int): String
+external fun chatResizeImage(buffer: ByteBuffer, maxSize: Int, png: Int): String
+external fun chatResizeImageFileUri(path: String, maxSize: Int): String
+external fun chatResizeImageFile(path: String, maxSize: Int, png: Int): String
+external fun chatResizeImageFdUri(fd: Int, maxSize: Int): String
+external fun chatResizeImageFd(fd: Int, maxSize: Int, png: Int): String
 
 // the code in core's canonical form (prefix and 20 characters, no separators), or null when core rejects it.
 // The check character is verified by core via FFI, not re-implemented here, so the two cannot disagree.
 fun parseBadgeCode(s: String): String? {
   val canonical = chatParseBadgeCode(s)
   return if (canonical.isEmpty()) null else canonical
+}
+
+fun ByteArray.toDirectBuffer(): ByteBuffer {
+  val buffer = ByteBuffer.allocateDirect(size)
+  buffer.put(this)
+  buffer.rewind()
+  return buffer
 }
 
 val chatModel: ChatModel

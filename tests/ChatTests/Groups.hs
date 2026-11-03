@@ -317,6 +317,9 @@ chatGroupTests = do
       it "should preserve working link after welcome message update" testChannelLinkAfterWelcomeUpdate
       it "should set chat layout of channel joined via relays from link data" testChannelChatLayout
       it "should preserve owner key in link data after profile update" testChannelOwnerKeyAfterLinkUpdate
+      it "should keep channel profile from link data when joining" testChannelJoinKeepsLinkProfile
+      it "should apply channel profile from link data when joining" testChannelJoinAppliesLinkProfile
+      it "should check entity ID of channel link on refresh" testChannelLinkDataOtherChannel
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
       it "should block member for all (signed)" testChannelBlockMemberSigned
@@ -351,6 +354,8 @@ chatGroupTests = do
         it "role transitions update the roster (mod <-> admin, admin -> non-roster)" testChannelRoleTransitionsUpdateRoster
         it "malicious relay cannot downgrade or re-key a roster-established moderator via XGrpMemNew" testChannelRelayCannotDowngradeRosterMember
         it "malicious relay cannot forge a privileged member via XGrpMemNew forwarded as the owner" testChannelRelayCannotForgePrivilegedMember
+        it "owner promotion with a different member key keeps the member role" testChannelPromotionDifferentKeyKeepsRole
+        it "owner promotion pins the key of a member known without a key" testChannelPromotionPinsMemberKey
         it "should add relay to channel with roster (relay caches roster before joinable)" testChannelAddRelayWithRoster
         it "roster blob spanning multiple chunks reassembles" testChannelRosterMultipartReassembly
         it "corrupted roster blob is rejected on digest mismatch" testChannelRosterDigestMismatchRejected
@@ -10230,7 +10235,7 @@ testChannelLargeProfileFits ps =
 
           -- ~14000 chars: profile fits in a singleton batch AND packs
           -- inline with the forwarded body (exercises the in-body path).
-          let bigImage = T.pack ("data:image/png;base64," <> replicate 14000 'A')
+          let bigImage = T.pack ("data:image/png;base64," <> take 14000 ("iVBORw0KGgo" <> repeat 'A'))
           withCCTransaction bob $ \db ->
             DB.execute db "UPDATE contact_profiles SET image = ? WHERE display_name = ?" (bigImage, "cath" :: T.Text)
 
@@ -10257,7 +10262,7 @@ testChannelOverflowProfileNotification ps =
           dan <## "ok"
           danConnId <- relayConnIdToMember bob "dan"
 
-          let bigImage = T.pack ("data:image/png;base64," <> replicate 10000 'A')
+          let bigImage = T.pack ("data:image/png;base64," <> take 10000 ("iVBORw0KGgo" <> repeat 'A'))
               longText = replicate 7000 'x'
           withCCTransaction bob $ \db ->
             DB.execute db "UPDATE contact_profiles SET image = ? WHERE display_name = ?" (bigImage, "cath" :: T.Text)
@@ -10284,8 +10289,8 @@ testChannelMultipleLargeProfiles ps =
 
             -- ~14500 chars each: one rides inline with the body,
             -- the other spills into a standalone overflow batch.
-            let cathImage = T.pack ("data:image/png;base64," <> replicate 14500 'A')
-                danImage = T.pack ("data:image/png;base64," <> replicate 14500 'B')
+            let cathImage = T.pack ("data:image/png;base64," <> take 14500 ("iVBORw0KGgo" <> repeat 'A'))
+                danImage = T.pack ("data:image/png;base64," <> take 14500 ("iVBORw0KGgo" <> repeat 'B'))
             withCCTransaction bob $ \db -> do
               DB.execute db "UPDATE contact_profiles SET image = ? WHERE display_name = ?" (cathImage, "cath" :: T.Text)
               DB.execute db "UPDATE contact_profiles SET image = ? WHERE display_name = ?" (danImage, "dan" :: T.Text)
@@ -10727,6 +10732,60 @@ testChannelOwnerKeyAfterLinkUpdate ps =
                 dan <## "alice updated group #my_team: (signed)"
                 dan <## "changed to #team"
             ]
+
+testChannelJoinKeepsLinkProfile :: HasCallStack => TestParams -> IO ()
+testChannelJoinKeepsLinkProfile ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        withCCTransaction bob $ \db ->
+          DB.execute_ db "UPDATE group_profiles SET short_descr = 'relay copy'"
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        withCCTransaction cath (\db -> DB.query_ db "SELECT short_descr FROM group_profiles" :: IO [Only (Maybe T.Text)])
+          `shouldReturn` [Only Nothing]
+
+testChannelJoinAppliesLinkProfile :: HasCallStack => TestParams -> IO ()
+testChannelJoinAppliesLinkProfile ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        cath ##> ("/_connect plan 1 " <> shortLink)
+        cath <## "group link: ok to connect via relays"
+        groupSLinkData <- getTermLine cath
+        cath ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " direct=off " <> groupSLinkData)
+        cath <## "#team: group is prepared"
+        withCCTransaction cath $ \db ->
+          DB.execute_ db "UPDATE group_profiles SET short_descr = 'earlier copy'"
+        cath ##> "/_connect group #1"
+        cath <## "#team: connection started"
+        concurrentlyN_
+          [ cath <### ["#team: joining the group (connecting to relay bob)...", "#team: you joined the group (connected to relay bob)"],
+            do
+              bob <## "cath (Catherine): accepting request to join group #team..."
+              bob <## "#team: cath joined the group",
+            alice <### [EndsWith "introduced cath (Catherine) in the channel"]
+          ]
+        withCCTransaction cath (\db -> DB.query_ db "SELECT short_descr FROM group_profiles" :: IO [Only (Maybe T.Text)])
+          `shouldReturn` [Only Nothing]
+
+testChannelLinkDataOtherChannel :: HasCallStack => TestParams -> IO ()
+testChannelLinkDataOtherChannel ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        (shortLink2, fullLink2) <- prepareChannel' 2 "news" alice bob
+        memberJoinChannel' "news" 2 1 1 1 [bob] [alice] shortLink2 fullLink2 cath
+        withCCTransaction cath $ \db ->
+          DB.execute_ db "UPDATE group_profiles SET group_link = (SELECT group_link FROM group_profiles WHERE display_name = 'news') WHERE display_name = 'team'"
+        cath ##> "/_get group link data #1"
+        cath <## ""
+        cath <## "Connection link is invalid, possibly it was created in a previous version."
+        cath <## "Please ask your contact to check /version and update if needed."
+        cath <## "To update run: curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash"
 
 testChannelUpdatePrefsSigned :: HasCallStack => TestParams -> IO ()
 testChannelUpdatePrefsSigned ps =
@@ -11343,6 +11402,54 @@ testChannelRelayCannotForgePrivilegedMember ps =
     forgedMemberRows cc name =
       withCCTransaction cc $ \db ->
         DB.query db "SELECT member_role, member_pub_key FROM group_members WHERE local_display_name = ?" (Only name)
+
+testChannelPromotionDifferentKeyKeepsRole :: HasCallStack => TestParams -> IO ()
+testChannelPromotionDifferentKeyKeepsRole ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          danId <- memberIdByName alice "dan"
+          connId <- relayConnIdToMember bob "cath"
+          g <- C.newRandom
+          kp <- atomically $ C.generateKeyPair g
+          let relayKey = fst kp :: C.PublicKeyEd25519
+              memInfo = MemberInfo {memberId = danId, memberRole = GRObserver, v = Nothing, profile = danProfile, memberKey = Just (MemberKey relayKey)}
+          agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpMemNew memInfo Nothing)
+          cath <## "#team: bob introduced dan (Daniel) in the channel"
+          threadDelay 1000000
+          alice ##> "/mr #team dan admin"
+          alice <## "#team: you changed the role of dan to admin (signed)"
+          concurrentlyN_
+            [ bob <## "#team: alice changed the role of dan from observer to admin (signed)",
+              dan <## "#team: alice changed your role from observer to admin (signed)",
+              cath <##. "error: x.grp.mem.role: member key conflict, keeping trusted key, memberId="
+            ]
+          checkMemberRow cath "dan" (Just "observer")
+
+testChannelPromotionPinsMemberKey :: HasCallStack => TestParams -> IO ()
+testChannelPromotionPinsMemberKey ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          threadDelay 1000000
+          alice ##> "/block for all #team dan"
+          alice <## "#team: you blocked dan (signed)"
+          bob <## "#team: alice blocked dan (signed)"
+          cath <##. "#team: alice blocked an unknown member, creating unknown member record"
+          cath .<##. ("#team: alice blocked", "(signed)")
+          threadDelay 1000000
+          promoteChannelMember "team" alice bob dan [cath]
+          danId <- getMemberIdByName alice "dan"
+          (_, danKey) <- getMemberRoleKey alice danId
+          getMemberRoleKey cath danId `shouldReturn` ("member", danKey)
 
 testChannelRemoveMemberSigned :: HasCallStack => TestParams -> IO ()
 testChannelRemoveMemberSigned ps =

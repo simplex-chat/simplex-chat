@@ -50,6 +50,7 @@ struct ChatItemView: View {
     @Binding var scrollToItemId: ChatItem.ID?
     var maxWidth: CGFloat = .infinity
     @Binding var allowMenu: Bool
+    var endButton: AnyView?
 
     init(
         chat: Chat,
@@ -59,7 +60,8 @@ struct ChatItemView: View {
         scrollToItemId: Binding<ChatItem.ID?> = .constant(nil),
         showMember: Bool = false,
         maxWidth: CGFloat = .infinity,
-        allowMenu: Binding<Bool> = .constant(false)
+        allowMenu: Binding<Bool> = .constant(false),
+        endButton: AnyView? = nil
     ) {
         self.chat = chat
         self.im = im
@@ -68,6 +70,7 @@ struct ChatItemView: View {
         _scrollToItemId = scrollToItemId
         self.maxWidth = maxWidth
         _allowMenu = allowMenu
+        self.endButton = endButton
     }
 
     var body: some View {
@@ -116,7 +119,8 @@ struct ChatItemView: View {
             maxWidth: maxWidth,
             imgWidth: adjustedMaxWidth,
             videoWidth: adjustedMaxWidth,
-            allowMenu: $allowMenu
+            allowMenu: $allowMenu,
+            endButton: endButton
         )
     }
 }
@@ -125,6 +129,7 @@ struct ChatItemContentView<Content: View>: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.revealed) var revealed: Bool
+    @Environment(\.terminalLayout) private var terminal
     @ObservedObject var chat: Chat
     @ObservedObject var im: ItemsModel
     var chatItem: ChatItem
@@ -192,7 +197,9 @@ struct ChatItemContentView<Content: View>: View {
     }
 
     private func eventItemView() -> some View {
-        CIEventView(eventText: eventItemViewText(theme.colors.secondary))
+        ChatEventWithMeta(chatItem: chatItem) { ts in
+            CIEventView(eventText: eventItemViewText(theme.colors.secondary, terminal ? ts : textSpace + ts))
+        }
     }
 
     private func pendingReviewEventItemText() -> Text {
@@ -202,17 +209,17 @@ struct ChatItemContentView<Content: View>: View {
             .fontWeight(.bold)
     }
 
-    private func eventItemViewText(_ secondaryColor: Color) -> Text {
+    private func eventItemViewText(_ secondaryColor: Color, _ ts: Text) -> Text {
         if !revealed, let t = mergedGroupEventText {
-            return chatEventText(t + textSpace + chatItem.timestampText, secondaryColor)
+            return chatEventText(t + textSpace + ts, secondaryColor)
         } else if let member = chatItem.memberDisplayName {
             return Text(member + " ")
                     .font(.caption)
                     .foregroundColor(secondaryColor)
                     .fontWeight(.light)
-                + chatEventText(chatItem, secondaryColor, isChannel: chat.chatInfo.isChannel)
+                + chatEventText(chatItem, secondaryColor, isChannel: chat.chatInfo.isChannel, ts: ts)
         } else {
-            return chatEventText(chatItem, secondaryColor, isChannel: chat.chatInfo.isChannel)
+            return chatEventText(chatItem, secondaryColor, isChannel: chat.chatInfo.isChannel, ts: ts)
         }
     }
 
@@ -282,8 +289,8 @@ func chatEventText(_ eventText: LocalizedStringKey, _ ts: Text, _ secondaryColor
     chatEventText(Text(eventText) + textSpace + ts, secondaryColor)
 }
 
-func chatEventText(_ ci: ChatItem, _ secondaryColor: Color, isChannel: Bool = false) -> Text {
-    chatEventText("\(ci.content.text(isChannel: isChannel))", ci.timestampText, secondaryColor)
+func chatEventText(_ ci: ChatItem, _ secondaryColor: Color, isChannel: Bool = false, ts: Text) -> Text {
+    chatEventText("\(ci.content.text(isChannel: isChannel))", ts, secondaryColor)
 }
 
 func previewDated(_ chatItem: ChatItem) -> ChatItem {

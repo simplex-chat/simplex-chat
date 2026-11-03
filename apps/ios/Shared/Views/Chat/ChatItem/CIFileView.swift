@@ -15,6 +15,7 @@ struct CIFileView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.showTimestamp) var showTimestamp: Bool
+    @Environment(\.terminalLayout) private var terminal
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
     @AppStorage(DEFAULT_PRIVACY_SHOW_SIGNATURE) private var showSignature = true
     @AppStorage(DEFAULT_PRIVACY_SHOW_FILE_ENCRYPTION) private var showFileEncryption = true
@@ -33,7 +34,7 @@ struct CIFileView: View {
             let metaReserve = Text(verbatim: "   ") + ciMetaText(meta, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: encrypted, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, signedFileVerified: file?.loaded, showSignature: showSignature, showFileEncryption: showFileEncryption)
             HStack(alignment: .bottom, spacing: 6) {
                 fileIndicator()
-                    .padding(.top, 5)
+                    .padding(.top, terminal ? 0 : 5)
                     .padding(.bottom, 3)
                 if let file = file {
                     let prettyFileSize = ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
@@ -52,8 +53,8 @@ struct CIFileView: View {
                     metaReserve.font(.caption)
                 }
             }
-            .padding(.top, 4)
-            .padding(.bottom, 6)
+            .padding(.top, terminal ? terminalFileTopGap : 4)
+            .padding(.bottom, terminal ? 0 : 6)
             .padding(.leading, 10)
             .padding(.trailing, 12)
             .simultaneousGesture(TapGesture().onEnded { fileAction(file) })

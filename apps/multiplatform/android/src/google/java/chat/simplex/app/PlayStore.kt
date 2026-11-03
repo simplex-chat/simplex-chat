@@ -1,5 +1,8 @@
 package chat.simplex.app
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
 import chat.simplex.common.platform.Log
 import chat.simplex.common.platform.androidAppContext
 import chat.simplex.common.platform.androidPlayStoreCountry
@@ -9,6 +12,8 @@ import chat.simplex.common.views.helpers.withLongRunningApi
 import com.android.billingclient.api.*
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 const val hasPlatformStore = true
@@ -45,6 +50,8 @@ fun loadPlayStoreCountry() {
 @Volatile private var badgeBillingClient: BillingClient? = null
 @Volatile private var badgeOffers: Map<BadgeStoreProductId, BadgeOffer> = emptyMap()
 @Volatile private var badgePurchase: CompletableDeferred<BadgePurchaseOutcome>? = null
+// two callers connecting at once would each keep a client open, and Play could deliver a purchase event to each
+private val badgeBillingConnection = Mutex()
 
 // offerToken is null for one-time products, which have no base plan to choose
 private class BadgeOffer(
@@ -92,7 +99,7 @@ suspend fun purchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurc
   try {
     val launched = withContext(Dispatchers.Main) { client.launchBillingFlow(activity, params) }
     if (launched.responseCode != BillingClient.BillingResponseCode.OK) {
-      throw BadgeStoreError.BillingError(launched.responseCode, launched.debugMessage)
+      throw badgePurchaseError(launched)
     }
     return purchase.await()
   } finally {
@@ -100,10 +107,20 @@ suspend fun purchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurc
   }
 }
 
-// one-time purchases Play still holds: bought and not consumed, or awaiting a slow payment
+// purchases Play still holds: one-time products bought and not consumed, subscriptions in a paid period,
+// and either awaiting a slow payment
 suspend fun unfinishedBadgePurchases(): List<BadgePurchaseOutcome> {
   val client = connectedBadgeBillingClient()
-  val params = QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build()
+  val oneTime = queryBadgePurchases(client, BillingClient.ProductType.INAPP)
+  // a Play that cannot sell subscriptions holds none; any other failure must not read as no purchases
+  val subscriptions =
+    if (client.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS).responseCode == BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED) emptyList()
+    else queryBadgePurchases(client, BillingClient.ProductType.SUBS)
+  return (oneTime + subscriptions).mapNotNull(::badgePurchaseOutcome)
+}
+
+private suspend fun queryBadgePurchases(client: BillingClient, productType: String): List<Purchase> {
+  val params = QueryPurchasesParams.newBuilder().setProductType(productType).build()
   val queried = CompletableDeferred<List<Purchase>>()
   client.queryPurchasesAsync(params) { result, purchases ->
     if (result.responseCode == BillingClient.BillingResponseCode.OK) {
@@ -112,7 +129,7 @@ suspend fun unfinishedBadgePurchases(): List<BadgePurchaseOutcome> {
       queried.completeExceptionally(BadgeStoreError.BillingError(result.responseCode, result.debugMessage))
     }
   }
-  return queried.await().mapNotNull(::badgePurchaseOutcome)
+  return queried.await()
 }
 
 private val badgePurchasesUpdatedListener = PurchasesUpdatedListener { result, purchases ->
@@ -120,7 +137,7 @@ private val badgePurchasesUpdatedListener = PurchasesUpdatedListener { result, p
   if (pending == null) {
     // settled outside a purchase call, such as a slow payment completing
     if (result.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
-      withLongRunningApi { purchases.mapNotNull(::badgePurchaseOutcome).forEach { BadgeStore.reconcile(it) } }
+      withLongRunningApi { purchases.mapNotNull(::badgePurchaseOutcome).forEach { BadgeStore.reconcileListed(it) } }
     }
     return@PurchasesUpdatedListener
   }
@@ -128,13 +145,22 @@ private val badgePurchasesUpdatedListener = PurchasesUpdatedListener { result, p
     result.responseCode == BillingClient.BillingResponseCode.OK && purchases != null -> {
       val outcomes = purchases.mapNotNull(::badgePurchaseOutcome)
       pending.complete(outcomes.firstOrNull() ?: BadgePurchaseOutcome.Cancelled)
-      withLongRunningApi { outcomes.drop(1).forEach { BadgeStore.reconcile(it) } }
+      withLongRunningApi { outcomes.drop(1).forEach { BadgeStore.reconcileListed(it) } }
     }
     result.responseCode == BillingClient.BillingResponseCode.USER_CANCELED ->
       pending.complete(BadgePurchaseOutcome.Cancelled)
     else ->
-      pending.completeExceptionally(BadgeStoreError.BillingError(result.responseCode, result.debugMessage))
+      pending.completeExceptionally(badgePurchaseError(result))
   }
+}
+
+private fun badgePurchaseError(result: BillingResult): BadgeStoreError = when (result.responseCode) {
+  BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> BadgeStoreError.AlreadyOwned
+  BillingClient.BillingResponseCode.NETWORK_ERROR,
+  BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
+  BillingClient.BillingResponseCode.SERVICE_DISCONNECTED -> BadgeStoreError.StoreUnreachable
+  BillingClient.BillingResponseCode.ITEM_UNAVAILABLE -> BadgeStoreError.NotOnSale
+  else -> BadgeStoreError.BillingError(result.responseCode, result.debugMessage)
 }
 
 private fun badgePurchaseOutcome(purchase: Purchase): BadgePurchaseOutcome? = when (purchase.purchaseState) {
@@ -144,14 +170,22 @@ private fun badgePurchaseOutcome(purchase: Purchase): BadgePurchaseOutcome? = wh
       token = purchase.purchaseToken,
       productId = purchase.products.firstOrNull() ?: "",
       invoiceId = purchase.accountIdentifiers?.obfuscatedAccountId,
-      acknowledged = purchase.isAcknowledged
+      acknowledged = purchase.isAcknowledged,
+      // Play answers false for a one-time product
+      autoRenewing = if (purchase.products.firstOrNull() in badgeOneTimeProductIds) null else purchase.isAutoRenewing
     )
   )
   else -> null
 }
 
-private suspend fun connectedBadgeBillingClient(): BillingClient {
-  badgeBillingClient?.let { if (it.isReady) return it }
+private suspend fun connectedBadgeBillingClient(): BillingClient = badgeBillingConnection.withLock {
+  badgeBillingClient?.let { replaced ->
+    if (replaced.isReady) return@withLock replaced
+    // ended, it no longer hears the result of a purchase launched on it, which the next sweep finds unfinished
+    badgePurchase?.completeExceptionally(BadgeStoreError.BillingError(BillingClient.BillingResponseCode.SERVICE_DISCONNECTED, "billing client replaced"))
+    replaced.endConnection()
+    badgeBillingClient = null
+  }
   val client = BillingClient.newBuilder(androidAppContext)
     .setListener(badgePurchasesUpdatedListener)
     .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
@@ -163,7 +197,6 @@ private suspend fun connectedBadgeBillingClient(): BillingClient {
     }
 
     override fun onBillingServiceDisconnected() {
-      badgeBillingClient = null
       connected.complete(
         BillingResult.newBuilder().setResponseCode(BillingClient.BillingResponseCode.SERVICE_DISCONNECTED).build()
       )
@@ -175,7 +208,7 @@ private suspend fun connectedBadgeBillingClient(): BillingClient {
     throw BadgeStoreError.BillingError(result.responseCode, result.debugMessage)
   }
   badgeBillingClient = client
-  return client
+  client
 }
 
 private suspend fun queryBadgeProducts(client: BillingClient, ids: List<BadgeStoreProductId>, productType: String): List<ProductDetails> {
@@ -210,7 +243,8 @@ private fun ProductDetails.badgeOffer(id: BadgeStoreProductId): BadgeOffer? {
     val product = BadgeProduct(id, purchase.formattedPrice, purchase.priceAmountMicros, purchase.priceCurrencyCode)
     return BadgeOffer(id, product, this, offerToken = null)
   }
-  val offer = subscriptionOfferDetails?.firstOrNull { it.basePlanId == id.basePlanId }
+  // the base plan's own offer: a promotional offer on the same base plan has an offerId and other pricing phases
+  val offer = subscriptionOfferDetails?.firstOrNull { it.basePlanId == id.basePlanId && it.offerId == null }
   if (offer == null) {
     Log.w(TAG, "badgeOffer: ${id.productId} has no base plan ${id.basePlanId}, Play has ${subscriptionOfferDetails?.map { it.basePlanId }}")
     return null
@@ -231,8 +265,8 @@ suspend fun acknowledgeBadgePurchase(receipt: BadgeStoreReceipt) {
   if (!receipt.acknowledged) acknowledge(connectedBadgeBillingClient(), receipt.token)
 }
 
-// consumed if one-time so it can be bought again, else acknowledged, as Play refunds an unacknowledged purchase
-// after 3 days; decided by product id, as after a restart there is no ProductDetails for the purchase
+// consumed if one-time so it can be bought again; a subscription is acknowledged by the service when it credits it,
+// and Play lists it until it ends. Decided by product id, as after a restart there is no ProductDetails for the purchase
 suspend fun finishBadgePurchase(receipt: BadgeStoreReceipt) {
   val client = connectedBadgeBillingClient()
   if (receipt.productId in badgeOneTimeProductIds) {
@@ -240,8 +274,15 @@ suspend fun finishBadgePurchase(receipt: BadgeStoreReceipt) {
     val params = ConsumeParams.newBuilder().setPurchaseToken(receipt.token).build()
     client.consumeAsync(params) { result, _ -> done.complete(result) }
     checkBillingResult(done.await())
-  } else {
-    acknowledge(client, receipt.token)
+  }
+}
+
+fun manageBadgeSubscription(productId: String) {
+  val page = Uri.parse("https://play.google.com/store/account/subscriptions?sku=$productId&package=${androidAppContext.packageName}")
+  try {
+    androidAppContext.startActivity(Intent(Intent.ACTION_VIEW, page).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+  } catch (e: ActivityNotFoundException) {
+    Log.e(TAG, "manageBadgeSubscription: ${e.message}")
   }
 }
 

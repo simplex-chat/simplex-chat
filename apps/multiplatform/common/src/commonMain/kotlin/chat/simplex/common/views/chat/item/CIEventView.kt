@@ -7,7 +7,6 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.*
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatItem
@@ -21,16 +20,12 @@ fun CIEventView(text: AnnotatedString) {
 
 @Composable
 fun chatEventTextStyle(base: TextStyle = LocalTextStyle.current): TextStyle =
-  if (LocalTerminalLayout.current) {
-    base.merge(terminalTextStyle(12.sp, MaterialTheme.colors.secondary))
-  } else {
-    base
-  }
+  base.merge(chatTextStyle(12.sp, MaterialTheme.colors.secondary))
 
 @Composable
-fun chatEventPadding(vertical: Dp = 6.dp): PaddingValues =
+fun chatEventPadding(): PaddingValues =
   if (LocalTerminalLayout.current) PaddingValues(start = CHAT_ITEM_TEXT_PADDING, top = TERMINAL_EVENT_TOP_GAP.toDp(), end = CHAT_ITEM_TEXT_PADDING, bottom = TERMINAL_EVENT_BOTTOM_GAP.toDp())
-  else PaddingValues(horizontal = 6.dp, vertical = vertical)
+  else PaddingValues(horizontal = 6.dp, vertical = 6.dp)
 
 @Composable
 fun ChatEventWithMeta(ci: ChatItem, content: @Composable (separator: AnnotatedString, ts: AnnotatedString) -> Unit) {
@@ -38,7 +33,7 @@ fun ChatEventWithMeta(ci: ChatItem, content: @Composable (separator: AnnotatedSt
     if (inlineMeta != null) {
       content(AnnotatedString("  "), AnnotatedString(ci.timestampText))
     } else {
-      val copy = terminalReserveSpaceForMeta(ci.meta, chatTTL = null, encrypted = null, signedFileVerified = null, secondaryColor = MaterialTheme.colors.secondary, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = true)
+      val copy = metaReserveCopy(ci.meta, chatTTL = null, encrypted = null, signedFileVerified = null, secondaryColor = MaterialTheme.colors.secondary, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = true)
       content(
         buildAnnotatedString { withStyle(chatEventStyle) { withStyle(reserveTimestampStyle) { append("\u00A0\u00A0\u00A0") } } },
         buildAnnotatedString { withStyle(reserveTimestampStyle) { append(copy) } }
@@ -51,7 +46,7 @@ fun ChatEventWithMeta(ci: ChatItem, content: @Composable (separator: AnnotatedSt
   name = "Dark Mode"
 )*/
 @Composable
-fun CIEventViewPreview() {
+fun CIEventViewPreview() = BubblePreview {
   SimpleXTheme {
     CIEventView(buildAnnotatedString { append("event happened") })
   }
