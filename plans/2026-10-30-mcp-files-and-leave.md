@@ -17,6 +17,7 @@ Phases:
 1. Library methods only:
    - the 15 command strings of the server are replaced by typed methods
    - the wait at stop runs without `/sql`: decision 15
+   - exception, decided 2026-11-03: `/_temp_folder DATA/tmp` stays a command string (`setTempFolder`, `serve.ts:205-209`); the typed `apiSetTempFolder` comes with the next library release, so #7962 changes no library code
 2. `/leave CHAT` is an owner command in the agent control chat; it acts at once.
 3. A received file reaches the agent at once, in the message's `file` field, with status `offered`.
 4. `download` is a new action tool; the owner lets the agent receive each file, or all files of one chat.
