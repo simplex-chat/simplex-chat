@@ -23,6 +23,7 @@ where
 
 import StoreService.Config (StripeConfig (..))
 import Control.Concurrent.STM
+import Control.Monad (forM_, when)
 import Crypto.Hash (Digest, SHA256)
 import Crypto.MAC.HMAC (HMAC, hmac, hmacGetDigest)
 import qualified Data.Aeson as J
@@ -60,7 +61,7 @@ import Network.HTTP.Types
     unauthorized401,
   )
 import Network.HTTP.Types.Header (Header)
-import Network.Wai (Application, Response, pathInfo, queryString, requestHeaders, requestMethod, responseLBS, strictRequestBody)
+import Network.Wai (Application, Response, mapResponseHeaders, pathInfo, queryString, requestHeaders, requestMethod, responseLBS, strictRequestBody)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Messaging.Util (tshow)
 import System.FilePath ((</>))
@@ -104,7 +105,9 @@ data FakeState = FakeState
     fsFail :: FailPlan,
     fsList :: Text,
     fsPageSize :: Maybe Int,
-    fsRequests :: [FakeRequest]
+    fsRequests :: [FakeRequest],
+    -- | The first answer to each Idempotency-Key, which Stripe replays to every later call with it.
+    fsReplies :: M.Map ByteString Response
   }
 
 initialState :: FakeState
@@ -115,7 +118,8 @@ initialState =
       fsFail = FailPlan {fpCalls = 0, fpStatus = 0},
       fsList = "intent-list",
       fsPageSize = Nothing,
-      fsRequests = []
+      fsRequests = [],
+      fsReplies = M.empty
     }
 
 data FakeStripe = FakeStripe
@@ -197,7 +201,7 @@ setField k v = \case
   other -> other
 
 fakeApp :: TVar FakeState -> Application
-fakeApp stv req respond = do
+fakeApp stv req respond0 = do
   body <- strictRequestBody req
   case pathInfo req of
     ["_state", pid] | isPost -> control body (setState pid)
@@ -211,6 +215,16 @@ fakeApp stv req respond = do
     isPost = verb == methodPost
     isGet = verb == methodGet
     refuse st message = respond (errorResponse st message)
+    idempotencyKey = if isPost then lookup "Idempotency-Key" (requestHeaders req) else Nothing
+    authorized = lookup hAuthorization (requestHeaders req) == Just expectedAuth
+    -- Stripe saves an answer only once the call runs, so a refused key saves nothing
+    respond r = do
+      forM_ idempotencyKey $ \k -> when authorized $ atomically $ modifyTVar' stv $ \st -> st {fsReplies = M.insertWith (\_ saved -> saved) k r (fsReplies st)}
+      respond0 r
+    replaying act =
+      maybe (pure Nothing) (\k -> M.lookup k . fsReplies <$> readTVarIO stv) idempotencyKey >>= \case
+        Just saved -> respond0 (mapResponseHeaders (("Idempotent-Replayed", "true") :) saved)
+        Nothing -> act
     ok = respond (jsonResponse ok200 (J.object ["ok" J..= True]))
 
     control b act = case J.decode b of
@@ -260,7 +274,7 @@ fakeApp stv req respond = do
         modifyTVar' stv $ \st ->
           st {fsRequests = FakeRequest verb (pathInfo req) (queryString req) (requestHeaders req) b : fsRequests st}
       case lookup hAuthorization (requestHeaders req) of
-        Just given | given == expectedAuth -> injectingFailure (route b rest)
+        Just given | given == expectedAuth -> replaying (injectingFailure (route b rest))
         _ -> refuse unauthorized401 "Authorization must be HTTP Basic with the secret key as username"
 
     -- Stripe authenticates the secret key as the Basic username with an empty password, which is

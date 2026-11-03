@@ -239,18 +239,31 @@ instance J.FromJSON CreatedIntent where
 createInvoice :: StripeEnv -> ServicePaymentMethod -> OrderDraft -> IO (Either ProviderError ProviderInvoice)
 createInvoice _ (SPMCrypto _) _ = pure (Left (ProviderError "stripe offers no crypto payment method"))
 createInvoice env (SPMCard CPStripe) OrderDraft {odAmount = CurrencyAmount minor, odCurrency, odReference} = do
-  let form =
-        [ ("amount", B8.pack (show minor)),
-          ("currency", TE.encodeUtf8 (T.toLower odCurrency)),
+  let amount = B8.pack (show minor)
+      currency = TE.encodeUtf8 (T.toLower odCurrency)
+      reference = TE.encodeUtf8 odReference
+      form =
+        [ ("amount", amount),
+          ("currency", currency),
           -- Only card is offered, because a redirect-based method would navigate the top window out of the embedded frame.
           ("allowed_payment_method_types[]", "card"),
-          ("metadata[order]", TE.encodeUtf8 odReference)
+          ("metadata[order]", reference)
         ]
-  created <- stripeApi env what methodPost ["v1", "payment_intents"] [] (Just form)
+      create headers = stripeSend env what methodPost ["v1", "payment_intents"] [] headers (Just form)
+  -- a name order sent again after a lost answer gets the intent its first create made
+  (replayed, keyed) <- create [("Idempotency-Key", B8.intercalate ":" [reference, amount, currency])]
+  -- Stripe replays a key's first answer for 24 hours, so an error or an intent cancelled since would fail every resend
+  stale <- if replayed then unusable keyed else pure False
+  created <- if stale then snd <$> create [] else pure keyed
   pure $ created >>= decodeStripe what <&> \CreatedIntent {ciId, ciClientSecret} ->
     ProviderInvoice {piProviderRef = ciId, piDestination = SPDCard CPStripe ciClientSecret}
   where
     what = "create intent"
+    unusable = \case
+      Left _ -> pure True
+      Right body -> case decodeStripe what body of
+        Left _ -> pure True
+        Right CreatedIntent {ciId} -> either (const True) isJust <$> readInvoice env ciId
 
 cancelInvoice :: StripeEnv -> Text -> IO (Either ProviderError ())
 cancelInvoice env pid =
@@ -328,7 +341,19 @@ stripeApi ::
   Query ->
   Maybe [(ByteString, ByteString)] ->
   IO (Either ProviderError LB.ByteString)
-stripeApi StripeEnv {seCfg, seManager} what verb segments query form = do
+stripeApi env what verb segments query form = snd <$> stripeSend env what verb segments query [] form
+
+-- | The answer, and whether Stripe replayed it as its saved answer to an Idempotency-Key it has seen.
+stripeSend ::
+  StripeEnv ->
+  Text ->
+  Method ->
+  [Text] ->
+  Query ->
+  [Header] ->
+  Maybe [(ByteString, ByteString)] ->
+  IO (Bool, Either ProviderError LB.ByteString)
+stripeSend StripeEnv {seCfg, seManager} what verb segments query headers form = do
   r <- try $ do
     req0 <- parseRequest (T.unpack url)
     -- applyBasicAuth must wrap the record update, because updating requestHeaders after it would drop the header it adds.
@@ -339,24 +364,26 @@ stripeApi StripeEnv {seCfg, seManager} what verb segments query form = do
                 requestHeaders =
                   ("Accept", "application/json")
                     : ("Stripe-Version", stripeApiVersion)
-                    : [("Content-Type", "application/x-www-form-urlencoded") | isJust form],
+                    : [("Content-Type", "application/x-www-form-urlencoded") | isJust form]
+                    <> headers,
                 requestBody = RequestBodyBS (maybe "" (renderSimpleQuery False) form)
               }
     withResponse req seManager $ \resp -> do
       taken <- brReadSome (responseBody resp) (fromIntegral maxProviderBytes + 1)
-      pure (statusCode (responseStatus resp), taken)
+      pure (lookup "Idempotent-Replayed" (responseHeaders resp) == Just "true", statusCode (responseStatus resp), taken)
   pure $ case r of
     -- http-client hides the Authorization header when showing a Request
-    Left (e :: HttpException) -> Left (ProviderError (what <> " failed: " <> tshow e))
-    Right (code, taken)
-      | LB.length taken > maxProviderBytes ->
+    Left (e :: HttpException) -> (False, Left (ProviderError (what <> " failed: " <> tshow e)))
+    Right (replayed, code, taken) -> (replayed, answer code taken)
+  where
+    answer code taken
+      | LB.length taken > maxProviderBytes =
           Left . ProviderError $
             what <> " failed: HTTP " <> tshow code <> ", and the answer is over " <> tshow maxProviderBytes <> " bytes"
-      | code >= 200 && code < 300 -> Right taken
-      | otherwise ->
+      | code >= 200 && code < 300 = Right taken
+      | otherwise =
           Left . ProviderError $
             what <> " failed: HTTP " <> tshow code <> " " <> snippet taken
-  where
     url =
       T.dropWhileEnd (== '/') (sHost seCfg)
         <> "/"

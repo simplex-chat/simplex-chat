@@ -232,6 +232,14 @@ order's is its id, which the page shows the buyer as "Reference" (`invoice_id` i
 `sx_badge_service_name_registrations`). Neither is a secret, and support finds an intent's order
 from it in the Dashboard.
 
+The create also sends an `Idempotency-Key` of that reference with the amount and currency. The
+page sends a name order again as it was, so a resend after the first answer was lost gets the
+intent the first create made, not a second one. Stripe keeps a key's first answer for 24 hours and
+replays it, an error included. A replayed error, or a replayed intent that has been cancelled since
+(the service cancels the intent of an order it could not write), is not passed on: the service
+creates the intent again without the key. A badge order's reference is new on every request, so
+its key never repeats.
+
 The service fills `publishable_key` into the shell at boot: the built `index.html` ships
 with an empty `<meta id="stripe-publishable-key" name="stripe-publishable-key" content="">`
 (`web/public/index.html`), and the listener serves a copy with the configured key

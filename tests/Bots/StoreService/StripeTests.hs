@@ -49,6 +49,9 @@ badgeStripeTests = describe "badge stripe adapter" $ do
   describe "against the fake Stripe" $ do
     it "creates a PaymentIntent and reads back the client secret" testFakeCreatesCard
     it "sends the create form Stripe documents, over HTTP Basic" testFakeCreateBody
+    it "sends an Idempotency-Key of the order, so a create sent again gets the same intent" testFakeCreateIsIdempotent
+    it "creates again without the key when the key replays an error" testFakeReplayedErrorIsNotPassedOn
+    it "creates again without the key when the key replays an intent cancelled since" testFakeReplayedCancelIsNotPassedOn
     it "is refused when the secret key is wrong, rather than passing silently" testFakeWrongSecretKey
     it "walks requires_payment_method through processing to succeeded, then refuses a cancel" testFakeLifecycle
     it "cancels an open intent once, then refuses a second cancel" testFakeCancel
@@ -146,8 +149,45 @@ testFakeCreateBody = withProvider $ \fake p -> do
       -- Card only keeps the client confirm from redirecting the top window out of the embedded frame.
       lookup "allowed_payment_method_types[]" form `shouldBe` Just "card"
       lookup "metadata[order]" form `shouldBe` Just (TE.encodeUtf8 sampleReference)
+      lookup "Idempotency-Key" (frHeaders created) `shouldBe` Just (TE.encodeUtf8 sampleReference <> ":5400:usd")
       lookup hAuthorization (frHeaders created) `shouldSatisfy` maybe False ("Basic " `B8.isPrefixOf`)
     _ -> expectationFailure ("expected one create, got " <> show (length posts))
+
+nameOrder :: OrderDraft
+nameOrder = fiftyFourDollars {odReference = "name:0x" <> T.replicate 32 "ab"}
+
+nameOrderKey :: B8.ByteString
+nameOrderKey = TE.encodeUtf8 (odReference nameOrder) <> ":5400:usd"
+
+createdNameOrder :: HasCallStack => Provider -> IO Text
+createdNameOrder p =
+  pCreateInvoice p (SPMCard CPStripe) nameOrder >>= \case
+    Right ProviderInvoice {piProviderRef} -> pure piProviderRef
+    Left e -> failWith ("expected an invoice, got " <> show e)
+
+testFakeCreateIsIdempotent :: IO ()
+testFakeCreateIsIdempotent = withProvider $ \fake p -> do
+  first <- createdNameOrder p
+  createdNameOrder p `shouldReturn` first
+  ProviderInvoice {piProviderRef = badge} <- createdInvoice p (SPMCard CPStripe)
+  badge `shouldNotBe` first
+  length <$> fakeIntentIds fake `shouldReturn` 2
+
+testFakeReplayedErrorIsNotPassedOn :: IO ()
+testFakeReplayedErrorIsNotPassedOn = withProvider $ \fake p -> do
+  failNextCalls fake 1 500
+  pCreateInvoice p (SPMCard CPStripe) nameOrder >>= (`shouldSatisfy` namesInError "500")
+  pid <- createdNameOrder p
+  fakeIntentIds fake `shouldReturn` [pid]
+  map (lookup "Idempotency-Key" . frHeaders) <$> apiRequests fake "POST" [] `shouldReturn` [Just nameOrderKey, Just nameOrderKey, Nothing]
+
+testFakeReplayedCancelIsNotPassedOn :: IO ()
+testFakeReplayedCancelIsNotPassedOn = withProvider $ \fake p -> do
+  first <- createdNameOrder p
+  pCancelInvoice p first `shouldReturn` Right ()
+  again <- createdNameOrder p
+  again `shouldNotBe` first
+  fakeIntentStatus fake again `shouldReturn` Just "requires_payment_method"
 
 testFakeWrongSecretKey :: IO ()
 testFakeWrongSecretKey = bounded $ withFakeStripe $ \fake -> do
