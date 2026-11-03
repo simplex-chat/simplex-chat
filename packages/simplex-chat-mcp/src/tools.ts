@@ -127,6 +127,8 @@ type Plan = {join: PlanSummary; method: JoinMethod} | {known: T.ChatInfo; summar
 
 type Schema = {[key: string]: unknown}
 
+type Quoted = {from: string; text: string; content: T.MsgContent; fileName?: string}
+
 type ToolName = "connect" | "send" | "receive" | "download" | "list" | "leave"
 
 const maxChats = 1_000_000
@@ -142,6 +144,7 @@ const messagesOnConnect = 50
 const mediaTimeout = 30_000
 const maxMessageLength = 15_602
 const messageEnvelope = 600
+const quotesAsText: T.MsgContent["type"][] = ["link", "image", "video", "chat", "unknown"]
 const maxOutputBytes = 64 * 1024 * 1024
 const fixedPreview = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAJCAAAAAAeQfPuAAAAD0lEQVR42mNoQAMMg0QAAIXUSAG1CN3UAAAAAElFTkSuQmCC"
 const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
@@ -744,12 +747,13 @@ export class AgentTools {
       const role = chatInfo.groupInfo.membership.memberRole
       if (role === T.GroupMemberRole.Observer || role === T.GroupMemberRole.Relay) throw new ToolError(`The agent has role ${role} in ${chat} and can't post.`)
     }
-    const replyTo = input.reply_to === undefined ? undefined : await this.quotedItem(chat, input.reply_to)
+    const quoted = input.reply_to === undefined ? undefined : await this.quotedItem(chat, input.reply_to)
     const mentions = input.mention === undefined ? [] : await this.mentionedMembers(chatInfo, chat, input.mention)
     const file = input.file === undefined ? undefined : await this.attachment(input.file, input.as, chatInfo, chat)
-    if (file !== undefined && messageLength(fileContent(file, messageText(input.text, mentions)), file.name, replyTo, mentions) > maxMessageLength) {
-      throw new ToolError(`text: too long for a message with this ${file.type}; shorten it.`)
+    if (messageLength(sentContent(file, messageText(input.text, mentions)), file?.name, quoted, mentions) > maxMessageLength) {
+      throw new ToolError(file === undefined ? "text: too long for the message with its quote; shorten it." : `text: too long for a message with this ${file.type}; shorten it.`)
     }
+    const replyTo = quoted === undefined ? undefined : {from: quoted.from, text: quoted.text}
     const subject = chatSubject(chatInfo)
     const responses = new Collected()
     const approver = this.agent.standingApprover((await this.knownChat(chat)).chatInfo, "messages")
@@ -787,7 +791,7 @@ export class AgentTools {
       const [sent] = await this.agent.chat.apiSendMessages([chatType(chat), chatNumber(chat)], [
         {
           ...(filePath === undefined ? {} : {fileSource: {filePath}}),
-          msgContent: file === undefined ? {type: "text", text} : fileContent(file, text),
+          msgContent: sentContent(file, text),
           mentions: Object.fromEntries(mentions.map(({name, member}) => [name, member])),
           quotedItemId: input.reply_to,
         },
@@ -1107,12 +1111,14 @@ export class AgentTools {
     }
   }
 
-  private async quotedItem(chat: string, item: number): Promise<{from: string; text: string}> {
+  private async quotedItem(chat: string, item: number): Promise<Quoted> {
     const quoted = await getChat(this.agent.chat, chat, {type: "around", chatItemId: item, count: 0}).catch(() => undefined)
     const chatItem = quoted?.chatItems.find(({meta}) => meta.itemId === item)
     if (quoted === undefined || chatItem === undefined) throw new ToolError(`reply_to: ${chat} has no item ${item}.`)
-    if (!isMessageItem(chatItem)) throw new ToolError(`reply_to: item ${item} in ${chat} is not a message.`)
-    return {from: toMessage(quoted.chatInfo, chatItem, {name: this.selfName(quoted.chatInfo)}, this.rejectedFiles, this.agent.data).from, text: chatItem.meta.itemText}
+    const {content, file} = chatItem
+    if (content.type !== "rcvMsgContent" && content.type !== "sndMsgContent") throw new ToolError(`reply_to: item ${item} in ${chat} is not a message.`)
+    const from = toMessage(quoted.chatInfo, chatItem, {name: this.selfName(quoted.chatInfo)}, this.rejectedFiles, this.agent.data).from
+    return {from, text: chatItem.meta.itemText, content: content.msgContent, fileName: file?.fileName}
   }
 
   private async mentionedMembers(chatInfo: T.ChatInfo, chat: string, ids: number[]): Promise<{name: string; member: number}[]> {
@@ -1355,8 +1361,26 @@ function messageText(text: string | undefined, mentions: {name: string}[]): stri
   return [...missing, text ?? ""].filter(part => part !== "").join(" ")
 }
 
-function messageLength(content: T.MsgContent, fileName: string, replyTo: {text: string} | undefined, mentions: {name: string}[]): number {
-  return messageEnvelope + Buffer.byteLength(JSON.stringify([content, fileName, replyTo?.text ?? "", mentions.map(({name}) => name)]))
+function sentContent(file: Attachment | undefined, text: string): T.MsgContent {
+  return file === undefined ? {type: "text", text} : fileContent(file, text)
+}
+
+function messageLength(content: T.MsgContent, fileName: string | undefined, quoted: Quoted | undefined, mentions: {name: string}[]): number {
+  const quote = quoted === undefined ? undefined : quoteContent(content, quoted)
+  return messageEnvelope + Buffer.byteLength(JSON.stringify([content, fileName, quote, mentions.map(({name}) => name)]))
+}
+
+function quoteContent(sent: T.MsgContent, {content, fileName}: Quoted): T.MsgContent {
+  const text = content.text === "" ? (fileName ?? "") : content.text
+  if (quotesAsText.includes(sent.type)) return {type: "text", text}
+  switch (content.type) {
+    case "image":
+      return {...content, text}
+    case "file":
+      return {type: "file", text}
+    default:
+      return content
+  }
 }
 
 function mentionedIn(text: string, name: string): boolean {

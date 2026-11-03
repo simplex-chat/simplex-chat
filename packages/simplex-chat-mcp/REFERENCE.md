@@ -309,7 +309,7 @@ A short voice message can arrive with its file already received. The server move
 - `.mp4` and `.mov` as a video, unchanged, with the first frame as its preview and its duration when `ffmpeg` and `ffprobe` are installed, otherwise a gray preview;
 - other files as a file, unchanged; `as: "file"` sends an image or video this way too.
 
-An empty file is refused, and so is `as` without `file`. A message with a file holds at most 15602 bytes with the file's name, its preview, the quoted text of `reply_to` and the mentioned names: a `send` over it is refused with `text: too long for a message with this image; shorten it.` An image's preview takes up to 14000 bytes, so its text has about 1 KB.
+An empty file is refused, and so is `as` without `file`. A message holds at most 15602 bytes with its text, the file's name and preview, the message `reply_to` quotes and the mentioned names. The quote is the quoted text when the message is an image or video; otherwise it is the quoted content, an image's preview included. A `send` over it is refused with `text: too long for a message with this image; shorten it.`, or without a file `text: too long for the message with its quote; shorten it.` An image's preview takes up to 14000 bytes, so its text has about 1 KB.
 
 The server checks the file by its real path, after symbolic links, and refuses files under `~/.ssh`, `~/.gnupg` and `~/.simplex-mcp`, each folder taken by its real path too, files named `id_*`, `*.pem`, `*.key`, `*.p12` and `*.pfx`, and the files of its data folder except those under `files/`. The card shows the real path. A file whose real path, size, inode or change time differs at the send from the request is not sent: the action fails.
 

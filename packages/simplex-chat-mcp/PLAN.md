@@ -788,7 +788,7 @@ not a regular file                 file: /home/alice/trails is not a file.
 not readable                       file: /home/alice/trail.jpg can't be read.
 refused path, by its real path     file: /home/alice/.ssh/id_ed25519 is refused: private keys and the server's own files are not sent.
 empty file                         file: /home/alice/empty.txt is empty.
-message with a file over 15602     text: too long for a message with this image; shorten it. (video, voice, file: its type)
+message over 15602                 text: too long for a message with this image; shorten it. (video, voice, file: its type; no file: text: too long for the message with its quote; shorten it.)
 item not in chat                   item: #3 has no item 999.
 item without a received file       item: item 31 in #3 has no received file.
 upload not finished within wait    item: the sender has not uploaded the file of item 31 in #3 yet; call download again later.
@@ -1157,7 +1157,8 @@ send(input, ctx):
   reply_to i: /_get chat <chat> around=<i> count=0 fails or has no item i: tool error "reply_to not in chat"; item i not a message: tool error "reply_to not a message"
   mention, chat a contact chat: tool error "mention not a member"
   mention m: /_members <chat> has no member m: tool error "mention not a member"; two members with the same display name: tool error "mention of equal names"
-  file: attachment(file, as); the message over 15602 bytes (section Card size): tool error "message with a file over 15602"
+  file: attachment(file, as)
+  the message over 15602 bytes (section Card size): tool error "message over 15602"
   /_get chat <chat> count=0 again: the chat's approval of messages at this point
   action(send, input, ctx), standing under that approval
   return responses(action, wait, idle, limit, ctx) with {action, status: "done"}
@@ -1210,11 +1211,12 @@ chat message, JSON           15602   maxEncodedMsgLength (Protocol.hs:929-930), 
 x.msg.new envelope           114     measured with core 7.1.0.11; 128 with a 30-day ttl
 x.msg.update envelope        168     measured; 182 with a 30-day ttl
 card text, JSON-escaped      15000   the server's limit: 420 below the strictest measured case, 15602 - 182
-x.msg.new with a file        600     the server's allowance for the envelope, the file invitation (fileDescr of an XFTP file, Types.hs:1607-1617),
-                                     the quote's msgRef (Library/Internal.hs:372-398) and the mentions' member IDs
+x.msg.new allowance          600     the server's allowance for the envelope, the file invitation (fileDescr of an XFTP file, Types.hs:1607-1617),
+                                     the quote's msgRef and the mentions' member IDs
 ```
 
-- A send with a file is refused when 600 plus the UTF-8 length of the JSON of [msgContent, file name, quoted text, mentioned names] exceeds 15602; msgContent has the text with the added mentions and the preview (14000 bytes at most, `packages/simplex-chat-nodejs/src/core.ts:136`).
+- A send is refused when 600 plus the UTF-8 length of the JSON of [msgContent, file name, quoted content, mentioned names] exceeds 15602; msgContent has the text with the added mentions and, for an image or video, the preview (14000 bytes at most, `packages/simplex-chat-nodejs/src/core.ts:136`).
+- The quoted content is built as `quoteContent` builds it (`Library/Internal.hs:372-398`): a sent image, video or link quotes a text, the quoted text or else the quoted file's name; a sent text, file or voice quotes an image with its preview, a file as a file, and other content as it is.
 
 - Group member connections are created with PQ off (`Store/Groups.hs:1837`, `:2201`, `:2726`), so `deliverMessagesB` compresses to the same 15602 bytes (`Internal.hs:2578`).
 - The library posts a card with `/_send #G json ...` without `sign=on`, and edits it with `/_update item #G <item> json ...` (`api.js`, `apiSendMessages`, `apiUpdateChatItem`): the body has no signature prefix.

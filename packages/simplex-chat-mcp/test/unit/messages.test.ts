@@ -688,6 +688,21 @@ describe("send with a file", () => {
     expect(actions.all()).toEqual([])
   })
 
+  it("counts the quoted message as the core sends it: an image's preview, unless an image replies to it", async () => {
+    jest.spyOn(core, "resizeImage").mockResolvedValue(`data:image/jpg;base64,${"A".repeat(13_978)}`)
+    const {chat, tools, actions} = sendTools()
+    chat.chats.get("@4")!.items.push(fileItem(20, {type: "image", text: "", image: `data:image/jpg;base64,${"B".repeat(13_978)}`}, {type: "rcvComplete"}))
+    const text = async (args: object): Promise<string> => textOf(await tools.call("send", {chat: "@4", reply_to: 20, ...args}, signal().call))
+    expect(await text({text: "x".repeat(1100), file: fileIn("notes.txt")})).toBe("text: too long for a message with this file; shorten it.")
+    expect(await text({text: "x".repeat(1700)})).toBe("text: too long for the message with its quote; shorten it.")
+    expect(actions.all()).toEqual([])
+    const {controller, call} = signal()
+    const sending = tools.call("send", {chat: "@4", reply_to: 20, text: "x".repeat(800), file: fileIn("photo.jpg")}, call)
+    expect(await created(actions)).toMatchObject({tool: "send", state: "pending"})
+    controller.abort()
+    expect(await sending).toBeUndefined()
+  })
+
   it("fails when the file changed after the request, and deletes the copy when the send fails", async () => {
     jest.spyOn(core, "resizeImage").mockImplementation(async (_image, size) => (size === core.ImageSize.MessagePreview ? preview : resized))
     const photo = fileIn("photo.png")

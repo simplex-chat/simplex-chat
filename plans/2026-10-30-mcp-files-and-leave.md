@@ -417,7 +417,9 @@ empty file                                        file: PATH is empty.
 text and file both absent                         text: required without file.
 as without file                                   as: applies only with file.
 the message over 15602 bytes                      text: too long for a message with this image; shorten it.
+                                                  (no file: text: too long for the message with its quote; shorten it.)
 ```
+- The message length counts the quoted content as the core's `quoteContent` builds it, an image's preview included (`Library/Internal.hs:372-398`).
 - The refusal is posted: ``Refused to send `PATH` to bot SimpleX Directory (@4): private keys and the server's own files are not sent.``; the same line goes to the log.
 - The card shows the real path.
 
