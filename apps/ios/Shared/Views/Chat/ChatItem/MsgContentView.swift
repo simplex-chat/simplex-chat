@@ -29,6 +29,7 @@ struct MsgContentView: View {
     @ObservedObject var chat: Chat
     @Environment(\.showTimestamp) var showTimestamp: Bool
     @Environment(\.containerBackground) var containerBackground: UIColor
+    @Environment(\.terminalLayout) private var terminal
     @EnvironmentObject var theme: AppTheme
     var text: String
     var formattedText: [FormattedText]? = nil
@@ -43,6 +44,10 @@ struct MsgContentView: View {
     var stripLink: String? = nil
     var blockLayout = false
     var cardColor: Color? = nil
+    var encrypted: Bool? = nil
+    var signedFileVerified: Bool? = nil
+    var textColor: Color? = nil
+    var ruleMinWidth: CGFloat = 0
     @State private var showSecrets: Set<Int> = []
     @State private var typingIdx = 0
     @State private var timer: Timer?
@@ -52,6 +57,7 @@ struct MsgContentView: View {
 
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
     @AppStorage(DEFAULT_PRIVACY_SHOW_SIGNATURE) private var showSignature = true
+    @AppStorage(DEFAULT_PRIVACY_SHOW_FILE_ENCRYPTION) private var showFileEncryption = true
 
     var body: some View {
         let v = contentView()
@@ -108,15 +114,19 @@ struct MsgContentView: View {
                 textStyle: textStyle,
                 cardColor: cardColor ?? theme.appColors.receivedQuote,
                 rightToLeft: rightToLeft,
-                blockText: { index, range, font, secretStart, last in blockTextView(fts, blocks, index, range, font, secretStart, last) },
-                metaLine: { metaLineView() }
+                blockText: { index, range, font, secretStart, last, textAlpha in blockTextView(fts, blocks, index, range, font, secretStart, last, textAlpha) },
+                metaLine: { metaLineView() },
+                marksLastBlock: terminal && meta?.isLive != true,
+                ruleWidthText: terminal ? meta.map { reserveSpaceForMeta($0) } : nil,
+                ruleMinWidth: ruleMinWidth,
+                chatHeadings: true
             )
         } else {
             msgContentView()
         }
     }
 
-    private func blockTextView(_ fts: [FormattedText], _ blocks: [MarkdownBlock], _ index: Int, _ range: Range<Int>, _ font: UIFont, _ secretStart: Int, _ last: Bool) -> some View {
+    private func blockTextView(_ fts: [FormattedText], _ blocks: [MarkdownBlock], _ index: Int, _ range: Range<Int>, _ font: UIFont, _ secretStart: Int, _ last: Bool, _ textAlpha: Double) -> some View {
         let r = messageText(
             text,
             fts,
@@ -131,7 +141,8 @@ struct MsgContentView: View {
             prefix: index == 0 ? prefix : nil,
             range: range,
             baseFont: font,
-            secretStart: secretStart
+            secretStart: secretStart,
+            textColor: UIColor(messageColor)
         )
         let s = r.string
         let t: Text
@@ -143,12 +154,14 @@ struct MsgContentView: View {
         } else {
             t = Text(AttributedString(s))
         }
-        return msgTextResultView(r, t, showSecrets: $showSecrets, sendCommand: { cmd in sendCommandMsg(chat, cmd) })
+        let bodyFont = UIFont.preferredFont(forTextStyle: textStyle)
+        let box = terminal ? terminalLineBox(font, messageColor.opacity(textAlpha), theme, capsOf: font.pointSize > bodyFont.pointSize ? bodyFont : nil) : nil
+        return msgTextView(r, t, box)
     }
 
     @ViewBuilder
     private func metaLineView() -> some View {
-        if let mt = meta {
+        if let mt = meta, !terminal || mt.isLive {
             (mt.isLive ? Text(AttributedString(typingIndicator(mt.recent))) : Text(verbatim: "")) + reserveSpaceForMeta(mt, newLine: false)
         }
     }
@@ -167,7 +180,8 @@ struct MsgContentView: View {
             commands: chat.chatInfo.useCommands && chat.chatInfo.sndReady,
             backgroundColor: containerBackground,
             prefix: prefix,
-            stripLink: stripLink
+            stripLink: stripLink,
+            textColor: UIColor(messageColor)
         )
         let s = r.string
         let t: Text
@@ -179,7 +193,21 @@ struct MsgContentView: View {
         } else {
             t = Text(AttributedString(s))
         }
-        return msgTextResultView(r, t, showSecrets: $showSecrets, sendCommand: { cmd in sendCommandMsg(chat, cmd) })
+        let box = terminal ? terminalLineBox(UIFont.preferredFont(forTextStyle: textStyle), messageColor, theme) : nil
+        return msgTextView(r, t, box)
+    }
+
+    @ViewBuilder private func msgTextView(_ r: MsgTextResult, _ t: Text, _ box: TerminalLineBox?) -> some View {
+        let v = msgTextResultView(r, t, showSecrets: $showSecrets, sendCommand: { cmd in sendCommandMsg(chat, cmd) }, lineSpacing: box?.spacing ?? 0)
+        if let box {
+            v.modifier(box)
+        } else {
+            v
+        }
+    }
+
+    private var messageColor: Color {
+        textColor ?? messageTextColor(theme)
     }
 
     @inline(__always)
@@ -191,8 +219,21 @@ struct MsgContentView: View {
 
     @inline(__always)
     private func reserveSpaceForMeta(_ mt: CIMeta, newLine: Bool = true) -> Text {
-        (rightToLeft && newLine ? textNewLine : Text(verbatim: "   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, showSignature: showSignature)
+        if terminal {
+            let separator = rightToLeft && newLine ? textNewLine : metaCopyJoiner(rightToLeft) + Text(verbatim: "\u{00A0}\u{00A0}\u{00A0}")
+            return separator + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: encrypted, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, signedFileVerified: signedFileVerified, showSignature: showSignature, showFileEncryption: showFileEncryption, unbreakable: true)
+        }
+        return (rightToLeft && newLine ? textNewLine : Text(verbatim: "   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, showSignature: showSignature)
     }
+}
+
+private func withLineSpacing(_ s: NSAttributedString, _ lineSpacing: CGFloat) -> NSAttributedString {
+    if lineSpacing <= 0 { return s }
+    let spaced = NSMutableAttributedString(attributedString: s)
+    let style = NSMutableParagraphStyle()
+    style.lineSpacing = lineSpacing
+    spaced.addAttribute(.paragraphStyle, value: style, range: NSRange(location: 0, length: spaced.length))
+    return spaced
 }
 
 func msgTextResultView(
@@ -202,10 +243,11 @@ func msgTextResultView(
     sendCommand: ((String) -> Void)? = nil,
     openModal: ((Format) -> Void)? = nil,
     centered: Bool = false,
-    smallFont: Bool = false
+    smallFont: Bool = false,
+    lineSpacing: CGFloat = 0
 ) -> some View {
     t.if(r.hasSecrets, transform: hiddenSecretsView)
-        .if(r.handleTaps) { $0.overlay(handleTextTaps(r.string, showSecrets: showSecrets, sendCommand: sendCommand, openModal: openModal, centered: centered, smallFont: smallFont)) }
+        .if(r.handleTaps) { $0.overlay(handleTextTaps(r.string, showSecrets: showSecrets, sendCommand: sendCommand, openModal: openModal, centered: centered, smallFont: smallFont, lineSpacing: lineSpacing)) }
 }
 
 // smallFont parameter is used to pad height, otherwise CTFrameGetLines fails to see them as lines - it's needed if font is not .body
@@ -216,7 +258,8 @@ private func handleTextTaps(
     sendCommand: ((String) -> Void)? = nil,
     openModal: ((Format) -> Void)? = nil,
     centered: Bool,
-    smallFont: Bool
+    smallFont: Bool,
+    lineSpacing: CGFloat
 ) -> some View {
     return GeometryReader { g in
         Rectangle()
@@ -225,7 +268,7 @@ private func handleTextTaps(
             .simultaneousGesture(DragGesture(minimumDistance: 0).onEnded { event in
                 let t = event.translation
                 if t.width * t.width + t.height * t.height > 100 { return }
-                let framesetter = CTFramesetterCreateWithAttributedString(s as CFAttributedString)
+                let framesetter = CTFramesetterCreateWithAttributedString(withLineSpacing(s, lineSpacing) as CFAttributedString)
                 let paddedSize = smallFont ? CGSize(width: g.size.width, height: g.size.height + 1.0) : g.size
                 let path = CGPath(rect: CGRect(origin: .zero, size: paddedSize), transform: nil)
                 let frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(0, s.length), path, nil)
@@ -473,7 +516,8 @@ func messageText(
     stripLink: String? = nil,
     range: Range<Int>? = nil,
     baseFont: UIFont? = nil,
-    secretStart: Int = 0
+    secretStart: Int = 0,
+    textColor: UIColor = .label
 ) -> MsgTextResult {
     let text = if let stripLink { stripTextLink(text, stripLink) } else { text }
     let formattedText = if let stripLink { stripFormattedTextLink(formattedText, stripLink) } else { formattedText }
@@ -482,7 +526,7 @@ func messageText(
     let font = baseFont ?? UIFont.preferredFont(forTextStyle: textStyle)
     let plain: [NSAttributedString.Key: Any] = [
         .font: font,
-        .foregroundColor: UIColor.label
+        .foregroundColor: textColor
     ]
     let secretColor = backgroundColor.withAlphaComponent(1)
     var hasSecrets = false
@@ -536,7 +580,7 @@ func messageText(
         let (descr, font) = segmentFonts(heading)
         let plain: [NSAttributedString.Key: Any] = [
             .font: font,
-            .foregroundColor: UIColor.label
+            .foregroundColor: textColor
         ]
         var link: [NSAttributedString.Key: Any]?
         var bold: UIFont?
@@ -619,10 +663,10 @@ func messageText(
                     t = viaHost(smpHosts)
                 }
             case let .command(cmdStr):
-                snippet = snippet ?? UIFont.monospacedSystemFont(ofSize: descr.pointSize, weight: .regular)
-                attrs[.font] = snippet
-                t = "/" + cmdStr
                 if !preview && commands {
+                    snippet = snippet ?? UIFont.monospacedSystemFont(ofSize: descr.pointSize, weight: .regular)
+                    attrs[.font] = snippet
+                    t = "/" + cmdStr
                     attrs[.foregroundColor] = uiLinkColor
                     attrs[commandAttrKey] = t
                     handleTaps = true
@@ -702,6 +746,7 @@ struct SwipeExclusionFrames: PreferenceKey {
 }
 
 struct MarkdownView: View {
+    @EnvironmentObject var theme: AppTheme
     var text: String
     var formattedText: [FormattedText]?
     var markdownBlocks: [MarkdownBlock]?
@@ -720,17 +765,18 @@ struct MarkdownView: View {
                 textStyle: .body,
                 cardColor: cardColor,
                 rightToLeft: isRightToLeft(text),
-                blockText: { index, range, font, secretStart, _ in
+                blockText: { index, range, font, secretStart, _, _ in
                     let r = messageText(
                         text, fts, markdownBlocks: blocks, sender: index == 0 ? sender : nil, mentions: mentions, userMemberId: userMemberId,
-                        showSecrets: showSecrets, backgroundColor: UIColor(backgroundColor), range: range, baseFont: font, secretStart: secretStart
+                        showSecrets: showSecrets, backgroundColor: UIColor(backgroundColor), range: range, baseFont: font, secretStart: secretStart,
+                        textColor: UIColor(messageTextColor(theme))
                     )
                     msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets)
                 },
                 metaLine: { EmptyView() }
             )
         } else {
-            let r = messageText(text, formattedText, sender: sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, backgroundColor: UIColor(backgroundColor))
+            let r = messageText(text, formattedText, sender: sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, backgroundColor: UIColor(backgroundColor), textColor: UIColor(messageTextColor(theme)))
             msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets)
         }
     }
@@ -755,22 +801,29 @@ private struct BlocksLayout {
 
 struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
     @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
+    @Environment(\.terminalLayout) private var terminal
     var formattedText: [FormattedText]
     var blocks: [MarkdownBlock]
     var textStyle: UIFont.TextStyle
     var cardColor: Color
     var rightToLeft: Bool
-    @ViewBuilder var blockText: (_ index: Int, _ range: Range<Int>, _ font: UIFont, _ secretStart: Int, _ last: Bool) -> BlockText
+    @ViewBuilder var blockText: (_ index: Int, _ range: Range<Int>, _ font: UIFont, _ secretStart: Int, _ last: Bool, _ textAlpha: Double) -> BlockText
     @ViewBuilder var metaLine: () -> MetaLine
+    var marksLastBlock = false
+    var ruleWidthText: Text? = nil
+    var ruleMinWidth: CGFloat = 0
+    var chatHeadings = false
 
     var body: some View {
         let l = BlocksLayout(formattedText, blocks, textStyle)
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(blocks.enumerated()), id: \.offset) { k, block in
-                if k > 0 && paragraphBreak(blocks[k - 1].endIndex, block.startIndex) {
-                    Color.clear.frame(height: l.font.lineHeight / 2)
+                if k > 0 && terminal && blocks[k - 1].isHeading && !block.isHeading {
+                    Color.clear.frame(height: terminalHeadingBottomGap)
+                } else if k > 0 && (paragraphBreak(blocks[k - 1].endIndex, block.startIndex) || terminal && block.isHeading) {
+                    Color.clear.frame(height: terminal ? terminalLevelStep : l.font.lineHeight / 2)
                 }
-                blockView(block, l.starts[k], l)
+                blockView(block, l.starts[k], l, last: k == blocks.count - 1)
             }
             if !l.lastIsText {
                 metaLine()
@@ -780,20 +833,20 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
         .environment(\.layoutDirection, rightToLeft ? .rightToLeft : .leftToRight)
     }
 
-    private func text(_ index: Int, _ r: SegmentRange, _ font: UIFont, _ l: BlocksLayout) -> BlockText {
-        blockText(index, r.from..<max(r.from, r.to), font, l.secrets[min(max(r.from, 0), formattedText.count)], l.lastIsText && index == l.starts[l.starts.count - 1] - 1)
+    private func text(_ index: Int, _ r: SegmentRange, _ font: UIFont, _ l: BlocksLayout, textAlpha: Double = 1) -> BlockText {
+        blockText(index, r.from..<max(r.from, r.to), font, l.secrets[min(max(r.from, 0), formattedText.count)], l.lastIsText && index == l.starts[l.starts.count - 1] - 1, textAlpha)
     }
 
-    @ViewBuilder private func blockView(_ block: MarkdownBlock, _ start: Int, _ l: BlocksLayout) -> some View {
+    @ViewBuilder private func blockView(_ block: MarkdownBlock, _ start: Int, _ l: BlocksLayout, last: Bool) -> some View {
         switch block {
         case let .paragraph(content):
             text(start, content, l.font, l)
         case let .heading(level, content):
-            text(start, content, headingFont(l.font, level), l)
+            text(start, content, terminal || chatHeadings ? terminalHeadingFont(l.font, level) : headingFont(l.font, level), l)
         case let .quote(content):
             HStack(alignment: .top, spacing: 10) {
-                RoundedRectangle(cornerRadius: 2).fill(Color(uiColor: .label).opacity(0.16)).frame(width: 4)
-                text(start, content, l.font, l).opacity(0.72)
+                quoteBar()
+                text(start, content, l.font, l, textAlpha: 0.72).opacity(0.72)
             }
             .fixedSize(horizontal: false, vertical: true)
         case let .list(items):
@@ -808,10 +861,32 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
             CodeBlockCard(color: cardColor, radius: 12 * roundness, copyText: codeText(content)) {
                 text(start, content, monospacedFont(l.font), l).fixedSize(horizontal: true, vertical: false)
             }
+            .if(terminal) { cardMargins($0, last) }
         case let .table(columns, header, rows):
             tableView(columns, [header] + rows, start, l)
+                .if(terminal) { cardMargins($0.alignmentGuide(.lastTextBaseline) { d in d[explicit: .lastTextBaseline] ?? d[.bottom] - 4 + l.font.descender }, last) }
         case .rule:
-            Rectangle().fill(Color(uiColor: .secondaryLabel).opacity(0.35)).frame(height: 1).padding(.vertical, 6)
+            if terminal {
+                cardMargins(terminalRule(), last)
+            } else {
+                Rectangle().fill(Color(uiColor: .secondaryLabel).opacity(0.35)).frame(height: 1).padding(.vertical, 6)
+            }
+        }
+    }
+
+    private func cardMargins(_ block: some View, _ last: Bool) -> some View {
+        block
+            .if(last && marksLastBlock) { $0.modifier(MessageLastBlock()) }
+            .padding(.top, terminalBlockTopGap)
+            .padding(.bottom, last && marksLastBlock ? 0 : terminalBlockBottomGap)
+    }
+
+    @ViewBuilder private func terminalRule() -> some View {
+        let rule = Rectangle().fill(Color(uiColor: .secondaryLabel).opacity(0.35)).frame(height: 1)
+        if let ruleWidthText, blocks.allSatisfy({ if case .rule = $0 { true } else { false } }) {
+            ruleWidthText.fixedSize().hidden().frame(minWidth: ruleMinWidth, alignment: .leading).frame(height: 1).overlay(rule)
+        } else {
+            rule
         }
     }
 
@@ -897,6 +972,12 @@ private extension MarkdownBlock {
     }
 }
 
+let quoteBarWidth: CGFloat = 4
+
+func quoteBar() -> some View {
+    RoundedRectangle(cornerRadius: 2).fill(Color(uiColor: .label).opacity(0.16)).frame(width: quoteBarWidth)
+}
+
 private func headingFont(_ font: UIFont, _ level: Int) -> UIFont {
     let scale: CGFloat = switch level {
     case 1: 1.5
@@ -905,6 +986,10 @@ private func headingFont(_ font: UIFont, _ level: Int) -> UIFont {
     default: 1
     }
     return UIFont(descriptor: boldFont(font).fontDescriptor, size: font.pointSize * scale)
+}
+
+private func terminalHeadingFont(_ font: UIFont, _ level: Int) -> UIFont {
+    UIFont(descriptor: boldFont(font).fontDescriptor, size: font.pointSize * pow(terminalHeadingRatio, CGFloat(max(0, 3 - level))))
 }
 
 private func boldFont(_ font: UIFont) -> UIFont {

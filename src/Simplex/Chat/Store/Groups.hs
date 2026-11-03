@@ -836,7 +836,7 @@ updatePreparedUserAndHostMembers'
     unless (memberStatus membership == GSMemConnected) $
       liftIO $ updateUserMember currentTs
     hostMember' <- updateHostMember currentTs
-    when (gp /= groupProfile) $
+    when (not (useRelays' gInfo) && gp /= groupProfile) $
       void $ updateGroupProfile db user gInfo groupProfile
     when (isJust businessChat && isJust business) $
       liftIO $ updateBusinessChatInfo db groupId business

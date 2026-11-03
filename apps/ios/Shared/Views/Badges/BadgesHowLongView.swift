@@ -69,18 +69,34 @@ enum BadgePeriod: String, CaseIterable, Identifiable {
 }
 
 struct BadgesHowLongView: View {
+    let level: BadgeLevel
+    var startDate = Date()
+    var priceList: BadgePriceList? = nil
+
+    var body: some View {
+        BadgesHowLongLayout(level: level, startDate: startDate, priceList: priceList)
+            .task { await BadgeStore.shared.load() }
+    }
+}
+
+struct BadgesHowLongLayout: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var store = BadgeStore.shared
     // store.forSale reads the active profile's badge
     @ObservedObject private var badgeModel = BadgeModel.shared
     let level: BadgeLevel
     var startDate = Date()
+    var priceList: BadgePriceList? = nil
     @State private var chosenPeriod: BadgePeriod? = nil
     @State private var continueActive = false
 
+    private var prices: BadgePriceList {
+        priceList ?? store.priceList(level)
+    }
+
     // monthly once subscriptions turn out to be for sale, unless a period was chosen before that
     private var selectedPeriod: BadgePeriod {
-        chosenPeriod ?? (store.forSale(level, .monthly) ? .monthly : .oneMonth)
+        chosenPeriod ?? (prices.forSale(.monthly) ? .monthly : .oneMonth)
     }
 
     var body: some View {
@@ -112,8 +128,8 @@ struct BadgesHowLongView: View {
                     }
                     .fixedSize(horizontal: false, vertical: true)
 
-                    if !store.forSale(level, .monthly) && store.subscribedBefore {
-                        Text("This Apple ID already has a badge subscription. Only the profile that bought it can continue it.")
+                    if !prices.forSale(.monthly) && prices.subscribedBefore {
+                        Text("Subscribed on another profile.")
                             .font(.footnote)
                             .foregroundColor(theme.colors.secondary)
                             .multilineTextAlignment(.center)
@@ -126,6 +142,7 @@ struct BadgesHowLongView: View {
                         continueButton()
                             .padding(.vertical, 10)
                         BadgeBillingFooter(period: selectedPeriod, startDate: startDate)
+                        BadgeInvestorOffer(level: level)
                     }
                     .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }
@@ -137,12 +154,11 @@ struct BadgesHowLongView: View {
         }
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
-        .task { await store.load() }
     }
 
     private func periodCard(_ period: BadgePeriod) -> some View {
         let isSelected = period == selectedPeriod
-        let forSale = store.forSale(level, period)
+        let forSale = prices.forSale(period)
         return Button {
             chosenPeriod = period
         } label: {
@@ -155,7 +171,7 @@ struct BadgesHowLongView: View {
                     .opacity(forSale ? 1 : 0.4)
                 Text(period.label)
                     .font(.subheadline)
-                period.priceText(store.price(level, period))
+                period.priceText(prices.price(period))
                     .font(.headline)
                 if let percent = savingsPercent(period) {
                     Text("\(percent)% off")
@@ -180,7 +196,7 @@ struct BadgesHowLongView: View {
     }
 
     private func savingsPercent(_ period: BadgePeriod) -> Int? {
-        period == .annual ? store.annualSavings(level) : nil
+        period == .annual ? prices.annualSavings : nil
     }
 
     private func continueButton() -> some View {
@@ -234,7 +250,11 @@ struct BadgeBillingFooter: View {
 struct BadgesHowLongView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesHowLongView(level: .supporter, startDate: previewDate)
+            BadgesHowLongLayout(
+                level: .supporter,
+                startDate: previewDate,
+                priceList: BadgePriceList(oneMonth: .price("$7"), monthly: .price("$7"), annual: .price("$42"), monthlyAmount: 7, annualAmount: 42, subscriptionsForSale: true, subscribedBefore: false)
+            )
         }
     }
 }

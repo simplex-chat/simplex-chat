@@ -100,6 +100,7 @@ checkout_git() {
   git -C "$git_dir" reset --hard
   git -C "$git_dir" clean -dfx
   git -C "$git_dir" checkout "$tag"
+  git -C "$git_dir" submodule update --init --recursive
 }
 
 check_apk() {

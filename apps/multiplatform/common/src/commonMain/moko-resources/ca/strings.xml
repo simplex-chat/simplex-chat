@@ -16,7 +16,7 @@
     <string name="turning_off_service_and_periodic">L\'optimització de la bateria està activa, desactiva el servei en segon pla i les sol·licituds periòdiques de missatges nous. Podeu tornar-los a activar mitjançant la configuració.</string>
     <string name="attempts_label">intents</string>
     <string name="block_member_confirmation">Blocar</string>
-    <string name="remote_host_error_bad_version"><![CDATA[Mobile <b>%s</b> té una versió no compatible.  Si us plau, assegureu-vos que feu servir la mateixa versió als dos dispositius]]></string>
+    <string name="remote_host_error_bad_version"><![CDATA[Mobile <b>%s</b> té una versió no compatible. \u0020Si us plau, assegureu-vos que feu servir la mateixa versió als dos dispositius]]></string>
     <string name="call_service_notification_audio_call">Trucada</string>
     <string name="la_auth_failed">L\'autenticació ha fallat</string>
     <string name="auth_unavailable">Autenticació no disponible</string>

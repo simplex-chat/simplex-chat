@@ -25,7 +25,7 @@ import qualified Data.Attoparsec.Text as A
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Char (isAlpha, isAscii, isDigit, isPunctuation, isSpace, isSymbol)
+import Data.Char (isAlpha, isAlphaNum, isAscii, isAsciiLower, isDigit, isPunctuation, isSpace, isSymbol)
 import Data.Either (fromRight, isLeft, lefts)
 import Data.Functor (($>))
 import Data.List (intercalate)
@@ -366,10 +366,13 @@ markdownP = joinMarkdown <$> A.many' fragmentP
             | otherwise -> wordP
         Nothing -> fail ""
     formattedP :: Char -> Format -> Parser Markdown
-    formattedP c f = do
-      s <- A.char c *> A.takeTill (\x -> x == c || x == '\n')
-      (A.char c $> md c f s) <|> (markdown f <$> acrossLinesP s) <|> noFormat (c `T.cons` s)
+    formattedP c f = A.char c *> ((md c f . T.concat <$> A.many' pieceP <* A.char c) <|> openedP)
       where
+        pieceP = A.takeWhile1 (\x -> x /= c && x /= '`' && x /= '\n') <|> codeTextP <|> delimitersP
+        delimitersP = A.takeWhile1 (== c) >>= \r -> r <$ (guard (T.length r > 1) <|> lookAhead (void $ A.satisfy $ notClosingBefore c))
+        openedP = do
+          s <- A.takeTill (\x -> x == c || x == '\n')
+          (markdown f <$> acrossLinesP s) <|> noFormat (c `T.cons` s)
         acrossLinesP s = do
           s' <- ((s <> "\n") <>) <$> (A.char '\n' *> A.takeTill (== c) <* A.char c)
           if T.null s || isSpace (T.head s) || isSpace (T.last s') then fail "not formatted" else pure s'
@@ -380,12 +383,19 @@ markdownP = joinMarkdown <$> A.many' fragmentP
       | otherwise = markdown f s
     doubleP :: Char -> Format -> Parser Markdown
     doubleP c f = do
-      s <- A.string cc *> A.takeTill (== c) <* A.string cc
+      s <- A.string cc *> (T.concat <$> A.many' (A.takeWhile1 (\x -> x /= c && x /= '`') <|> codeTextP)) <* A.string cc <* notP (A.satisfy $ notClosingBefore c)
       if T.null s || isSpace (T.head s) || isSpace (T.last s)
         then fail "not formatted"
         else pure $ markdown f s
       where
         cc = T.pack [c, c]
+    notClosingBefore :: Char -> Char -> Bool
+    notClosingBefore c x = x == c || (c == '_' && isAlphaNum x)
+    codeTextP :: Parser Text
+    codeTextP = do
+      ticks <- A.takeWhile1 (== '`')
+      let pieceP = A.takeWhile1 (\x -> x /= '`' && x /= '\n') <|> (A.takeWhile1 (== '`') >>= \r -> r <$ guard (r /= ticks))
+      ((\s -> ticks <> s <> ticks) . T.concat <$> A.many' pieceP <* A.string ticks) <|> pure ticks
     codeSpanP :: Parser Markdown
     codeSpanP = do
       ticks <- A.takeWhile1 (== '`')
@@ -414,6 +424,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
       where
         nameRef word
           | pfx == '@' && T.all (/= '.') name = Left "not a name"
+          | pfx == '#' && T.all isDigit name = Left "not a name"
           | otherwise = mkMd <$> strDecode (encodeUtf8 full)
           where
             (name, punct) = splitPunctuation word
@@ -477,7 +488,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
       code <- optional $ conc4 <$> phoneSep <*> "(" <*> A.takeWhile1 isDigit <*> ")"
       s <- segmentsP $ fromMaybe "" country <> fromMaybe "" code
       let len = T.length s
-      if 7 <= len && len <= 22 then pure $ markdown Phone s else fail "not phone"
+      if 7 <= len && len <= 22 then pure $ if isJust country || "0" `T.isPrefixOf` s then markdown Phone s else unmarked s else fail "not phone"
     segmentsP s
       | T.length s > 22 = fail "not phone"
       | otherwise = optional ((<>) <$> phoneSep <*> A.takeWhile1 isDigit) >>= maybe (pure s) (segmentsP . (s <>))
@@ -486,20 +497,35 @@ markdownP = joinMarkdown <$> A.many' fragmentP
     wordP :: Parser Markdown
     wordP = wordMD . T.concat <$> A.many' (A.takeWhile1 (\c -> c /= ' ' && c /= '\n' && c /= '\\') <|> (notP escapeP *> A.string "\\"))
     wordMD :: Text -> Markdown
-    wordMD s
-      | T.null s = unmarked s
-      | isUri s' = case strDecode $ encodeUtf8 s of
-          Right cLink -> res $ markdown (simplexUriFormat Nothing cLink) s'
-          Left _ -> case parseUri $ encodeUtf8 s' of
-            Right _ -> res $ markdown Uri s'
-            Left _ -> unmarked s
-      | isDomain s' = res $ markdown Uri s'
-      | isEmail s' = res $ markdown Email s'
-      | otherwise = unmarked s
+    wordMD s = fromMaybe (unmarked s) $ linkMD s <|> linkAfterParen
       where
-        punct = T.takeWhileEnd isPunctuation' s
-        s' = T.dropWhileEnd isPunctuation' s
+        linkAfterParen = case T.breakOn "(" s of
+          (before, after)
+            | not (T.null after) ->
+                let (parens, rest) = T.span (== '(') after
+                 in (unmarked (before <> parens) <>) <$> linkMD rest
+          _ -> Nothing
+    linkMD :: Text -> Maybe Markdown
+    linkMD s
+      | isUri s' = case strDecode $ encodeUtf8 s' of
+          Right cLink -> Just $ res $ markdown (simplexUriFormat Nothing cLink) s'
+          Left _ -> case parseUri $ encodeUtf8 s' of
+            Right _ -> Just $ res $ markdown Uri s'
+            Left _ -> Nothing
+      | isDomain s' = Just $ res $ markdown Uri s'
+      | isEmail s' = Just $ res $ markdown Email s'
+      | otherwise = Nothing
+      where
+        (s', punct) = T.splitAt (T.length s - linkEndLength s) s
         res md' = if T.null punct then md' else md' :|: unmarked punct
+    linkEndLength :: Text -> Int
+    linkEndLength s = go (T.count ")" s - T.count "(" s) s 0
+      where
+        go unmatched t n = case T.unsnoc t of
+          Just (t', c)
+            | isPunctuation' c -> go unmatched t' (n + 1)
+            | c == ')' && unmatched > 0 -> go (unmatched - 1) t' (n + 1)
+          _ -> n
     isPunctuation' = \case
       '/' -> False
       ')' -> False
@@ -516,7 +542,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
         isDomain_ name tld =
           (let n = T.length name in n >= 1 && n <= 24)
             && (let n = T.length tld in n >= 2 && n <= 8)
-            && (let p c = isAscii c && isAlpha c in T.all p name && T.all p tld)
+            && (let p c = isAscii c && isAlpha c in T.all p name && T.all isAsciiLower tld)
     isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
     noFormat = pure . unmarked
     simplexUriFormat :: Maybe Text -> AConnectionLink -> Format
@@ -643,7 +669,7 @@ headingMarkP = do
   ind <- A.takeWhile isIndentChar
   hashes <- A.takeWhile1 (== '#')
   guard $ T.length hashes <= 6
-  sp <- A.string " "
+  sp <- (<>) <$> A.string " " <*> A.takeWhile isIndentChar
   hasTextP
   pure (T.length hashes, ind <> hashes <> sp)
 
@@ -654,7 +680,7 @@ listItemP :: Parser MarkdownList
 listItemP = do
   (num, syntax) <- listMarkP
   l <- lineTextP
-  ls <- A.many' $ (\br ind l' -> (br, [markupText Indent ind | not (T.null ind)], l')) <$> lineEndP <* paragraphLineP <*> A.takeWhile isIndentChar <*> lineTextP
+  ls <- A.many' $ (\br ind l' -> (br, [markupText Indent ind], l')) <$> lineEndP <* paragraphLineP <*> A.takeWhile1 isIndentChar <*> lineTextP
   pure $ markupText (ListMark num) syntax : inlineLines l ls
 
 listMarkP :: Parser (Maybe Text, Text)
@@ -675,22 +701,21 @@ quoteP :: Parser MarkdownList
 quoteP = do
   leading <- A.many' $ (\l br -> [markupText QuoteMark l, markupText HardBreak br]) <$> blankQuoteLineP <*> lineEndP
   (mark, l) <- quoteTextP
-  ls <- nextLinesP True
+  ls <- nextLinesP
   pure $ concat leading <> (markupText QuoteMark mark : inlineLines l ls)
   where
     quoteTextP = (,) <$> quoteMarkP <* hasTextP <*> lineTextP
-    nextLinesP afterText = A.option [] $ do
+    nextLinesP = A.option [] $ do
       br <- lineEndP
-      (syntax, l, isText) <- quoteLineP <|> blankLineP <|> (if afterText then lazyLineP else mzero)
-      ((br, syntax, l) :) <$> nextLinesP isText
-    quoteLineP = (\(m, l) -> ([markupText QuoteMark m], l, True)) <$> quoteTextP
-    blankLineP = (\l -> ([markupText QuoteMark l], "", False)) <$> blankQuoteLineP
-    lazyLineP = ([],,True) <$> (notP quoteMarkP *> paragraphLineP *> lineTextP)
+      (syntax, l) <- quoteLineP <|> blankLineP
+      ((br, syntax, l) :) <$> nextLinesP
+    quoteLineP = (\(m, l) -> ([markupText QuoteMark m], l)) <$> quoteTextP
+    blankLineP = (\l -> ([markupText QuoteMark l], "")) <$> blankQuoteLineP
 
 quoteMarkP :: Parser Text
 quoteMarkP = do
   ind <- A.takeWhile isIndentChar
-  sp <- A.char '>' *> A.option "" (T.singleton <$> A.satisfy isIndentChar)
+  sp <- A.char '>' *> ((T.singleton <$> A.satisfy isIndentChar) <|> ("" <$ lookAhead (void lineEndP <|> A.endOfInput)))
   pure $ ind <> ">" <> sp
 
 blankQuoteLineP :: Parser Text
@@ -702,9 +727,12 @@ quoteStartP = optional (blankQuoteLineP *> lineEndP) *> quoteMarkP *> hasTextP
 paragraphP :: Parser MarkdownList
 paragraphP = do
   l <- lineTextP
-  ls <- A.many' $ (,[],) <$> lineEndP <* notP underlineP <* paragraphLineP <*> lineTextP
+  ls <- A.many' $ (,[],) <$> lineEndP <* notP underlineP <* (paragraphLineP <|> numberedTextLineP) <*> lineTextP
   underline <- A.option [] $ (\br (lvl, u) -> [markupText HardBreak br, markupText (HeadingUnderline lvl) u]) <$> lineEndP <*> underlineP
   pure $ inlineLines l ls <> underline
+
+numberedTextLineP :: Parser ()
+numberedTextLineP = lookAhead $ listMarkP >>= \(num, _) -> guard $ maybe False (`notElem` ["1.", "1)"]) num
 
 underlineP :: Parser (Int, Text)
 underlineP = lineTextP >>= \l -> maybe mzero (pure . (,l)) (underlineLevel l)
@@ -728,7 +756,7 @@ breakAfter :: Text -> Text -> (Text, FormattedText)
 breakAfter l br
   | T.length spaces >= 2 = (T.dropEnd (T.length spaces) l, markupText HardBreak (spaces <> br))
   | odd (T.length $ T.takeWhileEnd (== '\\') l) = (T.dropEnd 1 l, markupText HardBreak ("\\" <> br))
-  | otherwise = (l, markupText SoftBreak br)
+  | otherwise = (l, markupText HardBreak br)
   where
     spaces = T.takeWhileEnd (== ' ') l
 
@@ -797,7 +825,6 @@ headingClosing c =
 underlineLevel :: Text -> Maybe Int
 underlineLevel t = case T.uncons s of
   Just ('=', _) | T.all (== '=') s -> Just 1
-  Just ('-', _) | T.all (== '-') s -> Just 2
   _ -> Nothing
   where
     s = T.dropWhileEnd isSpace $ T.dropWhile isIndentChar t

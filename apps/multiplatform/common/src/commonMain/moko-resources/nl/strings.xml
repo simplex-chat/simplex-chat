@@ -16,7 +16,7 @@
     <string name="icon_descr_asked_to_receive">Gevraagd om de afbeelding te ontvangen</string>
     <string name="change_verb">Wijziging</string>
     <string name="network_settings">Geavanceerde netwerk instellingen</string>
-    <string name="network_enable_socks_info">Toegang tot de servers via SOCKS proxy op poort %d\? De proxy moet worden gestart voordat u deze optie inschakelt.</string>
+    <string name="network_enable_socks_info">Toegang tot de servers via SOCKS proxy op poort %d? De proxy moet worden gestart voordat u deze optie inschakelt.</string>
     <string name="alert_title_cant_invite_contacts">Kan geen contacten uitnodigen!</string>
     <string name="allow_direct_messages">Sta het verzenden van directe berichten naar leden toe.</string>
     <string name="allow_to_delete_messages">Sta toe om verzonden berichten definitief te verwijderen. (24 uur)</string>
@@ -33,7 +33,7 @@
     <string name="accept_call_on_lock_screen">Accepteer</string>
     <string name="color_primary">Accent</string>
     <string name="accept">Accepteer</string>
-    <string name="accept_connection_request__question">Verbindingsverzoek accepteren\?</string>
+    <string name="accept_connection_request__question">Verbindingsverzoek accepteren?</string>
     <string name="callstatus_accepted">geaccepteerde oproep</string>
     <string name="accept_contact_incognito_button">Accepteer incognito</string>
     <string name="users_add">Profiel toevoegen</string>
@@ -60,7 +60,7 @@
     <string name="allow_to_send_disappearing">Sta toe om verdwijnende berichten te verzenden.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Sta toe dat uw contacten spraak berichten verzenden.</string>
     <string name="all_your_contacts_will_remain_connected">Al uw contacten blijven verbonden.</string>
-    <string name="allow_voice_messages_question">Spraak berichten toestaan\?</string>
+    <string name="allow_voice_messages_question">Spraak berichten toestaan?</string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Goed voor de batterij</b>. App controleert berichten elke 10 minuten. U kunt oproepen of urgente berichten missen.]]></string>
     <string name="integrity_msg_bad_hash">Onjuiste bericht hash</string>
     <string name="integrity_msg_bad_id">Onjuiste bericht-ID</string>
@@ -114,7 +114,7 @@
     <string name="chat_is_stopped">Chat is gestopt</string>
     <string name="notifications_mode_periodic_desc">Controleert nieuwe berichten elke 10 minuten gedurende maximaal 1 minuut</string>
     <string name="rcv_group_event_changed_your_role">je rol gewijzigd in %s</string>
-    <string name="change_database_passphrase_question">Wachtwoord database wijzigen\?</string>
+    <string name="change_database_passphrase_question">Wachtwoord database wijzigen?</string>
     <string name="chat_is_stopped_indication">Chat is gestopt</string>
     <string name="chat_preferences">Chat voorkeuren</string>
     <string name="network_session_mode_user">Chatprofiel</string>
@@ -139,7 +139,7 @@
     <string name="create_group">Maak een geheime groep aan</string>
     <string name="database_will_be_encrypted">Database wordt versleuteld.</string>
     <string name="group_member_status_creator">creator</string>
-    <string name="delete_address__question">Adres verwijderen\?</string>
+    <string name="delete_address__question">Adres verwijderen?</string>
     <string name="database_passphrase_and_export">Database wachtwoord &amp; exporteren</string>
     <string name="passphrase_is_different">Het wachtwoord van de database verschilt van het wachtwoord dat is opgeslagen in de keychain.</string>
     <string name="ttl_d">%dd</string>
@@ -184,7 +184,7 @@
     <string name="group_connection_pending">Verbinden…</string>
     <string name="icon_descr_context">Context icon</string>
     <string name="copy_verb">Kopiëren</string>
-    <string name="clear_chat_question">Wis gesprek\?</string>
+    <string name="clear_chat_question">Wis gesprek?</string>
     <string name="icon_descr_close_button">Knop sluiten</string>
     <string name="clear_chat_button">Gesprek wissen</string>
     <string name="alert_title_contact_connection_pending">Contact is nog niet verbonden!</string>
@@ -220,7 +220,7 @@
     <string name="contacts_can_mark_messages_for_deletion">Contact personen kunnen berichten markeren voor verwijdering; u kunt ze wel bekijken.</string>
     <string name="theme_dark">Donker</string>
     <string name="chat_preferences_default">standaard (%s)</string>
-    <string name="delete_contact_question">Verwijder contact\?</string>
+    <string name="delete_contact_question">Verwijder contact?</string>
     <string name="delete_chat_profile_question">Chatprofiel verwijderen?</string>
     <string name="full_deletion">Verwijderen voor iedereen</string>
     <string name="delete_link">Link verwijderen</string>
@@ -233,16 +233,16 @@
     <string name="delete_image">Verwijder afbeelding</string>
     <string name="delete_database">Database verwijderen</string>
     <string name="rcv_group_event_group_deleted">verwijderde groep</string>
-    <string name="delete_files_and_media_question">Bestanden en media verwijderen\?</string>
-    <string name="delete_group_question">Groep verwijderen\?</string>
-    <string name="delete_message__question">Verwijder bericht\?</string>
+    <string name="delete_files_and_media_question">Bestanden en media verwijderen?</string>
+    <string name="delete_group_question">Groep verwijderen?</string>
+    <string name="delete_message__question">Verwijder bericht?</string>
     <string name="delete_messages">Verwijder berichten</string>
     <string name="smp_server_test_delete_queue">Wachtrij verwijderen</string>
     <string name="delete_files_and_media_for_all_users">Verwijder bestanden voor alle chatprofielen</string>
     <string name="for_me_only">Verwijder voor mij</string>
     <string name="button_delete_group">Groep verwijderen</string>
-    <string name="delete_link_question">Link verwijderen\?</string>
-    <string name="delete_pending_connection__question">Wachtende verbinding verwijderen\?</string>
+    <string name="delete_link_question">Link verwijderen?</string>
+    <string name="delete_pending_connection__question">Wachtende verbinding verwijderen?</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 desktop: scan weergegeven QR-code vanuit de app, via <b>Scan QR-code</b>.]]></string>
     <string name="settings_developer_tools">Ontwikkel gereedschap</string>
     <string name="auth_device_authentication_is_disabled_turning_off">Apparaatverificatie is uitgeschakeld. SimpleX Vergrendelen uitschakelen.</string>
@@ -283,7 +283,7 @@
     <string name="error_deleting_contact_request">Fout bij verwijderen van contact verzoek</string>
     <string name="full_name__field">Volledige naam:</string>
     <string name="error_importing_database">Fout bij het importeren van de chat database</string>
-    <string name="encrypt_database_question">Database versleutelen\?</string>
+    <string name="encrypt_database_question">Database versleutelen?</string>
     <string name="alert_title_no_group">Groep niet gevonden!</string>
     <string name="group_display_name_field">Groep naam invoeren:</string>
     <string name="failed_to_create_user_duplicate_title">Dubbele weergavenaam!</string>
@@ -342,7 +342,7 @@
     <string name="encrypted_audio_call">e2e versleutelde audio oproep</string>
     <string name="status_e2e_encrypted">e2e versleuteld</string>
     <string name="edit_verb">Bewerk</string>
-    <string name="enable_automatic_deletion_question">Automatisch verwijderen van berichten aanzetten\?</string>
+    <string name="enable_automatic_deletion_question">Automatisch verwijderen van berichten aanzetten?</string>
     <string name="enter_correct_passphrase">Voer het juiste wachtwoord in.</string>
     <string name="button_edit_group_profile">Groep profiel bewerken</string>
     <string name="network_option_enable_tcp_keep_alive">Schakel TCP keep-alive in</string>
@@ -390,7 +390,7 @@
     <string name="live_message">Live bericht!</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Als je een uitnodiging link voor SimpleX Chat hebt ontvangen, kun je deze in je browser openen:</string>
     <string name="onboarding_notifications_mode_subtitle">Hoe dit de batterij beïnvloedt</string>
-    <string name="join_group_question">Deelnemen aan groep\?</string>
+    <string name="join_group_question">Deelnemen aan groep?</string>
     <string name="icon_descr_add_members">Nodig leden uit</string>
     <string name="no_contacts_selected">Geen contacten geselecteerd</string>
     <string name="v4_4_live_messages">Live berichten</string>
@@ -418,7 +418,7 @@
     <string name="incoming_video_call">Inkomend video gesprek</string>
     <string name="ignore">Negeren</string>
     <string name="status_no_e2e_encryption">geen e2e versleuteling</string>
-    <string name="import_database_question">Chat database importeren\?</string>
+    <string name="import_database_question">Chat database importeren?</string>
     <string name="chat_item_ttl_none">nooit</string>
     <string name="no_received_app_files">Geen ontvangen of verzonden bestanden</string>
     <string name="alert_title_group_invitation_expired">Uitnodiging verlopen!</string>
@@ -435,7 +435,7 @@
     <string name="new_passphrase">Nieuw wachtwoord…</string>
     <string name="keychain_error">Keychain fout</string>
     <string name="join_group_button">Word lid</string>
-    <string name="leave_group_question">Groep verlaten\?</string>
+    <string name="leave_group_question">Groep verlaten?</string>
     <string name="new_member_role">Nieuwe leden rol</string>
     <string name="no_contacts_to_add">Geen contacten om toe te voegen</string>
     <string name="incognito_info_allows">Het maakt het mogelijk om veel anonieme verbindingen te hebben zonder enige gedeelde gegevens tussen hen in een enkel chatprofiel.</string>
@@ -455,10 +455,7 @@
     <string name="invite_to_group_button">Uitnodigen voor groep</string>
     <string name="join_group_incognito_button">Doe incognito mee</string>
     <string name="group_preview_join_as">lid worden als %s</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Het kan gebeuren wanneer:
-\n1. De berichten zijn na 2 dagen verlopen bij de verzendende client of na 30 dagen op de server.
-\n2. Decodering van het bericht is mislukt, omdat u of uw contact een oude database back-up heeft gebruikt.
-\n3. De verbinding is verbroken.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Het kan gebeuren wanneer: \n1. De berichten zijn na 2 dagen verlopen bij de verzendende client of na 30 dagen op de server. \n2. Decodering van het bericht is mislukt, omdat u of uw contact een oude database back-up heeft gebruikt. \n3. De verbinding is verbroken.</string>
     <string name="joining_group">Deel nemen aan groep</string>
     <string name="leave_group_button">Verlaten</string>
     <string name="group_member_role_member">Lid</string>
@@ -573,8 +570,7 @@
     <string name="simplex_link_mode_browser_warning">Het openen van de link in de browser kan de privacy en beveiliging van de verbinding verminderen. Niet vertrouwde SimpleX links worden rood weergegeven.</string>
     <string name="contact_developers">Werk de app bij en neem contact op met de ontwikkelaars.</string>
     <string name="sender_may_have_deleted_the_connection_request">De afzender heeft mogelijk het verbindingsverzoek verwijderd.</string>
-    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Schakel SimpleX Vergrendelen in om uw informatie te beschermen.
-\nU wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingeschakeld.</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Schakel SimpleX Vergrendelen in om uw informatie te beschermen. \nU wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingeschakeld.</string>
     <string name="la_notice_turn_on">Aanzetten</string>
     <string name="auth_unlock">Ontgrendelen</string>
     <string name="waiting_for_image">Wachten op afbeelding</string>
@@ -626,7 +622,7 @@
     <string name="scan_QR_code">Scan QR-code</string>
     <string name="icon_descr_send_message">Bericht versturen</string>
     <string name="add_contact_or_create_group">Begin een nieuw gesprek</string>
-    <string name="switch_receiving_address_question">Ontvangst adres wijzigen\?</string>
+    <string name="switch_receiving_address_question">Ontvangst adres wijzigen?</string>
     <string name="verify_security_code">Controleer de beveiligingscode</string>
     <string name="view_security_code">Beveiligingscode bekijken</string>
     <string name="you_need_to_allow_to_send_voice">U moet uw contact toestemming geven om spraak berichten te verzenden om ze te kunnen verzenden.</string>
@@ -637,8 +633,7 @@
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Het contact met wie je deze link hebt gedeeld kan GEEN verbinding maken!</string>
     <string name="you_accepted_connection">Je hebt de verbinding geaccepteerd</string>
     <string name="you_invited_a_contact">Je hebt je contact uitgenodigd</string>
-    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Uw contact moet online zijn om de verbinding te voltooien.
-\nU kunt deze verbinding verbreken en het contact verwijderen en later proberen met een nieuwe link.</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Uw contact moet online zijn om de verbinding te voltooien. \nU kunt deze verbinding verbreken en het contact verwijderen en later proberen met een nieuwe link.</string>
     <string name="image_descr_qr_code">QR-code</string>
     <string name="icon_descr_settings">Instellingen</string>
     <string name="contact_wants_to_connect_with_you">wil met je in contact komen!</string>
@@ -668,7 +663,7 @@
     <string name="using_simplex_chat_servers">Gebruik SimpleX Chat servers.</string>
     <string name="smp_servers_your_server_address">Uw server adres</string>
     <string name="network_session_mode_transport_isolation">Transport isolation</string>
-    <string name="save_preferences_question">Voorkeuren opslaan\?</string>
+    <string name="save_preferences_question">Voorkeuren opslaan?</string>
     <string name="save_and_notify_contact">Opslaan en Contact melden</string>
     <string name="your_current_profile">Je huidige profiel</string>
     <string name="save_and_notify_contacts">Opslaan en Contacten melden</string>
@@ -705,7 +700,7 @@
     <string name="you_must_use_the_most_recent_version_of_database">U mag ALLEEN de meest recente versie van uw chat-database op één apparaat gebruiken, anders ontvangt u mogelijk geen berichten meer van sommige contacten.</string>
     <string name="restart_the_app_to_use_imported_chat_database">Start de app opnieuw om de geïmporteerde chat database te gebruiken.</string>
     <string name="delete_files_and_media_desc">Deze actie kan niet ongedaan worden gemaakt, alle ontvangen en verzonden bestanden en media worden verwijderd. Foto\'s met een lage resolutie blijven behouden.</string>
-    <string name="remove_passphrase_from_keychain">Wachtwoord verwijderen uit Keychain\?</string>
+    <string name="remove_passphrase_from_keychain">Wachtwoord verwijderen uit Keychain?</string>
     <string name="remove_passphrase">Verwijderen</string>
     <string name="update_database">Update</string>
     <string name="unknown_database_error_with_info">Onbekende databasefout: %s</string>
@@ -720,7 +715,7 @@
     <string name="group_info_section_title_num_members">%1$s LEDEN</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">U kunt een link of een QR-code delen. Iedereen kan lid worden van de groep. U verliest geen leden van de groep als u deze later verwijdert.</string>
     <string name="switch_verb">Wijzig</string>
-    <string name="member_role_will_be_changed_with_notification">De rol wordt gewijzigd in "%s". Iedereen in de groep wordt op de hoogte gebracht.</string>
+    <string name="member_role_will_be_changed_with_notification">De rol wordt gewijzigd in %s. Iedereen in de groep wordt op de hoogte gebracht.</string>
     <string name="receiving_via">Ontvang via</string>
     <string name="save_group_profile">Groep profiel opslaan</string>
     <string name="group_is_decentralized">Volledig gedecentraliseerd – alleen zichtbaar voor leden.</string>
@@ -731,7 +726,7 @@
     <string name="v4_5_reduced_battery_usage">Verminderd batterijgebruik</string>
     <string name="v4_5_private_filenames_descr">Om de tijdzone te beschermen, gebruiken afbeeldings-/spraakbestanden UTC.</string>
     <string name="stop_chat_confirmation">Stop</string>
-    <string name="stop_chat_question">Stop chat\?</string>
+    <string name="stop_chat_question">Stop chat?</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">Stop de chat om de chat database te exporteren, importeren of verwijderen. U kunt geen berichten ontvangen en verzenden terwijl de chat is gestopt.</string>
     <string name="chat_item_ttl_seconds">%s seconde(n)</string>
     <string name="update_database_passphrase">Database wachtwoord bijwerken</string>
@@ -753,7 +748,7 @@
     <string name="button_remove_member">Lid verwijderen</string>
     <string name="role_in_group">Rol</string>
     <string name="button_send_direct_message">Direct bericht sturen</string>
-    <string name="member_role_will_be_changed_with_invitation">De rol wordt gewijzigd in "%s". De gebruiker ontvangt een nieuwe uitnodiging.</string>
+    <string name="member_role_will_be_changed_with_invitation">De rol wordt gewijzigd in %s. De gebruiker ontvangt een nieuwe uitnodiging.</string>
     <string name="sending_via">Verzenden via</string>
     <string name="conn_stats_section_title_servers">Servers</string>
     <string name="network_options_reset_to_defaults">Resetten naar standaardwaarden</string>
@@ -774,7 +769,7 @@
     <string name="v4_4_verify_connection_security">Controleer de verbindingsbeveiliging</string>
     <string name="v4_4_french_interface_descr">Dank aan de gebruikers – draag bij via Weblate!</string>
     <string name="v4_5_transport_isolation">Transport isolation</string>
-    <string name="app_name">SimpleX</string>
+    <string name="app_name" translatable="false">SimpleX</string>
     <string name="connected_to_server_to_receive_messages_from_contact">U bent verbonden met de server die wordt gebruikt om berichten van deze verbinding te ontvangen.</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Je profiel wordt verzonden naar het contact van wie je deze link hebt ontvangen.</string>
     <string name="you_will_join_group">Je maakt verbinding met alle groepsleden.</string>
@@ -798,9 +793,9 @@
     <string name="saved_ICE_servers_will_be_removed">Opgeslagen WebRTC ICE servers worden verwijderd.</string>
     <string name="your_ICE_servers">Uw ICE servers</string>
     <string name="save_servers_button">Opslaan</string>
-    <string name="network_enable_socks">SOCKS-proxy gebruiken\?</string>
+    <string name="network_enable_socks">SOCKS-proxy gebruiken?</string>
     <string name="network_use_onion_hosts">Gebruik .onion-hosts</string>
-    <string name="network_disable_socks">Directe internetverbinding gebruiken\?</string>
+    <string name="network_disable_socks">Directe internetverbinding gebruiken?</string>
     <string name="network_use_onion_hosts_prefer">Wanneer beschikbaar</string>
     <string name="network_use_onion_hosts_required">Vereist</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
@@ -817,11 +812,11 @@
     <string name="save_passphrase_and_open_chat">Wachtwoord opslaan en open je chats</string>
     <string name="database_backup_can_be_restored">De poging om het wachtwoord van de database te wijzigen is niet voltooid.</string>
     <string name="restore_database">Database back-up terugzetten</string>
-    <string name="restore_database_alert_title">Database back-up terugzetten\?</string>
+    <string name="restore_database_alert_title">Database back-up terugzetten?</string>
     <string name="restore_database_alert_confirm">Herstellen</string>
     <string name="snd_group_event_changed_member_role">je veranderde de rol van %s in %s</string>
     <string name="snd_group_event_changed_role_for_yourself">je veranderde de rol voor jezelf naar %s</string>
-    <string name="update_network_settings_question">Netwerk instellingen bijwerken\?</string>
+    <string name="update_network_settings_question">Netwerk instellingen bijwerken?</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Door de instellingen bij te werken, wordt de client opnieuw verbonden met alle servers.</string>
     <string name="update_network_settings_confirmation">Update</string>
     <string name="incognito_random_profile">Je willekeurige profiel</string>
@@ -848,7 +843,7 @@
     <string name="you_are_invited_to_group">Je bent uitgenodigd voor de groep</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[U kunt <font color="#0088ff">verbinding maken met SimpleX Chat ontwikkelaars om vragen te stellen en updates te ontvangen</font>.]]></string>
     <string name="connection_error_auth_desc">Tenzij uw contact de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft. \nOm verbinding te maken, vraagt u uw contact om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.</string>
-    <string name="use_simplex_chat_servers__question">SimpleX Chat servers gebruiken\?</string>
+    <string name="use_simplex_chat_servers__question">SimpleX Chat servers gebruiken?</string>
     <string name="voice_messages_are_prohibited">Spraak berichten zijn niet toegestaan.</string>
     <string name="personal_welcome">Welkom %1$s!</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">U kunt de chat starten via app Instellingen / Database of door de app opnieuw op te starten.</string>
@@ -920,13 +915,11 @@
     <string name="user_mute">Dempen</string>
     <string name="v4_6_reduced_battery_usage_descr">Meer verbeteringen volgen snel!</string>
     <string name="make_profile_private">Profiel privé maken!</string>
-    <string name="v4_6_group_moderation_descr">Nu kunnen beheerders:
-\n- berichten van leden verwijderen.
-\n- schakel leden uit ("waarnemer" rol)</string>
+    <string name="v4_6_group_moderation_descr">Nu kunnen beheerders: \n- berichten van leden verwijderen. \n- schakel leden uit (waarnemer rol)</string>
     <string name="v4_6_hidden_chat_profiles_descr">Bescherm je chatprofielen met een wachtwoord!</string>
     <string name="password_to_show">Wachtwoord om weer te geven</string>
     <string name="save_and_update_group_profile">Groep profiel opslaan en bijwerken</string>
-    <string name="smp_save_servers_question">Servers opslaan\?</string>
+    <string name="smp_save_servers_question">Servers opslaan?</string>
     <string name="save_profile_password">Bewaar profiel wachtwoord</string>
     <string name="v4_6_group_welcome_message_descr">Stel het getoonde bericht in voor nieuwe leden!</string>
     <string name="save_welcome_message_question">Welkom bericht opslaan?</string>
@@ -1021,17 +1014,16 @@
     <string name="alert_text_fragment_please_report_to_developers">Meld het alsjeblieft aan de ontwikkelaars.</string>
     <string name="alert_title_msg_bad_hash">Onjuiste bericht hash</string>
     <string name="alert_title_msg_bad_id">Onjuiste bericht-ID</string>
-    <string name="alert_text_msg_bad_id">De ID van het volgende bericht is onjuist (minder of gelijk aan het vorige).
-\nHet kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</string>
+    <string name="alert_text_msg_bad_id">De ID van het volgende bericht is onjuist (minder of gelijk aan het vorige). \nHet kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d berichten konden niet worden ontsleuteld.</string>
     <string name="stop_rcv_file__message">Het ontvangen van het bestand wordt gestopt.</string>
     <string name="revoke_file__confirm">Intrekken</string>
     <string name="revoke_file__action">Bestand intrekken</string>
-    <string name="revoke_file__title">Bestand intrekken\?</string>
+    <string name="revoke_file__title">Bestand intrekken?</string>
     <string name="stop_file__confirm">Stop</string>
     <string name="stop_file__action">Bestand stoppen</string>
-    <string name="stop_rcv_file__title">Stoppen met het ontvangen van bestand\?</string>
-    <string name="stop_snd_file__title">Bestand verzenden stoppen\?</string>
+    <string name="stop_rcv_file__title">Stoppen met het ontvangen van bestand?</string>
+    <string name="stop_snd_file__title">Bestand verzenden stoppen?</string>
     <string name="only_your_contact_can_make_calls">Alleen je contact kan bellen.</string>
     <string name="revoke_file__message">Het bestand wordt van de servers verwijderd.</string>
     <string name="both_you_and_your_contact_can_make_calls">Zowel u als uw contact kunnen bellen.</string>
@@ -1065,14 +1057,13 @@
     <string name="profile_update_will_be_sent_to_contacts">Profiel update wordt naar uw contacten verzonden.</string>
     <string name="share_address_with_contacts_question">Adres delen met contacten?</string>
     <string name="stop_sharing">Stop met delen</string>
-    <string name="stop_sharing_address">Stop met het delen van adres\?</string>
+    <string name="stop_sharing_address">Stop met het delen van adres?</string>
     <string name="invite_friends">Nodig vrienden uit</string>
     <string name="email_invite_subject">Laten we praten in SimpleX Chat</string>
     <string name="save_auto_accept_settings">Sla instellingen voor automatisch accepteren op</string>
-    <string name="save_settings_question">Instellingen opslaan\?</string>
+    <string name="save_settings_question">Instellingen opslaan?</string>
     <string name="enter_welcome_message_optional">Voer welkom bericht in... (optioneel)</string>
-    <string name="email_invite_body">Hoi!
-\nMaak verbinding met mij via SimpleX Chat: %s</string>
+    <string name="email_invite_body">Hoi! \nMaak verbinding met mij via SimpleX Chat: %s</string>
     <string name="share_address">Adres delen</string>
     <string name="enter_welcome_message">Welkom bericht invoeren…</string>
     <string name="import_theme">Thema importeren</string>
@@ -1170,18 +1161,16 @@
     <string name="v5_1_japanese_portuguese_interface">Japanse en Portugese gebruikersinterface</string>
     <string name="v5_1_self_destruct_passcode">Zelfvernietigingscode</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">Dank aan de gebruikers – draag bij via Weblate!</string>
-    <string name="v5_1_better_messages_descr">- spraakberichten tot 5 minuten.
-\n- aangepaste tijd om te verdwijnen.
-\n- bewerkingsgeschiedenis.</string>
+    <string name="v5_1_better_messages_descr">- spraakberichten tot 5 minuten. \n- aangepaste tijd om te verdwijnen. \n- bewerkingsgeschiedenis.</string>
     <string name="item_info_no_text">geen tekst</string>
     <string name="non_fatal_errors_occured_during_import">Er zijn enkele niet-fatale fouten opgetreden tijdens het importeren:</string>
-    <string name="shutdown_alert_question">Afsluiten\?</string>
+    <string name="shutdown_alert_question">Afsluiten?</string>
     <string name="settings_section_title_app">App</string>
     <string name="settings_restart_app">Herstarten</string>
     <string name="settings_shutdown">Afsluiten</string>
     <string name="shutdown_alert_desc">Meldingen werken niet meer totdat u de app opnieuw start</string>
     <string name="error_aborting_address_change">Fout bij het afbreken van adres wijziging</string>
-    <string name="abort_switch_receiving_address_question">Adres wijziging afbreken\?</string>
+    <string name="abort_switch_receiving_address_question">Adres wijziging afbreken?</string>
     <string name="abort_switch_receiving_address_desc">Adres wijziging wordt afgebroken. Het oude ontvangstadres wordt gebruikt.</string>
     <string name="abort_switch_receiving_address">Annuleer het wijzigen van het adres</string>
     <string name="abort_switch_receiving_address_confirm">Afbreken</string>
@@ -1201,7 +1190,7 @@
     <string name="no_history">Geen geschiedenis</string>
     <string name="in_reply_to">In antwoord op</string>
     <string name="sync_connection_force_confirm">Opnieuw onderhandelen</string>
-    <string name="sync_connection_force_question">Heronderhandelen over versleuteling\?</string>
+    <string name="sync_connection_force_question">Heronderhandelen over versleuteling?</string>
     <string name="snd_conn_event_ratchet_sync_allowed">versleuteling heronderhandeling toegestaan voor %s</string>
     <string name="conn_event_ratchet_sync_required">heronderhandeling van versleuteling vereist</string>
     <string name="snd_conn_event_ratchet_sync_required">heronderhandeling over versleuteling vereist voor %s</string>
@@ -1218,7 +1207,7 @@
     <string name="snd_conn_event_ratchet_sync_ok">versleuteling ok voor %s</string>
     <string name="fix_connection">Verbinding herstellen</string>
     <string name="fix_connection_confirm">Herstel</string>
-    <string name="fix_connection_question">Verbinding herstellen\?</string>
+    <string name="fix_connection_question">Verbinding herstellen?</string>
     <string name="conn_event_ratchet_sync_allowed">versleuteling heronderhandeling toegestaan</string>
     <string name="error_synchronizing_connection">Fout bij het synchroniseren van de verbinding</string>
     <string name="sync_connection_force_desc">De versleuteling werkt en de nieuwe versleutelingsovereenkomst is niet vereist. Dit kan leiden tot verbindingsfouten!</string>
@@ -1226,8 +1215,8 @@
     <string name="v5_2_message_delivery_receipts">Ontvangst bevestiging voor berichten!</string>
     <string name="receipts_section_description_1">Ze kunnen worden overschreven in contact en groep instellingen</string>
     <string name="receipts_section_contacts">Contacten</string>
-    <string name="receipts_contacts_title_disable">Ontvangst bevestiging uitschakelen\?</string>
-    <string name="receipts_contacts_title_enable">Ontvangst bevestiging inschakelen\?</string>
+    <string name="receipts_contacts_title_disable">Ontvangst bevestiging uitschakelen?</string>
+    <string name="receipts_contacts_title_enable">Ontvangst bevestiging inschakelen?</string>
     <string name="receipts_contacts_override_enabled">Het verzenden van ontvangst bevestiging is ingeschakeld voor %d-contactpersonen</string>
     <string name="these_settings_are_for_your_current_profile">Deze instellingen gelden voor uw huidige profiel</string>
     <string name="receipts_contacts_disable_keep_overrides">Uitschakelen (overschrijvingen behouden)</string>
@@ -1249,9 +1238,7 @@
     <string name="dont_enable_receipts">Niet inschakelen</string>
     <string name="enable_receipts_all">Inschakelen</string>
     <string name="v5_2_disappear_one_message_descr">Zelfs wanneer uitgeschakeld in het gesprek.</string>
-    <string name="v5_2_more_things_descr">- stabielere berichtbezorging.
-\n- een beetje betere groepen.
-\n- en meer!</string>
+    <string name="v5_2_more_things_descr">- stabielere berichtbezorging. \n- een beetje betere groepen. \n- en meer!</string>
     <string name="sending_delivery_receipts_will_be_enabled">Het verzenden van ontvangst bevestiging wordt ingeschakeld voor alle contactpersonen.</string>
     <string name="you_can_enable_delivery_receipts_later">U kunt later inschakelen via Instellingen</string>
     <string name="you_can_enable_delivery_receipts_later_alert">U kunt ze later inschakelen via de privacy- en beveiligingsinstellingen van de app.</string>
@@ -1262,8 +1249,8 @@
     <string name="no_selected_chat">Geen geselecteerd gesprek</string>
     <string name="delivery">Levering</string>
     <string name="no_info_on_delivery">Geen leveringsinformatie</string>
-    <string name="receipts_groups_title_disable">Ontvangstbevestiging voor groepen uitschakelen\?</string>
-    <string name="receipts_groups_title_enable">Ontvangstbevestiging inschakelen voor groepen\?</string>
+    <string name="receipts_groups_title_disable">Ontvangstbevestiging voor groepen uitschakelen?</string>
+    <string name="receipts_groups_title_enable">Ontvangstbevestiging inschakelen voor groepen?</string>
     <string name="receipts_section_groups">Kleine groepen (max 20)</string>
     <string name="receipts_groups_disable_for_all">Uitschakelen voor alle groepen</string>
     <string name="receipts_groups_disable_keep_overrides">Uitschakelen (groep overschrijven behouden)</string>
@@ -1275,7 +1262,7 @@
     <string name="send_receipts_disabled_alert_msg">Deze groep heeft meer dan %1$d leden, Ontvangstbevestigingen worden niet verzonden.</string>
     <string name="send_receipts_disabled">uitgeschakeld</string>
     <string name="send_receipts_disabled_alert_title">Ontvangstbevestigingen zijn uitgeschakeld</string>
-    <string name="connect_via_member_address_alert_title">Verbind direct\?</string>
+    <string name="connect_via_member_address_alert_title">Verbind direct?</string>
     <string name="turn_off_battery_optimization_button">Toestaan</string>
     <string name="disable_notifications_button">Meldingen uitzetten</string>
     <string name="turn_off_system_restriction_button">Open app instellingen</string>
@@ -1295,10 +1282,9 @@
     <string name="rcv_group_event_3_members_connected">%s, %s en %s verbonden</string>
     <string name="rcv_group_event_2_members_connected">%s en %s verbonden</string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">De database wordt versleuteld en het wachtwoord wordt opgeslagen in de instellingen.</string>
-    <string name="you_can_change_it_later">Willekeurig wachtwoord wordt in de instellingen opgeslagen als platte tekst.
-\nJe kunt het later wijzigen.</string>
+    <string name="you_can_change_it_later">Willekeurig wachtwoord wordt in de instellingen opgeslagen als platte tekst. \nJe kunt het later wijzigen.</string>
     <string name="database_encryption_will_be_updated_in_settings">Het wachtwoord voor database versleuteling wordt bijgewerkt en opgeslagen in de instellingen.</string>
-    <string name="remove_passphrase_from_settings">Wachtwoord uit instellingen verwijderen\?</string>
+    <string name="remove_passphrase_from_settings">Wachtwoord uit instellingen verwijderen?</string>
     <string name="use_random_passphrase">Gebruik een willekeurig wachtwoord</string>
     <string name="save_passphrase_in_settings">Bewaar het wachtwoord in de instellingen</string>
     <string name="setup_database_passphrase">Database wachtwoord instellen</string>
@@ -1317,9 +1303,7 @@
     <string name="v5_3_new_interface_languages_descr">Arabisch, Bulgaars, Fins, Hebreeuws, Thais en Oekraïens - dankzij de gebruikers en Weblate.</string>
     <string name="v5_3_new_desktop_app_descr">Maak een nieuw profiel in de desktop-app. 💻</string>
     <string name="v5_3_simpler_incognito_mode_descr">Schakel incognito in tijdens het verbinden.</string>
-    <string name="v5_3_discover_join_groups_descr">- maak verbinding met de directoryservice (BETA)!
-\n- ontvangst bevestiging (tot 20 leden).
-\n- sneller en stabieler.</string>
+    <string name="v5_3_discover_join_groups_descr">- maak verbinding met de directoryservice (BETA)! \n- ontvangst bevestiging (tot 20 leden). \n- sneller en stabieler.</string>
     <string name="rcv_group_event_open_chat">Open</string>
     <string name="error_creating_member_contact">Fout bij aanmaken contact</string>
     <string name="compose_send_direct_message_to_connect">Stuur een direct bericht om verbinding te maken</string>
@@ -1432,9 +1416,7 @@
     <string name="v5_4_better_groups">Betere groepen</string>
     <string name="v5_4_incognito_groups">Incognitogroepen</string>
     <string name="v5_4_better_groups_descr">Snellere deelname en betrouwbaardere berichten.</string>
-    <string name="v5_4_more_things_descr">- optioneel verwijderde contacten op de hoogte stellen.
-\n- profielnamen met spaties.
-\n- en meer!</string>
+    <string name="v5_4_more_things_descr">- optioneel verwijderde contacten op de hoogte stellen. \n- profielnamen met spaties. \n- en meer!</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[Mobiele verbinding <b>%s</b> is verbroken]]></string>
     <string name="group_member_role_author">auteur</string>
     <string name="waiting_for_mobile_to_connect">Wachten tot mobiel verbinding maakt:</string>
@@ -1485,12 +1467,8 @@
     <string name="show_internal_errors">Toon interne fouten</string>
     <string name="agent_critical_error_title">Kritische fout</string>
     <string name="agent_internal_error_title">Interne fout</string>
-    <string name="agent_internal_error_desc">Rapporteer dit alstublieft aan de ontwikkelaars:
-\n%s</string>
-    <string name="agent_critical_error_desc">Rapporteer dit alstublieft aan de ontwikkelaars:
-\n%s
-\n
-\nHet wordt aanbevolen om de app opnieuw te starten.</string>
+    <string name="agent_internal_error_desc">Rapporteer dit alstublieft aan de ontwikkelaars: \n%s</string>
+    <string name="agent_critical_error_desc">Rapporteer dit alstublieft aan de ontwikkelaars: \n%s \n \nHet wordt aanbevolen om de app opnieuw te starten.</string>
     <string name="remote_ctrl_error_bad_version">Desktop heeft een niet-ondersteunde versie. Zorg ervoor dat u op beide apparaten dezelfde versie gebruikt</string>
     <string name="failed_to_create_user_invalid_title">Ongeldige weergavenaam!</string>
     <string name="failed_to_create_user_invalid_desc">Deze weergavenaam is ongeldig. Kies een andere naam.</string>
@@ -1558,8 +1536,7 @@
     <string name="snd_group_event_member_unblocked">je hebt %s gedeblokkeerd</string>
     <string name="message_too_large">Bericht te groot</string>
     <string name="welcome_message_is_too_long">Welkom bericht is te lang</string>
-    <string name="database_migration_in_progress">De databasemigratie wordt uitgevoerd.
-\nDit kan enkele minuten duren.</string>
+    <string name="database_migration_in_progress">De databasemigratie wordt uitgevoerd. \nDit kan enkele minuten duren.</string>
     <string name="call_service_notification_audio_call">Audio oproep</string>
     <string name="call_service_notification_end_call">Ophangen</string>
     <string name="call_service_notification_video_call">Video oproep</string>
@@ -1698,10 +1675,8 @@
     <string name="snd_error_quota">Capaciteit overschreden - ontvanger heeft eerder verzonden berichten niet ontvangen.</string>
     <string name="snd_error_relay">Fout met bestemmingsserver: %1$s</string>
     <string name="ci_status_other_error">Fout: %1$s</string>
-    <string name="snd_error_proxy_relay">Doorstuurserver: %1$s
-\nBestemmingsserverfout: %2$s</string>
-    <string name="snd_error_proxy">Doorstuurserver: %1$s
-\nFout: %2$s</string>
+    <string name="snd_error_proxy_relay">Doorstuurserver: %1$s \nBestemmingsserverfout: %2$s</string>
+    <string name="snd_error_proxy">Doorstuurserver: %1$s \nFout: %2$s</string>
     <string name="message_delivery_warning_title">Waarschuwing voor berichtbezorging</string>
     <string name="snd_error_expired">Netwerkproblemen - bericht is verlopen na vele pogingen om het te verzenden.</string>
     <string name="srv_error_host">Serveradres is niet compatibel met netwerkinstellingen.</string>
@@ -1727,14 +1702,12 @@
     <string name="settings_section_title_private_message_routing">Privébericht routing</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Stuur berichten rechtstreeks als het IP-adres beschermd is en uw of bestemmingsserver geen privéroutering ondersteunt.</string>
     <string name="file_not_approved_title">Onbekende servers!</string>
-    <string name="file_not_approved_descr">Zonder Tor of VPN is uw IP-adres zichtbaar voor deze XFTP-relays:
-\n%1$s.</string>
+    <string name="file_not_approved_descr">Zonder Tor of VPN is uw IP-adres zichtbaar voor deze XFTP-relays: \n%1$s.</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Zonder Tor of VPN is uw IP-adres zichtbaar voor bestandsservers.</string>
     <string name="settings_section_title_files">Bestanden</string>
     <string name="protect_ip_address">Bescherm het IP-adres</string>
     <string name="app_will_ask_to_confirm_unknown_file_servers">De app vraagt om downloads van onbekende bestandsservers te bevestigen (behalve .onion of wanneer SOCKS-proxy is ingeschakeld).</string>
-    <string name="error_initializing_web_view">Fout bij het initialiseren van WebView. Update uw systeem naar de nieuwe versie. Neem contact op met ontwikkelaars.
-\nFout: %s</string>
+    <string name="error_initializing_web_view">Fout bij het initialiseren van WebView. Update uw systeem naar de nieuwe versie. Neem contact op met ontwikkelaars. \nFout: %s</string>
     <string name="color_wallpaper_tint">Achtergrond accent</string>
     <string name="wallpaper_scale_fill">Vullen</string>
     <string name="wallpaper_scale_fit">Passen</string>
@@ -1758,8 +1731,7 @@
     <string name="chat_theme_reset_to_user_theme">Terugzetten naar gebruikersthema</string>
     <string name="chat_theme_apply_to_dark_mode">Donkere modus</string>
     <string name="wallpaper_advanced_settings">Geavanceerde instellingen</string>
-    <string name="v5_8_private_routing_descr">Bescherm uw IP-adres tegen de berichtenrelais die door uw contacten zijn gekozen.
-\nSchakel dit in in *Netwerk en servers*-instellingen.</string>
+    <string name="v5_8_private_routing_descr">Bescherm uw IP-adres tegen de berichtenrelais die door uw contacten zijn gekozen. \nSchakel dit in in *Netwerk en servers*-instellingen.</string>
     <string name="wallpaper_scale_repeat">Herhalen</string>
     <string name="settings_section_title_chat_colors">Chat kleuren</string>
     <string name="settings_section_title_user_theme">Profiel thema</string>
@@ -1779,17 +1751,14 @@
     <string name="message_queue_info_none">geen</string>
     <string name="info_row_debug_delivery">Foutopsporing bezorging</string>
     <string name="message_queue_info">Informatie over berichtenwachtrij</string>
-    <string name="message_queue_info_server_info">informatie over serverwachtrij: %1$s
-\n
-\nlaatst ontvangen bericht: %2$s</string>
+    <string name="message_queue_info_server_info">informatie over serverwachtrij: %1$s \n \nlaatst ontvangen bericht: %2$s</string>
     <string name="file_error_no_file">Bestand niet gevonden - hoogstwaarschijnlijk is het bestand verwijderd of geannuleerd.</string>
     <string name="file_error_auth">Verkeerde sleutel of onbekend bestanddeeladres - hoogstwaarschijnlijk is het bestand verwijderd.</string>
     <string name="file_error_relay">Bestandsserverfout: %1$s</string>
     <string name="file_error">Bestandsfout</string>
     <string name="temporary_file_error">Tijdelijke bestandsfout</string>
     <string name="copy_error">Kopieerfout</string>
-    <string name="remote_ctrl_connection_stopped_desc">Controleer of mobiel en desktop met hetzelfde lokale netwerk zijn verbonden en of de desktopfirewall de verbinding toestaat.
-\nDeel eventuele andere problemen met de ontwikkelaars.</string>
+    <string name="remote_ctrl_connection_stopped_desc">Controleer of mobiel en desktop met hetzelfde lokale netwerk zijn verbonden en of de desktopfirewall de verbinding toestaat. \nDeel eventuele andere problemen met de ontwikkelaars.</string>
     <string name="remote_ctrl_connection_stopped_identity_desc">Deze link is gebruikt met een ander mobiel apparaat. Maak een nieuwe link op de desktop.</string>
     <string name="info_row_file_status">Bestandsstatus</string>
     <string name="share_text_message_status">Berichtstatus: %s</string>
@@ -1997,8 +1966,7 @@
     <string name="migrate_from_device_remove_archive_question">Archief verwijderen?</string>
     <string name="delete_messages_cannot_be_undone_warning">Berichten worden verwijderd. Dit kan niet ongedaan worden gemaakt!</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">Het geüploade databasearchief wordt permanent van de servers verwijderd.</string>
-    <string name="n_file_errors">%1$d bestandsfout(en):
-\n%2$s</string>
+    <string name="n_file_errors">%1$d bestandsfout(en): \n%2$s</string>
     <string name="forward_files_messages_deleted_after_selection_title">%1$s berichten niet doorgestuurd</string>
     <string name="forward_alert_title_messages_to_forward">%1$s bericht(en) doorsturen?</string>
     <string name="network_proxy_auth">Proxy-authenticatie</string>

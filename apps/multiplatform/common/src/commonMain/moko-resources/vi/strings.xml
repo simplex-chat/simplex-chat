@@ -303,9 +303,7 @@
     <string name="icon_descr_call_connecting">Đang kết nối cuộc gọi</string>
     <string name="desktop_connection_terminated">Kết nối đã bị ngắt</string>
     <string name="connecting_to_desktop">Đang kết nối tới máy tính</string>
-    <string name="v5_3_discover_join_groups_descr">- kết nối tới dịch vụ thư mục (BETA)!
-\n- đánh dấu đã nhận (tối đa 20 thành viên).
-\n- nhanh hơn và ổn định hơn.</string>
+    <string name="v5_3_discover_join_groups_descr">- kết nối tới dịch vụ thư mục (BETA)! \n- đánh dấu đã nhận (tối đa 20 thành viên). \n- nhanh hơn và ổn định hơn.</string>
     <string name="remote_ctrl_was_disconnected_title">Kết nối đã bị ngắt</string>
     <string name="remote_host_error_bad_state"><![CDATA[Kết nối tới điện thoại <b>%s</b> đang ở trong tình trạng không tốt]]></string>
     <string name="connect_to_desktop">Kết nối tới máy tính</string>
@@ -399,8 +397,7 @@
     <string name="ttl_d">%dd</string>
     <string name="ttl_day">%d ngày</string>
     <string name="database_will_be_encrypted">Cơ sở dữ liệu sẽ được mã hóa.</string>
-    <string name="database_migration_in_progress">Việc di chuyển cơ sở dữ liệu đang diễn ra.
-\nQuá trình này có thể mất một vài phút.</string>
+    <string name="database_migration_in_progress">Việc di chuyển cơ sở dữ liệu đang diễn ra. \nQuá trình này có thể mất một vài phút.</string>
     <string name="database_passphrase_and_export">Mật khẩu cơ sở dữ liệu và xuất dữ liệu</string>
     <string name="passphrase_is_different">Mật khẩu cơ sở dữ liệu khác với mật khẩu được lưu trong Keystore.</string>
     <string name="database_passphrase_is_required">Mật khẩu cơ sở dữ liệu là cần thiết để mở kết nối trò chuyện.</string>
@@ -687,8 +684,7 @@
     <string name="error_importing_database">Lỗi nhập cơ sở dữ liệu trò chuyện</string>
     <string name="error_exporting_chat_database">Lỗi xuất cơ sở dữ liệu trò chuyện</string>
     <string name="migrate_to_device_error_downloading_archive">Lỗi tải xuống kho lưu trữ</string>
-    <string name="error_initializing_web_view">Lỗi khởi tạo WebView. Cập nhật hệ điều hành của bạn lên phiên bản mới. Vui lòng liên hệ với nhà phát triển.
-\nLỗi: %s</string>
+    <string name="error_initializing_web_view">Lỗi khởi tạo WebView. Cập nhật hệ điều hành của bạn lên phiên bản mới. Vui lòng liên hệ với nhà phát triển. \nLỗi: %s</string>
     <string name="error_removing_member">Lỗi xóa thành viên</string>
     <string name="error_with_info">Lỗi: %s</string>
     <string name="unable_to_open_browser_title">Lỗi mở trình duyệt</string>
@@ -770,10 +766,8 @@
     <string name="forward_chat_item">Chuyển tiếp</string>
     <string name="forwarded_from_chat_item_info_title">Đã được chuyển tiếp từ</string>
     <string name="forwarded_description">đã được chuyển tiếp</string>
-    <string name="snd_error_proxy_relay">Máy chủ chuyển tiếp: %1$s
-\nLỗi máy chủ đích: %2$s</string>
-    <string name="snd_error_proxy">Máy chủ chuyển tiếp: %1$s
-\nLỗi: %2$s</string>
+    <string name="snd_error_proxy_relay">Máy chủ chuyển tiếp: %1$s \nLỗi máy chủ đích: %2$s</string>
+    <string name="snd_error_proxy">Máy chủ chuyển tiếp: %1$s \nLỗi: %2$s</string>
     <string name="v5_7_forward">Chuyển tiếp và lưu tin nhắn</string>
     <string name="fix_connection_not_supported_by_group_member">Chức năng sửa không hỗ trợ bởi thành viên nhóm</string>
     <string name="for_everybody">Cho tất cả mọi người</string>
@@ -840,8 +834,7 @@
     <string name="snd_group_event_group_profile_updated">hồ sơ nhóm đã được cập nhật</string>
     <string name="icon_descr_help">trợ giúp</string>
     <string name="hide_dev_options">Ẩn:</string>
-    <string name="email_invite_body">Xin chào!
-\nKết nối với tôi qua SimpleX Chat: %s</string>
+    <string name="email_invite_body">Xin chào! \nKết nối với tôi qua SimpleX Chat: %s</string>
     <string name="hide_profile">Ẩn hồ sơ</string>
     <string name="settings_section_title_help">Trợ giúp</string>
     <string name="delete_group_for_all_members_cannot_undo_warning">Nhóm sẽ bị xóa cho tất cả các thành viên - điều này không thể hoàn tác!</string>

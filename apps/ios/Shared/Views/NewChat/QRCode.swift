@@ -46,19 +46,31 @@ struct SimpleXLinkQRCode: View {
 
 private let smallQRRatio: CGFloat = 0.63
 
+extension EnvironmentValues {
+    struct FixedQRCode: EnvironmentKey {
+        static let defaultValue: UIImage? = nil
+    }
+
+    var fixedQRCode: UIImage? {
+        get { self[FixedQRCode.self] }
+        set { self[FixedQRCode.self] = newValue }
+    }
+}
+
 struct QRCode: View {
     let uri: String
     var small: Bool = false
     var withLogo: Bool = true
     var tintColor = UIColor(red: 0.023, green: 0.176, blue: 0.337, alpha: 1)
     var onShare: (() -> Void)? = nil
+    @Environment(\.fixedQRCode) private var fixedQRCode
     @State private var image: UIImage? = nil
     @State private var makeScreenshotFunc: () -> Void = {}
     @State private var width: CGFloat = .infinity
 
     var body: some View {
         ZStack {
-            if let image = image {
+            if let image = fixedQRCode ?? image {
                 qrCodeImage(image).frame(width: width, height: width)
                 GeometryReader { g in
                     let w = g.size.width * (small ? smallQRRatio : 1)
@@ -90,7 +102,7 @@ struct QRCode: View {
             }
         }
         .onTapGesture(perform: makeScreenshotFunc)
-        .task { image = await generateImage(uri, tintColor: tintColor, errorLevel: small ? "M" : "L") }
+        .task { if fixedQRCode == nil { image = await generateImage(uri, tintColor: tintColor, errorLevel: small ? "M" : "L") } }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -103,7 +115,7 @@ private func qrCodeImage(_ image: UIImage) -> some View {
         .textSelection(.enabled)
 }
 
-private func generateImage(_ uri: String, tintColor: UIColor, errorLevel: String) async -> UIImage? {
+func generateImage(_ uri: String, tintColor: UIColor, errorLevel: String) async -> UIImage? {
     let context = CIContext()
     let filter = CIFilter.qrCodeGenerator()
     filter.message = Data(uri.utf8)
@@ -131,6 +143,6 @@ extension View {
 
 struct QRCode_Previews: PreviewProvider {
     static var previews: some View {
-        QRCode(uri: "https://simplex.chat/invitation#/?v=1&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FFe5ICmvrm4wkrr6X1LTMii-lhBqLeB76%23MCowBQYDK2VuAyEAdhZZsHpuaAk3Hh1q0uNb_6hGTpuwBIrsp2z9U2T0oC0%3D&e2e=v%3D1%26x3dh%3DMEIwBQYDK2VvAzkAcz6jJk71InuxA0bOX7OUhddfB8Ov7xwQIlIDeXBRZaOntUU4brU5Y3rBzroZBdQJi0FKdtt_D7I%3D%2CMEIwBQYDK2VvAzkA-hDvk1duBi1hlOr08VWSI-Ou4JNNSQjseY69QyKm7Kgg1zZjbpGfyBqSZ2eqys6xtoV4ZtoQUXQ%3D")
+        QRCode(uri: "https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw", small: true)
     }
 }

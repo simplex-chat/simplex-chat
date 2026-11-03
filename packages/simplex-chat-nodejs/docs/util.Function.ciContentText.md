@@ -8,7 +8,7 @@
 
 > **ciContentText**(`__namedParameters`): `string` \| `undefined`
 
-Defined in: [src/util.ts:64](../util.ts#L64)
+Defined in: [src/util.ts:65](../util.ts#L65)
 
 ## Parameters
 
