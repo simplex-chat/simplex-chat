@@ -6,13 +6,13 @@ On Android, scrolling a group's revealed "connected" events stutters.
 
 ## Cause
 
-Each revealed event row shows the avatar of another member: `MemberImage` -> `MemberProfileImage` -> `ProfileImage` (async = false) -> `base64ToBitmap`, called during composition on the main thread.
-Android `base64ToBitmap` decodes the image at every call.
-A row that scrolls off is disposed, and its avatar is decoded again when it returns.
+Each revealed event row is from a different member and is displayed with that member's avatar: `MemberImage` -> `MemberProfileImage` -> `ProfileImage` (async = false) -> `base64ToBitmap`, called during composition on the main thread.
+On Android, the image is decoded at every `base64ToBitmap` call.
+A row scrolled out of view is disposed, and its avatar is decoded again when the row is composed again.
 
 ## Fix
 
-Android `base64ToBitmap` keeps decoded images in an `android.util.LruCache`:
+On Android, images decoded by `base64ToBitmap` are kept in an `android.util.LruCache`:
 - key: the base64 string;
 - size: 2 bytes per key character + `Bitmap.byteCount` per entry;
 - limit: 1/8 of `Runtime.maxMemory()`;
@@ -21,6 +21,6 @@ Android `base64ToBitmap` keeps decoded images in an `android.util.LruCache`:
 ## Scope
 
 - `common/src/androidMain/.../platform/Images.android.kt`
-- Android callers of `base64ToBitmap` read the cache: avatars (also in calls), image, video and link previews (chat, chat list), video previews in the full-screen viewer, chat-link cards, quotes, compose previews, theme wallpaper, contact-request and call notification icons.
+- The cache is used by every Android caller of `base64ToBitmap`: avatars (also in calls), image, video and link previews (chat, chat list), video previews in the full-screen viewer, chat-link cards, quotes, compose previews, theme wallpaper, contact-request and call notification icons.
 - test: `android/src/androidTest/.../Base64ToBitmapTest.kt`
 - `android/build.gradle.kts`: `testInstrumentationRunner` = `androidx.test.runner.AndroidJUnitRunner`.
