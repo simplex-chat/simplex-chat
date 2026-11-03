@@ -1,6 +1,6 @@
 # SimpleX MCP server: specification
 
-> Technical specification of `@simplex-chat/mcp` 0.2.0 in `packages/simplex-chat-mcp`. Statements are checked against the source at commit `c7bae599c`, and each section links to the code.
+> Technical specification of `@simplex-chat/mcp` 0.2.0 in `packages/simplex-chat-mcp`. Statements are checked against the source at commit `154038348`, and each section links to the code.
 >
 > Related: [README](../README.md) (user manual) | [PLAN](../PLAN.md) (design record) | [TESTING](../TESTING.md) (local build and test)
 
@@ -19,7 +19,7 @@
 
 The SimpleX core (libsimplex, release `core-7.1.0.18`) runs inside the same Node.js process, loaded by the `simplex-chat` library 7.1.0-beta.10.1. The core keeps the profile, chats and connections in two SQLite databases of the data folder, and sends and receives files through XFTP servers. The MCP protocol is served by the MCP TypeScript SDK (`@modelcontextprotocol/server` 2.3.1 and `@modelcontextprotocol/node` 2.1.1).
 
-`connect`, `send`, `download` and `leave` are actions. In mode `requests` the server posts each action as a card in the agent control chat, a SimpleX group created and owned by the agent's profile. An owner approves or rejects the card with a command in that chat, and the server performs the action after the approval. An owner can also approve all messages to one chat, or all downloads of files on known servers from one chat, in advance. In mode `host` the server performs actions at once and marks the four tools for the host's own confirmation.
+`connect`, `send`, `download` and `leave` are actions. In mode `requests` the server posts each action as a card in the agent control chat, a SimpleX group created and owned by the agent's profile. An owner approves or rejects the card with a command in that chat, and the server performs the action after the approval. An owner can also approve all messages to one chat, or all downloads of files on known servers from one chat, in advance. On a download card, the owner lets the agent receive the file, or has it forwarded only to the owner. In mode `host` the server performs actions at once and marks the four tools for the host's own confirmation.
 
 A tool call is held open by the server until the owner decides and, for `connect` and `send`, until the replies arrive, and for `download`, until the file is received or `wait` passes. A repeated call with the same arguments is attached to the same action, so a call that the host ends early is resumed.
 
@@ -112,12 +112,12 @@ graph TD
 | Server start | [`src/serve.ts`](../src/serve.ts#L65) | `startServer` | [65](../src/serve.ts#L65) |
 | Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L88) | `startAgent` | [88](../src/serve.ts#L88) |
 | HTTP listener | [`src/http.ts`](../src/http.ts#L14) | `startHttp` | [14](../src/http.ts#L14) |
-| Tool registration | [`src/tools.ts`](../src/tools.ts#L481) | `AgentTools.register` | [481](../src/tools.ts#L481) |
-| Downloads | [`src/tools.ts`](../src/tools.ts#L515) | `AgentTools.downloadFile` | [515](../src/tools.ts#L515) |
+| Tool registration | [`src/tools.ts`](../src/tools.ts#L483) | `AgentTools.register` | [483](../src/tools.ts#L483) |
+| Downloads | [`src/tools.ts`](../src/tools.ts#L517) | `AgentTools.downloadFile` | [517](../src/tools.ts#L517) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L124) | `Actions` | [124](../src/actions.ts#L124) |
-| Agent control chat | [`src/control.ts`](../src/control.ts#L80) | `Control` | [80](../src/control.ts#L80) |
-| Card text | [`src/control.ts`](../src/control.ts#L545) | `cardText` | [545](../src/control.ts#L545) |
-| Item watch | [`src/messages.ts`](../src/messages.ts#L83) | `ChatItemsWatch` | [83](../src/messages.ts#L83) |
+| Agent control chat | [`src/control.ts`](../src/control.ts#L81) | `Control` | [81](../src/control.ts#L81) |
+| Card text | [`src/control.ts`](../src/control.ts#L551) | `cardText` | [551](../src/control.ts#L551) |
+| Item watch | [`src/messages.ts`](../src/messages.ts#L85) | `ChatItemsWatch` | [85](../src/messages.ts#L85) |
 | Claude Code entry | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
 | Data folder files | [`src/files.ts`](../src/files.ts#L12) | `createDataFolder`, `acquireLock` | [12](../src/files.ts#L12) |
 | Package manifest | [`package.json`](../package.json) | `bin.simplex-mcp` | [6](../package.json#L6) |
