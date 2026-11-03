@@ -21,7 +21,7 @@ android {
         versionCode = (extra["android.version_code"] as String).toInt()
         versionName = extra["android.version_name"] as String
 
-        testInstrumentationRunner = "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }

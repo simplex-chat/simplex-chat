@@ -24,3 +24,4 @@ Android `base64ToBitmap` keeps decoded images in an `android.util.LruCache`:
 - `common/src/androidMain/.../platform/Images.android.kt`
 - Android callers of `base64ToBitmap` read the cache: avatars, image, video and link previews, quotes, compose previews, theme wallpaper.
 - test: `android/src/androidTest/.../Base64ToBitmapTest.kt`
+- `android/build.gradle.kts`: `testInstrumentationRunner` is `androidx.test.runner.AndroidJUnitRunner`, the runner the test APK contains.
