@@ -16,6 +16,6 @@ class Base64ToBitmapTest {
     val out = ByteArrayOutputStream()
     Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888).compress(Bitmap.CompressFormat.JPEG, 85, out)
     val image = "data:image/jpg;base64," + Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
-    assertSame(base64ToBitmap(image), base64ToBitmap(image))
+    assertSame(base64ToBitmap(image), base64ToBitmap(String(image.toCharArray())))
   }
 }
