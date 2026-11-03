@@ -2852,7 +2852,7 @@ memberSendAction gInfo@GroupInfo {membership} events members m@GroupMember {memb
   | otherwise = case memberConn m of
       Nothing -> pendingOrForwarded
       Just conn@Connection {connStatus}
-        | connDisabled conn || connStatus == ConnDeleted || isConnFailed connStatus || memberStatus == GSMemRejected -> Nothing
+        | connEnded conn || memberStatus == GSMemRejected -> Nothing
         | connInactive conn -> Just MSAPending
         | connStatus == ConnSndReady || connStatus == ConnReady -> Just (MSASend conn)
         | otherwise -> pendingOrForwarded
@@ -2877,6 +2877,9 @@ memberSendAction gInfo@GroupInfo {membership} events members m@GroupMember {memb
             isXGrpMsgForward event = case event of
               XGrpMsgForward {} -> True
               _ -> False
+
+connEnded :: Connection -> Bool
+connEnded conn@Connection {connStatus} = connDisabled conn || connStatus == ConnDeleted || isConnFailed connStatus
 
 forwardingMemberId :: GroupInfo -> GroupMember -> Maybe GroupMemberId
 forwardingMemberId GroupInfo {membership} m = case memberCategory m of
