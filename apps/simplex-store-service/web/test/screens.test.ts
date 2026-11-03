@@ -604,6 +604,41 @@ domTest("screens: the Lightning confirming screen waits for settlement, and prin
   assertNoCode(p, "the Lightning confirming screen");
 });
 
+domTest("screens: the Lightning give-up screen says the payment has not settled, not that it is unconfirmed", () => {
+  const ln = render(screens.awaitingConfirmation({ invoice: undefined, method: "ln", order: smuggled(), gaveUp: true, onCheckAgain: noop }));
+  assert.ok(ln.textContent.includes("The payment has not settled. This page keeps working"), ln.textContent);
+  assert.ok(!/confirm/i.test(ln.textContent), ln.textContent);
+  for (const method of ["btc", "xmr", "card", undefined] as const) {
+    const other = render(screens.awaitingConfirmation({ invoice: undefined, method, order: smuggled(), gaveUp: true, onCheckAgain: noop }));
+    assert.ok(other.textContent.includes("The payment has not been confirmed."), `${method ?? "no method"}: ${other.textContent}`);
+  }
+});
+
+domTest("screens: a Lightning row still settling says so in Your codes, and every other row keeps its words", () => {
+  const funded = { amountPaid: 42000, paidInFull: true } as const;
+  const rows = historyRows([
+    record({ orderId: "inv_ln", method: "ln", ...funded }),
+    record({ orderId: "inv_btc", method: "btc", ...funded }),
+    record({ orderId: "inv_ln_open", method: "ln" }),
+  ]);
+  assert.deepEqual(rows.map((r) => r.kind), ["processing", "processing", "open"]);
+  const p = render(screens.purchaseHistory({ rows, keepsNewCodes: true, onOpen: noop, onStart: noop, onForget: noop }));
+  const statuses = p.all("span.status").map((s) => s.textContent);
+  assert.deepEqual(statuses, ["payment received, waiting to settle", "payment received, waiting to confirm", "waiting for payment"]);
+  assert.equal(p.all("span.status.pending").length, 3, "the Lightning row keeps the pending tone");
+});
+
+// BTCPay 2.4.4 does not cancel the node's BOLT11 when an invoice is marked Invalid, and records a payment to it until monitoring ends.
+domTest("screens: cancelling a Lightning invoice warns that its BOLT11 stays payable until it expires", () => {
+  assert.equal(screens.cancelConfirmation("ln"), screens.CANCEL_CONFIRM_LIGHTNING);
+  assert.ok(screens.CANCEL_CONFIRM_LIGHTNING.includes("stays payable until it expires"), screens.CANCEL_CONFIRM_LIGHTNING);
+  assert.ok(screens.CANCEL_CONFIRM_LIGHTNING.includes("do not pay it afterwards"), screens.CANCEL_CONFIRM_LIGHTNING);
+  assert.ok(!screens.CANCEL_CONFIRM_LIGHTNING.includes("address"), "a BOLT11 is an invoice, not an address");
+  for (const method of ["btc", "xmr", "card"] as const) {
+    assert.equal(screens.cancelConfirmation(method), screens.CANCEL_CONFIRM, method);
+  }
+});
+
 domTest("screens: an expired Lightning order says the invoice can no longer be paid", () => {
   const nothing = render(screens.windowClosed({ onNewInvoice: noop,
     order: unpaidRecord({ status: "expired", method: "ln" }),

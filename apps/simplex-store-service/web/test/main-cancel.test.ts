@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { headingOf, installPage, screenOf, settle, timedTest, until } from "./boot.js";
 import { type StubElement } from "./stub-dom.js";
 import { ADDRESS, HELD_CODE, NOW, openReply, ORDER_ID, seededStorage, storedOrder } from "./open-order.js";
-import { CANCEL_INVOICE, CANCEL_FAILED, CANCEL_HAS_FUNDS, CANCEL_NOT_OPEN, CANCEL_STILL_OPEN } from "../src/screens.js";
+import { CANCEL_CONFIRM, CANCEL_INVOICE, CANCEL_FAILED, CANCEL_HAS_FUNDS, CANCEL_NOT_OPEN, CANCEL_STILL_OPEN } from "../src/screens.js";
 
 const cancelTest = timedTest(3000);
 
@@ -29,6 +29,7 @@ cancelTest("main: a cancel the service refuses says so and keeps watching the or
 
   cancelControl()?.click();
   await settle();
+  assert.equal(page.confirms.at(-1), CANCEL_CONFIRM, "a Monero order is asked about its address");
   await until(() => screenOf(app).textContent.includes(CANCEL_FAILED), "the failure is on screen");
   // A count alone is satisfied by the cancel POST, so this checks for the read the restarted watch makes.
   const after = fetches.slice(before).map((f) => f.url);

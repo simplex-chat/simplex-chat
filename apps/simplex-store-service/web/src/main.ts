@@ -561,8 +561,8 @@ function refuseCancel(orderId: string, resume: Parameters<typeof flow.watch>[1],
 
 let cancelInFlight = false;
 
-async function cancelInvoice(orderId: string): Promise<void> {
-  if (!window.confirm(screens.CANCEL_CONFIRM)) return;
+async function cancelInvoice(orderId: string, method: Method): Promise<void> {
+  if (!window.confirm(screens.cancelConfirmation(method))) return;
   cancelNotice = undefined;
   const { record: _record, ...resume } = flow.liveWatches().find((w) => w.orderId === orderId)?.restartOptions() ?? {};
   flow.stopAll();
@@ -611,11 +611,11 @@ async function cancelInvoice(orderId: string): Promise<void> {
 }
 
 // The Cancel button's disabled attribute does not survive a repaint, so this flag allows one cancel at a time.
-async function cancelInvoiceOnce(orderId: string): Promise<void> {
+async function cancelInvoiceOnce(orderId: string, method: Method): Promise<void> {
   if (cancelInFlight) return;
   cancelInFlight = true;
   try {
-    await cancelInvoice(orderId);
+    await cancelInvoice(orderId, method);
   } finally {
     cancelInFlight = false;
   }
@@ -679,7 +679,7 @@ function paint(view: PaymentView): void {
       const awaitingPayment = screens.awaitingPayment({
         order: view.order, invoice: view.invoice, method: view.method,
         nowMs: Date.now(), resumed: view.resumed, offline: isOffline(),
-        onCancel: () => cancelInvoiceOnce(view.order.orderId),
+        onCancel: () => cancelInvoiceOnce(view.order.orderId, view.method),
         ...(cancelNotice?.orderId === view.order.orderId && cancelNotice.epoch === flow.epoch
           ? { notice: cancelNotice.message } : {}),
       });
@@ -762,7 +762,7 @@ function renderCardForm(view: CardView): void {
   const shell = (body: HTMLElement): HTMLElement => screens.cardForm({
     order: view.order, invoice: view.invoice, resumed: view.resumed, body,
     // A PaymentIntent is only cancelable before it confirms, so the button is inert once a confirm is in flight.
-    onCancel: () => (cardConfirmPending ? Promise.resolve() : cancelInvoiceOnce(view.order.orderId)),
+    onCancel: () => (cardConfirmPending ? Promise.resolve() : cancelInvoiceOnce(view.order.orderId, "card")),
     ...(cancelNotice?.orderId === view.order.orderId && cancelNotice.epoch === flow.epoch
       ? { notice: cancelNotice.message } : {}),
   });
