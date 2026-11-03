@@ -17,8 +17,6 @@ REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 REFERENCES = os.path.join(REPO, "apps/ios/SimpleX Snapshots/References")
 GUIDE_IMAGES = os.path.join(REPO, "docs/guide/images")
 
-ISLAND_GAP = 6
-
 FRAMED = {
     "app-settings-advanced-network-settings.png": "AdvancedNetworkSettings",
     "app-settings-settings.png": "SettingsView",
@@ -45,32 +43,24 @@ FRAMED = {
     "supporter-badges-support-simplex.png": "BadgesSupportSimplexView",
 }
 
-FIXED_SHIFTS = {"ChatView": 0, "SimpleXInfo": 20}
-
 
 def main():
     parser = argparse.ArgumentParser(description="Places the iOS renders used by the user guide into Apple's iPhone 17 Pro bezel.")
     parser.add_argument("--cache", default=os.path.join(tempfile.gettempdir(), "simplex-guide-bezel"), help="directory for the downloaded bezel, outside the repository")
+    parser.add_argument("--references", default=REFERENCES, help="directory of the snapshot references")
     args = parser.parse_args()
     bezel_w, bezel_h, bezel = downscale(*read_png(bezel_png(args.cache)), BEZEL_SCALE)
     left, top, screen_w, screen_h = screen_area(bezel_w, bezel_h, bezel)
-    island_bottom = max(y for y in range(top, top + screen_h // 4) if bezel[(y * bezel_w + bezel_w // 2) * 4 + 3]) - top
     for image, view in FRAMED.items():
-        w, h, render = read_png(os.path.join(REFERENCES, f"{view}-light-large.png"))
+        w, h, render = read_png(os.path.join(args.references, f"{view}-light-large.png"))
         if (w, h) != (screen_w, screen_h):
             sys.exit(f"{view}: render is {w}x{h}, the bezel screen is {screen_w}x{screen_h}")
-        shift = FIXED_SHIFTS.get(view, max(0, island_bottom + ISLAND_GAP - first_content_row(w, h, render)))
-        screen = render[:w * 4] * shift + render[:(h - shift) * w * 4]
         framed = bytearray(bezel_w * bezel_h * 4)
         for y in range(h):
             start = ((top + y) * bezel_w + left) * 4
-            framed[start:start + w * 4] = screen[y * w * 4:(y + 1) * w * 4]
+            framed[start:start + w * 4] = render[y * w * 4:(y + 1) * w * 4]
         write_png(os.path.join(GUIDE_IMAGES, image), bezel_w, bezel_h, composite_over(framed, bezel))
-        print(f"{image}: {view}, moved down by {shift} rows")
-
-
-def first_content_row(w, h, rgba):
-    return next(y for y in range(h) if len({bytes(rgba[(y * w + x) * 4:(y * w + x) * 4 + 3]) for x in range(w)}) > 1)
+        print(f"{image}: {view}")
 
 
 def bezel_png(cache):
