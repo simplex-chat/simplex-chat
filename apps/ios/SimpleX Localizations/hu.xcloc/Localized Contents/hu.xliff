@@ -13434,11 +13434,11 @@ utoljára fogadott üzenet: %2$@</target>
       </trans-unit>
       <trans-unit id="Renews at %@ a month until you cancel it in the App Store." xml:space="preserve" approved="no">
         <source>Renews at %@ a month until you cancel it in the App Store.</source>
-        <target state="translated">Havonta megújul %1$s áron, amíg le nem mondja az App Store-ban.</target>
+        <target state="translated">Havonta megújul %1$@ áron, amíg le nem mondja az App Store-ban.</target>
       </trans-unit>
       <trans-unit id="Renews at %@ a year until you cancel it in the App Store." xml:space="preserve" approved="no">
         <source>Renews at %@ a year until you cancel it in the App Store.</source>
-        <target state="translated">Évente megújul %1$s áron, amíg le nem mondja az App Store-ban.</target>
+        <target state="translated">Évente megújul %1$@ áron, amíg le nem mondja az App Store-ban.</target>
       </trans-unit>
       <trans-unit id="Renews automatically until you cancel it in the App Store." xml:space="preserve" approved="no">
         <source>Renews automatically until you cancel it in the App Store.</source>
