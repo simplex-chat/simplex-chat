@@ -6,7 +6,8 @@ module Bots.StoreService.StripeTests (badgeStripeTests) where
 
 import StoreService.Config (StripeConfig (..))
 import StoreService.Providers
-  ( ListPass (..),
+  ( Funded (..),
+    ListPass (..),
     OrderDraft (..),
     PaymentSignal (..),
     Provider (..),
@@ -25,6 +26,7 @@ import qualified Data.ByteString.Lazy as LB
 import Data.Either (isLeft)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Network.HTTP.Types (hAuthorization, parseSimpleQuery)
@@ -70,7 +72,10 @@ badgeStripeTests = describe "badge stripe adapter" $ do
     it "accepts a signature up to 15 minutes from now, either way, and refuses one further out" testWebhookTimestampWindow
 
 fiftyFourDollars :: OrderDraft
-fiftyFourDollars = OrderDraft {odAmount = CurrencyAmount 5400, odCurrency = "usd"}
+fiftyFourDollars = OrderDraft {odAmount = CurrencyAmount 5400, odCurrency = "usd", odReference = sampleReference}
+
+sampleReference :: Text
+sampleReference = "Xq3v9TzK2mB7wR4yLp8cNd"
 
 fiftyFourDollarsReceived :: Received
 fiftyFourDollarsReceived = Received {rcvAmount = CurrencyAmount 5400, rcvCrypto = Nothing, rcvDue = Nothing}
@@ -122,6 +127,7 @@ testFakeCreateBody = withProvider $ \fake p -> do
       lookup "currency" form `shouldBe` Just "usd"
       -- Card only keeps the client confirm from redirecting the top window out of the embedded frame.
       lookup "allowed_payment_method_types[]" form `shouldBe` Just "card"
+      lookup "metadata[order]" form `shouldBe` Just (TE.encodeUtf8 sampleReference)
       lookup hAuthorization (frHeaders created) `shouldSatisfy` maybe False ("Basic " `B8.isPrefixOf`)
     _ -> expectationFailure ("expected one create, got " <> show (length posts))
 
@@ -159,7 +165,7 @@ testFakeCancel = withProvider $ \fake p -> do
   ProviderInvoice {piProviderRef = pid} <- createdInvoice p (SPMCard CPStripe)
   pCancelInvoice p pid `shouldReturn` Right ()
   fakeIntentStatus fake pid `shouldReturn` Just "canceled"
-  pReadInvoice p pid `shouldReturn` Right (Just (SigClosed nothingReceived))
+  pReadInvoice p pid `shouldReturn` Right (Just (SigClosed nothingReceived PaidInPart))
   pCancelInvoice p pid >>= (`shouldSatisfy` namesInError "payment_intent_unexpected_state")
 
 testFakeReadExpands :: IO ()
@@ -176,7 +182,7 @@ testFakeCanceled = withProvider $ \fake p -> do
   ProviderInvoice {piProviderRef = pid} <- createdInvoice p (SPMCard CPStripe)
   setIntentState fake pid ["status" .= ("canceled" :: Text)]
   -- A nonzero received amount here would write a phantom payment for money the buyer never sent.
-  pReadInvoice p pid `shouldReturn` Right (Just (SigClosed nothingReceived))
+  pReadInvoice p pid `shouldReturn` Right (Just (SigClosed nothingReceived PaidInPart))
 
 testFakeCreate500 :: IO ()
 testFakeCreate500 = withProvider $ \fake p -> do
@@ -249,7 +255,7 @@ testFakeListsOpen = withProvider $ \_ p -> do
           rcv `shouldBe` fiftyFourDollarsReceived
           settledAt `shouldSatisfy` \t -> t >= askedAt && t <= answeredAt
         other -> failWith ("pi_test_a should settle at read time, got " <> show other)
-      lookup "pi_test_b" lpMoved `shouldBe` Just (SigClosed nothingReceived)
+      lookup "pi_test_b" lpMoved `shouldBe` Just (SigClosed nothingReceived PaidInPart)
     Left e -> failWith ("expected a list pass, got " <> show e)
 
 testFakeListSkipsIdless :: IO ()

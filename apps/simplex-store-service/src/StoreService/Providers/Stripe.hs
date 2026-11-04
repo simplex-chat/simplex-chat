@@ -12,7 +12,8 @@ where
 
 import StoreService.Config (StripeConfig (..))
 import StoreService.Providers
-  ( ListPass (..),
+  ( Funded (..),
+    ListPass (..),
     OrderDraft (..),
     PaymentSignal (..),
     Provider (..),
@@ -235,12 +236,13 @@ instance J.FromJSON CreatedIntent where
 
 createInvoice :: StripeEnv -> ServicePaymentMethod -> OrderDraft -> IO (Either ProviderError ProviderInvoice)
 createInvoice _ (SPMCrypto _) _ = pure (Left (ProviderError "stripe offers no crypto payment method"))
-createInvoice env (SPMCard CPStripe) OrderDraft {odAmount = CurrencyAmount minor, odCurrency} = do
+createInvoice env (SPMCard CPStripe) OrderDraft {odAmount = CurrencyAmount minor, odCurrency, odReference} = do
   let form =
         [ ("amount", B8.pack (show minor)),
           ("currency", TE.encodeUtf8 (T.toLower odCurrency)),
           -- Only card is offered, because a redirect-based method would navigate the top window out of the embedded frame.
-          ("allowed_payment_method_types[]", "card")
+          ("allowed_payment_method_types[]", "card"),
+          ("metadata[order]", TE.encodeUtf8 odReference)
         ]
   created <- stripeApi env what methodPost ["v1", "payment_intents"] [] (Just form)
   pure $ created >>= decodeStripe what <&> \CreatedIntent {ciId, ciClientSecret} ->
@@ -264,7 +266,7 @@ signalOf :: UTCTime -> IntentRead -> Either ProviderError (Maybe PaymentSignal)
 signalOf now IntentRead {irStatus, irAmountReceived, irChargeCreated} =
   case irStatus of
     "succeeded" -> Right (Just (SigSettled (received irAmountReceived) settledAt))
-    "canceled" -> Right (Just (SigClosed (received 0)))
+    "canceled" -> Right (Just (SigClosed (received 0) PaidInPart))
     s | s `elem` openStatuses -> Right Nothing
       | otherwise -> Left (ProviderError ("stripe payment_intent: unknown status " <> s))
   where

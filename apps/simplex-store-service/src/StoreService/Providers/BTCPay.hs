@@ -81,8 +81,12 @@ xmrMethodId = "XMR-CHAIN"
 knownMethodIds :: [Text]
 knownMethodIds = [btcMethodId, xmrMethodId]
 
+closedInFullStatuses :: [Text]
+closedInFullStatuses = ["PaidLate", "PaidOver"]
+
+-- The last two are the only events a payment into a closed invoice sends.
 actedOnEventTypes :: [Text]
-actedOnEventTypes = ["InvoiceProcessing", "InvoiceSettled", "InvoiceExpired", "InvoiceInvalid"]
+actedOnEventTypes = ["InvoiceProcessing", "InvoiceSettled", "InvoiceExpired", "InvoiceInvalid", "InvoiceReceivedPayment", "InvoicePaymentSettled"]
 
 maxErrorBytes :: Int64
 maxErrorBytes = 4000
@@ -308,7 +312,7 @@ readInvoice env ref = do
       logAdditionalStatus ref giAdditionalStatus
       ms <- greenfield env what methodGet ["invoices", ref, "payment-methods"] [] Nothing
       now <- getCurrentTime
-      pure (ms >>= paymentMethodsSignal now ref giStatus)
+      pure (ms >>= paymentMethodsSignal now ref giStatus giAdditionalStatus)
   where
     what = "read invoice"
 
@@ -355,11 +359,11 @@ invoicesPass now invs = foldr add (Right ListPass {lpMoved = [], lpSkipped = []}
     add v (Right pass) = case J.fromJSON v of
       J.Error e -> Right pass {lpSkipped = (invoiceIdOf v, T.pack e) : lpSkipped pass}
       J.Success gi -> addInvoice gi pass
-    addInvoice GInvoice {giId, giStatus, giPaymentMethods} pass = case giPaymentMethods of
+    addInvoice GInvoice {giId, giStatus, giAdditionalStatus, giPaymentMethods} pass = case giPaymentMethods of
       Nothing ->
         Left . ProviderError $
           listWhat <> ": invoice " <> giId <> " carries no paymentMethods, so includePaymentMethods was not honoured"
-      Just ms -> case invoiceSignal now giId giStatus ms of
+      Just ms -> case invoiceSignal now giId giStatus giAdditionalStatus ms of
         Left (ProviderError e) -> Right pass {lpSkipped = (Just giId, e) : lpSkipped pass}
         Right Nothing -> Right pass
         Right (Just sig) -> Right pass {lpMoved = (giId, sig) : lpMoved pass}
@@ -376,22 +380,25 @@ logAdditionalStatus ref = \case
   Just s | s /= "None" -> logNote ("btcpay: invoice " <> ref <> " additionalStatus " <> s)
   _ -> pure ()
 
-paymentMethodsSignal :: UTCTime -> Text -> Text -> LB.ByteString -> Either ProviderError (Maybe PaymentSignal)
-paymentMethodsSignal now ref status body =
-  decodeGreenfield "read invoice" body >>= invoiceSignal now ref status
+paymentMethodsSignal :: UTCTime -> Text -> Text -> Maybe Text -> LB.ByteString -> Either ProviderError (Maybe PaymentSignal)
+paymentMethodsSignal now ref status additional body =
+  decodeGreenfield "read invoice" body >>= invoiceSignal now ref status additional
 
 -- Complete is the old API's status name and never matches, so it has no case here.
-invoiceSignal :: UTCTime -> Text -> Text -> [GPaymentMethod] -> Either ProviderError (Maybe PaymentSignal)
-invoiceSignal now ref status ms = do
+invoiceSignal :: UTCTime -> Text -> Text -> Maybe Text -> [GPaymentMethod] -> Either ProviderError (Maybe PaymentSignal)
+invoiceSignal now ref status additional ms = do
   m@GPaymentMethod {gpmRate, gpmPaid, gpmDue} <- chooseMethod ref ms
   rate <- priced "rate" gpmRate
   paid <- priced "paymentMethodPaid" gpmPaid
   let received = receivedOf rate paid gpmDue
+      -- BTCPay never settles an invoice it has closed, so only its additional status tells that the whole amount reached it.
+      -- Its paid amount counts unconfirmed payments too, so a due at 0 or less does not.
+      closedFunded = if maybe False (`elem` closedInFullStatuses) additional then PaidInFull else PaidInPart
   case status of
     "Settled" -> Right (Just (SigSettled received (fromMaybe now (latestSettledAt m))))
     "Processing" -> Right (Just (SigFunded received PaidInFull))
-    "Expired" -> Right (Just (SigClosed received))
-    "Invalid" -> Right (Just (SigClosed received))
+    "Expired" -> Right (Just (SigClosed received closedFunded))
+    "Invalid" -> Right (Just (SigClosed received closedFunded))
     "New" -> Right (SigFunded received PaidInPart <$ rcvCrypto received)
     other -> Left (ProviderError ("btcpay invoice " <> ref <> ": unknown status " <> other))
   where
@@ -431,8 +438,11 @@ receivedOf rate paid due =
   Received
     { rcvAmount = toMinorUnits (wnValue paid * wnValue rate),
       rcvCrypto = if wnValue paid > 0 then Just (wnText paid) else Nothing,
-      rcvDue = wnText <$> due
+      rcvDue = nonNegative <$> due
     }
+  where
+    -- an overpaid invoice's due is below 0, and nothing is owed on it
+    nonNegative WireNum {wnText, wnValue} = if wnValue < 0 then "0" else wnText
 
 -- Clamp stops a wildly wrong figure wrapping Word32 and coming out small.
 toMinorUnits :: Scientific -> CurrencyAmount

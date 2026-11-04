@@ -542,11 +542,11 @@ createInvoiceHandler env@WebEnv {weStore} req respond =
 createAtProvider :: WebEnv -> Provider -> CreateRequest -> PricedOffer -> Respond -> IO ResponseReceived
 createAtProvider WebEnv {weStore, weConfig} provider CreateRequest {crPriceId, crOfferId, crMethod, crCodeHash} priced respond =
   do
-      invId <- newInvoiceId
+      invId@(InvoiceId orderId) <- newInvoiceId
       -- truncate once, so the response, the row and the provider get the same value
       now <- truncateToSecond <$> getCurrentTime
       let expiresAt = addUTCTime (invoiceWindow weConfig crMethod) now
-          draft = OrderDraft {odAmount = poAmount priced, odCurrency = poCurrency priced}
+          draft = OrderDraft {odAmount = poAmount priced, odCurrency = poCurrency priced, odReference = orderId}
       pCreateInvoice provider crMethod draft >>= \case
         Left (ProviderError e) -> failed ("provider refused to create an invoice: " <> e) providerUnavailable
         Right ProviderInvoice {piProviderRef, piDestination} -> do
@@ -724,8 +724,13 @@ webSettings :: ListenerConfig -> Warp.Settings
 webSettings ListenerConfig {lHost, lPort} =
   Warp.setHost (fromString (T.unpack lHost))
     . Warp.setPort lPort
+    . Warp.setOnException logRequestException
     . Warp.setOnExceptionResponse (const internalError)
     $ Warp.defaultSettings
+
+-- | Warp's default bypasses the logger and writes the text and its newline apart, so another record can land between them.
+logRequestException :: Maybe Request -> E.SomeException -> IO ()
+logRequestException _ e = when (Warp.defaultShouldDisplayException e) $ logError ("store service: a web request failed: " <> tshow e)
 
 runWebListener :: WebEnv -> IO ()
 runWebListener env = do

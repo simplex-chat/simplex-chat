@@ -40,11 +40,13 @@ where
 
 import Control.Exception (Exception)
 import qualified Control.Exception as E
+import Control.Logger.Simple (logError)
 import Control.Monad (filterM)
 import Crypto.Random (getRandomBytes)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Char8 as BC8
+import Data.Maybe (catMaybes)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -502,13 +504,15 @@ data OverdueInvoice = OverdueInvoice
   deriving (Eq, Show)
 
 overdueInvoices :: DBStore -> UTCTime -> IO [OverdueInvoice]
-overdueInvoices st cutoff = withConnection st $ \db -> do
-  rows <- DB.query db qOverdueInvoices (Only (truncateToSecond cutoff))
-  either (E.throwIO . StoreDecodeError) pure (traverse toOverdue rows)
+overdueInvoices st cutoff = do
+  rows <- withConnection st $ \db -> DB.query db qOverdueInvoices (Only (truncateToSecond cutoff))
+  catMaybes <$> mapM toOverdue rows
   where
     toOverdue (i, providerTxt, oiProviderRef, oiCreatedAt) = case textDecode providerTxt of
-      Just oiProvider -> Right OverdueInvoice {oiInvoiceId = InvoiceId i, oiProvider, oiProviderRef, oiCreatedAt}
-      Nothing -> Left ("invoices.provider: " <> providerTxt)
+      Just oiProvider -> pure $ Just OverdueInvoice {oiInvoiceId = InvoiceId i, oiProvider, oiProviderRef, oiCreatedAt}
+      Nothing -> do
+        logError ("store: overdue invoice " <> i <> " names provider " <> providerTxt <> ", which this build does not know, so it is left open")
+        pure Nothing
 
 -- | Of the given invoices, expire those that are still open, have received no money, and are past their deadline.
 expireOverdue :: DBStore -> UTCTime -> [InvoiceId] -> IO [InvoiceId]
