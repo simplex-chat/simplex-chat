@@ -8619,9 +8619,9 @@ Query: UPDATE contacts SET request_shared_msg_id = ? WHERE contact_id = ?
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE contacts SET send_rcpts = NULL
+Query: UPDATE contacts SET send_rcpts = NULL WHERE user_id = ?
 Plan:
-SCAN contacts
+SEARCH contacts USING INDEX sqlite_autoindex_contacts_2 (user_id=?)
 
 Query: UPDATE contacts SET ui_themes = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?
 Plan:
@@ -8875,9 +8875,9 @@ Query: UPDATE groups SET roster_version = ?, updated_at = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE groups SET send_rcpts = NULL
+Query: UPDATE groups SET send_rcpts = NULL WHERE user_id = ?
 Plan:
-SCAN groups
+SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=?)
 
 Query: UPDATE groups SET ui_themes = ?, updated_at = ? WHERE user_id = ? AND group_id = ?
 Plan:

@@ -170,6 +170,7 @@ chatDirectTests = do
   describe "delivery receipts" $ do
     it "should send delivery receipts" testSendDeliveryReceipts
     it "should send delivery receipts depending on configuration" testConfigureDeliveryReceipts
+    it "should clear delivery receipts overrides only for the current user" testClearReceiptsOverridesCurrentUser
   describe "link content filter" $ do
     it "filter chat by link content" testLinkContentFilter
   describe "negotiate connection peer chat protocol version range" $ do
@@ -3474,6 +3475,38 @@ testConfigureDeliveryReceipts ps =
       cc1 #> ("@" <> name2 <> " " <> msg)
       cc2 <# (name1 <> "> " <> msg)
       cc1 <// 50000
+
+testClearReceiptsOverridesCurrentUser :: HasCallStack => TestParams -> IO ()
+testClearReceiptsOverridesCurrentUser ps =
+  withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
+        connectUsers alice bob
+        alice ##> "/receipts @bob off"
+        alice <## "ok"
+
+        alice ##> "/create user alisa"
+        showActiveUser alice "alisa"
+        connectUsers alice cath
+        alice ##> "/set receipts contacts off"
+        alice <## "ok"
+        alice ##> "/receipts @cath on"
+        alice <## "ok"
+
+        alice ##> "/user alice"
+        showActiveUser alice "alice (Alice)"
+        alice ##> "/set receipts contacts on clear_overrides=on"
+        alice <## "ok"
+
+        bob #> "@alice hi"
+        alice <# "bob> hi"
+        bob ⩗ "@alice hi"
+
+        cath #> "@alisa hey"
+        (alice, "alisa") $<# "cath> hey"
+        cath ⩗ "@alisa hey"
+  where
+    cfg = testCfg {showReceipts = True}
 
 testConnInvChatVRange :: HasCallStack => VersionRangeChat -> VersionRangeChat -> TestParams -> IO ()
 testConnInvChatVRange ct1VRange ct2VRange ps =
