@@ -206,6 +206,9 @@ The secondary context is used for:
 - `reorderChat(chat, toIndex)` -- reorders chat list (e.g., when a chat receives a new message)
 - `updateChatInfo(rhId, cInfo)` -- updates chat metadata while preserving connection stats
 - `hasChat(rhId, id)` / `getChat(id)` -- lookup methods
+- `startRecordingItemUpdates(record)` / `stopRecordingItemUpdates(record)` -- record the list part of each item update while a page of items loads (`recordItemUpdatesWhileLoading` in `ChatItemsLoader.kt`)
+- `recordItemUpdate(cInfo, itemId, update)` -- record an update of an item that is not in the list
+- `applyItemUpdatesWhileLoading(record)` -- re-run the recorded additions and then the other recorded updates, each in order
 
 ### ActiveChatState
 

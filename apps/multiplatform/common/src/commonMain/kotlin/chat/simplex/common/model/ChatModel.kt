@@ -577,6 +577,44 @@ object ChatModel {
       }
     }
 
+    class ItemUpdatesWhileLoading {
+      val additions = ArrayList<() -> Unit>()
+      val updates = ArrayList<() -> Unit>()
+    }
+
+    private val itemUpdateRecords = ArrayList<ItemUpdatesWhileLoading>()
+
+    fun startRecordingItemUpdates(record: ItemUpdatesWhileLoading) {
+      itemUpdateRecords.add(record)
+    }
+
+    fun stopRecordingItemUpdates(record: ItemUpdatesWhileLoading) {
+      itemUpdateRecords.remove(record)
+    }
+
+    fun applyItemUpdatesWhileLoading(record: ItemUpdatesWhileLoading) {
+      record.additions.forEach { it() }
+      record.updates.forEach { it() }
+    }
+
+    private fun recordUpdate(update: () -> Unit) {
+      itemUpdateRecords.forEach { it.updates.add(update) }
+    }
+
+    private fun updateAndRecord(update: () -> Unit) {
+      recordUpdate(update)
+      update()
+    }
+
+    fun recordItemUpdate(cInfo: ChatInfo, itemId: Long, update: (ChatItem) -> ChatItem) {
+      recordUpdate {
+        val cItem = chatItems.value.lastOrNull { it.id == itemId }
+        if (cItem != null && chatItemBelongsToScope(cInfo, cItem)) {
+          replaceItemInScope(update(cItem))
+        }
+      }
+    }
+
     suspend fun addChatItem(rhId: Long?, chatInfo: ChatInfo, cItem: ChatItem) {
       // updates membersRequireAttention
       val cInfo = if (chatInfo is ChatInfo.Direct && chatInfo.chatDeleted) {
@@ -637,16 +675,20 @@ object ChatModel {
       }
       // add to current scope
       withContext(Dispatchers.Main) {
-        if (chatItemBelongsToScope(cInfo, cItem)) {
-          // Prevent situation when chat item already in the list received from backend
-          if (chatItems.value.none { it.id == cItem.id }) {
-            if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-              addToChatItems(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
-            } else {
-              addToChatItems(cItem)
+        val addition = {
+          if (chatItemBelongsToScope(cInfo, cItem)) {
+            // Prevent situation when chat item already in the list received from backend
+            if (chatItems.value.none { it.id == cItem.id }) {
+              if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+                addToChatItems(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
+              } else {
+                addToChatItems(cItem)
+              }
             }
           }
         }
+        itemUpdateRecords.forEach { it.additions.add(addition) }
+        addition()
       }
     }
 
@@ -689,22 +731,13 @@ object ChatModel {
       }
       // update current scope
       withContext(Dispatchers.Main) {
-        if (chatItemBelongsToScope(cInfo, cItem)) {
-          if (cItem.isDeletedContent || cItem.meta.itemDeleted != null) {
-            AudioPlayer.stop(cItem)
+        recordUpdate {
+          if (chatItemBelongsToScope(cInfo, cItem)) {
+            replaceKeepingReadAndDeleted(cItem)
           }
-          val items = chatItems.value
-          val itemIndex = items.indexOfFirst { it.id == cItem.id }
-          if (itemIndex >= 0) {
-            val oldStatus = items[itemIndex].meta.itemStatus
-            val newStatus = cItem.meta.itemStatus
-            val ci = if (shouldKeepOldSndCIStatus(oldStatus, newStatus)) {
-              cItem.copy(meta = cItem.meta.copy(itemStatus = oldStatus))
-            } else {
-              cItem
-            }
-            items[itemIndex] = ci
-          } else {
+        }
+        if (chatItemBelongsToScope(cInfo, cItem)) {
+          if (!replaceItemInScope(cItem)) {
             addToChatItems(cItem)
             itemAdded = true
           }
@@ -713,11 +746,41 @@ object ChatModel {
       return  itemAdded
     }
 
-    suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null, atIndex: Int? = null) {
+    private fun replaceKeepingReadAndDeleted(cItem: ChatItem) {
+      val current = chatItems.value.firstOrNull { it.id == cItem.id } ?: return
+      if (current.meta.itemDeleted != null && cItem.meta.itemDeleted == null) return
+      val itemStatus = if (current.meta.itemStatus is CIStatus.RcvRead && cItem.meta.itemStatus is CIStatus.RcvNew) current.meta.itemStatus else cItem.meta.itemStatus
+      replaceItemInScope(cItem.copy(meta = cItem.meta.copy(itemStatus = itemStatus)))
+    }
+
+    private fun replaceItemInScope(cItem: ChatItem): Boolean {
+      if (cItem.isDeletedContent || cItem.meta.itemDeleted != null) {
+        AudioPlayer.stop(cItem)
+      }
+      val items = chatItems.value
+      val itemIndex = items.indexOfFirst { it.id == cItem.id }
+      if (itemIndex < 0) return false
+      val oldStatus = items[itemIndex].meta.itemStatus
+      val newStatus = cItem.meta.itemStatus
+      val ci = if (shouldKeepOldSndCIStatus(oldStatus, newStatus)) {
+        cItem.copy(meta = cItem.meta.copy(itemStatus = oldStatus))
+      } else {
+        cItem
+      }
+      items[itemIndex] = ci
+      return true
+    }
+
+    suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null) {
       withContext(Dispatchers.Main) {
+        recordUpdate {
+          if (chatItemBelongsToScope(cInfo, cItem)) {
+            replaceKeepingReadAndDeleted(cItem)
+          }
+        }
         if (chatItemBelongsToScope(cInfo, cItem)) {
           val items = chatItems.value
-          val itemIndex = atIndex ?: items.indexOfFirst { it.id == cItem.id }
+          val itemIndex = items.indexOfFirst { it.id == cItem.id }
           if (itemIndex >= 0) {
             items[itemIndex] = cItem
           }
@@ -743,18 +806,20 @@ object ChatModel {
         }
       }
       // remove from current scope
-      if (chatItemBelongsToScope(cInfo, cItem)) {
-        chatItems.removeAllAndNotify {
-          // We delete taking into account meta.createdAt to make sure we will not be in situation when two items with the same id will be deleted
-          // (it can happen if already deleted chat item in backend still in the list and new one came with the same (re-used) chat item id)
-          val remove = it.id == cItem.id && it.meta.createdAt == cItem.meta.createdAt
-          if (remove) { AudioPlayer.stop(it) }
-          remove
+      updateAndRecord {
+        if (chatItemBelongsToScope(cInfo, cItem)) {
+          chatItems.removeAllAndNotify {
+            // We delete taking into account meta.createdAt to make sure we will not be in situation when two items with the same id will be deleted
+            // (it can happen if already deleted chat item in backend still in the list and new one came with the same (re-used) chat item id)
+            val remove = it.id == cItem.id && it.meta.createdAt == cItem.meta.createdAt
+            if (remove) { AudioPlayer.stop(it) }
+            remove
+          }
         }
       }
     }
 
-    suspend fun removeMemberItems(rhId: Long?, removedMember: GroupMember, byMember: GroupMember, groupInfo: GroupInfo) {
+    fun removeMemberItems(rhId: Long?, removedMember: GroupMember, byMember: GroupMember, groupInfo: GroupInfo) {
       fun isRemovedMemberItem(item: ChatItem): Boolean = when {
         item.chatDir is CIDirection.GroupSnd -> removedMember.groupMemberId == groupInfo.membership.groupMemberId
         item.chatDir is CIDirection.GroupRcv -> item.chatDir.groupMember.groupMemberId == removedMember.groupMemberId
@@ -762,13 +827,9 @@ object ChatModel {
       }
       fun markedUpdatedItem(item: ChatItem): ChatItem? {
         if (!isRemovedMemberItem(item)) return null
-        val updatedItem = item.copy(
+        return item.copy(
           meta = item.meta.copy(itemDeleted = CIDeleted.Moderated(Clock.System.now(), byGroupMember = byMember))
         )
-        if (item.isActiveReport) {
-          decreaseGroupReportsCounter(rhId, groupInfo.id)
-        }
-        return updatedItem
       }
 
       // Mirrors backend groupFeatureMemberAllowed: fullDelete may be role-gated in business groups.
@@ -777,27 +838,13 @@ object ChatModel {
         byMember.memberRole >= (fullDeletePref.role ?: GroupMemberRole.Observer)
       val cInfo = ChatInfo.Group(groupInfo, groupChatScope = null) // TODO [knocking] review
       if (chatId.value == groupInfo.id) {
-        if (fullDelete) {
-          for (item in chatItems.value) {
-            if (isRemovedMemberItem(item)) {
-              if (item.isRcvNew) {
-                decreaseCounterInPrimaryContext(rhId, groupInfo.id)
-              }
-              if (item.isActiveReport) {
-                decreaseGroupReportsCounter(rhId, groupInfo.id)
-              }
+        for (item in chatItems.value) {
+          if (isRemovedMemberItem(item)) {
+            if (fullDelete && item.isRcvNew) {
+              decreaseCounterInPrimaryContext(rhId, groupInfo.id)
             }
-          }
-          chatItems.removeAllAndNotify { item ->
-            val remove = isRemovedMemberItem(item)
-            if (remove) AudioPlayer.stop(item)
-            remove
-          }
-        } else {
-          for (i in 0 until chatItems.value.size) {
-            val updatedItem = markedUpdatedItem(chatItems.value[i])
-            if (updatedItem != null) {
-              updateChatItem(cInfo, updatedItem, atIndex = i)
+            if (item.isActiveReport) {
+              decreaseGroupReportsCounter(rhId, groupInfo.id)
             }
           }
         }
@@ -813,8 +860,29 @@ object ChatModel {
               } else {
                 val updatedItem = markedUpdatedItem(preview)
                 if (updatedItem != null) {
+                  if (preview.isActiveReport) {
+                    decreaseGroupReportsCounter(rhId, groupInfo.id)
+                  }
                   chats.value[i] = chat.copy(chatItems = listOf(updatedItem))
                 }
+              }
+            }
+          }
+        }
+      }
+      updateAndRecord {
+        if (chatId.value == groupInfo.id) {
+          if (fullDelete) {
+            chatItems.removeAllAndNotify { item ->
+              val remove = isRemovedMemberItem(item)
+              if (remove) AudioPlayer.stop(item)
+              remove
+            }
+          } else {
+            for (i in 0 until chatItems.value.size) {
+              val updatedItem = markedUpdatedItem(chatItems.value[i])
+              if (updatedItem != null && chatItemBelongsToScope(cInfo, updatedItem)) {
+                chatItems.value[i] = updatedItem
               }
             }
           }
@@ -832,8 +900,10 @@ object ChatModel {
         markChatTagRead(chatBefore)
       }
       // clear current chat
-      if (chatId.value == cInfo.id) {
-        chatItems.clearAndNotify()
+      updateAndRecord {
+        if (chatId.value == cInfo.id) {
+          chatItems.clearAndNotify()
+        }
       }
     }
 
@@ -889,6 +959,9 @@ object ChatModel {
     }
 
     fun markChatItemsRead(remoteHostId: Long?, id: ChatId, itemIds: List<Long>? = null) {
+      if (itemIds != null) {
+        recordUpdate { markItemsReadInCurrentChat(id, itemIds) }
+      }
       val (markedRead, mentionsMarkedRead) = markItemsReadInCurrentChat(id, itemIds)
       // update preview
       val chatIdx = getChatIndex(remoteHostId, id)
@@ -988,6 +1061,25 @@ object ChatModel {
         updateGroup(rhId, groupInfo)
         return false
       }
+      updateAndRecord {
+        if (chatId.value == groupInfo.id || creatingChannelId.value == groupInfo.id) {
+          val updated = chatItems.value.map {
+            // Take into account only specific changes, not all. Other member updates are not important and can be skipped
+            if (it.chatDir is CIDirection.GroupRcv && it.chatDir.groupMember.groupMemberId == member.groupMemberId &&
+              (it.chatDir.groupMember.image != member.image ||
+                  it.chatDir.groupMember.chatViewName != member.chatViewName ||
+                  it.chatDir.groupMember.blocked != member.blocked ||
+                  it.chatDir.groupMember.memberRole != member.memberRole)
+              )
+              it.copy(chatDir = CIDirection.GroupRcv(member))
+            else
+              it
+          }
+          if (updated != chatItems.value) {
+            chatItems.replaceAll(updated)
+          }
+        }
+      }
       // update current chat or channel being created
       return if (chatId.value == groupInfo.id || creatingChannelId.value == groupInfo.id) {
         if (groupMembers.value.isNotEmpty() && groupMembers.value.firstOrNull()?.groupId != groupInfo.groupId) {
@@ -996,21 +1088,6 @@ object ChatModel {
           groupMembersIndexes.value = emptyMap()
         }
         val memberIndex = groupMembersIndexes.value[member.groupMemberId]
-        val updated = chatItems.value.map {
-          // Take into account only specific changes, not all. Other member updates are not important and can be skipped
-          if (it.chatDir is CIDirection.GroupRcv && it.chatDir.groupMember.groupMemberId == member.groupMemberId &&
-            (it.chatDir.groupMember.image != member.image ||
-                it.chatDir.groupMember.chatViewName != member.chatViewName ||
-                it.chatDir.groupMember.blocked != member.blocked ||
-                it.chatDir.groupMember.memberRole != member.memberRole)
-            )
-            it.copy(chatDir = CIDirection.GroupRcv(member))
-          else
-            it
-        }
-        if (updated != chatItems.value) {
-          chatItems.replaceAll(updated)
-        }
         val gMembers = groupMembers.value.toMutableList()
         if (memberIndex != null) {
           gMembers[memberIndex] = member
