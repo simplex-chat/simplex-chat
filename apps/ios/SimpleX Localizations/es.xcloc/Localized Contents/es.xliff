@@ -5797,11 +5797,6 @@ This is your link for group %@!</source>
         <target>Más información en Wefunder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Learn more on Wefunder." xml:space="preserve">
-        <source>Learn more on Wefunder.</source>
-        <target>Más información en Wefunder.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Leave" xml:space="preserve">
         <source>Leave</source>
         <target>Salir</target>

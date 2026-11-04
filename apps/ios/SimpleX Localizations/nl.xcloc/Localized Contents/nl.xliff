@@ -4934,11 +4934,6 @@ Dit is jouw link voor groep %@!</target>
         <target>Kom meer te weten op Wefunder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Learn more on Wefunder." xml:space="preserve">
-        <source>Learn more on Wefunder.</source>
-        <target>Kom meer te weten op Wefunder.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Leave" xml:space="preserve">
         <source>Leave</source>
         <target>Verlaten</target>

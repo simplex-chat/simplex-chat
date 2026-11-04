@@ -5922,11 +5922,6 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Tudjon meg többet a Wefunder oldalon</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Learn more on Wefunder." xml:space="preserve">
-        <source>Learn more on Wefunder.</source>
-        <target>Tudjon meg többet a Wefunder oldalon.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Learn more." xml:space="preserve">
         <source>Learn more.</source>
         <target>Tudjon meg többet.</target>

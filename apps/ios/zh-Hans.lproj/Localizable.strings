@@ -157,8 +157,17 @@
 /* copied message info */
 "%@:" = "%@:";
 
+/* No comment provided by engineer. */
+"%@/month" = "%@/月";
+
+/* No comment provided by engineer. */
+"%@/year" = "%@/年";
+
 /* badge alert */
 "%1$@ supported SimpleX Chat. The badge expired on %2$@." = "%1$@ 曾是 SimpleX Chat 支持者。徽章已于 %2$@ 过期。";
+
+/* time interval */
+"%d day" = "%d 天";
 
 /* time interval */
 "%d days" = "%d 天";
@@ -183,6 +192,9 @@
 
 /* time interval */
 "%d min" = "%d 分钟";
+
+/* time interval */
+"%d month" = "%d 个月";
 
 /* time interval */
 "%d months" = "%d 月";
@@ -375,6 +387,12 @@ time interval */
 /* No comment provided by engineer. */
 "30 seconds" = "30秒";
 
+/* badge link, profile has a badge */
+"A badge can be added to another profile, or here once this badge ends." = "徽章可以添加到另一个个人资料，或在此徽章结束后添加到这里。";
+
+/* No comment provided by engineer. */
+"A badge is an anonymous credential stored in your profile on your device. This credential is never sent to anyone." = "徽章是存储在你设备上个人资料中的匿名凭证。此凭证永远不会发送给任何人。";
+
 /* No comment provided by engineer. */
 "A few more things" = "一些杂项";
 
@@ -387,11 +405,17 @@ time interval */
 /* No comment provided by engineer. */
 "A new random profile will be shared." = "创建一个随机的共享文件。";
 
+/* alert message */
+"A purchase is being added to this profile. Try again later." = "一项购买正在被添加到此个人资料。请稍后重试。";
+
 /* No comment provided by engineer. */
 "A separate TCP connection will be used **for each chat profile you have in the app**." = "一个单独的 TCP 连接将被用于**您在应用程序中的每个聊天资料**。";
 
 /* No comment provided by engineer. */
 "A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "每个联系人和群成员将使用一个独立的 TCP 连接。\n请注意：如果您有许多连接，将会消耗更多的电量和流量，并且某些连接可能会失败。";
+
+/* alert message */
+"A store purchase is being added to this profile." = "一项商店购买正在被添加到此个人资料。";
 
 /* No comment provided by engineer. */
 "Abort" = "中止";
@@ -488,6 +512,12 @@ swipe action */
 "Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts." = "将地址添加到你的个人资料，让你的 SimpleX 联系人可以与其他人分享。个人资料更新将发送给你的 SimpleX 联系人。";
 
 /* No comment provided by engineer. */
+"Add badge" = "添加徽章";
+
+/* No comment provided by engineer. */
+"Add badge to your profile?" = "将徽章添加到你的个人资料？";
+
+/* No comment provided by engineer. */
 "Add friends" = "添加好友";
 
 /* No comment provided by engineer. */
@@ -495,6 +525,9 @@ swipe action */
 
 /* placeholder for sending contact request */
 "Add message" = "添加信息";
+
+/* No comment provided by engineer. */
+"Add moderators and sign every message." = "添加协管并签署每条消息。";
 
 /* No comment provided by engineer. */
 "Add profile" = "添加个人资料";
@@ -760,8 +793,14 @@ swipe action */
 /* No comment provided by engineer. */
 "An empty chat profile with the provided name is created, and the app opens as usual." = "已创建一个包含所提供名字的空白聊天资料，应用程序照常打开。";
 
+/* ledger entry field */
+"Anchor" = "锚定时间";
+
 /* No comment provided by engineer. */
 "and %lld other events" = "和 %lld 其他事件";
+
+/* No comment provided by engineer. */
+"Annual" = "年度";
 
 /* report reason */
 "Another reason" = "另一个理由";
@@ -807,6 +846,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Appearance" = "外观";
+
+/* No comment provided by engineer. */
+"Apple did not sign this purchase, so it cannot be verified." = "Apple 未签署此购买，因此无法验证。";
 
 /* No comment provided by engineer. */
 "Apply" = "应用";
@@ -916,8 +958,32 @@ swipe action */
 /* No comment provided by engineer. */
 "Bad message ID" = "错误消息 ID";
 
+/* alert title */
+"Badge added" = "徽章已添加";
+
 /* badge alert title */
 "Badge cannot be verified" = "无法验证徽章";
+
+/* No comment provided by engineer. */
+"Badge ledger" = "徽章账本";
+
+/* alert title */
+"Badge payment problem" = "徽章付款问题";
+
+/* alert title */
+"Badge renewal failed" = "徽章续订失败";
+
+/* ledger entry field */
+"Badge type" = "徽章类型";
+
+/* alert message */
+"Badges cannot be bought in the app yet." = "暂时还无法在应用内购买徽章。";
+
+/* ledger entry field */
+"Balance" = "余额";
+
+/* ledger entry field */
+"Balance start" = "余额起始时间";
 
 /* No comment provided by engineer. */
 "Be free\nin your network" = "在你的网络中\n保持自由";
@@ -927,6 +993,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Because we destroyed the power to know who you are. So that your power can never be taken." = "因为我们摧毁了知道你是谁的权力，因而您的权利永远不会被夺走。";
+
+/* No comment provided by engineer. */
+"Benefits" = "福利";
 
 /* No comment provided by engineer. */
 "Better calls" = "更佳的通话";
@@ -1052,6 +1121,12 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Businesses" = "企业";
 
+/* alert message */
+"Buy badges in the App Store version of the app." = "请在 App Store 版本的应用中购买徽章。";
+
+/* No comment provided by engineer. */
+"Buy in browser" = "在浏览器中购买";
+
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "通过聊天资料（默认）或者[通过连接](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)。";
 
@@ -1125,6 +1200,12 @@ new chat action */
 
 /* alert title */
 "Cannot receive file" = "无法接收文件";
+
+/* alert title */
+"Cannot redeem code" = "无法兑换代码";
+
+/* No comment provided by engineer. */
+"Cannot verify this purchase" = "无法验证此购买";
 
 /* snd error text */
 "Capacity exceeded - recipient did not receive previously sent messages." = "超出容量-收件人未收到以前发送的邮件。";
@@ -1221,6 +1302,9 @@ alert subtitle */
 /* alert message */
 "Channel profile was changed. If you save it, the updated profile will be sent to channel subscribers." = "频道资料已更改。如果保存，更新后的资料将发送给频道订阅者。";
 
+/* No comment provided by engineer. */
+"Channel SimpleX name" = "频道的 SimpleX 名称";
+
 /* alert title */
 "Channel temporarily unavailable" = "频道暂时不可用";
 
@@ -1238,6 +1322,9 @@ alert subtitle */
 
 /* No comment provided by engineer. */
 "Channels" = "频道";
+
+/* ledger entry field */
+"Charge ID" = "扣款 ID";
 
 /* No comment provided by engineer. */
 "Chat" = "聊天";
@@ -1355,6 +1442,12 @@ chat toolbar */
 "Check server address and try again." = "检查服务器地址并再试一次。";
 
 /* No comment provided by engineer. */
+"Check your order" = "检查你的订单";
+
+/* No comment provided by engineer. */
+"Checking your purchases" = "正在检查你的购买";
+
+/* No comment provided by engineer. */
 "Chinese and Spanish interface" = "中文和西班牙文界面";
 
 /* No comment provided by engineer. */
@@ -1365,6 +1458,9 @@ chat toolbar */
 
 /* No comment provided by engineer. */
 "Choose from library" = "从库中选择";
+
+/* No comment provided by engineer. */
+"Choose your badge" = "选择你的徽章";
 
 /* No comment provided by engineer. */
 "Chunks deleted" = "已删除的块";
@@ -1686,7 +1782,16 @@ server test step */
 "contact should accept…" = "联系人应当接受…";
 
 /* No comment provided by engineer. */
+"Contact SimpleX team" = "联系 SimpleX 团队";
+
+/* No comment provided by engineer. */
 "Contact will be deleted - this cannot be undone!" = "联系人将被删除-这是无法撤消的！";
+
+/* file alert */
+"Contact's badge expired." = "联系人徽章已过期。";
+
+/* file alert */
+"Contact's badge verification failed." = "联系人徽章验证失败。";
 
 /* No comment provided by engineer. */
 "Contacts" = "联系人";
@@ -1714,6 +1819,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Copy error" = "复制错误";
+
+/* No comment provided by engineer. */
+"Copy purchase key" = "复制购买密钥";
 
 /* No comment provided by engineer. */
 "Core version: v%@" = "核心版本: v%@";
@@ -1795,6 +1903,12 @@ server test step */
 
 /* No comment provided by engineer. */
 "creator" = "创建者";
+
+/* No comment provided by engineer. */
+"Credential" = "凭证";
+
+/* No comment provided by engineer. */
+"Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)" = "众筹投资者可在销售开始前保留名称：[simplex.domains](https://simplex.domains/)";
 
 /* No comment provided by engineer. */
 "Current conditions text couldn't be loaded, you can review conditions via this link:" = "无法加载当前条款文本，你可以通过此链接审阅条款：";
@@ -1885,6 +1999,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Database will be migrated when the app restarts" = "应用程序重新启动时将迁移数据库";
+
+/* ledger entry field */
+"Date" = "日期";
 
 /* time unit */
 "days" = "天";
@@ -2222,6 +2339,9 @@ alert button */
 /* No comment provided by engineer. */
 "Discover via local network" = "通过本地网络发现";
 
+/* alert button */
+"Dismiss" = "关闭";
+
 /* No comment provided by engineer. */
 "Do it later" = "稍后再做";
 
@@ -2353,6 +2473,9 @@ chat item action */
 "Enable for all" = "全部启用";
 
 /* No comment provided by engineer. */
+"Enable in Appearance settings." = "在外观设置中启用。";
+
+/* No comment provided by engineer. */
 "Enable in direct chats (BETA)!" = "在私聊中开启（公测）！";
 
 /* No comment provided by engineer. */
@@ -2466,8 +2589,20 @@ chat item action */
 /* No comment provided by engineer. */
 "ended" = "已结束";
 
+/* No comment provided by engineer. */
+"Ended" = "已结束";
+
 /* call status */
 "ended call %@" = "结束通话 %@";
+
+/* No comment provided by engineer. */
+"Ends" = "结束";
+
+/* No comment provided by engineer. */
+"Ends %@" = "结束于 %@";
+
+/* No comment provided by engineer. */
+"Ends on %@." = "结束于 %@。";
 
 /* No comment provided by engineer. */
 "Enter channel name…" = "输入频道名称…";
@@ -2513,6 +2648,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Enter your name…" = "请输入您的姓名…";
+
+/* ledger entry field */
+"Entry ID" = "条目 ID";
 
 /* No comment provided by engineer. */
 "error" = "错误";
@@ -2700,6 +2838,9 @@ chat item action */
 /* No comment provided by engineer. */
 "Error saving ICE servers" = "保存 ICE 服务器错误";
 
+/* alert title */
+"Error saving name" = "保存名称出错";
+
 /* No comment provided by engineer. */
 "Error saving passcode" = "保存密码错误";
 
@@ -2819,6 +2960,9 @@ server test error */
 "Expired" = "已过期";
 
 /* No comment provided by engineer. */
+"Expires" = "到期";
+
+/* No comment provided by engineer. */
 "Export database" = "导出数据库";
 
 /* No comment provided by engineer. */
@@ -2915,6 +3059,18 @@ server test error */
 "Files and media prohibited!" = "禁止文件和媒体！";
 
 /* No comment provided by engineer. */
+"Files up to 2 GB" = "文件最大 2 GB";
+
+/* No comment provided by engineer. */
+"Files up to 2 GB, stored for 7 days." = "文件最大 2 GB，保留 7 天。";
+
+/* No comment provided by engineer. */
+"Files up to 5 GB" = "文件最大 5 GB";
+
+/* No comment provided by engineer. */
+"Files up to 5 GB, stored for 21 days." = "文件最大 5 GB，保留 21 天。";
+
+/* No comment provided by engineer. */
 "Filter" = "过滤器";
 
 /* No comment provided by engineer. */
@@ -2962,6 +3118,9 @@ server test error */
 
 /* No comment provided by engineer. */
 "Fix not supported by group member" = "修复群组成员不支持的问题";
+
+/* No comment provided by engineer. */
+"Flat layout and markdown" = "扁平布局和 Markdown";
 
 /* No comment provided by engineer. */
 "For all moderators" = "所有 moderators";
@@ -3039,6 +3198,9 @@ servers warning */
 /* No comment provided by engineer. */
 "French interface" = "法语界面";
 
+/* ledger entry field */
+"From purchase key" = "来源购买密钥";
+
 /* No comment provided by engineer. */
 "Full link" = "完整链接";
 
@@ -3054,11 +3216,20 @@ servers warning */
 /* No comment provided by engineer. */
 "Further reduced battery usage" = "进一步减少电池使用";
 
+/* No comment provided by engineer. */
+"Get a badge to send larger files (2-5GB) that stay available longer (7-21 days), and to show it on your profile." = "获取徽章即可发送更大的文件（2-5 GB），文件保留时间更长（7-21 天），并可在个人资料上展示徽章。";
+
+/* No comment provided by engineer. */
+"Get badge + better files" = "获得徽章+更好的文件功能";
+
 /* relay test step */
 "Get link" = "获取链接";
 
 /* No comment provided by engineer. */
 "Get notified when mentioned." = "被提及时收到通知。";
+
+/* No comment provided by engineer. */
+"Get SimpleX name (BETA)" = "获得 SimpleX 名称 (测试)";
 
 /* No comment provided by engineer. */
 "Get started" = "开始使用";
@@ -3193,6 +3364,9 @@ servers warning */
 "hours" = "小时";
 
 /* No comment provided by engineer. */
+"How badges protect your privacy" = "徽章如何保护你的隐私";
+
+/* No comment provided by engineer. */
 "How it affects privacy" = "它如何影响隐私";
 
 /* No comment provided by engineer. */
@@ -3202,10 +3376,16 @@ servers warning */
 "How it works" = "工作原理";
 
 /* No comment provided by engineer. */
+"How long?" = "多长时间？";
+
+/* No comment provided by engineer. */
 "How SimpleX works" = "SimpleX的工作原理";
 
 /* No comment provided by engineer. */
 "How to" = "如何";
+
+/* No comment provided by engineer. */
+"How to register a test name" = "如何注册测试名";
 
 /* No comment provided by engineer. */
 "How to use it" = "如何使用它";
@@ -3424,6 +3604,15 @@ servers warning */
 "Invalid status" = "无效状态";
 
 /* No comment provided by engineer. */
+"Invest $100+ and get a free badge." = "投资 $100+ 即可免费获得徽章。";
+
+/* No comment provided by engineer. */
+"Invest $1000+ and get a free legend badge." = "投资 $1000+ 即可免费获得传奇徽章。";
+
+/* badge type */
+"Investor" = "投资人";
+
+/* No comment provided by engineer. */
 "Invitation expired!" = "邀请已过期！";
 
 /* group name */
@@ -3462,6 +3651,9 @@ servers warning */
 /* rcv group event chat item */
 "invited via your group link" = "通过您的群组链接邀请";
 
+/* ledger entry field */
+"Invoice ID" = "发票 ID";
+
 /* No comment provided by engineer. */
 "iOS Keychain is used to securely store passphrase - it allows receiving push notifications." = "iOS钥匙串用于安全地存储密码——它允许接收推送通知。";
 
@@ -3479,6 +3671,9 @@ servers warning */
 
 /* No comment provided by engineer. */
 "Irreversible message deletion is prohibited." = "此群组中禁止不可撤回消息移除。";
+
+/* No comment provided by engineer. */
+"Issuing your badge" = "正在颁发你的徽章";
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "它允许在一个聊天资料中有多个匿名连接，而它们之间没有任何共享数据。";
@@ -3503,6 +3698,9 @@ servers warning */
 
 /* No comment provided by engineer. */
 "italic" = "斜体";
+
+/* badge link, profile has a badge */
+"Its code is on the page you bought it on, under Show code." = "其代码位于你购买它的页面上的“显示代码”下。";
 
 /* No comment provided by engineer. */
 "Japanese interface" = "日语界面";
@@ -3561,8 +3759,20 @@ servers warning */
 /* file alert title */
 "Large file!" = "大文件！";
 
+/* No comment provided by engineer. */
+"Larger files available for longer." = "更大的文件，保留更久。";
+
+/* No comment provided by engineer. */
+"Larger files that stay available longer." = "更大的文件，保留更久。";
+
+/* No comment provided by engineer. */
+"Last attempt" = "上次尝试";
+
 /* badge alert button */
 "Learn more" = "了解更多";
+
+/* No comment provided by engineer. */
+"Learn more on Wefunder" = "在 Wefunder 上了解更多";
 
 /* swipe action */
 "Leave" = "离开";
@@ -3587,6 +3797,15 @@ servers warning */
 
 /* rcv group event chat item */
 "left" = "已离开";
+
+/* badge type */
+"Legend" = "传奇";
+
+/* badge required to send a large file */
+"legend badge" = "传奇徽章";
+
+/* No comment provided by engineer. */
+"Legend: 5 GB files available for 21 days." = "传奇：5 GB 文件，可保留 21 天。";
 
 /* No comment provided by engineer. */
 "Less traffic on mobile networks." = "消耗更少的移动网络数据。";
@@ -3649,6 +3868,9 @@ servers warning */
 "Loading profile…" = "正加载个人资料…";
 
 /* No comment provided by engineer. */
+"Loading…" = "加载中…";
+
+/* No comment provided by engineer. */
 "Local name" = "本地名称";
 
 /* No comment provided by engineer. */
@@ -3670,6 +3892,9 @@ servers warning */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "确保 WebRTC ICE 服务器地址格式正确、每行分开且不重复。";
 
 /* No comment provided by engineer. */
+"Manage subscription" = "管理订阅";
+
+/* No comment provided by engineer. */
 "Mark deleted for everyone" = "标记为所有人已删除";
 
 /* No comment provided by engineer. */
@@ -3686,6 +3911,9 @@ servers warning */
 
 /* No comment provided by engineer. */
 "Max 30 seconds, received instantly." = "最长30秒，立即接收。";
+
+/* file alert */
+"Maximum supported file size is %1$@, with a %2$@." = "拥有%2$@时，支持的最大文件大小为 %1$@。";
 
 /* No comment provided by engineer. */
 "Media & file servers" = "Media & file servers";
@@ -3930,8 +4158,14 @@ servers warning */
 /* member role */
 "moderator" = "协管";
 
+/* No comment provided by engineer. */
+"Monthly" = "月度";
+
 /* time unit */
 "months" = "月";
+
+/* No comment provided by engineer. */
+"Months left" = "剩余月数";
 
 /* swipe action */
 "More" = "更多";
@@ -3962,6 +4196,9 @@ servers warning */
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "不活动时静音！";
+
+/* badges preview placeholder */
+"My nickname" = "我的昵称";
 
 /* swipe action */
 "Name" = "名称";
@@ -4074,6 +4311,9 @@ servers warning */
 /* No comment provided by engineer. */
 "New SOCKS credentials will be used for each server." = "每个服务器都会使用新的 SOCKS 凭据。";
 
+/* No comment provided by engineer. */
+"Next check" = "下次检查";
+
 /* pref value */
 "no" = "否";
 
@@ -4088,6 +4328,9 @@ servers warning */
 
 /* Authentication unavailable */
 "No app password" = "没有应用程序密码";
+
+/* alert message */
+"No App Store purchase waiting to be added was found." = "未找到等待添加的 App Store 购买。";
 
 /* No comment provided by engineer. */
 "No available relays" = "没有可用的中继";
@@ -4129,6 +4372,9 @@ servers warning */
 "no e2e encryption" = "无端到端加密";
 
 /* No comment provided by engineer. */
+"No entries" = "无条目";
+
+/* No comment provided by engineer. */
 "No filtered chats" = "无过滤聊天";
 
 /* No comment provided by engineer. */
@@ -4139,6 +4385,9 @@ servers warning */
 
 /* No comment provided by engineer. */
 "No info, try to reload" = "无信息，尝试重新加载";
+
+/* file alert */
+"No key to verify contact's badge." = "没有密钥来验证联系人的徽章。";
 
 /* servers error */
 "No media & file servers." = "无媒体和文件服务器。";
@@ -4173,6 +4422,9 @@ servers warning */
 /* No comment provided by engineer. */
 "No relays" = "没有中继";
 
+/* No comment provided by engineer. */
+"No renewal: the badge ends when the prepaid months run out." = "不会续订：预付费月份用完后徽章到期。";
+
 /* servers error */
 "No servers for private message routing." = "无私密消息路由服务器。";
 
@@ -4204,6 +4456,9 @@ servers warning */
 "No valid link" = "无有效链接";
 
 /* No comment provided by engineer. */
+"Nobody can link two different proofs to each other or to the purchase." = "任何人都无法将两个不同的证明相互关联，也无法将其与购买关联。";
+
+/* No comment provided by engineer. */
 "Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." = "没有人追踪你的谈话内容。没有人绘制你去过的地方的地图。隐私从来都不是一项功能--而是一种生活方式。";
 
 /* No comment provided by engineer. */
@@ -4219,6 +4474,9 @@ servers warning */
 "Not all relays connected" = "并非所有中继都已连接";
 
 /* No comment provided by engineer. */
+"Not available" = "不可用";
+
+/* No comment provided by engineer. */
 "Not compatible!" = "不兼容！";
 
 /* No comment provided by engineer. */
@@ -4228,10 +4486,16 @@ servers warning */
 "Notes" = "附注";
 
 /* No comment provided by engineer. */
+"Nothing has been charged." = "未产生任何扣款。";
+
+/* No comment provided by engineer. */
 "Nothing selected" = "未选中任何内容";
 
 /* alert title */
 "Nothing to forward!" = "无可转发！";
+
+/* alert title */
+"Nothing to restore" = "没有可恢复的内容";
 
 /* No comment provided by engineer. */
 "Notifications" = "通知";
@@ -4473,6 +4737,12 @@ alert button */
 /* alert message */
 "Other file errors:\n%@" = "其他文件错误:\n%@";
 
+/* No comment provided by engineer. */
+"Own a part of SimpleX Chat" = "拥有 SimpleX Chat 的一部分";
+
+/* No comment provided by engineer. */
+"Own a part of SimpleX Chat! 🚀" = "拥有 SimpleX Chat 的一部分！🚀";
+
 /* member role */
 "owner" = "群主";
 
@@ -4510,6 +4780,9 @@ alert button */
 "Password to show" = "显示密码";
 
 /* No comment provided by engineer. */
+"Paste" = "粘贴";
+
+/* No comment provided by engineer. */
 "Paste desktop address" = "粘贴桌面地址";
 
 /* No comment provided by engineer. */
@@ -4522,7 +4795,28 @@ alert button */
 "Paste link to connect!" = "粘贴链接以连接！";
 
 /* No comment provided by engineer. */
+"Paste the code you received." = "粘贴你收到的代码。";
+
+/* No comment provided by engineer. */
 "Paste the link you received" = "粘贴您收到的链接";
+
+/* ledger entry field */
+"Paused since" = "暂停自";
+
+/* No comment provided by engineer. */
+"Pay %@" = "支付 %@";
+
+/* No comment provided by engineer. */
+"Pay %@/month" = "支付 %@/月";
+
+/* No comment provided by engineer. */
+"Pay %@/year" = "支付 %@/年";
+
+/* No comment provided by engineer. */
+"Payment failed. Update your payment method in the App Store." = "付款失败。请在 App Store 中更新你的付款方式。";
+
+/* No comment provided by engineer. */
+"Payment problem" = "付款问题";
 
 /* No comment provided by engineer. */
 "peer-to-peer" = "点对点";
@@ -4681,6 +4975,9 @@ alert button */
 "Private routing timeout" = "私密路由超时";
 
 /* No comment provided by engineer. */
+"Profile already has a badge" = "个人资料已有徽章";
+
+/* No comment provided by engineer. */
 "Profile and server connections" = "资料和服务器连接";
 
 /* No comment provided by engineer. */
@@ -4768,6 +5065,15 @@ alert title */
 /* No comment provided by engineer. */
 "Public channels - speak freely 🚀" = "公开频道 - 自由发言 🚀";
 
+/* alert title */
+"Purchase error" = "购买错误";
+
+/* No comment provided by engineer. */
+"Purchase ID" = "购买 ID";
+
+/* alert message */
+"Purchases are off on this device." = "此设备已关闭购买功能。";
+
 /* No comment provided by engineer. */
 "Push notifications" = "推送通知";
 
@@ -4794,6 +5100,9 @@ alert title */
 
 /* profile description teaser */
 "Read more" = "阅读更多";
+
+/* No comment provided by engineer. */
+"Read more in our blog." = "在我们的博客中了解更多。";
 
 /* No comment provided by engineer. */
 "Read more in our GitHub repository." = "在我们的 GitHub 仓库 中阅读更多信息。";
@@ -4877,6 +5186,15 @@ alert title */
 "Record updated at: %@" = "记录更新于：%@";
 
 /* No comment provided by engineer. */
+"Redeem" = "兑换";
+
+/* No comment provided by engineer. */
+"Redeem badge code" = "兑换徽章代码";
+
+/* No comment provided by engineer. */
+"Redeem code" = "兑换代码";
+
+/* No comment provided by engineer. */
 "Reduced battery usage" = "减少电池使用量";
 
 /* No comment provided by engineer. */
@@ -4944,6 +5262,9 @@ swipe action */
 /* No comment provided by engineer. */
 "Reliability: many relays per channel." = "可靠性：每个频道使用多个中继。";
 
+/* alert button */
+"Remind me later" = "稍后提醒";
+
 /* alert action */
 "Remove" = "移除";
 
@@ -4964,6 +5285,9 @@ swipe action */
 
 /* alert title */
 "Remove member?" = "删除成员吗？";
+
+/* No comment provided by engineer. */
+"Remove name" = "删除名称";
 
 /* No comment provided by engineer. */
 "Remove passphrase from keychain?" = "从钥匙串中删除密码？";
@@ -5012,6 +5336,36 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Renegotiate encryption?" = "重新协商加密？";
+
+/* No comment provided by engineer. */
+"Renewing" = "正在续订";
+
+/* No comment provided by engineer. */
+"Renews %@" = "%@ 续订";
+
+/* No comment provided by engineer. */
+"Renews %@ · %@" = "%@ 续订 · %@";
+
+/* No comment provided by engineer. */
+"Renews at %@ a month until you cancel it in the App Store." = "每月 %@ 自动续订，直到你在 App Store 中取消。";
+
+/* No comment provided by engineer. */
+"Renews at %@ a year until you cancel it in the App Store." = "每年 %@ 自动续订，直到你在 App Store 中取消。";
+
+/* No comment provided by engineer. */
+"Renews automatically until you cancel it in the App Store." = "自动续订，直到你在 App Store 中取消。";
+
+/* No comment provided by engineer. */
+"Renews on %@ for %@." = "将于 %@ 以 %@ 续订。";
+
+/* No comment provided by engineer. */
+"Renews on %@." = "将于 %@ 续订。";
+
+/* No comment provided by engineer. */
+"Renews on %@. Cancel anytime." = "将于 %@ 续订。可随时取消。";
+
+/* No comment provided by engineer. */
+"Renews once the App Store charges your subscription." = "App Store 扣款成功后续订。";
 
 /* No comment provided by engineer. */
 "Repeat download" = "重复下载";
@@ -5101,6 +5455,9 @@ swipe action */
 "Reset to user theme" = "重置为用户主题";
 
 /* No comment provided by engineer. */
+"Resolver error: %@" = "解析错误：%@";
+
+/* No comment provided by engineer. */
 "Restart the app to create a new chat profile" = "重新启动应用程序以创建新的聊天资料";
 
 /* No comment provided by engineer. */
@@ -5117,6 +5474,12 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Restore database error" = "恢复数据库错误";
+
+/* alert title */
+"Restore failed" = "恢复失败";
+
+/* No comment provided by engineer. */
+"Restore purchases" = "恢复购买";
 
 /* alert action */
 "Retry" = "重试";
@@ -5176,7 +5539,13 @@ swipe action */
 "Safely receive files" = "安全接收文件";
 
 /* No comment provided by engineer. */
+"Safer channels" = "更安全的频道";
+
+/* No comment provided by engineer. */
 "Safer groups" = "更安全的群组";
+
+/* No comment provided by engineer. */
+"Sale starts on December 12." = "12 月 12 日开始销售。";
 
 /* alert action
 alert button
@@ -5245,6 +5614,9 @@ chat item action */
 
 /* alert title */
 "Save servers?" = "保存服务器？";
+
+/* alert title */
+"Save SimpleX name?" = "保存 SimpleX 名称？";
 
 /* alert title */
 "Save webpage settings?" = "要保存网页设置吗？";
@@ -5507,6 +5879,9 @@ chat item action */
 /* No comment provided by engineer. */
 "Server" = "服务器";
 
+/* No comment provided by engineer. */
+"Server %@ does not support name resolution. Configure servers, or use a connection link." = "%@ 服务器不支持名称解析。配置服务器或使用连接链接。";
+
 /* alert message */
 "Server added to operator %@." = "服务器已添加到运营方 %@。";
 
@@ -5722,6 +6097,9 @@ chat item action */
 "Show:" = "显示：";
 
 /* No comment provided by engineer. */
+"shown on your profile" = "在个人资料页上展示";
+
+/* No comment provided by engineer. */
 "SimpleX" = "SimpleX";
 
 /* No comment provided by engineer. */
@@ -5787,17 +6165,26 @@ chat item action */
 /* alert title */
 "SimpleX name not verified" = "SimpleX 名称未验证";
 
+/* No comment provided by engineer. */
+"SimpleX name sale starts in" = "SimpleX 名称销售倒计时";
+
 /* simplex link type */
 "SimpleX one-time invitation" = "SimpleX 一次性邀请";
 
 /* No comment provided by engineer. */
 "SimpleX protocols reviewed by Trail of Bits." = "SimpleX 协议由 Trail of Bits 审阅。";
 
+/* No comment provided by engineer. */
+"SimpleX public names" = "SimpleX 公开名称";
+
 /* simplex link type */
 "SimpleX relay address" = "SimpleX 中继地址";
 
 /* No comment provided by engineer. */
 "Simplified incognito mode" = "简化的隐身模式";
+
+/* No comment provided by engineer. */
+"Since" = "开始于";
 
 /* No comment provided by engineer. */
 "Size" = "大小";
@@ -5909,6 +6296,12 @@ report reason */
 "Storage" = "存储";
 
 /* No comment provided by engineer. */
+"Stored for 7 days" = "保留 7 天";
+
+/* No comment provided by engineer. */
+"Stored for 21 days" = "保留 21 天";
+
+/* No comment provided by engineer. */
 "strike" = "删去";
 
 /* blur media */
@@ -5919,6 +6312,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "Subscribed" = "已订阅";
+
+/* alert message */
+"Subscribed on another profile." = "已在另一个个人资料上订阅。";
 
 /* No comment provided by engineer. */
 "Subscriber" = "订阅者";
@@ -5963,13 +6359,44 @@ report reason */
 "Subscribers use relay link to connect to the channel.\nRelay address was used to set up this relay for the channel." = "订阅者使用中继链接连接到频道。\n中继地址曾用于为此频道设置此中继。";
 
 /* No comment provided by engineer. */
+"Subscription" = "订阅";
+
+/* alert title */
+"Subscription cancelled" = "订阅已取消";
+
+/* No comment provided by engineer. */
+"Subscription ended. The badge will be removed." = "订阅已结束。徽章将被移除。";
+
+/* No comment provided by engineer. */
 "Subscription errors" = "订阅错误";
 
 /* No comment provided by engineer. */
 "Subscriptions ignored" = "忽略订阅";
 
+/* alert button
+alert title */
+"Support SimpleX" = "支持 SimpleX";
+
+/* No comment provided by engineer. */
+"Support SimpleX and get a badge." = "支持 SimpleX 并获得徽章。";
+
+/* No comment provided by engineer. */
+"Support SimpleX to send larger files that stay available longer" = "支持 SimpleX 即可发送更大的文件，且保留更久";
+
 /* No comment provided by engineer. */
 "Support the project" = "支持项目";
+
+/* badge type */
+"Supporter" = "支持者";
+
+/* badge required to send a large file */
+"supporter badge" = "支持者徽章";
+
+/* No comment provided by engineer. */
+"Supporter badges" = "支持者徽章";
+
+/* No comment provided by engineer. */
+"Supporter: 2 GB files available for 7 days." = "支持者：2 GB 文件，可保留 7 天。";
 
 /* No comment provided by engineer. */
 "Switch audio and video during the call." = "通话期间切换音频和视频。";
@@ -6104,6 +6531,45 @@ server test failure */
 /* badge alert */
 "The badge is signed with a key that this version of the app does not recognize. Update the app to verify this badge." = "此徽章使用此版本应用程序无法识别的密钥签署。请更新应用程序来验证此徽章。";
 
+/* badge renewal error */
+"The badge issued by the service cannot be verified." = "服务颁发的徽章无法被验证。";
+
+/* badge renewal error */
+"The badge service could not be reached." = "无法连接到徽章服务。";
+
+/* badge renewal error */
+"The badge service did not respond." = "徽章服务没有响应。";
+
+/* alert message */
+"The badge service does not recognize this badge." = "徽章服务无法识别此徽章。";
+
+/* badge purchase error */
+"The badge service refused the purchase: %@" = "徽章服务拒绝了购买：%@";
+
+/* badge renewal error */
+"The badge service refused the renewal: %@" = "徽章服务拒绝了续订：%@";
+
+/* alert message */
+"The badge service reported an internal error." = "徽章服务报告了内部错误。";
+
+/* alert message */
+"The badge service sent an unexpected response: %@" = "徽章服务发送了意料之外的响应：%@";
+
+/* alert message */
+"The badge was added to the profile %@." = "徽章已添加到个人资料 %@。";
+
+/* badge link confirmation */
+"The badge will be added to the profile %@." = "徽章将被添加到个人资料 %@。";
+
+/* badge link, being issued */
+"The badge will be added to this profile." = "徽章将被添加到此个人资料。";
+
+/* alert message */
+"The code was accepted, but the badge it grants has already ended." = "代码被接受，但其授予的徽章已过期。";
+
+/* alert message */
+"The code you scanned is not a badge code." = "你扫描的代码不是徽章代码。";
+
 /* No comment provided by engineer. */
 "The code you scanned is not a SimpleX link QR code." = "您扫描的码不是 SimpleX 链接的二维码。";
 
@@ -6155,6 +6621,9 @@ server test failure */
 /* No comment provided by engineer. */
 "The oldest human freedom - to speak to another person without being watched - built on infrastructure that cannot betray it." = "人类最古老的自由--与他人交谈而不被监视--建立在不会背叛它的基础设施之上。";
 
+/* alert message */
+"The payment has not been confirmed yet." = "付款尚未确认。";
+
 /* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "相同条件将适用于运营商 **%@**。";
 
@@ -6175,6 +6644,27 @@ server test failure */
 
 /* No comment provided by engineer. */
 "The servers for new files of your current chat profile **%@**." = "当前聊天个人资料 **%@** 的新文件服务器。";
+
+/* alert message */
+"The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page." = "SimpleX 名称 @%@ 已注册但没有 SimpleX 地址。通过注册页将你的 SimpleX 地址添加到名称。";
+
+/* alert message */
+"The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page." = "SimpleX 名称 #%@ 已注册但没有频道链接。通过注册页添加频道链接到名称。";
+
+/* No comment provided by engineer. */
+"The SimpleX name %@ is registered, but it has no valid link." = "SimpleX 名称 %@ 已注册但没有有效链接。";
+
+/* No comment provided by engineer. */
+"The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner." = "SimpleX 名称 %@ 已注册但未添加到资料中。如果你是所有者，请将其添加到你的地址或频道资料。";
+
+/* alert message */
+"The store could not be reached." = "无法连接到商店。";
+
+/* No comment provided by engineer. */
+"The store could not charge your payment method." = "商店无法从你的付款方式扣款。";
+
+/* alert message */
+"The store did not confirm this purchase." = "商店未确认此购买。";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "您粘贴的文本不是 SimpleX 链接。";
@@ -6212,14 +6702,38 @@ server test failure */
 /* No comment provided by engineer. */
 "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "此操作无法撤消——您的个人资料、联系人、消息和文件将不可撤回地丢失。";
 
+/* alert message */
+"This app version cannot buy badges." = "此应用版本无法购买徽章。";
+
+/* alert message */
+"This app version cannot redeem badge codes." = "此应用版本无法兑换徽章代码。";
+
+/* alert message */
+"This app version cannot verify this badge. Please update the app." = "此应用版本无法验证该徽章。请更新应用。";
+
 /* badge alert */
 "This badge could not be verified and may not be genuine." = "无法验证此徽章，可能并非真品。";
+
+/* alert message */
+"This badge is not on sale." = "此徽章未在出售。";
 
 /* E2EE info chat item */
 "This chat is protected by end-to-end encryption." = "此聊天受端到端加密保护。";
 
 /* E2EE info chat item */
 "This chat is protected by quantum resistant end-to-end encryption." = "此聊天受抗量子的端到端加密保护。";
+
+/* alert message */
+"This code has already been used." = "此代码已使用。";
+
+/* alert message */
+"This code has expired." = "此代码已过期。";
+
+/* alert message */
+"This code is not valid." = "此代码无效。";
+
+/* alert message */
+"This code was not recognized." = "未识别此代码。";
 
 /* notification title */
 "this contact" = "这个联系人";
@@ -6258,8 +6772,20 @@ alert subtitle */
 /* No comment provided by engineer. */
 "This message was deleted or not received yet." = "此消息被删除或尚未收到。";
 
+/* alert message */
+"This profile already has a badge." = "此个人资料已有徽章。";
+
+/* alert message */
+"This purchase is already used on another profile." = "此购买已在另一个个人资料上使用。";
+
+/* alert message */
+"This purchase was moved to another device or profile recently." = "此购买最近已被转移到另一台设备或个人资料。";
+
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "此设置适用于您当前聊天资料 **%@** 中的消息。";
+
+/* No comment provided by engineer. */
+"This SimpleX name is not registered. Please check the name." = "SimpleX 名称未注册。请检查该名称。";
 
 /* No comment provided by engineer. */
 "Time to disappear is set only for new contacts." = "只为新联系人设置了消失时间。";
@@ -6298,6 +6824,12 @@ alert subtitle */
 "To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "为了保护隐私，SimpleX使用针对消息队列的标识符，而不是所有其他平台使用的用户ID，每个联系人都有独立的标识符。";
 
 /* No comment provided by engineer. */
+"To prove to a contact or a server that you have a badge, the app generates a new proof that reveals only the badge type and the expiry date, rounded to a week." = "为了向联系人或服务器证明你拥有徽章，应用会生成一个新的证明，该证明只透露徽章类型和精确到周的到期日期。";
+
+/* ledger entry field */
+"To purchase key" = "目标购买密钥";
+
+/* No comment provided by engineer. */
 "To receive" = "消息接收";
 
 /* No comment provided by engineer. */
@@ -6308,6 +6840,9 @@ alert subtitle */
 
 /* No comment provided by engineer. */
 "To record voice message please grant permission to use Microphone." = "请授权使用麦克风以录制语音消息。";
+
+/* No comment provided by engineer. */
+"To resolve names" = "用于解析名称";
 
 /* No comment provided by engineer. */
 "To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "要显示您的隐藏的个人资料，请在**您的聊天个人资料**页面的搜索字段中输入完整密码。";
@@ -6335,6 +6870,9 @@ alert subtitle */
 
 /* token status */
 "Token status: %@." = "令牌状态：%@。";
+
+/* alert message */
+"Too many attempts. Please try again later." = "太多的尝试。请稍后重试。";
 
 /* No comment provided by engineer. */
 "Toolbar opacity" = "工具栏不透明度";
@@ -6388,7 +6926,13 @@ alert subtitle */
 "unblocked %@" = "未阻止 %@";
 
 /* No comment provided by engineer. */
+"Unconfirmed name" = "未确认的名称";
+
+/* No comment provided by engineer. */
 "Undelivered messages" = "未送达的消息";
+
+/* badge renewal error */
+"Unexpected error: %@" = "意外错误：%@";
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "未预料的迁移状态";
@@ -6456,6 +7000,9 @@ alert subtitle */
 /* conn error description */
 "Unsupported connection link" = "不支持的连接链接";
 
+/* No comment provided by engineer. */
+"until you can register a SimpleX domain" = "后即可注册 SimpleX 域名";
+
 /* badge alert title */
 "Unverified badge" = "未验证的徽章";
 
@@ -6476,6 +7023,12 @@ alert subtitle */
 
 /* No comment provided by engineer. */
 "Update settings?" = "更新设置？";
+
+/* No comment provided by engineer. */
+"Update the app to register a SimpleX domain" = "更新应用来注册 SimpleX 域名";
+
+/* alert message */
+"Update the app to use badges." = "请更新应用以使用徽章。";
 
 /* rcv group event chat item */
 "updated channel profile" = "频道更新了频道资料";
@@ -6641,10 +7194,16 @@ alert title */
 "Verify database passphrase" = "验证数据库密码短语";
 
 /* No comment provided by engineer. */
+"Verify name" = "验证名称";
+
+/* No comment provided by engineer. */
 "Verify passphrase" = "验证密码短语";
 
 /* No comment provided by engineer. */
 "Verify security code" = "验证安全码";
+
+/* No comment provided by engineer. */
+"Verify SimpleX names" = "验证 SimpleX 名称";
 
 /* relay hostname */
 "via %@" = "通过 %@";
@@ -6697,6 +7256,9 @@ alert title */
 /* No comment provided by engineer. */
 "View updated conditions" = "查看更新后的条款";
 
+/* No comment provided by engineer. */
+"View your badge" = "查看你的徽章";
+
 /* chat feature */
 "Visible history" = "可见的历史";
 
@@ -6726,6 +7288,9 @@ alert title */
 
 /* No comment provided by engineer. */
 "waiting for answer…" = "等待答复中……";
+
+/* No comment provided by engineer. */
+"Waiting for approval" = "等待批准";
 
 /* No comment provided by engineer. */
 "Waiting for channel owner to add relays." = "正在等待频道所有者添加中继。";
@@ -6866,6 +7431,9 @@ alert title */
 "You allow" = "您允许";
 
 /* No comment provided by engineer. */
+"You already have a badge!" = "你已经拥有徽章！";
+
+/* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "您已经有一个显示名相同的聊天资料。请选择另一个名字。";
 
 /* new chat alert */
@@ -6985,6 +7553,9 @@ alert title */
 /* No comment provided by engineer. */
 "You can still view conversation with %@ in the list of chats." = "您仍然可以在聊天列表中查看与 %@的对话。";
 
+/* alert message */
+"You can support SimpleX later in Settings." = "你可以之后在设置中支持 SimpleX。";
+
 /* No comment provided by engineer. */
 "You can turn on SimpleX Lock via Settings." = "您可以通过设置开启 SimpleX 锁定。";
 
@@ -7047,6 +7618,9 @@ alert title */
 
 /* No comment provided by engineer. */
 "You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." = "您只能在一台设备上使用最新版本的聊天数据库，否则您可能会停止接收来自某些联系人的消息。";
+
+/* file alert */
+"You need a %1$@ to send files larger than %2$@." = "你需要一枚 %1$@ 来发送超过 %2$@ 的文件。";
 
 /* No comment provided by engineer. */
 "You need to allow your contact to call to be able to call them." = "您需要允许您的联系人呼叫才能呼叫他们。";
@@ -7121,6 +7695,30 @@ alert title */
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "您正在为该群组使用隐身个人资料——为防止共享您的主要个人资料，不允许邀请联系人";
 
 /* No comment provided by engineer. */
+"Your badge" = "你的徽章";
+
+/* No comment provided by engineer. */
+"Your badge could not be renewed." = "你的徽章无法续订。";
+
+/* alert title */
+"Your badge expired" = "你的徽章已过期";
+
+/* No comment provided by engineer. */
+"Your badge expired on %@." = "你的徽章已于 %@ 过期。";
+
+/* file alert */
+"Your badge expired." = "你的徽章过期了。";
+
+/* alert title */
+"Your badge renews soon" = "你的徽章即将续订";
+
+/* No comment provided by engineer. */
+"Your badge stays until %@." = "你的徽章将保留到 %@。";
+
+/* No comment provided by engineer. */
+"Your badge subscription ended on %@." = "你的徽章订阅已于 %@ 结束。";
+
+/* No comment provided by engineer. */
 "Your business contact" = "你的企业联系人";
 
 /* No comment provided by engineer. */
@@ -7175,10 +7773,16 @@ alert title */
 "Your ICE servers" = "您的 ICE 服务器";
 
 /* No comment provided by engineer. */
+"Your legend badge" = "你的传奇徽章";
+
+/* No comment provided by engineer. */
 "Your network" = "您的网络";
 
 /* alert message */
 "Your new channel %@ is connected to %d of %d relays.\nIf you cancel, the channel will be deleted - you can create it again." = "你的新频道 %1$@ 已连接到 %2$d/%3$d 个中继。\n如果取消，频道将被删除；你可以再次创建。";
+
+/* No comment provided by engineer. */
+"Your payment is complete. The badge will be added to this profile." = "你的付款已完成。徽章将被添加到此个人资料。";
 
 /* No comment provided by engineer. */
 "Your preferences" = "您的偏好设置";
@@ -7227,4 +7831,13 @@ alert title */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "您的 SimpleX 地址";
+
+/* No comment provided by engineer. */
+"Your SimpleX name" = "你的 SimpleX 名称";
+
+/* alert title */
+"Your subscription ended" = "你的订阅已结束";
+
+/* No comment provided by engineer. */
+"Your subscription is cancelled. The badge stays until %@." = "你的订阅已取消。徽章将保留到 %@。";
 

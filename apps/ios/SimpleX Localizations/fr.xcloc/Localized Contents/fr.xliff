@@ -5892,11 +5892,6 @@ Voici votre lien pour le groupe %@ !</target>
         <target>En savoir plus sur Wefunder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Learn more on Wefunder." xml:space="preserve">
-        <source>Learn more on Wefunder.</source>
-        <target>En savoir plus sur Wefunder.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Leave" xml:space="preserve">
         <source>Leave</source>
         <target>Quitter</target>
