@@ -661,6 +661,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "refuses a bad or wrongly checksummed contract address, naming the key" testNamesBadAddress
   it "refuses a bad service key without quoting it" testNamesBadServiceKey
   it "keeps the RPC URL and the service key out of errors and the shown config" testNamesSecretsHidden
+  it "takes an http rpc_url only to a node on loopback, any other only as https" testNamesRpcUrlHttps
   it "names a [names] or [chain] setting nothing reads, and still boots" testNamesUnknownKeys
   it "reads codes_only on and off as a known setting, off when absent, and refuses any other value" testNamesCodesOnly
   it "reads record_edits_per_year as a known setting, 3 when absent, and refuses a value outside 1-100" testNamesRecordEdits
@@ -842,12 +843,26 @@ testNamesBadServiceKey = do
   refused "0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141"
   refused "0xzz0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 
+testNamesRpcUrlHttps :: IO ()
+testNamesRpcUrlHttps = do
+  forM_ ["https://eth.example.org/v2/rpc-token-value", "http://127.0.0.1:8545", "http://[::1]:8545", "http://LOCALHOST:8545/"] $ \url -> do
+    ChainConfig {cRpcUrl} <- nChain <$> parsedNames namesSection (withRpcUrl url)
+    cRpcUrl `shouldBe` T.unpack url
+  forM_ ["http://eth.example.org/v2/rpc-token-value", "http://127.0.0.1.example.org:8545", "http://localhost@eth.example.org/rpc-token-value", "http://10.0.0.5:8545"] $ \url -> do
+    e <- namesRefusal namesSection (withRpcUrl url)
+    e `shouldBe` rpcUrlRefusal
+    e `shouldNotContain` "rpc-token-value"
+
+withRpcUrl :: T.Text -> [T.Text]
+withRpcUrl v = map (\l -> if "rpc_url =" `T.isPrefixOf` l then "rpc_url = " <> v else l) chainSection
+
+rpcUrlRefusal :: String
+rpcUrlRefusal = "chain.rpc_url must be an https URL, or http to a node on loopback: 127.0.0.1, ::1 or localhost"
+
 testNamesSecretsHidden :: IO ()
 testNamesSecretsHidden = do
-  let secretUrl = "ftp://eth.example.org/v2/rpc-token-value"
-      withUrl v = map (\l -> if "rpc_url =" `T.isPrefixOf` l then "rpc_url = " <> v else l) chainSection
-  e <- namesRefusal namesSection (withUrl secretUrl)
-  e `shouldBe` "chain.rpc_url must be an http or https URL"
+  e <- namesRefusal namesSection (withRpcUrl "ftp://eth.example.org/v2/rpc-token-value")
+  e `shouldBe` rpcUrlRefusal
   e `shouldNotContain` "rpc-token-value"
   other <- namesRefusal namesSection (chainSection <> ["confirmations = many"])
   other `shouldNotContain` "rpc-token-value"

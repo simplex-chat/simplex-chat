@@ -136,7 +136,9 @@ section (omitting it disables card payments), an optional `[group]` section (omi
 turns off the group's commands, though a group created earlier still has its code messages updated),
 the poll cadence, optional `[apple]` and `[google]` sections that verify store purchases (see
 [Store purchases](#store-purchases-app-store-and-google-play)), and optional `[names]` and `[chain]` sections for the names store (omitting both
-turns it off), whose `[chain] service_key` is [the gas key](#the-gas-key). `[names]` requires
+turns it off), whose `[chain] service_key` is [the gas key](#the-gas-key). `[chain] rpc_url` must be
+https, as it can carry a provider's API key, unless the node is on the same machine (`127.0.0.1`,
+`::1` or `localhost`), which `http://` may reach. `[names]` requires
 `terms_version` and `terms_url`, and an optional `[community]` section lists the community names
 (see [Terms and community names](#terms-and-community-names)). Write every setting as
 `key = value`: the parser also reads `key: value`, but drops the first character of its value. A

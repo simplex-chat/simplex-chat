@@ -683,9 +683,11 @@ parseConfig ini = do
       cGasLimitCap <- positiveWord "gas_limit_cap" (Just 8000000)
       cMaxFeePerGas <- positiveWord "max_fee_per_gas" (Just defaultMaxFeePerGas)
       pure ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cConfirmations, cGasLimitCap, cMaxFeePerGas}
+    -- http only to a node on the same machine, as the URL can carry a provider's API key
     rpcUrl = do
       v <- required "chain" "rpc_url"
-      unless (any (`T.isPrefixOf` v) ["http://", "https://"]) $ Left "chain.rpc_url must be an http or https URL"
+      unless ("https://" `T.isPrefixOf` v || ("http://" `T.isPrefixOf` v && isLoopbackHost (urlHost v))) $
+        Left "chain.rpc_url must be an https URL, or http to a node on loopback: 127.0.0.1, ::1 or localhost"
       Right (T.unpack v)
     positiveWord k d = case (present "chain" k, d) of
       (Nothing, Just v) -> Right v

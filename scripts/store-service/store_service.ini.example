@@ -114,7 +114,8 @@ private_key = replace-me
 ;bakers = bakers and bakeries in Portugal
 ;
 ; the chain the names are registered on. rpc_url can carry a provider's API key and service_key
-; pays for every commit and register: keep both secret. Neither is ever logged.
+; pays for every commit and register: keep both secret. Neither is ever logged. rpc_url must be
+; https unless the node is on loopback (127.0.0.1, ::1 or localhost)
 ;[chain]
 ; the reth node
 ;rpc_url = http://127.0.0.1:8545
