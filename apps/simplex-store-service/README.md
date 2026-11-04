@@ -574,6 +574,10 @@ git -C apps/simplex-domains checkout <commit>
 git add apps/simplex-domains
 ```
 
+`.gitmodules` names `branch = sh/names-webapp`, the branch of simplex.domains#6, which is not merged
+yet; it only sets what `git submodule update --remote` fetches, and moves to the main branch once
+that pull request merges. The commit committed here is what builds.
+
 The names site is on when, and only when, the ini has `[names]`. Its `[listener]` keys:
 
 - `names_static_dir`: the names build, by default `/srv/names`, the image's;
