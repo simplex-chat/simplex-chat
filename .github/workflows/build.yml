@@ -87,7 +87,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       GHC_VER: 9.6.3
-      JAVA_VER: 17
     steps:
       - name: Dummy job when we have just simple variables
         if: false
@@ -463,21 +462,24 @@ jobs:
           done
           strip /out/simplex-chat
 
+      - name: Setup Python for the build script
+        if: matrix.should_run == true
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
       # Also for pull requests that change the chat core, for the package tests.
+      # In the builder container, with its cabal store, and in dist-lib, which shares the source repositories of dist-newstyle.
       - name: Build library
         id: build-lib
         if: matrix.libs && (needs.maybe-release.outputs.libs_tag || (needs.maybe-release.outputs.core_changed && matrix.arch == 'x86_64' && (needs.maybe-release.outputs.reduced != 'true' || matrix.packages == true)))
-        shell: docker exec -t builder sh -eu {0}
+        shell: bash
         run: |
-          scripts/ci/prune-old-builds.sh dist-lib
+          docker exec builder scripts/ci/prune-old-builds.sh dist-lib
           mkdir -p dist-lib
           rm -rf dist-lib/src
           ln -s ../dist-newstyle/src dist-lib/src
-          DIST_DIR=dist-lib SKIP_VLC=1 scripts/desktop/build-lib-linux.sh
-          name=simplex-chat-libs-linux-${{ matrix.arch }}
-          mkdir -p release-libs/$name/libs
-          find apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-${{ matrix.arch }} -maxdepth 1 -type f -exec cp {} release-libs/$name/libs/ \;
-          (cd release-libs/$name && zip -r ../$name.zip libs)
+          python3 scripts/simplex-chat-build.py build libs linux --container builder --dist-dir dist-lib --out release-libs
 
       - name: Record source hashes (GHC 8.10.7)
         if: matrix.should_run == true && matrix.ghc == '8.10.7'
@@ -530,113 +532,11 @@ jobs:
           TAG: ${{ needs.maybe-release.outputs.libs_tag }}
         run: gh release upload "$TAG" release-libs/*.zip --clobber --repo "${{ github.repository }}-libs"
 
-      - name: Build CLI deb
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
-        shell: docker exec -t builder sh -eu {0}
-        run: |
-          version=${{ github.ref }}
-          version=${version#refs/tags/v}
-          version=${version%-*}
-
-          ./scripts/desktop/build-cli-deb.sh "$version"
-
       - name: Copy tests from container
         if: matrix.should_run == true
         shell: bash
         run: |
           docker cp builder:/out/simplex-chat-test .
-
-      - name: Copy CLI from container and prepare it
-        id: linux_cli_prepare
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
-        shell: bash
-        run: |
-          cli_name="simplex-chat-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}"
-          cli_deb_name="${cli_name}.deb"
-          cli_path="${{ github.workspace }}"
-
-          docker cp builder:/out/simplex-chat "./${cli_name}"
-          docker cp builder:/out/deb-build/simplex-chat.deb "./${cli_deb_name}"
-
-          echo "bin_name=${cli_name}" >> $GITHUB_OUTPUT
-          echo "bin_path=${cli_path}/${cli_name}" >> $GITHUB_OUTPUT
-          echo "bin_hash=$(echo SHA2-256\(${cli_name}\)= $(openssl sha256 "${cli_path}/${cli_name}" | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
-
-          echo "deb_name=${cli_deb_name}" >> $GITHUB_OUTPUT
-          echo "deb_path=${cli_path}/${cli_deb_name}" >> $GITHUB_OUTPUT
-          echo "deb_hash=$(echo SHA2-256\(${cli_deb_name}\)= $(openssl sha256 "${cli_path}/${cli_deb_name}" | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
-
-      - name: Upload CLI
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
-        uses: ./.github/actions/prepare-release
-        with:
-          bin_name: ${{ steps.linux_cli_prepare.outputs.bin_name }}
-          bin_path: ${{ steps.linux_cli_prepare.outputs.bin_path }}
-          bin_hash: ${{ steps.linux_cli_prepare.outputs.bin_hash }}
-          github_ref: ${{ github.ref }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload CLI deb
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
-        uses: ./.github/actions/prepare-release
-        with:
-          bin_name: ${{ steps.linux_cli_prepare.outputs.deb_name }}
-          bin_path: ${{ steps.linux_cli_prepare.outputs.deb_path }}
-          bin_hash: ${{ steps.linux_cli_prepare.outputs.deb_hash }}
-          github_ref: ${{ github.ref }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build Desktop
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
-        shell: docker exec -t builder sh -eu {0}
-        run: |
-          export ASSETS_DIR='../../assets'
-          scripts/desktop/make-deb-linux.sh
-
-      - name: Prepare Desktop
-        id: linux_desktop_build
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
-        shell: bash
-        run: |
-          path=$(echo ${{ github.workspace }}/apps/multiplatform/release/main/deb/simplex_${{ matrix.arch }}.deb )
-          echo "package_path=$path" >> $GITHUB_OUTPUT
-          echo "package_hash=$(echo SHA2-256\(simplex-desktop-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}.deb\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
-
-      - name: Upload Desktop
-        uses: ./.github/actions/prepare-release
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
-        with:
-          bin_path: ${{ steps.linux_desktop_build.outputs.package_path }}
-          bin_name: simplex-desktop-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}.deb
-          bin_hash: ${{ steps.linux_desktop_build.outputs.package_hash }}
-          github_ref: ${{ github.ref }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build AppImage
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04' && matrix.should_run == true
-        shell: docker exec -t builder sh -eu {0}
-        run: |
-          export ASSETS_DIR='../../assets'
-          scripts/desktop/make-appimage-linux.sh
-
-      - name: Prepare AppImage
-        id: linux_appimage_build
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04' && matrix.should_run == true
-        shell: bash
-        run: |
-          path=$(echo ${{ github.workspace }}/apps/multiplatform/release/main/*imple*.AppImage)
-          echo "appimage_path=$path" >> $GITHUB_OUTPUT
-          echo "appimage_hash=$(echo SHA2-256\(simplex-desktop-${{ matrix.arch }}.AppImage\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
-
-      - name: Upload AppImage
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04' && matrix.should_run == true
-        uses: ./.github/actions/prepare-release
-        with:
-          bin_path: ${{ steps.linux_appimage_build.outputs.appimage_path }}
-          bin_name: "simplex-desktop-${{ matrix.arch }}.AppImage"
-          bin_hash: ${{ steps.linux_appimage_build.outputs.appimage_hash }}
-          github_ref: ${{ github.ref }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Mount RAM disk for tests
         if: matrix.should_run == true && matrix.arch == 'x86_64'
@@ -656,6 +556,69 @@ jobs:
           PR_BODY: ${{ github.event.pull_request.draft == true && github.event.pull_request.body || '' }}
           ATTEMPTS: ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) && 3 || 1 }}
         run: scripts/ci/run-tests.sh timeout 35m ./simplex-chat-test
+
+      # After the tests: it cleans dist-newstyle and builds in a new container, as a reproduction does.
+      - name: Build release files
+        id: linux-release
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
+        shell: bash
+        run: |
+          version=${GITHUB_REF#refs/tags/v}
+          version=${version%-*}
+          python3 scripts/simplex-chat-build.py build desktop linux ${{ matrix.os }} --version "$version" --out release-files
+          cli=simplex-chat-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}
+          desktop=simplex-desktop-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}.deb
+          appimage=simplex-desktop-${{ matrix.arch }}.AppImage
+          for output in "cli=$cli" "cli_deb=$cli.deb" "desktop=$desktop" "appimage=$appimage"; do
+            key=${output%%=*}
+            name=${output#*=}
+            [ -f "release-files/$name" ] || continue
+            {
+              echo "${key}_name=$name"
+              echo "${key}_path=$GITHUB_WORKSPACE/release-files/$name"
+              echo "${key}_hash=SHA2-256($name)= $(sha256sum "release-files/$name" | cut -d' ' -f1)"
+            } >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Upload CLI
+        if: steps.linux-release.outcome == 'success'
+        uses: ./.github/actions/prepare-release
+        with:
+          bin_name: ${{ steps.linux-release.outputs.cli_name }}
+          bin_path: ${{ steps.linux-release.outputs.cli_path }}
+          bin_hash: ${{ steps.linux-release.outputs.cli_hash }}
+          github_ref: ${{ github.ref }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload CLI deb
+        if: steps.linux-release.outcome == 'success'
+        uses: ./.github/actions/prepare-release
+        with:
+          bin_name: ${{ steps.linux-release.outputs.cli_deb_name }}
+          bin_path: ${{ steps.linux-release.outputs.cli_deb_path }}
+          bin_hash: ${{ steps.linux-release.outputs.cli_deb_hash }}
+          github_ref: ${{ github.ref }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Desktop
+        if: steps.linux-release.outcome == 'success'
+        uses: ./.github/actions/prepare-release
+        with:
+          bin_name: ${{ steps.linux-release.outputs.desktop_name }}
+          bin_path: ${{ steps.linux-release.outputs.desktop_path }}
+          bin_hash: ${{ steps.linux-release.outputs.desktop_hash }}
+          github_ref: ${{ github.ref }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload AppImage
+        if: steps.linux-release.outcome == 'success' && steps.linux-release.outputs.appimage_name
+        uses: ./.github/actions/prepare-release
+        with:
+          bin_name: ${{ steps.linux-release.outputs.appimage_name }}
+          bin_path: ${{ steps.linux-release.outputs.appimage_path }}
+          bin_hash: ${{ steps.linux-release.outputs.appimage_hash }}
+          github_ref: ${{ github.ref }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       # Compiling the desktop and Android targets of :common in parallel exceeds the 2 GB Kotlin daemon heap.
       # cmakeBuildAndCopy links the JNI library against libsimplex, which this job does not build.
@@ -690,7 +653,7 @@ jobs:
         timeout-minutes: 30
         shell: bash
         env:
-          SIMPLEX_LIBS_DIR: ${{ steps.build-lib.outcome == 'success' && format('{0}/release-libs/simplex-chat-libs-linux-{1}/libs', github.workspace, matrix.arch) || '' }}
+          SIMPLEX_LIBS_DIR: ${{ steps.build-lib.outcome == 'success' && format('{0}/apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-{1}', github.workspace, matrix.arch) || '' }}
         run: |
           scripts/ci/package-tests.sh build linux-${{ matrix.arch }}
           scripts/ci/package-tests.sh test
@@ -941,18 +904,14 @@ jobs:
         if: steps.restore-deps.outputs.cache-matched-key == ''
         run: echo "::warning title=Cache miss::${{ steps.keys.outputs.deps }}-${{ env.branch }}"
 
-      - name: Prepare cabal.project.local
-        shell: bash
-        run: |
-          echo "ignore-project: False"    >> cabal.project.local
-          echo "package direct-sqlcipher" >> cabal.project.local
-          echo "    flags: +openssl"      >> cabal.project.local
+      - name: Setup Python for the build script
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
 
       - name: Build postgres library
-        shell: docker exec -t builder sh -eu {0}
-        run: |
-          cabal update
-          scripts/desktop/build-lib-linux.sh postgres
+        shell: bash
+        run: python3 scripts/simplex-chat-build.py build libs linux --database postgres --container builder --out postgres-libs
 
       - name: Compute dependency cache key
         id: hash-deps
@@ -965,17 +924,6 @@ jobs:
         with:
           path: ~/.cabal/store
           key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ steps.hash-deps.outputs.hash }}
-
-      - name: Copy libs from container
-        shell: bash
-        run: |
-          ARCH=x86_64
-          GHC_VER=${{ needs.variables.outputs.GHC_VER }}
-          BUILD_DIR=$(echo dist-newstyle/build/${ARCH}-linux/ghc-${GHC_VER}/simplex-chat-*)
-          mkdir -p postgres-libs/libs
-          cp ${BUILD_DIR}/build/libsimplex.so postgres-libs/libs/
-          cp ${BUILD_DIR}/build/deps/* postgres-libs/libs/
-          (cd postgres-libs && zip -r simplex-chat-libs-linux-x86_64-postgres.zip libs)
 
       - name: Upload postgres library
         shell: bash
@@ -1000,19 +948,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-latest
+          - os: macos-26
             arch: aarch64
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             cli_asset_name: simplex-chat-macos-aarch64
             desktop_asset_name: simplex-desktop-macos-aarch64.dmg
-            openssl_dir: "/opt/homebrew/opt"
             should_run: ${{ needs.maybe-release.outputs.haskell == 'true' }}
-          - os: macos-15-intel
+          - os: macos-26-intel
             arch: x86_64
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             cli_asset_name: simplex-chat-macos-x86-64
             desktop_asset_name: simplex-desktop-macos-x86_64.dmg
-            openssl_dir: "/usr/local/opt"
             should_run: ${{ needs.maybe-release.outputs.haskell == 'true' }}
     steps:
       - name: Checkout Code
@@ -1020,6 +966,9 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive
+
+      - name: Use the release Xcode
+        uses: ./.github/actions/xcode
 
       - name: Point Command Line Tools SDK to Xcode SDK
         if: matrix.should_run == true
@@ -1052,7 +1001,6 @@ jobs:
         if: matrix.should_run == true
         uses: ./.github/actions/prepare-build
         with:
-          java_ver: ${{ needs.variables.outputs.JAVA_VER }}
           ghc_ver: ${{ matrix.ghc }}
           github_ref: ${{ github.ref }}
 
@@ -1066,23 +1014,17 @@ jobs:
             ~/.ghcup/bin/cabal-3.10.2.0
           key: ${{ steps.toolchain-key.outputs.key }}
 
-      - name: Install OpenSSL
+      - name: Setup Python for the build script
         if: matrix.should_run == true
-        run: brew install openssl@3.0
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
 
-      - name: Prepare cabal.project.local
+      # The pinned OpenSSL of the releases, and cabal.project.local linking it
+      - name: Build OpenSSL
         if: matrix.should_run == true
         shell: bash
-        run: |
-          echo "ignore-project: False"                                                    >> cabal.project.local
-          echo "package simplexmq"                                                        >> cabal.project.local
-          echo "    extra-include-dirs: ${{ matrix.openssl_dir }}/openssl@3.0/include"    >> cabal.project.local
-          echo "    extra-lib-dirs: ${{ matrix.openssl_dir}}/openssl@3.0/lib"             >> cabal.project.local
-          echo ""                                                                         >> cabal.project.local
-          echo "package direct-sqlcipher"                                                 >> cabal.project.local
-          echo "    extra-include-dirs: ${{ matrix.openssl_dir }}/openssl@3.0/include"    >> cabal.project.local
-          echo "    extra-lib-dirs: ${{ matrix.openssl_dir }}/openssl@3.0/lib"            >> cabal.project.local
-          echo "    flags: +openssl"                                                      >> cabal.project.local
+        run: python3 scripts/simplex-chat-build.py build openssl macos --out "$RUNNER_TEMP/openssl"
 
       - name: Compute cache key prefixes
         id: keys
@@ -1146,9 +1088,6 @@ jobs:
         run: |
           scripts/ci/prune-old-builds.sh dist-newstyle
           cabal build -j --enable-tests ${{ env.ghc_options }}
-          path=$(cabal list-bin simplex-chat | tail -n 1)
-          echo "bin_path=$path" >> $GITHUB_OUTPUT
-          echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Compute dependency cache key
         id: hash-deps
@@ -1178,41 +1117,6 @@ jobs:
             dist-newstyle/*
             !dist-newstyle/src
           key: ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-${{ github.sha }}
-
-      - name: Upload CLI
-        if: matrix.should_run == true && startsWith(github.ref, 'refs/tags/v')
-        uses: ./.github/actions/prepare-release
-        with:
-          bin_path: ${{ steps.mac_cli_build.outputs.bin_path }}
-          bin_name: ${{ matrix.cli_asset_name }}
-          bin_hash: ${{ steps.mac_cli_build.outputs.bin_hash }}
-          github_ref: ${{ github.ref }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build Desktop
-        id: mac_desktop_build
-        if: matrix.should_run == true && startsWith(github.ref, 'refs/tags/v')
-        shell: bash
-        env:
-          APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN }}
-          APPLE_SIMPLEX_NOTARIZATION_APPLE_ID: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_APPLE_ID }}
-          APPLE_SIMPLEX_NOTARIZATION_PASSWORD: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_PASSWORD }}
-        run: |
-          export ASSETS_DIR='../../assets'
-          scripts/ci/build-desktop-mac.sh
-          path=$(echo $PWD/apps/multiplatform/release/main/dmg/SimpleX-*.dmg)
-          echo "package_path=$path" >> $GITHUB_OUTPUT
-          echo "package_hash=$(echo SHA2-256\(${{ matrix.desktop_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
-
-      - name: Upload Desktop
-        if: matrix.should_run == true && startsWith(github.ref, 'refs/tags/v')
-        uses: ./.github/actions/prepare-release
-        with:
-          bin_path: ${{ steps.mac_desktop_build.outputs.package_path }}
-          bin_name: ${{ matrix.desktop_asset_name }}
-          bin_hash: ${{ steps.mac_desktop_build.outputs.package_hash }}
-          github_ref: ${{ github.ref }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Mount RAM disk for tests
         if: matrix.should_run == true && matrix.arch == 'aarch64'
@@ -1244,6 +1148,45 @@ jobs:
             exit 1
           fi
 
+      # After the tests: it cleans dist-newstyle. Signed and notarized, which only simplex-chat/simplex-chat can.
+      - name: Build release files
+        id: mac-release
+        if: matrix.should_run == true && startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN }}
+          APPLE_SIMPLEX_NOTARIZATION_APPLE_ID: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_APPLE_ID }}
+          APPLE_SIMPLEX_NOTARIZATION_PASSWORD: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_PASSWORD }}
+          REQUIRE_SIGNING: ${{ github.repository == 'simplex-chat/simplex-chat' && '--require-signing' || '' }}
+        run: |
+          python3 scripts/simplex-chat-build.py build desktop macos ${REQUIRE_SIGNING:+"$REQUIRE_SIGNING"} --out release-files
+          for output in "cli=${{ matrix.cli_asset_name }}" "desktop=${{ matrix.desktop_asset_name }}"; do
+            key=${output%%=*}
+            name=${output#*=}
+            echo "${key}_path=$GITHUB_WORKSPACE/release-files/$name" >> "$GITHUB_OUTPUT"
+            echo "${key}_hash=SHA2-256($name)= $(shasum -a 256 "release-files/$name" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Upload CLI
+        if: steps.mac-release.outcome == 'success'
+        uses: ./.github/actions/prepare-release
+        with:
+          bin_path: ${{ steps.mac-release.outputs.cli_path }}
+          bin_name: ${{ matrix.cli_asset_name }}
+          bin_hash: ${{ steps.mac-release.outputs.cli_hash }}
+          github_ref: ${{ github.ref }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Desktop
+        if: steps.mac-release.outcome == 'success'
+        uses: ./.github/actions/prepare-release
+        with:
+          bin_path: ${{ steps.mac-release.outputs.desktop_path }}
+          bin_name: ${{ matrix.desktop_asset_name }}
+          bin_hash: ${{ steps.mac-release.outputs.desktop_hash }}
+          github_ref: ${{ github.ref }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build library
         id: mac_lib_build
         if: ${{ !cancelled() && matrix.should_run == true && needs.maybe-release.outputs.libs_tag && steps.mac_cli_build.outcome == 'success' }}
@@ -1252,13 +1195,7 @@ jobs:
           APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN }}
           APPLE_SIMPLEX_NOTARIZATION_APPLE_ID: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_APPLE_ID }}
           APPLE_SIMPLEX_NOTARIZATION_PASSWORD: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_PASSWORD }}
-        run: |
-          SKIP_VLC=1 scripts/desktop/build-lib-mac.sh
-          name=simplex-chat-libs-macos-${{ matrix.arch }}
-          mkdir -p release-libs/$name/libs
-          find apps/multiplatform/common/src/commonMain/cpp/desktop/libs/mac-${{ matrix.arch }} -maxdepth 1 -type f -exec cp {} release-libs/$name/libs/ \;
-          scripts/ci/sign-libs-mac.sh release-libs/$name/libs
-          (cd release-libs/$name && zip -r ../$name.zip libs)
+        run: python3 scripts/simplex-chat-build.py build libs macos --require-signing --out release-libs
 
       - name: Upload library
         if: ${{ !cancelled() && matrix.should_run == true && steps.mac_lib_build.outcome == 'success' }}
@@ -1354,16 +1291,19 @@ jobs:
           key: ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-${{ github.sha }}
 
   build-ios:
-    name: "macos-latest (iOS)"
+    name: "macos-26 (iOS)"
     needs: maybe-release
     if: needs.maybe-release.outputs.ios == 'true'
-    runs-on: macos-latest
+    runs-on: macos-26
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-ios
       cancel-in-progress: ${{ github.event_name != 'push' }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+
+      - name: Use the release Xcode
+        uses: ./.github/actions/xcode
 
       - name: Point Command Line Tools SDK to Xcode SDK
         shell: bash
@@ -1389,6 +1329,69 @@ jobs:
             ARCHS=arm64 \
             CODE_SIGNING_ALLOWED=NO
 
+  # The unsigned archive that the App Store build is exported from, and its core, for reproduce ios: the App Store
+  # binary is encrypted and signed again by Apple, so no one can compare it with a build.
+  release-ios:
+    name: "macos-26 (iOS archive)"
+    needs: maybe-release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-26
+    timeout-minutes: 360
+    env:
+      HAS_ART_KEY: ${{ secrets.SIMPLEX_ART_SSH_KEY != '' }}
+      HOMEBREW_NO_AUTO_UPDATE: 1
+      HOMEBREW_NO_INSTALL_CLEANUP: 1
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: tree:0
+
+      - name: Use the release Xcode
+        uses: ./.github/actions/xcode
+
+      - name: Use the macOS 26 SDK
+        run: scripts/ci/ios-sim/use-macos26-sdk.sh
+
+      # without the key of the private brand assets, as on forks, the archive has the default icons
+      - name: Checkout brand assets
+        if: env.HAS_ART_KEY == 'true'
+        uses: actions/checkout@v6
+        with:
+          repository: simplex-chat/simplex-chat-art
+          ssh-key: ${{ secrets.SIMPLEX_ART_SSH_KEY }}
+          path: simplex-chat-art
+
+      - name: Build archive
+        id: ios-release
+        run: |
+          scripts/simplex-chat-build.py build xcarchive ${{ env.HAS_ART_KEY == 'true' && '--art simplex-chat-art' || '' }} --out release-files --install-nix
+          for output in "archive=SimpleX.xcarchive.zip" "core=pkg-ios-aarch64-swift-json.zip"; do
+            key=${output%%=*}
+            name=${output#*=}
+            echo "${key}_path=$GITHUB_WORKSPACE/release-files/$name" >> "$GITHUB_OUTPUT"
+            echo "${key}_hash=SHA2-256($name)= $(shasum -a 256 "release-files/$name" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Upload archive
+        uses: ./.github/actions/prepare-release
+        with:
+          bin_path: ${{ steps.ios-release.outputs.archive_path }}
+          bin_name: SimpleX.xcarchive.zip
+          bin_hash: ${{ steps.ios-release.outputs.archive_hash }}
+          github_ref: ${{ github.ref }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload core
+        uses: ./.github/actions/prepare-release
+        with:
+          bin_path: ${{ steps.ios-release.outputs.core_path }}
+          bin_name: pkg-ios-aarch64-swift-json.zip
+          bin_hash: ${{ steps.ios-release.outputs.core_hash }}
+          github_ref: ${{ github.ref }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
 # =========================
 #      Windows Build
 # =========================
@@ -1410,6 +1413,11 @@ jobs:
             cli_asset_name: simplex-chat-windows-x86-64
             desktop_asset_name: simplex-desktop-windows-x86_64.msi
     steps:
+      # Git for Windows checks files out with CRLF line endings, which the Windows build would compile into the binaries
+      - name: Check out with the repository's line endings
+        shell: bash
+        run: git config --global core.autocrlf false
+
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
@@ -1419,7 +1427,6 @@ jobs:
         id: prepare
         uses: ./.github/actions/prepare-build
         with:
-          java_ver: ${{ needs.variables.outputs.JAVA_VER }}
           ghc_ver: ${{ matrix.ghc }}
           github_ref: ${{ github.ref }}
 
@@ -1428,7 +1435,8 @@ jobs:
         with:
           minimum-size: 16GB
           maximum-size: 16GB
-          disk-root: "C:"
+          # C: holds the fixed directory of the Windows builds, and has about 30 GB free
+          disk-root: "D:"
   
       - name: 'Setup MSYS2'
         uses: simplex-chat/setup-msys2@v2
@@ -1443,6 +1451,7 @@ jobs:
           pacboy: >-
             toolchain:p
             cmake:p
+            python:p
 
       - name: Compute cache key prefixes
         id: keys
@@ -1506,23 +1515,11 @@ jobs:
         shell: msys2 {0}
         run: |
           export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
-          scripts/desktop/prepare-openssl-windows.sh
-          openssl_windows_style_path=$(echo `pwd`/dist-newstyle/openssl-3.0.15 | sed 's#/\([a-zA-Z]\)#\1:#' | sed 's#/#\\#g')
-          rm cabal.project.local 2>/dev/null || true
-          echo "ignore-project: False" >> cabal.project.local
-          echo "package direct-sqlcipher" >> cabal.project.local
-          echo "    flags: +openssl" >> cabal.project.local
-          echo "    extra-include-dirs: $openssl_windows_style_path\include" >> cabal.project.local
-          echo "    extra-lib-dirs: $openssl_windows_style_path" >> cabal.project.local
-
+          python scripts/simplex-chat-build.py build openssl windows --out "$(cygpath -w "$RUNNER_TEMP")/openssl"
           scripts/ci/prune-old-builds.sh dist-newstyle
           rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq* dist-newstyle/src/hs-jpeg-t* dist-newstyle/src/JuicyPixe*
-          sed -i "s/, unix /--, unix /" simplex-chat.cabal
           cabal build -j --enable-tests ${{ env.ghc_options }}
           rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq* dist-newstyle/src/hs-jpeg-t* dist-newstyle/src/JuicyPixe*
-          path=$(cabal list-bin simplex-chat | tail -n 1)
-          echo "bin_path=$path" >> $GITHUB_OUTPUT
-          echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Compute dependency cache key
         id: hash-deps
@@ -1558,13 +1555,7 @@ jobs:
         shell: msys2 {0}
         run: |
           export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
-          SKIP_VLC=1 scripts/desktop/build-lib-windows.sh
-          dlltool -d libsimplex.dll.def -l libsimplex.lib -D libsimplex.dll
-          name=simplex-chat-libs-windows-x86_64
-          mkdir -p release-libs/$name/libs
-          find apps/multiplatform/common/src/commonMain/cpp/desktop/libs/windows-x86_64 -maxdepth 1 -type f -exec cp {} release-libs/$name/libs/ \;
-          cp libsimplex.lib release-libs/$name/libs/
-          (cd release-libs/$name && zip -r ../$name.zip libs)
+          python scripts/simplex-chat-build.py build libs windows --out release-libs
 
       - name: Upload library
         if: needs.maybe-release.outputs.libs_tag
@@ -1623,37 +1614,37 @@ jobs:
           name: package-tests-windows-x86_64
           path: ${{ runner.temp }}/package-tests
 
-      - name: Upload CLI
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: ./.github/actions/prepare-release
-        with:
-          bin_path: ${{ steps.windows_cli_build.outputs.bin_path }}
-          bin_name: ${{ matrix.cli_asset_name }}
-          bin_hash: ${{ steps.windows_cli_build.outputs.bin_hash }}
-          github_ref: ${{ github.ref }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build Desktop
-        id: windows_desktop_build
+      - name: Build release files
+        id: windows-release
         if: startsWith(github.ref, 'refs/tags/v')
         shell: msys2 {0}
         run: |
           export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
-          scripts/desktop/build-lib-windows.sh
-          cd apps/multiplatform
-          ./gradlew -Psimplex.assets.dir=../../assets packageMsi
-          rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq* dist-newstyle/src/hs-jpeg-t* dist-newstyle/src/JuicyPixe*
-          path=$(echo $PWD/release/main/msi/*imple*.msi | sed 's#/\([a-z]\)#\1:#' | sed 's#/#\\#g')
-          echo "package_path=$path" >> $GITHUB_OUTPUT
-          echo "package_hash=$(echo SHA2-256\(${{ matrix.desktop_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          python scripts/simplex-chat-build.py build desktop windows --out release-files
+          for output in "cli=${{ matrix.cli_asset_name }}" "desktop=${{ matrix.desktop_asset_name }}"; do
+            key=${output%%=*}
+            name=${output#*=}
+            echo "${key}_path=$(cygpath -w "$PWD/release-files/$name")" >> "$GITHUB_OUTPUT"
+            echo "${key}_hash=SHA2-256($name)= $(sha256sum "release-files/$name" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          done
 
-      - name: Upload Desktop
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Upload CLI
+        if: steps.windows-release.outcome == 'success'
         uses: ./.github/actions/prepare-release
         with:
-          bin_path: ${{ steps.windows_desktop_build.outputs.package_path }}
+          bin_path: ${{ steps.windows-release.outputs.cli_path }}
+          bin_name: ${{ matrix.cli_asset_name }}
+          bin_hash: ${{ steps.windows-release.outputs.cli_hash }}
+          github_ref: ${{ github.ref }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Desktop
+        if: steps.windows-release.outcome == 'success'
+        uses: ./.github/actions/prepare-release
+        with:
+          bin_path: ${{ steps.windows-release.outputs.desktop_path }}
           bin_name: ${{ matrix.desktop_asset_name }}
-          bin_hash: ${{ steps.windows_desktop_build.outputs.package_hash }}
+          bin_hash: ${{ steps.windows-release.outputs.desktop_hash }}
           github_ref: ${{ github.ref }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -1682,7 +1673,6 @@ jobs:
         shell: msys2 {0}
         run: |
           export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
-          scripts/desktop/prepare-openssl-windows.sh
           scripts/ci/prune-old-builds.sh dist-newstyle
           rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq* dist-newstyle/src/hs-jpeg-t* dist-newstyle/src/JuicyPixe*
           cabal build -j --enable-tests --ghc-options=-O0

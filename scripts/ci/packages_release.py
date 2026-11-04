@@ -103,8 +103,8 @@ LIBS_ASSETS = [
 ADDON_RUNNERS = {
     "linux-aarch64": "ubuntu-22.04-arm",
     "linux-x86_64": "ubuntu-22.04",
-    "macos-aarch64": "macos-latest",
-    "macos-x86_64": "macos-15-intel",
+    "macos-aarch64": "macos-26",
+    "macos-x86_64": "macos-26-intel",
     "windows-x86_64": "windows-latest",
 }
 ADDON_PLATFORMS = list(ADDON_RUNNERS)
