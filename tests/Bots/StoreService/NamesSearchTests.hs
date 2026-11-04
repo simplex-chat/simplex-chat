@@ -78,7 +78,7 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "makes one entity per short link of its record's kind, splitting on ';', and none from other values" $ testRecordLinks g
     it "makes entities of the first 5 short links of a record only, fetching no other" $ testRecordLinksCap g
     it "reads no records from another resolver" $ testOtherResolver g
-    it "answers a registered name's record edits left and when the next one returns, counting pending and mined edits of 365 days" $ testRecordEdits g
+    it "answers a registered name's record edits left and when the next one returns, counting the edits of 365 days, reverted too" $ testRecordEdits g
     it "answers a link whose profile was not read unread, and a private host's unavailable without fetching it" $ testEntityProfiles g
     it "answers provider_unavailable to any failed chain read, records and price included" $ testFailedReads g
     it "fails a search whose reads together pass one deadline, though each read meets it" $ testOneDeadline g
@@ -416,7 +416,7 @@ testOtherResolver g = withSearch g id id $ \s@Search {node} -> do
   searchAlice s 12 `shouldReturn` registeredAnswer [] J.Null otherResolverText J.Null
 
 testRecordEdits :: TVar ChaChaDRG -> IO ()
-testRecordEdits g = forM_ [(3, 1), (2, 0)] $ \(perYear, left) -> withSearch g (\cfg -> cfg {nRecordEditsPerYear = perYear}) id $ \s@Search {node, store} -> do
+testRecordEdits g = forM_ [(4, 1, 10), (2, 0, 5)] $ \(perYear, left, returnsFrom) -> withSearch g (\cfg -> cfg {nRecordEditsPerYear = perYear}) id $ \s@Search {node, store} -> do
   registeredWith node fullLink ""
   let daysAgo :: Int -> UTCTime
       daysAgo d = addUTCTime (fromIntegral $ negate d * 86400) t0
@@ -430,7 +430,7 @@ testRecordEdits g = forM_ [(3, 1), (2, 0)] $ \(perYear, left) -> withSearch g (\
     settleRecordEdit db revertedId (ESReverted Nothing) `shouldReturn` True
   answer <- searchAlice s 12
   (snd answer >>= JT.parseMaybe (J.withObject "answer" (J..: "recordEdits")))
-    `shouldBe` Just (editsLeft left $ J.toJSON (floor (utcTimeToPOSIXSeconds $ daysAgo 10) + 365 * 86400 :: Int))
+    `shouldBe` Just (editsLeft left $ J.toJSON (floor (utcTimeToPOSIXSeconds $ daysAgo returnsFrom) + 365 * 86400 :: Int))
 
 testEntityProfiles :: TVar ChaChaDRG -> IO ()
 testEntityProfiles g = withSearch g id id $ \s@Search {node} -> do

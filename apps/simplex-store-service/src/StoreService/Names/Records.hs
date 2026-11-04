@@ -139,10 +139,10 @@ newRecords rsStore rsTurns rsContracts rsChain rsSender rsTLD rsEditsPerYear rsN
   rsChanges <- newTVarIO 0
   pure Records {rsStore, rsTurns, rsContracts, rsChain, rsSender, rsTLD, rsEditsPerYear, rsNow, rsPendingAfter = editPendingAfter, rsClaimed, rsStalled, rsChanges}
 
--- | A pending or mined edit counts. One refused, never sent, or reverted on chain does not.
+-- | Every relayed edit counts, a reverted one too, since its gas is paid. One refused or never sent does not.
 nameEditsLeft :: DB.Connection -> Int -> LabelHash -> UTCTime -> IO EditsLeft
 nameEditsLeft db perYear lh now = do
-  times <- countedEditTimes db lh $ addUTCTime (negate editLimitWindow) now
+  times <- relayedEditTimes db lh $ addUTCTime (negate editLimitWindow) now
   let counted = length times
   -- the oldest edit returns one, unless a lowered limit is overrun and later ones must go too
   pure EditsLeft {elLeft = max 0 $ perYear - counted, elNextAt = addUTCTime editLimitWindow <$> listToMaybe (drop (counted - perYear) times)}

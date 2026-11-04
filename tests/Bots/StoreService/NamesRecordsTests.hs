@@ -96,7 +96,7 @@ namesRecordsTests = describe "StoreService names: records" $ do
     it "answers an exact resend of two edits from the stored request, and checks either edit alone anew" $ testTwoResend g
     it "counts two edits as one edit of the yearly limit, taking the last one left" $ testTwoYearLimit g
     it "counts two edits as one request of the hourly cap" $ testTwoCap g
-    it "answers a mined revert of two edits record_reverted with no name, giving its edit back" $ testTwoReverted g
+    it "answers a mined revert of two edits record_reverted with no name, counting it once" $ testTwoReverted g
     it "stores nothing when the dry run of two edits reverts, answering it with no name" $ testTwoDryRunReverted g
     it "settles two edits SignatureExpired once the earliest deadline is passed at depth" $ testTwoExpired g
     it "answers two edits applied with no hash only when the nonce passed both and both records hold their values" $ testTwoAppliedByAnother g
@@ -121,7 +121,7 @@ namesRecordsTests = describe "StoreService names: records" $ do
     it "refuses a name's fourth edit within 365 days with when the first leaves, before any chain read, row or gas" $ testYearLimit g
     it "takes an edit again once the oldest counted one is 365 days old" $ testYearWindow g
     it "answers an accepted edit's resend as before once the limit is used up, counting it once" $ testYearResend g
-    it "counts a pending edit, and no edit refused, never sent, or reverted on chain" $ testYearFailedRelays g
+    it "counts a pending edit and one reverted on chain, and no edit refused or never sent" $ testYearFailedRelays g
   describe "http" $ do
     it "answers the contract's statuses and bodies" $ testHttp g
     it "answers 503, 504, and 429 with the real wait in Retry-After" $ testHttpUnsettled g
@@ -614,7 +614,7 @@ testTwoReverted g = withSetup g $ \s@Setup {records} -> do
   _ <- mineSent s 1 False
   answerOf r `shouldReturn` EAReverted Nothing
   stateOf s req `shouldReturn` Just (ESReverted Nothing)
-  editsLeftNow s `shouldReturn` EditsLeft editsPerYear Nothing
+  editsLeftNow s `shouldReturn` EditsLeft (editsPerYear - 1) (Just $ addUTCTime year t0)
   relayEdit records req `shouldReturn` EAReverted Nothing
 
 testTwoDryRunReverted :: TVar ChaChaDRG -> IO ()
@@ -644,7 +644,7 @@ testTwoExpired g = withSetup g $ \s@Setup {node, records, owner} -> do
   setBlock node 302 $ deadline + 2
   recordsRound records
   stateOf s req `shouldReturn` Just (ESReverted $ Just "SignatureExpired")
-  editsLeftNow s `shouldReturn` EditsLeft editsPerYear Nothing
+  editsLeftNow s `shouldReturn` EditsLeft (editsPerYear - 1) (Just $ addUTCTime year t0)
 
 testTwoAppliedByAnother :: TVar ChaChaDRG -> IO ()
 testTwoAppliedByAnother g =
@@ -927,10 +927,11 @@ testYearResend g = withSetup g $ \s@Setup {node, records} -> do
 
 testYearFailedRelays :: TVar ChaChaDRG -> IO ()
 testYearFailedRelays g = withSetup g $ \s@Setup {node, records, owner} -> do
-  -- reverted on chain, its nonce unused
+  -- reverted on chain, its nonce unused, and its gas paid
   r <- relay s =<< ownerEdit s viemChannelLink
   _ <- mineSent s 1 False
   answerOf r `shouldReturn` EAReverted Nothing
+  editsLeftNow s `shouldReturn` EditsLeft (editsPerYear - 1) (Just $ addUTCTime year t0)
   -- refused: another signer, then a passed deadline
   other <- newEphemeralWallet g
   (relayEdit records =<< signEdit s other (channel viemChannelLink) 0 deadline) `shouldReturn` EARefused
@@ -942,20 +943,19 @@ testYearFailedRelays g = withSetup g $ \s@Setup {node, records, owner} -> do
   setFault node "eth_maxPriorityFeePerGas" HttpFailure
   (relayEdit records =<< signEdit s owner (channel "https://smp9.simplex.im/c#fee") 0 deadline) `shouldReturn` EAUnavailable
   clearFault node "eth_maxPriorityFeePerGas"
-  -- two mined and one pending use the limit up
-  _ <- appliedEditsFrom s 0 1 2
-  setNonce s 2
-  unsettled <- signEdit s owner (channel "https://smp9.simplex.im/c#pending") 2 deadline
+  -- with the reverted one, one mined and one pending use the limit up
+  _ <- appliedEditsFrom s 0 1 1
+  setNonce s 1
+  unsettled <- signEdit s owner (channel "https://smp9.simplex.im/c#pending") 1 deadline
   relayEdit records {rsPendingAfter = shortWait} unsettled `shouldReturn` EAPending
-  setNonce s 3
-  fourth <- signEdit s owner (channel "https://smp9.simplex.im/c#fourth") 3 deadline
+  setNonce s 2
+  fourth <- signEdit s owner (channel "https://smp9.simplex.im/c#fourth") 2 deadline
   relayEdit records fourth `shouldReturn` EALimited (addUTCTime year t0)
-  -- the pending edit reverts, which gives its edit back
-  _ <- mineSent s 4 False
-  stateOf s unsettled >>= (`shouldSatisfy` \case Just (ESReverted _) -> True; _ -> False)
-  r' <- relay s fourth
-  h <- mineSent s 5 True
-  answerOf r' `shouldReturn` EAApplied (Just h)
+  -- the owner spent the pending edit's nonce on another body, so it reverts InvalidNonce, and still counts
+  _ <- mineSent s 3 False
+  stateOf s unsettled `shouldReturn` Just (ESReverted $ Just "InvalidNonce")
+  relayEdit records fourth `shouldReturn` EALimited (addUTCTime year t0)
+  editRows s `shouldReturn` 3
 
 -- | The owner's channel edits from nonce 0, each relayed, mined and answered, a day apart from t0; their requests and hashes.
 appliedEdits :: Setup -> Int -> IO [(EditRequest, TxHash)]

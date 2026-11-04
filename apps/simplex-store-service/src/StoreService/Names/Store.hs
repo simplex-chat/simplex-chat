@@ -97,7 +97,6 @@ module StoreService.Names.Store
     pendingEditIds,
     deleteUnsentEdit,
     relayedEditTimes,
-    countedEditTimes,
   )
 where
 
@@ -1544,15 +1543,6 @@ relayedEditTimes db (LabelHash lh) since =
       db
       "SELECT created_at FROM sx_badge_service_name_record_edits WHERE label_hash = ? AND created_at > ? ORDER BY created_at"
       (Binary lh, truncateToSecond since)
-
--- | When each pending or mined edit of the name was made since the given time, oldest first: the edits its yearly limit counts.
-countedEditTimes :: DB.Connection -> LabelHash -> UTCTime -> IO [UTCTime]
-countedEditTimes db (LabelHash lh) since =
-  map fromOnly
-    <$> DB.query
-      db
-      "SELECT created_at FROM sx_badge_service_name_record_edits WHERE label_hash = ? AND created_at > ? AND state IN (?,?) ORDER BY created_at"
-      (Binary lh, truncateToSecond since, pendingEdit, minedEdit)
 
 int64 :: Word64 -> Int64
 int64 = fromIntegral

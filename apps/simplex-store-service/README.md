@@ -823,16 +823,17 @@ any 365 days:
 - each accepted request counts once, from when it is stored to be sent, whether it changes one link
   or both, or clears them;
 - links set at registration ride on the register transaction and count nothing;
-- a request refused before any transaction, a dry run that reverts, a send the chain fails, and an
-  edit that reverts on chain (or expires) count nothing, the last once it settles. A pending edit
-  counts until then;
+- an edit that reverts on chain (or expires) counts as well, since its transaction may have paid
+  gas, so the limit bounds repeats of failing edits too;
+- a request refused before any transaction, a dry run that reverts, and a send the chain fails count
+  nothing;
 - an exact resend of an accepted request is answered as before and counts nothing more.
 
 When a name has none left, `POST /api/name/records` answers
 `429 {"error": "edit_limit", "nextAt": <unix seconds>}` before any chain read, and the search answer
 for the name carries `recordEdits: {"left": 0, "nextAt": …}`, from which the page shows when the
 owner can edit again. Lowering the setting keeps the edits already counted. The hourly cap of 10
-relayed requests per name still applies, and still counts reverted ones.
+relayed requests per name still applies.
 
 ### The gas key
 

@@ -94,8 +94,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "round-trips a clear edit" testClearEdit
     it "stores an edit's two changes and reads them back in nonce order, found by either nonce" testTwoChangeEdit
     it "deletes an unsent edit with its changes" testDeleteUnsentChanges
-    it "gives the times of a name's relayed edits in the window" testRelayedEditTimes
-    it "gives the times of a name's pending and mined edits in the window, leaving out reverted ones" testCountedEditTimes
+    it "gives the times of a name's relayed edits in the window, pending, mined and reverted" testRelayedEditTimes
 
 t0 :: UTCTime
 t0 = UTCTime (fromGregorian 2026 10 21) 0
@@ -1010,17 +1009,10 @@ changeRows st = withTransaction st $ \db -> do
 
 testRelayedEditTimes :: IO ()
 testRelayedEditTimes = withServiceStore $ \st -> do
-  forM_ (zip [1 ..] [0, 10, 20]) $ \(n, m) ->
-    withTransaction st $ \db -> void $ insertRecordEdit db (atNonce (fromIntegral n) $ newEdit ownerA n setChannel) (at m)
-  withTransaction st (\db -> void $ insertRecordEdit db (atNonce 9 $ newEdit ownerA 9 setChannel) {nreLabelHash = labelHash "bobsbakery"} (at 15))
-  withTransaction st (\db -> relayedEditTimes db (labelHash "alicebakery") (at 5)) `shouldReturn` [at 10, at 20]
-
-testCountedEditTimes :: IO ()
-testCountedEditTimes = withServiceStore $ \st -> do
   [_, Just minedId, Just revertedId, _] <- forM (zip [1 ..] [0, 10, 20, 30]) $ \(n, m) ->
     withTransaction st $ \db -> insertRecordEdit db (atNonce (fromIntegral n) $ newEdit ownerA n setChannel) (at m)
   withTransaction st $ \db -> do
     settleRecordEdit db minedId (ESMined Nothing) `shouldReturn` True
     settleRecordEdit db revertedId (ESReverted Nothing) `shouldReturn` True
   withTransaction st (\db -> void $ insertRecordEdit db (atNonce 9 $ newEdit ownerA 9 setChannel) {nreLabelHash = labelHash "bobsbakery"} (at 15))
-  withTransaction st (\db -> countedEditTimes db (labelHash "alicebakery") (at 5)) `shouldReturn` [at 10, at 30]
+  withTransaction st (\db -> relayedEditTimes db (labelHash "alicebakery") (at 5)) `shouldReturn` [at 10, at 20, at 30]
