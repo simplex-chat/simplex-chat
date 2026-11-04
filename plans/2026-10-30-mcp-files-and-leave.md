@@ -116,7 +116,7 @@ control.ts   OwnerRequest    {type: "leave", chat}
              commandsReply   /leave added
 tools.ts     leaveChat       performLeave, public, by chat reference; perform calls it
              chatFiles       new: the folder of a chat, its file count and bytes
-             deleteChatFiles new: fails and cancels the chat's downloads, then deletes its folder
+             deleteChatFiles new: fails and cancels the chat's downloads, also those the core continues after a restart, then deletes its folder
 messages.ts  chatFolder      new: DATA/files/group-N for #N, DATA/files/contact-N for @N
 actions.ts   leaveVerbs      input: {chat}
 ```
@@ -138,6 +138,7 @@ the folder of CHAT with files: after the reply, post "Files from business Ridgel
 ```
 step                          effect
 each download of CHAT         rejected, "Your owner deleted the files of this chat."; apiCancelFile, an error logged; its partial file deleted
+each other file of CHAT       apiCancelFile, an error logged; files in status rcvAccepted, rcvTransfer or rcvWarning, read with apiGetChat in pages of 100; a left chat: none
 the folders of CHAT with files the folder and DATA/forwarded/<folder> deleted; reply "Deleted 3 files from #9, 2.1 MB.", forwarded files counted
 no files                      reply "No files from #9."
 ```
@@ -155,6 +156,7 @@ sequenceDiagram
   O->>C: /delete #9 files
   C->>T: deleteChatFiles(#9)
   T->>T: each download of #9: failDownload, apiCancelFile, its partial file deleted
+  T->>T: each other file of #9 in rcvAccepted, rcvTransfer or rcvWarning: apiCancelFile
   T->>T: the folder of #9 and its forwarded folder deleted
   C->>O: Deleted 3 files from #9, 2.1 MB.
 ```
@@ -200,9 +202,9 @@ Status, completed:
 fileStatus                         status
 rcvInvitation, rcvWarning          offered
 rcvAccepted, rcvTransfer           offered
-rcvComplete                        failed: "The received file is not in the agent's files folder.", when the download path has no file
-                                   received, when fileSource is the download path
-                                   offered otherwise: a file moved there without a download
+rcvComplete                        failed: "The received file is not in the agent's files folder.", when neither the download path nor the forwarded path has a file
+                                   received, when the download path has a file and fileSource is the download path or the forwarded path
+                                   offered otherwise: a file moved to the download path without a download, or a forwarded file before /receive
 rcvCancelled                       failed: "The file was cancelled."
 rcvAborted                         failed: "The download was aborted."
 rcvError                           failed: fileErrorText
@@ -268,7 +270,8 @@ command              effect
 - `/list` shows it per chat.
 - Mode host: the host confirms the call (`anthropic/requiresUserInteraction`, `tools.ts:361`); no card.
 - A file on unknown servers gets a card under the files approval too; the card leaves out `/'receive CHAT N all'`, and `/receive CHAT N all` of another card leaves it pending, with the reply "Files approved for group Builders (#3) by Alice, except downloads from unknown servers. /'receive #3 off'".
-- `/receive CHAT N` after `/forward CHAT N` moves the forwarded file into `DATA/files/<folder>/`, once the copy for the post is made, when it has the file's size.
+- `/receive CHAT N` after `/forward CHAT N` moves the forwarded file into `DATA/files/<folder>/`, once the copy for the post is made.
+- The post of `/forward` replies to the card when the message, with the card as its quote, is within 15602 bytes by the length rule of `send`; otherwise it is posted without the quote.
 
 ```mermaid
 sequenceDiagram
@@ -309,11 +312,15 @@ actions.ts    DownloadAction      new: input, subject, chat, item, from, file, s
               performedText       download: "downloaded."
 messages.ts   anyScopeChatRef     new: @N or #N, also for a member chat of a group
               chatRef             undefined for a member chat of a group, otherwise anyScopeChatRef
+              filePaths           new: the download path and the forwarded path of a received file
+              receivingFiles      new: the IDs of the chat's files in status rcvAccepted, rcvTransfer or rcvWarning
 tools.ts      download            new: attach; knownChat; the item and its file; action
               actionResult        until; an action still performing at until: {action, status: "performing"}, kept in memory
               performDownload     new: startedAt; downloadFile; path
-              downloadFile        new: one download per file ID, a promise settled by onFile; a forwarded file moved to the download path
-              forwardFile         new, public: the download to DATA/forwarded/<folder>/, then its copy for the post
+              downloadTo          new: one download per file ID to a target path, a promise settled by onFile
+              downloadFile        new: downloadTo the download path; a forwarded file moved to the download path
+              forwardFile         new, public: downloadTo the forwarded path, then its copy for the post
+              fitsMessage         the length rule of send, also for the post of /forward
               onFile              new: settles the promise of the file's download
               onFileComplete      new: moves the received file, also of a member chat of a group; settles as onFile
               onFileCancelled     new: deletes the partial file of a download; rejects it
@@ -328,7 +335,7 @@ control.ts    ownerRequest        /receive [CHAT] N; /receive CHAT N all; /recei
               approveChat         standing kind
               revoke              standing kind
               standingApprover    standing kind
-              forward             new: forwardFile, then the copy posted into the agent control chat, replying to the card
+              forward             new: forwardFile, then the copy posted into the agent control chat, replying to the card when the message fits
               cardContent         new: image and video cards with the sender's preview, fitted to the card size
               postCard, outcome   cardContent
               outcome             no post for a download without a card
@@ -343,17 +350,16 @@ status       meaning
 performing   wait passed after the approval; the download continues; the same call again attaches to the action
 ```
 
-`downloadFile(chat, item, file)`, also for each received file that `newChatItems` shows in status rcvAccepted:
+`downloadTo(action, TARGET)`: TARGET is the download path `DATA/files/<folder>/<file ID><extension>` for `downloadFile`, run by `download` and for each received file that `newChatItems` shows in status rcvAccepted; for `forwardFile`, run by `/forward`, the forwarded path `DATA/forwarded/<folder>/<file ID><extension>`:
 ```
 a download of the file ID in memory: its promise
-otherwise a new promise in memory, then:
-  path DATA/files/<folder>/<file ID><extension>; the folder created with mode 0700
-  the item's file status:
-    rcvComplete              resolved with path; path has no file: rejected, "The received file is not in the agent's files folder."
-    failed                   partial file deleted; rejected
-    rcvAccepted, rcvTransfer the events settle it
-    other                    apiReceiveFile(fileId, path); the core creates the file at that path (getRcvFilePath, Library/Internal.hs:958-965)
+otherwise a new promise in memory, then the item's file status:
+  rcvComplete              resolved with the download path or the forwarded path, the first that has a file; neither: rejected, "The received file is not in the agent's files folder."
+  failed                   partial file deleted; rejected
+  rcvAccepted, rcvTransfer the events settle it
+  other                    the folder of TARGET created with mode 0700; apiReceiveFile(fileId, TARGET); the core creates the file at that path (getRcvFilePath, Library/Internal.hs:958-965)
 ```
+- `downloadFile` resolved with the forwarded path: after the copy for the post of `/forward`, the file moved to the download path when that has no file.
 
 Events and checks, for the received file of the event's item:
 ```
@@ -365,7 +371,7 @@ every 60 s, the item read again              gone: the partial file at the last 
 30 minutes without rcvTransfer progress      rejected, "The download made no progress for 30 minutes and was cancelled."; apiCancelFile; the partial file at the last fileSource deleted
 chatItemUpdated                              as rcvComplete and failed above: file digest, relays not approved (Library/Subscriber.hs:415-439)
 ```
-- Moved to path: when fileSource differs, path has no file and the file at fileSource has fileSize bytes; also without a download, and from a member chat of a group into the group's folder.
+- Moved to path: when fileSource is neither the download path nor the forwarded path, the download path has no file and the file at fileSource has fileSize bytes; also without a download, and from a member chat of a group into the group's folder.
 - A move is a rename; across file systems (EXDEV), a copy to `<path>.part`, its rename to path and a delete of the source.
 - Partial file deleted: only for a file with a download, when the file has at most fileSize bytes.
 - Every other row changes only a file with a download.
@@ -373,13 +379,15 @@ chatItemUpdated                              as rcvComplete and failed above: fi
 ```mermaid
 flowchart TD
   E[event or 60 s check] --> C{rcvFileComplete, or a check that reads rcvComplete}
-  C -- yes --> M{fileSource differs, path has no file, fileSize bytes at fileSource}
-  M -- yes --> V[moved to path]
+  C -- yes --> M{fileSource neither the download path nor the forwarded path, no file at the download path, fileSize bytes at fileSource}
+  M -- yes --> V[moved to the download path]
   M -- no --> S{download of the file ID}
   V --> S
   C -- no --> S
   S -- no --> N[unchanged]
-  S -- yes, rcvComplete --> D[resolved with path]
+  S -- yes, rcvComplete --> R{a file at the download path or the forwarded path}
+  R -- yes --> D[resolved with the first of them]
+  R -- no --> Y
   S -- yes, failed, cancelled, gone or stalled --> P{at most fileSize bytes at fileSource}
   P -- yes --> X[deleted, rejected]
   P -- no --> Y[rejected]
@@ -410,7 +418,7 @@ command                 reply
 /receive CHAT off       Files from business Ridgeline (#9) need approval again.
                         Files from #9 have no standing approval.
 /receive [CHAT] N       none; the card is edited at the outcome
-/forward [CHAT] N       none; the file arrives as a reply to the card
+/forward [CHAT] N       none; the file arrives, as a reply to the card when the message fits
                         Action N: the file was not received: `<error>`.   (the download or the post of the file failed)
 /receive, /forward      Action N has no file.   (N not a download)
 /approve [CHAT] N       Action N is a download: /'receive #9 N', /'receive #9 N all', /'forward #9 N' or /'reject #9 N'.   (N a download)

@@ -112,12 +112,12 @@ graph TD
 | Server start | [`src/serve.ts`](../src/serve.ts#L65) | `startServer` | [65](../src/serve.ts#L65) |
 | Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L88) | `startAgent` | [88](../src/serve.ts#L88) |
 | HTTP listener | [`src/http.ts`](../src/http.ts#L14) | `startHttp` | [14](../src/http.ts#L14) |
-| Tool registration | [`src/tools.ts`](../src/tools.ts#L483) | `AgentTools.register` | [483](../src/tools.ts#L483) |
-| Downloads | [`src/tools.ts`](../src/tools.ts#L517) | `AgentTools.downloadFile` | [517](../src/tools.ts#L517) |
+| Tool registration | [`src/tools.ts`](../src/tools.ts#L484) | `AgentTools.register` | [484](../src/tools.ts#L484) |
+| Downloads | [`src/tools.ts`](../src/tools.ts#L518) | `AgentTools.downloadFile` | [518](../src/tools.ts#L518) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L124) | `Actions` | [124](../src/actions.ts#L124) |
 | Agent control chat | [`src/control.ts`](../src/control.ts#L81) | `Control` | [81](../src/control.ts#L81) |
-| Card text | [`src/control.ts`](../src/control.ts#L551) | `cardText` | [551](../src/control.ts#L551) |
-| Item watch | [`src/messages.ts`](../src/messages.ts#L85) | `ChatItemsWatch` | [85](../src/messages.ts#L85) |
+| Card text | [`src/control.ts`](../src/control.ts#L556) | `cardText` | [556](../src/control.ts#L556) |
+| Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
 | Claude Code entry | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
 | Data folder files | [`src/files.ts`](../src/files.ts#L12) | `createDataFolder`, `acquireLock` | [12](../src/files.ts#L12) |
 | Package manifest | [`package.json`](../package.json) | `bin.simplex-mcp` | [6](../package.json#L6) |

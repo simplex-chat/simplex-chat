@@ -482,9 +482,9 @@ command             result
 /receive [CHAT] N   download N is performed: the agent receives the file; the card is edited
 /receive CHAT N all download N is performed, and the files approval of CHAT by the sender; its other pending downloads of files on known servers are performed
 /receive CHAT off   the files approval of CHAT is removed
-/forward [CHAT] N   the server downloads the file of download N into DIR/forwarded/FOLDER/ and posts it as a reply to the card; the card stays pending
+/forward [CHAT] N   the server downloads the file of download N into DIR/forwarded/FOLDER/ and posts it, as a reply to the card when the message fits 15602 bytes; the card stays pending
 /leave CHAT         at once, the agent leaves group CHAT or deletes contact CHAT, as the leave tool does; its pending actions for CHAT are rejected by the sender
-/delete CHAT files  the running downloads of CHAT failed and cancelled, then the folder of CHAT deleted, for a current or a left chat
+/delete CHAT files  the running downloads of CHAT failed and cancelled, also those the core continues after a restart, then the folder of CHAT deleted, for a current or a left chat
 /pending            one line per pending action: "2  send to bot SimpleX Directory  expires 2026-10-18 09:15 UTC"; "No pending actions." when none
 /list               one line per chat of the agent, as list returns them: the 100 most recent chats, each line cut to 100 bytes as encoded in the message, "…" included; then "K older chats are not shown." ("1 older chat is not shown.") when more exist
 ```
@@ -518,7 +518,7 @@ CHAT not the agent's
 /revoke CHAT, no standing approval          Messages to #9 have no standing approval.
 /receive CHAT off                           Files from group Builders (#3) need approval again.
 /receive CHAT off, no files approval        Files from #3 have no standing approval.
-/forward [CHAT] N                           none; the file is a reply to the card
+/forward [CHAT] N                           none; the file is a reply to the card when the message fits
 /receive | /forward [CHAT] N, N not a       Action 10 has no file.
 download
 /forward [CHAT] N, the download or the post Action 7: the file was not received: `<error>`.
@@ -998,15 +998,18 @@ revoke CHAT:      no approval in the chat's custom data: reply "Messages to CHAT
 receive CHAT N all: as approve CHAT all, with the key simplexMcpFiles, action N and the pending downloads of CHAT on known servers; reply "Files approved for ... by NAME. /'receive CHAT off'",
                   with ", except downloads from unknown servers" after NAME while other pending downloads of CHAT have unknown servers
 receive CHAT off: as revoke CHAT, with the key simplexMcpFiles; replies "Files from CHAT have no standing approval.", "Files from ... need approval again."
-forward [CHAT] N: forwardFile(action N), not awaited: downloadFile to DIR/forwarded/FOLDER/<fileId><extension>, or the file already received; then a copy under the file's name in DIR/files/sent/;
+forward [CHAT] N: forwardFile(action N), not awaited: downloadTo DIR/forwarded/FOLDER/<fileId><extension>, or the file already received; then a copy under the file's name in DIR/files/sent/;
                   then /_send #group json [{fileSource: {filePath: the copy}, msgContent: the file's type and preview, no text, quotedItemId: card}];
+                  quotedItemId left out when the message, with the card as its quote, is over 15602 bytes by the length rule of send;
                   an error of the download, the copy or the post: post "Action N: the file was not received: `<error>`."; a failed post deletes the copy; no reply
 leave CHAT:       CHAT not a chat of the agent: reply "No chat CHAT. ..."; otherwise the steps of perform leave for CHAT; log "Left ... (CHAT), requested by NAME.";
                   each pending action of CHAT with its card set: reject as above; reply with the logged line; the folder of CHAT with files: after the reply, post "Files from ... are kept in ..."
 delete CHAT files: each download of CHAT in memory: rejected, "Your owner deleted the files of this chat."; /fcancel <fileId>, an error logged; delete partial at the last fileSource seen;
+                  then /_get chat CHAT count=100, and before=<the first item ID> count=100 while a page holds 100: /fcancel <fileId> for each other file in status rcvAccepted, rcvTransfer or rcvWarning,
+                  such as a download the core continues after a restart, an error logged; a chat that is gone: none; another error of a read: logged, no more reads;
                   then count and size of the files in the folder of CHAT and in DIR/forwarded/FOLDER/; delete both; reply "Deleted K files from CHAT, SIZE." or "No files from CHAT."
 pending:          reply with the pending actions
-list:             reply with one line per chat of list(), the 100 most recent: CHAT, the type and name, ", approved for this chat by NAME" while the approval applies, ", not connected";
+list:             reply with one line per chat of list(), the 100 most recent: CHAT, the type and name, ", approved for this chat by NAME" and ", files approved by NAME" while each approval applies, ", not connected";
                   each line cut to 100 encoded bytes with "…"; then "K older chats are not shown." when more exist (worst case about 10.3 KB, below the 15602-byte message)
 ```
 
@@ -1284,15 +1287,15 @@ perform download:
 
 downloadFile(chat, item, file), also run by newChatItems for each received file in status rcvAccepted (a voice file the core receives without a request: Library/Subscriber.hs:2047-2053, :2550-2556):
   path = DIR/files/FOLDER/<fileId><extension>   # FOLDER: group-N for #N, contact-N for @N; extension: of file.name when it is "." and 1 to 16 ASCII letters and digits, otherwise none
-  found = file download to path (below)
-  found is the forwarded path: after the /forward of the file ID makes its copy, moved to path when path has no file and found has file.size bytes; otherwise rejected, "The received file is not in the agent's files folder."
+  found = downloadTo path (below)
+  found is the forwarded path: after the /forward of the file ID makes its copy, moved to path when path has no file; a failed move: rejected with its error
   resolved with path
 
 forwardFile(chat, item, file), run by /forward:
-  found = file download to DIR/forwarded/FOLDER/<fileId><extension>, the forwarded path
+  found = downloadTo DIR/forwarded/FOLDER/<fileId><extension>, the forwarded path
   then a copy of found for the post, kept in memory as the forwarding of the file ID until it is made
 
-file download to TARGET:
+downloadTo TARGET:
   a download of the file ID in memory: its promise
   otherwise a new promise in memory, with TARGET
   then /_get chat <chat> around=<item> count=0, the item's file:
