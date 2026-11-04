@@ -202,7 +202,7 @@ ChatTagsModel (singleton -- filter state)
 | `preloadState` | `PreloadState` | State for infinite-scroll preloading | [L77](../Shared/Model/ChatModel.swift#L77) |
 | `secondaryIMFilter` | `SecondaryItemsModelFilter?` | Filter for secondary instances | [L76](../Shared/Model/ChatModel.swift#L76) |
 | `openingChatId` | `ChatId?` | Chat being opened by `loadOpenChat` (until `chatId` is set in its navigation timer step) or `loadOpenChatNoWait` (until its completion step) | [L96](../Shared/Model/ChatModel.swift#L96) |
-| `openingItemUpdates` | `ChatModel.ItemUpdatesWhileLoading?` | Record of the installed opening page; each newly recorded update is applied at once, until the step that clears `openingChatId` | [L97](../Shared/Model/ChatModel.swift#L97) |
+| `openingItemUpdates` | `ChatModel.ItemUpdatesWhileLoading?` | Record of the installed opening page; each newly recorded update is applied at once, until the record is stopped (`stopApplyingItemUpdates`) | [L97](../Shared/Model/ChatModel.swift#L97) |
 
 ### Computed Properties
 
@@ -235,8 +235,8 @@ Direct `@Published` properties (`isLoading`, `showLoadingProgress`) bypass throt
 | `ChatModel.startRecordingItemUpdates(_ record:)` / `stopRecordingItemUpdates(_ record:)` | Record the list part of each item update while a page of items loads (`apiLoadMessages` in `ChatItemsLoader.swift`) | [L724](../Shared/Model/ChatModel.swift#L724) |
 | `ChatModel.recordItemUpdate(_ cInfo:, _ itemId:, _ update:)` | Record an update of an item missing from the list | [L783](../Shared/Model/ChatModel.swift#L783) |
 | `ChatModel.applyItemUpdatesWhileLoading(_ record:, _ loadingIM:, _ loadedChatId:)` | Re-run the recorded additions and then the other recorded updates on the items of `loadingIM`, each in order, resolved for the chat `loadedChatId` | [L732](../Shared/Model/ChatModel.swift#L732) |
-| `ChatModel.applyItemUpdatesUntilChatIsShown(_ record:, _ loadingIM:, _ loadedChatId:)` | After the install of an opening page while `openingChatId` is the loaded chat, apply each newly recorded update to `loadingIM` at once, until `stopApplyingItemUpdates()` | [L737](../Shared/Model/ChatModel.swift#L737) |
-| `stopApplyingItemUpdates()` | Stop the record of the opening page; called in the step that clears `openingChatId`, when `loadChat` clears the items, when the next load starts and when a new opening record is kept | [L167](../Shared/Model/ChatModel.swift#L167) |
+| `ChatModel.applyItemUpdatesUntilChatIsShown(_ record:, _ loadingIM:, _ loadedChatId:)` | After the install of an opening page while `openingChatId` is the loaded chat and `chatId` differs from it, apply each newly recorded update to `loadingIM` at once, until `stopApplyingItemUpdates()` | [L737](../Shared/Model/ChatModel.swift#L737) |
+| `stopApplyingItemUpdates()` | Stop the record of the opening page; called in the step that clears `openingChatId`, in the `loadChat` step that clears the items, when the next load starts and when a new opening record is kept | [L167](../Shared/Model/ChatModel.swift#L167) |
 
 ### [SecondaryItemsModelFilter](../Shared/Model/ChatModel.swift#L58-L70)
 

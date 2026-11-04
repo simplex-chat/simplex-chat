@@ -176,7 +176,7 @@ Filter matching is handled by [`presetTagMatchesChat()`](../../Shared/Views/Chat
 
 ### ChatTagsModel State
 
-Filtering state is managed by [`ChatTagsModel`](../../Shared/Model/ChatModel.swift#L204) (`ChatModel.swift` L183):
+Filtering state is managed by [`ChatTagsModel`](../../Shared/Model/ChatModel.swift#L204) (`ChatModel.swift` L204):
 
 ```swift
 class ChatTagsModel: ObservableObject {

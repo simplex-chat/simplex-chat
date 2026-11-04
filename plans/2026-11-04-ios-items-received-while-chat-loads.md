@@ -14,7 +14,7 @@ The open list is changed by `addChatItem` and the other item updates of `ChatMod
 
 ## Fix
 
-The current list is read and the page is installed by `processLoadedChat` (`ChatItemsLoader.swift`) in one main-actor step; the merging paginations (Before, After, Around to a quoted item, Last) read a list that includes every update applied to it during the load.
+The current list is read and the page is installed by `processLoadedChat` (`ChatItemsLoader.swift`) in one main-actor step; the list read by the merging paginations (Before, After, Around to a quoted item, Last) includes every update applied during the load.
 
 While a page loads, the list part of each item update is recorded by `ChatModel` in every active `ItemUpdatesWhileLoading`, as a closure of the loading `ItemsModel` and the loaded chat's id:
 - `addChatItem`, as an addition of an item missing from the list;
@@ -25,20 +25,20 @@ While a page loads, the list part of each item update is recorded by `ChatModel`
 - `markChatItemsRead`;
 - `groupChatItemsDeleted` (`SimpleXAPI.swift`), with `recordItemUpdate` for an item missing from the list.
 
-The `ItemsModel` of a recorded update is resolved by `getCIItemsModel` for the loaded chat's id, or by a comparison of the chat id and the `ItemsModel` for the updates that check `chatId`; the update is applied only to the loading `ItemsModel`. Counters (row stats, total unread, reports), notifications and the voice playback stop are run once, outside the recorded part; the open chat's counters (`chatState`) are changed with the list.
+The `ItemsModel` of a recorded update is resolved by `getCIItemsModel` for the loaded chat's id, or by a comparison of the chat id and the `ItemsModel` for the updates conditioned on `chatId`; the update is applied only to the loading `ItemsModel`. Counters (row stats, total unread, reports), notifications and the voice playback stop are run once, outside the recorded part; the open chat's counters (`chatState`) are changed with the list.
 
 A record is started by `apiLoadMessages` before `apiGetChat`, for every pagination.
 
-In the install step of a page that replaces the list (Initial, Around at an item) and contains the newest item (`afterTotal == 0`), the recorded additions and then the other recorded updates are re-run, each in order. For an older page, the recorded updates are discarded.
+In the install step of a page installed in place of the list (Initial, Around at an item) with the newest item (`afterTotal == 0`), the recorded additions and then the other recorded updates are re-run, each in order. For an older page, the recorded updates are discarded.
 
 `ItemsModel.openingChatId` is set by `loadOpenChat` from the start of its navigation timer until `chatId` is set, and by `loadOpenChatNoWait` from its start until its completion step. When a replacing page of that chat is installed while `chatId` is not the loaded chat, the record is kept as `ItemsModel.openingItemUpdates`; each update recorded after the install is applied at once to that `ItemsModel` for the loaded chat. The record is stopped:
-- in the install step, when it is not kept, by the step's `defer`, also on the early return before an install (switched chat, empty page, cancelled task);
-- in the step that clears `openingChatId`: the navigation timer step of `loadOpenChat`, the completion step of `loadOpenChatNoWait`;
-- in the step of `loadChat` that clears the items;
+- by the `defer` of the install step, when the record is not kept, also on the early return before an install (switched chat, empty page, cancelled task);
+- where `openingChatId` is cleared: the navigation timer step of `loadOpenChat`, the completion step of `loadOpenChatNoWait`;
+- when the items are cleared by `loadChat`;
 - at the start of the next load of the same `ItemsModel`, and when a new opening record of it is kept;
 - on an `apiGetChat` error.
 
-A missing row is added with the page's stats (`addChat`); only the page's chat info is set on an existing row (`updateChatInfo`). The row's stats are left unchanged.
+For the primary `ItemsModel`, a missing row is added with the page's stats (`addChat`); the page's chat info and a new creation time are set on an existing row (`updateChatInfo`); the row's stats are left unchanged.
 
 ## Scope
 
