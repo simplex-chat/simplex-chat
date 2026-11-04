@@ -601,7 +601,7 @@
     <string name="message_delivery_error_title">消息传递错误</string>
     <string name="ttl_hour">%d 小时</string>
     <string name="ttl_hours">%d 小时</string>
-    <string name="ttl_month">%d 月</string>
+    <string name="ttl_month">%d 个月</string>
     <string name="ttl_sec">%d 秒</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">确保 WebRTC ICE 服务器地址格式正确、每行分开且不重复。</string>
     <string name="markdown_help">Markdown 帮助</string>
@@ -2785,7 +2785,7 @@
     <string name="register_test_name">如何注册测试名</string>
     <string name="remove_name">删除名称</string>
     <string name="require_message_signatures">要求消息签名。</string>
-    <string name="save_simplex_name_question">保存 SimpleX 名称?</string>
+    <string name="save_simplex_name_question">保存 SimpleX 名称？</string>
     <string name="show_encryption">显示加密</string>
     <string name="show_signature">显示签名</string>
     <string name="signature_missing_alert_title">签名缺失</string>

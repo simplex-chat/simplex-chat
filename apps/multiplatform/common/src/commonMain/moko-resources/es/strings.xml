@@ -2861,7 +2861,7 @@
     <string name="badges_remind_me_later">Recordar más tarde</string>
     <string name="badges_billing_footer_subscribe">Se renueva el %1$s. Cancela en cualquier momento.</string>
     <string name="badges_savings">Ahorra %1$s</string>
-    <string name="badges_shown_on_your_profile">mostrado en tu perfil</string>
+    <string name="badges_shown_on_your_profile">mostrada en tu perfil</string>
     <string name="badges_support_simplex_body">Consigue una insignia para enviar archivos más grandes (2-5 GB) que permanecen disponibles más tiempo (7-21 días) y para mostrarla en tu perfil.</string>
     <string name="badges_support_ended">Tu insignia ha caducado</string>
     <string name="badges_level_supporter">Patrocinador</string>
@@ -2884,7 +2884,7 @@
     <string name="badges_error_already_active">Este perfil ya tiene una insignia.</string>
     <string name="badges_error_rate_limited">Demasiados intentos. Por favor, prueba más tarde.</string>
     <string name="badges_why_simplex_is_built">Por qué fue creado SimpleX.</string>
-    <string name="badges_banner_dismiss_message">Puedes apoyar SimpleX más tarde en Configuración.</string>
+    <string name="badges_banner_dismiss_message">Puedes patrocinar SimpleX más tarde en Configuración.</string>
     <string name="large_file_requires_badge">Necesitas una %1$s para enviar archivos de más de %2$s.</string>
     <string name="badges_your_badge">Tu insignia</string>
     <string name="your_badge_expired">Tu insignia ha caducado.</string>
