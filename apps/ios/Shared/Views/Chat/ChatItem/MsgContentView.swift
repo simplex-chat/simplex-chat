@@ -186,11 +186,6 @@ struct MsgContentView: View {
             textColor: UIColor(messageColor)
         )
         let s = r.string
-        let font = UIFont.preferredFont(forTextStyle: textStyle)
-        let box = terminal ? terminalLineBox(font, messageColor, theme) : nil
-        if let box, blockLayout {
-            setEmptyLineHeight(s, terminalParagraphGap - box.spacing, font)
-        }
         let t: Text
         if let mt = meta {
             if mt.isLive {
@@ -200,6 +195,7 @@ struct MsgContentView: View {
         } else {
             t = Text(AttributedString(s))
         }
+        let box = terminal ? terminalLineBox(UIFont.preferredFont(forTextStyle: textStyle), messageColor, theme) : nil
         return msgTextView(r, t, box)
     }
 
@@ -240,16 +236,6 @@ private func withLineSpacing(_ s: NSAttributedString, _ lineSpacing: CGFloat) ->
     style.lineSpacing = lineSpacing
     spaced.addAttribute(.paragraphStyle, value: style, range: NSRange(location: 0, length: spaced.length))
     return spaced
-}
-
-private func setEmptyLineHeight(_ s: NSMutableAttributedString, _ height: CGFloat, _ font: UIFont) {
-    let emptyLineFont = font.withSize(height * font.pointSize / font.lineHeight)
-    let text = s.string as NSString
-    text.enumerateSubstrings(in: NSRange(location: 0, length: text.length), options: [.byParagraphs, .substringNotRequired]) { _, range, enclosingRange, _ in
-        if range.length == 0 {
-            s.addAttribute(.font, value: emptyLineFont, range: enclosingRange)
-        }
-    }
 }
 
 func msgTextResultView(

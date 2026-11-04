@@ -149,12 +149,16 @@ final class SnapshotTests: XCTestCase {
         }
         XCTAssertEqual(items.map(\.isOneLine), [false, true, true, true, true, true, true, false, true, true, false, true, false, false])
         XCTAssertEqual(rows.map { $0.sender }, [true, true, false, false, true, false, true, false, true, true, true, false, true])
-        XCTAssertEqual(rows.map { $0.gap }, [p, p, 0, 0, p, 0, p, p, p, p, p, p, p])
+        XCTAssertEqual(rows.map { $0.gap }, [p, p, 0, p, p, 0, p, p, p, p, p, p, p])
         XCTAssertEqual(rows.map { $0.card }, [false, false, false, false, false, false, false, false, false, true, true, true, false])
         XCTAssertEqual(items.suffix(2).map(terminalTextTopGap), [p, 0])
         let edges = SnapshotFixtures().spacingEdgeItems()
         XCTAssertEqual(edges.map { terminalItemStartsWithCard($0, revealed: true) }, [true, false, true])
         XCTAssertEqual(edges.suffix(2).map(terminalTextTopGap), [p, 0])
+        var unreacted = items[3]
+        unreacted.reactions = []
+        let rowHash = { (older: ChatItem) in ListItem(item: items[4], prevItem: items[5], nextItem: older, unreadBefore: 0).genHash(false, false) }
+        XCTAssertNotEqual(rowHash(items[3]), rowHash(unreacted))
     }
 }
 
@@ -891,8 +895,8 @@ private final class SnapshotFixtures {
         [
             event(.groupRcv(groupMember: carol), .rcvGroupEvent(rcvGroupEvent: .memberConnected), -130),
             msg(.groupRcv(groupMember: alice), "Welcome, carol!", -120),
-            msg(.groupRcv(groupMember: carol), "Thanks! Glad to be here", -118, reactions: [reaction(.heart, 2)]),
-            msg(.groupRcv(groupMember: carol), "ok", -118 + 20.0 / 60),
+            msg(.groupRcv(groupMember: carol), "Thanks! Glad to be here", -118),
+            msg(.groupRcv(groupMember: carol), "ok", -118 + 20.0 / 60, reactions: [reaction(.heart, 2)]),
             msg(.groupRcv(groupMember: carol), "one question", -118 + 40.0 / 60),
             msg(.groupRcv(groupMember: bob), "I pushed the release build, please check it on your phones", -105),
             msg(.groupRcv(groupMember: bob), "done", -104.5),

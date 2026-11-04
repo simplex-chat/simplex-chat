@@ -129,7 +129,7 @@ private func sameSender(_ item: ChatItem, _ older: ChatItem) -> Bool {
 
 func terminalRowGap(_ item: ChatItem, _ older: ChatItem?, separated: Bool, largeGap: Bool, hasSenderRow: Bool) -> CGFloat {
     guard let older, !separated else { return 0 }
-    return largeGap || hasSenderRow || !item.isOneLine || !older.isOneLine
+    return largeGap || hasSenderRow || !item.isOneLine || !older.isOneLine || !older.reactions.isEmpty
     ? terminalParagraphGap
     : 0
 }

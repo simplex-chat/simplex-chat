@@ -136,7 +136,7 @@ private val ChatItem.channelIsSender: Boolean get() =
   chatDir is CIDirection.ChannelRcv || (chatDir is CIDirection.GroupSnd && meta.showGroupAsSender)
 
 fun terminalRowGap(item: ChatItem, older: ChatItem?, separated: Boolean, largeGap: Boolean, hasSenderRow: Boolean): TextUnit =
-  if (older != null && !separated && (largeGap || hasSenderRow || !item.isOneLine || !older.isOneLine)) TERMINAL_PARAGRAPH_GAP else 0.sp
+  if (older != null && !separated && (largeGap || hasSenderRow || !item.isOneLine || !older.isOneLine || older.reactions.isNotEmpty())) TERMINAL_PARAGRAPH_GAP else 0.sp
 
 fun terminalTextTop(item: ChatItem): TextUnit = when {
   item.cardAboveText || item.hasQuoteOrHeader && item.startsWithCard -> if (item.startsWithEmptyLines) 0.sp else TERMINAL_PARAGRAPH_GAP
@@ -154,7 +154,7 @@ fun terminalReactionsGap(item: ChatItem): TextUnit =
   if (item.reactions.isNotEmpty()) TERMINAL_PARAGRAPH_GAP else 0.sp
 
 val ChatItem.isOneLine: Boolean get() =
-  textAtItemTop && markdownBlocks == null && '\n' !in content.text && reactions.isEmpty()
+  textAtItemTop && markdownBlocks == null && '\n' !in content.text
 
 private val ChatItem.textAtItemTop: Boolean get() =
   textOnly && !hasQuoteOrHeader
@@ -174,7 +174,7 @@ private val ChatItem.startsWithCard: Boolean get() =
 private val ChatItem.startsWithEmptyLines: Boolean get() {
   val fts = formattedText
   val blocks = markdownBlocks
-  return if (fts != null && blocks != null) leadingEmptyLines(fts, blocks) > 0 else !isReport && content.text.startsWith('\n')
+  return if (fts != null && blocks != null) leadingEmptyLines(fts, blocks) > 0 else !isReport && (content.text.startsWith('\n') || content.text.startsWith("\r\n"))
 }
 
 val CIContent.hasTerminalSender: Boolean get() = when (this) {

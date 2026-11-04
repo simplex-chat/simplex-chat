@@ -175,7 +175,13 @@ class TerminalItemViewTest {
     assertEquals(TERMINAL_PARAGRAPH_GAP, gap(msg(3, CIDirection.DirectSnd(), 20), twoLines))
     assertEquals(TERMINAL_PARAGRAPH_GAP, gap(quoted(msg(2, CIDirection.DirectSnd(), 10)), older))
     assertEquals(TERMINAL_PARAGRAPH_GAP, gap(withBlocks(msg(2, CIDirection.DirectSnd(), 10), heading()), older))
+  }
+
+  @Test
+  fun rowGapBelowReactions() {
+    val older = msg(1, CIDirection.DirectSnd(), 0)
     assertEquals(TERMINAL_PARAGRAPH_GAP, gap(msg(2, CIDirection.DirectSnd(), 10), older.copy(reactions = thumbsUp)))
+    assertEquals(0.sp, gap(msg(2, CIDirection.DirectSnd(), 10).copy(reactions = thumbsUp), older))
   }
 
   @Test
@@ -183,7 +189,7 @@ class TerminalItemViewTest {
     assertTrue(msg(1, CIDirection.DirectSnd(), 0).isOneLine)
     assertTrue(msg(1, CIDirection.DirectRcv(), 0, "👍").isOneLine)
     assertFalse(msg(1, CIDirection.DirectSnd(), 0, "hello\n").isOneLine)
-    assertFalse(msg(1, CIDirection.DirectSnd(), 0).copy(reactions = thumbsUp).isOneLine)
+    assertTrue(msg(1, CIDirection.DirectSnd(), 0).copy(reactions = thumbsUp).isOneLine)
     assertFalse(quoted(msg(1, CIDirection.DirectSnd(), 0)).isOneLine)
     assertFalse(forwarded(msg(1, CIDirection.DirectSnd(), 0)).isOneLine)
     assertFalse(withBlocks(msg(1, CIDirection.DirectSnd(), 0), heading()).isOneLine)
@@ -271,6 +277,7 @@ class TerminalItemViewTest {
     assertEquals(0.sp, terminalTextTop(caption))
     val base = msg(2, CIDirection.DirectSnd(), 10)
     assertEquals(0.sp, terminalTextTop(base.copy(content = CIContent.SndMsgContent(MsgContent.MCImage("\nCaption", "")))))
+    assertEquals(0.sp, terminalTextTop(base.copy(content = CIContent.SndMsgContent(MsgContent.MCImage("\r\nCaption", "")))))
     assertEquals(TERMINAL_PARAGRAPH_GAP, terminalTextTop(quoted(base).copy(content = CIContent.SndMsgContent(MsgContent.MCReport("\nComment", ReportReason.Spam)))))
   }
 
