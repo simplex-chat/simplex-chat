@@ -18,11 +18,15 @@ func apiLoadMessages(
     _ contentTag: MsgContentTag? = nil,
     _ search: String = "",
     _ openAroundItemId: ChatItem.ID? = nil,
-    _ visibleItemIndexesNonReversed: @MainActor () -> ClosedRange<Int> = { 0 ... 0 }
+    _ visibleItemIndexesNonReversed: @MainActor () -> ClosedRange<Int> = { 0 ... 0 },
+    _ opening: Bool = false
 ) async {
     let chatModel = ChatModel.shared
     let itemUpdates = ChatModel.ItemUpdatesWhileLoading()
-    await MainActor.run { chatModel.startRecordingItemUpdates(itemUpdates) }
+    await MainActor.run {
+        im.stopApplyingItemUpdates()
+        chatModel.startRecordingItemUpdates(itemUpdates)
+    }
     let chat: Chat
     let navInfo: NavigationInfo
     do {
@@ -34,7 +38,11 @@ func apiLoadMessages(
     }
 
     await MainActor.run {
-        chatModel.stopRecordingItemUpdates(itemUpdates)
+        defer {
+            if im.openingItemUpdates !== itemUpdates {
+                chatModel.stopRecordingItemUpdates(itemUpdates)
+            }
+        }
         let paginationIsInitial = switch pagination { case .initial: true; default: false }
         let paginationIsLast = switch pagination { case .last: true; default: false }
         // For .initial allow the chatItems to be empty, as well as for .last that is used for searching
@@ -42,7 +50,7 @@ func apiLoadMessages(
         if chatWasSwitched(chat, pagination, openAroundItemId) || (!allowEmptyItems && chat.chatItems.isEmpty) || Task.isCancelled {
             return
         }
-        processLoadedChat(chat, navInfo, im, pagination, openAroundItemId, itemUpdates, visibleItemIndexesNonReversed)
+        processLoadedChat(chat, navInfo, im, pagination, openAroundItemId, opening, itemUpdates, visibleItemIndexesNonReversed)
     }
 }
 
@@ -53,6 +61,7 @@ func processLoadedChat(
     _ im: ItemsModel,
     _ pagination: ChatPagination,
     _ openAroundItemId: ChatItem.ID?,
+    _ opening: Bool,
     _ itemUpdates: ChatModel.ItemUpdatesWhileLoading,
     _ visibleItemIndexesNonReversed: @MainActor () -> ClosedRange<Int> = { 0 ... 0 }
 ) {
@@ -81,6 +90,9 @@ func processLoadedChat(
         im.chatState.unreadAfterNewestLoaded = navInfo.afterUnread
         if navInfo.afterTotal == 0 {
             chatModel.applyItemUpdatesWhileLoading(itemUpdates, im, chat.id)
+        }
+        if opening && chatModel.chatId != chat.id {
+            chatModel.applyItemUpdatesUntilChatIsShown(itemUpdates, im, chat.id)
         }
 
         im.preloadState.clear()
@@ -154,6 +166,9 @@ func processLoadedChat(
             }
             if navInfo.afterTotal == 0 {
                 chatModel.applyItemUpdatesWhileLoading(itemUpdates, im, chat.id)
+            }
+            if opening && chatModel.chatId != chat.id {
+                chatModel.applyItemUpdatesUntilChatIsShown(itemUpdates, im, chat.id)
             }
         } else {
             // no need to set it, count will be wrong

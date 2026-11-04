@@ -93,6 +93,7 @@ class ItemsModel: ObservableObject {
 
     private var navigationTimeoutTask: Task<Void, Never>? = nil
     private var loadChatTask: Task<Void, Never>? = nil
+    fileprivate(set) var openingItemUpdates: ChatModel.ItemUpdatesWhileLoading? = nil
 
     var lastItemsLoaded: Bool {
         chatState.splits.isEmpty || chatState.splits.first != reversedChatItems.first?.id
@@ -122,6 +123,7 @@ class ItemsModel: ObservableObject {
                 try await Task.sleep(nanoseconds: 250_000000)
                 await MainActor.run {
                     ChatModel.shared.chatId = chatId
+                    self.stopApplyingItemUpdates()
                     willNavigate()
                 }
             } catch {}
@@ -129,7 +131,7 @@ class ItemsModel: ObservableObject {
         loadChatTask = Task {
             await MainActor.run { self.isLoading = true }
 //            try? await Task.sleep(nanoseconds: 1000_000000)
-            await loadChat(chatId: chatId, im: self)
+            await loadChat(chatId: chatId, im: self, opening: true)
             if !Task.isCancelled {
                 await MainActor.run {
                     self.isLoading = false
@@ -145,14 +147,22 @@ class ItemsModel: ObservableObject {
         loadChatTask?.cancel()
         loadChatTask = Task {
             //            try? await Task.sleep(nanoseconds: 1000_000000)
-            await loadChat(chatId: chatId, im: self, openAroundItemId: openAroundItemId, clearItems: openAroundItemId == nil)
+            await loadChat(chatId: chatId, im: self, openAroundItemId: openAroundItemId, clearItems: openAroundItemId == nil, opening: true)
             if !Task.isCancelled {
                 await MainActor.run {
                     if openAroundItemId == nil {
                         ChatModel.shared.chatId = chatId
                     }
+                    self.stopApplyingItemUpdates()
                 }
             }
+        }
+    }
+
+    func stopApplyingItemUpdates() {
+        if let openingItemUpdates {
+            ChatModel.shared.stopRecordingItemUpdates(openingItemUpdates)
+            self.openingItemUpdates = nil
         }
     }
 
@@ -701,6 +711,7 @@ final class ChatModel: ObservableObject {
     class ItemUpdatesWhileLoading {
         fileprivate var additions: [(ItemsModel, ChatId) -> Void] = []
         fileprivate var updates: [(ItemsModel, ChatId) -> Void] = []
+        fileprivate var installed: (im: ItemsModel, chatId: ChatId)? = nil
     }
 
     private var itemUpdateRecords: [ItemUpdatesWhileLoading] = []
@@ -718,8 +729,24 @@ final class ChatModel: ObservableObject {
         record.updates.forEach { $0(loadingIM, loadedChatId) }
     }
 
+    func applyItemUpdatesUntilChatIsShown(_ record: ItemUpdatesWhileLoading, _ loadingIM: ItemsModel, _ loadedChatId: ChatId) {
+        loadingIM.stopApplyingItemUpdates()
+        record.installed = (loadingIM, loadedChatId)
+        loadingIM.openingItemUpdates = record
+    }
+
+    private func addToRecords(_ update: @escaping (ItemsModel, ChatId) -> Void, in list: ReferenceWritableKeyPath<ItemUpdatesWhileLoading, [(ItemsModel, ChatId) -> Void]>) {
+        for record in itemUpdateRecords {
+            if let installed = record.installed {
+                update(installed.im, installed.chatId)
+            } else {
+                record[keyPath: list].append(update)
+            }
+        }
+    }
+
     private func recordUpdate(_ update: @escaping (ItemsModel, ChatId) -> Void) {
-        itemUpdateRecords.forEach { $0.updates.append(update) }
+        addToRecords(update, in: \.updates)
     }
 
     private func recordUpdate(_ cInfo: ChatInfo, _ cItem: ChatItem, _ update: @escaping (ItemsModel) -> Void) {
@@ -806,7 +833,7 @@ final class ChatModel: ObservableObject {
                 _ = self._upsertChatItem(loadingIM, cInfo, cItem)
             }
         }
-        itemUpdateRecords.forEach { $0.additions.append(addition) }
+        addToRecords(addition, in: \.additions)
         if let ciIM = getCIItemsModel(cInfo, cItem) {
             _ = _upsertChatItem(ciIM, cInfo, cItem)
         }

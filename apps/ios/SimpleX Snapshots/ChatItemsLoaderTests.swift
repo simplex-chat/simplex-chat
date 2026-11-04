@@ -81,16 +81,29 @@ final class ChatItemsLoaderTests: XCTestCase {
     }
 
     @MainActor
-    private func load(_ page: Chat, _ pagination: ChatPagination, _ navInfo: NavigationInfo = NavigationInfo(), during events: () async -> Void) async {
+    func testItemReceivedAfterInstallBeforeChatIsShownIsShown() async {
+        let opening = openingChat(groupId: 1008, itemIds: [101, 102])
+        await load(opening, .initial(count: 2), opening: true) {}
+        ChatModel.shared.addChatItem(opening.chatInfo, receivedItem(103))
+        XCTAssertEqual(itemIds(), [101, 102, 103])
+        ChatModel.shared.chatId = opening.id
+        ItemsModel.shared.stopApplyingItemUpdates()
+    }
+
+    @MainActor
+    private func load(_ page: Chat, _ pagination: ChatPagination, _ navInfo: NavigationInfo = NavigationInfo(), opening: Bool = false, during events: () async -> Void) async {
         let itemUpdates = ChatModel.ItemUpdatesWhileLoading()
         ChatModel.shared.startRecordingItemUpdates(itemUpdates)
         await events()
-        ChatModel.shared.stopRecordingItemUpdates(itemUpdates)
-        processLoadedChat(page, navInfo, ItemsModel.shared, pagination, nil, itemUpdates)
+        processLoadedChat(page, navInfo, ItemsModel.shared, pagination, nil, opening, itemUpdates)
+        if ItemsModel.shared.openingItemUpdates !== itemUpdates {
+            ChatModel.shared.stopRecordingItemUpdates(itemUpdates)
+        }
     }
 
     @MainActor
     private func openingChat(groupId: Int64, itemIds: [Int64]) -> Chat {
+        ItemsModel.shared.stopApplyingItemUpdates()
         ChatModel.shared.currentUser = User.sampleData
         ChatModel.shared.chatId = nil
         ItemsModel.shared.reversedChatItems = []

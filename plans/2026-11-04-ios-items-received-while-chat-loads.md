@@ -31,6 +31,12 @@ A recorded update resolves its `ItemsModel` with `getCIItemsModel` for the loade
 
 The pages that replace the list (Initial, Around at an item) re-run the recorded additions and then the other recorded updates in the install step, each in order, when they contain the newest item (`afterTotal == 0`). On an older page, items received during the load are loaded by After pagination; updates of its items are not re-run.
 
+An opening load (`loadOpenChat`, `loadOpenChatNoWait`) whose replacing page is installed while `chatId` is not yet the loaded chat keeps its record as `ItemsModel.openingItemUpdates`; each update recorded after the install is applied at once to that `ItemsModel` for the loaded chat. The record is stopped:
+- at the install, when `chatId` is already the loaded chat or the load is not an opening one;
+- where `chatId` is set: the navigation timer of `loadOpenChat`, the completion of `loadOpenChatNoWait`;
+- at the start of the next load of the same `ItemsModel` (a cancelled opening is always followed by one);
+- on an error, a switched chat or a cancelled load, before the install.
+
 The row's stats are not set from the page (only `updateChatInfo`, or `addChat` of a missing row); they are not changed.
 
 ## Scope
