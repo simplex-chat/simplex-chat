@@ -478,6 +478,7 @@ func loadChat(chat: Chat, im: ItemsModel, contentTag: MsgContentTag? = nil, sear
 func loadChat(chatId: ChatId, im: ItemsModel, contentTag: MsgContentTag? = nil, search: String = "", openAroundItemId: ChatItem.ID? = nil, clearItems: Bool = true) async {
     await MainActor.run {
         if clearItems {
+            im.stopApplyingItemUpdates()
             im.reversedChatItems = []
             im.chatState.clear()
         }
