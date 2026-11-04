@@ -115,6 +115,20 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 - CI, in build-linux: `scope-tests.sh ci-scripts` (step "Test changed scopes").
 - Local: `python3 scripts/ci/test_packages_release.py`; Python 3.11 or newer is required for tomllib (packages_release.py).
 
+#### names-web
+
+- Globs:
+  - apps/simplex-domains, the names webapp's submodule
+  - apps/simplex-store-service/**, except apps/simplex-store-service/web/**
+  - scripts/store-service/dev/**
+
+  These paths are also in the core globs, so the store service that the scope tests run is built by the core build.
+- CI, in build-linux: core build and tests, Node 24 (step "Setup Node.js 24"), then `scope-tests.sh names-web` (step "Test changed scopes"):
+  - the webapp's unit tests and production build;
+  - the compiled contracts and anvil, copied from the webapp's dev image (`webapp/dev/Dockerfile`);
+  - `scripts/store-service/dev/contract-run.sh`: the webapp's browser cases, in headless Chromium, against that store service on a local anvil chain.
+- Local, with Docker, Node 24 and the store service built (`cabal build exe:simplex-store-service`): `scripts/ci/scope-tests.sh names-web`.
+
 #### Scopes lacking CI tests
 
 | Scope | Paths | CI |

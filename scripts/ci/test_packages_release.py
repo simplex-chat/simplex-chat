@@ -510,6 +510,14 @@ class ChangesTest(GitRepoTest):
         self.assertEqual(self.builds("apps/simplex-store-service/web/src/catalog.ts"), {"haskell"})
         self.assertEqual(self.values["scopes"], "badge-web")
 
+    def test_names_webapp_change_builds_the_core_and_tests_its_scope(self):
+        self.assertEqual(self.builds("apps/simplex-domains"), {"haskell"})
+        self.assertEqual(self.values["scopes"], "names-web")
+
+    def test_store_service_change_tests_the_names_webapp(self):
+        self.assertEqual(self.builds("apps/simplex-store-service/src/StoreService/Web/Names.hs"), {"haskell"})
+        self.assertEqual(self.values["scopes"], "names-web")
+
     def test_release_script_change_tests_the_ci_scripts(self):
         self.assertEqual(self.builds("scripts/ci/packages_release.py"), set())
         self.assertEqual(self.values["scopes"], "ci-scripts")

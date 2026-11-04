@@ -115,7 +115,9 @@ start_chain() {
   answering $! -X POST -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}' "$RPC_URL"
   (cd "$WEBAPP_DIR" && RPC_URL="$RPC_URL" LOCAL_CHAIN_OUT="$RUN_DIR/chain.json" MIN_COMMITMENT_AGE="$MIN_COMMITMENT_AGE" \
     ENS_CONTRACTS_DIR="$ENS_CONTRACTS_DIR" node dev/deploy.ts) > "$RUN_DIR/deploy.log" 2>&1
-  if ! cmp -s "$RUN_DIR/chain.json" "$WEBAPP_DIR/dev/local-chain-0.json"; then
+  if [ ! -e "$WEBAPP_DIR/dev/local-chain-0.json" ]; then
+    cp "$RUN_DIR/chain.json" "$WEBAPP_DIR/dev/local-chain-0.json"
+  elif ! cmp -s "$RUN_DIR/chain.json" "$WEBAPP_DIR/dev/local-chain-0.json"; then
     echo "the deployment differs from $WEBAPP_DIR/dev/local-chain-0.json, which the e2e helpers read; run its dev/start.sh with SLOTS=1 MIN_COMMITMENT_AGE=$MIN_COMMITMENT_AGE once" >&2
     exit 1
   fi

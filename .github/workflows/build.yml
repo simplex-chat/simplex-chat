@@ -16,6 +16,8 @@ on:
       - "apps/simplex-bot/**"
       - "apps/simplex-bot-advanced/**"
       - "apps/simplex-store-service/**"
+      - "apps/simplex-domains"
+      - "scripts/store-service/dev/**"
       - "apps/simplex-broadcast-bot/**"
       - "apps/simplex-directory-service/**"
       - "apps/multiplatform/**"
@@ -722,9 +724,15 @@ jobs:
           name: package-tests-linux-${{ matrix.arch }}
           path: ${{ runner.temp }}/package-tests
 
+      - name: Setup Node.js 24
+        if: ${{ !cancelled() && matrix.scope_tests == true && contains(needs.maybe-release.outputs.scopes, 'names-web') }}
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
       - name: Test changed scopes
         if: ${{ !cancelled() && matrix.scope_tests == true && steps.setup-python.outcome == 'success' }}
-        timeout-minutes: 30
+        timeout-minutes: 60
         shell: bash
         env:
           SCOPES: ${{ needs.maybe-release.outputs.scopes }}
