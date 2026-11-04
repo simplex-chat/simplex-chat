@@ -230,6 +230,9 @@ Direct `@Published` properties (`isLoading`, `showLoadingProgress`) bypass throt
 | `loadOpenChat(_ chatId:)` | Load chat with 250ms navigation delay | [L117](../Shared/Model/ChatModel.swift#L117) |
 | `loadOpenChatNoWait(_ chatId:, _ openAroundItemId:)` | Load chat without delay | [L143](../Shared/Model/ChatModel.swift#L143) |
 | `loadSecondaryChat(_ chatId:, chatFilter:)` | Create secondary ItemsModel instance | [L110](../Shared/Model/ChatModel.swift#L110) |
+| `ChatModel.startRecordingItemUpdates(_ record:)` / `stopRecordingItemUpdates(_ record:)` | Record the list part of each item update while a page of items loads (`apiLoadMessages` in `ChatItemsLoader.swift`) | [L708](../Shared/Model/ChatModel.swift#L708) |
+| `ChatModel.recordItemUpdate(_ cInfo:, _ itemId:, _ update:)` | Record an update of an item that is not in the list | [L751](../Shared/Model/ChatModel.swift#L751) |
+| `ChatModel.applyItemUpdatesWhileLoading(_ record:, _ loadingIM:, _ loadedChatId:)` | Re-run the recorded additions and then the other recorded updates on the items of `loadingIM`, each in order, resolved for the chat `loadedChatId` | [L716](../Shared/Model/ChatModel.swift#L716) |
 
 ### [SecondaryItemsModelFilter](../Shared/Model/ChatModel.swift#L58-L70)
 

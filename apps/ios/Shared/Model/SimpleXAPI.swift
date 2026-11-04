@@ -3232,22 +3232,30 @@ func groupChatItemsDeleted(_ user: UserRef, _ groupInfo: GroupInfo, _ chatItemID
     await MainActor.run {
         m.decreaseGroupReportsCounter(cInfo.id, by: chatItemIDs.count)
     }
-    var notFound = chatItemIDs.count
+    var notFound = chatItemIDs
     for ci in im.reversedChatItems {
-        if chatItemIDs.contains(ci.id) {
-            let deleted = if case let .groupRcv(groupMember) = ci.chatDir, let member_, groupMember.groupMemberId != member_.groupMemberId {
-                CIDeleted.moderated(deletedTs: Date.now, byGroupMember: member_)
-            } else {
-                CIDeleted.deleted(deletedTs: Date.now)
-            }
+        if notFound.remove(ci.id) != nil {
             await MainActor.run {
-                var newItem = ci
-                newItem.meta.itemDeleted = deleted
-                _ = m.upsertChatItem(cInfo, newItem)
+                _ = m.upsertChatItem(cInfo, markedDeleted(ci))
             }
-            notFound -= 1
-            if notFound == 0 { break }
+            if notFound.isEmpty { break }
         }
+    }
+    await MainActor.run { [notFound] in
+        for itemId in notFound {
+            m.recordItemUpdate(cInfo, itemId, markedDeleted)
+        }
+    }
+
+    func markedDeleted(_ ci: ChatItem) -> ChatItem {
+        let deleted = if case let .groupRcv(groupMember) = ci.chatDir, let member_, groupMember.groupMemberId != member_.groupMemberId {
+            CIDeleted.moderated(deletedTs: Date.now, byGroupMember: member_)
+        } else {
+            CIDeleted.deleted(deletedTs: Date.now)
+        }
+        var newItem = ci
+        newItem.meta.itemDeleted = deleted
+        return newItem
     }
 }
 
