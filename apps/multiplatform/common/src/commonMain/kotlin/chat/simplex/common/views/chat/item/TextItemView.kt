@@ -144,10 +144,11 @@ fun itemDisplay(ci: ChatItem, linkMode: SimplexLinkMode): ItemDisplay? {
   val blocks = ci.markdownBlocks ?: return ItemDisplay(fts.map(segment), listOf(0))
   val parts = mutableListOf<Pair<String, String>>()
   var offset = itemPrefixText(ci).length
-  val bases = blockTextRanges(blocks).mapIndexed { i, t ->
+  val ranges = blockTextRanges(blocks)
+  val bases = ranges.mapIndexed { i, t ->
     if (i > 0) {
       val separator = if (t.inRow) "\t" else "\n"
-      parts += separator to separator
+      parts += separator to separator.repeat(1 + emptyLines(fts, ranges[i - 1].range.to, t.range.from, between = true))
       offset += 1
     }
     val base = if (i == 0) 0 else offset

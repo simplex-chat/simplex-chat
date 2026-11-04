@@ -823,7 +823,7 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
     var body: some View {
         let l = BlocksLayout(formattedText, blocks, textStyle, text: text)
         VStack(alignment: .leading, spacing: 0) {
-            emptyLinesGap(emptyLines(formattedText, 0, blocks.first?.startIndex ?? 0, between: false), l)
+            emptyLinesGap(leadingEmptyLines(formattedText, blocks), l)
             ForEach(Array(blocks.enumerated()), id: \.offset) { k, block in
                 let emptyHeight = k > 0 ? emptyLinesHeight(emptyLines(formattedText, blocks[k - 1].endIndex, block.startIndex, between: true), l) : 0
                 if k > 0 && terminal && (blocks[k - 1].isCard || block.isCard) {
@@ -833,7 +833,7 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
                 } else if k > 0 && terminal && block.isHeading {
                     Color.clear.frame(height: terminalLevelStep + emptyHeight)
                 } else if emptyHeight > 0 {
-                    Color.clear.frame(height: emptyHeight)
+                    Color.clear.frame(width: terminal ? nil : 0, height: emptyHeight)
                 }
                 blockView(block, l.starts[k], l, last: k == blocks.count - 1 && l.trailingEmptyLines == 0)
             }
@@ -1003,6 +1003,10 @@ private func emptyLines(_ fts: [FormattedText], _ from: Int, _ to: Int, between:
         }
     }
     return min(max(0, lineBreaks - (between ? 1 : 0)), maxEmptyLines)
+}
+
+func leadingEmptyLines(_ fts: [FormattedText], _ blocks: [MarkdownBlock]) -> Int {
+    emptyLines(fts, 0, blocks.first?.startIndex ?? 0, between: false)
 }
 
 let quoteBarWidth: CGFloat = 4
