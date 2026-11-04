@@ -21,7 +21,7 @@ Development, from a fresh clone:
 
 ```
 git clone https://github.com/simplex-chat/simplex-chat && cd simplex-chat
-git checkout sh/store-service && git submodule update --init apps/simplex-domains
+git checkout names && git submodule update --init apps/simplex-domains
 cd scripts/store-service
 echo "COMPOSE_FILE=compose.yml:compose.dev.yml" > .env
 docker compose up -d --build
