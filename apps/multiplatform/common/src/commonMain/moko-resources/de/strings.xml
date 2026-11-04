@@ -3125,4 +3125,22 @@
     <string name="badges_subscription_cancelled_footer">Ihr Abonnement wurde gekündigt. Der Badge bleibt bis %1$s aktiv.</string>
     <string name="badges_subscription_renews_footer">Verlängert sich automatisch, bis Sie es in Google Play kündigen.</string>
     <string name="badges_subscription_renews_footer_store">Verlängert sich automatisch, bis Sie es im Store kündigen.</string>
+    <string name="badges_your_legend_badge">Ihr Legenden-Badge</string>
+    <string name="badges_supporter_benefits">Dateien bis zu 2 GB, für 7 Tage gespeichert.</string>
+    <string name="badges_legend_benefits">Dateien bis zu 5 GB, für 21 Tage gespeichert.</string>
+    <string name="badges_benefits">Vorteile</string>
+    <string name="badges_investor_offer_supporter">Investieren Sie ab $100 und erhalten Sie einen kostenlosen Badge.</string>
+    <string name="badges_investor_offer_legend">Investieren Sie ab $1000 und erhalten Sie einen kostenlosen Legenden-Badge.</string>
+    <string name="badges_investor_offer_learn_more">Mehr erfahren auf Wefunder</string>
+    <string name="v7_1_invest">Werden Sie Miteigentümer von SimpleX Chat! 🚀</string>
+    <string name="v7_1_invest_learn_more">Mehr erfahren auf Wefunder.</string>
+    <string name="v7_1_supporter_badge_descr">Größere Dateien, die länger verfügbar bleiben.</string>
+    <string name="v7_1_supporter_badge_get">Unterstützen Sie SimpleX und erhalten Sie einen Badge.</string>
+    <string name="v7_1_supporter_badge_have">Sie haben bereits einen Badge!</string>
+    <string name="v7_1_simplex_names">Öffentliche SimpleX-Namen</string>
+    <string name="v7_1_simplex_names_descr">Der Verkauf startet am 12. Dezember.</string>
+    <string name="v7_1_channels">Sicherere Kanäle</string>
+    <string name="v7_1_channels_descr">Moderatoren hinzufügen und jede Nachricht signieren.</string>
+    <string name="v7_1_flat_layout">Flaches Layout und Markdown</string>
+    <string name="v7_1_flat_layout_descr">In den Einstellungen unter \"Darstellung\" aktivieren.</string>
 </resources>
