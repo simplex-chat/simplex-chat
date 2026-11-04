@@ -595,7 +595,7 @@ func messageText(
             var attrs = plain
             switch (ft.format) {
             case let .bold(singleStar):
-                if singleStar && markdownBlocks != nil {
+                if singleStar {
                     italic = italic ?? UIFont(descriptor: descr.withSymbolicTraits(.traitItalic) ?? descr, size: descr.pointSize)
                     attrs[.font] = italic
                 } else {
@@ -833,7 +833,7 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
                 } else if k > 0 && terminal && block.isHeading {
                     Color.clear.frame(height: terminalLevelStep + emptyHeight)
                 } else if emptyHeight > 0 {
-                    Color.clear.frame(width: terminal ? nil : 0, height: emptyHeight)
+                    Color.clear.frame(width: 0, height: emptyHeight)
                 }
                 blockView(block, l.starts[k], l, last: k == blocks.count - 1 && l.trailingEmptyLines == 0)
             }

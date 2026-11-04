@@ -16,6 +16,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Markdown
+import Simplex.Chat.Messages (parsedMsgContent)
+import Simplex.Chat.Protocol (MsgContent (..), ReportReason (..))
 import Simplex.Chat.Types (BoolDef (..))
 import Simplex.Messaging.Agent.Protocol (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.Encoding.String
@@ -1115,6 +1117,12 @@ linearTimeParsing = describe "bounded scans for linear-time parsing" do
 
 markdownConsumers :: Spec
 markdownConsumers = describe "consumers of parsed Markdown" do
+  it "reports and voice messages are parsed without the prefix of their item text" do
+    let ft mc = let ParsedMarkdown fts _ = parsedMsgContent mc in fts
+    ft (MCReport "a\n\n*b*" RRSpam) `shouldBe` ft (MCText "a\n\n*b*")
+    ft (MCVoice "a\n\n*b*" 10) `shouldBe` ft (MCText "a\n\n*b*")
+    ft (MCReport "" RRSpam) `shouldBe` Nothing
+    ft (MCVoice "" 10) `shouldBe` Nothing
   it "mentionedNames: mentions in blocks, not in code" do
     mentions "- @alice" `shouldBe` ["alice"]
     mentions "> @alice" `shouldBe` ["alice"]

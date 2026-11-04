@@ -333,7 +333,7 @@ fun MarkdownText (
           if (heading) pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
           if (ft.format == null) append(ft.text)
           else when(ft.format) {
-            is Format.Bold -> withStyle(if (markdownBlocks != null && ft.format.singleStar) Format.Italic().style else ft.format.style) { append(ft.text) }
+            is Format.Bold -> withStyle(if (ft.format.singleStar) Format.Italic().style else ft.format.style) { append(ft.text) }
             is Format.Italic -> withStyle(ft.format.style) { append(ft.text) }
             is Format.StrikeThrough -> withStyle(ft.format.style) { append(ft.text) }
             is Format.Snippet -> withStyle(ft.format.style) { append(ft.text) }

@@ -154,7 +154,7 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(items.suffix(2).map(terminalTextTopGap), [p, 0])
         let edges = SnapshotFixtures().spacingEdgeItems()
         XCTAssertEqual(edges.map { terminalItemStartsWithCard($0, revealed: true) }, [true, false, true, true])
-        XCTAssertEqual(edges.suffix(3).map(terminalTextTopGap), [p, 0, 0])
+        XCTAssertEqual(edges.suffix(3).map(terminalTextTopGap), [0, 0, 0])
         var unreacted = items[3]
         unreacted.reactions = []
         let rowHash = { (older: ChatItem) in ListItem(item: items[4], prevItem: items[5], nextItem: older, unreadBefore: 0).genHash(false, false) }
@@ -705,6 +705,15 @@ private final class SnapshotFixtures {
                 .paragraph(content: SegmentRange(from: 0, to: 1)),
                 .paragraph(content: SegmentRange(from: 2, to: 3)),
                 .paragraph(content: SegmentRange(from: 4, to: 5))
+            ]
+        ),
+        "\nlinks to a scam site": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "\n", format: .markup(token: .paragraphBreak(lineBreaks: 1))),
+                FormattedText(text: "links to a scam site")
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 1, to: 2))
             ]
         ),
         "\nafter an empty line": ParsedMarkdown(
