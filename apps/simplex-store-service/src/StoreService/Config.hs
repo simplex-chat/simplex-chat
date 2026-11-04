@@ -31,7 +31,7 @@ module StoreService.Config
 where
 
 import qualified Control.Exception as E
-import Control.Applicative (many)
+import Control.Applicative (many, (<|>))
 import Control.Logger.Simple (LogLevel (..), logNote, logWarn)
 import Control.Monad (forM_, mfilter, unless, when)
 import Data.Attoparsec.Combinator (lookAhead)
@@ -354,7 +354,7 @@ readServiceConfig path =
     -- Data.Ini stops at the first unparseable line and keeps what it has, so a missing `=` silently drops every section below.
     Right text -> case parseOnly ((,) <$> lookAhead (many keyValueParser *> many sectionParser) <*> iniParser <* trailingNoise <* endOfInput) text of
       Left _ -> pure (Left "could not be read as an ini file: a line is malformed")
-      Right (written, ini) -> case repeatedSetting written of
+      Right (written, ini) -> case colonSetting text <|> repeatedSetting written of
         Just e -> pure (Left e)
         Nothing -> do
           mapM_ (\k -> logWarn (T.pack path <> ": nothing reads " <> k <> ", so it was ignored")) (unknownKeys ini)
@@ -362,6 +362,21 @@ readServiceConfig path =
           forM_ (either (const Nothing) names cfg) $ \NamesConfig {nCommunity} ->
             logNote ("names: " <> tshow (M.size nCommunity) <> " community names loaded")
           pure cfg
+
+-- | Data.Ini also reads `key: value`, but drops the first character after the colon, so `key:value` loses one.
+-- Its key ends at the first `=` or `:`, so a line whose first of them is a colon is such a setting.
+colonSetting :: Text -> Maybe String
+colonSetting = go Nothing . map T.stripStart . T.lines
+  where
+    go _ [] = Nothing
+    go section (line : rest) = case T.uncons line of
+      Just ('[', name) -> go (Just $ T.takeWhile (/= ']') name) rest
+      Just (c, _)
+        | c /= ';' && c /= '#',
+          (key, delimited) <- T.break (`elem` [':', '=']) line,
+          ":" `T.isPrefixOf` delimited ->
+            Just (maybe "" ((<> ".") . T.unpack) section <> T.unpack (T.strip key) <> " is written as `key: value`, which the parser misreads; write `key = value`")
+      _ -> go section rest
 
 -- | Data.Ini keeps only the last section of a name and the first value of a key in a section,
 -- so the sections are read in order to refuse a repeated one.

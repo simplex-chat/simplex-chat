@@ -143,8 +143,9 @@ transaction's receipt must be before the service settles it and reads the chain'
 the receipt's own block, so it must be at least 1. `[names]` requires
 `terms_version` and `terms_url`, and an optional `[community]` section lists the community names
 (see [Terms and community names](#terms-and-community-names)). Write every setting as
-`key = value`: the parser also reads `key: value`, but drops the first character of its value. A
-key written twice in one section, or a section header written twice, stops the service at startup.
+`key = value`. A `key: value` line, which the parser would read with the first character of its
+value dropped, a key written twice in one section, or a section header written twice, stops the
+service at startup.
 `store_service.ini.example` is the committed template; `store_service.ini` itself is
 gitignored, since a real one holds API keys and webhook secrets.
 

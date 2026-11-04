@@ -51,6 +51,7 @@ badgeConfigTests = describe "store service config" $ do
   it "ignores a section nothing reads rather than refusing the file" testUnknownSectionStillBoots
   it "refuses a file one malformed line would silently truncate" testMalformedLineRefused
   it "accepts a comment or blank line after the last setting" testTrailingCommentIsAccepted
+  it "refuses a setting written as key: value, naming it and quoting no value" testColonSettingRefused
   it "reports a missing file rather than throwing" testMissingFileIsReported
   it "has no issuer key when the section is absent" testIssuerAbsent
   it "reads the index and the private key it signs with" testIssuerKey
@@ -313,6 +314,17 @@ testMalformedLineRefused =
     readServiceConfig p >>= \r -> case r of
       Left e -> e `shouldContain` "malformed"
       Right cfg -> expectationFailure ("a truncated file must not boot, and this one kept " <> show (btcpay cfg))
+
+testColonSettingRefused :: IO ()
+testColonSettingRefused = do
+  parseIni (fullIni <> "[poll]\nwaiting_seconds:5\n") `shouldReturn` Left "poll.waiting_seconds is written as `key: value`, which the parser misreads; write `key = value`"
+  Left e <- parseIni (T.replace "api_key = token-value" "api_key: token-value" fullIni)
+  e `shouldBe` "btcpay.api_key is written as `key: value`, which the parser misreads; write `key = value`"
+  e `shouldNotContain` "token-value"
+  -- a colon in a value, or in a comment, is no such setting
+  Right _ <- parseIni (fullIni <> "[poll]\n; waiting_seconds: 5\nidle_seconds = 60 \n")
+  Right ServiceConfig {btcpay = Just BTCPayConfig {bHost}} <- parseIni fullIni
+  bHost `shouldBe` "https://btcpay.example.org"
 
 -- | The strictness that refuses a truncated file must not refuse a trailing comment or blank line,
 -- since `iniParser` stops before one and commenting out the last section is enough to produce it.
