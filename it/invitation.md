@@ -4,7 +4,7 @@
 
 Le chiavi pubbliche e l'indirizzo della coda di messaggi in questo link NON vengono inviati in rete quando vedi questa pagina — sono contenuti nel frammento hash dell'URL del link.
 
-Non hai ancora scaricato SimpleX Chat?
+Non hai ancora scaricato l'app di SimpleX Chat?
 
 Usa i link sottostanti per scaricare l'app.
 

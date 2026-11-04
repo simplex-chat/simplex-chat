@@ -16,4 +16,4 @@ Mert felszámoltuk a lehetőségét is annak, hogy megtudjuk, Ön kicsoda. Így 
 
 Legyen szabad a saját hálózatában.
 
-[Nézze meg a 2 perces filmet a YouTube-on](https://www.youtube.com/watch?v=k-GhLNZm8G0)
+[Tekintse meg a 2 perces filmet a YouTube-on](https://www.youtube.com/watch?v=k-GhLNZm8G0)

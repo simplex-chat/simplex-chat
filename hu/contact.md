@@ -4,7 +4,7 @@
 
 A hivatkozásban szereplő nyilvános kulcsok és az üzenetek várólistájának címe NEM lesz elküldve a hálózaton keresztül, amikor megtekinti ezt az oldalt — azokat, a hivatkozás webcímének kivonattöredéke tartalmazza.
 
-Még nem töltötte le a SimpleX Chatet?
+Még nem töltötte le a SimpleX Chat alkalmazást?
 
 Az alkalmazás letöltéséhez használja az alábbi hivatkozások egyikét.
 

@@ -4,8 +4,8 @@
 
 ## 在属于你的网络中
 
-首个无用户 ID 的网络。
-您的联系人、群组和频道由您掌控。
+唯一一个 没有任何用户标识符的网络。
+你拥有你的联系人、群和频道。
 
 拥有它的一部分。 [投资 SimpleX Chat。](https://wefunder.com/simplex.chat?utm_source=home)
 

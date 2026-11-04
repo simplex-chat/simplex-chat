@@ -68,9 +68,9 @@ A küldött és a fogadott kiszolgálóforgalom között nincsenek közös azono
 
 Használhatja **a SimpleXet a saját kiszolgálóival**, és továbbra is kommunikálhat azokkal, akik az előre beállított kiszolgálókat használják az alkalmazásban.
 
-A SimpleX hálózat [nyitott protokollt](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md) használ és [SDK-t biztosít a csevegési botok létrehozásához](https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript), lehetővé téve olyan szolgáltatások megvalósítását, amelyekkel a felhasználók a SimpleX Chat alkalmazásokon keresztül léphetnek kapcsolatba — mi már nagyon várjuk, hogy milyen SimpleX szolgáltatásokat készítenek a lelkes közreműködők.
+A SimpleX hálózat [nyitott protokollt](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md) használ, és [SDK-t biztosít csevegési botok létrehozásához](https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript), lehetővé téve olyan szolgáltatások megvalósítását, amelyekkel a felhasználók a SimpleX Chat alkalmazásokon keresztül léphetnek kapcsolatba — már nagyon várjuk, hogy milyen SimpleX szolgáltatásokat fog létrehozni.
 
-Ha a SimpleX hálózatra való fejlesztést fontolgatja, például a SimpleX alkalmazások felhasználóinak szánt csevegési botot, vagy a SimpleX Chat könyvtárbotjának integrálását más mobilalkalmazásba, [lépjen velünk kapcsolatba](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D), ha bármilyen tanácsot vagy támogatást szeretne kapni.
+Ha a SimpleX hálózatra való fejlesztést fontolgatja, például a SimpleX alkalmazások felhasználóinak szánt csevegési botot, vagy a SimpleX Chat könyvtár integrálását más mobilalkalmazásokba, akkor bátran [lépjen velünk kapcsolatba](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D) bármilyen tanácsért vagy támogatásért.
 
 ## Funkciók
 
@@ -140,7 +140,7 @@ Az újrakapcsolódás le van tiltva a munkamenet elleni támadások megelőzése
 
 Az IP-cím védelme érdekében a kiszolgálókat a Tor hálózaton vagy más átvitelátfedő hálózaton keresztül is elérheti.
 
-A SimpleX, Tor hálózaton keresztüli használatához telepítse az [Orbot alkalmazást](https://guardianproject.info/apps/org.torproject.android/) és engedélyezze a SOCKS5 proxyt (vagy a VPN-t [az iOS-ban](https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone)).
+A SimpleX Tor hálózaton keresztüli használatához telepítse az [Orbot alkalmazást](https://guardianproject.info/apps/org.torproject.android/), és engedélyezze a SOCKS5 proxyt (vagy a VPN-t [iOS esetén](https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone)).
 
 ### Egyirányú várólista az üzenetekhez
 

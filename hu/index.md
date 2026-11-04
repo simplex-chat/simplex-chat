@@ -4,16 +4,16 @@
 
 ## A saját hálózatában
 
-Az egyetlen üzenetküldő hálózat semmilyen felhasználói azonosító nélkül.
-A saját partnerei, csoportjai és csatornái felett Ön rendelkezik.
+Az egyetlen üzenetváltó hálózat felhasználói azonosítók nélkül.
+A saját partnerei, csoportjai és csatornái felett csak Ön rendelkezik.
 
 Legyen résztulajdonos. [Fektessen be a SimpleX Chatbe.](https://wefunder.com/simplex.chat?utm_source=home)
 
-**3M**Letöltés
+**3M**Letöltések
 
-**600K**Havi felhasználó
+**600K**Havi felhasználók
 
-[Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [SimpleX alkalmazás az F-Droidon keresztül](https://simplex.chat/hu/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu)
+[Download Desktop App](https://simplex.chat/hu/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [SimpleX alkalmazás az F-Droidon keresztül](https://simplex.chat/hu/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu)
 
 [Biztonsági auditok](https://www.trailofbits.com/about) [2022](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html) [2024](https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html)
 
@@ -42,7 +42,7 @@ A függetlenség megőrzéséhez a nagy csatornák és közösségek fizetni fog
 
 És a felhasználók mostantól befektethetnek a SimpleX Chatbe — a közösségi finanszírozás elindult!
 
-[Befektetés a SimpleX Chatbe](https://wefunder.com/simplex.chat?utm_source=home)
+[Fektessen be a SimpleX Chatbe](https://wefunder.com/simplex.chat?utm_source=home)
 
 ## A SimpleX ütemterve a szabad internethez
 
