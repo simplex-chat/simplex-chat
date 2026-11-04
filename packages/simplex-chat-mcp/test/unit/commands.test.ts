@@ -433,6 +433,21 @@ describe("downloads in the agent control chat", () => {
     expect(cards).toHaveLength(1)
   })
 
+  it("forwards an image with the sender's preview, as a reply to its card only when the message fits", async () => {
+    jest.spyOn(core, "chatResizeImageUri").mockResolvedValue("data:image/jpg;base64,/9j/small")
+    for (const [length, quoted] of [[14000, true], [14800, false]] as const) {
+      const image = `data:image/jpg;base64,${"A".repeat(length)}`
+      const {chat, action, control} = await downloadSetup({type: "image", preview: image})
+      const path = join(data, "files", "group-2", "7.pdf")
+      mkdirSync(dirname(path), {recursive: true})
+      writeFileSync(path, "image")
+      chat.chats.get("#2")!.items.push(fileItem(30, {type: "image", text: "", image}, {type: "rcvComplete"}, {chatDir: {type: "groupRcv", groupMember: bob}, fileSource: {filePath: path}}))
+      await control.ownerCommand(alice, {keyword: "forward", params: `${action.n}`})
+      while (chat.sent.length < 2) await flushed()
+      expect(chat.sent[1].messages[0]).toEqual({fileSource: {filePath: expect.any(String)}, msgContent: {type: "image", text: "", image}, quotedItemId: quoted ? action.card : undefined, mentions: {}})
+    }
+  })
+
   it("replies when the file is not forwarded", async () => {
     const {chat, tools, action, control} = await downloadSetup()
     chat.chats.get("#2")!.items.push(fileItem(30, {type: "file", text: "report"}, {type: "rcvTransfer", rcvProgress: 1, rcvTotal: 2}, {chatDir: {type: "groupRcv", groupMember: bob}}))
@@ -479,6 +494,18 @@ describe("downloads in the agent control chat", () => {
     expect(chat.commands).toContain("/fcancel 7")
     expect(chat.sent.at(-1)!.messages[0].msgContent.text).toBe("Action 1: the file was not received: `Your owner deleted the files of this chat.`.")
     expect([existsSync(folder), existsSync(forwarded)]).toEqual([false, false])
+  })
+
+  it("cancels the downloads of a chat that the core continues after a restart when /delete CHAT files deletes its files", async () => {
+    const {chat, control} = await downloadSetup()
+    const items = chat.chats.get("#2")!.items
+    items.push(fileItem(30, {type: "file", text: ""}, {type: "rcvTransfer", rcvProgress: 1, rcvTotal: 2}, {fileId: 8}))
+    items.push(...Array.from({length: 120}, (_, i) => item(40 + i, "hi")))
+    items.push(fileItem(200, {type: "voice", text: "", duration: 3}, {type: "rcvAccepted"}, {fileId: 9}))
+    items.push(fileItem(201, {type: "file", text: ""}, {type: "rcvComplete"}, {fileId: 10}))
+    for (const fileId of [8, 9]) chat.responses.set(`/fcancel ${fileId}`, {type: "rcvFileCancelled", user, rcvFileTransfer: {fileId}})
+    expect(await control.ownerCommand(alice, {keyword: "delete", params: "#2 files"})).toBe("No files from #2.")
+    expect(chat.commands.filter(cmd => cmd.startsWith("/fcancel"))).toEqual(["/fcancel 9", "/fcancel 8"])
   })
 })
 

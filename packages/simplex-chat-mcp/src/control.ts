@@ -5,7 +5,7 @@ import {Action, ActionHooks, Actions, ConnectAction, DownloadAction, Standing, S
 import {ExitError, chatErrorOf, errorText, fileError, log, logError, oneLine, serverHostname, shellWord} from "./log"
 import {chatNumber, chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "./messages"
 import type {OwnerEntry, QrCodeSize} from "./serve"
-import {AgentTools, chatSubject, isActive, isConnected, memberCurrent, refusedFileReason} from "./tools"
+import {AgentTools, chatSubject, fitsMessage, isActive, isConnected, memberCurrent, refusedFileReason} from "./tools"
 
 const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "pending", label: "Pending actions"},
@@ -270,10 +270,15 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     this.tools
       .forwardFile(action)
       .then(copy =>
-        this.postMessage({fileSource: {filePath: copy}, msgContent: fileContent(action.file, ""), quotedItemId: action.card, mentions: {}}).catch(error => {
-          this.tools.deleteSentCopy(copy)
-          throw error
-        }),
+        this.cardContent(action)
+          .then(card => {
+            const msgContent = fileContent(action.file, "")
+            return this.postMessage({fileSource: {filePath: copy}, msgContent, quotedItemId: fitsMessage(msgContent, action.file.name, {content: card}) ? action.card : undefined, mentions: {}})
+          })
+          .catch(error => {
+            this.tools.deleteSentCopy(copy)
+            throw error
+          }),
       )
       .catch(error => this.post(`Action ${action.n}: the file was not received: ${codeSpan(oneLine(errorText(error)))}.`))
       .catch(error => logError(`action ${action.n} file`, error))

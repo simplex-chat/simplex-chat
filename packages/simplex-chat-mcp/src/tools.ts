@@ -22,9 +22,9 @@ import {
   chatNumber,
   chatRef,
   chatType,
-  downloadPath,
   fileContent,
   fileOffer,
+  filePaths,
   getChat,
   isChatRef,
   isLive,
@@ -35,6 +35,7 @@ import {
   nextChange,
   receivedFileError,
   receivedPath,
+  receivingFiles,
   reportProgress,
   toMessage,
   unreadItems,
@@ -515,26 +516,25 @@ export class AgentTools {
   }
 
   private async downloadFile(action: Pick<DownloadAction, "chat" | "item" | "file">): Promise<string> {
-    const {chat, file: {fileId, name, size}} = action
-    const path = downloadPath(this.agent.data, chat, fileId, name)
-    const found = await this.fileDownload(action, path)
+    const {chat, file: {fileId, name}} = action
+    const {path} = filePaths(this.agent.data, chat, fileId, name)
+    const found = await this.downloadTo(action, path)
     if (found === path) return path
     await this.forwarding.get(fileId)?.catch(() => undefined)
-    if (existsSync(path) || fileBytes(found) !== size) throw new Error(missingFile)
-    moveFile(found, path)
+    if (!existsSync(path)) moveFile(found, path)
     return path
   }
 
   forwardFile(action: Pick<DownloadAction, "chat" | "item" | "file">): Promise<string> {
     const {chat, file: {fileId, name}} = action
-    const copy = this.fileDownload(action, downloadPath(this.agent.data, chat, fileId, name, "forwarded")).then(found => this.copyForSending(found, name))
+    const copy = this.downloadTo(action, filePaths(this.agent.data, chat, fileId, name).forwarded).then(found => this.copyForSending(found, name))
     this.forwarding.set(fileId, copy)
     return copy.finally(() => {
       if (this.forwarding.get(fileId) === copy) this.forwarding.delete(fileId)
     })
   }
 
-  private fileDownload({chat, item, file: {fileId, size}}: Pick<DownloadAction, "chat" | "item" | "file">, path: string): Promise<string> {
+  private downloadTo({chat, item, file: {fileId, size}}: Pick<DownloadAction, "chat" | "item" | "file">, path: string): Promise<string> {
     const started = this.downloads.get(fileId)
     if (started !== undefined) return started.promise
     const check = setInterval(() => this.checkDownload(download).catch(error => logError(`download of file ${fileId}`, error)), downloadCheck).unref()
@@ -783,7 +783,7 @@ export class AgentTools {
     const quoted = input.reply_to === undefined ? undefined : await this.quotedItem(chat, input.reply_to)
     const mentions = input.mention === undefined ? [] : await this.mentionedMembers(chatInfo, chat, input.mention)
     const file = input.file === undefined ? undefined : await this.attachment(input.file, input.as, chatInfo, chat)
-    if (messageLength(sentContent(file, messageText(input.text, mentions)), file?.name, quoted, mentions) > maxMessageLength) {
+    if (!fitsMessage(sentContent(file, messageText(input.text, mentions)), file?.name, quoted, mentions)) {
       throw new ToolError(file === undefined ? "text: too long for the message with its quote; shorten it." : `text: too long for a message with this ${file.type}; shorten it.`)
     }
     const replyTo = quoted === undefined ? undefined : {from: quoted.from, text: quoted.text}
@@ -903,10 +903,18 @@ export class AgentTools {
   }
 
   async deleteChatFiles(chat: string): Promise<{count: number; bytes: number}> {
-    for (const download of [...this.downloads.values()].filter(download => download.chat === chat)) {
+    const downloads = [...this.downloads.values()].filter(download => download.chat === chat)
+    for (const download of downloads) {
       this.failDownload(download.fileId, deletedFiles)
       await this.agent.chat.apiCancelFile(download.fileId).catch(error => logError(`cancelling file ${download.fileId}`, error))
       deletePartial(download.source, download.size)
+    }
+    const receiving = await receivingFiles(this.agent.chat, chat).catch(error => {
+      if (!isNotFound(error)) logError(`files of ${chat}`, error)
+      return []
+    })
+    for (const fileId of receiving) {
+      if (!downloads.some(download => download.fileId === fileId)) await this.agent.chat.apiCancelFile(fileId).catch(error => logError(`cancelling file ${fileId}`, error))
     }
     const folders = [chatFolder(this.agent.data, chat), chatFolder(this.agent.data, chat, "forwarded")]
     const files = folders.map(folderFiles)
@@ -1063,9 +1071,8 @@ export class AgentTools {
   }
 
   private moveReceived(chat: string, {fileId, fileName, fileSize, fileSource}: T.CIFile): void {
-    const path = downloadPath(this.agent.data, chat, fileId, fileName)
+    const {path, forwarded} = filePaths(this.agent.data, chat, fileId, fileName)
     const source = fileSource?.filePath
-    const forwarded = downloadPath(this.agent.data, chat, fileId, fileName, "forwarded")
     if (source === undefined || source === path || source === forwarded || existsSync(path) || fileBytes(source) !== fileSize) return
     try {
       moveFile(source, path)
@@ -1414,12 +1421,12 @@ function sentContent(file: Attachment | undefined, text: string): T.MsgContent {
   return file === undefined ? {type: "text", text} : fileContent(file, text)
 }
 
-function messageLength(content: T.MsgContent, fileName: string | undefined, quoted: Quoted | undefined, mentions: {name: string}[]): number {
+export function fitsMessage(content: T.MsgContent, fileName: string | undefined, quoted: Pick<Quoted, "content" | "fileName"> | undefined, mentions: {name: string}[] = []): boolean {
   const quote = quoted === undefined ? undefined : quoteContent(content, quoted)
-  return messageEnvelope + Buffer.byteLength(JSON.stringify([content, fileName, quote, mentions.map(({name}) => name)]))
+  return messageEnvelope + Buffer.byteLength(JSON.stringify([content, fileName, quote, mentions.map(({name}) => name)])) <= maxMessageLength
 }
 
-function quoteContent(sent: T.MsgContent, {content, fileName}: Quoted): T.MsgContent {
+function quoteContent(sent: T.MsgContent, {content, fileName}: Pick<Quoted, "content" | "fileName">): T.MsgContent {
   const text = content.text === "" ? (fileName ?? "") : content.text
   if (quotesAsText.includes(sent.type)) return {type: "text", text}
   switch (content.type) {

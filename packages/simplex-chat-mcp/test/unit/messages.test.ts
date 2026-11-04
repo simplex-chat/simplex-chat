@@ -1279,6 +1279,25 @@ describe("download", () => {
       expect([existsSync(source), readFileSync(downloaded, "utf8")]).toEqual([false, "voice"])
     })
 
+    it("is not moved when its size differs from the size in its message", () => {
+      const chat = new FakeChat()
+      const {source, received} = receivedIn(chat, "voice")
+      received.file!.fileSize = 4
+      const {tools} = downloadTools(chat)
+      tools.onFileComplete(event(trail, received))
+      expect([readFileSync(source, "utf8"), existsSync(downloaded)]).toEqual(["voice", false])
+    })
+
+    it("keeps its file when an update shows the file failed or cancelled", () => {
+      const chat = new FakeChat()
+      const {source} = receivedIn(chat, "voice")
+      const {tools} = downloadTools(chat)
+      for (const fileStatus of [{type: "rcvCancelled"}, {type: "rcvError", rcvFileError: {type: "noFile"}}]) {
+        tools.onFile(event(trail, fileItem(30, image, fileStatus, {fileSource: {filePath: source}})))
+      }
+      expect(readFileSync(source, "utf8")).toBe("voice")
+    })
+
     it("leaves no partial file when the sender cancels it or its message is deleted", async () => {
       jest.useFakeTimers()
       jest.spyOn(process.stderr, "write").mockImplementation(() => true)

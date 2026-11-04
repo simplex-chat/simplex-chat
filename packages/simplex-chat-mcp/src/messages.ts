@@ -10,6 +10,7 @@ const pageSize = 100
 const maxCollected = 100
 const prohibitedNameChars = ".,;/\\#@'\"`~"
 const maxNameLength = 50
+const receivingStatuses: T.CIFileStatus["type"][] = ["rcvAccepted", "rcvTransfer", "rcvWarning"]
 export const missingFile = "The received file is not in the agent's files folder."
 
 export interface Message {
@@ -195,11 +196,10 @@ function messageFile(chat: string, msgContent: T.MsgContent, ciFile: T.CIFile, r
   const file = {name, size, type}
   const {fileId, fileSource, fileStatus} = ciFile
   const error = receivedFileError(data, chat, ciFile)
-  const path = downloadPath(data, chat, fileId, name)
-  const sources = [path, downloadPath(data, chat, fileId, name, "forwarded")]
+  const {path, forwarded} = filePaths(data, chat, fileId, name)
   if (rejectedFiles.has(fileId)) return {...file, status: "rejected"}
   if (error !== undefined) return {...file, status: "failed", error}
-  if (fileStatus.type === "rcvComplete" && existsSync(path) && sources.includes(fileSource?.filePath ?? "")) return {...file, status: "received", path}
+  if (fileStatus.type === "rcvComplete" && existsSync(path) && [path, forwarded].includes(fileSource?.filePath ?? "")) return {...file, status: "received", path}
   return {...file, status: "offered"}
 }
 
@@ -208,12 +208,14 @@ export function receivedFileError(data: string, chat: string, file: T.CIFile): s
 }
 
 export function receivedPath(data: string, chat: string, {fileId, fileName}: T.CIFile): string | undefined {
-  return [downloadPath(data, chat, fileId, fileName), downloadPath(data, chat, fileId, fileName, "forwarded")].find(path => existsSync(path))
+  const {path, forwarded} = filePaths(data, chat, fileId, fileName)
+  return [path, forwarded].find(file => existsSync(file))
 }
 
-export function downloadPath(data: string, chat: string, fileId: number, name: string, root: FilesRoot = "files"): string {
+export function filePaths(data: string, chat: string, fileId: number, name: string): {path: string; forwarded: string} {
   const extension = extname(name)
-  return join(chatFolder(data, chat, root), `${fileId}${/^\.[A-Za-z0-9]{1,16}$/.test(extension) ? extension : ""}`)
+  const file = `${fileId}${/^\.[A-Za-z0-9]{1,16}$/.test(extension) ? extension : ""}`
+  return {path: join(chatFolder(data, chat), file), forwarded: join(chatFolder(data, chat, "forwarded"), file)}
 }
 
 export function chatFolder(data: string, chat: string, root: FilesRoot = "files"): string {
@@ -264,6 +266,16 @@ function itemSender(chatInfo: T.ChatInfo, chatDir: T.CIDirection, self: Sender):
 
 export async function getChat(chat: api.ChatApi, ref: string, pagination: T.ChatPagination | number): Promise<T.AChat> {
   return chat.apiGetChat(chatType(ref), chatNumber(ref), pagination)
+}
+
+export async function receivingFiles(chat: api.ChatApi, ref: string): Promise<number[]> {
+  const fileIds: number[] = []
+  for (let pagination: T.ChatPagination = {type: "last", count: pageSize}; ; ) {
+    const items: T.ChatItem[] = (await getChat(chat, ref, pagination)).chatItems
+    fileIds.push(...items.flatMap(({file}) => (file !== undefined && receivingStatuses.includes(file.fileStatus.type) ? [file.fileId] : [])))
+    if (items.length < pageSize) return fileIds
+    pagination = {type: "before", chatItemId: items[0].meta.itemId, count: pageSize}
+  }
 }
 
 export async function markRead(chat: api.ChatApi, ref: string, itemIds: number[]): Promise<void> {

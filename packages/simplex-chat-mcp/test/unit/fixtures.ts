@@ -245,14 +245,17 @@ export class FakeChat {
     if (data === undefined) throw storeError(ref)
     const around = /^around=(\d+) count=0$/.exec(pagination)
     const after = /^after=(\d+) count=(\d+)$/.exec(pagination)
+    const before = /^before=(\d+) count=(\d+)$/.exec(pagination)
     const last = /^count=(\d+)$/.exec(pagination)
     const chatItems = around
       ? data.items.filter(({meta}) => meta.itemId === Number(around[1]))
       : after
         ? data.items.filter(({meta}) => meta.itemId > Number(after[1])).slice(0, Number(after[2]))
-        : last && Number(last[1]) > 0
-          ? data.items.slice(-Number(last[1]))
-          : []
+        : before
+          ? data.items.filter(({meta}) => meta.itemId < Number(before[1])).slice(-Number(before[2]))
+          : last && Number(last[1]) > 0
+            ? data.items.slice(-Number(last[1]))
+            : []
     if (around && chatItems.length === 0) throw storeError(ref)
     return structuredClone({type: "apiChat", chat: {chatInfo: data.chatInfo, chatItems, chatStats: chatStats(data.items)}}) as unknown as ChatResponse
   }
