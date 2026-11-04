@@ -217,7 +217,7 @@
       </trans-unit>
       <trans-unit id="%d months" xml:space="preserve">
         <source>%d months</source>
-        <target>%d 月</target>
+        <target>%d 个月</target>
         <note>time interval</note>
       </trans-unit>
       <trans-unit id="%d owner" xml:space="preserve">
