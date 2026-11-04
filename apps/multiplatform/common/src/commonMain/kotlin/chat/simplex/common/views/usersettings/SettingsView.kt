@@ -143,7 +143,7 @@ fun SettingsLayout(
         SettingsActionItem(
           painterResource(MR.images.ic_redeem),
           stringResource(MR.strings.v7_0_crowdfunding),
-          { ModalManager.start.showModal(cardScreen = true) { GetStakeView() } }
+          { ModalManager.start.showModalCloseable(cardScreen = true) { close -> GetStakeView(close = close) } }
         )
       }
     }
