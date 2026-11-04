@@ -2,7 +2,7 @@
 
 ## Problem
 
-Settings → Privacy → "Send delivery receipts to": switching Contacts or Small groups and choosing "Enable for all" / "Disable for all" also resets the per-chat receipt settings of every other profile. The section footer states "These settings are for your current profile".
+Settings → Privacy → "Send delivery receipts to": switching Contacts or Small groups (max 20) and choosing "Enable for all" / "Disable for all" ("Enable for all groups" / "Disable for all groups" for groups on Android and desktop) also resets the per-chat receipt settings of every other profile. The section footer states "These settings are for your current profile".
 
 ## Cause
 
