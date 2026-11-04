@@ -4203,17 +4203,29 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         }
     }
 
+    public var hasHeaderAboveQuote: Bool {
+        isReport || meta.itemDeleted != nil || meta.isLive
+    }
+
+    public var hasQuoteOrHeader: Bool {
+        quotedItem != nil || meta.itemForwarded != nil || hasHeaderAboveQuote
+    }
+
     public var textAtItemTop: Bool {
         let textContent = switch content.msgContent {
         case .text: true
         case .unknown: file == nil
         default: false
         }
-        return textContent && quotedItem == nil && meta.itemForwarded == nil && meta.itemDeleted == nil && !meta.isLive && !isReport
+        return textContent && !hasQuoteOrHeader
     }
 
     public var startsWithHeading: Bool {
         if case .heading = markdownBlocks?.first { true } else { false }
+    }
+
+    public var isOneLine: Bool {
+        textAtItemTop && markdownBlocks == nil && !content.text.contains(where: \.isNewline)
     }
 
     public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> ChatItem {
@@ -5910,6 +5922,13 @@ public enum MarkdownBlock: Decodable, Hashable {
 
     public var isHeading: Bool {
         if case .heading = self { true } else { false }
+    }
+
+    public var isCard: Bool {
+        switch self {
+        case .codeBlock, .table, .rule: true
+        case .paragraph, .heading, .quote, .list: false
+        }
     }
 }
 

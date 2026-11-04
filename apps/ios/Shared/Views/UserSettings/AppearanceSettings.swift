@@ -393,10 +393,10 @@ struct ChatThemePreview: View {
                     .opacity(terminal ? 0 : 1)
                     .accessibilityHidden(terminal)
                     VStack(spacing: 0) {
-                        TerminalChatItemRow(sender: ChatItemSender(name: Text(verbatim: "alice"), own: false), gutter: 0, topGap: terminalRowGap(alice, nil, separated: false, largeGap: true, hasSenderRow: true), senderTopGap: 0) {
+                        TerminalChatItemRow(sender: ChatItemSender(name: Text(verbatim: "alice"), own: false), gutter: 0, topGap: terminalRowGap(alice, nil, separated: false, largeGap: true, hasSenderRow: true), contentStartsWithCard: terminalItemStartsWithCard(alice, revealed: true)) {
                             ChatItemView(chat: Chat.sampleData, im: ItemsModel.shared, chatItem: alice, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
                         }
-                        TerminalChatItemRow(sender: ChatItemSender(name: Text(verbatim: "bob"), own: true), gutter: 0, topGap: terminalRowGap(bob, alice, separated: false, largeGap: true, hasSenderRow: true)) {
+                        TerminalChatItemRow(sender: ChatItemSender(name: Text(verbatim: "bob"), own: true), gutter: 0, topGap: terminalRowGap(bob, alice, separated: false, largeGap: true, hasSenderRow: true), contentStartsWithCard: terminalItemStartsWithCard(bob, revealed: true)) {
                             ChatItemView(chat: Chat.sampleData, im: ItemsModel.shared, chatItem: bob, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
                         }
                     }
