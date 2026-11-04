@@ -407,7 +407,7 @@ struct TerminalChatItemRow<Content: View>: View {
 
     private func senderNameAndRole(_ sender: ChatItemSender) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
-            NameWithBadge(sender.name.font(.body.weight(.semibold)).foregroundColor(sender.own ? theme.colors.primary : messageTextColor(theme)), sender.badge)
+            NameWithBadge(sender.name.font(.body.weight(.semibold)).foregroundColor(sender.own ? theme.colors.primary : theme.colors.secondary), sender.badge)
                 .lineLimit(1)
             if let role = sender.role {
                 Text(role)

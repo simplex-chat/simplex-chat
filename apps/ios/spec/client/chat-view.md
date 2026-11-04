@@ -362,7 +362,7 @@ avatar             memberImageSize: scaledMemberImageSize, 34pt × chat list pro
                    top-aligned with the name
                    classic group bubbles: maximum width less the avatar column, scaledMemberImageSize + 8pt
                    classic sender name: memberImageSize + 10pt after the avatar's start, on the bubble edge (user, I23)
-sender row         name and badge in the body text style, semibold (primary for own items, messageTextColor otherwise)
+sender row         name and badge in the body text style, semibold (primary for own items, secondary otherwise)
                    role label in the body text style, medium, secondary, 15pt after the name; line box of the body font
                    start padding chatItemTextPadding; below: terminalParagraphGap when the content starts with a card
                    (contentStartsWithCard: terminalItemStartsWithCard), otherwise 0

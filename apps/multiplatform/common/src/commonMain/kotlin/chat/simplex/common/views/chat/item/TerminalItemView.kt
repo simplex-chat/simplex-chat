@@ -372,7 +372,7 @@ private fun SenderNameAndRole(sender: ChatItemSender, modifier: Modifier) {
       Modifier.weight(1f, false),
       fontSize = MaterialTheme.typography.body1.fontSize,
       fontWeight = FontWeight.SemiBold,
-      color = if (sender.own) MaterialTheme.colors.primary else messageTextColor(),
+      color = if (sender.own) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
       overflow = TextOverflow.Ellipsis,
       maxLines = 1
     )
