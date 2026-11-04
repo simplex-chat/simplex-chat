@@ -709,7 +709,7 @@ time interval</note>
       </trans-unit>
       <trans-unit id="A store purchase is being added to this profile." xml:space="preserve">
         <source>A store purchase is being added to this profile.</source>
-        <target>Ein im Store erworbener Kauf wird diesem Profil hinzugefügt.</target>
+        <target>Ein Kauf aus dem Store wird diesem Profil hinzugefügt.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Abort" xml:space="preserve">

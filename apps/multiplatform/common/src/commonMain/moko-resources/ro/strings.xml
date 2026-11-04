@@ -2451,7 +2451,7 @@
     <string name="badge_supported_simplex">%1$s a susținut SimpleX Chat. Insigna a expirat pe %2$s.</string>
     <string name="relay_status_accepted">acceptată</string>
     <string name="app_update_required">Aplicația necesita actualizare</string>
-    <string name="badge_unknown_key_title">Eticheta nu poate fi verificată</string>
+    <string name="badge_unknown_key_title">Insigna nu poate fi verificată</string>
     <string name="why_built_p7">Deoarece am distrus puterea să știm cine ești. Așa că puterea ta nu poate fi luată niciodată.</string>
     <string name="onboarding_be_free">Fii liber\nîn rețeaua ta</string>
     <string name="why_built_tagline">Fii liber în rețeaua ta.</string>

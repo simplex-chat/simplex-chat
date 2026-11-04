@@ -2590,7 +2590,7 @@
     <string name="badges_ledger_no_entries">Cap entrada</string>
     <string name="badges_ledger_date">Data</string>
     <string name="badges_ledger_balance">Saldo</string>
-    <string name="badges_ledger_balance_start">Saldo inicial</string>
+    <string name="badges_ledger_balance_start">Inici del saldo</string>
     <string name="badges_ledger_anchor">Àncora</string>
     <string name="badges_ledger_badge_type">Tipus d\'insígnia</string>
     <string name="badges_ledger_paused_since">En pausa des de</string>

@@ -2992,8 +2992,8 @@
     <string name="badges_ledger_entry_id">ID de l’entrée</string>
     <string name="badges_ledger_invoice_id">ID de facture</string>
     <string name="badges_ledger_charge_id">ID de la transaction</string>
-    <string name="badges_ledger_from_purchase_key">À partir de la clé d’achat</string>
-    <string name="badges_ledger_to_purchase_key">Vers la clé d’achat</string>
+    <string name="badges_ledger_from_purchase_key">Clé d’achat d’origine</string>
+    <string name="badges_ledger_to_purchase_key">Clé d’achat de destination</string>
     <string name="badges_renewal_failed">Échec du renouvellement du badge</string>
     <string name="badges_renewal_failed_unknown">Votre badge n’a pas pu être renouvelé.</string>
     <string name="badges_error_service_refused">Le service des badges a refusé le renouvellement : %1$s</string>

@@ -424,7 +424,7 @@ time interval */
 "A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "**Für jeden Kontakt und jedes Gruppenmitglied** wird eine separate TCP-Verbindung genutzt.\n**Bitte beachten Sie**: Wenn Sie viele Verbindungen haben, kann der Batterieverbrauch und die Datennutzung wesentlich höher sein und einige Verbindungen können scheitern.";
 
 /* alert message */
-"A store purchase is being added to this profile." = "Ein im Store erworbener Kauf wird diesem Profil hinzugefügt.";
+"A store purchase is being added to this profile." = "Ein Kauf aus dem Store wird diesem Profil hinzugefügt.";
 
 /* No comment provided by engineer. */
 "Abort" = "Beenden";

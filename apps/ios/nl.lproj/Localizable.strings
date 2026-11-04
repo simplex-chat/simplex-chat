@@ -1482,10 +1482,10 @@ server test step */
 "Contact will be deleted - this cannot be undone!" = "Het contact wordt verwijderd. Dit kan niet ongedaan worden gemaakt!";
 
 /* file alert */
-"Contact's badge expired." = "Badge van contact is verlopen.";
+"Contact's badge expired." = "De badge van het contact is verlopen.";
 
 /* file alert */
-"Contact's badge verification failed." = "Verificatie van de badge van contact is mislukt.";
+"Contact's badge verification failed." = "Verificatie van de badge van het contact is mislukt.";
 
 /* No comment provided by engineer. */
 "Contacts" = "Contacten";
@@ -3783,7 +3783,7 @@ servers warning */
 "No info, try to reload" = "Geen info, probeer opnieuw te laden";
 
 /* file alert */
-"No key to verify contact's badge." = "Geen sleutel om de badge van contact te verifiëren.";
+"No key to verify contact's badge." = "Geen sleutel om de badge van het contact te verifiëren.";
 
 /* servers error */
 "No media & file servers." = "Geen media- en bestandsservers.";

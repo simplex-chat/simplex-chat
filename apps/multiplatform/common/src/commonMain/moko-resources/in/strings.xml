@@ -2791,7 +2791,7 @@
     <string name="badges_ledger_no_entries">Tidak ada entri</string>
     <string name="badges_ledger_date">Tanggal</string>
     <string name="badges_ledger_balance">Saldo</string>
-    <string name="badges_ledger_balance_start">Saldo awal</string>
+    <string name="badges_ledger_balance_start">Awal periode saldo</string>
     <string name="badges_ledger_anchor">Jangkar</string>
     <string name="badges_ledger_badge_type">Jenis lencana</string>
     <string name="badges_ledger_paused_since">Dijeda sejak</string>

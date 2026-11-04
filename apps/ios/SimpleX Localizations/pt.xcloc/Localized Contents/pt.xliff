@@ -724,7 +724,7 @@
       </trans-unit>
       <trans-unit id="Already connecting!" xml:space="preserve" approved="no">
         <source>Already connecting!</source>
-        <target state="translated">A ligar!</target>
+        <target state="translated">Já está a ligar!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve" approved="no">
@@ -789,7 +789,7 @@
       </trans-unit>
       <trans-unit id="Already joining the group!" xml:space="preserve" approved="no">
         <source>Already joining the group!</source>
-        <target state="translated">A entrar no grupo!</target>
+        <target state="translated">Já está a entrar no grupo!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="An empty chat profile with the provided name is created, and the app opens as usual." xml:space="preserve" approved="no">
@@ -895,7 +895,7 @@
       </trans-unit>
       <trans-unit id="%1$@ supported SimpleX Chat. The badge expired on %2$@." xml:space="preserve" approved="no">
         <source>%1$@ supported SimpleX Chat. The badge expired on %2$@.</source>
-        <target state="translated">%1$@ apoiou o SimpleX Chat. O dístico expirou em %2$@.</target>
+        <target state="translated">%1$@ apoiou o SimpleX Chat. O distintivo expirou em %2$@.</target>
       </trans-unit>
       <trans-unit id="%02d hrs %02d min %02d sec" xml:space="preserve" approved="no">
         <source>%1$02d hrs %2$02d min %3$02d sec</source>
@@ -911,7 +911,7 @@
       </trans-unit>
       <trans-unit id="%@ server" xml:space="preserve" approved="no">
         <source>%@ server</source>
-        <target state="translated">%@ servidor</target>
+        <target state="translated">Servidor %@</target>
       </trans-unit>
       <trans-unit id="%@ supports SimpleX Chat." xml:space="preserve" approved="no">
         <source>%@ supports SimpleX Chat.</source>
@@ -1097,9 +1097,9 @@
         <source>- voice messages up to 5 minutes.
 - custom time to disappear.
 - editing history.</source>
-        <target state="translated">- voice messages up to 5 minutes.
-- custom time to disaplicaçãoear.
-- editing history.</target>
+        <target state="translated">- mensagens de voz até 5 minutos.
+- tempo personalizado para desaparecer.
+- histórico de edições.</target>
       </trans-unit>
       <trans-unit id="0 sec" xml:space="preserve" approved="no">
         <source>0 sec</source>
@@ -1161,11 +1161,11 @@
       </trans-unit>
       <trans-unit id="A badge can be added to another profile, or here once this badge ends." xml:space="preserve" approved="no">
         <source>A badge can be added to another profile, or here once this badge ends.</source>
-        <target state="translated">Pode ser adicionado um dístico a outro perfil ou aqui assim que este expirar.</target>
+        <target state="translated">Pode ser adicionado um distintivo a outro perfil ou aqui assim que este expirar.</target>
       </trans-unit>
       <trans-unit id="A badge is an anonymous credential stored in your profile on your device. This credential is never sent to anyone." xml:space="preserve" approved="no">
         <source>A badge is an anonymous credential stored in your profile on your device. This credential is never sent to anyone.</source>
-        <target state="translated">Um dístico é uma credencial anónima guardada no perfil do utilizador no respetivo dispositivo. Esta credencial nunca é enviada a ninguém.</target>
+        <target state="translated">Um distintivo é uma credencial anónima guardada no perfil do utilizador no respetivo dispositivo. Esta credencial nunca é enviada a ninguém.</target>
       </trans-unit>
       <trans-unit id="A few more things" xml:space="preserve" approved="no">
         <source>A few more things</source>
@@ -1194,8 +1194,8 @@
       <trans-unit id="A separate TCP connection will be used **for each contact and group member**.&#10;**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." xml:space="preserve" approved="no">
         <source>A separate TCP connection will be used **for each contact and group member**.
 **Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.</source>
-        <target state="translated">A separate TCP connection will be used **for each contact and group member**.
-**Please note**: if existente many connections, your battery and traffic consumption can be substantially higher and some connections may fail.</target>
+        <target state="translated">Será utilizada uma ligação TCP separada **para cada contacto e membro do grupo**.
+**Tenha em atenção**: se tiver muitas ligações, o consumo de bateria e de tráfego poderá ser substancialmente maior e algumas ligações poderão falhar.</target>
       </trans-unit>
       <trans-unit id="A store purchase is being added to this profile." xml:space="preserve" approved="no">
         <source>A store purchase is being added to this profile.</source>
@@ -1259,7 +1259,7 @@
       </trans-unit>
       <trans-unit id="Accepted conditions" xml:space="preserve" approved="no">
         <source>Accepted conditions</source>
-        <target state="translated">Aceitar condições</target>
+        <target state="translated">Condições aceites</target>
       </trans-unit>
       <trans-unit id="Active" xml:space="preserve" approved="no">
         <source>Active</source>
@@ -1275,11 +1275,11 @@
       </trans-unit>
       <trans-unit id="Add badge" xml:space="preserve" approved="no">
         <source>Add badge</source>
-        <target state="translated">Ãdicionar dístico</target>
+        <target state="translated">Adicionar distintivo</target>
       </trans-unit>
       <trans-unit id="Add badge to your profile?" xml:space="preserve" approved="no">
         <source>Add badge to your profile?</source>
-        <target state="translated">Adicionar dístico ao seru perfil?</target>
+        <target state="translated">Adicionar distintivo ao seu perfil?</target>
       </trans-unit>
       <trans-unit id="Add contributors." xml:space="preserve" approved="no">
         <source>Add contributors.</source>
@@ -1323,7 +1323,7 @@
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve" approved="no">
         <source>Add to another device</source>
-        <target state="translated">Adicionar outro dispositivo</target>
+        <target state="translated">Adicionar a outro dispositivo</target>
       </trans-unit>
       <trans-unit id="Add to list" xml:space="preserve" approved="no">
         <source>Add to list</source>
@@ -1347,7 +1347,7 @@
       </trans-unit>
       <trans-unit id="Admins can block a member for all." xml:space="preserve" approved="no">
         <source>Admins can block a member for all.</source>
-        <target state="translated">Os administradores podem bloquear um membro para sempre.</target>
+        <target state="translated">Os administradores podem bloquear um membro para todos.</target>
       </trans-unit>
       <trans-unit id="All" xml:space="preserve" approved="no">
         <source>All</source>
@@ -1363,7 +1363,7 @@
       </trans-unit>
       <trans-unit id="All profiles" xml:space="preserve" approved="no">
         <source>All profiles</source>
-        <target state="translated">Todos os perfils</target>
+        <target state="translated">Todos os perfis</target>
       </trans-unit>
       <trans-unit id="All servers" xml:space="preserve" approved="no">
         <source>All servers</source>
@@ -1395,7 +1395,7 @@
       </trans-unit>
       <trans-unit id="Archive" xml:space="preserve" approved="no">
         <source>Archive</source>
-        <target state="translated">Arquivo</target>
+        <target state="translated">Arquivar</target>
       </trans-unit>
       <trans-unit id="Audio call" xml:space="preserve" approved="no">
         <source>Audio call</source>
@@ -1415,23 +1415,23 @@
       </trans-unit>
       <trans-unit id="Badge added" xml:space="preserve" approved="no">
         <source>Badge added</source>
-        <target state="translated">Dístico adicionado</target>
+        <target state="translated">Distintivo adicionado</target>
       </trans-unit>
       <trans-unit id="Badge cannot be verified" xml:space="preserve" approved="no">
         <source>Badge cannot be verified</source>
-        <target state="translated">Não foi possível verificar o dístico</target>
+        <target state="translated">Não foi possível verificar o distintivo</target>
       </trans-unit>
       <trans-unit id="Badge payment problem" xml:space="preserve" approved="no">
         <source>Badge payment problem</source>
-        <target state="translated">Problema com o pagamento do dístico</target>
+        <target state="translated">Problema com o pagamento do distintivo</target>
       </trans-unit>
       <trans-unit id="Badge renewal failed" xml:space="preserve" approved="no">
         <source>Badge renewal failed</source>
-        <target state="translated">Renovação do dístico falhou</target>
+        <target state="translated">Renovação do distintivo falhou</target>
       </trans-unit>
       <trans-unit id="Badge type" xml:space="preserve" approved="no">
         <source>Badge type</source>
-        <target state="translated">Típo de dístico</target>
+        <target state="translated">Tipo de distintivo</target>
       </trans-unit>
       <trans-unit id="Bio" xml:space="preserve" approved="no">
         <source>Bio</source>
@@ -1439,7 +1439,7 @@
       </trans-unit>
       <trans-unit id="Bio too large" xml:space="preserve" approved="no">
         <source>Bio too large</source>
-        <target state="translated">Biografia demasiado entensa</target>
+        <target state="translated">Biografia demasiado extensa</target>
       </trans-unit>
       <trans-unit id="Black" xml:space="preserve" approved="no">
         <source>Black</source>
@@ -1459,11 +1459,11 @@
       </trans-unit>
       <trans-unit id="Blur for better privacy." xml:space="preserve" approved="no">
         <source>Blur for better privacy.</source>
-        <target state="translated">Descofar para melhor privacidade.</target>
+        <target state="translated">Desfocar para melhor privacidade.</target>
       </trans-unit>
       <trans-unit id="Blur media" xml:space="preserve" approved="no">
         <source>Blur media</source>
-        <target state="translated">Descofar ficheiros multimédia</target>
+        <target state="translated">Desfocar ficheiros multimédia</target>
       </trans-unit>
       <trans-unit id="Bot" xml:space="preserve" approved="no">
         <source>Bot</source>
@@ -1487,7 +1487,7 @@
       </trans-unit>
       <trans-unit id="Calls prohibited!" xml:space="preserve" approved="no">
         <source>Calls prohibited!</source>
-        <target state="translated">Chamada proibida!</target>
+        <target state="translated">Chamadas proibidas!</target>
       </trans-unit>
       <trans-unit id="Can't call contact" xml:space="preserve" approved="no">
         <source>Can't call contact</source>
@@ -1503,7 +1503,7 @@
       </trans-unit>
       <trans-unit id="Cancel and delete channel" xml:space="preserve" approved="no">
         <source>Cancel and delete channel</source>
-        <target state="translated">Cancelar, ou eliminar canal</target>
+        <target state="translated">Cancelar e eliminar canal</target>
       </trans-unit>
       <trans-unit id="Cancel creating channel?" xml:space="preserve" approved="no">
         <source>Cancel creating channel?</source>
@@ -1515,7 +1515,7 @@
       </trans-unit>
       <trans-unit id="Cellular" xml:space="preserve" approved="no">
         <source>Cellular</source>
-        <target state="translated">Telemóvel</target>
+        <target state="translated">Rede móvel</target>
       </trans-unit>
       <trans-unit id="Channel" xml:space="preserve" approved="no">
         <source>Channel</source>
