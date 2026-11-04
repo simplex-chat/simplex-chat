@@ -252,18 +252,20 @@ createInvoice env (SPMCard CPStripe) OrderDraft {odAmount = CurrencyAmount minor
       create headers = stripeSend env what methodPost ["v1", "payment_intents"] [] headers (Just form)
   -- a name order sent again after a lost answer gets the intent its first create made
   (replayed, keyed) <- create [("Idempotency-Key", B8.intercalate ":" [reference, amount, currency])]
-  -- Stripe replays a key's first answer for 24 hours, so an error or an intent cancelled since would fail every resend
-  stale <- if replayed then unusable keyed else pure False
-  created <- if stale then snd <$> create [] else pure keyed
+  created <- if replayed then replayedIntent (snd <$> create []) keyed else pure keyed
   pure $ created >>= decodeStripe what <&> \CreatedIntent {ciId, ciClientSecret} ->
     ProviderInvoice {piProviderRef = ciId, piDestination = SPDCard CPStripe ciClientSecret}
   where
     what = "create intent"
-    unusable = \case
-      Left _ -> pure True
-      Right body -> case decodeStripe what body of
-        Left _ -> pure True
-        Right CreatedIntent {ciId} -> either (const True) isJust <$> readInvoice env ciId
+    -- Stripe replays a key's first answer for 24 hours, so an error or an intent cancelled since would fail every resend.
+    -- An intent that succeeded holds the order's payment, and one that cannot be read may, so neither is replaced.
+    replayedIntent fresh keyed = case keyed >>= decodeStripe what of
+      Left _ -> fresh
+      Right CreatedIntent {ciId} ->
+        readInvoice env ciId >>= \case
+          Right (Just SigClosed {}) -> fresh
+          Right _ -> pure keyed
+          Left e -> pure (Left e)
 
 cancelInvoice :: StripeEnv -> Text -> IO (Either ProviderError ())
 cancelInvoice env pid =

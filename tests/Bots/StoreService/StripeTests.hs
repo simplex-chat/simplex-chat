@@ -52,6 +52,8 @@ badgeStripeTests = describe "badge stripe adapter" $ do
     it "sends an Idempotency-Key of the order, so a create sent again gets the same intent" testFakeCreateIsIdempotent
     it "creates again without the key when the key replays an error" testFakeReplayedErrorIsNotPassedOn
     it "creates again without the key when the key replays an intent cancelled since" testFakeReplayedCancelIsNotPassedOn
+    it "keeps a replayed intent that succeeded since, creating no other" testFakeReplayedSuccessIsKept
+    it "answers an error, creating no other intent, when a replayed intent cannot be read" testFakeReplayedUnreadIsKept
     it "is refused when the secret key is wrong, rather than passing silently" testFakeWrongSecretKey
     it "walks requires_payment_method through processing to succeeded, then refuses a cancel" testFakeLifecycle
     it "cancels an open intent once, then refuses a second cancel" testFakeCancel
@@ -188,6 +190,21 @@ testFakeReplayedCancelIsNotPassedOn = withProvider $ \fake p -> do
   again <- createdNameOrder p
   again `shouldNotBe` first
   fakeIntentStatus fake again `shouldReturn` Just "requires_payment_method"
+
+testFakeReplayedSuccessIsKept :: IO ()
+testFakeReplayedSuccessIsKept = withProvider $ \fake p -> do
+  first <- createdNameOrder p
+  setIntentState fake first ["status" .= ("succeeded" :: Text)]
+  createdNameOrder p `shouldReturn` first
+  fakeIntentIds fake `shouldReturn` [first]
+
+testFakeReplayedUnreadIsKept :: IO ()
+testFakeReplayedUnreadIsKept = withProvider $ \fake p -> do
+  first <- createdNameOrder p
+  failNextCalls fake 1 500
+  pCreateInvoice p (SPMCard CPStripe) nameOrder >>= (`shouldSatisfy` namesInError "500")
+  fakeIntentIds fake `shouldReturn` [first]
+  createdNameOrder p `shouldReturn` first
 
 testFakeWrongSecretKey :: IO ()
 testFakeWrongSecretKey = bounded $ withFakeStripe $ \fake -> do
