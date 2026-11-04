@@ -4023,6 +4023,9 @@ servers warning */
 /* No comment provided by engineer. */
 "Max 30 seconds, received instantly." = "Max 30 secondes, réception immédiate.";
 
+/* file alert */
+"Maximum supported file size is %1$@, with a %2$@." = "La taille maximale de fichier prise en charge est de %1$@, avec un %2$@.";
+
 /* No comment provided by engineer. */
 "Media & file servers" = "Serveurs de fichiers et de médias";
 

@@ -6104,7 +6104,7 @@ Voici votre lien pour le groupe %@ !</target>
       </trans-unit>
       <trans-unit id="Maximum supported file size is %1$@, with a %2$@." xml:space="preserve">
         <source>Maximum supported file size is %1$@, with a %2$@.</source>
-        <target state="needs-translation">La taille maximale de fichier prise en charge est de %1$@, avec un(e) %2$@.</target>
+        <target>La taille maximale de fichier prise en charge est de %1$@, avec un %2$@.</target>
         <note>file alert</note>
       </trans-unit>
       <trans-unit id="Media &amp; file servers" xml:space="preserve">
