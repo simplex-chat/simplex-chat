@@ -1040,6 +1040,11 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
 - `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over max_fee_per_gas
   <cap>` when a transaction stuck in the pool cannot be bumped within the cap.
 
+Try again or a move of a failed order, and the worker's judgment of a register that did not go
+through, first run `confirmLanded`. It marks the order registered when `ownerOf` at the confirmation
+depth shows the order's owner holding the name, even if this order's register never landed: an
+owner who got the name another way counts as served, and a code order spends its code.
+
 #### Rotate the key
 
 The service resumes its saved transactions at start and gives new ones nonces after theirs. Those
