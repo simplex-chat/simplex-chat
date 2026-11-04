@@ -153,11 +153,12 @@ final class ChatItemsLoaderTests: XCTestCase {
     }
 
     @MainActor
-    private func load(_ page: Chat, _ pagination: ChatPagination, _ navInfo: NavigationInfo = NavigationInfo(), openAroundItemId: ChatItem.ID? = nil, during events: () async -> Void) async {
+    private func load(_ page: Chat, _ pagination: ChatPagination, _ navInfo: NavigationInfo = NavigationInfo(), openAroundItemId: ChatItem.ID? = nil, during events: @MainActor () async -> Void) async {
         let itemUpdates = ChatModel.ItemUpdatesWhileLoading()
         ChatModel.shared.startRecordingItemUpdates(itemUpdates)
         await events()
         processLoadedChat(page, navInfo, ItemsModel.shared, pagination, openAroundItemId, itemUpdates)
+        ChatModel.shared.updateChats(savedChats)
         if ItemsModel.shared.openingItemUpdates !== itemUpdates {
             ChatModel.shared.stopRecordingItemUpdates(itemUpdates)
         }
