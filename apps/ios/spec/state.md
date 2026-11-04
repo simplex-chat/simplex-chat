@@ -278,7 +278,7 @@ enum ActiveFilter {
 
 ---
 
-## 5. [ChannelRelaysModel](../Shared/Model/ChatModel.swift#L351-L350)
+## 5. [ChannelRelaysModel](../Shared/Model/ChatModel.swift#L351-L375)
 
 **Class**: `class ChannelRelaysModel: ObservableObject`
 **Singleton**: `ChannelRelaysModel.shared`
