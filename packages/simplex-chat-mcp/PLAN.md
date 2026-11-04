@@ -540,7 +540,7 @@ Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agen
 - The count and the size are of the files directly in the folder; sizes as on download cards.
 
 - CHAT is optional in `/approve N`, `/reject N`, `/receive N` and `/forward N` as typed; the cards include it for sends, downloads and leaves.
-- The file of `/forward` has the message's type and the sender's preview, with no text. It is posted from a copy under the file's name, in `DIR/files/sent/`, deleted as resized copies are, and when its post fails. The downloaded file stays in `DIR/forwarded/FOLDER/`, so the agent's messages show it as offered, without a path; the card stays pending. A later `/receive` moves it into `DIR/files/FOLDER/`, after the copy for the post is made, when it has the file's size.
+- The file of `/forward` has the message's type and the sender's preview, with no text, and replies to the card when the message, with the card as its quote, is within 15602 bytes. It is posted from a copy under the file's name, in `DIR/files/sent/`, deleted as resized copies are, and when its post fails. The downloaded file stays in `DIR/forwarded/FOLDER/`, so the agent's messages show it as offered, without a path; the card stays pending. A later `/receive` moves it into `DIR/files/FOLDER/`, after the copy for the post is made.
 - A files approval covers downloads only, and ends as a standing approval does.
 - `/leave CHAT` applies in both modes. Its reply is logged, with names on one line.
 - A standing approval covers sends only. It ends at `/revoke`, when the chat is deleted, or when member `approvedById` is no longer an approver. It applies in mode `requests` only: in mode `host`, `list` and `/list` show no approvals, and `/approve CHAT all` stores none.
