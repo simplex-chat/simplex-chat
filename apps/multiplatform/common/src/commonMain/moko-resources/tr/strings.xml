@@ -2688,8 +2688,8 @@
     <string name="tray_tooltip_unread">SimpleX - %d okunmamış</string>
     <string name="simplex_name_error">SimpleX ad hatası</string>
     <string name="simplex_name_not_verified">SimpleX adı doğrulanmadı</string>
-    <string name="badge_invested">SimpleX Chat kitlesel fonlamasına yatırım yapan %s\'ler.</string>
-    <string name="badge_supports_simplex">%s kişi SimpleX Chat\'i destekliyor.</string>
+    <string name="badge_invested">%s, SimpleX Chat kitle fonlamasına yatırım yaptı.</string>
+    <string name="badge_supports_simplex">%s, SimpleX Chat\'i destekliyor.</string>
     <string name="member_info_status">Durum</string>
     <string name="group_member_role_observer_channel">abone</string>
     <string name="member_info_section_title_subscriber">Abone</string>
@@ -2766,8 +2766,8 @@
     <string name="content_filter_voice_messages">Sesli mesaj</string>
     <string name="voice_recording_not_supported">Kullanmakta olduğunuz platform ses kaydı almayı desteklemiyor.</string>
     <string name="relay_bar_subscriber_waiting">Kanal sahibinin aktarıcıları (relay\'leri) eklemesi bekleniyor.</string>
-    <string name="connect_plan_connect_to_name">%s\'ye bağlanın</string>
-    <string name="connect_plan_join_name">Kanal %s\'ye katıl</string>
+    <string name="connect_plan_connect_to_name">%s ile bağlan</string>
+    <string name="connect_plan_join_name">%s kanalına katıl</string>
     <string name="save_simplex_name_question">SimpleX adı kaydedilsin mi?</string>
     <string name="get_simplex_name_beta">SimpleX adı al (BETA)</string>
     <string name="channel_simplex_name">Kanal SimpleX adı</string>

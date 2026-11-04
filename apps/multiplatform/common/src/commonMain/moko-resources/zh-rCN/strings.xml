@@ -2865,7 +2865,7 @@
     <string name="badges_redeem">兑换</string>
     <string name="badges_redeem_code_title">兑换代码</string>
     <string name="badges_remind_me_later">稍后提醒</string>
-    <string name="badges_billing_footer_subscribe">%1$s 续费。随时取消。</string>
+    <string name="badges_billing_footer_subscribe">将于 %1$s 续订。可随时取消。</string>
     <string name="badges_savings">节省 %1$s</string>
     <string name="badges_shown_on_your_profile">在个人资料页上展示</string>
     <string name="badges_support_ended">你的徽章已过期</string>

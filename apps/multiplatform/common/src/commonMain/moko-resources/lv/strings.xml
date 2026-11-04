@@ -2093,8 +2093,8 @@
     <string name="ttl_hour">stunda</string>
     <string name="ttl_hours">stundas</string>
     <string name="ttl_h">h</string>
-    <string name="ttl_day">diena</string>
-    <string name="ttl_days">dienas</string>
+    <string name="ttl_day">%d diena</string>
+    <string name="ttl_days">%d dienas</string>
     <string name="ttl_d">d</string>
     <string name="ttl_week">nedēļa</string>
     <string name="ttl_weeks">nedēļas</string>

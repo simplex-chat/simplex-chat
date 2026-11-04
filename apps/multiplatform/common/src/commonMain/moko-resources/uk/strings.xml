@@ -2462,7 +2462,7 @@
     <string name="another_instance_title">Додаток вже запущено</string>
     <string name="no_names_servers_enabled">Немає серверів для розпізнавання імен.</string>
     <string name="app_update_required">Потрібно оновити додаток</string>
-    <string name="badge_unknown_key_title">Значок не можливо верифікувати</string>
+    <string name="badge_unknown_key_title">Значок неможливо перевірити</string>
     <string name="why_built_p7">Тому що ми знищили здатність дізнатися, хто ти є. Щоб твою силу ніколи не можна було відібрати.</string>
     <string name="onboarding_be_free">Будь вільним\nв твоій мережі</string>
     <string name="why_built_tagline">Будь вільним у твоїй мережі.</string>
