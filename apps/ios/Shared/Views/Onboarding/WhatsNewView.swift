@@ -853,13 +853,13 @@ fileprivate struct InvestInSimpleXChat: View {
                 .padding(.bottom, 8)
                 .onTapGesture { showGetStakeSheet = true }
             #endif
-            Text("Learn more on Wefunder.")
-                .foregroundColor(theme.colors.primary)
+            (Text("Crowdfunding on Wefunder.") + Text(verbatim: " ") + Text("Learn more").foregroundColor(theme.colors.primary))
+                .multilineTextAlignment(.leading)
                 .onTapGesture { showGetStakeSheet = true }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .sheet(isPresented: $showGetStakeSheet) {
-            GetStakeView(fromSettings: false)
+            GetStakeView(fromSettings: false, showFirstImage: false)
         }
     }
 }
@@ -885,7 +885,7 @@ fileprivate let getStakeSlides: [(image: String, heading: String, info: String?,
     ),
     (
         "crowdfunding_4",
-        "Revenue plan: businesses & channels pay",
+        "Revenue plan: businesses & big channels pay",
         "SimpleX Chat plans to earn from the infrastructure and services that creators, businesses and large communities need as they grow.",
         "Read about how we plan to make SimpleX Chat and network profitable, and about all the investment terms on Wefunder."
     ),
@@ -899,6 +899,7 @@ struct GetStakeView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatModel: ChatModel
     var fromSettings: Bool
+    var showFirstImage: Bool
 
     var body: some View {
         ZoomablePageView {
@@ -908,7 +909,9 @@ struct GetStakeView: View {
                     .bold()
                     .fixedSize(horizontal: false, vertical: true)
                     .if(!fromSettings) { $0.padding(.top) }
-                slideImage(getStakeSlides[0])
+                if showFirstImage {
+                    slideImage(getStakeSlides[0])
+                }
                 (Text(verbatim: getStakeSlides[0].text) + Text(verbatim: " Learn more and invest on Wefunder.").bold().foregroundColor(.accentColor))
                     .multilineTextAlignment(.leading)
                     .onTapGesture {
