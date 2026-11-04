@@ -970,7 +970,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     features = listOf(
       VersionFeature.FeatureView(
         icon = null,
-        titleId = MR.strings.v7_0_invest,
+        titleId = MR.strings.v7_1_invest,
         view = { modalManager -> InvestInSimpleXChatView(modalManager) }
       ),
       VersionFeature.FeatureDescription(
@@ -997,7 +997,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     features = listOf(
       VersionFeature.FeatureView(
         icon = null,
-        titleId = MR.strings.v7_0_invest,
+        titleId = MR.strings.v7_1_invest,
         view = { modalManager -> InvestInSimpleXChatView(modalManager) }
       ),
       VersionFeature.FeatureView(
@@ -1136,30 +1136,13 @@ fun isInUs(): Boolean =
 @Composable
 private fun InvestInSimpleXChatView(modalManager: ModalManager) {
   if (!crowdfundingAvailable()) return
-  val showGetStake = { modalManager.showModalCloseable(cardScreen = true) { close -> GetStakeView(showFirstImage = false, inCenterOfWindow = crowdfundingLayout.inCenterOfWindow(modalManager), close = close) } }
+  val showGetStake = { modalManager.showModalCloseable(cardScreen = true) { close -> GetStakeView(inCenterOfWindow = crowdfundingLayout.inCenterOfWindow(modalManager), close = close) } }
   Column(modifier = Modifier.padding(bottom = 12.dp)) {
     Text(
-      generalGetString(MR.strings.v7_0_invest),
+      generalGetString(MR.strings.v7_1_invest),
       style = MaterialTheme.typography.h4,
       fontWeight = FontWeight.Medium,
       modifier = Modifier.padding(bottom = 6.dp)
-    )
-    Text(
-      buildAnnotatedString {
-        append(generalGetString(MR.strings.v7_0_invest_descr))
-        append(" ")
-        withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
-          append(generalGetString(MR.strings.learn_more))
-        }
-      },
-      fontSize = 15.sp,
-      modifier = Modifier
-        .pointerHoverIcon(PointerIcon.Hand)
-        .clickable(
-          interactionSource = remember { MutableInteractionSource() },
-          indication = null,
-          onClick = showGetStake
-        )
     )
     if (BuildConfigCommon.SIMPLEX_ASSETS) {
       Image(
@@ -1167,7 +1150,7 @@ private fun InvestInSimpleXChatView(modalManager: ModalManager) {
         contentDescription = null,
         contentScale = ContentScale.FillWidth,
         modifier = Modifier
-          .padding(top = 8.dp)
+          .padding(top = 2.dp, bottom = 12.dp)
           .widthIn(max = MAX_CROWDFUNDING_IMAGE_WIDTH)
           .fillMaxWidth()
           .clip(crowdfundingLayout.imageShape)
@@ -1179,6 +1162,18 @@ private fun InvestInSimpleXChatView(modalManager: ModalManager) {
           )
       )
     }
+    Text(
+      generalGetString(MR.strings.v7_1_invest_learn_more),
+      color = MaterialTheme.colors.primary,
+      fontSize = 15.sp,
+      modifier = Modifier
+        .pointerHoverIcon(PointerIcon.Hand)
+        .clickable(
+          interactionSource = remember { MutableInteractionSource() },
+          indication = null,
+          onClick = showGetStake
+        )
+    )
   }
 }
 
@@ -1218,7 +1213,7 @@ private val getStakeSlides: List<CrowdfundingSlide> = listOf(
 )
 
 @Composable
-fun GetStakeView(showFirstImage: Boolean, inCenterOfWindow: Boolean = false, close: () -> Unit) {
+fun GetStakeView(inCenterOfWindow: Boolean = false, close: () -> Unit) {
   val uriHandler = LocalUriHandler.current
   val stopped = chatModel.chatRunning.value == false
 
@@ -1247,10 +1242,7 @@ fun GetStakeView(showFirstImage: Boolean, inCenterOfWindow: Boolean = false, clo
     // in the center of the window the page is wide enough for the title to fit on one line
     val title = "Invest in\nSimpleX Chat"
     AppBarTitle(if (inCenterOfWindow) title.replace("\n", " ") else title, withPadding = false)
-    // What's new already shows the image of the first slide, above the link that opens this page
-    if (showFirstImage) {
-      slideImage(getStakeSlides[0])
-    }
+    slideImage(getStakeSlides[0])
     Text(
       buildAnnotatedString {
         append(getStakeSlides[0].text)
@@ -1261,7 +1253,7 @@ fun GetStakeView(showFirstImage: Boolean, inCenterOfWindow: Boolean = false, clo
           }
         }
       },
-      Modifier.padding(top = if (showFirstImage) 8.dp else 0.dp),
+      Modifier.padding(top = 8.dp),
       lineHeight = 24.sp
     )
 

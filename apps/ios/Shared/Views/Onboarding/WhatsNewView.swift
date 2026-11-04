@@ -677,7 +677,7 @@ private let versionDescriptions: [VersionDescription] = [
         features: (isInUS ? [
             .view(FeatureView(
                 icon: nil,
-                title: "You can now invest in SimpleX Chat",
+                title: "Own a part of SimpleX Chat",
                 view: { InvestInSimpleXChat() }
             ))
         ] : []) + [
@@ -705,7 +705,7 @@ private let versionDescriptions: [VersionDescription] = [
         features: (isInUS ? [
             .view(FeatureView(
                 icon: nil,
-                title: "You can now invest in SimpleX Chat",
+                title: "Own a part of SimpleX Chat",
                 view: { InvestInSimpleXChat() }
             ))
         ] : []) + [
@@ -843,22 +843,23 @@ fileprivate struct InvestInSimpleXChat: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("You can now invest in SimpleX Chat! 🚀").font(.title3).bold()
-            (Text("Crowdfunding on Wefunder.") + Text(verbatim: " ") + Text("Learn more").foregroundColor(theme.colors.primary))
-                .multilineTextAlignment(.leading)
-                .onTapGesture { showGetStakeSheet = true }
+            Text("Own a part of SimpleX Chat! 🚀").font(.title3).bold()
             #if SIMPLEX_ASSETS
             Image("crowdfunding_1")
                 .resizable()
                 .scaledToFit()
                 .cornerRadius(12)
-                .padding(.vertical, 4)
+                .padding(.top, 4)
+                .padding(.bottom, 8)
                 .onTapGesture { showGetStakeSheet = true }
             #endif
+            Text("Learn more on Wefunder.")
+                .foregroundColor(theme.colors.primary)
+                .onTapGesture { showGetStakeSheet = true }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .sheet(isPresented: $showGetStakeSheet) {
-            GetStakeView(fromSettings: false, showFirstImage: false)
+            GetStakeView(fromSettings: false)
         }
     }
 }
@@ -898,7 +899,6 @@ struct GetStakeView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatModel: ChatModel
     var fromSettings: Bool
-    var showFirstImage: Bool
 
     var body: some View {
         ZoomablePageView {
@@ -908,9 +908,7 @@ struct GetStakeView: View {
                     .bold()
                     .fixedSize(horizontal: false, vertical: true)
                     .if(!fromSettings) { $0.padding(.top) }
-                if showFirstImage {
-                    slideImage(getStakeSlides[0])
-                }
+                slideImage(getStakeSlides[0])
                 (Text(verbatim: getStakeSlides[0].text) + Text(verbatim: " Learn more and invest on Wefunder.").bold().foregroundColor(.accentColor))
                     .multilineTextAlignment(.leading)
                     .onTapGesture {
