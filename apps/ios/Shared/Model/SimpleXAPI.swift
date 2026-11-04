@@ -475,7 +475,7 @@ func loadChat(chat: Chat, im: ItemsModel, contentTag: MsgContentTag? = nil, sear
     await loadChat(chatId: chat.chatInfo.id, im: im, contentTag: contentTag, search: search, clearItems: clearItems)
 }
 
-func loadChat(chatId: ChatId, im: ItemsModel, contentTag: MsgContentTag? = nil, search: String = "", openAroundItemId: ChatItem.ID? = nil, clearItems: Bool = true, opening: Bool = false) async {
+func loadChat(chatId: ChatId, im: ItemsModel, contentTag: MsgContentTag? = nil, search: String = "", openAroundItemId: ChatItem.ID? = nil, clearItems: Bool = true) async {
     await MainActor.run {
         if clearItems {
             im.reversedChatItems = []
@@ -496,8 +496,7 @@ func loadChat(chatId: ChatId, im: ItemsModel, contentTag: MsgContentTag? = nil, 
         contentTag,
         search,
         openAroundItemId,
-        { 0...0 },
-        opening
+        { 0...0 }
     )
 }
 

@@ -18,8 +18,7 @@ func apiLoadMessages(
     _ contentTag: MsgContentTag? = nil,
     _ search: String = "",
     _ openAroundItemId: ChatItem.ID? = nil,
-    _ visibleItemIndexesNonReversed: @MainActor () -> ClosedRange<Int> = { 0 ... 0 },
-    _ opening: Bool = false
+    _ visibleItemIndexesNonReversed: @MainActor () -> ClosedRange<Int> = { 0 ... 0 }
 ) async {
     let chatModel = ChatModel.shared
     let itemUpdates = ChatModel.ItemUpdatesWhileLoading()
@@ -50,7 +49,7 @@ func apiLoadMessages(
         if chatWasSwitched(chat, pagination, openAroundItemId) || (!allowEmptyItems && chat.chatItems.isEmpty) || Task.isCancelled {
             return
         }
-        processLoadedChat(chat, navInfo, im, pagination, openAroundItemId, opening, itemUpdates, visibleItemIndexesNonReversed)
+        processLoadedChat(chat, navInfo, im, pagination, openAroundItemId, itemUpdates, visibleItemIndexesNonReversed)
     }
 }
 
@@ -61,7 +60,6 @@ func processLoadedChat(
     _ im: ItemsModel,
     _ pagination: ChatPagination,
     _ openAroundItemId: ChatItem.ID?,
-    _ opening: Bool,
     _ itemUpdates: ChatModel.ItemUpdatesWhileLoading,
     _ visibleItemIndexesNonReversed: @MainActor () -> ClosedRange<Int> = { 0 ... 0 }
 ) {
@@ -91,7 +89,7 @@ func processLoadedChat(
         if navInfo.afterTotal == 0 {
             chatModel.applyItemUpdatesWhileLoading(itemUpdates, im, chat.id)
         }
-        if opening && chatModel.chatId != chat.id {
+        if im.openingChatId == chat.id && chatModel.chatId != chat.id {
             chatModel.applyItemUpdatesUntilChatIsShown(itemUpdates, im, chat.id)
         }
 
@@ -167,7 +165,7 @@ func processLoadedChat(
             if navInfo.afterTotal == 0 {
                 chatModel.applyItemUpdatesWhileLoading(itemUpdates, im, chat.id)
             }
-            if opening && chatModel.chatId != chat.id {
+            if im.openingChatId == chat.id && chatModel.chatId != chat.id {
                 chatModel.applyItemUpdatesUntilChatIsShown(itemUpdates, im, chat.id)
             }
         } else {

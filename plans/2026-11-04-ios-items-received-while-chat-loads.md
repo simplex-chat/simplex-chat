@@ -6,38 +6,38 @@ A message received while its chat is being opened is missing from the open chat 
 
 ## Cause
 
-`apiLoadMessages` (`ChatItemsLoader.swift`) installs a page that `apiGetChat` read before the install.
+A page read by `apiGetChat` is installed by `apiLoadMessages` (`ChatItemsLoader.swift`) after the read.
 
-`addChatItem` and the other item updates of `ChatModel` (`ChatModel.swift`) change the open list only when `ChatModel.chatId` is the item's chat (`getCIItemsModel`). An update handled between the read and the install is lost:
-- when the chat is opening, `chatId` is set in the install (Around at an item), after it (`loadOpenChatNoWait`) or by the 250 ms navigation timeout (`loadOpenChat`), so the update is not applied;
-- when the chat is open, the update is applied to the list that the install replaces (Initial, Around at an item) or that was read before a main-actor step (other paginations).
+The open list is changed by `addChatItem` and the other item updates of `ChatModel` (`ChatModel.swift`) only when `ChatModel.chatId` is the item's chat (`getCIItemsModel`). An update handled between the read and the install is lost:
+- while the chat is opening, `chatId` is set in the install (Around at an item), after it (`loadOpenChatNoWait`) or by the 250 ms navigation timer (`loadOpenChat`), so the update is not applied;
+- while the chat is open, the update is applied to the list that is replaced by the install (Initial, Around at an item) or that was read before a main-actor step (other paginations).
 
 ## Fix
 
-`processLoadedChat` (`ChatItemsLoader.swift`) runs on the main actor in one step from reading the current list to the install, so the merging paginations (Before, After, Around to a quoted item, Last) read a list that includes every update applied to it during the load.
+The current list is read and the page is installed by `processLoadedChat` (`ChatItemsLoader.swift`) in one main-actor step; the merging paginations (Before, After, Around to a quoted item, Last) read a list that includes every update applied to it during the load.
 
-While a page loads, `ChatModel` records the list part of each item update in every active `ItemUpdatesWhileLoading`, as a closure of the loading `ItemsModel` and the loaded chat's id:
+While a page loads, the list part of each item update is recorded by `ChatModel` in every active `ItemUpdatesWhileLoading`, as a closure of the loading `ItemsModel` and the loaded chat's id:
 - `addChatItem`, as an addition of an item missing from the list;
-- `upsertChatItem` and `updateChatItem`, as a replacement of an item in the list that keeps its read status and is skipped when the item is already deleted;
+- `upsertChatItem` and `updateChatItem`, as a replacement of an item in the list; the read and sent statuses of the listed item are kept, and the update is skipped when the listed item is deleted and the new item is not;
 - `removeChatItem`;
 - `removeMemberItems`;
 - `clearChat`;
 - `markChatItemsRead`;
-- `groupChatItemsDeleted` (`SimpleXAPI.swift`), with `recordItemUpdate` for an item that is not in the list.
+- `groupChatItemsDeleted` (`SimpleXAPI.swift`), with `recordItemUpdate` for an item missing from the list.
 
-A recorded update resolves its `ItemsModel` with `getCIItemsModel` for the loaded chat's id (or compares the chat id and the `ItemsModel` for the updates that check `chatId`) and applies only to the loading `ItemsModel`. Counters (row stats, total unread, reports), notifications and voice playback stop run once, outside the recorded part; the open chat's counters (`chatState`) change with the list.
+The `ItemsModel` of a recorded update is resolved by `getCIItemsModel` for the loaded chat's id, or by a comparison of the chat id and the `ItemsModel` for the updates that check `chatId`; the update is applied only to the loading `ItemsModel`. Counters (row stats, total unread, reports), notifications and the voice playback stop are run once, outside the recorded part; the open chat's counters (`chatState`) are changed with the list.
 
-`apiLoadMessages` starts a record before `apiGetChat` and stops it on an error or in the main-actor step of the install, for every pagination.
+A record is started by `apiLoadMessages` before `apiGetChat`, for every pagination.
 
-The pages that replace the list (Initial, Around at an item) re-run the recorded additions and then the other recorded updates in the install step, each in order, when they contain the newest item (`afterTotal == 0`). On an older page, items received during the load are loaded by After pagination; updates of its items are not re-run.
+In the install step of a page that replaces the list (Initial, Around at an item) and contains the newest item (`afterTotal == 0`), the recorded additions and then the other recorded updates are re-run, each in order. For an older page, items received during the load are loaded by After pagination; the recorded updates are discarded.
 
-An opening load (`loadOpenChat`, `loadOpenChatNoWait`) whose replacing page is installed while `chatId` is not yet the loaded chat keeps its record as `ItemsModel.openingItemUpdates`; each update recorded after the install is applied at once to that `ItemsModel` for the loaded chat. The record is stopped:
-- at the install, when `chatId` is already the loaded chat or the load is not an opening one;
-- where `chatId` is set: the navigation timer of `loadOpenChat`, the completion of `loadOpenChatNoWait`;
-- at the start of the next load of the same `ItemsModel` (a cancelled opening is always followed by one);
-- on an error, a switched chat or a cancelled load, before the install.
+`ItemsModel.openingChatId` is set by `loadOpenChat` from the start of its navigation timer until `chatId` is set, and by `loadOpenChatNoWait` from its start until its completion step. When a replacing page of that chat is installed while `chatId` is not the loaded chat, the record is kept as `ItemsModel.openingItemUpdates`; each update recorded after the install is applied at once to that `ItemsModel` for the loaded chat. The record is stopped:
+- in the install step, when it is not kept;
+- in the step that sets `chatId`: the navigation timer of `loadOpenChat`, the completion step of `loadOpenChatNoWait`;
+- at the start of the next load of the same `ItemsModel`, and when a new opening record of it is kept;
+- on an `apiGetChat` error.
 
-The row's stats are not set from the page (only `updateChatInfo`, or `addChat` of a missing row); they are not changed.
+A missing row is added with the page's stats (`addChat`); an existing row receives only the page's chat info (`updateChatInfo`). The row's stats are left unchanged.
 
 ## Scope
 

@@ -93,6 +93,7 @@ class ItemsModel: ObservableObject {
 
     private var navigationTimeoutTask: Task<Void, Never>? = nil
     private var loadChatTask: Task<Void, Never>? = nil
+    var openingChatId: ChatId? = nil
     fileprivate(set) var openingItemUpdates: ChatModel.ItemUpdatesWhileLoading? = nil
 
     var lastItemsLoaded: Bool {
@@ -120,9 +121,11 @@ class ItemsModel: ObservableObject {
         loadChatTask?.cancel()
         navigationTimeoutTask = Task {
             do {
+                await MainActor.run { self.openingChatId = chatId }
                 try await Task.sleep(nanoseconds: 250_000000)
                 await MainActor.run {
                     ChatModel.shared.chatId = chatId
+                    self.openingChatId = nil
                     self.stopApplyingItemUpdates()
                     willNavigate()
                 }
@@ -131,7 +134,7 @@ class ItemsModel: ObservableObject {
         loadChatTask = Task {
             await MainActor.run { self.isLoading = true }
 //            try? await Task.sleep(nanoseconds: 1000_000000)
-            await loadChat(chatId: chatId, im: self, opening: true)
+            await loadChat(chatId: chatId, im: self)
             if !Task.isCancelled {
                 await MainActor.run {
                     self.isLoading = false
@@ -146,13 +149,15 @@ class ItemsModel: ObservableObject {
         navigationTimeoutTask?.cancel()
         loadChatTask?.cancel()
         loadChatTask = Task {
+            await MainActor.run { self.openingChatId = chatId }
             //            try? await Task.sleep(nanoseconds: 1000_000000)
-            await loadChat(chatId: chatId, im: self, openAroundItemId: openAroundItemId, clearItems: openAroundItemId == nil, opening: true)
+            await loadChat(chatId: chatId, im: self, openAroundItemId: openAroundItemId, clearItems: openAroundItemId == nil)
             if !Task.isCancelled {
                 await MainActor.run {
                     if openAroundItemId == nil {
                         ChatModel.shared.chatId = chatId
                     }
+                    self.openingChatId = nil
                     self.stopApplyingItemUpdates()
                 }
             }

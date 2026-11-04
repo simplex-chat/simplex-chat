@@ -3,6 +3,22 @@ import XCTest
 @testable import SimpleXChat
 
 final class ChatItemsLoaderTests: XCTestCase {
+    private var savedChats: [ChatData] = []
+    private var savedUsers: [UserInfo] = []
+    private var savedCurrentUser: User?
+    private var savedChatId: ChatId?
+    private var savedOpenAroundItemId: ChatItem.ID?
+    private var savedChatToTop: String?
+    private var savedItems: [ChatItem] = []
+    private var savedItemAdded = false
+
+    override func setUp() async throws {
+        await saveSharedState()
+    }
+
+    override func tearDown() async throws {
+        await restoreSharedState()
+    }
 
     @MainActor
     func testItemReceivedWhileChatOpensIsShown() async {
@@ -83,27 +99,105 @@ final class ChatItemsLoaderTests: XCTestCase {
     @MainActor
     func testItemReceivedAfterInstallBeforeChatIsShownIsShown() async {
         let opening = openingChat(groupId: 1008, itemIds: [101, 102])
-        await load(opening, .initial(count: 2), opening: true) {}
+        ItemsModel.shared.openingChatId = opening.id
+        await load(opening, .initial(count: 2)) {}
         ChatModel.shared.addChatItem(opening.chatInfo, receivedItem(103))
         XCTAssertEqual(itemIds(), [101, 102, 103])
-        ChatModel.shared.chatId = opening.id
-        ItemsModel.shared.stopApplyingItemUpdates()
     }
 
     @MainActor
-    private func load(_ page: Chat, _ pagination: ChatPagination, _ navInfo: NavigationInfo = NavigationInfo(), opening: Bool = false, during events: () async -> Void) async {
+    func testRecordIsStoppedAtInstallWhenChatWasShownAndClosed() async {
+        let opening = openingChat(groupId: 1009, itemIds: [101, 102])
+        await load(opening, .initial(count: 2)) {}
+        XCTAssertNil(ItemsModel.shared.openingItemUpdates)
+        ChatModel.shared.addChatItem(opening.chatInfo, receivedItem(103))
+        XCTAssertEqual(itemIds(), [101, 102])
+    }
+
+    @MainActor
+    func testItemReceivedWhileChatOpensAtItemIsShown() async {
+        let opening = openingChat(groupId: 1010, itemIds: [101, 102])
+        await load(opening, .around(chatItemId: 101, count: 2), openAroundItemId: 101) {
+            ChatModel.shared.addChatItem(opening.chatInfo, receivedItem(103))
+        }
+        XCTAssertEqual(itemIds(), [101, 102, 103])
+    }
+
+    @MainActor
+    func testItemUpdatedWhileOpenedChatReloadsStaysRead() async {
+        let opened = openedChat(groupId: 1011, itemIds: [101, 102])
+        let pageReadAfterMark = opened.copy(chatItems: opened.chatItems + [receivedItem(103, .rcvRead)])
+        await load(pageReadAfterMark, .initial(count: 3)) {
+            ChatModel.shared.updateChatItem(opened.chatInfo, receivedItem(103))
+        }
+        XCTAssertEqual(item(103)?.isRcvNew, false)
+    }
+
+    @MainActor
+    func testItemUpsertedWhileOpenedChatReloadsStaysDeleted() async {
+        let opened = openedChat(groupId: 1012, itemIds: [101, 102])
+        let pageReadAfterDeletion = opened.copy(chatItems: opened.chatItems + [receivedItem(103, itemDeleted: .deleted(deletedTs: nil))])
+        await load(pageReadAfterDeletion, .initial(count: 3)) {
+            _ = ChatModel.shared.upsertChatItem(opened.chatInfo, receivedItem(103))
+        }
+        XCTAssertNotNil(item(103)?.meta.itemDeleted)
+    }
+
+    @MainActor
+    func testChatClearedWhileOpenedChatReloadsIsEmpty() async {
+        let opened = openedChat(groupId: 1013, itemIds: [101, 102])
+        await load(opened, .initial(count: 2)) {
+            ChatModel.shared.clearChat(opened.chatInfo)
+        }
+        XCTAssertEqual(itemIds(), [])
+    }
+
+    @MainActor
+    private func load(_ page: Chat, _ pagination: ChatPagination, _ navInfo: NavigationInfo = NavigationInfo(), openAroundItemId: ChatItem.ID? = nil, during events: () async -> Void) async {
         let itemUpdates = ChatModel.ItemUpdatesWhileLoading()
         ChatModel.shared.startRecordingItemUpdates(itemUpdates)
         await events()
-        processLoadedChat(page, navInfo, ItemsModel.shared, pagination, nil, opening, itemUpdates)
+        processLoadedChat(page, navInfo, ItemsModel.shared, pagination, openAroundItemId, itemUpdates)
         if ItemsModel.shared.openingItemUpdates !== itemUpdates {
             ChatModel.shared.stopRecordingItemUpdates(itemUpdates)
         }
     }
 
     @MainActor
+    private func saveSharedState() {
+        let m = ChatModel.shared
+        savedChats = m.chats.map { ChatData(chatInfo: $0.chatInfo, chatItems: $0.chatItems, chatStats: $0.chatStats) }
+        savedUsers = m.users
+        savedCurrentUser = m.currentUser
+        savedChatId = m.chatId
+        savedOpenAroundItemId = m.openAroundItemId
+        savedChatToTop = m.chatToTop
+        savedItems = ItemsModel.shared.reversedChatItems
+        savedItemAdded = ItemsModel.shared.itemAdded
+    }
+
+    @MainActor
+    private func restoreSharedState() {
+        let m = ChatModel.shared
+        let im = ItemsModel.shared
+        im.stopApplyingItemUpdates()
+        im.openingChatId = nil
+        im.reversedChatItems = savedItems
+        im.itemAdded = savedItemAdded
+        im.chatState.clear()
+        im.preloadState.clear()
+        m.chatId = savedChatId
+        m.openAroundItemId = savedOpenAroundItemId
+        m.chatToTop = savedChatToTop
+        m.currentUser = savedCurrentUser
+        m.users = savedUsers
+        m.updateChats(savedChats)
+    }
+
+    @MainActor
     private func openingChat(groupId: Int64, itemIds: [Int64]) -> Chat {
         ItemsModel.shared.stopApplyingItemUpdates()
+        ItemsModel.shared.openingChatId = nil
         ChatModel.shared.currentUser = User.sampleData
         ChatModel.shared.chatId = nil
         ItemsModel.shared.reversedChatItems = []
@@ -122,8 +216,8 @@ final class ChatItemsLoaderTests: XCTestCase {
         return chat
     }
 
-    private func receivedItem(_ id: Int64) -> ChatItem {
-        ChatItem.getSample(id, .groupRcv(groupMember: GroupMember.sampleData), Date(timeIntervalSince1970: TimeInterval(id)), "", .rcvNew)
+    private func receivedItem(_ id: Int64, _ status: CIStatus = .rcvNew, itemDeleted: CIDeleted? = nil) -> ChatItem {
+        ChatItem.getSample(id, .groupRcv(groupMember: GroupMember.sampleData), Date(timeIntervalSince1970: TimeInterval(id)), "", status, itemDeleted: itemDeleted)
     }
 
     private func itemIds() -> [Int64] {
