@@ -168,7 +168,11 @@ func terminalTextTopGap(_ item: ChatItem) -> CGFloat {
 }
 
 private func startsWithEmptyLine(_ item: ChatItem) -> Bool {
-    item.content.text.first?.isNewline == true && (item.markdownBlocks != nil || !item.isReport)
+    if let fts = item.formattedText, let blocks = item.markdownBlocks {
+        leadingEmptyLines(fts, blocks) > 0
+    } else {
+        item.content.text.first?.isNewline == true && !item.isReport
+    }
 }
 
 private func terminalMediaCard(_ item: ChatItem) -> Bool {

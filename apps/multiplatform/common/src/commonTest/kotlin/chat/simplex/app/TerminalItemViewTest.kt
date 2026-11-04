@@ -275,6 +275,11 @@ class TerminalItemViewTest {
       markdownBlocks = listOf(MarkdownBlock.Paragraph(SegmentRange(1, 2)))
     )
     assertEquals(0.sp, terminalTextTop(caption))
+    val oneBreak = caption.copy(
+      content = CIContent.SndMsgContent(MsgContent.MCImage("\nCaption", "")),
+      formattedText = listOf(FormattedText("\n", Format.Markup(BlockToken.ParagraphBreak(1))), FormattedText("Caption"))
+    )
+    assertEquals(0.sp, terminalTextTop(oneBreak))
     val base = msg(2, CIDirection.DirectSnd(), 10)
     assertEquals(0.sp, terminalTextTop(base.copy(content = CIContent.SndMsgContent(MsgContent.MCImage("\nCaption", "")))))
     assertEquals(0.sp, terminalTextTop(base.copy(content = CIContent.SndMsgContent(MsgContent.MCImage("\r\nCaption", "")))))

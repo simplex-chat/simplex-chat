@@ -153,8 +153,8 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(rows.map { $0.card }, [false, false, false, false, false, false, false, false, false, true, true, true, false])
         XCTAssertEqual(items.suffix(2).map(terminalTextTopGap), [p, 0])
         let edges = SnapshotFixtures().spacingEdgeItems()
-        XCTAssertEqual(edges.map { terminalItemStartsWithCard($0, revealed: true) }, [true, false, true])
-        XCTAssertEqual(edges.suffix(2).map(terminalTextTopGap), [p, 0])
+        XCTAssertEqual(edges.map { terminalItemStartsWithCard($0, revealed: true) }, [true, false, true, true])
+        XCTAssertEqual(edges.suffix(3).map(terminalTextTopGap), [p, 0, 0])
         var unreacted = items[3]
         unreacted.reactions = []
         let rowHash = { (older: ChatItem) in ListItem(item: items[4], prevItem: items[5], nextItem: older, unreadBefore: 0).genHash(false, false) }
@@ -234,6 +234,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ClassicOverviewChannel_Previews.self),
         SnapshotScene(ClassicOverviewDirect_Previews.self),
         SnapshotScene(ClassicOverviewGroup_Previews.self),
+        SnapshotScene(ClassicParagraphs_Previews.self, allSizes: true),
         SnapshotScene(ComposeVoiceView_Previews.self),
         SnapshotScene(ConnectDesktopView_Previews.self, device: true),
         SnapshotScene(ContactConnectionInfo_Previews.self),
@@ -488,6 +489,12 @@ struct ClassicOverviewChannel_Previews: PreviewProvider {
     }
 }
 
+struct ClassicParagraphs_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().paragraphs()
+    }
+}
+
 private struct ChatRows: View {
     @EnvironmentObject var theme: AppTheme
     let chat: Chat
@@ -684,6 +691,38 @@ private final class SnapshotFixtures {
                     ListEntry(number: nil, content: SegmentRange(from: 11, to: 12), items: []),
                     ListEntry(number: nil, content: SegmentRange(from: 14, to: 15), items: [])
                 ])
+            ]
+        ),
+        "first part\n\nafter one empty line\n\n\nafter two empty lines": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "first part"),
+                FormattedText(text: "\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 2))),
+                FormattedText(text: "after one empty line"),
+                FormattedText(text: "\n\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 3))),
+                FormattedText(text: "after two empty lines")
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 0, to: 1)),
+                .paragraph(content: SegmentRange(from: 2, to: 3)),
+                .paragraph(content: SegmentRange(from: 4, to: 5))
+            ]
+        ),
+        "\nafter an empty line": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "\n", format: .markup(token: .paragraphBreak(lineBreaks: 1))),
+                FormattedText(text: "after an empty line")
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 1, to: 2))
+            ]
+        ),
+        "  \nafter a line of spaces": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "  \n", format: .markup(token: .paragraphBreak(lineBreaks: 1))),
+                FormattedText(text: "after a line of spaces")
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 1, to: 2))
             ]
         ),
         "Plan for today:\n1. review\n2. **release**": ParsedMarkdown(
@@ -914,12 +953,21 @@ private final class SnapshotFixtures {
         chatRows(teamChat, spacingItems(), terminal: true)
     }
 
+    func paragraphs() -> some View {
+        let text = "first part\n\nafter one empty line\n\n\nafter two empty lines"
+        var oneText = msg(.directRcv, text, -9)
+        oneText.formattedText = nil
+        oneText.markdownBlocks = nil
+        return chatRows(direct, [msg(.directRcv, text, -10), oneText], terminal: false)
+    }
+
     func spacingEdgeItems() -> [ChatItem] {
         let reported = quote(.groupRcv(groupMember: alice), "Welcome, carol!")
         return [
             msg(.groupRcv(groupMember: bob), "👍", -10, content: .unknown(type: "sticker", text: "👍")),
             msg(.groupSnd, "\nlinks to a scam site", -9, quote: reported, content: .report(text: "\nlinks to a scam site", reason: .spam)),
-            msg(.groupSnd, "\nafter an empty line", -8, quote: reported)
+            msg(.groupSnd, "\nafter an empty line", -8, quote: reported),
+            msg(.groupSnd, "  \nafter a line of spaces", -7, quote: reported)
         ]
     }
 

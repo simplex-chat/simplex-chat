@@ -190,7 +190,7 @@ Renders emoji-only messages (messages containing only emoji characters) in a lar
 
 **File**: [`Shared/Views/Chat/ChatItem/MsgContentView.swift`](../../Shared/Views/Chat/ChatItem/MsgContentView.swift)
 
-Renders message text with SimpleX markdown formatting (bold, italic, code, links, mentions). Blocks of `markdownBlocks` (headings, lists, quotes, code blocks, tables, rules) are drawn as a column of views by `MarkdownBlocksView`; code blocks and tables scroll sideways. In bubbles, each empty line is one line of the font, in a gap of zero width: the bubble is as wide as its widest block.
+Renders message text with SimpleX markdown formatting (bold, italic, code, links, mentions). Blocks of `markdownBlocks` (paragraphs, headings, lists, quotes, code blocks, tables, rules) are drawn as a column of views by `MarkdownBlocksView`; code blocks and tables scroll sideways. The core sends `markdownBlocks` for text with block syntax or an empty line, up to 2000 markup tokens. In bubbles, each empty line is one line of the font, in a gap of zero width: the bubble is as wide as its widest block.
 
 Text colour: `textColor`, else `messageTextColor(theme)`: `onSurface`, at 95% in dark themes. `FramedItemView` passes `onSurface` for quote text (terminal rows: 70%). `MarkdownView` (chat item info, group welcome message, profile description) draws its text in `messageTextColor(theme)`.
 
@@ -352,7 +352,7 @@ unknown values                              skipped
 
 ### Rows
 
-[`ChatItemWithMenu.terminalItemRow`](../../Shared/Views/Chat/ChatView.swift#L2149) wraps `chatItemWithMenu` in [`TerminalChatItemRow`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L380). Gaps follow the paragraph unit `terminalParagraphGap` (user, terminal spacing mockup):
+[`ChatItemWithMenu.terminalItemRow`](../../Shared/Views/Chat/ChatView.swift#L2149) wraps `chatItemWithMenu` in [`TerminalChatItemRow`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L384). Gaps follow the paragraph unit `terminalParagraphGap` (user, terminal spacing mockup):
 
 ```
 row padding        top: topGap
@@ -379,7 +379,7 @@ bottom padding     newest row: 8pt; above a date separator: terminalLevelStep; o
 | [`terminalItemStartsWithCard(item, revealed)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L137) | The first element of the item is a card: a marked deleted item drawn as a card; a quote without a report, deleted or live header above it (`hasHeaderAboveQuote`). Without a quote or header: content other than a message, except calls (deleted, error and group invitation cards, invalid data); media (`terminalMediaCard`: image, video, voice, file, link preview, chat link); text starting with a code block, table or rule (`MarkdownBlock.isCard`); a large emoji (text content, or `FramedItemView.showsEmoji`) |
 | [`terminalCardTopGap(item)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L150) | `terminalParagraphGap` above media, voice, file and emoji when a quote or header is above them (`hasQuoteOrHeader`), otherwise 0 |
 | [`terminalCardBottomGap(item)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L154) | `terminalParagraphGap` below a card that ends the item when reactions follow, otherwise 0 |
-| [`terminalTextTopGap(item)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L158) | Above the text of `FramedItemView`: 0 at the item top; `terminalParagraphGap` below a quote or media, or when the text starts with a code block, table or rule (0 when the text starts with empty lines, which are at least as high, except in a report without block markdown, whose reason is drawn first: `startsWithEmptyLine`); `terminalLevelStep` below a header when the text starts with a heading; otherwise 0 |
+| [`terminalTextTopGap(item)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L158) | Above the text of `FramedItemView`: 0 at the item top; `terminalParagraphGap` below a quote or media, or when the text starts with a code block, table or rule (0 when the text starts with empty lines, which are at least as high: `startsWithEmptyLine`; block markdown: `leadingEmptyLines`; other text: a line break at its start, except in reports, whose reason is drawn first); `terminalLevelStep` below a header when the text starts with a heading; otherwise 0 |
 | [`terminalRowsSeparated(olderRow)`](../../Shared/Views/Chat/ChatView.swift#L2180) | The newest item of the older row is the chat banner, or its `getItemSeparation` has a date (against its newer item only for single and revealed rows) |
 | [`chatItemSender(ci, range)`](../../Shared/Views/Chat/ChatView.swift#L2187) | Channel as sender: group name, role "channel", group image. Received direct: contact name and badge. Group member: `memberNames`, badge and role of a single member, member image (tap: member info). Own group items: membership name, badge, role, image. Other own items: user name and badge, or "Incognito" |
 | `CIContent.hasTerminalSender` | Sent messages, deleted and moderated items, calls and group invitations; received content with `showMemberName` |
@@ -422,7 +422,7 @@ FramedItemView        background, quote background and header backgrounds omitte
                       text: terminalTextTopGap above
 MsgContentView        line box terminalLineBox; meta line for live messages, and in the line box after empty lines at the text end
                       text ends with the transparent copy of the meta (reserveSpaceForMeta)
-                      text without block markdown keeps one full line per empty line
+                      text without markdownBlocks (over 2000 markup tokens) keeps one full line per empty line
 MarkdownBlocksView    code block, table or rule next to another block (MarkdownBlock.isCard): terminalParagraphGap,
                       or the typed empty lines when they are higher
                       heading after another block: terminalLevelStep
@@ -452,7 +452,7 @@ cards                 DeletedItemView, MarkedDeletedItemView, CIMsgError, CIRcvD
 
 ### Time and Status
 
-[`ItemWithMeta(showMeta, metaReserved, overlayMeta, endButton, lastBlockGap, meta, content)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L212):
+[`ItemWithMeta(showMeta, metaReserved, overlayMeta, endButton, lastBlockGap, meta, content)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L216):
 
 ```
 classic            content(meta()): the meta drawn inside the item, as before
@@ -461,7 +461,7 @@ iOS 16             TerminalMetaLayout
 iOS 15             HStack(alignment: .lastTextBaseline): content, end button, meta; lastBlockGap not applied
 ```
 
-[`TerminalMetaLayout`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L269):
+[`TerminalMetaLayout`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L273):
 
 ```
 content width      row width less the wider of: the end button; the meta, without metaReserved and overlayMeta
@@ -478,7 +478,7 @@ row height         at least the meta height
 
 `metaReserved`: content with its own reserve for the time: text with the copy, files, emoji, events.
 
-[`ChatEventWithMeta(chatItem) { ts in }`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L347) passes the end of the event text, placed after the classic separator: classic `chatItem.timestampText`; terminal `metaCopyJoiner`, two no-break spaces and the transparent unbreakable time in regular weight.
+[`ChatEventWithMeta(chatItem) { ts in }`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L351) passes the end of the event text, placed after the classic separator: classic `chatItem.timestampText`; terminal `metaCopyJoiner`, two no-break spaces and the transparent unbreakable time in regular weight.
 
 Meta copy, `ciMetaText(unbreakable: true)`:
 
