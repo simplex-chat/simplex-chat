@@ -77,6 +77,7 @@ namesRecordsTests = describe "StoreService names: records" $ do
   describe "relay" $ do
     it "relays an edit with viem's calldata and answers its hash once mined" $ testRelayMined g
     it "refuses a wrong signer or a passed deadline before any row or gas" $ testRefusedBeforeRow g
+    it "refuses an edit whose deadline is within ten minutes of the latest block, before any row or gas" $ testDeadlineMargin g
     it "refuses an edit of a name on another resolver, or past its expiry and grace, before any row or gas" $ testRefusedNameState g
     it "leaves the owner's cap untouched by ten edits a non-owner signs" $ testNonOwnerCap g
     it "checks a refused edit's repeat anew" $ testRefusedRepeat g
@@ -378,6 +379,18 @@ testRefusedBeforeRow g = withSetup g $ \s@Setup {node, records} -> do
   (relayEdit records =<< ownerEdit s viemChannelLink) `shouldReturn` EARefused
   editRows s `shouldReturn` 0
   sentTransactions node `shouldReturn` []
+
+testDeadlineMargin :: TVar ChaChaDRG -> IO ()
+testDeadlineMargin g = withSetup g $ \s@Setup {node, records} -> do
+  req <- ownerEdit s viemChannelLink
+  setBlock node 2 $ deadline - 600
+  relayEdit records req `shouldReturn` EARefused
+  editRows s `shouldReturn` 0
+  sentTransactions node `shouldReturn` []
+  setBlock node 2 $ deadline - 601
+  r <- relay s req
+  h <- mineSent s 1 True
+  answerOf r `shouldReturn` EAApplied (Just h)
 
 testRefusedNameState :: TVar ChaChaDRG -> IO ()
 testRefusedNameState g = withSetup g $ \s@Setup {node, records} -> do

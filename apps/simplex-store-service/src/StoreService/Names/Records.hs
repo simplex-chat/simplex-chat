@@ -127,6 +127,11 @@ editLimitWindow = 365 * 86400
 recordsInterval :: Int
 recordsInterval = 4000000
 
+-- | Seconds an edit's deadline must leave past the latest block, or it could revert after paying gas.
+-- Two of the sender's fee replacements (Sender.replaceAfter, 3 minutes each) and 20 blocks of 12 seconds.
+editDeadlineMargin :: Word64
+editDeadlineMargin = 600
+
 newRecords :: DBStore -> Turns -> Contracts -> ChainClient -> Sender -> SimplexTLD -> Int -> IO UTCTime -> IO Records
 newRecords rsStore rsTurns rsContracts rsChain rsSender rsTLD rsEditsPerYear rsNow = do
   rsClaimed <- newTVarIO S.empty
@@ -177,11 +182,11 @@ newEdit rs timer req signer bodyHash =
         -- a pending or mined edit holds the nonce: the identical twin is waited for, any other body refused
         Right Nothing -> withStore rs (`getRecordEditByBody` bodyHash) >>= maybe (pure EARefused) (awaitEdit rs timer . reId)
 
--- | The earliest deadline after the latest block's time, the signer the registry's owner on the default resolver, the first nonce the owner's next.
+-- | The earliest deadline more than 'editDeadlineMargin' past the latest block's time, the signer the registry's owner on the default resolver, the first nonce the owner's next.
 chainAccepts :: Records -> EditRequest -> Address -> IO (Either ChainError Bool)
 chainAccepts Records {rsChain, rsContracts} EditRequest {erLabelHash, erChanges} signer = runExceptT $ do
   Block {blockTimestamp} <- ExceptT $ latestBlock rsChain
-  if earliestDeadline erChanges <= blockTimestamp
+  if earliestDeadline erChanges <= blockTimestamp + editDeadlineMargin
     then pure False
     else
       ExceptT (nameStatus rsContracts erLabelHash) >>= \case
