@@ -1279,6 +1279,20 @@ describe("download", () => {
       expect([existsSync(source), readFileSync(downloaded, "utf8")]).toEqual([false, "voice"])
     })
 
+    it("is moved into the chat's folder at the completion of a transfer that started in this run, whatever its size", async () => {
+      const chat = new FakeChat()
+      const {tools} = downloadTools(chat)
+      const source = join(elsewhere, "report.pdf")
+      writeFileSync(source, "vo")
+      const incoming = offeredIn(chat, {type: "rcvAccepted"}, {filePath: source})
+      tools.onNewItems([event(trail, incoming)])
+      await flushed()
+      writeFileSync(source, "voice")
+      Object.assign(incoming.file!, {fileStatus: {type: "rcvComplete"}, fileSize: 6})
+      tools.onFileComplete(event(trail, incoming))
+      expect([existsSync(source), readFileSync(downloaded, "utf8")]).toEqual([false, "voice"])
+    })
+
     it("is not moved when its size differs from the size in its message", () => {
       const chat = new FakeChat()
       const {source, received} = receivedIn(chat, "voice")

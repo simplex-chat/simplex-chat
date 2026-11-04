@@ -1309,7 +1309,7 @@ settle received, for a received file in status rcvComplete with a promise:
   otherwise rejected, "The received file is not in the agent's files folder."
 
 move received, at rcvFileComplete with or without a promise, and at a check that reads rcvComplete:
-  fileSource.filePath is neither the download path nor the forwarded path, the download path has no file, and the file at fileSource.filePath has fileSize bytes: the file moved there   # a rename; on EXDEV a copy to <download path>.part, a rename of it and a delete of the source
+  fileSource.filePath is neither the download path nor the forwarded path, the download path has no file, and the file at fileSource.filePath exists for a file with a promise, or has fileSize bytes for one without: the file moved there   # a rename; on EXDEV a copy to <download path>.part, a rename of it and a delete of the source
   a failed move: logged
 
 delete partial at PATH, for a file with a promise:

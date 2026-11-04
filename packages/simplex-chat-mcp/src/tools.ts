@@ -1073,7 +1073,7 @@ export class AgentTools {
   private moveReceived(chat: string, {fileId, fileName, fileSize, fileSource}: T.CIFile): void {
     const {path, forwarded} = filePaths(this.agent.data, chat, fileId, fileName)
     const source = fileSource?.filePath
-    if (source === undefined || source === path || source === forwarded || existsSync(path) || fileBytes(source) !== fileSize) return
+    if (source === undefined || source === path || source === forwarded || existsSync(path) || (this.downloads.has(fileId) ? !existsSync(source) : fileBytes(source) !== fileSize)) return
     try {
       moveFile(source, path)
     } catch (error) {

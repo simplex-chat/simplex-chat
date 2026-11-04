@@ -603,7 +603,7 @@ Notes:
 - `/approve #15 N` on a download card gets the reply `Action N is a download: ...` with the card's command line ([control.ts:234](../src/control.ts#L234)).
 - A file on unknown servers gets a card that names their hosts and leaves out `/'receive CHAT N all'` ([control.ts:598-603](../src/control.ts#L598-L603), [:615-618](../src/control.ts#L615-L618), [:668-672](../src/control.ts#L668-L672)).
 - The card of an image or video shows the sender's preview ([control.ts:445-465](../src/control.ts#L445-L465)).
-- A file the core receives without a request, a short voice message, is moved into the chat's folder at `rcvFileComplete` when it has its full size; its message then shows it as `offered`, and `download` returns its path after the approval ([tools.ts:547-567](../src/tools.ts#L547-L567), [:1073-1082](../src/tools.ts#L1073-L1082), [messages.ts:194-208](../src/messages.ts#L194-L208)).
+- A file the core receives without a request, a short voice message, is moved into the chat's folder at `rcvFileComplete`; one whose transfer started before a restart, only when it has its full size. Its message then shows it as `offered`, and `download` returns its path after the approval ([tools.ts:547-567](../src/tools.ts#L547-L567), [:1073-1082](../src/tools.ts#L1073-L1082), [messages.ts:194-208](../src/messages.ts#L194-L208)).
 
 Source: [tools.ts:956-1094](../src/tools.ts#L956-L1094), [control.ts:577-620](../src/control.ts#L577-L620), [serve.ts:139-155](../src/serve.ts#L139-L155).
 

@@ -615,7 +615,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 | a download is saved only at `DATA/files/group-N/` or `DATA/files/contact-N/`, or for `/forward` at the same name under `DATA/forwarded/`, named by its file ID and an extension of 1 to 16 ASCII letters and digits | [messages.ts:215-223](../src/messages.ts#L215-L223) |
 | a forwarded file is outside `DATA/files/`, so `send` refuses it; a download moves it into `DATA/files/` after the copy for the post is made | [tools.ts:518-535](../src/tools.ts#L518-L535), [:867-872](../src/tools.ts#L867-L872) |
 | a file on unknown servers gets a card that names them, also under a files approval; in mode `host` the core downloads it only when the IP address is protected | [tools.ts:971](../src/tools.ts#L971), [:1025](../src/tools.ts#L1025), [control.ts:615-618](../src/control.ts#L615-L618) |
-| a file received without a download is moved into the chat's folder at its completion, when it has its full size, unless it is at the forwarded path; a partial file is deleted only for a download in memory, when it is no larger than the file | [tools.ts:1073-1082](../src/tools.ts#L1073-L1082), [:1477-1483](../src/tools.ts#L1477-L1483) |
+| a received file is moved into the chat's folder at its completion, unless it is at the forwarded path; a file without a download in memory, such as one whose transfer started before a restart, only when it has its full size; a partial file is deleted only for a download in memory, when it is no larger than the file | [tools.ts:1073-1082](../src/tools.ts#L1073-L1082), [:1477-1483](../src/tools.ts#L1477-L1483) |
 
 ### 6.7 Link and network
 

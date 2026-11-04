@@ -371,7 +371,7 @@ every 60 s, the item read again              gone: the partial file at the last 
 30 minutes without rcvTransfer progress      rejected, "The download made no progress for 30 minutes and was cancelled."; apiCancelFile; the partial file at the last fileSource deleted
 chatItemUpdated                              as rcvComplete and failed above: file digest, relays not approved (Library/Subscriber.hs:415-439)
 ```
-- Moved to path: when fileSource is neither the download path nor the forwarded path, the download path has no file and the file at fileSource has fileSize bytes; also without a download, and from a member chat of a group into the group's folder.
+- Moved to path: when fileSource is neither the download path nor the forwarded path, the download path has no file, and a file is at fileSource, with fileSize bytes for a file without a download; also from a member chat of a group into the group's folder.
 - A move is a rename; across file systems (EXDEV), a copy to `<path>.part`, its rename to path and a delete of the source.
 - Partial file deleted: only for a file with a download, when the file has at most fileSize bytes.
 - Every other row changes only a file with a download.
@@ -379,7 +379,7 @@ chatItemUpdated                              as rcvComplete and failed above: fi
 ```mermaid
 flowchart TD
   E[event or 60 s check] --> C{rcvFileComplete, or a check that reads rcvComplete}
-  C -- yes --> M{fileSource neither the download path nor the forwarded path, no file at the download path, fileSize bytes at fileSource}
+  C -- yes --> M{fileSource neither the download path nor the forwarded path, no file at the download path, a file at fileSource, with fileSize bytes without a download of the file ID}
   M -- yes --> V[moved to the download path]
   M -- no --> S{download of the file ID}
   V --> S
