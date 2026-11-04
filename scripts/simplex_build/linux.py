@@ -44,6 +44,7 @@ from .desktop import (
     zip_desktop_libs,
 )
 from .docker import OUT, PROJECT, Container, HostRunner, Runner, Step
+from .openssl import OPENSSL_UNIX_DIR, OPENSSL_UNIX_PREFIX, fetch_openssl, openssl_build
 
 
 @dataclass(frozen=True, slots=True)
@@ -282,17 +283,6 @@ def ubuntu_codename(runner: Runner) -> str:
     raise BuildError("VERSION_CODENAME is not in /etc/os-release")
 
 
-def system_libcrypto(runner: Runner, libs: Path, work: Path) -> Path:
-    """A copy in work of the system's libcrypto that libsimplex.so loads, which the AppImage bundles."""
-    ldd = runner.run(Step(("ldd", "libsimplex.so"), runner.path(libs)), capture=True)
-    found = [fields[2] for fields in map(str.split, ldd.splitlines()) if fields and fields[0].startswith("libcrypto.")]
-    if len(found) != 1:
-        raise BuildError(f"libsimplex.so loads {len(found)} libcrypto libraries, not one: {', '.join(found)}")
-    copy = work / Path(found[0]).name
-    runner.run(Step(("cp", "-L", found[0], runner.path(copy)), runner.path(libs)))
-    return copy
-
-
 def package_appimage(runner: Runner, source: Path, arch: str, libcrypto: Path, work: Path) -> Path:
     """The AppImage of the desktop app, with libcrypto bundled and fixed timestamps."""
     multiplatform = source / "apps/multiplatform"
@@ -419,7 +409,11 @@ def build_desktop_linux(source: Path, image: UbuntuImage, version: str, out: Pat
             shutil.copy(deb, out / desktop_files(image)[2])
             if image.version == APPIMAGE_IMAGE:
                 zip_desktop_libs(libs, [], out / linux_libs_zip(image.arch, Database.SQLITE))
-                appimage = package_appimage(container, source, image.arch, system_libcrypto(container, libs, work), work)
+                openssl = fetch_openssl(work)
+                build = openssl_build(f"linux-{image.arch}", OPENSSL_UNIX_PREFIX, OPENSSL_UNIX_DIR, install=False)
+                for argv in build:
+                    container.run(Step(argv, container.path(openssl), {"SOURCE_DATE_EPOCH": SOURCE_DATE_EPOCH}))
+                appimage = package_appimage(container, source, image.arch, openssl / "libcrypto.so.3", work)
                 shutil.copy(appimage, out / desktop_files(image)[3])
 
 

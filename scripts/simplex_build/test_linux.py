@@ -327,37 +327,16 @@ class DesktopTest(unittest.TestCase):
             patch_all("link_desktop_libs", record("link")),
             patch_all("package_desktop_deb", record("desktop deb", made("desktop.deb"))),
             patch_all("zip_desktop_libs", record("libs zip")),
-            patch_all("system_libcrypto", record("libcrypto", lambda *a: self.root / "libcrypto.so.3")),
+            patch_all("fetch_openssl", record("openssl", lambda work: work)),
             patch_all("package_appimage", record("appimage", made("app.AppImage"))),
             patch_all("log"),
         ):
             build_script.build_desktop_linux(self.source, JAMMY, "7.1.0", out)
-        self.assertEqual(calls, ["cli deb", "lib", "vlc", "link", "desktop deb", "libs zip", "libcrypto", "appimage"])
+        self.assertEqual(calls, ["cli deb", "lib", "vlc", "link", "desktop deb", "libs zip", "openssl", "appimage"])
         self.assertEqual(sorted(p.name for p in out.iterdir()), sorted(build_script.desktop_files(JAMMY)))
+        configure = next(a for a in container.argvs() if a[:2] == ("perl", "Configure"))
+        self.assertIn("--openssldir=/etc/ssl", configure)
         self.assertIn("flags: +openssl", (self.source / "cabal.project.local").read_text())
-
-    def test_the_appimage_bundles_the_system_libcrypto_that_libsimplex_loads(self):
-        libs, work = self.root / "libs", self.root / "work"
-        ldd = (
-            "\tlinux-vdso.so.1 (0x00007ffd)\n"
-            "\tlibHSbase-4.18.1.0-ghc9.6.3.so => /w/libs/libHSbase-4.18.1.0-ghc9.6.3.so (0x00007f10)\n"
-            "\tlibcrypto.so.3 => /lib/x86_64-linux-gnu/libcrypto.so.3 (0x00007f20)\n"
-            "\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f30)\n"
-        )
-        runner = FakeRunner(answers={"ldd": ldd})
-        self.assertEqual(build_script.system_libcrypto(runner, libs, work), work / "libcrypto.so.3")
-        self.assertEqual(
-            [(step.argv, step.workdir) for step in runner.steps],
-            [
-                (("ldd", "libsimplex.so"), str(libs)),
-                (("cp", "-L", "/lib/x86_64-linux-gnu/libcrypto.so.3", str(work / "libcrypto.so.3")), str(libs)),
-            ],
-        )
-
-    def test_libsimplex_without_one_libcrypto_fails(self):
-        runner = FakeRunner(answers={"ldd": "\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f30)\n"})
-        with self.assertRaisesRegex(build_script.BuildError, "loads 0 libcrypto libraries"):
-            build_script.system_libcrypto(runner, self.root / "libs", self.root / "work")
 
     def test_release_made_before_this_script_is_built_by_its_own_scripts(self):
         out, work = self.root / "out", self.root / "work"
