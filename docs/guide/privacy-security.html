@@ -159,21 +159,33 @@
                     
                         <li><a href="/docs/guide/readme.html" class="">Quick start</a></li>
                     
-                        <li><a href="/docs/guide/send-messages.html" class="">Sending messages</a></li>
+                        <li><a href="/docs/guide/making-connections.html" class="">Making connections</a></li>
                     
-                        <li><a href="/docs/guide/secret-groups.html" class="">Secret groups</a></li>
+                        <li><a href="/docs/guide/send-messages.html" class="">Messages and media</a></li>
+                    
+                        <li><a href="/docs/guide/secret-groups.html" class="">Groups</a></li>
+                    
+                        <li><a href="/docs/guide/channels.html" class="">Channels</a></li>
+                    
+                        <li><a href="/docs/guide/channel-webpage.html" class="">Channel webpage</a></li>
                     
                         <li><a href="/docs/guide/chat-profiles.html" class="">Chat profiles</a></li>
                     
+                        <li><a href="/docs/guide/register-simplex-name.html" class="">Registering a SimpleX name</a></li>
+                    
                         <li><a href="/docs/guide/managing-data.html" class="">Managing data</a></li>
                     
-                        <li><a href="/docs/guide/audio-video-calls.html" class="">Audio & video Calls</a></li>
+                        <li><a href="/docs/guide/linked-devices.html" class="">Linked devices</a></li>
+                    
+                        <li><a href="/docs/guide/audio-video-calls.html" class="">Audio & video calls</a></li>
+                    
+                        <li><a href="/docs/guide/notifications.html" class="">Notifications</a></li>
                     
                         <li><a href="/docs/guide/privacy-security.html" class="active">Privacy & security</a></li>
                     
                         <li><a href="/docs/guide/app-settings.html" class="">App settings</a></li>
                     
-                        <li><a href="/docs/guide/making-connections.html" class="">Making connections</a></li>
+                        <li><a href="/docs/guide/supporter-badges.html" class="">Supporter badges</a></li>
                     
                 </ul>
             </li>
@@ -535,11 +547,19 @@ window.addEventListener('click',(e)=>{
                                                 </li>
                                             
                                                 <li>
+                                                    <a class="" href="/docs/guide/making-connections.html">Making connections</a>
+                                                </li>
+                                            
+                                                <li>
                                                     <a class="" href="/docs/guide/send-messages.html">Sending messages</a>
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="" href="/docs/guide/secret-groups.html">Secret groups</a>
+                                                    <a class="" href="/docs/guide/secret-groups.html">Groups</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/channels.html">Channels</a>
                                                 </li>
                                             
                                                 <li>
@@ -551,11 +571,23 @@ window.addEventListener('click',(e)=>{
                                                 </li>
                                             
                                                 <li>
+                                                    <a class="" href="/docs/guide/register-simplex-name.html">Registering a SimpleX name</a>
+                                                </li>
+                                            
+                                                <li>
                                                     <a class="" href="/docs/guide/managing-data.html">Managing data</a>
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="" href="/docs/guide/audio-video-calls.html">Audio &amp; video Calls</a>
+                                                    <a class="" href="/docs/guide/linked-devices.html">Linked devices</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/audio-video-calls.html">Audio &amp; video calls</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/notifications.html">Notifications</a>
                                                 </li>
                                             
                                                 <li>
@@ -567,7 +599,7 @@ window.addEventListener('click',(e)=>{
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="" href="/docs/guide/making-connections.html">Making connections</a>
+                                                    <a class="" href="/docs/guide/supporter-badges.html">Supporter badges</a>
                                                 </li>
                                             
                                         </ul>
@@ -791,40 +823,77 @@ window.addEventListener('click',(e)=>{
                     </div> -->
                     <div><h1 id="privacy-and-security" tabindex="-1">Privacy and Security</h1>
 <p>SimpleX Chat default configuration aims to balance privacy, security and convenience. You may want to change the default options.</p>
-<p>This page lists all the features and options that affect privacy and security.</p>
+<p>This page lists the main features and options that affect privacy and security.</p>
 <h2 id="privacy-and-security-settings" tabindex="-1">Privacy and Security settings</h2>
-<p>These settings are available in the <a href="/docs/guide/app-settings.html#privacy-and-security">Privacy &amp; Security settings</a>.</p>
+<p>These settings are available in <a href="/docs/guide/app-settings.html#privacy-and-security">Your
+privacy</a> settings.</p>
+<h2 id="end-to-end-encryption" tabindex="-1">End-to-end encryption</h2>
+<p>Direct chats and groups are protected by end-to-end encryption. When a
+conversation starts, the app shows: &quot;Messages, files and calls are protected by
+<strong>end-to-end encryption</strong> with perfect forward secrecy, repudiation and break-in
+recovery.&quot; In a direct chat with quantum resistant encryption, it shows
+<strong>quantum resistant e2e encryption</strong> instead.</p>
+<p>Messages in channels are not end-to-end encrypted: &quot;Chat relays can see these
+messages.&quot; See <a href="/docs/guide/channels.html#how-channels-work">How channels work</a>.</p>
 <h2 id="security-code-verification" tabindex="-1">Security code verification</h2>
-<img src="../../blog/images/20230103-verification.png" width="288">
-<p>While SimpleX Chat always establishes connection via link passed via an independent channel, so it is already more protected than other apps, there are scenarios when the invitation links can be substituted in transit (MITM attack). To protect against such attacks, you should verify the security code with your contacts:</p>
+<img src="./images/privacy-security-verify-code.png" alt="Security code on iOS" width="288">
+<p>SimpleX Chat always establishes connection via link passed via an independent
+channel, so servers cannot substitute the encryption keys. In some scenarios,
+the invitation links can be substituted in transit (MITM attack). To protect
+against such attacks, you should verify the security code with your contacts:</p>
 <ul>
 <li>open the conversation with the contact</li>
-<li>tap the contact name on top of the conversation</li>
+<li>tap the contact name in the chat toolbar</li>
 <li>tap &quot;Verify security code&quot;</li>
 <li>ask your contact to do the same</li>
 <li>the connection is secure if you and your contact have the same security code</li>
 </ul>
 <p>This can be validated by one of the following:</p>
 <ul>
-<li>one of you can scan the security code from their device, if the codes match the contact will be marked as verified on the device that scanned the code.</li>
+<li>one of you can scan the security code from their device (iOS and Android), if
+the codes match the contact will be marked as verified on the device that
+scanned the code.</li>
 <li>simply tap mark verified if you trust the confirmation from your contact that the code is verified.</li>
-<li>you can also read the contact over the voice call.</li>
+<li>you can also read the code over the voice call.</li>
 </ul>
+<p>You can verify the security code of a group member in the same way, in the
+member's info.</p>
 <p>Read more in <a href="/blog/20230103-simplex-chat-v4.4-disappearing-messages.html#connection-security-verification">this post</a></p>
 <h2 id="database-passphrase" tabindex="-1">Database passphrase</h2>
-<p>When installed, the app generates a random passphrase for the chat database and stores it securely in KeyChain (iOS) or using KeyStore (Android, TPM module is used when available). You can set your own passphrase and also remove it from the device, in which case you will need to enter it every time you start the app, and notifications may be limited, in the <a href="/docs/guide/managing-data.html#database-passphrase">Database passphrase &amp; export</a> settings.</p>
+<p>When installed, the app generates a random passphrase for the chat database and
+stores it securely in Keychain (iOS) or using Keystore (Android, secure hardware
+is used when available). The desktop app offers to set your own passphrase when
+you create your first profile and, if you skip it, stores the random passphrase
+in the app settings as plaintext. You can set your own passphrase and also
+remove it from the device, in which case you will need to enter it every time
+you start the app, and notifications may be limited, in the <a href="/docs/guide/managing-data.html#database-passphrase">Database
+passphrase &amp; export</a> settings.</p>
 <h2 id="incognito-mode" tabindex="-1">Incognito mode</h2>
-<p>This feature generates a random profile name for each new contact. Read more in <a href="/docs/guide/app-settings.html#incognito">Incognito mode</a>.</p>
+<p>This feature generates a random profile name for a new contact or group, when
+you choose it for the connection. Read more in <a href="/docs/guide/app-settings.html#incognito">Incognito
+mode</a>.</p>
 <h2 id="hidden-profiles" tabindex="-1">Hidden profiles</h2>
 <p>This feature allows to hide some of your chat profiles with the password. Read more in <a href="/docs/guide/chat-profiles.html#hiding-and-muting-chat-profiles">Hiding and muting chat profiles</a>.</p>
 <h2 id="network-settings" tabindex="-1">Network settings</h2>
-<p><a href="/docs/guide/app-settings.html#transport-isolation-beta">Transport isolation (BETA)</a> allows to isolate you traffic with each contact in a different TCP connection (and Tor circuit).</p>
+<p><a href="/docs/guide/app-settings.html#transport-isolation-beta">Transport isolation (BETA)</a> allows
+to isolate the traffic of each chat profile (by default) or your traffic with
+each contact in a different TCP connection (and Tor circuit, on Android and
+desktop).</p>
+<p><a href="/docs/guide/app-settings.html#advanced-network-settings">Private message routing</a> is used
+by default: &quot;To protect your IP address, private routing uses your SMP servers
+to deliver messages.&quot;</p>
+<p><strong>Protect IP address</strong>, in <strong>Your privacy</strong> &gt; <strong>More privacy</strong>, makes the app
+ask you to confirm downloads of files from unknown file servers, unless you use
+a SOCKS proxy or the .onion address of the server. It is on by default.</p>
 <h2 id="using-tor" tabindex="-1">Using Tor</h2>
-<p><img src="../../blog/images/20220808-tor1.png" width="330">   <img src="../../blog/images/20220808-tor2.png" width="330"></p>
-<p>To connect to SMP relays (messaging servers) via Tor you need to install Orbot app.</p>
-<p>Android: use Orbot app as SOCKS proxy on port 9050 (default) and enable <a href="/docs/guide/app-settings.html#use-socks-proxy-android-only">Use SOCKS proxy</a>.</p>
-<p>iOS: use Orbot app as VPN provider and enable VPN.</p>
+<p>To connect to SMP relays (messaging servers) via Tor you need to install Orbot
+app or another app that provides a SOCKS proxy to Tor network.</p>
+<p>Android: use Orbot app as SOCKS proxy on port 9050 (default) and enable <a href="/docs/guide/app-settings.html#use-socks-proxy">Use SOCKS proxy</a>.</p>
+<p>Desktop: use a SOCKS proxy to Tor network in the same way.</p>
+<p>iOS: use Orbot app as VPN provider and enable VPN, or set a SOCKS proxy to Tor
+in <a href="/docs/guide/app-settings.html#advanced-network-settings">Advanced network settings</a>.</p>
 <p>You can also change which server addresses are used with <a href="/docs/guide/app-settings.html#use-onion-hosts">Use .onion hosts option</a>.</p>
+<p>Calls connect without the SOCKS proxy.</p>
 </div>
                 </article>
             </main>

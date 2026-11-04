@@ -159,21 +159,33 @@
                     
                         <li><a href="/docs/guide/readme.html" class="">Quick start</a></li>
                     
-                        <li><a href="/docs/guide/send-messages.html" class="">Sending messages</a></li>
+                        <li><a href="/docs/guide/making-connections.html" class="">Making connections</a></li>
                     
-                        <li><a href="/docs/guide/secret-groups.html" class="">Secret groups</a></li>
+                        <li><a href="/docs/guide/send-messages.html" class="">Messages and media</a></li>
+                    
+                        <li><a href="/docs/guide/secret-groups.html" class="">Groups</a></li>
+                    
+                        <li><a href="/docs/guide/channels.html" class="">Channels</a></li>
+                    
+                        <li><a href="/docs/guide/channel-webpage.html" class="">Channel webpage</a></li>
                     
                         <li><a href="/docs/guide/chat-profiles.html" class="active">Chat profiles</a></li>
                     
+                        <li><a href="/docs/guide/register-simplex-name.html" class="">Registering a SimpleX name</a></li>
+                    
                         <li><a href="/docs/guide/managing-data.html" class="">Managing data</a></li>
                     
-                        <li><a href="/docs/guide/audio-video-calls.html" class="">Audio & video Calls</a></li>
+                        <li><a href="/docs/guide/linked-devices.html" class="">Linked devices</a></li>
+                    
+                        <li><a href="/docs/guide/audio-video-calls.html" class="">Audio & video calls</a></li>
+                    
+                        <li><a href="/docs/guide/notifications.html" class="">Notifications</a></li>
                     
                         <li><a href="/docs/guide/privacy-security.html" class="">Privacy & security</a></li>
                     
                         <li><a href="/docs/guide/app-settings.html" class="">App settings</a></li>
                     
-                        <li><a href="/docs/guide/making-connections.html" class="">Making connections</a></li>
+                        <li><a href="/docs/guide/supporter-badges.html" class="">Supporter badges</a></li>
                     
                 </ul>
             </li>
@@ -535,11 +547,19 @@ window.addEventListener('click',(e)=>{
                                                 </li>
                                             
                                                 <li>
+                                                    <a class="" href="/docs/guide/making-connections.html">Making connections</a>
+                                                </li>
+                                            
+                                                <li>
                                                     <a class="" href="/docs/guide/send-messages.html">Sending messages</a>
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="" href="/docs/guide/secret-groups.html">Secret groups</a>
+                                                    <a class="" href="/docs/guide/secret-groups.html">Groups</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/channels.html">Channels</a>
                                                 </li>
                                             
                                                 <li>
@@ -551,11 +571,23 @@ window.addEventListener('click',(e)=>{
                                                 </li>
                                             
                                                 <li>
+                                                    <a class="" href="/docs/guide/register-simplex-name.html">Registering a SimpleX name</a>
+                                                </li>
+                                            
+                                                <li>
                                                     <a class="" href="/docs/guide/managing-data.html">Managing data</a>
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="" href="/docs/guide/audio-video-calls.html">Audio &amp; video Calls</a>
+                                                    <a class="" href="/docs/guide/linked-devices.html">Linked devices</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/audio-video-calls.html">Audio &amp; video calls</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/notifications.html">Notifications</a>
                                                 </li>
                                             
                                                 <li>
@@ -567,7 +599,7 @@ window.addEventListener('click',(e)=>{
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="" href="/docs/guide/making-connections.html">Making connections</a>
+                                                    <a class="" href="/docs/guide/supporter-badges.html">Supporter badges</a>
                                                 </li>
                                             
                                         </ul>
@@ -789,60 +821,86 @@ window.addEventListener('click',(e)=>{
                             </div>
                         </div>
                     </div> -->
-                    <div><h1 id="your-chat-profiles" tabindex="-1">Your chat profiles</h1>
+                    <div><h1 id="chat-profiles" tabindex="-1">Chat profiles</h1>
 <h2 id="creating-additional-chat-profiles" tabindex="-1">Creating additional chat profiles</h2>
-<p>SimpleX Chat allows creating as many chat profiles as you like. Same as the first profile, they are only stored locally on your device.</p>
-<img src="../../blog/images/20230204-profiles2.png" width="288">
+<p>SimpleX Chat allows creating as many chat profiles as you like. Same as the first
+profile, they are stored on your device and shared only with your contacts. You
+can use different profiles, for example for family and work, or one with a
+pseudonym. All of them receive messages at the same time.</p>
 <p>To create an additional SimpleX Chat profile:</p>
 <ul>
-<li><a href="/docs/guide/app-settings.html#opening-the-app-settings">Open the app settings</a>.</li>
+<li>Tap your profile image in the chat list toolbar to open the profile menu.</li>
 <li>Select &quot;Your chat profiles&quot;.</li>
-<li>Unlock option via fingerprint or PIN.</li>
-<li>Tap on &quot;+ Add profile”.</li>
-<li>Create a new profile by inputting your display name and full name (optional).</li>
-<li>Tap on &quot;Create&quot;.</li>
+<li>Tap on &quot;Add profile&quot;.</li>
+<li>Unlock via fingerprint or PIN, if you have <a href="/docs/guide/app-settings.html#simplex-lock">SimpleX
+Lock</a> enabled.</li>
+<li>Create a new profile by inputting your display name, and optionally a bio and
+a profile image.</li>
+<li>Tap on &quot;Create profile&quot;.</li>
 </ul>
 <h2 id="hiding-and-muting-chat-profiles" tabindex="-1">Hiding and muting chat profiles</h2>
 <p>v4.6 added the ability to mute and to hide chat profiles.</p>
-<p><img src="../../blog/images/20230328-hidden-profiles1.png" width="288">    <img src="../../blog/images/20230328-hidden-profiles2.png" width="288">    <img src="../../blog/images/20230328-hidden-profiles3.png" width="288"></p>
-<p>These actions are available via long-press (Android) or swipe (iOS) on the profile in the list.</p>
-<p>To unhide hidden profiles, enter the full password in the search bar.</p>
+<img src="./images/chat-profiles-hide-profile.png" alt="Hide profile screen with the fields Password to show and Confirm password" width="300">
+<p>These actions are available via long-press (Android), swipe right (iOS) or
+right-click (desktop) on the profile in the list.</p>
+<p>To show hidden profiles, enter the full password in the search bar of &quot;Your chat
+profiles&quot;. Tap the profile to use it, or choose &quot;Unhide&quot; to unhide it.</p>
 <h2 id="switching-between-profiles" tabindex="-1">Switching between profiles</h2>
-<img src="../../blog/images/20230204-profiles1.png" width="288">
 <ul>
-<li>Tap on your user profile image in the upper right-hand of the screen.</li>
+<li>Tap on your user profile image in the lower left-hand of the screen (upper
+left, when the toolbar is at the top).</li>
 <li>Select which profile you want to use.</li>
 </ul>
-<p>You can also switch profile via Your chat profiles in the settings.</p>
+<p>You can also switch profile via &quot;Your chat profiles&quot; in the same menu.</p>
 <h2 id="incognito-mode" tabindex="-1">Incognito mode</h2>
-<p><img src="../../blog/images/20220901-incognito1.png" width="330"> <img src="../../blog/images/20220901-incognito2.png" width="330"> <img src="../../blog/images/20220901-incognito3.png" width="330"></p>
 <p>This feature is unique to SimpleX Chat – it is independent from chat profiles.</p>
-<p>When &quot;Incognito Mode” is turned on, your currently chosen profile name and image are hidden from your new contacts. It allows anonymous connections with other people without any shared data – when you make new connections or join groups via a link a new random profile name will be generated for each connection.</p>
-<p>To toggle the incognito mode on/off:</p>
+<p>When you choose &quot;Incognito&quot; for a new connection, your currently chosen profile
+name and image are hidden from this contact, group or channel. It allows
+anonymous connections with other people without any shared data – a new random
+profile name will be generated for each connection. When you share an incognito
+profile with somebody, this profile will also be used for the groups they invite
+you to.</p>
+<p>To choose incognito mode:</p>
 <ul>
-<li><a href="/docs/guide/app-settings.html#opening-the-app-settings">Open the app settings</a>.</li>
-<li>Turn on/off incognito mode by tapping on the switch on &quot;Incognito&quot;.</li>
+<li>When you create a 1-time link, tap your profile under &quot;Share profile&quot; and
+choose &quot;Incognito&quot;.</li>
+<li>When you connect via a link, tap your profile under &quot;Your profile&quot; in the new
+chat and choose &quot;Incognito&quot;, before you tap &quot;Connect&quot;, &quot;Join group&quot; or &quot;Join
+channel&quot;. For some links, the app asks you to choose &quot;Use current profile&quot; or
+&quot;Use new incognito profile&quot; instead.</li>
+<li>When you create a group, turn on &quot;Incognito&quot;.</li>
 </ul>
-<p>Please read more in <a href="/blog/20220901-simplex-chat-v3.2-incognito-mode.html#incognito-mode">this post</a>.</p>
+<p>The app remembers your last choice for the next connection.</p>
 <h2 id="edit-your-profile" tabindex="-1">Edit your profile</h2>
 <p>To edit your profile:</p>
 <ul>
-<li><a href="/docs/guide/app-settings.html#opening-the-app-settings">Open the app settings</a>.</li>
+<li>Tap your profile image in the chat list toolbar to open the profile menu.</li>
 <li>Select your profile.</li>
-<li>Tap on &quot;Edit&quot;.</li>
-<li>Input your desired profile name and/or update your full name.</li>
+<li>Input your desired profile name and/or update your bio. You can also add or
+edit a description.</li>
 <li>You can also set and change profile image.</li>
-<li>Tap on &quot;Save and notify contacts&quot;.</li>
+<li>Tap on &quot;Save (and notify contacts)&quot; (iOS) or &quot;Save and notify contacts&quot;
+(Android and desktop).</li>
 </ul>
 <h2 id="move-your-chat-profiles-to-another-device" tabindex="-1">Move your chat profiles to another device</h2>
-<p>SimpleX Chat stores all user data only on client devices using a portable encrypted database format that can be exported and transferred to any supported device.</p>
+<p>SimpleX Chat stores all user data on client devices using a portable encrypted
+database format that can be exported and transferred to any supported device.</p>
+<p>You can move all profiles with &quot;Migrate to another device&quot; in the app settings:
+the app uploads the encrypted database, and the new device downloads it after
+you scan a QR code or paste a link, see <a href="/docs/guide/managing-data.html#migrate-to-another-device">Migrate to another
+device</a>. You can also export the
+database to a file and import it on the new device.</p>
 <p>To export your SimpleX Chat data:</p>
 <ul>
 <li><a href="/docs/guide/app-settings.html#opening-the-app-settings">Open the app settings</a>.</li>
-<li>Select &quot;Database passphrase &amp; export&quot;.</li>
+<li>Select &quot;Chat data&quot;, then &quot;Database passphrase &amp; export&quot;.</li>
 <li>Stop chat by toggling &quot;Chat is running&quot; (tap &quot;Stop” in the confirmation dialog).</li>
 <li>Confirm it with fingerprint or PIN, in case you have <a href="/docs/guide/app-settings.html#simplex-lock">SimpleX Lock</a> enabled.</li>
-<li>If you didn't set it before, <a href="/docs/guide/managing-data.html#database-passphrase">set a passphrase</a> in &quot;Database passphrase&quot;. Initially, the database is encrypted with a random passphrase that is stored in KeyChain (iOS) or with KeyStore (Android).</li>
+<li>If you didn't set it before, <a href="/docs/guide/managing-data.html#database-passphrase">set a
+passphrase</a> in &quot;Database passphrase&quot;.
+Initially, the database is encrypted with a random passphrase that is stored
+in Keychain (iOS), with Keystore (Android) or in the app settings as plaintext
+(desktop).</li>
 <li>Tap on &quot;Export database&quot; - it won't allow exporting unless you have set a passphrase.</li>
 <li>Save the file on your device or share it via any available option.</li>
 </ul>
@@ -850,9 +908,11 @@ window.addEventListener('click',(e)=>{
 <ul>
 <li>Transfer the database file to the new device.</li>
 <li>Install SimpleX Chat app.</li>
-<li>Create chat profile with any name by following the steps in <a href="#create-yout-first-chat-profile">Create your first chat profile</a> – you will replace it soon.</li>
+<li>Create chat profile with any name by following the steps in <a href="/docs/guide/readme.html#create-your-first-chat-profile">Create your first
+chat profile</a> – you will replace
+it soon.</li>
 <li>Open the app settings</li>
-<li>Select &quot;Database passphrase &amp; export&quot;.</li>
+<li>Select &quot;Chat data&quot;, then &quot;Database passphrase &amp; export&quot;.</li>
 <li>Stop chat by tapping the switch on &quot;Chat is running&quot;.</li>
 <li>Tap &quot;Import database&quot;.</li>
 <li>Select the .zip file of the exported chat data.</li>
@@ -865,7 +925,7 @@ window.addEventListener('click',(e)=>{
 <p>Currently you cannot move some of the profiles, only the whole database containing all profiles can be moved.</p>
 </li>
 <li>
-<p>You must NOT use the exported database on more than one device at a time, as it may disrupt some of the connections. You also must always use the latest version of the chat database - using the old one is also likely to disrupt your connections.</p>
+<p>You must not use the exported database on more than one device at a time, as it may disrupt some of the connections. You also must always use the latest version of the chat database - using the old one is also likely to disrupt your connections.</p>
 </li>
 <li>
 <p>There is no way to recover lost passphrase - make sure to store it securely.</p>

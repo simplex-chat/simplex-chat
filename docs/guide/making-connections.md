@@ -1,20 +1,38 @@
 # Connect to somebody in the chat
 
-_Work in progress_
+Because you have no identifier on the SimpleX network, nobody can contact you
+unless you share a 1-time link or your SimpleX address, as a QR code or a
+link, or a SimpleX name registered for your address. Members of groups you join
+can also send you contact requests, when direct messages are allowed in the
+group.
 
-Because you have no identifier on the SimpleX platform, nobody can contact you unless you share a one-time or temporary user address, such as a QR code or a link.
+Your SimpleX address is optional. You can change or delete it without losing any
+of your connections, for example when you receive spam contact requests.
 
-Even with the optional user address, while it can be used to send spam contact requests, you can change or completely delete it without losing any of your connections.
+Private Connection — connect using a 1-time link, or its QR code shown in person
+or in a video call.
 
-Private Connection — connect using an invitation link or QR code via video or in-person.
+Group Chat — join a group via its link or an invitation from a contact, or
+create your own group, see [Groups](https://simplex.chat/docs/guide/secret-groups.md).
 
-Group Chat — Users have the option to create a secret group, share their contact link [which can be deleted later on], or generate a one-time invitation link.
+Channel — join a channel via its link or its SimpleX name, see
+[Channels](https://simplex.chat/docs/guide/channels.md).
 
 ## Your SimpleX contact address
 
-You can [create an optional long term address](https://simplex.chat/docs/guide/app-settings.md#your-simplex-contact-address) for other people to connect with you. Unlike 1-time invitation links, these addresses can be used many times, that makes them good to share online, e.g. on social media platforms, or in email signatures. That helps more people discover SimpleX Chat, so please do it!
+You can [create an optional long term
+address](https://simplex.chat/docs/guide/app-settings.md#your-simplex-contact-address) for other people to
+connect with you. Unlike 1-time invitation links, these addresses can be used
+many times, that makes them good to share online, e.g. on social media
+platforms, or in email signatures.
 
-When people connect to you via this address, you will receive a connection request that you can accept or reject. You can configure an automatic acceptance of connection request and an automatic welcome message that will be sent to the new contacts. You can also share this address as part of your SimpleX profile, so group members can connect to you, and your contacts can share it with others - if this is something that you want.
+When people connect to you via this address, you will receive a connection
+request that you can accept or reject. You can configure an automatic acceptance
+of connection request and an automatic welcome message that will be sent to the
+new contacts. You can also share this address as part of your SimpleX profile,
+so group members can connect to you (in the groups that allow direct messages
+and SimpleX links), and your contacts can share it with others - if this is
+something that you want.
 
 If you start receiving too many requests via this address it is always safe to remove it – all the connections you created via this address will remain active, as this address is not used to deliver the messages.
 
@@ -48,8 +66,8 @@ If you start receiving too many requests via this address it is always safe to r
   </tr>
   <tr>
     <td>Identification</td>
-    <td>Both sides know who they connect to, as they know with whom and by who the link was shared. You can attach alias to this invitation as soon as you share it or use it, to identify the other person when connection is established.</td>
-    <td>Only the person using the address knows who they connect to, via the channel where they found the address (email, social media, etc.). The address owner can only see the user profile of the request, and has no proof of identity from the person sending the request<sup>*</sup>.</td>
+    <td>Both sides know who they connect to, as they know with whom and by who the link was shared. You can set a contact name for this invitation as soon as you share it or use it, to identify the other person when connection is established.</td>
+    <td>Only the person using the address knows who they connect to, via the channel where they found the address (email, social media, etc.). The address owner can only see the user profile of the request, and has no proof of identity from the person sending the request.</td>
   </tr>
   <tr>
     <td>Advantages over other platforms</td>
@@ -63,7 +81,7 @@ If you start receiving too many requests via this address it is always safe to r
   </tr>
   <tr>
     <td>Passive attacks on connection links</td>
-    <td colspan="2">Both types of links are not vulnerable if simply observed — they only contain public keys. So they can be safely shared via insecure or public channels, as long as you can confirm that you connected to the intended person.</td>
+    <td colspan="2">Both types of links are not vulnerable if simply observed — the private keys are kept on the devices and are not included in the links. So they can be safely shared via insecure or public channels, as long as you can confirm that you connected to the intended person.</td>
   </tr>
   <tr>
     <td>Active attacks on connection links</td>
@@ -71,11 +89,33 @@ If you start receiving too many requests via this address it is always safe to r
   </tr>
 </table>
 
-<sup>*</sup> Adding optional verified identities that we plan in the future will change it — the address owner will have an option to request identity verification before accepting the connection.
-
 <sup>**</sup> Connection security code is the cryptographic hash (SHA256) of combined public keys of both sides — there are 2<sup>256</sup> possible security codes (1 with 77 zeros – about [1000 times smaller](https://www.wolframalpha.com/input?i=2%5E256) than the estimated number of atoms in the visible universe).
+
+## Connect via a link or a name
+
+To connect via a 1-time link or a SimpleX address that you received:
+
+- Tap the pencil button, then "Scan / Paste link" (iOS), "Paste link / Scan"
+  (Android) or "Paste link" (desktop), and paste the link, or scan its QR code
+  on iOS and Android. You can also paste the link into the search field of the
+  chat list, or tap the link in a message.
+- The app shows the profile included in the link. Tap "Open new chat".
+- In the new chat, "Your profile" shows the profile you will connect with. Tap
+  it to choose another chat profile or "Incognito", see [Incognito
+  mode](https://simplex.chat/docs/guide/chat-profiles.md#incognito-mode).
+- Tap "Connect". For an address, you can also send a message with your contact
+  request. More messages can be sent after the request is accepted.
+
+For some links, the app shows no profile and asks you to choose "Use current
+profile" or "Use new incognito profile".
+
+To connect via a SimpleX name, type it into the search field of the chat list,
+for example `@name.testing`, and tap the "Connect to …" row, see [Registering a
+SimpleX name](https://simplex.chat/docs/guide/register-simplex-name.md).
 
 ## Conversation preferences
 
-Tap on one of your conversations to open conversation preferences.
-Here you can choose whether you wish to allow disappearing messages, deleting messages for everyone and voice messages.
+Open one of your conversations, tap the contact's name in the chat toolbar and
+tap "Contact preferences". Here you can choose whether you wish to allow
+disappearing messages, deleting messages for everyone, message reactions, voice
+messages and audio/video calls.

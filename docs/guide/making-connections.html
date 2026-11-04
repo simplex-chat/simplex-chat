@@ -159,21 +159,33 @@
                     
                         <li><a href="/docs/guide/readme.html" class="">Quick start</a></li>
                     
-                        <li><a href="/docs/guide/send-messages.html" class="">Sending messages</a></li>
+                        <li><a href="/docs/guide/making-connections.html" class="active">Making connections</a></li>
                     
-                        <li><a href="/docs/guide/secret-groups.html" class="">Secret groups</a></li>
+                        <li><a href="/docs/guide/send-messages.html" class="">Messages and media</a></li>
+                    
+                        <li><a href="/docs/guide/secret-groups.html" class="">Groups</a></li>
+                    
+                        <li><a href="/docs/guide/channels.html" class="">Channels</a></li>
+                    
+                        <li><a href="/docs/guide/channel-webpage.html" class="">Channel webpage</a></li>
                     
                         <li><a href="/docs/guide/chat-profiles.html" class="">Chat profiles</a></li>
                     
+                        <li><a href="/docs/guide/register-simplex-name.html" class="">Registering a SimpleX name</a></li>
+                    
                         <li><a href="/docs/guide/managing-data.html" class="">Managing data</a></li>
                     
-                        <li><a href="/docs/guide/audio-video-calls.html" class="">Audio & video Calls</a></li>
+                        <li><a href="/docs/guide/linked-devices.html" class="">Linked devices</a></li>
+                    
+                        <li><a href="/docs/guide/audio-video-calls.html" class="">Audio & video calls</a></li>
+                    
+                        <li><a href="/docs/guide/notifications.html" class="">Notifications</a></li>
                     
                         <li><a href="/docs/guide/privacy-security.html" class="">Privacy & security</a></li>
                     
                         <li><a href="/docs/guide/app-settings.html" class="">App settings</a></li>
                     
-                        <li><a href="/docs/guide/making-connections.html" class="active">Making connections</a></li>
+                        <li><a href="/docs/guide/supporter-badges.html" class="">Supporter badges</a></li>
                     
                 </ul>
             </li>
@@ -636,11 +648,19 @@ window.addEventListener('click',(e)=>{
                                                 </li>
                                             
                                                 <li>
+                                                    <a class="active" href="/docs/guide/making-connections.html">Making connections</a>
+                                                </li>
+                                            
+                                                <li>
                                                     <a class="" href="/docs/guide/send-messages.html">Sending messages</a>
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="" href="/docs/guide/secret-groups.html">Secret groups</a>
+                                                    <a class="" href="/docs/guide/secret-groups.html">Groups</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/channels.html">Channels</a>
                                                 </li>
                                             
                                                 <li>
@@ -652,11 +672,23 @@ window.addEventListener('click',(e)=>{
                                                 </li>
                                             
                                                 <li>
+                                                    <a class="" href="/docs/guide/register-simplex-name.html">Registering a SimpleX name</a>
+                                                </li>
+                                            
+                                                <li>
                                                     <a class="" href="/docs/guide/managing-data.html">Managing data</a>
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="" href="/docs/guide/audio-video-calls.html">Audio &amp; video Calls</a>
+                                                    <a class="" href="/docs/guide/linked-devices.html">Linked devices</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/audio-video-calls.html">Audio &amp; video calls</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/notifications.html">Notifications</a>
                                                 </li>
                                             
                                                 <li>
@@ -668,7 +700,7 @@ window.addEventListener('click',(e)=>{
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="active" href="/docs/guide/making-connections.html">Making connections</a>
+                                                    <a class="" href="/docs/guide/supporter-badges.html">Supporter badges</a>
                                                 </li>
                                             
                                         </ul>
@@ -891,14 +923,32 @@ window.addEventListener('click',(e)=>{
                         </div>
                     </div> -->
                     <div><h1 id="connect-to-somebody-in-the-chat" tabindex="-1">Connect to somebody in the chat</h1>
-<p><em>Work in progress</em></p>
-<p>Because you have no identifier on the SimpleX platform, nobody can contact you unless you share a one-time or temporary user address, such as a QR code or a link.</p>
-<p>Even with the optional user address, while it can be used to send spam contact requests, you can change or completely delete it without losing any of your connections.</p>
-<p>Private Connection — connect using an invitation link or QR code via video or in-person.</p>
-<p>Group Chat — Users have the option to create a secret group, share their contact link [which can be deleted later on], or generate a one-time invitation link.</p>
+<p>Because you have no identifier on the SimpleX network, nobody can contact you
+unless you share a 1-time link or your SimpleX address, as a QR code or a
+link, or a SimpleX name registered for your address. Members of groups you join
+can also send you contact requests, when direct messages are allowed in the
+group.</p>
+<p>Your SimpleX address is optional. You can change or delete it without losing any
+of your connections, for example when you receive spam contact requests.</p>
+<p>Private Connection — connect using a 1-time link, or its QR code shown in person
+or in a video call.</p>
+<p>Group Chat — join a group via its link or an invitation from a contact, or
+create your own group, see <a href="/docs/guide/secret-groups.html">Groups</a>.</p>
+<p>Channel — join a channel via its link or its SimpleX name, see
+<a href="/docs/guide/channels.html">Channels</a>.</p>
 <h2 id="your-simplex-contact-address" tabindex="-1">Your SimpleX contact address</h2>
-<p>You can <a href="/docs/guide/app-settings.html#your-simplex-contact-address">create an optional long term address</a> for other people to connect with you. Unlike 1-time invitation links, these addresses can be used many times, that makes them good to share online, e.g. on social media platforms, or in email signatures. That helps more people discover SimpleX Chat, so please do it!</p>
-<p>When people connect to you via this address, you will receive a connection request that you can accept or reject. You can configure an automatic acceptance of connection request and an automatic welcome message that will be sent to the new contacts. You can also share this address as part of your SimpleX profile, so group members can connect to you, and your contacts can share it with others - if this is something that you want.</p>
+<p>You can <a href="/docs/guide/app-settings.html#your-simplex-contact-address">create an optional long term
+address</a> for other people to
+connect with you. Unlike 1-time invitation links, these addresses can be used
+many times, that makes them good to share online, e.g. on social media
+platforms, or in email signatures.</p>
+<p>When people connect to you via this address, you will receive a connection
+request that you can accept or reject. You can configure an automatic acceptance
+of connection request and an automatic welcome message that will be sent to the
+new contacts. You can also share this address as part of your SimpleX profile,
+so group members can connect to you (in the groups that allow direct messages
+and SimpleX links), and your contacts can share it with others - if this is
+something that you want.</p>
 <p>If you start receiving too many requests via this address it is always safe to remove it – all the connections you created via this address will remain active, as this address is not used to deliver the messages.</p>
 <h3 id="comparison-of-1-time-invitation-links-and-simplex-contact-addresses" tabindex="-1">Comparison of 1-time invitation links and SimpleX Contact addresses</h3>
 <table>
@@ -929,8 +979,8 @@ window.addEventListener('click',(e)=>{
   </tr>
   <tr>
     <td>Identification</td>
-    <td>Both sides know who they connect to, as they know with whom and by who the link was shared. You can attach alias to this invitation as soon as you share it or use it, to identify the other person when connection is established.</td>
-    <td>Only the person using the address knows who they connect to, via the channel where they found the address (email, social media, etc.). The address owner can only see the user profile of the request, and has no proof of identity from the person sending the request<sup>*</sup>.</td>
+    <td>Both sides know who they connect to, as they know with whom and by who the link was shared. You can set a contact name for this invitation as soon as you share it or use it, to identify the other person when connection is established.</td>
+    <td>Only the person using the address knows who they connect to, via the channel where they found the address (email, social media, etc.). The address owner can only see the user profile of the request, and has no proof of identity from the person sending the request.</td>
   </tr>
   <tr>
     <td>Advantages over other platforms</td>
@@ -944,18 +994,38 @@ window.addEventListener('click',(e)=>{
   </tr>
   <tr>
     <td>Passive attacks on connection links</td>
-    <td colspan="2">Both types of links are not vulnerable if simply observed &mdash; they only contain public keys. So they can be safely shared via insecure or public channels, as long as you can confirm that you connected to the intended person.</td>
+    <td colspan="2">Both types of links are not vulnerable if simply observed &mdash; the private keys are kept on the devices and are not included in the links. So they can be safely shared via insecure or public channels, as long as you can confirm that you connected to the intended person.</td>
   </tr>
   <tr>
     <td>Active attacks on connection links</td>
     <td colspan="2">If the link is substituted via the attack on the channel used to share it, the connection security can be compromised, and the original messages monitored (man-in-the-middle attack). If it is a real risk then security code should be verified to mitigate it - doing so proves<sup>**</sup> that the link and keys were not substituted, and that the end-to-end encryption is secure.</td>
   </tr>
 </table>
-<p><sup>*</sup> Adding optional verified identities that we plan in the future will change it — the address owner will have an option to request identity verification before accepting the connection.</p>
 <p><sup>**</sup> Connection security code is the cryptographic hash (SHA256) of combined public keys of both sides — there are 2<sup>256</sup> possible security codes (1 with 77 zeros – about <a href="https://www.wolframalpha.com/input?i=2%5E256">1000 times smaller</a> than the estimated number of atoms in the visible universe).</p>
+<h2 id="connect-via-a-link-or-a-name" tabindex="-1">Connect via a link or a name</h2>
+<p>To connect via a 1-time link or a SimpleX address that you received:</p>
+<ul>
+<li>Tap the pencil button, then &quot;Scan / Paste link&quot; (iOS), &quot;Paste link / Scan&quot;
+(Android) or &quot;Paste link&quot; (desktop), and paste the link, or scan its QR code
+on iOS and Android. You can also paste the link into the search field of the
+chat list, or tap the link in a message.</li>
+<li>The app shows the profile included in the link. Tap &quot;Open new chat&quot;.</li>
+<li>In the new chat, &quot;Your profile&quot; shows the profile you will connect with. Tap
+it to choose another chat profile or &quot;Incognito&quot;, see <a href="/docs/guide/chat-profiles.html#incognito-mode">Incognito
+mode</a>.</li>
+<li>Tap &quot;Connect&quot;. For an address, you can also send a message with your contact
+request. More messages can be sent after the request is accepted.</li>
+</ul>
+<p>For some links, the app shows no profile and asks you to choose &quot;Use current
+profile&quot; or &quot;Use new incognito profile&quot;.</p>
+<p>To connect via a SimpleX name, type it into the search field of the chat list,
+for example <code>@name.testing</code>, and tap the &quot;Connect to …&quot; row, see <a href="/docs/guide/register-simplex-name.html">Registering a
+SimpleX name</a>.</p>
 <h2 id="conversation-preferences" tabindex="-1">Conversation preferences</h2>
-<p>Tap on one of your conversations to open conversation preferences.<br>
-Here you can choose whether you wish to allow disappearing messages, deleting messages for everyone and voice messages.</p>
+<p>Open one of your conversations, tap the contact's name in the chat toolbar and
+tap &quot;Contact preferences&quot;. Here you can choose whether you wish to allow
+disappearing messages, deleting messages for everyone, message reactions, voice
+messages and audio/video calls.</p>
 </div>
                 </article>
             </main>

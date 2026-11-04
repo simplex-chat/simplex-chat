@@ -76,7 +76,7 @@ When "Incognito Mode” is turned on, your currently chosen profile name and ima
 
 It is quite a complex process, but fortunately all of this happens in the background, so it's simple to use.
 
-Whenever somebody connects to you via your address, they basically ask your client whether they want to establish connection. After that, you can either agree or disagree.
+Whenever somebody connects to you via your address, they basically ask your client whether they want to establish connection. After that, you can either agree or disagree.\
 If interested, please read more: [Addresses and invitations](https://simplex.chat/docs/guide/making-connections.md).
 
 ### How to configure and delete groups?
@@ -91,7 +91,7 @@ Yes! Currently, there are six emojis available. What's more, you can respond to 
 
 It's quite simple:
 - one checkmark - message is delivered to the relay (the server).
-- two checkmarks - message is delivered to the recipient's device.
+- two checkmarks - message is delivered to the recipient's device.\
 "sent" means accepted by the relay for delivery, "delivered" - stored on the recipient device.
 
 Also see: [I do not see the second tick on the messages I sent](#i-do-not-see-the-second-tick-on-the-messages-i-sent)
@@ -172,12 +172,12 @@ becomes: `simplex:/i#E74vSxMwDnEx6DAvRCZmzBeZwwAseJUD/yVTHjaaH_EzL19DG7fvd46Mjry
 
 ### How to change servers to my own?
 
-Add your server in Settings -> Network & servers -> Your servers. If you have multiple profiles, you need to add your server in every profile.
+Add your server in Settings -> Network & servers -> Your servers. If you have multiple profiles, you need to add your server in every profile.\
 After that, disable all preset servers. If you have multiple profiles, you must first add your server to all profiles for this option to be available.
 
 To resolve SimpleX public names, if your server does not support it, you may leave preset servers enabled only for resolving the public names.
 
-Please note: configured servers only determine which servers will be used for the new connections (members/contacts). Previously created connections don't switch automatically. You can manually switch all existing contacts and small/important groups (each member needs to be switched), and then leave and re-join all large groups.
+Please note: configured servers only determine which servers will be used for the new connections (members/contacts). Previously created connections don't switch automatically. You can manually switch all existing contacts and small/important groups (each member needs to be switched), and then leave and re-join all large groups.\
 You can switch contacts/members manually to another server by going to their profile and clicking on "Change receiving address", note that the current server must be online for the address change to work.
 
 ## Troubleshooting
@@ -414,7 +414,7 @@ SimpleX Chat Ltd is funded by private investors and venture capital. As an open-
 
 Here are some reflections on VC funding being a necessity for a project at this scale, as well as sustainability and profitability for longtime operations: https://www.poberezkin.com/posts/2023-10-31-why-privacy-impossible-without-venture-funding.html
 
-And another perspective from a team member on the delicate balance of venture-backed and nonprofit structures, and the plans for the SimpleX network protocols to evolve under the stewardship of nonprofit entities in various jurisdictions, so that its continued evolution aligns more closely with the vision of community-driven, independent and transparent governance:
+And another perspective from a team member on the delicate balance of venture-backed and nonprofit structures, and the plans for the SimpleX network protocols to evolve under the stewardship of nonprofit entities in various jurisdictions, so that its continued evolution aligns more closely with the vision of community-driven, independent and transparent governance:\
 [https://simplex.chat/blog/20240404-why-i-joined-simplex-chat-esraa-al-shafei.html](https://simplex.chat/blog/20240404-why-i-joined-simplex-chat-esraa-al-shafei.md).
 
 ### What will be the business model?

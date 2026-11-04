@@ -159,21 +159,33 @@
                     
                         <li><a href="/docs/guide/readme.html" class="">Quick start</a></li>
                     
-                        <li><a href="/docs/guide/send-messages.html" class="">Sending messages</a></li>
+                        <li><a href="/docs/guide/making-connections.html" class="">Making connections</a></li>
                     
-                        <li><a href="/docs/guide/secret-groups.html" class="">Secret groups</a></li>
+                        <li><a href="/docs/guide/send-messages.html" class="">Messages and media</a></li>
+                    
+                        <li><a href="/docs/guide/secret-groups.html" class="">Groups</a></li>
+                    
+                        <li><a href="/docs/guide/channels.html" class="">Channels</a></li>
+                    
+                        <li><a href="/docs/guide/channel-webpage.html" class="">Channel webpage</a></li>
                     
                         <li><a href="/docs/guide/chat-profiles.html" class="">Chat profiles</a></li>
                     
+                        <li><a href="/docs/guide/register-simplex-name.html" class="">Registering a SimpleX name</a></li>
+                    
                         <li><a href="/docs/guide/managing-data.html" class="active">Managing data</a></li>
                     
-                        <li><a href="/docs/guide/audio-video-calls.html" class="">Audio & video Calls</a></li>
+                        <li><a href="/docs/guide/linked-devices.html" class="">Linked devices</a></li>
+                    
+                        <li><a href="/docs/guide/audio-video-calls.html" class="">Audio & video calls</a></li>
+                    
+                        <li><a href="/docs/guide/notifications.html" class="">Notifications</a></li>
                     
                         <li><a href="/docs/guide/privacy-security.html" class="">Privacy & security</a></li>
                     
                         <li><a href="/docs/guide/app-settings.html" class="">App settings</a></li>
                     
-                        <li><a href="/docs/guide/making-connections.html" class="">Making connections</a></li>
+                        <li><a href="/docs/guide/supporter-badges.html" class="">Supporter badges</a></li>
                     
                 </ul>
             </li>
@@ -636,11 +648,19 @@ window.addEventListener('click',(e)=>{
                                                 </li>
                                             
                                                 <li>
+                                                    <a class="" href="/docs/guide/making-connections.html">Making connections</a>
+                                                </li>
+                                            
+                                                <li>
                                                     <a class="" href="/docs/guide/send-messages.html">Sending messages</a>
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="" href="/docs/guide/secret-groups.html">Secret groups</a>
+                                                    <a class="" href="/docs/guide/secret-groups.html">Groups</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/channels.html">Channels</a>
                                                 </li>
                                             
                                                 <li>
@@ -652,11 +672,23 @@ window.addEventListener('click',(e)=>{
                                                 </li>
                                             
                                                 <li>
+                                                    <a class="" href="/docs/guide/register-simplex-name.html">Registering a SimpleX name</a>
+                                                </li>
+                                            
+                                                <li>
                                                     <a class="active" href="/docs/guide/managing-data.html">Managing data</a>
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="" href="/docs/guide/audio-video-calls.html">Audio &amp; video Calls</a>
+                                                    <a class="" href="/docs/guide/linked-devices.html">Linked devices</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/audio-video-calls.html">Audio &amp; video calls</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/notifications.html">Notifications</a>
                                                 </li>
                                             
                                                 <li>
@@ -668,7 +700,7 @@ window.addEventListener('click',(e)=>{
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="" href="/docs/guide/making-connections.html">Making connections</a>
+                                                    <a class="" href="/docs/guide/supporter-badges.html">Supporter badges</a>
                                                 </li>
                                             
                                         </ul>
@@ -890,30 +922,79 @@ window.addEventListener('click',(e)=>{
                             </div>
                         </div>
                     </div> -->
-                    <div><h1 id="managing-your-data" tabindex="-1">Managing Your Data</h1>
+                    <div><h1 id="managing-data" tabindex="-1">Managing data</h1>
 <h2 id="automatic-message-deletion" tabindex="-1">Automatic message deletion</h2>
-<p>Here you can choose to delete messages from your local chat database after a set period of time.</p>
+<p>To delete messages from your local chat database after a set period of time,
+open <a href="/docs/guide/app-settings.html#opening-the-app-settings">the app settings</a>, tap <strong>Chat
+data</strong> and choose the period in <strong>Delete messages after</strong>.</p>
 <p><strong>Please note</strong>: This option does not delete messages for other users, only for you. This option is set independently for each chat profile.</p>
-<h2 id="chat-database" tabindex="-1">Chat Database</h2>
+<p>To set a different period for one chat, choose it in <strong>Delete messages after</strong>
+in the chat info.</p>
+<h2 id="chat-database" tabindex="-1">Chat database</h2>
 <p>To open your chat database settings:</p>
 <ul>
 <li><a href="/docs/guide/app-settings.html#opening-the-app-settings">Open the app settings</a>.</li>
-<li>Tap on &quot;Database passphrase &amp; export&quot; button.</li>
+<li>Tap <strong>Chat data</strong>, then <strong>Database passphrase &amp; export</strong>.</li>
 </ul>
 <h3 id="database-passphrase" tabindex="-1">Database passphrase</h3>
-<img src="../../blog/images/20220928-passphrase.png" width="330">
+<img src="./images/managing-data-passphrase.png" alt="Database passphrase screen on iOS with Save passphrase in Keychain turned on" width="300">
 <p>By default, database passphrase is random, you have to set it manually to be able to export it.</p>
+<p>To set your own passphrase, tap <strong>Database passphrase</strong>, enter it in <strong>New
+passphrase…</strong> and <strong>Confirm new passphrase…</strong>, and tap <strong>Update database
+passphrase</strong>. To change a passphrase that you set before, also enter it in
+<strong>Current passphrase…</strong>.</p>
+<p>The app saves the passphrase on the device, in iOS Keychain, in Android Keystore,
+or in the app settings as plaintext on desktop. After you set your own
+passphrase, you can turn off <strong>Save passphrase in Keychain</strong> (iOS), <strong>Save
+passphrase in Keystore</strong> (Android) or <strong>Save passphrase in settings</strong> (desktop).
+The app then asks for the passphrase each time it starts, and notifications on
+iOS and Android are limited (see
+<a href="/docs/guide/notifications.html#notifications-and-the-database-passphrase">Notifications</a>).
+On desktop, a passphrase that you set at the first start is not saved. A lost
+passphrase cannot be recovered.</p>
 <h3 id="app-data-backup" tabindex="-1">App data backup</h3>
-<p>Here you can allow the system to back up app data, wherever it is configured. A database passphrase must be set to use this.</p>
+<p>The app data is not saved in iOS backups, and Android backup is turned off for
+the app. To keep a copy of your data, <a href="#export-database">export the database</a>
+regularly: importing an old copy may disrupt your conversations with some
+contacts.</p>
 <h3 id="export-database" tabindex="-1">Export database</h3>
-<p>Here you can export the chat database to a file.</p>
+<p>Here you can export the chat database to a file. The file also contains your
+files and the app settings. The app stops the chat to export the database, and
+the chat stays stopped after the export. To start it again, turn on the toggle
+under <strong>Run chat</strong>.</p>
 <h3 id="import-database" tabindex="-1">Import database</h3>
-<p>Here you can import the chat database from a file.</p>
+<p>Here you can import the chat database from a file. Your current chat database is
+deleted and replaced with the imported one. When the chat starts again, the app
+asks for the passphrase of the imported database.</p>
 <h3 id="delete-database" tabindex="-1">Delete database</h3>
-<p>Here you can delete your chat database. WARNING: Results in a loss of all your SimpleX Chat data! Unless you have just exported the chat database.</p>
+<p>Here you can delete your chat database. All your SimpleX Chat data will be lost,
+unless you have just exported the chat database.</p>
 <h2 id="delete-files-and-media" tabindex="-1">Delete files and media</h2>
-<img src="../../blog/images/20220928-files-media.png" width="330">
-<p>You can delete all sent and received files and media stored in the app via this option, without deleting the messages.</p>
+<img src="./images/managing-data-chat-data.png" alt="Chat data screen on iOS with Delete messages after, Database passphrase and export, and Delete all files" width="300">
+<p>You can delete all sent and received files and media stored in the app with
+<strong>Delete all files</strong> in <strong>Chat data</strong>, without deleting the messages. When you
+have several chat profiles, the button is <strong>Delete files for all chat
+profiles</strong>.</p>
+<h2 id="migrate-to-another-device" tabindex="-1">Migrate to another device</h2>
+<p>You can move all your chat profiles, contacts, messages and files to a new
+device. The app encrypts them and uploads them in chunks to your XFTP file
+servers.</p>
+<ol>
+<li>On the old device, open <a href="/docs/guide/app-settings.html#opening-the-app-settings">the app
+settings</a> and tap <strong>Migrate to
+another device</strong>. The app stops the chat. Set a database passphrase, or
+confirm the one you set before, and tap <strong>Archive and upload</strong>. When the
+upload completes, the app shows a QR code and a link.</li>
+<li>On the new device, install the app and tap <strong>Get started</strong> (iOS and Android)
+or <strong>Create your profile</strong> (desktop). Tap <strong>Migrate</strong> (<strong>Migrate from another
+device</strong> on desktop) at the top of the screen. Scan the QR code (iOS and
+Android) or paste the link, then enter the database passphrase and tap <strong>Open
+chat</strong>.</li>
+<li>When the new device shows <strong>Chat migrated!</strong>, tap <strong>Finalize migration</strong> on
+the old device, then <strong>Delete database from this device</strong>.</li>
+</ol>
+<p>Do not use the same database on two devices. It breaks the decryption of
+messages from your connections.</p>
 </div>
                 </article>
             </main>
