@@ -2994,7 +2994,7 @@
     <string name="badges_contact_team">Contactar a equipa do SimpleX</string>
     <string name="badges_credential_next_check">Próxima verificação</string>
     <string name="supporter_perks">Vantagens de apoiante</string>
-    <string name="v7_1_supporter_badge_title">Distintivos de apoiante ❤️</string>
+    <string name="v7_1_supporter_badge_title">Distintivos de apoiante</string>
     <string name="v7_1_supporter_badge_body">Envie ficheiros maiores\ndisponíveis por mais tempo.</string>
     <string name="file_already_exists_replace_question">O ficheiro já existe. Substituir?</string>
     <string name="badges_error_store_purchase_open_purchase">Uma compra da loja está a ser adicionada a este perfil.</string>
