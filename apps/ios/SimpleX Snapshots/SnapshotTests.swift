@@ -137,6 +137,25 @@ final class SnapshotTests: XCTestCase {
         window.isHidden = true
         window.rootViewController = nil
     }
+
+    @MainActor
+    func testTerminalSpacing() {
+        let items = SnapshotFixtures().spacingItems()
+        let p = terminalParagraphGap
+        let rows = zip(items.dropFirst(), items).map { item, older in
+            let sender = terminalItemShowsSender(item, older)
+            let largeGap = !item.chatDir.sameDirection(older.chatDir) || item.meta.itemTs.timeIntervalSince(older.meta.itemTs) > 60
+            return (sender: sender, gap: terminalRowGap(item, older, separated: false, largeGap: largeGap, hasSenderRow: sender), card: terminalItemStartsWithCard(item, revealed: true))
+        }
+        XCTAssertEqual(items.map(\.isOneLine), [false, true, true, true, true, true, true, false, true, true, false, true, false, false])
+        XCTAssertEqual(rows.map { $0.sender }, [true, true, false, false, true, false, true, false, true, true, true, false, true])
+        XCTAssertEqual(rows.map { $0.gap }, [p, p, 0, 0, p, 0, p, p, p, p, p, p, p])
+        XCTAssertEqual(rows.map { $0.card }, [false, false, false, false, false, false, false, false, false, true, true, true, false])
+        XCTAssertEqual(items.suffix(2).map(terminalTextTopGap), [p, 0])
+        let edges = SnapshotFixtures().spacingEdgeItems()
+        XCTAssertEqual(edges.map { terminalItemStartsWithCard($0, revealed: true) }, [true, false, true])
+        XCTAssertEqual(edges.suffix(2).map(terminalTextTopGap), [p, 0])
+    }
 }
 
 private func layoutCheckDir(_ env: [String: String]) -> URL {
@@ -294,6 +313,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(TerminalOverviewGroup_Previews.self),
         SnapshotScene(TerminalQuoteThumbnail_Previews.self, allSizes: true),
         SnapshotScene(TerminalRuleOnly_Previews.self, allSizes: true),
+        SnapshotScene(TerminalSpacing_Previews.self, allSizes: true),
         SnapshotScene(UserAddressLearnMore_Previews.self),
         SnapshotScene(UserAddressView_Previews.self),
         SnapshotScene(UserPicker_Previews.self),
@@ -407,6 +427,12 @@ struct TerminalMedia_Previews: PreviewProvider {
 struct TerminalRuleOnly_Previews: PreviewProvider {
     static var previews: some View {
         SnapshotFixtures().ruleOnly()
+    }
+}
+
+struct TerminalSpacing_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().spacing()
     }
 }
 
@@ -696,6 +722,21 @@ private final class SnapshotFixtures {
                     ListEntry(number: nil, content: SegmentRange(from: 7, to: 8), items: [])
                 ])
             ]
+        ),
+        "run this one first:\n```\nnpm run publish\n```": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "run this one first:"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "```", format: .markup(token: .fenceMark(language: nil))),
+                FormattedText(text: "\n", format: .markup(token: .hardBreak)),
+                FormattedText(text: "npm run publish"),
+                FormattedText(text: "\n", format: .markup(token: .hardBreak)),
+                FormattedText(text: "```", format: .markup(token: .fenceMark(language: nil)))
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 0, to: 1)),
+                .codeBlock(language: nil, content: SegmentRange(from: 4, to: 5))
+            ]
         )
     ]
 
@@ -844,6 +885,38 @@ private final class SnapshotFixtures {
             msg(.groupRcv(groupMember: carol), "Count me in, a bit late", -35),
             msg(.groupSnd, "Great", -30)
         ], terminal: terminal)
+    }
+
+    func spacingItems() -> [ChatItem] {
+        [
+            event(.groupRcv(groupMember: carol), .rcvGroupEvent(rcvGroupEvent: .memberConnected), -130),
+            msg(.groupRcv(groupMember: alice), "Welcome, carol!", -120),
+            msg(.groupRcv(groupMember: carol), "Thanks! Glad to be here", -118, reactions: [reaction(.heart, 2)]),
+            msg(.groupRcv(groupMember: carol), "ok", -118 + 20.0 / 60),
+            msg(.groupRcv(groupMember: carol), "one question", -118 + 40.0 / 60),
+            msg(.groupRcv(groupMember: bob), "I pushed the release build, please check it on your phones", -105),
+            msg(.groupRcv(groupMember: bob), "done", -104.5),
+            msg(.groupRcv(groupMember: alice), "first part\n\nafter one empty line\n\n\nafter two empty lines", -90),
+            msg(.groupRcv(groupMember: alice), "and one more thing", -89.5),
+            msg(.groupRcv(groupMember: alice), "after a pause of eight minutes", -81.5),
+            msg(.groupRcv(groupMember: bob), "", -80, reactions: [reaction(.heart, 2)], content: .image(text: "", image: landscape), file: imageFile("view.jpg")),
+            msg(.groupSnd, "👍", -79),
+            msg(.groupSnd, "nice view", -78.5, quote: quote(.groupRcv(groupMember: bob), "", image: landscape)),
+            msg(.groupRcv(groupMember: carol), "run this one first:\n```\nnpm run publish\n```", -70, reactions: [reaction(.thumbsup, 1)])
+        ]
+    }
+
+    func spacing() -> some View {
+        chatRows(teamChat, spacingItems(), terminal: true)
+    }
+
+    func spacingEdgeItems() -> [ChatItem] {
+        let reported = quote(.groupRcv(groupMember: alice), "Welcome, carol!")
+        return [
+            msg(.groupRcv(groupMember: bob), "👍", -10, content: .unknown(type: "sticker", text: "👍")),
+            msg(.groupSnd, "\nlinks to a scam site", -9, quote: reported, content: .report(text: "\nlinks to a scam site", reason: .spam)),
+            msg(.groupSnd, "\nafter an empty line", -8, quote: reported)
+        ]
     }
 
     func overviewDirect(terminal: Bool) -> ChatRows {

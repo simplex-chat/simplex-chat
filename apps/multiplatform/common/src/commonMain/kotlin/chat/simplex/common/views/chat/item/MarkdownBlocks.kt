@@ -74,6 +74,7 @@ fun MarkdownBlocks(
   val fontSize = style.fontSize.takeOrElse { 16.sp }
   val lineHeight = style.lineHeight.takeOrElse { 22.sp }
   val chatTypography = usesChatTypography()
+  val terminal = LocalTerminalLayout.current
   val starts = remember(blocks) { blocks.runningFold(0) { n, b -> n + b.textRanges.size } }
   val lastIsText = when (blocks.lastOrNull()) {
     is MarkdownBlock.Paragraph, is MarkdownBlock.Heading, is MarkdownBlock.Quote, is MarkdownBlock.ItemList -> trailingEmptyLines == 0
@@ -83,13 +84,15 @@ fun MarkdownBlocks(
   fun BlockText(index: Int, range: SegmentRange, style: TextStyle, modifier: Modifier = Modifier, softWrap: Boolean = true) {
     blockText(index, range, style, modifier, softWrap, lastIsText && index == starts.last() - 1)
   }
-  val bodyLineHeight = with(LocalDensity.current) { (fontSize.toPx() * lineHeight.value / fontSize.value).toDp() }
-  fun emptyLinesHeight(from: Int, to: Int, between: Boolean): Dp = bodyLineHeight * emptyLines(formattedText, from, to, between)
+  val emptyLineHeight = if (terminal) TERMINAL_PARAGRAPH_GAP.toDp() else with(LocalDensity.current) { (fontSize.toPx() * lineHeight.value / fontSize.value).toDp() }
+  fun emptyLinesHeight(from: Int, to: Int, between: Boolean): Dp = emptyLineHeight * emptyLines(formattedText, from, to, between)
   Column(modifier) {
-    Spacer(Modifier.height(emptyLinesHeight(0, blocks.firstOrNull()?.start ?: 0, between = false)))
+    Spacer(Modifier.height(emptyLineHeight * leadingEmptyLines(formattedText, blocks)))
     blocks.forEachIndexed { k, block ->
       val emptyHeight = if (k > 0) emptyLinesHeight(blocks[k - 1].end, block.start, between = true) else 0.dp
-      if (k > 0 && chatTypography && blocks[k - 1] is MarkdownBlock.Heading && block !is MarkdownBlock.Heading) {
+      if (k > 0 && terminal && (block.isCard || blocks[k - 1].isCard)) {
+        Spacer(Modifier.height(maxOf(TERMINAL_PARAGRAPH_GAP.toDp(), emptyHeight)))
+      } else if (k > 0 && chatTypography && blocks[k - 1] is MarkdownBlock.Heading && block !is MarkdownBlock.Heading) {
         Spacer(Modifier.height(TERMINAL_HEADING_BOTTOM_GAP.toDp() + emptyHeight))
       } else if (k > 0 && chatTypography && block is MarkdownBlock.Heading) {
         Spacer(Modifier.height(TERMINAL_LEVEL_STEP.toDp() + emptyHeight))
@@ -98,7 +101,7 @@ fun MarkdownBlocks(
       }
       val start = starts[k]
       val marksLastBlock = k == blocks.lastIndex && metaLine == null
-      val cardMargins = if (!chatTypography) Modifier else if (marksLastBlock) Modifier.padding(top = TERMINAL_BLOCK_TOP_GAP.toDp()).messageLastBlock() else Modifier.padding(top = TERMINAL_BLOCK_TOP_GAP.toDp(), bottom = TERMINAL_BLOCK_BOTTOM_GAP.toDp())
+      val cardMargins = if (!chatTypography) Modifier else if (terminal) Modifier.messageCard().then(if (marksLastBlock) Modifier.messageLastLine() else Modifier) else Modifier.padding(top = TERMINAL_BLOCK_TOP_GAP.toDp(), bottom = TERMINAL_BLOCK_BOTTOM_GAP.toDp())
       when (block) {
         is MarkdownBlock.Paragraph -> BlockText(start, block.content, style)
         is MarkdownBlock.Heading -> {
@@ -154,7 +157,7 @@ fun MarkdownBlocks(
         is MarkdownBlock.Rule -> Box((if (chatTypography) cardMargins.widthIn(min = ruleMinWidth) else Modifier.padding(vertical = 6.dp)).fillMaxWidth().height(1.dp).background(lineColor))
       }
     }
-    Spacer(Modifier.height(bodyLineHeight * trailingEmptyLines))
+    Spacer(Modifier.height(emptyLineHeight * trailingEmptyLines))
     if (!lastIsText) metaLine?.invoke()
   }
 }
@@ -196,6 +199,9 @@ private val MarkdownBlock.end: Int get() = when (this) {
   else -> textRanges.lastOrNull()?.range?.to ?: 0
 }
 
+val MarkdownBlock.isCard: Boolean get() =
+  this is MarkdownBlock.CodeBlock || this is MarkdownBlock.Table || this is MarkdownBlock.Rule
+
 const val MAX_EMPTY_LINES = 100
 
 fun emptyLines(fts: List<FormattedText>, from: Int, to: Int, between: Boolean): Int {
@@ -208,6 +214,9 @@ fun emptyLines(fts: List<FormattedText>, from: Int, to: Int, between: Boolean): 
   }
   return (lineBreaks - if (between) 1 else 0).coerceIn(0, MAX_EMPTY_LINES)
 }
+
+fun leadingEmptyLines(fts: List<FormattedText>, blocks: List<MarkdownBlock>): Int =
+  emptyLines(fts, 0, blocks.firstOrNull()?.start ?: 0, between = false)
 
 fun trailingEmptyLines(text: CharSequence, fts: List<FormattedText>, blocks: List<MarkdownBlock>): Int =
   emptyLines(fts, blocks.lastOrNull()?.end ?: 0, fts.size, between = !text.endsWith("\n"))

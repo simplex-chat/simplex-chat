@@ -186,6 +186,11 @@ struct MsgContentView: View {
             textColor: UIColor(messageColor)
         )
         let s = r.string
+        let font = UIFont.preferredFont(forTextStyle: textStyle)
+        let box = terminal ? terminalLineBox(font, messageColor, theme) : nil
+        if let box, blockLayout {
+            setEmptyLineHeight(s, terminalParagraphGap - box.spacing, font)
+        }
         let t: Text
         if let mt = meta {
             if mt.isLive {
@@ -195,7 +200,6 @@ struct MsgContentView: View {
         } else {
             t = Text(AttributedString(s))
         }
-        let box = terminal ? terminalLineBox(UIFont.preferredFont(forTextStyle: textStyle), messageColor, theme) : nil
         return msgTextView(r, t, box)
     }
 
@@ -236,6 +240,16 @@ private func withLineSpacing(_ s: NSAttributedString, _ lineSpacing: CGFloat) ->
     style.lineSpacing = lineSpacing
     spaced.addAttribute(.paragraphStyle, value: style, range: NSRange(location: 0, length: spaced.length))
     return spaced
+}
+
+private func setEmptyLineHeight(_ s: NSMutableAttributedString, _ height: CGFloat, _ font: UIFont) {
+    let emptyLineFont = font.withSize(height * font.pointSize / font.lineHeight)
+    let text = s.string as NSString
+    text.enumerateSubstrings(in: NSRange(location: 0, length: text.length), options: [.byParagraphs, .substringNotRequired]) { _, range, enclosingRange, _ in
+        if range.length == 0 {
+            s.addAttribute(.font, value: emptyLineFont, range: enclosingRange)
+        }
+    }
 }
 
 func msgTextResultView(
@@ -826,7 +840,9 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
             emptyLinesGap(emptyLines(formattedText, 0, blocks.first?.startIndex ?? 0, between: false), l)
             ForEach(Array(blocks.enumerated()), id: \.offset) { k, block in
                 let emptyHeight = k > 0 ? emptyLinesHeight(emptyLines(formattedText, blocks[k - 1].endIndex, block.startIndex, between: true), l) : 0
-                if k > 0 && terminal && blocks[k - 1].isHeading && !block.isHeading {
+                if k > 0 && terminal && (blocks[k - 1].isCard || block.isCard) {
+                    Color.clear.frame(height: max(terminalParagraphGap, emptyHeight))
+                } else if k > 0 && terminal && blocks[k - 1].isHeading && !block.isHeading {
                     Color.clear.frame(height: terminalHeadingBottomGap + emptyHeight)
                 } else if k > 0 && terminal && block.isHeading {
                     Color.clear.frame(height: terminalLevelStep + emptyHeight)
@@ -892,8 +908,7 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
     private func cardMargins(_ block: some View, _ last: Bool) -> some View {
         block
             .if(last && marksLastBlock) { $0.modifier(MessageLastBlock()) }
-            .padding(.top, terminalBlockTopGap)
-            .padding(.bottom, last && marksLastBlock ? 0 : terminalBlockBottomGap)
+            .padding(.bottom, last && !marksLastBlock ? terminalParagraphGap : 0)
     }
 
     @ViewBuilder private func terminalRule() -> some View {
@@ -959,7 +974,7 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
     }
 
     private func emptyLinesHeight(_ lines: Int, _ l: BlocksLayout) -> CGFloat {
-        CGFloat(lines) * (terminal ? terminalLineHeight(l.font, nil, AppTheme.shared) : l.font.lineHeight)
+        CGFloat(lines) * (terminal ? terminalParagraphGap : l.font.lineHeight)
     }
 
     private func codeText(_ r: SegmentRange) -> String {

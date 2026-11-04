@@ -4,6 +4,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.views.chat.item.MAX_EMPTY_LINES
 import chat.simplex.common.views.chat.item.emptyLines
 import chat.simplex.common.views.chat.item.itemDisplay
+import chat.simplex.common.views.chat.item.leadingEmptyLines
 import chat.simplex.common.views.chat.item.segmentDisplayText
 import chat.simplex.common.views.chat.item.trailingEmptyLines
 import chat.simplex.common.views.helpers.ParsedFormattedText
@@ -95,6 +96,8 @@ class MarkdownBlocksTest {
   fun testEmptyLines() {
     val gapTokens = gaps.formattedText!!
     assertEquals(2, emptyLines(gapTokens, 0, 1, between = false))
+    assertEquals(2, leadingEmptyLines(gapTokens, gaps.markdownBlocks!!))
+    assertEquals(0, leadingEmptyLines(headingAndParagraph.formattedText!!, headingAndParagraph.markdownBlocks!!))
     assertEquals(2, emptyLines(gapTokens, 2, 4, between = true))
     assertEquals(0, emptyLines(headingAndParagraph.formattedText!!, 3, 4, between = true))
     assertEquals(0, emptyLines(nestedList.formattedText!!, 5, 7, between = true))

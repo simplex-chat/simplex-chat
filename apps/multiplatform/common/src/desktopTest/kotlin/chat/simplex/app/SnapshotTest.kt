@@ -62,6 +62,7 @@ private val previewScenes = listOf(
   SnapshotScene("ChatInfoView.PreviewChatInfoLayout") { chat.simplex.common.views.chat.PreviewChatInfoLayout() },
   SnapshotScene("ChatView.PreviewChatLayout") { PreviewChatLayout() },
   SnapshotScene("ChatView.PreviewGroupChatLayout") { PreviewGroupChatLayout() },
+  SnapshotScene("ChatView.PreviewGroupChatLayoutTerminal", chatItemFontScales) { PreviewGroupChatLayoutTerminal() },
   SnapshotScene("ComposeFileView.PreviewComposeFileView") { PreviewComposeFileView() },
   SnapshotScene("ComposeVoiceView.PreviewComposeAudioView") { PreviewComposeAudioView() },
   SnapshotScene("ContextItemView.PreviewContextItemView") { PreviewContextItemView() },

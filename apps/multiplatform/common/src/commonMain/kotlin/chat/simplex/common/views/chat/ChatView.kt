@@ -4030,6 +4030,12 @@ fun PreviewGroupChatLayout() = BubblePreview {
   }
 }
 
+@Preview
+@Composable
+fun PreviewGroupChatLayoutTerminal() = CompositionLocalProvider(LocalTerminalLayout provides true) {
+  PreviewGroupChatLayout()
+}
+
 enum class ContentFilter(
   val contentTag: MsgContentTag,
   val label: StringResource,
