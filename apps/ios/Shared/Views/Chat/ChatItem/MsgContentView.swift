@@ -107,7 +107,7 @@ struct MsgContentView: View {
     @ViewBuilder
     private func contentView() -> some View {
         let fts = if let stripLink { stripFormattedTextLink(formattedText, stripLink) } else { formattedText }
-        if blockLayout, let fts, !fts.isEmpty, let blocks = markdownBlocks {
+        if blockLayout, let fts, !fts.isEmpty, let blocks = markdownBlocks, prefix == nil || !blockTextRanges(blocks).isEmpty {
             MarkdownBlocksView(
                 formattedText: fts,
                 blocks: blocks,
@@ -173,7 +173,7 @@ struct MsgContentView: View {
         let r = messageText(
             text,
             formattedText,
-            markdownBlocks: markdownBlocks,
+            markdownBlocks: blockLayout ? nil : markdownBlocks,
             textStyle: textStyle,
             sender: sender,
             mentions: mentions,
@@ -823,15 +823,15 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
     var body: some View {
         let l = BlocksLayout(formattedText, blocks, textStyle, text: text)
         VStack(alignment: .leading, spacing: 0) {
-            emptyLinesGap(leadingEmptyLines(formattedText, blocks), l)
+            emptyLinesGap(leadingEmptyLines(formattedText, blocks), l, between: false)
             ForEach(Array(blocks.enumerated()), id: \.offset) { k, block in
                 let emptyHeight = k > 0 ? emptyLinesHeight(emptyLines(formattedText, blocks[k - 1].endIndex, block.startIndex, between: true), l) : 0
                 if k > 0 && terminal && (blocks[k - 1].isCard || block.isCard) {
-                    Color.clear.frame(height: max(terminalParagraphGap, emptyHeight))
+                    Color.clear.frame(width: 0, height: max(terminalParagraphGap, emptyHeight))
                 } else if k > 0 && terminal && blocks[k - 1].isHeading && !block.isHeading {
-                    Color.clear.frame(height: terminalHeadingBottomGap + emptyHeight)
+                    Color.clear.frame(width: 0, height: terminalHeadingBottomGap + emptyHeight)
                 } else if k > 0 && terminal && block.isHeading {
-                    Color.clear.frame(height: terminalLevelStep + emptyHeight)
+                    Color.clear.frame(width: 0, height: terminalLevelStep + emptyHeight)
                 } else if emptyHeight > 0 {
                     Color.clear.frame(width: 0, height: emptyHeight)
                 }
@@ -953,14 +953,16 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
         }
     }
 
-    @ViewBuilder private func emptyLinesGap(_ lines: Int, _ l: BlocksLayout) -> some View {
+    @ViewBuilder private func emptyLinesGap(_ lines: Int, _ l: BlocksLayout, between: Bool = true) -> some View {
         if lines > 0 {
-            Color.clear.frame(width: 0, height: emptyLinesHeight(lines, l))
+            Color.clear.frame(width: 0, height: emptyLinesHeight(lines, l, between: between))
         }
     }
 
-    private func emptyLinesHeight(_ lines: Int, _ l: BlocksLayout) -> CGFloat {
-        CGFloat(lines) * (terminal ? terminalParagraphGap : l.font.lineHeight)
+    private func emptyLinesHeight(_ lines: Int, _ l: BlocksLayout, between: Bool = true) -> CGFloat {
+        if terminal { return CGFloat(lines) * terminalParagraphGap }
+        let height = CGFloat(lines) * (l.font.lineHeight + l.font.leading)
+        return between && lines > 0 ? height + l.font.leading : height
     }
 
     private func codeText(_ r: SegmentRange) -> String {

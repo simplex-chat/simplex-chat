@@ -190,7 +190,7 @@ Renders emoji-only messages (messages containing only emoji characters) in a lar
 
 **File**: [`Shared/Views/Chat/ChatItem/MsgContentView.swift`](../../Shared/Views/Chat/ChatItem/MsgContentView.swift)
 
-Renders message text with SimpleX markdown formatting (bold, italic, code, links, mentions). Blocks of `markdownBlocks` (paragraphs, headings, lists, quotes, code blocks, tables, rules) are drawn as a column of views by `MarkdownBlocksView`; code blocks and tables scroll sideways. The core sends `markdownBlocks` for text with block syntax or an empty line, up to 2000 markup tokens. In bubbles, each empty line is one line of the font, in a gap of zero width: the bubble is as wide as its widest block.
+Renders message text with SimpleX markdown formatting (bold, italic, code, links, mentions). Blocks of `markdownBlocks` (paragraphs, headings, lists, quotes, code blocks, tables, rules) are drawn as a column of views by `MarkdownBlocksView`; code blocks and tables scroll sideways. The core sends `markdownBlocks` for text with block syntax or an empty line, up to 2000 markup tokens. A report whose blocks have no text ranges (only rules) is drawn as one text: the reason, then the source text of the rules. In bubbles and outside chats, the gap of n empty lines is n × (`font.lineHeight` + `font.leading`), with one `font.leading` more after a block, as the same lines in one text, where the leading is added between lines only; the gap has zero width: the bubble is as wide as its widest block.
 
 Text colour: `textColor`, else `messageTextColor(theme)`: `onSurface`, at 95% in dark themes. `FramedItemView` passes `onSurface` for quote text (terminal rows: 70%). `MarkdownView` (chat item info, group welcome message, profile description) draws its text in `messageTextColor(theme)`.
 
@@ -423,7 +423,8 @@ FramedItemView        background, quote background and header backgrounds omitte
 MsgContentView        line box terminalLineBox; meta line for live messages, and in the line box after empty lines at the text end
                       text ends with the transparent copy of the meta (reserveSpaceForMeta)
                       text without markdownBlocks (over 2000 markup tokens) keeps one full line per empty line
-MarkdownBlocksView    code block, table or rule next to another block (MarkdownBlock.isCard): terminalParagraphGap,
+MarkdownBlocksView    all gaps have zero width: the column is as wide as its widest block
+                      code block, table or rule next to another block (MarkdownBlock.isCard): terminalParagraphGap,
                       or the typed empty lines when they are higher
                       heading after another block: terminalLevelStep
                       block other than a heading after a heading: terminalHeadingBottomGap
