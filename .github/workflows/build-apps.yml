@@ -1,0 +1,551 @@
+name: build-apps
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-apps-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  HOMEBREW_NO_AUTO_UPDATE: 1
+  HOMEBREW_NO_INSTALL_CLEANUP: 1
+  # newer images add Command Line Tools whose macOS SDK the default Xcode's linker cannot read
+  DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+
+jobs:
+  # every build must open this encrypted database, made by the previous release with its own OpenSSL
+  old-database:
+    name: Previous release's database
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Make the database
+        run: python3 scripts/simplex-chat-build.py test old-database --out "$RUNNER_TEMP/old-database"
+
+      - name: Upload the database
+        uses: actions/upload-artifact@v7
+        with:
+          name: old-database
+          path: ${{ runner.temp }}/old-database
+          retention-days: 30
+          if-no-files-found: error
+
+  android:
+    name: Android ${{ matrix.arch }} APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [aarch64, armv7a]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: tree:0
+
+      - name: Show runner
+        run: |
+          lsb_release -ds
+          nproc
+          free -h
+          df -h /
+
+      - name: Free disk space
+        run: scripts/ci/linux_util_free_space.sh
+
+      - name: Setup swap
+        if: matrix.arch == 'armv7a'
+        uses: ./.github/actions/swap
+        with:
+          swap-size-gb: 30
+
+      # the Nix sandbox needs user namespaces, which Ubuntu 24.04 restricts
+      - name: Allow user namespaces
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: Build APK
+        run: scripts/simplex-chat-build.py build apk ${{ matrix.arch }} --out "$RUNNER_TEMP/out" --nix-cache
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-${{ matrix.arch }}-unsigned
+          path: ${{ runner.temp }}/out
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
+  android-bundle:
+    name: Android Play bundle
+    needs: android
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Free disk space
+        run: scripts/ci/linux_util_free_space.sh
+
+      - name: Download core libraries
+        uses: actions/download-artifact@v8
+        with:
+          pattern: android-*-unsigned
+          path: ${{ runner.temp }}/libs
+
+      - name: Build bundle
+        run: scripts/simplex-chat-build.py build aab --libs "$RUNNER_TEMP/libs" --out "$RUNNER_TEMP/out"
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-bundle-unsigned
+          path: ${{ runner.temp }}/out
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
+  android-test:
+    name: Android ${{ matrix.arch }} APK in the emulator
+    needs: [android, old-database, desktop-linux]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: aarch64
+            api: 34
+          - arch: armv7a
+            api: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download APK
+        uses: actions/download-artifact@v8
+        with:
+          name: android-${{ matrix.arch }}-unsigned
+          path: ${{ runner.temp }}/apks
+
+      # the emulator's qemu needs libpulse0 and libegl1
+      - name: Install emulator and system image
+        run: |
+          sudo apt-get install -y libpulse0 libegl1
+          scripts/ci/android/install-sdk.sh "$RUNNER_TEMP/android-sdk" ${{ matrix.api }}
+
+      - name: Boot emulator
+        run: scripts/ci/android/emulator.sh start "$RUNNER_TEMP/screens"
+
+      # the unsigned APKs are signed with a throwaway key, which Android needs to install them
+      - name: Download the previous release's database
+        uses: actions/download-artifact@v8
+        with:
+          name: old-database
+          path: ${{ runner.temp }}/old-database
+
+      - name: Smoke test
+        run: |
+          python3 scripts/simplex-chat-build.py test apk "$RUNNER_TEMP/apks/simplex-${{ matrix.arch }}.apk" \
+            --out "$RUNNER_TEMP/screens" --database "$RUNNER_TEMP/old-database"
+
+      # the new CLI is the app's peer on the preset servers
+      - name: Download the CLI
+        uses: actions/download-artifact@v8
+        with:
+          name: desktop-ubuntu-24.04-x86_64
+          path: ${{ runner.temp }}/cli
+
+      - name: Upgrade and quantum resistant contact
+        run: |
+          python3 scripts/simplex-chat-build.py test apk "$RUNNER_TEMP/apks/simplex-${{ matrix.arch }}.apk" \
+            --out "$RUNNER_TEMP/screens" --upgrade-from-previous --cli "$RUNNER_TEMP/cli/simplex-chat-ubuntu-24_04-x86_64"
+
+      - name: Upload screenshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: screens-android-${{ matrix.arch }}
+          path: ${{ runner.temp }}/screens
+          retention-days: 30
+          if-no-files-found: ignore
+
+  ios:
+    name: iOS archive
+    runs-on: macos-26
+    timeout-minutes: 360
+    env:
+      HAS_ART_KEY: ${{ secrets.SIMPLEX_ART_SSH_KEY != '' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: tree:0
+
+      - name: Use the release Xcode
+        uses: ./.github/actions/xcode
+
+      - name: Show runner
+        run: |
+          sw_vers
+          df -h /
+          xcodebuild -version
+
+      - name: Use the macOS 26 SDK
+        run: scripts/ci/ios-sim/use-macos26-sdk.sh
+
+      # the brand assets of release builds are in this private repository; without its key, as on forks, the archive
+      # has the default icons
+      - name: Checkout brand assets
+        if: env.HAS_ART_KEY == 'true'
+        uses: actions/checkout@v6
+        with:
+          repository: simplex-chat/simplex-chat-art
+          ssh-key: ${{ secrets.SIMPLEX_ART_SSH_KEY }}
+          path: simplex-chat-art
+
+      - name: Build archive
+        run: scripts/simplex-chat-build.py build xcarchive ${{ env.HAS_ART_KEY == 'true' && '--art simplex-chat-art' || '' }} --out "$RUNNER_TEMP/out" --install-nix
+
+      - name: Upload archive
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-archive-unsigned
+          path: ${{ runner.temp }}/out
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
+  # the archive's core, from Nix, relabelled for the simulator: the same objects as the archive's, in the simulator app
+  ios-test:
+    name: iOS app in the simulator
+    needs: [ios, old-database, desktop-macos]
+    runs-on: macos-26
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Use the release Xcode
+        uses: ./.github/actions/xcode
+
+      - name: Use the macOS 26 SDK
+        run: scripts/ci/ios-sim/use-macos26-sdk.sh
+
+      - name: Download the archive's core
+        uses: actions/download-artifact@v8
+        with:
+          name: ios-archive-unsigned
+          path: ${{ runner.temp }}/ios
+
+      - name: Prepare libraries
+        run: scripts/simplex-chat-build.py install libs ios "$RUNNER_TEMP"/ios/pkg-ios-*.zip
+
+      - name: Build app
+        run: |
+          xcodebuild build -quiet \
+            -project apps/ios/SimpleX.xcodeproj \
+            -scheme "SimpleX (iOS)" \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -onlyUsePackageVersionsFromResolvedFile \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            ARCHS=arm64 \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY=- \
+            DEVELOPMENT_TEAM= \
+            PROVISIONING_PROFILE_SPECIFIER=
+
+      - name: Install AXe
+        run: scripts/ci/ios-sim/install-axe.sh
+
+      - name: Smoke test
+        run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app" "$RUNNER_TEMP/screens"
+
+      # the new CLI is the app's peer on the preset servers
+      - name: Download the CLI
+        uses: actions/download-artifact@v8
+        with:
+          name: desktop-macos-aarch64-unsigned
+          path: ${{ runner.temp }}/cli
+
+      - name: Quantum resistant contact
+        run: scripts/ci/ios-sim/pq-contact.sh "$RUNNER_TEMP/cli/simplex-chat-macos-aarch64" "$RUNNER_TEMP/peer"
+
+      - name: Download the previous release's database
+        uses: actions/download-artifact@v8
+        with:
+          name: old-database
+          path: ${{ runner.temp }}/old-database
+
+      - name: Open the previous release's database
+        run: scripts/ci/ios-sim/old-database.sh "$RUNNER_TEMP/old-database"
+
+      - name: Upload screenshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: screens-ios
+          path: ${{ runner.temp }}/screens
+          retention-days: 30
+          if-no-files-found: ignore
+
+  desktop-linux:
+    name: Desktop Ubuntu ${{ matrix.ubuntu }} ${{ matrix.arch }}
+    needs: old-database
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { ubuntu: "22.04", arch: x86_64, runner: ubuntu-22.04 }
+          - { ubuntu: "24.04", arch: x86_64, runner: ubuntu-24.04 }
+          - { ubuntu: "22.04", arch: aarch64, runner: ubuntu-22.04-arm }
+          - { ubuntu: "24.04", arch: aarch64, runner: ubuntu-24.04-arm }
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Free disk space
+        run: scripts/ci/linux_util_free_space.sh
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Build CLI and desktop apps
+        run: |
+          version=$(sed -n 's/^version: *//p' simplex-chat.cabal)
+          python3 scripts/simplex-chat-build.py build desktop linux ${{ matrix.ubuntu }} --version "$version" --out "$RUNNER_TEMP/out"
+
+      - name: Upload apps
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-ubuntu-${{ matrix.ubuntu }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/out
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
+      # the desktop deb's post-install script runs xdg-desktop-menu, which fails without this directory
+      - name: Install a display for the smoke tests
+        run: |
+          sudo apt-get install -y --no-install-recommends xvfb openbox xdotool imagemagick
+          sudo mkdir -p /usr/share/desktop-directories
+
+      # each file runs as its users run it, and the apps leave screenshots
+      - name: Download the previous release's database
+        uses: actions/download-artifact@v8
+        with:
+          name: old-database
+          path: ${{ runner.temp }}/old-database
+
+      # each upgrade test installs the previous release's app where no app is installed, and uninstalls the app after
+      - name: Smoke test
+        run: |
+          out=$RUNNER_TEMP/out
+          ubuntu=${{ matrix.ubuntu }}
+          name=ubuntu-${ubuntu//./_}-${{ matrix.arch }}
+          old=(--database "$RUNNER_TEMP/old-database")
+          upgrade=(--upgrade-from-previous --cli "$out/simplex-chat-$name")
+          python3 scripts/simplex-chat-build.py test cli "$out/simplex-chat-$name" --out "$RUNNER_TEMP/screens" "${old[@]}"
+          python3 scripts/simplex-chat-build.py test desktop "$out/simplex-desktop-$name.deb" --out "$RUNNER_TEMP/screens" "${upgrade[@]}"
+          python3 scripts/simplex-chat-build.py test desktop "$out/simplex-desktop-$name.deb" --out "$RUNNER_TEMP/screens" \
+            "${old[@]}" --cli "$out/simplex-chat-$name"
+          if [ -f "$out/simplex-desktop-${{ matrix.arch }}.AppImage" ]; then
+            python3 scripts/simplex-chat-build.py test desktop "$out/simplex-desktop-${{ matrix.arch }}.AppImage" --out "$RUNNER_TEMP/screens" \
+              "${upgrade[@]}"
+            python3 scripts/simplex-chat-build.py test desktop "$out/simplex-desktop-${{ matrix.arch }}.AppImage" --out "$RUNNER_TEMP/screens" \
+              "${old[@]}" --cli "$out/simplex-chat-$name"
+          fi
+
+      - name: Upload screenshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: screens-ubuntu-${{ matrix.ubuntu }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/screens
+          retention-days: 30
+          if-no-files-found: ignore
+
+  desktop-macos:
+    name: Desktop macOS ${{ matrix.arch }}
+    needs: old-database
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: aarch64, runner: macos-26 }
+          - { arch: x86_64, runner: macos-26-intel }
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Use the release Xcode
+        uses: ./.github/actions/xcode
+
+      # GHC's C compiler uses the Command Line Tools' SDK
+      - name: Point Command Line Tools SDK to Xcode SDK
+        run: sudo ln -sfn "$(xcrun --sdk macosx --show-sdk-path)" /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+
+      - name: Setup Haskell
+        uses: simplex-chat/setup-haskell-action@v2
+        with:
+          ghc-version: 9.6.3
+          cabal-version: 3.10.2.0
+
+      - name: Setup Java
+        uses: ./.github/actions/setup-corretto
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Build CLI, desktop app and libraries
+        run: python3 scripts/simplex-chat-build.py build desktop macos --out "$RUNNER_TEMP/out"
+
+      - name: Upload apps
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-macos-${{ matrix.arch }}-unsigned
+          path: ${{ runner.temp }}/out
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Download the previous release's database
+        uses: actions/download-artifact@v8
+        with:
+          name: old-database
+          path: ${{ runner.temp }}/old-database
+
+      - name: Smoke test
+        run: |
+          out=$RUNNER_TEMP/out
+          cli=simplex-chat-macos-${{ matrix.arch == 'aarch64' && 'aarch64' || 'x86-64' }}
+          old=(--database "$RUNNER_TEMP/old-database")
+          python3 scripts/simplex-chat-build.py test cli "$out/$cli" --out "$RUNNER_TEMP/screens" "${old[@]}"
+          python3 scripts/simplex-chat-build.py test desktop "$out/simplex-desktop-macos-${{ matrix.arch }}.dmg" --out "$RUNNER_TEMP/screens" \
+            --upgrade-from-previous --cli "$out/$cli"
+          python3 scripts/simplex-chat-build.py test desktop "$out/simplex-desktop-macos-${{ matrix.arch }}.dmg" --out "$RUNNER_TEMP/screens" \
+            "${old[@]}" --cli "$out/$cli"
+
+      - name: Upload screenshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: screens-macos-${{ matrix.arch }}
+          path: ${{ runner.temp }}/screens
+          retention-days: 30
+          if-no-files-found: ignore
+
+  desktop-windows:
+    name: Desktop Windows
+    needs: old-database
+    runs-on: windows-latest
+    timeout-minutes: 240
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      # Git for Windows checks files out with CRLF line endings, which the Windows build would compile into the binaries
+      - name: Check out with the repository's line endings
+        shell: bash
+        run: git config --global core.autocrlf false
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Configure pagefile
+        uses: simplex-chat/configure-pagefile-action@v1.4
+        with:
+          minimum-size: 16GB
+          maximum-size: 16GB
+          # C: holds the fixed directory of the Windows builds, and has about 30 GB free
+          disk-root: "D:"
+
+      - name: Setup Haskell
+        uses: simplex-chat/setup-haskell-action@v2
+        with:
+          ghc-version: 9.6.3
+          cabal-version: 3.10.2.0
+
+      - name: Setup Java
+        uses: ./.github/actions/setup-corretto
+
+      - name: Setup MSYS2
+        uses: simplex-chat/setup-msys2@v2
+        with:
+          msystem: ucrt64
+          update: true
+          install: >-
+            git
+            perl
+            make
+          pacboy: >-
+            toolchain:p
+            cmake:p
+            python:p
+
+      - name: Build CLI, desktop app and libraries
+        run: |
+          export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
+          python scripts/simplex-chat-build.py build desktop windows --out "$(cygpath -w "$RUNNER_TEMP")/out"
+
+      - name: Upload apps
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-windows-unsigned
+          path: ${{ runner.temp }}/out
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Download the previous release's database
+        uses: actions/download-artifact@v8
+        with:
+          name: old-database
+          path: ${{ runner.temp }}/old-database
+
+      - name: Smoke test
+        run: |
+          out="$(cygpath -w "$RUNNER_TEMP")/out"
+          screens="$(cygpath -w "$RUNNER_TEMP")/screens"
+          old="$(cygpath -w "$RUNNER_TEMP")/old-database"
+          python scripts/simplex-chat-build.py test cli "$out/simplex-chat-windows-x86-64" --out "$screens" --database "$old"
+          python scripts/simplex-chat-build.py test desktop "$out/simplex-desktop-windows-x86_64.msi" --out "$screens" \
+            --upgrade-from-previous --cli "$out/simplex-chat-windows-x86-64"
+          python scripts/simplex-chat-build.py test desktop "$out/simplex-desktop-windows-x86_64.msi" --out "$screens" \
+            --database "$old" --cli "$out/simplex-chat-windows-x86-64"
+
+      - name: Upload screenshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: screens-windows
+          path: ${{ runner.temp }}/screens
+          retention-days: 30
+          if-no-files-found: ignore

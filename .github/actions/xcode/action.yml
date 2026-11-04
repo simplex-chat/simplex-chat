@@ -1,0 +1,27 @@
+name: Use the release Xcode
+description: >-
+  Selects Xcode 26.6, XCODE in scripts/simplex_build/apple.py, at /Applications/Xcode.app, where the iOS build needs it
+  because the dSYMs name its path; the runner images link that path to their default Xcode, and keep each Xcode at
+  /Applications/Xcode_<version>.app, which stays a link to it.
+runs:
+  using: composite
+  steps:
+    - name: Move Xcode to /Applications/Xcode.app
+      shell: bash
+      env:
+        RELEASE_XCODE: /Applications/Xcode_26.6.app
+        USUAL_XCODE: /Applications/Xcode.app
+      run: |
+        if [ ! -L "$RELEASE_XCODE" ]; then
+          if [ -L "$USUAL_XCODE" ]; then
+            sudo rm "$USUAL_XCODE"
+          fi
+          if [ -e "$USUAL_XCODE" ]; then
+            echo "::error::$USUAL_XCODE is not a link to the image's default Xcode"
+            exit 1
+          fi
+          sudo mv "$RELEASE_XCODE" "$USUAL_XCODE"
+          sudo ln -s "$USUAL_XCODE" "$RELEASE_XCODE"
+        fi
+        echo "DEVELOPER_DIR=$USUAL_XCODE/Contents/Developer" >> "$GITHUB_ENV"
+        DEVELOPER_DIR=$USUAL_XCODE/Contents/Developer xcodebuild -version
