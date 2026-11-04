@@ -187,6 +187,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "keeps out of a pass's sweep only the invoices whose read or settlement failed" testPassSweepsAroundFailures
     it "cleans up unpaid orders after 30 days, reading the provider first" testCleanup
     it "reads at most a pass's share of the provider in a cleanup, carrying the rest to the next pass" testCleanupCapped
+    it "runs the day's cleanup again at the next pass when reading its orders fails" testCleanupReadFails
     it "answers 503 for a name invoice while names are off, cancelling nothing" testNamesOff
   describe "codes only" $ do
     it "answers a name invoice 403 codes_only before reading the order, reaching no provider and writing nothing" testInvoiceCodesOnly
@@ -1537,6 +1538,21 @@ testCleanupCapped = withOrders $ \ctx@Ctx {cStore = st} -> do
   cleanupUnpaid poller (addUTCTime 1 due)
   reads' `shouldReturn` count
   length <$> registrationsOf ctx ownerA `shouldReturn` 0
+
+testCleanupReadFails :: IO ()
+testCleanupReadFails = withOrders $ \ctx@Ctx {cStore = st} -> do
+  let due = addUTCTime (unpaidRetention + 1) t0
+  placePaid st "old" ownerA (order "alicebakery" 1) t0 `shouldReturn` Right ()
+  poller <- newPollerEnv st (weWaiters $ cWeb ctx) Nothing (weHints $ cWeb ctx) (weProviders $ cWeb ctx) (poll $ weConfig $ cWeb ctx)
+  -- the candidates query reads the payments table, so without it the read fails
+  withConnection st $ \db -> DB.execute_ db "ALTER TABLE sx_badge_service_payments RENAME TO sx_badge_service_payments_away"
+  logs <- capturingStderr $ void (E.try (cleanupUnpaid poller due) :: IO (Either E.SomeException ()))
+  withConnection st $ \db -> DB.execute_ db "ALTER TABLE sx_badge_service_payments_away RENAME TO sx_badge_service_payments"
+  let present = isJust <$> withTransaction st (`getRegistration` RegistrationId "old")
+  present `shouldReturn` True
+  cleanupUnpaid poller (addUTCTime 1 due)
+  present `shouldReturn` False
+  logs `shouldSatisfy` T.isInfixOf "names cleanup: the unpaid orders read failed; the next pass will run"
 
 testProviderRefs :: IO ()
 testProviderRefs = withServiceStore $ \st -> do

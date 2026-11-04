@@ -289,20 +289,20 @@ sweepExpired env@PollerEnv {peStore, peWaiters, pePhases, peCancelFailed} now mi
   unless (null expired) $ logNote ("badge poller: expired " <> tshow (length expired) <> " invoice(s) past their window")
 
 cleanupDue :: PollerEnv -> UTCTime -> IO Bool
-cleanupDue PollerEnv {peCleanedAt} now = atomically $ do
-  due <- maybe True (\at -> diffUTCTime now at >= cleanupInterval) <$> readTVar peCleanedAt
-  when due $ writeTVar peCleanedAt (Just now)
-  pure due
+cleanupDue PollerEnv {peCleanedAt} now = maybe True (\at -> diffUTCTime now at >= cleanupInterval) <$> readTVarIO peCleanedAt
 
 -- | The poller reads an invoice only within settleWindow of its creation, so each order's invoice is read once more
 -- before the order goes: a payment whose webhook was lost is recorded then, and the order is kept with its balance.
 -- Each pass reads at most cleanupReadsPerPass of the day's orders. The day's alerts on late money go with it.
 cleanupUnpaid :: PollerEnv -> UTCTime -> IO ()
-cleanupUnpaid env@PollerEnv {peStore, peCleanupLeft} now = do
+cleanupUnpaid env@PollerEnv {peStore, peCleanedAt, peCleanupLeft} now = do
   due <- cleanupDue env now
   when due $ do
-    withTransaction peStore (`unpaidCleanupCandidates` addUTCTime (negate unpaidRetention) now) >>= atomically . writeTVar peCleanupLeft
-    void $ safely "names: the late payment alerts" (alertLatePayments env now)
+    listed <- safely "names cleanup: the unpaid orders read" $ withTransaction peStore (`unpaidCleanupCandidates` addUTCTime (negate unpaidRetention) now) >>= atomically . writeTVar peCleanupLeft
+    -- stamped only after a successful read, so a failed one runs again at the next pass
+    when listed $ do
+      atomically $ writeTVar peCleanedAt (Just now)
+      void $ safely "names: the late payment alerts" (alertLatePayments env now)
   candidates <- atomically $ stateTVar peCleanupLeft (splitAt cleanupReadsPerPass)
   deleted <- filterM (\c@(RegistrationId rid, _) -> safelyWith ("names cleanup: registration " <> rid) False (cleanOne c)) candidates
   unless (null deleted) $ logNote ("names cleanup: deleted " <> tshow (length deleted) <> " unpaid order(s)")
