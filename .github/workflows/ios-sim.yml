@@ -11,6 +11,14 @@ on:
         description: Start the test backend
         type: boolean
         default: false
+      calls:
+        description: Test video calls between two simulators, this branch's app with itself and with another ref's
+        type: boolean
+        default: false
+      calls_with:
+        description: The other ref's app for the call test, built with this branch's core library
+        type: string
+        default: master
 
 permissions:
   contents: read
@@ -104,6 +112,8 @@ jobs:
       START_BACKEND: ${{ needs.plan.outputs.run-backend }}
       BUILD_CORE: ${{ needs.plan.outputs.core-run == '' }}
       BUILD_BACKEND: ${{ needs.plan.outputs.run-backend == 'true' && needs.plan.outputs.backend-run == '' }}
+      CALLS: ${{ inputs.calls }}
+      CALLS_WITH: ${{ inputs.calls_with }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -188,22 +198,13 @@ jobs:
         timeout-minutes: 30
         run: scripts/ci/ios-sim/backend.sh start ~/Downloads/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
 
+      # the simulator has no camera: the app sends sounds/video.mp4 in its place
+      - name: Make test video
+        run: swift scripts/ci/ios-sim/test-video.swift apps/ios/sounds/video.mp4
+
       - name: Build app
-        run: |
-          xcodebuild build -quiet \
-            -project apps/ios/SimpleX.xcodeproj \
-            -scheme "SimpleX (iOS)" \
-            -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
-            -onlyUsePackageVersionsFromResolvedFile \
-            -skipPackagePluginValidation \
-            -skipMacroValidation \
-            ARCHS=arm64 \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY=- \
-            DEVELOPMENT_TEAM= \
-            PROVISIONING_PROFILE_SPECIFIER=
+        id: build
+        run: scripts/ci/ios-sim/build-app.sh "$RUNNER_TEMP/DerivedData"
 
       # a tarball keeps the app's file modes, which an artifact drops
       - name: Pack app
@@ -218,15 +219,51 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
+      - name: Test calls between two call clients
+        timeout-minutes: 30
+        run: scripts/ci/ios-sim/call-xctest.sh "$RUNNER_TEMP/DerivedData" "$RUNNER_TEMP/call-test/xctest"
+
+      # the tests after the call tests run whenever the app built: each checks something else
       - name: Install AXe
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: scripts/ci/ios-sim/install-axe.sh
 
       - name: Run smoke test
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app" "$RUNNER_TEMP/smoke-test" images
+
+      - name: Build the other ref's app
+        id: other-app
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && env.CALLS == 'true' }}
+        run: scripts/ci/ios-sim/build-app.sh "$RUNNER_TEMP/DerivedData-other" "$CALLS_WITH"
+
+      - name: Test calls between two of this branch's apps
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && env.CALLS == 'true' }}
+        run: |
+          if [ -n "${SIM_UDID:-}" ]; then xcrun simctl shutdown "$SIM_UDID" || true; fi
+          app=$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app
+          scripts/ci/ios-sim/call-test.sh "$app" "$app" "$RUNNER_TEMP/call-test/branch-branch"
+
+      - name: Test calls between this branch's app and the other ref's
+        if: ${{ !cancelled() && steps.other-app.outcome == 'success' }}
+        run: |
+          scripts/ci/ios-sim/call-test.sh \
+            "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app" \
+            "$RUNNER_TEMP/DerivedData-other/Build/Products/Debug-iphonesimulator/SimpleX.app" \
+            "$RUNNER_TEMP/call-test/branch-other"
 
       - name: Stop test backend
         if: ${{ !cancelled() && env.START_BACKEND == 'true' }}
         run: scripts/ci/ios-sim/backend.sh stop "$RUNNER_TEMP/backend"
+
+      - name: Upload call test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-sim-call-test
+          path: ${{ runner.temp }}/call-test
+          retention-days: 3
+          if-no-files-found: warn
 
       - name: Upload smoke test results
         if: ${{ !cancelled() }}

@@ -13,10 +13,7 @@ import SimpleXChat
 final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDelegate, RTCFrameDecryptorDelegate {
     private static let factory: RTCPeerConnectionFactory = {
         RTCInitializeSSL()
-        let videoEncoderFactory = RTCDefaultVideoEncoderFactory()
-        let videoDecoderFactory = RTCDefaultVideoDecoderFactory()
-        videoEncoderFactory.preferredCodec = RTCVideoCodecInfo(name: kRTCVp8CodecName)
-        return RTCPeerConnectionFactory(encoderFactory: videoEncoderFactory, decoderFactory: videoDecoderFactory)
+        return RTCPeerConnectionFactory(encoderFactory: VP8EncoderFactory(), decoderFactory: VP8DecoderFactory())
     }()
     private static let ivTagBytes: Int = 28
     private static let enableEncryption: Bool = true
@@ -66,6 +63,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
 
     private let rtcAudioSession =  RTCAudioSession.sharedInstance()
     private let audioQueue = DispatchQueue(label: "chat.simplex.app.audio")
+    private let endCallLock = NSLock()
     private var sendCallResponse: (WVAPIMessage) async -> Void
     var activeCall: Call?
     var notConnectedCall: NotConnectedCall?
@@ -448,6 +446,73 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         }
     }
 
+#if DEBUG
+    // The call tests check media with these, since a simulator in CI may not draw video (CallTests.swift, call-test.sh).
+    struct MediaStats: Equatable {
+        var audioPacketsReceived: Int64 = 0
+        var videoFramesDecoded: Int64 = 0
+        var videoFramesEncoded: Int64 = 0
+        var codecs: Set<String> = []
+    }
+
+    struct FrameCounts: Equatable {
+        var encrypted = 0
+        var decrypted = 0
+        var errors = 0
+    }
+
+    private let frameCountsLock = NSLock()
+    private var currentFrameCounts = FrameCounts()
+
+    // the frame encryptor and decryptor run on WebRTC's encoder and decoder threads
+    var frameCounts: FrameCounts {
+        frameCountsLock.lock()
+        defer { frameCountsLock.unlock() }
+        return currentFrameCounts
+    }
+
+    private func countFrame(_ op: String, ok: Bool) {
+        frameCountsLock.lock()
+        defer { frameCountsLock.unlock() }
+        if !ok {
+            currentFrameCounts.errors += 1
+        } else if op == "encrypt" {
+            currentFrameCounts.encrypted += 1
+        } else {
+            currentFrameCounts.decrypted += 1
+        }
+    }
+
+    func mediaStats() async -> MediaStats? {
+        guard let connection = activeCall?.connection else { return nil }
+        let report = await connection.statistics()
+        var stats = MediaStats()
+        for stat in report.statistics.values where stat.type == "inbound-rtp" || stat.type == "outbound-rtp" {
+            let count = { (key: String) in (stat.values[key] as? NSNumber)?.int64Value ?? 0 }
+            if let codec = (stat.values["codecId"] as? String).flatMap({ report.statistics[$0]?.values["mimeType"] as? String }) {
+                stats.codecs.insert(codec)
+            }
+            switch (stat.type, stat.values["kind"] as? String ?? "") {
+            case ("inbound-rtp", "audio"): stats.audioPacketsReceived += count("packetsReceived")
+            case ("inbound-rtp", "video"): stats.videoFramesDecoded += count("framesDecoded")
+            case ("outbound-rtp", "video"): stats.videoFramesEncoded += count("framesEncoded")
+            default: ()
+            }
+        }
+        return stats
+    }
+
+    func logMediaStats(_ connection: RTCPeerConnection) {
+        Task {
+            while let call = activeCall, call.connection == connection, let stats = await mediaStats() {
+                let frames = frameCounts
+                logger.debug("call media stats: audio packets received \(stats.audioPacketsReceived), video frames decoded \(stats.videoFramesDecoded), encoded \(stats.videoFramesEncoded), frames encrypted \(frames.encrypted), decrypted \(frames.decrypted), crypto errors \(frames.errors), codecs \(stats.codecs.sorted().joined(separator: " "), privacy: .public)")
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
+            }
+        }
+    }
+#endif
+
     @MainActor
     func onMediaMuteUnmute(_ transceiverMid: String?, _ mute: Bool) {
         guard let activeCall = ChatModel.shared.activeCall else { return }
@@ -491,7 +556,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         }
     }
 
-    func addLocalRenderer(_ renderer: RTCEAGLVideoView) {
+    func addLocalRenderer(_ renderer: RTCMTLVideoView) {
         if let activeCall {
             if let track = activeCall.localVideoTrack {
                 track.add(renderer)
@@ -505,7 +570,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         renderer.delegate = self
     }
 
-    func removeLocalRenderer(_ renderer: RTCEAGLVideoView) {
+    func removeLocalRenderer(_ renderer: RTCMTLVideoView) {
         if let activeCall {
             if let track = activeCall.localVideoTrack {
                 track.remove(renderer)
@@ -643,6 +708,9 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     private func logCrypto(_ op: String, _ r: UnsafeMutablePointer<CChar>?) {
         if let r = r {
             let err = fromCString(r)
+#if DEBUG
+            countFrame(op, ok: err == "")
+#endif
             if err != "" {
                 logger.error("\(op) error: \(err)")
 //            } else {
@@ -687,7 +755,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     func startCaptureLocalVideo(_ device: AVCaptureDevice.Position?, _ capturer: RTCVideoCapturer?) {
 #if targetEnvironment(simulator)
         guard
-            let capturer = (activeCall?.localCamera ?? notConnectedCall?.localCameraAndTrack?.0) as? RTCFileVideoCapturer
+            let capturer = (capturer ?? activeCall?.localCamera ?? notConnectedCall?.localCameraAndTrack?.0) as? RTCFileVideoCapturer
         else {
             logger.error("Unable to work with a file capturer")
             return
@@ -759,7 +827,13 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
 
     private func _endCall() {
         (notConnectedCall?.localCameraAndTrack?.0 as? RTCCameraVideoCapturer)?.stopCapture()
-        guard let call = activeCall else { return }
+        // The end command and the call view ending it on disappearing both end the call: closing the connection from
+        // both at once froze the app (CI run 41311546712), so only the first takes the call.
+        endCallLock.lock()
+        let call = activeCall
+        activeCall = nil
+        endCallLock.unlock()
+        guard let call else { return }
         logger.debug("WebRTCClient: ending the call")
         call.reconnection?.cancel()
         call.iceRestarts?.cancel()
@@ -769,7 +843,6 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         call.frameDecryptor?.delegate = nil
         (call.localCamera as? RTCCameraVideoCapturer)?.stopCapture()
         audioSessionToDefaults()
-        activeCall = nil
     }
 
     func untilIceComplete(timeoutMs: UInt64, stepMs: UInt64, action: @escaping () async -> Void) async {
@@ -898,6 +971,9 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
                 setSpeakerEnabledAndConfigureSession(enableSpeaker)
             case .connected:
                 stopReconnecting()
+#if DEBUG
+                if activeCall?.wasConnected != true { logMediaStats(connection) }
+#endif
                 activeCall?.wasConnected = true
                 sendConnectedEvent(connection)
             case .disconnected, .failed: endCall()
@@ -1014,16 +1090,16 @@ extension WebRTCClient {
             do {
                 let hasExternalAudioDevice = self.rtcAudioSession.session.hasExternalAudioDevice()
                 if enabled {
-                    try self.rtcAudioSession.setCategory(AVAudioSession.Category.playAndRecord.rawValue, with: [.defaultToSpeaker, .allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
-                    try self.rtcAudioSession.setMode(AVAudioSession.Mode.videoChat.rawValue)
+                    try self.rtcAudioSession.setCategory(.playAndRecord, with: [.defaultToSpeaker, .allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
+                    try self.rtcAudioSession.setMode(.videoChat)
                     if hasExternalAudioDevice && !skipExternalDevice, let preferred = self.rtcAudioSession.session.preferredInputDevice() {
                         try self.rtcAudioSession.setPreferredInput(preferred)
                     } else {
                         try self.rtcAudioSession.overrideOutputAudioPort(.speaker)
                     }
                 } else {
-                    try self.rtcAudioSession.setCategory(AVAudioSession.Category.playAndRecord.rawValue, with: [.allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
-                    try self.rtcAudioSession.setMode(AVAudioSession.Mode.voiceChat.rawValue)
+                    try self.rtcAudioSession.setCategory(.playAndRecord, with: [.allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
+                    try self.rtcAudioSession.setMode(.voiceChat)
                     try self.rtcAudioSession.overrideOutputAudioPort(.none)
                 }
                 if hasExternalAudioDevice && !skipExternalDevice {
@@ -1046,8 +1122,8 @@ extension WebRTCClient {
                 self.rtcAudioSession.unlockForConfiguration()
             }
             do {
-                try self.rtcAudioSession.setCategory(AVAudioSession.Category.ambient.rawValue)
-                try self.rtcAudioSession.setMode(AVAudioSession.Mode.default.rawValue)
+                try self.rtcAudioSession.setCategory(.ambient)
+                try self.rtcAudioSession.setMode(.default)
                 try self.rtcAudioSession.overrideOutputAudioPort(.none)
                 try self.rtcAudioSession.setActive(false)
                 logger.debug("WebRTCClient: audioSession to defaults success")
@@ -1245,4 +1321,18 @@ extension RTCSignalingState {
         default: return nil // unknown
         }
     }
+}
+
+// The frame encryption leaves only VP8's header in the clear for WebRTC's packetizer, so calls send and receive VP8 alone:
+// with the default factories two apps on WebRTC M156 chose H.264, and no video arrived.
+private final class VP8EncoderFactory: NSObject, RTCVideoEncoderFactory {
+    func createEncoder(_ info: RTCVideoCodecInfo) -> RTCVideoEncoder? { RTCVideoEncoderVP8.vp8Encoder() }
+
+    func supportedCodecs() -> [RTCVideoCodecInfo] { RTCVideoEncoderVP8.supportedCodecs() }
+}
+
+private final class VP8DecoderFactory: NSObject, RTCVideoDecoderFactory {
+    func createDecoder(_ info: RTCVideoCodecInfo) -> RTCVideoDecoder? { RTCVideoDecoderVP8.vp8Decoder() }
+
+    func supportedCodecs() -> [RTCVideoCodecInfo] { RTCVideoDecoderVP8.supportedCodecs() }
 }

@@ -270,6 +270,7 @@
 		E5AEC0AB2F91A6EB00270665 /* CIChatLinkHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0AA2F91A6EA00270665 /* CIChatLinkHeader.swift */; };
 		E5AEC0B22F9C000100270665 /* TerminalItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0B12F9C000100270665 /* TerminalItemView.swift */; };
 		E5AEC0C22F9C000100270665 /* SnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0C12F9C000100270665 /* SnapshotTests.swift */; };
+		E5CA11022F9C000100270665 /* CallTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5CA11012F9C000100270665 /* CallTests.swift */; };
 		E5AEC0AF2F91A73500270665 /* ComposeChatLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0AE2F91A73500270665 /* ComposeChatLinkView.swift */; };
 		E5C0BBE82F82B45500EA7527 /* SimpleXAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */; };
 		E5C0BBE92F82B45500EA7527 /* SimpleXAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */; };
@@ -288,6 +289,13 @@
 
 /* Begin PBXContainerItemProxy section */
 		E5AEC0C92F9C000100270665 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5CA059BE279559F40002BEB4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5CA059C9279559F40002BEB4;
+			remoteInfo = "SimpleX (iOS)";
+		};
+		E5CA11092F9C000100270665 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 5CA059BE279559F40002BEB4 /* Project object */;
 			proxyType = 1;
@@ -673,7 +681,9 @@
 		E5AEC0AA2F91A6EA00270665 /* CIChatLinkHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIChatLinkHeader.swift; sourceTree = "<group>"; };
 		E5AEC0B12F9C000100270665 /* TerminalItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalItemView.swift; sourceTree = "<group>"; };
 		E5AEC0C12F9C000100270665 /* SnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotTests.swift; sourceTree = "<group>"; };
+		E5CA11012F9C000100270665 /* CallTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallTests.swift; sourceTree = "<group>"; };
 		E5AEC0C32F9C000100270665 /* SimpleX Snapshots.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SimpleX Snapshots.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		E5CA11032F9C000100270665 /* SimpleX Calls.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SimpleX Calls.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E5AEC0AE2F91A73500270665 /* ComposeChatLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeChatLinkView.swift; sourceTree = "<group>"; };
 		E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = SimpleXAssets.xcassets; sourceTree = "<group>"; };
 		E5C0BBEA2F82B45500EA7527 /* SharedAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = SharedAssets.xcassets; sourceTree = "<group>"; };
@@ -765,6 +775,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		E5AEC0C62F9C000100270665 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E5CA11062F9C000100270665 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -959,6 +976,7 @@
 				CEE723A82C3BD3D70009AE93 /* SimpleX SE */,
 				5CA059DA279559F40002BEB4 /* Tests iOS */,
 				E5AEC0C42F9C000100270665 /* SimpleX Snapshots */,
+				E5CA11042F9C000100270665 /* SimpleX Calls */,
 				5CE2BA692845308900EC33A6 /* SimpleXChat */,
 				5CA059CB279559F40002BEB4 /* Products */,
 				5C764E7A279C71D4000C6508 /* Frameworks */,
@@ -989,6 +1007,7 @@
 				5CA059CA279559F40002BEB4 /* SimpleX.app */,
 				5CA059D7279559F40002BEB4 /* Tests iOS.xctest */,
 				E5AEC0C32F9C000100270665 /* SimpleX Snapshots.xctest */,
+				E5CA11032F9C000100270665 /* SimpleX Calls.xctest */,
 				5CDCAD452818589900503DA2 /* SimpleX NSE.appex */,
 				5CE2BA682845308900EC33A6 /* SimpleXChat.framework */,
 				CEE723A72C3BD3D70009AE93 /* SimpleX SE.appex */,
@@ -1011,6 +1030,14 @@
 				E5AEC0C12F9C000100270665 /* SnapshotTests.swift */,
 			);
 			path = "SimpleX Snapshots";
+			sourceTree = "<group>";
+		};
+		E5CA11042F9C000100270665 /* SimpleX Calls */ = {
+			isa = PBXGroup;
+			children = (
+				E5CA11012F9C000100270665 /* CallTests.swift */,
+			);
+			path = "SimpleX Calls";
 			sourceTree = "<group>";
 		};
 		5CA8D01B2AD9B076001FD661 /* RemoteAccess */ = {
@@ -1412,6 +1439,24 @@
 			productReference = E5AEC0C32F9C000100270665 /* SimpleX Snapshots.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		E5CA11082F9C000100270665 /* SimpleX Calls */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E5CA110B2F9C000100270665 /* Build configuration list for PBXNativeTarget "SimpleX Calls" */;
+			buildPhases = (
+				E5CA11052F9C000100270665 /* Sources */,
+				E5CA11062F9C000100270665 /* Frameworks */,
+				E5CA11072F9C000100270665 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E5CA110A2F9C000100270665 /* PBXTargetDependency */,
+			);
+			name = "SimpleX Calls";
+			productName = "SimpleX Calls";
+			productReference = E5CA11032F9C000100270665 /* SimpleX Calls.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		5CDCAD442818589900503DA2 /* SimpleX NSE */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5CDCAD502818589900503DA2 /* Build configuration list for PBXNativeTarget "SimpleX NSE" */;
@@ -1503,6 +1548,10 @@
 						CreatedOnToolsVersion = 26.0;
 						TestTargetID = 5CA059C9279559F40002BEB4;
 					};
+					E5CA11082F9C000100270665 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = 5CA059C9279559F40002BEB4;
+					};
 				};
 			};
 			buildConfigurationList = 5CA059C1279559F40002BEB4 /* Build configuration list for PBXProject "SimpleX" */;
@@ -1546,6 +1595,7 @@
 				5CA059C9279559F40002BEB4 /* SimpleX (iOS) */,
 				5CA059D6279559F40002BEB4 /* Tests iOS */,
 				E5AEC0C82F9C000100270665 /* SimpleX Snapshots */,
+				E5CA11082F9C000100270665 /* SimpleX Calls */,
 				5CDCAD442818589900503DA2 /* SimpleX NSE */,
 				CEE723A62C3BD3D70009AE93 /* SimpleX SE */,
 				5CE2BA672845308900EC33A6 /* SimpleXChat */,
@@ -1575,6 +1625,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		E5AEC0C72F9C000100270665 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E5CA11072F9C000100270665 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1862,6 +1919,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E5CA11052F9C000100270665 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E5CA11022F9C000100270665 /* CallTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5CDCAD412818589900503DA2 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1919,6 +1984,11 @@
 			isa = PBXTargetDependency;
 			target = 5CA059C9279559F40002BEB4 /* SimpleX (iOS) */;
 			targetProxy = E5AEC0C92F9C000100270665 /* PBXContainerItemProxy */;
+		};
+		E5CA110A2F9C000100270665 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5CA059C9279559F40002BEB4 /* SimpleX (iOS) */;
+			targetProxy = E5CA11092F9C000100270665 /* PBXContainerItemProxy */;
 		};
 		5CA059D9279559F40002BEB4 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -2377,6 +2447,24 @@
 			};
 			name = Debug;
 		};
+		E5CA110C2F9C000100270665 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 5NN7GUYB6T;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "chat.simplex.app.calls";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SimpleX.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SimpleX";
+			};
+			name = Debug;
+		};
 		E5AEC0CD2F9C000100270665 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2386,6 +2474,25 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "chat.simplex.app.snapshots";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SimpleX.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SimpleX";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		E5CA110D2F9C000100270665 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 5NN7GUYB6T;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "chat.simplex.app.calls";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -2684,6 +2791,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		E5CA110B2F9C000100270665 /* Build configuration list for PBXNativeTarget "SimpleX Calls" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E5CA110C2F9C000100270665 /* Debug */,
+				E5CA110D2F9C000100270665 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		5CDCAD502818589900503DA2 /* Build configuration list for PBXNativeTarget "SimpleX NSE" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -2751,7 +2867,7 @@
 			repositoryURL = "https://github.com/simplex-chat/WebRTC.git";
 			requirement = {
 				kind = revision;
-				revision = 34bedc50f9c58dccf4967ea59c7e6a47d620803b;
+				revision = 7771ab09f540f620d7780298e378e006a5fe5a7d;
 			};
 		};
 		D77B92DA2952372200A5A1CC /* XCRemoteSwiftPackageReference "SwiftyGif" */ = {
