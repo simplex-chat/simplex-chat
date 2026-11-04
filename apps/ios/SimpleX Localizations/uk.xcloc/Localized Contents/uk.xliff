@@ -92,7 +92,7 @@
       </trans-unit>
       <trans-unit id="%@ invested in SimpleX Chat crowdfunding." xml:space="preserve">
         <source>%@ invested in SimpleX Chat crowdfunding.</source>
-        <target>%@ інвестував в SimpleX Chat краудфандінг.</target>
+        <target>%@ інвестував(ла) у краудфандинг SimpleX Chat.</target>
         <note>badge alert</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">

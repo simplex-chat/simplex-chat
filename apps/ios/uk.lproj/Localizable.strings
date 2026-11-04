@@ -119,7 +119,7 @@
 "%@ downloaded" = "%@ встановлено";
 
 /* badge alert */
-"%@ invested in SimpleX Chat crowdfunding." = "%@ інвестував в SimpleX Chat краудфандінг.";
+"%@ invested in SimpleX Chat crowdfunding." = "%@ інвестував(ла) у краудфандинг SimpleX Chat.";
 
 /* notification title */
 "%@ is connected!" = "%@ підключено!";
