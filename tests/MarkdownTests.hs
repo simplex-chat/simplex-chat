@@ -605,19 +605,22 @@ textsWithoutBlocks :: Spec
 textsWithoutBlocks = describe "texts without blocks, as on master" do
   it "no format" do
     parseMaybeMarkdownList "a\nb" `shouldBe` Nothing
+    parseMaybeMarkdownList "a\n\nb" `shouldBe` Nothing
     parseMaybeMarkdownList "a\n" `shouldBe` Nothing
     parseMaybeMarkdownList "a  \nb" `shouldBe` Nothing
-    parseMaybeMarkdownList "\n\n" `shouldBe` Nothing
-    parseMaybeMarkdownList "\n \n" `shouldBe` Nothing
+    parseMaybeMarkdownList "\n\na" `shouldBe` Nothing
   it "line breaks are text" do
+    "*a*\n\nb" <<==>> [fmt boldF "a", "\n\nb"]
     "*a*\nb" <<==>> [fmt boldF "a", "\nb"]
     "*a*\r\nb" <<==>> [fmt boldF "a", "\r\nb"]
     "*a*  \nb" <<==>> [fmt boldF "a", "  \nb"]
     "*a*\\\nb" <<==>> [fmt boldF "a", "\\\nb"]
     "  a\n*b*" <<==>> ["  a\n", fmt boldF "b"]
+    "\n\n*a*" <<==>> ["\n\n", fmt boldF "a"]
   it "the final line break is removed" do
     "*a*\n" ==>> [fmt boldF "a"]
     "*a*\r\n" ==>> [fmt boldF "a"]
+    "*a*\n\n" ==>> [fmt boldF "a", "\n"]
 
 infix 1 ===>, <===>
 
@@ -748,23 +751,6 @@ breaksInBlocks = describe "line breaks in texts with blocks" do
     "# a\n\n" <===> ([heading1, "a", lineBr], [Heading 1 (rng 1 2)])
     "# a\n\n\n" <===> ([heading1, "a", mk (ParagraphBreak 2) "\n\n"], [Heading 1 (rng 1 2)])
     "# a\n  " <===> ([heading1, "a", mk (ParagraphBreak 1) "\n  "], [Heading 1 (rng 1 2)])
-  it "empty lines between paragraphs" do
-    "a\n\nb" <===> (["a", mk (ParagraphBreak 2) "\n\n", "b"], [Paragraph (rng 0 1), Paragraph (rng 2 3)])
-    "a\n\n\nb" <===> (["a", mk (ParagraphBreak 3) "\n\n\n", "b"], [Paragraph (rng 0 1), Paragraph (rng 2 3)])
-    "a\n \t\nb" <===> (["a", mk (ParagraphBreak 2) "\n \t\n", "b"], [Paragraph (rng 0 1), Paragraph (rng 2 3)])
-    "a\r\n\r\nb" <===> (["a", mk (ParagraphBreak 2) "\r\n\r\n", "b"], [Paragraph (rng 0 1), Paragraph (rng 2 3)])
-    "a\n\160\nb" <===> (["a", lineBr, "\160", hardBr, "b"], [Paragraph (rng 0 1), Paragraph (rng 2 5)])
-    "a\nb\n\nc" <===> (["a", hardBr, "b", mk (ParagraphBreak 2) "\n\n", "c"], [Paragraph (rng 0 3), Paragraph (rng 4 5)])
-    "a\\\nb\n\nc" <===> (["a", mk HardBreak "\\\n", "b", mk (ParagraphBreak 2) "\n\n", "c"], [Paragraph (rng 0 3), Paragraph (rng 4 5)])
-    "*a*\n\n_b_" <===> ([fmt boldF "a", mk (ParagraphBreak 2) "\n\n", fmt Italic "b"], [Paragraph (rng 0 1), Paragraph (rng 2 3)])
-  it "empty lines at the start and the end of paragraphs" do
-    "\na" <===> ([mk (ParagraphBreak 1) "\n", "a"], [Paragraph (rng 1 2)])
-    "\n\na" <===> ([mk (ParagraphBreak 2) "\n\n", "a"], [Paragraph (rng 1 2)])
-    "\n\n*a*" <===> ([mk (ParagraphBreak 2) "\n\n", fmt boldF "a"], [Paragraph (rng 1 2)])
-    "a\n\n" <===> (["a", lineBr], [Paragraph (rng 0 1)])
-    "*a*\n\n" <===> ([fmt boldF "a", lineBr], [Paragraph (rng 0 1)])
-    "a\n\n\n" <===> (["a", mk (ParagraphBreak 2) "\n\n"], [Paragraph (rng 0 1)])
-    "a\n  " <===> (["a", mk (ParagraphBreak 1) "\n  "], [Paragraph (rng 0 1)])
   it "CR before line breaks" do
     "a\r\nb\r\n- c" <===> (["a", mk HardBreak "\r\n", "b", mk LineBreak "\r\n", bullet "- ", "c"], [Paragraph (rng 0 3), List [entry 5 6 []]])
     "a  \r\nb\r\n- c" <===> (["a", mk HardBreak "  \r\n", "b", mk LineBreak "\r\n", bullet "- ", "c"], [Paragraph (rng 0 3), List [entry 5 6 []]])
@@ -819,7 +805,7 @@ headings = describe "headings" do
     "> a\n===" <===> ([quoteMark "> ", "a", lineBr, "==="], [Quote (rng 1 2), Paragraph (rng 3 4)])
     "- a\n===" <===> ([bullet "- ", "a", lineBr, "==="], [List [entry 1 2 []], Paragraph (rng 3 4)])
     noBlocks "a\n= ="
-    "a\n\n===" <===> (["a", mk (ParagraphBreak 2) "\n\n", "==="], [Paragraph (rng 0 1), Paragraph (rng 2 3)])
+    noBlocks "a\n\n==="
     noBlocks "==="
     noBlocks "===\na"
 
@@ -1040,7 +1026,7 @@ formatsAcrossLines = describe "formats across line breaks" do
     "> *a\n> b*" ===> (quoted, [Quote (rng 1 5)])
     "> *a*\n> *b*" <===> (quoted, [Quote (rng 1 5)])
   it "not across blocks, blank lines and cells" do
-    "*a\n\nb*" <===> (["*a", mk (ParagraphBreak 2) "\n\n", "b*"], [Paragraph (rng 0 1), Paragraph (rng 2 3)])
+    parseMaybeMarkdownList "*a\n\nb*" `shouldBe` Nothing
     "# *a\nb*" <===> ([heading1, "*a", lineBr, "b*"], [Heading 1 (rng 1 2), Paragraph (rng 3 4)])
     "- *a\n- b*" <===> ([bullet "- ", "*a", lineBr, bullet "- ", "b*"], [List [entry 1 2 [], entry 4 5 []]])
     "- *a\nb*" <===> ([bullet "- ", "*a", lineBr, "b*"], [List [entry 1 2 []], Paragraph (rng 3 4)])
@@ -1105,10 +1091,6 @@ linearTimeParsing = describe "bounded scans for linear-time parsing" do
     length <$> blocks `shouldBe` Just 1
     noBlocks $ T.replicate 1001 "- a\n"
     length . filter (\(FormattedText f _) -> f == Just boldF) <$> parseMaybeMarkdownList (T.replicate 1001 "- *a*\n") `shouldBe` Just 1001
-    let ParsedMarkdown _ paragraphs = parsedMarkdown $ T.replicate 2000 "a\n\n"
-    length <$> paragraphs `shouldBe` Just 2000
-    parseMaybeMarkdownList (T.replicate 2001 "a\n\n") `shouldBe` Nothing
-    length . filter (\(FormattedText f _) -> f == Just boldF) <$> parseMaybeMarkdownList (T.replicate 2001 "*a*\n\n") `shouldBe` Just 2001
   it "large adversarial texts" do
     forM_ (["1 ", "[ ", "[a]( ", "< ", "a\n", ">\n", "- a\n", "|\n", "|-|\n", "*a\n"] :: [Text]) $ \p ->
       length (show $ parseMaybeMarkdownList $ "|a|\n|-|\n" <> T.replicate 4000 p) `shouldSatisfy` (> 0)
@@ -1120,14 +1102,11 @@ markdownConsumers = describe "consumers of parsed Markdown" do
     mentions "> @alice" `shouldBe` ["alice"]
     mentions "# @alice" `shouldBe` ["alice"]
     mentions "| @alice |\n|---|" `shouldBe` ["alice"]
-    mentions "a\n\n@alice" `shouldBe` ["alice"]
     mentions "```\n@alice\n```" `shouldBe` []
     mentions "`@alice`" `shouldBe` []
   it "hasLinks: links in blocks, not in code" do
     links "- https://simplex.chat" `shouldBe` True
     links "| https://simplex.chat |\n|---|" `shouldBe` True
-    links "a\n\nhttps://simplex.chat" `shouldBe` True
-    links "a\n\nb" `shouldBe` False
     links "```\nhttps://simplex.chat\n```" `shouldBe` False
   it "SimpleX links in blocks and in code" do
     simplexLinks ("- " <> addr) `shouldBe` True

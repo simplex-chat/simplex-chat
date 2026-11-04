@@ -140,11 +140,7 @@ class MarkdownBlocksTest {
     val table = item.copy(formattedText = tableAligned.formattedText, markdownBlocks = tableAligned.markdownBlocks)
     val tableDisplay = itemDisplay(table, SimplexLinkMode.DESCRIPTION)!!
     assertEquals("a\tb\tc\td\nxxx\tyyy\tzzz", tableDisplay.parts.joinToString("") { it.first })
-    assertEquals("a\tb\tc\td\nxxx\tyyy\tzzz", tableDisplay.parts.joinToString("") { it.second })
     assertEquals(listOf(0, 2, 4, 6, 8, 12, 16), tableDisplay.bases)
-    val paragraphs = itemDisplay(item.copy(formattedText = gaps.formattedText, markdownBlocks = gaps.markdownBlocks), SimplexLinkMode.DESCRIPTION)!!
-    assertEquals(listOf("a" to "a", "\n" to "\n\n\n", "h" to "h"), paragraphs.parts)
-    assertEquals(listOf(0, 2), paragraphs.bases)
     val plain = item.copy(formattedText = escapes.formattedText, markdownBlocks = null)
     val plainDisplay = itemDisplay(plain, SimplexLinkMode.DESCRIPTION)!!
     assertEquals(listOf("text " to "text ", "" to "\\", "*not" to "*not", "" to "\\", "*\nmore" to "*\nmore"), plainDisplay.parts)

@@ -85,8 +85,6 @@ markdownBlocksJSONTests :: Spec
 markdownBlocksJSONTests = do
   it "should encode tokens and blocks" $
     J.encode (parsedMarkdown "## a\n- *b*") `shouldBe` markdownBlocksTagged
-  it "should encode paragraphs of a text with an empty line" $
-    J.encode (parsedMarkdown "a\n\nb") `shouldBe` markdownParagraphsTagged
   it "should decode tokens and blocks of each kind" $ do
     let ParsedMarkdown ft blocks = parsedMarkdown "# a #\nb\n===\n- *c*\n  1. d\n> e\n\n| x | y |\n|:-|-:|\n| 1 |\n```bash\ncode\n```\n---\ne  \nf\\\ng\n- \\*h\n  i"
     J.eitherDecode (J.encode ft) `shouldBe` Right ft
