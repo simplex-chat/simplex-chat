@@ -2360,9 +2360,9 @@
     <string name="legend_badge">legende-badge</string>
     <string name="large_file_requires_badge">U heeft een %1$s nodig om bestanden groter dan %2$s te verzenden.</string>
     <string name="max_file_size_with_badge">De maximaal ondersteunde bestandsgrootte is %1$s, met een %2$s.</string>
-    <string name="badge_expired">Badge van contact is verlopen.</string>
-    <string name="badge_verification_failed">Verificatie van de badge van contact is mislukt.</string>
-    <string name="badge_no_key">Geen sleutel om de badge van contact te verifiëren.</string>
+    <string name="badge_expired">De badge van het contact is verlopen.</string>
+    <string name="badge_verification_failed">Verificatie van de badge van het contact is mislukt.</string>
+    <string name="badge_no_key">Geen sleutel om de badge van het contact te verifiëren.</string>
     <string name="your_badge_expired">Uw badge is verlopen.</string>
     <string name="verify_simplex_name_action">Naam verifiëren</string>
     <string name="verify_simplex_names">SimpleX namen verifiëren</string>

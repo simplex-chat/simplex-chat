@@ -2994,8 +2994,8 @@
     <string name="badges_contact_team">Contactar a equipa do SimpleX</string>
     <string name="badges_credential_next_check">Próxima verificação</string>
     <string name="supporter_perks">Vantagens de apoiante</string>
-    <string name="v7_1_supporter_badge_title">Dístico de apoiante ❤️</string>
-    <string name="v7_1_supporter_badge_body">Envie ficheiros maiores\ndisponível por mais tempo</string>
+    <string name="v7_1_supporter_badge_title">Distintivos de apoiante ❤️</string>
+    <string name="v7_1_supporter_badge_body">Envie ficheiros maiores\ndisponíveis por mais tempo.</string>
     <string name="file_already_exists_replace_question">O ficheiro já existe. Substituir?</string>
     <string name="badges_error_store_purchase_open_purchase">Uma compra da loja está a ser adicionada a este perfil.</string>
     <string name="badges_error_store_purchase_open">Uma compra está a ser adicionada a este perfil. Tente novamente mais tarde.</string>
@@ -3046,19 +3046,19 @@
     <string name="v7_1_flat_layout_descr">Ativar nas definições de Aparência</string>
     <string name="badges_supporter_benefits">Ficheiros até 2 GB, armazenados por 7 dias.</string>
     <string name="badges_legend_benefits">Ficheiros até 5 GB, armazenados por 21 dias.</string>
-    <string name="chat_layout_flat">Plano</string>
+    <string name="chat_layout_flat">Plana</string>
     <string name="v7_1_flat_layout">Estrutura plana e markdown</string>
-    <string name="badges_investor_offer_legend">Invista $1000+ e receba grátis um dístico de lenda.</string>
-    <string name="badges_investor_offer_supporter">Invista $100+ e receba um dístico grátis.</string>
-    <string name="v7_1_supporter_badge_descr">Ficheiros grandes disponíveis por mais tempo.</string>
+    <string name="badges_investor_offer_legend">Invista $1000+ e receba grátis um distintivo de lenda.</string>
+    <string name="badges_investor_offer_supporter">Invista $100+ e receba um distintivo grátis.</string>
+    <string name="v7_1_supporter_badge_descr">Ficheiros maiores disponíveis por mais tempo.</string>
     <string name="whats_new_learn_more">Aprenda mais.</string>
     <string name="badges_investor_offer_learn_more">Aprenda mais no Wefunder</string>
     <string name="v7_1_invest">Seja dono de uma parte do SimpleX Chat! 🚀</string>
     <string name="v7_1_channels">Canais mais seguros</string>
     <string name="v7_1_simplex_names_descr">A venda começa a 12 de Dezembro.</string>
     <string name="v7_1_simplex_names">Nomes públicos SimpleX</string>
-    <string name="v7_1_supporter_badge_get">Apoie o SimpleX e receba um dístico.</string>
-    <string name="v7_1_supporter_badge_have">Já tem um dístico!</string>
-    <string name="badges_your_legend_badge">O seu dítico de lenda</string>
+    <string name="v7_1_supporter_badge_get">Apoie o SimpleX e receba um distintivo.</string>
+    <string name="v7_1_supporter_badge_have">Já tem um distintivo!</string>
+    <string name="badges_your_legend_badge">O seu distintivo de lenda</string>
     <string name="v7_1_channels_descr">Adicionar moderadores e assinar todas as mensagens.</string>
 </resources>

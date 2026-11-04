@@ -6872,7 +6872,7 @@ alert subtitle */
 "Token status: %@." = "令牌状态：%@。";
 
 /* alert message */
-"Too many attempts. Please try again later." = "太多的尝试。请稍后重试。";
+"Too many attempts. Please try again later." = "尝试次数过多。请稍后重试。";
 
 /* No comment provided by engineer. */
 "Toolbar opacity" = "工具栏不透明度";

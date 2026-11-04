@@ -2642,7 +2642,7 @@
     <string name="badges_nothing_to_restore">Nie ma nic do przywrócenia</string>
     <string name="badges_nothing_to_restore_desc">Nie znaleziono zakupu w Google Play oczekującego na dodanie.</string>
     <string name="badges_restore_failed">Przywracanie nie powiodło się</string>
-    <string name="badges_error_already_owned">Kupiono w innym profilu. Użyj opcji Przywróć zakupy, aby przenieść ją tutaj.</string>
+    <string name="badges_error_already_owned">Odznakę kupiono w innym profilu. Użyj opcji Przywróć zakupy, aby przenieść ją tutaj.</string>
     <string name="badges_error_store_unreachable">Nie można połączyć się ze sklepem.</string>
     <string name="badges_error_not_on_sale">Ta odznaka nie jest w sprzedaży.</string>
     <string name="badges_subscription">Subskrypcja</string>

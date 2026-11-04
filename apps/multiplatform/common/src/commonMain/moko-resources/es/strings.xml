@@ -2841,9 +2841,9 @@
     <string name="badges_how_it_works_button">Cómo protegen tu privacidad las insignias</string>
     <string name="badges_type_investor">Inversor</string>
     <string name="badges_level_legend">Leyenda</string>
-    <string name="legend_badge">leyenda insignia</string>
+    <string name="legend_badge">insignia de leyenda</string>
     <string name="badges_price_loading">Cargando…</string>
-    <string name="max_file_size_with_badge">El tamaño máximo de archivo admitido es %1$s, con %2$s.</string>
+    <string name="max_file_size_with_badge">El tamaño máximo de archivo admitido es %1$s, con una %2$s.</string>
     <string name="badges_period_monthly">Mensual</string>
     <string name="badges_preview_my_nickname">Mi nombre</string>
     <string name="badge_no_key">No hay clave para verificar la insignia del contacto.</string>
@@ -2865,7 +2865,7 @@
     <string name="badges_support_simplex_body">Consigue una insignia para enviar archivos más grandes (2-5 GB) que permanecen disponibles más tiempo (7-21 días) y para mostrarla en tu perfil.</string>
     <string name="badges_support_ended">Tu insignia ha caducado</string>
     <string name="badges_level_supporter">Patrocinador</string>
-    <string name="supporter_badge">Insignia patrocinador</string>
+    <string name="supporter_badge">insignia de patrocinador</string>
     <string name="v7_1_supporter_badge_title">Insignia de patrocinador ❤️</string>
     <string name="supporter_perks">Ventajas para patrocinadores</string>
     <string name="badges_support_simplex_title">Patrocina SimpleX</string>
@@ -2873,7 +2873,7 @@
     <string name="badges_error_bad_service_response">El servicio de insignias ha enviado una respuesta inesperada: %1$s</string>
     <string name="badges_error_unknown">El código no puede ser canjeado.</string>
     <string name="badges_error_badge_ended">El código fue aceptado, pero la insignia que otorga ya ha finalizado.</string>
-    <string name="badges_code_you_scanned_is_not_badge_code">El código escaneado no es código de insignia.</string>
+    <string name="badges_code_you_scanned_is_not_badge_code">El código escaneado no es un código de insignia.</string>
     <string name="badges_error_service_not_configured">Esta versión no puede canjear códigos de insignia.</string>
     <string name="badges_error_credential_not_verified">Esta versión no puede verificar la insignia. Por favor, actualiza la aplicación.</string>
     <string name="badges_error_unsupported_version">Actualiza la aplicación para usar insignias.</string>
@@ -2885,7 +2885,7 @@
     <string name="badges_error_rate_limited">Demasiados intentos. Por favor, prueba más tarde.</string>
     <string name="badges_why_simplex_is_built">Por qué fue creado SimpleX.</string>
     <string name="badges_banner_dismiss_message">Puedes apoyar SimpleX más tarde en Configuración.</string>
-    <string name="large_file_requires_badge">Debes tener %1$s para enviar archivos mayores que %2$s.</string>
+    <string name="large_file_requires_badge">Necesitas una %1$s para enviar archivos de más de %2$s.</string>
     <string name="badges_your_badge">Tu insignia</string>
     <string name="your_badge_expired">Tu insignia ha caducado.</string>
     <string name="badges_level_supporter_file_size">Archivos de hasta 2 GB</string>

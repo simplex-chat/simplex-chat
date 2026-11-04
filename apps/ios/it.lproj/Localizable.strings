@@ -3228,7 +3228,7 @@ server test error */
 "Flat" = "Piatta";
 
 /* No comment provided by engineer. */
-"Flat layout and markdown" = "Disposizione chat e markdown piatti";
+"Flat layout and markdown" = "Disposizione chat piatta e markdown";
 
 /* No comment provided by engineer. */
 "Follow SimpleX Network News" = "Segui SimpleX Network News";
@@ -6510,7 +6510,7 @@ report reason */
 "Subscribed" = "Iscritto/a";
 
 /* alert message */
-"Subscribed on another profile." = "Iscritto in un altro profilo.";
+"Subscribed on another profile." = "Abbonato su un altro profilo.";
 
 /* member role */
 "subscriber" = "iscritto";

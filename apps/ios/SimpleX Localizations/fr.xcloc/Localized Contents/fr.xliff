@@ -5022,7 +5022,7 @@ Erreur : %2$@</target>
       </trans-unit>
       <trans-unit id="From purchase key" xml:space="preserve">
         <source>From purchase key</source>
-        <target>À partir de la clé d’achat</target>
+        <target>Clé d’achat d’origine</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Full link" xml:space="preserve">
@@ -10719,7 +10719,7 @@ Une authentification vous sera demandée avant que cette fonctionnalité ne soit
       </trans-unit>
       <trans-unit id="To purchase key" xml:space="preserve">
         <source>To purchase key</source>
-        <target>Vers la clé d’achat</target>
+        <target>Clé d’achat de destination</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="To receive" xml:space="preserve">

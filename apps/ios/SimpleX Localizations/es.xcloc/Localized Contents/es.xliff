@@ -6009,7 +6009,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Maximum supported file size is %1$@, with a %2$@." xml:space="preserve">
         <source>Maximum supported file size is %1$@, with a %2$@.</source>
-        <target>El tamaño máximo de archivo admitido es %1$@, con %2$@.</target>
+        <target>El tamaño máximo de archivo admitido es %1$@, con una %2$@.</target>
         <note>file alert</note>
       </trans-unit>
       <trans-unit id="Media &amp; file servers" xml:space="preserve">
@@ -10199,7 +10199,7 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
       </trans-unit>
       <trans-unit id="The code you scanned is not a badge code." xml:space="preserve">
         <source>The code you scanned is not a badge code.</source>
-        <target>El código escaneado no es código de insignia.</target>
+        <target>El código escaneado no es un código de insignia.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The connection reached the limit of undelivered messages" xml:space="preserve">
@@ -11773,7 +11773,7 @@ Repeat connection request?</source>
       </trans-unit>
       <trans-unit id="You need a %1$@ to send files larger than %2$@." xml:space="preserve">
         <source>You need a %1$@ to send files larger than %2$@.</source>
-        <target>Debes tener %1$@ para enviar archivos mayores que %2$@.</target>
+        <target>Necesitas una %1$@ para enviar archivos de más de %2$@.</target>
         <note>file alert</note>
       </trans-unit>
       <trans-unit id="You need to allow your contact to call to be able to call them." xml:space="preserve">

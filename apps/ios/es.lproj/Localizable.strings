@@ -3967,7 +3967,7 @@ servers warning */
 "Max 30 seconds, received instantly." = "Máximo 30 segundos, recibido al instante.";
 
 /* file alert */
-"Maximum supported file size is %1$@, with a %2$@." = "El tamaño máximo de archivo admitido es %1$@, con %2$@.";
+"Maximum supported file size is %1$@, with a %2$@." = "El tamaño máximo de archivo admitido es %1$@, con una %2$@.";
 
 /* No comment provided by engineer. */
 "Media & file servers" = "Servidores de archivos y multimedia";
@@ -6662,7 +6662,7 @@ server test failure */
 "The code was accepted, but the badge it grants has already ended." = "El código fue aceptado, pero la insignia que otorga ya ha finalizado.";
 
 /* alert message */
-"The code you scanned is not a badge code." = "El código escaneado no es código de insignia.";
+"The code you scanned is not a badge code." = "El código escaneado no es un código de insignia.";
 
 /* No comment provided by engineer. */
 "The code you scanned is not a SimpleX link QR code." = "El código QR escaneado no es un enlace de SimpleX.";
@@ -7720,7 +7720,7 @@ alert title */
 "You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." = "Debes usar la versión más reciente de tu base de datos ÚNICAMENTE en un dispositivo, de lo contrario podrías dejar de recibir mensajes de algunos contactos.";
 
 /* file alert */
-"You need a %1$@ to send files larger than %2$@." = "Debes tener %1$@ para enviar archivos mayores que %2$@.";
+"You need a %1$@ to send files larger than %2$@." = "Necesitas una %1$@ para enviar archivos de más de %2$@.";
 
 /* No comment provided by engineer. */
 "You need to allow your contact to call to be able to call them." = "Debes permitir que tus contacto te llamen para poder llamarles.";

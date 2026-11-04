@@ -3081,7 +3081,7 @@
     <string name="badges_issuing_body">Ihre Zahlung wurde abgeschlossen. Der Badge wird diesem Profil hinzugefügt.</string>
     <string name="file_already_exists_replace_question">Die Datei existiert bereits. Möchten Sie sie ersetzen?</string>
     <string name="badges_restore_purchases_footnote">Überträgt einen bezahlten Badge auf dieses Profil.</string>
-    <string name="badges_error_store_purchase_open_purchase">Ein im Store erworbener Kauf wird diesem Profil hinzugefügt.</string>
+    <string name="badges_error_store_purchase_open_purchase">Ein Kauf aus dem Store wird diesem Profil hinzugefügt.</string>
     <string name="badges_error_store_purchase_open">Ein Kauf wird diesem Profil hinzugefügt. Versuchen Sie es später erneut.</string>
     <string name="badges_payment_problem_title">Problem bei der Badge-Bezahlung</string>
     <string name="member_info_section_title_contributor">Mitwirkender</string>

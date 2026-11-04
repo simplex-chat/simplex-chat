@@ -2210,12 +2210,12 @@ Dit is uw eigen eenmalige link!</target>
       </trans-unit>
       <trans-unit id="Contact's badge expired." xml:space="preserve">
         <source>Contact's badge expired.</source>
-        <target>Badge van contact is verlopen.</target>
+        <target>De badge van het contact is verlopen.</target>
         <note>file alert</note>
       </trans-unit>
       <trans-unit id="Contact's badge verification failed." xml:space="preserve">
         <source>Contact's badge verification failed.</source>
-        <target>Verificatie van de badge van contact is mislukt.</target>
+        <target>Verificatie van de badge van het contact is mislukt.</target>
         <note>file alert</note>
       </trans-unit>
       <trans-unit id="Contacts" xml:space="preserve">
@@ -5701,7 +5701,7 @@ Dit is jouw link voor groep %@!</target>
       </trans-unit>
       <trans-unit id="No key to verify contact's badge." xml:space="preserve">
         <source>No key to verify contact's badge.</source>
-        <target>Geen sleutel om de badge van contact te verifiëren.</target>
+        <target>Geen sleutel om de badge van het contact te verifiëren.</target>
         <note>file alert</note>
       </trans-unit>
       <trans-unit id="No media &amp; file servers." xml:space="preserve">

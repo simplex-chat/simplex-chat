@@ -3301,7 +3301,7 @@ servers warning */
 "French interface" = "Interface en français";
 
 /* ledger entry field */
-"From purchase key" = "À partir de la clé d’achat";
+"From purchase key" = "Clé d’achat d’origine";
 
 /* No comment provided by engineer. */
 "Full link" = "Lien entier";
@@ -6999,7 +6999,7 @@ alert subtitle */
 "To prove to a contact or a server that you have a badge, the app generates a new proof that reveals only the badge type and the expiry date, rounded to a week." = "Pour prouver à un contact ou à un serveur que vous possédez un badge, l’application génère une nouvelle preuve qui ne révèle que le type de badge et sa date d’expiration, arrondie à la semaine.";
 
 /* ledger entry field */
-"To purchase key" = "Vers la clé d’achat";
+"To purchase key" = "Clé d’achat de destination";
 
 /* No comment provided by engineer. */
 "To receive" = "Pour recevoir";

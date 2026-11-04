@@ -4907,7 +4907,7 @@ server test error</note>
       </trans-unit>
       <trans-unit id="Flat layout and markdown" xml:space="preserve">
         <source>Flat layout and markdown</source>
-        <target>Disposizione chat e markdown piatti</target>
+        <target>Disposizione chat piatta e markdown</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Follow SimpleX Network News" xml:space="preserve">
@@ -9913,7 +9913,7 @@ report reason</note>
       </trans-unit>
       <trans-unit id="Subscribed on another profile." xml:space="preserve">
         <source>Subscribed on another profile.</source>
-        <target>Iscritto in un altro profilo.</target>
+        <target>Abbonato su un altro profilo.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Subscriber" xml:space="preserve">
