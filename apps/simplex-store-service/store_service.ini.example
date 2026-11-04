@@ -102,10 +102,6 @@ idle_seconds = 60
 ;[names]
 ; testing until the .simplex TLD is deployed
 ;tld = testing
-; the version of the name terms buyers agree to (1 to 32 letters, digits, dots, underscores or
-; hyphens), and the page the order's checkbox links to; both required, read only at startup
-;terms_version = 2026-10-23
-;terms_url = https://simplex.chat/
 ; the paid years of a name; at least 2, the controller's minimum
 ;years = 2
 ; a name's term starts here; the days until then are free
@@ -122,7 +118,8 @@ idle_seconds = 60
 ; service pays; 1 to 100. A request refused, never sent or reverted on chain does not count
 ;record_edits_per_year = 3
 ;
-; community names, with [names] only: one line per name, `<label> = <what it is for>`, the label in
+; what each community name is for, with [names] only (the name policy on chain lists the names):
+; one line per name, `<label> = <what it is for>`, the label in
 ; lower case and listed once, the text 1 to 200 characters without a full stop at the end, which
 ; the page adds; read only at startup, see apps/simplex-store-service/README.md
 ;[community]

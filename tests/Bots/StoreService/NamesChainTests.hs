@@ -53,7 +53,7 @@ namesChainTests = describe "StoreService names: chain" $ do
     it "signs a transaction whose hash is the node's keccak256 of the raw bytes" $ testSignedHash g
     it "refuses a gas estimate above the cap" $ testGasCap g
 
--- | The custom errors of the four contracts' compiled ABIs, with viem's encodeErrorResult selectors.
+-- | The custom errors the service tells apart, from the contracts' compiled ABIs, with viem's encodeErrorResult selectors.
 viemSelectors :: [(ByteString, RevertName)]
 viemSelectors =
   [ ("5289653e", RNAlreadyFrozen),
@@ -95,6 +95,8 @@ viemSelectors =
     ("d3f605c4", RNResolverRequiredWhenDataSupplied),
     ("27af646c", RNReverseRecordNotSupported),
     ("0819bdcd", RNSignatureExpired),
+    ("c4f189e2", RNTermsMismatch),
+    ("bcdf753d", RNTermsNotAccepted),
     ("90b8ec18", RNTransferFailed),
     ("bf2f44f5", RNTransferToSelf),
     ("0a059d71", RNUnexpiredCommitmentExists),

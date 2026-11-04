@@ -2,6 +2,7 @@
 # The local chain of compose.dev.yml. Runs in the webapp's dev image, which has anvil, node, the deploy script and the
 # compiled contracts.
 #   chain.sh                      anvil with its state kept in $CHAIN_DIR, the names contracts deployed on the first start,
+#                                 the texts of their terms' links in $CHAIN_DIR/terms served on 127.0.0.1:8098,
 #                                 and $CONFIG_DIR/store_service.ini written for them unless it exists
 #   chain.sh topup [address] [eth]   sets an account's balance, by default the service key's account to 10000 ETH
 set -eu
@@ -21,8 +22,7 @@ USER_GID="${USER_GID:-1000}"
 # [issuer] dev_keys, which it accepts only on chain 31337, and refuses it at an index clients trust (1 to 8).
 DEV_ISSUER_INDEX=999
 DEV_ISSUER_SECRET=Grc_c1bKCSa3U8mMwRy6XNTJNwSveJi332wAqyyCy2o=
-TERMS_VERSION=2026-10-23
-TERMS_URL=https://simplex.chat/
+export TERMS_DIR="$CHAIN_DIR/terms"
 # compose's healthcheck waits for this file, written once the contracts are on the running chain
 READY="$CHAIN_DIR/ready"
 # the dumps are taken this often and on exit, so a restart keeps the contracts and every name registered on them
@@ -74,6 +74,7 @@ stop() {
 }
 trap stop EXIT INT TERM
 until rpc eth_chainId '[]' > /dev/null; do sleep 0.2; done
+(cd "$WEBAPP_DIR" && node dev/serve-terms.ts) &
 
 deployed() {
   [ -s "$DEPLOYMENT" ] || return 1
@@ -113,8 +114,6 @@ dev_keys = $DEV_ISSUER_INDEX:$DEV_ISSUER_SECRET
 
 [names]
 tld = $(field tld)
-terms_version = $TERMS_VERSION
-terms_url = $TERMS_URL
 
 [chain]
 rpc_url = $(field rpcUrl)

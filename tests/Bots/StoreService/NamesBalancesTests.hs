@@ -7,7 +7,7 @@
 
 module Bots.StoreService.NamesBalancesTests (namesBalancesTests, cardPaid, coveredSpend, credit, creditLate, fieldsN, figures, holdPrice, holder, invariantHolds, lateCredit, payment, placeOrderRow, settleHolder, source) where
 
-import Bots.StoreService.ConfigTests (termsVersion)
+import Bots.StoreService.FakeEthNode (plainTerms)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), withOrders)
 import Bots.StoreService.NamesStoreTests (at, btc, invoiceStatus, newReg, ownerA, ownerB, paidOrder, reg, signature, t0, write)
 import Bots.StoreService.WebTests (capturingStderr, rcv, withServiceStore, withServiceStores)
@@ -103,7 +103,7 @@ fieldsN label =
       ofDuration = 69292800,
       ofCommitment = C.sha256Hash $ encodeUtf8 label,
       ofSealed = "sealed-" <> label,
-      ofAgreedTerms = termsVersion
+      ofAgreedTerms = plainTerms
     }
 
 -- | A crypto invoice row, or a card one with its client secret in place of an address.

@@ -28,9 +28,8 @@ module Bots.StoreService.NamesOwnerTests
   )
 where
 
-import Bots.StoreService.ConfigTests (termsVersion)
 import Bots.StoreService.FakeEthNode
-import Bots.StoreService.NamesContractsTests (registrarOf, unhex)
+import Bots.StoreService.NamesContractsTests (registrarOf, rentPriceAnswer, unhex)
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, order, ownerA, paidOrder, t0)
 import Bots.StoreService.WebTests (capturingStderr, digestFixture, jsonObject, statusOf, webGet)
@@ -89,10 +88,12 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "refuses a move from registered, queued, taken, and committed without a refused reveal" testMoveRefusedPhases
     it "moves a failed order, a lapsed one, and a committed one whose links were refused, to the same name with other links too" testMoveAccepted
     it "answers a body equal to the current fields with the view unchanged, counting no move, whatever its timestamp" testMoveRepeat
-    it "answers a repeat after the terms version changed with the view unchanged, counting no second move" testMoveRepeatAfterBump
+    it "answers a repeat after the terms changed on chain with the view unchanged, counting no second move" testMoveRepeatAfterBump
     it "moves an order by a body differing only in terms, storing them" testMoveTermsOnly
-    it "answers terms_changed for an old version or the wrong variant, listed or not, a body differing only in terms included, and moves under the community terms, storing them" testMoveTermsChanged
-    it "checks the terms after the timestamp, /retry's first check, the existing orders and the duration, before the chain" testMoveTermsCheckOrder
+    it "answers terms_changed for an old version, other terms or the other kind, listed or not, a body differing only in terms included, and moves under the community terms, storing them" testMoveTermsChanged
+    it "checks a code order moved to a community name for 2 years, and moved on to another name for its code's years again" testMoveCommunityYears
+    it "prices a paid order moved to a community name for 2 years, whatever years it paid for" testMoveCommunityPaidYears
+    it "checks the terms after the timestamp, /retry's first check, the existing orders and the duration, before the chain, answering terms_unavailable while they are not set" testMoveTermsCheckOrder
     it "answers move_limit before checking the terms" testMoveLimitBeforeTerms
     it "answers the fourth move move_limit with the current view, changing nothing" testMoveLimit
     it "refuses a move meeting another live order of the wallet's or the commitment with a bare order_exists, before the price" testMoveMeetsOrder
@@ -193,7 +194,7 @@ answerFree ctx label = answerReserved ctx label 0 >> answerUnowned ctx label
 answerReserved :: Ctx -> Text -> Int -> IO ()
 answerReserved Ctx {cNode} label reason = do
   answerCall cNode (registrarOf cNode) (nameExpiresSelector <> lh) $ Returns $ uint256 (0 :: Int)
-  answerCall cNode fakeController (reservedNamesSelector <> lh) $ Returns $ uint256 reason
+  answerCall cNode fakeNamePolicy (reservedNamesSelector <> lh) $ Returns $ uint256 reason
   where
     LabelHash lh = labelHash label
 
@@ -247,7 +248,7 @@ linksRefusedPhase r = (committedPhase r) {nrLinksRefusedAt = Just orderTime}
 moveTo :: Ctx -> Text -> Int -> IO OrderFields
 moveTo Ctx {cClock} label n = do
   t <- readIORef cClock
-  pure OrderFields {ofLabelHash = labelHash label, ofLength = T.length label, ofDuration = yearsDuration 2 t, ofCommitment = commitmentOf n, ofSealed = "sealed-" <> label <> "-" <> tshow n, ofAgreedTerms = termsVersion}
+  pure OrderFields {ofLabelHash = labelHash label, ofLength = T.length label, ofDuration = yearsDuration 2 t, ofCommitment = commitmentOf n, ofSealed = "sealed-" <> label <> "-" <> tshow n, ofAgreedTerms = plainTerms}
 
 moveBody :: Ctx -> Secp256k1PrivateKey -> RegistrationId -> OrderFields -> IO J.Object
 moveBody ctx key rid fields = clockSeconds ctx >>= moveBodyAt ctx key rid fields
@@ -470,40 +471,71 @@ testMoveRepeat = withOwner $ \ctx -> do
   nrMoves movedOnce `shouldBe` 1
 
 testMoveRepeatAfterBump :: IO ()
-testMoveRepeatAfterBump = withOwner $ \ctx0 -> do
-  answerFree ctx0 "alicebakers"
-  r <- paidIn ctx0 aliceOrder failedPhase
-  body <- moveBody ctx0 keyA (nrId r) =<< moveTo ctx0 "alicebakers" 10
-  first' <- postMove ctx0 (nrId r) body
+testMoveRepeatAfterBump = withOwner $ \ctx -> do
+  answerFree ctx "alicebakers"
+  r <- paidIn ctx aliceOrder failedPhase
+  body <- moveBody ctx keyA (nrId r) =<< moveTo ctx "alicebakers" 10
+  first' <- postMove ctx (nrId r) body
   fst first' `shouldBe` 200
-  movedOnce <- stored ctx0 r
-  serveOwner (configured bumpedTerms ctx0) $ \ctx -> do
-    advance ctx 60
-    postMove ctx (nrId r) body `shouldReturn` first'
-    stored ctx r `shouldReturn` movedOnce
-    (nrMoves &&& nrAgreedTerms) movedOnce `shouldBe` (1, termsVersion)
+  movedOnce <- stored ctx r
+  setGeneralTerms (cNode ctx) fakeNewGeneralTermsText
+  advance ctx 60
+  postMove ctx (nrId r) body `shouldReturn` first'
+  stored ctx r `shouldReturn` movedOnce
+  (nrMoves &&& nrAgreedTerms) movedOnce `shouldBe` (1, plainTerms)
 
 testMoveTermsOnly :: IO ()
 testMoveTermsOnly = withOwner $ \ctx -> do
   r <- paidIn ctx aliceOrder $ \p -> (failedPhase p) {nrAgreedTerms = "2026-10-01"}
-  (status, v) <- move ctx keyA r (currentFields r) {ofAgreedTerms = termsVersion}
+  (status, v) <- move ctx keyA r (currentFields r) {ofAgreedTerms = plainTerms}
   (status, field "phase" =<< v, field "moves" =<< v) `shouldBe` (200, Just "queued", Just (J.Number 1))
-  (nrAgreedTerms &&& nrMoves) <$> stored ctx r `shouldReturn` (termsVersion, 1)
+  (nrAgreedTerms &&& nrMoves) <$> stored ctx r `shouldReturn` (plainTerms, 1)
 
 testMoveTermsChanged :: IO ()
 testMoveTermsChanged = withOwnerAs (listName "alicebakers") $ \ctx -> do
+  listOnChain ctx "alicebakers"
   answerFree ctx "alicebakers"
   r <- paidIn ctx aliceOrder failedPhase
-  forM_ [olderTerms, communityTerms termsVersion] $ \t ->
-    move ctx keyA r (currentFields r) {ofCommitment = commitmentOf 11, ofAgreedTerms = t} `shouldReturn` termsChanged termsVersion Nothing
-  move ctx keyA r (currentFields r) {ofAgreedTerms = olderTerms} `shouldReturn` termsChanged termsVersion Nothing
+  forM_ [olderTerms, communityTerms] $ \t ->
+    move ctx keyA r (currentFields r) {ofCommitment = commitmentOf 11, ofAgreedTerms = t} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
+  move ctx keyA r (currentFields r) {ofAgreedTerms = olderTerms} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
   to <- moveTo ctx "alicebakers" 10
-  forM_ [termsVersion, communityTerms olderTerms] $ \t ->
-    move ctx keyA r to {ofAgreedTerms = t} `shouldReturn` termsChanged termsVersion (Just bakers)
+  forM_ [plainTerms, olderTerms, otherCommunityTerms] $ \t ->
+    move ctx keyA r to {ofAgreedTerms = t} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
   stored ctx r `shouldReturn` r
-  v <- moved ctx keyA r to {ofAgreedTerms = communityTerms termsVersion}
-  fieldsIn v [("terms", J.String $ communityTerms termsVersion), ("community", J.object [("for", J.String bakers)])]
-  nrAgreedTerms <$> stored ctx r `shouldReturn` communityTerms termsVersion
+  v <- moved ctx keyA r to {ofAgreedTerms = communityTerms}
+  fieldsIn v [("terms", J.String communityTerms), ("community", communityEntry bakers)]
+  nrAgreedTerms <$> stored ctx r `shouldReturn` communityTerms
+
+testMoveCommunityYears :: IO ()
+testMoveCommunityYears = withOwnerAs (listName "alicebakers") $ \ctx -> do
+  listOnChain ctx "alicebakers"
+  answerFree ctx "alicebakers"
+  (code, _) <- issueCode ctx 8 5 id
+  r <- registrationById ctx =<< registered ctx code aliceOrder {oDuration = yearsDuration 5 orderTime}
+  failed <- rewrite ctx r failedPhase
+  to <- (\f -> f {ofAgreedTerms = communityTerms}) <$> moveTo ctx "alicebakers" 10
+  move ctx keyA failed to {ofDuration = yearsDuration 5 orderTime} `shouldReturn` refusedWith 400 "bad_request"
+  void $ moved ctx keyA failed to
+  answerFree ctx "alicecakes"
+  again <- rewrite ctx r failedPhase
+  toPlain <- moveTo ctx "alicecakes" 11
+  void $ moved ctx keyA again toPlain {ofDuration = yearsDuration 5 orderTime}
+  (nrYears &&& nrDuration) <$> stored ctx r `shouldReturn` (5, yearsDuration 5 orderTime)
+
+testMoveCommunityPaidYears :: IO ()
+testMoveCommunityPaidYears = withOwnerAs (threeYears . listName "alicebakers") $ \ctx -> do
+  listOnChain ctx "alicebakers"
+  answerFree ctx "alicebakers"
+  answerCall (cNode ctx) fakeController threeYearsOf11 $ Returns $ rentPriceAnswer 15000
+  r <- paidIn ctx aliceOrder {oDuration = yearsDuration 3 orderTime, oPrice = 15000} failedPhase
+  to <- (\f -> f {ofAgreedTerms = communityTerms}) <$> moveTo ctx "alicebakers" 10
+  void $ moved ctx keyA r to
+  (nrYears &&& nrPrice) <$> stored ctx r `shouldReturn` (3, 10000)
+  balanceOf ctx r `shouldReturn` Just (5000, 5000)
+  where
+    -- viem: rentPriceUSD of 11 letters for 3 years
+    threeYearsOf11 = unhex "9ff7ec0900000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000005a39a80000000000000000000000000000000000000000000000000000000000000000b6161616161616161616161000000000000000000000000000000000000000000"
 
 testMoveTermsCheckOrder :: IO ()
 testMoveTermsCheckOrder = withOwner $ \ctx@Ctx {cNode} -> do
@@ -519,8 +551,11 @@ testMoveTermsCheckOrder = withOwner $ \ctx@Ctx {cNode} -> do
   toDynamis <- moveTo ctx "dynamis" 10
   move ctx keyA r toDynamis {ofAgreedTerms = olderTerms} `shouldReturn` refusedWith 409 "order_exists"
   move ctx keyA r to {ofDuration = ofDuration to + 3601} `shouldReturn` refusedWith 400 "bad_request"
+  setGeneralTerms cNode ""
+  move ctx keyA r to `shouldReturn` refusedWith 503 "terms_unavailable"
+  setGeneralTerms cNode fakeGeneralTermsText
   answerReserved ctx "alicebakers" 1
-  move ctx keyA r to `shouldReturn` termsChanged termsVersion Nothing
+  move ctx keyA r to `shouldReturn` termsChanged fakeGeneralTermsText Nothing
   stored ctx r `shouldReturn` r
   answerExpiry ctx "alicebakery" (seconds orderTime + 2 * 31536000)
   answerOwner ctx "alicebakery" ownerA
@@ -682,7 +717,7 @@ testMoveKeepsFromBalance = withOwner $ \ctx@Ctx {cStore} -> do
   answerFree ctx "alicebakers"
   paying <- paidIn ctx (byB aliceOrder) failedPhase
   withTransaction cStore $ \db -> creditBalance db (nrId paying) 5000 orderTime
-  let fields = OrderFields {ofLabelHash = labelHash "dynamis", ofLength = 7, ofDuration = yearsDuration 2 orderTime, ofCommitment = commitmentOf 3, ofSealed = "sealed-dynamis-3", ofAgreedTerms = termsVersion}
+  let fields = OrderFields {ofLabelHash = labelHash "dynamis", ofLength = 7, ofDuration = yearsDuration 2 orderTime, ofCommitment = commitmentOf 3, ofSealed = "sealed-dynamis-3", ofAgreedTerms = plainTerms}
       new = NewRegistration {nrgId = RegistrationId "diff", nrgOwner = ownerA, nrgOrder = fields, nrgYears = 2}
   withTransaction cStore $ \db -> do
     insertInvoiceRow db "inv-diff" (addUTCTime 3600 orderTime) "open"

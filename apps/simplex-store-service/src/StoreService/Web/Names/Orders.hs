@@ -52,7 +52,7 @@ import StoreService.Orders (publishRegistration)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderError (..), ProviderInvoice (..), expiresItself)
 import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId, truncateToSecond)
 import StoreService.Waiters (Waiters, publish)
-import StoreService.Web.Http (Respond, badRequest, confirmationsFor, internalError, invalidName, invoiceAt, invoicePairs, invoiceWindow, jsonError, jsonResponse, nameBodyBytes, notFound, providerFor, providerNamed, providerUnavailable, readBoundedBody)
+import StoreService.Web.Http (Respond, badRequest, confirmationsFor, internalError, invalidName, invoiceAt, invoicePairs, invoiceWindow, jsonError, jsonResponse, nameBodyBytes, notFound, providerFor, providerNamed, providerUnavailable, readBoundedBody, termsUnavailable)
 import StoreService.Web.Names.Codes (codeRefusalResponse)
 
 data InvoiceOrder = InvoiceOrder
@@ -102,12 +102,12 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} cfg providers waiters
     refuse = refused what
     newOrder InvoiceOrder {ioRequest = req@OrderRequest {orOwner, orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp}, ioMethod, ioPrice} = do
       now <- oeNow
-      let years = nYears $ oeConfig env
+      let years = orderYears fields $ nYears $ oeConfig env
           price = fromIntegral ioPrice
           checks =
             [ pure $ checkTimestamp now orTimestamp,
               pure $ checkDuration (oeConfig env) now years ofDuration,
-              pure $ checkTerms (oeConfig env) fields,
+              checkTerms (oeConfig env) (oeContracts env) fields,
               checkNameFree (oeContracts env) oeStore ofLabelHash,
               checkPrice (oeContracts env) ofLength years price
             ]
@@ -215,8 +215,8 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} 
     newOrder now order@OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofDuration}, orTimestamp} code@PrepaidCode {pcYears} = do
       let checks =
             [ pure $ checkTimestamp now orTimestamp,
-              pure $ checkDuration oeConfig now pcYears ofDuration,
-              pure $ checkTerms oeConfig fields,
+              pure $ checkDuration oeConfig now (orderYears fields pcYears) ofDuration,
+              checkTerms oeConfig oeContracts fields,
               checkNameFree oeContracts oeStore ofLabelHash
             ]
       firstRefusal checks >>= \case
@@ -261,10 +261,10 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} cfg 
         EOMeets -> refuse OROrderExists
         EONew _ -> runExceptT (checked now order spend) >>= either refuse (place order spend)
     checked now OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp} spend@Spend {spPrice} = do
-      let years = nYears oeConfig
+      let years = orderYears fields $ nYears oeConfig
       liftEither $ checkTimestamp now orTimestamp
       liftEither $ checkDuration oeConfig now years ofDuration
-      liftEither $ checkTerms oeConfig fields
+      ExceptT $ checkTerms oeConfig oeContracts fields
       holder <- ExceptT $ checkSpendBalance oeStore spend now
       ExceptT $ checkNameFree oeContracts oeStore ofLabelHash
       ExceptT $ checkPrice oeContracts ofLength years spPrice
@@ -352,4 +352,5 @@ orderRefusalResponse = \case
   ORPriceTooHigh price -> jsonResponse status409 $ J.object ["error" .= ("price_too_high" :: Text), "price" .= price]
   ORBalanceChanged balance -> jsonResponse status409 $ J.object ["error" .= ("balance_changed" :: Text), "balance" .= (balanceJSON <$> balance)]
   ORTermsChanged terms community -> jsonResponse status409 $ J.object ["error" .= ("terms_changed" :: Text), "terms" .= terms, "community" .= community]
+  ORTermsUnavailable wait -> maybe (jsonError status503 "terms_unavailable") termsUnavailable wait
   ORCodesOnly -> jsonError status403 "codes_only"

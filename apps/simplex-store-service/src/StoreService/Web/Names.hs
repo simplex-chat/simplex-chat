@@ -17,7 +17,7 @@ import StoreService.Web.Names.Orders (codeOrderHandler, spendHandler)
 import StoreService.Web.Names.Owner (findHandler, retargetHandler)
 import StoreService.Web.Names.Records (recordsHandler)
 import StoreService.Web.Names.Registration (registrationHandler, retryHandler, revealHandler)
-import StoreService.Web.Names.Search (previewHandler, searchHandler)
+import StoreService.Web.Names.Search (previewHandler, searchHandler, termsHandler)
 
 data Route = Route
   { rMethod :: Method,
@@ -31,6 +31,7 @@ namesRoutes cfg env@NamesEnv {neConfig, neStore, neContracts, neProfiles, neReco
   ["api", "name", "register"] -> Just Route {rMethod = "POST", rLimit = codeLimit, rHandler = codeOrderHandler (ordersEnv env) neProviders neWaiters}
   ["api", "code", "check"] -> Just Route {rMethod = "POST", rLimit = codeLimit, rHandler = codeCheckHandler neStore}
   ["api", "link", "preview"] -> Just Route {rMethod = "POST", rLimit = previewLimit, rHandler = previewHandler neProfiles}
+  ["api", "terms", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = termsHandler neContracts hash}
   -- below every fixed /api/name/<word> route, which it would otherwise match
   ["api", "name", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = searchHandler neConfig neStore neContracts neProfiles getCurrentTime hash}
   -- above /api/registration/:id, which it would otherwise match

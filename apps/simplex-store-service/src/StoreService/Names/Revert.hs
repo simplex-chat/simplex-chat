@@ -12,7 +12,7 @@ import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
 import StoreService.Names.Abi (selector)
 
--- | The custom errors of SimplexController, SimplexSponsor, BaseRegistrarImplementation and SimplexResolver.
+-- | The custom errors of SimplexController, SimplexSponsor, BaseRegistrarImplementation and SimplexResolver, and the reservation and terms errors of SimplexNamePolicy, that the service tells apart.
 -- The sponsor passes the controller's and the base registrar's reverts through, so any call can revert with any of them.
 data RevertName
   = RNAlreadyFrozen
@@ -54,6 +54,8 @@ data RevertName
   | RNResolverRequiredWhenDataSupplied
   | RNReverseRecordNotSupported
   | RNSignatureExpired
+  | RNTermsMismatch
+  | RNTermsNotAccepted
   | RNTransferFailed
   | RNTransferToSelf
   | RNUnexpiredCommitmentExists
@@ -104,6 +106,8 @@ revertSignature = \case
   RNResolverRequiredWhenDataSupplied -> Just "ResolverRequiredWhenDataSupplied()"
   RNReverseRecordNotSupported -> Just "ReverseRecordNotSupported()"
   RNSignatureExpired -> Just "SignatureExpired()"
+  RNTermsMismatch -> Just "TermsMismatch(bytes32,bytes32)"
+  RNTermsNotAccepted -> Just "TermsNotAccepted(string)"
   RNTransferFailed -> Just "TransferFailed()"
   RNTransferToSelf -> Just "TransferToSelf()"
   RNUnexpiredCommitmentExists -> Just "UnexpiredCommitmentExists(bytes32)"

@@ -19,6 +19,7 @@ where
 
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
+import Data.Functor ((<&>))
 import Data.Int (Int64)
 import Data.Maybe (isJust)
 import Data.Text (Text)
@@ -34,7 +35,7 @@ import Simplex.Messaging.Util (safeDecodeUtf8)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain (TxHash (..))
-import StoreService.Names.Community (communityJSON)
+import StoreService.Names.Community (AcceptanceAsked (..), agreedTermsHash, communityJSON, currentAcceptance)
 import StoreService.Names.Contracts (Contracts, sponsorNonce)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Store (Balance (..), BalanceHold (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), RegistrationPayment (..), getBalance, getRegistration, heldBy, lateWait)
@@ -42,7 +43,8 @@ import StoreService.Names.Store (Balance (..), BalanceHold (..), LateWait (..), 
 -- | The view's chain reads; a field whose read failed is null and named in vrUnread.
 data ViewReads = ViewReads
   { vrIntentNonce :: Maybe Word64,
-    vrUnread :: [Text]
+    vrUnread :: [Text],
+    vrAcceptance :: Maybe AcceptanceAsked
   }
   deriving (Eq, Show)
 
@@ -57,18 +59,24 @@ registrationView st cfg ct now r = do
     pure (balance, late)
   viewJSON cfg r balance late <$> readViewChain ct r
 
--- | The intent nonce only in committed.
+-- | The intent nonce only in committed; the acceptance too, until a reveal is stored.
 readViewChain :: Contracts -> NameRegistration -> IO ViewReads
-readViewChain ct NameRegistration {nrPhase, nrOwner} = case nrPhase of
-  PCommitted -> sponsorNonce ct nrOwner >>= \case
-    Right nonce -> pure none {vrIntentNonce = Just nonce}
-    Left _ -> pure none {vrUnread = ["intentNonce"]}
+readViewChain ct NameRegistration {nrPhase, nrOwner, nrLabelHash, nrReveal} = case nrPhase of
+  PCommitted -> do
+    vr <- sponsorNonce ct nrOwner >>= \case
+      Right nonce -> pure none {vrIntentNonce = Just nonce}
+      Left _ -> pure none {vrUnread = ["intentNonce"]}
+    if isJust nrReveal
+      then pure vr
+      else currentAcceptance ct nrLabelHash nrOwner <&> \case
+        Right acceptance -> vr {vrAcceptance = Just acceptance}
+        Left _ -> vr {vrUnread = vrUnread vr <> ["acceptance"]}
   _ -> pure none
   where
-    none = ViewReads {vrIntentNonce = Nothing, vrUnread = []}
+    none = ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing}
 
 viewJSON :: NamesConfig -> NameRegistration -> Maybe Balance -> Maybe LateWait -> ViewReads -> J.Value
-viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSponsor}} r balance late ViewReads {vrIntentNonce, vrUnread} =
+viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSponsor}} r balance late ViewReads {vrIntentNonce, vrUnread, vrAcceptance} =
   J.object
     [ "id" .= rid,
       "version" .= nrVersion,
@@ -95,16 +103,19 @@ viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSpon
       "revealAfter" .= nrRevealAfter,
       "revealBefore" .= nrRevealBefore,
       "intentNonce" .= vrIntentNonce,
+      "acceptance" .= (acceptanceJSON <$> vrAcceptance),
       "unread" .= vrUnread,
       "expiresAt" .= nrExpiresAt,
       "error" .= nrError,
-      "community" .= communityJSON cfg (nrLabelHash r),
+      "community" .= communityJSON cfg (nrLabelHash r) (isJust $ agreedTermsHash nrAgreedTerms),
       "terms" .= (if T.null nrAgreedTerms then Nothing else Just nrAgreedTerms)
     ]
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLinksRefusedAt, nrPhase, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
     NameRegistration {nrYears, nrDuration, nrPrice, nrBalanceUsed, nrCommitTx, nrRegisterTx, nrRevealAfter, nrRevealBefore, nrExpiresAt, nrError, nrAgreedTerms} = r
     txText (TxHash h) = hex h
+    acceptanceJSON AcceptanceAsked {acCommunity, acPolicy, acTermsHash, acNonce} =
+      J.object ["kind" .= (if acCommunity then "community" else "general" :: Text), "policy" .= addressText acPolicy, "termsHash" .= hex acTermsHash, "nonce" .= acNonce]
     waitingText :: LateWait -> Text
     waitingText = \case
       LWConfirming -> "confirming"

@@ -14,13 +14,16 @@ import Data.ByteArray.Encoding (Base (Base16), convertFromBase, convertToBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Word (Word64)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.Secp256k1 (signRecoverable)
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
+import StoreService.Names.Signatures (parseSignature)
 import Test.Hspec
 
 badgeNameRegistrationTests :: Spec
@@ -35,6 +38,11 @@ badgeNameRegistrationTests = describe "StoreService names: registration" $ do
     it "rejects an intent signed by another wallet" $ testVerifyOtherSigner g
     it "rejects an intent past its deadline" $ testVerifyExpired g
     it "rejects a secret that is not 32 bytes" $ testVerifyShortSecret g
+  -- viem's hashTypedData and encodeFunctionData against the SimplexNamePolicy ABI of ens-contracts 6ccb5c5
+  describe "terms acceptance" $ do
+    it "hashes AcceptGeneralTerms and AcceptCommunityTerms as the policy does" testAcceptanceDigest
+    it "encodes commitUnderGeneralTermsWithSig and commitUnderCommunityTermsWithSig" testAcceptCalldata
+    it "verifies the owner's acceptance, and rejects another signer, another deadline and the other kind of terms" $ testVerifyAcceptance g
   it "reads the register's dry run reverting as the sponsor's error" $ testRevertedDryRun g
   it "registers a name the client committed to without revealing it" $ testCommitThenRegister g
 
@@ -153,6 +161,48 @@ expectedTransaction g nonce to calldata =
           txValue = 0,
           txData = calldata
         }
+
+acceptanceDomain :: Eip712Domain
+acceptanceDomain = policyDomain fakeChainId fakeNamePolicy
+
+-- viem: keccak256(toHex("SimpleX community terms v1")) and keccak256(toHex("alicebakery commitment"))
+acceptedHash, acceptedCommitment :: ByteString
+acceptedHash = fromHex "eed23f946d290583f5f55c2ae8255db70adac4fc4c5de714a920d35eed9c7dac"
+acceptedCommitment = fromHex "26d4dc807322bcdc1f68a2459b580919c4e6c5629d07cb20c38a31f7b72b7e5d"
+
+acceptanceDeadline :: Word64
+acceptanceDeadline = 1767315600
+
+testAcceptanceDigest :: IO ()
+testAcceptanceDigest = do
+  toHex (acceptanceDigest acceptanceDomain (termsKind False) acceptedCommitment acceptedHash 3 acceptanceDeadline) `shouldBe` "f486b536cdf4e28031b02fb4345f26678a088d84846a0a6c72896062af283065"
+  toHex (acceptanceDigest acceptanceDomain (termsKind True) acceptedCommitment acceptedHash 3 acceptanceDeadline) `shouldBe` "6df583ad3bcbef3e4061599fa9d45174fcda5731764320cd08ade35c8324eef7"
+
+testAcceptCalldata :: IO ()
+testAcceptCalldata = do
+  sig <- either (fail . show) pure $ parseSignature $ "0x" <> T.replicate 32 "11" <> T.replicate 32 "22" <> "1b"
+  let acceptance = TermsAcceptance {taTermsHash = acceptedHash, taNonce = 3, taSignature = sig}
+      calldata community = toHex (acceptCalldata (termsKind community) acceptedCommitment (address "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955") acceptanceDeadline acceptance)
+      args =
+        "26d4dc807322bcdc1f68a2459b580919c4e6c5629d07cb20c38a31f7b72b7e5deed23f946d290583f5f55c2ae8255db70adac4fc4c5de714a920d35eed9c7dac\
+        \00000000000000000000000014dc79964da2c08b23698b3d3cc7ca32193d99550000000000000000000000000000000000000000000000000000000000000003\
+        \000000000000000000000000000000000000000000000000000000006957189000000000000000000000000000000000000000000000000000000000000000c0\
+        \00000000000000000000000000000000000000000000000000000000000000411111111111111111111111111111111111111111111111111111111111111111\
+        \22222222222222222222222222222222222222222222222222222222222222221b00000000000000000000000000000000000000000000000000000000000000"
+  calldata False `shouldBe` "c50f972f" <> args
+  calldata True `shouldBe` "4b1a8e04" <> args
+
+testVerifyAcceptance :: TVar ChaChaDRG -> IO ()
+testVerifyAcceptance g = do
+  owner <- newEphemeralWallet g
+  other <- newEphemeralWallet g
+  sig <- signRecoverable g (ewKey owner) (acceptanceDigest acceptanceDomain (termsKind True) acceptedCommitment acceptedHash 3 acceptanceDeadline) >>= either fail pure
+  let acceptance = TermsAcceptance {taTermsHash = acceptedHash, taNonce = 3, taSignature = sig}
+      verify community w = verifyAcceptance acceptanceDomain (termsKind community) (ewAddress w) acceptedCommitment
+  verify True owner acceptanceDeadline acceptance `shouldReturn` Right ()
+  verify True other acceptanceDeadline acceptance `shouldReturn` Left "acceptance is not signed by the owner"
+  verify True owner (acceptanceDeadline + 1) acceptance `shouldReturn` Left "acceptance is not signed by the owner"
+  verify False owner acceptanceDeadline acceptance `shouldReturn` Left "acceptance is not signed by the owner"
 
 address :: ByteString -> Address
 address = right . strDecode
