@@ -128,7 +128,8 @@ private_key = replace-me
 ; 0x and 64 hex digits: the registrar key the service sends transactions with; create, fund and
 ; rotate it as apps/simplex-store-service/README.md, "The gas key", says
 ;service_key = 0x...
-; blocks after a register's receipt before a name counts as registered
+; blocks after a register's receipt before a name counts as registered, at least 1, which is the
+; receipt's own block
 ;confirmations = 3
 ; the most gas any one transaction may use
 ;gas_limit_cap = 8000000

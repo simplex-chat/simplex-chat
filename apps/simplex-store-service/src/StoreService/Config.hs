@@ -679,7 +679,7 @@ parseConfig ini = do
       cBaseRegistrar <- address "base_registrar"
       cResolver <- address "resolver"
       cServiceKey <- serviceKey
-      cConfirmations <- atLeast 0 "chain" "confirmations" 3
+      cConfirmations <- atLeast 1 "chain" "confirmations" 3
       cGasLimitCap <- positiveWord "gas_limit_cap" (Just 8000000)
       cMaxFeePerGas <- positiveWord "max_fee_per_gas" (Just defaultMaxFeePerGas)
       pure ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cConfirmations, cGasLimitCap, cMaxFeePerGas}

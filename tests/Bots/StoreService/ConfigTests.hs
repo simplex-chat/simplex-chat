@@ -742,15 +742,16 @@ testNamesDefaults = do
 testNamesWrittenOut :: IO ()
 testNamesWrittenOut = do
   let ns = ["[names]", "tld = simplex", "terms_version = 2027-01.b", "terms_url = https://simplex.chat/names/terms", "years = 5", "term_start = 2027-03-01T12:00:00Z", "term_slack_seconds = 60", "reveal_margin_seconds = 0", "max_order_moves = 0"]
-      cs = chainSection <> ["confirmations = 0", "gas_limit_cap = 500000", "max_fee_per_gas = 30000000000"]
+      cs = chainSection <> ["confirmations = 1", "gas_limit_cap = 500000", "max_fee_per_gas = 30000000000"]
   NamesConfig {nTLD, nTerms, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nChain = ChainConfig {cConfirmations, cGasLimitCap, cMaxFeePerGas}} <- parsedNames ns cs
   nTLD `shouldBe` TLDSimplex
   nTerms `shouldBe` TermsConfig {tVersion = "2027-01.b", tUrl = "https://simplex.chat/names/terms"}
   nYears `shouldBe` 5
   nTermStart `shouldBe` UTCTime (fromGregorian 2027 3 1) (12 * 3600)
   (nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves) `shouldBe` (60, 0, 0)
-  (cConfirmations, cGasLimitCap, cMaxFeePerGas) `shouldBe` (0, 500000, 30000000000)
-  namesRefusal ns (chainSection <> ["confirmations = -1"]) `shouldReturn` "chain.confirmations must be at least 0"
+  (cConfirmations, cGasLimitCap, cMaxFeePerGas) `shouldBe` (1, 500000, 30000000000)
+  namesRefusal ns (chainSection <> ["confirmations = 0"]) `shouldReturn` "chain.confirmations must be at least 1"
+  namesRefusal ns (chainSection <> ["confirmations = -1"]) `shouldReturn` "chain.confirmations must be at least 1"
   namesRefusal ns (chainSection <> ["gas_limit_cap = 0"]) `shouldReturn` "chain.gas_limit_cap must be a positive whole number"
   namesRefusal ns (chainSection <> ["max_fee_per_gas = 0"]) `shouldReturn` "chain.max_fee_per_gas must be a positive whole number"
   namesRefusal ns (chainSection <> ["max_fee_per_gas = 18446744073709551616"]) `shouldReturn` "chain.max_fee_per_gas must be a positive whole number"
