@@ -38,6 +38,9 @@ on:
       - "apps/simplex-badge-service/web/**"
       - "scripts/ci/packages_release.py"
       - "scripts/ci/test_packages_release.py"
+      - "website/src/js/simplex-lib.jsc"
+      - "website/test/**"
+      - "website/package.json"
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
