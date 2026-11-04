@@ -9,14 +9,14 @@ from pathlib import Path
 from .common import BuildError, Platform, fetch_pinned, host_platform, remove_tree, run
 from .desktop import SOURCE_DATE_EPOCH, WINDOWS_DESKTOP, macos_desktop
 
-# The OpenSSL that the macOS and Windows releases link, the version of the releases before this script
-OPENSSL_VERSION = "3.0.15"
+# The OpenSSL bundled with the apps; pinOpenssl in flake.nix pins the same for the Android and iOS core libraries
+OPENSSL_VERSION = "3.5.9"
 
 
 OPENSSL_URL = f"https://github.com/openssl/openssl/releases/download/openssl-{OPENSSL_VERSION}/openssl-{OPENSSL_VERSION}.tar.gz"
 
 
-OPENSSL_SHA256 = "23c666d0edf20f14249b3d8f0368acaee9ab585b09e1de82107c66e1f3ec9533"
+OPENSSL_SHA256 = "603f5602e2eef00d77fbd429d34dcd5822bb301757a1bc9cdb24c670f1eb859a"
 
 
 # OpenSSL loads openssl.cnf from OPENSSLDIR and modules from the prefix, and the file can load any module: only
@@ -49,7 +49,7 @@ def fetch_openssl(work: Path) -> Path:
 def openssl_build(target: str, prefix: str, openssldir: str, install: bool) -> list[tuple[str, ...]]:
     """The commands that build OpenSSL in its source tree, then install it to prefix when install is set."""
     commands = [
-        ("perl", "Configure", target, f"--prefix={prefix}", f"--openssldir={openssldir}", "--libdir=lib", "no-tests"),
+        ("perl", "Configure", target, f"--prefix={prefix}", f"--openssldir={openssldir}", "--libdir=lib", "no-docs", "no-tests"),
         ("make", f"-j{os.cpu_count() or 1}"),
     ]
     if install:

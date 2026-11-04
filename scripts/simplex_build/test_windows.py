@@ -45,7 +45,7 @@ class WindowsLibTest(unittest.TestCase):
         self.assertEqual((libdir / "settings").read_text(), '[("ld command", "abracadabra.exe"), ("x", "ld.lld.exe")]\n')
 
     def test_library_links_the_pinned_openssl(self):
-        openssl = self.root / "openssl-3.0.15"
+        openssl = self.root / "openssl-3.5.9"
         openssl.mkdir()
         (openssl / "libcrypto-3-x64.dll").write_bytes(b"crypto")
         (self.source / "libsimplex.dll").write_bytes(b"simplex")
