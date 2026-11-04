@@ -405,5 +405,14 @@
     "downloads-advanced-h2": "Per utenti avanzati",
     "downloads-github": "Tutte le versioni su GitHub",
     "downloads-mirror": "Mirror: git.simplex.chat",
-    "downloads-fdroid-repo": "Repository F-Droid"
+    "downloads-fdroid-repo": "Repository F-Droid",
+    "guide-dropdown-2": "Messaggi e multimediali",
+    "guide-dropdown-3": "Gruppi",
+    "guide-dropdown-6": "Chiamate audio e video",
+    "guide-dropdown-10": "Canali",
+    "guide-dropdown-11": "Pagine web dei canali",
+    "guide-dropdown-12": "Registrazione di un nome SimpleX",
+    "guide-dropdown-13": "Dispositivi collegati",
+    "guide-dropdown-14": "Notifiche",
+    "guide-dropdown-15": "Distintivi dei sostenitori"
 }
