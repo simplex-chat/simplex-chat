@@ -134,7 +134,7 @@ The library docs are [here](./docs/README.md).
 Library provides these modules:
 - [bot](./docs/Namespace.bot.md): a simple declarative API to run a chat-bot with a single function call. It automates creating and updating of the bot profile, address and bot commands shown in the app UI.
 - [api](./docs/Namespace.api.md): an API to send chat commands and receive chat events to/from chat core. You need to use it in bot event handlers, and for any other use cases.
-- [core](./docs/Namespace.core.md): a low level API to the core library - the same that is used in desktop clients. You are unlikely to ever need to use this module directly.
+- [core](./docs/Namespace.core.md): a low level API to the core library - the same that is used in desktop clients. You are unlikely to ever need to use this module directly, except for image resizing.
 - [util](./docs/Namespace.util.md): useful functions for chat events and types.
 
 

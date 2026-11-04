@@ -1,4 +1,4 @@
-# Device test plan: channel message signing and channel moderators
+# Device test plan: channel message signing, channel moderators and sending images
 
 The app as the scripted smoke test leaves it: the profile "citester", without conversations. The cases run in the order of the tables and build on each other: one channel, "ci signing", owned by citester, and two more profiles in this app, "cimod" and "cisub", that join it by its link. Do not reorder them: cisub must join only after cimod has become a moderator (B2), so that cimod learns about cisub.
 
@@ -35,3 +35,14 @@ The app as the scripted smoke test leaves it: the profile "citester", without co
 | B5 | Open "cisub" in that list | cisub's info offers "Block for all" (do not tap it yet) |
 | B6 | Back in the chat, long-press "contributor post" → "Moderate" → "Delete member message?" → "Delete" | The message shows "moderated by cimod" in its place |
 | B7 | Channel info → "Subscribers" → "cisub" → "Block for all" → "Block subscriber for all?" → "Block for all" | cisub's info now offers "Unblock for all"; the chat shows "you blocked cisub" |
+
+## Sending images
+
+These cases run after the channel cases: first switch to citester and go back to its chat list. The photo library has, besides the simulator's own photos, the images of these cases: a TV test card 1280×720 (JPEG: colour bars, a large circle, "1080" at the top and "TVB" at the bottom), the dark blue and turquoise SimpleX logo on a transparent background (PNG), and, when the runner could make it, the same test card turned by 90° to portrait (HEIC). In the photo picker, identify each by its thumbnail. The paperclip button left of the message field opens the "Attach" dialog; the send button is the arrow at the right end of the field; find their labels with `ui tree`.
+
+| ID | Do | Expect |
+|----|----|--------|
+| I1 | Tap "Compose", then "Create group"; type `image notes` in the field "Enter group name…", check the value, tap "Create group", then "Skip" if it shows; open the group's chat if it is not open | The chat of "image notes", with the message field and the paperclip button enabled |
+| I2 | Tap the paperclip button, "Choose from library", the test card's thumbnail, then the picker's "Add" button; `ui shot I2-preview`; tap the send button; tap the sent image; `ui shot I2-full`; close the image | Before sending, the compose area shows the whole test card, upright and not stretched; after sending, the chat shows it; opened, it fills the screen width and "1080" and "TVB" are sharp and readable |
+| I3 | As I2, with the SimpleX logo | The preview and the sent image show the whole logo; the area around its letters shows the chat's background, not black or grey |
+| I4 | As I2, with the portrait test card; skipped when the library has no portrait test card | The preview and the sent image show the test card upright in portrait, as the picker's thumbnail does |

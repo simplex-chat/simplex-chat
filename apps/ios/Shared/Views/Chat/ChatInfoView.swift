@@ -370,7 +370,8 @@ struct ChatInfoView: View {
         VStack(spacing: 8) {
             let cInfo = chat.chatInfo
             ChatInfoImage(chat: chat, size: 192, color: Color(uiColor: .tertiarySystemFill))
-                .padding(.vertical, 12)
+                .padding(.top, 20)
+                .padding(.bottom, 12)
             // show actual display name, alias can be edited in this view
             let displayName = contact.profile.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
             let fullName = cInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -68,6 +68,10 @@
 
           ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
             packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
+          })
+
+          ({ lib, ... }: {
+            packages.JuicyPixels-spng.package.license = lib.mkForce "BSD-3-Clause AND BSD-2-Clause AND MIT";
           })] ++ extra-modules;
       }; in
       # by defualt we don't need to pass extra-modules.
@@ -484,6 +488,12 @@
                   "chat_badge_keygen"
                   "chat_badge_issue"
                   "chat_write_file"
+                  "chat_resize_image_uri"
+                  "chat_resize_image"
+                  "chat_resize_image_file_uri"
+                  "chat_resize_image_file"
+                  "chat_resize_image_fd_uri"
+                  "chat_resize_image_fd"
                 ];
                 postInstall = ''
                   set -x
