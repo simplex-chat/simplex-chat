@@ -1883,7 +1883,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           -- sendProbe -> sendProbeHashes (currently)
           -- sendProbeHashes -> sendProbe (reversed - change order in code, may add delay)
           sendProbe probe
-          ms <- map COMGroupMember <$> withStore' (\db -> getMatchingMembers db cxt user ct)
+          ms <- withStore' (`getMatchingContactsOrMembers` COMContact ct)
           sendProbeHashes (COMContact ct) ms probe probeId
         else sendProbe . Probe =<< liftIO (encodedRandomBytes gVar 32)
       where
@@ -1899,7 +1899,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         then do
           (probe, probeId) <- withStore $ \db -> createSentProbe db gVar userId $ COMGroupMember m
           sendProbe probe
-          cs <- map COMContact <$> withStore' (\db -> getMatchingMemberContacts db cxt user m)
+          cs <- withStore' (`getMatchingContactsOrMembers` COMGroupMember m)
           sendProbeHashes (COMGroupMember m) cs probe probeId
         else sendProbe . Probe =<< liftIO (encodedRandomBytes gVar 32)
       where
