@@ -1396,6 +1396,24 @@ describe("download", () => {
     expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
   })
 
+  it("asks the owner again for a rejected file under the files approval of the chat", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    let approved = false
+    const {tools, actions} = downloadTools(chat, (_, standing) => (approved && standing === "files" ? "Alice" : undefined))
+    const rejecting = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    actions.reject(actions.get(1)!, "Alice")
+    expect((await rejecting)!.structuredContent).toEqual({action: 1, status: "rejected"})
+    approved = true
+    const {controller, call} = signal()
+    const asking = tools.call("download", {chat: "#15", item: 30}, call)
+    await flushed()
+    expect(actions.get(2)).toMatchObject({state: "pending", standing: false})
+    controller.abort()
+    expect(await asking).toBeUndefined()
+  })
+
   it("asks the owner for a file on unknown servers under the files approval of the chat", async () => {
     const chat = new FakeChat()
     offeredIn(chat)

@@ -972,7 +972,7 @@ export class AgentTools {
     const deadline = Date.now() + (input.wait ?? downloadWait) * 1000
     const servers = file.fileProtocol === T.FileProtocol.XFTP ? await this.fileServers(chat, item, deadline, call) : undefined
     const unknownServers = servers === undefined ? undefined : await this.unknownServers(servers)
-    const approver = hasUnknownServers({unknownServers}) ? undefined : this.agent.standingApprover((await this.knownChat(chat)).chatInfo, "files")
+    const approver = hasUnknownServers({unknownServers}) || this.rejectedFiles.has(file.fileId) ? undefined : this.agent.standingApprover((await this.knownChat(chat)).chatInfo, "files")
     if (call.signal.aborted) return undefined
     const from = chatDir.type === "groupRcv" ? chatDir.groupMember.memberProfile.displayName : undefined
     const subject = chatSubject(chatInfo)
