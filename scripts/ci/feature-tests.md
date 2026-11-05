@@ -35,15 +35,15 @@ The app as the smoke test left it, restarted at the chat list with the reachable
 
 | Platform | Profile | Chats | With the backend |
 |---|---|---|---|
-| desktop | onboarded as citester | "seeded notes", "Private notes" | the test SMP server is the only one resolving names (`seeded.testing` resolves to ci_contact) |
-| Android | onboarded | "seeded notes", "Private notes" | the test SMP server added under Your servers |
+| desktop | onboarded as citester | "seeded notes", a group with the two images the smoke test sent; "Private notes" | the test SMP server is the only one resolving names (`seeded.testing` resolves to ci_contact) |
+| Android | onboarded | "seeded notes", a group with the two images the smoke test sent; "Private notes" | the test SMP server added under Your servers |
 | iOS | onboarded, local files not encrypted | "image notes", a group with the two images the smoke test sent; "Private notes" | — |
 
 Tests run one after another in name order and share that profile. A test may leave state behind; it names what it creates after itself and must still pass with what earlier tests left.
 
 ## Which tests a run runs
 
-The smoke test always runs. After it, once its checks passed (on iOS, also when the preview snapshots it then compares differ), the step "Run feature tests" runs the tests chosen by comparing the branch with the upstream master:
+The smoke test always runs. After it, once its checks passed (on iOS, also when its preview snapshots differ from their references), the step "Run feature tests" runs the tests chosen by comparing the branch with the upstream master:
 
 - the tests the branch adds or changes;
 - the tests whose `covers` patterns match a file the branch changes;
