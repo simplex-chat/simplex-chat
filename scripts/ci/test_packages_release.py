@@ -572,7 +572,6 @@ class SelectTestsTest(GitRepoTest):
         self.assertEqual(self.selected("beta"), ["beta"])
         self.assertEqual(self.selected("alpha beta"), ["alpha", "beta"])
         self.assertEqual(self.selected("beta alpha beta"), ["alpha", "beta"])
-        self.assertEqual(self.selected("gamma"), [])
 
     def test_other_words_in_the_input_fail(self):
         self.assertEqual(self.select("../alpha").returncode, 2)
@@ -580,6 +579,14 @@ class SelectTestsTest(GitRepoTest):
         self.assertEqual(self.select("Alpha").returncode, 2)
         self.assertEqual(self.select("all beta").returncode, 2)
         self.assertEqual(self.select("none beta").returncode, 2)
+
+    def test_name_no_platform_has_fails(self):
+        self.assertEqual(self.select("gamma").returncode, 2)
+        self.assertEqual(self.select("alpha gamma").returncode, 2)
+
+    def test_name_only_another_platform_has_selects_nothing(self):
+        self.write("scripts/ci/android/tests/delta.sh", "")
+        self.assertEqual(self.selected("delta"), [])
 
     def test_none_overrides_changes(self):
         self.change_from_base("apps/mp/views/chat/Compose.kt")
