@@ -330,8 +330,8 @@ The search text can be sent online on request to SimpleX Directory, to find publ
 
 | Trigger | Handler | Runs |
 |---------|---------|------|
-| Keyboard Search key (`.submitLabel(.search)`) | [`runDirectorySearch()`](../../Shared/Views/ChatList/ChatListView.swift#L1019) | `searchDirectory(text)` |
-| "Search in Directory" row ([`SearchInDirectoryRow`](../../Shared/Views/ChatList/DirectorySearchView.swift#L163)) | [`runDirectorySearch()`](../../Shared/Views/ChatList/ChatListView.swift#L1019) | `searchDirectory(text)` |
+| Keyboard Search key (`.submitLabel(.search)`) | [`runDirectorySearch()`](../../Shared/Views/ChatList/ChatListView.swift#L1019) | `search(text)`, unless the text is a SimpleX link |
+| "Search in Directory" row ([`SearchInDirectoryRow`](../../Shared/Views/ChatList/DirectorySearchView.swift#L163)) | [`runDirectorySearch()`](../../Shared/Views/ChatList/ChatListView.swift#L1019) | `search(text)`, unless the text is a SimpleX link |
 
 Both triggers run the same directory search, which never resolves SimpleX names: a name is looked up only by "Connect to …" (`ConnectByNameRow`). The field neither autocorrects nor capitalizes, so the Search key searches what was typed. Both triggers do nothing for empty (trimmed) text or a pasted SimpleX link, and both go through [`confirmDirectorySearch()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L321), which runs the search at once when the "Directory search" switch is on (`DEFAULT_PRIVACY_DIRECTORY_SEARCH`, default false, in Privacy settings › Chats after "Send link previews") and otherwise shows the alert [`showDirectorySearchAlert`](../../Shared/Views/ChatList/DirectorySearchView.swift#L329): "Enable Directory search?", with the message "Search text is sent to SimpleX Directory, each search separately and without your profile." and two actions, Cancel (sends nothing) and Enable (turns the switch on, then searches). So every search asks while the switch is off. The key is not in `hintDefaults`: "Reset all hints" leaves the switch as it is.
 
@@ -367,7 +367,8 @@ The rows above or below the search field follow the toolbar mode. "Search in Dir
 |--------|-------------|
 | [`reset()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L36) | Clears all results, `moreCount` and flags, bumps `generation` (text change, profile switch, each new search) |
 | [`cancelRequest()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L48) | The spinner's `onCancel`: bumps `generation` and clears `loading`; results already shown stay |
-| [`searchDirectory(_:)`](../../Shared/Views/ChatList/DirectorySearchView.swift#L53) | Both triggers: ignored for empty text or while `loading` for the same text; otherwise resets, then the first page |
+| `search(_:)` | Both triggers: trims the text and, unless it is empty, runs `searchDirectory` through `confirmDirectorySearch` |
+| [`searchDirectory(_:)`](../../Shared/Views/ChatList/DirectorySearchView.swift#L53) | Private: ignored for empty text or while `loading` for the same text; otherwise resets, then the first page |
 | [`loadMore()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L69) | The load row: the next page, appended |
 | [`retry()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L75) | The retry row: resumes the page when a cursor exists, else calls `searchDirectory` with the text searched, so a cancelled retry offers "Search in Directory" again; that call does nothing after a reset, whose text is empty (its consent alert can outlast one) |
 | [`rows(shownChatIds:)`](../../Shared/Views/ChatList/DirectorySearchView.swift#L83) | The rows to render, given the ids of the local chats shown (see De-duplication) |

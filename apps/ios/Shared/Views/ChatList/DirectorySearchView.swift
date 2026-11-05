@@ -46,8 +46,14 @@ class OnlineSearchModel: ObservableObject {
         loading = false
     }
 
-    func searchDirectory(_ text: String) async {
+    func search(_ text: String) {
         let text = text.trimmingCharacters(in: .whitespaces)
+        if !text.isEmpty {
+            confirmDirectorySearch { Task { await self.searchDirectory(text) } }
+        }
+    }
+
+    private func searchDirectory(_ text: String) async {
         guard !text.isEmpty, !(loading && text == searchedText) else { return }
         reset()
         searchedText = text

@@ -1038,9 +1038,7 @@ struct ChatListSearchBar: View {
     }
 
     private func runDirectorySearch() {
-        let text = searchTrimmed
-        guard !text.isEmpty, !searchShowingSimplexLink else { return }
-        confirmDirectorySearch { Task { await onlineSearch.searchDirectory(text) } }
+        if !searchShowingSimplexLink { onlineSearch.search(searchText) }
     }
 }
 

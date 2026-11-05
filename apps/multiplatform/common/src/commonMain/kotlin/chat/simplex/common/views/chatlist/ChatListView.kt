@@ -1009,9 +1009,7 @@ private fun searchTrimmed(searchText: State<TextFieldValue>): String =
   searchText.value.text.trim()
 
 private fun runDirectorySearch(searchText: State<TextFieldValue>, searchShowingSimplexLink: State<Boolean>, onlineSearch: OnlineSearchModel) {
-  val text = searchTrimmed(searchText)
-  if (text.isEmpty() || searchShowingSimplexLink.value) return
-  confirmDirectorySearch { withApi { onlineSearch.searchDirectory(text) } }
+  if (!searchShowingSimplexLink.value) onlineSearch.search(searchText.value.text)
 }
 
 @Composable

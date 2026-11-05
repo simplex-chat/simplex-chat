@@ -70,8 +70,14 @@ class OnlineSearchModel {
     loading = false
   }
 
-  suspend fun searchDirectory(text: String) {
+  fun search(text: String) {
     val text = text.trim()
+    if (text.isNotEmpty()) {
+      confirmDirectorySearch { withApi { searchDirectory(text) } }
+    }
+  }
+
+  private suspend fun searchDirectory(text: String) {
     if (text.isEmpty() || (loading && text == searchedText)) return
     reset()
     searchedText = text

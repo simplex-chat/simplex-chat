@@ -208,9 +208,7 @@ private fun ModalData.NewChatSheetLayout(
   val showsEmptyState = !onlineSearch.loading && rows.isEmpty && !showsSearchInDirectory
 
   fun runDirectorySearch() {
-    val text = searchTrimmed()
-    if (text.isEmpty() || searchShowingSimplexLink.value) return
-    confirmDirectorySearch { withApi { onlineSearch.searchDirectory(text) } }
+    if (!searchShowingSimplexLink.value) onlineSearch.search(searchText.value.text)
   }
 
   val sectionModifier = Modifier.fillMaxWidth()
