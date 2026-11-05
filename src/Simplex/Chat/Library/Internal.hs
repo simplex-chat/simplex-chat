@@ -1895,9 +1895,8 @@ getChatItemFileServers user dir ci = case ci of
           Nothing -> pure []
       SMDRcv -> do
         RcvFileDescr {fileDescrText, fileDescrComplete} <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
-        if fileDescrComplete
-          then fileDescrServers <$> (parseFileDescription fileDescrText :: CM (ValidFileDescription 'FRecipient))
-          else pure []
+        unless fileDescrComplete $ throwChatError $ CEInvalidFileDescription "incomplete file description"
+        fileDescrServers <$> (parseFileDescription fileDescrText :: CM (ValidFileDescription 'FRecipient))
 
 sendDirectFileInline :: User -> Contact -> FileTransferMeta -> SharedMsgId -> CM ()
 sendDirectFileInline user ct ft sharedMsgId = do
