@@ -190,7 +190,7 @@ public let MAX_VOICE_MESSAGE_LENGTH = TimeInterval(300) // 5 minutes (300 second
 
 ## [7. CryptoFile -- At-Rest Encryption](../../SimpleXChat/ChatTypes.swift#L5086)
 
-When [`apiSetEncryptLocalFiles(enable: true)`](../../Shared/Model/SimpleXAPI.swift#L392) is configured, files stored on the device are AES-encrypted.
+When [`apiSetEncryptLocalFiles(enable: true)`](../../Shared/Model/SimpleXAPI.swift#L393) is configured, files stored on the device are AES-encrypted.
 
 ### [`CryptoFile`](../../SimpleXChat/ChatTypes.swift#L5086) Type
 
@@ -223,7 +223,7 @@ Implemented in [`CryptoFile.swift`](../../SimpleXChat/CryptoFile.swift):
 
 - Encrypted files stored alongside unencrypted files in `Documents/files/`
 - The `CryptoFileArgs` (key + nonce) are stored in the Haskell database, not on the filesystem
-- Toggle via privacy settings: [`apiSetEncryptLocalFiles(enable:)`](../../Shared/Model/SimpleXAPI.swift#L392)
+- Toggle via privacy settings: [`apiSetEncryptLocalFiles(enable:)`](../../Shared/Model/SimpleXAPI.swift#L393)
 
 ---
 
@@ -250,7 +250,7 @@ func getWallpaperDirectory() -> URL   // Documents/wallpapers/
 - Downloaded files: `Documents/files/{filename}`
 - Temporary files during transfer: `Documents/temp_files/`
 - Wallpaper images: `Documents/wallpapers/`
-- File paths are set via [`apiSetAppFilePaths(filesFolder:, tempFolder:, assetsFolder:)`](../../Shared/Model/SimpleXAPI.swift#L385) at startup
+- File paths are set via [`apiSetAppFilePaths(filesFolder:, tempFolder:, assetsFolder:)`](../../Shared/Model/SimpleXAPI.swift#L386) at startup
 
 ---
 
@@ -330,20 +330,20 @@ Cancels an in-progress upload or download. For XFTP transfers, also requests chu
 
 | Event | Description | Line |
 |-------|-------------|------|
-| [`rcvFileAccepted`](../../Shared/Model/AppAPITypes.swift#L1257) | Download request accepted | [L1257](../../Shared/Model/AppAPITypes.swift#L1257) |
-| [`rcvFileStart`](../../Shared/Model/AppAPITypes.swift#L1259) | Download started | [L1259](../../Shared/Model/AppAPITypes.swift#L1259) |
-| [`rcvFileProgressXFTP`](../../Shared/Model/AppAPITypes.swift#L1260) | Download progress (receivedSize, totalSize) | [L1260](../../Shared/Model/AppAPITypes.swift#L1260) |
-| [`rcvFileComplete`](../../Shared/Model/AppAPITypes.swift#L1261) | Download complete | [L1261](../../Shared/Model/AppAPITypes.swift#L1261) |
-| [`rcvFileSndCancelled`](../../Shared/Model/AppAPITypes.swift#L1263) | Sender cancelled the transfer | [L1263](../../Shared/Model/AppAPITypes.swift#L1263) |
-| [`rcvFileError`](../../Shared/Model/AppAPITypes.swift#L1264) | Download failed | [L1264](../../Shared/Model/AppAPITypes.swift#L1264) |
-| [`rcvFileWarning`](../../Shared/Model/AppAPITypes.swift#L1265) | Download warning (non-fatal) | [L1265](../../Shared/Model/AppAPITypes.swift#L1265) |
-| [`sndFileStart`](../../Shared/Model/AppAPITypes.swift#L1267) | Upload started | [L1267](../../Shared/Model/AppAPITypes.swift#L1267) |
-| [`sndFileComplete`](../../Shared/Model/AppAPITypes.swift#L1268) | Inline upload complete | [L1268](../../Shared/Model/AppAPITypes.swift#L1268) |
-| [`sndFileProgressXFTP`](../../Shared/Model/AppAPITypes.swift#L1270) | XFTP upload progress (sentSize, totalSize) | [L1270](../../Shared/Model/AppAPITypes.swift#L1270) |
-| [`sndFileCompleteXFTP`](../../Shared/Model/AppAPITypes.swift#L1272) | XFTP upload complete | [L1272](../../Shared/Model/AppAPITypes.swift#L1272) |
-| [`sndFileRcvCancelled`](../../Shared/Model/AppAPITypes.swift#L1269) | Receiver cancelled | [L1269](../../Shared/Model/AppAPITypes.swift#L1269) |
-| [`sndFileError`](../../Shared/Model/AppAPITypes.swift#L1274) | Upload failed | [L1274](../../Shared/Model/AppAPITypes.swift#L1274) |
-| [`sndFileWarning`](../../Shared/Model/AppAPITypes.swift#L1275) | Upload warning (non-fatal) | [L1275](../../Shared/Model/AppAPITypes.swift#L1275) |
+| [`rcvFileAccepted`](../../Shared/Model/AppAPITypes.swift#L1283) | Download request accepted | [L1283](../../Shared/Model/AppAPITypes.swift#L1283) |
+| [`rcvFileStart`](../../Shared/Model/AppAPITypes.swift#L1285) | Download started | [L1285](../../Shared/Model/AppAPITypes.swift#L1285) |
+| [`rcvFileProgressXFTP`](../../Shared/Model/AppAPITypes.swift#L1286) | Download progress (receivedSize, totalSize) | [L1286](../../Shared/Model/AppAPITypes.swift#L1286) |
+| [`rcvFileComplete`](../../Shared/Model/AppAPITypes.swift#L1287) | Download complete | [L1287](../../Shared/Model/AppAPITypes.swift#L1287) |
+| [`rcvFileSndCancelled`](../../Shared/Model/AppAPITypes.swift#L1289) | Sender cancelled the transfer | [L1289](../../Shared/Model/AppAPITypes.swift#L1289) |
+| [`rcvFileError`](../../Shared/Model/AppAPITypes.swift#L1290) | Download failed | [L1290](../../Shared/Model/AppAPITypes.swift#L1290) |
+| [`rcvFileWarning`](../../Shared/Model/AppAPITypes.swift#L1291) | Download warning (non-fatal) | [L1291](../../Shared/Model/AppAPITypes.swift#L1291) |
+| [`sndFileStart`](../../Shared/Model/AppAPITypes.swift#L1293) | Upload started | [L1293](../../Shared/Model/AppAPITypes.swift#L1293) |
+| [`sndFileComplete`](../../Shared/Model/AppAPITypes.swift#L1294) | Inline upload complete | [L1294](../../Shared/Model/AppAPITypes.swift#L1294) |
+| [`sndFileProgressXFTP`](../../Shared/Model/AppAPITypes.swift#L1296) | XFTP upload progress (sentSize, totalSize) | [L1296](../../Shared/Model/AppAPITypes.swift#L1296) |
+| [`sndFileCompleteXFTP`](../../Shared/Model/AppAPITypes.swift#L1298) | XFTP upload complete | [L1298](../../Shared/Model/AppAPITypes.swift#L1298) |
+| [`sndFileRcvCancelled`](../../Shared/Model/AppAPITypes.swift#L1295) | Receiver cancelled | [L1295](../../Shared/Model/AppAPITypes.swift#L1295) |
+| [`sndFileError`](../../Shared/Model/AppAPITypes.swift#L1300) | Upload failed | [L1300](../../Shared/Model/AppAPITypes.swift#L1300) |
+| [`sndFileWarning`](../../Shared/Model/AppAPITypes.swift#L1301) | Upload warning (non-fatal) | [L1301](../../Shared/Model/AppAPITypes.swift#L1301) |
 
 ---
 

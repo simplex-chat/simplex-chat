@@ -83,7 +83,7 @@
 | Shared/Model/ChatModel.swift | PC1 through PC33 | High | Central state — all features depend on it |
 | Shared/Model/SimpleXAPI.swift | PC1 through PC33 | High | FFI bridge — all commands flow through here |
 | Shared/Model/AppAPITypes.swift | PC1 through PC33 | High | Command/response types — all API communication |
-| Shared/Model/DirectorySearch.swift | PC33 | High | Directory response parsing (entries, lenient `moreCount`) and link-type validation of untrusted entries; result states and rows |
+| Shared/Model/DirectorySearch.swift | PC33 | High | Directory response parsing (entries, lenient `moreCount`) and link-type and image validation of untrusted entries; result states and rows |
 | Shared/Model/NtfManager.swift | PC18 | High | Notification delivery |
 | Shared/Model/BGManager.swift | PC18 | Medium | Background fetch scheduling |
 | Shared/Theme/ThemeManager.swift | PC24 | Medium | Theme resolution engine |

@@ -58,7 +58,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `AppLock.kt` | PC22 | Medium | App lock state and authorization lifecycle |
 | `model/ChatModel.kt` | PC1 through PC33 | High | Central state object — every feature reads or writes here |
 | `model/SimpleXAPI.kt` | PC1 through PC33 | High | FFI bridge to Haskell core — all commands and responses |
-| `model/DirectorySearch.kt` | PC33 | High | Directory response parsing (entries, lenient `moreCount`) and link-type validation of untrusted entries; result states and rows |
+| `model/DirectorySearch.kt` | PC33 | High | Directory response parsing (entries, lenient `moreCount`) and link-type and image validation of untrusted entries; result states and rows |
 | `model/CryptoFile.kt` | PC10, PC23 | Medium | Encrypted file read/write helpers |
 | `platform/Core.kt` | PC1 through PC33 | High | Native FFI declarations (`chatMigrateInit`, `chatSendCmd`, etc.) — all API traffic |
 | `platform/AppCommon.kt` | PC1 through PC33 | Medium | Shared app initialization logic |

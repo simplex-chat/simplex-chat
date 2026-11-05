@@ -203,14 +203,14 @@ Two API functions manage database encryption, both in [SimpleXAPI.kt](../common/
 
 | Function | Parameters | Description | Line |
 |----------|-----------|-------------|------|
-| `apiStorageEncryption` | `currentKey: String, newKey: String` | Change or set the database encryption passphrase | [L999](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L999) |
-| `testStorageEncryption` | `key: String, ctrl: ChatCtrl?` | Test whether a given key can decrypt the database | [L1006](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1006) |
+| `apiStorageEncryption` | `currentKey: String, newKey: String` | Change or set the database encryption passphrase | [L1191](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1191) |
+| `testStorageEncryption` | `key: String, ctrl: ChatCtrl?` | Test whether a given key can decrypt the database | [L1198](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1198) |
 
 Both delegate to the Haskell core via `CC.ApiStorageEncryption(DBEncryptionConfig)` and `CC.TestStorageEncryption(key)` respectively.
 
 <a id="DBEncryptionConfig"></a>
 
-`DBEncryptionConfig` ([SimpleXAPI.kt#L4166](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4166)):
+`DBEncryptionConfig` ([SimpleXAPI.kt#L4769](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4769)):
 
 ```kotlin
 class DBEncryptionConfig(val currentKey: String, val newKey: String)
@@ -308,7 +308,7 @@ Files referenced by chat items use `CryptoFile` (optional encryption metadata + 
 
 ### Local File Encryption
 
-The `apiSetEncryptLocalFiles(enable)` command ([SimpleXAPI.kt#L967](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L967)) tells the Haskell core to encrypt files stored in `appFilesDir`. When enabled, files are written as `CryptoFile` with a random AES key and nonce. The JNI functions `chatEncryptFile` and `chatDecryptFile` ([Core.kt#L39-L40](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L39)) handle the actual crypto operations.
+The `apiSetEncryptLocalFiles(enable)` command ([SimpleXAPI.kt#L1159](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1159)) tells the Haskell core to encrypt files stored in `appFilesDir`. When enabled, files are written as `CryptoFile` with a random AES key and nonce. The JNI functions `chatEncryptFile` and `chatDecryptFile` ([Core.kt#L39-L40](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L39)) handle the actual crypto operations.
 
 ---
 
@@ -318,13 +318,13 @@ The `apiSetEncryptLocalFiles(enable)` command ([SimpleXAPI.kt#L967](../common/sr
 
 | Function | CC Command | CR Response | Line |
 |----------|-----------|-------------|------|
-| `apiExportArchive(config)` | `CC.ApiExportArchive(config)` | `CR.ArchiveExported(archiveErrors)` | [SimpleXAPI.kt#L981](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L981) |
-| `apiImportArchive(config)` | `CC.ApiImportArchive(config)` | `CR.ArchiveImported(archiveErrors)` | [SimpleXAPI.kt#L987](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L987) |
-| `apiDeleteStorage()` | `CC.ApiDeleteStorage()` | `CR.CmdOk` | [SimpleXAPI.kt#L993](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L993) |
+| `apiExportArchive(config)` | `CC.ApiExportArchive(config)` | `CR.ArchiveExported(archiveErrors)` | [SimpleXAPI.kt#L1173](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1173) |
+| `apiImportArchive(config)` | `CC.ApiImportArchive(config)` | `CR.ArchiveImported(archiveErrors)` | [SimpleXAPI.kt#L1179](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1179) |
+| `apiDeleteStorage()` | `CC.ApiDeleteStorage()` | `CR.CmdOk` | [SimpleXAPI.kt#L1185](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1185) |
 
 ### ArchiveConfig
 
-Defined at [SimpleXAPI.kt#L4162](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4162):
+Defined at [SimpleXAPI.kt#L4765](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4765):
 
 ```kotlin
 class ArchiveConfig(
@@ -355,7 +355,7 @@ class ArchiveConfig(
 
 ### ArchiveError
 
-Defined at [SimpleXAPI.kt#L7658](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L7658):
+Defined at [SimpleXAPI.kt#L8683](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L8683):
 
 ```kotlin
 sealed class ArchiveError {
