@@ -295,7 +295,7 @@ The `ChatCommand` enum ([`AppAPITypes.swift` L15](../Shared/Model/AppAPITypes.sw
 
 | Command | Parameters | Description | Source |
 |---------|-----------|-------------|--------|
-| `apiSendServiceRequest` | `userId, target, timeoutSec: Double?, requestJSON` | Send a JSON request to a service address (e.g. SimpleX Directory) and wait up to the timeout for its response (`/_service_request`); returns `serviceResponse` | [L137](../Shared/Model/AppAPITypes.swift#L137) |
+| `apiSendServiceRequest` | `userId, target, timeoutSec: Double?, requestJSON` | Send a JSON request to a service address (e.g. SimpleX Directory) and wait for its response, up to the timeout from sending; the lookup of the address before it has its own network timeout (`/_service_request`); returns `serviceResponse` | [L137](../Shared/Model/AppAPITypes.swift#L137) |
 
 ---
 
@@ -610,7 +610,7 @@ Wrappers in [`Shared/Model/SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift) 
 
 | Function | Description | Source |
 |----------|-------------|--------|
-| `apiSearchDirectory(_ text:, cursor:)` | Sends `apiSendServiceRequest` to `DIRECTORY_SERVICE_LINK` with `DIRECTORY_SEARCH_TIMEOUT_SEC` and the search request; returns `parseDirectorySearchResponse(responseData)` (the entries, the cursor and `moreCount`), or nil on any error (logged). Blocks for up to the timeout | [L1044](../Shared/Model/SimpleXAPI.swift#L1044) |
+| `apiSearchDirectory(_ text:, cursor:)` | Sends `apiSendServiceRequest` to `DIRECTORY_SERVICE_LINK` with `DIRECTORY_SEARCH_TIMEOUT_SEC` and the search request; returns `parseDirectorySearchResponse(responseData)` (the entries, the cursor and `moreCount`), or nil on any error (logged). Blocks for the address lookup, then for up to the timeout | [L1044](../Shared/Model/SimpleXAPI.swift#L1044) |
 | `apiConnectPlan(connLink:, resolveMode:, linkOwnerSig:, inProgress:, onFailure:)` | Plans a connection; returns `ConnectionPlanResult?`. `notResolvedLocally` (a `.never` lookup that matched nothing) returns nil silently; any other failure is handled by `onFailure`. The online search reads nil from a `.never` plan of a directory result as "not one of your chats" | [L1064](../Shared/Model/SimpleXAPI.swift#L1064) |
 | `ConnectPlanFailure` | `.alert` (default, every existing caller): `apiConnectResponseAlert`; `.log`: debug log only, used by the online search so per-entry lookups never raise alerts | [L1060](../Shared/Model/SimpleXAPI.swift#L1060) |
 

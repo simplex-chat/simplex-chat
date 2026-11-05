@@ -118,7 +118,7 @@ Kotlin `CC.APISendServiceRequest(userId, target, timeoutSec, request: JsonObject
 
 The app sends at most 100 characters of search text, the directory's limit, counted as Unicode scalars on iOS and code points on Kotlin, as the directory counts.
 
-The call blocks until reply or timeout, with `requestTimeout` of **10 s**. On Kotlin it runs with `withApi` and uses plain `sendCmd`, so a timeout gives a retry row rather than the alert `sendCmdWithRetry` would show. Progress shows through `ConnectProgressManager`, whose spinner appears after 1 s in the search field; its `onCancel` is a way out of the wait, and what is already shown stays.
+The call blocks until reply or timeout, with `requestTimeout` of **10 s** counted from sending; the lookup of the directory's address before it has its own network timeout. On Kotlin it runs with `withApi` and uses plain `sendCmd`, so a timeout gives a retry row rather than the alert `sendCmdWithRetry` would show. Progress shows through `ConnectProgressManager`, whose spinner appears after 1 s in the search field; its `onCancel` is a way out of the wait, and what is already shown stays.
 
 **The progress manager has an owner, because a search and a connection can overlap.** Tapping a result while a search runs is normal: `planAndConnect` calls `cancelConnectProgress()` and then starts its own progress. There is one slot rather than a second spinner:
 
@@ -207,7 +207,7 @@ Kotlin: `common/src/commonMain/moko-resources/base/strings.xml`. iOS: inline `NS
 | Directory over its cap | rejected at once → retry row, not a 10 s wait (§1) |
 | Directory silent, or service requests not enabled | timeout after 10 s → retry row |
 | Response too large to send | prevented by filling the page against the compressed size (§1) |
-| Network down | fails within the 10 s → retry row |
+| Network down | fails at the address lookup's network timeout, or within 10 s of sending → retry row |
 | Error response, or a response that can't be parsed | logged, retry row |
 | One entry that can't be decoded, or with another kind of link | that entry dropped, the rest of the page kept |
 | A store lookup of a result fails | a result with Open, whose online plan shows the real error; no alert |
@@ -217,7 +217,7 @@ Kotlin: `common/src/commonMain/moko-resources/base/strings.xml`. iOS: inline `NS
 
 ## 10. What the design protects, and its limits
 
-The directory learns the search text and when it was sent, and nothing else about the requester: a request is unsigned, contains no profile, and uses a new connection that is deleted after the reply or the timeout. Requests are end-to-end encrypted from the requester to the directory's address. The pages of one search share their text and cursor, so the directory can link them.
+The directory learns the search text, when it was sent, and the SMP server of the request's reply queue, and nothing else about the requester: a request is unsigned, contains no profile, and uses a new connection that is deleted after the reply or the timeout. Requests are end-to-end encrypted from the requester to the directory's address. The pages of one search share their text and cursor, so the directory can link them.
 
 The directory or whoever controls it is treated as untrusted by the apps: they accept only group and channel links, draw its text as plain text and only JPEG and PNG images, and make no network request and show no alert for an entry until the user opens it. Listing owners can't affect the requester beyond their own listing's bounded fields. Anyone can send requests without connecting, so the work of one request is bounded by the text limit and the page size, and the work of all requests by the global cap.
 
@@ -225,6 +225,7 @@ Each request's reply queue is created on one of the user's SMP servers, as for a
 
 Limits of what is built:
 
+- The reply queue is on one of the user's own servers, and the directory sees that server. A user with few or self-hosted servers can have their searches linked and be recognised by it.
 - A group the user was added to by invitation, or joined through a link its owner has since replaced, isn't recognised: it shows as a result with Open beside the user's own chat, and Open prepares a second copy. Recognising it needs the group's current link in the member's group record, a protocol change. Channels are always joined through a prepared chat, so they are recognised.
 - "N left" counts listings without a public link, which are never sent, so it can promise more than loading brings.
 - One directory, fixed in the apps.
