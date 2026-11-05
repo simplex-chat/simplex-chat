@@ -1335,6 +1335,7 @@ private fun TagsOrConnectByName(
             ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
           }
           if (showsSearchInDirectory) {
+            if (candidate != null) Divider()
             searchInDirectoryRow()
           }
         }
@@ -1344,7 +1345,10 @@ private fun TagsOrConnectByName(
     oneHandUI.value ->
       if (candidate != null) {
         ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
-        if (showsSearchInDirectory) searchInDirectoryRow()
+        if (showsSearchInDirectory) {
+          Divider()
+          searchInDirectoryRow()
+        }
       } else if (searchesText) {
         if (showsSearchInDirectory) searchInDirectoryRow()
       } else {

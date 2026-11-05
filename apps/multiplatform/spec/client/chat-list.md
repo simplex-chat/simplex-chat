@@ -396,7 +396,7 @@ The rows next to the search field share one slot with the tags, laid out by [`Ta
 | Name candidate | "Connect to …", and "Search in Directory" until results show | "Connect to …" (in the tags' place), then "Search in Directory" until results show | Tags, "Connect to …", and "Search in Directory" until results show |
 | Pasted SimpleX link | Tags | Tags | Tags |
 
-On desktop the rows are passed to the caller's `desktopView`, which places them between the tags and the field: above the field with the bottom toolbar, below it with the top toolbar.
+A `Divider` separates "Connect to …" and "Search in Directory" in every layout. On desktop the rows are passed to the caller's `desktopView`, which places them between the tags and the field: above the field with the bottom toolbar, below it with the top toolbar.
 
 <a id="OnlineSearchModel"></a>
 
