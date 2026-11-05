@@ -9,7 +9,7 @@ case "$input" in
     base=""
     ;;
   *)
-    upstream=$(gh api "repos/$GITHUB_REPOSITORY" --jq '.parent.owner.login // .owner.login')
+    upstream=$(gh api "repos/$GITHUB_REPOSITORY" --jq '.source.owner.login // .owner.login')
     base=$(gh api "repos/$GITHUB_REPOSITORY/compare/$upstream:master...$GITHUB_SHA" --jq .merge_base_commit.sha)
     git fetch -q --depth=1 origin "$base"
     ;;
