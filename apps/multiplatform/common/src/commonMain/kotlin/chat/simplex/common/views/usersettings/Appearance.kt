@@ -43,7 +43,6 @@ import chat.simplex.common.views.chat.item.ChatItemSender
 import chat.simplex.common.views.chat.item.LocalBubbleLayout
 import chat.simplex.common.views.chat.item.LocalTerminalLayout
 import chat.simplex.common.views.chat.item.PreviewChatItemView
-import chat.simplex.common.views.chat.item.TERMINAL_SENDER_TOP_GAP
 import chat.simplex.common.views.chat.item.TerminalChatItemRow
 import chat.simplex.common.views.chat.item.terminalRowGap
 import chat.simplex.common.views.chat.item.msgTailWidthDp
@@ -308,7 +307,7 @@ object AppearanceScope {
 
         @Composable
         fun TerminalPreviewRow(item: ChatItem, older: ChatItem?, sender: ChatItemSender) {
-          TerminalChatItemRow(sender, gutter = 0.dp, topGap = terminalRowGap(item, older, separated = false, largeGap = true, hasSenderRow = true).toDp(), senderTopGap = if (older == null) 0.dp else TERMINAL_SENDER_TOP_GAP.toDp()) {
+          TerminalChatItemRow(sender, gutter = 0.dp, topGap = terminalRowGap(item, older, separated = false, largeGap = true, hasSenderRow = true).toDp()) {
             PreviewChatItemView(item)
           }
         }

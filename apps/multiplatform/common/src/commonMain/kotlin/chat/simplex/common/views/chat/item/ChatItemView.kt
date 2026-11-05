@@ -1561,6 +1561,44 @@ fun PreviewChatItemView(
 
 @Preview
 @Composable
+fun PreviewChatItemViewEmptyLines() = PreviewChatItemView(
+  ChatItem.getSampleData(1, CIDirection.DirectSnd(), previewDate, "### Gaps\n\none empty line above\n\n\ntwo empty lines above\n\n### After one empty line\n- list entry\n\n- after one empty line\n\n").copy(
+    formattedText = listOf(
+      FormattedText("### ", Format.Markup(BlockToken.HeadingMark(3))),
+      FormattedText("Gaps"),
+      FormattedText("\n\n", Format.Markup(BlockToken.ParagraphBreak(2))),
+      FormattedText("one empty line above"),
+      FormattedText("\n\n\n", Format.Markup(BlockToken.ParagraphBreak(3))),
+      FormattedText("two empty lines above"),
+      FormattedText("\n\n", Format.Markup(BlockToken.ParagraphBreak(2))),
+      FormattedText("### ", Format.Markup(BlockToken.HeadingMark(3))),
+      FormattedText("After one empty line"),
+      FormattedText("\n", Format.Markup(BlockToken.LineBreak())),
+      FormattedText("- ", Format.Markup(BlockToken.ListMark())),
+      FormattedText("list entry"),
+      FormattedText("\n\n", Format.Markup(BlockToken.ParagraphBreak(2))),
+      FormattedText("- ", Format.Markup(BlockToken.ListMark())),
+      FormattedText("after one empty line"),
+      FormattedText("\n", Format.Markup(BlockToken.LineBreak()))
+    ),
+    markdownBlocks = listOf(
+      MarkdownBlock.Heading(3, SegmentRange(1, 2)),
+      MarkdownBlock.Paragraph(SegmentRange(3, 4)),
+      MarkdownBlock.Paragraph(SegmentRange(5, 6)),
+      MarkdownBlock.Heading(3, SegmentRange(8, 9)),
+      MarkdownBlock.ItemList(listOf(ListEntry(content = SegmentRange(11, 12), items = listOf()), ListEntry(content = SegmentRange(14, 15), items = listOf())))
+    )
+  )
+)
+
+@Preview
+@Composable
+fun PreviewChatItemViewEmptyLinesTerminal() = CompositionLocalProvider(LocalTerminalLayout provides true) {
+  PreviewChatItemViewEmptyLines()
+}
+
+@Preview
+@Composable
 fun PreviewChatItemViewDeletedContent() = BubblePreview {
   SimpleXTheme {
     ChatItemView(

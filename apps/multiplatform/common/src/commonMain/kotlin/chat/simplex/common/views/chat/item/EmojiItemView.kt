@@ -26,9 +26,9 @@ fun EmojiItemView(chatItem: ChatItem, timedMessagesTTL: Int?, showViaProxy: Bool
   val emojiText = chatItem.content.text.trim()
   val isSelected = setupEmojiSelection(LocalSelectionManager.current, LocalItemContext.current.selectionIndex, emojiText.length)
 
-  ItemWithMeta(meta = { CIMetaView(chatItem, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }, metaReserved = true) { inlineMeta ->
+  ItemWithMeta(meta = { CIMetaView(chatItem, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }, metaReserved = true, gapBelowCard = terminalReactionsGap(chatItem).toDp()) { inlineMeta ->
     Column(
-      if (LocalTerminalLayout.current) Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, top = TERMINAL_EMOJI_TOP_GAP.toDp(), end = CHAT_ITEM_TEXT_PADDING, bottom = TERMINAL_EMOJI_BOTTOM_GAP.toDp()).messageLastLine() else Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
+      if (LocalTerminalLayout.current) Modifier.padding(horizontal = CHAT_ITEM_TEXT_PADDING).messageCard().messageLastLine() else Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       if (isSelected) {

@@ -39,7 +39,8 @@ struct FramedItemView: View {
             showMeta: chatItem.content.msgContent != nil,
             metaReserved: metaPlacement.reserved,
             overlayMeta: captionlessMedia ? AnyView(CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary, invertedMaterial: true)) : nil,
-            endButton: endButton
+            endButton: endButton,
+            lastBlockGap: terminalCardBottomGap(chatItem)
         ) {
             CIMetaView(
                 chat: chat,
@@ -141,7 +142,7 @@ struct FramedItemView: View {
         }
             .background { if !terminal { chatItemFrameColorMaybeImageOrVideo(chatItem, theme).modifier(ChatTailPadding()) } }
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
-            .padding(.bottom, terminal && metaPlacement.gapBelowBlock ? terminalBlockBottomGap : 0)
+            .padding(.bottom, terminal && metaPlacement.gapBelowBlock ? terminalCardBottomGap(chatItem) : 0)
 
         if let (title, text) = chatItem.meta.itemStatus.statusInfo ?? chatItem.meta.msgVerified?.sigMissingInfo {
             v.simultaneousGesture(TapGesture().onEnded {
@@ -157,12 +158,16 @@ struct FramedItemView: View {
         }
     }
 
+    static func showsEmoji(_ ci: ChatItem) -> Bool {
+        ci.formattedText == nil && ci.file == nil && !ci.meta.isLive && isShortEmoji(ci.content.text)
+    }
+
     @ViewBuilder private func framedMsgContentView() -> some View {
-        if chatItem.formattedText == nil && chatItem.file == nil && !chatItem.meta.isLive && isShortEmoji(chatItem.content.text) {
+        if Self.showsEmoji(chatItem) {
             if terminal {
                 emojiText(chatItem.content.text)
                     .modifier(MessageLastLine())
-                    .padding(EdgeInsets(top: terminalEmojiTopGap, leading: chatItemTextPadding, bottom: terminalEmojiBottomGap, trailing: chatItemTextPadding))
+                    .padding(EdgeInsets(top: terminalCardTopGap(chatItem), leading: chatItemTextPadding, bottom: terminalCardBottomGap(chatItem), trailing: chatItemTextPadding))
             } else {
                 VStack(spacing: 4) {
                     emojiText(chatItem.content.text)
@@ -190,7 +195,7 @@ struct FramedItemView: View {
                             useWhiteMetaColor = false
                         }
                 } else {
-                    ciMsgContentView(chatItem, terminalTop: terminalBlockBottomGap)
+                    ciMsgContentView(chatItem)
                 }
             case let .video(text, _, duration):
                 CIVideoView(chatItem: chatItem, preview: preview, duration: duration, maxWidth: maxWidth, videoWidth: videoWidth, showFullscreenPlayer: $showFullscreenGallery)
@@ -206,7 +211,7 @@ struct FramedItemView: View {
                         useWhiteMetaColor = false
                     }
                 } else {
-                    ciMsgContentView(chatItem, terminalTop: terminalBlockBottomGap)
+                    ciMsgContentView(chatItem)
                 }
             case let .voice(text, duration):
                 FramedCIVoiceView(chat: chat, chatItem: chatItem, recordingFile: chatItem.file, duration: duration, allowMenu: $allowMenu)
@@ -221,7 +226,7 @@ struct FramedItemView: View {
             case let .link(_, preview):
                 CILinkView(linkPreview: preview, maxWidth: maxWidth)
                     .if(terminal) { terminalBlock($0.frame(maxWidth: maxWidth).padding(.bottom, 8), chatItemFrameContextColor(chatItem, theme)) }
-                ciMsgContentView(chatItem, terminalTop: terminalBlockBottomGap)
+                ciMsgContentView(chatItem)
             case let .chat(text, chatLink, ownerSig):
                 let hasText = text != chatLink.connLinkStr
                 CIChatLinkHeader(chatItem: chatItem, chatLink: chatLink, ownerSig: ownerSig, hasText: hasText)
@@ -231,7 +236,7 @@ struct FramedItemView: View {
                     })
                     .if(terminal) { terminalBlock($0.frame(maxWidth: maxWidth).fixedSize(horizontal: true, vertical: false), chatItemFrameContextColor(chatItem, theme)) }
                 if hasText {
-                    ciMsgContentView(chatItem, stripLink: chatLink.connLinkStr, terminalTop: terminalBlockBottomGap)
+                    ciMsgContentView(chatItem, stripLink: chatLink.connLinkStr)
                 }
             case let .unknown(_, text: text):
                 if chatItem.file == nil {
@@ -396,8 +401,7 @@ struct FramedItemView: View {
         .fixedSize(horizontal: false, vertical: true)
         .padding(.leading, chatItemTextPadding)
         .overlay { if case .voice = chatItem.content.msgContent {} else { DetermineWidth() } }
-        .padding(.top, terminalBlockTopGap)
-        .padding(.bottom, terminalBlockBottomGap)
+        .padding(.top, chatItem.hasHeaderAboveQuote ? terminalParagraphGap : 0)
     }
 
     private func terminalBlock(_ block: some View, _ background: Color = .clear) -> some View {
@@ -405,7 +409,7 @@ struct FramedItemView: View {
             .background(background)
             .clipShape(RoundedRectangle(cornerRadius: msgRectMaxRadius * roundness))
             .padding(.leading, chatItemTextPadding)
-            .padding(.top, terminalBlockTopGap)
+            .padding(.top, terminalCardTopGap(chatItem))
     }
     
     private func membership() -> GroupMember? {
@@ -415,7 +419,7 @@ struct FramedItemView: View {
         }
     }
     
-    @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, txtPrefix: NSAttributedString? = nil, stripLink: String? = nil, terminalTop: CGFloat = 0) -> some View {
+    @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, txtPrefix: NSAttributedString? = nil, stripLink: String? = nil) -> some View {
         let text = ci.meta.isLive ? ci.content.msgContent?.text ?? ci.text : ci.text
         let rtl = isRightToLeft(text)
         let ft = text == "" ? [] : ci.formattedText
@@ -440,7 +444,7 @@ struct FramedItemView: View {
         .environment(\.containerBackground, UIColor(terminal ? terminalBackgroundColor(theme) : chatItemFrameColor(ci, theme)))
         .multilineTextAlignment(rtl ? .trailing : .leading)
         .padding(.vertical, terminal ? 0 : 6)
-        .padding(.top, terminal ? terminalTop + terminalHeadingGap(ci) : 0)
+        .padding(.top, terminal ? terminalTextTopGap(ci) : 0)
         .padding(.horizontal, 12)
         .overlay(DetermineWidth())
         .frame(minWidth: 0, alignment: .leading)
@@ -455,6 +459,7 @@ struct FramedItemView: View {
     @ViewBuilder private func ciFileView(_ ci: ChatItem, _ text: String) -> some View {
         CIFileView(chat: chat, file: chatItem.file, meta: chatItem.meta)
             .overlay(DetermineWidth())
+            .padding(.top, terminal ? terminalCardTopGap(ci) : 0)
         if text != "" || ci.meta.isLive {
             ciMsgContentView (chatItem)
         }
@@ -492,7 +497,8 @@ struct FramedItemView: View {
 
     private var metaPlacement: (reserved: Bool, gapBelowBlock: Bool) {
         switch chatItem.content.msgContent {
-        case let .voice(text, _): (text != "", false)
+        case let .voice(text, _): (text != "", text == "")
+        case let .file(text), let .unknown(_, text): (true, chatItem.file != nil && text == "" && !chatItem.meta.isLive)
         case let .chat(text, chatLink, _): text != chatLink.connLinkStr ? (true, false) : (false, true)
         default: (!captionlessMedia, captionlessMedia)
         }
