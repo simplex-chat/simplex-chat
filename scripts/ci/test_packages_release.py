@@ -507,7 +507,7 @@ class ChangesTest(GitRepoTest):
         self.assertEqual(self.builds("packages/simplex-chat-python/src/simplex_chat/client.py"), {"packages"})
 
     def test_badge_web_change_builds_the_core_and_tests_its_scope(self):
-        self.assertEqual(self.builds("apps/simplex-badge-service/web/src/catalog.ts"), {"haskell"})
+        self.assertEqual(self.builds("apps/simplex-store-service/web/src/catalog.ts"), {"haskell"})
         self.assertEqual(self.values["scopes"], "badge-web")
 
     def test_release_script_change_tests_the_ci_scripts(self):

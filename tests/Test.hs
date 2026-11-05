@@ -3,16 +3,17 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
 
-import Bots.BadgeService.BTCPayTests
-import Bots.BadgeService.BotTests
-import Bots.BadgeService.CatalogTests
-import Bots.BadgeService.ConfigTests
-import Bots.BadgeService.GroupIntegrationTests
-import Bots.BadgeService.GroupTests
-import Bots.BadgeService.StoreVerifierTests
-import Bots.BadgeService.StripeTests
-import Bots.BadgeService.WaitersTests
-import Bots.BadgeService.WebTests
+import Bots.StoreService.BTCPayTests
+import Bots.StoreService.BotTests
+import Bots.StoreService.CatalogTests
+import Bots.StoreService.ConfigTests
+import Bots.StoreService.GroupIntegrationTests
+import Bots.StoreService.GroupTests
+import Bots.StoreService.NameRegistrationTests
+import Bots.StoreService.StoreVerifierTests
+import Bots.StoreService.StripeTests
+import Bots.StoreService.WaitersTests
+import Bots.StoreService.WebTests
 import Bots.BroadcastTests
 import Bots.DirectoryTests
 import ChatClient
@@ -38,6 +39,7 @@ import Test.Hspec.Core.Spec (sequential)
 import UnliftIO.Temporary (withTempDirectory)
 import ValidNames
 import ViewTests
+import WalletTests
 #if defined(dbPostgres)
 import Control.Exception (bracket_, finally)
 import PostgresSchemaDump
@@ -77,7 +79,7 @@ main = do
       around tmpBracket $ describe "WebRTC encryption" webRTCTests
 #endif
       describe "Supporter badges" badgeTests
-      describe "SimpleX badge service" $ do
+      describe "SimpleX store service" $ do
         badgeConfigTests
         badgeWebTests
         badgeCatalogTests
@@ -85,11 +87,13 @@ main = do
         badgeWaitersTests
         badgeBTCPayTests
         badgeStripeTests
+        badgeNameRegistrationTests
         badgeStoreVerifierTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "Member relations" memberRelationsTests
       describe "SimpleX chat view" viewTests
+      describe "Wallet derivation" walletDerivationTests
       describe "SimpleX chat protocol" protocolTests
       describe "Valid names" validNameTests
       describe "Message batching" batchingTests
@@ -110,10 +114,11 @@ main = do
           describe "Mobile API Tests" mobileTests
 #endif
           describe "SimpleX chat client" chatTests
+          describe "Wallet" walletTests
           xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
           describe "SimpleX Directory service bot" directoryServiceTests
-          describe "SimpleX badge service e2e" $ do
-            badgeServiceTests
+          describe "SimpleX store service e2e" $ do
+            storeServiceTests
             describe "managed group" badgeGroupIntegrationTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
