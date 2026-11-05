@@ -80,7 +80,7 @@ directoryServiceTests = do
   it "should hold a place under the in-flight cap until the request is answered" testServiceRequestSlotHeld
   it "should send every entry field the apps render" testDirectorySearchEntryFields
   it "should send a channel entry with its published link" testDirectorySearchChannelEntry
-  it "should drop an oversize image and keep the entry" testSearchEntryImageBound
+  it "should drop an image that is oversize or not JPEG or PNG and keep the entry" testSearchEntryImageBound
   it "should cut a long short description to the clients' limit" testSearchEntryShortDescrBound
   it "should page image-bearing entries over the envelope" testDirectorySearchImagePaging
   it "should join a group found over the service RPC" testDirectorySearchJoinGroup
@@ -871,17 +871,18 @@ testSearchEntryImageBound ps =
     (g@GroupInfo {groupProfile = p}, gLink_) <- ownerGroup bob "privacy"
     now <- getCurrentTime
     let entryWithImage t = searchEntry now (g {groupProfile = (p :: GroupProfile) {image = Just (ImageData t)}}) gLink_
-        atBound = T.replicate maxProfileImageSize "a"
+        pngHeader = "data:image/png;base64,iVBORw0KGgoA"
+        atBound = pngHeader <> T.replicate (maxProfileImageSize - T.length pngHeader) "a"
     case entryWithImage atBound of
       Just DirectorySearchEntry {image} -> image `shouldBe` Just (ImageData atBound)
       Nothing -> expectationFailure "entry at the image bound was dropped"
-    case entryWithImage (T.replicate (maxProfileImageSize + 1) "a") of
+    forM_ [atBound <> "a", "data:image/gif;base64,R0lGODlh"] $ \t -> case entryWithImage t of
       Just DirectorySearchEntry {image, displayName, shortDescr, groupLink = PublicLink {connShortLink}} -> do
         image `shouldBe` Nothing
         displayName `shouldBe` "privacy"
         shortDescr `shouldBe` Just "Private chats"
         isJust connShortLink `shouldBe` True
-      Nothing -> expectationFailure "entry over the image bound was dropped"
+      Nothing -> expectationFailure "entry was dropped with its image"
 
 testSearchEntryShortDescrBound :: HasCallStack => TestParams -> IO ()
 testSearchEntryShortDescrBound ps =

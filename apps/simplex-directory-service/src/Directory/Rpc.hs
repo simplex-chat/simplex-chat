@@ -108,7 +108,7 @@ searchEntry now g@GroupInfo {groupProfile} gLink_ =
           -- the apps connect through the short link, and a full link is hundreds of bytes of the envelope
           groupLink = if isJust connShortLink then link {connFullLink = Nothing} else link,
           shortDescr = T.take maxShortDescrLength <$> shortDescr,
-          image = image >>= \img@(ImageData t) -> if T.length t > maxProfileImageSize then Nothing else Just img,
+          image = image >>= \img@(ImageData t) -> if T.length t > maxProfileImageSize || T.null (safeImageData t) then Nothing else Just img,
           activeAt = groupActiveAt now g,
           createdAt = groupCreatedAt now g
         }

@@ -4,6 +4,7 @@ import chat.simplex.common.views.chatlist.DirectoryFooter
 import chat.simplex.common.views.newchat.ConnectTarget
 import chat.simplex.common.views.newchat.strConnectTarget
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -38,7 +39,7 @@ data class DirectorySearchEntry(
   val simplexName: String? = null,
   private val groupLink: DirectoryPublicLink,
   val shortDescr: String? = null,
-  val image: String? = null,
+  @SerialName("image") private val imageData: String? = null,
   val activeAt: Instant? = null,
   val createdAt: Instant? = null,
 ) {
@@ -56,12 +57,18 @@ data class DirectorySearchEntry(
     }
     link
   }
+
+  @Transient
+  val image: String? = imageData?.takeIf(::isSafeImageData)
 }
 
 fun simplexLinkType(s: String): SimplexLinkType? {
   val t = strConnectTarget(s)
   return if (t is ConnectTarget.Link && t.text == s) t.linkType else null
 }
+
+private fun isSafeImageData(s: String): Boolean =
+  s.startsWith("data:image/jpg;base64,/9j/") || s.startsWith("data:image/png;base64,iVBORw0KGgo")
 
 data class DirectorySearchResults(
   val entries: List<DirectorySearchEntry>,

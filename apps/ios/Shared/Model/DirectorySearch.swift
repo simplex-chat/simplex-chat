@@ -52,7 +52,7 @@ struct DirectorySearchEntry: Decodable, Hashable, Identifiable {
         displayName = try c.decode(String.self, forKey: .displayName)
         simplexName = try c.decodeIfPresent(String.self, forKey: .simplexName)
         shortDescr = try c.decodeIfPresent(String.self, forKey: .shortDescr)
-        image = try c.decodeIfPresent(String.self, forKey: .image)
+        image = try c.decodeIfPresent(String.self, forKey: .image).flatMap { isSafeImageData($0) ? $0 : nil }
         activeAt = try c.decodeIfPresent(Date.self, forKey: .activeAt)
         createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt)
         let groupLink = try c.decode(DirectoryPublicLink.self, forKey: .groupLink)
@@ -68,6 +68,10 @@ struct DirectorySearchEntry: Decodable, Hashable, Identifiable {
 
 func simplexLinkType(_ s: String) -> SimplexLinkType? {
     if case let .link(text, linkType, _) = strConnectTarget(s), text == s { linkType } else { nil }
+}
+
+private func isSafeImageData(_ s: String) -> Bool {
+    s.hasPrefix("data:image/jpg;base64,/9j/") || s.hasPrefix("data:image/png;base64,iVBORw0KGgo")
 }
 
 // entries stay undecoded here so they can be decoded one at a time: one entry the app does not
