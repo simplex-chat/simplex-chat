@@ -51,7 +51,6 @@ class OnlineSearchModel {
   private var generation = 0
   private var spinnerShown = false
 
-  val searching: Boolean get() = loading
   val showResults: Boolean get() = loading || searched
   val footer: DirectoryFooter? get() = if (failed) DirectoryFooter.Retry else if (cursor != null) DirectoryFooter.LoadMore else null
 
@@ -164,8 +163,8 @@ class OnlineSearchModel {
   }
 
   private fun updateSpinner() {
-    if (searching == spinnerShown) return
-    spinnerShown = searching
+    if (loading == spinnerShown) return
+    spinnerShown = loading
     if (spinnerShown) {
       ConnectProgressManager.startConnectProgress(
         generalGetString(MR.strings.searching_directory),

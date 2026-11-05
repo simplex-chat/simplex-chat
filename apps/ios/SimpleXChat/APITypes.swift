@@ -749,10 +749,6 @@ public enum JSONValue: Codable, Hashable {
         case let .object(v): try c.encode(v)
         }
     }
-
-    public var stringValue: String? {
-        if case let .string(v) = self { return v } else { return nil }
-    }
 }
 
 public func decodeJSONValue<T: Decodable>(_ value: JSONValue) -> T? {

@@ -184,7 +184,7 @@ struct NewChatSheet: View {
                     searchShowingSimplexLink: $searchShowingSimplexLink,
                     searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
                     showDeletedChatIcon: true,
-                    showsEmptyState: !onlineSearch.searching && !showsSearchInDirectory
+                    showsEmptyState: !onlineSearch.loading && !showsSearchInDirectory
                 )
             }
         }

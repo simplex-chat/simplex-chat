@@ -27,7 +27,6 @@ class OnlineSearchModel: ObservableObject {
     private var generation = 0
     private var spinnerShown = false
 
-    var searching: Bool { loading }
     var showResults: Bool { loading || searched }
     var footer: DirectoryFooter? { failed ? .retry : cursor != nil ? .loadMore : nil }
 
@@ -141,8 +140,8 @@ class OnlineSearchModel: ObservableObject {
     }
 
     private func updateSpinner() {
-        guard searching != spinnerShown else { return }
-        spinnerShown = searching
+        guard loading != spinnerShown else { return }
+        spinnerShown = loading
         if spinnerShown {
             ConnectProgressManager.shared.startConnectProgress(
                 NSLocalizedString("Searching directory…", comment: "in progress text"),

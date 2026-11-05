@@ -34,13 +34,11 @@ struct DirectorySearchEntry: Decodable, Hashable, Identifiable {
     let link: String
     var shortDescr: String? = nil
     var image: String? = nil
-    var activeAt: Date? = nil
-    var createdAt: Date? = nil
 
     var id: String { link }
 
     enum CodingKeys: String, CodingKey {
-        case entryType, displayName, simplexName, groupLink, shortDescr, image, activeAt, createdAt
+        case entryType, displayName, simplexName, groupLink, shortDescr, image
     }
 
     init(from decoder: Decoder) throws {
@@ -50,8 +48,6 @@ struct DirectorySearchEntry: Decodable, Hashable, Identifiable {
         simplexName = try c.decodeIfPresent(String.self, forKey: .simplexName)
         shortDescr = try c.decodeIfPresent(String.self, forKey: .shortDescr)
         image = try c.decodeIfPresent(String.self, forKey: .image).flatMap { isSafeImageData($0) ? $0 : nil }
-        activeAt = try c.decodeIfPresent(Date.self, forKey: .activeAt)
-        createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt)
         let groupLink = try c.decode(DirectoryPublicLink.self, forKey: .groupLink)
         // untrusted input: only group and channel links are kept
         guard let link = groupLink.connShortLink ?? groupLink.connFullLink,

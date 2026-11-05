@@ -506,7 +506,7 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
             reverseLayout = oneHandUI.value
           ) {
             directoryRows(rows, onlineSearch)
-            if (!onlineSearch.searching && rows.isEmpty) {
+            if (!onlineSearch.loading && rows.isEmpty) {
               item {
                 Text(
                   stringResource(MR.strings.no_chats_found),
@@ -1210,7 +1210,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
       item { Spacer(if (oneHandUI.value) Modifier.windowInsetsTopHeight(WindowInsets.statusBars) else Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars)) }
     }
   }
-  if (chats.isEmpty() && (chatModel.chats.value.isNotEmpty() || onlineSearch.searched) && !onlineSearch.searching && rows.isEmpty && !showsSearchInDirectory) {
+  if (chats.isEmpty() && (chatModel.chats.value.isNotEmpty() || onlineSearch.searched) && !onlineSearch.loading && rows.isEmpty && !showsSearchInDirectory) {
     Box(Modifier.fillMaxSize().imePadding().padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
       NoChatsView(searchText = searchText)
     }

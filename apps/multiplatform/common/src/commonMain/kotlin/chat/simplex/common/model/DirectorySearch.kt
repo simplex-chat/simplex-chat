@@ -3,7 +3,6 @@ package chat.simplex.common.model
 import chat.simplex.common.views.chatlist.DirectoryFooter
 import chat.simplex.common.views.newchat.ConnectTarget
 import chat.simplex.common.views.newchat.strConnectTarget
-import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
@@ -38,8 +37,6 @@ data class DirectorySearchEntry(
   private val groupLink: DirectoryPublicLink,
   val shortDescr: String? = null,
   @SerialName("image") private val imageData: String? = null,
-  val activeAt: Instant? = null,
-  val createdAt: Instant? = null,
 ) {
   val id: String get() = link
 

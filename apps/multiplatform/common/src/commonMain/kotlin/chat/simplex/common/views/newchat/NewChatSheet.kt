@@ -205,7 +205,7 @@ private fun ModalData.NewChatSheetLayout(
   fun searchTrimmed(): String = searchText.value.text.trim()
 
   val showsSearchInDirectory = searchTrimmed().isNotEmpty() && !searchShowingSimplexLink.value && !onlineSearch.showResults
-  val showsEmptyState = !onlineSearch.searching && rows.isEmpty && !showsSearchInDirectory
+  val showsEmptyState = !onlineSearch.loading && rows.isEmpty && !showsSearchInDirectory
 
   fun runDirectorySearch() {
     val text = searchTrimmed()
