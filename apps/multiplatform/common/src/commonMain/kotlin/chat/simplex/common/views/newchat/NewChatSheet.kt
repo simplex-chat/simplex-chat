@@ -295,15 +295,13 @@ private fun ModalData.NewChatSheetLayout(
 
   @Composable
   fun NoFilteredContactsItem() {
-    if (showsEmptyState) {
-      if (filteredContactChats.isEmpty() && allChats.isNotEmpty()) {
-        Column(sectionModifier.fillMaxSize().padding(DEFAULT_PADDING)) {
-          Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            Text(
-              generalGetString(MR.strings.no_filtered_contacts),
-              color = MaterialTheme.colors.secondary
-            )
-          }
+    if (showsEmptyState && filteredContactChats.isEmpty() && (allChats.isNotEmpty() || onlineSearch.searched)) {
+      Column(sectionModifier.fillMaxSize().padding(DEFAULT_PADDING)) {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+          Text(
+            generalGetString(if (allChats.isNotEmpty()) MR.strings.no_filtered_contacts else MR.strings.no_contacts),
+            color = MaterialTheme.colors.secondary
+          )
         }
       }
     }

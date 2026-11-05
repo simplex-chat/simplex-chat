@@ -657,7 +657,7 @@ struct ChatListView: View {
                 }
             }
             // this covers the whole list, so it must not hide the online results or their messages
-            if cs.isEmpty && !chatModel.chats.isEmpty && !onlineSearch.searching && rows.isEmpty && !showsSearchInDirectory {
+            if cs.isEmpty && (!chatModel.chats.isEmpty || onlineSearch.searched) && !onlineSearch.searching && rows.isEmpty && !showsSearchInDirectory {
                 noChatsView()
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)

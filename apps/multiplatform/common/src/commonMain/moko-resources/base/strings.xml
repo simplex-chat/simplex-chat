@@ -1013,6 +1013,7 @@
 
   <string name="deleted_chats">Archived contacts</string>
   <string name="no_filtered_contacts">No filtered contacts</string>
+  <string name="no_contacts">No contacts</string>
   <string name="contact_list_header_title">Your contacts</string>
 
   <!--  ComposeContextProfilePickerView.kt -->

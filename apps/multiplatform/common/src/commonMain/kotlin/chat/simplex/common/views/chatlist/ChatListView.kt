@@ -1215,7 +1215,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     }
   }
   // this covers the whole list, so it must not hide the online results or their messages
-  if (chats.isEmpty() && chatModel.chats.value.isNotEmpty() && !onlineSearch.searching && rows.isEmpty && !showsSearchInDirectory) {
+  if (chats.isEmpty() && (chatModel.chats.value.isNotEmpty() || onlineSearch.searched) && !onlineSearch.searching && rows.isEmpty && !showsSearchInDirectory) {
     Box(Modifier.fillMaxSize().imePadding().padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
       NoChatsView(searchText = searchText)
     }
