@@ -6,9 +6,15 @@ import chat.simplex.common.views.chat.ListItem
 import chat.simplex.common.views.chat.MergedItem
 import chat.simplex.common.views.chat.terminalRowsSeparated
 import chat.simplex.common.views.chat.item.TERMINAL_LEVEL_STEP
-import chat.simplex.common.views.chat.item.terminalHeadingGap
+import chat.simplex.common.views.chat.item.TERMINAL_NAME_REPEAT_SECONDS
+import chat.simplex.common.views.chat.item.TERMINAL_PARAGRAPH_GAP
+import chat.simplex.common.views.chat.item.isOneLine
+import chat.simplex.common.views.chat.item.terminalCardTop
 import chat.simplex.common.views.chat.item.terminalItemShowsSender
+import chat.simplex.common.views.chat.item.terminalQuoteTop
+import chat.simplex.common.views.chat.item.terminalReactionsGap
 import chat.simplex.common.views.chat.item.terminalRowGap
+import chat.simplex.common.views.chat.item.terminalTextTop
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
@@ -25,13 +31,13 @@ class TerminalItemViewTest {
   private val alice = GroupMember.sampleData.copy(groupMemberId = 1, memberId = "alice")
   private val bob = GroupMember.sampleData.copy(groupMemberId = 2, memberId = "bob")
 
-  private fun msgAt(id: Long, dir: CIDirection, ts: Instant) =
-    ChatItem.getSampleData(id, dir, ts).let {
-      if (dir.sent) it else it.copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello")))
+  private fun msgAt(id: Long, dir: CIDirection, ts: Instant, text: String = "hello") =
+    ChatItem.getSampleData(id, dir, ts, text).let {
+      if (dir.sent) it else it.copy(content = CIContent.RcvMsgContent(MsgContent.MCText(text)))
     }
 
-  private fun msg(id: Long, dir: CIDirection, secondsAfterNoon: Long) =
-    msgAt(id, dir, Instant.fromEpochSeconds(noon.epochSeconds + secondsAfterNoon))
+  private fun msg(id: Long, dir: CIDirection, secondsAfterNoon: Long, text: String = "hello") =
+    msgAt(id, dir, Instant.fromEpochSeconds(noon.epochSeconds + secondsAfterNoon), text)
 
   private fun integrityError(id: Long, secondsAfterNoon: Long) =
     msg(id, CIDirection.DirectRcv(), secondsAfterNoon).copy(content = CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(1, 2)))
@@ -53,7 +59,15 @@ class TerminalItemViewTest {
   fun senderHiddenForSameSender() {
     assertFalse(terminalItemShowsSender(msg(2, CIDirection.DirectSnd(), 30), older = msg(1, CIDirection.DirectSnd(), 0)))
     assertFalse(terminalItemShowsSender(msg(2, CIDirection.GroupRcv(alice), 59), older = msg(1, CIDirection.GroupRcv(alice), 0)))
-    assertFalse(terminalItemShowsSender(msg(2, CIDirection.DirectRcv(), 3600), older = msg(1, CIDirection.DirectRcv(), 0)))
+    assertFalse(terminalItemShowsSender(msg(2, CIDirection.DirectRcv(), TERMINAL_NAME_REPEAT_SECONDS - 1L), older = msg(1, CIDirection.DirectRcv(), 0)))
+    assertFalse(terminalItemShowsSender(msg(2, CIDirection.DirectRcv(), 0), older = msg(1, CIDirection.DirectRcv(), TERMINAL_NAME_REPEAT_SECONDS.toLong())))
+  }
+
+  @Test
+  fun senderShownAgainAfterPause() {
+    assertTrue(terminalItemShowsSender(msg(2, CIDirection.DirectRcv(), TERMINAL_NAME_REPEAT_SECONDS.toLong()), older = msg(1, CIDirection.DirectRcv(), 0)))
+    assertTrue(terminalItemShowsSender(msg(2, CIDirection.GroupRcv(alice), 3600), older = msg(1, CIDirection.GroupRcv(alice), 0)))
+    assertFalse(terminalItemShowsSender(featureEvent(2, 3600), older = featureEvent(1, 0)))
   }
 
   @Test
@@ -130,6 +144,10 @@ class TerminalItemViewTest {
 
   private fun forwarded(item: ChatItem) = item.copy(meta = item.meta.copy(itemForwarded = CIForwardedFrom.Unknown))
 
+  private val file = CIFile(fileId = 1, fileName = "a.txt", fileSize = 1, fileStatus = CIFileStatus.SndComplete, fileProtocol = FileProtocol.XFTP)
+
+  private val thumbsUp = listOf(CIReactionCount(MsgReaction.Emoji(MREmojiChar.ThumbsUp), userReacted = false, totalReacted = 1))
+
   private fun gap(item: ChatItem, older: ChatItem?, separated: Boolean = false, largeGap: Boolean = false, hasSenderRow: Boolean = false) =
     terminalRowGap(item, older, separated, largeGap, hasSenderRow)
 
@@ -144,21 +162,55 @@ class TerminalItemViewTest {
   }
 
   @Test
-  fun rowGapZeroBetweenCloseMessages() {
+  fun rowGapZeroBetweenCloseOneLineMessages() {
     assertEquals(0.sp, gap(msg(2, CIDirection.DirectSnd(), 10), msg(1, CIDirection.DirectSnd(), 0)))
+    assertEquals(0.sp, gap(msg(2, CIDirection.DirectRcv(), 10, "👍"), msg(1, CIDirection.DirectRcv(), 0)))
+  }
+
+  @Test
+  fun rowGapBetweenCloseMessagesUnlessBothAreOneLine() {
+    val older = msg(1, CIDirection.DirectSnd(), 0)
+    val twoLines = msg(2, CIDirection.DirectSnd(), 10, "line one\nline two")
+    assertEquals(TERMINAL_PARAGRAPH_GAP, gap(twoLines, older))
+    assertEquals(TERMINAL_PARAGRAPH_GAP, gap(msg(3, CIDirection.DirectSnd(), 20), twoLines))
+    assertEquals(TERMINAL_PARAGRAPH_GAP, gap(quoted(msg(2, CIDirection.DirectSnd(), 10)), older))
+    assertEquals(TERMINAL_PARAGRAPH_GAP, gap(withBlocks(msg(2, CIDirection.DirectSnd(), 10), heading()), older))
+  }
+
+  @Test
+  fun rowGapBelowReactions() {
+    val older = msg(1, CIDirection.DirectSnd(), 0)
+    assertEquals(TERMINAL_PARAGRAPH_GAP, gap(msg(2, CIDirection.DirectSnd(), 10), older.copy(reactions = thumbsUp)))
+    assertEquals(0.sp, gap(msg(2, CIDirection.DirectSnd(), 10).copy(reactions = thumbsUp), older))
+  }
+
+  @Test
+  fun oneLineMessages() {
+    assertTrue(msg(1, CIDirection.DirectSnd(), 0).isOneLine)
+    assertTrue(msg(1, CIDirection.DirectRcv(), 0, "👍").isOneLine)
+    assertFalse(msg(1, CIDirection.DirectSnd(), 0, "hello\n").isOneLine)
+    assertTrue(msg(1, CIDirection.DirectSnd(), 0).copy(reactions = thumbsUp).isOneLine)
+    assertFalse(quoted(msg(1, CIDirection.DirectSnd(), 0)).isOneLine)
+    assertFalse(forwarded(msg(1, CIDirection.DirectSnd(), 0)).isOneLine)
+    assertFalse(withBlocks(msg(1, CIDirection.DirectSnd(), 0), heading()).isOneLine)
+    val base = msg(1, CIDirection.DirectSnd(), 0)
+    assertFalse(base.copy(content = CIContent.SndMsgContent(MsgContent.MCImage("hello", ""))).isOneLine)
+    assertFalse(base.copy(content = CIContent.SndMsgContent(MsgContent.MCUnknown(text = "hello", json = JsonPrimitive("unknown"))), file = file).isOneLine)
+    assertFalse(featureEvent(1, 0).isOneLine)
   }
 
   @Test
   fun rowGapAfterLargeGapOrAboveSenderRow() {
     val older = msg(1, CIDirection.DirectSnd(), 0)
-    assertEquals(TERMINAL_LEVEL_STEP, gap(msg(2, CIDirection.DirectSnd(), 70), older, largeGap = true))
-    assertEquals(TERMINAL_LEVEL_STEP, gap(msg(2, CIDirection.DirectSnd(), 10), older, hasSenderRow = true))
+    assertEquals(TERMINAL_PARAGRAPH_GAP, gap(msg(2, CIDirection.DirectSnd(), 70), older, largeGap = true))
+    assertEquals(TERMINAL_PARAGRAPH_GAP, gap(msg(2, CIDirection.DirectSnd(), 10), older, hasSenderRow = true))
   }
 
   @Test
   fun rowGapNextToEvent() {
-    assertEquals(TERMINAL_LEVEL_STEP, gap(featureEvent(2, 10), msg(1, CIDirection.DirectRcv(), 0)))
-    assertEquals(TERMINAL_LEVEL_STEP, gap(msg(2, CIDirection.DirectRcv(), 10), featureEvent(1, 0)))
+    assertEquals(TERMINAL_PARAGRAPH_GAP, gap(featureEvent(2, 10), msg(1, CIDirection.DirectRcv(), 0)))
+    assertEquals(TERMINAL_PARAGRAPH_GAP, gap(msg(2, CIDirection.DirectRcv(), 10), featureEvent(1, 0)))
+    assertEquals(TERMINAL_PARAGRAPH_GAP, gap(featureEvent(2, 10), featureEvent(1, 0)))
   }
 
   @Test
@@ -184,51 +236,93 @@ class TerminalItemViewTest {
   @Test
   fun headingAtItemTopTakesRowGap() {
     val item = withBlocks(msg(2, CIDirection.DirectSnd(), 10), heading())
-    assertEquals(TERMINAL_LEVEL_STEP, gap(item, msg(1, CIDirection.DirectSnd(), 0)))
-    assertEquals(0.sp, terminalHeadingGap(item))
+    assertEquals(TERMINAL_PARAGRAPH_GAP, gap(item, msg(1, CIDirection.DirectSnd(), 0)))
+    assertEquals(0.sp, terminalTextTop(item))
   }
 
   @Test
-  fun headingBelowQuoteOrHeaderTakesHeadingGap() {
-    val older = msg(1, CIDirection.DirectSnd(), 0)
-    listOf(quoted(msg(2, CIDirection.DirectSnd(), 10)), forwarded(msg(2, CIDirection.DirectSnd(), 10))).forEach {
-      val item = withBlocks(it, heading())
-      assertEquals(0.sp, gap(item, older))
-      assertEquals(TERMINAL_LEVEL_STEP, terminalHeadingGap(item))
-    }
-  }
-
-  @Test
-  fun headingBelowDeletionLiveFileOrMediaTakesHeadingGap() {
-    val older = msg(1, CIDirection.DirectSnd(), 0)
+  fun headingBelowHeaderTakesHeadingGap() {
     val base = msg(2, CIDirection.DirectSnd(), 10)
-    val file = CIFile(fileId = 1, fileName = "a.txt", fileSize = 1, fileStatus = CIFileStatus.SndComplete, fileProtocol = FileProtocol.XFTP)
     listOf(
+      forwarded(base),
       base.copy(meta = base.meta.copy(itemDeleted = CIDeleted.Deleted(null))),
-      base.copy(meta = base.meta.copy(itemLive = true)),
-      base.copy(content = CIContent.SndMsgContent(MsgContent.MCUnknown(text = "# Notes", json = JsonPrimitive("unknown"))), file = file),
-      base.copy(content = CIContent.SndMsgContent(MsgContent.MCImage("# Caption", "")))
+      base.copy(meta = base.meta.copy(itemLive = true))
     ).forEach {
-      val item = withBlocks(it, heading())
-      assertEquals(0.sp, gap(item, older))
-      assertEquals(TERMINAL_LEVEL_STEP, terminalHeadingGap(item))
+      assertEquals(TERMINAL_LEVEL_STEP, terminalTextTop(withBlocks(it, heading())))
+      assertEquals(0.sp, terminalTextTop(it))
     }
+  }
+
+  @Test
+  fun textBelowCardTakesParagraphGap() {
+    val base = msg(2, CIDirection.DirectSnd(), 10)
+    listOf(
+      quoted(base),
+      base.copy(content = CIContent.SndMsgContent(MsgContent.MCUnknown(text = "# Notes", json = JsonPrimitive("unknown"))), file = file),
+      base.copy(content = CIContent.SndMsgContent(MsgContent.MCImage("# Caption", ""))),
+      forwarded(base).copy(content = CIContent.SndMsgContent(MsgContent.MCVoice("# Caption", 10)))
+    ).forEach {
+      assertEquals(TERMINAL_PARAGRAPH_GAP, terminalTextTop(withBlocks(it, heading())))
+      assertEquals(TERMINAL_PARAGRAPH_GAP, terminalTextTop(it))
+    }
+  }
+
+  @Test
+  fun emptyLinesBelowCardReplaceParagraphGap() {
+    val caption = msg(2, CIDirection.DirectSnd(), 10).copy(
+      content = CIContent.SndMsgContent(MsgContent.MCImage("\n\nCaption", "")),
+      formattedText = listOf(FormattedText("\n\n", Format.Markup(BlockToken.ParagraphBreak(2))), FormattedText("Caption")),
+      markdownBlocks = listOf(MarkdownBlock.Paragraph(SegmentRange(1, 2)))
+    )
+    assertEquals(0.sp, terminalTextTop(caption))
+    val oneBreak = caption.copy(
+      content = CIContent.SndMsgContent(MsgContent.MCImage("\nCaption", "")),
+      formattedText = listOf(FormattedText("\n", Format.Markup(BlockToken.ParagraphBreak(1))), FormattedText("Caption"))
+    )
+    assertEquals(0.sp, terminalTextTop(oneBreak))
+    val base = msg(2, CIDirection.DirectSnd(), 10)
+    assertEquals(0.sp, terminalTextTop(base.copy(content = CIContent.SndMsgContent(MsgContent.MCImage("\nCaption", "")))))
+    assertEquals(0.sp, terminalTextTop(base.copy(content = CIContent.SndMsgContent(MsgContent.MCImage("\r\nCaption", "")))))
+    assertEquals(TERMINAL_PARAGRAPH_GAP, terminalTextTop(quoted(base).copy(content = CIContent.SndMsgContent(MsgContent.MCReport("\nComment", ReportReason.Spam)))))
+  }
+
+  @Test
+  fun cardStartingTextBelowHeaderTakesParagraphGap() {
+    val code = withBlocks(msg(2, CIDirection.DirectSnd(), 10), MarkdownBlock.CodeBlock(content = SegmentRange(0, 1)))
+    assertEquals(0.sp, terminalTextTop(code))
+    assertEquals(TERMINAL_PARAGRAPH_GAP, terminalTextTop(forwarded(code)))
+    assertEquals(TERMINAL_PARAGRAPH_GAP, terminalTextTop(code.copy(meta = code.meta.copy(itemLive = true))))
   }
 
   @Test
   fun headingInUnknownContentWithoutFileTakesRowGap() {
     val base = msg(2, CIDirection.DirectSnd(), 10)
     val item = withBlocks(base.copy(content = CIContent.SndMsgContent(MsgContent.MCUnknown(text = "# Notes", json = JsonPrimitive("unknown")))), heading())
-    assertEquals(TERMINAL_LEVEL_STEP, gap(item, msg(1, CIDirection.DirectSnd(), 0)))
-    assertEquals(0.sp, terminalHeadingGap(item))
+    assertEquals(TERMINAL_PARAGRAPH_GAP, gap(item, msg(1, CIDirection.DirectSnd(), 0)))
+    assertEquals(0.sp, terminalTextTop(item))
   }
 
   @Test
   fun noHeadingGapsWithoutLeadingHeading() {
-    val older = msg(1, CIDirection.DirectSnd(), 0)
     val headingSecond = withBlocks(msg(2, CIDirection.DirectSnd(), 10), MarkdownBlock.Paragraph(SegmentRange(0, 1)), heading())
-    assertEquals(0.sp, gap(headingSecond, older))
-    assertEquals(0.sp, terminalHeadingGap(headingSecond))
-    assertEquals(0.sp, terminalHeadingGap(quoted(msg(2, CIDirection.DirectSnd(), 10))))
+    assertEquals(0.sp, terminalTextTop(headingSecond))
+    assertEquals(0.sp, terminalTextTop(forwarded(headingSecond)))
+  }
+
+  @Test
+  fun cardBelowQuoteOrHeaderTakesParagraphGap() {
+    val base = msg(2, CIDirection.DirectSnd(), 10)
+    assertEquals(0.sp, terminalCardTop(base))
+    assertEquals(TERMINAL_PARAGRAPH_GAP, terminalCardTop(quoted(base)))
+    assertEquals(TERMINAL_PARAGRAPH_GAP, terminalCardTop(forwarded(base)))
+    assertEquals(0.sp, terminalQuoteTop(quoted(base)))
+    assertEquals(TERMINAL_PARAGRAPH_GAP, terminalQuoteTop(quoted(base).let { it.copy(meta = it.meta.copy(itemLive = true)) }))
+  }
+
+  @Test
+  fun lastCardTakesParagraphGapAboveReactions() {
+    val base = msg(2, CIDirection.DirectSnd(), 10)
+    assertEquals(0.sp, terminalReactionsGap(base))
+    assertEquals(TERMINAL_PARAGRAPH_GAP, terminalReactionsGap(base.copy(reactions = thumbsUp)))
   }
 }

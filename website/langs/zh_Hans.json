@@ -259,7 +259,7 @@
     "docs-dropdown-15": "验证并重现构建过程",
     "index-hero-h1": "变得<br>自由",
     "index-hero-h2": "在属于你的网络中",
-    "index-hero-p1": "首个无用户 ID 的网络。<br>您的联系人、群组和频道由您掌控。",
+    "index-hero-p1": "<span class=\"nowrap\">唯一一个</span> <span class=\"nowrap\">没有任何用户标识符的网络。</span><br>你拥有你的联系人、群和频道。",
     "index-hero-download-desktop-btn-title": "下载 SimpleX 桌面应用程序",
     "index-testflight-title": "SimpleX iOS 测试版已在 TestFlight 上发布",
     "index-f-droid-title": "SimpleX 安卓应用（通过 F-Droid）",
