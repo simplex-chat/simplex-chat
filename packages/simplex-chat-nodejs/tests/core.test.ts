@@ -338,11 +338,12 @@ describe("Core tests", () => {
           console.log(JSON.stringify({codes, closed: await simplex.chat_close_store(ctrl) === ""}));
         });
     `;
-    const child = spawnSync(process.execPath, ["-e", script], {timeout: 30000, encoding: "utf8"});
+    // macOS Intel runners took over 30 s to load libsimplex in four workers and migrate a new database
+    const child = spawnSync(process.execPath, ["-e", script], {timeout: 90000, encoding: "utf8"});
     if (child.status !== 0 || child.signal !== null) console.log("child stderr:", child.stderr);
     expect({status: child.status, signal: child.signal, stdout: child.stdout.trim()})
       .toEqual({status: 0, signal: null, stdout: 'true\n{"codes":[0,0,0,0],"closed":true}'});
-  }, 35000);
+  }, 95000);
 
   it("should let the process exit while a receiver is idle", () => {
     const childDbPath = path.resolve(dbPath);
