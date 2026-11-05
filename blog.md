@@ -10,7 +10,7 @@ Supporter badges are available in v7.1 beta: a badge on your profile, larger fil
 
 Investors in our equity crowdfunding receive badges as perks.
 
-If you invest $500 or more by November 22, you will also receive a public SimpleX name for 5 years. [Learn more and invest on Wefunder](https://wefunder.com/simplex.chat?utm_source=blog).
+If you invest $500 or more during early bird terms, you will also receive a public SimpleX name for 5 years. [Learn more and invest on Wefunder](https://wefunder.com/simplex.chat?utm_source=blog).
 
 [Read More](https://simplex.chat/blog/20260919-simplex-supporter-badges.html)
 
