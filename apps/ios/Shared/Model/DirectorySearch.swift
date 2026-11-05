@@ -9,11 +9,9 @@
 import Foundation
 import SimpleXChat
 
-// The directory's address, as published in docs/DIRECTORY.md. It must be the short link form -
-// only that one carries the keys a service request needs; a full link fails every time.
+// Must be the short link form: only that one carries the keys a service request needs.
 let DIRECTORY_SERVICE_LINK = "https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok"
 
-// A search sets up an encrypted connection, so it takes seconds, not milliseconds.
 let DIRECTORY_SEARCH_TIMEOUT_SEC: Double = 10
 
 // The directory refuses longer search text, counting Unicode scalars rather than characters.
@@ -39,7 +37,6 @@ struct DirectorySearchEntry: Decodable, Hashable, Identifiable {
     var activeAt: Date? = nil
     var createdAt: Date? = nil
 
-    // the link is stable and unique per entry, so it also de-duplicates across pages
     var id: String { link }
 
     enum CodingKeys: String, CodingKey {
@@ -85,7 +82,6 @@ private struct DirectorySearchResponse: Decodable {
 
 struct DirectorySearchResults {
     var entries: [DirectorySearchEntry]
-    // opaque: stored and echoed back on the next request, never inspected
     var cursor: JSONValue?
     var moreCount: Int?
 }
@@ -97,8 +93,6 @@ func directorySearchRequestJSON(_ text: String, _ cursor: JSONValue?) -> String 
     return encodeJSON(JSONValue.object(req))
 }
 
-// Anything but a well-formed results response is a failure, not something to salvage: it comes
-// from another party, not from our own core.
 func parseDirectorySearchResponse(_ resp: JSONValue) -> DirectorySearchResults? {
     guard let r: DirectorySearchResponse = decodeJSONValue(resp), r.type == "searchResults" else {
         return nil
@@ -106,7 +100,6 @@ func parseDirectorySearchResponse(_ resp: JSONValue) -> DirectorySearchResults? 
     let entries = (r.entries ?? []).compactMap { (e: JSONValue) -> DirectorySearchEntry? in
         decodeJSONValue(e)
     }
-    // only shown as text, so a count out of range is dropped rather than failing the response
     let moreCount: Int? = if case let .number(n)? = r.moreCount, n >= 0, n <= Double(Int32.max), n == n.rounded() { Int(n) } else { nil }
     return DirectorySearchResults(entries: entries, cursor: r.searchCursor, moreCount: moreCount)
 }
@@ -140,7 +133,6 @@ enum DirectoryResultState {
     case open
 }
 
-// no plan means the store doesn't know the link, or the plan failed and Open's online plan will show why
 func directoryResultState(_ plan: ConnectionPlan?) -> DirectoryResultState {
     if let chatId = plan.flatMap(planLocalChatId) { return .yourChat(chatId) }
     switch plan {

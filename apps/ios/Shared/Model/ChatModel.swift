@@ -298,8 +298,6 @@ class ChatItemDummyModel: ObservableObject {
     func sendUpdate() { objectWillChange.send() }
 }
 
-// There is one spinner, and a search and a connection can run at once - tapping a result starts
-// connecting while the search is still going - so it records which of them it belongs to.
 enum ConnectProgressOwner {
     case connect
     case directorySearch
@@ -332,7 +330,6 @@ class ConnectProgressManager: ObservableObject {
         connectProgressByTimeout = false
     }
 
-    // unlike stopConnectProgress, this cancels whoever owns the spinner
     func cancelConnectProgress() {
         let cancel = onCancel
         owner = nil

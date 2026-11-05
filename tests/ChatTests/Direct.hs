@@ -2122,8 +2122,6 @@ testServiceRequestNonDRAddress =
     bob ##> ("/_service_request 1 " <> sLink <> " {\"ping\":1}")
     bob <## "smp agent error: AGENT {agentErr = A_SERVICE {serviceError = ASENotDRAddress}}"
 
--- an address created without DR keys gets them from a key rotation, and keeps the same link,
--- so a published address can be upgraded in place rather than replaced
 testServiceRequestUpgradedAddress :: HasCallStack => TestParams -> IO ()
 testServiceRequestUpgradedAddress =
   testChat2 aliceProfile bobProfile $ \alice bob -> do

@@ -45,8 +45,6 @@ import kotlin.collections.ArrayList
 import kotlin.random.Random
 import kotlin.time.*
 
-// There is one spinner, and a search and a connection can run at once - tapping a result starts
-// connecting while the search is still going - so it records which of them it belongs to.
 enum class ConnectProgressOwner { Connect, DirectorySearch }
 
 object ConnectProgressManager {
@@ -77,7 +75,6 @@ object ConnectProgressManager {
     connectProgressByTimeout.value = false
   }
 
-  // unlike stopConnectProgress, this cancels whoever owns the spinner
   fun cancelConnectProgress() {
     val cancel = onCancel
     owner = null

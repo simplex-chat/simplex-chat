@@ -717,8 +717,6 @@ private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
     encodeJSON(value).cString(using: .utf8)!
 }
 
-// Any JSON, so a service response can pass through this layer without it knowing the service's
-// own types. Callers decode it into their own type with decodeJSONValue.
 public enum JSONValue: Codable, Hashable {
     case null
     case bool(Bool)

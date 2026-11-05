@@ -649,7 +649,6 @@ testSearchGroupsPaging ps =
         cath <## "#groupD: member 'SimpleX Directory_1' is connected"
         cath <## "contact and member are merged: 'SimpleX Directory', #groupD 'SimpleX Directory_1'"
         cath <## "use @'SimpleX Directory' <message> to send messages"
-        -- /all: members desc, so groupD (3) precedes the groups registered before it
         cath #> "@'SimpleX Directory' /all"
         cath <# "'SimpleX Directory'> > /all"
         cath <## "      4 group(s) listed, sending top 3."
@@ -661,7 +660,6 @@ testSearchGroupsPaging ps =
         cath <# "'SimpleX Directory'> > /next"
         cath <## "      Sending 1 more group(s)."
         receivedGroup cath 2 2
-        -- /new: created_at desc, in reverse registration order
         cath #> "@'SimpleX Directory' /new"
         cath <# "'SimpleX Directory'> > /new"
         cath <## "      4 group(s) listed, sending the most recent 3."
@@ -673,7 +671,6 @@ testSearchGroupsPaging ps =
         cath <# "'SimpleX Directory'> > /next"
         cath <## "      Sending 1 more group(s)."
         receivedGroup cath 0 2
-        -- text search sorts as /all does
         cath #> "@'SimpleX Directory' group"
         cath <# "'SimpleX Directory'> > group"
         cath <## "      Found 4 group(s), sending top 3."
@@ -701,18 +698,15 @@ testDirectorySearchRpc ps =
       bob `connectVia` dsShortLink
       registerGroupId superUser bob "PrivacyGroup" "" 1 1
       withNewTestChat ps "cath" cathProfile $ \cath -> do
-        -- cath never connects to the directory: the request goes to the address
         cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"privacy\"}")
         resp <- getTermLine cath
         resp `shouldStartWith` "service response: {\"entries\":[{"
-        -- the last page carries no cursor, so the client does not spend a round trip finding out
         resp `shouldNotContain` "searchCursor"
         cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"nothing matches this\"}")
         cath <## "service response: {\"entries\":[],\"moreCount\":0,\"type\":\"searchResults\"}"
         cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"nonsense\"}")
         cath <## "service response: {\"errorMessage\":\"unsupported request\",\"type\":\"error\"}"
 
--- the cursor is echoed back exactly as received, which is what the apps do with it
 testDirectorySearchRpcPaging :: HasCallStack => TestParams -> IO ()
 testDirectorySearchRpcPaging ps =
   withDirectoryServiceLinks ps $ \superUser (dsShortLink, _) ->
@@ -729,11 +723,9 @@ testDirectorySearchRpcPaging ps =
         page2 `shouldBe` ["group4"]
         cursor' `shouldBe` Nothing
         moreCount2 `shouldBe` 0
-        -- only a forged request pairs text search with a creation-time cursor, and it must not restart from the first page
         cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"group\",\"searchCursor\":{\"type\":\"recent\",\"lastCreatedAt\":\"2026-01-01T00:00:00Z\",\"lastGroupId\":1}}")
         cath <## "service response: {\"errorMessage\":\"search failed\",\"type\":\"error\"}"
 
--- the search text is a substring: '%' and '_' in it match literally, and its length is bounded
 testDirectorySearchRpcLiteral :: HasCallStack => TestParams -> IO ()
 testDirectorySearchRpcLiteral ps =
   withDirectoryServiceLinks ps $ \superUser (dsShortLink, _) ->
@@ -752,7 +744,6 @@ testDirectorySearchRpcLiteral ps =
         cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"" <> replicate 101 'a' <> "\"}")
         cath <## "service response: {\"errorMessage\":\"search text is too long\",\"type\":\"error\"}"
 
--- over the cap a request is refused at once with a reason, so the requester does not wait out its timeout
 testDirectorySearchRpcBusy :: HasCallStack => TestParams -> IO ()
 testDirectorySearchRpcBusy ps =
   withDirectoryServiceOptsLinks ps (\o -> o {maxServiceRequestsInFlight = 0}) $ \_superUser (dsShortLink, _) ->
@@ -820,7 +811,6 @@ testDirectorySearchEntryFields ps =
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       bob `connectVia` dsLink
       registerGroupWithImage superUser bob "PrivacyGroup" "Private chats" 1
-      -- the chat path reports the same member count the entry carries
       groupFound bob "PrivacyGroup"
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         DirectorySearchEntry {displayName, simplexName, groupLink, shortDescr, image, entryType} <-
@@ -831,13 +821,11 @@ testDirectorySearchEntryFields ps =
         simplexName `shouldBe` Nothing
         let PublicLink {connFullLink, connShortLink} = groupLink
         isJust connShortLink `shouldBe` True
-        -- the app connects through the short link, so the full link is not worth its bytes
         isNothing connFullLink `shouldBe` True
         let DETGroup {groupType, summary = GroupSummary {currentMembers}} = entryType
         groupType `shouldBe` Nothing
         currentMembers `shouldBe` 2
 
--- a channel publishes its own link in the profile, so groupPublicLink takes the other branch
 testDirectorySearchChannelEntry :: HasCallStack => TestParams -> IO ()
 testDirectorySearchChannelEntry ps =
   withDirectoryServiceCfgLinks ps testCfg $ \superUser (dsShortLink, dsLink) ->
@@ -852,7 +840,6 @@ testDirectorySearchChannelEntry ps =
           displayName `shouldBe` "news"
           let DETGroup {groupType, summary = GroupSummary {publicMemberCount}} = entryType
           groupType `shouldBe` Just GTChannel
-          -- the iOS row shows this as the subscriber count, not currentMembers
           publicMemberCount `shouldBe` Just subscribers
           let PublicLink {connFullLink, connShortLink} = groupLink
           (B.unpack . strEncode <$> connShortLink) `shouldBe` Just shortLink
@@ -898,7 +885,6 @@ testSearchEntryShortDescrBound ps =
       Just DirectorySearchEntry {shortDescr} -> shortDescr `shouldBe` Just (T.take maxShortDescrLength long)
       Nothing -> expectationFailure "entry with a long short description was dropped"
 
--- one entry with a large image nearly fills a response, so both groups match but only one is sent
 testDirectorySearchImagePaging :: HasCallStack => TestParams -> IO ()
 testDirectorySearchImagePaging ps =
   withDirectoryServiceLinks ps $ \superUser (dsShortLink, dsLink) ->
@@ -915,7 +901,6 @@ testDirectorySearchImagePaging ps =
         page2 `shouldSatisfy` notElem (head page1)
         sort (page1 <> page2) `shouldBe` ["photos1", "photos2"]
 
--- the link in a result actually works: this is what happens when a user taps a row in the app
 testDirectorySearchJoinGroup :: HasCallStack => TestParams -> IO ()
 testDirectorySearchJoinGroup ps =
   withDirectoryServiceLinks ps $ \superUser (dsShortLink, dsLink) ->
@@ -969,7 +954,6 @@ registerGroupWithImage su u n descr gId = do
   groupAccepted u n gId
   void $ completeRegistrationId su u n descr gId gId
 
--- simplexName_ is the extra line the admin sees when the channel has a verified domain
 registerChannel :: HasCallStack => TestCC -> TestCC -> TestCC -> Maybe String -> IO ()
 registerChannel su u relay simplexName_ = do
   uName <- userName u
@@ -1005,7 +989,6 @@ channelFoundSubscribers u name = do
   line <- getTermLine u
   maybe (fail $ "unexpected subscribers line: " <> line) pure $ readMaybe (takeWhile (/= ' ') line)
 
--- what limits a page is the response size, not the configured page size
 testSearchResultsPage :: HasCallStack => TestParams -> IO ()
 testSearchResultsPage _ps = do
   g <- C.newRandom
@@ -1034,7 +1017,6 @@ testSearchResultsPage _ps = do
   page 3 [(1, Just a), (2, Just b), (3, Just c)] `shouldBe` (["a", "b"], Just 2, 1)
   page 2 [(1, Just a), (2, Just b)] `shouldBe` (["a", "b"], Nothing, 0)
   page 5 [(1, Just a), (2, Just b)] `shouldBe` (["a", "b"], Just 2, 3)
-  -- a row without a link is consumed by the cursor, not sent
   page 4 [(1, Just a), (2, Nothing)] `shouldBe` (["a"], Just 2, 2)
   page 2 [(1, Just a), (2, Nothing)] `shouldBe` (["a"], Nothing, 0)
   big <- randomText 12000
@@ -2738,7 +2720,6 @@ testDirectoryChannelName ps = withSmpServerAndNames ps $ \reg ->
   where
     newsName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "news" [])
 
--- the app renders simplexName as the directory's claim, so it has to reach the entry
 testDirectorySearchVerifiedName :: HasCallStack => TestParams -> IO ()
 testDirectorySearchVerifiedName ps = withSmpServerAndNames ps $ \reg ->
   withDirectoryServiceCfgLinks ps testCfg $ \superUser (dsShortLink, dsLink) ->

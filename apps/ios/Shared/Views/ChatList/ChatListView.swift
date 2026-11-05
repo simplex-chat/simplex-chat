@@ -462,7 +462,6 @@ struct ChatListView: View {
 
     @ViewBuilder private var chatList: some View {
         if shouldShowOnboarding {
-            // the search bar is shown here too: someone with no chats yet is who most needs to find some
             VStack(spacing: 0) {
                 ChatListSearchBar(
                     searchMode: $searchMode,
@@ -656,7 +655,6 @@ struct ChatListView: View {
                     }
                 }
             }
-            // this covers the whole list, so it must not hide the online results or their messages
             if cs.isEmpty && (!chatModel.chats.isEmpty || onlineSearch.searched) && !onlineSearch.searching && rows.isEmpty && !showsSearchInDirectory {
                 noChatsView()
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
@@ -882,7 +880,6 @@ struct ChatListSearchBar: View {
                     dismiss: false
                 )
                 if !onlineSearch.showResults { searchInDirectoryRow() }
-            // a SimpleX link connects on its own, so the directory is not offered for one
             } else if oneHandUI, !searchTrimmed.isEmpty, !searchShowingSimplexLink {
                 if !onlineSearch.showResults { searchInDirectoryRow() }
             } else {
@@ -1040,7 +1037,6 @@ struct ChatListSearchBar: View {
         SearchInDirectoryRow(searchFocussed: $searchFocussed, onSearch: runDirectorySearch)
     }
 
-    // whatever is typed here gets sent to the directory, so ask until Directory search is enabled
     private func runDirectorySearch() {
         let text = searchTrimmed
         guard !text.isEmpty, !searchShowingSimplexLink else { return }

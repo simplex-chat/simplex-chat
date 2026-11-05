@@ -15,7 +15,6 @@ data SearchRequest = SearchRequest
     searchCursor :: SearchCursor
   }
 
--- Where the last page ended: the value the search mode sorts by, and the group ID that breaks ties.
 -- The service RPC sends it to anyone: the group ID shows only the order the directory joined groups, and a text search cursor has no timestamp.
 data SearchCursor
   = SCMembers {lastMembers :: Int64, lastGroupId :: GroupId}

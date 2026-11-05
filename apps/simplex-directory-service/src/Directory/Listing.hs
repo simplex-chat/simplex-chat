@@ -171,7 +171,6 @@ groupDirectoryEntry now g@GroupInfo {groupProfile} gLink_ =
             Right img'' -> Just (imgFile, img'')
             Left _ -> Nothing
 
--- a public group publishes its own link in the profile; other groups only have the link the service created
 groupPublicLink :: GroupInfo -> Maybe GroupLink -> Maybe PublicLink
 groupPublicLink GroupInfo {groupProfile = GroupProfile {publicGroup}} gLink_ = case publicGroup of
   Just PublicGroupProfile {groupLink = sLnk} -> Just $ PublicLink Nothing (Just sLnk)
@@ -179,7 +178,6 @@ groupPublicLink GroupInfo {groupProfile = GroupProfile {publicGroup}} gLink_ = c
   where
     toPublicLink (CCLink fullLink shortLink) = PublicLink (Just fullLink) shortLink
 
--- what the web listing and the search RPC both publish about a group, defined once so their privacy rounding cannot diverge
 groupEntryType :: GroupInfo -> DirectoryEntryType
 groupEntryType GroupInfo {groupProfile = GroupProfile {memberAdmission, publicGroup}, groupSummary} =
   DETGroup ((\PublicGroupProfile {groupType} -> groupType) <$> publicGroup) memberAdmission groupSummary

@@ -10,11 +10,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.*
 
-// The directory's address, as published in docs/DIRECTORY.md. It must be the short link form -
-// only that one carries the keys a service request needs; a full link fails every time.
+// Must be the short link form: only that one carries the keys a service request needs.
 const val DIRECTORY_SERVICE_LINK = "https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok"
 
-// A search sets up an encrypted connection, so it takes seconds, not milliseconds.
 const val DIRECTORY_SEARCH_TIMEOUT_SEC = 10.0
 
 // The directory refuses longer search text, counting code points rather than UTF-16 chars.
@@ -43,7 +41,6 @@ data class DirectorySearchEntry(
   val activeAt: Instant? = null,
   val createdAt: Instant? = null,
 ) {
-  // the link is stable and unique per entry, so it also de-duplicates across pages
   val id: String get() = link
 
   // untrusted input: only group and channel links are kept
@@ -72,7 +69,6 @@ private fun isSafeImageData(s: String): Boolean =
 
 data class DirectorySearchResults(
   val entries: List<DirectorySearchEntry>,
-  // opaque: stored and echoed back on the next request, never inspected
   val cursor: JsonObject?,
   val moreCount: Int?,
 )
@@ -93,15 +89,12 @@ private fun String.takeCodePoints(n: Int): String {
   return substring(0, end)
 }
 
-// Anything but a well-formed results response is a failure, not something to salvage: it comes
-// from another party, not from our own core.
 fun parseDirectorySearchResponse(resp: JsonObject): DirectorySearchResults? =
   when ((resp["type"] as? JsonPrimitive)?.contentOrNull) {
     "searchResults" -> {
       val entries = (resp["entries"] as? JsonArray)?.mapNotNull {
         runCatching { json.decodeFromJsonElement<DirectorySearchEntry>(it) }.getOrNull()
       } ?: emptyList()
-      // only shown as text, so a count out of range is dropped rather than failing the response
       val moreCount = (resp["moreCount"] as? JsonPrimitive)?.takeIf { !it.isString }?.intOrNull?.takeIf { it >= 0 }
       DirectorySearchResults(entries, resp["searchCursor"] as? JsonObject, moreCount)
     }
@@ -136,7 +129,6 @@ sealed class DirectoryResultState {
   object Open: DirectoryResultState()
 }
 
-// no plan means the store doesn't know the link, or the plan failed and Open's online plan will show why
 fun directoryResultState(plan: ConnectionPlan?): DirectoryResultState {
   val chatId = plan?.let { planLocalChatId(it) }
   if (chatId != null) return DirectoryResultState.YourChat(chatId)

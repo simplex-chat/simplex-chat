@@ -141,7 +141,6 @@ newServiceState opts = do
   pure ServiceState {searchRequests, blockedWordsCfg, pendingCaptchas, serviceCC, eventQ, updateListingsJob, serviceRequestsInFlight}
 
 -- anyone can search without connecting first, so limit the work one request can ask for.
--- No name or description is long enough for a longer search term to be useful.
 maxSearchTextLength :: Int
 maxSearchTextLength = 100
 
@@ -327,7 +326,6 @@ readBlockedWordsConfig DirectoryOpts {blockedFragmentsFile, blockedWordsFile, na
   unless testing $ putStrLn $ "Blocked fragments: " <> show (length blockedFragments) <> ", blocked words: " <> show (length blockedWords) <> ", spelling rules: " <> show (M.size spelling)
   pure BlockedWordsConfig {blockedFragments, blockedWords, extensionRules, spelling}
 
--- the place is freed however the action ends, so a failed search can't shrink the cap
 forkWithinCap :: TVar Int -> Int -> IO () -> IO Bool
 forkWithinCap inFlight cap action = do
   accepted <- atomically $ stateTVar inFlight $ \n -> if n < cap then (True, n + 1) else (False, n)

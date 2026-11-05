@@ -484,7 +484,6 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
   if (chatModel.chatRunning.value == null) {
     Text(stringResource(MR.strings.loading_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
   } else if (shouldShowOnboarding()) {
-    // the search bar is shown here too: someone with no chats yet is who most needs to find some
     val topPad = topPaddingToContent(false)
     val bottomPad = if (oneHandUI.value) {
       WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier
@@ -1009,7 +1008,6 @@ private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<
 private fun searchTrimmed(searchText: State<TextFieldValue>): String =
   searchText.value.text.trim()
 
-// whatever is typed here gets sent to the directory, so ask until Directory search is enabled
 private fun runDirectorySearch(searchText: State<TextFieldValue>, searchShowingSimplexLink: State<Boolean>, onlineSearch: OnlineSearchModel) {
   val text = searchTrimmed(searchText)
   if (text.isEmpty() || searchShowingSimplexLink.value) return
@@ -1212,7 +1210,6 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
       item { Spacer(if (oneHandUI.value) Modifier.windowInsetsTopHeight(WindowInsets.statusBars) else Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars)) }
     }
   }
-  // this covers the whole list, so it must not hide the online results or their messages
   if (chats.isEmpty() && (chatModel.chats.value.isNotEmpty() || onlineSearch.searched) && !onlineSearch.searching && rows.isEmpty && !showsSearchInDirectory) {
     Box(Modifier.fillMaxSize().imePadding().padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
       NoChatsView(searchText = searchText)
@@ -1243,7 +1240,6 @@ private fun ChatListSearchBarWithTags(listState: LazyListState, searchText: Muta
   if (oneHandUI.value) {
     Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
       Divider()
-      // bottom toolbar: search bar below, so on desktop the search rows go below the tags
       TagsOrConnectByName(searchText, searchShowingSimplexLink, connectNameCandidate, onlineSearch) { rows ->
         TagsView(searchText)
         Divider()
@@ -1257,7 +1253,6 @@ private fun ChatListSearchBarWithTags(listState: LazyListState, searchText: Muta
     }
   } else {
     ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate, onlineSearch, searchFocused)
-    // top toolbar: search bar above, so on desktop the search rows go above the tags
     TagsOrConnectByName(searchText, searchShowingSimplexLink, connectNameCandidate, onlineSearch) { rows ->
       rows()
       Divider()
@@ -1319,11 +1314,6 @@ internal suspend fun knownChatId(rhId: Long?, result: ConnectionPlanResult?): St
   else -> null
 }
 
-// The list tags share one slot with the search rows (connect by name, search in directory); when no
-// row shows, the tags show. On mobile with the bottom toolbar the rows replace the tags; with the top
-// toolbar the connect row replaces the tags and the directory row follows them. On desktop the tags
-// always show, with the rows arranged by the caller (which knows whether the search bar is above or
-// below), passed as desktopView.
 @Composable
 private fun TagsOrConnectByName(
   searchText: MutableState<TextFieldValue>,
@@ -1337,7 +1327,6 @@ private fun TagsOrConnectByName(
   val searchInDirectoryRow: @Composable () -> Unit = {
     SearchInDirectoryRow(onSearch = { runDirectorySearch(searchText, searchShowingSimplexLink, onlineSearch) })
   }
-  // a SimpleX link connects on its own, so the directory is not offered for one
   val searchesText = searchTrimmed(searchText).isNotEmpty() && !searchShowingSimplexLink.value
   val showsSearchInDirectory = searchesText && !onlineSearch.showResults
   when {

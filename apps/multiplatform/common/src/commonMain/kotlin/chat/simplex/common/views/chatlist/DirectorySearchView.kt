@@ -30,7 +30,6 @@ import kotlinx.serialization.json.JsonObject
 
 enum class DirectoryFooter { Retry, LoadMore }
 
-// Online results are not chats and are never saved: they live as long as the search text does.
 // main thread only, as iOS's @MainActor: callers launch with withApi, and the generation checks rely on it
 class OnlineSearchModel {
   var directory by mutableStateOf<List<DirectoryResult>>(emptyList())
@@ -43,7 +42,6 @@ class OnlineSearchModel {
     private set(value) { _loading.value = value; updateSpinner() }
   var failed by mutableStateOf(false)
     private set
-  // tells "nothing searched yet" apart from "searched and found nothing"
   var searched by mutableStateOf(false)
     private set
 
@@ -68,7 +66,6 @@ class OnlineSearchModel {
     searchedText = ""
   }
 
-  // a way out of the wait, not out of the results: what is already shown stays
   fun cancelRequest() {
     generation += 1
     loading = false
@@ -95,7 +92,6 @@ class OnlineSearchModel {
     request(append = true)
   }
 
-  // a failed "Load more" keeps its cursor, so the retry resumes the page rather than starting over
   suspend fun retry() {
     if (cursor != null) {
       loadMore()
@@ -123,7 +119,6 @@ class OnlineSearchModel {
     return OnlineSearchRows(yourChats = yourChats, results = results, footer = footer)
   }
 
-  // a chat opened from a result exists only once its connection flow ends, so results look again then
   suspend fun refreshStates() {
     val rh = chatModel.remoteHostId()
     val gen = generation
@@ -327,7 +322,6 @@ private fun DirectoryRetryRowLayout(onRetry: () -> Unit) {
   }
 }
 
-// a result as a chat row: the same padding and divider, and the long-press / right-click menu with Open
 @Composable
 fun DirectoryResultNavLink(result: DirectoryResult, imageSize: Dp, previewModifier: Modifier = Modifier, close: (() -> Unit)?, cleanup: (() -> Unit)?) {
   val showMenu = remember { mutableStateOf(false) }
@@ -352,7 +346,6 @@ fun DirectoryResultNavLink(result: DirectoryResult, imageSize: Dp, previewModifi
   )
 }
 
-// a pending join keeps the alert the connection flow shows for it
 fun openDirectoryResult(result: DirectoryResult, close: (() -> Unit)?, cleanup: (() -> Unit)?) {
   val prepareGroup = if (result.state == DirectoryResultState.Joining) PrepareGroupMode.Confirm else PrepareGroupMode.Open
   withBGApi { planAndConnect(chatModel.remoteHostId(), result.entry.link, close = close, cleanup = cleanup, prepareGroup = prepareGroup) }

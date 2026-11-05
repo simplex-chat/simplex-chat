@@ -13,14 +13,12 @@ enum DirectoryFooter {
     case retry, loadMore
 }
 
-// Online results are not chats and are never saved: they live as long as the search text does.
 @MainActor
 class OnlineSearchModel: ObservableObject {
     @Published private(set) var directory: [DirectoryResult] = []
     @Published private(set) var moreCount: Int? = nil
     @Published private(set) var loading = false { didSet { updateSpinner() } }
     @Published private(set) var failed = false
-    // tells "nothing searched yet" apart from "searched and found nothing"
     @Published private(set) var searched = false
 
     private var cursor: JSONValue? = nil
@@ -44,7 +42,6 @@ class OnlineSearchModel: ObservableObject {
         searchedText = ""
     }
 
-    // a way out of the wait, not out of the results: what is already shown stays
     func cancelRequest() {
         generation += 1
         loading = false
@@ -71,7 +68,6 @@ class OnlineSearchModel: ObservableObject {
         await request(append: true)
     }
 
-    // a failed "Load more" keeps its cursor, so the retry resumes the page rather than starting over
     func retry() async {
         if cursor != nil {
             await loadMore()
@@ -98,7 +94,6 @@ class OnlineSearchModel: ObservableObject {
         return OnlineSearchRows(yourChats: yourChats, results: results, footer: footer)
     }
 
-    // a chat opened from a result exists only once its connection flow ends, so results look again then
     func refreshStates() async {
         let gen = generation
         var states: [String: DirectoryResultState] = [:]
@@ -358,7 +353,6 @@ struct DirectoryResultMenu: ViewModifier {
     }
 }
 
-// a pending join keeps the sheet or alert the connection flow shows for it
 func openDirectoryResult(_ result: DirectoryResult, theme: AppTheme, dismiss: Bool, cleanup: (() -> Void)?) {
     let prepareGroup: PrepareGroupMode = if case .joining = result.state { .confirm } else { .open }
     planAndConnect(result.entry.link, theme: theme, dismiss: dismiss, cleanup: cleanup, prepareGroup: prepareGroup)

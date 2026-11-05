@@ -25,7 +25,6 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
 
 data DirectoryRequest = DRSearch
   { searchText :: Text,
-    -- opaque to the client: it is stored and echoed back, never inspected
     searchCursor :: Maybe SearchCursor
   }
 
@@ -44,8 +43,8 @@ data DirectorySearchEntry = DirectorySearchEntry
 data DirectoryResponse
   = DRSearchResults
       { entries :: [DirectorySearchEntry],
-        searchCursor :: Maybe SearchCursor, -- Nothing when there are no more results
-        moreCount :: Int -- matches after the cursor: they can include listings without a public link, which are not sent
+        searchCursor :: Maybe SearchCursor,
+        moreCount :: Int
       }
   | DRError {errorMessage :: Text}
 
@@ -103,7 +102,6 @@ searchEntry now g@GroupInfo {groupProfile} gLink_ =
         { entryType = groupEntryType g,
           displayName,
           simplexName = groupSimplexName g,
-          -- the apps connect through the short link, and a full link is hundreds of bytes of the envelope
           groupLink = if isJust connShortLink then link {connFullLink = Nothing} else link,
           shortDescr = T.take maxShortDescrLength <$> shortDescr,
           image = image >>= \img@(ImageData t) -> if T.length t > maxProfileImageSize || T.null (safeImageData t) then Nothing else Just img,
