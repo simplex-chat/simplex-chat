@@ -119,11 +119,6 @@ disable_file_encryption() {
   "$ui" relaunch
 }
 
-fail() {
-  echo "error: $*"
-  exit 1
-}
-
 create_group() {
   "$ui" tap Compose
   "$ui" tap "Create group" 30
