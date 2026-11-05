@@ -42,6 +42,8 @@ When you receive the invitation to join the group you can accept it both from th
 
 To join a group via its link, open the link in the app, tap "Open group", then
 "Join group" (see [Join some user groups](./README.md#join-some-user-groups)).
+To find public groups, you can [search SimpleX
+Directory](./making-connections.md#find-groups-and-channels) in the app.
 
 ## Leaving a group
 
