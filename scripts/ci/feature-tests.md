@@ -66,7 +66,7 @@ The tests stay on master. A run of a branch that touches code a test covers runs
 1. Read what the screens show. The smoke-test artifact of an earlier run (`gh run download <id> -n <artifact>`, with `ios-sim-smoke-test`, `android-smoke-test` or `desktop-smoke-test`) has, per step, a screenshot and what was read from it: desktop `NN-<step>.txt` (`x,y phrase` from OCR), Android `NN-<step>.xml` and `.txt` (the accessibility tree), iOS `NN-<step>.json` (AXe's tree).
 2. Write the steps by text or label: `click-text`, `tap`, `wait`, `find`. Coordinates are needed only for icons without text, mostly on desktop (the toolbar's buttons); the Android and iOS trees give every icon's description and position.
 3. Check what the feature promises with `check`, and take a `ui shot <name>` at each result.
-4. Push and start a run (`gh workflow run <workflow>.yml --ref <branch>`, or the Actions tab). Where the test stops, its folder shows why: its last screens, `test.log` (its output, ending with the error) and, on desktop and Android, `steps.log` (each `ui` command).
+4. Push and start a run (`gh workflow run <workflow>.yml --ref <branch>`, or the Actions tab). Where the test stops, its folder shows why: its last screens, `test.log` (its output, ending with the error) and, on desktop and Android, `steps.log` (each `ui` command); iOS keeps no app log during the feature tests.
 
 ### From a Claude run (optional)
 
