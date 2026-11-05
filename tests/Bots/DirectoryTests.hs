@@ -708,7 +708,7 @@ testDirectorySearchRpc ps =
         -- the last page carries no cursor, so the client does not spend a round trip finding out
         resp `shouldNotContain` "searchCursor"
         cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"nothing matches this\"}")
-        cath <## "service response: {\"entries\":[],\"moreCount\":0,\"pageSize\":3,\"type\":\"searchResults\"}"
+        cath <## "service response: {\"entries\":[],\"moreCount\":0,\"type\":\"searchResults\"}"
         cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"nonsense\"}")
         cath <## "service response: {\"errorMessage\":\"unsupported request\",\"type\":\"error\"}"
 
@@ -720,13 +720,12 @@ testDirectorySearchRpcPaging ps =
       bob `connectVia` dsShortLink
       forM_ [1 .. 4 :: Int] $ \i -> registerGroupId superUser bob ("group" <> show i) "" i i
       withNewTestChat ps "cath" cathProfile $ \cath -> do
-        (page1, cursor, moreCount1, pageSize1) <- searchNamesCounts cath dsShortLink "group" Nothing
+        (page1, cursor, moreCount1) <- searchNamesCounts cath dsShortLink "group" Nothing
         page1 `shouldBe` ["group1", "group2", "group3"]
         moreCount1 `shouldBe` 1
-        pageSize1 `shouldBe` 3
         -- anyone can send this request, so the cursor must not reveal when a group was registered
         maybe "" (LB.unpack . J.encode) cursor `shouldNotContain` "lastCreatedAt"
-        (page2, cursor', moreCount2, _) <- searchNamesCounts cath dsShortLink "group" cursor
+        (page2, cursor', moreCount2) <- searchNamesCounts cath dsShortLink "group" cursor
         page2 `shouldBe` ["group4"]
         cursor' `shouldBe` Nothing
         moreCount2 `shouldBe` 0
@@ -766,7 +765,7 @@ testDirectorySearchRpcSlotReleased ps =
   withDirectoryServiceOptsLinks ps (\o -> o {maxServiceRequestsInFlight = 1}) $ \_superUser (dsShortLink, _) ->
     withNewTestChat ps "cath" cathProfile $ \cath -> do
       let search = cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"nothing matches this\"}")
-          noResults = "service response: {\"entries\":[],\"moreCount\":0,\"pageSize\":3,\"type\":\"searchResults\"}"
+          noResults = "service response: {\"entries\":[],\"moreCount\":0,\"type\":\"searchResults\"}"
       search
       cath <## noResults
       search
@@ -785,7 +784,7 @@ testServiceRequestSlotHeld _ = do
 
 -- Read from the controller, not the terminal: an entry with an image is longer than a terminal
 -- row, and the test terminal only queues the last row of a line that wrapped.
-searchDirectoryCounts :: TestCC -> String -> String -> Maybe J.Value -> IO ([DirectorySearchEntry], Maybe J.Value, Int, Int)
+searchDirectoryCounts :: TestCC -> String -> String -> Maybe J.Value -> IO ([DirectorySearchEntry], Maybe J.Value, Int)
 searchDirectoryCounts TestCC {chatController = cc} dsLink text cursor_ = do
   let req = J.object $ ["type" .= ("search" :: String), "searchText" .= text] <> maybe [] (\c -> ["searchCursor" .= c]) cursor_
   r <- sendChatCmdStr cc ("/_service_request 1 " <> dsLink <> " " <> LB.unpack (J.encode req))
@@ -794,16 +793,16 @@ searchDirectoryCounts TestCC {chatController = cc} dsLink text cursor_ = do
       maybe (fail $ "unexpected response: " <> LB.unpack (J.encode responseData)) pure $ JT.parseMaybe searchResults responseData
     _ -> fail $ "service request failed: " <> show r
   where
-    searchResults o = (,,,) <$> o .: "entries" <*> o .:? "searchCursor" <*> o .: "moreCount" <*> o .: "pageSize"
+    searchResults o = (,,) <$> o .: "entries" <*> o .:? "searchCursor" <*> o .: "moreCount"
 
 searchDirectory :: TestCC -> String -> String -> Maybe J.Value -> IO ([DirectorySearchEntry], Maybe J.Value)
-searchDirectory u dsLink text cursor_ = (\(es, c, _, _) -> (es, c)) <$> searchDirectoryCounts u dsLink text cursor_
+searchDirectory u dsLink text cursor_ = (\(es, c, _) -> (es, c)) <$> searchDirectoryCounts u dsLink text cursor_
 
 searchNames :: HasCallStack => TestCC -> String -> String -> Maybe J.Value -> IO ([Text], Maybe J.Value)
 searchNames u dsLink text cursor_ = first (map entryName) <$> searchDirectory u dsLink text cursor_
 
-searchNamesCounts :: TestCC -> String -> String -> Maybe J.Value -> IO ([Text], Maybe J.Value, Int, Int)
-searchNamesCounts u dsLink text cursor_ = (\(es, c, m, s) -> (map entryName es, c, m, s)) <$> searchDirectoryCounts u dsLink text cursor_
+searchNamesCounts :: TestCC -> String -> String -> Maybe J.Value -> IO ([Text], Maybe J.Value, Int)
+searchNamesCounts u dsLink text cursor_ = (\(es, c, m) -> (map entryName es, c, m)) <$> searchDirectoryCounts u dsLink text cursor_
 
 entryName :: DirectorySearchEntry -> Text
 entryName DirectorySearchEntry {displayName} = displayName
@@ -908,7 +907,7 @@ testDirectorySearchImagePaging ps =
       registerGroupWithImage superUser bob "photos1" "Photo group" 1
       registerGroupWithImage superUser bob "photos2" "Photo group" 2
       withNewTestChat ps "cath" cathProfile $ \cath -> do
-        (page1, cursor, moreCount1, _) <- searchNamesCounts cath dsShortLink "photo" Nothing
+        (page1, cursor, moreCount1) <- searchNamesCounts cath dsShortLink "photo" Nothing
         length page1 `shouldBe` 1
         isJust cursor `shouldBe` True
         moreCount1 `shouldBe` 1
@@ -1013,7 +1012,7 @@ testSearchResultsPage _ps = do
   -- base64 of random bytes does not compress, so the envelope decides what fits
   let randomText n = safeDecodeUtf8 . strEncode <$> atomically (C.randomBytes n g)
       cursor gId = SCMembers {lastMembers = 1, lastGroupId = gId}
-      page matched rows = case searchResultsPage cursor (length rows) matched rows of
+      page matched rows = case searchResultsPage cursor matched rows of
         DRSearchResults {entries, searchCursor, moreCount} -> (map (\DirectorySearchEntry {displayName} -> displayName) entries, lastGroupId <$> searchCursor, moreCount)
         DRError e -> error $ T.unpack e
       entry name descr img =
