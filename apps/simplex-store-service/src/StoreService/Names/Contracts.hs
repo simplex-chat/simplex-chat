@@ -20,9 +20,11 @@ module StoreService.Names.Contracts
     sponsorNonce,
     resolverNonce,
     namePolicy,
+    forgetNamePolicy,
     communityName,
     termsLinks,
     termsOf,
+    termsLinkAllowed,
     termsText,
     policyNonce,
     acceptedTerms,
@@ -52,7 +54,7 @@ import Data.Functor.Compose (Compose (..))
 import Data.IORef (IORef, atomicWriteIORef, modifyIORef', newIORef, readIORef, writeIORef)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, decodeUtf8', encodeUtf8)
@@ -187,11 +189,14 @@ resolverNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 resolverNonce ct owner = call ct (resolver ct) ("nonces(address)", addressWord owner) decodeWord64
 
 -- | The policy holding the reserved and the community names, read once: as the service starts, or on first use after that
--- read failed or found none set.
+-- read failed, found none set, or was forgotten as a register reverted TermsNotAccepted.
 namePolicy :: Contracts -> IO (Either ChainError Address)
 namePolicy ct@Contracts {ctNamePolicy} = readOnce ctNamePolicy $ (>>= nonZero) <$> call ct (controller ct) ("namePolicy()", "") decodeAddress
   where
     nonZero policy = if B.all (== '\NUL') (unAddress policy) then Left (ChainUnavailable "the controller has no name policy yet") else Right policy
+
+forgetNamePolicy :: Contracts -> IO ()
+forgetNamePolicy Contracts {ctNamePolicy} = atomicWriteIORef ctNamePolicy Nothing
 
 communityName :: Contracts -> LabelHash -> IO (Either ChainError Bool)
 communityName ct lh = policyCall ct ("communityNames(bytes32)", labelHashArg lh) decodeBool
@@ -207,6 +212,9 @@ termsOf :: Text -> Maybe Terms
 termsOf link
   | T.null link = Nothing
   | otherwise = Just Terms {tmLink = link, tmHash = keccak256 $ encodeUtf8 link}
+
+termsLinkAllowed :: Contracts -> Terms -> IO Bool
+termsLinkAllowed Contracts {ctChain} Terms {tmLink} = isJust <$> allowedLink ctChain tmLink
 
 termsText :: Contracts -> Terms -> IO (Either TermsRefusal Text)
 termsText ct@Contracts {ctTermsTexts, ctFetching} t@Terms {tmHash} =

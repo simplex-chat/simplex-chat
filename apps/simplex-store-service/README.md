@@ -759,7 +759,8 @@ The service sets each file's type and `Cache-Control` itself: `no-cache`, and a 
 ### Terms and community names
 
 The controller's name policy (`SimplexNamePolicy`, read from `namePolicy()` once at startup and
-logged, or on first use when that read fails or finds none) holds the links of two sets of terms:
+logged, or on first use when that read fails or finds none, or after a register reverts
+`TermsNotAccepted`) holds the links of two sets of terms:
 `generalTermsLink()`, the general terms, and `communityTermsLink()`, the community terms. It keeps
 the list of community names, which the contracts' owner edits on chain and the guardian
 can add to. A listed name is sold under the community terms, which include the general terms that
@@ -770,9 +771,10 @@ accepts the current terms of its kind on chain, once.
 startup that nothing reads them, and ignores them.
 
 A later `setNamePolicy` takes effect for the service after a restart, so restart it
-at once: until then the service reads the reservations, the list, the terms and the nonces from the
-old policy, so an order of a name the new policy reserves ends taken, and one of a name it lists
-does not register: the page signs again until the order lapses, and only the first relay spends gas.
+at once. Until then the service reads the reservations, the list, the terms and the nonces from the
+old policy, so an order of a name the new policy reserves ends taken. Each order whose acceptance
+went to the old policy fails one register, `TermsNotAccepted`, and its page signs again; the first
+such failure makes the service read `namePolicy()` again, so the page signs for the new policy.
 
 A community name is registered for 2 paid years, plus the free days before `[names] term_start`,
 whatever years `[names] years` or its prepaid code gives, since the controller registers a community
@@ -803,7 +805,9 @@ The terms of a name's kind are unavailable while their link is not set, is not a
 takes, or has a text the service cannot fetch now. An available name's search answer then carries
 `"terms": null`, and an order, a code order, a move or a spend of such a name answers
 `503 terms_unavailable` before any payment, with `Retry-After` while the fetch waits. The service
-logs both links at startup, and warns for each that leaves names unavailable. To change the terms,
+logs both links and their hashes at startup, and warns for each that is not set or not a link it
+takes; it fetches the texts on first use. A search reads the links only for an available name, and
+waits for its text within the search's deadline. To change the terms,
 the contracts' owner calls `setGeneralTerms(link)` or `setCommunityTerms(link)`; an order signed
 under the old terms is asked to agree again before its reveal.
 

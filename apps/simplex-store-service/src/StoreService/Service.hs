@@ -49,7 +49,7 @@ import StoreService.Names.Abi (hex)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (newChainClient, nodeChainId)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
-import StoreService.Names.Contracts (Contracts, Terms (..), TermsRefusal (..), communityName, namePolicy, termsLinks, termsOf, termsText)
+import StoreService.Names.Contracts (Contracts, Terms (..), communityName, namePolicy, termsLinkAllowed, termsLinks, termsOf)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
@@ -331,10 +331,9 @@ logNamePolicy NamesConfig {nCommunity} ct =
     logTerms what sold link = case termsOf link of
       Nothing -> logWarn $ "names: the name policy has no " <> what <> " yet, so " <> sold <> " cannot be ordered until the owner sets them"
       Just t@Terms {tmHash} ->
-        termsText ct t >>= \case
-          Right _ -> logNote $ "names: " <> what <> " " <> link <> ", accepted as " <> hex tmHash
-          Left TRLink -> logWarn $ "names: the name policy's " <> what <> " are not a link the service takes, so " <> sold <> " cannot be ordered: " <> link
-          Left (TRWait _) -> logWarn $ "names: the text of the " <> what <> " could not be fetched, so " <> sold <> " cannot be ordered until it is: " <> link
+        termsLinkAllowed ct t >>= \case
+          True -> logNote $ "names: " <> what <> " " <> link <> ", hash " <> hex tmHash
+          False -> logWarn $ "names: the name policy's " <> what <> " are not a link the service takes, so " <> sold <> " cannot be ordered: " <> link
 
 -- | The workers resume every registration in their phases, and the code sweep runs at the start and then daily.
 namesLanes :: NamesEnv -> IO [IO ()]

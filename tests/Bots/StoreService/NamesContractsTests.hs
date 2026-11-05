@@ -25,6 +25,7 @@ module Bots.StoreService.NamesContractsTests
     availableCall,
     minCommitmentAgeCall,
     maxCommitmentAgeCall,
+    newPolicy,
     unhex,
   )
 where
@@ -83,7 +84,7 @@ namesContractsTests = describe "StoreService names: contracts" $ do
     it "reads the controller's availability and the name's expiry" $ testAvailability g
     it "reads the commitment ages once" $ testCommitmentAges g
   describe "name policy" $ do
-    it "reads the policy from the controller once, and again after a zero answer or a failed read, and the reservations, listing, terms links, nonces and acceptances from it" $ testNamePolicy g
+    it "reads the policy from the controller once, and again after a zero answer, a failed read or once forgotten, and the reservations, listing, terms links, nonces and acceptances from it" $ testNamePolicy g
   describe "terms" $ do
     it "reads both terms links at one block, \"\" for one not set, and hashes a set link with keccak256 as viem does" $ testTermsLinks g
     it "fetches a terms text once, keeping it by its link's hash" $ testTermsTextKept g
@@ -143,6 +144,10 @@ testNamePolicy g = withContracts g $ \node ct -> do
   policyNonce ct owner `shouldReturn` Right 5
   answerCall node fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> commitment <> addressWord owner) $ Returns fakeCommunityTerms
   acceptedTerms ct commitment owner `shouldReturn` Right fakeCommunityTerms
+  answerCall node fakeController (selector "namePolicy()") $ Returns $ addressWord newPolicy
+  namePolicy ct `shouldReturn` Right fakeNamePolicy
+  forgetNamePolicy ct
+  namePolicy ct `shouldReturn` Right newPolicy
 
 testTermsLinks :: TVar ChaChaDRG -> IO ()
 testTermsLinks g = withContracts g $ \node ct -> do
@@ -488,10 +493,11 @@ aliceNode = unhex "0f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54e
 commitment :: ByteString
 commitment = unhex "f8096c3f3cfbadc9f3a108d2c586ccc816c0510711c8d6228aa4fa507324d30c"
 
-owner, registry, otherResolver :: Address
+owner, registry, otherResolver, newPolicy :: Address
 owner = address "0x014f9c09cceedef1b713110d04d3a07d5b5d9b73"
 registry = address "0x5fbdb2315678afecb367f032d93f642f64180aa3"
 otherResolver = address "0x4826533b4897376654bb4d4ad88b7fafd0c98528"
+newPolicy = address "0x8a791620dd6260079bf849dc5567adc3f2fdc318"
 
 -- viem's calldata for the reads
 

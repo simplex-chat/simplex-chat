@@ -30,6 +30,7 @@ import Bots.StoreService.NamesOrdersTests (communityEntry, termsEntry, threeYear
 import Bots.StoreService.NamesProfilesTests (bakeryLink, jpeg, newsLink)
 import Bots.StoreService.NamesStoreTests (atNonce, issue, newEdit, order, ownerA, placeCode, setChannel, t0, usable)
 import Bots.StoreService.WebTests (withServiceStore)
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
 import Control.Monad (forM_, replicateM_)
 import Crypto.Random (ChaChaDRG)
@@ -85,8 +86,9 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "reads no records from another resolver" $ testOtherResolver g
     it "answers a registered name's record edits left and when the next one returns, counting the edits of 365 days, reverted too" $ testRecordEdits g
     it "answers a link whose profile was not read unread, and a private host's unavailable without fetching it" $ testEntityProfiles g
-    it "answers provider_unavailable to any failed chain read, records and price included" $ testFailedReads g
+    it "answers provider_unavailable to any failed chain read, records and price included, and reads no terms link for a registered name" $ testFailedReads g
     it "fails a search whose reads together pass one deadline, though each read meets it" $ testOneDeadline g
+    it "fails a search whose terms text arrives past the deadline, and answers the text that fetch kept to the next search" $ testSlowTerms g
     it "answers bad_request to a hash not in 0x and 64 lowercase hex, before the length" $ testBadHash g
     it "answers invalid_name to a length not a decimal integer in 6-63" $ testBadLength g
     it "takes a search token for every request, whatever its outcome, and answers another method 405" $ testSearchLimit g
@@ -560,6 +562,8 @@ testFailedReads g = withSearch g id id $ \s@Search {node} -> do
   searchAlice s 12 `shouldReturn` unavailable
   answerCall node (resolverOf node) noncesCall $ Returns $ uint256 (0 :: Int)
   fst <$> searchAlice s 12 `shouldReturn` 200
+  answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Reverts ""
+  fst <$> searchAlice s 12 `shouldReturn` 200
 
 -- | Each slow read takes 40% of the deadline: the status's two concurrent rounds meet it, the records' third round passes it.
 testOneDeadline :: TVar ChaChaDRG -> IO ()
@@ -575,6 +579,21 @@ testOneDeadline g = withSearch g id (\ct -> ct {ctDeadline = deadline}) $ \s@Sea
   searchAlice s 12 `shouldReturn` registeredAnswer [] J.Null otherResolverText J.Null
   where
     deadline = 2000000
+
+testSlowTerms :: TVar ChaChaDRG -> IO ()
+testSlowTerms g = withSearch g id (\ct -> ct {ctDeadline = deadline}) $ \s@Search {node} -> do
+  available node
+  answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
+  setFault node "GET" $ Slow $ deadline * 3 `div` 2
+  (answer, elapsed) <- timed $ searchAlice s 12
+  answer `shouldBe` refused 503 "provider_unavailable"
+  elapsed `shouldSatisfy` (< 2)
+  clearFault node "GET"
+  threadDelay deadline
+  searchAlice s 12 `shouldReturn` availableAnswer 10000
+  fetchedTexts node `shouldReturn` [fakeTermsPath fakeGeneralTermsText]
+  where
+    deadline = 1000000
 
 testBadHash :: TVar ChaChaDRG -> IO ()
 testBadHash g = withSearch g id id $ \s -> do

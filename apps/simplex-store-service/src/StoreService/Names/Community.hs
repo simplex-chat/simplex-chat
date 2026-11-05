@@ -5,9 +5,11 @@ module StoreService.Names.Community
   ( communityFor,
     termsFor,
     agreedTermsHash,
+    communityTermsPrefix,
     communityJSON,
     yearsFor,
     termsJSON,
+    kindTerms,
     nameTerms,
     readableTerms,
     AcceptanceAsked (..),
@@ -59,12 +61,13 @@ yearsFor listed years = if listed then communityYears else years
 termsJSON :: Maybe Terms -> J.Value
 termsJSON = maybe J.Null $ \Terms {tmLink, tmHash} -> J.object ["hash" .= hex tmHash, "link" .= tmLink]
 
+kindTerms :: Bool -> (Text, Text) -> Maybe Terms
+kindTerms listed (generalLink, communityLink) = termsOf $ if listed then communityLink else generalLink
+
 -- | Whether the policy lists the name, and the terms it is sold under: the community terms for a listed name, else the
 -- general terms; Nothing until the owner sets them.
 nameTerms :: Contracts -> LabelHash -> IO (Either ChainError (Bool, Maybe Terms))
-nameTerms ct lh = together $ kindTerms <$> concurrent (communityName ct lh) <*> concurrent (termsLinks ct)
-  where
-    kindTerms listed (generalLink, communityLink) = (listed, termsOf $ if listed then communityLink else generalLink)
+nameTerms ct lh = together $ (\listed links -> (listed, kindTerms listed links)) <$> concurrent (communityName ct lh) <*> concurrent (termsLinks ct)
 
 readableTerms :: Contracts -> Maybe Terms -> IO (Either (Maybe Int) Terms)
 readableTerms ct = maybe (pure $ Left Nothing) $ \t -> bimap waitOf (const t) <$> termsText ct t

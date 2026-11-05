@@ -41,7 +41,7 @@ import Simplex.Messaging.Util (tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Chain (Block (..), ChainClient, ChainError (..), TxHash, blockAt)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, releaseCode, reserveCode)
-import StoreService.Names.Contracts (CommitmentAges (..), acceptedTerms, commitmentAges, commitmentTime, communityName, controllerAvailable, namePolicy, sponsorNonce)
+import StoreService.Names.Contracts (CommitmentAges (..), acceptedTerms, commitmentAges, commitmentTime, communityName, controllerAvailable, forgetNamePolicy, namePolicy, sponsorNonce)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), WriteRefusal (..), confirmLanded, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
@@ -339,8 +339,9 @@ registering w@Worker {wkSender} now r@NameRegistration {nrId} =
     Nothing -> judge w now r Nothing
 
 -- | A register that did not go through, by its dry run's revert or once every transaction settled: registered when one mined
--- with status 1 or the owner holds the name; committed again on InvalidNonce or a refused terms acceptance, for the page to sign again; taken on any revert
--- while the name is not available at the latest block; failed otherwise, unless the dry run named the name as gone.
+-- with status 1 or the owner holds the name; committed again on InvalidNonce or a refused terms acceptance, for the page to sign again, the name
+-- policy read again on TermsNotAccepted; taken on any revert while the name is not available at the latest block; failed otherwise, unless the
+-- dry run named the name as gone.
 judge :: Worker -> UTCTime -> NameRegistration -> Maybe RevertName -> IO Next
 judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {nrReveal} reason =
   inTurn w r $
@@ -349,7 +350,9 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
       LChanged -> pure (Nothing, Again)
       LUnread -> pure (Nothing, Retry (nrVersion r) "the register check's chain read failed")
       LNotLanded -> case reason of
-        Just e | e `elem` [RNInvalidNonce, RNTermsNotAccepted, RNTermsMismatch] -> store w now r {nrReveal = Nothing}
+        Just e | e `elem` [RNInvalidNonce, RNTermsNotAccepted, RNTermsMismatch] -> do
+          when (e == RNTermsNotAccepted) $ forgetNamePolicy oeContracts
+          store w now r {nrReveal = Nothing}
         Just RNCommitmentTooNew -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
         _ -> case nrReveal of
           Just NameReveal {rvLabel} ->

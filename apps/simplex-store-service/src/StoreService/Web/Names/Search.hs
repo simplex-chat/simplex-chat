@@ -5,7 +5,7 @@
 
 module StoreService.Web.Names.Search (searchHandler, previewHandler, termsHandler) where
 
-import Control.Concurrent.Async (mapConcurrently)
+import Control.Concurrent.Async (async, mapConcurrently, wait)
 import Control.Logger.Simple (logWarn)
 import Control.Monad (join)
 import Control.Monad.Except (ExceptT (..), runExceptT)
@@ -29,7 +29,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (bytes32FromHex)
-import StoreService.Names.Community (communityJSON, nameTerms, readableTerms, termsJSON, yearsFor)
+import StoreService.Names.Community (communityJSON, kindTerms, readableTerms, termsJSON, yearsFor)
 import StoreService.Names.Contracts
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
@@ -42,7 +42,7 @@ import System.Timeout (timeout)
 import Text.Read (readMaybe)
 
 data Found
-  = FAvailable Int
+  = FAvailable Int (Maybe Terms)
   | -- | the chain says available while a registration here has its register sent, not mined
     FRegistering
   | FReserved
@@ -57,18 +57,19 @@ searchHandler cfg@NamesConfig {nYears} st ct ps clock hashText req respond = cas
     Just len -> do
       registering <- withTransaction st (`isLabelRegistering` lh)
       timeout (ctDeadline ct) (runExceptT $ found lh len registering) >>= \case
-        Just (Right (f, terms)) -> respond =<< searchAnswer cfg st ct ps clock lh terms f
+        Just (Right (f, listed)) -> respond =<< searchAnswer cfg st ps clock lh listed f
         Just (Left e) -> unavailable $ tshow e
         Nothing -> unavailable "timed out"
   where
     found lh len registering = do
-      (status, terms@(listed, _)) <- ExceptT $ together $ (,) <$> concurrent (nameStatus ct lh) <*> concurrent (nameTerms ct lh)
-      (,terms) <$> case status of
+      (status, listed) <- ExceptT $ together $ (,) <$> concurrent (nameStatus ct lh) <*> concurrent (communityName ct lh)
+      (,listed) <$> case status of
         NSAvailable
           | registering -> pure FRegistering
-          | otherwise -> FAvailable <$> ExceptT (chainPriceCents ct len (yearsFor listed nYears))
+          | otherwise -> ExceptT $ together $ FAvailable <$> concurrent (chainPriceCents ct len (yearsFor listed nYears)) <*> concurrent (readableNow listed)
         NSReserved -> pure FReserved
         NSRegistered name -> FRegistered name <$> ExceptT (nameRecords ct lh name)
+    readableNow listed = termsLinks ct >>= traverse (\links -> eitherToMaybe <$> (wait =<< async (readableTerms ct $ kindTerms listed links)))
     unavailable :: Text -> IO ResponseReceived
     unavailable why = logWarn ("GET /api/name: a chain read failed: " <> why) >> respond providerUnavailable
 
@@ -83,10 +84,9 @@ queryLength req = case join $ lookup "length" $ queryString req of
       | n >= toInteger minNameLength && n <= toInteger maxNameLength = Just $ fromInteger n
       | otherwise = Nothing
 
-searchAnswer :: NamesConfig -> DBStore -> Contracts -> Profiles -> IO UTCTime -> LabelHash -> (Bool, Maybe Terms) -> Found -> IO Response
-searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nChain = ChainConfig {cChainId, cResolver, cSponsor}} st ct ps clock lh (listed, terms) = \case
-  FAvailable price -> do
-    readable <- eitherToMaybe <$> readableTerms ct terms
+searchAnswer :: NamesConfig -> DBStore -> Profiles -> IO UTCTime -> LabelHash -> Bool -> Found -> IO Response
+searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nChain = ChainConfig {cChainId, cResolver, cSponsor}} st ps clock lh listed = \case
+  FAvailable price readable ->
     ok $
       ["status" .= ("available" :: Text), "price" .= price, "currency" .= ("usd" :: Text), "years" .= nYears, "termStart" .= termStart]
         <> ["resolver" .= addressText cResolver, "sponsor" .= addressText cSponsor]

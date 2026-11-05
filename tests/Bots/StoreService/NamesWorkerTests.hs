@@ -6,7 +6,7 @@
 module Bots.StoreService.NamesWorkerTests (namesWorkerTests) where
 
 import Bots.StoreService.FakeEthNode
-import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, noncesCall, registrarOf, unhex)
+import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, newPolicy, noncesCall, registrarOf, unhex)
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
@@ -44,6 +44,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig)
 import StoreService.Names.Abi (abiBytes, abiTuple, addressWord, AbiValue (..), hex, selector, uint256)
 import StoreService.Names.Chain (Block (..), ChainClient, Receipt (..), TxHash (..), TxRequest (..), blockAt, decodeSignedTx, newChainClient)
+import StoreService.Names.Contracts (namePolicy)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange)
 import StoreService.Names.Registration (RegisterIntent (..), TermsAcceptance (..), acceptCalldata, acceptanceDigest, commitCalldata, policyDomain, registerIntentDigest, registerWithCreditCalldata, sponsorDomain, termsKind)
@@ -89,7 +90,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "ends taken on any revert while the name is not available, releasing a code and keeping no balance" testRevertTaken
     it "keeps the phase on NameNotAvailable while the name still reads available, as for a pending competitor" testPendingCompetitor
     it "ends failed on a revert while the name is available, alerting on InsufficientAllowance and keeping a code" testRevertFailed
-    it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed" testInvalidNonce
+    it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed, and reads the name policy again on TermsNotAccepted" testInvalidNonce
     it "relays no intent past its deadline, ending failed" testExpiredIntent
     it "keeps the phase when a read of the final check fails" testCheckUnread
     it "waits a second when the dry run reverts CommitmentTooNew" testCommitmentTooNew
@@ -653,13 +654,16 @@ testRevertFailed = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   sent w `shouldReturn` []
 
 testInvalidNonce :: IO ()
-testInvalidNonce = forM_ ["InvalidNonce()", "TermsNotAccepted(string)"] $ \revert -> withWorker $ \w@W {wCtx = ctx} -> do
+testInvalidNonce = forM_ [("InvalidNonce()", fakeNamePolicy), ("TermsNotAccepted(string)", newPolicy)] $ \(revert, policyAfter) -> withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders = OrdersEnv {oeContracts}}} -> do
   r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
+  namePolicy oeContracts `shouldReturn` Right fakeNamePolicy
+  answerCall cNode fakeController (selector "namePolicy()") $ Returns $ addressWord newPolicy
   dryRunsRevert w revert ""
   published w r (steps w r >>= waitingUntil) `shouldReturn` at (orderSeconds - minAge + maxAge + 1)
   x <- stored ctx r
   (nrPhase x, nrReveal x, nrVersion x, nrRevealBefore x) `shouldBe` (PCommitted, Nothing, nrVersion r + 1, nrRevealBefore r)
   sent w `shouldReturn` []
+  namePolicy oeContracts `shouldReturn` Right policyAfter
 
 -- | The page's reveal with its acceptance of the policy's general terms.
 acceptedReveal :: Ctx -> NameRegistration -> IO NameRegistration

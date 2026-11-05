@@ -4,7 +4,7 @@
 module Bots.StoreService.NamesCommunityTests (namesCommunityTests) where
 
 import Bots.StoreService.ConfigTests (chainSection, namesIni, namesRefusal, namesSection, parseIni, parsedNames, withIni)
-import Bots.StoreService.FakeEthNode (CallAnswer (..), TextAnswer (..), answerCall, answerListing, answerText, fakeCommunityTerms, fakeCommunityTermsText, fakeController, fakeGeneralTerms, fakeGeneralTermsText, fakeNamePolicy, fakeNewCommunityTermsText, fakeTermsLink, fakeTermsPath, setCommunityTerms, setGeneralTerms)
+import Bots.StoreService.FakeEthNode (CallAnswer (..), answerCall, answerListing, fakeCommunityTerms, fakeCommunityTermsText, fakeController, fakeGeneralTerms, fakeGeneralTermsText, fakeNamePolicy, fakeTermsLink, fetchedTexts, setCommunityTerms, setGeneralTerms)
 import Bots.StoreService.NamesContractsTests (withContracts)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import Bots.StoreService.WebTests (capturingStderr)
@@ -17,7 +17,6 @@ import Data.Maybe (fromJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Network.HTTP.Types (status404)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import StoreService.Config (NamesConfig (..), unknownKeys)
@@ -40,9 +39,9 @@ namesCommunityTests = describe "StoreService names: community" $ do
   it "names no community label as a setting nothing reads" testNoUnknownKeys
   it "logs how many community names it loaded" testLoadedCount
   it "gives the terms' hash for an unlisted name and community/ with it for a listed one, and reads a community hash back" testTermsFor
-  it "logs the name policy and both terms links at startup, and checks the [community] lines" $ testStartupCheck g
+  it "logs the name policy and both terms links with their hashes at startup, fetching no text, and checks the [community] lines" $ testStartupCheck g
   it "checks no [community] line when the policy cannot be read at startup" $ testStartupUnread g
-  it "warns at startup on terms not set, unread, of a link the service does not take, or whose text cannot be fetched" $ testStartupWarnings g
+  it "warns at startup on terms not set, unread, or of a link the service does not take, fetching no text" $ testStartupWarnings g
 
 bakersText :: Text
 bakersText = "bakers and bakeries in Portugal"
@@ -141,9 +140,10 @@ testStartupCheck g = withContracts g $ \node ct -> do
   cfg <- withCommunity ["alicebakery = Alice's bakery"]
   logged <- capturingStderr $ logNamePolicy cfg ct
   logged `shouldSatisfy` T.isInfixOf ("names: name policy " <> addressText fakeNamePolicy)
-  logged `shouldSatisfy` T.isInfixOf ("names: general terms " <> fakeTermsLink fakeGeneralTermsText <> ", accepted as " <> hex fakeGeneralTerms)
-  logged `shouldSatisfy` T.isInfixOf ("names: community terms " <> fakeTermsLink fakeCommunityTermsText <> ", accepted as " <> hex fakeCommunityTerms)
+  logged `shouldSatisfy` T.isInfixOf ("names: general terms " <> fakeTermsLink fakeGeneralTermsText <> ", hash " <> hex fakeGeneralTerms)
+  logged `shouldSatisfy` T.isInfixOf ("names: community terms " <> fakeTermsLink fakeCommunityTermsText <> ", hash " <> hex fakeCommunityTerms)
   logged `shouldSatisfy` T.isInfixOf "names: [community] lists a name the name policy does not list, so it is sold as a plain name: Alice's bakery"
+  fetchedTexts node `shouldReturn` []
   answerListing node aliceHash $ Reverts ""
   unread <- capturingStderr $ logNamePolicy cfg ct
   unread `shouldSatisfy` T.isInfixOf "names: a [community] name's listing could not be read: Alice's bakery"
@@ -168,8 +168,6 @@ testStartupWarnings g = withContracts g $ \node ct -> do
   warns "names: the name policy has no community terms yet, so community names cannot be ordered until the owner sets them"
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes $ encodeUtf8 otherLink]
   warns $ "names: the name policy's general terms are not a link the service takes, so plain names cannot be ordered: " <> otherLink
-  setCommunityTerms node fakeNewCommunityTermsText
-  answerText node (fakeTermsPath fakeNewCommunityTermsText) $ TextAnswer status404 [] ""
-  warns $ "names: the text of the community terms could not be fetched, so community names cannot be ordered until it is: " <> fakeTermsLink fakeNewCommunityTermsText
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Reverts ""
   warns "names: the name policy's terms could not be read: "
+  fetchedTexts node `shouldReturn` []
