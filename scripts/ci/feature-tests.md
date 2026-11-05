@@ -80,7 +80,7 @@ To turn a session into a scripted test, list the commands it sent (`grep '^allow
 
 `ios-sim/tests/settings.sh` was written this way, from a session of the earlier smoke plan that opened Settings from the profile picker and closed it. Its taps and the swipe come from the guard log. The checks come from its report ("Your settings", "Network & servers", and Settings gone after the swipe). The fixed point it tapped became a lookup of the element in the tree.
 
-On desktop and Android the Claude job starts at the app's first screen, not at the feature tests' starting point, so a session meant for this must first onboard and create the group, as `claude-test.md` asks.
+The Claude job doesn't start at the feature tests' starting point. On desktop and Android it starts at the app's first screen, so a session meant for this must first onboard and create the group, as `claude-test.md` asks; on iOS it starts at the chat list without chats, as the smoke test leaves it before its images case.
 
 ## Composing tests here, without the app
 
