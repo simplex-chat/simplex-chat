@@ -423,7 +423,7 @@ Servers: `a.example.com`, `b.example.com`, unknown: downloading shows them this 
 ```
 
 - Known servers are the user's XFTP servers from `apiGetUserServers`, disabled ones included, except those of a disabled operator; addresses are compared without their password. This is the core's rule for approving relays (`getKnownAgentServers`, `Library/Internal.hs:898-904`; `agentServerCfgs`, `Operators.hs:455-465`), except that the preset servers used when the user has none count as unknown.
-- In mode requests the download approves the relays (`apiReceiveFile`, `approvedRelays` true): a file on unknown servers is downloaded only after `/receive` or `/forward` of the card that names them. In mode host `approvedRelays` is false, and the core downloads a file on unknown servers only when the IP address is protected (`receiveViaCompleteFD`, `Library/Internal.hs:859-868`); otherwise the download fails with `fileNotApproved`.
+- In mode requests the download approves the relays (`apiReceiveFile`, `approvedRelays` true) only after `/receive` or `/forward` of a card that names unknown servers. Every other download, and every download in mode host, has `approvedRelays` false: the core checks the complete description, and downloads a file on unknown servers only when the IP address is protected (`receiveViaCompleteFD`, `Library/Internal.hs:859-868`). Otherwise the download fails with `fileNotApproved`. When the description completes after the acceptance, the core returns the file to rcvInvitation (`relaysNotApproved`, `Library/Internal.hs:884-890`), and the next check fails the download.
 
 ```
 message type   card
@@ -1298,7 +1298,7 @@ downloadTo TARGET:
   then /_get chat <chat> around=<item> count=0, the item's file:
     rcvComplete              settle received (below)
     failed, as in file       delete partial at fileSource (below); rejected with its error
-    rcvInvitation            mkdir the folder of TARGET, mode 0700; /freceive <fileId> approved_relays=on TARGET, without approved_relays=on in mode host   # apiReceiveFile; the core creates the file at that path (getRcvFilePath, Library/Internal.hs:958-965)
+    rcvInvitation            mkdir the folder of TARGET, mode 0700; /freceive <fileId> TARGET, with approved_relays=on in mode requests for a download whose card named unknown servers   # apiReceiveFile; the core creates the file at that path (getRcvFilePath, Library/Internal.hs:958-965)
     other                    the events below settle it
 
 settle received, for a received file in status rcvComplete with a promise:
@@ -1322,7 +1322,7 @@ chatItemUpdated                           as the item's file above: rcvComplete,
 ```
 
 - An event settles or deletes only a file with a promise; rcvFileComplete also moves a file without one, for example one whose transfer completes after a restart.
-- rcvFileComplete in a member chat of a group (groupChatScope) moves the file into the group's folder, DIR/files/group-<groupId>; newChatItems runs downloadFile only for the main conversation.
+- A file in a member chat of a group (groupChatScope) has a promise too: newChatItems runs downloadFile for it with the group as its chat, and rcvFileComplete moves it into the group's folder, DIR/files/group-<groupId>. The check reads its item by ID; chatItemUpdated, and rcvFileError with an item, leave it to the next check.
 
 Every 60 s while the promise is unsettled:
 
@@ -1331,6 +1331,7 @@ step                                        result
 /_get chat <chat> around=<item> count=0     the message or its chat gone (errorStore chatItemNotFound, contactNotFound, groupNotFound): delete partial at the last fileSource seen; rejected, "The message or its chat was deleted."
                                             another error: logged; the download continues
                                             otherwise the item's file settles the promise as rcvComplete and failed above; rcvComplete: move received first
+rcvInvitation after the acceptance          rejected, "The file is on unknown servers that were not approved."   (relaysNotApproved, Library/Internal.hs:884-890)
 rcvTransfer, rcvProgress above the          the time of progress: now
 largest one seen
 30 minutes since the start or the time      rejected, "The download made no progress for 30 minutes and was cancelled."; /fcancel <fileId>; delete partial at the last fileSource seen

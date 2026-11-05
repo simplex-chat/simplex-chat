@@ -1,6 +1,6 @@
 # SimpleX MCP server: specification
 
-> Technical specification of `@simplex-chat/mcp` 0.2.0 in `packages/simplex-chat-mcp`. Statements are checked against the source at commit `b54d66d25`, and each section links to the code.
+> Technical specification of `@simplex-chat/mcp` 0.2.0 in `packages/simplex-chat-mcp`. Statements are checked against the source at commit `65a5e60ed`, and each section links to the code.
 >
 > Related: [README](../README.md) (user manual) | [PLAN](../PLAN.md) (design record) | [TESTING](../TESTING.md) (local build and test)
 
@@ -112,8 +112,8 @@ graph TD
 | Server start | [`src/serve.ts`](../src/serve.ts#L65) | `startServer` | [65](../src/serve.ts#L65) |
 | Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L88) | `startAgent` | [88](../src/serve.ts#L88) |
 | HTTP listener | [`src/http.ts`](../src/http.ts#L14) | `startHttp` | [14](../src/http.ts#L14) |
-| Tool registration | [`src/tools.ts`](../src/tools.ts#L484) | `AgentTools.register` | [484](../src/tools.ts#L484) |
-| Downloads | [`src/tools.ts`](../src/tools.ts#L518) | `AgentTools.downloadFile` | [518](../src/tools.ts#L518) |
+| Tool registration | [`src/tools.ts`](../src/tools.ts#L488) | `AgentTools.register` | [488](../src/tools.ts#L488) |
+| Downloads | [`src/tools.ts`](../src/tools.ts#L522) | `AgentTools.downloadFile` | [522](../src/tools.ts#L522) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L124) | `Actions` | [124](../src/actions.ts#L124) |
 | Agent control chat | [`src/control.ts`](../src/control.ts#L81) | `Control` | [81](../src/control.ts#L81) |
 | Card text | [`src/control.ts`](../src/control.ts#L552) | `cardText` | [552](../src/control.ts#L552) |

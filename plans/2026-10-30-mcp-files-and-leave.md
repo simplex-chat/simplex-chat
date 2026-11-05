@@ -296,7 +296,7 @@ sequenceDiagram
 - The files approval and the approval of messages are read again just before the action is created.
 
 Perform:
-- `apiReceiveFile(fileId, "DATA/files/<folder>/<file ID><extension>", approvedRelays)`: true in mode requests, false in mode host, where the core then downloads a file on unknown servers only when the IP address is protected
+- `apiReceiveFile(fileId, "DATA/files/<folder>/<file ID><extension>", approvedRelays)`: true in mode requests for a download whose card named unknown servers; false otherwise, where the core checks the complete description and downloads a file on unknown servers only when the IP address is protected
 - `rcvFileComplete` for the file ends it with its path; `rcvFileError` or `rcvFileSndCancelled` fail it
 
 Restart: undecided cards show "Cancelled: the server stopped"; their files stay offered.
@@ -350,7 +350,7 @@ status       meaning
 performing   wait passed after the approval; the download continues; the same call again attaches to the action
 ```
 
-`downloadTo(action, TARGET)`: TARGET is the download path `DATA/files/<folder>/<file ID><extension>` for `downloadFile`, run by `download` and for each received file that `newChatItems` shows in status rcvAccepted; for `forwardFile`, run by `/forward`, the forwarded path `DATA/forwarded/<folder>/<file ID><extension>`:
+`downloadTo(action, TARGET)`: TARGET is the download path `DATA/files/<folder>/<file ID><extension>` for `downloadFile`, run by `download` and for each received file that `newChatItems` shows in status rcvAccepted, also in a member chat of a group; for `forwardFile`, run by `/forward`, the forwarded path `DATA/forwarded/<folder>/<file ID><extension>`:
 ```
 a download of the file ID in memory: its promise
 otherwise a new promise in memory, then the item's file status:
@@ -368,6 +368,7 @@ rcvFileComplete                              moved to path; as rcvComplete above
 rcvFileError                                 as failed above, else rejected with the agent error (Library/Subscriber.hs:440-446)
 rcvFileSndCancelled                          partial file deleted; rejected: "The sender cancelled the file.", by rcvFileTransfer.fileId
 every 60 s, the item read again              gone: the partial file at the last fileSource deleted; rejected, "The message or its chat was deleted."; rcvComplete: moved to path; its file as the events above
+                                             rcvInvitation after the acceptance: rejected, "The file is on unknown servers that were not approved."
 30 minutes without rcvTransfer progress      rejected, "The download made no progress for 30 minutes and was cancelled."; apiCancelFile; the partial file at the last fileSource deleted
 chatItemUpdated                              as rcvComplete and failed above: file digest, relays not approved (Library/Subscriber.hs:415-439)
 ```
