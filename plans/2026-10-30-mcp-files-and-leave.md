@@ -22,7 +22,7 @@ Phases:
 3. A received file reaches the agent at once, in the message's `file` field, with status `offered`.
 4. `download` is a new action tool; the owner lets the agent receive each file, or all files of one chat.
 5. A download card shows the file's own preview and names the file's servers.
-6. Download card commands, decided 2026-11-03: `/receive CHAT N` performs the download for the agent; `/receive CHAT N all` also lets the agent receive all later files of the chat on known servers, ended by `/receive CHAT off`; `/forward CHAT N` makes the server download the file and forward it into the agent control chat, the card staying pending and the file kept outside the chat's folder until `/receive`; `/reject CHAT N` as for other actions. `/approve CHAT files` and `/revoke CHAT files` are removed; `/approve` is refused on download cards.
+6. Download card commands, decided 2026-11-03: `/receive CHAT N` performs the download for the agent; `/receive CHAT N all` also lets the agent receive all later files of the chat on known servers, ended by `/receive CHAT off`, and leaves other pending cards pending (decided 2026-11-05); `/forward CHAT N` makes the server download the file and forward it into the agent control chat, the card staying pending and the file kept outside the chat's folder until `/receive`; `/reject CHAT N` as for other actions. `/approve CHAT files` and `/revoke CHAT files` are removed; `/approve` is refused on download cards.
 7. Downloads go to `DATA/files/<folder>/<file ID><extension>`, one folder per chat, `group-N` for #N and `contact-N` for @N; commands keep the chat ID, as in `/delete #3 files`; the extension of the file's name is kept when it has only letters and digits. The file field has a path only for a file downloaded there. A file the core receives without a request is moved there when it is received in full.
 8. `send` takes `file`, an absolute path; `text` becomes the caption.
 9. Images are sent with a core-made preview and a core-resized copy; other files unchanged.
@@ -259,7 +259,7 @@ Owner commands:
 ```
 command              effect
 /receive CHAT N      the agent receives the file: the download is performed and the call returns its path
-/receive CHAT N all  the same, and all later downloads in CHAT of files on known servers, with its other pending ones; these post no card
+/receive CHAT N all  the same, and all later downloads in CHAT of files on known servers, which post no card; its other pending downloads stay pending
 /receive CHAT off    downloads in CHAT need a card again; /revoke CHAT keeps covering messages only
 /forward CHAT N      the server downloads the file to DATA/forwarded/<folder>/ and sends it into the agent control chat; the card stays pending; the agent's message shows the file as offered
 /reject CHAT N       the call returns status rejected
@@ -269,7 +269,7 @@ command              effect
 - The "files" approval is stored in the chat's custom data, next to the standing approval of messages (`approvalOf`, `control.ts:554-557`).
 - `/list` shows it per chat.
 - Mode host: the host confirms the call (`anthropic/requiresUserInteraction`, `tools.ts:361`); no card.
-- A file on unknown servers gets a card under the files approval too; the card leaves out `/'receive CHAT N all'`, and `/receive CHAT N all` of another card leaves it pending, with the reply "Files approved for group Builders (#3) by Alice, except downloads from unknown servers. /'receive #3 off'".
+- A file on unknown servers gets a card under the files approval too; the card leaves out `/'receive CHAT N all'`.
 - `/receive CHAT N` after `/forward CHAT N` moves the forwarded file into `DATA/files/<folder>/`, once the copy for the post is made.
 - The post of `/forward` replies to the card when the message, with the card as its quote, is within 15602 bytes by the length rule of `send`; otherwise it is posted without the quote.
 
@@ -331,7 +331,7 @@ serve.ts      startAgent          Agent.data: the data folder
                                   rcvFileSndCancelled: tools.onFileCancelled
                                   chatItemUpdated: tools.onFile
 control.ts    ownerRequest        /receive [CHAT] N; /receive CHAT N all; /receive CHAT off; /forward [CHAT] N
-              standings           new: messages and files, with the custom data key, the tool and the reply words
+              standings           new: messages and files, with the custom data key and the reply words
               approveChat         standing kind
               revoke              standing kind
               standingApprover    standing kind
@@ -420,7 +420,7 @@ command                 reply
 /receive [CHAT] N       none; the card is edited at the outcome
 /forward [CHAT] N       none; the file arrives, as a reply to the card when the message fits
                         Action N: the file was not received: `<error>`.   (the download or the post of the file failed)
-/receive, /forward      Action N has no file.   (N not a download)
+/receive, /forward      Action N is not a download.   (N not a download)
 /approve [CHAT] N       Action N is a download: /'receive #9 N', /'receive #9 N all', /'forward #9 N' or /'reject #9 N'.   (N a download)
 ```
 - The files approval: custom data key `simplexMcpFiles`, `{approvedBy, approvedById, approvedAt}`; the approval of messages keeps `simplexMcp`.

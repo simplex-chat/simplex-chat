@@ -249,7 +249,7 @@ Commands:
 | `/approve #9 all` | Approves all the agent's messages to chat #9: the pending ones and later ones. |
 | `/revoke #9` | Ends that approval: each message to #9 needs approval again. |
 | `/receive #3 7` | The agent receives the file of download 7: the server downloads it, and the agent's call returns its path. |
-| `/receive #3 7 all` | The same, and the agent receives all its downloads from chat #3 of files on its XFTP servers without asking: the pending ones and later ones. When downloads from other servers stay pending, the reply says `..., except downloads from unknown servers.` |
+| `/receive #3 7 all` | The same, and the agent receives its later downloads from chat #3 of files on its XFTP servers without asking. Other pending downloads of #3 stay pending. |
 | `/receive #3 off` | Ends that: each download from #3 needs approval again. |
 | `/forward #3 7` | Downloads the file of action 7 and sends it to you in the agent control chat, as a reply to the card when the file's preview and the card fit in one message. The card stays pending, and the agent gets nothing: its messages show the file as offered, without a path. The server keeps the file outside the chat's folder until `/receive #3 7`, which then uses it. |
 | `/leave #9`, `/leave @4` | Makes the agent leave group #9, or delete contact @4, at once, in both approval modes, and rejects the agent's pending actions for that chat. The reply, for example `Left business Ridgeline (#9), requested by Alice.`, is logged too. |
@@ -278,9 +278,10 @@ My Agent: I sent a message to business Ridgeline, where I am incognito:
 
 ### Receiving all files from a chat
 
-After `/receive #3 7 all`, the agent's downloads from #3 are performed at once, and nothing is posted in the agent control chat.
+After `/receive #3 7 all`, the agent's later downloads from #3 are performed at once, and nothing is posted in the agent control chat.
 
 - It covers files on the agent's XFTP servers. A download of a file on other servers gets a card, as without it.
+- Cards already pending in #3, other than card 7, stay pending.
 - It covers downloads only, and the approval of messages covers no downloads: each is given and ended by its own command.
 - It lasts as the approval of messages does, until `/receive #3 off`, and is kept next to it in the chat's custom data.
 - `/list` shows it as `, files approved by Alice`.
@@ -424,7 +425,7 @@ One server runs per data folder: a second one exits, because two processes on on
 - With `--owners`, only the listed owners approve.
 - After `/approve #N all`, the agent sends to that chat without asking, files included; `/revoke #N` ends it.
 - The server refuses to send private keys, its own files and the files under `~/.simplex-mcp`, where agents keep their data, except the files under `files/` of its own data folder; other files the agent can read are sent after approval.
-- After `/receive #N 7 all`, the agent downloads every file sent to that chat on its XFTP servers without asking; `/receive #N off` ends it. A file on other servers is downloaded only by `/receive` or `/forward` of the card that names them; in mode `host`, its download fails.
+- After `/receive #N 7 all`, the agent's later downloads from that chat, of files on its XFTP servers, run without asking; `/receive #N off` ends it. A file on other servers is downloaded only by `/receive` or `/forward` of the card that names them; in mode `host`, its download fails.
 - Peers of a chat connected as the agent see its profile; peers of an incognito chat see a random profile made for that chat only.
 - The agent has no address, so nobody can contact it first.
 - The agent uses private message routing: the SMP server that holds a contact's queue does not see the agent's IP address.

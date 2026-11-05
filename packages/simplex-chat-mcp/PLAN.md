@@ -480,7 +480,7 @@ command             result
 /approve CHAT all   the standing approval of CHAT by the sender; its pending sends are approved
 /revoke CHAT        the standing approval of CHAT is removed
 /receive [CHAT] N   download N is performed: the agent receives the file; the card is edited
-/receive CHAT N all download N is performed, and the files approval of CHAT by the sender; its other pending downloads of files on known servers are performed
+/receive CHAT N all download N is performed, and the files approval of CHAT by the sender, for its later downloads of files on known servers; its other pending downloads stay pending
 /receive CHAT off   the files approval of CHAT is removed
 /forward [CHAT] N   the server downloads the file of download N into DIR/forwarded/FOLDER/ and posts it, as a reply to the card when the message fits 15602 bytes; the card stays pending
 /leave CHAT         at once, the agent leaves group CHAT or deletes contact CHAT, as the leave tool does; its pending actions for CHAT are rejected by the sender
@@ -509,8 +509,6 @@ CHAT not the action's chat                  Action 10 is not for #3.
 /approve [CHAT] N, N a download             Action 7 is a download: /'receive #3 7', /'receive #3 7 all', /'forward #3 7' or /'reject #3 7'.
 /receive [CHAT] N                           none; the card is edited at the outcome
 /receive CHAT N all                         Files approved for group Builders (#3) by Alice. /'receive #3 off'
-/receive CHAT N all, other downloads from   Files approved for group Builders (#3) by Alice, except downloads from unknown servers. /'receive #3 off'
-unknown servers stay pending
 /approve CHAT all | /receive CHAT N all,    No chat #13. /list shows the agent's chats.
 CHAT not the agent's
 /approve CHAT all, mode host                Approvals apply in mode requests; this server runs in mode host.
@@ -519,7 +517,7 @@ CHAT not the agent's
 /receive CHAT off                           Files from group Builders (#3) need approval again.
 /receive CHAT off, no files approval        Files from #3 have no standing approval.
 /forward [CHAT] N                           none; the file is a reply to the card when the message fits
-/receive | /forward [CHAT] N, N not a       Action 10 has no file.
+/receive | /forward [CHAT] N, N not a       Action 10 is not a download.
 download
 /forward [CHAT] N, the download or the post Action 7: the file was not received: `<error>`.
 of the file fails
@@ -990,13 +988,12 @@ approve | reject | receive | forward [CHAT] N, receive CHAT N all, action N not 
 the same with CHAT, action N a connect or for another chat: reply "Action N is not for CHAT."
 approve [CHAT] N: action N a download: reply "Action N is a download: " + its commands line + "."; otherwise decidedBy = sender; state performing; start perform(N) without awaiting it in the event handler; its end edits the card
 reject [CHAT] N:  decidedBy = sender; state rejected; edit the card
-receive | forward [CHAT] N, receive CHAT N all, action N not a download: reply "Action N has no file."
+receive | forward [CHAT] N, receive CHAT N all, action N not a download: reply "Action N is not a download."
 receive [CHAT] N: as approve, for a download
 approve CHAT all: mode host: reply "Approvals apply in mode requests; this server runs in mode host."; CHAT not a chat of the agent: reply "No chat CHAT. ..."; otherwise set the chat's custom data simplexMcp = {approvedBy: sender name, approvedById: sender groupMemberId, approvedAt}, keeping its other keys
                   (/_set custom @C or #G); each pending send of CHAT: approve as above; reply "Approved for ... /'revoke CHAT'"
 revoke CHAT:      no approval in the chat's custom data: reply "Messages to CHAT have no standing approval."; otherwise remove simplexMcp from it; reply "Messages to ... need approval again."
-receive CHAT N all: as approve CHAT all, with the key simplexMcpFiles, action N and the pending downloads of CHAT on known servers; reply "Files approved for ... by NAME. /'receive CHAT off'",
-                  with ", except downloads from unknown servers" after NAME while other pending downloads of CHAT have unknown servers
+receive CHAT N all: as approve CHAT all, with the key simplexMcpFiles, approving action N while it is pending; the other pending downloads of CHAT stay pending; reply "Files approved for ... by NAME. /'receive CHAT off'"
 receive CHAT off: as revoke CHAT, with the key simplexMcpFiles; replies "Files from CHAT have no standing approval.", "Files from ... need approval again."
 forward [CHAT] N: forwardFile(action N), not awaited: downloadTo DIR/forwarded/FOLDER/<fileId><extension>, or the file already received; then a copy under the file's name in DIR/files/sent/;
                   then /_send #group json [{fileSource: {filePath: the copy}, msgContent: the file's type and preview, no text, quotedItemId: card}];
@@ -1041,7 +1038,7 @@ download call, mode       -           performing
   requests, files approval
 /approve N, /receive N    pending     performing
 /approve CHAT all         pending     performing    (the sends of CHAT)
-/receive CHAT N all       pending     performing    (N and the downloads of CHAT on known servers)
+/receive CHAT N all       pending     performing    (N)
 perform(N) ends           performing  done | failed
 /reject N                 pending     rejected
 /leave CHAT               pending     rejected      (the actions of CHAT)

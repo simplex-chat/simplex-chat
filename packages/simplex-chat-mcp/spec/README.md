@@ -1,6 +1,6 @@
 # SimpleX MCP server: specification
 
-> Technical specification of `@simplex-chat/mcp` 0.2.0 in `packages/simplex-chat-mcp`. Statements are checked against the source at commit `7030eb0aa`, and each section links to the code.
+> Technical specification of `@simplex-chat/mcp` 0.2.0 in `packages/simplex-chat-mcp`. Statements are checked against the source at commit `b54d66d25`, and each section links to the code.
 >
 > Related: [README](../README.md) (user manual) | [PLAN](../PLAN.md) (design record) | [TESTING](../TESTING.md) (local build and test)
 
@@ -116,7 +116,7 @@ graph TD
 | Downloads | [`src/tools.ts`](../src/tools.ts#L518) | `AgentTools.downloadFile` | [518](../src/tools.ts#L518) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L124) | `Actions` | [124](../src/actions.ts#L124) |
 | Agent control chat | [`src/control.ts`](../src/control.ts#L81) | `Control` | [81](../src/control.ts#L81) |
-| Card text | [`src/control.ts`](../src/control.ts#L556) | `cardText` | [556](../src/control.ts#L556) |
+| Card text | [`src/control.ts`](../src/control.ts#L552) | `cardText` | [552](../src/control.ts#L552) |
 | Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
 | Claude Code entry | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
 | Data folder files | [`src/files.ts`](../src/files.ts#L12) | `createDataFolder`, `acquireLock` | [12](../src/files.ts#L12) |

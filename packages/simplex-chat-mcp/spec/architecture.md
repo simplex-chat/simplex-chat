@@ -189,7 +189,7 @@ Hooks are bound in [`serve.ts:100-106`](../src/serve.ts#L100-L106): `refusal`, `
 | Symbol | Line | Contents |
 |---|---|---|
 | `controlCommands` | [10](../src/control.ts#L10) | the command menu |
-| `standings` | [22](../src/control.ts#L22) | custom data key, tool and reply words of the approvals of messages and files |
+| `standings` | [22](../src/control.ts#L22) | custom data key and reply words of the approvals of messages and files |
 | `ControlData` | [43](../src/control.ts#L43) | `{control: true, nextAction}` |
 | `ChatApproval` | [60](../src/control.ts#L60) | `{approvedBy, approvedById, approvedAt}` |
 | `OwnerRequest` | [66](../src/control.ts#L66) | parsed owner command |
@@ -203,19 +203,19 @@ Hooks are bound in [`serve.ts:100-106`](../src/serve.ts#L100-L106): `refusal`, `
 | `Control.onMessage` | [171](../src/control.ts#L171) | owner commands, queued one at a time |
 | `Control.onEvent` | [183](../src/control.ts#L183) | membership changes and loss of the control chat |
 | `Control.ownerCommand` | [200](../src/control.ts#L200) | command dispatch and replies |
-| `approveChat`, `revoke`, `forward`, `leave`, `deleteFiles` | [243-311](../src/control.ts#L243-L311) | owner requests |
-| `cardContent`, `fittedImage` | [445-465](../src/control.ts#L445-L465) | image and video cards with the file's preview |
-| `findControlGroup`, `createControlChat`, `resetControlChat` | [503-531](../src/control.ts#L503-L531) | control group lookup, creation, reset |
-| `isControlEvent` | [533](../src/control.ts#L533) | membership events of the control group |
-| `parseCommand` | [549](../src/control.ts#L549) | one-line `/keyword params` |
-| `cardText`, `requestLines`, `commandsLine` | [556-620](../src/control.ts#L556-L620) | card text per tool, state and mode |
-| `largestCard`, `encodedLength` | [626-634](../src/control.ts#L626-L634) | card size check |
-| `serversLine`, `sizeText` | [668-677](../src/control.ts#L668-L677) | servers line and sizes of download cards |
-| `codeSpan`, `safeName`, `mentionText` | [687-699](../src/control.ts#L687-L699) | quoting of peer text |
-| `ownerRequest` | [714](../src/control.ts#L714) | command words to an `OwnerRequest` |
-| `qrCodeText` | [729](../src/control.ts#L729) | terminal QR code |
-| `losesControl`, `isLost` | [745-760](../src/control.ts#L745-L760) | loss of the control chat |
-| `entryText`, `restartText` | [778-788](../src/control.ts#L778-L788) | `--owners` entries in restart lines |
+| `approveChat`, `revoke`, `forward`, `leave`, `deleteFiles` | [243-307](../src/control.ts#L243-L307) | owner requests |
+| `cardContent`, `fittedImage` | [441-461](../src/control.ts#L441-L461) | image and video cards with the file's preview |
+| `findControlGroup`, `createControlChat`, `resetControlChat` | [499-527](../src/control.ts#L499-L527) | control group lookup, creation, reset |
+| `isControlEvent` | [529](../src/control.ts#L529) | membership events of the control group |
+| `parseCommand` | [545](../src/control.ts#L545) | one-line `/keyword params` |
+| `cardText`, `requestLines`, `commandsLine` | [552-616](../src/control.ts#L552-L616) | card text per tool, state and mode |
+| `largestCard`, `encodedLength` | [622-630](../src/control.ts#L622-L630) | card size check |
+| `serversLine`, `sizeText` | [664-673](../src/control.ts#L664-L673) | servers line and sizes of download cards |
+| `codeSpan`, `safeName`, `mentionText` | [683-695](../src/control.ts#L683-L695) | quoting of peer text |
+| `ownerRequest` | [710](../src/control.ts#L710) | command words to an `OwnerRequest` |
+| `qrCodeText` | [725](../src/control.ts#L725) | terminal QR code |
+| `losesControl`, `isLost` | [741-756](../src/control.ts#L741-L756) | loss of the control chat |
+| `entryText`, `restartText` | [774-784](../src/control.ts#L774-L784) | `--owners` entries in restart lines |
 
 ### [2.7 `messages.ts`](../src/messages.ts)
 
@@ -286,16 +286,16 @@ Hooks are bound in [`serve.ts:100-106`](../src/serve.ts#L100-L106): `refusal`, `
 | Forwards | `AgentTools.forwarding`, the copy for the post per file ID ([tools.ts:477](../src/tools.ts#L477)) | `forwardFile` | `downloadFile`, before it moves a forwarded file |
 | Rejected files | `AgentTools.rejectedFiles` ([tools.ts:478](../src/tools.ts#L478)) | `downloadResult` ([:1009-1010](../src/tools.ts#L1009-L1010)) | the file field |
 | Count of file descriptions | `AgentTools.describedFiles` ([tools.ts:479-480](../src/tools.ts#L479-L480)) | `onFileDescription` | `fileServers` |
-| Members of the control chat | `Control.members` ([control.ts:82](../src/control.ts#L82)) | `refreshMembers` ([:467-469](../src/control.ts#L467-L469)) | approver checks |
+| Members of the control chat | `Control.members` ([control.ts:82](../src/control.ts#L82)) | `refreshMembers` ([:463-465](../src/control.ts#L463-L465)) | approver checks |
 | Mode, expiry, owners list, stop wait | `ServeOptions` of the run | CLI | all modules |
 
 ### 3.2 Chat database custom data
 
 | Item | Entity | Value | Written by | Read by |
 |---|---|---|---|---|
-| Control marker and counter | agent control chat | `{simplexMcp: {control: true, nextAction: N}}` | [`createControlChat`](../src/control.ts#L513-L524), [`saveCounter`](../src/control.ts#L135) | [`findControlGroup`](../src/control.ts#L503), [`controlDataOf`](../src/control.ts#L508) |
-| Standing approval of messages | contact or group of the agent | `{...other keys, simplexMcp: {approvedBy, approvedById, approvedAt}}` | [`approveChat`](../src/control.ts#L243), [`revoke`](../src/control.ts#L260) | [`standingApprover`](../src/control.ts#L130) |
-| Files approval | contact or group of the agent | `{...other keys, simplexMcpFiles: {approvedBy, approvedById, approvedAt}}` | [`approveChat`](../src/control.ts#L243), [`revoke`](../src/control.ts#L260) | [`standingApprover`](../src/control.ts#L130) |
+| Control marker and counter | agent control chat | `{simplexMcp: {control: true, nextAction: N}}` | [`createControlChat`](../src/control.ts#L509-L520), [`saveCounter`](../src/control.ts#L135) | [`findControlGroup`](../src/control.ts#L499), [`controlDataOf`](../src/control.ts#L504) |
+| Standing approval of messages | contact or group of the agent | `{...other keys, simplexMcp: {approvedBy, approvedById, approvedAt}}` | [`approveChat`](../src/control.ts#L243), [`revoke`](../src/control.ts#L256) | [`standingApprover`](../src/control.ts#L130) |
+| Files approval | contact or group of the agent | `{...other keys, simplexMcpFiles: {approvedBy, approvedById, approvedAt}}` | [`approveChat`](../src/control.ts#L243), [`revoke`](../src/control.ts#L256) | [`standingApprover`](../src/control.ts#L130) |
 
 The profile, chats, items, members and file transfers are stored by the core in `DATA/simplex_chat.db`; connections and queues in `DATA/simplex_agent.db` (file prefix `DATA/simplex`, [serve.ts:72](../src/serve.ts#L72)).
 
@@ -406,19 +406,19 @@ The mode is set by `--approve` for one run ([cli.ts:76-78](../src/cli.ts#L76-L78
 | `requests` | `pending`<br>`performing` for a send under a standing approval, and for a download under a files approval | card with commands<br>outcome as a new message after a standing send; none after a download without a card | none |
 | `host` | `performing` | outcome as a new message after the perform; none for a download | `{"anthropic/requiresUserInteraction": true}` |
 
-Sources: [actions.ts:166](../src/actions.ts#L166), [tools.ts:490](../src/tools.ts#L490), [control.ts:145-152](../src/control.ts#L145-L152), [:499-501](../src/control.ts#L499-L501). In both modes a new action is refused unless the control chat has an approver ([control.ts:124-127](../src/control.ts#L124-L127)).
+Sources: [actions.ts:166](../src/actions.ts#L166), [tools.ts:490](../src/tools.ts#L490), [control.ts:145-152](../src/control.ts#L145-L152), [:495-497](../src/control.ts#L495-L497). In both modes a new action is refused unless the control chat has an approver ([control.ts:124-127](../src/control.ts#L124-L127)).
 
 ### 5.2 Owners and approvers
 
 | Term | Rule | Code |
 |---|---|---|
-| human | member other than the agent's membership, status `connected` or `complete` | [control.ts:488-490](../src/control.ts#L488-L490), [tools.ts:1385-1387](../src/tools.ts#L1385-L1387) |
-| human owner | human with role `owner` | [control.ts:475-477](../src/control.ts#L475-L477) |
-| approver, `--owners` absent | member with role `owner` | [control.ts:492-496](../src/control.ts#L492-L496) |
-| approver, `--owners` without a list | none | [control.ts:495](../src/control.ts#L495) |
-| approver, `--owners ID:NAME,...` | member with role `owner` whose `groupMemberId` and `displayName`, folded to one line by `oneLine`, match an entry | [control.ts:495](../src/control.ts#L495), [:762-764](../src/control.ts#L762-L764) |
+| human | member other than the agent's membership, status `connected` or `complete` | [control.ts:484-486](../src/control.ts#L484-L486), [tools.ts:1385-1387](../src/tools.ts#L1385-L1387) |
+| human owner | human with role `owner` | [control.ts:471-473](../src/control.ts#L471-L473) |
+| approver, `--owners` absent | member with role `owner` | [control.ts:488-492](../src/control.ts#L488-L492) |
+| approver, `--owners` without a list | none | [control.ts:491](../src/control.ts#L491) |
+| approver, `--owners ID:NAME,...` | member with role `owner` whose `groupMemberId` and `displayName`, folded to one line by `oneLine`, match an entry | [control.ts:491](../src/control.ts#L491), [:758-760](../src/control.ts#L758-L760) |
 
-The command sender's member record from the chat item is checked ([control.ts:176](../src/control.ts#L176), [:204](../src/control.ts#L204)). The approver count for refusals and standing approvals is taken from `Control.members`, refreshed at load and at each membership event ([control.ts:187](../src/control.ts#L187), [:467-469](../src/control.ts#L467-L469)).
+The command sender's member record from the chat item is checked ([control.ts:176](../src/control.ts#L176), [:204](../src/control.ts#L204)). The approver count for refusals and standing approvals is taken from `Control.members`, refreshed at load and at each membership event ([control.ts:187](../src/control.ts#L187), [:463-465](../src/control.ts#L463-L465)).
 
 Owner setup at start ([control.ts:111-117](../src/control.ts#L111-L117)):
 
@@ -428,7 +428,7 @@ Owner setup at start ([control.ts:111-117](../src/control.ts#L111-L117)):
 | without a list | no humans: link with role `observer`<br>humans exist: their IDs and the restart command, in the log and the chat | link deleted, the joined member and the restart command announced |
 | `ID:NAME,...` | each entry matched to a human, or exit 2<br>role `owner` set where missing<br>other humans removed<br>link deleted<br>`Owners: ...` and register hint | |
 
-Sources: [`startOwners`](../src/control.ts#L345), [`startObserver`](../src/control.ts#L351), [`startListed`](../src/control.ts#L356), [`ownerJoined`](../src/control.ts#L375), [`observerJoined`](../src/control.ts#L384).
+Sources: [`startOwners`](../src/control.ts#L341), [`startObserver`](../src/control.ts#L347), [`startListed`](../src/control.ts#L352), [`ownerJoined`](../src/control.ts#L371), [`observerJoined`](../src/control.ts#L380).
 
 Membership changes at run time ([control.ts:183-198](../src/control.ts#L183-L198)):
 
@@ -451,7 +451,7 @@ Transitions, one per row:
 | counter write or card post fails | `pending`<br>`performing` | `failed` | [actions.ts:252-263](../src/actions.ts#L252-L263) |
 | stop arrives while the counter of a `performing` action is written | `performing` | `pending`, interrupted | [actions.ts:265-270](../src/actions.ts#L265-L270) |
 | control chat lost | `pending` | `failed` | [actions.ts:232-238](../src/actions.ts#L232-L238) |
-| `/reject`, or `/leave CHAT` for a pending action of CHAT with a card | `pending` | `rejected` | [actions.ts:225-230](../src/actions.ts#L225-L230), [control.ts:295-297](../src/control.ts#L295-L297) |
+| `/reject`, or `/leave CHAT` for a pending action of CHAT with a card | `pending` | `rejected` | [actions.ts:225-230](../src/actions.ts#L225-L230), [control.ts:291-293](../src/control.ts#L291-L293) |
 | expiry time passes | `pending` | `expired` | [actions.ts:196-199](../src/actions.ts#L196-L199) |
 | `/approve N`, `/approve CHAT N` and `/approve CHAT all` for other actions; `/receive N`, `/receive CHAT N` and `/receive CHAT N all` for downloads | `pending` | `performing` | [actions.ts:219-223](../src/actions.ts#L219-L223), [control.ts:229-238](../src/control.ts#L229-L238) |
 | perform throws | `performing` | `failed` | [actions.ts:276-279](../src/actions.ts#L276-L279) |
@@ -499,7 +499,7 @@ An action is removed from memory when its result is returned to a call ([tools.t
 
 ### 5.4 Cards
 
-The server posts a card when a `pending` action is created, and edits it with `apiUpdateChatItem` at the outcome ([actions.ts:255](../src/actions.ts#L255), [control.ts:145-152](../src/control.ts#L145-L152)). For a `connect`, `send` or `leave` without a card (mode `host`, standing sends) the server posts the outcome as a new message; a `download` without a card gets none ([control.ts:499-501](../src/control.ts#L499-L501)). The text per state is built by [`cardText`](../src/control.ts#L556-L575); a card of an image or video file is an image or video message with the file's preview ([control.ts:445-465](../src/control.ts#L445-L465)); forms are listed in [API: cards](api.md#22-cards).
+The server posts a card when a `pending` action is created, and edits it with `apiUpdateChatItem` at the outcome ([actions.ts:255](../src/actions.ts#L255), [control.ts:145-152](../src/control.ts#L145-L152)). For a `connect`, `send` or `leave` without a card (mode `host`, standing sends) the server posts the outcome as a new message; a `download` without a card gets none ([control.ts:495-497](../src/control.ts#L495-L497)). The text per state is built by [`cardText`](../src/control.ts#L552-L571); a card of an image or video file is an image or video message with the file's preview ([control.ts:441-461](../src/control.ts#L441-L461)); forms are listed in [API: cards](api.md#22-cards).
 
 Outcomes are posted after `done` and `failed` ([actions.ts:282](../src/actions.ts#L282)), after `rejected` and `expired` ([:229](../src/actions.ts#L229), [:199](../src/actions.ts#L199)), and at stop ([:247](../src/actions.ts#L247)). They are skipped after the control chat is lost ([:247](../src/actions.ts#L247), [:282](../src/actions.ts#L282), [:291](../src/actions.ts#L291)).
 
@@ -507,9 +507,9 @@ Outcomes are posted after `done` and `failed` ([actions.ts:282](../src/actions.t
 
 | Aspect | Messages | Files | Code |
 |---|---|---|---|
-| grant | `/approve CHAT all` from an approver in mode `requests`; pending sends of CHAT with a card are approved | `/receive CHAT N all` from an approver, on the card of download N; N and the other pending downloads of CHAT with a card are performed, except other ones of files on unknown servers | [control.ts:237](../src/control.ts#L237), [:243-258](../src/control.ts#L243-L258) |
+| grant | `/approve CHAT all` from an approver in mode `requests`; pending sends of CHAT with a card are approved | `/receive CHAT N all` from an approver, on the card of download N; N is performed, and the other pending downloads of CHAT stay pending | [control.ts:237](../src/control.ts#L237), [:243-254](../src/control.ts#L243-L254) |
 | mode `host` | nothing stored; reply `Approvals apply in mode requests; this server runs in mode host.` | downloads get no card, so the command has none to act on | [control.ts:213](../src/control.ts#L213) |
-| removal | `/revoke CHAT`: the `simplexMcp` key is removed, other keys kept | `/receive CHAT off`: the `simplexMcpFiles` key is removed | [control.ts:260-267](../src/control.ts#L260-L267) |
+| removal | `/revoke CHAT`: the `simplexMcp` key is removed, other keys kept | `/receive CHAT off`: the `simplexMcpFiles` key is removed | [control.ts:256-263](../src/control.ts#L256-L263) |
 | use | mode `requests`, and `approvedById` equal to the `groupMemberId` of a current approver | the same | [control.ts:130-133](../src/control.ts#L130-L133) |
 | scope | `send` | `download` of a file whose servers are all known | [tools.ts:792](../src/tools.ts#L792), [:971](../src/tools.ts#L971) |
 | decider shown | `safeName(approvedBy)` | the same | [control.ts:132](../src/control.ts#L132) |
@@ -535,7 +535,7 @@ Outcomes are posted after `done` and `failed` ([actions.ts:282](../src/actions.t
 | a new action takes `next`, then `next` grows by 1 | [actions.ts:156](../src/actions.ts#L156), [:178](../src/actions.ts#L178) |
 | the new `next` is written before the card is posted | [actions.ts:254-255](../src/actions.ts#L254-L255) |
 | one write at a time, also after a failed write | [control.ts:135-139](../src/control.ts#L135-L139) |
-| `--reset-owners` copies the value into the new control chat | [serve.ts:221-222](../src/serve.ts#L221-L222), [control.ts:526-531](../src/control.ts#L526-L531) |
+| `--reset-owners` copies the value into the new control chat | [serve.ts:221-222](../src/serve.ts#L221-L222), [control.ts:522-527](../src/control.ts#L522-L527) |
 | a refused call leaves the counter unchanged | [actions.ts:177](../src/actions.ts#L177) |
 
 ---
@@ -572,25 +572,25 @@ Node limits: `requestTimeout` 0, `timeout` 0, `headersTimeout` 60 s, `keepAliveT
 
 | Destination | Rule | Code |
 |---|---|---|
-| card and reply names | folded to one line; a valid display name is plain, others a code span | [`safeName`](../src/control.ts#L691-L694) |
+| card and reply names | folded to one line; a valid display name is plain, others a code span | [`safeName`](../src/control.ts#L687-L690) |
 | card text lines | one code span per line; backticks become `'`; a leading or trailing space becomes U+00A0; blank lines empty | [`codeLines`, `codeSpan`](../src/control.ts#L672-L678) |
-| file names and paths on cards and posts | folded to one line, one code span | [control.ts:589](../src/control.ts#L589), [:602](../src/control.ts#L602), [:166-168](../src/control.ts#L166-L168) |
-| reply quote on a send card | whitespace runs to one space, first 100 characters (code points), one code span | [control.ts:590](../src/control.ts#L590) |
-| link texts on a connect card | code span lines in the bytes that the largest card form leaves; the line that does not fit is cut and ends in `…` inside its code span; later lines left out | [control.ts:648-662](../src/control.ts#L648-L662) |
-| mention names | valid name: `@name` or `@'name'`; others a code span | [`mentionText`](../src/control.ts#L696-L699) |
-| errors on cards | folded to one line, one code span | [control.ts:569](../src/control.ts#L569) |
-| `--owners` part of restart lines in the chat | one code span | [control.ts:79](../src/control.ts#L79), [:786-788](../src/control.ts#L786-L788) |
+| file names and paths on cards and posts | folded to one line, one code span | [control.ts:585](../src/control.ts#L585), [:598](../src/control.ts#L598), [:166-168](../src/control.ts#L166-L168) |
+| reply quote on a send card | whitespace runs to one space, first 100 characters (code points), one code span | [control.ts:586](../src/control.ts#L586) |
+| link texts on a connect card | code span lines in the bytes that the largest card form leaves; the line that does not fit is cut and ends in `…` inside its code span; later lines left out | [control.ts:644-658](../src/control.ts#L644-L658) |
+| mention names | valid name: `@name` or `@'name'`; others a code span | [`mentionText`](../src/control.ts#L692-L695) |
+| errors on cards | folded to one line, one code span | [control.ts:565](../src/control.ts#L565) |
+| `--owners` part of restart lines in the chat | one code span | [control.ts:79](../src/control.ts#L79), [:782-784](../src/control.ts#L782-L784) |
 | terminal names and errors of actions | folded to one line | [actions.ts:180-181](../src/actions.ts#L180-L181), [:333-341](../src/actions.ts#L333-L341), [control.ts:78](../src/control.ts#L78) |
 | tool results | returned as data; schema descriptions and instructions mark `text`, `from`, `name`, file names, downloaded files, `description`, `welcome` and `commands` with their labels and params as data, not instructions; the instructions take a chat's messages as prompts only when the user said so in the session, and limit what the agent shares about its user | [tools.ts:181](../src/tools.ts#L181), [:185](../src/tools.ts#L185), [:190](../src/tools.ts#L190), [:215-216](../src/tools.ts#L215-L216), [:226-231](../src/tools.ts#L226-L231), [:394](../src/tools.ts#L394), [:436](../src/tools.ts#L436) |
 
-The server writes the tappable form `/'...'` only in the card's command line ([control.ts:607-620](../src/control.ts#L607-L620)), in `/'revoke CHAT'` of standing cards and replies ([:567](../src/control.ts#L567), [:257](../src/control.ts#L257)), and in `/'delete CHAT files'` of the kept-files message ([:305](../src/control.ts#L305)).
+The server writes the tappable form `/'...'` only in the card's command line ([control.ts:603-616](../src/control.ts#L603-L616)), in `/'revoke CHAT'` of standing cards and replies ([:563](../src/control.ts#L563), [:253](../src/control.ts#L253)), and in `/'delete CHAT files'` of the kept-files message ([:301](../src/control.ts#L301)).
 
 ### 6.4 Chat references
 
 | Rule | Code |
 |---|---|
 | `^[@#][1-9]\d{0,14}$`: 1 to 15 digits; the core reads `#(2^64 + N)` as `#N` | [messages.ts:150-152](../src/messages.ts#L150-L152), [scenarios.test.ts:491-503](../test/e2e/scenarios.test.ts#L491-L503) |
-| the control chat is refused by `send`, `receive`, `download`, `leave` and the owner commands with CHAT, and left out of `list` and `/list` | [tools.ts:1107](../src/tools.ts#L1107), [:1151-1168](../src/tools.ts#L1151-L1168), [control.ts:332-339](../src/control.ts#L332-L339) |
+| the control chat is refused by `send`, `receive`, `download`, `leave` and the owner commands with CHAT, and left out of `list` and `/list` | [tools.ts:1107](../src/tools.ts#L1107), [:1151-1168](../src/tools.ts#L1151-L1168), [control.ts:328-335](../src/control.ts#L328-L335) |
 | a store error of the chat read is reported as `No chat CHAT.` | [tools.ts:1112](../src/tools.ts#L1112), [:1166](../src/tools.ts#L1166) |
 | the agent's own links are refused by `connect` (`ownLink` plans) | [tools.ts:1270](../src/tools.ts#L1270), [:1288](../src/tools.ts#L1288), [:1310](../src/tools.ts#L1310) |
 
@@ -599,7 +599,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 | Rule | Code |
 |---|---|
 | source: `groupRcv` text items in the main scope of the control group | [serve.ts:134](../src/serve.ts#L134), [control.ts:173](../src/control.ts#L173) |
-| form: one line `/keyword params`, leading spaces allowed | [control.ts:549-554](../src/control.ts#L549-L554) |
+| form: one line `/keyword params`, leading spaces allowed | [control.ts:545-550](../src/control.ts#L545-L550) |
 | the help reply is sent to any sender; other commands are accepted from approvers only | [control.ts:203-204](../src/control.ts#L203-L204) |
 | commands run one at a time in arrival order | [control.ts:177-180](../src/control.ts#L177-L180) |
 | `/approve`, `/reject`, `/receive` and `/forward` need a pending action with a card, and the action's chat when CHAT is given; `/receive` and `/forward` take downloads only, `/approve` the other actions only | [control.ts:227-237](../src/control.ts#L227-L237) |
@@ -614,12 +614,12 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 | `ffmpeg` and `ffprobe` read a video as MP4 or QuickTime, local files only, without standard input, 30 s and 64 MiB of output each | [tools.ts:1525-1543](../src/tools.ts#L1525-L1543) |
 | a download is saved only at `DATA/files/group-N/` or `DATA/files/contact-N/`, or for `/forward` at the same name under `DATA/forwarded/`, named by its file ID and an extension of 1 to 16 ASCII letters and digits | [messages.ts:215-223](../src/messages.ts#L215-L223) |
 | a forwarded file is outside `DATA/files/`, so `send` refuses it; a download moves it into `DATA/files/` after the copy for the post is made | [tools.ts:518-535](../src/tools.ts#L518-L535), [:867-872](../src/tools.ts#L867-L872) |
-| a file on unknown servers gets a card that names them, also under a files approval; in mode `host` the core downloads it only when the IP address is protected | [tools.ts:971](../src/tools.ts#L971), [:1025](../src/tools.ts#L1025), [control.ts:615-618](../src/control.ts#L615-L618) |
+| a file on unknown servers gets a card that names them, also under a files approval; in mode `host` the core downloads it only when the IP address is protected | [tools.ts:971](../src/tools.ts#L971), [:1025](../src/tools.ts#L1025), [control.ts:611-614](../src/control.ts#L611-L614) |
 | a received file is moved into the chat's folder at its completion, unless it is at the forwarded path; a file without a download in memory, such as one whose transfer started before a restart, only when it has its full size; a partial file is deleted only for a download in memory, when it is no larger than the file | [tools.ts:1073-1082](../src/tools.ts#L1073-L1082), [:1477-1483](../src/tools.ts#L1477-L1483) |
 
 ### 6.7 Link and network
 
-- The join link is a group link of the control chat with role `member`, or `observer` with `--owners`; it is printed with a QR code on stdout and deleted at the first join event ([control.ts:410-420](../src/control.ts#L410-L420), [:376](../src/control.ts#L376), [:385](../src/control.ts#L385)).
+- The join link is a group link of the control chat with role `member`, or `observer` with `--owners`; it is printed with a QR code on stdout and deleted at the first join event ([control.ts:406-416](../src/control.ts#L406-L416), [:372](../src/control.ts#L372), [:381](../src/control.ts#L381)).
 - At every start the server sets private message routing: `smpProxyMode` `always`, `smpProxyFallback` `allowProtected` ([serve.ts:91-92](../src/serve.ts#L91-L92)).
 - With `incognito: true` the join methods connect incognito ([tools.ts:717](../src/tools.ts#L717)); the core then uses a random profile for that chat ([PLAN, Participants](../PLAN.md#participants)).
 
@@ -633,9 +633,9 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 | actions being performed | 20 | [actions.ts:12](../src/actions.ts#L12) |
 | expiry | 1 to 23 h, default 23 | [cli.ts:59](../src/cli.ts#L59), [:82-84](../src/cli.ts#L82-L84) |
 | connect wait for the other side | `created + 23 h 50 min` | [tools.ts:141](../src/tools.ts#L141) |
-| send, connect and download card | 15000 bytes JSON-escaped, in its largest form | [control.ts:26](../src/control.ts#L26), [:626-634](../src/control.ts#L626-L634) |
+| send, connect and download card | 15000 bytes JSON-escaped, in its largest form | [control.ts:26](../src/control.ts#L26), [:622-630](../src/control.ts#L622-L630) |
 | error assumed in the largest card | 600 × `€` | [control.ts:30](../src/control.ts#L30) |
-| message as the core sends it | 15602 bytes, counted with 600 bytes of envelope; `send` refuses a longer one, and the post of `/forward` leaves out its quote of the card | [tools.ts:151-152](../src/tools.ts#L151-L152), [:1424-1427](../src/tools.ts#L1424-L1427), [control.ts:269-285](../src/control.ts#L269-L285) |
+| message as the core sends it | 15602 bytes, counted with 600 bytes of envelope; `send` refuses a longer one, and the post of `/forward` leaves out its quote of the card | [tools.ts:151-152](../src/tools.ts#L151-L152), [:1424-1427](../src/tools.ts#L1424-L1427), [control.ts:265-281](../src/control.ts#L265-L281) |
 | `send.text` | 1 to 12000 characters | [tools.ts:253](../src/tools.ts#L253) |
 | `connect.message` | 1 to 2000 characters | [tools.ts:241](../src/tools.ts#L241) |
 | `send.mention` | 1 to 3 unique member IDs | [tools.ts:257](../src/tools.ts#L257) |
