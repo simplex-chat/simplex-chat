@@ -153,7 +153,6 @@ above() {
   [ "$a" -lt "$b" ]
 }
 
-# each text is above the next
 in_order() {
   local text y previous=-1
   for text in "$@"; do
@@ -277,7 +276,6 @@ cards_hidden() {
   done
 }
 
-# Escape clears the search field
 clear_search_and_check_cards() {
   local what=$1 screen card
   "$ui" key Escape
