@@ -37,7 +37,7 @@ The app as the smoke test left it, restarted at the chat list with the reachable
 |---|---|---|---|
 | desktop | onboarded as citester | "seeded notes", "Private notes" | the test SMP server is the only one resolving names (`seeded.testing` resolves to ci_contact) |
 | Android | onboarded | "seeded notes", "Private notes" | the test SMP server added under Your servers |
-| iOS | onboarded | none: the chat list shows its onboarding pages | — |
+| iOS | onboarded | "image notes", a group with the two images the smoke test sent | — |
 
 Tests run one after another in name order and share that profile. A test may leave state behind; it names what it creates after itself and must still pass with what earlier tests left.
 
