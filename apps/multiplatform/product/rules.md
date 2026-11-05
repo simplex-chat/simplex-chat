@@ -288,10 +288,10 @@ This document specifies invariants enforced by the Android and Desktop (Kotlin/C
 
 **Invariant:** Looking up directory entries locally MUST NOT show any alert, including the network retry alert; a failed lookup shows the entry with Open, whose online plan shows the real error.
 
-**Enforcement:** Every lookup of the online search (`OnlineSearchModel.resultState`) calls `apiConnectPlan(…, inProgress = mutableStateOf(false), onFailure = ConnectPlanFailure.Log)`: `Log` only logs the failure, and a false `inProgress` also keeps `sendCmdWithRetry` from showing its retry alert. `directoryResultState` maps no plan to `Open`.
+**Enforcement:** Every lookup of the online search (`OnlineSearchModel.resultState`) calls `apiConnectPlan(…, inProgress = mutableStateOf(false))`: a false `inProgress` keeps `apiConnectPlan` from showing its failure alert and `sendCmdWithRetry` from showing its retry alert. `directoryResultState` maps no plan to `Open`.
 
 **Location:**
-- `common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt` -- `ChatController.apiConnectPlan()`, `ConnectPlanFailure`
+- `common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt` -- `ChatController.apiConnectPlan()`
 - `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `OnlineSearchModel.resultState()`, `OnlineSearchModel.request()`, `OnlineSearchModel.refreshStates()`
 - `common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt` -- `directoryResultState()`
 

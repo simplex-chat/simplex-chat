@@ -129,7 +129,7 @@ class OnlineSearchModel {
   }
 
   private suspend fun resultState(rh: Long?, link: String): DirectoryResultState {
-    val plan = chatModel.controller.apiConnectPlan(rh, link, resolveMode = PlanResolveMode.PRMNever, inProgress = mutableStateOf(false), onFailure = ConnectPlanFailure.Log)
+    val plan = chatModel.controller.apiConnectPlan(rh, link, resolveMode = PlanResolveMode.PRMNever, inProgress = mutableStateOf(false))
     return directoryResultState(plan?.connectionPlan)
   }
 

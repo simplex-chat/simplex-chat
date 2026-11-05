@@ -107,7 +107,7 @@ class OnlineSearchModel: ObservableObject {
     }
 
     private func resultState(_ link: String) async -> DirectoryResultState {
-        let plan = await apiConnectPlan(connLink: link, resolveMode: .never, inProgress: BoxedValue(false), onFailure: .log)
+        let plan = await apiConnectPlan(connLink: link, resolveMode: .never, inProgress: BoxedValue(false))
         return directoryResultState(plan?.connectionPlan)
     }
 

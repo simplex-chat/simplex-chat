@@ -163,7 +163,7 @@
 
 ### RULE-26: Online lookups never show alerts
 **Rule:** Looking up directory entries locally MUST NOT show any alert, including the network retry alert; a failed lookup shows the entry with Open, whose online plan shows the real error.
-**Enforced by:** `SimpleXAPI.swift` (`apiConnectPlan(onFailure: .log)`); `DirectorySearchView.swift` (`inProgress: BoxedValue(false)` for every lookup); `DirectorySearch.swift` (`directoryResultState` maps no plan to `.open`).
+**Enforced by:** `SimpleXAPI.swift` (`apiConnectPlan` alerts only while `inProgress` is true); `DirectorySearchView.swift` (`inProgress: BoxedValue(false)` for every lookup); `DirectorySearch.swift` (`directoryResultState` maps no plan to `.open`).
 **Spec:** [spec/api.md](../spec/api.md#8-directory-search-and-connection-plans)
 
 ### RULE-27: Nothing is shown twice

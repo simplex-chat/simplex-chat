@@ -1701,18 +1701,13 @@ object ChatController {
     return null
   }
 
-  suspend fun apiConnectPlan(rh: Long?, connLink: String, resolveMode: PlanResolveMode = PlanResolveMode.PRMUnknown, linkOwnerSig: LinkOwnerSig? = null, inProgress: MutableState<Boolean>, onFailure: ConnectPlanFailure = ConnectPlanFailure.Alert): ConnectionPlanResult? {
+  suspend fun apiConnectPlan(rh: Long?, connLink: String, resolveMode: PlanResolveMode = PlanResolveMode.PRMUnknown, linkOwnerSig: LinkOwnerSig? = null, inProgress: MutableState<Boolean>): ConnectionPlanResult? {
     val userId = kotlin.runCatching { currentUserId("apiConnectPlan") }.getOrElse { return null }
     val r = sendCmdWithRetry(rh, CC.APIConnectPlan(userId, connLink, resolveMode, linkOwnerSig), inProgress = inProgress)
     if (r is API.Result && r.res is CR.CRConnectionPlan) return ConnectionPlanResult(r.res.connLink, r.res.planSimplexName, r.res.otherSimplexName, r.res.connectionPlan)
     // a PRMNever (typing) search that matches nothing locally is not an error to surface
     if (r is API.Error && r.err is ChatError.ChatErrorChat && r.err.errorType is ChatErrorType.NotResolvedLocally) return null
-    if (r != null) {
-      when (onFailure) {
-        ConnectPlanFailure.Alert -> if (inProgress.value) apiConnectResponseAlert(r)
-        ConnectPlanFailure.Log -> Log.d(TAG, "apiConnectPlan: ${r.responseType} ${r.details}")
-      }
-    }
+    if (inProgress.value && r != null) apiConnectResponseAlert(r)
     return null
   }
 
@@ -7656,8 +7651,6 @@ enum class PlanResolveMode {
     PRMNever -> "never"
   }
 }
-
-enum class ConnectPlanFailure { Alert, Log }
 
 @Serializable
 sealed class ConnectionPlan {
