@@ -568,7 +568,7 @@ module.exports = function (ty) {
 
   const markdownLib = markdownIt({
     html: true,
-    breaks: true,
+    breaks: false,
     linkify: true,
     replaceLink: replaceLink
   }).use(markdownItAnchor, {
