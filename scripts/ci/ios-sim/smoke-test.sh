@@ -13,7 +13,9 @@
 # a page whose only result is that channel adds nothing; the load row says how many results are left, is disabled while
 # its page loads (a screenshot shows its colour) and offers a retry when that fails; and a long press on a result
 # shows a menu with Open (not fatal: the gesture is new to this harness; a screenshot shows it).
-# Usage: scripts/ci/ios-sim/smoke-test.sh <path to SimpleX.app> <output dir>
+# With "images" it then turns off the encryption of local files, creates a group and sends tests/fixtures/test.jpg and
+# logo-large-rgba.png picked in the photo library, and checks the pixel sizes of the sent files.
+# Usage: scripts/ci/ios-sim/smoke-test.sh <path to SimpleX.app> <output dir> [images]
 # Each step saves a screenshot and an accessibility tree to the output dir and prints the tree to the log.
 # Later steps of the job get SIM_UDID and UI_OUT, with the simulator still running.
 
@@ -21,11 +23,18 @@ set -euo pipefail
 
 app=$1
 export UI_OUT=$2
+cases=${3:-}
 bundle_id=chat.simplex.app
 search_text="ci seed"
 # matches no chat and no listing
 no_match_text=zqxvjk
 ui=$(dirname "$0")/ui
+fixtures=$(cd "$(dirname "$0")/../../../tests/fixtures" && pwd)
+test_card_x=66
+logo_x=200
+photo_y=412
+picker_done_x=363
+picker_done_y=144
 mkdir -p "$UI_OUT"
 
 axe --version
@@ -400,6 +409,89 @@ search_in_new_chat() {
   echo "in New chat #ci_group is a result with Open, the empty state shows only once the search for \"$no_match_text\" found nothing, and the directory result for the joined ci_cards is its chat row ($row), which closes the sheet and opens the channel"
 }
 
+tap_matching_element() {
+  local line
+  line=$("$ui" tree | grep -iE "^$1 \"$2\"" | tail -n 1)
+  [ -n "$line" ] || return 1
+  tap_element "$line"
+}
+
+sent_files() {
+  find "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" group.chat.simplex.app)" "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" data)" -name "IMG_*.$1" 2> /dev/null | wc -l
+}
+
+sent_file() {
+  local deadline=$((SECONDS + 30))
+  until [ "$(sent_files "$1")" -gt "$2" ]; do
+    [ "$SECONDS" -lt "$deadline" ] || return 1
+    sleep 2
+  done
+}
+
+sent_size() {
+  local file
+  file=$(find "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" group.chat.simplex.app)" "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" data)" -name "IMG_*.$1" -exec ls -t {} + 2> /dev/null | sed -n 1p)
+  sips -g pixelWidth -g pixelHeight "$file" | awk '/pixelWidth/ {w = $2} /pixelHeight/ {h = $2} END {print w "x" h}'
+}
+
+disable_file_encryption() {
+  xcrun simctl terminate "$SIM_UDID" "$bundle_id" 2> /dev/null || true
+  xcrun simctl spawn "$SIM_UDID" defaults write "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" group.chat.simplex.app)/Library/Preferences/group.chat.simplex.app" privacyEncryptLocalFiles -bool false
+  "$ui" relaunch
+}
+
+fail() {
+  echo "error: $*"
+  exit 1
+}
+
+create_group() {
+  "$ui" tap Compose
+  "$ui" tap "Create group" 30
+  "$ui" tap-value "Enter group name…" 30
+  "$ui" type "image notes"
+  "$ui" shot new-group
+  tap_matching_element Button "Create group" || fail "no \"Create group\" button"
+  "$ui" tap Skip 10 || true
+  "$ui" shot group-created
+}
+
+app_resized_images() {
+  grep -cE "resizeImageTo(Str|Data)Size final" "$UI_OUT/app.log" || true
+}
+
+send_image() {
+  local ext=$1 photo_x=$2 size=$3 sent resized
+  sent=$(sent_files "$ext")
+  resized=$(app_resized_images)
+  tap_matching_element Button "Attachements" || fail "no attachment button"
+  "$ui" tap "Choose from library"
+  sleep 3
+  "$ui" shot "picker-$ext"
+  "$ui" tap-xy "$photo_x" "$photo_y"
+  "$ui" shot "picker-selected-$ext"
+  "$ui" tap-xy "$picker_done_x" "$picker_done_y"
+  sleep 3
+  "$ui" shot "preview-$ext"
+  "$ui" find multiply || fail "$ext: no image preview in the compose area"
+  tap_matching_element Button "[^\"]*arrow[^\"]*" || fail "no send button"
+  sent_file "$ext" "$sent" || fail "$ext: no .$ext file sent"
+  "$ui" shot "sent-$ext"
+  [ "$(sent_size "$ext")" = "$size" ] || fail "$ext: the sent image is $(sent_size "$ext"), not $size"
+  [ "$(app_resized_images)" -eq "$resized" ] || fail "$ext: the app resized the image in place of the core"
+  echo "$ext: the picked image was previewed and sent as a $size .$ext file"
+}
+
+send_images() {
+  "$ui" tap "Don’t Allow" 10 || true
+  disable_file_encryption
+  xcrun simctl addmedia "$SIM_UDID" "$fixtures/test.jpg" "$fixtures/logo-large-rgba.png"
+  create_group
+  send_image jpg "$test_card_x" 1280x720
+  send_image png "$logo_x" 1630x466
+  echo "smoke test passed: images"
+}
+
 xcrun simctl install "$SIM_UDID" "$app"
 xcrun simctl launch "$SIM_UDID" "$bundle_id"
 
@@ -447,6 +539,9 @@ fi
 
 if [ -z "${BACKEND_DIR:-}" ]; then
   echo "smoke test passed: onboarding reaches the chat list, which shows its onboarding pages and toolbar with the one-hand UI and with the top bar"
+  if [ "$cases" = images ]; then
+    send_images
+  fi
   exit 0
 fi
 
@@ -636,3 +731,6 @@ else
 fi
 clear_search || true
 echo "smoke test passed: onboarding reaches the chat list in both layouts; the first directory search asks to enable Directory search, Cancel sends nothing and Enable searches, and no later search asks; the search for \"$search_text\" shows #ci_group and #ci_channel with Open and their avatars, with no header; the Search key searches the directory and keeps \"Connect to …\"; Open opens a prepared channel without an alert, with its subscriber count; with a chat, the list's cards show while typing and hide under the results, and \"No chats found\" waits for a directory search that finds nothing; a page of chats already listed adds nothing; the joined channel found by its description is its chat row on the chat list in both layouts and in New chat, and opens it; the load row says how many results are left, is disabled while its page loads and retries a failed page"
+if [ "$cases" = images ]; then
+  send_images
+fi

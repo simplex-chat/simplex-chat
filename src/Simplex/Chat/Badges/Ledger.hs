@@ -98,12 +98,13 @@ lapseEntry t entryId e@StatementEntry {balanceMonths}
 -- replace the balance, so they are granted only onto an empty one.
 grantEntry :: UTCTime -> Text -> BadgeType -> Int -> StatementCreditType -> StatementEntry -> StatementEntry
 grantEntry t entryId badgeType n credit e@StatementEntry {balanceMonths, balanceStartTs, balanceBadgeType}
-  -- only a lapsed run, or one of another tier, restarts; topping up before coverage ends continues the
+  -- only a lapsed run, or one of another tier before coverage ends, restarts; topping up before coverage ends continues the
   -- run on its anchor, so buying a month at a time keeps the same day of month as buying a year at once
-  | lapsed || badgeType /= balanceBadgeType = credited {balanceMonths = n, balanceStartTs = t, balanceAnchorTs = t}
+  | lapsed || (badgeType /= balanceBadgeType && not atCoverageEnd) = credited {balanceMonths = n, balanceStartTs = t, balanceAnchorTs = t}
   | otherwise = credited {balanceMonths = balanceMonths + n}
   where
     lapsed = balanceMonths == 0 && t > balanceStartTs
+    atCoverageEnd = balanceMonths == 0 && t == balanceStartTs
     credited = e {entryId, createdAt = t, changeMonths = n, balanceBadgeType = badgeType, entryType = SECredit credit}
 
 -- | The period issued runs from the previous entry's balanceStartTs to this one's.

@@ -164,6 +164,18 @@ foreign export ccall "chat_encrypt_file" cChatEncryptFile :: StablePtr ChatContr
 
 foreign export ccall "chat_decrypt_file" cChatDecryptFile :: CString -> CString -> CString -> CString -> IO CString
 
+foreign export ccall "chat_resize_image_uri" cChatResizeImageUri :: Ptr Word8 -> CInt -> CInt -> IO CString
+
+foreign export ccall "chat_resize_image" cChatResizeImage :: Ptr Word8 -> CInt -> CInt -> CInt -> IO CString
+
+foreign export ccall "chat_resize_image_file_uri" cChatResizeImageFileUri :: CString -> CInt -> IO CString
+
+foreign export ccall "chat_resize_image_file" cChatResizeImageFile :: CString -> CInt -> CInt -> IO CString
+
+foreign export ccall "chat_resize_image_fd_uri" cChatResizeImageFdUri :: CInt -> CInt -> IO CString
+
+foreign export ccall "chat_resize_image_fd" cChatResizeImageFd :: CInt -> CInt -> CInt -> IO CString
+
 -- | check / migrate database and initialize chat controller on success
 -- For postgres first param is schema prefix, second param is database connection string.
 cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString

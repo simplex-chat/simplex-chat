@@ -51,6 +51,12 @@ struct ChatItemClipped: ViewModifier {
                     tailVisible: tail
                 )
                 : .roundRect(radius: msgRectMaxRadius)
+            case .sndDeleted, .rcvDeleted, .sndModerated, .rcvModerated, .rcvBlocked:
+                return terminal
+                ? .roundRect(radius: 8)
+                : tailEnabled
+                ? .bubble(padding: ci.chatDir.sent ? .trailing : .leading, tailVisible: false)
+                : .roundRect(radius: msgRectMaxRadius)
             case .rcvGroupInvitation, .sndGroupInvitation:
                 return .roundRect(radius: msgRectMaxRadius)
             default: return .roundRect(radius: 8)

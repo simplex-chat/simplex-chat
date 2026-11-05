@@ -45,6 +45,14 @@ false
 
 ***
 
+### chatLayout?
+
+> `optional` **chatLayout?**: `ChatLayout`
+
+Defined in: [src/api.ts:43](../api.ts#L43)
+
+***
+
 ### welcomeMessage?
 
 > `optional` **welcomeMessage?**: `string` \| `MsgContent`

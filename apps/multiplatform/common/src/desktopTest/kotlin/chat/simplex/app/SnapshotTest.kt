@@ -8,15 +8,17 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowState
-import chat.simplex.common.AppPreview
+import boofcv.alg.fiducial.qrcode.QrCode
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.PreviewTerminalLayout
+import chat.simplex.common.views.badges.PreviewPeriodCards
 import chat.simplex.common.views.call.PreviewIncomingCallAlertLayout
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.group.*
@@ -43,6 +45,7 @@ import kotlin.test.assertEquals
 
 private const val SCENE_WIDTH = 402
 private const val SCENE_MAX_HEIGHT = 874
+private const val PREVIEW_QR_LINK = "https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw"
 
 private val chatItemFontScales = listOf(1f, 1.4f, 1.5f)
 
@@ -59,6 +62,7 @@ private val previewScenes = listOf(
   SnapshotScene("ChatInfoView.PreviewChatInfoLayout") { chat.simplex.common.views.chat.PreviewChatInfoLayout() },
   SnapshotScene("ChatView.PreviewChatLayout") { PreviewChatLayout() },
   SnapshotScene("ChatView.PreviewGroupChatLayout") { PreviewGroupChatLayout() },
+  SnapshotScene("ChatView.PreviewGroupChatLayoutTerminal", chatItemFontScales) { PreviewGroupChatLayoutTerminal() },
   SnapshotScene("ComposeFileView.PreviewComposeFileView") { PreviewComposeFileView() },
   SnapshotScene("ComposeVoiceView.PreviewComposeAudioView") { PreviewComposeAudioView() },
   SnapshotScene("ContextItemView.PreviewContextItemView") { PreviewContextItemView() },
@@ -82,6 +86,8 @@ private val previewScenes = listOf(
   SnapshotScene("CIMetaView.PreviewCIMetaViewEditedSent", chatItemFontScales) { SimpleXTheme { PreviewCIMetaViewEditedSent() } },
   SnapshotScene("CIMetaView.PreviewCIMetaViewDeletedContent", chatItemFontScales) { SimpleXTheme { PreviewCIMetaViewDeletedContent() } },
   SnapshotScene("ChatItemView.PreviewChatItemView", chatItemFontScales) { SimpleXTheme { PreviewChatItemView() } },
+  SnapshotScene("ChatItemView.PreviewChatItemViewEmptyLines", chatItemFontScales) { SimpleXTheme { PreviewChatItemViewEmptyLines() } },
+  SnapshotScene("ChatItemView.PreviewChatItemViewEmptyLinesTerminal", chatItemFontScales) { SimpleXTheme { PreviewChatItemViewEmptyLinesTerminal() } },
   SnapshotScene("ChatItemView.PreviewChatItemViewDeletedContent", chatItemFontScales) { PreviewChatItemViewDeletedContent() },
   SnapshotScene("DeletedItemView.PreviewDeletedItemView", chatItemFontScales) { PreviewDeletedItemView() },
   SnapshotScene("IntegrityErrorItemView.IntegrityErrorItemViewPreview", chatItemFontScales) { IntegrityErrorItemViewPreview() },
@@ -105,6 +111,8 @@ private val previewScenes = listOf(
   SnapshotScene("HowItWorks.PreviewHowItWorks") { PreviewHowItWorks() },
   SnapshotScene("SimpleXInfo.PreviewSimpleXInfo") { PreviewSimpleXInfo() },
   SnapshotScene("WhatsNewView.PreviewWhatsNewView") { PreviewWhatsNewView() },
+  SnapshotScene("SetNotificationsMode.PreviewSetNotificationsMode") { PreviewSetNotificationsMode() },
+  SnapshotScene("BadgesHowLongView.PreviewPeriodCards") { PreviewPeriodCards() },
   SnapshotScene("HelpView.PreviewHelpView") { PreviewHelpView() },
   SnapshotScene("MarkdownHelpView.PreviewMarkdownHelpView") { PreviewMarkdownHelpView() },
   SnapshotScene("SettingsView.PreviewSettingsLayout") { PreviewSettingsLayout() },
@@ -112,7 +120,6 @@ private val previewScenes = listOf(
   SnapshotScene("UserAddressView.PreviewUserAddressLayoutAddressCreated") { PreviewUserAddressLayoutAddressCreated() },
   SnapshotScene("AdvancedNetworkSettings.PreviewAdvancedNetworkSettingsLayout") { PreviewAdvancedNetworkSettingsLayout() },
   SnapshotScene("NetworkAndServers.PreviewNetworkAndServersLayout") { PreviewNetworkAndServersLayout() },
-  SnapshotScene("DesktopApp.AppPreview") { AppPreview() },
 )
 
 private val previewsCallingCore = listOf(
@@ -139,12 +146,29 @@ class SnapshotTest {
     val theme = appPrefs.currentTheme.get()!!
     val themeOverrides = appPrefs.themeOverrides.get()
     val fontScale = appPrefs.fontScale.get()
+    val densityScale = appPrefs.densityScale.get()
+    val oneHandUI = appPrefs.oneHandUI.get()
+    val chatBottomBar = appPrefs.chatBottomBar.get()
+    val chatItemRoundness = appPrefs.chatItemRoundness.get()
+    val chatItemTail = appPrefs.chatItemTail.get()
+    val privacyMediaBlurRadius = appPrefs.privacyMediaBlurRadius.get()
+    val appearanceBarsBlurRadius = appPrefs.appearanceBarsBlurRadius.get()
+    val inAppBarsAlpha = appPrefs.inAppBarsAlpha.get()
+    val appBarMaxHeightPx = AppBarHandler.appBarMaxHeightPx
     val index = mutableListOf<Snapshot>()
     val failures = mutableListOf<String>()
     try {
       Locale.setDefault(Locale.US)
       TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
       simplexWindowState.windowState = WindowState(size = DpSize(SCENE_WIDTH.dp, SCENE_MAX_HEIGHT.dp))
+      appPrefs.densityScale.set(1f)
+      appPrefs.oneHandUI.set(true)
+      appPrefs.chatBottomBar.set(true)
+      appPrefs.chatItemRoundness.set(0.75f)
+      appPrefs.chatItemTail.set(true)
+      appPrefs.privacyMediaBlurRadius.set(0)
+      appPrefs.appearanceBarsBlurRadius.set(if (appPrefs.deviceSupportsBlur) 50 else 0)
+      appPrefs.inAppBarsAlpha.set(appPrefs.inAppBarsDefaultAlpha)
       appPrefs.themeOverrides.set(listOf(ThemeOverrides(base = DefaultTheme.LIGHT), ThemeOverrides(base = DefaultTheme.DARK)))
       for (base in listOf(DefaultTheme.LIGHT, DefaultTheme.DARK)) {
         ThemeManager.applyTheme(base.themeName)
@@ -170,6 +194,15 @@ class SnapshotTest {
       TimeZone.setDefault(timeZone)
       appPrefs.themeOverrides.set(themeOverrides)
       appPrefs.fontScale.set(fontScale)
+      appPrefs.densityScale.set(densityScale)
+      appPrefs.oneHandUI.set(oneHandUI)
+      appPrefs.chatBottomBar.set(chatBottomBar)
+      appPrefs.chatItemRoundness.set(chatItemRoundness)
+      appPrefs.chatItemTail.set(chatItemTail)
+      appPrefs.privacyMediaBlurRadius.set(privacyMediaBlurRadius)
+      appPrefs.appearanceBarsBlurRadius.set(appearanceBarsBlurRadius)
+      appPrefs.inAppBarsAlpha.set(inAppBarsAlpha)
+      AppBarHandler.appBarMaxHeightPx = appBarMaxHeightPx
       ThemeManager.applyTheme(theme)
     }
     assertEquals(emptyList(), failures)
@@ -178,9 +211,11 @@ class SnapshotTest {
 
 private fun renderSnapshot(content: @Composable () -> Unit): Image {
   var height = 0
+  val fixedQRCode = qrCodeBitmap(PREVIEW_QR_LINK, 1024, QrCode.ErrorLevel.M)
   val frame = renderScene(width = SCENE_WIDTH, height = SCENE_MAX_HEIGHT, frames = 4) {
+    AppBarHandler.appBarMaxHeightPx = with(LocalDensity.current) { AppBarHeight.roundToPx() }
     Box(Modifier.width(SCENE_WIDTH.dp).background(CurrentColors.collectAsState().value.colors.background).onSizeChanged { height = it.height }) {
-      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler(), content = content)
+      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler(), LocalFixedQRCode provides fixedQRCode, content = content)
     }
   }
   return Surface.makeRasterN32Premul(SCENE_WIDTH, height).run {

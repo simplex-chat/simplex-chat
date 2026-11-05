@@ -244,7 +244,7 @@ sndRcvImg pqEnc enabled (cc1, msg, v1) (cc2, v2) = do
 genProfileImg :: IO ByteString
 genProfileImg = do
   g <- C.newRandom
-  atomically $ B64.encode <$> C.randomBytes lrgLen g
+  atomically $ B64.encode . ("\x89PNG\r\n\x1a\n" <>) <$> C.randomBytes (lrgLen - 8) g
   where
     -- raw bytes that base64-encode to fit maxProfileImageSize when prefixed with "data:image/png;base64,"
     lrgLen = (maxProfileImageSize - imagePrefixLen) * 3 `div` 4 - 1

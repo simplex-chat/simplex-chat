@@ -44,7 +44,7 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
   - Docker image (step "Build and cache Docker image");
   - caches (the steps "Restore ... from cache");
   - `cabal build -j --enable-tests --ghc-options=-O0` (step "Build CLI");
-  - simplex-chat-test with the selected tests (step "Run tests").
+  - simplex-chat-test with the selected tests (step "Run tests"), each attempt limited to 35 minutes by `timeout`; an attempt that reaches the limit fails, and "Attempt <n> timed out." is printed.
 - Local:
   ```sh
   cp scripts/cabal.project.local.linux cabal.project.local
@@ -155,6 +155,7 @@ Pushes start none of the app workflows: a run is started by hand, on any branch,
 | `claude` | scripted test, then Claude | scripted test, then Claude | scripted test, then Claude |
 | `backend` | also the test backend | also the test backend | also the test backend |
 | `release` | — | also the latest release's onboarding, to tell a branch's failure from the runner's | also the latest release's onboarding, to tell a branch's failure from the runner's |
+| `armv7a` | — | — | also the core library for 32-bit Arm (armeabi-v7a), built only |
 
 In the Actions tab: `ios-sim`, `desktop-linux` or `android-emu` → Run workflow, choose the branch and tick the inputs. With the GitHub CLI, each input is a field:
 

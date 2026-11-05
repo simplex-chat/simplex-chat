@@ -12,6 +12,9 @@ module MobileTests (mobileTests) where
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
+import Codec.Picture (PixelRGB8 (..), generateImage)
+import Codec.Picture.JPEGTurbo (encodeRGB)
+import Control.Concurrent (forkIO)
 import Control.Concurrent.STM
 import Control.Monad.Except
 import Data.Aeson (FromJSON)
@@ -19,6 +22,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as BS
 import Data.ByteString.Internal (create)
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -31,10 +35,14 @@ import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (peek)
 import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
+import qualified GHC.IO.FD as FD
+import GHC.IO.Handle.FD (fdToHandle)
+import ImageTests (pngShortImageData, pngSideAbove16384)
 import JSONFixtures
 import Simplex.Chat
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeRequest (..), BadgeType (..), generateMasterKey, verifyCredential)
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDatabase (..))
+import Simplex.Chat.Image (maxDecodeMemoryMB)
 import Simplex.Chat.Mobile hiding (error)
 import Simplex.Chat.Mobile.Badges hiding (error)
 import Simplex.Chat.Mobile.File
@@ -55,7 +63,10 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import System.Directory (copyFile)
 import System.FilePath ((</>))
-import System.IO (utf8)
+import System.IO (IOMode (..), hClose, hSetFileSize, utf8, withBinaryFile)
+import System.IO.Error (tryIOError)
+import System.Posix.Internals (c_open, fdStat, o_RDONLY, withFilePath)
+import System.Process (createPipeFd)
 import Test.Hspec hiding (it)
 
 mobileTests :: HasCallStack => SpecWith TestParams
@@ -89,6 +100,14 @@ mobileTests = do
       it "should parse and sanitize URI" testChatParseUri
     describe "Badges" $ do
       it "should generate key and issue badge via C API, verify credential" testBadgeKeygenIssueCApi
+    describe "Images" $ do
+      it "should resize image to data URI via C API" testResizeImageUriCApi
+      it "should resize image to data size via C API" testResizeImageCApi
+      it "should choose image format by transparency via C API" testResizeImageAutoFormatCApi
+      it "should resize JPEG with a side above 16384 via C API" testResizeLargeJpegCApi
+      it "should resize image from a file path via C API" testResizeImageFileCApi
+      it "should resize image from a file descriptor via C API" testResizeImageFdCApi
+      it "should refuse malformed PNG via C API" testResizeMalformedPngCApi
 
 noActiveUser :: LB.ByteString
 noActiveUser =
@@ -345,6 +364,111 @@ testBadgeKeygenIssueCApi _ = do
   let req = BadgeIssueReq {badgeKeyIdx = 1, secretKey, request = BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry, badgeExtra = ""}}}
   cred <- ffiResult =<< (peekCString =<< cChatBadgeIssue =<< newCString (LB.unpack (J.encode req)))
   verifyCredential publicKey cred `shouldReturn` True
+
+testResizeImageUriCApi :: TestParams -> IO ()
+testResizeImageUriCApi _ = do
+  (ptr, len) <- cBuffer =<< B.readFile "./tests/fixtures/test.jpg"
+  uri <- peekCAString =<< cChatResizeImageUri ptr len 14000
+  uri `shouldStartWith` "data:image/jpg;base64,"
+  length uri `shouldSatisfy` (<= 14000)
+  (ptr', len') <- cBuffer "not an image"
+  (peekCAString =<< cChatResizeImageUri ptr' len' 14000) `shouldReturn` ""
+
+testResizeImageCApi :: TestParams -> IO ()
+testResizeImageCApi _ = do
+  (ptr, len) <- cBuffer =<< B.readFile "./tests/fixtures/test.jpg"
+  let resizeToDataSize png = do
+        Right bytes <- B64.decode . BS.pack <$> (peekCAString =<< cChatResizeImage ptr len 100000 png)
+        B.length bytes `shouldSatisfy` (<= 100000)
+        pure bytes
+  B.take 2 <$> resizeToDataSize 0 `shouldReturn` "\xFF\xD8"
+  B.take 8 <$> resizeToDataSize 1 `shouldReturn` "\x89PNG\r\n\x1a\n"
+
+testResizeImageAutoFormatCApi :: TestParams -> IO ()
+testResizeImageAutoFormatCApi _ = do
+  B.take 2 <$> resizeWithAutoFormat "./tests/fixtures/test.jpg" `shouldReturn` "\xFF\xD8"
+  B.take 8 <$> resizeWithAutoFormat "./tests/fixtures/logo-large-rgba.png" `shouldReturn` "\x89PNG\r\n\x1a\n"
+  where
+    resizeWithAutoFormat path = do
+      (ptr, len) <- cBuffer =<< B.readFile path
+      Right bytes <- B64.decode . BS.pack <$> (peekCAString =<< cChatResizeImage ptr len 100000 (-1))
+      pure bytes
+
+testResizeLargeJpegCApi :: TestParams -> IO ()
+testResizeLargeJpegCApi _ = do
+  (ptr, len) <- cBuffer =<< encodeRGB 90 Nothing (generateImage (\_ _ -> PixelRGB8 128 128 128) 20000 16)
+  Right bytes <- B64.decode . BS.pack <$> (peekCAString =<< cChatResizeImage ptr len 261120 (-1))
+  B.take 2 bytes `shouldBe` "\xFF\xD8"
+
+testResizeImageFileCApi :: TestParams -> IO ()
+testResizeImageFileCApi ps = do
+  uri <- peekCAString =<< withCString "./tests/fixtures/test.jpg" (`cChatResizeImageFileUri` 14000)
+  uri `shouldStartWith` "data:image/jpg;base64,"
+  length uri `shouldSatisfy` (<= 14000)
+  Right bytes <- B64.decode . BS.pack <$> (peekCAString =<< withCString "./tests/fixtures/logo-large-rgba.png" (\path -> cChatResizeImageFile path 100000 (-1)))
+  B.take 8 bytes `shouldBe` "\x89PNG\r\n\x1a\n"
+  (peekCAString =<< withCString "./tests/fixtures/missing.jpg" (`cChatResizeImageFileUri` 14000)) `shouldReturn` ""
+  oversized <- oversizedJpegFile ps
+  (peekCAString =<< withCString oversized (`cChatResizeImageFileUri` 14000)) `shouldReturn` ""
+
+testResizeImageFdCApi :: TestParams -> IO ()
+testResizeImageFdCApi ps = do
+  jpeg <- openFd "./tests/fixtures/test.jpg"
+  jpegFile <- fdStat jpeg
+  uri <- peekCAString =<< cChatResizeImageFdUri jpeg 14000
+  uri `shouldStartWith` "data:image/jpg;base64,"
+  length uri `shouldSatisfy` (<= 14000)
+  isOpen jpeg jpegFile `shouldReturn` False
+  piped <- pipeFd =<< B.readFile "./tests/fixtures/test.jpg"
+  pipedFile <- fdStat piped
+  pipedUri <- peekCAString =<< cChatResizeImageFdUri piped 14000
+  pipedUri `shouldStartWith` "data:image/jpg;base64,"
+  isOpen piped pipedFile `shouldReturn` False
+  pdf <- openFd "./tests/fixtures/test.pdf"
+  pdfFile <- fdStat pdf
+  (peekCAString =<< cChatResizeImageFd pdf 100000 (-1)) `shouldReturn` ""
+  isOpen pdf pdfFile `shouldReturn` False
+  dir <- withFilePath "./tests/fixtures" $ \path -> c_open path o_RDONLY 0
+  dirFile <- fdStat dir
+  (peekCAString =<< cChatResizeImageFdUri dir 14000) `shouldReturn` ""
+  isOpen dir dirFile `shouldReturn` False
+  (peekCAString =<< cChatResizeImageFdUri 1000000 14000) `shouldReturn` ""
+  (peekCAString =<< cChatResizeImageFdUri (-1) 14000) `shouldReturn` ""
+  oversized <- openFd =<< oversizedJpegFile ps
+  oversizedFile <- fdStat oversized
+  (peekCAString =<< cChatResizeImageFdUri oversized 14000) `shouldReturn` ""
+  isOpen oversized oversizedFile `shouldReturn` False
+  where
+    openFd path = FD.fdFD . fst <$> FD.openFile path ReadMode False
+    isOpen fd file = either (const False) (== file) <$> tryIOError (fdStat fd)
+    pipeFd s = do
+      (r, w) <- createPipeFd
+      h <- fdToHandle w
+      _ <- forkIO $ B.hPut h s >> hClose h
+      pure r
+
+oversizedJpegFile :: TestParams -> IO FilePath
+oversizedJpegFile ps = do
+  let path = tmpPath ps </> "oversized.jpg"
+  copyFile "./tests/fixtures/test.jpg" path
+  withBinaryFile path ReadWriteMode (`hSetFileSize` (fromIntegral maxDecodeMemoryMB * 1048576 + 1))
+  pure path
+
+testResizeMalformedPngCApi :: TestParams -> IO ()
+testResizeMalformedPngCApi _ = do
+  refused pngShortImageData
+  refused pngSideAbove16384
+  where
+    refused png = do
+      (ptr, len) <- cBuffer png
+      (peekCAString =<< cChatResizeImageUri ptr len 14000) `shouldReturn` ""
+      (peekCAString =<< cChatResizeImage ptr len 261120 (-1)) `shouldReturn` ""
+
+cBuffer :: ByteString -> IO (Ptr Word8, CInt)
+cBuffer s = do
+  ptr <- mallocBytes $ B.length s
+  putByteString ptr s
+  pure (ptr, fromIntegral $ B.length s)
 
 -- Decode an FFI `BadgeResult` envelope, returning the result or failing on error.
 ffiResult :: FromJSON r => String -> IO r

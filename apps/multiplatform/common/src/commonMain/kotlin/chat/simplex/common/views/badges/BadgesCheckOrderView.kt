@@ -18,7 +18,6 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingActionButton
-import chat.simplex.common.views.usersettings.networkAndServers.ConditionsTextView
 import chat.simplex.res.*
 
 @Composable
@@ -70,23 +69,10 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
       PayButton(level, period, purchasing)
-      BadgeBillingFooter(period)
-      Text(
-        stringResource(MR.strings.badges_privacy_policy),
-        Modifier.clickable { modalManager.showModal { BadgeConditionsView() } },
-        style = MaterialTheme.typography.body2,
-        color = MaterialTheme.colors.primary
-      )
-    }
-  }
-}
-
-@Composable
-private fun BadgeConditionsView() {
-  ColumnWithScrollBar(Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
-    AppBarTitle(stringResource(MR.strings.badges_privacy_policy), enableAlphaChanges = false, withPadding = false, bottomPadding = DEFAULT_PADDING)
-    Column(Modifier.weight(1f).padding(bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF)) {
-      ConditionsTextView(chatModel.remoteHostId())
+      BadgeStoreFooter {
+        BadgeBillingFooter(period)
+        BadgeInvestorOffer(level)
+      }
     }
   }
 }
@@ -148,11 +134,11 @@ private fun purchase(level: BadgeLevel, period: BadgePeriod, purchasing: Mutable
 val badgeStoreLane: Boolean get() = badgeStoreAvailable && chatModel.remoteHostId() == null
 
 @Composable
-fun RestorePurchasesButton() {
+fun RestorePurchasesButton(enabled: Boolean = true) {
   val restoring = remember { mutableStateOf(false) }
   Text(
     stringResource(MR.strings.badges_restore_purchases),
-    Modifier.clickable(enabled = !restoring.value) { restoreBadgePurchases(restoring) },
+    Modifier.clickable(enabled = enabled && !restoring.value) { restoreBadgePurchases(restoring) },
     style = MaterialTheme.typography.body2,
     color = MaterialTheme.colors.primary
   )

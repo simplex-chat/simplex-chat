@@ -211,11 +211,8 @@
     "comparison-section-list-point-4": "Jeśli bezpieczeństwo serwerów operatora zostało naruszone. Zweryfikuj kody bezpieczeństwa w Signalu lub innej aplikacji aby to złagodzić",
     "comparison-section-list-point-7": "Sieci P2P albo mają centralny organ, albo cała sieć może zostać skompromitowana",
     "guide-dropdown-1": "Szybki start",
-    "guide-dropdown-2": "Wysyłanie wiadomości",
-    "guide-dropdown-3": "Tajne grupy",
     "guide-dropdown-4": "Profile czatu",
     "guide-dropdown-5": "Zarządzanie danymi",
-    "guide-dropdown-6": "Połączenia audio i wideo",
     "guide-dropdown-7": "Prywatność i bezpieczeństwo",
     "guide-dropdown-8": "Ustawienia aplikacji",
     "guide-dropdown-9": "Nawiązywanie połączeń",
@@ -379,5 +376,10 @@
     "file-proto-p-4": "Gdy plik jest dzielony na fragmenty, jest on wysyłany przez routery sieciowe obsługiwane przez niezależne podmioty. Żaden operator nie może zobaczyć rzeczywistego rozmiaru ani nazwy pliku. Nawet jeśli router zostanie naruszony, może on zobaczyć tylko zaszyfrowane fragmenty o stałym rozmiarze. Fragmenty plików są przechowywane w pamięci podręcznej routerów sieciowych przez około 48 godzin.",
     "file-proto-spec": "Zapoznaj się ze specyfikacją protokołu XFTP →",
     "send-file": "Wyślij plik",
-    "why-film": "Obejrzyj 2-minutowy film na YouTube"
+    "why-film": "Obejrzyj 2-minutowy film na YouTube",
+    "docs-dropdown-16": "",
+    "links-all-languages": "",
+    "index-hero-invest-cta": "",
+    "links-title": "",
+    "links": ""
 }

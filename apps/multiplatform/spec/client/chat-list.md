@@ -334,7 +334,7 @@ Uses `AnimatedViewState` (`GONE`, `VISIBLE`, `HIDING`) with a `MutableStateFlow`
 fun GetStakeBanner(showDismiss: Boolean, onTap: () -> Unit, onDismiss: () -> Unit)
 ```
 
-Gradient card inviting the user to invest on Wefunder. Shown only when `crowdfundingAvailable()` — always outside Play Store builds, and in Play builds only while the store country is the US or not yet known — and only while `getStakeBannerDismissed` is false.
+Gradient card inviting the user to invest on Wefunder. Shown only when `crowdfundingAvailable()` — always outside Play Store builds, and in Play builds only once the store country is known and is the US (or empty) — and only while `getStakeBannerDismissed` is false.
 
 ### Placement
 

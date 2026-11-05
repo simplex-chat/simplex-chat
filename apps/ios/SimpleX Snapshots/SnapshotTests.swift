@@ -1,10 +1,17 @@
 import XCTest
 import SwiftUI
 import UIKit
+import AVFoundation
 @testable import SimpleX
 @testable import SimpleXChat
 
 final class SnapshotTests: XCTestCase {
+    private var fixedQRCode: UIImage?
+
+    override func setUp() async throws {
+        fixedQRCode = await generateImage(previewQRLink, tintColor: UIColor(red: 0.023, green: 0.176, blue: 0.337, alpha: 1), errorLevel: "M")
+    }
+
     @MainActor
     func testPreviews() throws {
         NSTimeZone.default = try XCTUnwrap(TimeZone(identifier: "UTC"))
@@ -14,6 +21,7 @@ final class SnapshotTests: XCTestCase {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let windowScene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
         ChatModel.shared.currentUser = User.sampleData
+        BadgeModel.shared.set(userId: User.sampleData.userId, badgeState: nil)
         var index: [[String: Any]] = []
         for dark in [false, true] {
             let theme = snapshotTheme(dark)
@@ -21,7 +29,7 @@ final class SnapshotTests: XCTestCase {
             for scene in previewScenes() where scene.allSizes || size == "large" {
                 let themeName = dark ? "dark" : "light"
                 let file = "\(scene.name)-\(themeName)-\(size).png"
-                let image = try renderScene(scene, theme.toAppTheme(), dark: dark, in: windowScene)
+                let image = try renderScene(scene, theme.toAppTheme(), dark: dark, fixedQRCode: fixedQRCode, in: windowScene)
                 try XCTUnwrap(image.pngData()).write(to: dir.appendingPathComponent(file))
                 index.append([
                     "scene": scene.name,
@@ -129,6 +137,29 @@ final class SnapshotTests: XCTestCase {
         window.isHidden = true
         window.rootViewController = nil
     }
+
+    @MainActor
+    func testTerminalSpacing() {
+        let items = SnapshotFixtures().spacingItems()
+        let p = terminalParagraphGap
+        let rows = zip(items.dropFirst(), items).map { item, older in
+            let sender = terminalItemShowsSender(item, older)
+            let largeGap = !item.chatDir.sameDirection(older.chatDir) || item.meta.itemTs.timeIntervalSince(older.meta.itemTs) > 60
+            return (sender: sender, gap: terminalRowGap(item, older, separated: false, largeGap: largeGap, hasSenderRow: sender), card: terminalItemStartsWithCard(item, revealed: true))
+        }
+        XCTAssertEqual(items.map(\.isOneLine), [false, true, true, true, true, true, true, false, true, true, false, true, false, false])
+        XCTAssertEqual(rows.map { $0.sender }, [true, true, false, false, true, false, true, false, true, true, true, false, true])
+        XCTAssertEqual(rows.map { $0.gap }, [p, p, 0, p, p, 0, p, p, p, p, p, p, p])
+        XCTAssertEqual(rows.map { $0.card }, [false, false, false, false, false, false, false, false, false, true, true, true, false])
+        XCTAssertEqual(items.suffix(2).map(terminalTextTopGap), [p, 0])
+        let edges = SnapshotFixtures().spacingEdgeItems()
+        XCTAssertEqual(edges.map { terminalItemStartsWithCard($0, revealed: true) }, [true, false, true, true])
+        XCTAssertEqual(edges.suffix(3).map(terminalTextTopGap), [0, 0, 0])
+        var unreacted = items[3]
+        unreacted.reactions = []
+        let rowHash = { (older: ChatItem) in ListItem(item: items[4], prevItem: items[5], nextItem: older, unreadBefore: 0).genHash(false, false) }
+        XCTAssertNotEqual(rowHash(items[3]), rowHash(unreacted))
+    }
 }
 
 private func layoutCheckDir(_ env: [String: String]) -> URL {
@@ -151,11 +182,13 @@ private struct SnapshotScene {
     var name: String
     var height: CGFloat? = nil
     var allSizes: Bool
+    var device: Bool
     var view: AnyView
 
-    init<P: PreviewProvider>(_ preview: P.Type, allSizes: Bool = false) {
+    init<P: PreviewProvider>(_ preview: P.Type, allSizes: Bool = false, device: Bool = false) {
         name = String(describing: preview).replacingOccurrences(of: "_Previews", with: "")
         self.allSizes = allSizes
+        self.device = device
         view = AnyView(preview.previews)
     }
 }
@@ -163,23 +196,23 @@ private struct SnapshotScene {
 private func previewScenes() -> [SnapshotScene] {
     [
         SnapshotScene(ActiveCallOverlay_Previews.self),
-        SnapshotScene(AddChannelView_Previews.self),
+        SnapshotScene(AddChannelView_Previews.self, device: true),
         SnapshotScene(AddContactLearnMore_Previews.self),
         SnapshotScene(AddGroupMembersView_Previews.self),
-        SnapshotScene(AddGroupView_Previews.self),
-        SnapshotScene(AdvancedNetworkSettings_Previews.self),
+        SnapshotScene(AddGroupView_Previews.self, device: true),
+        SnapshotScene(AdvancedNetworkSettings_Previews.self, device: true),
         SnapshotScene(BadgesCheckOrderView_Previews.self),
         SnapshotScene(BadgesHowItWorksView_Previews.self),
         SnapshotScene(BadgesHowLongView_Previews.self),
-        SnapshotScene(BadgesRedeemCodeView_Previews.self),
-        SnapshotScene(BadgesSupportSimplexView_Previews.self),
-        SnapshotScene(CallSettings_Previews.self),
+        SnapshotScene(BadgesRedeemCodeView_Previews.self, device: true),
+        SnapshotScene(BadgesSupportSimplexView_Previews.self, device: true),
+        SnapshotScene(CallSettings_Previews.self, device: true),
         SnapshotScene(ChannelMembersView_Previews.self),
         SnapshotScene(ChannelRelaysView_Previews.self),
         SnapshotScene(ChatHelp_Previews.self),
         SnapshotScene(ChatInfoImage_Previews.self),
         SnapshotScene(ChatInfoToolbar_Previews.self),
-        SnapshotScene(ChatInfoView_Previews.self),
+        SnapshotScene(ChatInfoView_Previews.self, device: true),
         SnapshotScene(ChatItemForwardingView_Previews.self),
         SnapshotScene(ChatItemInfoView_Previews.self),
         SnapshotScene(ChatItemView_NonMsgContentDeleted_Previews.self, allSizes: true),
@@ -187,7 +220,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ChatListNavLink_Previews.self),
         SnapshotScene(ChatListView_Previews.self),
         SnapshotScene(ChatPreviewView_Previews.self),
-        SnapshotScene(ChatView_Previews.self),
+        SnapshotScene(ChatView_Previews.self, device: true),
         SnapshotScene(CIChatFeatureView_Previews.self, allSizes: true),
         SnapshotScene(CIEventView_Previews.self, allSizes: true),
         SnapshotScene(CIFeaturePreferenceView_Previews.self, allSizes: true),
@@ -201,23 +234,24 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ClassicOverviewChannel_Previews.self),
         SnapshotScene(ClassicOverviewDirect_Previews.self),
         SnapshotScene(ClassicOverviewGroup_Previews.self),
+        SnapshotScene(ClassicParagraphs_Previews.self, allSizes: true),
         SnapshotScene(ComposeVoiceView_Previews.self),
-        SnapshotScene(ConnectDesktopView_Previews.self),
+        SnapshotScene(ConnectDesktopView_Previews.self, device: true),
         SnapshotScene(ContactConnectionInfo_Previews.self),
         SnapshotScene(ContactConnectionView_Previews.self),
-        SnapshotScene(ContactPreferencesView_Previews.self),
+        SnapshotScene(ContactPreferencesView_Previews.self, device: true),
         SnapshotScene(ContactRequestView_Previews.self),
         SnapshotScene(ContextContactRequestActionsView_Previews.self),
         SnapshotScene(ContextItemView_Previews.self),
         SnapshotScene(ContextMemberContactActionsView_Previews.self),
         SnapshotScene(ContextPendingMemberActionsView_Previews.self),
         SnapshotScene(ContextProfilePickerView_Previews.self),
-        SnapshotScene(CreateProfile_Previews.self),
+        SnapshotScene(CreateProfile_Previews.self, device: true),
         SnapshotScene(CreateSimpleXAddress_Previews.self),
         SnapshotScene(CustomTimePicker_Previews.self),
-        SnapshotScene(DatabaseEncryptionView_Previews.self),
+        SnapshotScene(DatabaseEncryptionView_Previews.self, device: true),
         SnapshotScene(DatabaseErrorView_Previews.self),
-        SnapshotScene(DatabaseView_Previews.self),
+        SnapshotScene(DatabaseView_Previews.self, device: true),
         SnapshotScene(DeletedItemView_Previews.self, allSizes: true),
         SnapshotScene(DetermineWidth_Previews.self),
         SnapshotScene(DeveloperView_Previews.self),
@@ -227,11 +261,11 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(FramedItemView_Edited_Previews.self, allSizes: true),
         SnapshotScene(FramedItemView_Previews.self, allSizes: true),
         SnapshotScene(GetStakeBanner_Previews.self),
-        SnapshotScene(GroupChatInfoView_Previews.self),
+        SnapshotScene(GroupChatInfoView_Previews.self, device: true),
         SnapshotScene(GroupLinkView_Previews.self),
-        SnapshotScene(GroupMemberInfoView_Previews.self),
-        SnapshotScene(GroupPreferencesView_Previews.self),
-        SnapshotScene(GroupProfileView_Previews.self),
+        SnapshotScene(GroupMemberInfoView_Previews.self, device: true),
+        SnapshotScene(GroupPreferencesView_Previews.self, device: true),
+        SnapshotScene(GroupProfileView_Previews.self, device: true),
         SnapshotScene(GroupWelcomeView_Previews.self),
         SnapshotScene(IncognitoHelp_Previews.self),
         SnapshotScene(IncomingCallView_Previews.self),
@@ -243,7 +277,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(MemberAdmissionView_Previews.self),
         SnapshotScene(MemberSupportChatToolbar_Previews.self),
         SnapshotScene(MemberSupportView_Previews.self),
-        SnapshotScene(MigrateToDevice_Previews.self),
+        SnapshotScene(MigrateToDevice_Previews.self, device: true),
         SnapshotScene(MigrateToGroupView_Previews.self),
         SnapshotScene(MsgContentView_Previews.self, allSizes: true),
         SnapshotScene(NativeTextEditor_Previews.self),
@@ -251,7 +285,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(NewChatMenuButton_Previews.self),
         SnapshotScene(NewFeaturesView_Previews.self),
         SnapshotScene(NewServerView_Previews.self),
-        SnapshotScene(NotificationsModeView_Previews.self),
+        SnapshotScene(NotificationsModeView_Previews.self, device: true),
         SnapshotScene(NotificationsView_Previews.self),
         SnapshotScene(OnboardingConditionsView_Previews.self),
         SnapshotScene(OnboardingStepsView_Previews.self),
@@ -262,7 +296,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(PreferencesView_Previews.self),
         SnapshotScene(PrivacySettings_Previews.self),
         SnapshotScene(ProfileImage_Previews.self),
-        SnapshotScene(ProfilePrivacyView_Previews.self),
+        SnapshotScene(ProfilePrivacyView_Previews.self, device: true),
         SnapshotScene(ProtocolServerView_Previews.self),
         SnapshotScene(QRCode_Previews.self),
         SnapshotScene(RTCServers_Previews.self),
@@ -272,8 +306,8 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(SendMessageView_Previews.self),
         SnapshotScene(SetAppPasscodeView_Previews.self),
         SnapshotScene(SetDeliveryReceiptsView_Previews.self),
-        SnapshotScene(SettingsView_Previews.self),
-        SnapshotScene(SimpleXInfo_Previews.self),
+        SnapshotScene(SettingsView_Previews.self, device: true),
+        SnapshotScene(SimpleXInfo_Previews.self, device: true),
         SnapshotScene(SmallLinkPreview_Previews.self),
         SnapshotScene(SupportSimpleXBanner_Previews.self),
         SnapshotScene(TerminalAvatars_Previews.self, allSizes: true),
@@ -284,10 +318,11 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(TerminalOverviewGroup_Previews.self),
         SnapshotScene(TerminalQuoteThumbnail_Previews.self, allSizes: true),
         SnapshotScene(TerminalRuleOnly_Previews.self, allSizes: true),
+        SnapshotScene(TerminalSpacing_Previews.self, allSizes: true),
         SnapshotScene(UserAddressLearnMore_Previews.self),
         SnapshotScene(UserAddressView_Previews.self),
         SnapshotScene(UserPicker_Previews.self),
-        SnapshotScene(VerifyCodeView_Previews.self),
+        SnapshotScene(VerifyCodeView_Previews.self, device: true),
         SnapshotScene(VersionView_Previews.self),
         SnapshotScene(WhySimpleX_Previews.self),
         SnapshotScene(YourServersView_Previews.self)
@@ -305,17 +340,20 @@ private func snapshotTheme(_ dark: Bool) -> ThemeManager.ActiveTheme {
     )
 }
 
+private let previewQRLink = "https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw"
+
 @MainActor
-private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, in windowScene: UIWindowScene) throws -> UIImage {
+private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, fixedQRCode: UIImage?, in windowScene: UIWindowScene) throws -> UIImage {
     let screen = windowScene.screen
     let width = screen.bounds.width
     let root = VStack(spacing: 0) { scene.view }
         .environmentObject(ChatModel.shared)
         .environmentObject(theme)
+        .environment(\.fixedQRCode, fixedQRCode)
         .frame(width: width, height: scene.height)
     let host = UIHostingController(rootView: AnyView(root))
     if #available(iOS 16.4, *) {
-        host.safeAreaRegions = []
+        host.safeAreaRegions = scene.device ? .container : []
     }
     let window = UIWindow(windowScene: windowScene)
     window.overrideUserInterfaceStyle = dark ? .dark : .light
@@ -323,7 +361,7 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
     window.frame = CGRect(x: 0, y: 0, width: width, height: scene.height ?? screen.bounds.height)
     window.isHidden = false
     settle()
-    if scene.height == nil {
+    if scene.height == nil && !scene.device {
         for _ in 0..<2 {
             let fit = host.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
             let fill = host.sizeThatFits(in: screen.bounds.size)
@@ -339,10 +377,29 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
     format.opaque = true
     let image = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { _ in
         _ = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        if scene.device {
+            drawStatusBar(dark: dark)
+        }
     }
     window.isHidden = true
     window.rootViewController = nil
     return image
+}
+
+private func drawStatusBar(dark: Bool) {
+    let color: UIColor = dark ? .white : .black
+    let time = NSAttributedString(string: "9:41", attributes: [.font: UIFont.systemFont(ofSize: 17, weight: .semibold), .foregroundColor: color])
+    let timeSize = time.size()
+    time.draw(at: CGPoint(x: 74 - timeSize.width / 2, y: 32.5 - timeSize.height / 2))
+    let icons = [
+        ("cellularbars", CGRect(x: 288.5, y: 26.5, width: 19, height: 12)),
+        ("wifi", CGRect(x: 315, y: 26.5, width: 17, height: 12)),
+        ("battery.100", CGRect(x: 339.5, y: 26, width: 27, height: 13))
+    ]
+    for (symbol, box) in icons {
+        let icon = UIImage(systemName: symbol)!.withTintColor(color, renderingMode: .alwaysOriginal)
+        icon.draw(in: AVMakeRect(aspectRatio: icon.size, insideRect: box))
+    }
 }
 
 private func removeAnimations(_ layer: CALayer) {
@@ -375,6 +432,12 @@ struct TerminalMedia_Previews: PreviewProvider {
 struct TerminalRuleOnly_Previews: PreviewProvider {
     static var previews: some View {
         SnapshotFixtures().ruleOnly()
+    }
+}
+
+struct TerminalSpacing_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().spacing()
     }
 }
 
@@ -423,6 +486,12 @@ struct TerminalOverviewChannel_Previews: PreviewProvider {
 struct ClassicOverviewChannel_Previews: PreviewProvider {
     static var previews: some View {
         SnapshotFixtures().overviewChannel(terminal: false)
+    }
+}
+
+struct ClassicParagraphs_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().paragraphs()
     }
 }
 
@@ -548,6 +617,180 @@ private final class SnapshotFixtures {
     let team: GroupInfo
     let news: GroupInfo
     let contact: Contact
+    private let markdown: [String: ParsedMarkdown] = [
+        "https://simplex.chat": ParsedMarkdown(formattedText: [
+            FormattedText(text: "https://simplex.chat", format: .uri)
+        ]),
+        "---": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "---", format: .markup(token: .ruleMark))
+            ],
+            markdownBlocks: [
+                .rule(mark: SegmentRange(from: 0, to: 1))
+            ]
+        ),
+        "Hi! Did you see the **new release**?": ParsedMarkdown(formattedText: [
+            FormattedText(text: "Hi! Did you see the "),
+            FormattedText(text: "new release", format: .bold(singleStar: false)),
+            FormattedText(text: "?")
+        ]),
+        "Yes, *great* changes 🎉": ParsedMarkdown(formattedText: [
+            FormattedText(text: "Yes, "),
+            FormattedText(text: "great", format: .bold(singleStar: true)),
+            FormattedText(text: " changes 🎉")
+        ]),
+        "# Release notes\n- terminal layout\n- `code` blocks\n\n> quoted line": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "# ", format: .markup(token: .headingMark(level: 1))),
+                FormattedText(text: "Release notes"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "- ", format: .markup(token: .listMark(number: nil))),
+                FormattedText(text: "terminal layout"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "- ", format: .markup(token: .listMark(number: nil))),
+                FormattedText(text: "code", format: .snippet),
+                FormattedText(text: " blocks"),
+                FormattedText(text: "\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 2))),
+                FormattedText(text: "> ", format: .markup(token: .quoteMark)),
+                FormattedText(text: "quoted line")
+            ],
+            markdownBlocks: [
+                .heading(level: 1, content: SegmentRange(from: 1, to: 2)),
+                .list(items: [
+                    ListEntry(number: nil, content: SegmentRange(from: 4, to: 5), items: []),
+                    ListEntry(number: nil, content: SegmentRange(from: 7, to: 9), items: [])
+                ]),
+                .quote(content: SegmentRange(from: 11, to: 12))
+            ]
+        ),
+        "### Gaps\n\none empty line above\n\n\ntwo empty lines above\n\n### After one empty line\n- list entry\n\n- after one empty line\n\n": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "### ", format: .markup(token: .headingMark(level: 3))),
+                FormattedText(text: "Gaps"),
+                FormattedText(text: "\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 2))),
+                FormattedText(text: "one empty line above"),
+                FormattedText(text: "\n\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 3))),
+                FormattedText(text: "two empty lines above"),
+                FormattedText(text: "\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 2))),
+                FormattedText(text: "### ", format: .markup(token: .headingMark(level: 3))),
+                FormattedText(text: "After one empty line"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "- ", format: .markup(token: .listMark(number: nil))),
+                FormattedText(text: "list entry"),
+                FormattedText(text: "\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 2))),
+                FormattedText(text: "- ", format: .markup(token: .listMark(number: nil))),
+                FormattedText(text: "after one empty line"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak))
+            ],
+            markdownBlocks: [
+                .heading(level: 3, content: SegmentRange(from: 1, to: 2)),
+                .paragraph(content: SegmentRange(from: 3, to: 4)),
+                .paragraph(content: SegmentRange(from: 5, to: 6)),
+                .heading(level: 3, content: SegmentRange(from: 8, to: 9)),
+                .list(items: [
+                    ListEntry(number: nil, content: SegmentRange(from: 11, to: 12), items: []),
+                    ListEntry(number: nil, content: SegmentRange(from: 14, to: 15), items: [])
+                ])
+            ]
+        ),
+        "first part\n\nafter one empty line\n\n\nafter two empty lines": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "first part"),
+                FormattedText(text: "\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 2))),
+                FormattedText(text: "after one empty line"),
+                FormattedText(text: "\n\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 3))),
+                FormattedText(text: "after two empty lines")
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 0, to: 1)),
+                .paragraph(content: SegmentRange(from: 2, to: 3)),
+                .paragraph(content: SegmentRange(from: 4, to: 5))
+            ]
+        ),
+        "\nlinks to a scam site": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "\n", format: .markup(token: .paragraphBreak(lineBreaks: 1))),
+                FormattedText(text: "links to a scam site")
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 1, to: 2))
+            ]
+        ),
+        "\nafter an empty line": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "\n", format: .markup(token: .paragraphBreak(lineBreaks: 1))),
+                FormattedText(text: "after an empty line")
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 1, to: 2))
+            ]
+        ),
+        "  \nafter a line of spaces": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "  \n", format: .markup(token: .paragraphBreak(lineBreaks: 1))),
+                FormattedText(text: "after a line of spaces")
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 1, to: 2))
+            ]
+        ),
+        "Plan for today:\n1. review\n2. **release**": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "Plan for today:"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "1. ", format: .markup(token: .listMark(number: "1."))),
+                FormattedText(text: "review"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "2. ", format: .markup(token: .listMark(number: "2."))),
+                FormattedText(text: "release", format: .bold(singleStar: false))
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 0, to: 1)),
+                .list(items: [
+                    ListEntry(number: "1.", content: SegmentRange(from: 3, to: 4), items: []),
+                    ListEntry(number: "2.", content: SegmentRange(from: 6, to: 7), items: [])
+                ])
+            ]
+        ),
+        "**Version 7.1** is out": ParsedMarkdown(formattedText: [
+            FormattedText(text: "Version 7.1", format: .bold(singleStar: false)),
+            FormattedText(text: " is out")
+        ]),
+        "## What's new\n- terminal layout\n- faster sync": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "## ", format: .markup(token: .headingMark(level: 2))),
+                FormattedText(text: "What's new"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "- ", format: .markup(token: .listMark(number: nil))),
+                FormattedText(text: "terminal layout"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "- ", format: .markup(token: .listMark(number: nil))),
+                FormattedText(text: "faster sync")
+            ],
+            markdownBlocks: [
+                .heading(level: 2, content: SegmentRange(from: 1, to: 2)),
+                .list(items: [
+                    ListEntry(number: nil, content: SegmentRange(from: 4, to: 5), items: []),
+                    ListEntry(number: nil, content: SegmentRange(from: 7, to: 8), items: [])
+                ])
+            ]
+        ),
+        "run this one first:\n```\nnpm run publish\n```": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "run this one first:"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "```", format: .markup(token: .fenceMark(language: nil))),
+                FormattedText(text: "\n", format: .markup(token: .hardBreak)),
+                FormattedText(text: "npm run publish"),
+                FormattedText(text: "\n", format: .markup(token: .hardBreak)),
+                FormattedText(text: "```", format: .markup(token: .fenceMark(language: nil)))
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 0, to: 1)),
+                .codeBlock(language: nil, content: SegmentRange(from: 4, to: 5))
+            ]
+        )
+    ]
 
     init() {
         alice = Self.member(2, "alice", .admin, image: imageBase64(UIColor(red: 0.85, green: 0.45, blue: 0.3, alpha: 1), CGSize(width: 64, height: 64)))
@@ -594,7 +837,7 @@ private final class SnapshotFixtures {
     }
 
     private func msg(_ dir: CIDirection, _ text: String, _ minutes: Double, quote: CIQuote? = nil, reactions: [CIReactionCount] = [], content: MsgContent? = nil, file: CIFile? = nil) -> ChatItem {
-        let parsed = text.isEmpty ? nil : parseSimpleXMarkdownText(text)
+        let parsed = markdown[text]
         let mc = content ?? .text(text)
         return ChatItem(
             chatDir: dir,
@@ -613,7 +856,7 @@ private final class SnapshotFixtures {
     }
 
     private func quote(_ dir: CIDirection?, _ text: String, image: String? = nil) -> CIQuote {
-        let parsed = text.isEmpty ? nil : parseSimpleXMarkdownText(text)
+        let parsed = markdown[text]
         return CIQuote(
             chatDir: dir,
             itemId: 1,
@@ -696,12 +939,54 @@ private final class SnapshotFixtures {
         ], terminal: terminal)
     }
 
+    func spacingItems() -> [ChatItem] {
+        [
+            event(.groupRcv(groupMember: carol), .rcvGroupEvent(rcvGroupEvent: .memberConnected), -130),
+            msg(.groupRcv(groupMember: alice), "Welcome, carol!", -120),
+            msg(.groupRcv(groupMember: carol), "Thanks! Glad to be here", -118),
+            msg(.groupRcv(groupMember: carol), "ok", -118 + 20.0 / 60, reactions: [reaction(.heart, 2)]),
+            msg(.groupRcv(groupMember: carol), "one question", -118 + 40.0 / 60),
+            msg(.groupRcv(groupMember: bob), "I pushed the release build, please check it on your phones", -105),
+            msg(.groupRcv(groupMember: bob), "done", -104.5),
+            msg(.groupRcv(groupMember: alice), "first part\n\nafter one empty line\n\n\nafter two empty lines", -90),
+            msg(.groupRcv(groupMember: alice), "and one more thing", -89.5),
+            msg(.groupRcv(groupMember: alice), "after a pause of eight minutes", -81.5),
+            msg(.groupRcv(groupMember: bob), "", -80, reactions: [reaction(.heart, 2)], content: .image(text: "", image: landscape), file: imageFile("view.jpg")),
+            msg(.groupSnd, "👍", -79),
+            msg(.groupSnd, "nice view", -78.5, quote: quote(.groupRcv(groupMember: bob), "", image: landscape)),
+            msg(.groupRcv(groupMember: carol), "run this one first:\n```\nnpm run publish\n```", -70, reactions: [reaction(.thumbsup, 1)])
+        ]
+    }
+
+    func spacing() -> some View {
+        chatRows(teamChat, spacingItems(), terminal: true)
+    }
+
+    func paragraphs() -> some View {
+        let text = "first part\n\nafter one empty line\n\n\nafter two empty lines"
+        var oneText = msg(.directRcv, text, -9)
+        oneText.formattedText = nil
+        oneText.markdownBlocks = nil
+        return chatRows(direct, [msg(.directRcv, text, -10), oneText], terminal: false)
+    }
+
+    func spacingEdgeItems() -> [ChatItem] {
+        let reported = quote(.groupRcv(groupMember: alice), "Welcome, carol!")
+        return [
+            msg(.groupRcv(groupMember: bob), "👍", -10, content: .unknown(type: "sticker", text: "👍")),
+            msg(.groupSnd, "\nlinks to a scam site", -9, quote: reported, content: .report(text: "\nlinks to a scam site", reason: .spam)),
+            msg(.groupSnd, "\nafter an empty line", -8, quote: reported),
+            msg(.groupSnd, "  \nafter a line of spaces", -7, quote: reported)
+        ]
+    }
+
     func overviewDirect(terminal: Bool) -> ChatRows {
         chatRows(direct, [
             event(.directRcv, .rcvChatFeature(feature: .voice, enabled: FeatureEnabled(forUser: true, forContact: true), param: nil), -120),
             msg(.directRcv, "Hi! Did you see the **new release**?", -60),
             msg(.directSnd, "Yes, *great* changes 🎉", -58, reactions: [reaction(.thumbsup, 1)]),
             msg(.directRcv, "# Release notes\n- terminal layout\n- `code` blocks\n\n> quoted line", -50),
+            msg(.directRcv, "### Gaps\n\none empty line above\n\n\ntwo empty lines above\n\n### After one empty line\n- list entry\n\n- after one empty line\n\n", -48),
             msg(.directSnd, "Thanks for the summary", -45, quote: quote(.directRcv, "Release notes")),
             msg(.directRcv, "", -40, content: .image(text: "", image: landscape), file: imageFile("photo.jpg")),
             msg(.directRcv, "", -35, content: .file(""), file: CIFile.getSample(fileId: id(), fileName: "report.pdf", fileSize: 245_760, filePath: nil, fileStatus: .rcvInvitation)),

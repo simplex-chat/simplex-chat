@@ -98,6 +98,8 @@ badgeTests = do
     it "accepts every row a store charge adds, on each path a subscription renews by" testChargeRowsVerify
     it "re-runs an upgrade or a transfer debit, and rejects one that leaves months" testDebitRowsVerify
     it "accepts every row a change of tier adds, and rejects a new tier granted over months still held" testTierChangeRowsVerify
+    it "keeps the renewal day of a run whose tier changes at renewal" testTierChangeAtRenewalKeepsDay
+    it "restarts the run of a tier changed before its coverage ends" testTierChangeInCoverageRestarts
   describe "worker retry" $ do
     it "repeats a failure that can clear on its own, and no other" testRetryClassification
     it "backs off to the cap" testRetryBackoff
@@ -812,7 +814,7 @@ testDebitRowsVerify = do
   verdicts t (Just issued) [upgraded {changeMonths = -10, balanceMonths = 1}] `shouldBe` [Just False]
 
 -- A charge of another tier ends the old run with an upgrade debit of what it still held and starts
--- a new one: every row it writes must re-run on the client, on each path a tier changes by.
+-- a new one, or continues it at renewal: every row it writes must re-run on the client, on each path a tier changes by.
 testTierChangeRowsVerify :: IO ()
 testTierChangeRowsVerify = do
   k <- newPurchaseKey
@@ -824,7 +826,7 @@ testTierChangeRowsVerify = do
       downgraded = charged k p1 (days 2 p1) BTSupporter 1 legendTip
   map rowKind downgraded `shouldBe` ["charge", "badge"]
   map bTier downgraded `shouldBe` [BTSupporter, BTSupporter]
-  map bAnchor (take 1 downgraded) `shouldBe` [p1]
+  map bAnchor (take 1 downgraded) `shouldBe` [p0]
   verdicts (days 2 p1) (Just legendTip) downgraded `shouldBe` [Just True, Just True]
   -- an annual Supporter subscription upgraded to annual Legend in its third month, every month so
   -- far issued: the nine left are debited, and the new year starts at the upgrade
@@ -869,6 +871,33 @@ testTierChangeRowsVerify = do
   map rowKind found `shouldBe` ["charge", "lapse", "badge"]
   map rowKind renewed `shouldBe` ["charge", "badge"]
   allVerify (annual <> yearIssued <> found <> legendIssued <> renewed)
+
+monthlySupporterFrom31Jan :: C.PublicKeyEd25519 -> [StatementEntry]
+monthlySupporterFrom31Jan k = charged k p0 (addUTCTime 600 p0) BTSupporter 1 (newBalance p0)
+  where
+    p0 = at 2027 1 31
+
+testTierChangeAtRenewalKeepsDay :: IO ()
+testTierChangeAtRenewalKeepsDay = do
+  k <- newPurchaseKey
+  let supporter = monthlySupporterFrom31Jan k
+      supporterTip = last supporter
+      renewal = at 2027 2 28
+      legend = charged k renewal (addUTCTime 600 renewal) BTLegend 1 supporterTip
+  bStart supporterTip `shouldBe` renewal
+  map rowKind legend `shouldBe` ["charge", "badge"]
+  map (\e -> (bStart e, bAnchor e, bTier e)) legend `shouldBe` [(renewal, at 2027 1 31, BTLegend), (at 2027 3 31, at 2027 1 31, BTLegend)]
+  allVerify (supporter <> legend)
+
+testTierChangeInCoverageRestarts :: IO ()
+testTierChangeInCoverageRestarts = do
+  k <- newPurchaseKey
+  let supporter = monthlySupporterFrom31Jan k
+      upgradedAt = at 2027 2 10
+      legend = charged k upgradedAt (addUTCTime 600 upgradedAt) BTLegend 1 (last supporter)
+  map rowKind legend `shouldBe` ["charge", "badge"]
+  map (\e -> (bStart e, bAnchor e, bTier e)) legend `shouldBe` [(upgradedAt, upgradedAt, BTLegend), (at 2027 3 10, upgradedAt, BTLegend)]
+  allVerify (supporter <> legend)
 
 -- A failed renewal is otherwise left until the next chat start or activate, which on a desktop
 -- left running can be days - long enough for a funded badge to lapse.

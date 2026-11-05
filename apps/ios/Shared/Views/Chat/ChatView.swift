@@ -2174,7 +2174,8 @@ struct ChatView: View {
                 TerminalChatItemRow(
                     sender: showSender ? chatItemSender(ci, range) : nil,
                     gutter: gutter,
-                    topGap: topGap
+                    topGap: topGap,
+                    contentStartsWithCard: terminalItemStartsWithCard(ci, revealed: revealed)
                 ) {
                     chatItemWithMenu(ci, range, min(maxWidth, listWidth - leading - gutter - 2 * chatItemTextPadding), itemSeparation)
                 }
@@ -2261,7 +2262,7 @@ struct ChatView: View {
                     .foregroundColor(.secondary)
                     .opacity(min(1, -swipeOffset / 30))
                     .offset(x: swipeOffset + 40)
-                VStack(alignment: alignment.horizontal, spacing: 3) {
+                VStack(alignment: alignment.horizontal, spacing: terminal ? 0 : 3) {
                     HStack {
                         if alignEnd {
                             goToItemButton(true)
@@ -2288,7 +2289,7 @@ struct ChatView: View {
                     if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
                         chatItemReactions(ci)
                             .padding(.leading, terminal ? chatItemTextPadding - 6 : 0)
-                            .padding(.bottom, 4)
+                            .padding(.bottom, terminal ? 0 : 4)
                     }
                 }
                 .coordinateSpace(name: swipeExclusionSpace)
