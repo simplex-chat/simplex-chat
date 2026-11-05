@@ -40,10 +40,11 @@ var badgeBrowserAllowed: Bool {
     SKPaymentQueue.default().storefront?.countryCode == "USA"
 }
 
-// TestFlight and App Review buy in the Sandbox, which the service refuses, so only a build the App
-// Store served may sell. Below iOS 16 the receipt's name is all that tells the environment.
-private var appStoreReceiptIsSandbox: Bool {
-    Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
+// Only a receipt the App Store installed proves a build it served, and nothing else may sell: TestFlight,
+// App Review and Xcode buy in the Sandbox, which the service credits nowhere, and carry no receipt at all
+// until a purchase is made, so an absent or unfamiliar one counts as not served.
+private var appStoreReceiptIsProduction: Bool {
+    Bundle.main.appStoreReceiptURL?.lastPathComponent == "receipt"
 }
 
 enum BadgePrice {
@@ -145,8 +146,8 @@ final class BadgeStore: ObservableObject {
     // the original ids of the Apple ID's subscriptions; nil until load() has read them. Apple folds a new subscription
     // of an Apple ID that subscribed before into the earlier one, which core resumes only for the profile it retired
     @Published private(set) var priorSubscriptions: Set<String>? = nil
-    // whether this build may sell: right from the first frame, and confirmed by readEnvironment on iOS 16
-    @Published private(set) var purchasesReleased = !appStoreReceiptIsSandbox
+    // right from the first frame, and confirmed by readEnvironment on iOS 16
+    @Published private(set) var servedByAppStore = appStoreReceiptIsProduction
     // the sweep has no buyer waiting and runs at four triggers, so a failure that cannot clear is told once a run
     private var sweepFailureShown = false
     private var transactionUpdates: Task<Void, Never>? = nil
@@ -221,13 +222,13 @@ final class BadgeStore: ObservableObject {
         )
     }
 
-    // iOS 16 carries the environment in the app transaction, which Apple signs, so it overrides the receipt's name
+    // iOS 16 carries the environment in the app transaction, which Apple signs, so it overrides the receipt
     func readEnvironment() async {
         if #available(iOS 16.0, *) {
             if let verification = try? await AppTransaction.shared,
                case .verified(let appTransaction) = verification {
-                let released = appTransaction.environment == .production
-                await MainActor.run { purchasesReleased = released }
+                let served = appTransaction.environment == .production
+                await MainActor.run { servedByAppStore = served }
             }
         }
     }

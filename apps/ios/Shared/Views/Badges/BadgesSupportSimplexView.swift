@@ -46,7 +46,7 @@ struct BadgesSupportSimplexView: View {
                 Spacer(minLength: 0)
 
                 VStack(spacing: 10) {
-                    if store.purchasesReleased {
+                    if store.servedByAppStore {
                         chooseLevelButton()
                             .padding(.vertical, 10)
                         Group {
