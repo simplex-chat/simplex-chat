@@ -33,13 +33,13 @@ import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
 import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
-import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, uniqueMsgMentions, updatedMentionNames)
+import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectContactMessage, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XFile, XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XFile, XGrpDirectInv, XGrpMemNew, XGrpRelayInv, XInfo, XInfoProbe, XInfoProbeCheck, XMember, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, connProbeHashVersion, groupInvVersion, mcSimple, msgContentText)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -167,16 +167,23 @@ chatGroupTests = do
     it "direct contacts are not created" testNoGroupDirectConns
     it "members have different local display names in different groups" testNoDirectDifferentLDNs
   describe "merge members and contacts" $ do
-    it "new member should merge with existing contact" testMergeMemberExistingContact
+    it "new member should merge with existing contact" $ testMergeMemberExistingContact testCfg testCfg
+    it "new member should merge with existing contact of previous version" $ testMergeMemberExistingContact testCfg prevProbeHashCfg
+    it "new member of previous version should merge with existing contact" $ testMergeMemberExistingContact prevProbeHashCfg testCfg
     it "new contact should merge with existing member" testMergeContactExistingMember
     it "new contact should merge with multiple existing members" testMergeContactMultipleMembers
     it "new group link host contact should merge with single existing contact out of multiple" testMergeGroupLinkHostMultipleContacts
+    it "member that passed on the probe of another member should not merge" $ testNoMergeRelayedProbe testCfg
+    it "member of previous version that passed on the probe of another member should not merge" $ testNoMergeRelayedProbe prevProbeHashCfg
+    it "contact that passed on the probe hash of another contact should not merge" $ testNoMergeRelayedProbeHash testCfg
+    it "contact of previous version that passed on the probe hash of another contact should not merge" $ testNoMergeRelayedProbeHash prevProbeHashCfg
   describe "create member contact" $ do
     it "create contact with group member with invitation message" testMemberContactMessage
     it "create contact with group member without invitation message" testMemberContactNoMessage
     it "prohibited to create contact with group member if it already exists" testMemberContactProhibitedContactExists
     it "prohibited to repeat sending x.grp.direct.inv" testMemberContactProhibitedRepeatInv
     it "invited member replaces member contact reference if it already exists" testMemberContactInvitedConnectionReplaced
+    it "invited member does not replace a ready contact connection" testMemberContactInvitedReadyConnectionKept
     it "share incognito profile" testMemberContactIncognito
     it "sends and updates profile when creating contact" testMemberContactProfileUpdate
     it "re-create member contact after deletion, many groups" testRecreateMemberContactManyGroups
@@ -4741,52 +4748,53 @@ testNoDirectDifferentLDNs =
           bob <# ("#" <> gName <> " " <> cathLDN <> "> hey")
         ]
 
-testMergeMemberExistingContact :: HasCallStack => TestParams -> IO ()
-testMergeMemberExistingContact =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      connectUsers alice bob
-      connectUsers alice cath
-      createGroup2 "team" bob cath
-      bob ##> "/a #team alice"
-      bob <## "invitation to join the group #team sent to alice"
-      alice <## "#team: bob invites you to join the group as member"
-      alice <## "use /j team to accept"
-      alice ##> "/j team"
-      concurrentlyN_
-        [ do
-            alice <## "#team: you joined the group"
-            alice <## "#team: member cath_1 (Catherine) is connected"
-            alice <## "contact and member are merged: cath, #team cath_1"
-            alice <## "use @cath <message> to send messages",
-          do
-            bob <## "#team: alice joined the group",
-          do
-            cath <## "#team: bob added alice_1 (Alice) to the group (connecting...)"
-            cath <## "#team: new member alice_1 is connected"
-            cath <## "contact and member are merged: alice, #team alice_1"
-            cath <## "use @alice <message> to send messages"
-        ]
-      alice <##> cath
-      alice #> "#team hello"
-      bob <# "#team alice> hello"
-      cath <# "#team alice> hello"
-      cath #> "#team hello too"
-      bob <# "#team cath> hello too"
-      alice <# "#team cath> hello too"
+testMergeMemberExistingContact :: HasCallStack => ChatConfig -> ChatConfig -> TestParams -> IO ()
+testMergeMemberExistingContact aliceCfg cathCfg ps =
+  withNewTestChatCfg ps aliceCfg "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps cathCfg "cath" cathProfile $ \cath -> do
+        connectUsers alice bob
+        connectUsers alice cath
+        createGroup2 "team" bob cath
+        bob ##> "/a #team alice"
+        bob <## "invitation to join the group #team sent to alice"
+        alice <## "#team: bob invites you to join the group as member"
+        alice <## "use /j team to accept"
+        alice ##> "/j team"
+        concurrentlyN_
+          [ do
+              alice <## "#team: you joined the group"
+              alice <## "#team: member cath_1 (Catherine) is connected"
+              alice <## "contact and member are merged: cath, #team cath_1"
+              alice <## "use @cath <message> to send messages",
+            do
+              bob <## "#team: alice joined the group",
+            do
+              cath <## "#team: bob added alice_1 (Alice) to the group (connecting...)"
+              cath <## "#team: new member alice_1 is connected"
+              cath <## "contact and member are merged: alice, #team alice_1"
+              cath <## "use @alice <message> to send messages"
+          ]
+        alice <##> cath
+        alice #> "#team hello"
+        bob <# "#team alice> hello"
+        cath <# "#team alice> hello"
+        cath #> "#team hello too"
+        bob <# "#team cath> hello too"
+        alice <# "#team cath> hello too"
 
-      alice ##> "/contacts"
-      alice
-        <### [ "bob (Bob)",
-               "cath (Catherine)"
-             ]
-      cath ##> "/contacts"
-      cath
-        <### [ "alice (Alice)",
-               "bob (Bob)"
-             ]
-      alice `hasContactProfiles` ["alice", "bob", "cath"]
-      cath `hasContactProfiles` ["cath", "alice", "bob"]
+        alice ##> "/contacts"
+        alice
+          <### [ "bob (Bob)",
+                 "cath (Catherine)"
+               ]
+        cath ##> "/contacts"
+        cath
+          <### [ "alice (Alice)",
+                 "bob (Bob)"
+               ]
+        alice `hasContactProfiles` ["alice", "bob", "cath"]
+        cath `hasContactProfiles` ["cath", "alice", "bob"]
 
 testMergeContactExistingMember :: HasCallStack => TestParams -> IO ()
 testMergeContactExistingMember =
@@ -4903,6 +4911,75 @@ testMergeGroupLinkHostMultipleContacts =
       cath <### ["bob (Bob)", "bob_1 (Bob)"]
       bob `hasContactProfiles` ["bob", "cath", "cath"]
       cath `hasContactProfiles` ["cath", "bob", "bob"]
+
+testNoMergeRelayedProbe :: HasCallStack => ChatConfig -> TestParams -> IO ()
+testNoMergeRelayedProbe eveCfg ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps eveCfg "eve_alice" aliceProfile $ \eveAsAlice ->
+        withNewTestChatCfg ps eveCfg "eve_bob" bobProfile $ \eveAsBob -> do
+          connectUsers alice bob
+          joinGroupViaLink eveAsAlice "club" bob "bob" "Bob"
+          joinGroupViaLink eveAsBob "lounge" alice "alice" "Alice"
+          GroupMember {groupMemberId} <- getTestMember eveAsAlice "club" "bob"
+          let bobProbes =
+                withCCTransaction eveAsAlice $ \db ->
+                  DB.query db "SELECT probe FROM received_probes WHERE group_member_id = ? AND probe IS NOT NULL" (Only groupMemberId) :: IO [Only ByteString]
+          (length <$> bobProbes) `shouldEventuallyReturn` 1
+          [Only probe] <- bobProbes
+          bob #> "@alice hi"
+          alice <# "bob> hi"
+          GroupMember {groupId, activeConn = Just conn} <- getTestMember eveAsBob "lounge" "alice"
+          runExceptT (sendDirectMemberMessage conn (XInfoProbe $ Probe probe) groupId) `runReaderT` chatController eveAsBob
+            >>= either (fail . show) (\_ -> pure ())
+          eveAsBob #> "#lounge hello"
+          alice <# "#lounge bob_1> hello"
+          memberContactId <$> getTestMember alice "lounge" "bob_1" `shouldReturn` Nothing
+          memberContactId <$> getTestMember bob "club" "alice_1" `shouldReturn` Nothing
+
+testNoMergeRelayedProbeHash :: HasCallStack => ChatConfig -> TestParams -> IO ()
+testNoMergeRelayedProbeHash eveCfg ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps eveCfg "eve_alice" aliceProfile $ \eveAsAlice ->
+        withNewTestChatCfg ps eveCfg "eve_bob" bobProfile $ \eveAsBob -> do
+          connectUsers bob eveAsAlice
+          connectUsers alice eveAsBob
+          joinGroupViaLink alice "team" bob "bob_1" "Bob"
+          let bobHashes =
+                withCCTransaction eveAsAlice $ \db ->
+                  DB.query_ db "SELECT probe_hash FROM received_probes WHERE probe IS NULL" :: IO [Only ByteString]
+          (length <$> bobHashes) `shouldEventuallyReturn` 1
+          [Only probeHash] <- bobHashes
+          bob #> "#team hi"
+          alice <# "#team bob_1> hi"
+          ct <- getTestCCContact eveAsBob 2
+          withCCUser eveAsBob $ \user ->
+            runExceptT (sendDirectContactMessage user ct $ XInfoProbeCheck $ ProbeHash probeHash) `runReaderT` chatController eveAsBob
+              >>= either (fail . show) (\_ -> pure ())
+          eveAsBob #> "@alice hello"
+          alice <# "bob> hello"
+          memberContactId <$> getTestMember alice "team" "bob_1" `shouldReturn` Nothing
+
+prevProbeHashCfg :: ChatConfig
+prevProbeHashCfg = testCfg {chatVRange = (chatVRange testCfg) {maxVersion = prevVersion connProbeHashVersion}}
+
+joinGroupViaLink :: HasCallStack => TestCC -> String -> TestCC -> String -> String -> IO ()
+joinGroupViaLink host gName cc ccName ccFullName = do
+  host ##> ("/g " <> gName)
+  host <## ("group #" <> gName <> " is created")
+  host <## ("to add members use /a " <> gName <> " <name> or /create link #" <> gName)
+  host ##> ("/create link #" <> gName)
+  gLink <- getGroupLink host gName GRMember True
+  cc ##> ("/c " <> gLink)
+  cc <## "connection request sent!"
+  host <## (ccName <> " (" <> ccFullName <> "): accepting request to join group #" <> gName <> "...")
+  concurrentlyN_
+    [ host <## ("#" <> gName <> ": " <> ccName <> " joined the group"),
+      do
+        cc <## ("#" <> gName <> ": joining the group...")
+        cc <## ("#" <> gName <> ": you joined the group")
+    ]
 
 testMemberContactMessage :: HasCallStack => TestParams -> IO ()
 testMemberContactMessage =
@@ -5117,6 +5194,39 @@ testMemberContactInvitedConnectionReplaced ps = do
       alice <##> bob
       alice @@@ [("@bob", "hey"), ("@cath", "sent invitation to join group team as admin"), ("#team", "connected")]
       bob @@@ [("@alice", "hey"), ("#team", "started direct connection with you")]
+
+testMemberContactInvitedReadyConnectionKept :: HasCallStack => TestParams -> IO ()
+testMemberContactInvitedReadyConnectionKept =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      bob ##> "/c"
+      inv <- getInvitation bob
+      cath ##> ("/c " <> inv)
+      cath <## "confirmation sent!"
+      concurrentlyN_
+        [ bob
+            <### [ "cath_1 (Catherine): contact is connected",
+                   "contact and member are merged: cath_1, #team cath",
+                   "use @cath <message> to send messages"
+                 ],
+          cath
+            <### [ "bob_1 (Bob): contact is connected",
+                   "contact and member are merged: bob_1, #team bob",
+                   "use @bob <message> to send messages"
+                 ]
+        ]
+      bob <##> cath
+      GroupMember {memberContactId} <- getTestMember bob "team" "cath"
+      memberContactId `shouldSatisfy` isJust
+      cath ##> "/c"
+      connReqStr <- getInvitation cath
+      let connReq = either error id $ strDecode (B.pack connReqStr) :: ConnReqInvitation
+      GroupMember {groupId, activeConn = Just conn} <- getTestMember cath "team" "bob"
+      runExceptT (sendDirectMemberMessage conn (XGrpDirectInv connReq Nothing Nothing) groupId) `runReaderT` chatController cath
+        >>= either (fail . show) (\_ -> pure ())
+      bob <## "error: x.grp.direct.inv: member contact already connected"
+      bob <##> cath
 
 testMemberContactIncognito :: HasCallStack => TestParams -> IO ()
 testMemberContactIncognito =
@@ -5661,12 +5771,14 @@ testInviteMemberViaGroupProhibited =
 testInviteMemberViaGroupPrevVersion :: HasCallStack => TestParams -> IO ()
 testInviteMemberViaGroupPrevVersion ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatCfg ps testCfgVPrev "bob" bobProfile $ \bob -> do
+    withNewTestChatCfg ps beforeGroupInvCfg "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
       createClub alice
       GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
       alice ##> ("/_add #2 #1 " <> show bobId <> " member")
       alice <## "peer chat protocol version range incompatible"
+  where
+    beforeGroupInvCfg = testCfg {chatVRange = (chatVRange testCfg) {maxVersion = prevVersion groupInvVersion}}
 
 createClub :: HasCallStack => TestCC -> IO ()
 createClub cc = do

@@ -382,6 +382,11 @@ contactOrMemberIncognito = \case
   COMContact ct -> contactConnIncognito ct
   COMGroupMember m -> memberIncognito m
 
+contactOrMemberConn :: ContactOrMember -> Maybe Connection
+contactOrMemberConn = \case
+  COMContact ct -> contactConn ct
+  COMGroupMember m -> memberConn m
+
 data UserContact = UserContact
   { userContactLinkId :: Int64,
     connReqContact :: ConnReqContact,
@@ -1397,6 +1402,12 @@ instance FromJSON ProbeHash where
 instance ToJSON ProbeHash where
   toJSON = strToJSON
   toEncoding = strToJEncoding
+
+connProbeHash :: ByteString -> Probe -> ProbeHash
+connProbeHash connCode (Probe probe) = ProbeHash $ C.sha256Hash $ connCode <> probe
+
+connProbeCheckHash :: ByteString -> ProbeHash -> ProbeHash
+connProbeCheckHash connCode (ProbeHash probeHash) = ProbeHash $ C.sha256Hash $ connCode <> probeHash
 
 data GroupMemberCategory
   = GCUserMember
