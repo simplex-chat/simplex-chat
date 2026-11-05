@@ -96,6 +96,7 @@ class OnlineSearchModel {
     if (cursor != null) {
       loadMore()
     } else if (!loading && searchedText.isNotEmpty()) {
+      searched = false
       request(append = false)
     }
   }

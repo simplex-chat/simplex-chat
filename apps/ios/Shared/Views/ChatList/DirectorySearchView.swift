@@ -72,6 +72,7 @@ class OnlineSearchModel: ObservableObject {
         if cursor != nil {
             await loadMore()
         } else if !loading && !searchedText.isEmpty {
+            searched = false
             await request(append: false)
         }
     }
