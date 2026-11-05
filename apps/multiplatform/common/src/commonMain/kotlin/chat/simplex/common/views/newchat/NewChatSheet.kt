@@ -354,8 +354,7 @@ private fun ModalData.NewChatSheetLayout(
               close = close,
               onSearch = ::runDirectorySearch,
             )
-            val candidate = connectNameCandidate.value
-            if (candidate != null) {
+            connectNameCandidate.value?.let { candidate ->
               Divider()
               ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
             }
@@ -452,8 +451,7 @@ private fun ModalData.NewChatSheetLayout(
             close = close,
             onSearch = ::runDirectorySearch,
           )
-          val candidate = connectNameCandidate.value
-          if (candidate != null) {
+          connectNameCandidate.value?.let { candidate ->
             Divider()
             ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
           }
