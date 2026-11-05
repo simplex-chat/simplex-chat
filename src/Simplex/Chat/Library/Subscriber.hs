@@ -3943,15 +3943,16 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               mCt <- withStore $ \db -> getContact db cxt user mContactId
               let Contact {activeConn, contactGrpInvSent} = mCt
               forM_ activeConn $ \Connection {connId} ->
-                if contactGrpInvSent
-                  then do
-                    ownConnReq <- withStore $ \db -> getConnReqInv db connId
-                    -- in case both members sent x.grp.direct.inv before receiving other's for processing,
-                    -- only the one who received greater connReq joins, the other creates items and waits for confirmation
-                    if strEncode connReq > strEncode ownConnReq
-                      then joinExistingContact subMode mCt
-                      else createItems mCt m
-                  else joinExistingContact subMode mCt
+                if
+                  | not (contactUpdatableFromMember mCt) -> messageError "x.grp.direct.inv: member contact already connected"
+                  | contactGrpInvSent -> do
+                      ownConnReq <- withStore $ \db -> getConnReqInv db connId
+                      -- in case both members sent x.grp.direct.inv before receiving other's for processing,
+                      -- only the one who received greater connReq joins, the other creates items and waits for confirmation
+                      if strEncode connReq > strEncode ownConnReq
+                        then joinExistingContact subMode mCt
+                        else createItems mCt m
+                  | otherwise -> joinExistingContact subMode mCt
       where
         groupDirectInv =
           GroupDirectInvitation

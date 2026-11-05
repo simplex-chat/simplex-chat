@@ -183,6 +183,7 @@ chatGroupTests = do
     it "prohibited to create contact with group member if it already exists" testMemberContactProhibitedContactExists
     it "prohibited to repeat sending x.grp.direct.inv" testMemberContactProhibitedRepeatInv
     it "invited member replaces member contact reference if it already exists" testMemberContactInvitedConnectionReplaced
+    it "invited member does not replace a ready contact connection" testMemberContactInvitedReadyConnectionKept
     it "share incognito profile" testMemberContactIncognito
     it "sends and updates profile when creating contact" testMemberContactProfileUpdate
     it "re-create member contact after deletion, many groups" testRecreateMemberContactManyGroups
@@ -5193,6 +5194,39 @@ testMemberContactInvitedConnectionReplaced ps = do
       alice <##> bob
       alice @@@ [("@bob", "hey"), ("@cath", "sent invitation to join group team as admin"), ("#team", "connected")]
       bob @@@ [("@alice", "hey"), ("#team", "started direct connection with you")]
+
+testMemberContactInvitedReadyConnectionKept :: HasCallStack => TestParams -> IO ()
+testMemberContactInvitedReadyConnectionKept =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      bob ##> "/c"
+      inv <- getInvitation bob
+      cath ##> ("/c " <> inv)
+      cath <## "confirmation sent!"
+      concurrentlyN_
+        [ bob
+            <### [ "cath_1 (Catherine): contact is connected",
+                   "contact and member are merged: cath_1, #team cath",
+                   "use @cath <message> to send messages"
+                 ],
+          cath
+            <### [ "bob_1 (Bob): contact is connected",
+                   "contact and member are merged: bob_1, #team bob",
+                   "use @bob <message> to send messages"
+                 ]
+        ]
+      bob <##> cath
+      GroupMember {memberContactId} <- getTestMember bob "team" "cath"
+      memberContactId `shouldSatisfy` isJust
+      cath ##> "/c"
+      connReqStr <- getInvitation cath
+      let connReq = either error id $ strDecode (B.pack connReqStr) :: ConnReqInvitation
+      GroupMember {groupId, activeConn = Just conn} <- getTestMember cath "team" "bob"
+      runExceptT (sendDirectMemberMessage conn (XGrpDirectInv connReq Nothing Nothing) groupId) `runReaderT` chatController cath
+        >>= either (fail . show) (\_ -> pure ())
+      bob <## "error: x.grp.direct.inv: member contact already connected"
+      bob <##> cath
 
 testMemberContactIncognito :: HasCallStack => TestParams -> IO ()
 testMemberContactIncognito =
