@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chatlist
 
 import SectionItemView
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -202,10 +203,33 @@ fun SearchInDirectoryRow(onSearch: () -> Unit) {
 
 @Composable
 fun DirectorySearchRow(entry: DirectorySearchEntry, imageSize: Dp, state: DirectoryResultState, modifier: Modifier = Modifier) {
-  val displayName = "#" + entry.displayName
-  val isChannel = entry.entryType.groupType == GroupType.Channel
+  DirectorySearchRowLayout(
+    entryType = entry.entryType,
+    name = entry.displayName,
+    simplexName = entry.simplexName,
+    shortDescr = entry.shortDescr,
+    image = entry.image,
+    imageSize = imageSize,
+    state = state,
+    modifier = modifier
+  )
+}
+
+@Composable
+private fun DirectorySearchRowLayout(
+  entryType: DirectoryEntryType,
+  name: String,
+  simplexName: String?,
+  shortDescr: String?,
+  image: String?,
+  imageSize: Dp,
+  state: DirectoryResultState,
+  modifier: Modifier = Modifier
+) {
+  val displayName = "#" + name
+  val isChannel = entryType.groupType == GroupType.Channel
   val joining = state == DirectoryResultState.Joining
-  val summary = entry.entryType.summary
+  val summary = entryType.summary
   val count = summary.publicMemberCount ?: summary.currentMembers
   val membersText = if (isChannel) subscriberCountStr(count) else String.format(generalGetString(MR.strings.directory_search_n_members), count)
   Row(
@@ -215,13 +239,12 @@ fun DirectorySearchRow(entry: DirectorySearchEntry, imageSize: Dp, state: Direct
   ) {
     ProfileImage(
       size = imageSize,
-      image = entry.image,
+      image = image,
       icon = if (isChannel) MR.images.ic_bigtop_updates_circle_filled else MR.images.ic_supervised_user_circle_filled
     )
     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
       Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(displayName, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        val simplexName = entry.simplexName
         if (simplexName != null) {
           // the directory's claim, shown as plain text: connecting uses the link
           Text(
@@ -233,9 +256,8 @@ fun DirectorySearchRow(entry: DirectorySearchEntry, imageSize: Dp, state: Direct
           )
         }
       }
-      val descr = entry.shortDescr
-      if (descr != null && descr.isNotEmpty()) {
-        Text(descr, color = MaterialTheme.colors.secondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+      if (shortDescr != null && shortDescr.isNotEmpty()) {
+        Text(shortDescr, color = MaterialTheme.colors.secondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
       }
       Text(
         if (joining) stringResource(MR.strings.directory_search_already_joining) else membersText,
@@ -256,13 +278,19 @@ fun DirectorySearchRow(entry: DirectorySearchEntry, imageSize: Dp, state: Direct
 
 @Composable
 fun DirectoryLoadMoreRow(onlineSearch: OnlineSearchModel) {
-  val moreCount = onlineSearch.moreCount
-  val color = if (onlineSearch.loading) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+  DirectoryLoadMoreRowLayout(moreCount = onlineSearch.moreCount, loading = onlineSearch.loading) {
+    confirmDirectorySearch { withApi { onlineSearch.loadMore() } }
+  }
+}
+
+@Composable
+private fun DirectoryLoadMoreRowLayout(moreCount: Int?, loading: Boolean, onLoadMore: () -> Unit) {
+  val color = if (loading) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
   Row(
     Modifier
       .fillMaxWidth()
-      .clickable(enabled = !onlineSearch.loading) {
-        confirmDirectorySearch { withApi { onlineSearch.loadMore() } }
+      .clickable(enabled = !loading) {
+        onLoadMore()
       }
       .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
     verticalAlignment = Alignment.CenterVertically
@@ -278,11 +306,18 @@ fun DirectoryLoadMoreRow(onlineSearch: OnlineSearchModel) {
 
 @Composable
 fun DirectoryRetryRow(onlineSearch: OnlineSearchModel) {
+  DirectoryRetryRowLayout {
+    confirmDirectorySearch { withApi { onlineSearch.retry() } }
+  }
+}
+
+@Composable
+private fun DirectoryRetryRowLayout(onRetry: () -> Unit) {
   Row(
     Modifier
       .fillMaxWidth()
       .clickable {
-        confirmDirectorySearch { withApi { onlineSearch.retry() } }
+        onRetry()
       }
       .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
     verticalAlignment = Alignment.CenterVertically
@@ -353,4 +388,56 @@ private fun showDirectorySearchAlert(onSearch: () -> Unit) {
       }
     }
   )
+}
+
+private const val DIRECTORY_PREVIEW_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAT0lEQVR42u3V0QkAIAhFURdqxJZsodsCRUUqRO/i//kIzUptoWMC3gaAEIBRbgDzHABWXQHs9S3ASXqDKCB8DzI2OeMWZVxT/WgCBAjwng4ufNBwaLZEbgAAAABJRU5ErkJggg=="
+
+@Composable
+private fun PreviewDirectoryResult(
+  name: String,
+  entryType: DirectoryEntryType = DirectoryEntryType(summary = GroupSummary(currentMembers = 128)),
+  simplexName: String? = null,
+  shortDescr: String? = "Private chats",
+  image: String? = null,
+  state: DirectoryResultState = DirectoryResultState.Open
+) {
+  DirectorySearchRowLayout(
+    entryType = entryType,
+    name = name,
+    simplexName = simplexName,
+    shortDescr = shortDescr,
+    image = image,
+    imageSize = 72.dp,
+    state = state,
+    modifier = Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)
+  )
+}
+
+@Preview
+@Composable
+fun PreviewDirectorySearchRows() {
+  SimpleXTheme {
+    Column {
+      PreviewDirectoryResult("Privacy")
+      PreviewDirectoryResult(
+        "SimpleX news",
+        entryType = DirectoryEntryType(groupType = GroupType.Channel, summary = GroupSummary(currentMembers = 3, publicMemberCount = 2048)),
+        shortDescr = "News about the app",
+        image = DIRECTORY_PREVIEW_IMAGE
+      )
+      PreviewDirectoryResult("a")
+      PreviewDirectoryResult(
+        "The longest channel name that anyone could give to a group about private messaging",
+        simplexName = "#private-messaging.simplex.chat",
+        shortDescr = "Private messaging without user IDs: news, releases and help with servers, notifications and groups, with answers that never fit in the two lines of a row."
+      )
+      PreviewDirectoryResult("No description", shortDescr = null)
+      PreviewDirectoryResult("Joining", state = DirectoryResultState.Joining)
+      SearchInDirectoryRow(onSearch = {})
+      DirectoryLoadMoreRowLayout(moreCount = 12, loading = false, onLoadMore = {})
+      DirectoryLoadMoreRowLayout(moreCount = null, loading = false, onLoadMore = {})
+      DirectoryLoadMoreRowLayout(moreCount = 12, loading = true, onLoadMore = {})
+      DirectoryRetryRowLayout(onRetry = {})
+    }
+  }
 }

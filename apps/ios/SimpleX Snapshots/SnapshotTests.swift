@@ -255,6 +255,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(DeletedItemView_Previews.self, allSizes: true),
         SnapshotScene(DetermineWidth_Previews.self),
         SnapshotScene(DeveloperView_Previews.self),
+        SnapshotScene(DirectorySearchView_Previews.self),
         SnapshotScene(EmojiItemView_Previews.self, allSizes: true),
         SnapshotScene(FramedCIVoiceView_Previews.self, allSizes: true),
         SnapshotScene(FramedItemView_Deleted_Previews.self, allSizes: true),

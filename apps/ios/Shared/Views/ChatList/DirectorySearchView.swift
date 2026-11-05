@@ -183,30 +183,54 @@ struct SearchInDirectoryRow: View {
 }
 
 struct DirectorySearchRow: View {
-    @EnvironmentObject var theme: AppTheme
     var entry: DirectorySearchEntry
     var imageSize: CGFloat
     var state: DirectoryResultState
     var showsOpen = true
 
     var body: some View {
+        DirectorySearchRowLayout(
+            entryType: entry.entryType,
+            name: entry.displayName,
+            simplexName: entry.simplexName,
+            shortDescr: entry.shortDescr,
+            image: entry.image,
+            imageSize: imageSize,
+            state: state,
+            showsOpen: showsOpen
+        )
+    }
+}
+
+private struct DirectorySearchRowLayout: View {
+    @EnvironmentObject var theme: AppTheme
+    var entryType: DirectoryEntryType
+    var name: String
+    var simplexName: String?
+    var shortDescr: String?
+    var image: String?
+    var imageSize: CGFloat
+    var state: DirectoryResultState
+    var showsOpen: Bool
+
+    var body: some View {
         HStack(spacing: 8) {
             ProfileImage(
-                imageStr: entry.image,
+                imageStr: image,
                 icon: Image(systemName: isChannel ? "antenna.radiowaves.left.and.right.circle.fill" : "person.2.circle.fill"),
                 size: imageSize
             )
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
                     Text(displayName).fontWeight(.bold).lineLimit(1)
-                    if let simplexName = entry.simplexName {
+                    if let simplexName {
                         // the directory's claim, shown as plain text: connecting uses the link
                         Text(simplexName)
                             .foregroundColor(theme.colors.secondary)
                             .lineLimit(1)
                     }
                 }
-                if let descr = entry.shortDescr, !descr.isEmpty {
+                if let descr = shortDescr, !descr.isEmpty {
                     Text(descr)
                         .foregroundColor(theme.colors.secondary)
                         .lineLimit(2)
@@ -227,16 +251,16 @@ struct DirectorySearchRow: View {
         .contentShape(Rectangle())
     }
 
-    private var displayName: String { "#" + entry.displayName }
+    private var displayName: String { "#" + name }
 
-    private var isChannel: Bool { entry.entryType.groupType == .channel }
+    private var isChannel: Bool { entryType.groupType == .channel }
 
     private var joining: Bool {
         if case .joining = state { true } else { false }
     }
 
     private var membersText: String {
-        let summary = entry.entryType.summary
+        let summary = entryType.summary
         let count = summary.publicMemberCount ?? summary.currentMembers
         return isChannel
             ? subscriberCountStr(count)
@@ -245,24 +269,36 @@ struct DirectorySearchRow: View {
 }
 
 struct DirectoryLoadMoreRow: View {
-    @EnvironmentObject var theme: AppTheme
     @ObservedObject var onlineSearch: OnlineSearchModel
 
     var body: some View {
-        Button {
+        DirectoryLoadMoreRowLayout(moreCount: onlineSearch.moreCount, loading: onlineSearch.loading) {
             confirmDirectorySearch { Task { await onlineSearch.loadMore() } }
+        }
+    }
+}
+
+private struct DirectoryLoadMoreRowLayout: View {
+    @EnvironmentObject var theme: AppTheme
+    var moreCount: Int?
+    var loading: Bool
+    var onLoadMore: () -> Void
+
+    var body: some View {
+        Button {
+            onLoadMore()
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: "plus.magnifyingglass")
                 Text(loadMoreText)
             }
-            .foregroundColor(onlineSearch.loading ? theme.colors.secondary : theme.colors.primary)
+            .foregroundColor(loading ? theme.colors.secondary : theme.colors.primary)
         }
-        .disabled(onlineSearch.loading)
+        .disabled(loading)
     }
 
     private var loadMoreText: String {
-        if let n = onlineSearch.moreCount, n > 0 {
+        if let n = moreCount, n > 0 {
             String.localizedStringWithFormat(NSLocalizedString("Load more · %d left", comment: "directory search results"), n)
         } else {
             NSLocalizedString("Load more", comment: "directory search results")
@@ -271,12 +307,22 @@ struct DirectoryLoadMoreRow: View {
 }
 
 struct DirectoryRetryRow: View {
-    @EnvironmentObject var theme: AppTheme
     var onlineSearch: OnlineSearchModel
 
     var body: some View {
-        Button {
+        DirectoryRetryRowLayout {
             confirmDirectorySearch { Task { await onlineSearch.retry() } }
+        }
+    }
+}
+
+private struct DirectoryRetryRowLayout: View {
+    @EnvironmentObject var theme: AppTheme
+    var onRetry: () -> Void
+
+    var body: some View {
+        Button {
+            onRetry()
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: "arrow.clockwise")
@@ -342,4 +388,68 @@ private func showDirectorySearchAlert(onSearch: @escaping () -> Void) {
             )
         ]}
     )
+}
+
+private let DIRECTORY_PREVIEW_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAT0lEQVR42u3V0QkAIAhFURdqxJZsodsCRUUqRO/i//kIzUptoWMC3gaAEIBRbgDzHABWXQHs9S3ASXqDKCB8DzI2OeMWZVxT/WgCBAjwng4ufNBwaLZEbgAAAABJRU5ErkJggg=="
+
+private struct DirectorySearchRowsPreview: View {
+    @FocusState private var searchFocussed: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            results
+            SearchInDirectoryRow(searchFocussed: $searchFocussed, onSearch: {})
+            DirectoryLoadMoreRowLayout(moreCount: 12, loading: false, onLoadMore: {})
+            DirectoryLoadMoreRowLayout(moreCount: nil, loading: false, onLoadMore: {})
+            DirectoryLoadMoreRowLayout(moreCount: 12, loading: true, onLoadMore: {})
+            DirectoryRetryRowLayout(onRetry: {})
+        }
+        .padding()
+    }
+
+    @ViewBuilder private var results: some View {
+        result("Privacy")
+        result(
+            "SimpleX news",
+            entryType: DirectoryEntryType(groupType: .channel, summary: GroupSummary(currentMembers: 3, publicMemberCount: 2048)),
+            shortDescr: "News about the app",
+            image: DIRECTORY_PREVIEW_IMAGE
+        )
+        result("a")
+        result(
+            "The longest channel name that anyone could give to a group about private messaging",
+            simplexName: "#private-messaging.simplex.chat",
+            shortDescr: "Private messaging without user IDs: news, releases and help with servers, notifications and groups, with answers that never fit in the two lines of a row."
+        )
+        result("No description", shortDescr: nil)
+        result("Joining", state: .joining)
+        result("Long press", showsOpen: false)
+    }
+
+    private func result(
+        _ name: String,
+        entryType: DirectoryEntryType = DirectoryEntryType(summary: GroupSummary(currentMembers: 128)),
+        simplexName: String? = nil,
+        shortDescr: String? = "Private chats",
+        image: String? = nil,
+        state: DirectoryResultState = .open,
+        showsOpen: Bool = true
+    ) -> some View {
+        DirectorySearchRowLayout(
+            entryType: entryType,
+            name: name,
+            simplexName: simplexName,
+            shortDescr: shortDescr,
+            image: image,
+            imageSize: 63,
+            state: state,
+            showsOpen: showsOpen
+        )
+    }
+}
+
+struct DirectorySearchView_Previews: PreviewProvider {
+    static var previews: some View {
+        DirectorySearchRowsPreview()
+    }
 }
