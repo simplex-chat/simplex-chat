@@ -152,6 +152,7 @@ The `filteredChats` function (line ~1474) applies filters in this order:
 - Text input with search icon.
 - SimpleX link detection: When a pasted string contains a single SimpleX link, it triggers `planAndConnect` for connection, suppressing normal search.
 - Unread filter toggle button (right side, when search is empty).
+- Switching profile clears the search text.
 
 ---
 
