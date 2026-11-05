@@ -1,0 +1,410 @@
+import {writeSync} from "fs"
+import {Server, ServerResponse} from "http"
+import {CallToolResult} from "@modelcontextprotocol/server"
+import {T} from "@simplex-chat/types"
+import {Action, Actions, Mode, stoppingMessage} from "./actions"
+import {openSessionAgent, sessionName} from "./agent"
+import {Config, defaultConfig, readConfig} from "./config"
+import {SessionView, Sessions} from "./control"
+import {LockedError, acquireLock, createDataFolder, dataRoot, readSessionFile, releaseLock, serverToken, sessionFolder, sessionNumbers, socketPath, writeSessionFile} from "./files"
+import {Hub, Perform} from "./hub"
+import {ExitError, errorText, log, logError} from "./log"
+import {ToolCall} from "./messages"
+import {AttachRequest, CallRequest, OwnerState, SessionReply, SessionRequest, StatusReply, TitleReply, TitleRequest, protocolVersion} from "./protocol"
+import {Handler, SocketError, listen, sendJson, startLines} from "./socket"
+import {ToolName} from "./tools"
+import {version} from "./version"
+
+const idleClose = 10 * 60_000
+const idleStop = 10 * 60_000
+const maxTitles = 100
+const firstFreeFd = 3
+
+export interface HubLike {
+  readonly mainGroup: string
+  readonly actions: Actions
+  owner(): OwnerState
+  configure(config: Config): Promise<void>
+  resetOwners(): Promise<string>
+  standingApprover(chatInfo: T.ChatInfo, mode: Mode): string | undefined
+  stop(): Promise<number>
+}
+
+export interface AgentLike extends SessionView {
+  rename(name: string): Promise<void>
+  close(): Promise<void>
+  call(tool: ToolName, input: unknown, call: ToolCall): Promise<CallToolResult | undefined>
+  perform(action: Action, signal: AbortSignal): Promise<void>
+}
+
+export interface OpenSessionOptions {
+  folder: string
+  number: number
+  name: string
+  mode: () => Mode
+  hub: HubLike
+}
+
+export interface DaemonDeps {
+  root: string
+  token: string
+  version: string
+  openHub(config: Config, sessions: Sessions, perform: Perform): Promise<HubLike>
+  openSession(options: OpenSessionOptions): Promise<AgentLike>
+  onStopped(code: number): void
+}
+
+interface Entry {
+  opening: Promise<AgentLike>
+  agent?: AgentLike
+  mode: Mode
+  attached: number
+  calls: number
+  idle?: NodeJS.Timeout
+}
+
+export class Daemon {
+  private readonly entries = new Map<string, Entry>()
+  private readonly closing = new Map<string, Promise<void>>()
+  private readonly streams = new Set<ServerResponse>()
+  private readonly titles = new Map<string, string>()
+  private nextNumber: number
+  private stopTimer?: NodeJS.Timeout
+  private stopping?: Promise<void>
+  private hub!: HubLike
+  private hubReady!: Promise<HubLike>
+  private server!: Server
+
+  private constructor(private readonly deps: DaemonDeps) {
+    this.nextNumber = Math.max(0, ...sessionNumbers(deps.root)) + 1
+  }
+
+  static async start(deps: DaemonDeps, config: () => Config): Promise<Daemon> {
+    acquireLock(deps.root)
+    try {
+      const daemon = new Daemon(deps)
+      // listen before the hub opens: a starter that lost the lock race sends /status right after "running"
+      daemon.server = await listen(socketPath(deps.root), deps.token, daemon.routes())
+      daemon.hubReady = daemon.openHub(config)
+      try {
+        await daemon.hubReady
+      } catch (error) {
+        await daemon.closeListener()
+        throw error
+      }
+      daemon.scheduleStop()
+      return daemon
+    } catch (error) {
+      releaseLock(deps.root)
+      throw error
+    }
+  }
+
+  stop(reply?: ServerResponse): Promise<void> {
+    this.stopping ??= this.shutdown(reply)
+    return this.stopping
+  }
+
+  private async openHub(config: () => Config): Promise<HubLike> {
+    this.hub = await this.deps.openHub(config(), this.sessions(), (action, signal) => this.perform(action, signal))
+    return this.hub
+  }
+
+  private closeListener(): Promise<void> {
+    const closed = new Promise<void>(resolve => this.server.close(() => resolve()))
+    this.server.closeIdleConnections()
+    return closed
+  }
+
+  private routes(): {[route: string]: Handler} {
+    return {
+      "POST /session": this.expiring(async (body, res) => sendJson(res, 200, await this.onSession(body as SessionRequest))),
+      "POST /title": this.expiring(async (body, res) => sendJson(res, 200, await this.onTitle(body as TitleRequest))),
+      "POST /attach": this.expiring((body, res) => this.onAttach(body as AttachRequest, res)),
+      "POST /call": this.expiring((body, res) => this.onCall(body as CallRequest, res)),
+      "GET /status": this.expiring(async (_body, res) => sendJson(res, 200, this.status())),
+      "POST /reset-owners": this.withHub(async (_body, res) => sendJson(res, 200, {link: await this.hub.resetOwners()})),
+      "POST /stop": this.withHub(async (_body, res) => {
+        await this.stop(res)
+        sendJson(res, 200, {})
+      }),
+    }
+  }
+
+  private withHub(handler: Handler): Handler {
+    return async (body, res, req) => {
+      await this.hubReady
+      return handler(body, res, req)
+    }
+  }
+
+  private expiring(handler: Handler): Handler {
+    return this.withHub((body, res, req) => {
+      this.hub.actions.expireDue()
+      return handler(body, res, req)
+    })
+  }
+
+  private async shutdown(reply: ServerResponse | undefined): Promise<void> {
+    clearTimeout(this.stopTimer)
+    for (const entry of this.entries.values()) clearTimeout(entry.idle)
+    const closed = new Promise<void>(resolve => this.server.close(() => resolve()))
+    for (const res of this.streams) res.destroy()
+    this.server.closeIdleConnections()
+    const cancelled = await this.hub.stop().catch(error => {
+      logError("stop", error)
+      return 0
+    })
+    if (cancelled > 0) log(`Cancelled ${cancelled} action${cancelled === 1 ? "" : "s"}.`)
+    const agents = await Promise.all([...this.entries.values()].map(({opening}) => opening.catch(() => undefined)))
+    this.entries.clear()
+    for (const agent of agents) await agent?.close().catch(error => logError("close session", error))
+    await Promise.all(this.closing.values())
+    releaseLock(this.deps.root)
+    log("Stopped.")
+    const stopped = (): void => {
+      this.server.closeAllConnections()
+      closed.then(() => this.deps.onStopped(0))
+    }
+    // the /stop reply is sent after this promise resolves; "close" also fires when the client leaves before it is written
+    if (reply === undefined || reply.destroyed) stopped()
+    else reply.once("close", stopped)
+  }
+
+  private agents(): AgentLike[] {
+    return [...this.entries.values()].flatMap(({agent}) => (agent === undefined ? [] : [agent]))
+  }
+
+  private agent(number: number): AgentLike | undefined {
+    return this.agents().find(agent => agent.number === number)
+  }
+
+  private sessions(): Sessions {
+    return {get: number => this.agent(number), open: () => this.agents()}
+  }
+
+  private perform(action: Action, signal: AbortSignal): Promise<void> {
+    const agent = this.agent(action.session)
+    if (agent === undefined) return Promise.reject(new Error(`Session ${action.session} is closed.`))
+    return agent.perform(action, signal)
+  }
+
+  private async onSession(request: SessionRequest): Promise<SessionReply> {
+    const entry = this.entry(request.id, request)
+    entry.mode = request.config.approve
+    const agent = await entry.opening
+    if (entry.attached === 0) this.scheduleIdle(request.id, entry)
+    await this.hub.configure(request.config)
+    return {number: agent.number, displayName: agent.displayName, version: this.deps.version, protocol: protocolVersion, owner: this.hub.owner()}
+  }
+
+  private async onTitle({id, name, config}: TitleRequest): Promise<TitleReply> {
+    this.refuseWhenStopping()
+    const folder = this.folder(id)
+    await this.hub.configure(config)
+    const title = name?.trim()
+    if (title) await this.applyTitle(id, folder, title)
+    return {mainGroup: this.hub.mainGroup, owner: this.hub.owner(), version: this.deps.version, protocol: protocolVersion}
+  }
+
+  private async applyTitle(id: string, folder: string, title: string): Promise<void> {
+    const entry = this.entries.get(id)
+    if (entry !== undefined) return this.rename(folder, await entry.opening, title)
+    const stored = readSessionFile(folder)
+    if (stored === undefined) this.rememberTitle(id, title)
+    else if (title !== stored.name) writeSessionFile(folder, {...stored, name: title})
+  }
+
+  private async rename(folder: string, agent: AgentLike, name: string): Promise<void> {
+    const stored = readSessionFile(folder)!
+    if (name === stored.name) return
+    await agent.rename(name)
+    writeSessionFile(folder, {...stored, name})
+  }
+
+  private rememberTitle(id: string, name: string): void {
+    const key = id.toLowerCase()
+    this.titles.delete(key)
+    this.titles.set(key, name)
+    if (this.titles.size > maxTitles) this.titles.delete(this.titles.keys().next().value!)
+  }
+
+  private takeTitle(id: string): string | undefined {
+    const key = id.toLowerCase()
+    const title = this.titles.get(key)
+    this.titles.delete(key)
+    return title
+  }
+
+  private async onAttach({id}: AttachRequest, res: ServerResponse): Promise<void> {
+    const entry = this.entry(id)
+    await entry.opening
+    if (!this.hold(res)) return
+    entry.attached++
+    clearTimeout(entry.idle)
+    startLines(res)({version: this.deps.version, protocol: protocolVersion})
+    res.once("close", () => {
+      entry.attached--
+      if (entry.attached === 0) this.scheduleIdle(id, entry)
+    })
+  }
+
+  private async onCall({id, tool, input}: CallRequest, res: ServerResponse): Promise<void> {
+    const entry = this.entry(id)
+    const agent = await entry.opening
+    if (!this.hold(res)) return
+    const controller = new AbortController()
+    res.once("close", () => {
+      if (!res.writableFinished) controller.abort()
+    })
+    const write = startLines(res)
+    entry.calls++
+    try {
+      const result = await agent.call(tool, input, {signal: controller.signal, progress: progress => write({progress})})
+      if (!controller.signal.aborted) res.end(`${JSON.stringify({result: result ?? null})}\n`)
+    } finally {
+      entry.calls--
+      if (entry.attached === 0 && entry.calls === 0) this.scheduleIdle(id, entry)
+    }
+  }
+
+  private hold(res: ServerResponse): boolean {
+    if (this.stopping !== undefined || res.destroyed) {
+      res.destroy()
+      return false
+    }
+    this.streams.add(res)
+    res.once("close", () => this.streams.delete(res))
+    return true
+  }
+
+  // the stop timer runs only while no entries exist, so a new entry cancels it
+  private entry(id: string, request?: SessionRequest): Entry {
+    this.refuseWhenStopping()
+    const folder = this.folder(id)
+    const existing = this.entries.get(id)
+    if (existing !== undefined) return existing
+    clearTimeout(this.stopTimer)
+    const entry: Entry = {attached: 0, calls: 0, mode: defaultConfig.approve, opening: this.openAgent(id, folder, request, () => entry.mode)}
+    this.entries.set(id, entry)
+    this.scheduleIdle(id, entry)
+    entry.opening.then(
+      agent => {
+        entry.agent = agent
+      },
+      () => {
+        clearTimeout(entry.idle)
+        this.entries.delete(id)
+        if (this.entries.size === 0) this.scheduleStop()
+      },
+    )
+    return entry
+  }
+
+  private refuseWhenStopping(): void {
+    if (this.stopping !== undefined) throw new SocketError(stoppingMessage, 503)
+  }
+
+  private folder(id: string): string {
+    try {
+      return sessionFolder(this.deps.root, id)
+    } catch (error) {
+      throw error instanceof ExitError ? new SocketError(error.message, 400) : error
+    }
+  }
+
+  private async openAgent(id: string, folder: string, request: SessionRequest | undefined, mode: () => Mode): Promise<AgentLike> {
+    await this.closing.get(id)
+    let stored = readSessionFile(folder)
+    if (stored === undefined) {
+      if (request === undefined) throw new SocketError("Unknown session; restart the Claude Code session.", 409)
+      const title = this.takeTitle(id)
+      createDataFolder(folder)
+      stored = {number: this.nextNumber++, name: sessionName(title, request.project), project: request.project, created: new Date().toISOString()}
+      writeSessionFile(folder, stored)
+    }
+    return this.deps.openSession({folder, number: stored.number, name: stored.name, mode, hub: this.hub})
+  }
+
+  private scheduleIdle(id: string, entry: Entry): void {
+    clearTimeout(entry.idle)
+    if (this.stopping !== undefined) return
+    entry.idle = setTimeout(() => {
+      const {agent} = entry
+      if (agent === undefined || entry.calls > 0 || this.hub.actions.ofSession(agent.number).length > 0) return this.scheduleIdle(id, entry)
+      this.entries.delete(id)
+      this.closeAgent(id, agent)
+      if (this.entries.size === 0) this.scheduleStop()
+    }, idleClose)
+  }
+
+  private closeAgent(id: string, agent: AgentLike): void {
+    const closed = agent
+      .close()
+      .catch(error => logError("close session", error))
+      .finally(() => this.closing.delete(id))
+    this.closing.set(id, closed)
+  }
+
+  private scheduleStop(): void {
+    clearTimeout(this.stopTimer)
+    if (this.stopping !== undefined) return
+    this.stopTimer = setTimeout(() => {
+      this.stop().catch(error => logError("stop", error))
+    }, idleStop)
+  }
+
+  private status(): StatusReply {
+    const sessions = [...this.entries.values()].flatMap(({agent, attached}) => (agent === undefined ? [] : [{number: agent.number, name: agent.displayName, attached}]))
+    return {version: this.deps.version, protocol: protocolVersion, mainGroup: this.hub.mainGroup, owner: this.hub.owner(), sessions}
+  }
+}
+
+export async function runDaemon(env: NodeJS.ProcessEnv = process.env): Promise<void> {
+  const ready = readyChannel(env)
+  const root = dataRoot(env)
+  let daemon: Daemon
+  try {
+    createDataFolder(root)
+    daemon = await Daemon.start(productionDeps(root), () => readConfig(env))
+  } catch (error) {
+    if (error instanceof LockedError) return ready("running")
+    ready(`error: ${errorText(error)}`)
+    process.exit(1)
+  }
+  log(`SimpleX MCP daemon ${version}, data folder ${root}`)
+  ready("ready")
+  const stop = (): void => {
+    daemon.stop().catch(error => {
+      logError("stop", error)
+      process.exit(1)
+    })
+  }
+  process.on("SIGINT", stop)
+  process.on("SIGTERM", stop)
+}
+
+export function productionDeps(root: string): DaemonDeps {
+  return {
+    root,
+    token: serverToken(root),
+    version,
+    openHub: (config, sessions, perform) => Hub.open(root, config, sessions, perform),
+    openSession: async ({folder, number, name, mode, hub}) => {
+      const agent = await openSessionAgent({folder, number, name, mode, actions: hub.actions, standingApprover: (chatInfo, approve) => hub.standingApprover(chatInfo, approve)})
+      return Object.assign(agent, {
+        call: (tool: ToolName, input: unknown, call: ToolCall) => agent.tools.call(tool, input, call),
+        perform: (action: Action, signal: AbortSignal) => agent.tools.perform(action, signal),
+      })
+    },
+    onStopped: code => process.exit(code),
+  }
+}
+
+function readyChannel(env: NodeJS.ProcessEnv): (line: string) => void {
+  const fd = Number(env.SIMPLEX_MCP_READY_FD)
+  return line => {
+    if (Number.isInteger(fd) && fd >= firstFreeFd) writeSync(fd, `${line}\n`)
+    else process.stdout.write(`${line}\n`)
+  }
+}

@@ -1,13 +1,18 @@
 {
   "name": "@simplex-chat/mcp",
-  "version": "0.1.1",
-  "description": "MCP server that gives an AI agent its own SimpleX profile",
+  "version": "0.2.0",
+  "description": "Claude Code plugin: each session chats on SimpleX with its own profile, approved in your app",
   "bin": {
     "simplex-mcp": "dist/cli.js"
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    ".claude-plugin",
+    ".mcp.json",
+    "hooks",
+    "plugin",
+    "skills"
   ],
   "engines": {
     "node": ">=22"
@@ -19,10 +24,9 @@
     "build": "tsc",
     "prepack": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
     "test": "jest test/unit",
-    "test:e2e": "jest test/e2e"
+    "test:e2e": "tsc && jest test/e2e"
   },
   "dependencies": {
-    "@modelcontextprotocol/node": "^2.1.1",
     "@modelcontextprotocol/server": "^2.3.1",
     "@simplex-chat/types": "^7.1.0-beta.6.2",
     "qrcode": "^1.5",
@@ -43,6 +47,8 @@
   "keywords": [
     "simplex",
     "mcp",
+    "claude-code",
+    "plugin",
     "agent",
     "privacy"
   ],

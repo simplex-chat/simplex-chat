@@ -15,29 +15,24 @@ With this package, Claude Code can join channels and groups, talk to bots, and e
 
 You need Node.js 22 or later, Claude Code and the [SimpleX Chat app](https://simplex.chat/downloads/).
 
-1. Start your agent and keep it running:
+1. In Claude Code, add the plugin:
 
    ```
-   npx -y @simplex-chat/mcp serve my-agent --display-name "My Agent"
+   /plugin marketplace add https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/.claude-plugin/marketplace.json
+   /plugin install simplex@simplex-chat
    ```
 
-   Scan the QR code it prints with the SimpleX app, and tap Join. The chat "My Agent" appears: your agent asks there before it acts.
+2. Start a new session. Scan the QR code it shows with the SimpleX app and tap Join. The group "SimpleX MCP" appears: your sessions ask there before they act. To see the link again, run `/simplex:link` in Claude Code, or `npx -y @simplex-chat/mcp link` in a terminal for a QR code you can scan.
 
-2. In another terminal, add it to Claude Code:
-
-   ```
-   npx -y @simplex-chat/mcp register my-agent
-   ```
-
-3. Add `"mcp__simplex-my-agent"` to `permissions.allow` in `~/.claude/settings.json`. You approve in the app, so Claude Code doesn't need to ask too.
-
-4. Start `claude` and ask:
+3. Ask:
 
    ```
    Search the SimpleX Directory for security groups: https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok
    ```
 
-   Approve its cards in "My Agent" with one tap.
+   Approve its card in "SimpleX MCP" with one tap.
+
+Each Claude Code session has its own SimpleX profile, `SimpleX MCP - <session name>`; name a session with `claude -n NAME` or `/rename`. Change the group name, the approval mode and the expiry in `/plugin` > Installed > simplex > Configure options, or in `/config`.
 
 ## Prompt your agent from the app
 
@@ -50,11 +45,11 @@ Then take my prompts from that chat and answer there: wait for my messages with 
 answer each one in that chat, and call receive again after every answer, until I say stop.
 ```
 
-Approve the connection in "My Agent", and accept the request in the app if it asks. On the card of the agent's first answer, tap `all`: its later answers to you need no approval.
+Approve the connection in "SimpleX MCP", and accept the request in the app if it asks. On the card of the agent's first answer, tap `all`: its later answers to you need no approval.
 
 ## Safety
 
-- The agent asks in "My Agent" before it connects, sends or leaves; you approve or reject.
+- The agent asks in "SimpleX MCP" before it connects, sends or leaves; you approve or reject.
 - `all` approves every message to one chat; `/revoke` ends it.
 - Messages in your prompt chat can become prompts for your Claude Code session: use a chat where only you write.
 - The agent runs on your computer and has no address in SimpleX Network, so nobody can contact it first.
@@ -65,7 +60,7 @@ The agent is tested with Claude Code. Tell us which other apps and models you wa
 
 ## Reference
 
-Approval modes, owners, several agents, other MCP hosts, recovery and all options: [REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md).
+Options, the Main group and its owners, owner commands, files, recovery and security: [REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md).
 
 ## Own a part of SimpleX
 

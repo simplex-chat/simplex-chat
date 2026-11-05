@@ -1,17 +1,15 @@
 import {errorText, log, logError, oneLine} from "./log"
-import {Changes, Collected, ToolCall, nextChange, reportProgress, utcMinutes} from "./messages"
+import {Changes, Collected, ToolCall, maxTimer, nextChange, reportProgress, utcMinutes} from "./messages"
 import type {ConnectInput, LeaveInput, PlanSummary, SendInput} from "./tools"
 
 export type Mode = "requests" | "host"
 export type State = "pending" | "performing" | "done" | "failed" | "rejected" | "expired"
 
-const progressTick = 60_000
-const expiryTick = 60_000
 const maxPending = 20
 const maxPerforming = 20
 
-export const lostMessage = "The agent lost its control chat. The person who runs it has to restart it with --reset-owners."
-export const stoppingMessage = "The server is stopping."
+export const lostMessage = "The Main group is lost. Run /simplex:reset-owners in Claude Code."
+export const stoppingMessage = "The SimpleX daemon is stopping."
 const pendingMessage = `${maxPending} actions are pending; wait for the owner's decisions.`
 const performingMessage = `${maxPerforming} actions are being performed; wait for their results.`
 
@@ -32,6 +30,8 @@ export interface ConnRef {
 
 interface ActionRecord {
   readonly n: number
+  readonly session: number
+  readonly mode: Mode
   readonly key: string
   readonly created: number
   readonly expires: number
@@ -98,11 +98,11 @@ export class Actions {
   private stopping = false
   private readonly abortPerforms = new AbortController()
   private readonly actions = new Map<number, Action>()
-  private readonly expiry = setInterval(() => this.expireDue(), expiryTick).unref()
+  private readonly expiries = new Map<number, NodeJS.Timeout>()
   private readonly posting = new Map<number, Promise<boolean>>()
   private readonly outcomes = new Set<Promise<void>>()
 
-  constructor(readonly mode: Mode, readonly expireHours: number, public next: number, private readonly hooks: ActionHooks) {}
+  constructor(public expireHours: number, public next: number, private readonly hooks: ActionHooks) {}
 
   get(n: number): Action | undefined {
     return this.actions.get(n)
@@ -116,63 +116,75 @@ export class Actions {
     return this.all().filter(({state}) => state === "pending")
   }
 
-  private performing(): Action[] {
-    return this.all().filter(({state}) => state === "performing")
-  }
-
   find(key: string): Action | undefined {
     return this.all().find(action => action.key === key)
   }
 
-  create(key: string, fields: NewAction, approvedBy?: string): Action {
+  create(session: number, mode: Mode, key: string, fields: NewAction, approvedBy?: string): Action {
     const n = this.next
     const created = Date.now()
     const standing = approvedBy !== undefined
     const record: ActionRecord = {
       n,
+      session,
+      mode,
       key,
       created,
       expires: created + this.expireHours * 3_600_000,
       changes: new Changes(),
       standing,
-      state: this.mode === "host" || standing ? "performing" : "pending",
+      state: mode === "host" || standing ? "performing" : "pending",
       decidedBy: approvedBy,
       open: 0,
       interrupted: false,
     }
     const action = {...fields, ...record} as Action
+    const ofSession = this.ofSession(session)
     const refusal = this.stopping ? stoppingMessage
       : this.lost ? lostMessage
-      : this.pending().length >= maxPending ? pendingMessage
-      : this.performing().length >= maxPerforming ? performingMessage
+      : ofSession.filter(({state}) => state === "pending").length >= maxPending ? pendingMessage
+      : ofSession.filter(({state}) => state === "performing").length >= maxPerforming ? performingMessage
       : this.hooks.refusal(action)
     if (refusal !== undefined) throw new ToolError(refusal)
     this.next++
     this.actions.set(n, action)
+    this.scheduleExpiry(action)
     const {what, detail} = summary(action, oneLine)
-    log(`Action ${n}: ${what}${detail}`)
+    log(`Action ${n} of session ${session}: ${what}${detail}`)
     const posting = this.post(action)
     this.posting.set(n, posting)
     posting.then(posted => this.afterPosting(action, posted)).catch(error => logError(`action ${n}`, error))
     return action
   }
 
+  ofSession(session: number): Action[] {
+    return this.all().filter(action => action.session === session)
+  }
+
+  regainControl(): void {
+    this.lost = false
+  }
+
   remove(action: Action): void {
-    this.actions.delete(action.n)
+    if (!this.actions.delete(action.n)) return
+    clearTimeout(this.expiries.get(action.n))
+    this.expiries.delete(action.n)
     action.stopCollecting?.()
   }
 
+  openCall(action: Action): void {
+    action.open++
+  }
+
+  closeCall(action: Action): void {
+    action.open--
+    this.forgetExpired(action)
+  }
+
   expireDue(): void {
+    if (this.stopping) return
     const now = Date.now()
-    for (const action of this.all().filter(({expires}) => expires <= now)) {
-      if (action.state === "pending") {
-        this.decide(action, "expired")
-        log(`Action ${action.n} expired.`)
-        this.updateCard(action)
-      } else if (isDecided(action.state) && action.open === 0) {
-        this.remove(action)
-      }
-    }
+    for (const action of this.all().filter(({expires}) => expires <= now)) this.expire(action)
   }
 
   async decided(action: Action, call: ToolCall): Promise<boolean> {
@@ -180,7 +192,7 @@ export class Actions {
     const stopProgress = reportProgress(call, () => progressText(action))
     try {
       while (!isDecided(action.state)) {
-        if (!(await nextChange(action.changes, call.signal, progressTick))) return false
+        if (!(await nextChange(action.changes, call.signal))) return false
       }
       return true
     } finally {
@@ -211,7 +223,8 @@ export class Actions {
 
   async stop(): Promise<number> {
     this.stopping = true
-    clearInterval(this.expiry)
+    for (const timer of this.expiries.values()) clearTimeout(timer)
+    this.expiries.clear()
     await Promise.all(this.posting.values())
     const stopped = this.all().filter(({state}) => state === "pending" || state === "performing")
     for (const action of stopped) action.interrupted = true
@@ -219,6 +232,26 @@ export class Actions {
     if (!this.lost) await Promise.all(stopped.map(action => this.hooks.outcome(action).catch(error => logError(`action ${action.n} card`, error))))
     await Promise.allSettled(this.outcomes)
     return stopped.length
+  }
+
+  private scheduleExpiry(action: Action): void {
+    const timer = setTimeout(() => this.expire(action), Math.min(action.expires - Date.now(), maxTimer))
+    this.expiries.set(action.n, timer.unref())
+  }
+
+  private expire(action: Action): void {
+    clearTimeout(this.expiries.get(action.n))
+    this.expiries.delete(action.n)
+    // Timers follow the monotonic clock and expires is wall-clock time, so a timer can fire before it.
+    if (action.expires > Date.now()) return this.scheduleExpiry(action)
+    if (action.state !== "pending") return this.forgetExpired(action)
+    this.decide(action, "expired")
+    log(`Action ${action.n} expired.`)
+    this.updateCard(action)
+  }
+
+  private forgetExpired(action: Action): void {
+    if (isDecided(action.state) && action.open === 0 && action.expires <= Date.now()) this.remove(action)
   }
 
   private async post(action: Action): Promise<boolean> {
@@ -237,7 +270,7 @@ export class Actions {
   private async afterPosting(action: Action, posted: boolean): Promise<void> {
     this.posting.delete(action.n)
     if (!posted || action.state !== "performing") return
-    if (this.stopping) action.state = "pending"
+    if (this.stopping) this.decide(action, "pending")
     else await this.runPerform(action)
   }
 
@@ -250,13 +283,14 @@ export class Actions {
       this.decide(action, "failed")
     }
     if (action.interrupted) return
-    log(`Action ${action.n}${this.mode === "host" ? ":" : ` approved by ${action.decidedBy}:`} ${performedText(action, this.mode)}`)
+    log(`Action ${action.n}${action.mode === "host" ? ":" : ` approved by ${action.decidedBy}:`} ${performedText(action)}`)
     if (!this.lost) await this.postOutcome(action)
   }
 
   private decide(action: Action, state: State): void {
     action.state = state
     action.changes.notify()
+    this.forgetExpired(action)
   }
 
   private updateCard(action: Action): void {
@@ -296,9 +330,9 @@ export function leaveVerbs({chat}: LeaveAction): {present: string; past: string}
   return chat.startsWith("@") ? {present: "delete", past: "deleted"} : {present: "leave", past: "left"}
 }
 
-function performedText(action: Action, mode: Mode): string {
+function performedText(action: Action): string {
   const failure = action.state === "failed" ? `; failed: ${oneLine(action.error ?? "")}` : ""
-  if (mode === "host") return `performed without approval (mode host)${failure}.`
+  if (action.mode === "host") return `performed without approval (mode host)${failure}.`
   if (failure !== "") return `failed: ${oneLine(action.error ?? "")}.`
   if (action.tool === "send") return "sent."
   if (action.tool === "leave") return `${leaveVerbs(action).past}.`
