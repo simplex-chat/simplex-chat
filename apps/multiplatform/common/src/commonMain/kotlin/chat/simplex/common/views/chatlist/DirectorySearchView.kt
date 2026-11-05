@@ -401,7 +401,7 @@ private fun PreviewDirectoryResult(
     simplexName = simplexName,
     shortDescr = shortDescr,
     image = image,
-    imageSize = 72.dp,
+    imageSize = 72.dp * fontSizeSqrtMultiplier,
     state = state,
     modifier = Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)
   )
@@ -427,6 +427,15 @@ fun PreviewDirectorySearchRows() {
       )
       PreviewDirectoryResult("No description", shortDescr = null)
       PreviewDirectoryResult("Joining", state = DirectoryResultState.Joining)
+    }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDirectorySearchActionRows() {
+  SimpleXTheme {
+    Column {
       SearchInDirectoryRow(onSearch = {})
       DirectoryLoadMoreRowLayout(moreCount = 12, loading = false, onLoadMore = {})
       DirectoryLoadMoreRowLayout(moreCount = null, loading = false, onLoadMore = {})

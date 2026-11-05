@@ -388,6 +388,7 @@ private func showDirectorySearchAlert(onSearch: @escaping () -> Void) {
 private let DIRECTORY_PREVIEW_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAT0lEQVR42u3V0QkAIAhFURdqxJZsodsCRUUqRO/i//kIzUptoWMC3gaAEIBRbgDzHABWXQHs9S3ASXqDKCB8DzI2OeMWZVxT/WgCBAjwng4ufNBwaLZEbgAAAABJRU5ErkJggg=="
 
 private struct DirectorySearchRowsPreview: View {
+    @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
     @FocusState private var searchFocussed: Bool
 
     var body: some View {
@@ -436,7 +437,7 @@ private struct DirectorySearchRowsPreview: View {
             simplexName: simplexName,
             shortDescr: shortDescr,
             image: image,
-            imageSize: 63,
+            imageSize: dynamicSize(userFont).profileImageSize,
             state: state,
             showsOpen: showsOpen
         )
