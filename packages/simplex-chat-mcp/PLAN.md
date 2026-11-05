@@ -1,6 +1,6 @@
 # SimpleX MCP server 0.2: plan
 
-Status: draft · 2026-10-17, files and leave 2026-10-30 (`plans/2026-10-30-mcp-files-and-leave.md`) · person-facing manual: `README.md`, in full `REFERENCE.md`. Code references: master `139ce5f8c` (`/code/simplex-chat-6`), unless marked `9711dcfc9` (core 7.1.0.11); `simplex-chat` 7.1.0-beta.10.1 loads core 7.1.0.18. Pending decisions: section Open.
+Status: draft · 2026-10-17, files and leave 2026-10-30 (`plans/2026-10-30-mcp-files-and-leave.md`) · person-facing manual: `README.md`, in full `REFERENCE.md`. Code references: master `139ce5f8c` (`/code/simplex-chat-6`), unless marked `9711dcfc9` (core 7.1.0.11); `simplex-chat` 7.1.0-beta.10.2 loads core 7.1.0.20. Pending decisions: section Open.
 
 ## Scope
 
@@ -125,7 +125,7 @@ npm name       @simplex-chat/mcp
 binary         simplex-mcp -> dist/cli.js
 licence        AGPL-3.0
 Node.js        22
-chat library   simplex-chat ^7.1.0-beta.10.1
+chat library   simplex-chat ^7.1.0-beta.10.2
 types          @simplex-chat/types ^7.1.0-beta.9.1
 MCP SDK        @modelcontextprotocol/server 2.3.1, @modelcontextprotocol/node 2.1.1
 QR code        qrcode ^1.5
@@ -236,7 +236,7 @@ NAME not ^[a-z0-9](-?[a-z0-9])*-?$,   NAME: 1 to 32 lowercase letters, digits an
 
 ```
 $ npx -y @simplex-chat/mcp serve my-agent --display-name "My Agent"
-Downloading libsimplex from https://github.com/simplex-chat/simplex-chat-libs/releases/download/core-7.1.0.18/simplex-chat-libs-linux-x86_64.zip ...
+Downloading libsimplex from https://github.com/simplex-chat/simplex-chat-libs/releases/download/core-7.1.0.20/simplex-chat-libs-linux-x86_64.zip ...
 Downloading the Node.js add-on from https://github.com/simplex-chat/simplex-chat-libs/releases/download/nodejs-addon-cce06d8/simplex-chat-nodejs-linux-x86_64.node ...
 SimpleX MCP server 0.2.0, agent "my-agent"
 Data folder: /home/alice/.simplex-mcp/my-agent
@@ -423,7 +423,7 @@ Servers: `a.example.com`, `b.example.com`, unknown: downloading shows them this 
 ```
 
 - Known servers are the user's XFTP servers from `apiGetUserServers`, disabled ones included, except those of a disabled operator; addresses are compared without their password. This is the core's rule for approving relays (`getKnownAgentServers`, `Library/Internal.hs:898-904`; `agentServerCfgs`, `Operators.hs:455-465`), except that the preset servers used when the user has none count as unknown.
-- In mode requests the download approves the relays (`apiReceiveFile`, `approvedRelays` true) only after `/receive` or `/forward` of a card that names unknown servers. Every other download, and every download in mode host, has `approvedRelays` false: the core checks the complete description, and downloads a file on unknown servers only when the IP address is protected (`receiveViaCompleteFD`, `Library/Internal.hs:859-868`). Otherwise the download fails with `fileNotApproved`. When the description completes after the acceptance, the core returns the file to rcvInvitation (`relaysNotApproved`, `Library/Internal.hs:884-890`), and the next check fails the download.
+- In mode requests the download approves the relays (`apiReceiveFile`, `approvedRelays` true) only after `/receive` or `/forward` of a card that names unknown servers. Every other download, and every download in mode host, has `approvedRelays` false: the core checks the complete description, and downloads a file on unknown servers only when the IP address is protected (`receiveViaCompleteFD`, `Library/Internal.hs:860-869`). Otherwise the download fails with `fileNotApproved`. When the description completes after the acceptance, the core returns the file to rcvInvitation (`relaysNotApproved`, `Library/Internal.hs:885-891`), and the next check fails the download.
 
 ```
 message type   card
@@ -766,7 +766,7 @@ path          string    done; the full path of the file
 error         string    failed
 ```
 
-- An XFTP file has servers only after its sender finishes the upload: the sender's description of the file arrives then (`dummyFileDescr` until then, `Library/Internal.hs:448`). The call waits for it before it creates the action, so that the card names the servers; at the end of `wait` it returns a tool error, and a later call waits again. An offered file gets no card and no action without servers, whatever its protocol; the core lists servers only for protocol XFTP (`Library/Internal.hs:1885-1887`), so a file invited without a description is not downloaded. A file already received keeps its path.
+- An XFTP file has servers only after its sender finishes the upload: the sender's description of the file arrives then (`dummyFileDescr` until then, `Library/Internal.hs:448`). The call waits for it before it creates the action, so that the card names the servers; at the end of `wait` it returns a tool error, and a later call waits again. An offered file gets no card and no action without servers, whatever its protocol; the core lists servers only for protocol XFTP, from a complete description (`getChatItemFileServers`, `Library/Internal.hs:1885-1899`), so a file invited without a description is not downloaded. A file already received keeps its path.
 - `performing`: `wait` passed and the download runs; the action stays in memory, and the same call attaches to it.
 - A file already received, by `/forward` or by an earlier action, returns its path after the approval.
 
@@ -1331,7 +1331,7 @@ step                                        result
 /_get chat <chat> around=<item> count=0     the message or its chat gone (errorStore chatItemNotFound, contactNotFound, groupNotFound): delete partial at the last fileSource seen; rejected, "The message or its chat was deleted."
                                             another error: logged; the download continues
                                             otherwise the item's file settles the promise as rcvComplete and failed above; rcvComplete: move received first
-rcvInvitation after the acceptance          rejected, "The file is on unknown servers that were not approved."   (relaysNotApproved, Library/Internal.hs:884-890)
+rcvInvitation after the acceptance          rejected, "The file is on unknown servers that were not approved."   (relaysNotApproved, Library/Internal.hs:885-891)
 rcvTransfer, rcvProgress above the          the time of progress: now
 largest one seen
 30 minutes since the start or the time      rejected, "The download made no progress for 30 minutes and was cancelled."; /fcancel <fileId>; delete partial at the last fileSource seen
