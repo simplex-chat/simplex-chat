@@ -48,7 +48,8 @@ fun CIVoiceView(
   val padding = when {
     smallView -> PaddingValues()
     classicWithText -> PaddingValues(top = 14.sp.toDp() * sizeMultiplier, bottom = 14.sp.toDp() * sizeMultiplier, start = 6.sp.toDp() * sizeMultiplier, end = 6.sp.toDp() * sizeMultiplier)
-    else -> PaddingValues(top = 4.sp.toDp() * sizeMultiplier, bottom = 6.sp.toDp() * sizeMultiplier, start = if (LocalTerminalLayout.current) CHAT_ITEM_TEXT_PADDING else 0.dp, end = 0.dp)
+    LocalTerminalLayout.current -> PaddingValues(start = CHAT_ITEM_TEXT_PADDING, top = terminalCardTop(ci).toDp())
+    else -> PaddingValues(top = 4.sp.toDp() * sizeMultiplier, bottom = 6.sp.toDp() * sizeMultiplier)
   }
   Row(
     Modifier.padding(padding),
@@ -212,7 +213,7 @@ private fun VoiceLayout(
     else -> {
       @Composable
       fun VoiceRow(inlineMeta: (@Composable () -> Unit)?) {
-        Column(horizontalAlignment = Alignment.Start) {
+        Column(Modifier.messageCard(), horizontalAlignment = Alignment.Start) {
           Row {
             VoiceMsgIndicator(file, audioPlaying.value, sent, false, progress, duration, brokenAudio, 1f, play, pause, longClick, receiveFile)
             Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Start) {
@@ -228,7 +229,7 @@ private fun VoiceLayout(
           }
         }
       }
-      if (hasText) VoiceRow(null) else ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { VoiceRow(it) }
+      if (hasText) VoiceRow(null) else ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }, gapBelowCard = terminalReactionsGap(ci).toDp()) { VoiceRow(it) }
     }
   }
 }

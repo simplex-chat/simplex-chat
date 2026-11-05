@@ -364,10 +364,10 @@ getMessageMentions db user gId msg = case parseMaybeMarkdownList msg of
         <$> runExceptT (getGroupMemberIdByName db user gId name)
 
 msgContentTexts :: MsgContent -> (Text, ParsedMarkdown)
-msgContentTexts mc = let t = msgContentText mc in (t, parsedMarkdown t)
+msgContentTexts mc = (msgContentText mc, parsedMsgContent mc)
 
 ciContentTexts :: CIContent d -> (Text, ParsedMarkdown)
-ciContentTexts content = let t = ciContentToText content in (t, parsedMarkdown t)
+ciContentTexts content = let t = ciContentToText content in (t, parsedCIContent content t)
 
 quoteContent :: forall d. MsgContent -> MsgContent -> Maybe (CIFile d) -> MsgContent
 quoteContent mc qmc ciFile_

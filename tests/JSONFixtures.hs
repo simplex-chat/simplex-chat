@@ -48,3 +48,6 @@ markdownBlocksSwift = "{\"formattedText\":[{\"format\":{\"_owsf\":true,\"markup\
 
 markdownBlocksTagged :: LB.ByteString
 markdownBlocksTagged = "{\"formattedText\":[{\"format\":{\"type\":\"markup\",\"token\":{\"type\":\"headingMark\",\"level\":2}},\"text\":\"## \"},{\"text\":\"a\"},{\"format\":{\"type\":\"markup\",\"token\":{\"type\":\"lineBreak\"}},\"text\":\"\\n\"},{\"format\":{\"type\":\"markup\",\"token\":{\"type\":\"listMark\"}},\"text\":\"- \"},{\"format\":{\"type\":\"bold\",\"singleStar\":true},\"text\":\"b\"}],\"markdownBlocks\":[{\"type\":\"heading\",\"level\":2,\"content\":{\"from\":1,\"to\":2}},{\"type\":\"list\",\"items\":[{\"content\":{\"from\":4,\"to\":5},\"items\":[]}]}]}"
+
+markdownParagraphsTagged :: LB.ByteString
+markdownParagraphsTagged = "{\"formattedText\":[{\"text\":\"a\"},{\"format\":{\"type\":\"markup\",\"token\":{\"type\":\"paragraphBreak\",\"lineBreaks\":2}},\"text\":\"\\n\\n\"},{\"text\":\"b\"}],\"markdownBlocks\":[{\"type\":\"paragraph\",\"content\":{\"from\":0,\"to\":1}},{\"type\":\"paragraph\",\"content\":{\"from\":2,\"to\":3}}]}"
