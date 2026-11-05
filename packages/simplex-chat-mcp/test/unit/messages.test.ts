@@ -1045,7 +1045,7 @@ describe("download", () => {
   function offeredIn(chat: FakeChat, fileStatus: object = {type: "rcvInvitation"}, fileSource?: object): T.ChatItem {
     const offered = fileItem(30, image, fileStatus, {chatDir: {type: "groupRcv", groupMember: switchback}, fileSource})
     chat.chats.set("#15", {chatInfo: trail, items: [offered]})
-    chat.responses.set(`/freceive 7 approved_relays=on ${downloaded}`, {type: "rcvFileAccepted", user, chatItem: event(trail, offered)})
+    chat.responses.set(`/freceive 7 ${downloaded}`, {type: "rcvFileAccepted", user, chatItem: event(trail, offered)})
     fileServersIn(chat, [knownServer])
     chat.responses.set("/_servers 1", {
       type: "userServers",
@@ -1088,7 +1088,7 @@ describe("download", () => {
     actions.approve(action, "Alice")
     await flushed()
     expect(existsSync(folder)).toBe(true)
-    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 approved_relays=on ${downloaded}`])
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 ${downloaded}`])
     tools.onFile(completed(downloaded))
     expect((await downloading)!.structuredContent).toEqual({action: 1, status: "done", chat: "#15", item: 30, path: downloaded})
   })
@@ -1098,7 +1098,7 @@ describe("download", () => {
     const offered = offeredIn(chat)
     offered.file!.fileSize = 6
     const forwarded = join(data, "forwarded", "group-15", "7.pdf")
-    chat.responses.set(`/freceive 7 approved_relays=on ${forwarded}`, {type: "rcvFileAccepted", user, chatItem: event(trail, offered)})
+    chat.responses.set(`/freceive 7 ${forwarded}`, {type: "rcvFileAccepted", user, chatItem: event(trail, offered)})
     const {tools, actions} = downloadTools(chat)
     const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
     await flushed()
@@ -1115,7 +1115,7 @@ describe("download", () => {
     actions.approve(action, "Alice")
     expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
     expect([existsSync(forwarded), readFileSync(downloaded, "utf8")]).toEqual([false, "report"])
-    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 approved_relays=on ${forwarded}`])
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 ${forwarded}`])
   })
 
   it("returns performing when the download outlasts wait, and the path to the call that attaches again", async () => {
@@ -1394,12 +1394,90 @@ describe("download", () => {
   it("downloads without approving unknown servers in mode host", async () => {
     const chat = new FakeChat()
     offeredIn(chat)
-    chat.responses.set(`/freceive 7 ${downloaded}`, {type: "rcvFileAccepted", user, chatItem: event(trail, chat.chats.get("#15")!.items[0])})
+    fileServersIn(chat, ["xftp://hash2@xftp.example.com"])
     const {tools} = downloadTools(chat, () => undefined, "host")
     const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
     await flushed()
     await flushed()
     expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 ${downloaded}`])
+    tools.onFile(completed(downloaded))
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
+  })
+
+  it("approves the servers of a file only after a card that names them as unknown", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    fileServersIn(chat, ["xftp://hash2@xftp.example.com"])
+    chat.responses.set(`/freceive 7 approved_relays=on ${downloaded}`, {type: "rcvFileAccepted", user, chatItem: event(trail, chat.chats.get("#15")!.items[0])})
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    actions.approve(actions.get(1)!, "Alice")
+    await flushed()
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 approved_relays=on ${downloaded}`])
+    tools.onFile(completed(downloaded))
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
+  })
+
+  it("leaves the servers of a file without a server list to the core's check, also under the files approval", async () => {
+    const chat = new FakeChat()
+    const offered = offeredIn(chat)
+    offered.file!.fileProtocol = T.FileProtocol.SMP
+    const {tools, actions} = downloadTools(chat, (_, standing) => (standing === "files" ? "Alice" : undefined))
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    expect(actions.get(1)).toMatchObject({state: "performing", standing: true})
+    expect(chat.commands.filter(cmd => cmd.startsWith("/_get item info"))).toEqual([])
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 ${downloaded}`])
+    tools.onFile(completed(downloaded))
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done"})
+  })
+
+  it("fails with the core's words when the core refuses the servers of the file at the download", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const receive = chat.sendChatCmd.bind(chat)
+    chat.sendChatCmd = async cmd => {
+      if (cmd.startsWith("/freceive")) throw new core.ChatAPIError("Chat command error", {type: "error", errorType: {type: "fileNotApproved", fileId: 7, unknownServers: ["xftp://hash2@xftp.example.com"]}})
+      return receive(cmd)
+    }
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    actions.approve(actions.get(1)!, "Alice")
+    expect((await downloading)!.structuredContent).toEqual({action: 1, status: "failed", error: "Unknown servers! Without Tor or VPN, your IP address will be visible to these XFTP relays: xftp.example.com."})
+  })
+
+  it("fails at the next check when the core returns an accepted file to the offer because its servers are not approved", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30, wait: 3600}, signal().call)
+    await jest.advanceTimersByTimeAsync(0)
+    actions.approve(actions.get(1)!, "Alice")
+    await jest.advanceTimersByTimeAsync(60_000)
+    expect((await downloading)!.structuredContent).toEqual({action: 1, status: "failed", error: "The file is on unknown servers that were not approved."})
+  })
+
+  it("keeps a download whose acceptance has not returned when a check reads the file as offered", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const receive = chat.sendChatCmd.bind(chat)
+    let accept = (): void => undefined
+    chat.sendChatCmd = async cmd => {
+      if (cmd.startsWith("/freceive")) await new Promise<void>(resolve => (accept = resolve))
+      return receive(cmd)
+    }
+    const downloading = tools.call("download", {chat: "#15", item: 30, wait: 3600}, signal().call)
+    await jest.advanceTimersByTimeAsync(0)
+    actions.approve(actions.get(1)!, "Alice")
+    await jest.advanceTimersByTimeAsync(60_000)
+    expect(actions.get(1)!.state).toBe("performing")
+    accept()
+    await jest.advanceTimersByTimeAsync(0)
     tools.onFile(completed(downloaded))
     expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
   })

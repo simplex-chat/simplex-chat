@@ -135,6 +135,8 @@ type Schema = {[key: string]: unknown}
 
 type Quoted = {from: string; text: string; content: T.MsgContent; fileName?: string}
 
+type DownloadRequest = Pick<DownloadAction, "chat" | "item" | "file" | "unknownServers">
+
 type ToolName = "connect" | "send" | "receive" | "download" | "list" | "leave"
 
 const maxChats = 1_000_000
@@ -158,6 +160,7 @@ const refusedName = /^id_|\.(pem|key|p12|pfx)$/i
 export const refusedFileReason = "private keys and the server's own files are not sent"
 const deletedItem = "The message or its chat was deleted."
 const deletedFiles = "Your owner deleted the files of this chat."
+const unapprovedServers = "The file is on unknown servers that were not approved."
 const notFoundErrors: T.StoreError["type"][] = ["chatItemNotFound", "contactNotFound", "groupNotFound"]
 const stalledDownload = `The download made no progress for ${downloadStall / 60_000} minutes and was cancelled.`
 
@@ -465,9 +468,10 @@ class Download {
   })
   receivedBytes = 0
   receivedAt = Date.now()
+  accepted = false
   source: string
 
-  constructor(readonly chat: string, readonly item: number, readonly fileId: number, readonly size: number, readonly path: string, readonly check: NodeJS.Timeout) {
+  constructor(readonly chat: string, readonly item: number, readonly fileId: number, readonly size: number, readonly path: string, readonly approvedRelays: boolean, readonly check: NodeJS.Timeout) {
     this.source = path
   }
 }
@@ -515,7 +519,7 @@ export class AgentTools {
     }
   }
 
-  private async downloadFile(action: Pick<DownloadAction, "chat" | "item" | "file">): Promise<string> {
+  private async downloadFile(action: DownloadRequest): Promise<string> {
     const {chat, file: {fileId, name}} = action
     const {path} = filePaths(this.agent.data, chat, fileId, name)
     const found = await this.downloadTo(action, path)
@@ -525,7 +529,7 @@ export class AgentTools {
     return path
   }
 
-  forwardFile(action: Pick<DownloadAction, "chat" | "item" | "file">): Promise<string> {
+  forwardFile(action: DownloadRequest): Promise<string> {
     const {chat, file: {fileId, name}} = action
     const copy = this.downloadTo(action, filePaths(this.agent.data, chat, fileId, name).forwarded).then(found => this.copyForSending(found, name))
     this.forwarding.set(fileId, copy)
@@ -534,11 +538,11 @@ export class AgentTools {
     })
   }
 
-  private downloadTo({chat, item, file: {fileId, size}}: Pick<DownloadAction, "chat" | "item" | "file">, path: string): Promise<string> {
+  private downloadTo({chat, item, file: {fileId, size}, unknownServers}: DownloadRequest, path: string): Promise<string> {
     const started = this.downloads.get(fileId)
     if (started !== undefined) return started.promise
     const check = setInterval(() => this.checkDownload(download).catch(error => logError(`download of file ${fileId}`, error)), downloadCheck).unref()
-    const download: Download = new Download(chat, item, fileId, size, path, check)
+    const download: Download = new Download(chat, item, fileId, size, path, this.mode === "requests" && hasUnknownServers({unknownServers}), check)
     this.downloads.set(fileId, download)
     this.startDownload(download).catch(error => this.settleDownload(fileId, ({reject}) => reject(error)))
     return download.promise
@@ -1020,19 +1024,24 @@ export class AgentTools {
   private async startDownload(download: Download): Promise<void> {
     const file = await this.currentFile(download)
     if (file === undefined) return
-    if (file.fileStatus.type !== "rcvInvitation" || fileError(file) !== undefined) return this.settleFile(download.chat, file)
-    mkdirSync(dirname(download.path), {recursive: true, mode: 0o700})
-    await this.agent.chat.apiReceiveFile(download.fileId, download.path, this.mode === "requests")
+    if (file.fileStatus.type !== "rcvInvitation" || fileError(file) !== undefined) this.settleFile(download.chat, file)
+    else {
+      mkdirSync(dirname(download.path), {recursive: true, mode: 0o700})
+      await this.agent.chat.apiReceiveFile(download.fileId, download.path, download.approvedRelays)
+    }
+    download.accepted = true
   }
 
   private async checkDownload(download: Download): Promise<void> {
+    const {accepted} = download
     const file = await this.currentFile(download)
     if (file === undefined) return
     const {fileStatus} = file
     if (fileStatus.type === "rcvComplete") this.moveReceived(download.chat, file)
     this.settleFile(download.chat, file)
     if (this.downloads.get(download.fileId) !== download) return
-    if (fileStatus.type === "rcvTransfer" && fileStatus.rcvProgress > download.receivedBytes) {
+    if (accepted && fileStatus.type === "rcvInvitation") this.failDownload(download.fileId, unapprovedServers)
+    else if (fileStatus.type === "rcvTransfer" && fileStatus.rcvProgress > download.receivedBytes) {
       download.receivedBytes = fileStatus.rcvProgress
       download.receivedAt = Date.now()
     } else if (Date.now() - download.receivedAt >= downloadStall) {
