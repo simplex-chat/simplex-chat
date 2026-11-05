@@ -397,6 +397,18 @@ jobs:
           key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
           restore-keys: src-${{ runner.os }}-
 
+      # A checkout restored for other pins can keep untracked files of a submodule those pins lack,
+      # such as a .git file whose repository is gone, and cabal's submodule update then fails.
+      - name: Clean source repositories restored for other pins
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-src.outputs.cache-matched-key != '' && steps.restore-src.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          for repo in dist-newstyle/src/*/; do
+            [ -e "$repo/.git" ] || continue
+            # the repositories can be owned by the build container's user
+            git -c safe.directory='*' -C "$repo" clean -ffdxq || echo "::warning title=Source clean failed::$repo"
+          done
+
       - name: Warn if source repositories not in cache
         if: matrix.should_run == true && env.release != 'true' && steps.restore-src.outputs.cache-matched-key == ''
         run: echo "::warning title=Cache miss::src-${{ runner.os }}"
@@ -1118,6 +1130,18 @@ jobs:
           key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
           restore-keys: src-${{ runner.os }}-
 
+      # A checkout restored for other pins can keep untracked files of a submodule those pins lack,
+      # such as a .git file whose repository is gone, and cabal's submodule update then fails.
+      - name: Clean source repositories restored for other pins
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-src.outputs.cache-matched-key != '' && steps.restore-src.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          for repo in dist-newstyle/src/*/; do
+            [ -e "$repo/.git" ] || continue
+            # the repositories can be owned by the build container's user
+            git -c safe.directory='*' -C "$repo" clean -ffdxq || echo "::warning title=Source clean failed::$repo"
+          done
+
       - name: Warn if source repositories not in cache
         if: matrix.should_run == true && env.release != 'true' && steps.restore-src.outputs.cache-matched-key == ''
         run: echo "::warning title=Cache miss::src-${{ runner.os }}"
@@ -1477,6 +1501,18 @@ jobs:
           path: dist-newstyle/src
           key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
           restore-keys: src-${{ runner.os }}-
+
+      # A checkout restored for other pins can keep untracked files of a submodule those pins lack,
+      # such as a .git file whose repository is gone, and cabal's submodule update then fails.
+      - name: Clean source repositories restored for other pins
+        if: env.release != 'true' && steps.restore-src.outputs.cache-matched-key != '' && steps.restore-src.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          for repo in dist-newstyle/src/*/; do
+            [ -e "$repo/.git" ] || continue
+            # the repositories can be owned by the build container's user
+            git -c safe.directory='*' -C "$repo" clean -ffdxq || echo "::warning title=Source clean failed::$repo"
+          done
 
       - name: Warn if source repositories not in cache
         if: env.release != 'true' && steps.restore-src.outputs.cache-matched-key == ''
