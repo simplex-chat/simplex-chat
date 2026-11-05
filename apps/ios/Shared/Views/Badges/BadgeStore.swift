@@ -40,6 +40,12 @@ var badgeBrowserAllowed: Bool {
     SKPaymentQueue.default().storefront?.countryCode == "USA"
 }
 
+// TestFlight and App Review buy in the Sandbox, which the service refuses, so only a build the App
+// Store served may sell. Below iOS 16 the receipt's name is all that tells the environment.
+private var appStoreReceiptIsSandbox: Bool {
+    Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
+}
+
 enum BadgePrice {
     case loading
     case price(String)
@@ -139,6 +145,8 @@ final class BadgeStore: ObservableObject {
     // the original ids of the Apple ID's subscriptions; nil until load() has read them. Apple folds a new subscription
     // of an Apple ID that subscribed before into the earlier one, which core resumes only for the profile it retired
     @Published private(set) var priorSubscriptions: Set<String>? = nil
+    // whether this build may sell: right from the first frame, and confirmed by readEnvironment on iOS 16
+    @Published private(set) var purchasesReleased = !appStoreReceiptIsSandbox
     // the sweep has no buyer waiting and runs at four triggers, so a failure that cannot clear is told once a run
     private var sweepFailureShown = false
     private var transactionUpdates: Task<Void, Never>? = nil
@@ -211,6 +219,17 @@ final class BadgeStore: ObservableObject {
             subscriptionsForSale: forSale(level, .monthly),
             subscribedBefore: subscribedBefore
         )
+    }
+
+    // the app transaction is signed by Apple, so where it exists it decides
+    func readEnvironment() async {
+        if #available(iOS 16.0, *) {
+            if let verification = try? await AppTransaction.shared,
+               case .verified(let appTransaction) = verification {
+                let released = appTransaction.environment == .production
+                await MainActor.run { purchasesReleased = released }
+            }
+        }
     }
 
     func load() async {
