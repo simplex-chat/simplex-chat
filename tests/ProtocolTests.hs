@@ -12,6 +12,7 @@ import Control.Concurrent.STM (atomically)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import Data.Either (isLeft)
 import Data.List (isInfixOf)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
@@ -109,6 +110,13 @@ serviceBodyTests = describe "service payload compression" $ do
     let nested n = "{\"a\":" <> B.replicate n '[' <> B.replicate n ']' <> "}"
     parseServiceBody (nested 10) `shouldBe` J.eitherDecodeStrict' (nested 10)
     parseServiceBody (nested 100) `shouldBe` Left "service payload is nested too deeply"
+  it "rejects an empty payload" $
+    decompressServiceBody "" `shouldBe` Left "empty service payload"
+  it "rejects a compressed payload that does not decode" $
+    decompressServiceBody "Xgarbage" `shouldSatisfy` isLeft
+  it "rejects a compressed batch of more than one part" $ do
+    let c = compress1 "{}"
+    decompressServiceBody (markCompressedBatch $ smpEncode (c L.:| [c])) `shouldBe` Left "unexpected compressed batch"
 
 batchLimitTests :: Spec
 batchLimitTests = describe "Chat message batch limits" $ do

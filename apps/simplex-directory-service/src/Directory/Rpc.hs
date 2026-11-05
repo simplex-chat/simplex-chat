@@ -70,6 +70,7 @@ searchResultsPage rowCursor matched rows = fit entryRows
       Just resp -> resp
       Nothing -> case sent of
         [(row, e)] -> fromMaybe (skipped row) $ page [(row, dropImage e)]
+        [] -> results [] Nothing
         _ -> fit (init sent)
     page sent
       | fits resp = Just resp
