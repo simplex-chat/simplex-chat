@@ -2623,6 +2623,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     receiveInlineChunk RcvFileTransfer {fileId, fileStatus = RFSNew} FileChunk {chunkNo} _
       | chunkNo == 1 = throwChatError $ CEInlineFileProhibited fileId
       | otherwise = pure ()
+    receiveInlineChunk ft FileChunk {} _ | rcvFileCompleteOrCancelled ft = pure ()
     receiveInlineChunk ft@RcvFileTransfer {fileId} chunk meta = do
       case chunk of
         FileChunk {chunkNo} -> when (chunkNo == 1) $ startReceivingFile user fileId
