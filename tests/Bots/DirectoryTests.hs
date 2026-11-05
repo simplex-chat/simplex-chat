@@ -45,7 +45,7 @@ import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Protocol (memberSupportVoiceVersion)
 import qualified Simplex.Chat.Store.Groups as Store
-import Simplex.Chat.Types (ChatPeerType (..), GroupInfo (..), GroupLink, GroupProfile (..), GroupSummary (..), GroupType (..), ImageData (..), Profile (..))
+import Simplex.Chat.Types (ChatPeerType (..), GroupInfo (..), GroupLink, GroupProfile (..), GroupSummary (..), GroupType (..), ImageData (..), Profile (..), safeImageData)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
@@ -827,7 +827,7 @@ testDirectorySearchEntryFields ps =
           searchEntryOnly cath dsShortLink "privacy"
         displayName `shouldBe` "PrivacyGroup"
         shortDescr `shouldBe` Just "Private chats"
-        isJust image `shouldBe` True
+        (\(ImageData t) -> T.null (safeImageData t)) <$> image `shouldBe` Just False
         simplexName `shouldBe` Nothing
         let PublicLink {connFullLink, connShortLink} = groupLink
         isJust connShortLink `shouldBe` True
@@ -1038,7 +1038,11 @@ testSearchResultsPage _ps = do
   page 4 [(1, Just a), (2, Nothing)] `shouldBe` (["a"], Just 2, 2)
   page 2 [(1, Just a), (2, Nothing)] `shouldBe` (["a"], Nothing, 0)
   big <- randomText 12000
-  page 1 [(1, Just $ entry "d" "" (Just big))] `shouldBe` (["d"], Nothing, 0)
+  let bigImageEntry = entry "d" "" (Just $ "data:image/png;base64,iVBORw0KGgoA" <> big)
+  page 1 [(1, Just bigImageEntry)] `shouldBe` (["d"], Nothing, 0)
+  case searchResultsPage cursor 1 [(1, Just bigImageEntry)] of
+    DRSearchResults {entries = [DirectorySearchEntry {image}]} -> image `shouldBe` Nothing
+    _ -> expectationFailure "expected the entry without its image"
   page 2 [(1, Just $ entry "e" big Nothing), (2, Just a)] `shouldBe` ([], Just 1, 1)
   -- compresses to almost nothing, but no client decompresses a body past 64 KB
   let unreadable = entry "f" (T.replicate 70000 "a") Nothing
