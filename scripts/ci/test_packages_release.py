@@ -650,6 +650,124 @@ class SelectTestsTest(GitRepoTest):
         self.assertEqual(self.selected(), ["alpha"])
 
 
+class FeatureTestsTest(unittest.TestCase):
+    TESTS = {
+        "passes": 'check "one" true\ncheck "two" true\n',
+        "fails-a-check": 'check "good" true\ncheck "bad" false\ncheck "after" true\n',
+        "stops": 'check "before" true\nfail "cannot go on"\ncheck "never" true\n',
+        "needs-backend": '# needs: backend\ncheck "backend at $BACKEND_DIR" true\n',
+    }
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        work = Path(directory.name)
+        self.platform = work / "platform"
+        self.out = work / "out"
+        self.summary = work / "summary"
+        self.ui_log = work / "ui.log"
+        self.backend = work / "backend"
+        (self.platform / "tests").mkdir(parents=True)
+        ui = self.platform / "ui"
+        ui.write_text('#!/bin/bash\necho "$* $UI_OUT" >> "$UI_LOG"\n[ "$1" != layout ] || [ -z "$UI_LAYOUT_FAILS" ]\n')
+        ui.chmod(0o755)
+        checks = packages_release.ROOT / "scripts/ci/app-tests/checks.sh"
+        (self.platform / "lib.sh").write_text(f'ui="{ui}"\n. "{checks}"\n')
+        for name, steps in self.TESTS.items():
+            (self.platform / "tests" / f"{name}.sh").write_text(
+                f'#!/bin/bash\nset -euo pipefail\n. "$(dirname "$0")/../lib.sh"\n{steps}'
+            )
+
+    def run_tests(self, *names, backend_dir="", layout_fails=False):
+        script = packages_release.ROOT / "scripts/ci/app-tests/feature-tests.sh"
+        env = {
+            "GITHUB_STEP_SUMMARY": str(self.summary),
+            "UI_LOG": str(self.ui_log),
+            "BACKEND_DIR": backend_dir,
+            "UI_LAYOUT_FAILS": "1" if layout_fails else "",
+        }
+        with mock.patch.dict("os.environ", env):
+            return subprocess.run([script, self.platform, self.out, *names], capture_output=True, text=True)
+
+    def run_every_kind(self):
+        return self.run_tests("passes", "fails-a-check", "stops", "needs-backend")
+
+    def checks(self, name):
+        return (self.out / name / "checks.txt").read_text().splitlines()
+
+    def test_failed_test_fails_the_run(self):
+        self.assertEqual(self.run_every_kind().returncode, 1)
+
+    def test_failed_check_lets_the_test_go_on(self):
+        self.run_tests("fails-a-check")
+        self.assertEqual(self.checks("fails-a-check"), ["PASS good", "FAIL bad", "PASS after"])
+
+    def test_fail_stops_the_test_and_notes_why(self):
+        self.run_tests("stops")
+        self.assertEqual(
+            self.checks("stops"),
+            ["PASS before", "NOTE stopped: cannot go on", "NOTE the test exited with status 1"],
+        )
+
+    def test_test_needing_the_backend_is_skipped_without_it(self):
+        self.assertEqual(self.run_tests("needs-backend").returncode, 0)
+        self.assertEqual(
+            self.checks("needs-backend"), ["NOTE skipped: needs the test backend, which this run didn't start"]
+        )
+
+    def test_test_needing_the_backend_runs_with_it(self):
+        self.assertEqual(self.run_tests("passes", "needs-backend", backend_dir=str(self.backend)).returncode, 0)
+        self.assertEqual(self.checks("needs-backend"), [f"PASS backend at {self.backend}"])
+
+    def test_summary_has_each_tests_result_and_checks(self):
+        self.run_every_kind()
+        self.assertEqual(
+            self.summary.read_text().splitlines(),
+            [
+                "### Feature test passes: passed",
+                "",
+                "- PASS one",
+                "- PASS two",
+                "### Feature test fails-a-check: failed",
+                "",
+                "- PASS good",
+                "- FAIL bad",
+                "- PASS after",
+                "### Feature test stops: failed",
+                "",
+                "- PASS before",
+                "- NOTE stopped: cannot go on",
+                "- NOTE the test exited with status 1",
+                "### Feature test needs-backend: skipped",
+                "",
+                "- NOTE skipped: needs the test backend, which this run didn't start",
+            ],
+        )
+
+    def test_app_restarts_before_each_test_run_and_each_failed_test_is_shot_in_its_folder(self):
+        self.run_every_kind()
+        self.assertEqual(
+            self.ui_log.read_text().splitlines(),
+            [
+                f"layout reachable {self.out}/passes",
+                f"layout reachable {self.out}/fails-a-check",
+                f"shot final {self.out}/fails-a-check",
+                f"layout reachable {self.out}/stops",
+                f"shot final {self.out}/stops",
+            ],
+        )
+
+    def test_name_that_is_not_a_test_is_refused_before_any_test_runs(self):
+        for name in ["../tests/passes", "nonexistent"]:
+            self.assertEqual(self.run_tests("passes", name).returncode, 2, name)
+        self.assertFalse(self.ui_log.exists())
+
+    def test_failed_restart_fails_the_test(self):
+        self.assertEqual(self.run_tests("passes", layout_fails=True).returncode, 1)
+        self.assertEqual(self.checks("passes"), ["FAIL the app restarted at the chat list in the reachable layout"])
+        self.assertEqual(self.summary.read_text().splitlines()[0], "### Feature test passes: failed")
+
+
 class PackageStateTest(GitRepoTest):
     def setUp(self):
         super().setUp()
