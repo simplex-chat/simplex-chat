@@ -2389,7 +2389,7 @@ fun BoxScope.ChatItemsList(
           )
         }
 
-        val subscriberCount = if (chatInfo is ChatInfo.Group && chatInfo.groupInfo.nextConnectPrepared && chatInfo.groupInfo.useRelays) chatInfo.groupInfo.groupSummary.publicMemberCount else null
+        val subscriberCount = if (chatInfo is ChatInfo.Group && chatInfo.groupInfo.nextConnectPrepared && chatInfo.groupInfo.useRelays) chatInfo.groupInfo.groupSummary.publicMemberCount?.takeIf { it > 0 } else null
         if (subscriberCount != null) {
           Text(
             subscriberCountStr(subscriberCount),

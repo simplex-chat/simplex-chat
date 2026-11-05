@@ -1046,7 +1046,8 @@ struct ChatView: View {
 
                 if case let .group(groupInfo, _) = chat.chatInfo,
                    groupInfo.nextConnectPrepared && groupInfo.useRelays,
-                   let count = groupInfo.groupSummary.publicMemberCount {
+                   let count = groupInfo.groupSummary.publicMemberCount,
+                   count > 0 {
                     Text(subscriberCountStr(count))
                         .font(.subheadline)
                         .foregroundColor(theme.colors.secondary)
