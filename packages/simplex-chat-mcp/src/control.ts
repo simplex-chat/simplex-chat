@@ -19,9 +19,9 @@ const cardTooLong = {
   connect: "message: too long for its approval card; shorten it.",
   download: "item: the names of its file and chat are too long for its approval card.",
 }
-const standings: {[standing in Standing]: {key: string; tool: Action["tool"]; approved: string; scope: string; revoke: (chat: string) => string; listed: string}} = {
-  messages: {key: "simplexMcp", tool: "send", approved: "Approved for", scope: "Messages to", revoke: chat => `revoke ${chat}`, listed: "approved for this chat by"},
-  files: {key: "simplexMcpFiles", tool: "download", approved: "Files approved for", scope: "Files from", revoke: chat => `receive ${chat} off`, listed: "files approved by"},
+const standings: {[standing in Standing]: {key: string; approved: string; scope: string; revoke: (chat: string) => string; listed: string}} = {
+  messages: {key: "simplexMcp", approved: "Approved for", scope: "Messages to", revoke: chat => `revoke ${chat}`, listed: "approved for this chat by"},
+  files: {key: "simplexMcpFiles", approved: "Files approved for", scope: "Files from", revoke: chat => `receive ${chat} off`, listed: "files approved by"},
 }
 const maxCardLength = 15_000
 const listedChats = 100
@@ -229,7 +229,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         const approver = safeName(sender.memberProfile.displayName)
         if (request.type === "reject") this.actions.reject(action, approver)
         else if (action.tool !== "download") {
-          if (request.type !== "approve") return `Action ${request.action} has no file.`
+          if (request.type !== "approve") return `Action ${request.action} is not a download.`
           this.actions.approve(action, approver)
         } else if (request.type === "approve") return `Action ${action.n} is a download: ${commandsLine(action)}.`
         else if (request.type === "receive") this.actions.approve(action, approver)
@@ -241,20 +241,16 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   }
 
   private async approveChat(sender: T.GroupMember, chat: string, standing: Standing, named?: Action): Promise<string> {
-    const {key, tool, approved, revoke} = standings[standing]
+    const {key, approved, revoke} = standings[standing]
     const chatInfo = await this.agentChat(chat)
     if (chatInfo === undefined) return `No chat ${chat}. /list shows the agent's chats.`
     const approvedBy = sender.memberProfile.displayName
     const approval: ChatApproval = {approvedBy, approvedById: sender.groupMemberId, approvedAt: new Date().toISOString()}
     await this.setCustomData(chat, {...customDataOf(chatInfo), [key]: approval})
     const approver = safeName(approvedBy)
-    const pending = this.actions.pending().filter(action => action.tool === tool && action.chat === chat && action.card !== undefined)
-    const fromUnknownServers = pending.filter(action => action !== named && action.tool === "download" && hasUnknownServers(action))
-    for (const action of pending) {
-      if (!fromUnknownServers.includes(action)) this.actions.approve(action, approver)
-    }
-    const except = fromUnknownServers.length > 0 ? ", except downloads from unknown servers" : ""
-    return `${approved} ${chatName(chatSubject(chatInfo))} (${chat}) by ${approver}${except}. /'${revoke(chat)}'`
+    const pending = this.actions.pending().filter(action => (named === undefined ? action.tool === "send" && action.chat === chat && action.card !== undefined : action === named))
+    for (const action of pending) this.actions.approve(action, approver)
+    return `${approved} ${chatName(chatSubject(chatInfo))} (${chat}) by ${approver}. /'${revoke(chat)}'`
   }
 
   private async revoke(chat: string, standing: Standing): Promise<string> {

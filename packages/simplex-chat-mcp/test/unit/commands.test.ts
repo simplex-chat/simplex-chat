@@ -291,7 +291,7 @@ function downloadFields(chat = "#2", file: object = {}): NewAction {
 }
 
 describe("receiving all files of a chat", () => {
-  it("receives a download and the later ones of its chat, apart from its messages, until /receive CHAT off", async () => {
+  it("receives a download and the later ones of its chat, apart from its messages and other pending downloads, until /receive CHAT off", async () => {
     const {control, actions, chat} = await setup()
     const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
     directory.customData = {other: 1}
@@ -299,7 +299,7 @@ describe("receiving all files of a chat", () => {
     const second = actions.create("d2", {...downloadFields("@4", {fileId: 8}), item: 31} as NewAction)
     await settled()
     expect(await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${download.n} all`})).toBe("Files approved for bot SimpleX Directory (@4) by Alice. /'receive @4 off'")
-    expect([download, second].map(({state, decidedBy}) => [state, decidedBy])).toEqual([["performing", "Alice"], ["performing", "Alice"]])
+    expect([download, second].map(({state, decidedBy}) => [state, decidedBy])).toEqual([["performing", "Alice"], ["pending", undefined]])
     expect(actions.get(5)).toMatchObject({state: "pending"})
     expect(customDataOf(chat, "@4")).toEqual({other: 1, simplexMcpFiles: {approvedBy: "Alice", approvedById: 3, approvedAt: expect.any(String)}})
     expect([control.standingApprover(chatInfoOf(chat, "@4"), "files"), control.standingApprover(chatInfoOf(chat, "@4"), "messages")]).toEqual(["Alice", undefined])
@@ -312,15 +312,29 @@ describe("receiving all files of a chat", () => {
     expect(customDataOf(chat, "@4")).toEqual({other: 1})
   })
 
-  it("leaves other downloads from unknown servers pending, and says so in its reply", async () => {
+  it("receives the named download also from unknown servers, and each named download only", async () => {
     const {control, actions} = await setup()
     const known = actions.create("d1", downloadFields("@4"))
     const unknown = actions.create("d2", {...downloadFields("@4", {fileId: 8}), item: 31, unknownServers: ["xftp://hash2@xftp.example.com"]} as NewAction)
     await settled()
-    expect(await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${known.n} all`})).toBe("Files approved for bot SimpleX Directory (@4) by Alice, except downloads from unknown servers. /'receive @4 off'")
+    const reply = "Files approved for bot SimpleX Directory (@4) by Alice. /'receive @4 off'"
+    expect(await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${known.n} all`})).toBe(reply)
     expect([known.state, unknown.state]).toEqual(["performing", "pending"])
-    expect(await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${unknown.n} all`})).toBe("Files approved for bot SimpleX Directory (@4) by Alice. /'receive @4 off'")
+    expect(await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${unknown.n} all`})).toBe(reply)
     expect(unknown).toMatchObject({state: "performing", decidedBy: "Alice"})
+  })
+
+  it("leaves a download that stops being pending while the approval is stored", async () => {
+    const {control, actions, chat} = await setup()
+    const download = actions.create("d1", downloadFields("@4"))
+    await settled()
+    const store = chat.apiSetContactCustomData.bind(chat)
+    chat.apiSetContactCustomData = async (contactId, customData) => {
+      actions.reject(download, "Bob")
+      return store(contactId, customData)
+    }
+    await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${download.n} all`})
+    expect(download).toMatchObject({state: "rejected", decidedBy: "Bob"})
   })
 
   it("takes /receive and /forward for downloads only, and /approve for the other actions only", async () => {
@@ -329,10 +343,10 @@ describe("receiving all files of a chat", () => {
     await settled()
     expect(await control.ownerCommand(alice, {keyword: "approve", params: `@4 ${download.n}`})).toBe(`Action ${download.n} is a download: /'receive @4 ${download.n}', /'receive @4 ${download.n} all', /'forward @4 ${download.n}' or /'reject @4 ${download.n}'.`)
     for (const params of [`${action.n}`, `@4 ${action.n}`]) {
-      expect(await control.ownerCommand(alice, {keyword: "receive", params})).toBe(`Action ${action.n} has no file.`)
-      expect(await control.ownerCommand(alice, {keyword: "forward", params})).toBe(`Action ${action.n} has no file.`)
+      expect(await control.ownerCommand(alice, {keyword: "receive", params})).toBe(`Action ${action.n} is not a download.`)
+      expect(await control.ownerCommand(alice, {keyword: "forward", params})).toBe(`Action ${action.n} is not a download.`)
     }
-    expect(await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${action.n} all`})).toBe(`Action ${action.n} has no file.`)
+    expect(await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${action.n} all`})).toBe(`Action ${action.n} is not a download.`)
     expect([action.state, download.state]).toEqual(["pending", "pending"])
     expect(await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${download.n}`})).toBeUndefined()
     expect(download).toMatchObject({state: "performing", decidedBy: "Alice"})
