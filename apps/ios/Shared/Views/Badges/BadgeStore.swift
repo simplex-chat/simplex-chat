@@ -40,9 +40,7 @@ var badgeBrowserAllowed: Bool {
     SKPaymentQueue.default().storefront?.countryCode == "USA"
 }
 
-// Only a receipt the App Store installed proves a build it served, and nothing else may sell: TestFlight,
-// App Review and Xcode buy in the Sandbox, which the service credits nowhere, and carry no receipt at all
-// until a purchase is made, so an absent or unfamiliar one counts as not served.
+// Checks that build is from App Store, supported in iOS 15
 private var appStoreReceiptIsProduction: Bool {
     Bundle.main.appStoreReceiptURL?.lastPathComponent == "receipt"
 }
@@ -222,7 +220,7 @@ final class BadgeStore: ObservableObject {
         )
     }
 
-    // iOS 16 carries the environment in the app transaction, which Apple signs, so it overrides the receipt
+    // iOS 16 includes the environment in the app transaction
     func readEnvironment() async {
         if #available(iOS 16.0, *) {
             if let verification = try? await AppTransaction.shared,
