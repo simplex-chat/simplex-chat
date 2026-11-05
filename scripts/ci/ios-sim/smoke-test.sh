@@ -203,18 +203,14 @@ expect_chat_list top
 "$ui" layout reachable
 fail_on_failed_checks "the smoke test"
 echo "smoke test passed: onboarding reaches the chat list, which shows its onboarding pages and toolbar with the one-hand UI and with the top bar"
-if [ -n "${GITHUB_OUTPUT:-}" ]; then
-  echo "checks=passed" >> "$GITHUB_OUTPUT"
-fi
 
 products=$(dirname "$app")
+snapshots_status=0
 if [[ "$products" == */Build/Products/Debug-iphonesimulator ]]; then
   # the previews read the app's settings, and their references have the default private routing
   xcrun simctl spawn "$SIM_UDID" defaults delete "$prefs" networkSMPProxyMode
-  snapshots_status=0
   "$(dirname "$0")/snapshots.sh" "${products%/Build/Products/Debug-iphonesimulator}" "$UI_OUT/snapshots" || snapshots_status=$?
   xcrun simctl spawn "$SIM_UDID" defaults write "$prefs" networkSMPProxyMode -string unknown
-  exit "$snapshots_status"
 fi
 
 if [ "$cases" = images ]; then
@@ -226,3 +222,7 @@ if [ "$cases" = images ]; then
   send_image png "$logo_x" 1630x466
   echo "smoke test passed: images"
 fi
+if [ -n "${GITHUB_OUTPUT:-}" ]; then
+  echo "checks=passed" >> "$GITHUB_OUTPUT"
+fi
+exit "$snapshots_status"
