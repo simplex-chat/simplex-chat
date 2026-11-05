@@ -29,9 +29,9 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Control.Monad.Reader (runReaderT)
-import qualified Data.Attoparsec.Text as A
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
+import qualified Data.Attoparsec.Text as A
 import Data.Bifunctor (first)
 import Data.Either (fromRight)
 import Data.Functor (($>))

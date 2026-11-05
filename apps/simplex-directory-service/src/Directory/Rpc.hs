@@ -33,7 +33,7 @@ data DirectorySearchEntry = DirectorySearchEntry
     displayName :: Text,
     simplexName :: Maybe Text,
     groupLink :: PublicLink,
-    -- plain text, not parsed markdown: the apps parse it themselves, and their format differs
+    -- plain text, not parsed markdown: the apps draw it as text, and the parsed format differs between platforms
     shortDescr :: Maybe Text,
     image :: Maybe ImageData,
     activeAt :: Maybe UTCTime,

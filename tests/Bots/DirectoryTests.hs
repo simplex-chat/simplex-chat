@@ -992,7 +992,7 @@ channelFoundSubscribers u name = do
 testSearchResultsPage :: HasCallStack => TestParams -> IO ()
 testSearchResultsPage _ps = do
   g <- C.newRandom
-  -- base64 of random bytes does not compress, so the envelope decides what fits
+  -- base64 of random bytes compresses only to the size of those bytes, so the envelope decides what fits
   let randomText n = safeDecodeUtf8 . strEncode <$> atomically (C.randomBytes n g)
       cursor gId = SCMembers {lastMembers = 1, lastGroupId = gId}
       page matched rows = case searchResultsPage cursor matched rows of

@@ -22,10 +22,10 @@ module Directory.Events
 where
 
 import Control.Applicative (optional, (<|>))
+import qualified Data.Aeson as J
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
 import Data.Char (isSpace)
-import qualified Data.Aeson as J
 import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.Maybe (fromMaybe, isNothing)
