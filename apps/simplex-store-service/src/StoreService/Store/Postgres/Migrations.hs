@@ -27,7 +27,8 @@ schemaMigrations =
     ("20261022_name_late_wait", m20261022_name_late_wait, Just down_m20261022_name_late_wait),
     ("20261023_name_terms", m20261023_name_terms, Just down_m20261023_name_terms),
     ("20261027_name_invoiced_units", m20261027_name_invoiced_units, Just down_m20261027_name_invoiced_units),
-    ("20261029_name_record_changes", m20261029_name_record_changes, Just down_m20261029_name_record_changes)
+    ("20261029_name_record_changes", m20261029_name_record_changes, Just down_m20261029_name_record_changes),
+    ("20261102_name_terms_acceptance", m20261102_name_terms_acceptance, Just down_m20261102_name_terms_acceptance)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -670,6 +671,28 @@ UPDATE @name_record_edits SET
   signature = (SELECT c.signature FROM @name_record_changes c WHERE c.name_record_edit_id = @name_record_edits.name_record_edit_id AND c.nonce = @name_record_edits.nonce);
 
 DROP TABLE @name_record_changes;
+|]
+
+-- The owner's acceptance of the terms of the name's kind, stored with its reveal.
+m20261102_name_terms_acceptance :: Text
+m20261102_name_terms_acceptance =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @name_registrations ADD COLUMN accept_terms BYTEA;
+ALTER TABLE @name_registrations ADD COLUMN accept_nonce BIGINT;
+ALTER TABLE @name_registrations ADD COLUMN accept_signature BYTEA;
+|]
+
+down_m20261102_name_terms_acceptance :: Text
+down_m20261102_name_terms_acceptance =
+  withPrefix
+    servicePrefix
+    [r|
+DELETE FROM @name_transactions WHERE kind = 'accept';
+ALTER TABLE @name_registrations DROP COLUMN accept_signature;
+ALTER TABLE @name_registrations DROP COLUMN accept_nonce;
+ALTER TABLE @name_registrations DROP COLUMN accept_terms;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.

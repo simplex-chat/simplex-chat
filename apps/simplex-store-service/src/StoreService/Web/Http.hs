@@ -30,6 +30,7 @@ module StoreService.Web.Http
     invalidLink,
     codeConflict,
     providerUnavailable,
+    termsUnavailable,
     rateLimited,
     methodNotAllowed,
     internalError,
@@ -266,12 +267,18 @@ codeConflict = jsonError status409 "code_conflict"
 providerUnavailable :: Response
 providerUnavailable = jsonError status503 "provider_unavailable"
 
+termsUnavailable :: Int -> Response
+termsUnavailable = retryAfterError status503 "terms_unavailable"
+
 rateLimited :: Int -> Response
-rateLimited seconds =
+rateLimited = retryAfterError status429 "rate_limited"
+
+retryAfterError :: Status -> Text -> Int -> Response
+retryAfterError st code seconds =
   responseLBS
-    status429
+    st
     (("Retry-After", B.pack (show seconds)) : apiHeaders)
-    (J.encode (J.object ["error" .= ("rate_limited" :: Text)]))
+    (J.encode (J.object ["error" .= code]))
 
 methodNotAllowed :: Method -> Response
 methodNotAllowed allow = responseLBS status405 (("Allow", allow) : apiHeaders) (J.encode (J.object ["error" .= ("method_not_allowed" :: Text)]))

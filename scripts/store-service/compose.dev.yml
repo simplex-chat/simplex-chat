@@ -1,5 +1,6 @@
 # Development: compose.yml plus a local chain with the names contracts, kept in ./data/chain across restarts, which
-# writes ./config/store_service.ini for them on its first start, and a local database.
+# serves the texts of their terms on 127.0.0.1:8098 and writes ./config/store_service.ini for them on its first start,
+# and a local database.
 # Enable it with COMPOSE_FILE=compose.yml:compose.dev.yml in .env; unlike a compose.override.yml, it is never
 # picked up on its own.
 services:

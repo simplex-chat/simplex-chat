@@ -4,6 +4,7 @@
 module StoreService.Names.Abi
   ( AbiValue (..),
     AbiError (..),
+    abiWordSize,
     abiTuple,
     abiBytes,
     abiArray,

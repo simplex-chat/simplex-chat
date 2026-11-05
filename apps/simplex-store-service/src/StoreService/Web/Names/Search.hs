@@ -3,9 +3,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module StoreService.Web.Names.Search (searchHandler, previewHandler) where
+module StoreService.Web.Names.Search (searchHandler, previewHandler, termsHandler) where
 
-import Control.Concurrent.Async (mapConcurrently)
+import Control.Concurrent.Async (async, mapConcurrently, wait)
 import Control.Logger.Simple (logWarn)
 import Control.Monad (join)
 import Control.Monad.Except (ExceptT (..), runExceptT)
@@ -15,6 +15,8 @@ import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
+import Data.List (find)
+import Data.Maybe (mapMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import qualified Data.Text as T
@@ -24,23 +26,23 @@ import Network.Wai (Request, Response, ResponseReceived, queryString)
 import Simplex.Chat.Badges.Code (maxNameLength, minNameLength)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.SimplexName (LabelHash (..))
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (bytes32FromHex)
-import StoreService.Names.Community (communityJSON, termsJSON)
+import StoreService.Names.Community (communityJSON, kindTerms, readableTerms, termsJSON, yearsFor)
 import StoreService.Names.Contracts
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
 import StoreService.Names.Records (nameEditsLeft)
 import StoreService.Names.Store (isLabelRegistering)
 import StoreService.Names.View (addressText, tldText)
-import StoreService.Web.Http (Respond, badRequest, invalidLink, invalidName, jsonResponse, maxBodyBytes, providerUnavailable, readBoundedBody)
+import StoreService.Web.Http (Respond, badRequest, invalidLink, invalidName, jsonResponse, maxBodyBytes, notFound, providerUnavailable, readBoundedBody, termsUnavailable)
 import StoreService.Web.Names.Records (editsLeftJSON)
 import System.Timeout (timeout)
 import Text.Read (readMaybe)
 
 data Found
-  = FAvailable Int
+  = FAvailable Int (Maybe Terms)
   | -- | the chain says available while a registration here has its register sent, not mined
     FRegistering
   | FReserved
@@ -55,17 +57,19 @@ searchHandler cfg@NamesConfig {nYears} st ct ps clock hashText req respond = cas
     Just len -> do
       registering <- withTransaction st (`isLabelRegistering` lh)
       timeout (ctDeadline ct) (runExceptT $ found lh len registering) >>= \case
-        Just (Right f) -> respond =<< searchAnswer cfg st ps clock lh f
+        Just (Right (f, listed)) -> respond =<< searchAnswer cfg st ps clock lh listed f
         Just (Left e) -> unavailable $ tshow e
         Nothing -> unavailable "timed out"
   where
-    found lh len registering =
-      ExceptT (nameStatus ct lh) >>= \case
+    found lh len registering = do
+      (status, listed) <- ExceptT $ together $ (,) <$> concurrent (nameStatus ct lh) <*> concurrent (communityName ct lh)
+      (,listed) <$> case status of
         NSAvailable
           | registering -> pure FRegistering
-          | otherwise -> FAvailable <$> ExceptT (chainPriceCents ct len nYears)
+          | otherwise -> ExceptT $ together $ FAvailable <$> concurrent (chainPriceCents ct len (yearsFor listed nYears)) <*> concurrent (readableNow listed)
         NSReserved -> pure FReserved
         NSRegistered name -> FRegistered name <$> ExceptT (nameRecords ct lh name)
+    readableNow listed = termsLinks ct >>= traverse (\links -> eitherToMaybe <$> (wait =<< async (readableTerms ct $ kindTerms listed links)))
     unavailable :: Text -> IO ResponseReceived
     unavailable why = logWarn ("GET /api/name: a chain read failed: " <> why) >> respond providerUnavailable
 
@@ -80,14 +84,14 @@ queryLength req = case join $ lookup "length" $ queryString req of
       | n >= toInteger minNameLength && n <= toInteger maxNameLength = Just $ fromInteger n
       | otherwise = Nothing
 
-searchAnswer :: NamesConfig -> DBStore -> Profiles -> IO UTCTime -> LabelHash -> Found -> IO Response
-searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nChain = ChainConfig {cChainId, cResolver, cSponsor}} st ps clock lh = \case
-  FAvailable price ->
+searchAnswer :: NamesConfig -> DBStore -> Profiles -> IO UTCTime -> LabelHash -> Bool -> Found -> IO Response
+searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nChain = ChainConfig {cChainId, cResolver, cSponsor}} st ps clock lh listed = \case
+  FAvailable price readable ->
     ok $
       ["status" .= ("available" :: Text), "price" .= price, "currency" .= ("usd" :: Text), "years" .= nYears, "termStart" .= termStart]
         <> ["resolver" .= addressText cResolver, "sponsor" .= addressText cSponsor]
         <> chain
-        <> ["terms" .= termsJSON cfg]
+        <> ["terms" .= termsJSON readable]
   FRegistering -> ok ["status" .= ("registered" :: Text), "entities" .= ([] :: [Entity]), "tld" .= tldText nTLD]
   FReserved -> ok ["status" .= ("reserved" :: Text)]
   FRegistered RegisteredName {rnOwner, rnResolver, rnExpiresAt, rnGracePeriod} records_ -> do
@@ -101,7 +105,7 @@ searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nCh
         <> chain
   where
     ok :: [JT.Pair] -> IO Response
-    ok fields = pure $ jsonResponse status200 $ J.object $ fields <> ["community" .= communityJSON cfg lh]
+    ok fields = pure $ jsonResponse status200 $ J.object $ fields <> ["community" .= communityJSON cfg lh listed]
     chain = ["chainId" .= cChainId, "tld" .= tldText nTLD]
     termStart = floor (utcTimeToPOSIXSeconds nTermStart) :: Integer
     recordsJSON NameRecords {rdContact, rdChannel} = J.object ["contact" .= rdContact, "channel" .= rdChannel]
@@ -130,3 +134,18 @@ previewHandler ps req respond =
       Just (J.String link) | Just kind <- linkKindOf link -> respond . jsonResponse status200 . J.toJSON =<< linkPreview ps kind link
       _ -> respond invalidLink
     _ -> respond badRequest
+
+-- | The text of either current set of terms, by its hash, with its link; any other hash answers not_found.
+termsHandler :: Contracts -> Text -> Request -> Respond -> IO ResponseReceived
+termsHandler ct hashText _ respond = case bytes32FromHex hashText of
+  Nothing -> respond badRequest
+  Just h ->
+    termsLinks ct >>= \case
+      Left e -> logWarn ("GET /api/terms: a chain read failed: " <> tshow e) >> respond providerUnavailable
+      Right (generalLink, communityLink) -> case find ((h ==) . tmHash) $ mapMaybe termsOf [generalLink, communityLink] of
+        Nothing -> respond notFound
+        Just t@Terms {tmLink} ->
+          termsText ct t >>= \case
+            Right text -> respond $ jsonResponse status200 $ J.object ["link" .= tmLink, "text" .= text]
+            Left TRLink -> respond notFound
+            Left (TRWait seconds) -> respond $ termsUnavailable seconds
