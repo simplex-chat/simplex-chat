@@ -107,6 +107,10 @@ chatProfileTests = do
     it "create address on specified server" testCreateAddressOnServer
     it "retry connecting via contact link" testRetryConnectingViaContactLink
     it "retry connecting via address in contact profile after address keys rotation" testRetryConnectingContactViaAddress
+    it "connections prepared for failed joins are shown in chat list" testFailedConnectViaLinksInChatList
+#if !defined(dbPostgres)
+    it "failed join to an address leaves no receive queue after deleting the connection" testFailedConnectDeletesRcvQueue
+#endif
     it "add contact link to profile" testProfileLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
     it "deduplicate contact requests" testDeduplicateContactRequests
@@ -1556,6 +1560,70 @@ testRetryConnectingContactViaAddress ps =
               { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
               }
         }
+
+testFailedConnectViaLinksInChatList :: HasCallStack => TestParams -> IO ()
+testFailedConnectViaLinksInChatList ps = testChatOpts2 opts' aliceProfile bobProfile test ps
+  where
+    test alice bob = do
+      (cLink, inv, gLink) <- withSmpServer' serverCfg' $ do
+        alice ##> "/ad"
+        cLink <- getContactLink alice True
+        alice ##> "/_connect 1"
+        inv <- getInvitation alice
+        alice ##> "/g team"
+        alice <## "group #team is created"
+        alice <## "to add members use /a team <name> or /create link #team"
+        alice ##> "/create link #team"
+        gLink <- getGroupLink alice "team" GRMember True
+        pure (cLink, inv, gLink)
+      alice <## "disconnected 3 connections on server localhost"
+      forM_ [cLink, inv, gLink] $ \link -> do
+        bob ##> ("/_connect 1 " <> link)
+        bob <##. "smp agent error: BROKER"
+      bob @@@ [(":1", ""), (":2", ""), (":3", "")]
+      forM_ [1 :: Int, 2, 3] $ \i -> do
+        bob ##> ("/_delete :" <> show i)
+        bob <## ("connection :" <> show i <> " deleted")
+      bob @@@ []
+    serverCfg' =
+      (smpServerCfg ps) {transports = [(smpTestPort2 ps, transport @TLS, False)]}
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
+
+#if !defined(dbPostgres)
+testFailedConnectDeletesRcvQueue :: HasCallStack => TestParams -> IO ()
+testFailedConnectDeletesRcvQueue ps = testChat2 aliceProfile bobProfile test ps
+  where
+    test alice bob = do
+      cLink <- withSmpServer' altServerCfg $ do
+        alice ##> ("/_address 1 " <> smpServer2Str ps)
+        getContactLink alice True
+      alice <## "disconnected 1 connections on server localhost"
+      bob ##> ("/_connect 1 " <> cLink)
+      bob <##. "smp agent error: BROKER"
+      bob @@@ [(":1", "")]
+      rcvQueueCount bob `shouldReturn` "1"
+      bob ##> "/_delete :1"
+      bob <## "connection :1 deleted"
+      bob @@@ []
+      waitRcvQueueCount bob "0" (50 :: Int)
+    altServerCfg =
+      (smpServerCfg ps) {transports = [(smpTestPort2 ps, transport @TLS, False)]}
+    rcvQueueCount cc = do
+      cc ##> "/sql agent SELECT count(*) FROM rcv_queues"
+      cc <## "count(*)"
+      getTermLine cc
+    waitRcvQueueCount cc expected n = do
+      count <- rcvQueueCount cc
+      if count == expected || n <= 0
+        then count `shouldBe` expected
+        else threadDelay 100000 >> waitRcvQueueCount cc expected (n - 1)
+#endif
 
 testProfileLink :: HasCallStack => TestParams -> IO ()
 testProfileLink =
