@@ -73,30 +73,21 @@ class OnlineSearchModel {
   suspend fun searchDirectory(text: String) {
     val text = text.trim()
     if (text.isEmpty() || (loading && text == searchedText)) return
-    if (text == searchedText) {
-      directory = emptyList()
-      moreCount = null
-      cursor = null
-      failed = false
-      searched = false
-    } else {
-      reset()
-      searchedText = text
-    }
-    request(append = false)
+    reset()
+    searchedText = text
+    request()
   }
 
   suspend fun loadMore() {
     if (cursor == null || loading) return
-    request(append = true)
+    request()
   }
 
   suspend fun retry() {
     if (cursor != null) {
       loadMore()
-    } else if (!loading && searchedText.isNotEmpty()) {
-      searched = false
-      request(append = false)
+    } else {
+      searchDirectory(searchedText)
     }
   }
 
@@ -136,7 +127,7 @@ class OnlineSearchModel {
     return directoryResultState(plan?.connectionPlan)
   }
 
-  private suspend fun request(append: Boolean) {
+  private suspend fun request() {
     val rh = chatModel.remoteHostId()
     val gen = generation
     loading = true
@@ -159,7 +150,7 @@ class OnlineSearchModel {
     }
     cursor = r.cursor
     moreCount = r.moreCount
-    directory = if (append) directory + page else page
+    directory = directory + page
   }
 
   private fun updateSpinner() {

@@ -49,30 +49,21 @@ class OnlineSearchModel: ObservableObject {
     func searchDirectory(_ text: String) async {
         let text = text.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty, !(loading && text == searchedText) else { return }
-        if text == searchedText {
-            directory = []
-            moreCount = nil
-            cursor = nil
-            failed = false
-            searched = false
-        } else {
-            reset()
-            searchedText = text
-        }
-        await request(append: false)
+        reset()
+        searchedText = text
+        await request()
     }
 
     func loadMore() async {
         guard cursor != nil, !loading else { return }
-        await request(append: true)
+        await request()
     }
 
     func retry() async {
         if cursor != nil {
             await loadMore()
-        } else if !loading && !searchedText.isEmpty {
-            searched = false
-            await request(append: false)
+        } else {
+            await searchDirectory(searchedText)
         }
     }
 
@@ -114,7 +105,7 @@ class OnlineSearchModel: ObservableObject {
         return directoryResultState(plan?.connectionPlan)
     }
 
-    private func request(append: Bool) async {
+    private func request() async {
         let gen = generation
         loading = true
         failed = false
@@ -136,7 +127,7 @@ class OnlineSearchModel: ObservableObject {
         }
         cursor = r.cursor
         moreCount = r.moreCount
-        directory = append ? directory + page : page
+        directory += page
     }
 
     private func updateSpinner() {
