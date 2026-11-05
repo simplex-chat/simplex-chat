@@ -22,7 +22,7 @@ check "the note shows in the chat" "$ui" find "scripted note"
 - `# covers:` lines list the code the test exercises, as shell patterns from the repo root separated by spaces (`*` also matches `/`, `?` matches a space in a path). A run selects the test when its branch changes a file that matches one.
 - `# needs: backend` marks a test that needs the test backend. It gets `BACKEND_DIR`, the backend's work directory (`names-server`, `directory-link`, and on iOS `seed.md`). Without the backend, the test is skipped with a note.
 - The rest is bash over the platform's `ui`, the same commands a Claude session sends. `ui` alone prints them; each platform's README describes its driver.
-- `lib.sh` holds the platform's shared steps (on desktop and Android: finding text and positions, getting back to the chat list, opening Settings; on iOS: `in_tree`) and loads `scripts/ci/app-tests/checks.sh`:
+- `lib.sh` holds the platform's shared steps (on desktop and Android: finding text and positions, getting back to the chat list; on desktop, opening Settings; on iOS: `in_tree`) and loads `scripts/ci/app-tests/checks.sh`:
   - `check "<what is true>" <command>` records `PASS` or `FAIL` and goes on;
   - `fail "<why>"` ends the test;
   - `note "<text>"` records a remark for the summary.
@@ -37,7 +37,7 @@ The app as the smoke test left it, restarted at the chat list with the reachable
 |---|---|---|---|
 | desktop | onboarded as citester | "seeded notes", "Private notes" | the test SMP server is the only one resolving names (`seeded.testing` resolves to ci_contact) |
 | Android | onboarded | "seeded notes", "Private notes" | the test SMP server added under Your servers |
-| iOS | onboarded | "image notes", a group with the two images the smoke test sent | — |
+| iOS | onboarded, local files not encrypted | "image notes", a group with the two images the smoke test sent; "Private notes" | — |
 
 Tests run one after another in name order and share that profile. A test may leave state behind; it names what it creates after itself and must still pass with what earlier tests left.
 
