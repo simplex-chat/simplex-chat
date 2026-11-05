@@ -213,7 +213,7 @@ fun MarkdownText (
   val metaCopy = if (meta != null) {
     metaReserveCopy(meta, chatTTL, encrypted, signedFileVerified, MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp, breakBefore = !LocalTerminalLayout.current && range?.isEmpty() != true)
   } else null
-  if (blockLayout && formattedText != null && markdownBlocks != null && range == null) {
+  if (blockLayout && formattedText != null && markdownBlocks != null && range == null && (prefix == null || blockTextRanges(markdownBlocks).isNotEmpty())) {
     val direction = LocalLayoutDirection.current
     val terminal = LocalTerminalLayout.current
     val trailingEmptyLines = trailingEmptyLines(text, formattedText, markdownBlocks)
@@ -444,7 +444,7 @@ fun MarkdownText (
             is Format.Escape -> {}
             is Format.Markup -> append(
               if (range != null) ft.format.token.drawnText
-              else if (markdownBlocks != null) ft.format.token.previewText
+              else if (markdownBlocks != null && !blockLayout) ft.format.token.previewText
               else ft.text
             )
             is Format.Unknown -> append(ft.text)
