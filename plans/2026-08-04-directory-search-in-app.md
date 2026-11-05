@@ -1,78 +1,78 @@
 # SimpleX Directory search in app search
 
-Make the directory searchable from the app's search fields — chat list and New chat — instead of only by chatting with the bot. Transport is the Service RPC from `e1a349b90`: one request, one response, over the directory's contact address.
+The directory is searchable from the app's search fields, in the chat list and New chat, without chatting with the bot. Transport is the service RPC: one request, one response, over the directory's contact address.
 
 ```
 search field ──"Search in Directory" / keyboard Search──▶ APISendServiceRequest(directory short link, JSON)
    ▲                                                          │
 result rows ◀── CRServiceResponse ◀── APISendServiceResponse ◀─┴─ directory: CEvtServiceRequest → searchListedGroups
    │
-   └─tap─▶ planAndConnect(link)   — existing flow: resolves the link, prepares the chat, opens it
+   └─tap─▶ planAndConnect(link)   — loads the link's profile, prepares the chat, opens it
 ```
 
-Results are not chats and are never persisted; they live as long as the search text does.
+Results are not chats and are never persisted; they exist only as long as the search text and the active profile do.
 
 ## 1. Directory: search over RPC
 
-New `Directory/Rpc.hs`, JSON-derived, re-declared by hand in Kotlin and Swift.
+`Directory/Rpc.hs`, JSON-derived, declared by hand in Kotlin and Swift.
 
 ```haskell
-data DirectorySearchRequest = DirectorySearchRequest
-  { searchText :: Text                -- the string a user sends the bot in chat
-  , cursor :: Maybe DirectoryCursor   -- opaque to the app; Nothing = first page
+data DirectoryRequest = DRSearch
+  { searchText :: Text,                 -- at most 100 characters
+    searchCursor :: Maybe SearchCursor  -- opaque to the app; Nothing = first page
   }
 
 data DirectorySearchEntry = DirectorySearchEntry
-  { entryType, displayName, simplexName, groupLink, activeAt, createdAt  -- as DirectoryEntry, Listing.hs:70
-  , shortDescr :: Maybe Text          -- stored form, not DirectoryEntry's MarkdownList
-  , image :: Maybe ImageData          -- group profile picture, as the bot already sends it
+  { entryType :: DirectoryEntryType,
+    displayName :: Text,
+    simplexName :: Maybe Text,
+    groupLink :: PublicLink,
+    shortDescr :: Maybe Text,
+    image :: Maybe ImageData,
+    activeAt :: Maybe UTCTime,
+    createdAt :: Maybe UTCTime
   }
 
-data DirectorySearchResponse = DirectorySearchResponse
-  { entries :: [DirectorySearchEntry], cursor :: Maybe DirectoryCursor }  -- Nothing = no more
+data DirectoryResponse
+  = DRSearchResults
+      { entries :: [DirectorySearchEntry],
+        searchCursor :: Maybe SearchCursor,  -- Nothing = no more
+        moreCount :: Int
+      }
+  | DRError {errorMessage :: Text}
 ```
 
-This is the bot's existing text search (`STSearch`), a `LIKE '%…%'` over registered group and channel **profiles** — display name, full name, short description, welcome message, and the SimpleX name when the domain is verified (Store.hs:394-401). No conversation content is involved. No sort parameter: the directory's other modes are the separate `/all` and `/new` commands (Service.hs:1141-1142). No page-size parameter: it uses its own `searchResults` (Service.hs:1284, default 10).
+On the wire: `{"type": "search", "searchText": …, "searchCursor": …}`, answered by `{"type": "searchResults", "entries": […], "searchCursor": …, "moreCount": N}` or `{"type": "error", "errorMessage": …}`.
 
-Paging is `/next` with the state moved. In chat the directory keys the saved search on the contact (`TM.lookup (contactId' ct) searchRequests`, Service.hs:1128, written :1299, 5-minute expiry :1131). Over RPC it gets only a per-request `invId` (Subscriber.hs:1368) — nothing identifying the requester — so there is no key to look a `next` up against, and the cursor comes back in the request instead. `DirectoryCursor` is opaque to the app — a JSON value it stores and echoes back verbatim, never inspects. It MUST be typed as an opaque blob in the bindings (`JsonObject` / `Data`), not as an id, because the paging fix below changes it from a bare group id to a sort value plus a tie-break id; opacity is what keeps that fix out of the apps.
+This is the bot's text search (`STSearch`), a case-insensitive substring match over registered group and channel **profiles**: display name, full name, short description, description, and the SimpleX name when the domain is verified. `%` and `_` in the text match literally. No conversation content is involved. No sort parameter: results are sorted by member count, and the directory's other modes are the separate `/all` and `/new` commands. No page-size parameter: `searchListedGroups` reads at most `searchResults` rows (default 10), as the in-chat path does, and the size is not part of the response.
 
-Entry differences from `DirectoryEntry`: `welcomeMessage` dropped (it carries the whole group description, Listing.hs:105-119); `shortDescr` sent as stored `Text` (Types.hs:882) rather than `MarkdownList`, which would ship a Linux-shaped `Format` iOS cannot decode — apps parse markdown locally via `chat_parse_markdown` (Core.kt:31) if the row needs it; `imageFile` (a web-listing path) replaced by `image`, the profile picture the bot already sends as `MCImage` (Service.hs:1310), bounded to 12,500 characters of data URI (`maxProfileImageSize`, Commands.hs:157-159; matches `resizeImageToStrSize`, GroupProfileView.kt:95).
+Over RPC the directory gets only a per-request `invId`, with nothing identifying the requester, so there is no saved search to continue and the cursor comes back in the request. `SearchCursor` is opaque to the app: a JSON value it stores and echoes back verbatim and never inspects. It is typed as an opaque blob in the bindings (`JsonObject` / `JSONValue`), not as an id. A cursor of another search mode gets the error response, not the first page.
 
-**Response budget and compression.** A service response travels as a confirmation: `APISendServiceResponse` (Commands.hs:1474) -> `sendServiceReplyAsync'` -> `replyRequest_` -> `prepareReply` -> `storeConfirmation` (agent Agent.hs:4183-4191), padded to `e2eEncConnInfoLength` — **11,106 bytes** with PQ on at agent version >= 5 (agent Protocol.hs:349-353), not the 14,832 of the non-PQ branch. The reply connection inherits `PQSupportOn` from the requester (agent Agent.hs:1730, :1736 -> `newConnToAcceptDR` :1399), so 11,106 is the operative figure. Over-length fails in `pad` (agent Crypto.hs:1054), which surfaces to the app only as `ASETimeout`.
+An entry differs from the web listing's `DirectoryEntry`:
 
-**The response MUST be compressed, exactly as conn info is.** A service response is the same payload class as conn info — both are padded to `e2eEncConnInfoLength` — and the chat layer already compresses that class: `encodeConnInfoPQ` (Internal.hs:2250-2261) compresses with `compressedBatchMsgBody_` when PQ is on and the body exceeds `maxCompressedInfoLength` = **10,968** (Protocol.hs:939-940, defined as `maxEncodedInfoLength - 3726, see e2eEncConnInfoLength in agent`), and fails over the cap after compressing. The service path must do the same:
+- no `welcomeMessage`, which contains the whole group description;
+- `shortDescr` as plain text rather than `MarkdownList`, whose `Format` differs between platforms; it is cut to 160 characters, the limit clients apply when they set one;
+- `image` in place of `imageFile` (a web-listing path): the group's profile picture, sent only when it is at most 12,500 characters of data URI (`maxProfileImageSize`) and a JPEG or PNG that `safeImageData` keeps, so a response never contains a blank image; otherwise the entry is sent without it;
+- `groupLink` without its full link when it has a short link, since the apps connect through the short link;
+- `entryType`, `simplexName`, `activeAt` and `createdAt` from the same functions the web listing uses.
 
-Compression belongs in the **core**, not in the directory: `APISendServiceResponse` takes a `J.Object` (Controller.hs:415) and encodes it itself, so a handler has no way to hand it compressed bytes. It is also generic — any service, not just the directory, needs it. `compressServiceBody` / `decompressServiceBody` (Protocol.hs, beside `compressedBatchMsgBody_`) wrap the same `'X'` marker and `maxCompressedInfoLength` bound, and are applied symmetrically at all four points: request encode and response decode in `APISendServiceRequest`, response encode in `APISendServiceResponse`, and request decode on the `SREQ` path (Subscriber.hs). A JSON payload never starts with `'X'`, so the marker is unambiguous and payloads under the bound stay uncompressed.
+**Response budget and compression.** A service response travels as a confirmation, padded to `e2eEncConnInfoLength`: **11,106 bytes** with PQ on, which the reply connection inherits from the requester. A request also contains its reply queue and an optional signature, so both directions use one bound, `maxServiceBodyLength` = **10,737 bytes**.
 
-Decompression MUST bound the expanded size against `maxDecompressedMsgLength` — without it a small payload from an untrusted peer can expand without limit.
+Compression is in the **core**, not in the directory: `APISendServiceResponse` takes a `J.Object` and encodes it itself, and any service needs it. `compressServiceBody` (Protocol.hs) compresses a body over the bound with the same `'X'` marker as connection info and refuses one that is still over it, or over the decompressed limit of the receiver, when it is sent. `parseServiceBody` decompresses with the size bounded by `maxDecompressedMsgLength` (64 KB) and refuses JSON nested deeper than 32 levels. They apply symmetrically: request encode and response decode in `APISendServiceRequest`, response encode in `APISendServiceResponse`, and request decode on the `SREQ` path. A JSON payload never starts with `'X'`, so the marker is unambiguous, and payloads under the bound stay uncompressed. The directory handler and the apps see plain JSON.
 
-`10968` is the constant to size against, not the raw 11,106 — it is the chat layer's already-correct expression of the same agent limit.
+**Entries per page are bounded by images.** `image` is base64 of already-compressed JPEG or PNG, so compression recovers roughly the base64 expansion and no more: a near-limit image is roughly 9,400 bytes against the 10,737 budget. One such entry fits in a response, two do not, whatever the page size. The envelope is the binding constraint, and the app shows whatever fits and pages the rest on request (§6).
 
-The directory handler and the apps therefore see plain JSON and do nothing about compression.
+**Filling the page.** `searchResultsPage` drops entries from the end until the compressed response fits, so the cursor comes from the last row **included**, not the last one read, and truncated rows are sent on the next page. A single entry that doesn't fit is sent without its image, and if it still doesn't fit it is skipped, with the cursor moved past it, so paging doesn't stall. `moreCount` is the number of matches after the cursor, 0 without one. `searchListedGroups` returns each group's link, without which an entry has no link to send; rows without a public link are consumed by the cursor and not sent.
 
-**Entries per page is still bounded by images.** `image` is base64 of already-compressed JPEG/PNG, so compression recovers roughly the base64 expansion and no more: a near-cap 12,500-character image lands at roughly 9,400 bytes, against a 10,968 budget. One image-bearing entry per response; two will not fit whatever the page size. `searchResults` (default 10) is therefore not the binding constraint — the envelope is. The app shows whatever fits and pages the rest manually (§6); streaming the response is the eventual fix and is out of scope here.
+**Handler.** `DEServiceRequest` in `DirectoryEvent`, from `CEvtServiceRequest`; `directoryServiceEvent` decodes the request, searches, and replies with `APISendServiceResponse`. A payload that isn't a valid JSON object is dropped by the core and logged, so the handler sees a well-formed object and answers a wrong shape or unknown method with the error response, never a chat message.
 
-**Handler.** Add `DEServiceRequest` to `DirectoryEvent` (Events.hs:48) and a `CEvtServiceRequest` case to `crDirectoryEvent_` (:81); in `directoryServiceEvent` (Service.hs:321) decode, search, reply with `APISendServiceResponse`. Malformed JSON never reaches the bot — the core rejects it before emitting the event (Subscriber.hs:1367-1374), so the handler only ever sees a well-formed object and only has to answer for a wrong shape or unknown method, which returns the error envelope, never a chat message. The response must likewise be a JSON object: the core decodes it into `J.Object` and fails the whole call otherwise (Commands.hs:1455).
+The handler runs off the event loop: the directory processes registrations, captchas and owner commands on one sequential consumer, so `forkWithinCap` forks each request with at most `maxServiceRequestsInFlight` (8) running, and frees the place however the request ends.
 
-**Page size.** `searchListedGroups` takes `pageSize`; the handler passes `searchResults` (Options.hs:195, default 10) as the in-chat path does, then fills `entries` until the compressed response would exceed `maxCompressedInfoLength` and returns a cursor for the rest. Because images bind the page to roughly one entry, the cursor MUST come from the last **included** row, not from `last gs` as the chat path does (Service.hs:1290) — otherwise truncated rows are skipped permanently. Entries need the group link, which `searchListedGroups` does not return (Store.hs:343) and without which `groupDirectoryEntry` yields `Nothing` (Listing.hs:126-130) — extend it as `getAllListedGroups_` does (Store.hs:341).
+**The limit is global, and that is a deliberate privacy trade.** A signed request would give a caller identity, but a stable key would correlate every search a user ever makes, so the app doesn't sign and no per-caller key exists. All requesters share one cap, generous relative to legitimate traffic. Over it, a request is **rejected** with a reason (`APIRejectServiceRequest`, "service is busy"), so the requester gets an immediate failure instead of a 10 s timeout. A rejection is enqueued rather than sent from the event loop.
 
-Run the handler off the event loop (`forkIO`, as `sendFoundGroups` does at Service.hs:1301) with bounded concurrency: the directory processes registrations, captchas and owner commands on one sequential consumer (Service.hs:263-269) fed by an unbounded `TQueue` (:105, :133), so the handler must return to the loop immediately and the concurrency bound must live in the forked side.
+Per-request agent state on the responder is released: `replyRequest_` deletes the invitation, `sendReplyAsync` enqueues `ICReplyDel`, which sends and then deletes the connection, and a periodic sweep clears expired requests at `serviceResponseTimeout` (180 s).
 
-**Rate limiting is global, and that is a deliberate privacy trade.** A signed request would carry a caller identity — `CEvtServiceRequest` has `signerKey` (Controller.hs:952), populated end to end (agent Agent.hs:1716-1724; test Direct.hs:1928) — but a stable key would correlate every search a user ever makes, so the app does not sign, and no per-caller key exists. The cost is that all requesters share one cap. Accepted for now: the cap is generous relative to legitimate traffic, and over-cap requests are **rejected** (`rejectServiceRequest`, a fast error) rather than dropped, so a requester over the cap gets an immediate failure instead of a 10 s timeout.
-
-Per-request agent state on the responder is released and needs no work here: `replyRequest_` deletes the invitation (agent Agent.hs:1686), `sendReplyAsync` enqueues `ICReplyDel` which sends then deletes the connection (:1695, :2232-2234), and a periodic sweep clears expired requests at `serviceResponseTimeout` = 180 s (:3365-3368).
-
-**Cursor fix — separate commit, first.** All three search modes order by one key and page by an unrelated one, so `/next` skips and repeats rows in every mode. `/next` replays whichever `searchType` was saved (Service.hs:1136), so all three MUST be fixed together:
-
-| mode | `ORDER BY` | cursor predicate today |
-| --- | --- | --- |
-| `STAll` | `members_count DESC, group_reg_id ASC` (:359) | `r.group_id > ?` (:354) |
-| `STRecent` | `r.created_at DESC, group_reg_id ASC` (:371) | `r.group_id > ?` (:366) |
-| `STSearch` | `members_count DESC, group_reg_id ASC` (:388) | `r.group_id > ?` (:378) |
-
-`STRecent` is the worst: `created_at DESC` walks newest-first while `group_id > ?` excludes everything below the cursor, so `/next` after `/new` returns almost nothing.
-
-The predicate MUST match the sort key, and **the `ORDER BY` tie-break changes with it** — today it is `r.group_reg_id`, which is not selected (`groupRegFields`, Store.hs:450) and diverges from `group_id` after a deregister/re-register. Tie-break both on `r.group_id` (unique, Migrations.hs:36). Use the OR form; the mixed-direction sort rules out a row-value comparison:
+**Paging by the sort key.** Each search mode pages by the key it sorts on, tie-broken on `r.group_id` (unique), so `/next` and the RPC neither skip nor repeat rows. The mixed-direction sort rules out a row-value comparison:
 
 ```sql
 -- STAll, STSearch
@@ -84,19 +84,19 @@ AND (r.created_at < ? OR (r.created_at = ? AND r.group_id > ?))
 ORDER BY r.created_at DESC, r.group_id ASC
 ```
 
-The cursor therefore carries the sort value plus `r.group_id`, so `SearchRequest.lastGroup :: GroupId` (Search.hs:10) becomes a pair, and `updateSearchRequest` (Service.hs:1296-1300) takes it from the last row rather than its `groupId` alone. The count queries take the same predicate, so `n` stays the remainder `moreGroups` needs (Service.hs:1289).
+`SearchCursor` therefore holds the sort value plus the group id: `SCMembers {lastMembers, lastGroupId}` or `SCRecent {lastCreatedAt, lastGroupId}`. `/next` replays the saved `searchType` with it. The count queries take the same condition, so the count is the remainder. Anyone can send a search, so a text search's cursor has no timestamp: the group id shows only the order the directory joined groups.
 
-`testSearchGroups` (DirectoryTests.hs:505) misses all of this because its fixture registers groups in id order with equal member counts, so `group_reg_id` and `group_id` agree. It needs a fixture whose member counts are not monotone in id, plus a `/new` case.
+`testSearchGroupsPaging` covers `/all`, `/new` and text search with member counts that are not monotone in id: its last registered group has the most members.
 
 ## 2. Core: bot support and the DR address
 
-`startChatController` already threads a `serviceRequests` flag (Commands.hs:220); only `Core.hs:93` hardcodes it off. Add `serviceRequests :: Bool` to `CoreChatOpts` with a `--service-requests` switch in `coreChatOptsP` (Options.hs:71, :244), read it at Core.hs:93 (adding it to the destructuring at :90), and give it `False` at the two other full-record sites — `mobileChatOpts` (Mobile.hs:251) and `testCoreOpts` (ChatClient.hs:136); the cabal `-Werror=` list covers `incomplete-record-updates` but not `missing-fields`, so the compiler will not point them out. The directory inherits it via `coreChatOptsP` (Directory/Options.hs:52) and `mkChatOpts` (:216-218). The requester needs no flag.
+`CoreChatOpts` has `serviceRequests :: Bool` with a `--service-requests` switch, read in `runSimplexChat`, and false by default. The directory binary always sets it. The requester needs no flag. A service request received while the option is off is logged and dropped.
 
-Because the switch is opt-in, a deployment that omits it fails silently — every search times out after 10 s. Add `-- TODO [directory] default service requests on for the directory binary` at the switch, and make the operator-facing failure loud in the meantime.
+`APIRejectServiceRequest` lets a service refuse a request, with a reason that reaches the requester at once; without a reason the requester waits out its timeout.
 
-**The address is upgradable in place; the published link does not change.** Requests need address ratchet keys or fail with `ASENotDRAddress` (agent Agent.hs:1739-1740), and `APICreateMyAddress` generates them only when `pqRatchet` is `Just` (Commands.hs:2439-2443), which the bot's start-up path is not. But `setConnShortLink` **creates keys when there are none** (agent Agent.hs:1171-1178), so `APIRotateAddressRatchetKeys` (Commands.hs:2478, `rotateKeys = True`) or `APIAddMyAddressShortLink userId (Just True)` (:2474) upgrades the existing address, reusing the same `shortLinkKey` and `linkId` (agent Agent.hs:1181-1185) so the link string is unchanged. `keepAddressKeys` retains earlier generations (:1057-1060), so rotating does not break in-flight requests. Nothing needs recreating and no published link is invalidated.
+**The address is upgradable in place; the published link does not change.** Requests need address ratchet keys or fail with `ASENotDRAddress`, and an address created without `pq_ratchet` has none. `setConnShortLink` creates keys when there are none, so `/_rotate_address_keys <user id>` (`APIRotateAddressRatchetKeys`) upgrades the existing address, reusing the same `shortLinkKey` and `linkId`, so the link string is unchanged. Earlier generations are retained, so rotating doesn't break in-flight requests. `testServiceRequestUpgradedAddress` covers it.
 
-**Only the short link carries the keys.** `setMyAddressData` leaves `connFullLink` untouched (Commands.hs:4039) and that link was built with `useDR = False`, while `serviceRequest_` reads the keys off the resolved URI — so any full-link path yields `ASENotDRAddress` permanently. The app MUST use the short link (§3).
+**Only the short link contains the keys.** The address's full link was built without them, while `serviceRequest_` reads the keys from the resolved URI, so any full-link path gives `ASENotDRAddress`. The app uses the short link (§3).
 
 The directory's short link is published in `docs/DIRECTORY.md`:
 
@@ -104,126 +104,129 @@ The directory's short link is published in `docs/DIRECTORY.md`:
 https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok
 ```
 
-`/a#` is the contact-address short-link form (`'A' -> CCTContact`, agent Agent/Protocol.hs:1772). The links shipped in the apps today are unrelated to this: they are full links used only as "learn more" targets on the What's New cards (WhatsNewView.kt:512, :575; WhatsNewView.swift:293, :355, the latter inlined in the localized string and so duplicated across every `.lproj`). They stay as they are.
+`/a#` is the contact-address short-link form. The links shipped in the apps' What's New cards are unrelated: full links used only as "learn more" targets.
 
-The remaining deployment step is rotating the live address's ratchet keys so it carries DR keys. That keeps the link above unchanged, so nothing published anywhere needs updating.
+Before the release that uses search, the live address's keys are rotated with the new CLI on the directory's database, then the new directory service is started.
 
-Cover the upgrade with a test: `/ad`, rotate, start a responder with `service_requests=on`, expect the exchange of `testServiceRequestResponse` (Direct.hs:1903) instead of `ASENotDRAddress`. Do not extend `testServiceRequestNonDRAddress` (:1966) — it has no responder and can only observe failure.
+**A store-only plan of a group's short link.** `connectPlan` with `resolve=never` (`PRMNever`) reads only the store. For a group's short link it finds a prepared group, and one joined with `/c` and that link, whose connection stores the full link under the short link. The apps use this to recognise the user's own chats among results (§5) with no network request.
 
 ## 3. Apps: API binding
 
-Kotlin `CC.APISendServiceRequest(userId, target, timeoutSec, request: JsonObject)` with `cmdString` matching the parser (Commands.hs:5523 — `/_service_request <userId> <target>[ timeout=<s>][ sign_key=<k>] <json>`; the request is never signed, see §1), a `CR.ServiceResponse` case, and `apiSearchDirectory(rh, text, cursor)` wrapping the envelope. iOS: the same as a `ChatCommand` case plus a response case in `ChatResponse1` (AppAPITypes.swift:819), which already carries the command-result cases.
+Kotlin `CC.APISendServiceRequest(userId, target, timeoutSec, request: JsonObject)`, with `cmdString` matching the parser (`/_service_request <userId> <target>[ timeout=<s>][ sign_key=<k>] <json>`; the request is never signed, see §1), a `CR.ServiceResponse` case, and `apiSearchDirectory(rh, text, cursor)`. iOS: the same as a `ChatCommand` case plus a response case in `ChatResponse1`.
 
-`APISendServiceRequest` stays general — it takes the target, and will carry requests to services other than the directory. The directory's **short link** (§2) is therefore a constant in the app, declared once per platform in Kotlin and Swift and referenced only by `apiSearchDirectory`. Two copies is the accepted cost of keeping the command address-agnostic; do not push the address down into the core or the command. The app cannot cache a resolved target either, since `APISendServiceRequest` resolves internally and returns only the response.
+`APISendServiceRequest` stays general: it takes the target. The directory's **short link** (§2) is a constant in the app, `DIRECTORY_SERVICE_LINK`, declared once per platform and referenced only by `apiSearchDirectory`. Two copies is the accepted cost of keeping the command address-agnostic.
 
-The call blocks until reply or timeout — pass `requestTimeout` of **10 s**, and use `withLongRunningApi` (Utils.kt:43), not the single-threaded `withBGApi` (:38). Show progress through the existing `ConnectProgressManager` (ChatModel.kt:55-78, ChatModel.swift:303-329): `startConnectProgress(text, onCancel)` when the request goes out, `stopConnectProgress()` when it returns. It already withholds the spinner for 1 s, and the search bar already renders it (ChatListView.kt:522, ChatListView.swift:670); `onCancel` gives the user a way out of the wait.
+The app sends at most 100 characters of search text, the directory's limit, counted as Unicode scalars on iOS and code points on Kotlin, as the directory counts.
 
-**The progress manager needs an owner, because a search and a connect can overlap.** Tapping a result while the search is still running is normal: `planAndConnect` calls `cancelConnectProgress()` then `startConnectProgress(...)` (ConnectPlan.kt:48-50, NewChatView.swift:1331-1334), so today the search's `onCancel` would fire and, worse, the search's later `stopConnectProgress()` would kill the *connect* spinner. Add an owner tag to the single slot rather than a second spinner — the search and the connect are the same kind of wait in the same place, and two spinners would be worse UX:
+The call blocks until reply or timeout, with `requestTimeout` of **10 s**. On Kotlin it runs with `withApi` and uses plain `sendCmd`, so a timeout gives a retry row rather than the alert `sendCmdWithRetry` would show. Progress shows through `ConnectProgressManager`, whose spinner appears after 1 s in the search field; its `onCancel` is a way out of the wait, and what is already shown stays.
 
-- `startConnectProgress(text, owner, onCancel)` records the owner alongside the text;
-- `stopConnectProgress(owner)` is a no-op unless the current owner matches, so a late search result cannot clear a connect spinner;
-- `cancelConnectProgress()` keeps its current unconditional behaviour — a user-initiated cancel, and the takeover in `planAndConnect`, should still cancel whatever is running.
+**The progress manager has an owner, because a search and a connection can overlap.** Tapping a result while a search runs is normal: `planAndConnect` calls `cancelConnectProgress()` and then starts its own progress. There is one slot rather than a second spinner:
 
-Two owners for now (`directorySearch`, `connect`); existing call sites pass `connect` and keep today's semantics. The dispose-time cancels (ChatListView.kt:66, NewChatSheet.kt:46) are correct for a search too and need no change. Guard stale responses with a generation counter bumped on text change, profile switch, remote-host switch and filter reset; a text comparison alone lets a pre-switch request return and repopulate a cleared list. No remote-host allowlist change is needed (`allowRemoteCommand` is a deny-list, Controller.hs:735). The request carries no profile, so incognito needs nothing.
+- `startConnectProgress(text, owner, onCancel)` records the owner, and a search doesn't take the spinner from a running connection;
+- `stopConnectProgress(owner)` does nothing unless the current owner matches, so a late search result can't clear a connection's spinner;
+- `cancelConnectProgress()` cancels whichever owner has it.
+
+There are two owners, `directorySearch` and `connect`; other call sites use `connect`.
+
+`OnlineSearchModel` guards stale replies with a generation counter, bumped on every text change, profile switch and cancel; a reply whose generation differs writes nothing. The request contains no profile, so incognito needs nothing.
+
+**The response comes from another party**, so `parseDirectorySearchResponse` accepts only a `searchResults` response and decodes entries one at a time: an entry the app can't decode is dropped, and the rest of the page is kept. An entry is kept only when its link is exactly one SimpleX link of type group or channel. Its image is kept only when it is a JPEG or PNG data URI (`isSafeImageData`), as the core sends images; otherwise the entry is kept without it. `moreCount` is kept only when it is a valid count; anything else leaves it out, and the row reads "Load more". Text from the directory is drawn as plain text, never parsed as markdown, with line limits.
 
 ## 4. Search UI
 
-**Rows.** `SearchInDirectoryRow` goes beside `ConnectByNameRow` in the same slot on all four surfaces (ChatListView.kt:1109 via `TagsOrConnectByName` :1095; ChatListView.swift:803 via the `oneHandUI` branches :650-704; NewChatSheet.kt:322,413; NewChatMenuButton.swift:96-104). On a phone:
+**Rows.** `SearchInDirectoryRow` sits with `ConnectByNameRow` on all four surfaces: the chat list with either toolbar, and New chat on each platform.
 
-| search text | slot |
-| --- | --- |
-| empty | tags |
-| non-empty, not a name candidate | Search in Directory |
-| name candidate (5+ chars, ChatListView.kt:1043) | Search in Directory + Connect to \<name\> |
+| Search text | Toolbar at the bottom (slot above the field) | Toolbar at the top |
+|---|---|---|
+| Empty | Tags | Tags above; nothing below |
+| Plain text | "Search in Directory"; nothing while results show or load | Tags above; "Search in Directory" below, nothing while results show or load |
+| Name candidate | "Connect to …", and "Search in Directory" until results show | Tags above; "Connect to …" below, and "Search in Directory" until results show |
+| Pasted SimpleX link | Tags | Tags above; nothing below |
 
-The rows replace the tags exactly as `ConnectByNameRow` does today, so the tag rule is unchanged — only the range of text that produces a row widens. Desktop shows tags alongside, also as today. The directory row is hidden for a SimpleX link, which connects on its own.
+The directory row is not offered for a SimpleX link, which connects on its own. "Connect to …" stays next to the results. On Android with the toolbar at the top, "Connect to …" takes the tags' place. On desktop the tags always show, with the rows between them and the field.
 
-The slot still needs widening, and it is wider than it looks. `TagsOrConnectByName` has **three** branches, not two — `candidate == null -> TagsView`, mobile -> `ConnectByNameRow`, desktop -> `desktopView(candidate)` (ChatListView.kt:1100-1105) — and the desktop lambda is supplied separately at each of the two call sites, in opposite order because one has the search bar below and the other above (:976-980, :987-991). All four places change: the mobile branch and both lambdas must emit up to two rows, and the `candidate == null` branch must now distinguish empty text (tags) from non-empty text (Search in Directory). On iOS the same widening applies to the one-hand branch (:651-661) and the top-bar branch, which is already additive (:696-704).
+**Keyboard.** `SearchTextField` has an optional `onSearch`, passed only from the chat list's field and New chat's, and not from Archived contacts, which shares New chat's bar: on Android through `KeyboardActions`, on desktop on the Enter key's release. iOS uses `.submitLabel(.search)` and `.onSubmit`. A field with `onSearch` doesn't autocorrect or capitalize, so the key searches what was typed; other search fields keep autocorrect.
 
-**Keyboard.** Kotlin already sets `ImeAction.Search` (SearchTextField.kt:105) with no `keyboardActions`; add `onSearch: (() -> Unit)? = null` feeding `KeyboardActions`, defaulting to `KeyboardActions.Default`. `SearchTextField` has five call sites: pass the handler from **ChatListView.kt:760** (the chat list bar — the primary surface) and from `ContactsSearchBar` (NewChatSheet.kt:494), wired only from the New-chat callers (:312, :403) and not from the Deleted-chats ones (:715, :725) that share it; leave DefaultTopAppBar.kt:84, AddGroupMembersView.kt:217 and GroupChatInfoView.kt:1386 untouched. iOS has the same sharing hazard with `ContactsListSearchBar` (NewChatMenuButton.swift:333, used at :87 and :469). iOS also needs `.submitLabel(.search)` and `.onSubmit` (ChatListView.swift:665 and the New chat equivalent). Desktop shares `SearchTextField` with no soft keyboard — confirm Enter reaches the handler.
+**Actions.** The keyboard key and the row run the same directory search, which never looks up SimpleX names: a name is looked up only by "Connect to …", and the directory is the search's only recipient. Both do nothing for empty or whitespace-only text, which would otherwise match the whole listing, and for a pasted SimpleX link.
 
-**Actions.** The keyboard key runs the local filter, resolves the typed name online when it is ≥5 characters, and runs the directory search; the row runs the directory search only. Both triggers MUST be inert on empty or whitespace-only text: an empty `searchText` reaches the directory as `LIKE '%%'` and returns the whole listing ordered by member count, which is a browse, not a search. The directory does not reject it — the results are public either way — so the guard belongs in the UI, and the Search key is disabled while the field is empty. Name resolution must be silent — pass a false `inProgress` as the typing path does (ChatListView.kt:818), or `apiConnectPlan` pops "SimpleX name not found" (SimpleXAPI.kt:1540); iOS calls the alert unconditionally (SimpleXAPI.swift:1046) and needs the same guard.
+**The search bar is always present.** With no conversations yet, the onboarding content shows below a live search bar, on desktop too, and the results take the onboarding pages' place while a search runs or has results. On Android with the toolbar at the bottom, the onboarding cards keep their size when the field opens the keyboard, and the pages above the field scroll.
 
 ## 5. Results
 
-Three sections: local chats (unheadered, as today), then **Names**, then **Directory**. Each new section, header included, renders only when it has rows.
+One list without headers, below the local chats: first the user's chats among the results that the list doesn't show, as their regular chat rows; then the other results; then the load or retry row. With the toolbar at the bottom the list is mirrored, so the user's own chats stay nearest the field and the load row is farthest from it. On New chat the matching contacts and the results form one card, outside `ContactsList`, which Archived contacts also uses.
 
-**Name rows** come from the `apiConnectPlan` result for the resolved name and render like a chat list row — avatar, profile name, description — with the searched name appended as `(@name)` / `(#name)`, since the profile name may differ. At most two: a bare term resolves as both `@name` and `#name`, a prefixed one only as itself (ChatListView.kt:819). A name row replaces the "Connect to \<name\>" action row for that text.
+**Result rows** are drawn from the response: `image`, `#` and `displayName`, `simplexName` as plain text, `shortDescr` in up to two lines, and the member or subscriber count from `entryType.summary`, a channel when `groupType` says so. Trailing "Open". `SimplexNameView` isn't reused: it verifies automatically, so each row would make a network call. The name shown is the directory's claim, and connecting uses the link.
 
-Resolve with `PRMUnknown` (Controller.hs:684): it resolves only chats that are not already known, which is exactly the wanted behaviour here — `PRMNever` is the local-only mode the typing path already uses, and `PRMAllGroups` would re-resolve known groups over the network for no gain.
+**Nothing is shown twice.** Each new entry's link is planned store-only (§2, `apiConnectPlan` with `.never`, logging failures without an alert) and mapped by `directoryResultState`:
 
-**Nothing is shown twice.** The typing path already resolves the name locally and puts any hit into `searchChatFilteredBySimplexLink`, so a known chat is already rendered in the local section, and the candidate is cleared once every target is known (ChatListView.kt:812-824). So: a name that resolves to a chat already in the local section produces **no** Names row, and a directory entry whose link matches a chat already shown in the local or Names section produces no Directory row. De-duplication is by chat id for local matches and by link for directory entries, applied before render and again when "Show more" appends.
+| State | Plan | Drawn as |
+|---|---|---|
+| Your chat | names a chat: a known or prepared group, the user's own group, or a pending join with its chat | hidden when the list shows that chat, otherwise its chat row once, which opens it |
+| Joining | a pending join without a chat | a result with "Already joining" and no Open |
+| Open | anything else, including no plan | a result with Open |
 
-**Directory rows** render the same way from the response: `image`, `displayName` with its `#`/`@` prefix, `simplexName` as plain text, `shortDescr`, member count from `DETGroup.summary`. The verb comes from `DETGroup.groupType` — `compose_view_join_channel` / `compose_view_join_group` (strings.xml:625-626), defaulting to group when absent. Do not reuse `SimplexNameView`: it auto-verifies under `DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES` (ChatInfoView.swift:1411), so each row would fire a network call. The name shown is the directory's claim; connecting uses the link, as the in-chat flow does today.
+Only chat ids from the store decide this, never a field the directory wrote. An entry repeated across pages is dropped by its link, which is also the row key. A page whose results are all chats already listed adds no row and no note. Plan results are read again when a connection started from a result ends, since that flow creates the chat.
 
-Tap → `planAndConnect(rhId, shortLink ?: fullLink)`; both `PublicLink` fields are optional (Listing.hs:63-66) and entries with neither are dropped. The link is also the row key, and "Show more" de-duplicates by it. Already-joined is handled inside `planAndConnect` (ConnectPlan.kt:322-333), so results need no pre-check. Render directory text as untrusted: no markdown links, no HTML, clamped lengths.
+**Opening.** A tap calls `planAndConnect(link)` with `prepareGroup = open`, which makes the online plan, with the spinner in the field, and opens the prepared chat straight away with its Join button. The "Open channel?" question shows only when the plan has something to warn about: a checked signature, or the name also leading to another chat. For a Joining result it uses the default, `confirm`, so the pending join keeps its alert. Prepared chats the user opened but didn't join stay in the chat list, as for a pasted link. A long press (iOS 16 and later, Android) or a right click on desktop shows a menu with Open.
 
-**Placement.** Declaration order is search bar, local matches, Names, Directory in both bar positions — the search bar is declared first regardless of mode (ChatListView.kt:952 before :1001; ChatListView.swift:399-412 before :422/:431), and one-hand mode flips only the physical direction. On Kotlin the new items go before `ChatListFeatureCards` (:1007); on iOS each row carries the same per-row `.scaleEffect` flip. On New chat they go after `itemsIndexed(filteredContactChats)` (NewChatSheet.kt:341, :430) and after the `ContactsList(…)` call (NewChatMenuButton.swift:159-168) — not inside `ContactsList` (:223), which Deleted chats also uses (:482).
+**Cards.** While a search runs or has run, the chat list hides its banner and cards, even after a search that found nothing; filtering by typing keeps them.
 
-**Empty states** are centred overlays gated on the local filter being empty — ChatListView.kt:1016, ChatListView.swift:466, and "You have no chats" at ChatListView.kt:419. They now depend on whether an online search has run:
+**Empty states** depend on whether an online search has run:
 
-- **not yet run** (typing) — unchanged, including "You have no chats" when there are no local chats;
-- **run, anything found** in either new section — no overlay, results only;
-- **run, nothing found anywhere** — "no chats found".
+- **not run, with text** — no message: "Search in Directory" is offered instead, so "No chats found" and New chat's "No filtered contacts" never sit next to it;
+- **running, or anything found** — no message;
+- **finished, nothing found** — "No chats found" on the chat list (in onboarding, as a row); in New chat "No filtered contacts", or "No contacts" with no contacts.
 
-New chat has its own: `NoFilteredContactsItem`, local to `NewChatSheetLayout` (NewChatSheet.kt:261-272), and the iOS states inside the shared `ContactsList` (:262-266), needing a defaulted parameter or lifting to `NewChatSheet`.
-
-**The search bar must always be present**, since it is now a discovery instrument. Two gates hide it today and both have to go: iOS renders it only when the chat list is non-empty (ChatListView.swift:397-398), and the onboarding state replaces the whole list — `ConnectOnboardingView` (ChatListView.swift:383-386) and, on Kotlin, `ChatListWithLoadingScreen`'s onboarding branch (ChatListView.kt:413-414). Keep the onboarding content, but render it below a live search bar rather than instead of it.
-
-On Kotlin that branch is `if (appPlatform.isAndroid) AndroidOnboardingCards()`, so on **desktop** the onboarding state renders nothing at all today — no cards, no list, no search bar. Desktop must show the search bar there too; with no cards to keep, the branch becomes search bar only.
+"You have no chats" on Android and desktop hides while a search runs or has results.
 
 ## 6. Pagination
 
-Directory only — the Names section is bounded at two rows. The view model holds `entries`, `cursor`, `loading`, `error`; no count, since nothing renders one.
+The model holds the results, `moreCount`, `cursor`, `loading`, `failed` and `searched`.
 
-The app renders exactly what the response carries — as many entries as fit the envelope, which is often a single group when the entry has a full-size image (§1). A short first page is acceptable; the app does not try to disguise it.
+The app renders exactly what the response contains: as many entries as fit the envelope, which is often one group when the entry has a full-size image (§1). A short first page is acceptable.
 
-Filling the list is manual. **"Show more"** is the last row of the Directory section: it re-calls with the stored cursor, appends de-duplicated by key, and disappears when the cursor is `Nothing`; on failure it becomes a retry row. No auto-paging and no prefetch — each request is a full DR handshake, so filling in the background would multiply handshakes for results the user has not asked for.
+Filling the list is manual. The last row is "Load more · N left", or "Load more" when the directory gives no count. It calls with the stored cursor, appends de-duplicated by link, is greyed while the page loads, and goes away when there is no cursor. On failure it becomes "Search failed, tap to retry", which resumes from the cursor or repeats the first page; the results shown stay. No automatic paging and no prefetch: each request is a new connection, so pages load only on a tap. The row says how many are left rather than how many it will load, since the envelope decides that.
 
-Streaming the response is the eventual answer to the one-entry page and is out of scope here (see the closing section). It changes how entries arrive, not this view model, which already accumulates pages behind a cursor.
+Changing the search text or switching profile discards the results and the cursor, at the view that holds the text, since a profile switch can replace the search bar.
 
-Changing the search text discards both sections and the cursor, as do profile and remote-host switches — `activeFilter` already clears `searchText` (ChatListView.kt:1034) and must clear results with it.
+## 7. Consent
 
-## 7. Warning
+Search text leaves the device only when the user agrees. The "Directory search" switch in Settings › Privacy is off by default. While it is off, every online search, load and retry shows the alert "Enable Directory search?": "Search text is sent to SimpleX Directory, each search separately and without your profile." **Cancel** sends nothing; **Enable** turns the switch on and searches. Once it is on, nothing asks.
 
-The first online search from either trigger shows a three-action alert — **Cancel** / **Search** / **Search and don't show again** — the third writing `directorySearchAlertShown`, added to `hintPref` (SimpleXAPI.kt:273) and `hintDefaults` (SettingsView.swift:145) so "Reset hints" restores it. Kotlin uses `showAlertDialogButtonsColumn`; iOS an equivalent three-button alert.
-
-The copy names both recipients, since the Search key makes two requests: the search text to the directory, and a name-shaped term additionally to a name server. It should be clear that whatever is in the box is sent — the same field is the local chat filter. Claim no more: no contact is created and no profile is sent.
+No contact is created and no profile is sent.
 
 ## 8. Strings
 
-Kotlin: `common/src/commonMain/resources/MR/base/strings.xml`, beside `connect_plan_connect_to_name` (:19). iOS: inline `NSLocalizedString` at the use site (ChatListView.swift:815). Needed: the row label, two section headers, "Show more", the alert title/body/three buttons, the empty state, the error text.
+Kotlin: `common/src/commonMain/moko-resources/base/strings.xml`. iOS: inline `NSLocalizedString` at the use site. Texts: the row label, the load and retry rows, "Already joining", the members count, the alert's title and body, the switch, the spinner, and New chat's "No contacts".
 
 ## 9. Failure modes
 
 | Case | Surfaced as |
-| --- | --- |
-| Address not DR, or a full link used | `ASENotDRAddress` — a deployment bug: log, generic failure |
-| Directory over its cap | rejected fast → retry row, not a 10 s wait (§1) |
-| Directory silent | `ASETimeout` after ~10 s → retry row |
-| Response over `maxCompressedInfoLength` | send fails on the directory; the app sees `ASETimeout` → retry row. Prevented by filling the page against the compressed size (§1) |
-| Network down | fails within the 10 s budget → retry row; no indefinite wait |
-| Response malformed or oversized | parse failure → error row, log the size |
-| Response late, or after a profile/host switch | dropped by the generation counter |
-| Name resolves to nothing | no row, no alert |
-| No directory results | section omitted; empty state only when every section is empty |
-| Result already joined | `planAndConnect` opens it (ConnectPlan.kt:322-333) |
+|---|---|
+| Address not DR, or a full link used | `ASENotDRAddress`: logged, retry row |
+| Directory over its cap | rejected at once → retry row, not a 10 s wait (§1) |
+| Directory silent, or service requests not enabled | timeout after 10 s → retry row |
+| Response too large to send | prevented by filling the page against the compressed size (§1) |
+| Network down | fails within the 10 s → retry row |
+| Error response, or a response that can't be parsed | logged, retry row |
+| One entry that can't be decoded, or with another kind of link | that entry dropped, the rest of the page kept |
+| A store lookup of a result fails | a result with Open, whose online plan shows the real error; no alert |
+| Response late, or after a text change, profile switch or cancel | dropped by the generation counter |
+| No results | no rows; the empty state of §5 |
+| A chat the user already has | its chat row, or hidden (§5) |
 
-## 10. Order of work
+## 10. What the design protects, and its limits
 
-1. Page `searchListedGroups` by its sort key instead of `group_id` in **all three modes**, so `/next` stops repeating and skipping rows (§1), plus the `testSearchGroups` fixture and a `/new` case — standalone, no app dependency.
-2. `--service-requests` and the directory enabling it; upgrade the address to DR and confirm with the new test (§2).
-3. RPC schema, `Directory/Rpc.hs`, handler off the event loop — CLI-testable with `/_service_request`.
-4. iOS: API binding, view model, rows, button, keyboard, alert, pagination — chat list, then New chat.
-5. Kotlin: port it verbatim — same function and variable names, same structure and logic, diverging only where the platform forces it.
-6. Tests in `tests/Bots/DirectoryTests.hs`, following `Direct.hs:1903-1975`. Three harness changes first: `/ad` → `/ad pq_ratchet=on` (:1771); `mkDirectoryOpts` (:112-147) must set `serviceRequests` in `coreOptions`, as the bot starts through `runDirectory` → Core.hs:93; and the harness must expose the short link, which `getContactLink` (:1772) discards.
+The directory learns the search text and when it was sent, and nothing else about the requester: a request is unsigned, contains no profile, and uses a new connection that is deleted after the reply or the timeout. Requests are end-to-end encrypted from the requester to the directory's address. The pages of one search share their text and cursor, so the directory can link them.
 
-## Agent facts this plan depends on
+The directory or whoever controls it is treated as untrusted by the apps: they accept only group and channel links, draw its text as plain text and only JPEG and PNG images, and make no network request and show no alert for an entry until the user opens it. Listing owners can't affect the requester beyond their own listing's bounded fields. Anyone can send requests without connecting, so the work of one request is bounded by the text limit and the page size, and the work of all requests by the global cap.
 
-`cabal.project` pins simplexmq `e3d53428`; the checkout at `/workspace/simplexmq-1` contains it, and every agent line cited here was read at that commit. The three facts the design rests on:
+Each request's reply queue is created on one of the user's SMP servers, as for any new connection, so the consent alert promises only that each search is sent separately and without the profile.
 
-- **Response budget is 11,106 bytes** — `e2eEncConnInfoLength` with PQ on at agent version >= 5 (Protocol.hs:349-353), reached via `storeConfirmation` (Agent.hs:4191); over-length fails in `pad` and surfaces only as `ASETimeout`. Service responses are **not** compressed by the chat layer (§1).
-- **Responder state is released** — invitation deleted in `replyRequest_` (Agent.hs:1686), connection deleted by `ICReplyDel` (:1695, :2232-2234), expired requests swept at 180 s (:3365-3368).
-- **Address ratchet keys can be added to an existing address** without changing the link (Agent.hs:1171-1178, :1181-1185), and only the short link carries them (§2).
+Limits of what is built:
 
-Error constructors, `timeout=` syntax and the short-link target form are pinned by `tests/ChatTests/Direct.hs:1903-1975`. Streaming, per-row image fetch, directory browse and self-hosted directory configuration are out of scope.
+- A group the user was added to by invitation, or joined through a link its owner has since replaced, isn't recognised: it shows as a result with Open beside the user's own chat, and Open prepares a second copy. Recognising it needs the group's current link in the member's group record, a protocol change. Channels are always joined through a prepared chat, so they are recognised.
+- "N left" counts listings without a public link, which are never sent, so it can promise more than loading brings.
+- One directory, fixed in the apps.
+
+Out of scope: streaming the response, per-row image fetch, directory browse, and self-hosted directory configuration.
