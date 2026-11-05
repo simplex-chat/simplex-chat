@@ -218,11 +218,12 @@ prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc m
       fl_ <- liftIO $ ciffForwardLink db ciff
       pure (mcForward fl_ mc, Nothing)
     (Just quotedItemId, Nothing) -> do
-      CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, markdownBlocks, mentions = quoteMentions, file} <-
+      CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, mentions = quoteMentions, file} <-
         getGroupCIWithReactions db user g quotedItemId
       (origQmc, qd, sent, member_) <- quoteData qci membership
       let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = memberId' <$> member_}
           qmc = quoteContent mc origQmc file
+          ParsedMarkdown formattedText markdownBlocks = parsedMsgContent qmc
           (qmc', ft', _) = updatedMentionNames qmc formattedText quoteMentions
           quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc', formattedText = ft', markdownBlocks}
       pure (mcQuote QuotedMsg {msgRef, content = qmc'} mc, Just quotedItem)
@@ -364,10 +365,10 @@ getMessageMentions db user gId msg = case parseMaybeMarkdownList msg of
         <$> runExceptT (getGroupMemberIdByName db user gId name)
 
 msgContentTexts :: MsgContent -> (Text, ParsedMarkdown)
-msgContentTexts mc = let t = msgContentText mc in (t, parsedMarkdown t)
+msgContentTexts mc = (msgContentText mc, parsedMsgContent mc)
 
 ciContentTexts :: CIContent d -> (Text, ParsedMarkdown)
-ciContentTexts content = let t = ciContentToText content in (t, parsedMarkdown t)
+ciContentTexts content = let t = ciContentToText content in (t, parsedCIContent content t)
 
 quoteContent :: forall d. MsgContent -> MsgContent -> Maybe (CIFile d) -> MsgContent
 quoteContent mc qmc ciFile_
