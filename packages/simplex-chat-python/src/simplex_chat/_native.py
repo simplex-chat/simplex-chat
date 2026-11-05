@@ -15,6 +15,7 @@ import tempfile
 import threading
 import urllib.request
 import zipfile
+from collections.abc import Sequence
 from ctypes import POINTER, c_char_p, c_int, c_uint8, c_void_p
 from pathlib import Path
 from typing import Any, Literal
@@ -181,6 +182,18 @@ _lock = threading.Lock()
 _lib: ctypes.CDLL | None = None
 _libc: ctypes.CDLL | None = None
 _backend: Backend | None = None
+_runtime_options: tuple[str, ...] | None = None
+
+_RTS_PROGRAM_NAME = b"simplex"
+_RTS_START = b"+RTS"
+# The runtime must keep Python's signal handlers, such as SIGINT for KeyboardInterrupt.
+_RTS_NO_SIGNAL_HANDLERS = b"--install-signal-handlers=no"
+_DEFAULT_RUNTIME_OPTIONS = ("-A64m", "-H64m")
+_NONMOVING_GC_OPTION = "-xn"
+
+
+class RuntimeInitializedError(RuntimeError):
+    """Raised when runtime options are set after the Haskell runtime has started."""
 
 
 def _load_libc() -> ctypes.CDLL:
@@ -217,19 +230,44 @@ def _setup_signatures(lib: ctypes.CDLL) -> None:
     lib.chat_decrypt_file.restype = c_void_p
 
 
+def _default_runtime_options() -> tuple[str, ...]:
+    if sys.platform == "win32":
+        return _DEFAULT_RUNTIME_OPTIONS
+    return (*_DEFAULT_RUNTIME_OPTIONS, _NONMOVING_GC_OPTION)
+
+
+def _runtime_argv(options: Sequence[str]) -> list[bytes]:
+    return [
+        _RTS_PROGRAM_NAME,
+        _RTS_START,
+        *(option.encode() for option in options),
+        _RTS_NO_SIGNAL_HANDLERS,
+    ]
+
+
+def set_runtime_options(options: Sequence[str]) -> None:
+    """Replace the Haskell runtime GC and heap options of this process.
+
+    The defaults are `-A64m -H64m -xn` (`-A64m -H64m` on Windows). The runtime starts
+    once per process, so call this before the first `ChatApi`, `Client` or `Bot` starts.
+    An invalid option makes the runtime exit the process.
+    """
+    global _runtime_options
+    if isinstance(options, str):
+        raise TypeError("options must be a sequence of separate options, not a string")
+    with _lock:
+        if _lib is not None:
+            raise RuntimeInitializedError(
+                "the Haskell runtime is already initialized; "
+                "set its options before the first ChatApi, Client or Bot starts"
+            )
+        _runtime_options = tuple(options)
+
+
 def _hs_init(lib: ctypes.CDLL) -> None:
     """Initialize the Haskell runtime exactly once. Mirrors cpp/simplex.cc:13-32."""
-    if sys.platform == "win32":
-        argv_strs = [b"simplex", b"+RTS", b"-A64m", b"-H64m", b"--install-signal-handlers=no"]
-    else:
-        argv_strs = [
-            b"simplex",
-            b"+RTS",
-            b"-A64m",
-            b"-H64m",
-            b"-xn",
-            b"--install-signal-handlers=no",
-        ]
+    options = _default_runtime_options() if _runtime_options is None else _runtime_options
+    argv_strs = _runtime_argv(options)
     argc = c_int(len(argv_strs))
     arr = (c_char_p * (len(argv_strs) + 1))(*argv_strs, None)
     arr_ptr = ctypes.byref(ctypes.cast(arr, POINTER(c_char_p)))
