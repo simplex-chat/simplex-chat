@@ -17,6 +17,8 @@ let DIRECTORY_SEARCH_TIMEOUT_SEC: Double = 10
 // The directory refuses longer search text, counting Unicode scalars rather than characters.
 let DIRECTORY_SEARCH_MAX_TEXT_LENGTH = 100
 
+let DIRECTORY_SEARCH_MAX_IMAGE_LENGTH = 12500
+
 struct DirectoryPublicLink: Decodable, Hashable {
     var connFullLink: String? = nil
     var connShortLink: String? = nil
@@ -64,7 +66,8 @@ func simplexLinkType(_ s: String) -> SimplexLinkType? {
 }
 
 private func isSafeImageData(_ s: String) -> Bool {
-    s.hasPrefix("data:image/jpg;base64,/9j/") || s.hasPrefix("data:image/png;base64,iVBORw0KGgo")
+    s.utf8.count <= DIRECTORY_SEARCH_MAX_IMAGE_LENGTH
+        && (s.hasPrefix("data:image/jpg;base64,/9j/") || s.hasPrefix("data:image/png;base64,iVBORw0KGgo"))
 }
 
 // entries stay undecoded here so they can be decoded one at a time: one entry the app cannot decode,

@@ -130,7 +130,7 @@ There are two owners, `directorySearch` and `connect`; other call sites use `con
 
 `OnlineSearchModel` guards stale replies with a generation counter, bumped on every text change, profile switch and cancel; a reply whose generation differs writes nothing. The request contains no profile, so incognito needs nothing.
 
-**The response comes from another party**, so `parseDirectorySearchResponse` accepts only a `searchResults` response and decodes entries one at a time: an entry the app can't decode is dropped, and the rest of the page is kept. An entry is kept only when its link is exactly one SimpleX link of type group or channel. Its image is kept only when it is a JPEG or PNG data URI (`isSafeImageData`), as the core sends images; otherwise the entry is kept without it. `moreCount` is kept only when it is a valid count; anything else leaves it out, and the row reads "Load more". Text from the directory is drawn as plain text, never parsed as markdown, with line limits.
+**The response comes from another party**, so `parseDirectorySearchResponse` accepts only a `searchResults` response and decodes entries one at a time: an entry the app can't decode is dropped, and the rest of the page is kept. An entry is kept only when its link is exactly one SimpleX link of type group or channel. Its image is kept only when it is a JPEG or PNG data URI (`isSafeImageData`), as the core sends images, of at most 12,500 characters, the size the directory sends; otherwise the entry is kept without it. `moreCount` is kept only when it is a valid count; anything else leaves it out, and the row reads "Load more". Text from the directory is drawn as plain text, never parsed as markdown, with line limits.
 
 ## 4. Search UI
 

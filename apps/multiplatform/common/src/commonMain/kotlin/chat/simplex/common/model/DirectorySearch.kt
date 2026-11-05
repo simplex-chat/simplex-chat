@@ -17,6 +17,8 @@ const val DIRECTORY_SEARCH_TIMEOUT_SEC = 10.0
 // The directory refuses longer search text, counting code points rather than UTF-16 chars.
 const val DIRECTORY_SEARCH_MAX_TEXT_LENGTH = 100
 
+const val DIRECTORY_SEARCH_MAX_IMAGE_LENGTH = 12500
+
 @Serializable
 data class DirectoryPublicLink(
   val connFullLink: String? = null,
@@ -62,7 +64,8 @@ fun simplexLinkType(s: String): SimplexLinkType? {
 }
 
 private fun isSafeImageData(s: String): Boolean =
-  s.startsWith("data:image/jpg;base64,/9j/") || s.startsWith("data:image/png;base64,iVBORw0KGgo")
+  s.length <= DIRECTORY_SEARCH_MAX_IMAGE_LENGTH
+    && (s.startsWith("data:image/jpg;base64,/9j/") || s.startsWith("data:image/png;base64,iVBORw0KGgo"))
 
 data class DirectorySearchResults(
   val entries: List<DirectorySearchEntry>,
