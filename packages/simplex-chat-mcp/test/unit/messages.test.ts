@@ -1312,6 +1312,43 @@ describe("download", () => {
       expect(readFileSync(source, "utf8")).toBe("voice")
     })
 
+    it("is followed also in a member chat of the group: moved whatever its size, and its partial file deleted at a failure, at a check and by /delete", async () => {
+      jest.useFakeTimers()
+      jest.spyOn(process.stderr, "write").mockImplementation(() => true)
+      const memberChat = {...trail, groupChatScope: {type: "memberSupport"}} as T.ChatInfo
+      const chat = new FakeChat()
+      chat.responses.set("/fcancel 7", {type: "rcvFileCancelled", user, rcvFileTransfer: {fileId: 7}})
+      const {tools} = downloadTools(chat)
+      const source = join(elsewhere, "report.pdf")
+      const track = async (): Promise<T.ChatItem> => {
+        writeFileSync(source, "vo")
+        const incoming = offeredIn(chat, {type: "rcvAccepted"}, {filePath: source})
+        tools.onNewItems([event(memberChat, incoming)])
+        await jest.advanceTimersByTimeAsync(0)
+        return incoming
+      }
+      const received = await track()
+      writeFileSync(source, "voice")
+      Object.assign(received.file!, {fileStatus: {type: "rcvComplete"}, fileSize: 6})
+      tools.onFileComplete(event(memberChat, received))
+      expect([existsSync(source), readFileSync(downloaded, "utf8")]).toEqual([false, "voice"])
+      rmSync(downloaded)
+      const failed = await track()
+      await jest.advanceTimersByTimeAsync(60_000)
+      expect(existsSync(source)).toBe(true)
+      failed.file!.fileStatus = {type: "rcvError", rcvFileError: {type: "noFile"}}
+      await jest.advanceTimersByTimeAsync(60_000)
+      expect(existsSync(source)).toBe(false)
+      await track()
+      chat.chats.delete("#15")
+      await jest.advanceTimersByTimeAsync(60_000)
+      expect(existsSync(source)).toBe(false)
+      await track()
+      await tools.deleteChatFiles("#15")
+      expect(chat.commands).toContain("/fcancel 7")
+      expect(existsSync(source)).toBe(false)
+    })
+
     it("leaves no partial file when the sender cancels it or its message is deleted", async () => {
       jest.useFakeTimers()
       jest.spyOn(process.stderr, "write").mockImplementation(() => true)

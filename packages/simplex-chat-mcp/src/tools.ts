@@ -550,7 +550,7 @@ export class AgentTools {
 
   onNewItems(items: T.AChatItem[]): void {
     for (const {chatInfo, chatItem} of items) {
-      const chat = chatRef(chatInfo)
+      const chat = anyScopeChatRef(chatInfo)
       const {content, file, meta} = chatItem
       if (chat !== undefined && content.type === "rcvMsgContent" && file?.fileStatus.type === "rcvAccepted") {
         this.downloadFile({chat, item: meta.itemId, file: fileOffer(content.msgContent, file)}).catch(error => logError(`file ${file.fileId}`, error))
