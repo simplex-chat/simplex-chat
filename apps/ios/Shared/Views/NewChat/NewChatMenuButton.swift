@@ -444,8 +444,8 @@ struct ContactsListSearchBar: View {
                     .disabled(searchShowingSimplexLink)
                     .focused($searchFocussed)
                     .frame(maxWidth: .infinity)
-                    .autocorrectionDisabled(true)
-                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled(onSearch != nil)
+                    .textInputAutocapitalization(onSearch == nil ? nil : .never)
                     .submitLabel(onSearch == nil ? .return : .search)
                     .onSubmit { onSearch?() }
                 if connectProgressManager.showConnectProgress != nil {

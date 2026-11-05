@@ -289,7 +289,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/helpers/ChooseAttachmentView.kt` | PC10 | Low | Attachment picker |
 | `views/helpers/GetImageView.kt` | PC10, PC19 | Low | Image capture and crop |
 | `views/helpers/TextEditor.kt` | PC4 | Low | Rich text editor helpers |
-| `views/helpers/SearchTextField.kt` | PC1, PC33 | Low | Search bar composable; optional Search key handler (`onSearch`: Android IME action, desktop Enter); no autocorrect or capitalization |
+| `views/helpers/SearchTextField.kt` | PC1, PC33 | Low | Search bar composable; optional Search key handler (`onSearch`: Android IME action, desktop Enter), and no autocorrect with it |
 | `views/helpers/CustomTimePicker.kt` | PC8 | Low | Time picker for timed messages |
 | `views/helpers/DragAndDrop.kt` | PC10 | Low | Drag-and-drop file handling |
 | `views/helpers/ProcessedErrors.kt` | — | Low | Error aggregation |
