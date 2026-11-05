@@ -269,7 +269,7 @@ command              effect
 - The "files" approval is stored in the chat's custom data, next to the standing approval of messages (`approvalOf`, `control.ts:554-557`).
 - `/list` shows it per chat.
 - Mode host: the host confirms the call (`anthropic/requiresUserInteraction`, `tools.ts:361`); no card.
-- A file on unknown servers gets a card under the files approval too; the card leaves out `/'receive CHAT N all'`.
+- A file on unknown servers gets a card under the files approval too; the card leaves out `/'receive CHAT N all'`. A file in `rejectedFiles` gets a card too.
 - `/receive CHAT N` after `/forward CHAT N` moves the forwarded file into `DATA/files/<folder>/`, once the copy for the post is made.
 - The post of `/forward` replies to the card when the message, with the card as its quote, is within 15602 bytes by the length rule of `send`; otherwise it is posted without the quote.
 

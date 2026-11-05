@@ -433,7 +433,7 @@ voice, file    a text message
 ```
 
 - The preview counts against 15000 bytes with the card's largest text form (section Card size); a larger preview is resized by `core.chatResizeImageUri` to the bytes left; when resizing fails, the card is a text message.
-- Under the files approval of the chat, a download of a file on known servers posts no card and no outcome; a file on unknown servers gets a card, and its commands leave out `/'receive CHAT N all'`. In mode host, a download posts no card and no outcome.
+- Under the files approval of the chat, a download of a file on known servers posts no card and no outcome; a file on unknown servers gets a card, and its commands leave out `/'receive CHAT N all'`; a file in rejected files gets a card. In mode host, a download posts no card and no outcome.
 
 ### Outcomes
 
@@ -1091,7 +1091,7 @@ action(tool, input, ctx):
     N = nextAction; nextAction = N + 1; create action N; log "Action N: ..."
     /_set custom #group {simplexMcp: {control: true, nextAction}}, queued after earlier writes, awaited
     mode requests, a send to a chat whose approval applies: standing; decidedBy = approvedBy; start perform(N); its end posts the outcome card
-    mode requests, a download of a file on known servers from a chat whose files approval applies: standing; decidedBy = approvedBy; start perform(N); no card
+    mode requests, a download of a file on known servers, not in rejected files, from a chat whose files approval applies: standing; decidedBy = approvedBy; start perform(N); no card
     mode requests otherwise: /_send #group text <card>; card = its item ID; post failed: state failed, error "SimpleX error"
     mode host: start perform(N); its end posts the outcome card, except for downloads
   open += 1
@@ -1271,7 +1271,7 @@ download(input, ctx):
     wait for rcvFileDescrReady, then read again; progress "The sender is uploading the file of item N in CHAT; waiting until <time>."
     none at the end of wait: tool error "upload not finished within wait"
   unknownServers = servers not among /_servers <user> (section Download card)
-  no unknownServers: /_get chat <chat> count=0 again, the chat's files approval at this point
+  no unknownServers, the file ID not in rejected files: /_get chat <chat> count=0 again, the chat's files approval at this point
   action(download, input, ctx), standing under that approval
   until = wait seconds after startedAt, or after the call when the action is performing at the call
   result at until, still performing: {action, status: "performing"}; the action stays in memory

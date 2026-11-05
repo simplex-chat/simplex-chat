@@ -55,7 +55,7 @@ Approve the connection in "My Agent", and accept the request in the app if it as
 ## Safety
 
 - The agent asks in "My Agent" before it connects, sends a message or a file, downloads a file or leaves; you approve or reject. On a download card, `/receive` gives the agent the file, and `/forward` sends it only to you.
-- `all` approves every message to one chat; `/revoke` ends it. `/receive CHAT N all` lets the agent receive every file from one chat on the agent's servers; `/receive CHAT off` ends it.
+- `all` approves every message to one chat; `/revoke` ends it. `/receive CHAT N all` lets the agent receive that file and later files from one chat on the agent's servers; `/receive CHAT off` ends it.
 - Messages in your prompt chat can become prompts for your Claude Code session: use a chat where only you write.
 - The agent runs on your computer and has no address in SimpleX Network, so nobody can contact it first.
 

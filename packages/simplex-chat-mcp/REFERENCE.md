@@ -281,7 +281,7 @@ My Agent: I sent a message to business Ridgeline, where I am incognito:
 After `/receive #3 7 all`, the agent's later downloads from #3 are performed at once, and nothing is posted in the agent control chat.
 
 - It covers files on the agent's XFTP servers. A download of a file on other servers gets a card, as without it.
-- Cards already pending in #3, other than card 7, stay pending.
+- Cards already pending in #3, other than card 7, stay pending. A file you rejected, or whose card expired, gets a card again.
 - It covers downloads only, and the approval of messages covers no downloads: each is given and ended by its own command.
 - It lasts as the approval of messages does, until `/receive #3 off`, and is kept next to it in the chat's custom data.
 - `/list` shows it as `, files approved by Alice`.
