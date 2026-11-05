@@ -29,6 +29,7 @@ note_is_preview() {
   [ "$note_y" -gt "$name_y" ] && [ "$note_y" -lt $((name_y + row_spacing / 2)) ]
 }
 
+"$ui" wait "Private notes" 10
 read -r x y < <(left_pane_position "Private notes") || fail "no \"Private notes\" in the chat list"
 "$ui" click "$x" "$y"
 "$ui" click-text "Message" 10
@@ -42,5 +43,6 @@ check "the note shows in Private notes" in_open_chat "$note_text"
 check "reachable: Private notes shows the note as its preview" note_is_preview
 
 "$ui" layout top
+"$ui" wait "Private notes" 10
 "$ui" shot preview-top
 check "top: Private notes shows the note as its preview" note_is_preview

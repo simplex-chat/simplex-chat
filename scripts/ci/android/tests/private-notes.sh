@@ -40,5 +40,6 @@ back_to "Start new chat" || fail "no chat list after leaving Private notes"
 check "reachable: Private notes shows the note as its preview" note_is_preview
 
 "$ui" layout top
+"$ui" wait "Private notes" 10
 "$ui" shot preview-top
 check "top: Private notes shows the note as its preview" note_is_preview
