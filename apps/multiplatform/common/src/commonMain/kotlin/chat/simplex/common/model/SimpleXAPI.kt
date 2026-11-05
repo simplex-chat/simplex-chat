@@ -1696,7 +1696,11 @@ object ChatController {
     val userId = kotlin.runCatching { currentUserId("apiSearchDirectory") }.getOrElse { return null }
     val req = directorySearchRequest(text, cursor)
     val r = sendCmd(rh, CC.APISendServiceRequest(userId, DIRECTORY_SERVICE_LINK, DIRECTORY_SEARCH_TIMEOUT_SEC, req))
-    if (r is API.Result && r.res is CR.CRServiceResponse) return parseDirectorySearchResponse(r.res.responseData)
+    if (r is API.Result && r.res is CR.CRServiceResponse) {
+      val results = parseDirectorySearchResponse(r.res.responseData)
+      if (results == null) Log.e(TAG, "apiSearchDirectory: unusable response")
+      return results
+    }
     Log.e(TAG, "apiSearchDirectory error: ${r.responseType} ${r.details}")
     return null
   }

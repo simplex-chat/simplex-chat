@@ -1051,7 +1051,9 @@ func apiSearchDirectory(_ text: String, cursor: JSONValue?) async -> DirectorySe
         .apiSendServiceRequest(userId: userId, target: DIRECTORY_SERVICE_LINK, timeoutSec: DIRECTORY_SEARCH_TIMEOUT_SEC, requestJSON: req)
     )
     if case let .result(.serviceResponse(_, responseData)) = r {
-        return parseDirectorySearchResponse(responseData)
+        let results = parseDirectorySearchResponse(responseData)
+        if results == nil { logger.error("apiSearchDirectory: unusable response") }
+        return results
     }
     logger.error("apiSearchDirectory error: \(String(describing: r))")
     return nil
