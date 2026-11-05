@@ -144,10 +144,11 @@ fun itemDisplay(ci: ChatItem, linkMode: SimplexLinkMode): ItemDisplay? {
   val blocks = ci.markdownBlocks ?: return ItemDisplay(fts.map(segment), listOf(0))
   val parts = mutableListOf<Pair<String, String>>()
   var offset = itemPrefixText(ci).length
-  val bases = blockTextRanges(blocks).mapIndexed { i, t ->
+  val ranges = blockTextRanges(blocks)
+  val bases = ranges.mapIndexed { i, t ->
     if (i > 0) {
       val separator = if (t.inRow) "\t" else "\n"
-      parts += separator to separator
+      parts += separator to separator.repeat(1 + emptyLines(fts, ranges[i - 1].range.to, t.range.from, between = true))
       offset += 1
     }
     val base = if (i == 0) 0 else offset
@@ -215,12 +216,13 @@ fun MarkdownText (
   if (blockLayout && formattedText != null && markdownBlocks != null && range == null) {
     val direction = LocalLayoutDirection.current
     val terminal = LocalTerminalLayout.current
+    val trailingEmptyLines = trailingEmptyLines(text, formattedText, markdownBlocks)
     val ruleMinWidth = if (terminal && metaCopy != null && markdownBlocks.isNotEmpty() && markdownBlocks.all { it is MarkdownBlock.Rule }) {
       with(LocalDensity.current) { rememberTextMeasurer().measure(metaCopy, style).size.width.toDp() }
     } else 0.dp
     CompositionLocalProvider(LocalLayoutDirection provides textLayoutDirection) {
       MarkdownBlocks(
-        formattedText, markdownBlocks, style, modifier, cardColor ?: MaterialTheme.appColors.receivedQuote,
+        formattedText, markdownBlocks, trailingEmptyLines, style, modifier, cardColor ?: MaterialTheme.appColors.receivedQuote,
         blockText = { index, r, blockStyle, blockModifier, blockSoftWrap, last ->
           MarkdownText(
             text, formattedText, markdownBlocks, sender = if (index == 0) sender else null, meta = if (last) meta else null, chatTTL = chatTTL,
@@ -231,7 +233,7 @@ fun MarkdownText (
             selection = selection, textIndex = index, range = r.from until r.to, softWrap = blockSoftWrap, parentDirection = direction
           )
         },
-        metaLine = if (terminal && meta?.isLive != true) null else {
+        metaLine = if (terminal && meta?.isLive != true && trailingEmptyLines == 0) null else {
           {
             MarkdownText(
               text, formattedText, markdownBlocks, meta = meta, chatTTL = chatTTL, encrypted = encrypted, signedFileVerified = signedFileVerified, toggleSecrets = toggleSecrets, style = style,
@@ -331,7 +333,7 @@ fun MarkdownText (
           if (heading) pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
           if (ft.format == null) append(ft.text)
           else when(ft.format) {
-            is Format.Bold -> withStyle(if (markdownBlocks != null && ft.format.singleStar) Format.Italic().style else ft.format.style) { append(ft.text) }
+            is Format.Bold -> withStyle(if (ft.format.singleStar) Format.Italic().style else ft.format.style) { append(ft.text) }
             is Format.Italic -> withStyle(ft.format.style) { append(ft.text) }
             is Format.StrikeThrough -> withStyle(ft.format.style) { append(ft.text) }
             is Format.Snippet -> withStyle(ft.format.style) { append(ft.text) }

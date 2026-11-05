@@ -34,14 +34,14 @@ To make your voice heard, email your MP expressing your rejection of digital IDs
 
 *I object to the introduction of digital IDs in pubs or any other public places for these reasons:*
 
-1. *It violates the European Convention of Human Rights, article 8: “Everyone has the right to respect for his private and family life” (https://fra.europa.eu/en/law-reference/european-convention-human-rights-article-8-0).*
+1. *It violates the European Convention of Human Rights, article 8: “Everyone has the right to respect for his private and family life” (https://fra.europa.eu/en/law-reference/european-convention-human-rights-article-8-0).*\
 *Asking to present digital IDs when proof of identity is not legally required, even if it is optional, disrespects our privacy, and is therefore illegal.*
 2. *It will not be an effective measure in reducing the violations of the law. People who want to circumvent it, will find a way.*
 3. *It will increase crime, because combining a large amount of private information in a single system increases the risks of this information becoming available to criminals, who will exploit it for financial crimes and identity theft.*
 
 *I kindly ask you to oppose this plan, both publicly and during any discussions in the UK Parliament.*
 
-*Sincerely yours,*
+*Sincerely yours,*\
 *…*
 
 2. [**Find the email address of your MP**](https://members.parliament.uk/members/Commons) and copy it to the email.
