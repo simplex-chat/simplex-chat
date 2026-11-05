@@ -148,8 +148,17 @@
 /* copied message info */
 "%@:" = "%@:";
 
+/* No comment provided by engineer. */
+"%@/month" = "%@/ay";
+
+/* No comment provided by engineer. */
+"%@/year" = "%@/yıl";
+
 /* badge alert */
 "%1$@ supported SimpleX Chat. The badge expired on %2$@." = "%1$@, SimpleX Chat'i destekledi. Rozetin süresi %2$@ tarihinde doldu.";
+
+/* time interval */
+"%d day" = "%d gün";
 
 /* time interval */
 "%d days" = "%d gün";
@@ -174,6 +183,9 @@
 
 /* time interval */
 "%d min" = "%d dakika";
+
+/* time interval */
+"%d month" = "%d ay";
 
 /* time interval */
 "%d months" = "%d ay";
@@ -351,6 +363,12 @@ time interval */
 /* No comment provided by engineer. */
 "30 seconds" = "30 saniye";
 
+/* badge link, profile has a badge */
+"A badge can be added to another profile, or here once this badge ends." = "Rozet başka bir profile ya da bu rozet sona erdiğinde buraya eklenebilir.";
+
+/* No comment provided by engineer. */
+"A badge is an anonymous credential stored in your profile on your device. This credential is never sent to anyone." = "Rozet, cihazınızdaki profilinizde saklanan anonim bir kimlik bilgisidir. Bu kimlik bilgisi asla kimseye gönderilmez.";
+
 /* No comment provided by engineer. */
 "A few more things" = "Birkaç şey daha";
 
@@ -360,11 +378,17 @@ time interval */
 /* No comment provided by engineer. */
 "A new random profile will be shared." = "Yeni bir rastgele profil paylaşılacak.";
 
+/* alert message */
+"A purchase is being added to this profile. Try again later." = "Bu profile bir satın alım ekleniyor. Daha sonra tekrar deneyin.";
+
 /* No comment provided by engineer. */
 "A separate TCP connection will be used **for each chat profile you have in the app**." = "**uygulamandaki olan her sohbet profili için** ayrı bir TCP bağlantısı kullanılacaktır.";
 
 /* No comment provided by engineer. */
 "A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "**uygulamandaki olan her sohbet profili için** ayrı bir TCP bağlantısı kullanılacaktır.\n**Lütfen aklınızda bulunsun**: eğer çok fazla bağlantılarınız var ise pil kullanımı ve internet kullanımınız oldukça artabilir ve bazı bağlantılar hatayla karşılaşabilir.";
+
+/* alert message */
+"A store purchase is being added to this profile." = "Bu profile bir mağaza satın alımı ekleniyor.";
 
 /* No comment provided by engineer. */
 "Abort" = "İptal Et";
@@ -446,6 +470,12 @@ swipe action */
 "Active connections" = "Aktif bağlantılar";
 
 /* No comment provided by engineer. */
+"Add badge" = "Rozet ekle";
+
+/* No comment provided by engineer. */
+"Add badge to your profile?" = "Rozet profilinize eklensin mi?";
+
+/* No comment provided by engineer. */
 "Add friends" = "Arkadaş ekle";
 
 /* No comment provided by engineer. */
@@ -453,6 +483,9 @@ swipe action */
 
 /* placeholder for sending contact request */
 "Add message" = "Mesaj ekle";
+
+/* No comment provided by engineer. */
+"Add moderators and sign every message." = "Moderatör ekleyin ve her mesajı imzalayın.";
 
 /* No comment provided by engineer. */
 "Add profile" = "Profil ekle";
@@ -682,8 +715,14 @@ swipe action */
 /* No comment provided by engineer. */
 "An empty chat profile with the provided name is created, and the app opens as usual." = "Verilen adla boş bir sohbet profili oluşturulur ve uygulama her zamanki gibi açılır.";
 
+/* ledger entry field */
+"Anchor" = "Çapa";
+
 /* No comment provided by engineer. */
 "and %lld other events" = "ve %lld diğer etkinlikler";
+
+/* No comment provided by engineer. */
+"Annual" = "Yıllık";
 
 /* report reason */
 "Another reason" = "Başka bir sebep";
@@ -723,6 +762,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Appearance" = "Görünüş";
+
+/* No comment provided by engineer. */
+"Apple did not sign this purchase, so it cannot be verified." = "Apple bu satın alımı imzalamadı, bu nedenle doğrulanamıyor.";
 
 /* No comment provided by engineer. */
 "Apply" = "Uygula";
@@ -828,6 +870,36 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Bad message ID" = "Kötü mesaj kimliği";
+
+/* alert title */
+"Badge added" = "Rozet eklendi";
+
+/* badge alert title */
+"Badge cannot be verified" = "Rozet doğrulanamadı";
+
+/* No comment provided by engineer. */
+"Badge ledger" = "Rozet defteri";
+
+/* alert title */
+"Badge payment problem" = "Rozet ödeme sorunu";
+
+/* alert title */
+"Badge renewal failed" = "Rozet yenilenemedi";
+
+/* ledger entry field */
+"Badge type" = "Rozet türü";
+
+/* alert message */
+"Badges cannot be bought in the app yet." = "Rozetler henüz uygulama içinden satın alınamıyor.";
+
+/* ledger entry field */
+"Balance" = "Bakiye";
+
+/* ledger entry field */
+"Balance start" = "Bakiye başlangıcı";
+
+/* No comment provided by engineer. */
+"Benefits" = "Avantajlar";
 
 /* No comment provided by engineer. */
 "Better calls" = "Daha iyi aramalar";
@@ -944,6 +1016,12 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Businesses" = "İşletmeler";
 
+/* alert message */
+"Buy badges in the App Store version of the app." = "Rozetleri uygulamanın App Store sürümünden satın alın.";
+
+/* No comment provided by engineer. */
+"Buy in browser" = "Tarayıcıda satın al";
+
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Sohbet profiline göre (varsayılan) veya [bağlantıya göre](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
 
@@ -1009,6 +1087,12 @@ new chat action */
 /* alert title */
 "Cannot receive file" = "Dosya alınamıyor";
 
+/* alert title */
+"Cannot redeem code" = "Kod kullanılamıyor";
+
+/* No comment provided by engineer. */
+"Cannot verify this purchase" = "Bu satın alım doğrulanamıyor";
+
 /* snd error text */
 "Capacity exceeded - recipient did not receive previously sent messages." = "Kapasite aşıldı - alıcı önceden gönderilen mesajları almadı.";
 
@@ -1063,6 +1147,12 @@ set passcode view */
 
 /* chat item text */
 "changing address…" = "adres değiştiriliyor…";
+
+/* No comment provided by engineer. */
+"Channel SimpleX name" = "Kanal SimpleX adı";
+
+/* ledger entry field */
+"Charge ID" = "Tahsilat kimliği";
 
 /* No comment provided by engineer. */
 "Chat" = "Sohbet";
@@ -1150,6 +1240,12 @@ chat toolbar */
 "Check server address and try again." = "Sunucu adresini kontrol edip tekrar deneyin.";
 
 /* No comment provided by engineer. */
+"Check your order" = "Siparişinizi kontrol edin";
+
+/* No comment provided by engineer. */
+"Checking your purchases" = "Satın alımlarınız kontrol ediliyor";
+
+/* No comment provided by engineer. */
 "Chinese and Spanish interface" = "Çince ve İspanyolca arayüz";
 
 /* No comment provided by engineer. */
@@ -1160,6 +1256,9 @@ chat toolbar */
 
 /* No comment provided by engineer. */
 "Choose from library" = "Kütüphaneden seç";
+
+/* No comment provided by engineer. */
+"Choose your badge" = "Rozetinizi seçin";
 
 /* No comment provided by engineer. */
 "Chunks deleted" = "Parçalar silindi";
@@ -1281,6 +1380,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Connect faster! 🚀" = "Daha hızlı bağlanın! 🚀";
+
+/* new chat action */
+"Connect to %@" = "%@ ile bağlan";
 
 /* No comment provided by engineer. */
 "Connect to desktop" = "Bilgisayara bağlan";
@@ -1460,7 +1562,16 @@ server test step */
 "contact should accept…" = "kişi kabul etmeli…";
 
 /* No comment provided by engineer. */
+"Contact SimpleX team" = "SimpleX ekibiyle iletişime geç";
+
+/* No comment provided by engineer. */
 "Contact will be deleted - this cannot be undone!" = "Kişiler silinecek - bu geri alınamaz !";
+
+/* file alert */
+"Contact's badge expired." = "Kişinin rozetinin süresi doldu.";
+
+/* file alert */
+"Contact's badge verification failed." = "Kişinin rozeti doğrulanamadı.";
 
 /* No comment provided by engineer. */
 "Contacts" = "Kişiler";
@@ -1485,6 +1596,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Copy error" = "Kopyalama hatası";
+
+/* No comment provided by engineer. */
+"Copy purchase key" = "Satın alma anahtarını kopyala";
 
 /* No comment provided by engineer. */
 "Core version: v%@" = "Çekirdek sürümü: v%@";
@@ -1551,6 +1665,12 @@ server test step */
 
 /* No comment provided by engineer. */
 "creator" = "oluşturan";
+
+/* No comment provided by engineer. */
+"Credential" = "Kimlik bilgisi";
+
+/* No comment provided by engineer. */
+"Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)" = "Kitlesel fonlama yatırımcıları, satış başlamadan önce adları rezerve edebilir: [simplex.domains](https://simplex.domains/)";
 
 /* No comment provided by engineer. */
 "Current conditions text couldn't be loaded, you can review conditions via this link:" = "Şu anki koşulların yazısı yüklenemiyor, bu bağlantıdan koşullara inceleyebilirsin:";
@@ -1641,6 +1761,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Database will be migrated when the app restarts" = "Uygulama yeniden başlatıldığında veritabanı taşınacaktır";
+
+/* ledger entry field */
+"Date" = "Tarih";
 
 /* time unit */
 "days" = "gün";
@@ -1948,6 +2071,9 @@ alert button */
 /* No comment provided by engineer. */
 "Discover via local network" = "Yerel ağ aracılığıyla keşfet";
 
+/* alert button */
+"Dismiss" = "Kapat";
+
 /* No comment provided by engineer. */
 "Do it later" = "Sonra yap";
 
@@ -2064,6 +2190,9 @@ chat item action */
 "Enable for all" = "Herkes için etkinleştir";
 
 /* No comment provided by engineer. */
+"Enable in Appearance settings." = "Görünüm ayarlarından etkinleştirin.";
+
+/* No comment provided by engineer. */
 "Enable in direct chats (BETA)!" = "Doğrudan sohbetlerde etkinleştirin (BETA)!";
 
 /* No comment provided by engineer. */
@@ -2174,8 +2303,20 @@ chat item action */
 /* No comment provided by engineer. */
 "ended" = "bitti";
 
+/* No comment provided by engineer. */
+"Ended" = "Sona erdi";
+
 /* call status */
 "ended call %@" = "%@ araması bitti";
+
+/* No comment provided by engineer. */
+"Ends" = "Bitiş";
+
+/* No comment provided by engineer. */
+"Ends %@" = "Bitiş: %@";
+
+/* No comment provided by engineer. */
+"Ends on %@." = "%@ tarihinde sona erer.";
 
 /* No comment provided by engineer. */
 "Enter correct passphrase." = "Doğru şifreyi gir.";
@@ -2209,6 +2350,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Enter your name…" = "Adını gir…";
+
+/* ledger entry field */
+"Entry ID" = "Kayıt kimliği";
 
 /* No comment provided by engineer. */
 "error" = "hata";
@@ -2378,6 +2522,9 @@ chat item action */
 /* No comment provided by engineer. */
 "Error saving ICE servers" = "ICE sunucularını kaydedirken sorun oluştu";
 
+/* alert title */
+"Error saving name" = "Ad kaydedilirken hata oluştu";
+
 /* No comment provided by engineer. */
 "Error saving passcode" = "Parola kaydedilirken sorun oluştu";
 
@@ -2487,6 +2634,9 @@ snd error text */
 "Expired" = "Süresi dolmuş";
 
 /* No comment provided by engineer. */
+"Expires" = "Bitiş tarihi";
+
+/* No comment provided by engineer. */
 "Export database" = "Veritabanını dışarı aktar";
 
 /* No comment provided by engineer. */
@@ -2580,6 +2730,18 @@ snd error text */
 "Files and media prohibited!" = "Dosyalar ve medya yasaklandı!";
 
 /* No comment provided by engineer. */
+"Files up to 2 GB" = "2 GB'a kadar dosyalar";
+
+/* No comment provided by engineer. */
+"Files up to 2 GB, stored for 7 days." = "2 GB'a kadar dosyalar, 7 gün saklanır.";
+
+/* No comment provided by engineer. */
+"Files up to 5 GB" = "5 GB'a kadar dosyalar";
+
+/* No comment provided by engineer. */
+"Files up to 5 GB, stored for 21 days." = "5 GB'a kadar dosyalar, 21 gün saklanır.";
+
+/* No comment provided by engineer. */
 "Filter unread and favorite chats." = "Favori ve okunmamış sohbetleri filtrele.";
 
 /* No comment provided by engineer. */
@@ -2615,6 +2777,9 @@ server test error */
 
 /* No comment provided by engineer. */
 "Fix not supported by group member" = "Düzeltme grup üyesi tarafından desteklenmiyor";
+
+/* No comment provided by engineer. */
+"Flat layout and markdown" = "Düz tasarım ve markdown";
 
 /* No comment provided by engineer. */
 "For all moderators" = "Tüm moderatörler için";
@@ -2689,6 +2854,9 @@ servers warning */
 /* No comment provided by engineer. */
 "French interface" = "Fransızca arayüz";
 
+/* ledger entry field */
+"From purchase key" = "Kaynak satın alma anahtarı";
+
 /* No comment provided by engineer. */
 "Full link" = "Bütün bağlantı adresi";
 
@@ -2705,7 +2873,16 @@ servers warning */
 "Further reduced battery usage" = "Daha da azaltılmış pil kullanımı";
 
 /* No comment provided by engineer. */
+"Get a badge to send larger files (2-5GB) that stay available longer (7-21 days), and to show it on your profile." = "Daha uzun süre (7-21 gün) erişilebilir kalan daha büyük dosyalar (2-5GB) göndermek ve profilinizde göstermek için bir rozet alın.";
+
+/* No comment provided by engineer. */
+"Get badge + better files" = "Rozet + daha iyi dosyalar al";
+
+/* No comment provided by engineer. */
 "Get notified when mentioned." = "Bahsedildiğinde bildirim alın.";
+
+/* No comment provided by engineer. */
+"Get SimpleX name (BETA)" = "SimpleX adı al (BETA)";
 
 /* No comment provided by engineer. */
 "GIFs and stickers" = "GİFler ve çıkartmalar";
@@ -2828,6 +3005,9 @@ servers warning */
 "hours" = "saat";
 
 /* No comment provided by engineer. */
+"How badges protect your privacy" = "Rozetler gizliliğinizi nasıl korur";
+
+/* No comment provided by engineer. */
 "How it affects privacy" = "Gizliliğinizi nasıl etkiler";
 
 /* No comment provided by engineer. */
@@ -2837,10 +3017,16 @@ servers warning */
 "How it works" = "Nasıl çalışır";
 
 /* No comment provided by engineer. */
+"How long?" = "Ne kadar süre?";
+
+/* No comment provided by engineer. */
 "How SimpleX works" = "SimpleX nasıl çalışır";
 
 /* No comment provided by engineer. */
 "How to" = "Nasıl yapılır";
+
+/* No comment provided by engineer. */
+"How to register a test name" = "Test adı nasıl kaydedilir";
 
 /* No comment provided by engineer. */
 "How to use it" = "Nasıl kullanılır";
@@ -3044,6 +3230,15 @@ servers warning */
 "Invalid status" = "Geçersiz durum";
 
 /* No comment provided by engineer. */
+"Invest $100+ and get a free badge." = "$100+ yatırım yapın ve ücretsiz bir rozet alın.";
+
+/* No comment provided by engineer. */
+"Invest $1000+ and get a free legend badge." = "$1000+ yatırım yapın ve ücretsiz bir efsane rozeti alın.";
+
+/* badge type */
+"Investor" = "Yatırımcı";
+
+/* No comment provided by engineer. */
 "Invitation expired!" = "Davetin süresi geçti!";
 
 /* group name */
@@ -3076,6 +3271,9 @@ servers warning */
 /* rcv group event chat item */
 "invited via your group link" = "grup bağlantınız üzerinden davet edildi";
 
+/* ledger entry field */
+"Invoice ID" = "Fatura kimliği";
+
 /* No comment provided by engineer. */
 "iOS Keychain is used to securely store passphrase - it allows receiving push notifications." = "iOS Anahtar Zinciri parolayı güvenli bir şekilde saklamak için kullanılır - anlık bildirimlerin alınmasını sağlar.";
 
@@ -3093,6 +3291,9 @@ servers warning */
 
 /* No comment provided by engineer. */
 "Irreversible message deletion is prohibited." = "Bu grupta geri döndürülemez mesaj silme yasaktır.";
+
+/* No comment provided by engineer. */
+"Issuing your badge" = "Rozetiniz veriliyor";
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Tek bir sohbet profilinde aralarında herhangi bir veri paylaşımı olmadan birçok anonim bağlantıya sahip olmaya izin verir.";
@@ -3115,6 +3316,9 @@ servers warning */
 /* No comment provided by engineer. */
 "italic" = "italik";
 
+/* badge link, profile has a badge */
+"Its code is on the page you bought it on, under Show code." = "Kodu, satın aldığınız sayfada Kodu göster altında bulunur.";
+
 /* No comment provided by engineer. */
 "Japanese interface" = "Japonca arayüz";
 
@@ -3123,6 +3327,9 @@ servers warning */
 
 /* No comment provided by engineer. */
 "Join as %@" = "%@ olarak katıl";
+
+/* new chat action */
+"Join channel %@" = "%@ kanalına katıl";
 
 /* new chat sheet title */
 "Join group" = "Gruba katıl";
@@ -3166,8 +3373,20 @@ servers warning */
 /* file alert title */
 "Large file!" = "Büyük dosya!";
 
+/* No comment provided by engineer. */
+"Larger files available for longer." = "Daha büyük dosyalar, daha uzun süre erişilebilir.";
+
+/* No comment provided by engineer. */
+"Larger files that stay available longer." = "Daha uzun süre erişilebilir kalan daha büyük dosyalar.";
+
+/* No comment provided by engineer. */
+"Last attempt" = "Son deneme";
+
 /* badge alert button */
 "Learn more" = "Daha fazlası";
+
+/* No comment provided by engineer. */
+"Learn more on Wefunder" = "Wefunder'da daha fazla bilgi edinin";
 
 /* swipe action */
 "Leave" = "Ayrıl";
@@ -3187,8 +3406,23 @@ servers warning */
 /* rcv group event chat item */
 "left" = "ayrıldı";
 
+/* badge type */
+"Legend" = "Efsane";
+
+/* badge required to send a large file */
+"legend badge" = "efsane rozeti";
+
+/* No comment provided by engineer. */
+"Legend: 5 GB files available for 21 days." = "Efsane: 5 GB dosyalar 21 gün boyunca erişilebilir.";
+
 /* No comment provided by engineer. */
 "Less traffic on mobile networks." = "Mobil ağlarda daha az trafik.";
+
+/* No comment provided by engineer. */
+"Let people connect to you via name registered with your SimpleX address." = "İnsanların SimpleX adresinize kayıtlı ad üzerinden size bağlanmasına izin verin.";
+
+/* No comment provided by engineer. */
+"Let people join via name registered with this channel link." = "İnsanların bu kanal bağlantısıyla kayıtlı ad üzerinden katılmasına izin verin.";
 
 /* email subject */
 "Let's talk in SimpleX Chat" = "Hadi SimpleX Chat'te konuşalım";
@@ -3230,6 +3464,9 @@ servers warning */
 "Loading profile…" = "Profil yükleniyor…";
 
 /* No comment provided by engineer. */
+"Loading…" = "Yükleniyor…";
+
+/* No comment provided by engineer. */
 "Local name" = "Yerel isim";
 
 /* No comment provided by engineer. */
@@ -3251,6 +3488,9 @@ servers warning */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "WebRTC ICE sunucu adreslerinin doğru formatta olduğundan, satırlara ayrıldığından ve yinelenmediğinden emin olun.";
 
 /* No comment provided by engineer. */
+"Manage subscription" = "Aboneliği yönet";
+
+/* No comment provided by engineer. */
 "Mark deleted for everyone" = "Herkes için silinmiş olarak işaretle";
 
 /* No comment provided by engineer. */
@@ -3267,6 +3507,9 @@ servers warning */
 
 /* No comment provided by engineer. */
 "Max 30 seconds, received instantly." = "Maksimum 30 saniye, anında alındı.";
+
+/* file alert */
+"Maximum supported file size is %1$@, with a %2$@." = "Desteklenen en büyük dosya boyutu, %2$@ ile %1$@.";
 
 /* No comment provided by engineer. */
 "Media & file servers" = "Medya ve dosya sunucuları";
@@ -3493,8 +3736,14 @@ servers warning */
 /* member role */
 "moderator" = "moderatör";
 
+/* No comment provided by engineer. */
+"Monthly" = "Aylık";
+
 /* time unit */
 "months" = "aylar";
+
+/* No comment provided by engineer. */
+"Months left" = "Kalan ay";
 
 /* swipe action */
 "More" = "Daha fazla";
@@ -3523,8 +3772,14 @@ servers warning */
 /* No comment provided by engineer. */
 "Muted when inactive!" = "Aktif değilken susturuldu!";
 
+/* badges preview placeholder */
+"My nickname" = "Takma adım";
+
 /* swipe action */
 "Name" = "İsim";
+
+/* No comment provided by engineer. */
+"Name not found" = "Ad bulunamadı";
 
 /* No comment provided by engineer. */
 "Network & servers" = "Ağ & sunucular";
@@ -3613,6 +3868,9 @@ servers warning */
 /* No comment provided by engineer. */
 "New SOCKS credentials will be used for each server." = "Her sunucu için yeni SOCKS kimlik bilgileri kullanılacaktır.";
 
+/* No comment provided by engineer. */
+"Next check" = "Sonraki kontrol";
+
 /* pref value */
 "no" = "hayır";
 
@@ -3621,6 +3879,9 @@ servers warning */
 
 /* Authentication unavailable */
 "No app password" = "Uygulama şifresi yok";
+
+/* alert message */
+"No App Store purchase waiting to be added was found." = "Eklenmeyi bekleyen bir App Store satın alımı bulunamadı.";
 
 /* No comment provided by engineer. */
 "No chats" = "Hiç sohbet yok";
@@ -3653,6 +3914,9 @@ servers warning */
 "no e2e encryption" = "uçtan uca şifreleme yok";
 
 /* No comment provided by engineer. */
+"No entries" = "Kayıt yok";
+
+/* No comment provided by engineer. */
 "No filtered chats" = "Filtrelenmiş sohbetler yok";
 
 /* No comment provided by engineer. */
@@ -3663,6 +3927,9 @@ servers warning */
 
 /* No comment provided by engineer. */
 "No info, try to reload" = "Bilgi yok, yenilemeyi deneyin";
+
+/* file alert */
+"No key to verify contact's badge." = "Kişinin rozetini doğrulamak için anahtar yok.";
 
 /* servers error */
 "No media & file servers." = "Hiç medya & dosya sunucusu yok.";
@@ -3694,6 +3961,9 @@ servers warning */
 /* No comment provided by engineer. */
 "No received or sent files" = "Hiç alınmış veya gönderilmiş dosya yok";
 
+/* No comment provided by engineer. */
+"No renewal: the badge ends when the prepaid months run out." = "Yenileme yok: rozet, ön ödemeli aylar bittiğinde sona erer.";
+
 /* servers error */
 "No servers for private message routing." = "Özel mesaj yönlendirmesi için hiç sunucu yok.";
 
@@ -3702,6 +3972,9 @@ servers warning */
 
 /* servers error */
 "No servers to receive messages." = "Mesaj almak için hiç sunucu yok.";
+
+/* servers warning */
+"No servers to resolve names." = "Adları çözümleyecek sunucu yok.";
 
 /* servers error */
 "No servers to send files." = "Dosya göndermek için hiç sunucu yok.";
@@ -3716,6 +3989,18 @@ servers warning */
 "No unread chats" = "Okunmamış sohbet yok";
 
 /* No comment provided by engineer. */
+"No valid link" = "Geçerli bağlantı yok";
+
+/* No comment provided by engineer. */
+"Nobody can link two different proofs to each other or to the purchase." = "Hiç kimse iki farklı kanıtı birbirine veya satın alıma bağlayamaz.";
+
+/* No comment provided by engineer. */
+"None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link." = "Sunucularınızın hiçbiri SimpleX adlarını çözümleyecek şekilde ayarlanmamış. Sunucuları yapılandırın veya bir bağlantı linki kullanın.";
+
+/* No comment provided by engineer. */
+"Not available" = "Mevcut değil";
+
+/* No comment provided by engineer. */
 "Not compatible!" = "Uyumlu değil!";
 
 /* No comment provided by engineer. */
@@ -3725,10 +4010,16 @@ servers warning */
 "Notes" = "Notlar";
 
 /* No comment provided by engineer. */
+"Nothing has been charged." = "Hiçbir ücret alınmadı.";
+
+/* No comment provided by engineer. */
 "Nothing selected" = "Hiçbir şey seçilmedi";
 
 /* alert title */
 "Nothing to forward!" = "Yönlendirilecek bir şey yok!";
+
+/* alert title */
+"Nothing to restore" = "Geri yüklenecek bir şey yok";
 
 /* No comment provided by engineer. */
 "Notifications" = "Bildirimler";
@@ -3943,6 +4234,12 @@ alert button */
 /* alert message */
 "Other file errors:\n%@" = "Diğer dosya hataları:\n%@";
 
+/* No comment provided by engineer. */
+"Own a part of SimpleX Chat" = "SimpleX Chat'in bir parçasına sahip olun";
+
+/* No comment provided by engineer. */
+"Own a part of SimpleX Chat! 🚀" = "SimpleX Chat'in bir parçasına sahip olun! 🚀";
+
 /* member role */
 "owner" = "sahip";
 
@@ -3971,6 +4268,9 @@ alert button */
 "Password to show" = "Gösterilecek şifre";
 
 /* No comment provided by engineer. */
+"Paste" = "Yapıştır";
+
+/* No comment provided by engineer. */
 "Paste desktop address" = "Bilgisayar adresini yapıştır";
 
 /* No comment provided by engineer. */
@@ -3980,7 +4280,28 @@ alert button */
 "Paste link to connect!" = "Bağlanmak için bağlantıyı yapıştır!";
 
 /* No comment provided by engineer. */
+"Paste the code you received." = "Aldığınız kodu yapıştırın.";
+
+/* No comment provided by engineer. */
 "Paste the link you received" = "Aldığın bağlantıyı yapıştır";
+
+/* ledger entry field */
+"Paused since" = "Duraklatılma tarihi";
+
+/* No comment provided by engineer. */
+"Pay %@" = "%@ öde";
+
+/* No comment provided by engineer. */
+"Pay %@/month" = "%@/ay öde";
+
+/* No comment provided by engineer. */
+"Pay %@/year" = "%@/yıl öde";
+
+/* No comment provided by engineer. */
+"Payment failed. Update your payment method in the App Store." = "Ödeme başarısız oldu. App Store'da ödeme yönteminizi güncelleyin.";
+
+/* No comment provided by engineer. */
+"Payment problem" = "Ödeme sorunu";
 
 /* No comment provided by engineer. */
 "peer-to-peer" = "eşler arası";
@@ -4127,6 +4448,9 @@ alert button */
 "Private routing timeout" = "Özel yönlendirme zaman aşımı";
 
 /* No comment provided by engineer. */
+"Profile already has a badge" = "Profilin zaten bir rozeti var";
+
+/* No comment provided by engineer. */
 "Profile and server connections" = "Profil ve sunucu bağlantıları";
 
 /* No comment provided by engineer. */
@@ -4201,6 +4525,15 @@ alert button */
 /* No comment provided by engineer. */
 "Proxy requires password" = "Proxy şifre gerektirir";
 
+/* alert title */
+"Purchase error" = "Satın alma hatası";
+
+/* No comment provided by engineer. */
+"Purchase ID" = "Satın alma kimliği";
+
+/* alert message */
+"Purchases are off on this device." = "Bu cihazda satın alımlar kapalı.";
+
 /* No comment provided by engineer. */
 "Push notifications" = "Anında bildirimler";
 
@@ -4227,6 +4560,9 @@ alert button */
 
 /* profile description teaser */
 "Read more" = "Dahasını oku";
+
+/* No comment provided by engineer. */
+"Read more in our blog." = "Daha fazlasını blogumuzda okuyun.";
 
 /* No comment provided by engineer. */
 "Read more in our GitHub repository." = "GitHub deposunda daha fazlasını okuyun.";
@@ -4310,6 +4646,15 @@ alert button */
 "Record updated at: %@" = "Kayıt şu zamanda güncellendi: %@";
 
 /* No comment provided by engineer. */
+"Redeem" = "Kullan";
+
+/* No comment provided by engineer. */
+"Redeem badge code" = "Rozet kodunu kullan";
+
+/* No comment provided by engineer. */
+"Redeem code" = "Kodu kullan";
+
+/* No comment provided by engineer. */
 "Reduced battery usage" = "Azaltılmış pil kullanımı";
 
 /* No comment provided by engineer. */
@@ -4347,6 +4692,9 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "Yönlendirici sunucu IP adresinizi korur, ancak aramanın süresini gözlemleyebilir.";
 
+/* alert button */
+"Remind me later" = "Daha sonra hatırlat";
+
 /* alert action */
 "Remove" = "Sil";
 
@@ -4364,6 +4712,9 @@ swipe action */
 
 /* alert title */
 "Remove member?" = "Kişi silinsin mi?";
+
+/* No comment provided by engineer. */
+"Remove name" = "Adı kaldır";
 
 /* No comment provided by engineer. */
 "Remove passphrase from keychain?" = "Anahtar Zinciri'ndeki parola silinsin mi?";
@@ -4397,6 +4748,36 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Renegotiate encryption?" = "Şifreleme yeniden müzakere edilsin mi?";
+
+/* No comment provided by engineer. */
+"Renewing" = "Yenileniyor";
+
+/* No comment provided by engineer. */
+"Renews %@" = "Yenileme: %@";
+
+/* No comment provided by engineer. */
+"Renews %@ · %@" = "Yenileme: %@ · %@";
+
+/* No comment provided by engineer. */
+"Renews at %@ a month until you cancel it in the App Store." = "App Store'dan iptal edene kadar ayda %@ ücretle yenilenir.";
+
+/* No comment provided by engineer. */
+"Renews at %@ a year until you cancel it in the App Store." = "App Store'dan iptal edene kadar yılda %@ ücretle yenilenir.";
+
+/* No comment provided by engineer. */
+"Renews automatically until you cancel it in the App Store." = "App Store'dan iptal edene kadar otomatik olarak yenilenir.";
+
+/* No comment provided by engineer. */
+"Renews on %@ for %@." = "%@ tarihinde %@ karşılığında yenilenir.";
+
+/* No comment provided by engineer. */
+"Renews on %@." = "%@ tarihinde yenilenir.";
+
+/* No comment provided by engineer. */
+"Renews on %@. Cancel anytime." = "%@ tarihinde yenilenir. İstediğiniz zaman iptal edin.";
+
+/* No comment provided by engineer. */
+"Renews once the App Store charges your subscription." = "App Store aboneliğinizin ücretini tahsil ettiğinde yenilenir.";
 
 /* No comment provided by engineer. */
 "Repeat download" = "Tekrar indir";
@@ -4486,6 +4867,9 @@ swipe action */
 "Reset to user theme" = "Kullanıcı temasına sıfırla";
 
 /* No comment provided by engineer. */
+"Resolver error: %@" = "Çözümleyici hatası: %@";
+
+/* No comment provided by engineer. */
 "Restart the app to create a new chat profile" = "Yeni bir sohbet profili oluşturmak için uygulamayı yeniden başlatın";
 
 /* No comment provided by engineer. */
@@ -4502,6 +4886,12 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Restore database error" = "Veritabanını geri yüklerken hata oluştu";
+
+/* alert title */
+"Restore failed" = "Geri yükleme başarısız";
+
+/* No comment provided by engineer. */
+"Restore purchases" = "Satın alımları geri yükle";
 
 /* alert action */
 "Retry" = "Yeniden dene";
@@ -4555,7 +4945,13 @@ swipe action */
 "Safely receive files" = "Dosyaları güvenle alın";
 
 /* No comment provided by engineer. */
+"Safer channels" = "Daha güvenli kanallar";
+
+/* No comment provided by engineer. */
 "Safer groups" = "Daha güvenli gruplar";
+
+/* No comment provided by engineer. */
+"Sale starts on December 12." = "Satış 12 Aralık'ta başlıyor.";
 
 /* alert action
 alert button
@@ -4609,6 +5005,9 @@ chat item action */
 
 /* alert title */
 "Save servers?" = "Sunucular kaydedilsin mi?";
+
+/* alert title */
+"Save SimpleX name?" = "SimpleX adı kaydedilsin mi?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Hoşgeldin mesajı kaydedilsin mi?";
@@ -4841,6 +5240,9 @@ chat item action */
 /* No comment provided by engineer. */
 "Server" = "Sunucu";
 
+/* No comment provided by engineer. */
+"Server %@ does not support name resolution. Configure servers, or use a connection link." = "Sunucu %@ ad çözümlemesini desteklemiyor. Sunucuları yapılandırın veya bir bağlantı linki kullanın.";
+
 /* alert message */
 "Server added to operator %@." = "Sunucu operatör %@'ya eklendi.";
 
@@ -5032,6 +5434,9 @@ chat item action */
 "Show:" = "Göster:";
 
 /* No comment provided by engineer. */
+"shown on your profile" = "profilinizde gösterilir";
+
+/* No comment provided by engineer. */
 "SimpleX" = "SimpleX";
 
 /* No comment provided by engineer. */
@@ -5088,6 +5493,18 @@ chat item action */
 /* No comment provided by engineer. */
 "SimpleX Lock turned on" = "SimpleX Kilidi açıldı";
 
+/* No comment provided by engineer. */
+"SimpleX name" = "SimpleX adı";
+
+/* No comment provided by engineer. */
+"SimpleX name error" = "SimpleX ad hatası";
+
+/* alert title */
+"SimpleX name not verified" = "SimpleX adı doğrulanmadı";
+
+/* No comment provided by engineer. */
+"SimpleX name sale starts in" = "SimpleX adı satışının başlamasına kalan süre";
+
 /* simplex link type */
 "SimpleX one-time invitation" = "SimpleX tek kullanımlık davet";
 
@@ -5095,7 +5512,13 @@ chat item action */
 "SimpleX protocols reviewed by Trail of Bits." = "SimpleX protokolleri Trail of Bits tarafından incelenmiştir.";
 
 /* No comment provided by engineer. */
+"SimpleX public names" = "Herkese açık SimpleX adları";
+
+/* No comment provided by engineer. */
 "Simplified incognito mode" = "Basitleştirilmiş gizli mod";
+
+/* No comment provided by engineer. */
+"Since" = "Başlangıç";
 
 /* No comment provided by engineer. */
 "Size" = "Boyut";
@@ -5168,6 +5591,9 @@ report reason */
 "Statistics" = "İstatistikler";
 
 /* No comment provided by engineer. */
+"Status" = "Durum";
+
+/* No comment provided by engineer. */
 "Stop" = "Dur";
 
 /* No comment provided by engineer. */
@@ -5204,6 +5630,12 @@ report reason */
 "Storage" = "Depolama";
 
 /* No comment provided by engineer. */
+"Stored for 7 days" = "7 gün saklanır";
+
+/* No comment provided by engineer. */
+"Stored for 21 days" = "21 gün saklanır";
+
+/* No comment provided by engineer. */
 "strike" = "çizik";
 
 /* blur media */
@@ -5215,11 +5647,45 @@ report reason */
 /* No comment provided by engineer. */
 "Subscribed" = "Abone olundu";
 
+/* alert message */
+"Subscribed on another profile." = "Başka bir profilde abone olundu.";
+
+/* No comment provided by engineer. */
+"Subscription" = "Abonelik";
+
+/* alert title */
+"Subscription cancelled" = "Abonelik iptal edildi";
+
+/* No comment provided by engineer. */
+"Subscription ended. The badge will be removed." = "Abonelik sona erdi. Rozet kaldırılacak.";
+
 /* No comment provided by engineer. */
 "Subscription errors" = "Abone olurken hata";
 
 /* No comment provided by engineer. */
 "Subscriptions ignored" = "Abonelikler göz ardı edildi";
+
+/* alert button
+alert title */
+"Support SimpleX" = "SimpleX'i destekle";
+
+/* No comment provided by engineer. */
+"Support SimpleX and get a badge." = "SimpleX'i destekleyin ve bir rozet alın.";
+
+/* No comment provided by engineer. */
+"Support SimpleX to send larger files that stay available longer" = "Daha uzun süre erişilebilir kalan daha büyük dosyalar göndermek için SimpleX'i destekleyin";
+
+/* badge type */
+"Supporter" = "Destekçi";
+
+/* badge required to send a large file */
+"supporter badge" = "destekçi rozeti";
+
+/* No comment provided by engineer. */
+"Supporter badges" = "Destekçi rozetleri";
+
+/* No comment provided by engineer. */
+"Supporter: 2 GB files available for 7 days." = "Destekçi: 2 GB dosyalar 7 gün boyunca erişilebilir.";
 
 /* No comment provided by engineer. */
 "Switch audio and video during the call." = "Görüşme sırasında ses ve görüntüyü değiştirin.";
@@ -5336,6 +5802,48 @@ server test failure */
 /* No comment provided by engineer. */
 "The attempt to change database passphrase was not completed." = "Veritabanı parolasını değiştirme girişimi tamamlanmadı.";
 
+/* badge alert */
+"The badge is signed with a key that this version of the app does not recognize. Update the app to verify this badge." = "Rozet, uygulamanın bu sürümünün tanımadığı bir anahtarla imzalanmıştır. Bu rozeti doğrulamak için uygulamayı güncelleyin.";
+
+/* badge renewal error */
+"The badge issued by the service cannot be verified." = "Hizmet tarafından verilen rozet doğrulanamıyor.";
+
+/* badge renewal error */
+"The badge service could not be reached." = "Rozet hizmetine ulaşılamadı.";
+
+/* badge renewal error */
+"The badge service did not respond." = "Rozet hizmeti yanıt vermedi.";
+
+/* alert message */
+"The badge service does not recognize this badge." = "Rozet hizmeti bu rozeti tanımıyor.";
+
+/* badge purchase error */
+"The badge service refused the purchase: %@" = "Rozet hizmeti satın alımı reddetti: %@";
+
+/* badge renewal error */
+"The badge service refused the renewal: %@" = "Rozet hizmeti yenilemeyi reddetti: %@";
+
+/* alert message */
+"The badge service reported an internal error." = "Rozet hizmeti dahili bir hata bildirdi.";
+
+/* alert message */
+"The badge service sent an unexpected response: %@" = "Rozet hizmeti beklenmeyen bir yanıt gönderdi: %@";
+
+/* alert message */
+"The badge was added to the profile %@." = "Rozet %@ profiline eklendi.";
+
+/* badge link confirmation */
+"The badge will be added to the profile %@." = "Rozet %@ profiline eklenecek.";
+
+/* badge link, being issued */
+"The badge will be added to this profile." = "Rozet bu profile eklenecek.";
+
+/* alert message */
+"The code was accepted, but the badge it grants has already ended." = "Kod kabul edildi, ancak verdiği rozet zaten sona ermiş.";
+
+/* alert message */
+"The code you scanned is not a badge code." = "Taradığınız kod bir rozet kodu değil.";
+
 /* No comment provided by engineer. */
 "The code you scanned is not a SimpleX link QR code." = "Taradığınız kod bir SimpleX bağlantı QR kodu değildir.";
 
@@ -5378,6 +5886,9 @@ server test failure */
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "Eski veritabanı geçiş sırasında kaldırılmadı, silinebilir.";
 
+/* alert message */
+"The payment has not been confirmed yet." = "Ödeme henüz onaylanmadı.";
+
 /* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Aynı koşullar operatör **%@** için de geçerli olacaktır.";
 
@@ -5398,6 +5909,27 @@ server test failure */
 
 /* No comment provided by engineer. */
 "The servers for new files of your current chat profile **%@**." = "Mevcut sohbet profiliniz için yeni dosyaların sunucuları **%@**.";
+
+/* alert message */
+"The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page." = "SimpleX adı @%@ SimpleX adresi olmadan kaydedildi. SimpleX adresinizi kayıt sayfası üzerinden ada ekleyin.";
+
+/* alert message */
+"The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page." = "SimpleX adı #%@ kanal bağlantısı olmadan kaydedildi. Kayıt sayfası üzerinden ada kanal bağlantısı ekleyin.";
+
+/* No comment provided by engineer. */
+"The SimpleX name %@ is registered, but it has no valid link." = "SimpleX adı %@ kayıtlı, ancak geçerli bir bağlantısı yok.";
+
+/* No comment provided by engineer. */
+"The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner." = "SimpleX adı %@ kayıtlı, ancak profile eklenmemiş. Eğer sahibi sizseniz, lütfen adresinize veya kanal profilinize ekleyin.";
+
+/* alert message */
+"The store could not be reached." = "Mağazaya ulaşılamadı.";
+
+/* No comment provided by engineer. */
+"The store could not charge your payment method." = "Mağaza ödeme yönteminizden ücret alamadı.";
+
+/* alert message */
+"The store did not confirm this purchase." = "Mağaza bu satın alımı onaylamadı.";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Yapıştırdığın metin bir SimpleX bağlantısı değildir.";
@@ -5429,11 +5961,38 @@ server test failure */
 /* No comment provided by engineer. */
 "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Bu işlem geri alınamaz - profiliniz, kişileriniz, mesajlarınız ve dosyalarınız geri döndürülemez şekilde kaybolacaktır.";
 
+/* alert message */
+"This app version cannot buy badges." = "Bu uygulama sürümü rozet satın alamaz.";
+
+/* alert message */
+"This app version cannot redeem badge codes." = "Bu uygulama sürümü rozet kodlarını kullanamaz.";
+
+/* alert message */
+"This app version cannot verify this badge. Please update the app." = "Bu uygulama sürümü bu rozeti doğrulayamıyor. Lütfen uygulamayı güncelleyin.";
+
+/* badge alert */
+"This badge could not be verified and may not be genuine." = "Bu rozet doğrulanamamıştır ve orijinal olmayabilir.";
+
+/* alert message */
+"This badge is not on sale." = "Bu rozet satışta değil.";
+
 /* E2EE info chat item */
 "This chat is protected by end-to-end encryption." = "Bu sohbet uçtan uca şifreleme ile korunmaktadır.";
 
 /* E2EE info chat item */
 "This chat is protected by quantum resistant end-to-end encryption." = "Bu sohbet kuantum dirençli uçtan uca şifreleme ile korunmaktadır.";
+
+/* alert message */
+"This code has already been used." = "Bu kod zaten kullanılmış.";
+
+/* alert message */
+"This code has expired." = "Bu kodun süresi dolmuş.";
+
+/* alert message */
+"This code is not valid." = "Bu kod geçerli değil.";
+
+/* alert message */
+"This code was not recognized." = "Bu kod tanınmadı.";
 
 /* notification title */
 "this contact" = "Bu kişi";
@@ -5459,8 +6018,20 @@ server test failure */
 /* No comment provided by engineer. */
 "This message was deleted or not received yet." = "Bu mesaj silindi veya henüz alınmadı.";
 
+/* alert message */
+"This profile already has a badge." = "Bu profilin zaten bir rozeti var.";
+
+/* alert message */
+"This purchase is already used on another profile." = "Bu satın alım zaten başka bir profilde kullanılıyor.";
+
+/* alert message */
+"This purchase was moved to another device or profile recently." = "Bu satın alım yakın zamanda başka bir cihaza veya profile taşındı.";
+
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Bu ayar, geçerli sohbet profiliniz **%@** deki mesajlara uygulanır.";
+
+/* No comment provided by engineer. */
+"This SimpleX name is not registered. Please check the name." = "Bu SimpleX adı kayıtlı değil. Lütfen adı kontrol edin.";
 
 /* No comment provided by engineer. */
 "Time to disappear is set only for new contacts." = "Kaybolma süresi yalnızca yeni kişiler için ayarlanır.";
@@ -5496,6 +6067,12 @@ server test failure */
 "To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Gizliliği korumak için, diğer tüm platformlar gibi kullanıcı kimliği kullanmak yerine, SimpleX mesaj kuyrukları için kişilerinizin her biri için ayrı tanımlayıcılara sahiptir.";
 
 /* No comment provided by engineer. */
+"To prove to a contact or a server that you have a badge, the app generates a new proof that reveals only the badge type and the expiry date, rounded to a week." = "Bir kişiye veya sunucuya rozetiniz olduğunu kanıtlamak için uygulama, yalnızca rozet türünü ve haftaya yuvarlanmış bitiş tarihini gösteren yeni bir kanıt oluşturur.";
+
+/* ledger entry field */
+"To purchase key" = "Hedef satın alma anahtarı";
+
+/* No comment provided by engineer. */
 "To receive" = "Almak için";
 
 /* No comment provided by engineer. */
@@ -5506,6 +6083,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "To record voice message please grant permission to use Microphone." = "Sesli mesaj kaydetmek için lütfen Mikrofon kullanım izni verin.";
+
+/* No comment provided by engineer. */
+"To resolve names" = "Adları çözümlemek için";
 
 /* No comment provided by engineer. */
 "To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "Gizli profilinizi ortaya çıkarmak için **Sohbet profilleriniz** sayfasındaki arama alanına tam bir şifre girin.";
@@ -5533,6 +6113,9 @@ server test failure */
 
 /* token status */
 "Token status: %@." = "Jeton durumu: %@.";
+
+/* alert message */
+"Too many attempts. Please try again later." = "Çok fazla deneme. Lütfen daha sonra tekrar deneyin.";
 
 /* No comment provided by engineer. */
 "Toolbar opacity" = "Araç çubuğu opaklığı";
@@ -5577,7 +6160,13 @@ server test failure */
 "unblocked %@" = "engeli kaldırıldı %@";
 
 /* No comment provided by engineer. */
+"Unconfirmed name" = "Onaylanmamış ad";
+
+/* No comment provided by engineer. */
 "Undelivered messages" = "Teslim edilmemiş mesajlar";
+
+/* badge renewal error */
+"Unexpected error: %@" = "Beklenmeyen hata: %@";
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Beklenmeyen geçiş durumu";
@@ -5646,6 +6235,12 @@ server test failure */
 "Unsupported connection link" = "Desteklenmeyen bağlantı bağlantısı";
 
 /* No comment provided by engineer. */
+"until you can register a SimpleX domain" = "sonra SimpleX alan adı kaydedebilirsiniz";
+
+/* badge alert title */
+"Unverified badge" = "Doğrulanmamış rozet";
+
+/* No comment provided by engineer. */
 "Up to 100 last messages are sent to new members." = "Yeni üyelere 100e kadar en son mesajlar gönderildi.";
 
 /* No comment provided by engineer. */
@@ -5659,6 +6254,12 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Update settings?" = "Ayarları güncelleyelim mi?";
+
+/* No comment provided by engineer. */
+"Update the app to register a SimpleX domain" = "SimpleX alan adı kaydetmek için uygulamayı güncelleyin";
+
+/* alert message */
+"Update the app to use badges." = "Rozetleri kullanmak için uygulamayı güncelleyin.";
 
 /* No comment provided by engineer. */
 "Updated conditions" = "Güncellenmiş koşullar";
@@ -5806,10 +6407,16 @@ alert title */
 "Verify database passphrase" = "Veritabanı parolasını doğrulayın";
 
 /* No comment provided by engineer. */
+"Verify name" = "Adı doğrulayın";
+
+/* No comment provided by engineer. */
 "Verify passphrase" = "Parolayı doğrula";
 
 /* No comment provided by engineer. */
 "Verify security code" = "Güvenlik kodunu doğrula";
+
+/* No comment provided by engineer. */
+"Verify SimpleX names" = "SimpleX adlarını doğrula";
 
 /* No comment provided by engineer. */
 "Via browser" = "Tarayıcı üzerinden";
@@ -5856,6 +6463,9 @@ alert title */
 /* No comment provided by engineer. */
 "View updated conditions" = "Güncellenmiş koşulları görüntüle";
 
+/* No comment provided by engineer. */
+"View your badge" = "Rozetinizi görüntüleyin";
+
 /* chat feature */
 "Visible history" = "Görünür geçmiş";
 
@@ -5879,6 +6489,9 @@ alert title */
 
 /* No comment provided by engineer. */
 "waiting for answer…" = "cevap bekleniyor…";
+
+/* No comment provided by engineer. */
+"Waiting for approval" = "Onay bekleniyor";
 
 /* No comment provided by engineer. */
 "waiting for confirmation…" = "onay bekleniyor…";
@@ -5947,6 +6560,9 @@ alert title */
 "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Biriyle gizli bir profil paylaştığınızda, bu profil sizi davet ettikleri gruplar için kullanılacaktır.";
 
 /* No comment provided by engineer. */
+"Why SimpleX is built." = "SimpleX'in yapılış amacı.";
+
+/* No comment provided by engineer. */
 "WiFi" = "WiFi";
 
 /* No comment provided by engineer. */
@@ -6002,6 +6618,9 @@ alert title */
 
 /* No comment provided by engineer. */
 "You allow" = "İzin veriyorsunuz";
+
+/* No comment provided by engineer. */
+"You already have a badge!" = "Zaten bir rozetiniz var!";
 
 /* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "Aynı görünen ada sahip bir konuşma profilin zaten var. Lütfen başka bir ad seç.";
@@ -6105,6 +6724,9 @@ alert title */
 /* No comment provided by engineer. */
 "You can still view conversation with %@ in the list of chats." = "Sohbet listesinde %@ ile konuşmayı görüntülemeye devam edebilirsiniz.";
 
+/* alert message */
+"You can support SimpleX later in Settings." = "SimpleX'i daha sonra Ayarlar'dan destekleyebilirsiniz.";
+
 /* No comment provided by engineer. */
 "You can turn on SimpleX Lock via Settings." = "SimpleX Kilidini Ayarlar üzerinden açabilirsiniz.";
 
@@ -6161,6 +6783,9 @@ alert title */
 
 /* No comment provided by engineer. */
 "You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." = "Sohbet veritabanınızın en son sürümünü SADECE bir cihazda kullanmalısınız, aksi takdirde bazı kişilerden daha fazla mesaj alamayabilirsiniz.";
+
+/* file alert */
+"You need a %1$@ to send files larger than %2$@." = "%2$@ boyutundan büyük dosyalar göndermek için %1$@ gerekir.";
 
 /* No comment provided by engineer. */
 "You need to allow your contact to call to be able to call them." = "Kendiniz arayabilmeniz için önce irtibat kişinizin sizi aramasına izin vermelisiniz.";
@@ -6229,6 +6854,30 @@ alert title */
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Bu grup için gizli bir profil kullanıyorsunuz - ana profilinizi paylaşmayı önlemek için kişileri davet etmeye izin verilmiyor";
 
 /* No comment provided by engineer. */
+"Your badge" = "Rozetiniz";
+
+/* No comment provided by engineer. */
+"Your badge could not be renewed." = "Rozetiniz yenilenemedi.";
+
+/* alert title */
+"Your badge expired" = "Rozetinizin süresi doldu";
+
+/* No comment provided by engineer. */
+"Your badge expired on %@." = "Rozetinizin süresi %@ tarihinde doldu.";
+
+/* file alert */
+"Your badge expired." = "Rozetinizin süresi doldu.";
+
+/* alert title */
+"Your badge renews soon" = "Rozetiniz yakında yenilenecek";
+
+/* No comment provided by engineer. */
+"Your badge stays until %@." = "Rozetiniz %@ tarihine kadar kalır.";
+
+/* No comment provided by engineer. */
+"Your badge subscription ended on %@." = "Rozet aboneliğiniz %@ tarihinde sona erdi.";
+
+/* No comment provided by engineer. */
 "Your business contact" = "İş bağlantınız";
 
 /* No comment provided by engineer. */
@@ -6277,6 +6926,12 @@ alert title */
 "Your ICE servers" = "ICE sunucularınız";
 
 /* No comment provided by engineer. */
+"Your legend badge" = "Efsane rozetiniz";
+
+/* No comment provided by engineer. */
+"Your payment is complete. The badge will be added to this profile." = "Ödemeniz tamamlandı. Rozet bu profile eklenecek.";
+
+/* No comment provided by engineer. */
 "Your preferences" = "Tercihleriniz";
 
 /* No comment provided by engineer. */
@@ -6311,4 +6966,13 @@ alert title */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "SimpleX adresin";
+
+/* No comment provided by engineer. */
+"Your SimpleX name" = "SimpleX adınız";
+
+/* alert title */
+"Your subscription ended" = "Aboneliğiniz sona erdi";
+
+/* No comment provided by engineer. */
+"Your subscription is cancelled. The badge stays until %@." = "Aboneliğiniz iptal edildi. Rozet %@ tarihine kadar kalır.";
 

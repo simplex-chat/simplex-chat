@@ -97,6 +97,7 @@ fun CIGroupInvitationView(
     ) {
       Box(
         Modifier
+          .messageCard()
           .width(IntrinsicSize.Min)
           .padding(start = 8.dp, end = 12.dp, top = 8.dp, bottom = 4.dp),
         contentAlignment = Alignment.BottomEnd

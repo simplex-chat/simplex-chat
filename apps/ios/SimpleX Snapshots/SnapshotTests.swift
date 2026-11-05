@@ -137,6 +137,29 @@ final class SnapshotTests: XCTestCase {
         window.isHidden = true
         window.rootViewController = nil
     }
+
+    @MainActor
+    func testTerminalSpacing() {
+        let items = SnapshotFixtures().spacingItems()
+        let p = terminalParagraphGap
+        let rows = zip(items.dropFirst(), items).map { item, older in
+            let sender = terminalItemShowsSender(item, older)
+            let largeGap = !item.chatDir.sameDirection(older.chatDir) || item.meta.itemTs.timeIntervalSince(older.meta.itemTs) > 60
+            return (sender: sender, gap: terminalRowGap(item, older, separated: false, largeGap: largeGap, hasSenderRow: sender), card: terminalItemStartsWithCard(item, revealed: true))
+        }
+        XCTAssertEqual(items.map(\.isOneLine), [false, true, true, true, true, true, true, false, true, true, false, true, false, false])
+        XCTAssertEqual(rows.map { $0.sender }, [true, true, false, false, true, false, true, false, true, true, true, false, true])
+        XCTAssertEqual(rows.map { $0.gap }, [p, p, 0, p, p, 0, p, p, p, p, p, p, p])
+        XCTAssertEqual(rows.map { $0.card }, [false, false, false, false, false, false, false, false, false, true, true, true, false])
+        XCTAssertEqual(items.suffix(2).map(terminalTextTopGap), [p, 0])
+        let edges = SnapshotFixtures().spacingEdgeItems()
+        XCTAssertEqual(edges.map { terminalItemStartsWithCard($0, revealed: true) }, [true, false, true, true])
+        XCTAssertEqual(edges.suffix(3).map(terminalTextTopGap), [0, 0, 0])
+        var unreacted = items[3]
+        unreacted.reactions = []
+        let rowHash = { (older: ChatItem) in ListItem(item: items[4], prevItem: items[5], nextItem: older, unreadBefore: 0).genHash(false, false) }
+        XCTAssertNotEqual(rowHash(items[3]), rowHash(unreacted))
+    }
 }
 
 private func layoutCheckDir(_ env: [String: String]) -> URL {
@@ -211,6 +234,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ClassicOverviewChannel_Previews.self),
         SnapshotScene(ClassicOverviewDirect_Previews.self),
         SnapshotScene(ClassicOverviewGroup_Previews.self),
+        SnapshotScene(ClassicParagraphs_Previews.self, allSizes: true),
         SnapshotScene(ComposeVoiceView_Previews.self),
         SnapshotScene(ConnectDesktopView_Previews.self, device: true),
         SnapshotScene(ContactConnectionInfo_Previews.self),
@@ -293,7 +317,9 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(TerminalOverviewDirect_Previews.self),
         SnapshotScene(TerminalOverviewGroup_Previews.self),
         SnapshotScene(TerminalQuoteThumbnail_Previews.self, allSizes: true),
+        SnapshotScene(TerminalRightToLeft_Previews.self),
         SnapshotScene(TerminalRuleOnly_Previews.self, allSizes: true),
+        SnapshotScene(TerminalSpacing_Previews.self, allSizes: true),
         SnapshotScene(UserAddressLearnMore_Previews.self),
         SnapshotScene(UserAddressView_Previews.self),
         SnapshotScene(UserPicker_Previews.self),
@@ -404,9 +430,21 @@ struct TerminalMedia_Previews: PreviewProvider {
     }
 }
 
+struct TerminalRightToLeft_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().rightToLeft()
+    }
+}
+
 struct TerminalRuleOnly_Previews: PreviewProvider {
     static var previews: some View {
         SnapshotFixtures().ruleOnly()
+    }
+}
+
+struct TerminalSpacing_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().spacing()
     }
 }
 
@@ -455,6 +493,12 @@ struct TerminalOverviewChannel_Previews: PreviewProvider {
 struct ClassicOverviewChannel_Previews: PreviewProvider {
     static var previews: some View {
         SnapshotFixtures().overviewChannel(terminal: false)
+    }
+}
+
+struct ClassicParagraphs_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().paragraphs()
     }
 }
 
@@ -626,6 +670,77 @@ private final class SnapshotFixtures {
                 .quote(content: SegmentRange(from: 11, to: 12))
             ]
         ),
+        "### Gaps\n\none empty line above\n\n\ntwo empty lines above\n\n### After one empty line\n- list entry\n\n- after one empty line\n\n": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "### ", format: .markup(token: .headingMark(level: 3))),
+                FormattedText(text: "Gaps"),
+                FormattedText(text: "\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 2))),
+                FormattedText(text: "one empty line above"),
+                FormattedText(text: "\n\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 3))),
+                FormattedText(text: "two empty lines above"),
+                FormattedText(text: "\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 2))),
+                FormattedText(text: "### ", format: .markup(token: .headingMark(level: 3))),
+                FormattedText(text: "After one empty line"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "- ", format: .markup(token: .listMark(number: nil))),
+                FormattedText(text: "list entry"),
+                FormattedText(text: "\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 2))),
+                FormattedText(text: "- ", format: .markup(token: .listMark(number: nil))),
+                FormattedText(text: "after one empty line"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak))
+            ],
+            markdownBlocks: [
+                .heading(level: 3, content: SegmentRange(from: 1, to: 2)),
+                .paragraph(content: SegmentRange(from: 3, to: 4)),
+                .paragraph(content: SegmentRange(from: 5, to: 6)),
+                .heading(level: 3, content: SegmentRange(from: 8, to: 9)),
+                .list(items: [
+                    ListEntry(number: nil, content: SegmentRange(from: 11, to: 12), items: []),
+                    ListEntry(number: nil, content: SegmentRange(from: 14, to: 15), items: [])
+                ])
+            ]
+        ),
+        "first part\n\nafter one empty line\n\n\nafter two empty lines": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "first part"),
+                FormattedText(text: "\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 2))),
+                FormattedText(text: "after one empty line"),
+                FormattedText(text: "\n\n\n", format: .markup(token: .paragraphBreak(lineBreaks: 3))),
+                FormattedText(text: "after two empty lines")
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 0, to: 1)),
+                .paragraph(content: SegmentRange(from: 2, to: 3)),
+                .paragraph(content: SegmentRange(from: 4, to: 5))
+            ]
+        ),
+        "\nlinks to a scam site": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "\n", format: .markup(token: .paragraphBreak(lineBreaks: 1))),
+                FormattedText(text: "links to a scam site")
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 1, to: 2))
+            ]
+        ),
+        "\nafter an empty line": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "\n", format: .markup(token: .paragraphBreak(lineBreaks: 1))),
+                FormattedText(text: "after an empty line")
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 1, to: 2))
+            ]
+        ),
+        "  \nafter a line of spaces": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "  \n", format: .markup(token: .paragraphBreak(lineBreaks: 1))),
+                FormattedText(text: "after a line of spaces")
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 1, to: 2))
+            ]
+        ),
         "Plan for today:\n1. review\n2. **release**": ParsedMarkdown(
             formattedText: [
                 FormattedText(text: "Plan for today:"),
@@ -665,6 +780,44 @@ private final class SnapshotFixtures {
                     ListEntry(number: nil, content: SegmentRange(from: 4, to: 5), items: []),
                     ListEntry(number: nil, content: SegmentRange(from: 7, to: 8), items: [])
                 ])
+            ]
+        ),
+        "run this one first:\n```\nnpm run publish\n```": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "run this one first:"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "```", format: .markup(token: .fenceMark(language: nil))),
+                FormattedText(text: "\n", format: .markup(token: .hardBreak)),
+                FormattedText(text: "npm run publish"),
+                FormattedText(text: "\n", format: .markup(token: .hardBreak)),
+                FormattedText(text: "```", format: .markup(token: .fenceMark(language: nil)))
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 0, to: 1)),
+                .codeBlock(language: nil, content: SegmentRange(from: 4, to: 5))
+            ]
+        ),
+        "# מה חדש\nגרסה חדשה של האפליקציה\n## תכונות\n| שינוי |\n|---|": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "# ", format: .markup(token: .headingMark(level: 1))),
+                FormattedText(text: "מה חדש"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "גרסה חדשה של האפליקציה"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "## ", format: .markup(token: .headingMark(level: 2))),
+                FormattedText(text: "תכונות"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "| ", format: .markup(token: .rowMark)),
+                FormattedText(text: "שינוי"),
+                FormattedText(text: " |", format: .markup(token: .cellMark)),
+                FormattedText(text: "\n", format: .markup(token: .hardBreak)),
+                FormattedText(text: "|---|", format: .markup(token: .delimiterRow(columns: [.none])))
+            ],
+            markdownBlocks: [
+                .heading(level: 1, content: SegmentRange(from: 1, to: 2)),
+                .paragraph(content: SegmentRange(from: 3, to: 4)),
+                .heading(level: 2, content: SegmentRange(from: 6, to: 7)),
+                .table(columns: [.none], header: [SegmentRange(from: 9, to: 10)], rows: [])
             ]
         )
     ]
@@ -799,10 +952,17 @@ private final class SnapshotFixtures {
         }
     }
 
+    func rightToLeft() -> some View {
+        chatRows(direct, [
+            msg(.directRcv, "# מה חדש\nגרסה חדשה של האפליקציה\n## תכונות\n| שינוי |\n|---|", -10)
+        ], terminal: true)
+    }
+
     func ruleOnly() -> some View {
         chatRows(direct, [
             msg(.directRcv, "---", -10),
-            msg(.directRcv, "---", -9, quote: quote(.directSnd, "a quoted message that is much wider than the rule"))
+            msg(.directRcv, "---", -9, quote: quote(.directSnd, "a quoted message that is much wider than the rule")),
+            msg(.directRcv, "---", -8, content: .report(text: "---", reason: .spam))
         ], terminal: true)
     }
 
@@ -816,12 +976,54 @@ private final class SnapshotFixtures {
         ], terminal: terminal)
     }
 
+    func spacingItems() -> [ChatItem] {
+        [
+            event(.groupRcv(groupMember: carol), .rcvGroupEvent(rcvGroupEvent: .memberConnected), -130),
+            msg(.groupRcv(groupMember: alice), "Welcome, carol!", -120),
+            msg(.groupRcv(groupMember: carol), "Thanks! Glad to be here", -118),
+            msg(.groupRcv(groupMember: carol), "ok", -118 + 20.0 / 60, reactions: [reaction(.heart, 2)]),
+            msg(.groupRcv(groupMember: carol), "one question", -118 + 40.0 / 60),
+            msg(.groupRcv(groupMember: bob), "I pushed the release build, please check it on your phones", -105),
+            msg(.groupRcv(groupMember: bob), "done", -104.5),
+            msg(.groupRcv(groupMember: alice), "first part\n\nafter one empty line\n\n\nafter two empty lines", -90),
+            msg(.groupRcv(groupMember: alice), "and one more thing", -89.5),
+            msg(.groupRcv(groupMember: alice), "after a pause of eight minutes", -81.5),
+            msg(.groupRcv(groupMember: bob), "", -80, reactions: [reaction(.heart, 2)], content: .image(text: "", image: landscape), file: imageFile("view.jpg")),
+            msg(.groupSnd, "👍", -79),
+            msg(.groupSnd, "nice view", -78.5, quote: quote(.groupRcv(groupMember: bob), "", image: landscape)),
+            msg(.groupRcv(groupMember: carol), "run this one first:\n```\nnpm run publish\n```", -70, reactions: [reaction(.thumbsup, 1)])
+        ]
+    }
+
+    func spacing() -> some View {
+        chatRows(teamChat, spacingItems(), terminal: true)
+    }
+
+    func paragraphs() -> some View {
+        let text = "first part\n\nafter one empty line\n\n\nafter two empty lines"
+        var oneText = msg(.directRcv, text, -9)
+        oneText.formattedText = nil
+        oneText.markdownBlocks = nil
+        return chatRows(direct, [msg(.directRcv, text, -10), oneText], terminal: false)
+    }
+
+    func spacingEdgeItems() -> [ChatItem] {
+        let reported = quote(.groupRcv(groupMember: alice), "Welcome, carol!")
+        return [
+            msg(.groupRcv(groupMember: bob), "👍", -10, content: .unknown(type: "sticker", text: "👍")),
+            msg(.groupSnd, "\nlinks to a scam site", -9, quote: reported, content: .report(text: "\nlinks to a scam site", reason: .spam)),
+            msg(.groupSnd, "\nafter an empty line", -8, quote: reported),
+            msg(.groupSnd, "  \nafter a line of spaces", -7, quote: reported)
+        ]
+    }
+
     func overviewDirect(terminal: Bool) -> ChatRows {
         chatRows(direct, [
             event(.directRcv, .rcvChatFeature(feature: .voice, enabled: FeatureEnabled(forUser: true, forContact: true), param: nil), -120),
             msg(.directRcv, "Hi! Did you see the **new release**?", -60),
             msg(.directSnd, "Yes, *great* changes 🎉", -58, reactions: [reaction(.thumbsup, 1)]),
             msg(.directRcv, "# Release notes\n- terminal layout\n- `code` blocks\n\n> quoted line", -50),
+            msg(.directRcv, "### Gaps\n\none empty line above\n\n\ntwo empty lines above\n\n### After one empty line\n- list entry\n\n- after one empty line\n\n", -48),
             msg(.directSnd, "Thanks for the summary", -45, quote: quote(.directRcv, "Release notes")),
             msg(.directRcv, "", -40, content: .image(text: "", image: landscape), file: imageFile("photo.jpg")),
             msg(.directRcv, "", -35, content: .file(""), file: CIFile.getSample(fileId: id(), fileName: "report.pdf", fileSize: 245_760, filePath: nil, fileStatus: .rcvInvitation)),

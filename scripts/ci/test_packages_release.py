@@ -514,6 +514,10 @@ class ChangesTest(GitRepoTest):
         self.assertEqual(self.builds("scripts/ci/packages_release.py"), set())
         self.assertEqual(self.values["scopes"], "ci-scripts")
 
+    def test_website_library_change_tests_its_scope(self):
+        self.assertEqual(self.builds("website/src/js/simplex-lib.jsc"), set())
+        self.assertEqual(self.values["scopes"], "website")
+
 
 class PackageStateTest(GitRepoTest):
     def setUp(self):

@@ -971,7 +971,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       VersionFeature.FeatureView(
         icon = null,
         titleId = MR.strings.v7_1_invest,
-        view = { InvestInSimpleXChatView() }
+        view = { modalManager -> InvestInSimpleXChatView(modalManager) }
       ),
       VersionFeature.FeatureDescription(
         icon = MR.images.ic_alternate_email,
@@ -998,7 +998,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       VersionFeature.FeatureView(
         icon = null,
         titleId = MR.strings.v7_1_invest,
-        view = { InvestInSimpleXChatView() }
+        view = { modalManager -> InvestInSimpleXChatView(modalManager) }
       ),
       VersionFeature.FeatureView(
         icon = null,
@@ -1083,6 +1083,8 @@ fun shouldShowWhatsNew(m: ChatModel): Boolean {
 
 val WEFUNDER_URL = "https://wefunder.com/simplex.chat?utm_source=$APP_UTM_SOURCE"
 
+private const val CROWDFUNDING_CONTACT_URI = "simplex:/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo?h=smp11.simplex.im"
+
 // the center modal takes the remaining width of the window, so the image is limited to its design width
 private val MAX_CROWDFUNDING_IMAGE_WIDTH = DEFAULT_MIN_CENTER_MODAL_WIDTH
 
@@ -1095,8 +1097,12 @@ private const val CROWDFUNDING_IMAGE_CORNER_RADIUS_RATIO = 0.03f
 
 private class CrowdfundingLayout(
   val maxImageWidth: Dp,
-  val imageShape: Shape
-)
+  val imageShape: Shape,
+  // the modal manager that shows the page in the center of the window, or null when nothing does
+  private val centerOfWindow: ModalManager?
+) {
+  fun inCenterOfWindow(modalManager: ModalManager) = modalManager === centerOfWindow
+}
 
 // the images are designed for the width of a phone screen, which Android always gives them. On desktop
 // they are limited to their own width, and their radius is scaled with them, as they are still shown
@@ -1106,9 +1112,9 @@ private val crowdfundingLayout = if (appPlatform.isDesktop)
   CrowdfundingLayout(CROWDFUNDING_PAGE_IMAGE_WIDTH, object : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
       Outline.Rounded(RoundRect(size.toRect(), CornerRadius(size.width * CROWDFUNDING_IMAGE_CORNER_RADIUS_RATIO)))
-  })
+  }, ModalManager.center)
 else
-  CrowdfundingLayout(Dp.Unspecified, RoundedCornerShape(CROWDFUNDING_IMAGE_CORNER_RADIUS))
+  CrowdfundingLayout(Dp.Unspecified, RoundedCornerShape(CROWDFUNDING_IMAGE_CORNER_RADIUS), null)
 
 // Google Play policy restricts promoting investments, so Play builds only show it in the US
 @Composable
@@ -1128,10 +1134,9 @@ fun isInUs(): Boolean =
       || androidPlayStoreCountry.value == null
 
 @Composable
-private fun InvestInSimpleXChatView() {
+private fun InvestInSimpleXChatView(modalManager: ModalManager) {
   if (!crowdfundingAvailable()) return
-  val uriHandler = LocalUriHandler.current
-  val openWefunder = { uriHandler.openUriCatching(WEFUNDER_URL) }
+  val showGetStake = { modalManager.showModalCloseable(cardScreen = true) { close -> GetStakeView(showFirstImage = false, inCenterOfWindow = crowdfundingLayout.inCenterOfWindow(modalManager), close = close) } }
   Column(modifier = Modifier.padding(bottom = 12.dp)) {
     Text(
       generalGetString(MR.strings.v7_1_invest),
@@ -1153,20 +1158,25 @@ private fun InvestInSimpleXChatView() {
           .clickable(
             interactionSource = remember { MutableInteractionSource() },
             indication = null,
-            onClick = openWefunder
+            onClick = showGetStake
           )
       )
     }
     Text(
-      generalGetString(MR.strings.v7_1_invest_learn_more),
-      color = MaterialTheme.colors.primary,
+      buildAnnotatedString {
+        append(generalGetString(MR.strings.v7_0_invest_descr))
+        append(" ")
+        withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
+          append(generalGetString(MR.strings.learn_more))
+        }
+      },
       fontSize = 15.sp,
       modifier = Modifier
         .pointerHoverIcon(PointerIcon.Hand)
         .clickable(
           interactionSource = remember { MutableInteractionSource() },
           indication = null,
-          onClick = openWefunder
+          onClick = showGetStake
         )
     )
   }
@@ -1201,15 +1211,16 @@ private val getStakeSlides: List<CrowdfundingSlide> = listOf(
   ),
   CrowdfundingSlide(
     MR.images.crowdfunding_4,
-    "Revenue plan: businesses & channels pay",
+    "Revenue plan: businesses & big channels pay",
     "SimpleX Chat plans to earn from the infrastructure and services that creators, businesses and large communities need as they grow.",
     "Read about how we plan to make SimpleX Chat and network profitable, and about all the investment terms on Wefunder."
   ),
 )
 
 @Composable
-fun GetStakeView(inCenterOfWindow: Boolean = false) {
+fun GetStakeView(showFirstImage: Boolean, inCenterOfWindow: Boolean = false, close: () -> Unit) {
   val uriHandler = LocalUriHandler.current
+  val stopped = chatModel.chatRunning.value == false
 
   @Composable
   fun slideImage(slide: CrowdfundingSlide) {
@@ -1236,7 +1247,9 @@ fun GetStakeView(inCenterOfWindow: Boolean = false) {
     // in the center of the window the page is wide enough for the title to fit on one line
     val title = "Invest in\nSimpleX Chat"
     AppBarTitle(if (inCenterOfWindow) title.replace("\n", " ") else title, withPadding = false)
-    slideImage(getStakeSlides[0])
+    if (showFirstImage) {
+      slideImage(getStakeSlides[0])
+    }
     Text(
       buildAnnotatedString {
         append(getStakeSlides[0].text)
@@ -1247,7 +1260,7 @@ fun GetStakeView(inCenterOfWindow: Boolean = false) {
           }
         }
       },
-      Modifier.padding(top = 8.dp),
+      Modifier.padding(top = if (showFirstImage) 8.dp else 0.dp),
       lineHeight = 24.sp
     )
 
@@ -1259,7 +1272,7 @@ fun GetStakeView(inCenterOfWindow: Boolean = false) {
     }
 
     Column(
-      Modifier.fillMaxWidth().padding(vertical = DEFAULT_PADDING * 2),
+      Modifier.fillMaxWidth().padding(top = DEFAULT_PADDING * 2),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       OnboardingActionButton(
@@ -1268,6 +1281,15 @@ fun GetStakeView(inCenterOfWindow: Boolean = false) {
         onboarding = null,
         onclick = { uriHandler.openUriCatching(WEFUNDER_URL) }
       )
+      if (!chatModel.desktopNoUserNoRemote) {
+        TextButtonBelowOnboardingButton(
+          "or ask SimpleX team",
+          onClick = if (stopped) null else ({
+            close()
+            uriHandler.openVerifiedSimplexUri(CROWDFUNDING_CONTACT_URI)
+          })
+        )
+      }
     }
   }
 }
