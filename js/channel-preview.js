@@ -71,6 +71,8 @@ const MAX_LIST_DEPTH = 7;
 
 const MAX_TABLE_CELLS = 1000;
 
+const MAX_EMPTY_LINES = 100;
+
 const COPY_BUTTON =
   '<button type="button" class="md-copy" aria-label="Copy">' +
   '<svg class="md-icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"></rect><path d="M15 9V6.5A2.5 2.5 0 0 0 12.5 4h-6A2.5 2.5 0 0 0 4 6.5v6A2.5 2.5 0 0 0 6.5 15H9"></path></svg>' +
@@ -141,13 +143,26 @@ function validBlocks(fts, blocks) {
   });
 }
 
-function renderBlocks(fts, blocks) {
+function emptyLines(fts, from, to, between) {
+  let lineBreaks = 0;
+  for (const { format } of fts.slice(from, to)) {
+    const token = (format && format.type === 'markup' && format.token) || {};
+    lineBreaks += token.type === 'paragraphBreak' ? token.lineBreaks : token.type === 'lineBreak' ? 1 : 0;
+  }
+  return Math.min(Math.max(lineBreaks - (between ? 1 : 0), 0), MAX_EMPTY_LINES);
+}
+
+function renderBlocks(fts, blocks, messageText) {
+  const isMessage = typeof messageText === 'string';
   let html = '';
   let pos = 0;
   const segments = (r) => renderSegments(fts.slice(r.from, r.to), true);
   const isParagraphBreak = (ft) => ft.format && ft.format.type === 'markup' && ft.format.token && ft.format.token.type === 'paragraphBreak';
+  const trailingLines = (from) => emptyLines(fts, from, fts.length, !messageText.endsWith('\n'));
+  const inlineLast = (b) => isMessage && b === blocks[blocks.length - 1] && trailingLines(b.content.to) === 0;
   const gap = (to) => {
-    if (html && fts.slice(pos, to).some(isParagraphBreak)) html += '<div class="md-gap"></div>';
+    if (isMessage) html += '<br>'.repeat(emptyLines(fts, pos, to, html !== ''));
+    else if (html && fts.slice(pos, to).some(isParagraphBreak)) html += '<div class="md-gap"></div>';
     pos = Math.max(pos, to);
   };
   const block = (r, open, close) => {
@@ -156,6 +171,7 @@ function renderBlocks(fts, blocks) {
     pos = r.to;
   };
   const entry = (e, level) => {
+    if (isMessage) gap(e.content.from);
     html += `<div class="md-entry" style="padding-left: ${1.25 * Math.min(level, 6)}em;"><span class="md-mark">${escapeHtml(String(e.number ?? '•'))}</span><span class="md-text">${segments(e.content)}</span></div>`;
     pos = e.content.to;
     e.items.forEach((item) => entry(item, level + 1));
@@ -175,7 +191,8 @@ function renderBlocks(fts, blocks) {
   for (const b of blocks) {
     switch (b.type) {
       case 'paragraph':
-        block(b.content, '<div>', '</div>');
+        if (inlineLast(b)) block(b.content, '', '');
+        else block(b.content, '<div>', '</div>');
         break;
       case 'heading':
         block(b.content, `<div class="md-h${b.level === 1 || b.level === 2 || b.level === 3 ? b.level : 4}">`, '</div>');
@@ -198,6 +215,7 @@ function renderBlocks(fts, blocks) {
         break;
     }
   }
+  if (isMessage) html += '<br>'.repeat(trailingLines(pos));
   return html;
 }
 
@@ -213,8 +231,8 @@ function markupHtml(token) {
   }
 }
 
-function renderMarkdown(fts, blocks) {
-  return validBlocks(fts, blocks) ? renderBlocks(fts, blocks) : renderSegments(fts, false);
+function renderMarkdown(fts, blocks, messageText) {
+  return validBlocks(fts, blocks) ? renderBlocks(fts, blocks, messageText) : renderSegments(fts, false);
 }
 
 function renderSegments(fts, withBlocks) {
@@ -828,7 +846,6 @@ const STYLE = `
   min-width: 0;
 }
 
-.simplex-preview-text .md-gap { height: 0.7em; }
 .simplex-preview-text .md-h1 { font-size: 1.5em; line-height: 1.3; font-weight: 700; }
 .simplex-preview-text .md-h2 { font-size: 1.3em; line-height: 1.3; font-weight: 700; }
 .simplex-preview-text .md-h3 { font-size: 1.15em; line-height: 1.3; font-weight: 700; }
@@ -1248,7 +1265,7 @@ function render(container, data, channelLink, showAppBadges) {
     var welcomeMsg = {
       sender: null,
       ts: messages.length > 0 ? messages[0].ts : new Date().toISOString(),
-      content: { type: 'text', text: typeof welcome === 'string' ? welcome : '' },
+      content: { type: 'text', text: typeof welcome === 'string' ? welcome : channel.description },
       formattedText: Array.isArray(welcome) ? welcome : null,
       markdownBlocks: data.welcomeMessageBlocks,
       reactions: []
@@ -1868,7 +1885,7 @@ function appendTextBlock(bubble, msg) {
   textDiv.className = 'simplex-preview-text';
   const meta = renderMetaHTML(msg);
   if (msg.formattedText && msg.formattedText.length > 0) {
-    textDiv.innerHTML = renderMarkdown(msg.formattedText, msg.markdownBlocks) + meta;
+    textDiv.innerHTML = renderMarkdown(msg.formattedText, msg.markdownBlocks, msg.content.text) + meta;
   } else {
     textDiv.innerHTML = escapeHtml(msg.content.text || '') + meta;
   }
