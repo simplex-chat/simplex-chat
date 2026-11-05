@@ -15,7 +15,8 @@
 # of chats already listed adds nothing and that ci_channel, when the list doesn't show it, is its chat's row among the
 # results, opening it without an alert; and, with the toolbar at the bottom, that it is a chat row in New chat too.
 # Restarted with no chat open, a text that matches nothing offers the directory, and "No chats found" shows only once
-# the directory found nothing too; and, with ci_contact prepared through its name, New chat's "No filtered contacts" too.
+# the directory found nothing too; and New chat's "No contacts" too, then, with ci_contact prepared through its name,
+# its "No filtered contacts".
 # These three need NAMES_SERVER, the test SMP server's address.
 # Each step saves a numbered screenshot and the text read from it to the output dir, prints the text to the log,
 # and adds a line to steps.log there. What the screens show is checked without stopping: every check is listed in
@@ -464,10 +465,24 @@ close_new_chat() {
   back_to_chat_list || fail "no chat list after the New chat sheet"
 }
 
-# New chat shows its empty state, "No filtered contacts", only when it lists contacts: "Open new chat" for the registered
-# name prepares ci_contact first. A text that matches no contact offers the directory, and the empty state waits for its
-# search to find nothing.
+# New chat's empty state is "No contacts" with no contacts, and "No filtered contacts" once it lists contacts: "Open new
+# chat" for the registered name prepares ci_contact between the two. A text that matches no contact offers the directory,
+# and the empty state waits for its search to find nothing.
 new_chat_no_match_search() {
+  open_new_chat
+  "$ui" click-text "Search or paste SimpleX link"
+  "$ui" type "$no_match_text"
+  "$ui" wait "Search in Directory" 15 || true
+  "$ui" shot new-chat-no-contacts-typed
+  check "New chat: no \"No contacts\" before the directory search" not_on_screen "No contacts"
+  "$ui" click-text "Search in Directory"
+  if ! "$ui" wait "No contacts" 30 && on_screen "Search failed, tap to retry"; then
+    "$ui" click-text "Search failed, tap to retry"
+    "$ui" wait "No contacts" 30 || true
+  fi
+  "$ui" shot new-chat-no-contacts-searched
+  check "New chat: \"No contacts\" once the directory search found nothing" on_screen "No contacts"
+  close_new_chat
   "$ui" click-text "Search or paste SimpleX link"
   "$ui" type "$name_label"
   "$ui" click-text "Connect to $name_label.testing" 15
@@ -1030,7 +1045,7 @@ if grep -q '^FAIL' "$checks"; then
   fail "the smoke test failed checks: $(grep -c '^FAIL' "$checks") of $(grep -cE '^(PASS|FAIL)' "$checks")"
 fi
 if [ "$cases" = search ]; then
-  echo "smoke test passed: onboarding reached the chat list with the toolbar at the bottom and at the top, the first search enabled Directory search, the searches showed one list of results with Open and the load row, \"No chats found\" and New chat's \"No filtered contacts\" waited for a directory search that found nothing, Open opened the prepared ci_channel without an alert, and the joined ci_channel is a chat row among the results (chat list in both layouts, New chat), and a page of chats already listed adds nothing"
+  echo "smoke test passed: onboarding reached the chat list with the toolbar at the bottom and at the top, the first search enabled Directory search, the searches showed one list of results with Open and the load row, \"No chats found\" and New chat's \"No contacts\" and \"No filtered contacts\" waited for a directory search that found nothing, Open opened the prepared ci_channel without an alert, and the joined ci_channel is a chat row among the results (chat list in both layouts, New chat), and a page of chats already listed adds nothing"
   exit 0
 fi
 echo "smoke test passed: onboarding reached the chat list, which shows \"$local_chat\" with the toolbar at the bottom and at the top"
