@@ -43,7 +43,7 @@ Tests run one after another in name order and share that profile. A test may lea
 
 ## Which tests a run runs
 
-The smoke test always runs. After it, once its checks passed (on iOS, also when its preview snapshots differ from their references), the step "Run feature tests" runs the tests chosen by comparing the branch with the upstream master:
+The smoke test always runs. After it, once its checks passed (on iOS, also when its preview snapshots differ from their references), the step "Run feature tests" runs the tests chosen by comparing the branch with the upstream master, where deleting or moving a file counts as changing it:
 
 - the tests the branch adds or changes;
 - the tests whose `covers` patterns match a file the branch changes;

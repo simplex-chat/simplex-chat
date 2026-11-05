@@ -591,16 +591,19 @@ class SelectTestsTest(GitRepoTest):
         self.change_from_base("scripts/ci/desktop-linux/tests/beta.sh")
         self.assertEqual(self.selected(), ["beta"])
 
-    def test_deleted_files_select_nothing(self):
-        self.git(
-            "rm",
-            "-q",
-            "scripts/ci/desktop-linux/tests/beta.sh",
-            "apps/mp/views/chat/Compose.kt",
-            "scripts/ci/desktop-linux/lib.sh",
-        )
-        self.commit("delete files")
-        self.assertEqual(self.selected(), [])
+    def test_deleted_or_moved_file_selects_the_tests_covering_it(self):
+        self.git("rm", "-q", "apps/mp/views/chat/Compose.kt")
+        self.commit("delete covered file")
+        self.assertEqual(self.selected(), ["alpha"])
+        self.git("switch", "-q", "--detach", self.base)
+        self.git("mv", "apps/mp/views/chat/Compose.kt", "apps/mp/Moved.kt")
+        self.commit("move covered file")
+        self.assertEqual(self.selected(), ["alpha"])
+
+    def test_deleted_shared_file_selects_every_remaining_test(self):
+        self.git("rm", "-q", "scripts/ci/desktop-linux/lib.sh", "scripts/ci/desktop-linux/tests/beta.sh")
+        self.commit("delete shared file and test")
+        self.assertEqual(self.selected(), ["alpha"])
 
     def test_change_selects_the_tests_covering_it(self):
         self.change_from_base("apps/mp/views/chat/Compose.kt")

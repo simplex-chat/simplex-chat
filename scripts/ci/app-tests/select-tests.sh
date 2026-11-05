@@ -91,7 +91,7 @@ elif [ -z "$keyword" ] && [ "$words" -gt 0 ]; then
     fi
   done
 elif [ -z "$keyword" ]; then
-  changed=$(git diff --name-only --diff-filter=d "$base" HEAD)
+  changed=$(git diff --name-only --no-renames "$base" HEAD)
   shared=""
   while IFS= read -r changed_file; do
     if [ -n "$changed_file" ] && runs_every_test "$changed_file"; then
