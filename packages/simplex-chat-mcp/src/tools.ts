@@ -970,7 +970,7 @@ export class AgentTools {
     const failure = receivedFileError(this.agent.data, chat, file)
     if (failure !== undefined) throw new ToolError(`item: the file of item ${item} in ${chat} failed: ${failure}`)
     const deadline = Date.now() + (input.wait ?? downloadWait) * 1000
-    const servers = file.fileProtocol === T.FileProtocol.XFTP ? await this.fileServers(chat, item, deadline, call) : undefined
+    const servers = file.fileStatus.type === "rcvInvitation" || file.fileProtocol === T.FileProtocol.XFTP ? await this.fileServers(chat, item, deadline, call) : undefined
     const unknownServers = servers === undefined ? undefined : await this.unknownServers(servers)
     const approver = hasUnknownServers({unknownServers}) || this.rejectedFiles.has(file.fileId) ? undefined : this.agent.standingApprover((await this.knownChat(chat)).chatInfo, "files")
     if (call.signal.aborted) return undefined

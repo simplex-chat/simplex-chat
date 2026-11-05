@@ -1474,18 +1474,45 @@ describe("download", () => {
     expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
   })
 
-  it("leaves the servers of a file without a server list to the core's check, also under the files approval", async () => {
+  it("leaves the servers of a file to the core's check under the files approval", async () => {
     const chat = new FakeChat()
-    const offered = offeredIn(chat)
-    offered.file!.fileProtocol = T.FileProtocol.SMP
+    offeredIn(chat)
     const {tools, actions} = downloadTools(chat, (_, standing) => (standing === "files" ? "Alice" : undefined))
     const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
     await flushed()
     expect(actions.get(1)).toMatchObject({state: "performing", standing: true})
-    expect(chat.commands.filter(cmd => cmd.startsWith("/_get item info"))).toEqual([])
     expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 ${downloaded}`])
     tools.onFile(completed(downloaded))
     expect((await downloading)!.structuredContent).toMatchObject({status: "done"})
+  })
+
+  it("creates no card or action for an offered file without a file description, whatever its protocol", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    const offered = offeredIn(chat)
+    fileServersIn(chat, [])
+    const {tools, actions} = downloadTools(chat, (_, standing) => (standing === "files" ? "Alice" : undefined))
+    for (const fileProtocol of [T.FileProtocol.SMP, T.FileProtocol.XFTP]) {
+      offered.file!.fileProtocol = fileProtocol
+      const waiting = tools.call("download", {chat: "#15", item: 30, wait: 5}, signal().call)
+      await jest.advanceTimersByTimeAsync(5_000)
+      expect(textOf(await waiting)).toBe("item: the sender has not uploaded the file of item 30 in #15 yet; call download again later.")
+      expect(actions.all()).toEqual([])
+    }
+  })
+
+  it("asks for a file the core already received without reading its servers", async () => {
+    const chat = new FakeChat()
+    const received = offeredIn(chat, {type: "rcvComplete"}, {filePath: downloaded})
+    received.file!.fileProtocol = T.FileProtocol.SMP
+    mkdirSync(folder, {recursive: true})
+    writeFileSync(downloaded, "report")
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    expect(chat.commands.filter(cmd => cmd.startsWith("/_get item info"))).toEqual([])
+    actions.approve(actions.get(1)!, "Alice")
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
   })
 
   it("fails with the core's words when the core refuses the servers of the file at the download", async () => {
