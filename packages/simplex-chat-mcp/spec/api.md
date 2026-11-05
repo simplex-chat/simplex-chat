@@ -243,7 +243,7 @@ Steps before the action:
 
 | Step | Code |
 |---|---|
-| an XFTP file: the file's servers from `apiGetChatItemInfo`; while none, the call waits for `rcvFileDescrReady` until `wait` seconds after the call, with the progress `The sender is uploading the file of item N in CHAT; waiting until TIME.` | [tools.ts:983-1000](../src/tools.ts#L983-L1000) |
+| a file in status `rcvInvitation`, or an XFTP file: the file's servers from `apiGetChatItemInfo`; while none, the call waits for `rcvFileDescrReady` until `wait` seconds after the call, with the progress `The sender is uploading the file of item N in CHAT; waiting until TIME.` | [tools.ts:983-1000](../src/tools.ts#L983-L1000) |
 | unknown servers: the file's servers that are not among the XFTP servers of `apiGetUserServers`, of no operator or of an enabled one, compared without their passwords | [tools.ts:1002-1006](../src/tools.ts#L1002-L1006) |
 | without unknown servers, and for a file ID not in rejected files, the chat's files approval, read again, makes the action performed at once | [tools.ts:975](../src/tools.ts#L975) |
 
@@ -270,7 +270,7 @@ Tool errors:
 | `item: CHAT has no item N.` | the item is not found | [tools.ts:967](../src/tools.ts#L967) |
 | `item: item N in CHAT has no received file.` | the item is not received or has no file | [tools.ts:969](../src/tools.ts#L969) |
 | `item: the file of item N in CHAT failed: ERROR` | the file field has status `failed` | [tools.ts:970-971](../src/tools.ts#L970-L971) |
-| `item: the sender has not uploaded the file of item N in CHAT yet; call download again later.` | no servers by the end of `wait` | [tools.ts:998](../src/tools.ts#L998) |
+| `item: the sender has not uploaded the file of item N in CHAT yet; call download again later.` | no servers by the end of `wait`, also for a file invited without a description, whose servers the core does not list; no action is created | [tools.ts:973](../src/tools.ts#L973), [:998](../src/tools.ts#L998) |
 | refusals | see [1.9](#19-action-refusals) | |
 
 A file ID whose download returned `rejected` or `expired` shows status `rejected` until a download of it is done or the server restarts ([tools.ts:1013-1014](../src/tools.ts#L1013-L1014)).

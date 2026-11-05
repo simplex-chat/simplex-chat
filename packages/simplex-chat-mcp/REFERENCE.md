@@ -221,7 +221,7 @@ My Agent: I want to download a file from Alice in group Builders (#3):
           /receive #3 7, /forward #3 7 or /reject #3 7
 ```
 
-The download card of an image or a video shows the sender's preview. Its servers line says `Servers: known.` when the file is on the agent's XFTP servers; otherwise it names the other servers, which see this computer's IP address during the download, and the card leaves out `/receive #3 7 all`. The agent waits until the sender finishes the upload before it asks, because the file's servers are known only then. A send with a file names the file's type, full path and size after the text, and shows an image's or video's preview:
+The download card of an image or a video shows the sender's preview. Its servers line says `Servers: known.` when the file is on the agent's XFTP servers; otherwise it names the other servers, which see this computer's IP address during the download, and the card leaves out `/receive #3 7 all`. The agent waits until the sender finishes the upload before it asks, because the file's servers are known only then. A file without a file description is not downloaded: no card appears, and the agent's call ends with an error. A send with a file names the file's type, full path and size after the text, and shows an image's or video's preview:
 
 ```
 My Agent: I want to send a message to group Builders:

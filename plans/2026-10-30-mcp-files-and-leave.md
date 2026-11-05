@@ -30,7 +30,7 @@ Phases:
 11. C1 (a): the download card names unknown servers before approval, from the item's `fileXftpServers` (`apiGetChatItemInfo`, `Messages.hs:1362`) and the user's XFTP servers (`APIGetUserServers`); both methods are added to #7808.
 12. C2 (a): a GIF or WebP, which the core does not decode (`Image.hs:62-70`), is sent as an image with a fixed preview, the file unchanged.
 13. C3 (a): a video's preview and duration come from `ffmpeg` and `ffprobe` when installed, otherwise a fixed preview and duration 0.
-14. `download` waits for the file description (`rcvFileDescrReady`) before it creates the action, at most `wait` seconds; at the end of `wait` it returns a tool error that asks to call again later. Known servers follow the core's rule (`Library/Internal.hs:898-904`, `Operators.hs:455-465`), compared without passwords.
+14. `download` waits for the file description (`rcvFileDescrReady`) before it creates the action, at most `wait` seconds; at the end of `wait` it returns a tool error that asks to call again later. Decided 2026-11-05: without a description, no card and no action, for an offered file of any protocol; a file already received keeps its path. Known servers follow the core's rule (`Library/Internal.hs:898-904`, `Operators.hs:455-465`), compared without passwords.
 15. C4, for now: a fixed wait at stop, `--stop-wait SECONDS`, 0 to 60, 10 by default, only when cards were edited or posted at the stop; a second Ctrl-C ends it. The `/sql` count of pending deliveries is removed. A later change can post a final message and wait for its "sent" status for each owner.
 
 ## Library methods

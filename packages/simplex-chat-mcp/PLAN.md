@@ -766,7 +766,7 @@ path          string    done; the full path of the file
 error         string    failed
 ```
 
-- An XFTP file has servers only after its sender finishes the upload: the sender's description of the file arrives then (`dummyFileDescr` until then, `Library/Internal.hs:448`). The call waits for it before it creates the action, so that the card names the servers; at the end of `wait` it returns a tool error, and a later call waits again.
+- An XFTP file has servers only after its sender finishes the upload: the sender's description of the file arrives then (`dummyFileDescr` until then, `Library/Internal.hs:448`). The call waits for it before it creates the action, so that the card names the servers; at the end of `wait` it returns a tool error, and a later call waits again. An offered file gets no card and no action without servers, whatever its protocol; the core lists servers only for protocol XFTP (`Library/Internal.hs:1885-1887`), so a file invited without a description is not downloaded. A file already received keeps its path.
 - `performing`: `wait` passed and the download runs; the action stays in memory, and the same call attaches to it.
 - A file already received, by `/forward` or by an earlier action, returns its path after the approval.
 
@@ -1267,7 +1267,7 @@ download(input, ctx):
   /_get chat <chat> around=<item> count=0 fails or has no item: tool error "item not in chat"
   the item is not received (rcvMsgContent) or has no file: tool error "item without a received file"
   the file's status is failed, as in the file field: tool error "file failed"
-  XFTP file: servers = fileXftpServers of /_get item info <chat> <item>; while none, until wait seconds after the call:
+  a file in status rcvInvitation, or an XFTP file: servers = fileXftpServers of /_get item info <chat> <item>; while none, until wait seconds after the call:
     wait for rcvFileDescrReady, then read again; progress "The sender is uploading the file of item N in CHAT; waiting until <time>."
     none at the end of wait: tool error "upload not finished within wait"
   unknownServers = servers not among /_servers <user> (section Download card)
