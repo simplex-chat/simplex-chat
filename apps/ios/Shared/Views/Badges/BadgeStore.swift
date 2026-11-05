@@ -221,7 +221,7 @@ final class BadgeStore: ObservableObject {
         )
     }
 
-    // the app transaction is signed by Apple, so where it exists it decides
+    // iOS 16 carries the environment in the app transaction, which Apple signs, so it overrides the receipt's name
     func readEnvironment() async {
         if #available(iOS 16.0, *) {
             if let verification = try? await AppTransaction.shared,
