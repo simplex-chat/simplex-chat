@@ -400,7 +400,7 @@ Accepted for now: channels, the directory's main content, are always joined thro
 ### Affected Locations
 
 - `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `OnlineSearchModel.resultState`, `OnlineSearchModel.rows`, `openDirectoryResult`
-- `common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt` -- `planLocalChatId`, `directoryResultState`
+- `common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt` -- `directoryResultState`
 - See [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
 
 ### Impact

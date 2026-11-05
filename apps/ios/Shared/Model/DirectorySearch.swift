@@ -67,8 +67,8 @@ private func isSafeImageData(_ s: String) -> Bool {
     s.hasPrefix("data:image/jpg;base64,/9j/") || s.hasPrefix("data:image/png;base64,iVBORw0KGgo")
 }
 
-// entries stay undecoded here so they can be decoded one at a time: one entry the app does not
-// understand, because a newer directory added a field, must not discard the whole response
+// entries stay undecoded here so they can be decoded one at a time: one entry the app cannot decode,
+// or whose link it refuses, must not discard the whole response
 private struct DirectorySearchResponse: Decodable {
     var type: String
     var entries: [JSONValue]?
@@ -100,29 +100,6 @@ func parseDirectorySearchResponse(_ resp: JSONValue) -> DirectorySearchResults? 
     return DirectorySearchResults(entries: entries, cursor: r.searchCursor, moreCount: moreCount)
 }
 
-func planLocalChatId(_ plan: ConnectionPlan) -> ChatId? {
-    switch plan {
-    case let .contactAddress(contactAddressPlan):
-        switch contactAddressPlan {
-        case let .known(contact), let .connectingProhibit(contact), let .contactViaAddress(contact): return contact.id
-        case .ok, .ownLink, .connectingConfirmReconnect: return nil
-        }
-    case let .groupLink(groupLinkPlan):
-        switch groupLinkPlan {
-        case let .known(groupInfo), let .ownLink(groupInfo): return groupInfo.id
-        case let .connectingProhibit(groupInfo_): return groupInfo_?.id
-        case .ok, .connectingConfirmReconnect, .noRelays, .updateRequired: return nil
-        }
-    case let .invitationLink(invitationLinkPlan):
-        switch invitationLinkPlan {
-        case let .known(contact): return contact.id
-        case let .connecting(contact_): return contact_?.id
-        case .ok, .ownLink: return nil
-        }
-    case .error: return nil
-    }
-}
-
 enum DirectoryResultState {
     case yourChat(ChatId)
     case joining
@@ -130,10 +107,12 @@ enum DirectoryResultState {
 }
 
 func directoryResultState(_ plan: ConnectionPlan?) -> DirectoryResultState {
-    if let chatId = plan.flatMap(planLocalChatId) { return .yourChat(chatId) }
-    switch plan {
-    case .groupLink(.connectingConfirmReconnect)?, .groupLink(.connectingProhibit(nil))?: return .joining
-    default: return .open
+    guard case let .groupLink(groupLinkPlan)? = plan else { return .open }
+    switch groupLinkPlan {
+    case let .known(groupInfo), let .ownLink(groupInfo): return .yourChat(groupInfo.id)
+    case let .connectingProhibit(groupInfo_?): return .yourChat(groupInfo_.id)
+    case .connectingProhibit(nil), .connectingConfirmReconnect: return .joining
+    case .ok, .noRelays, .updateRequired: return .open
     }
 }
 

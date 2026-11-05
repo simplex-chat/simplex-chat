@@ -98,44 +98,20 @@ fun parseDirectorySearchResponse(resp: JsonObject): DirectorySearchResults? =
     else -> null
   }
 
-fun planLocalChatId(plan: ConnectionPlan): ChatId? =
-  when (plan) {
-    is ConnectionPlan.ContactAddress -> when (val contactAddressPlan = plan.contactAddressPlan) {
-      is ContactAddressPlan.Known -> contactAddressPlan.contact.id
-      is ContactAddressPlan.ConnectingProhibit -> contactAddressPlan.contact.id
-      is ContactAddressPlan.ContactViaAddress -> contactAddressPlan.contact.id
-      is ContactAddressPlan.Ok, ContactAddressPlan.OwnLink, ContactAddressPlan.ConnectingConfirmReconnect -> null
-    }
-    is ConnectionPlan.GroupLink -> when (val groupLinkPlan = plan.groupLinkPlan) {
-      is GroupLinkPlan.Known -> groupLinkPlan.groupInfo.id
-      is GroupLinkPlan.OwnLink -> groupLinkPlan.groupInfo.id
-      is GroupLinkPlan.ConnectingProhibit -> groupLinkPlan.groupInfo_?.id
-      is GroupLinkPlan.Ok, GroupLinkPlan.ConnectingConfirmReconnect, is GroupLinkPlan.NoRelays, is GroupLinkPlan.UpdateRequired -> null
-    }
-    is ConnectionPlan.InvitationLink -> when (val invitationLinkPlan = plan.invitationLinkPlan) {
-      is InvitationLinkPlan.Known -> invitationLinkPlan.contact.id
-      is InvitationLinkPlan.Connecting -> invitationLinkPlan.contact_?.id
-      is InvitationLinkPlan.Ok, InvitationLinkPlan.OwnLink -> null
-    }
-    is ConnectionPlan.Error -> null
-  }
-
 sealed class DirectoryResultState {
   data class YourChat(val chatId: ChatId): DirectoryResultState()
   object Joining: DirectoryResultState()
   object Open: DirectoryResultState()
 }
 
-fun directoryResultState(plan: ConnectionPlan?): DirectoryResultState {
-  val chatId = plan?.let { planLocalChatId(it) }
-  if (chatId != null) return DirectoryResultState.YourChat(chatId)
-  val groupLinkPlan = (plan as? ConnectionPlan.GroupLink)?.groupLinkPlan
-  return if (groupLinkPlan == GroupLinkPlan.ConnectingConfirmReconnect || (groupLinkPlan is GroupLinkPlan.ConnectingProhibit && groupLinkPlan.groupInfo_ == null)) {
-    DirectoryResultState.Joining
-  } else {
-    DirectoryResultState.Open
+fun directoryResultState(plan: ConnectionPlan?): DirectoryResultState =
+  when (val groupLinkPlan = (plan as? ConnectionPlan.GroupLink)?.groupLinkPlan) {
+    is GroupLinkPlan.Known -> DirectoryResultState.YourChat(groupLinkPlan.groupInfo.id)
+    is GroupLinkPlan.OwnLink -> DirectoryResultState.YourChat(groupLinkPlan.groupInfo.id)
+    is GroupLinkPlan.ConnectingProhibit -> groupLinkPlan.groupInfo_?.let { DirectoryResultState.YourChat(it.id) } ?: DirectoryResultState.Joining
+    GroupLinkPlan.ConnectingConfirmReconnect -> DirectoryResultState.Joining
+    is GroupLinkPlan.Ok, is GroupLinkPlan.NoRelays, is GroupLinkPlan.UpdateRequired, null -> DirectoryResultState.Open
   }
-}
 
 data class DirectoryResult(
   val entry: DirectorySearchEntry,

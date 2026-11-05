@@ -450,7 +450,7 @@ For each new entry of a page (not already shown, not repeated in the page), the 
 
 | State | Plan | Drawn as |
 |-------|------|----------|
-| `YourChat(chatId)` | [`planLocalChatId`](../../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L104-L124) names a chat (a known or prepared group, your own group, or a pending join with its chat) | the chat's own row |
+| `YourChat(chatId)` | the group link plan names a chat (a known or prepared group, your own group, or a pending join with its chat) | the chat's own row |
 | `Joining` | `GroupLinkPlan.ConnectingConfirmReconnect`, or `ConnectingProhibit` with no `groupInfo_`: a pending join without a chat | a result with "Already joining" |
 | `Open` | anything else: `GroupLinkPlan.Ok`, or no plan (`NotResolvedLocally` for a link the store doesn't know, which `apiConnectPlan` returns as null without an alert, or a logged failure) | a result with Open |
 

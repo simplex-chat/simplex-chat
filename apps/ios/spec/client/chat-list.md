@@ -390,7 +390,7 @@ For each new entry of a page (not already shown, not repeated in the page), the 
 
 | State | Plan | Drawn as |
 |-------|------|----------|
-| `.yourChat(chatId)` | [`planLocalChatId`](../../Shared/Model/DirectorySearch.swift#L110) names a chat (a known or prepared group, your own group, or a pending join with its chat) | the chat's own row |
+| `.yourChat(chatId)` | the group link plan names a chat (a known or prepared group, your own group, or a pending join with its chat) | the chat's own row |
 | `.joining` | `.groupLink(.connectingConfirmReconnect)` or `.groupLink(.connectingProhibit(nil))`: a pending join without a chat | a result with "Already joining" |
 | `.open` | anything else: `.groupLink(.ok)`, or no plan (`notResolvedLocally` for a link the store doesn't know, which `apiConnectPlan` returns as nil without an alert, or a logged failure) | a result with Open |
 
