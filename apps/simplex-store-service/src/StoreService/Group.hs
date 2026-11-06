@@ -29,6 +29,7 @@ import StoreService.Codes (issueFailedText, issueOneCode, revokeBadgeCode, singl
 import StoreService.Config (GroupConfig (..))
 import StoreService.Group.Command (CmdAction (..), GroupCmd (..), groupCmdAction, groupCommands)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
+import StoreService.Names.Store (nameCodesIssuedSince)
 import StoreService.Names.Turns (Turns)
 import StoreService.Store (CodeTracker (..), ManagedGroup (..), RevokeResult (..), clearCodeGroupItems, getCodeTracker, getEditableTrackers, getManagedGroup, insertManagedGroup, markOwnerBootstrapped, setCodeGroupItem)
 import StoreService.Store.Invoices (truncateToSecond)
@@ -274,8 +275,8 @@ runGroupCmd cc turns namesOn groupId = \case
   GCIssueName {} | not namesOn -> reply namesOffText
   GCBulkName {} | not namesOn -> reply namesOffText
   GCIssueName len years ->
-    issueNameCode cc len years CPSFree >>= reply . either (const issueFailedText) (("Code: " <>) . formatNameCode . NCPrepaid)
-  GCBulkName len years count -> issueMany count (fmap (formatNameCode . NCPrepaid) <$> issueNameCode cc len years CPSFree)
+    withinNameCodes 1 $ issueNameCode cc len years CPSFree >>= reply . either (const issueFailedText) (("Code: " <>) . formatNameCode . NCPrepaid)
+  GCBulkName len years count -> withinNameCodes count $ issueMany count (fmap (formatNameCode . NCPrepaid) <$> issueNameCode cc len years CPSFree)
   -- Naming the code tells concurrent revokes apart; the command already made it public.
   GCRevoke code -> do
     outcome <- either id id <$> revokeWithTracker cc code
@@ -285,11 +286,22 @@ runGroupCmd cc turns namesOn groupId = \case
     reply (formatNameCode (NCPrepaid code) <> ": " <> outcome)
   where
     reply = void . sendGroupText cc groupId "reply, any codes in it are lost"
+    withinNameCodes n issue = do
+      since <- addUTCTime (negate nominalDay) <$> getCurrentTime
+      withDB' "nameCodesIssuedSince" cc (`nameCodesIssuedSince` since) >>= \case
+        Right issued
+          | issued + n <= maxNameCodesPerDay -> issue
+          | otherwise -> reply $ "At most " <> tshow maxNameCodesPerDay <> " name codes are issued in a day, " <> tshow issued <> " so far. Issue more with //issue name in --run-cli."
+        Left _ -> reply issueFailedText
     issueMany count issueOne = do
       (errs, issued) <- partitionEithers <$> replicateM count issueOne
       reply . T.intercalate "\n" $ case errs of
         [] -> issued
         _ : _ -> issued <> ["Issued " <> tshow (length issued) <> " of " <> tshow count <> " codes. The remaining codes could not be issued."]
+
+-- | Each registers at the sponsor allowance's and the gas key's cost, so a member's account taken over issues few.
+maxNameCodesPerDay :: Int
+maxNameCodesPerDay = 100
 
 namesOffText :: Text
 namesOffText = "Names are not enabled on this service, so name codes cannot be issued."

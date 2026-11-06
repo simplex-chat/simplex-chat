@@ -341,7 +341,7 @@ testReleaseSpend = withOrders $ \turns st -> do
 
 testGroupNameCommands :: IO ()
 testGroupNameCommands = do
-  let p = groupCmdAction GRModerator
+  let p = groupCmdAction GRAdmin
   p "/issue name 8" `shouldBe` RunCmd (GCIssueName 8 2)
   p "/issue name 6 years 5" `shouldBe` RunCmd (GCIssueName 6 5)
   p "/issue name 63 years 10" `shouldBe` RunCmd (GCIssueName 63 10)

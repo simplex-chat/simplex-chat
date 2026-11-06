@@ -120,6 +120,11 @@ badgeGroupTests = describe "badge group" $ do
         `shouldBe` [IgnoreMsg, bulkUsage, bulkUsage]
       map (`groupCmdAction` "/revoke not-a-badge-code") [GRMember, GRModerator, GRAdmin]
         `shouldBe` [IgnoreMsg, IgnoreMsg, revokeUsage]
+    it "runs a name code command only for an admin or owner, refusing a moderator" $ do
+      map (`groupCmdAction` "/issue name 6") [GRMember, GRModerator, GRAdmin, GROwner]
+        `shouldBe` [IgnoreMsg, ReplyText "Only admins can issue name codes.", RunCmd (GCIssueName 6 2), RunCmd (GCIssueName 6 2)]
+      map (`groupCmdAction` "/bulk name 6 count 2") [GRModerator, GRAdmin]
+        `shouldBe` [ReplyText "Only admins can issue name codes.", RunCmd (GCBulkName 6 2 2)]
     it "accepts a command padded with whitespace" $ do
       p " /issue supporter " `shouldBe` RunCmd (GCIssue BTSupporter 1 1)
       p "\t/bulk supporter count 1" `shouldBe` RunCmd (GCBulk BTSupporter 1 1)

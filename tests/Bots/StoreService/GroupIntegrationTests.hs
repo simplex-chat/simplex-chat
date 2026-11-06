@@ -334,6 +334,7 @@ testWorkerBoot ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
 namesCodesChatTests :: SpecWith TestParams
 namesCodesChatTests = describe "StoreService names: prepaid codes" $ do
   it "issues prepaid codes on /issue name and /bulk name, answering the usage to years below 2" testGroupNameCodes
+  it "issues at most 100 name codes a day in the group" testGroupNameCodesPerDay
   it "issues prepaid codes on //issue name, checks them through the names router and revokes them on //revoke" testOperatorNameCodes
   it "revokes a prepaid code in the code's turn, after a reservation holding it" testRevokeTakesCodeTurn
   it "revokes a prepaid code on /revoke, answering a repeat as already revoked" testGroupRevokeNameCode
@@ -350,6 +351,16 @@ testGroupNameCodes ps = do
     forM_ bulk $ \code -> (namePrepaidCodeLength code,) <$> prepaidTerms cc code `shouldReturn` (6, Just (6, 2, CPSFree))
     replyTo cc alice "/issue name 8 years 1" `shouldReturn` issueUsage
     countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 4
+
+testGroupNameCodesPerDay :: HasCallStack => TestParams -> IO ()
+testGroupNameCodesPerDay ps = do
+  svc <- prepareGroupService ps
+  runWithOwner svc {gsIniSections = "" : codesOnlyNames <> chainSection} $ \cc _ _ alice -> do
+    length . T.lines <$> replyTo cc alice "/bulk name 6 count 99" `shouldReturn` 99
+    replyTo cc alice "/bulk name 6 count 2" `shouldReturn` "At most 100 name codes are issued in a day, 99 so far. Issue more with //issue name in --run-cli."
+    T.isPrefixOf "Code: " <$> replyTo cc alice "/issue name 6" `shouldReturn` True
+    replyTo cc alice "/issue name 6" `shouldReturn` "At most 100 name codes are issued in a day, 100 so far. Issue more with //issue name in --run-cli."
+    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 100
 
 testGroupRevokeNameCode :: HasCallStack => TestParams -> IO ()
 testGroupRevokeNameCode ps = do

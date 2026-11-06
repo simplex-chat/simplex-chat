@@ -78,6 +78,7 @@ module StoreService.Names.Store
     lateWait,
     insertPrepaidCode,
     getPrepaidCode,
+    nameCodesIssuedSince,
     getPrepaidCodeById,
     reservePrepaidCode,
     releasePrepaidCode,
@@ -1284,6 +1285,9 @@ type PrepaidCodeRow = (Int64, Binary ByteString, Int, Int, BadgeCodePaymentStatu
 toPrepaidCode :: PrepaidCodeRow -> PrepaidCode
 toPrepaidCode ((pcId, Binary pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, reservedBy, pcReservedAt, pcSpentAt, pcRevokedAt, pcExpiresAt) :. Only pcCreatedAt) =
   PrepaidCode {pcId, pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, pcReservedBy = RegistrationId <$> reservedBy, pcReservedAt, pcSpentAt, pcRevokedAt, pcExpiresAt, pcCreatedAt}
+
+nameCodesIssuedSince :: DB.Connection -> UTCTime -> IO Int
+nameCodesIssuedSince db since = maybe 0 fromOnly <$> maybeFirstRow id (DB.query db "SELECT COUNT(*) FROM sx_badge_service_name_prepaid_codes WHERE created_at >= ?" (Only since))
 
 getPrepaidCode :: DB.Connection -> ByteString -> IO (Maybe PrepaidCode)
 getPrepaidCode db codeHash =

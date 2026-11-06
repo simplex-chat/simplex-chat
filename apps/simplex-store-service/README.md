@@ -1267,7 +1267,9 @@ console, is in [Refunding a name balance](#refunding-a-name-balance).
 ### From the group
 
 With `[group]` in `store_service.ini`, the service manages one group and serves three commands in
-it: `/issue` and `/bulk` for moderators and above, `/revoke <code>` for admins and owners. Both
+it: `/issue` and `/bulk` for moderators and above, `/revoke <code>` for admins and owners. Name codes
+need an admin or owner too, as each one registers at the sponsor allowance's and the gas key's cost,
+and the group issues at most 100 of them in 24 hours (`//issue name` in `--run-cli` has no limit). Both
 code commands take every kind of code in one form:
 
 ```
