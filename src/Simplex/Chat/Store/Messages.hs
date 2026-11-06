@@ -892,9 +892,14 @@ getDirectChatPreview_ db cxt user (DirectChatPD _ contactId lastItemId_ stats) =
   lastItem <- case lastItemId_ of
     Just lastItemId -> do
       previewItem <- liftIO $ safeGetDirectItem db user contact ts lastItemId
-      pure [previewItem]
+      pure [previewItem | not (isChatBanner previewItem)]
     Nothing -> pure []
   pure $ AChat SCTDirect (Chat (DirectChat contact) lastItem stats)
+
+isChatBanner :: CChatItem c -> Bool
+isChatBanner (CChatItem _ ChatItem {content}) = case content of
+  CIChatBanner -> True
+  _ -> False
 
 findGroupChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 findGroupChatPreviews_ db User {userId} pagination clq =
@@ -1003,7 +1008,7 @@ getGroupChatPreview_ db cxt user (GroupChatPD _ groupId lastItemId_ stats) = do
   lastItem <- case lastItemId_ of
     Just lastItemId -> do
       previewItem <- liftIO $ safeGetGroupItem db user groupInfo ts lastItemId
-      pure [previewItem]
+      pure [previewItem | not (isChatBanner previewItem)]
     Nothing -> pure []
   pure $ AChat SCTGroup (Chat (GroupChat groupInfo Nothing) lastItem stats)
 

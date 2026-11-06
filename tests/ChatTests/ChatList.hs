@@ -3,9 +3,11 @@ module ChatTests.ChatList where
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
+import Control.Concurrent.Async (concurrently_)
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.Format.ISO8601 (iso8601Show)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
+import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Test.Hspec hiding (it)
 
 chatListTests :: SpecWith TestParams
@@ -18,6 +20,28 @@ chatListTests = do
   it "filter unread" testFilterUnread
   it "filter favorite or unread" testFilterFavoriteOrUnread
   it "sort and filter chats of all types" testPaginationAllChatTypes
+  it "chat with only the chat banner has no last item" testChatBannerNotLastItem
+
+testChatBannerNotLastItem :: HasCallStack => TestParams -> IO ()
+testChatBannerNotLastItem =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice <##> bob
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      addMember "team" alice bob GRMember
+      bob @@@ [("@alice", "received invitation to join group team as member"), ("#team", "")]
+      bob ##> "/j team"
+      concurrently_
+        (alice <## "#team: bob joined the group")
+        (bob <## "#team: you joined the group")
+      bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
+      bob #$> ("/_get chat @2 count=100", chat, [(1, "chat banner")])
+      bob #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
+      bob #$> ("/_get chat #1 count=100", chat, [(1, "chat banner")])
+      bob @@@ [("@alice", ""), ("#team", "")]
 
 testPaginationLast :: HasCallStack => TestParams -> IO ()
 testPaginationLast =

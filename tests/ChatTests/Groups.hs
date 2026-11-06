@@ -5498,7 +5498,7 @@ testMemberContactAcceptIncognito =
       cath <## ("to reject: /delete @" <> bobIncognito <> " (the sender will NOT be notified)")
 
       -- check correct incognito profiles are used
-      bob @@@ [("@" <> cathIncognito, "chat banner"), ("#team", "connected")]
+      bob @@@ [("@" <> cathIncognito, ""), ("#team", "connected")]
 
       bob ##> ("/i " <> cathIncognito)
       bob <## "contact ID: 2"
