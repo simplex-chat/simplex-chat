@@ -80,7 +80,8 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "multiplies the decimals exactly, where a Double would be a cent out" testExactDecimalMultiplication
     it "reads a numeric field sent as a JSON number as well as a string" testNumberAsWellAsString
   describe "confirmed money" $ do
-    it "confirms all of paymentMethodPaid on an invoice-level Settled, with a payment still Processing" testConfirmedInvoiceSettled
+    it "confirms only the Settled payments on an invoice-level Settled while a payment is still Processing" testConfirmedInvoiceSettled
+    it "confirms none of an extra still Processing on a Settled invoice, so a replaced transaction is never credited" testUnconfirmedExtra
     it "confirms all of paymentMethodPaid when every payment reads Settled, whatever their values" testConfirmedAllSettled
     it "confirms the Settled payments' value otherwise, rounded to cents once and capped at paymentMethodPaid" testConfirmedSettledSum
     it "counts BTC in satoshi and XMR in piconero" testConfirmedUnits
@@ -165,7 +166,12 @@ xmrPaid threshold paid payments =
 testConfirmedInvoiceSettled :: IO ()
 testConfirmedInvoiceSettled =
   signalOf "Settled" [btcPaid "0.00050000" [paymentOf "Settled" "0.00025000", paymentOf "Processing" "0.00025000"]]
-    `shouldBe` Right (Just (SigSettled halfMilliBtc (posixSecondsToUTCTime 1700000000)))
+    `shouldBe` Right (Just (SigSettled (btcReceived 5400 (Just "0.00050000") "0.00000000" 50000 25000 2700) (posixSecondsToUTCTime 1700000000)))
+
+testUnconfirmedExtra :: IO ()
+testUnconfirmedExtra =
+  signalOf "Settled" [btcPaid "0.00550000" [paymentOf "Settled" "0.00050000", paymentOf "Processing" "0.00500000"]]
+    `shouldBe` Right (Just (SigSettled (btcReceived 59400 (Just "0.00550000") "0" 550000 50000 5400) (posixSecondsToUTCTime 1700000000)))
 
 -- | The values sum to more than paymentMethodPaid, as a fee BTCPay nets out would; all of it is confirmed, never more.
 testConfirmedAllSettled :: IO ()
@@ -258,6 +264,7 @@ dueAfter :: Text -> Text
 dueAfter = \case
   "0.00050000" -> "0.00000000"
   "0.00080000" -> "-0.00030000"
+  "0.00550000" -> "-0.00500000"
   "0.00000001" -> "0.00050499"
   _ -> "0.00050000"
 

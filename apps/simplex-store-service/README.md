@@ -194,6 +194,8 @@ money goes to support for good.
 way, once confirmed, also on an invoice paid in time: the extra's share of the price, at the lower
 rate. The service logs it at note as `names: invoice <id> was overpaid; credited <cents> cents of the
 extra to the balance of registration <id>`, and an extra it cannot credit is alerted as late money is.
+An extra still unconfirmed when BTCPay settles the invoice is never credited, as its transaction can
+still be replaced: it is alerted, and support refunds it by hand once it confirms.
 
 BTCPay keeps an invoice it has closed `Expired` (or `Invalid` after a cancel) when money arrives late.
 The invoice view reports `paidInFull` on such an invoice only once BTCPay reads it `PaidLate` or

@@ -484,8 +484,9 @@ findMethod what ref methodId body = do
           <> T.intercalate ", " (map gpmId ms)
           <> "]"
 
--- | The confirmed crypto shares paymentMethodPaid's basis, whatever it nets out: all of it once the invoice or every payment is Settled,
--- else the Settled payments' value capped at it. An amount with a non-zero digit past its unit leaves every figure in units out.
+-- | The confirmed crypto shares paymentMethodPaid's basis, whatever it nets out: all of it once every payment is Settled, or the
+-- invoice is with none Processing, else the Settled payments' value capped at it. A Settled invoice can still hold a Processing extra.
+-- An amount with a non-zero digit past its unit leaves every figure in units out.
 -- The invoiced units are the method's amount, with the network fee BTCPay adds to it.
 receivedOf :: Int -> Bool -> Bool -> Bool -> WireNum -> WireNum -> Maybe WireNum -> Maybe WireNum -> [GPayment] -> Received
 receivedOf decimals confirming shown invoiceSettled rate paid invoiced due payments =
@@ -505,7 +506,7 @@ receivedOf decimals confirming shown invoiceSettled rate paid invoiced due payme
     -- an overpaid invoice's due is below 0, and nothing is owed on it
     nonNegative WireNum {wnText, wnValue} = if wnValue < 0 then "0" else wnText
     settled = filter ((== "Settled") . gpStatus) payments
-    allSettled = invoiceSettled || (not (null payments) && length settled == length payments)
+    allSettled = (invoiceSettled && not (any ((== "Processing") . gpStatus) payments)) || (not (null payments) && length settled == length payments)
     counted = do
       paidUnits <- toUnits (wnValue paid)
       settledUnits <- mapM (toUnits . wnValue <=< gpValue) settled
