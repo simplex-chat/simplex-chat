@@ -527,7 +527,7 @@ struct ChatListView: View {
 
     private func openResult(_ result: DirectoryResult) {
         searchFocussed = false
-        openDirectoryResult(result, theme: theme, dismiss: false, cleanup: { Task { await onlineSearch.refreshStates() } })
+        openDirectoryResult(result, theme: theme, dismiss: false, cleanup: { onlineSearch.refreshStates() })
     }
 
     private func openGetStake() {

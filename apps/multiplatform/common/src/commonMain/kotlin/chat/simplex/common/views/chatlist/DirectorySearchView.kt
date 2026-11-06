@@ -82,14 +82,22 @@ class OnlineSearchModel {
     request()
   }
 
-  suspend fun loadMore() {
+  fun loadMore() {
+    confirmDirectorySearch { withApi { requestNextPage() } }
+  }
+
+  private suspend fun requestNextPage() {
     if (cursor == null || loading) return
     request()
   }
 
-  suspend fun retry() {
+  fun retry() {
+    confirmDirectorySearch { withApi { retryRequest() } }
+  }
+
+  private suspend fun retryRequest() {
     if (cursor != null) {
-      loadMore()
+      requestNextPage()
     } else {
       searchDirectory(searchedText)
     }
@@ -114,16 +122,18 @@ class OnlineSearchModel {
     return OnlineSearchRows(yourChats = yourChats, results = results, footer = footer)
   }
 
-  suspend fun refreshStates() {
-    val rh = chatModel.remoteHostId()
-    val gen = generation
-    val states = mutableMapOf<String, DirectoryResultState>()
-    for (result in directory) {
-      if (result.state is DirectoryResultState.YourChat) continue
-      states[result.id] = resultState(rh, result.entry.link)
+  fun refreshStates() {
+    withApi {
+      val rh = chatModel.remoteHostId()
+      val gen = generation
+      val states = mutableMapOf<String, DirectoryResultState>()
+      for (result in directory) {
+        if (result.state is DirectoryResultState.YourChat) continue
+        states[result.id] = resultState(rh, result.entry.link)
+      }
+      if (gen != generation) return@withApi
+      directory = directory.map { r -> r.copy(state = states[r.id] ?: r.state) }
     }
-    if (gen != generation) return
-    directory = directory.map { r -> r.copy(state = states[r.id] ?: r.state) }
   }
 
   private suspend fun resultState(rh: Long?, link: String): DirectoryResultState {
@@ -268,7 +278,7 @@ private fun DirectorySearchRowLayout(
 @Composable
 fun DirectoryLoadMoreRow(onlineSearch: OnlineSearchModel) {
   DirectoryLoadMoreRowLayout(moreCount = onlineSearch.moreCount, loading = onlineSearch.loading) {
-    confirmDirectorySearch { withApi { onlineSearch.loadMore() } }
+    onlineSearch.loadMore()
   }
 }
 
@@ -296,7 +306,7 @@ private fun DirectoryLoadMoreRowLayout(moreCount: Int?, loading: Boolean, onLoad
 @Composable
 fun DirectoryRetryRow(onlineSearch: OnlineSearchModel) {
   DirectoryRetryRowLayout {
-    confirmDirectorySearch { withApi { onlineSearch.retry() } }
+    onlineSearch.retry()
   }
 }
 

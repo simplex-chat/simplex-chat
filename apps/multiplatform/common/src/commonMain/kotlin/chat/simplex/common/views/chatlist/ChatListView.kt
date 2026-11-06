@@ -544,7 +544,7 @@ private fun LazyListScope.directoryRows(rows: OnlineSearchRows, onlineSearch: On
     ChatListNavLinkView(chat, remember { mutableStateOf(false) })
   }
   items(rows.results, key = { it.id }) { result ->
-    DirectoryResultNavLink(result, imageSize = 72.dp * fontSizeSqrtMultiplier, close = null, cleanup = { withApi { onlineSearch.refreshStates() } })
+    DirectoryResultNavLink(result, imageSize = 72.dp * fontSizeSqrtMultiplier, close = null, cleanup = { onlineSearch.refreshStates() })
   }
   when (rows.footer) {
     DirectoryFooter.Retry -> item { DirectoryRetryRow(onlineSearch) }

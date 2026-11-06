@@ -173,5 +173,5 @@
 
 ### RULE-28: Consent before the first online search
 **Rule:** The search text MUST NOT be sent online while the "Directory search" switch in Privacy settings is off, unless the user confirms the "Enable Directory search?" alert, which says the text goes to SimpleX Directory and turns the switch on. Cancel MUST send nothing. The search never resolves SimpleX names, so the directory is its only recipient.
-**Enforced by:** `DirectorySearchView.swift` (`confirmDirectorySearch`, `DEFAULT_PRIVACY_DIRECTORY_SEARCH`); `PrivacySettings.swift` (the switch); both triggers in `ChatListView.swift` and `NewChatMenuButton.swift` go through it, and so do the load and retry rows (`DirectoryLoadMoreRow`, `DirectoryRetryRow`).
+**Enforced by:** `DirectorySearchView.swift` (`confirmDirectorySearch`, `DEFAULT_PRIVACY_DIRECTORY_SEARCH`); `PrivacySettings.swift` (the switch); `OnlineSearchModel`'s `search`, `loadMore` and `retry` call it, so both triggers in `ChatListView.swift` and `NewChatMenuButton.swift` and the load and retry rows go through it.
 **Spec:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)

@@ -317,10 +317,10 @@ This document specifies invariants enforced by the Android and Desktop (Kotlin/C
 
 **Invariant:** The search text MUST NOT be sent online while the "Directory search" switch in Privacy settings is off, unless the user confirms the "Enable Directory search?" alert, which says the text goes to SimpleX Directory and turns the switch on. Cancel MUST send nothing. The search never resolves SimpleX names, so the directory is its only recipient.
 
-**Enforcement:** Both triggers (the "Search in Directory" row and the Search key / Enter) on the chat list and in New chat go through `confirmDirectorySearch()`, and so do the load and retry rows (`DirectoryLoadMoreRow`, `DirectoryRetryRow`), shared by both screens; it runs the search at once only when `AppPreferences.privacyDirectorySearch` is on and otherwise shows the alert; Enable sets the preference, then searches. The preference is a setting, not a hint, so "Reset all hints" leaves it as it is.
+**Enforcement:** `OnlineSearchModel`'s `search()`, `loadMore()` and `retry()` call `confirmDirectorySearch()`, so both triggers (the "Search in Directory" row and the Search key / Enter) on the chat list and in New chat and the load and retry rows, shared by both screens, go through it; it runs the search at once only when `AppPreferences.privacyDirectorySearch` is on and otherwise shows the alert; Enable sets the preference, then searches. The preference is a setting, not a hint, so "Reset all hints" leaves it as it is.
 
 **Location:**
-- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `confirmDirectorySearch()`, `showDirectorySearchAlert()`, `DirectoryLoadMoreRow()`, `DirectoryRetryRow()`
+- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `confirmDirectorySearch()`, `showDirectorySearchAlert()`, `OnlineSearchModel.search()`, `OnlineSearchModel.loadMore()`, `OnlineSearchModel.retry()`
 - `common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt` -- `AppPreferences.privacyDirectorySearch`
 - `common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/PrivacySettings.kt` -- the switch
 

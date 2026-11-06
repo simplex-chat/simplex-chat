@@ -59,14 +59,22 @@ class OnlineSearchModel: ObservableObject {
         await request()
     }
 
-    func loadMore() async {
+    func loadMore() {
+        confirmDirectorySearch { Task { await self.requestNextPage() } }
+    }
+
+    private func requestNextPage() async {
         guard cursor != nil, !loading else { return }
         await request()
     }
 
-    func retry() async {
+    func retry() {
+        confirmDirectorySearch { Task { await self.retryRequest() } }
+    }
+
+    private func retryRequest() async {
         if cursor != nil {
-            await loadMore()
+            await requestNextPage()
         } else {
             await searchDirectory(searchedText)
         }
@@ -90,18 +98,20 @@ class OnlineSearchModel: ObservableObject {
         return OnlineSearchRows(yourChats: yourChats, results: results, footer: footer)
     }
 
-    func refreshStates() async {
-        let gen = generation
-        var states: [String: DirectoryResultState] = [:]
-        for result in directory {
-            if case .yourChat = result.state { continue }
-            states[result.id] = await resultState(result.entry.link)
-        }
-        guard gen == generation else { return }
-        directory = directory.map { result in
-            var r = result
-            r.state = states[r.id] ?? r.state
-            return r
+    func refreshStates() {
+        Task {
+            let gen = generation
+            var states: [String: DirectoryResultState] = [:]
+            for result in directory {
+                if case .yourChat = result.state { continue }
+                states[result.id] = await resultState(result.entry.link)
+            }
+            guard gen == generation else { return }
+            directory = directory.map { result in
+                var r = result
+                r.state = states[r.id] ?? r.state
+                return r
+            }
         }
     }
 
@@ -263,7 +273,7 @@ struct DirectoryLoadMoreRow: View {
 
     var body: some View {
         DirectoryLoadMoreRowLayout(moreCount: onlineSearch.moreCount, loading: onlineSearch.loading) {
-            confirmDirectorySearch { Task { await onlineSearch.loadMore() } }
+            onlineSearch.loadMore()
         }
     }
 }
@@ -301,7 +311,7 @@ struct DirectoryRetryRow: View {
 
     var body: some View {
         DirectoryRetryRowLayout {
-            confirmDirectorySearch { Task { await onlineSearch.retry() } }
+            onlineSearch.retry()
         }
     }
 }
