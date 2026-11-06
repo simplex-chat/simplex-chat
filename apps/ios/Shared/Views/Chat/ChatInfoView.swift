@@ -358,8 +358,10 @@ struct ChatInfoView: View {
             if let ct = chat.chatInfo.contact {
                 contact = ct
                 let allowed = contactUserPrefsToFeaturesAllowed(ct.mergedPreferences)
+                if featuresAllowed == currentFeaturesAllowed {
+                    featuresAllowed = allowed
+                }
                 currentFeaturesAllowed = allowed
-                featuresAllowed = allowed
             }
         }
         .onDisappear {
