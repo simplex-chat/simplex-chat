@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.MarkdownText
@@ -51,6 +52,7 @@ fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? 
       // Android also gets nav-bar inset so content doesn't run under the gesture bar.
       Spacer(Modifier.height(DEFAULT_PADDING))
       if (appPlatform.isAndroid) Spacer(Modifier.navigationBarsPadding())
+      if (appPrefs.oneHandUI.state.value) Spacer(Modifier.height(AppBarHeight * fontSizeSqrtMultiplier))
     }
   }
 }
