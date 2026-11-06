@@ -326,7 +326,7 @@ badgeWebTests = do
     it "holds the skip log under its cap when every reason is fresh" testSkipReasonsStayBounded
     it "warns once for all the invoices it did not sell, not once per invoice" testStrangerSkipsShareOneWarning
     it "raises a skip naming an invoice this service sold" testSkipNamingOurInvoiceIsRaised
-    it "holds the sweep back until a pass has accounted for every invoice" testSweepWaitsForAPassThatSawEverything
+    it "holds the sweep back until a pass has accounted for every invoice, or read an overdue one on its own" testSweepWaitsForAPassThatSawEverything
     it "settles and sweeps the rest of the pass around an invoice that throws" testOneBadInvoiceDoesNotStopThePass
     it "pages past a hundred open invoices, a request per hundred" testListPaginates
     it "stops paging at its ceiling rather than looping on a server that ignores take" testPagingStopsAtTheCeiling
@@ -3478,9 +3478,11 @@ testSweepWaitsForAPassThatSawEverything = bounded "sweep guards" $ withStubPolle
   mapM_ (\i -> seedOpenRef (weStore env) i ("p-bulk-" <> tshow i) someExpiry) [2 .. readsPerPass + 2]
   setSkipped ref [(Just "p-overdue", "btcpay invoice p-overdue: unknown status Frobnicated")]
   stillOpen "it answered and left one of ours unread"
+  -- a list that stopped early sweeps only what it read on its own
   setSkipped ref [(Nothing, "btcpay: the list stopped at 50 pages")]
-  stillOpen "it stopped early without saying whose invoices it missed"
-  setSkipped ref []
+  failRead ref (Just (ProviderError "connection refused"))
+  stillOpen "it stopped early and the invoice's own read failed"
+  failRead ref Nothing
   runOnePass poller
   invoiceStatus (weStore env) overdue `shouldReturn` ISExpired
 

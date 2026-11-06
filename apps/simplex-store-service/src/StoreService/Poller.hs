@@ -143,7 +143,8 @@ newPollerEnv peStore peWaiters pePhases peHints peProviders pePoll = do
   pure PollerEnv {peStore, peWaiters, pePhases, peHints, peProviders, pePoll, peSkipped, peListedAt, peStrayEvery = strayListInterval, peCancelFailed, peCleanedAt, peCleanupLeft, peCreditedAt, peRates}
 
 -- | Read providers before the sweep, and leave out of the sweep every invoice whose read or settlement failed,
--- so an invoice with money in it is never expired. A list that cannot account for every invoice skips the sweep.
+-- so an invoice with money in it is never expired. After a list that cannot account for every invoice, only overdue
+-- invoices read one by one are swept, so a flood of orders past the list's cap cannot stop the sweep.
 runOnePass :: PollerEnv -> IO ()
 runOnePass env@PollerEnv {peStore, peProviders} = do
   now <- getCurrentTime
@@ -162,7 +163,7 @@ runOnePass env@PollerEnv {peStore, peProviders} = do
         pure (Just missed)
   pruneSkipLog env now
   -- the cleanup runs whatever the sweep met
-  unless (null peProviders) $ forM_ missed $ \refs -> safely "badge poller: the sweep" (sweepExpired env now refs)
+  unless (null peProviders) $ void $ safely "badge poller: the sweep" $ maybe (sweepRead env now) (sweepExpired env now) missed
   void $ safely "names: the late credit pass" (creditPass env now)
   cleanupUnpaid env now
 
@@ -300,6 +301,12 @@ sweepExpired env@PollerEnv {peStore, peWaiters, pePhases, peCancelFailed} now mi
   cancelled <- filterM (closedAtProvider env now) (take readsPerPass payable)
   expired <- expireOverdue peStore peWaiters pePhases now cutoff (map oiInvoiceId (selfExpiring <> cancelled))
   unless (null expired) $ logNote ("badge poller: expired " <> tshow (length expired) <> " invoice(s) past their window")
+
+sweepRead :: PollerEnv -> UTCTime -> IO ()
+sweepRead env@PollerEnv {peStore} now = do
+  (reading, rest) <- splitAt readsPerPass <$> overdueInvoices peStore (addUTCTime (negate expiryGrace) now)
+  failed <- readRows env now [(textEncode oiProvider, oiProviderRef) | OverdueInvoice {oiProvider, oiProviderRef} <- reading]
+  sweepExpired env now $ failed <> S.fromList (map oiProviderRef rest)
 
 cleanupDue :: PollerEnv -> UTCTime -> IO Bool
 cleanupDue PollerEnv {peCleanedAt} now = maybe True (\at -> diffUTCTime now at >= cleanupInterval) <$> readTVarIO peCleanedAt
