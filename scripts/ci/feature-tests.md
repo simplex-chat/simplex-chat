@@ -1,10 +1,10 @@
 # Feature tests on the app test runners
 
-A feature's scripted UI tests run on GitHub's runners after the smoke test, in the same app: on iOS (`ios-sim`), Android (`android-emu`) and desktop (`desktop-linux`). A feature adds them as new files; no shared script changes.
+Scripted UI tests of a feature run on GitHub's runners after the smoke test, in the same app: on iOS (`ios-sim`), Android (`android-emu`) and desktop (`desktop-linux`). They are added as new files, and shared scripts remain unchanged.
 
 ## The files
 
-A feature's test on one platform is `scripts/ci/<platform>/tests/<feature>.sh`, with `<platform>` `ios-sim`, `android` or `desktop-linux`. The feature has the same name on every platform it covers; a platform without the file isn't covered. Names are lowercase letters, digits and dashes. Examples: `desktop-linux/tests/private-notes.sh`, `android/tests/private-notes.sh`, `ios-sim/tests/settings.sh`.
+The test of a feature on one platform is `scripts/ci/<platform>/tests/<feature>.sh`, with `<platform>` `ios-sim`, `android` or `desktop-linux`. The feature name is the same on every platform with a test. A name consists of lowercase letters, digits and dashes. Examples: `desktop-linux/tests/private-notes.sh`, `android/tests/private-notes.sh`, `ios-sim/tests/settings.sh`.
 
 ```bash
 #!/bin/bash
@@ -19,74 +19,74 @@ set -euo pipefail
 check "the note shows in the chat" "$ui" find "scripted note"
 ```
 
-- `# covers:` lines list the code the test exercises, as shell patterns from the repo root separated by spaces (`*` also matches `/`, `?` matches a space in a path). A run selects the test when its branch changes a file that matches one.
-- `# needs: backend` marks a test that needs the test backend. It gets `BACKEND_DIR`, the backend's work directory (`names-server`, `directory-link`, and on iOS `seed.md`). Without the backend, the test is skipped with a note.
-- The rest is bash over the platform's `ui`, the same commands a Claude session sends. `ui` alone prints them; each platform's README describes its driver.
-- `lib.sh` holds the platform's shared steps (on desktop and Android: finding text and positions, getting back to the chat list; on desktop, opening Settings; on iOS: `in_tree`) and loads `scripts/ci/app-tests/checks.sh`:
-  - `check "<what is true>" <command>` records `PASS` or `FAIL` and goes on;
+- `# covers:` lines contain the code paths exercised by the test, as shell patterns from the repo root separated by spaces (`*` also matches `/`, `?` matches a space in a path). The test is selected when the branch changes a file matching a pattern.
+- `# needs: backend` declares that the test requires the test backend. In a run with the backend, `BACKEND_DIR` is set to its work directory (`names-server`, `directory-link`, and on iOS `seed.md`). In a run without it, the test is skipped with a note.
+- The test body is bash over the platform's `ui`, with the commands a Claude session sends. `ui` without arguments prints them; each platform's README describes its driver.
+- `lib.sh` contains the platform's shared steps (on desktop and Android: finding text and positions, returning to the chat list, opening Settings; on iOS: `in_tree`) and sources `scripts/ci/app-tests/checks.sh`:
+  - `check "<what is true>" <command>` records `PASS` or `FAIL`, and the test continues;
   - `fail "<why>"` ends the test;
   - `note "<text>"` records a remark for the summary.
-- A step that more than one feature needs belongs in `lib.sh`. A change to `lib.sh` runs every test of that platform.
-- iOS tests run under macOS's `/bin/bash` 3.2: no `mapfile`, no associative arrays, no `${x,,}`, and no expansion of an empty array under `set -u`.
+- A step required by more than one feature is placed in `lib.sh`. After a change to `lib.sh`, every test of that platform is selected.
+- iOS tests, `scripts/ci/app-tests/feature-tests.sh` and `checks.sh` run under macOS's `/bin/bash` 3.2, so they avoid `mapfile`, associative arrays, `${x,,}` and the expansion of an empty array under `set -u`.
 
 ## What a test starts from
 
-The app as the smoke test left it, restarted at the chat list with the reachable toolbar (one-hand UI on iOS, "Reachable app toolbars" on desktop). `ui layout top` switches to the top bar.
+The app in the state left by the smoke test, restarted at the chat list with the reachable toolbar (one-hand UI on iOS, "Reachable app toolbars" on desktop). `ui layout top` switches to the top bar.
 
 | Platform | Profile | Chats | With the backend |
 |---|---|---|---|
-| desktop | onboarded as citester | "seeded notes", a group with the two images the smoke test sent; "Private notes" | the test SMP server is the only one resolving names (`seeded.testing` resolves to ci_contact) |
-| Android | onboarded | "seeded notes", a group with the two images the smoke test sent; "Private notes" | the test SMP server added under Your servers |
-| iOS | onboarded, local files not encrypted | "image notes", a group with the two images the smoke test sent; "Private notes" | — |
+| desktop | onboarded as citester | "seeded notes", a group with the two images sent by the smoke test; "Private notes" | the test SMP server is the only one resolving names (`seeded.testing` resolves to ci_contact) |
+| Android | onboarded | "seeded notes", a group with the two images sent by the smoke test; "Private notes" | the test SMP server added under Your servers |
+| iOS | onboarded, local files unencrypted, SimpleX Lock notice marked as shown | "image notes", a group with the two images sent by the smoke test; "Private notes" | — |
 
-Tests run one after another in name order and share that profile. A test may leave state behind; it names what it creates after itself and must still pass with what earlier tests left.
+Tests run one after another in name order, in one profile. Name anything a test creates after that test; each test must pass with the state left by earlier tests.
 
-## Which tests a run runs
+## Test selection
 
-The smoke test always runs. After it, once its checks passed (on iOS, also when its preview snapshots differ from their references), the step "Run feature tests" runs the tests chosen by comparing the branch with the upstream master, where deleting or moving a file counts as changing it:
+The smoke test always runs. Once its checks pass (on iOS, also when preview snapshots differ from their references), the step "Run feature tests" runs the tests selected by comparing the branch with the upstream master. A deleted or moved file counts as changed. The selected tests are:
 
-- the tests the branch adds or changes;
-- the tests whose `covers` patterns match a file the branch changes;
-- every test of a platform when what the tests run on changes: a file in `scripts/ci/app-tests/`, or in the platform's folder other than `tests/`, `*.md` and `claude-*`.
+- tests added or changed on the branch;
+- tests whose `covers` patterns match a file changed on the branch;
+- every test of a platform when a shared file changes: a file in `scripts/ci/app-tests/`, or a file in the platform's folder other than `tests/`, `*.md` and `claude-*`.
 
-A change to the workflow files selects no test: a branch that changes the feature test step is run with `tests: all`.
+Changes to workflow files are excluded from selection, so a branch changing the feature test step is run with `tests: all`.
 
-The run's `tests` input overrides this: feature names separated by spaces, `all` or `none` (Actions tab, or `gh workflow run <workflow>.yml --ref <branch> -f tests="private-notes"`). The plan job's log says why each test was selected, and its summary lists them.
+The run's `tests` input overrides the selection: feature names separated by spaces, `all` or `none` (Actions tab, or `gh workflow run <workflow>.yml --ref <branch> -f tests="private-notes"`). A name with a test on no platform fails the plan job. The plan job's log states the reason for each selected test, and its summary lists them.
 
-These rules are tested by `SelectTestsTest` in `scripts/ci/test_packages_release.py`, which the reduced build runs when a file in `scripts/ci/app-tests/` is changed.
+`SelectTestsTest` and `FeatureTestsTest` in `scripts/ci/test_packages_release.py` verify these rules and the runner; the reduced build runs them when a file in `scripts/ci/app-tests/` changes.
 
-Each test gets a section in the job summary, and its screens and `checks.txt` go to `tests/<feature>/` in the smoke-test artifact. One failed test doesn't stop the others; the step fails if any failed. A failed feature test fails the app job, so a run that also asks for Claude skips the Claude job: start it with `tests: none` to run Claude anyway.
+Each test has a section in the job summary, and its screens and `checks.txt` are stored in `tests/<feature>/` of the smoke-test artifact. After a failed test the remaining tests still run, and the step fails if any test failed. A failed feature test fails the app job, and GitHub then skips the Claude job. With `tests: none`, feature tests are excluded from the run.
 
 ## After the feature merges
 
-The tests stay on master. A run of a branch that touches code a test covers runs it. When it fails, that branch's PR updates the test or the app, as with a core test. Before a release, run each workflow with `tests: all`.
+The tests remain on master, and a test is selected for any branch changing the code it covers. When it fails, the test or the app is updated in that branch's pull request, as with a core test. Before a release, each workflow is run with `tests: all`.
 
 ## Writing a test
 
-1. Read what the screens show. The smoke-test artifact of an earlier run (`gh run download <id> -n <artifact>`, with `ios-sim-smoke-test`, `android-smoke-test` or `desktop-smoke-test`) has, per step, a screenshot and what was read from it: desktop `NN-<step>.txt` (`x,y phrase` from OCR), Android `NN-<step>.xml` and `.txt` (the accessibility tree), iOS `NN-<step>.json` (AXe's tree).
-2. Write the steps by text or label: `click-text`, `tap`, `wait`, `find`. Coordinates are needed only for icons without text, mostly on desktop (the toolbar's buttons); the Android and iOS trees give every icon's description and position.
-3. Check what the feature promises with `check`, and take a `ui shot <name>` at each result.
-4. Push and start a run (`gh workflow run <workflow>.yml --ref <branch>`, or the Actions tab). Where the test stops, its folder shows why: its last screens, `test.log` (its output, ending with the error) and, on desktop and Android, `steps.log` (each `ui` command); iOS keeps no app log during the feature tests.
+1. Read the screens. The smoke-test artifact of an earlier run (`gh run download <id> -n <artifact>`, with `ios-sim-smoke-test`, `android-smoke-test` or `desktop-smoke-test`) contains, per step, a screenshot and the text read from it: desktop `NN-<step>.txt` (`x,y phrase` from OCR), Android `NN-<step>.xml` and `.txt` (the accessibility tree), iOS `NN-<step>.json` (AXe's tree).
+2. Write the steps by text or label: `click-text`, `tap`, `wait`, `find`. Coordinates are required only for icons without text, mostly on desktop (the toolbar's buttons); the Android and iOS trees contain the description and position of every icon.
+3. Verify the feature's behaviour with `check`, and take a `ui shot <name>` at each result.
+4. Push and start a run (`gh workflow run <workflow>.yml --ref <branch>`, or the Actions tab). When a test stops, its folder contains the evidence: the last screens, `test.log` (the test's output, ending with the error) and, on desktop and Android, `steps.log` (each `ui` command). On iOS, the app log is recorded during the smoke test only.
 
 ### From a Claude run (optional)
 
-A Claude session on the runner explores the app with the same `ui` commands. Its artifact holds:
+A Claude session on the runner explores the app with the same `ui` commands. Its artifact contains:
 
-- the guard log: every `ui` command it sent, allowed or refused (`claude-transcript.jsonl.guard.log` on desktop and Android, `<layout>-guard.log` on iOS);
-- the transcript, with each command's output;
-- its report, with what it saw at each step, and its screens with their trees or OCR text.
+- the guard log: every `ui` command sent by the session, marked `allow` or `refuse` (`claude-transcript.jsonl.guard.log` on desktop and Android, `<layout>-guard.log` on iOS);
+- the transcript, with the output of each command;
+- the report, with the result of each step, and the screens with their trees or OCR text.
 
-To turn a session into a scripted test, list the commands it sent (`grep '^allow' <guard log>`), keep the ones that moved the app forward, drop the reads it made to find its way, and turn its conclusions into `check` lines. Then prove the test with a plain run.
+To convert a session into a scripted test, list its commands (`grep '^allow' <guard log>`), keep those that changed the app's state, drop those that only read the screen, and rewrite its conclusions as `check` lines. Then verify the test with a run without Claude.
 
-`ios-sim/tests/settings.sh` was written this way, from a session of the earlier smoke plan that opened Settings from the profile picker and closed it. Its taps and the swipe come from the guard log. The checks come from its report ("Your settings", "Network & servers", and Settings gone after the swipe). The fixed point it tapped became a lookup of the element in the tree.
+`ios-sim/tests/settings.sh` was written this way, from a session of the earlier smoke plan that opened Settings from the profile picker and closed it. The taps and the swipe were taken from the guard log, and the checks from the session's report ("Your settings", "Network & servers", and Settings closed after the swipe). The fixed point of a tap was replaced by a search for the element in the tree.
 
-The Claude job doesn't start at the feature tests' starting point. On desktop and Android it starts at the app's first screen, so a session meant for this must first onboard and create the group, as `claude-test.md` asks; on iOS it starts at the chat list without chats, as the smoke test leaves it before its images case.
+The Claude job starts at a different point from the feature tests. On desktop and Android it starts at the app's first screen, so a session used for this must first onboard and create the group, as stated in `claude-test.md`; on iOS it starts at the chat list without chats, the state left by the smoke test before its images case.
 
-## Composing tests here, without the app
+## Writing tests without the app
 
-- The app runs only on the runner. A test's flow and timing are proven there.
-- Lookups can be checked here against a run's saved screens:
-  - Android: `python3 scripts/ci/android/screen-tree.py <NN-step.xml> find "<text>"` (or `lines`, `tree`) answers as `ui find` does on the runner.
-  - iOS: `NN-step.json` is AXe's tree; `jq` over it, or the filter in `scripts/ci/ios-sim/ui`'s `compact_tree`, shows the labels, values and frames `ui tree` prints.
-  - Desktop: `NN-step.txt` has the phrases OCR read and their centres. Reading a screenshot again needs tesseract and ImageMagick, which the runner installs; OCR misreads show only there.
-- So iOS and Android tests can be written fully by label from a run's screens. Desktop tests can be written from the phrases, with coordinates only for icons.
+- The app runs only on the runner, so a test's flow and timing are verified there.
+- Text and element searches can be checked locally against a run's saved screens:
+  - Android: `python3 scripts/ci/android/screen-tree.py <NN-step.xml> find "<text>"` (or `lines`, `tree`) returns what `ui find` returns on the runner.
+  - iOS: `NN-step.json` is AXe's tree; `jq` over it, or the filter in `compact_tree` of `scripts/ci/ios-sim/ui`, prints the labels, values and frames of `ui tree`.
+  - Desktop: `NN-step.txt` contains the phrases read by OCR and their centres. Reading a screenshot again requires tesseract and ImageMagick, installed on the runner; OCR misreads appear only there.
+- iOS and Android tests can therefore be written fully by label from a run's screens, and desktop tests from the phrases, with coordinates only for icons.

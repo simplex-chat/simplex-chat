@@ -16,7 +16,7 @@ on:
         type: boolean
         default: false
       tests:
-        description: "Feature tests to run after the smoke test: names, all or none; empty runs the tests this branch's changes concern (scripts/ci/feature-tests.md)"
+        description: "Feature tests to run after the smoke test: names, all or none; when empty, tests are selected from this branch's changes (scripts/ci/feature-tests.md)"
         type: string
         default: ""
 

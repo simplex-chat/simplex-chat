@@ -2,7 +2,7 @@
 
 Three workflows build the apps from a branch's own code and test them, only when asked: `ios-sim` (the iOS app in a simulator on a macOS runner), `desktop-linux` (the desktop app on a Linux runner) and `android-emu` (the Android app in an emulator on a Linux runner). Each runs a scripted smoke test and, on request, a Claude session that follows a test plan, and a test backend (relay, directory, names server, peers). Details: [iOS](ios-sim/README.md), [desktop](desktop-linux/README.md), [Android](android/README.md).
 
-After the smoke test, a run also runs the scripted tests of the features its branch's changes concern. A feature adds them as its own files: [feature tests](feature-tests.md) says how.
+After the smoke test, the workflow runs the feature tests selected from the branch's changes. These scripted tests are files of their own: see [feature tests](feature-tests.md).
 
 ## Reduced build
 
@@ -154,7 +154,7 @@ Pushes start none of the app workflows: a run is started by hand, on any branch,
 
 | Input | iOS | Desktop | Android |
 |---|---|---|---|
-| no input | scripted test, then the feature tests the branch's changes concern, the app uploaded | scripted test, then the feature tests the branch's changes concern, the app uploaded | scripted test, then the feature tests the branch's changes concern, the app uploaded |
+| no input | scripted test, then the feature tests selected from the branch's changes, the app uploaded | scripted test, then the feature tests selected from the branch's changes, the app uploaded | scripted test, then the feature tests selected from the branch's changes, the app uploaded |
 | `tests` | the feature tests named, separated by spaces, `all` or `none`, in place of those | the same | the same |
 | `claude` | scripted test, then Claude | scripted test, then Claude | scripted test, then Claude |
 | `backend` | also the test backend | also the test backend | also the test backend |
@@ -175,7 +175,7 @@ A newer run of a workflow on the same branch cancels the older one.
 
 Each run uploads the app it built, for manual tests, as an artifact kept 14 days: `ios-sim-app` (SimpleX.app.tar.gz, for the iOS simulator on an Apple-silicon Mac), `desktop-app` (desktop-app.tar.gz, for Linux x86-64) and `android-app` (the debug APK, arm64-v8a only). The run's page lists it under Artifacts; `gh run download <run id> -n <artifact>` downloads it.
 
-A failed feature test fails the app job, so a run that also asks for Claude skips the Claude job: start it with `tests: none` to run Claude anyway.
+A failed feature test fails the app job, and GitHub then skips the Claude job. With `tests: none`, feature tests are excluded from the run.
 
 An agent that runs these workflows in a fork follows [app-tests-agent.md](app-tests-agent.md).
 
