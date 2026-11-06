@@ -177,7 +177,7 @@ private fun ModalData.NewChatSheetLayout(
     searchText = searchText.value.text,
     contactChats = allChats
   )
-  val rows = onlineSearch.rows(shownChatIds = filteredContactChats.map { it.id }.toSet())
+  val rows = onlineSearch.rows(shownChatIds = emptySet())
   KeyChangeEffect(searchText.value.text) {
     onlineSearch.reset()
   }

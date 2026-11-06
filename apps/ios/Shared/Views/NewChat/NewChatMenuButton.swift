@@ -53,7 +53,6 @@ struct NewChatSheet: View {
     @State private var allowSmallSheet = true
 
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
-    @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
         let showArchive = chatModel.chats.contains { $0.chatInfo.contact?.chatDeleted == true }
@@ -164,30 +163,19 @@ struct NewChatSheet: View {
                 }
             }
 
-            let shownContacts = ContactsList.shownChats(
-                chats: chatModel.chats,
-                predicate: contactListChatPredicate,
-                searchText: searchText,
-                searchShowingSimplexLink: searchShowingSimplexLink,
-                searchChatFilteredBySimplexLink: searchChatFilteredBySimplexLink,
-                showUnreadAndFavorites: showUnreadAndFavorites
-            ).shown
-            let rows = onlineSearch.rows(shownChatIds: Set(shownContacts.map { $0.id }))
-            if onlineSearch.showResults && (!shownContacts.isEmpty || !rows.isEmpty) {
-                onlineSearchSection(rows, contacts: shownContacts)
-            } else {
-                ContactsList(
-                    chatPredicate: contactListChatPredicate,
-                    searchMode: $searchMode,
-                    searchText: $searchText,
-                    header: "Your Contacts",
-                    searchFocussed: $searchFocussed,
-                    searchShowingSimplexLink: $searchShowingSimplexLink,
-                    searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
-                    showDeletedChatIcon: true,
-                    showsEmptyState: !onlineSearch.loading && !showsSearchInDirectory
-                )
-            }
+            let rows = onlineSearch.rows(shownChatIds: [])
+            ContactsList(
+                chatPredicate: contactListChatPredicate,
+                searchMode: $searchMode,
+                searchText: $searchText,
+                header: onlineSearch.showResults ? nil : "Your Contacts",
+                searchFocussed: $searchFocussed,
+                searchShowingSimplexLink: $searchShowingSimplexLink,
+                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
+                showDeletedChatIcon: true,
+                showsEmptyState: !onlineSearch.loading && rows.isEmpty && !showsSearchInDirectory,
+                moreRows: rows.isEmpty ? nil : AnyView(onlineSearchSection(rows))
+            )
         }
         .onChange(of: searchText) { _ in
             onlineSearch.reset()
@@ -197,26 +185,20 @@ struct NewChatSheet: View {
         }
     }
 
-    private func onlineSearchSection(_ rows: OnlineSearchRows, contacts: [Chat]) -> some View {
-        Section {
-            ForEach(contacts, id: \.viewId) { chat in
-                ContactListNavLink(chat: chat, showDeletedChatIcon: true)
-                    .disabled(chatModel.chatRunning != true)
-            }
-            ForEach(rows.yourChats.compactMap { chatModel.getChat($0) }, id: \.viewId) { chat in
-                ContactListNavLink(chat: chat, showDeletedChatIcon: true)
-                    .disabled(chatModel.chatRunning != true)
-            }
-            ForEach(rows.results) { result in
-                DirectorySearchRow(entry: result.entry, imageSize: 30, state: result.state)
-                    .modifier(DirectoryResultMenu(result: result, imageSize: 30, onOpen: { openResult(result) }))
-                    .onTapGesture { openResult(result) }
-                    .disabled(chatModel.chatRunning != true)
-            }
-            if let footer = rows.footer {
-                DirectoryFooterRow(footer: footer, onlineSearch: onlineSearch)
-                    .disabled(chatModel.chatRunning != true)
-            }
+    @ViewBuilder private func onlineSearchSection(_ rows: OnlineSearchRows) -> some View {
+        ForEach(rows.yourChats.compactMap { chatModel.getChat($0) }, id: \.viewId) { chat in
+            ContactListNavLink(chat: chat, showDeletedChatIcon: true)
+                .disabled(chatModel.chatRunning != true)
+        }
+        ForEach(rows.results) { result in
+            DirectorySearchRow(entry: result.entry, imageSize: 30, state: result.state)
+                .modifier(DirectoryResultMenu(result: result, imageSize: 30, onOpen: { openResult(result) }))
+                .onTapGesture { openResult(result) }
+                .disabled(chatModel.chatRunning != true)
+        }
+        if let footer = rows.footer {
+            DirectoryFooterRow(footer: footer, onlineSearch: onlineSearch)
+                .disabled(chatModel.chatRunning != true)
         }
     }
 
@@ -288,19 +270,20 @@ struct ContactsList: View {
     @Binding var searchChatFilteredBySimplexLink: String?
     var showDeletedChatIcon: Bool
     var showsEmptyState = true
+    var moreRows: AnyView? = nil
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
-        let (contactChats, filteredContactChats) = Self.shownChats(
-            chats: chatModel.chats,
-            predicate: chatPredicate,
-            searchText: searchText,
+        let contactChats = chatModel.chats.filter { chat in chatPredicate(chat, !searchText.isEmpty) }
+        let filteredContactChats = filteredContactChats(
+            showUnreadAndFavorites: showUnreadAndFavorites,
             searchShowingSimplexLink: searchShowingSimplexLink,
             searchChatFilteredBySimplexLink: searchChatFilteredBySimplexLink,
-            showUnreadAndFavorites: showUnreadAndFavorites
+            searchText: searchText,
+            contactChats: contactChats
         )
 
-        if !filteredContactChats.isEmpty {
+        if !filteredContactChats.isEmpty || moreRows != nil {
             Section(header: Group {
                 if let header = header {
                     Text(header)
@@ -313,6 +296,7 @@ struct ContactsList: View {
                     ContactListNavLink(chat: chat, showDeletedChatIcon: showDeletedChatIcon)
                         .disabled(chatModel.chatRunning != true)
                 }
+                moreRows
             }
         }
         
@@ -337,13 +321,13 @@ struct ContactsList: View {
         .listRowInsets(EdgeInsets(top: 7, leading: 0, bottom: 7, trailing: 0))
     }
 
-    private static func chatComparator(chat1: Chat, chat2: Chat) -> Bool {
+    private func chatComparator(chat1: Chat, chat2: Chat) -> Bool {
         let r1 = chatOrderRank(chat1)
         let r2 = chatOrderRank(chat2)
         return r1 > r2 ? true : r1 < r2 ? false : chat1.chatInfo.chatTs > chat2.chatInfo.chatTs
     }
         
-    private static func filterChat(chat: Chat, searchText: String, showUnreadAndFavorites: Bool) -> Bool {
+    private func filterChat(chat: Chat, searchText: String, showUnreadAndFavorites: Bool) -> Bool {
         var meetsPredicate = true
         let s = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let cInfo = chat.chatInfo
@@ -365,26 +349,7 @@ struct ContactsList: View {
         return meetsPredicate
     }
 
-    static func shownChats(
-        chats: [Chat],
-        predicate: (Chat, Bool) -> Bool,
-        searchText: String,
-        searchShowingSimplexLink: Bool,
-        searchChatFilteredBySimplexLink: String?,
-        showUnreadAndFavorites: Bool
-    ) -> (contactChats: [Chat], shown: [Chat]) {
-        let contactChats = chats.filter { chat in predicate(chat, !searchText.isEmpty) }
-        let shown = filteredContactChats(
-            showUnreadAndFavorites: showUnreadAndFavorites,
-            searchShowingSimplexLink: searchShowingSimplexLink,
-            searchChatFilteredBySimplexLink: searchChatFilteredBySimplexLink,
-            searchText: searchText,
-            contactChats: contactChats
-        )
-        return (contactChats, shown)
-    }
-
-    private static func filteredContactChats(
+    func filteredContactChats(
         showUnreadAndFavorites: Bool,
         searchShowingSimplexLink: Bool,
         searchChatFilteredBySimplexLink: String?,
