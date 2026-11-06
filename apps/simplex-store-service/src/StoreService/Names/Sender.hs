@@ -164,7 +164,7 @@ submitTransaction s@Sender {snChain = c@ChainClient {ccRegistrar}, snRandom, snS
       logWarn $ "names sender: the latest block needs " <> tshow needed <> " wei per gas, above max_fee_per_gas " <> tshow cap <> "; the transaction waits"
       throwError $ SEFeeAboveCap needed
     -- both fit Word64: the tip is at most the needed fee, and the max fee at most the cap
-    let request = TxRequest {trTo = to, trData = calldata, trNonce = nonce, trGasLimit = gas, trMaxFeePerGas = fromInteger $ min cap $ headroomFee market, trMaxPriorityFeePerGas = fromInteger tip}
+    let request = TxRequest {trTo = to, trData = calldata, trNonce = nonce, trGasLimit = gasWithHeadroom c gas, trMaxFeePerGas = fromInteger $ min cap $ headroomFee market, trMaxPriorityFeePerGas = fromInteger tip}
     SignedTx {stRaw, stHash} <- withExceptT SESigning $ ExceptT $ signTransaction snRandom c request
     liftIO $ do
       now <- snNow
@@ -294,6 +294,11 @@ marketFees c = runExceptT $ do
 
 headroomFee :: (Integer, Integer) -> Integer
 headroomFee (tip, baseFee) = baseFeeHeadroom * baseFee + tip
+
+-- | A fifth above the estimate, within gas_limit_cap: state can change between the dry run and the block, and a transaction
+-- that runs out of gas still pays for all of it.
+gasWithHeadroom :: ChainClient -> Word64 -> Word64
+gasWithHeadroom ChainClient {ccConfig = ChainConfig {cGasLimitCap}} gas = min cGasLimitCap (gas + gas `div` 5)
 
 feeCap :: ChainClient -> Integer
 feeCap ChainClient {ccConfig = ChainConfig {cMaxFeePerGas}} = toInteger cMaxFeePerGas

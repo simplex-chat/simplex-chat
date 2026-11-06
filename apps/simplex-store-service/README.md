@@ -1066,10 +1066,10 @@ reads, clears and logs its acceptance, as a community name's did:
 | `clearRecordsWithSig` | 80,312 | 80,312 | 0.0080 ETH |
 | `multicall`, two new links | 6,054,042 | 6,008,868 | 0.6054 ETH |
 
-- The service sets each transaction's gas limit to its estimate and its max fee to at most
-  `max_fee_per_gas` (default 100 gwei). The node accepts a transaction only while the balance covers
-  its limit × max fee, so the last column is what each one needs held. What it is charged is gas
-  used × the block's base fee plus tip, usually far less.
+- The service sets each transaction's gas limit a fifth above its estimate, within `gas_limit_cap`,
+  and its max fee to at most `max_fee_per_gas` (default 100 gwei). The node accepts a transaction only
+  while the balance covers its limit × max fee, so each needs held about 1.2 × the last column. What
+  it is charged is gas used × the block's base fee plus tip, usually far less.
 - An order is one commit, one acceptance relay and one register: 0.6946 ETH at the cap with two links, 0.0723 ETH with
   none. The expected orders × 0.6946 ETH, plus 0.6054 ETH per expected Save of both links (0.3026 ETH
   for one), pays for all of them even at the cap. A name's link edits are at most
