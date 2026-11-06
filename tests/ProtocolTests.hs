@@ -90,10 +90,9 @@ serviceBodyTests = describe "service payload compression" $ do
     B.head compressed `shouldBe` 'X'
     decompressServiceBody compressed `shouldBe` Right payload
   it "rejects a payload that is too large even compressed" $ do
-    -- random bytes do not compress, so this stays over the bound
     g <- C.newRandom
-    payload <- atomically $ C.randomBytes (maxServiceBodyLength * 2) g
-    compressServiceBody payload `shouldBe` Left "service payload is too large"
+    incompressible <- atomically $ C.randomBytes (maxServiceBodyLength * 2) g
+    compressServiceBody incompressible `shouldBe` Left "service payload is too large"
   it "rejects a payload that expands past the decompressed bound" $ do
     let bomb = compressedBatchMsgBody_ $ B.replicate (maxDecompressedMsgLength + 1) 'a'
     B.length bomb `shouldSatisfy` (< maxServiceBodyLength)
@@ -102,10 +101,9 @@ serviceBodyTests = describe "service payload compression" $ do
     compressServiceBody (B.replicate 70000 'a') `shouldBe` Left "service payload is too large"
   it "compresses to the bound it is given" $ do
     g <- C.newRandom
-    -- random bytes do not compress, so this is over the service bound and under the message bound
-    payload <- atomically $ C.randomBytes (maxServiceBodyLength + 1000) g
-    compressBodyTo maxServiceBodyLength payload `shouldBe` Nothing
-    compressBodyTo maxEncodedMsgLengthPQ payload `shouldBe` Just payload
+    incompressible <- atomically $ C.randomBytes (maxServiceBodyLength + 1000) g
+    compressBodyTo maxServiceBodyLength incompressible `shouldBe` Nothing
+    compressBodyTo maxEncodedMsgLengthPQ incompressible `shouldBe` Just incompressible
   it "rejects a payload nested deeper than the bound" $ do
     let nested n = "{\"a\":" <> B.replicate n '[' <> B.replicate n ']' <> "}"
     parseServiceBody (nested 10) `shouldBe` J.eitherDecodeStrict' (nested 10)

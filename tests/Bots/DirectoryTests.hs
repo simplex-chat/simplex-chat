@@ -43,7 +43,7 @@ import Simplex.Chat.Library.Commands (maxProfileImageSize, maxShortDescrLength)
 import qualified Simplex.Chat.Markdown as MD
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
-import Simplex.Chat.Protocol (memberSupportVoiceVersion)
+import Simplex.Chat.Protocol (maxDecompressedMsgLength, memberSupportVoiceVersion)
 import qualified Simplex.Chat.Store.Groups as Store
 import Simplex.Chat.Types (ChatPeerType (..), GroupInfo (..), GroupLink, GroupProfile (..), GroupSummary (..), GroupType (..), ImageData (..), Profile (..), safeImageData)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -633,8 +633,6 @@ testSearchGroups ps =
       u <##. "Link to join the group "
       u <## (show count <> " members")
 
--- Paging must continue from the sort key, not from group_id: here the last registered
--- group has the most members, so it sorts first, and a group_id cursor would send it again.
 testSearchGroupsPaging :: HasCallStack => TestParams -> IO ()
 testSearchGroupsPaging ps =
   withDirectoryService ps $ \superUser dsLink ->
@@ -717,7 +715,6 @@ testDirectorySearchRpcPaging ps =
         (page1, cursor, moreCount1) <- searchNamesCounts cath dsShortLink "group" Nothing
         page1 `shouldBe` ["group1", "group2", "group3"]
         moreCount1 `shouldBe` 1
-        -- anyone can send this request, so the cursor must not reveal when a group was registered
         maybe "" (LB.unpack . J.encode) cursor `shouldNotContain` "lastCreatedAt"
         (page2, cursor', moreCount2) <- searchNamesCounts cath dsShortLink "group" cursor
         page2 `shouldBe` ["group4"]
@@ -735,10 +732,8 @@ testDirectorySearchRpcLiteral ps =
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         (found, _) <- searchNames cath dsShortLink "privacy" Nothing
         found `shouldBe` ["PrivacyGroup"]
-        -- as a wildcard, '%' would match the empty string between the words
         (none, _) <- searchNames cath dsShortLink "privacy%group" Nothing
         none `shouldBe` []
-        -- as a wildcard, '_' would match the 'g'
         (none', _) <- searchNames cath dsShortLink "privacy_roup" Nothing
         none' `shouldBe` []
         cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"" <> replicate 101 'a' <> "\"}")
@@ -762,7 +757,6 @@ testDirectorySearchRpcSlotReleased ps =
       search
       cath <## noResults
 
--- the requests above are answered one after another, so only this shows a running request counts against the cap
 testServiceRequestSlotHeld :: HasCallStack => TestParams -> IO ()
 testServiceRequestSlotHeld _ = do
   inFlight <- newTVarIO 0
@@ -773,8 +767,6 @@ testServiceRequestSlotHeld _ = do
   timeout 5000000 (atomically $ readTVar inFlight >>= \n -> when (n /= 0) retry) `shouldReturn` Just ()
   forkWithinCap inFlight 1 (pure ()) `shouldReturn` True
 
--- Read from the controller, not the terminal: an entry with an image is longer than a terminal
--- row, and the test terminal only queues the last row of a line that wrapped.
 searchDirectoryCounts :: TestCC -> String -> String -> Maybe J.Value -> IO ([DirectorySearchEntry], Maybe J.Value, Int)
 searchDirectoryCounts TestCC {chatController = cc} dsLink text cursor_ = do
   let req = J.object $ ["type" .= ("search" :: String), "searchText" .= text] <> maybe [] (\c -> ["searchCursor" .= c]) cursor_
@@ -959,8 +951,8 @@ registerChannel su u relay simplexName_ = do
   uName <- userName u
   u ##> "/share chat #news @'SimpleX Directory'"
   u <# "@'SimpleX Directory' link to join channel #news (signed):"
-  void $ getTermLine u -- short link
-  void $ getTermLine u -- ownerSig JSON
+  _ <- getTermLine u
+  _ <- getTermLine u
   channelJoinedByDirectory u relay
   su <# ("'SimpleX Directory'> " <> uName <> " submitted the channel ID 1:")
   su <## "news"
@@ -992,8 +984,7 @@ channelFoundSubscribers u name = do
 testSearchResultsPage :: HasCallStack => TestParams -> IO ()
 testSearchResultsPage _ps = do
   g <- C.newRandom
-  -- base64 of random bytes compresses only to the size of those bytes, so the envelope decides what fits
-  let randomText n = safeDecodeUtf8 . strEncode <$> atomically (C.randomBytes n g)
+  let incompressibleText n = safeDecodeUtf8 . strEncode <$> atomically (C.randomBytes n g)
       cursor gId = SCMembers {lastMembers = 1, lastGroupId = gId}
       page matched rows = case searchResultsPage cursor matched rows of
         DRSearchResults {entries, searchCursor, moreCount} -> (map (\DirectorySearchEntry {displayName} -> displayName) entries, lastGroupId <$> searchCursor, moreCount)
@@ -1009,25 +1000,23 @@ testSearchResultsPage _ps = do
             activeAt = Nothing,
             createdAt = Nothing
           }
-      -- about 4.7 KB compressed each: two fit the 10,737-byte envelope, three do not
-      sized name = entry name <$> randomText 4500 <*> pure Nothing
-  a <- sized "a"
-  b <- sized "b"
-  c <- sized "c"
+      twoFitEnvelope name = entry name <$> incompressibleText 4500 <*> pure Nothing
+  a <- twoFitEnvelope "a"
+  b <- twoFitEnvelope "b"
+  c <- twoFitEnvelope "c"
   page 3 [(1, Just a), (2, Just b), (3, Just c)] `shouldBe` (["a", "b"], Just 2, 1)
   page 2 [(1, Just a), (2, Just b)] `shouldBe` (["a", "b"], Nothing, 0)
   page 5 [(1, Just a), (2, Just b)] `shouldBe` (["a", "b"], Just 2, 3)
   page 4 [(1, Just a), (2, Nothing)] `shouldBe` (["a"], Just 2, 2)
   page 2 [(1, Just a), (2, Nothing)] `shouldBe` (["a"], Nothing, 0)
-  big <- randomText 12000
+  big <- incompressibleText 12000
   let bigImageEntry = entry "d" "" (Just $ "data:image/png;base64,iVBORw0KGgoA" <> big)
   page 1 [(1, Just bigImageEntry)] `shouldBe` (["d"], Nothing, 0)
   case searchResultsPage cursor 1 [(1, Just bigImageEntry)] of
     DRSearchResults {entries = [DirectorySearchEntry {image}]} -> image `shouldBe` Nothing
     _ -> expectationFailure "expected the entry without its image"
   page 2 [(1, Just $ entry "e" big Nothing), (2, Just a)] `shouldBe` ([], Just 1, 1)
-  -- compresses to almost nothing, but no client decompresses a body past 64 KB
-  let unreadable = entry "f" (T.replicate 70000 "a") Nothing
+  let unreadable = entry "f" (T.replicate (maxDecompressedMsgLength + 1) "a") Nothing
   page 2 [(1, Just a), (2, Just unreadable)] `shouldBe` (["a"], Just 1, 1)
   page 2 [(2, Just unreadable), (3, Just b)] `shouldBe` ([], Just 2, 1)
 
@@ -2231,7 +2220,6 @@ withDirectoryServiceCfgOwnersGroup :: HasCallStack => TestParams -> ChatConfig -
 withDirectoryServiceCfgOwnersGroup ps cfg createOwnersGroup webFolder test =
   withDirectoryServiceCfgOwnersGroupLinks ps cfg createOwnersGroup webFolder $ \superUser (_, dsLink) -> test superUser dsLink
 
--- service request tests need the short link: only it carries the address ratchet keys
 withDirectoryServiceCfgOwnersGroupLinks :: HasCallStack => TestParams -> ChatConfig -> Bool -> Maybe FilePath -> (TestCC -> (String, String) -> IO ()) -> IO ()
 withDirectoryServiceCfgOwnersGroupLinks ps cfg createOwnersGroup webFolder test = do
   dsLinks <-

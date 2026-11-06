@@ -23,7 +23,6 @@ class OnlineSearchModel: ObservableObject {
 
     private var cursor: JSONValue? = nil
     private var searchedText = ""
-    // bumped on every reset, so a reply that arrives too late cannot refill a list already cleared
     private var generation = 0
     private var spinnerShown = false
 
@@ -216,7 +215,6 @@ private struct DirectorySearchRowLayout: View {
                 HStack(spacing: 4) {
                     Text(displayName).fontWeight(.bold).lineLimit(1)
                     if let simplexName {
-                        // the directory's claim, shown as plain text: connecting uses the link
                         Text(simplexName)
                             .foregroundColor(theme.colors.secondary)
                             .lineLimit(1)

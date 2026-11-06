@@ -66,7 +66,6 @@ object ConnectProgressManager {
     }
   }
 
-  // a search finishing late must not stop the spinner if a connection has taken it over
   fun stopConnectProgress(owner: ConnectProgressOwner = ConnectProgressOwner.Connect) {
     if (this.owner != null && this.owner != owner) return
     connectInProgress.value = null

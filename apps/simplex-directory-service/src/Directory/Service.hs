@@ -107,7 +107,6 @@ data ServiceState = ServiceState
     serviceCC :: TMVar ChatController,
     eventQ :: TQueue DirectoryEvent,
     updateListingsJob :: TMVar (),
-    -- service requests carry no caller identity, so the only possible bound is global
     serviceRequestsInFlight :: TVar Int
   }
 
@@ -140,7 +139,6 @@ newServiceState opts = do
   serviceRequestsInFlight <- newTVarIO 0
   pure ServiceState {searchRequests, blockedWordsCfg, pendingCaptchas, serviceCC, eventQ, updateListingsJob, serviceRequestsInFlight}
 
--- anyone can search without connecting first, so limit the work one request can ask for.
 maxSearchTextLength :: Int
 maxSearchTextLength = 100
 
@@ -365,11 +363,9 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
   where
     deServiceRequest :: AgentInvId -> J.Object -> IO ()
     deServiceRequest reqId req = do
-      -- the event loop is shared with registrations and captchas, so the bound is on the forked handlers
       accepted <- forkWithinCap serviceRequestsInFlight maxServiceRequestsInFlight (respond =<< requestResponse)
       unless accepted $ reject "service is busy"
       where
-        -- this runs on the shared event loop, so the reject is enqueued rather than sent here
         reject reason =
           sendChatCmd cc (APIRejectServiceRequest userId reqId $ Just reason) >>= \case
             Right _ -> pure ()

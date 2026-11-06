@@ -1532,7 +1532,6 @@ processChatCommand cxt nm = \case
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
   APIRejectServiceRequest userId requestId reason -> withUserId userId $ \user -> do
     let AgentInvId invId = requestId
-    -- without a reason the request is dropped silently and the requester waits out its timeout
     withAgent $ \a -> rejectServiceRequestAsync a "" (aUserId user) invId (encodeUtf8 <$> reason)
     ok user
   APISendCallInvitation contactId callType -> withUser $ \user -> do

@@ -185,7 +185,6 @@ private fun ModalData.NewChatSheetLayout(
     onlineSearch.reset()
   }
 
-  // emitted in this order, the load row is the row farthest from the field in both layouts
   fun LazyListScope.onlineSearchSection(rows: OnlineSearchRows) {
     if (!rows.isEmpty) {
       items(rows.yourChats.mapNotNull { chatModel.getChat(it) }, key = { it.remoteHostId to it.id }) { chat ->

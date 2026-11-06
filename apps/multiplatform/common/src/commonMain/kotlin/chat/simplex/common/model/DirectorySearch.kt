@@ -9,12 +9,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.*
 
-// Must be the short link form: only that one carries the keys a service request needs.
 const val DIRECTORY_SERVICE_LINK = "https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok"
 
 const val DIRECTORY_SEARCH_TIMEOUT_SEC = 10.0
 
-// The directory refuses longer search text, counting code points rather than UTF-16 chars.
 const val DIRECTORY_SEARCH_MAX_TEXT_LENGTH = 100
 
 const val DIRECTORY_SEARCH_MAX_IMAGE_LENGTH = 12500
@@ -43,7 +41,6 @@ data class DirectorySearchEntry(
   val id: String get() = link
 
   // untrusted input: only group and channel links are kept
-  // @Transient: the decoder always runs this check, and a "link" key in the JSON cannot replace it
   @Transient
   val link: String = run {
     val link = groupLink.connShortLink ?: groupLink.connFullLink

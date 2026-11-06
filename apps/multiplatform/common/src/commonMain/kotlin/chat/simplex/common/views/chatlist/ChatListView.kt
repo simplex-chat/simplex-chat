@@ -264,7 +264,6 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<Set<String>>(emptySet()) }
   val connectNameCandidate = remember { mutableStateOf<String?>(null) }
   val onlineSearch = remember { OnlineSearchModel() }
-  // here, not in the search bar: a profile switch can replace the search bar, and the new one never sees the change
   KeyChangeEffect(searchText.value.text) {
     onlineSearch.reset()
   }
@@ -1244,7 +1243,6 @@ private fun ChatListSearchBarWithTags(listState: LazyListState, searchText: Muta
         rows()
       }
       ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate, onlineSearch, searchFocused)
-      // only the field's own keyboard: one opened by a view over the list must not resize the onboarding cards above
       if (searchFocused.value) {
         Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
       }

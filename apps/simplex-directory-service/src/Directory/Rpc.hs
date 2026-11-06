@@ -33,7 +33,6 @@ data DirectorySearchEntry = DirectorySearchEntry
     displayName :: Text,
     simplexName :: Maybe Text,
     groupLink :: PublicLink,
-    -- plain text, not parsed markdown: the apps draw it as text, and the parsed format differs between platforms
     shortDescr :: Maybe Text,
     image :: Maybe ImageData,
     activeAt :: Maybe UTCTime,
@@ -59,19 +58,17 @@ responseObject resp = case J.toJSON resp of
   J.Object o -> o
   _ -> JM.fromList [("type", J.String "error"), ("errorMessage", J.String "internal error")]
 
--- Entries are dropped from the end until the response fits, so the cursor must point at the last row
--- included, not the last one read. A single entry that still does not fit is skipped, or paging stalls on it.
 searchResultsPage :: (row -> SearchCursor) -> Int -> [(row, Maybe DirectorySearchEntry)] -> DirectoryResponse
-searchResultsPage rowCursor matched rows = fit entryRows
+searchResultsPage rowCursor matched rows = fitFromEnd entryRows
   where
     numbered = [((n, row), e) | (n, (row, e)) <- zip [1 ..] rows]
     entryRows = [(row, e) | (row, Just e) <- numbered]
-    fit sent = case page sent of
+    fitFromEnd sent = case page sent of
       Just resp -> resp
       Nothing -> case sent of
         [(row, e)] -> fromMaybe (skipped row) $ page [(row, dropImage e)]
         [] -> results [] Nothing
-        _ -> fit (init sent)
+        _ -> fitFromEnd (init sent)
     page sent
       | fits resp = Just resp
       | otherwise = Nothing
@@ -85,7 +82,6 @@ searchResultsPage rowCursor matched rows = fit entryRows
       DRSearchResults
         { entries = map snd sent,
           searchCursor = rowCursor . snd <$> cursorRow,
-          -- the count query lacks the listing query's joins, so it can be below the rows read
           moreCount = maybe 0 (\(consumed, _) -> max 0 (matched - consumed)) cursorRow
         }
     fits = isRight . compressServiceBody . LB.toStrict . J.encode . responseObject

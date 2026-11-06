@@ -2168,7 +2168,6 @@ testServiceRequestCompressed =
       )
       ( do
           reqId <- serviceRequestId alice
-          -- the test terminal queues only the last row of a line that wrapped
           received <- getTermLine alice
           received `shouldSatisfy` (`isSuffixOf` ("request: " <> request))
           alice ##> ("/_service_response 1 " <> reqId <> " {\"pong\":2}")

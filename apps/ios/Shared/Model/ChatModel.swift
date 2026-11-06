@@ -321,7 +321,6 @@ class ConnectProgressManager: ObservableObject {
         }
     }
 
-    // a search finishing late must not stop the spinner if a connection has taken it over
     func stopConnectProgress(_ owner: ConnectProgressOwner = .connect) {
         if let current = self.owner, current != owner { return }
         connectInProgress = nil

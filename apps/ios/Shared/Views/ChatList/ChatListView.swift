@@ -236,7 +236,6 @@ struct ChatListView: View {
                 }
             }
         }
-        // here, not in the search bar: a profile switch can replace the search bar, and the new one never sees the change
         .onChange(of: searchText) { _ in
             onlineSearch.reset()
         }
@@ -513,7 +512,6 @@ struct ChatListView: View {
         }
         let imageSize = dynamicSize(userFont).profileImageSize
         ForEach(rows.results) { result in
-            // the menu's preview is drawn upright only when the menu is attached before the row is flipped
             DirectorySearchRow(entry: result.entry, imageSize: imageSize, state: result.state)
                 .modifier(DirectoryResultMenu(result: result, imageSize: imageSize, onOpen: { openResult(result) }))
                 .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)

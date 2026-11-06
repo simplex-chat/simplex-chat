@@ -1072,16 +1072,16 @@ compressBodyTo maxLen body
   where
     body' = compressedBatchMsgBody_ body
 
--- JSON never starts with 'X', so that marker unambiguously means the body is compressed.
 compressServiceBody :: ByteString -> Either String ByteString
 compressServiceBody body
   | B.length body <= maxDecompressedMsgLength, Just body' <- compressBodyTo maxServiceBodyLength body = Right body'
   | otherwise = Left "service payload is too large"
 
--- A service payload is padded as PQ connection info, and a request also carries its reply queue
--- and an optional signature (111 bytes encoded), so both directions get the request's bound.
+maxRequestSignatureLength :: Int
+maxRequestSignatureLength = 111
+
 maxServiceBodyLength :: Int
-maxServiceBodyLength = e2eEncConnInfoLength PQSupportOn - 2 - maxReplyQueueFraming - 111
+maxServiceBodyLength = e2eEncConnInfoLength PQSupportOn - 2 - maxReplyQueueFraming - maxRequestSignatureLength
 
 decompressServiceBody :: ByteString -> Either String ByteString
 decompressServiceBody body = case B.uncons body of
@@ -1089,7 +1089,6 @@ decompressServiceBody body = case B.uncons body of
   Just ('X', body') -> case smpDecode body' :: Either String (L.NonEmpty Compressed) of
     Left e -> Left e
     Right (c L.:| []) -> case decompressedSize c of
-      -- the bound is required: without it a small payload can expand to an unbounded one
       Just size | size > maxDecompressedMsgLength -> Left "decompressed size exceeds limit"
       Just _ -> decompress1 c
       Nothing -> Left "compressed size not specified"

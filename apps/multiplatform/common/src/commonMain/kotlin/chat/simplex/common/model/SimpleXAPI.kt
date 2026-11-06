@@ -1691,7 +1691,6 @@ object ChatController {
     return null
   }
 
-  // plain sendCmd: a timeout shows a retry row in the results, not the alert sendCmdWithRetry would show
   suspend fun apiSearchDirectory(rh: Long?, text: String, cursor: JsonObject?): DirectorySearchResults? {
     val userId = kotlin.runCatching { currentUserId("apiSearchDirectory") }.getOrElse { return null }
     val req = directorySearchRequest(text, cursor)

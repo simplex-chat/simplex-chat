@@ -394,12 +394,9 @@ searchListedGroups cc user@User {userId, userContactId} searchType cursor_ pageS
   where
     groups currentTs = (map (toGroupInfoRegLink currentTs (storeCxt cc) user) <$>)
     count = maybeFirstRow' 0 fromOnly
-    -- only a forged request pairs a mode with another mode's cursor: restarting from the first page would make a client loop
     wrongCursor = Left "search cursor does not match the search type"
     listedGroupQuery = groupReqQuery <> " AND r.group_reg_status = ? "
     countQuery = "SELECT COUNT(1) FROM groups g JOIN sx_directory_group_regs r ON g.group_id = r.group_id "
-    -- the cursor conditions must stay paired with the order by of the same sort key:
-    -- paging by any other column skips and repeats rows
     membersOrderBy = " ORDER BY g.summary_current_members_count DESC, r.group_id ASC "
     membersCond = " AND (g.summary_current_members_count < ? OR (g.summary_current_members_count = ? AND r.group_id > ?)) "
     recentOrderBy = " ORDER BY r.created_at DESC, r.group_id ASC "
@@ -414,7 +411,6 @@ searchListedGroups cc user@User {userId, userContactId} searchType cursor_ pageS
         )
       |]
 
--- the search text is a substring, not a pattern: its '%' and '_' must match literally
 likeEscape :: Text -> Text
 likeEscape = T.concatMap $ \c -> if c `elem` ['%', '_', '\\'] then T.pack ['\\', c] else T.singleton c
 

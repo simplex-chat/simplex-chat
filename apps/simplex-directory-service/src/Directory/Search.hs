@@ -15,7 +15,6 @@ data SearchRequest = SearchRequest
     searchCursor :: SearchCursor
   }
 
--- The service RPC sends it to anyone: the group ID shows only the order the directory joined groups, and a text search cursor has no timestamp.
 data SearchCursor
   = SCMembers {lastMembers :: Int64, lastGroupId :: GroupId}
   | SCRecent {lastCreatedAt :: UTCTime, lastGroupId :: GroupId}

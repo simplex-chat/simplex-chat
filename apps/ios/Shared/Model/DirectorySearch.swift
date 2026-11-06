@@ -9,12 +9,10 @@
 import Foundation
 import SimpleXChat
 
-// Must be the short link form: only that one carries the keys a service request needs.
 let DIRECTORY_SERVICE_LINK = "https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok"
 
 let DIRECTORY_SEARCH_TIMEOUT_SEC: Double = 10
 
-// The directory refuses longer search text, counting Unicode scalars rather than characters.
 let DIRECTORY_SEARCH_MAX_TEXT_LENGTH = 100
 
 let DIRECTORY_SEARCH_MAX_IMAGE_LENGTH = 12500
@@ -70,8 +68,6 @@ private func isSafeImageData(_ s: String) -> Bool {
         && (s.hasPrefix("data:image/jpg;base64,/9j/") || s.hasPrefix("data:image/png;base64,iVBORw0KGgo"))
 }
 
-// entries stay undecoded here so they can be decoded one at a time: one entry the app cannot decode,
-// or whose link it refuses, must not discard the whole response
 private struct DirectorySearchResponse: Decodable {
     var type: String
     var entries: [JSONValue]?

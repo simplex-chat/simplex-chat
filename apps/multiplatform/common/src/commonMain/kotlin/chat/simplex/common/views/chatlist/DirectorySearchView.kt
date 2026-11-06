@@ -30,7 +30,6 @@ import kotlinx.serialization.json.JsonObject
 
 enum class DirectoryFooter { Retry, LoadMore }
 
-// main thread only, as iOS's @MainActor: callers launch with withApi, and the generation checks rely on it
 class OnlineSearchModel {
   var directory by mutableStateOf<List<DirectoryResult>>(emptyList())
     private set
@@ -47,7 +46,6 @@ class OnlineSearchModel {
 
   private var cursor by mutableStateOf<JsonObject?>(null)
   private var searchedText = ""
-  // bumped on every reset, so a reply that arrives too late cannot refill a list already cleared
   private var generation = 0
   private var spinnerShown = false
 
@@ -238,7 +236,6 @@ private fun DirectorySearchRowLayout(
       Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(displayName, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         if (simplexName != null) {
-          // the directory's claim, shown as plain text: connecting uses the link
           Text(
             simplexName,
             Modifier.weight(1f, fill = false),
