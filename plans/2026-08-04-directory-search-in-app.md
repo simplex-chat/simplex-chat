@@ -21,7 +21,8 @@ sequenceDiagram
   RC->>App: CRServiceResponse
   App->>User: result rows
   User->>App: tap on a result
-  App->>RC: planAndConnect(link)
+  App->>App: planAndConnect(link)
+  App->>RC: APIConnectPlan, then APIPrepareGroup
   RC->>App: prepared chat
 ```
 
@@ -87,7 +88,7 @@ response: {"type": "searchResults", "entries": […], "searchCursor": …, "more
 error:    {"type": "error", "errorMessage": …}
 ```
 
-`searchText` has at most 100 characters. A null `searchCursor` in a request means the first page; in a response, the last page.
+`searchText` has at most 100 characters. An absent `searchCursor` in a request means the first page; in a response, the last page.
 
 The search is the bot's text search (`STSearch`): a case-insensitive substring match over the profiles of registered groups and channels. `%` and `_` in the text match literally. Matched fields:
 
@@ -134,10 +135,12 @@ flowchart TD
   still -- yes --> err
   still -- no --> wire[Sent compressed]
   recv[Body received] --> marker{Starts with X?}
+  recv -- empty --> rej[Error at the receiver]
   marker -- no --> json[JSON decode]
-  marker -- yes --> bound{Decompressed size known and at most 64 KB?}
-  bound -- no --> rej[Error at the receiver]
+  marker -- yes --> bound{One compressed part, size known and at most 64 KB?}
+  bound -- no --> rej
   bound -- yes --> json
+  json -- not a JSON object --> rej
   json --> depth{Nested deeper than 32 levels?}
   depth -- yes --> rej
   depth -- no --> ok[Object passed on]
@@ -192,18 +195,20 @@ ORDER BY r.created_at DESC, r.group_id ASC
 
 ```mermaid
 sequenceDiagram
-  participant Client as App or /next
+  participant App
   participant DS as Directory service
   participant DB as Store
-  Client->>DS: search, cursor absent
+  App->>DS: search, cursor absent
   DS->>DB: rows by sort key
   DB->>DS: rows, count
-  DS->>Client: page, cursor of the last row sent
-  Client->>DS: search, the same cursor
+  DS->>App: page, cursor of the last row sent
+  App->>DS: search, the same cursor
   DS->>DB: rows after the cursor
   DB->>DS: rows, count
-  DS->>Client: next page
+  DS->>App: next page
 ```
+
+For `/next` the directory holds the cursor in `searchRequests`.
 
 `testSearchGroupsPaging` covers `/all`, `/new` and text search with member counts that are not monotone in id: its last registered group has the most members.
 
@@ -252,7 +257,7 @@ flowchart TD
 
 ## 3. Apps: API binding
 
-Kotlin: `CC.APISendServiceRequest(userId, target, timeoutSec, request: JsonObject)`, with `cmdString` matching the parser (`/_service_request <userId> <target>[ timeout=<s>][ sign_key=<k>] <json>`), a `CR.ServiceResponse` case and `apiSearchDirectory(rh, text, cursor)`. iOS: the same as a `ChatCommand` case taking `JSONValue`, and a response case in `ChatResponse1`. The app sends requests unsigned.
+Kotlin: `CC.APISendServiceRequest(userId, target, timeoutSec, request: JsonObject)`, with `cmdString` matching the parser (`/_service_request <userId> <target>[ timeout=<s>][ sign_key=<k>] <json>`), a `CR.CRServiceResponse` case and `apiSearchDirectory(rh, text, cursor)`. iOS: the same as a `ChatCommand` case taking `JSONValue`, and a response case in `ChatResponse1`. The app sends requests unsigned.
 
 `APISendServiceRequest` takes the target. The directory's short link (§2) is a constant, `DIRECTORY_SERVICE_LINK`, declared once per platform and referenced only by `apiSearchDirectory`.
 
@@ -357,8 +362,6 @@ With the toolbar at the bottom the list is mirrored, so the user's own chats are
 - the member or subscriber count from `entryType.summary`, a channel when `groupType` is channel
 - trailing "Open"
 
-`SimplexNameView` is left unused here: it verifies automatically, with a network call per row.
-
 **Nothing is shown twice.** Each new entry's link is planned store-only (§2, `apiConnectPlan` with `.never`, logging failures without an alert) and mapped by `directoryResultState`:
 
 | State | Plan | Drawn as |
@@ -389,11 +392,11 @@ flowchart TD
   open --> plan[Online plan, spinner]
   plan --> ok{Plan}
   ok -- GLPOk --> prepared[Prepared chat with its Join button]
-  ok -- no relays, update required, error --> alert[The existing alert]
+  ok -- known group, no relays, update required, error --> alert[The existing alert]
   confirm --> pending[The pending join's alert]
 ```
 
-**While chat is stopped** result rows, load and retry rows and "Search in Directory" are disabled. The Search key still sends the search, which fails into the retry row.
+**While chat is stopped** "Search in Directory" and the load and retry rows are hidden, the Search key sends nothing, and result rows are disabled, as chat rows are.
 
 **Cards.** While a search runs or has run, the chat list hides its banner and cards, even after a search that found nothing; filtering by typing keeps them.
 
@@ -414,6 +417,8 @@ flowchart TD
 - Kotlin's New chat field stays enabled while a link shows, so its `onSearch` tests the link.
 - A long name hides the SimpleX name on Kotlin, and iOS truncates both.
 - Rotation on Android drops the results.
+- When onboarding ends, Kotlin clears the search and iOS keeps it.
+- While chat is starting, iOS treats it as stopped and Kotlin as running, as each platform's chat rows do.
 
 ## 6. Pagination
 
@@ -483,6 +488,8 @@ stateDiagram-v2
   Hidden --> Loading: search
   Loading --> LoadMore: page with a cursor
   Loading --> Hidden: page without a cursor
+  Loading --> Hidden: cancel, first page
+  Loading --> LoadMore: cancel, next page
   Loading --> Retry: failure
   LoadMore --> Loading: tap
   Retry --> Loading: tap
@@ -544,13 +551,13 @@ Kotlin: `common/src/commonMain/moko-resources/base/strings.xml`. iOS: inline `NS
 
 ## 10. What the design protects, and its limits
 
-The directory learns the search text, when it was sent, and the SMP server of the request's reply queue, and nothing else about the requester: a request is unsigned, contains no profile, and uses a new connection that is deleted after the reply or the timeout. Requests are end-to-end encrypted from the requester to the directory's address. The pages of one search share their text and cursor, so the directory can link them. A text search's cursor contains the member count and the group id; the group id shows only the order in which the directory joined groups.
+The directory learns the search text, when it was sent, and the SMP server of the request's reply queue, and nothing else about the requester: a request is unsigned, contains no profile, and uses a new connection that is deleted after the reply or the timeout. Requests are end-to-end encrypted from the requester to the directory's address. Each later page of a search repeats the text and sends the cursor of the page before, so the directory can link them. A text search's cursor contains the member count and the group id; the group id shows only the order in which the directory joined groups.
 
 A reply queue's SMP server sees the queue on the user's transport session for that server, as for any new connection.
 
 The apps treat the directory, and whoever controls it, as untrusted: they accept only group and channel links, draw its text as plain text and only JPEG and PNG images up to the profile image size, and make no network request and show no alert for an entry until the user opens it. Listing owners can't affect the requester beyond their own listing's bounded fields.
 
-Requests are unsigned, so the only limit is global: a stable key would link every search of a user. Anyone can send requests without connecting, so the work of one request is bounded by the text limit and the page size, and the work of all requests by the cap. The directory's terminal omits search text.
+Requests are unsigned, so the only limit is global: a stable key would link every search of a user. Anyone can send requests without connecting, so the work of one request is bounded by the text limit and the page size, and the work of accepted requests by the cap. The directory's terminal omits search text.
 
 The consent alert states only that each search is sent separately and without the profile.
 
@@ -560,6 +567,7 @@ Limits of what is built:
 - A group the user was added to by invitation, or joined through a link its owner has since replaced, isn't recognised: it shows as a result with Open beside the user's own chat, and Open prepares a second copy. Recognising it needs the group's current link in the member's group record, a protocol change. Channels are always joined through a prepared chat, so they are recognised.
 - "N left" counts listings without a public link, which are never sent, so the count can exceed the results still to come.
 - One directory, fixed in the apps.
+- A rejection over the cap is prepared on the directory's event thread, outside the cap.
 
 Out of scope:
 
