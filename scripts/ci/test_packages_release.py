@@ -628,7 +628,7 @@ class SelectTestsTest(GitRepoTest):
         self.change_from_base("apps/ios/SimpleX NSE/Info.plist")
         self.assertEqual(self.selected(), ["beta"])
 
-    def test_change_to_what_tests_run_on_selects_every_test(self):
+    def test_change_to_a_shared_file_selects_every_test(self):
         for file in self.SHARED_FILES:
             self.change_from_base(file)
             self.assertEqual(self.selected(), ["alpha", "beta"], file)
@@ -705,11 +705,11 @@ class FeatureTestsTest(unittest.TestCase):
     def test_failed_test_fails_the_run(self):
         self.assertEqual(self.run_every_kind().returncode, 1)
 
-    def test_failed_check_lets_the_test_go_on(self):
+    def test_test_continues_after_a_failed_check(self):
         self.run_tests("fails-a-check")
         self.assertEqual(self.checks("fails-a-check"), ["PASS good", "FAIL bad", "PASS after"])
 
-    def test_fail_stops_the_test_and_notes_why(self):
+    def test_fail_ends_the_test_and_records_the_reason(self):
         self.run_tests("stops")
         self.assertEqual(
             self.checks("stops"),
@@ -719,7 +719,7 @@ class FeatureTestsTest(unittest.TestCase):
     def test_test_needing_the_backend_is_skipped_without_it(self):
         self.assertEqual(self.run_tests("needs-backend").returncode, 0)
         self.assertEqual(
-            self.checks("needs-backend"), ["NOTE skipped: needs the test backend, which this run didn't start"]
+            self.checks("needs-backend"), ["NOTE skipped: requires the test backend, absent from this run"]
         )
 
     def test_test_needing_the_backend_runs_with_it(self):
@@ -747,11 +747,11 @@ class FeatureTestsTest(unittest.TestCase):
                 "- NOTE the test exited with status 1",
                 "### Feature test needs-backend: skipped",
                 "",
-                "- NOTE skipped: needs the test backend, which this run didn't start",
+                "- NOTE skipped: requires the test backend, absent from this run",
             ],
         )
 
-    def test_app_restarts_before_each_test_run_and_each_failed_test_is_shot_in_its_folder(self):
+    def test_app_restarts_before_each_test_and_a_failed_test_has_a_screenshot_in_its_folder(self):
         self.run_every_kind()
         self.assertEqual(
             self.ui_log.read_text().splitlines(),
@@ -764,7 +764,7 @@ class FeatureTestsTest(unittest.TestCase):
             ],
         )
 
-    def test_name_that_is_not_a_test_is_refused_before_any_test_runs(self):
+    def test_name_that_is_not_a_test_is_rejected_before_any_test_runs(self):
         for name in ["../tests/passes", "nonexistent"]:
             self.assertEqual(self.run_tests("passes", name).returncode, 2, name)
         self.assertFalse(self.ui_log.exists())

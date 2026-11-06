@@ -17,7 +17,7 @@ for file in "$platform_dir"/tests/*.sh; do
   [ -f "$file" ] || continue
   name=$(basename "$file" .sh)
   if ! [[ "$name" =~ $name_pattern ]]; then
-    echo "error: $file: a test's name has only lowercase letters, digits and -, so no run could select this one" >&2
+    echo "error: $file: a test name consists of lowercase letters, digits and -" >&2
     exit 2
   fi
   tests="$tests $name"
@@ -51,7 +51,7 @@ select_test() {
 "
 }
 
-runs_every_test() {
+is_shared_file() {
   case "$1" in
     scripts/ci/app-tests/*) return 0 ;;
     "$platform_dir"/tests/*) return 1 ;;
@@ -78,7 +78,7 @@ covered_file() {
 
 if [ "$keyword" = all ]; then
   for name in $tests; do
-    select_test "$name" "all tests asked for"
+    select_test "$name" "all tests requested"
   done
 elif [ -z "$keyword" ] && [ "$words" -gt 0 ]; then
   for name in $input; do
@@ -95,14 +95,14 @@ elif [ -z "$keyword" ]; then
   changed=$(git diff --name-only --no-renames "$base" HEAD)
   shared=""
   while IFS= read -r changed_file; do
-    if [ -n "$changed_file" ] && runs_every_test "$changed_file"; then
+    if [ -n "$changed_file" ] && is_shared_file "$changed_file"; then
       shared=$changed_file
       break
     fi
   done <<< "$changed"
   for name in $tests; do
     if [ -n "$shared" ]; then
-      select_test "$name" "$shared changed, which every $platform test runs on"
+      select_test "$name" "$shared changed, which every $platform test uses"
     elif grep -qxF "$platform_dir/tests/$name.sh" <<< "$changed"; then
       select_test "$name" "changed on this branch"
     elif covered=$(covered_file "$name"); then

@@ -37,7 +37,7 @@ for name in "$@"; do
   : > "$checks"
   echo "::group::feature test $name"
   if needs_backend "$file" && [ -z "$BACKEND_DIR" ]; then
-    note "skipped: needs the test backend, which this run didn't start"
+    note "skipped: requires the test backend, absent from this run"
     result=skipped
   else
     status=0
@@ -57,7 +57,7 @@ for name in "$@"; do
       "$ui" shot final || true
     else
       result=passed
-      [ -s "$checks" ] || note "the test made no checks"
+      [ -s "$checks" ] || note "no checks were recorded"
     fi
   fi
   echo "::endgroup::"
