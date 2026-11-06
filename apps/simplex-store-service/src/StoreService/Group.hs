@@ -89,7 +89,7 @@ ensureManagedGroup cc gc =
     -- A read error must not fall through to create, which would orphan a second group.
     -- The service stops instead, so a restart retries rather than leaving the group unserved.
     Left _ -> logError "badge group lookup failed, stopping" >> exitFailure
-    -- The join link is a bearer secret, logged only where it is created.
+    -- The join link is a bearer secret, so it is never logged.
     Right (Just ManagedGroup {mgGroupId}) ->
       sendChatCmd cc (APIGroupInfo mgGroupId) >>= \case
         Right CRGroupInfo {groupInfo = GroupInfo {membership, groupProfile = p}}
@@ -122,7 +122,7 @@ createManagedGroup cc gc userId =
           let linkText = groupLinkText connLinkContact
           withDB' "insertManagedGroup" cc (\db -> insertManagedGroup db groupId linkText now >> clearCodeGroupItems db) >>= \case
             Right () -> do
-              logNote $ "badge group created, join link: " <> linkText
+              logNote "badge group created; its join link is in group_link of sx_badge_service_group"
               pure (Just groupId)
             Left _ -> logError ("badge group " <> tshow groupId <> " not recorded - " <> orphanHint (groupName' g)) >> pure Nothing
         r -> logError ("badge group " <> tshow groupId <> " link failed: " <> tshow r <> " - " <> orphanHint (groupName' g)) >> pure Nothing

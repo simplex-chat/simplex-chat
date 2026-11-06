@@ -124,8 +124,7 @@ Other options:
 The service logs to stderr: its routine lines at note level, its warnings and errors at their own.
 `[log] level` in `store_service.ini` sets the lowest level printed, one of `trace`, `debug`, `info`,
 `note` (the default), `warn` or `error`, in both run modes. The level applies to the whole process,
-so below `note` the SMP agent's lines print too, and above it the group's join link is not logged
-on the start that creates the group; the link is still stored (see "From the group"). With
+so below `note` the SMP agent's lines print too. With
 `--log-agent` or `-l debug`, the level is set from `-l` instead, `important` counting as `info`.
 
 ### Running the web checkout
@@ -1312,11 +1311,17 @@ is logged at the next start or join. Then make the member you choose owner with 
 that the log line names, in `--run-cli` mode; the service never promotes anyone once the first
 promotion was attempted.
 
-The join link logged when the group is created stays valid: anyone who has it can join later, as a
-member, and read every code posted or edited from then on. That includes a removed member, who can
-rejoin through it, so removing a member does not stop them seeing new codes. Keep the log that holds
-it private. The link is also stored in the `group_link` column of `sx_badge_service_group`, where it
-can be read again.
+The join link is never logged, as anyone who has it can join. The service stores it in the
+`group_link` column of `sx_badge_service_group`, and the operator reads it there to join, in the chat
+schema (`simplex_v1_chat_schema` by default):
+
+```
+psql "$BADGE_DB_CONN" -Atc 'SELECT group_link FROM simplex_v1_chat_schema.sx_badge_service_group'
+```
+
+The link stays valid: anyone who has it can join later, as a member, and read every code posted or
+edited from then on. That includes a removed member, who can rejoin through it, so removing a member
+does not stop them seeing new codes. A database copy holds it, as it holds the codes.
 
 If an owner deletes the group, or removes the service from it, the service logs an error on start
 and stops serving the group. To create a new group, stop the service, delete the row, and start it
