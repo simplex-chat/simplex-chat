@@ -26,7 +26,7 @@ import dev.icerock.moko.resources.StringResource
 @Composable
 fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? = null, titleColor: Color = Color.Unspecified) {
   Column(Modifier.fillMaxSize().padding(horizontal = if (appPlatform.isDesktop) DEFAULT_PADDING * 2 else DEFAULT_PADDING)) {
-    Spacer(Modifier.statusBarsPadding().padding(top = AppBarHeight * fontSizeSqrtMultiplier))
+    Spacer(Modifier.statusBarsPadding().padding(top = if (onboardingStage == null && appPrefs.oneHandUI.state.value) DEFAULT_PADDING + 5.dp else AppBarHeight * fontSizeSqrtMultiplier))
     val paraPadding = PaddingValues(bottom = if (appPlatform.isDesktop) 10.dp else 12.dp)
     Column(Modifier.weight(1f).padding(bottom = DEFAULT_PADDING).verticalScroll(rememberScrollState())) {
       Text(stringResource(MR.strings.why_built_heading), style = MaterialTheme.typography.h1, color = titleColor, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
