@@ -22,6 +22,7 @@ import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Orders (cancelOpenInvoice, expireOverdue)
 import StoreService.Service (ServiceState (..), checkNodeChain, newServiceState, redactPassword, requireDevKeys, storeService, trustDevKeys)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
+import StoreService.Store.Migrate (withInstanceLock)
 import StoreService.Waiters (newWaiters)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
 import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection)
@@ -149,6 +150,7 @@ namesBootTests = do
   it "warns naming the indexes of trusted dev_keys, and says nothing without them" testDevKeysWarned
   it "refuses a node serving another chain than chain_id, and dev_keys unless the node answers, only warning without them" testNodeChain
   it "masks the database password in the start line, in a URI or as a keyword" testRedactPassword
+  it "refuses a second instance on the same Postgres database until the first ends, and takes no lock on SQLite" testInstanceLock
   it "boots codes-only, refusing paid name orders 403 codes_only and answering code orders and code checks, the badges shell as built" testNamesBootCodesOnly
   it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, the community terms and registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, and each route under its limit, shared by the routes of that limit" testNamesBoot
 
@@ -163,6 +165,17 @@ testDevKeysWarned _ = do
   Right withoutDev <- devKeysIni chainSection testIssuerKeyIdx sk []
   quiet <- capturingStderr $ trustDevKeys (Just withoutDev) cfg >>= (`shouldSatisfy` isRight) . fmap badgePublicKeys
   filter ("dev_keys" `T.isInfixOf`) (T.lines quiet) `shouldBe` []
+
+testInstanceLock :: HasCallStack => TestParams -> IO ()
+testInstanceLock ps = do
+  Right (_, sk) <- bbsKeyGen
+  let opts = mkStoreServiceOpts ps sk
+#if defined(dbPostgres)
+  withInstanceLock opts (withInstanceLock opts (pure ()) `shouldThrow` (== ExitFailure 1))
+#else
+  withInstanceLock opts (withInstanceLock opts (pure ()))
+#endif
+  withInstanceLock opts (pure True) `shouldReturn` True
 
 testRedactPassword :: HasCallStack => TestParams -> IO ()
 testRedactPassword _ = do

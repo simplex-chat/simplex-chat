@@ -531,6 +531,11 @@ service exports at boot and proxies the API to it.
 service account key when `[apple]` and `[google]` are configured. The folder must exist before
 `docker compose up`: compose refuses to start rather than create it empty.
 
+On PostgreSQL the service holds an advisory lock on its database for as long as it runs, so a second
+process on the same database, `--run-cli` included, stops at start with `another store service holds
+this database`: two would send with the gas key's nonces and run the chat agent's queues together. Stop
+the service before the console.
+
 ### Upgrading from the badge service
 
 The rename to StoreService changed what the operator runs:

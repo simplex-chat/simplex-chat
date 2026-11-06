@@ -5,6 +5,7 @@ module Main where
 import StoreService.Config (ServiceConfig (..), defaultLogLevel)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Service
+import StoreService.Store.Migrate (withInstanceLock)
 import Control.Logger.Simple (LogConfig (..), setLogLevel, withGlobalLogging)
 import GHC.IO.Encoding (setLocaleEncoding)
 import Simplex.Chat.Terminal (terminalChatConfig)
@@ -21,6 +22,7 @@ main = do
     opts@StoreServiceOpts {runCLI, serviceConfigFile} <- welcomeGetOpts
     serviceCfg <- traverse readConfigOrExit serviceConfigFile
     mapM_ (setLogLevel . serviceLogLevel) serviceCfg
-    if runCLI
-      then storeServiceCLI opts serviceCfg
-      else newServiceState >>= storeService opts serviceCfg terminalChatConfig
+    withInstanceLock opts $
+      if runCLI
+        then storeServiceCLI opts serviceCfg
+        else newServiceState >>= storeService opts serviceCfg terminalChatConfig
