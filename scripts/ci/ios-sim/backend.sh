@@ -1,15 +1,12 @@
 #!/bin/bash
 
 # Test backend on the app runner: a chat relay and a directory service on the preset servers, with groups and
-# channels registered and approved by a CLI peer, and searches that must find them, sent as a message and as the
-# app sends them; and for SimpleX names, a local SMP server with a name resolver, names claimed by channels and by
-# contacts that accept connections.
+# channels registered and approved by a CLI peer, and a search that must find them; and for SimpleX names,
+# a local SMP server with a name resolver, names claimed by channels and by contacts that accept connections.
 # Usage:
 #   scripts/ci/ios-sim/backend.sh start <backend zip> <work dir>   writes the directory's short address to <work dir>/directory-link,
 #                                                                  the names server's address to <work dir>/names-server
 #                                                                  and what was seeded to <work dir>/seed.md
-#   scripts/ci/ios-sim/backend.sh resume <backend zip> <work dir>  starts again, on another runner, what start left stopped in <work dir>,
-#                                                                  with the same addresses
 #   scripts/ci/ios-sim/backend.sh stop <work dir>                  stops everything it started, prints the logs
 #   scripts/ci/ios-sim/backend.sh directory-stop <work dir>        stops the directory only
 #   scripts/ci/ios-sim/backend.sh directory-start <work dir>       starts it again
@@ -23,7 +20,6 @@ admin=ci_admin
 search_text="ci seed"
 avatar_search_text="ci avatar"
 long_name=ci_long_name_entry_for_layout_truncation_checks
-# maxServiceBodyLength in src/Simplex/Chat/Protocol.hs
 max_service_body=10737
 names_resolver_port=18080
 
@@ -123,10 +119,10 @@ start_directory() {
   wait_connected directory
 }
 
-# A chat process shows that its chat has started by connecting to its servers: its output is block-buffered.
 wait_connected() {
   local pid deadline=$((SECONDS + 60))
   pid=$(cat "$work/$1.pid")
+  # its output is block-buffered, so it shows that its chat has started by connecting to its servers
   until lsof -a -p "$pid" -iTCP -sTCP:ESTABLISHED > /dev/null 2>&1; do
     if ! kill -0 "$pid" 2> /dev/null || [ "$SECONDS" -ge "$deadline" ]; then
       echo "error: $1 did not start"
@@ -396,7 +392,6 @@ probe_service_search() {
   echo "search request for \"$search_text\" found ci_group and ci_channel"
 }
 
-# Follows the search cursor to the end, recording what each response carried and its size against the limit.
 probe_pages() {
   local text=$1 expected=$2
   local page=0 cursor=null req resp names=""
@@ -514,7 +509,6 @@ start() {
   probe_pages "$avatar_search_text" 6
 }
 
-# The servers' keys and the clients' databases stay in the work dir, so its addresses are the same again.
 resume() {
   bin=$work/bin
   mkdir -p "$bin"

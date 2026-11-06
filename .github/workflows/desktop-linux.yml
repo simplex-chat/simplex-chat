@@ -309,7 +309,6 @@ jobs:
         if: ${{ !cancelled() && steps.backend.outcome != 'skipped' }}
         run: scripts/ci/desktop-linux/backend.sh stop "$RUNNER_TEMP/backend"
 
-      # the app points at this backend's directory, so the Claude job starts this backend again rather than a new one
       - name: Pack backend state
         if: ${{ !cancelled() && steps.backend.outcome == 'success' && steps.stop-backend.outcome == 'success' && needs.plan.outputs.claude-backend == 'yes' }}
         run: tar -czf "$RUNNER_TEMP/backend-state.tar.gz" --exclude=./bin -C "$RUNNER_TEMP/backend" .

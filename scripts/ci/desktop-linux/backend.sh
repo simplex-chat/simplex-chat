@@ -2,16 +2,12 @@
 
 # Test backend on the app runner: a chat relay and a directory service on the preset servers, with one group
 # and one channel registered and approved by a CLI peer, and another CLI peer that must find both by sending the
-# directory the search text, and a third that must find both with a search request, as the app does.
-# Both have profile images as large as the apps make them, so their search results don't fit in one service
-# response, and the search request must page through them.
+# directory the search text. Both have profile images as large as the apps make them.
 # For SimpleX names, an SMP server on 127.0.0.1 resolves .testing names through a local resolver, and a CLI peer
 # with an address on it claims the name seeded.testing.
 # Usage:
 #   scripts/ci/desktop-linux/backend.sh start <backend .tar.gz> <work dir>   writes the directory's short address to <work dir>/directory-link
 #                                                                            and the names server's address to <work dir>/names-server
-#   scripts/ci/desktop-linux/backend.sh resume <backend .tar.gz> <work dir>  starts again, on another runner, what start left stopped in
-#                                                                            <work dir>, with the same addresses
 #   scripts/ci/desktop-linux/backend.sh stop <work dir>                      stops the servers, prints their logs
 # The relay, the directory, the SMP server and the resolver keep running between start and stop.
 
@@ -23,7 +19,6 @@ admin=ci_admin
 search_text="ci seed"
 # the longest profile image data URI the apps make and the core accepts (maxProfileImageSize)
 max_image_size=12500
-# the largest service response body, compressed if it has to be (maxServiceBodyLength)
 max_service_body=10737
 name_label=seeded
 resolver_port=8090
@@ -136,10 +131,10 @@ start_directory() {
   wait_connected directory
 }
 
-# A chat process shows that its chat has started by connecting to its servers: its output is block-buffered.
 wait_connected() {
   local pid deadline=$((SECONDS + 60))
   pid=$(cat "$work/$1.pid")
+  # its output is block-buffered, so it shows that its chat has started by connecting to its servers
   until grep -q "pid=$pid," <<< "$(ss -Htnp state established)"; do
     if ! kill -0 "$pid" 2> /dev/null || [ "$SECONDS" -ge "$deadline" ]; then
       echo "error: $1 did not start"
@@ -318,9 +313,6 @@ page_summary() {
   echo "body: ${#resp} bytes$compressed, limit $max_service_body"
 }
 
-# What the app will send, from a client that never connected to the directory, following the cursor to the last page.
-# The images make the results too large for one response, so the directory must split them, and each must arrive
-# once and with its whole image.
 probe_search() {
   local cursor="" pages=0 started resp req
   : > "$work/probe-entries"
@@ -386,7 +378,6 @@ start() {
   seed_name
 }
 
-# The servers' keys and the clients' databases stay in the work dir, so its addresses are the same again.
 resume() {
   bin=$work/bin
   mkdir -p "$bin"

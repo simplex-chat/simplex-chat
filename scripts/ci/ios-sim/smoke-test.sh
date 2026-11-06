@@ -4,15 +4,6 @@
 # chat list with the one-hand UI (the default), then the chat list again with the top bar. It leaves the app in the one-hand UI.
 # For an app in the derived data of a build, it then renders the previews of the SimpleX Snapshots tests to the snapshots
 # folder of the output dir (snapshots.sh).
-# With BACKEND_DIR, the work dir of the running test backend, it then relaunches the app and searches the test directory: the first search
-# asks to enable Directory search (Cancel sends nothing, Enable searches), and no later search, the Search key's included,
-# asks again; the results show Open and their avatars, with no header, in both layouts; Open prepares a channel and
-# opens it without an alert, with its subscriber count; once joined, the channel is its chat row among the results, on
-# the chat list in both layouts and in New chat; the chat list's cards show while typing and hide under the results;
-# a text that no chat and no listing matches offers the directory, and "No chats found" shows only once it found nothing;
-# a page whose only result is that channel adds nothing; the load row says how many results are left, is disabled while
-# its page loads (a screenshot shows its colour) and offers a retry when that fails; and a long press on a result
-# shows a menu with Open (not fatal: the gesture is new to this harness; a screenshot shows it).
 # With "images" it then turns off the encryption of local files, creates a group and sends tests/fixtures/test.jpg and
 # logo-large-rgba.png picked in the photo library, and checks the pixel sizes of the sent files.
 # Usage: scripts/ci/ios-sim/smoke-test.sh <path to SimpleX.app> <output dir> [images]
@@ -26,7 +17,6 @@ export UI_OUT=$2
 cases=${3:-}
 bundle_id=chat.simplex.app
 search_text="ci seed"
-# matches no chat and no listing
 no_match_text=zqxvjk
 ui=$(dirname "$0")/ui
 fixtures=$(cd "$(dirname "$0")/../../../tests/fixtures" && pwd)
@@ -108,19 +98,16 @@ expect_chat_list() {
   echo "in the $1 layout the chat list shows the onboarding pages and the toolbar"
 }
 
-# the first element whose label contains the text
 labelled_containing() {
   local tree
   tree=$("$ui" tree)
   grep -F -- "$1" <<< "$tree" | head -n 1 || true
 }
 
-# The "Open" on the row of the result labelled exactly $1, or nothing: the row's texts are stacked beside its avatar
-# and Open is centred on the row, so Open's top is within a row's height of the name's top.
 open_in_row() {
-  local tree name top line y
+  local label=$1 tree name top line y
   tree=$("$ui" tree)
-  name=$(grep -F "\"$1\" value=" <<< "$tree" | head -n 1 || true)
+  name=$(grep -F "\"$label\" value=" <<< "$tree" | head -n 1 || true)
   if [ -z "$name" ]; then
     return 0
   fi
@@ -134,7 +121,6 @@ open_in_row() {
   done < <(grep -F '"Open" value=' <<< "$tree" || true)
 }
 
-# #ci_group and #ci_channel each with Open on its row and its avatar; no header, and no "Search in Directory" while results show
 expect_seed_results() {
   local tree name
   for name in "#ci_group" "#ci_channel"; do
@@ -144,7 +130,6 @@ expect_seed_results() {
     fi
   done
   tree=$("$ui" tree)
-  # matched exactly: "Search in Directory" also contains the word
   if grep -qF '"Directory" value=' <<< "$tree"; then
     echo "error: in the $1 layout the results have a Directory header"
     exit 1
@@ -157,11 +142,10 @@ expect_seed_results() {
   echo "in the $1 layout #ci_group and #ci_channel are results with Open, with no header and no \"Search in Directory\""
 }
 
-# a result without an avatar shows a placeholder icon labelled with its symbol name; an avatar image has no label
 expect_avatars() {
-  local tree
+  local tree placeholder_icons='"(person\.2|antenna\.radiowaves\.left\.and\.right)\.circle\.fill"'
   tree=$("$ui" tree)
-  if grep -qE '"(person\.2|antenna\.radiowaves\.left\.and\.right)\.circle\.fill"' <<< "$tree"; then
+  if grep -qE "$placeholder_icons" <<< "$tree"; then
     echo "error: in the $1 layout a directory result shows the placeholder icon, not its avatar"
     exit 1
   fi
@@ -174,7 +158,6 @@ type_search() {
   sleep 2
 }
 
-# the first search turned Directory search on, so no later one may ask to enable it
 expect_no_consent() {
   local tree
   tree=$("$ui" tree)
@@ -195,7 +178,6 @@ search_directory() {
   "$ui" wait "$1" 60
 }
 
-# "Cancel" exists only while the field is focused; the keyboard may have capitalized the typed text
 clear_search() {
   local text
   text=$("$ui" tree | sed -nE 's/^TextField null value="(.*)" at .*/\1/p' | head -n 1)
@@ -203,32 +185,28 @@ clear_search() {
   "$ui" tap Cancel
 }
 
-# New chat's empty search field: the topmost one, as the chat list's behind the sheet can be in the tree too
 focus_new_chat_search() {
   tap_element "$(topmost "$("$ui" tree | grep -F 'TextField null value="Search or paste SimpleX link"')")"
 }
 
-# "Cancel" exists only while New chat's field is focused, and the sheet's field is the topmost one
 clear_new_chat_search() {
   tap_element "$(topmost "$("$ui" tree | grep -F 'TextField null value=')")"
   "$ui" tap Cancel
 }
 
-# the first launch with more than two chats asks to turn on SimpleX Lock (laNoticeAlert in ContentView.swift)
-dismiss_lock_notice() {
+dismiss_simplex_lock_notice() {
   if "$ui" wait "SimpleX Lock" 10; then
     "$ui" tap Cancel
   fi
 }
 
 cards=("New 1-time link" "Paste link / Scan" "Bottom bar")
-# shown only in the US
-banner="Invest in SimpleX Chat!"
+us_only_banner="Invest in SimpleX Chat!"
 
 shown_cards() {
   local tree label
   tree=$("$ui" tree)
-  for label in "${cards[@]}" "$banner"; do
+  for label in "${cards[@]}" "$us_only_banner"; do
     if grep -qF "\"$label\"" <<< "$tree"; then
       echo "$label"
     fi
@@ -265,7 +243,6 @@ expect_cards_hidden_by_results() {
   echo "in the $1 layout the cards ($(paste -sd ',' - <<< "$typing")) show while typing, are hidden under the results and come back when the search is cleared"
 }
 
-# with a chat in the list, a text that matches no chat offers the directory; "No chats found" waits for its search to find nothing
 expect_no_chats_found_after_search() {
   local tree retry
   type_search "$no_match_text"
@@ -291,8 +268,7 @@ expect_no_chats_found_after_search() {
   echo "for \"$no_match_text\" the chat list offers \"Search in Directory\" without \"No chats found\", which shows once the directory found nothing"
 }
 
-# ci_cards is the only result for "ci cards": once joined, it must be its chat row, not a result to open
-expect_no_join_row() {
+expect_ci_cards_is_not_a_result() {
   local tree
   tree=$("$ui" tree)
   if grep -qF '"#ci_cards"' <<< "$tree" || grep -qF '"Open" value=' <<< "$tree"; then
@@ -307,7 +283,7 @@ open_known_chat_from_results() {
   search_directory "ci_cards"
   "$ui" shot "known-chat-$1"
   expect_in_tree -F 'StaticText "ci_cards"'
-  expect_no_join_row "the $1 layout (chat list)"
+  expect_ci_cards_is_not_a_result "the $1 layout (chat list)"
   "$ui" tap ci_cards
   "$ui" wait "you are subscriber" 30
   "$ui" shot "known-chat-opened-$1"
@@ -316,28 +292,26 @@ open_known_chat_from_results() {
   echo "in the $1 layout the directory result for the joined ci_cards is its chat row, which opens the channel"
 }
 
-# the elements labelled exactly $1, one per line
 labelled() {
-  "$ui" tree | grep -F "\"$1\" value=" || true
+  local label=$1
+  "$ui" tree | grep -F "\"$label\" value=" || true
 }
 
-# the elements labelled $1 that are not among the lines $2
 added_labelled() {
-  local now
-  now=$(labelled "$1")
-  if [ -z "$2" ]; then
+  local label=$1 before=$2 now
+  now=$(labelled "$label")
+  if [ -z "$before" ]; then
     printf '%s' "$now"
   else
-    grep -vxF -f <(printf '%s\n' "$2") <<< "$now" || true
+    grep -vxF -f <(printf '%s\n' "$before") <<< "$now" || true
   fi
 }
 
-# the topmost of these tree lines
 topmost() {
-  sed -E 's/.* at [0-9-]+,([0-9-]+) .*/\1 &/' <<< "$1" | sort -n | head -n 1 | cut -d ' ' -f 2-
+  local lines=$1
+  sed -E 's/.* at [0-9-]+,([0-9-]+) .*/\1 &/' <<< "$lines" | sort -n | head -n 1 | cut -d ' ' -f 2-
 }
 
-# taps the centre of the element on this tree line, or long-presses it with long-press
 tap_element() {
   local x y w h
   read -r x y w h <<< "$(sed -nE 's/.* at ([0-9]+),([0-9]+) size ([0-9]+)x([0-9]+).*/\1 \2 \3 \4/p' <<< "$1")"
@@ -348,9 +322,6 @@ tap_element() {
   "$ui" "${2:-tap-xy}" $((x + w / 2)) $((y + h / 2))
 }
 
-# New chat lists only contacts, so there the seeded results are rows with Open and the joined channel is a contact-style
-# chat row. The chat list behind the sheet may be in the tree too, with its own search field (at the bottom with the
-# one-hand UI) and ci_cards row, so the sheet's field is the topmost one and its row is the ci_cards element the search adds.
 search_in_new_chat() {
   local before row deadline tree
   before=$(labelled ci_cards)
@@ -401,7 +372,7 @@ search_in_new_chat() {
     sleep 2
   done
   "$ui" shot known-chat-new-chat
-  expect_no_join_row "New chat"
+  expect_ci_cards_is_not_a_result "New chat"
   tap_element "$row"
   "$ui" wait "you are subscriber" 30
   "$ui" shot known-chat-opened-new-chat
@@ -557,7 +528,6 @@ xcrun simctl spawn "$SIM_UDID" defaults write "$prefs" networkSMPProxyMode -stri
 "$ui" type "$search_text"
 sleep 2
 "$ui" shot search-typed
-# the keyboard capitalizes the first letter
 expect_in_tree -iF "\"$search_text\""
 expect_in_tree -F '"Search in Directory"'
 
@@ -594,7 +564,6 @@ type_search cinews
 expect_no_consent "The Search key"
 "$ui" wait '"#cinews"' 60
 "$ui" shot search-key-results
-# the keyboard capitalizes the first letter
 expect_in_tree -iF '"Connect to cinews.testing"'
 tree=$("$ui" tree)
 if grep -qF '"Names"' <<< "$tree"; then
@@ -637,7 +606,6 @@ until tree=$("$ui" tree) && grep -qF "Tap Join channel" <<< "$tree"; do
   sleep 1
 done
 "$ui" shot prepared-channel
-# the toolbar and the banner
 subscribers=$(grep -cE '[0-9]+ subscribers?' <<< "$tree" || true)
 if [ "$subscribers" -lt 2 ]; then
   echo "error: the prepared channel shows its subscriber count $subscribers times, not in both the toolbar and the banner"
@@ -648,10 +616,9 @@ echo "Open on #ci_cards opened the prepared channel without an alert, with its s
 "$ui" wait "you are subscriber" 60
 "$ui" shot joined-channel
 "$ui" tap Back
-# "ci cards" doesn't match the chat's name, so the list doesn't show it: the results show it as its chat row
 "$ui" shot joined-channel-search
 expect_in_tree -F 'StaticText "ci_cards"'
-expect_no_join_row "the chat list after joining"
+expect_ci_cards_is_not_a_result "the chat list after joining"
 echo "after joining through Open, ci_cards is its chat row among the results and no longer a result to open"
 clear_search
 # the page's only result is that channel, which the list shows, so the search adds no row and no note; nothing marks
@@ -666,9 +633,8 @@ if [ -n "$retry" ]; then
 fi
 "$ui" shot page-in-chats
 expect_in_tree -F 'StaticText "ci_cards"'
-expect_no_join_row "the chat list listing ci_cards"
+expect_ci_cards_is_not_a_result "the chat list listing ci_cards"
 tree=$("$ui" tree)
-# "Search in Directory" hides once a search for the text runs
 if grep -qF -e '"Search in Directory"' -e "All results on this page" -e "Search failed, tap to retry" <<< "$tree"; then
   echo "error: the search whose only result is the listed ci_cards didn't run, failed or shows a note"
   exit 1
@@ -679,7 +645,7 @@ expect_no_chats_found_after_search
 expect_cards_hidden_by_results reachable
 open_known_chat_from_results reachable
 "$ui" layout top
-dismiss_lock_notice
+dismiss_simplex_lock_notice
 expect_cards_hidden_by_results top
 open_known_chat_from_results top
 "$ui" layout reachable
@@ -693,13 +659,11 @@ expect_in_tree -E 'Load more · [0-9]+ left'
 loaded=$("$ui" tree | grep -cF '"#ci_avatar_' || true)
 "$ui" directory stop
 tap_element "$(labelled_containing "Load more")"
-# read before the screenshot, which takes long enough for the 10 s request to fail
 expect_in_tree -E '^Button ".*Load more.*" .* disabled$'
 "$ui" shot load-more-loading
 "$ui" wait "Search failed, tap to retry" 30
 "$ui" shot load-more-failed
 "$ui" directory start
-# the directory takes a while to accept requests again, so the retry is repeated until the next page comes
 deadline=$((SECONDS + 120))
 until [ "$("$ui" tree | grep -cF '"#ci_avatar_' || true)" -gt "$loaded" ]; do
   if [ "$SECONDS" -ge "$deadline" ]; then

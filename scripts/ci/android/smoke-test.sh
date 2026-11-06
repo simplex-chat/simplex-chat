@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # Installs the APK in the booted emulator (emulator.sh) and runs the scripted UI cases with the ui helper: onboarding to
-# the chat list, the onboarding cards with the search field's keyboard open, a local group, a search that matches no chat,
-# then the chat list with the reachable toolbar (the default) and with the top bar, then
+# the chat list, a local group, then the chat list with the reachable toolbar (the default) and with the top bar, then
 # tests/fixtures/test.jpg and logo-large-rgba.png picked in the system's image picker and sent in the group.
 # Usage: scripts/ci/android/smoke-test.sh <apk> <output dir> [start|onboarding|layouts|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list. "backend"
@@ -266,24 +265,22 @@ not_on_screen() {
   ! "$ui" find "$1" > /dev/null 2>&1
 }
 
-# the two numbers differ by at most the third
 near() {
-  [ $(($1 - $2)) -le "$3" ] && [ $(($2 - $1)) -le "$3" ]
+  local a=$1 b=$2 tolerance=$3
+  [ $((a - b)) -le "$tolerance" ] && [ $((b - a)) -le "$tolerance" ]
 }
 
-# The bottom edge of the text's element: a card title that the onboarding pages' scroll cuts at the top keeps its bottom.
 bottom_of() {
   local pos
   pos=$("$ui" find "$1") || return 1
   cut -d ' ' -f 6 <<< "$pos"
 }
 
-# Prints the search field's y once two reads a second apart agree and it is <test> <y> (as in "-lt 2000"), waiting up to 15 s.
 settled_field_y() {
-  local deadline=$((SECONDS + 15)) y previous=""
+  local test=$1 limit=$2 deadline=$((SECONDS + 15)) y previous=""
   while [ "$SECONDS" -lt "$deadline" ]; do
     y=$(y_of "$search_field") || y=""
-    if [ -n "$y" ] && [ "$y" = "$previous" ] && [ "$y" "$1" "$2" ]; then
+    if [ -n "$y" ] && [ "$y" = "$previous" ] && [ "$y" "$test" "$limit" ]; then
       echo "$y"
       return 0
     fi
@@ -299,9 +296,6 @@ title_back_at() {
   near "$y" "$2" 4
 }
 
-# With the reachable toolbar and no chats, the search field's keyboard scrolls the onboarding pages instead of shrinking
-# the cards: the card titles keep their distance, or, with the upper one scrolled out of view, the lower one moves up as
-# much as the search field. Closing the keyboard puts them back.
 onboarding_cards_keep_size() {
   local upper="Let someone connect to you" lower="Connect via link or QR code"
   local field upper_y lower_y field_open upper_open lower_open field_closed
@@ -332,8 +326,6 @@ onboarding_cards_keep_size() {
   check "onboarding: \"$lower\" back at y $lower_y" title_back_at "$lower" "$lower_y"
 }
 
-# With a chat in the list, a text that matches no chat offers the directory, with no "No chats found" before a directory
-# search; these runs have no directory to search.
 no_match_search() {
   "$ui" click-text "$search_field"
   "$ui" type "$no_match_text"

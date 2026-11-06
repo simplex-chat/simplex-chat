@@ -7,16 +7,7 @@
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
 # "setup" creates the group, makes the test SMP server (backend.sh) the one that resolves SimpleX names, and stops;
 # "backend" does the same, connects to the name that backend.sh registered, and goes on to both layouts.
-# "search" also searches in both layouts: the test directory with "Search in Directory", after the alert that enables
-# Directory search (Cancel searches nothing, Enable searches; no later search asks), and with Enter, the Search key,
-# which searches the directory too and leaves "Connect to …" for the typed name; with the toolbar at the bottom, also
-# with Enter in the New chat sheet, and a right click on a result opens its menu with Open. Then it joins ci_channel
-# through its result's Open, which opens the prepared channel without an alert, and checks, in both layouts, that a page
-# of chats already listed adds nothing and that ci_channel, when the list doesn't show it, is its chat's row among the
-# results, opening it without an alert; and, with the toolbar at the bottom, that it is a chat row in New chat too.
-# Restarted with no chat open, a text that matches nothing offers the directory, and "No chats found" shows only once
-# the directory found nothing too; and, with ci_contact prepared through its name, New chat's "No filtered contacts" too.
-# These three need NAMES_SERVER, the test SMP server's address.
+# Both need NAMES_SERVER, the test SMP server's address.
 # Each step saves a numbered screenshot and the text read from it to the output dir, prints the text to the log,
 # and adds a line to steps.log there. What the screens show is checked without stopping: every check is listed in
 # checks.txt and the job summary, and the test fails at the end if any failed. The app keeps running for later
@@ -35,10 +26,8 @@ case "$cases" in
     ;;
 esac
 search_text="ci seed"
-# matches no chat and no listing
 no_match_text=zqxvjk
-# backend.sh registered seeded.testing for ci_contact; as a SimpleX name candidate, Enter also searches the directory,
-# whose entries are "CI seeded ..."
+# backend.sh registered seeded.testing for ci_contact
 name_label=seeded
 local_chat="seeded notes"
 ui=$(dirname "$0")/ui
@@ -174,8 +163,6 @@ not_on_screen_exact() {
   ! left_pane_position "$1" exact > /dev/null
 }
 
-# Prints "x y" of the "Open" in the result row headed by the name, as in_row_of places a label: each result has one,
-# so the first "Open" on screen can be another row's.
 open_in_row_of() {
   local name line x y
   name=$(y_of "$1") || return 1
@@ -226,7 +213,6 @@ scroll_to() {
   return 1
 }
 
-# the count's text is smaller than the description's above it: both have capitals and ascenders, no descenders
 count_text_smaller() {
   local count description
   count=$("$ui" ink "1 subscriber") || return 1
@@ -235,7 +221,6 @@ count_text_smaller() {
   [ "$count" -lt "$description" ]
 }
 
-# the phrases in the chat list pane, left of x 390, one per line, normalised; the right pane can show a banner too
 left_pane_text() {
   local line
   "$ui" text | while IFS= read -r line; do
@@ -342,7 +327,6 @@ check_directory_rows() {
   check "$layout: subscriber count shown" on_screen "1 subscriber"
 }
 
-# The first search asks to enable Directory search: Cancel searches nothing, Enable turns it on and searches.
 enable_directory_search() {
   "$ui" click-text "Search in Directory"
   "$ui" wait "Enable Directory search" 10
@@ -362,8 +346,6 @@ no_consent_alert() {
   ! "$ui" find "Enable Directory search" > /dev/null 2>&1
 }
 
-# A right click on a result opens its menu, which offers Open; a click elsewhere closes it (Escape doesn't close the
-# chat list's menus on desktop).
 result_menu() {
   local layout=$1 pos opens
   pos=$(left_pane_position "#ci_group") || { check "$layout: #ci_group shown for its menu" false; return; }
@@ -376,8 +358,6 @@ result_menu() {
   check "$layout: a click elsewhere closes the result's menu" [ "$(count_phrases all Open)" -eq "$opens" ]
 }
 
-# Searches the directory for the text in the search field with the "Search in Directory" row; the first search
-# enables Directory search.
 search_directory() {
   local layout=$1
   if [ "$layout" = bottom ]; then
@@ -428,8 +408,6 @@ full_search() {
   clear_search_and_check_cards "$layout full search"
 }
 
-# With chats in the list and none open, a text that matches no chat offers the directory; "No chats found" waits for
-# its search to find nothing.
 no_match_search() {
   local layout=$1
   "$ui" click-text "Search or paste SimpleX link"
@@ -484,7 +462,6 @@ new_chat_no_match_search() {
   close_new_chat
 }
 
-# The same Search key from the New chat sheet: one group of results, the contacts that match first, with Open on the results.
 new_chat_sheet_search() {
   open_new_chat
   "$ui" click-text "Search or paste SimpleX link"
@@ -504,7 +481,6 @@ new_chat_sheet_search() {
   close_new_chat
 }
 
-# OCR reads a Directory row's name with its "#", which normalise drops, and a chat's row without it
 no_ci_channel_directory_row() {
   local line
   while IFS= read -r line; do
@@ -519,7 +495,6 @@ no_subscriber_alert() {
   ! "$ui" find "You are a subscriber" > /dev/null 2>&1
 }
 
-# waits up to 60 s for the text in the chat list pane
 wait_in_list() {
   local deadline=$((SECONDS + 60))
   until on_screen "$1"; do
@@ -528,7 +503,6 @@ wait_in_list() {
   done
 }
 
-# clicks the text in the chat list pane
 click_in_list() {
   local pos
   pos=$(left_pane_position "$1") || fail "\"$1\" is not in the chat list pane"
@@ -552,7 +526,6 @@ click_in_chat() {
   "$ui" click "${found% *}" "${found#* }"
 }
 
-# Selects the search field's text and deletes it: Escape would go to the open chat when it has the keyboard focus.
 clear_search_field() {
   local y=104
   [ "$1" = bottom ] && y=674
@@ -561,8 +534,6 @@ clear_search_field() {
   "$ui" wait "Search or paste SimpleX link" 10 || fail "$1: the search field is not empty"
 }
 
-# Opens the prepared channel, read before its shot: it has "Tap Join channel" and its subscriber count in the toolbar and
-# the banner. Sets alert_shown when a read on the way found the "Open channel" alert, which Open must not show.
 wait_prepared_channel() {
   local deadline=$((SECONDS + 30)) screen
   alert_shown=false
@@ -619,17 +590,12 @@ show_known_results() {
   "$ui" shot "$what-page-2"
 }
 
-# A directory result that is a chat the user has. Typed `ci_channel`, it is listed as the chat open in the right pane,
-# so the page adds no row and no note. With "seeded notes" open and `ci seed` typed, the list doesn't
-# show it, so it is its chat row among the results, and clicking it opens it.
 known_channel_searches() {
   local layout=$1
   "$ui" click-text "Search or paste SimpleX link"
   "$ui" type ci_channel
   "$ui" wait "Search in Directory" 15
   "$ui" click-text "Search in Directory"
-  # nothing marks the end of a search that adds no row: wait it out (once the directory's link is fetched, the request
-  # fails after 10 s); "Search in Directory" hides once a search for the text runs
   sleep 20
   if on_screen "Search failed, tap to retry"; then
     "$ui" click-text "Search failed, tap to retry"
@@ -660,7 +626,6 @@ known_channel_searches() {
   clear_search_field "$layout"
 }
 
-# New chat lists only contacts, so there too the joined channel is a chat row among the results.
 new_chat_known_channel() {
   open_new_chat
   "$ui" click-text "Search or paste SimpleX link"
@@ -689,15 +654,13 @@ on_chat_list() {
   not_on_screen "Settings" && not_on_screen "Chat preferences" && not_on_screen "Network" && not_on_screen "New chat" && on_screen "Search or paste SimpleX link"
 }
 
-# Opens Settings from the user menu, behind the profile picture at the left of the toolbar: at the bottom (y 730) unless
-# the toolbar is at the top (y 48).
+# Opens Settings from the user menu, behind the profile picture at the left of the bottom toolbar.
 open_settings() {
-  "$ui" click 27 "${1:-730}"
+  local toolbar_y=${1:-730}
+  "$ui" click 27 "$toolbar_y"
   "$ui" click-text "Settings" 10
 }
 
-# Switches "Reachable app toolbars" in Settings > Appearance, which moves the toolbar and the search field to the top
-# (off) or the bottom (on).
 switch_toolbar() {
   local to=$1 y
   "$ui" key Escape
@@ -820,7 +783,6 @@ use_names_server() {
   # OCR misreads the short "no", the item after "yes"
   read -r x y < <(left_pane_position yes exact) || fail "the \"To receive\" menu closed"
   "$ui" click "$x" $((y + 48))
-  # this menu opens over the address's QR code, where OCR can miss "yes", so it is the row under the menu's first item
   y=$(y_of "To resolve names")
   "$ui" click-text "default (no)" 10
   read -r x y < <(menu_first_item "default (no)" "$y") || fail "no menu for the test server's \"To resolve names\""
@@ -981,7 +943,6 @@ if [ "$cases" = setup ] || [ "$cases" = backend ] || [ "$cases" = search ]; then
 fi
 
 check_layout bottom
-# typed text that is not a SimpleX link offers the directory
 if [ "$cases" = search ]; then
   "$ui" click-text "Search or paste SimpleX link"
   "$ui" type "$search_text"
@@ -1012,7 +973,6 @@ if [ "$cases" = search ]; then
   # the chat list always shows the chat open in the right pane, and only a restart closes it
   "$ui" stop
   "$ui" start "$app_dir"
-  # a second start offers the update check over the chat list
   if "$ui" wait "Check for updates" 60; then
     "$ui" click-text "Disable"
   fi
