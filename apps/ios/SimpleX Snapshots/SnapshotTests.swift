@@ -307,6 +307,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(SetAppPasscodeView_Previews.self),
         SnapshotScene(SetDeliveryReceiptsView_Previews.self),
         SnapshotScene(SettingsView_Previews.self, device: true),
+        SnapshotScene(SimpleXInfoFromSettings_Previews.self, device: true),
         SnapshotScene(SimpleXInfo_Previews.self, device: true),
         SnapshotScene(SmallLinkPreview_Previews.self),
         SnapshotScene(SupportSimpleXBanner_Previews.self),

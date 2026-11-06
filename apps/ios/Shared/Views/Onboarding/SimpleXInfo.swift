@@ -70,18 +70,18 @@ struct SimpleXInfo: View {
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
 
-                if onboarding {
-                    Spacer(minLength: 0)
+                Spacer(minLength: 0)
 
+                if onboarding {
                     createFirstProfileButton()
                         .padding(.vertical, 10)
+                }
 
-                    Button {
-                        showWhyBuilt = true
-                    } label: {
-                        Label("Why SimpleX is built.", systemImage: "info.circle")
-                            .font(.headline)
-                    }
+                Button {
+                    showWhyBuilt = true
+                } label: {
+                    Label("Why SimpleX is built.", systemImage: "info.circle")
+                        .font(.headline)
                 }
             }
             .padding(.horizontal, 25)
@@ -144,5 +144,11 @@ let textNewLine = Text(verbatim: "\n")
 struct SimpleXInfo_Previews: PreviewProvider {
     static var previews: some View {
         SimpleXInfo(onboarding: true)
+    }
+}
+
+struct SimpleXInfoFromSettings_Previews: PreviewProvider {
+    static var previews: some View {
+        SimpleXInfo(onboarding: false)
     }
 }

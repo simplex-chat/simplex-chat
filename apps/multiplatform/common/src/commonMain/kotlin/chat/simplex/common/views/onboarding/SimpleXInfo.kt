@@ -151,15 +151,13 @@ fun SimpleXInfoLayout(
       }
     },
     button = {
-      if (onboardingStage != null) {
-        Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+      Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        if (onboardingStage != null) {
           OnboardingActionButton(user, onboardingStage)
-          TextButtonBelowOnboardingButton(stringResource(MR.strings.why_simplex_is_built), icon = painterResource(MR.images.ic_info), onClick = {
-            ModalManager.fullscreen.showModal { HowItWorks(user, onboardingStage) }
-          })
         }
-      } else {
-        Spacer(Modifier)
+        TextButtonBelowOnboardingButton(stringResource(MR.strings.why_simplex_is_built), icon = painterResource(MR.images.ic_info), onClick = {
+          ModalManager.fullscreen.showModal { HowItWorks(user, onboardingStage) }
+        })
       }
     }
   )
