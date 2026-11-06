@@ -166,8 +166,8 @@ expect_no_consent() {
   local tree
   tree=$("$ui" tree)
   if grep -qF "Enable Directory search?" <<< "$tree"; then
-    "$ui" shot consent-asked-again
-    fail "$1 asked to enable Directory search again"
+    "$ui" shot consent-shown-again
+    fail "$1 showed the \"Enable Directory search?\" alert again"
   fi
 }
 
@@ -508,7 +508,7 @@ search_listed_chat_adds_nothing() {
   if grep -qF -e '"Search in Directory"' -e "All results on this page" -e "Search failed, tap to retry" <<< "$tree"; then
     fail "the search whose only result is the listed ci_cards didn't run, failed or shows a note"
   fi
-  echo "the search whose only result is the listed ci_cards adds no row and no note"
+  echo "the search whose only result is the listed ci_cards adds neither row nor note"
   clear_search
 }
 

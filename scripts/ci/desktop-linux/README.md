@@ -38,7 +38,7 @@ Queueing for a runner adds from under a minute to 20 minutes. Results are artifa
   What these steps rely on:
   - Escape doesn't close the chat list's menus. It goes to the open chat when that has the keyboard focus, so the search field is cleared by selecting its text and deleting it.
   - With the toolbar at the bottom, Escape only clears the New chat sheet's search, and the sheet's back arrow closes it.
-  - Once the directory's link is fetched, a request fails after 10 s.
+  - Once the directory's link is fetched, a request without a reply fails after 10 s.
   - OCR reads a directory row's name with its `#`, which `normalise` drops, so `no_ci_channel_directory_row` reads the raw text; a chat's row has no `#`.
   - "You are a subscriber" is the alert of a directory entry the user has, which a chat's own row doesn't show.
   - The count's text is compared with the description's by the height of their ink, as both have capitals and ascenders and neither has descenders.

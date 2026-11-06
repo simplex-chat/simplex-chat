@@ -86,7 +86,7 @@ With the backend, the workflow points the app at the test directory before build
 
 What these steps rely on:
 
-- Once the directory's link is fetched, a request fails after 10 s. With the directory stopped, the next page therefore takes 10 s to fail, long enough to see the load row while it loads. A screenshot takes long enough for that request to fail, so the step reads the tree before its shot.
+- Once the directory's link is fetched, a request without a reply fails after 10 s. With the directory stopped, the next page therefore takes 10 s to fail, long enough to see the load row while it loads. A screenshot takes long enough for that request to fail, so the step reads the tree before its shot.
 - With a conversation, the chat list replaces the onboarding pages and has cards around the chats.
 - The first launch with more than two chats shows the SimpleX Lock notice (`laNoticeAlert` in `ContentView.swift`), which `dismiss_simplex_lock_notice` cancels.
 - A result row's texts are stacked beside its avatar and Open is centred on the row, so `open_in_row` accepts an Open from 10 points above to 60 points below the name's top.
