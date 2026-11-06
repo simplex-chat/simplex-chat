@@ -547,17 +547,19 @@ Move `scripts/badge-service/config/` to `scripts/store-service/config/` (a deplo
 the config folder creates it and moves `badge_service.ini` into it), rename `badge_service.ini` in it
 to `store_service.ini`, and change its keys and paths as the table says, the
 `/etc/simplex-badge-service/` files under `[apple]` and `[google]` among them. Point Caddy's badges root at
-`scripts/store-service/badges`, which the service fills at boot. The image builds the names site from
-the `apps/simplex-domains` submodule, a badge-only service included, so fetch it and start the new
-service:
+`scripts/store-service/badges`, which the service fills at boot. Compose names a project after its
+folder, so the new `store-service` project does not see the old `badge-service` container, which
+would keep running on the same port and database: stop it first, from `scripts/badge-service/` or
+anywhere with `-p`. The image builds the names site from the `apps/simplex-domains` submodule, a
+badge-only service included, so fetch it before the build:
 
 ```
+docker compose -p badge-service down
 git submodule update --init apps/simplex-domains
-docker compose up -d --build --remove-orphans
+docker compose up -d --build
 ```
 
-from `scripts/store-service/`. Without `--remove-orphans` the old `badge-service` container keeps
-running beside the new one, on the same port and database. The database `badge_service`,
+from `scripts/store-service/`. The database `badge_service`,
 `BADGE_DB_CONN`, the `sx_badge_service_` tables and the chat database prefix
 `simplex_badge_service` are unchanged.
 
