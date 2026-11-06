@@ -6157,16 +6157,20 @@ public enum ReportReason: Hashable {
 }
 
 extension ReportReason: Encodable {
+    public var cmdString: String {
+        switch self {
+        case .spam: return "spam"
+        case .illegal: return "content"
+        case .community: return "community"
+        case .profile: return "profile"
+        case .other: return "other"
+        case let .unknown(type): return type
+        }
+    }
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        switch self {
-        case .spam: try container.encode("spam")
-        case .illegal: try container.encode("illegal")
-        case .community: try container.encode("community")
-        case .profile: try container.encode("profile")
-        case .other: try container.encode("other")
-        case let .unknown(type): try container.encode(type)
-        }
+        try container.encode(cmdString)
     }
 }
 
@@ -6176,7 +6180,7 @@ extension ReportReason: Decodable {
         let type = try container.decode(String.self)
         switch type {
         case "spam": self = .spam
-        case "illegal": self = .illegal
+        case "content": self = .illegal
         case "community": self = .community
         case "profile": self = .profile
         case "other": self = .other

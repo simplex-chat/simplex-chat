@@ -172,7 +172,7 @@
         "report": {
           "properties": {
             "text": {"type": "string", "metadata": {"comment": "can be empty, includes report reason for old clients"}},
-            "reason": {"enum": ["spam", "illegal", "community", "other"]}
+            "reason": {"enum": ["spam", "content", "community", "profile", "other"]}
           }
         }
       },
