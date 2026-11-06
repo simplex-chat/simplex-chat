@@ -173,12 +173,13 @@ textRecord :: Contracts -> LabelHash -> ByteString -> IO (Either ChainError Text
 textRecord ct lh key = call ct (resolver ct) ("text(bytes32,string)", abiTuple [Static $ nodeArg ct lh, Dynamic $ abiBytes key]) decodeString
 
 -- | Cents for a label of this length and these years. The oracle prices by length only,
--- so a placeholder label of that length keeps the label from the RPC node.
+-- so a placeholder label of that length keeps the label from the RPC node. A price under a cent is refused: a node
+-- answering one would sell names for nothing while the sponsor allowance pays their rent.
 chainPriceCents :: Contracts -> Int -> Int -> IO (Either ChainError Int)
 chainPriceCents ct len years = call ct (controller ct) ("rentPriceUSD(string,uint256)", args) $ \ret -> do
   base <- decodeUint256 ret
   let cents = base `div` attoUsdPerCent
-  if cents <= toInteger (maxBound :: Int) then Right (fromInteger cents) else Left AERange
+  if cents >= 1 && cents <= toInteger (maxBound :: Int) then Right (fromInteger cents) else Left AERange
   where
     args = abiTuple [Dynamic $ abiBytes $ B.replicate len 'a', Static $ uint256 $ toInteger years * secondsPerYear]
 

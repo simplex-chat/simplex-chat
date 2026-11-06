@@ -75,7 +75,7 @@ namesContractsTests = describe "StoreService names: contracts" $ do
     it "reads the default resolver's records and the owner's nonce" $ testRecords g
     it "reads no records from another resolver" $ testOtherResolver g
   describe "prices" $ do
-    it "quotes 6, 7 and 12 letters at the launch list for 2 years" $ testLaunchPrices g
+    it "quotes 6, 7 and 12 letters at the launch list for 2 years, and refuses a price under a cent" $ testLaunchPrices g
   describe "other reads" $ do
     it "reads the sponsor's and the resolver's nonces from their own contracts" $ testNonces g
     it "reads ownerOf's revert without data as nobody" $ testOwnerOfNobody g
@@ -316,6 +316,8 @@ testLaunchPrices g = withContracts g $ \node ct -> do
   answerCall node fakeController (rentPriceCall 7) $ Returns $ rentPriceAnswer 20000
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   mapM (\len -> chainPriceCents ct len 2) [6, 7, 12] `shouldReturn` [Right 40000, Right 20000, Right 10000]
+  answerCall node fakeController (rentPriceCall 11) $ Returns $ rentPriceAnswer 0
+  chainPriceCents ct 11 2 `shouldReturn` Left (ChainUnavailable "eth_call: rentPriceUSD(string,uint256) answered AERange")
 
 testNonces :: TVar ChaChaDRG -> IO ()
 testNonces g = withContracts g $ \node ct -> do
