@@ -5,6 +5,7 @@ import email.message
 import hashlib
 import io
 import json
+import os
 import re
 import subprocess
 import tomllib
@@ -663,6 +664,7 @@ class FeatureTestsTest(unittest.TestCase):
         "fails-a-check": 'check "good" true\ncheck "bad" false\ncheck "after" true\n',
         "stops": 'check "before" true\nfail "cannot go on"\ncheck "never" true\n',
         "needs-backend": '# needs: backend\ncheck "backend at $BACKEND_DIR" true\n',
+        "no-checks": "",
     }
 
     def setUp(self):
@@ -773,6 +775,110 @@ class FeatureTestsTest(unittest.TestCase):
         self.assertEqual(self.run_tests("passes", layout_fails=True).returncode, 1)
         self.assertEqual(self.checks("passes"), ["FAIL the app restarted at the chat list in the reachable layout"])
         self.assertEqual(self.summary.read_text().splitlines()[0], "### Feature test passes: failed")
+
+    def test_test_without_checks_passes_with_a_note_in_the_summary(self):
+        self.assertEqual(self.run_tests("no-checks").returncode, 0)
+        self.assertEqual(
+            self.summary.read_text().splitlines(),
+            ["### Feature test no-checks: passed", "", "- NOTE no checks were recorded"],
+        )
+
+
+class ChecksTest(unittest.TestCase):
+    def run_checks(self, *steps):
+        script = packages_release.ROOT / "scripts/ci/app-tests/checks.sh"
+        with tempfile.TemporaryDirectory() as out:
+            with mock.patch.dict("os.environ", {"UI_OUT": out}):
+                return subprocess.run(
+                    ["bash", "-c", "\n".join([f'. "{script}"', *steps])], capture_output=True, text=True
+                )
+
+    def test_failed_check_fails_the_final_gate(self):
+        result = self.run_checks('check "good" true', 'check "bad" false', 'fail_on_failed_checks "the smoke test"')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("error: the smoke test failed checks: 1 of 2", result.stdout)
+
+    def test_passed_checks_and_notes_pass_the_final_gate(self):
+        result = self.run_checks('check "good" true', 'note "remark"', 'fail_on_failed_checks "the smoke test"')
+        self.assertEqual(result.returncode, 0)
+
+
+class ChooseFeatureTestsTest(GitRepoTest):
+    def setUp(self):
+        super().setUp()
+        self.write("scripts/ci/desktop-linux/lib.sh", "x")
+        self.write("scripts/ci/desktop-linux/tests/alpha.sh", "# covers: apps/mp/*\n")
+        self.write("scripts/ci/desktop-linux/tests/beta.sh", "# covers: apps/ios/*\n")
+        self.write("apps/mp/Compose.kt", "x")
+        self.commit("base")
+        self.base = self.head()
+        self.write("apps/mp/Compose.kt", "changed")
+        self.commit("change")
+        self.work = self.repo / ".git" / "choose-test"
+        self.work.mkdir()
+        origin = self.work / "origin.git"
+        self.git("clone", "-q", "--bare", ".", str(origin))
+        self.git("-C", str(origin), "config", "uploadpack.allowAnySHA1InWant", "true")
+        self.git("remote", "add", "origin", f"file://{origin}")
+        self.gh_log = self.work / "gh.log"
+        self.output = self.work / "output"
+        self.summary = self.work / "summary"
+        gh = self.work / "bin" / "gh"
+        gh.parent.mkdir()
+        gh.write_text(
+            "#!/bin/bash\n"
+            'echo "$*" >> "$GH_LOG"\n'
+            'case "$2" in\n'
+            '  */compare/*) echo "$BASE_COMMIT" ;;\n'
+            "  *) echo root-owner ;;\n"
+            "esac\n"
+        )
+        gh.chmod(0o755)
+
+    def choose(self, tests_input):
+        script = packages_release.ROOT / "scripts/ci/app-tests/choose-feature-tests.sh"
+        env = {
+            "PATH": f"{self.work / 'bin'}:{os.environ['PATH']}",
+            "TESTS": tests_input,
+            "GH_LOG": str(self.gh_log),
+            "BASE_COMMIT": self.base,
+            "GITHUB_REPOSITORY": "fork-owner/simplex-chat",
+            "GITHUB_SHA": self.head(),
+            "GITHUB_OUTPUT": str(self.output),
+            "GITHUB_STEP_SUMMARY": str(self.summary),
+        }
+        with mock.patch.dict("os.environ", env):
+            return subprocess.run(
+                [script, "scripts/ci/desktop-linux"], cwd=self.repo, capture_output=True, text=True
+            )
+
+    def test_blank_input_selects_from_the_changes_since_the_root_repository_master(self):
+        result = self.choose("  ")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.output.read_text(), "tests=alpha\n")
+        self.assertEqual(self.summary.read_text(), "- Feature tests: alpha\n")
+        self.assertEqual(
+            self.gh_log.read_text().splitlines(),
+            [
+                "api repos/fork-owner/simplex-chat --jq .source.owner.login // .owner.login",
+                f"api repos/fork-owner/simplex-chat/compare/root-owner:master...{self.head()} --jq .merge_base_commit.sha",
+            ],
+        )
+
+    def test_named_input_selects_without_github_calls(self):
+        result = self.choose("beta")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.output.read_text(), "tests=beta\n")
+        self.assertFalse(self.gh_log.exists())
+
+    def test_none_gives_an_empty_output(self):
+        self.assertEqual(self.choose("none").returncode, 0)
+        self.assertEqual(self.output.read_text(), "tests=\n")
+        self.assertEqual(self.summary.read_text(), "- Feature tests: none\n")
+
+    def test_name_no_platform_has_fails_the_step(self):
+        self.assertNotEqual(self.choose("gamma").returncode, 0)
+        self.assertFalse(self.output.exists())
 
 
 class PackageStateTest(GitRepoTest):
