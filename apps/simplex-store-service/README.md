@@ -1132,6 +1132,9 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
   with `InsufficientAllowance`. The order keeps its phase and its register is tried again every 15
   seconds, so a top-up before its commitment lapses registers it with no restart. The line is
   logged once per order. An order whose commitment lapses first fails, and the buyer can Try again.
+  This holds when the register's dry run is refused. A register that passes its dry run and reverts
+  once mined, as two registers sent while the allowance covers one can, fails its order with no
+  such line; the next order's dry run logs it, and the buyer can Try again.
 - `[WARN …] names sender: the latest block needs <wei> wei per gas, above max_fee_per_gas <cap>;
   the transaction waits` when fees are above the cap. Nothing is signed until they fall.
 - `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over max_fee_per_gas
