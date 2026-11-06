@@ -50,8 +50,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
-import qualified Data.Text.IO as TIO
+import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format.ISO8601 (iso8601ParseM)
 import Data.Word (Word64)
@@ -340,10 +339,13 @@ checkAppleHost creditTestPurchases AppleStoreConfig {aServerApi} = case (creditT
 
 readServiceConfig :: FilePath -> IO (Either String ServiceConfig)
 readServiceConfig path =
-  E.try (TIO.readFile path) >>= \case
+  -- read as UTF-8 whatever the locale, which is ASCII in a container with none set
+  E.try (B.readFile path) >>= \case
     Left (e :: E.IOException) -> pure (Left (ioeGetErrorString e))
+    Right bytes -> either (const $ pure $ Left "is not UTF-8") readText $ decodeUtf8' bytes
+  where
     -- Data.Ini stops at the first unparseable line and keeps what it has, so a missing `=` silently drops every section below.
-    Right text -> case parseOnly ((,) <$> lookAhead (many keyValueParser *> many sectionParser) <*> iniParser <* trailingNoise <* endOfInput) text of
+    readText text = case parseOnly ((,) <$> lookAhead (many keyValueParser *> many sectionParser) <*> iniParser <* trailingNoise <* endOfInput) text of
       Left _ -> pure (Left "could not be read as an ini file: a line is malformed")
       Right (written, ini) -> case colonSetting text <|> repeatedSetting written of
         Just e -> pure (Left e)

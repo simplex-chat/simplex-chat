@@ -13,7 +13,7 @@ import Data.Either (isLeft)
 import Data.Ini (readIniFile)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..))
 import Simplex.Messaging.Crypto.Secp256k1 (mkPrivateKey)
@@ -50,6 +50,7 @@ badgeConfigTests = describe "store service config" $ do
   it "names a setting nothing reads, in every section it parses" testUnknownKeysAreNamed
   it "ignores a section nothing reads rather than refusing the file" testUnknownSectionStillBoots
   it "refuses a file one malformed line would silently truncate" testMalformedLineRefused
+  it "reads the file as UTF-8 whatever the locale, and refuses one that is not UTF-8" testUtf8File
   it "accepts a comment or blank line after the last setting" testTrailingCommentIsAccepted
   it "refuses a setting written as key: value, naming it and quoting no value" testColonSettingRefused
   it "reports a missing file rather than throwing" testMissingFileIsReported
@@ -102,7 +103,7 @@ withIni t f = do
   createDirectoryIfMissing True "tests/tmp"
   withTempDirectory "tests/tmp" "badge-ini" $ \d -> do
     let p = d </> "store_service.ini"
-    T.writeFile p t
+    B.writeFile p $ encodeUtf8 t
     f p
 
 testDefaults :: IO ()
@@ -601,6 +602,16 @@ testDevUnverifiedBesideVerifier =
       withDevBeside stores ("accept_unverified_store_receipts = on\n" <> credit) $ \case
         Left e -> e `shouldContain` "accept_unverified_store_receipts"
         Right _ -> expectationFailure "a service that verifies store receipts must not also accept unverified ones"
+
+testUtf8File :: IO ()
+testUtf8File = do
+  Right ServiceConfig {group = Just GroupConfig {gDisplayName}} <- parseIni "[listener]\n[group]\ndisplay_name = Зеленые_имена\n"
+  gDisplayName `shouldBe` "Зеленые_имена"
+  createDirectoryIfMissing True "tests/tmp"
+  withTempDirectory "tests/tmp" "badge-ini" $ \d -> do
+    let p = d </> "store_service.ini"
+    B.writeFile p "[listener]\n[group]\ndisplay_name = \xff\n"
+    readServiceConfig p `shouldReturn` Left "is not UTF-8"
 
 parseIni :: T.Text -> IO (Either String ServiceConfig)
 parseIni t = withIni t readServiceConfig

@@ -682,7 +682,7 @@ groupServiceOpts GroupSvc {gsKey = BadgeIssuerKey {secretKey}, gsStaticDir, gsIn
       namesSite
         | "[names]" `elem` gsIniSections = ["names_static_dir = " <> gsStaticDir, "names_port = " <> show namesPort]
         | otherwise = []
-  writeFile iniPath $
+  B.writeFile iniPath . encodeUtf8 . T.pack $
     unlines $
       [ "[listener]",
         "host = 127.0.0.1",
