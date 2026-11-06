@@ -104,9 +104,10 @@ data PendingTx = PendingTx
     ptOutcome :: TMVar TxOutcome
   }
 
--- | 15 blocks: a transaction still not mined by then is replaced if the market's fees have passed its own.
+-- | 3 blocks: a transaction still not mined by then is replaced if the market's fees have passed its own. A register's calldata
+-- shows its label, so it must land well within the commitment's minimum age of about a minute.
 replaceAfter :: NominalDiffTime
-replaceAfter = 180
+replaceAfter = 36
 
 followInterval :: Int
 followInterval = 4000000

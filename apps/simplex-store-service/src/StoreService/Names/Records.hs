@@ -128,7 +128,7 @@ recordsInterval :: Int
 recordsInterval = 4000000
 
 -- | Seconds an edit's deadline must leave past the latest block, or it could revert after paying gas.
--- Two of the sender's fee replacements (Sender.replaceAfter, 3 minutes each) and 20 blocks of 12 seconds.
+-- Above two of the sender's fee replacements (Sender.replaceAfter) and 20 blocks of 12 seconds.
 editDeadlineMargin :: Word64
 editDeadlineMargin = 600
 

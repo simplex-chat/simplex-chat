@@ -887,7 +887,7 @@ both links as the resolver's `multicall` of two `setTextWithSig` calls, which la
 
 A request whose earliest signed deadline is within 10 minutes of the latest block's time is refused
 (`400 bad_request`) before any row or gas: a closer deadline could pass while the transaction waits
-for the sender's fee replacements (3 minutes apart), and the edit would revert after paying gas. The
+for the sender's fee replacements (36 seconds apart), and the edit would revert after paying gas. The
 names page signs a deadline one hour ahead.
 
 `[names] record_edits_per_year` (default 3, from 1 to 100, read at startup) bounds them per name in
