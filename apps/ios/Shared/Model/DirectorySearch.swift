@@ -85,11 +85,11 @@ func isDirectorySearchable(_ text: String, showingLink: Bool) -> Bool {
     !text.trimmingCharacters(in: .whitespaces).isEmpty && !showingLink
 }
 
-func directorySearchRequestJSON(_ text: String, _ cursor: JSONValue?) -> String {
+func directorySearchRequest(_ text: String, _ cursor: JSONValue?) -> JSONValue {
     let searchText = String(String.UnicodeScalarView(text.unicodeScalars.prefix(DIRECTORY_SEARCH_MAX_TEXT_LENGTH)))
     var req: [String: JSONValue] = ["type": .string("search"), "searchText": .string(searchText)]
     if let cursor { req["searchCursor"] = cursor }
-    return encodeJSON(JSONValue.object(req))
+    return .object(req)
 }
 
 func parseDirectorySearchResponse(_ resp: JSONValue) -> DirectorySearchResults? {

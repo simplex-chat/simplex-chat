@@ -134,7 +134,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiSetConnectionIncognito(connId: Int64, incognito: Bool)
     case apiChangeConnectionUser(connId: Int64, userId: Int64)
     case apiConnectPlan(userId: Int64, connLink: String, resolveMode: PlanResolveMode, linkOwnerSig: LinkOwnerSig?)
-    case apiSendServiceRequest(userId: Int64, target: String, timeoutSec: Double?, requestJSON: String)
+    case apiSendServiceRequest(userId: Int64, target: String, timeoutSec: Double?, request: JSONValue)
     case apiPrepareContact(userId: Int64, connLink: CreatedConnLink, contactShortLinkData: ContactShortLinkData, verifiedDomain: SimplexDomain?)
     case apiPrepareGroup(userId: Int64, connLink: CreatedConnLink, directLink: Bool, groupShortLinkData: GroupShortLinkData, verifiedDomain: SimplexDomain?)
     case apiChangePreparedContactUser(contactId: Int64, newUserId: Int64)
@@ -367,9 +367,9 @@ enum ChatCommand: ChatCmdProtocol {
                 let resolveStr = resolveMode == .unknown ? "" : " resolve=\(resolveMode.rawValue)"
                 let sigStr = if let linkOwnerSig { " sig=\(encodeJSON(linkOwnerSig))" } else { "" }
                 return "/_connect plan \(userId) \(connLink)\(resolveStr)\(sigStr)"
-            case let .apiSendServiceRequest(userId, target, timeoutSec, requestJSON):
+            case let .apiSendServiceRequest(userId, target, timeoutSec, request):
                 let timeoutStr = if let timeoutSec { " timeout=\(timeoutSec)" } else { "" }
-                return "/_service_request \(userId) \(target)\(timeoutStr) \(requestJSON)"
+                return "/_service_request \(userId) \(target)\(timeoutStr) \(encodeJSON(request))"
             case let .apiPrepareContact(userId, connLink, contactShortLinkData, verifiedDomain): return "/_prepare contact \(userId) \(connLink.cmdString)\(verifiedDomain.map{ " \($0.cmdString)" } ?? "") \(encodeJSON(contactShortLinkData))"
             case let .apiPrepareGroup(userId, connLink, directLink, groupShortLinkData, verifiedDomain): return "/_prepare group \(userId) \(connLink.cmdString) direct=\(onOff(directLink))\(verifiedDomain.map{ " \($0.cmdString)" } ?? "") \(encodeJSON(groupShortLinkData))"
             case let .apiChangePreparedContactUser(contactId, newUserId): return "/_set contact user @\(contactId) \(newUserId)"

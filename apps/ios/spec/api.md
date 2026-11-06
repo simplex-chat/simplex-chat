@@ -295,7 +295,7 @@ The `ChatCommand` enum ([`AppAPITypes.swift` L15](../Shared/Model/AppAPITypes.sw
 
 | Command | Parameters | Description | Source |
 |---------|-----------|-------------|--------|
-| `apiSendServiceRequest` | `userId, target, timeoutSec: Double?, requestJSON` | Send a JSON request to a service address (e.g. SimpleX Directory) and wait for its response, up to the timeout from sending; the lookup of the address before it has its own network timeout (`/_service_request`); returns `serviceResponse` | [L137](../Shared/Model/AppAPITypes.swift#L137) |
+| `apiSendServiceRequest` | `userId, target, timeoutSec: Double?, request: JSONValue` | Send a JSON request to a service address (e.g. SimpleX Directory) and wait for its response, up to the timeout from sending; the lookup of the address before it has its own network timeout (`/_service_request`); returns `serviceResponse` | [L137](../Shared/Model/AppAPITypes.swift#L137) |
 
 ---
 

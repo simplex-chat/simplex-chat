@@ -1046,9 +1046,9 @@ func apiSearchDirectory(_ text: String, cursor: JSONValue?) async -> DirectorySe
         logger.error("apiSearchDirectory: no current user")
         return nil
     }
-    let req = directorySearchRequestJSON(text, cursor)
+    let req = directorySearchRequest(text, cursor)
     let r: APIResult<ChatResponse1> = await chatApiSendCmd(
-        .apiSendServiceRequest(userId: userId, target: DIRECTORY_SERVICE_LINK, timeoutSec: DIRECTORY_SEARCH_TIMEOUT_SEC, requestJSON: req)
+        .apiSendServiceRequest(userId: userId, target: DIRECTORY_SERVICE_LINK, timeoutSec: DIRECTORY_SEARCH_TIMEOUT_SEC, request: req)
     )
     if case let .result(.serviceResponse(_, responseData)) = r {
         let results = parseDirectorySearchResponse(responseData)
