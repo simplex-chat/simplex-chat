@@ -85,7 +85,7 @@ struct NewChatSheet: View {
 
     private func viewBody(_ showArchive: Bool) -> some View {
         List {
-            let showsSearchInDirectory = !searchTrimmed.isEmpty && !searchShowingSimplexLink && !onlineSearch.showResults
+            let showsSearchInDirectory = isDirectorySearchable(searchText, showingLink: searchShowingSimplexLink) && !onlineSearch.showResults
             VStack(spacing: 12) {
                 ContactsListSearchBar(
                     searchMode: $searchMode,
@@ -94,7 +94,7 @@ struct NewChatSheet: View {
                     searchShowingSimplexLink: $searchShowingSimplexLink,
                     searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
                     connectNameCandidate: $connectNameCandidate,
-                    onSearch: runDirectorySearch
+                    onSearch: { onlineSearch.search(searchText) }
                 )
                 .frame(maxWidth: .infinity)
                 if let candidate = connectNameCandidate {
@@ -107,7 +107,7 @@ struct NewChatSheet: View {
                     )
                 }
                 if showsSearchInDirectory {
-                    SearchInDirectoryRow(searchFocussed: $searchFocussed, onSearch: runDirectorySearch)
+                    SearchInDirectoryRow(searchFocussed: $searchFocussed, onSearch: { onlineSearch.search(searchText) })
                 }
             }
             .listRowSeparator(.hidden)
@@ -210,10 +210,8 @@ struct NewChatSheet: View {
                     .modifier(DirectoryResultMenu(result: result, imageSize: 30, onOpen: { openResult(result) }))
                     .onTapGesture { openResult(result) }
             }
-            switch rows.footer {
-            case .retry: DirectoryRetryRow(onlineSearch: onlineSearch)
-            case .loadMore: DirectoryLoadMoreRow(onlineSearch: onlineSearch)
-            case nil: EmptyView()
+            if let footer = rows.footer {
+                DirectoryFooterRow(footer: footer, onlineSearch: onlineSearch)
             }
         }
     }
@@ -221,14 +219,6 @@ struct NewChatSheet: View {
     private func openResult(_ result: DirectoryResult) {
         searchFocussed = false
         openDirectoryResult(result, theme: theme, dismiss: true, cleanup: nil)
-    }
-
-    private var searchTrimmed: String {
-        searchText.trimmingCharacters(in: .whitespaces)
-    }
-
-    private func runDirectorySearch() {
-        if !searchShowingSimplexLink { onlineSearch.search(searchText) }
     }
 
     private func contactListChatPredicate(_ chat: Chat, _ withSearch: Bool) -> Bool {

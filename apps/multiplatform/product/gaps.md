@@ -426,7 +426,7 @@ The directory's `moreCount` counts the matching listings after the page, includi
 ### Affected Locations
 
 - `apps/simplex-directory-service/src/Directory/Rpc.hs` -- `searchResultsPage` (`moreCount`)
-- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `DirectoryLoadMoreRow`
+- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `DirectoryFooterRow`
 - See [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
 
 ### Impact

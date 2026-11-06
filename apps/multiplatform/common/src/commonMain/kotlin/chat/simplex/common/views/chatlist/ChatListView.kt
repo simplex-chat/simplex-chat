@@ -546,11 +546,7 @@ private fun LazyListScope.directoryRows(rows: OnlineSearchRows, onlineSearch: On
   items(rows.results, key = { it.id }) { result ->
     DirectoryResultNavLink(result, imageSize = 72.dp * fontSizeSqrtMultiplier, close = null, cleanup = { onlineSearch.refreshStates() })
   }
-  when (rows.footer) {
-    DirectoryFooter.Retry -> item { DirectoryRetryRow(onlineSearch) }
-    DirectoryFooter.LoadMore -> item { DirectoryLoadMoreRow(onlineSearch) }
-    null -> {}
-  }
+  rows.footer?.let { footer -> item { DirectoryFooterRow(footer, onlineSearch) } }
 }
 
 @Composable
@@ -911,7 +907,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
         trailingContent = null,
         // the clear button must line up with the filter icon it replaces, so no reduction here
         reducedCloseButtonPadding = 0.dp,
-        onSearch = { runDirectorySearch(searchText, searchShowingSimplexLink, onlineSearch) },
+        onSearch = { onlineSearch.search(searchText.value.text) },
       ) {
         searchText.value = searchText.value.copy(it)
       }
@@ -1004,13 +1000,6 @@ private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<
   }
 }
 
-private fun searchTrimmed(searchText: State<TextFieldValue>): String =
-  searchText.value.text.trim()
-
-private fun runDirectorySearch(searchText: State<TextFieldValue>, searchShowingSimplexLink: State<Boolean>, onlineSearch: OnlineSearchModel) {
-  if (!searchShowingSimplexLink.value) onlineSearch.search(searchText.value.text)
-}
-
 @Composable
 private fun ErrorSettingsView() {
   Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -1099,7 +1088,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val chats = filteredChats(searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList(), activeFilter.value)
   val rows = onlineSearch.rows(shownChatIds = chats.map { it.id }.toSet())
   val showsCards = !onlineSearch.showResults
-  val showsSearchInDirectory = searchTrimmed(searchText).isNotEmpty() && !searchShowingSimplexLink.value && !onlineSearch.showResults
+  val showsSearchInDirectory = isDirectorySearchable(searchText.value.text, searchShowingSimplexLink.value) && !onlineSearch.showResults
   val topPaddingToContent = topPaddingToContent(false)
   val blankSpaceSize = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else topPaddingToContent
   LazyColumnWithScrollBar(
@@ -1321,9 +1310,9 @@ private fun TagsOrConnectByName(
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val candidate = connectNameCandidate.value
   val searchInDirectoryRow: @Composable () -> Unit = {
-    SearchInDirectoryRow(onSearch = { runDirectorySearch(searchText, searchShowingSimplexLink, onlineSearch) })
+    SearchInDirectoryRow(onSearch = { onlineSearch.search(searchText.value.text) })
   }
-  val searchesText = searchTrimmed(searchText).isNotEmpty() && !searchShowingSimplexLink.value
+  val searchesText = isDirectorySearchable(searchText.value.text, searchShowingSimplexLink.value)
   val showsSearchInDirectory = searchesText && !onlineSearch.showResults
   when {
     appPlatform.isDesktop ->

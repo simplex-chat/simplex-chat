@@ -8,7 +8,6 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -28,8 +27,6 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.serialization.json.JsonObject
 
-enum class DirectoryFooter { Retry, LoadMore }
-
 class OnlineSearchModel {
   var directory by mutableStateOf<List<DirectoryResult>>(emptyList())
     private set
@@ -38,7 +35,7 @@ class OnlineSearchModel {
   private val _loading = mutableStateOf(false)
   var loading: Boolean
     get() = _loading.value
-    private set(value) { _loading.value = value; updateSpinner() }
+    private set(value) { if (value != _loading.value) { _loading.value = value; updateSpinner() } }
   var failed by mutableStateOf(false)
     private set
   var searched by mutableStateOf(false)
@@ -47,7 +44,6 @@ class OnlineSearchModel {
   private var cursor by mutableStateOf<JsonObject?>(null)
   private var searchedText = ""
   private var generation = 0
-  private var spinnerShown = false
 
   val showResults: Boolean get() = loading || searched
   val footer: DirectoryFooter? get() = if (failed) DirectoryFooter.Retry else if (cursor != null) DirectoryFooter.LoadMore else null
@@ -168,9 +164,7 @@ class OnlineSearchModel {
   }
 
   private fun updateSpinner() {
-    if (loading == spinnerShown) return
-    spinnerShown = loading
-    if (spinnerShown) {
+    if (loading) {
       ConnectProgressManager.startConnectProgress(
         generalGetString(MR.strings.searching_directory),
         owner = ConnectProgressOwner.DirectorySearch
@@ -202,21 +196,7 @@ fun SearchInDirectoryRow(onSearch: () -> Unit) {
 }
 
 @Composable
-fun DirectorySearchRow(entry: DirectorySearchEntry, imageSize: Dp, state: DirectoryResultState, modifier: Modifier = Modifier) {
-  DirectorySearchRowLayout(
-    entryType = entry.entryType,
-    name = entry.displayName,
-    simplexName = entry.simplexName,
-    shortDescr = entry.shortDescr,
-    image = entry.image,
-    imageSize = imageSize,
-    state = state,
-    modifier = modifier
-  )
-}
-
-@Composable
-private fun DirectorySearchRowLayout(
+private fun DirectorySearchRow(
   entryType: DirectoryEntryType,
   name: String,
   simplexName: String?,
@@ -276,9 +256,16 @@ private fun DirectorySearchRowLayout(
 }
 
 @Composable
-fun DirectoryLoadMoreRow(onlineSearch: OnlineSearchModel) {
-  DirectoryLoadMoreRowLayout(moreCount = onlineSearch.moreCount, loading = onlineSearch.loading) {
-    onlineSearch.loadMore()
+fun DirectoryFooterRow(footer: DirectoryFooter, onlineSearch: OnlineSearchModel) {
+  when (footer) {
+    DirectoryFooter.Retry ->
+      DirectoryRetryRowLayout {
+        onlineSearch.retry()
+      }
+    DirectoryFooter.LoadMore ->
+      DirectoryLoadMoreRowLayout(moreCount = onlineSearch.moreCount, loading = onlineSearch.loading) {
+        onlineSearch.loadMore()
+      }
   }
 }
 
@@ -300,13 +287,6 @@ private fun DirectoryLoadMoreRowLayout(moreCount: Int?, loading: Boolean, onLoad
       else stringResource(MR.strings.directory_search_load_more),
       color = color
     )
-  }
-}
-
-@Composable
-fun DirectoryRetryRow(onlineSearch: OnlineSearchModel) {
-  DirectoryRetryRowLayout {
-    onlineSearch.retry()
   }
 }
 
@@ -335,7 +315,18 @@ fun DirectoryResultNavLink(result: DirectoryResult, imageSize: Dp, previewModifi
     openDirectoryResult(result, close, cleanup)
   }
   ChatListNavLinkLayout(
-    chatLinkPreview = { DirectorySearchRow(result.entry, imageSize, result.state, previewModifier) },
+    chatLinkPreview = {
+      DirectorySearchRow(
+        entryType = result.entry.entryType,
+        name = result.entry.displayName,
+        simplexName = result.entry.simplexName,
+        shortDescr = result.entry.shortDescr,
+        image = result.entry.image,
+        imageSize = imageSize,
+        state = result.state,
+        modifier = previewModifier
+      )
+    },
     click = open,
     dropdownMenuItems = {
       ItemAction(stringResource(MR.strings.open_verb), painterResource(MR.images.ic_chat_bubble), onClick = {
@@ -398,7 +389,7 @@ private fun PreviewDirectoryResult(
   image: String? = null,
   state: DirectoryResultState = DirectoryResultState.Open
 ) {
-  DirectorySearchRowLayout(
+  DirectorySearchRow(
     entryType = entryType,
     name = name,
     simplexName = simplexName,

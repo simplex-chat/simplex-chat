@@ -93,7 +93,7 @@ fun SearchTextField(
       .indicatorLine(enabled, false, interactionSource, colors)
       .focusRequester(focusRequester)
       .onPreviewKeyEvent {
-        if (onSearch != null && appPlatform.isDesktop && (it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyUp) {
+        if (onSearch != null && enabled && appPlatform.isDesktop && (it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyUp) {
           onSearch()
           true
         } else {

@@ -9,22 +9,17 @@
 import SwiftUI
 import SimpleXChat
 
-enum DirectoryFooter {
-    case retry, loadMore
-}
-
 @MainActor
 class OnlineSearchModel: ObservableObject {
     @Published private(set) var directory: [DirectoryResult] = []
     @Published private(set) var moreCount: Int? = nil
-    @Published private(set) var loading = false { didSet { updateSpinner() } }
+    @Published private(set) var loading = false { didSet { if loading != oldValue { updateSpinner() } } }
     @Published private(set) var failed = false
     @Published private(set) var searched = false
 
     private var cursor: JSONValue? = nil
     private var searchedText = ""
     private var generation = 0
-    private var spinnerShown = false
 
     var showResults: Bool { loading || searched }
     var footer: DirectoryFooter? { failed ? .retry : cursor != nil ? .loadMore : nil }
@@ -146,9 +141,7 @@ class OnlineSearchModel: ObservableObject {
     }
 
     private func updateSpinner() {
-        guard loading != spinnerShown else { return }
-        spinnerShown = loading
-        if spinnerShown {
+        if loading {
             ConnectProgressManager.shared.startConnectProgress(
                 NSLocalizedString("Searching directory…", comment: "in progress text"),
                 owner: .directorySearch
@@ -184,13 +177,18 @@ struct SearchInDirectoryRow: View {
 }
 
 struct DirectorySearchRow: View {
-    var entry: DirectorySearchEntry
+    @EnvironmentObject var theme: AppTheme
+    var entryType: DirectoryEntryType
+    var name: String
+    var simplexName: String?
+    var shortDescr: String?
+    var image: String?
     var imageSize: CGFloat
     var state: DirectoryResultState
-    var showsOpen = true
+    var showsOpen: Bool
 
-    var body: some View {
-        DirectorySearchRowLayout(
+    init(entry: DirectorySearchEntry, imageSize: CGFloat, state: DirectoryResultState, showsOpen: Bool = true) {
+        self.init(
             entryType: entry.entryType,
             name: entry.displayName,
             simplexName: entry.simplexName,
@@ -201,18 +199,26 @@ struct DirectorySearchRow: View {
             showsOpen: showsOpen
         )
     }
-}
 
-private struct DirectorySearchRowLayout: View {
-    @EnvironmentObject var theme: AppTheme
-    var entryType: DirectoryEntryType
-    var name: String
-    var simplexName: String?
-    var shortDescr: String?
-    var image: String?
-    var imageSize: CGFloat
-    var state: DirectoryResultState
-    var showsOpen: Bool
+    fileprivate init(
+        entryType: DirectoryEntryType,
+        name: String,
+        simplexName: String?,
+        shortDescr: String?,
+        image: String?,
+        imageSize: CGFloat,
+        state: DirectoryResultState,
+        showsOpen: Bool
+    ) {
+        self.entryType = entryType
+        self.name = name
+        self.simplexName = simplexName
+        self.shortDescr = shortDescr
+        self.image = image
+        self.imageSize = imageSize
+        self.state = state
+        self.showsOpen = showsOpen
+    }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -268,12 +274,20 @@ private struct DirectorySearchRowLayout: View {
     }
 }
 
-struct DirectoryLoadMoreRow: View {
+struct DirectoryFooterRow: View {
+    var footer: DirectoryFooter
     @ObservedObject var onlineSearch: OnlineSearchModel
 
     var body: some View {
-        DirectoryLoadMoreRowLayout(moreCount: onlineSearch.moreCount, loading: onlineSearch.loading) {
-            onlineSearch.loadMore()
+        switch footer {
+        case .retry:
+            DirectoryRetryRowLayout {
+                onlineSearch.retry()
+            }
+        case .loadMore:
+            DirectoryLoadMoreRowLayout(moreCount: onlineSearch.moreCount, loading: onlineSearch.loading) {
+                onlineSearch.loadMore()
+            }
         }
     }
 }
@@ -302,16 +316,6 @@ private struct DirectoryLoadMoreRowLayout: View {
             String.localizedStringWithFormat(NSLocalizedString("Load more · %d left", comment: "directory search results"), n)
         } else {
             NSLocalizedString("Load more", comment: "directory search results")
-        }
-    }
-}
-
-struct DirectoryRetryRow: View {
-    var onlineSearch: OnlineSearchModel
-
-    var body: some View {
-        DirectoryRetryRowLayout {
-            onlineSearch.retry()
         }
     }
 }
@@ -435,7 +439,7 @@ private struct DirectorySearchRowsPreview: View {
         state: DirectoryResultState = .open,
         showsOpen: Bool = true
     ) -> some View {
-        DirectorySearchRowLayout(
+        DirectorySearchRow(
             entryType: entryType,
             name: name,
             simplexName: simplexName,

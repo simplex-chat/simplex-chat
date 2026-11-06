@@ -186,29 +186,17 @@ private fun ModalData.NewChatSheetLayout(
   }
 
   fun LazyListScope.onlineSearchSection(rows: OnlineSearchRows) {
-    if (!rows.isEmpty) {
-      items(rows.yourChats.mapNotNull { chatModel.getChat(it) }, key = { it.remoteHostId to it.id }) { chat ->
-        ContactListNavLinkView(chat, remember { mutableStateOf(false) }, showDeletedChatIcon = true)
-      }
-      items(rows.results, key = { it.id }) { result ->
-        DirectoryResultNavLink(result, imageSize = 42.dp, previewModifier = Modifier.padding(horizontal = DEFAULT_PADDING_HALF), close = close, cleanup = null)
-      }
-      when (rows.footer) {
-        DirectoryFooter.Retry -> item { DirectoryRetryRow(onlineSearch) }
-        DirectoryFooter.LoadMore -> item { DirectoryLoadMoreRow(onlineSearch) }
-        null -> {}
-      }
+    items(rows.yourChats.mapNotNull { chatModel.getChat(it) }, key = { it.remoteHostId to it.id }) { chat ->
+      ContactListNavLinkView(chat, remember { mutableStateOf(false) }, showDeletedChatIcon = true)
     }
+    items(rows.results, key = { it.id }) { result ->
+      DirectoryResultNavLink(result, imageSize = 42.dp, previewModifier = Modifier.padding(horizontal = DEFAULT_PADDING_HALF), close = close, cleanup = null)
+    }
+    rows.footer?.let { footer -> item { DirectoryFooterRow(footer, onlineSearch) } }
   }
 
-  fun searchTrimmed(): String = searchText.value.text.trim()
-
-  val showsSearchInDirectory = searchTrimmed().isNotEmpty() && !searchShowingSimplexLink.value && !onlineSearch.showResults
+  val showsSearchInDirectory = isDirectorySearchable(searchText.value.text, searchShowingSimplexLink.value) && !onlineSearch.showResults
   val showsEmptyState = !onlineSearch.loading && rows.isEmpty && !showsSearchInDirectory
-
-  fun runDirectorySearch() {
-    if (!searchShowingSimplexLink.value) onlineSearch.search(searchText.value.text)
-  }
 
   val sectionModifier = Modifier.fillMaxWidth()
   val deletedContactTypes = listOf(ContactType.CHAT_DELETED)
@@ -349,7 +337,7 @@ private fun ModalData.NewChatSheetLayout(
               searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
               connectNameCandidate = connectNameCandidate,
               close = close,
-              onSearch = ::runDirectorySearch,
+              onSearch = { if (!searchShowingSimplexLink.value) onlineSearch.search(searchText.value.text) },
             )
             connectNameCandidate.value?.let { candidate ->
               Divider()
@@ -357,7 +345,7 @@ private fun ModalData.NewChatSheetLayout(
             }
             if (showsSearchInDirectory) {
               Divider()
-              SearchInDirectoryRow(onSearch = ::runDirectorySearch)
+              SearchInDirectoryRow(onSearch = { onlineSearch.search(searchText.value.text) })
             }
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
           }
@@ -446,7 +434,7 @@ private fun ModalData.NewChatSheetLayout(
             searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
             connectNameCandidate = connectNameCandidate,
             close = close,
-            onSearch = ::runDirectorySearch,
+            onSearch = { if (!searchShowingSimplexLink.value) onlineSearch.search(searchText.value.text) },
           )
           connectNameCandidate.value?.let { candidate ->
             Divider()
@@ -454,7 +442,7 @@ private fun ModalData.NewChatSheetLayout(
           }
           if (showsSearchInDirectory) {
             Divider()
-            SearchInDirectoryRow(onSearch = ::runDirectorySearch)
+            SearchInDirectoryRow(onSearch = { onlineSearch.search(searchText.value.text) })
           }
           Divider()
         }

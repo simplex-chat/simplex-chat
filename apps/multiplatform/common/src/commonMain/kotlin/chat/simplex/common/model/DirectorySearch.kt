@@ -1,6 +1,5 @@
 package chat.simplex.common.model
 
-import chat.simplex.common.views.chatlist.DirectoryFooter
 import chat.simplex.common.views.newchat.ConnectTarget
 import chat.simplex.common.views.newchat.strConnectTarget
 import kotlinx.serialization.SerialName
@@ -70,6 +69,9 @@ data class DirectorySearchResults(
   val moreCount: Int?,
 )
 
+fun isDirectorySearchable(text: String, showingLink: Boolean): Boolean =
+  text.trim().isNotEmpty() && !showingLink
+
 fun directorySearchRequest(text: String, cursor: JsonObject?): JsonObject = buildJsonObject {
   put("type", JsonPrimitive("search"))
   put("searchText", JsonPrimitive(text.takeCodePoints(DIRECTORY_SEARCH_MAX_TEXT_LENGTH)))
@@ -119,6 +121,8 @@ data class DirectoryResult(
 ) {
   val id: String get() = entry.id
 }
+
+enum class DirectoryFooter { Retry, LoadMore }
 
 data class OnlineSearchRows(
   val yourChats: List<ChatId>,
