@@ -491,7 +491,14 @@ object ChatModel {
         } else if (currentCInfo is ChatInfo.Group && newCInfo is ChatInfo.Group && newCInfo.groupChatScope != null) {
           newCInfo = newCInfo.copy(groupInfo = newCInfo.groupInfo, groupChatScope = null)
         }
-        chats[i] = chats[i].copy(chatInfo = newCInfo)
+        chats[i] = chats[i].copy(chatInfo = currentCInfo.chatSettings?.let { newCInfo.withChatSettings(it) } ?: newCInfo)
+      }
+    }
+
+    fun setChatSettings(rhId: Long?, chatId: ChatId, chatSettings: ChatSettings) {
+      val i = getChatIndex(rhId, chatId)
+      if (i >= 0) {
+        chats[i] = chats[i].copy(chatInfo = chats[i].chatInfo.withChatSettings(chatSettings))
       }
     }
 
@@ -1830,6 +1837,12 @@ sealed class ChatInfo: SomeChat, NamedChat {
       is Group -> groupInfo.chatSettings
       else -> null
     }
+
+  fun withChatSettings(chatSettings: ChatSettings): ChatInfo = when(this) {
+    is Direct -> copy(contact = contact.copy(chatSettings = chatSettings))
+    is Group -> copy(groupInfo = groupInfo.copy(chatSettings = chatSettings))
+    else -> this
+  }
 
   val chatTs: Instant
     get() = when(this) {

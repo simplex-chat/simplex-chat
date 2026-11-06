@@ -175,7 +175,8 @@ ChatTagsModel (singleton -- filter state)
 | `removeUser(_ user:)` | Remove user from list | [L476](../Shared/Model/ChatModel.swift#L476) |
 | `getChat(_ id:)` | Find chat by ID | [L487](../Shared/Model/ChatModel.swift#L487) |
 | `addChat(_ chat:)` | Add chat to list | [L542](../Shared/Model/ChatModel.swift#L542) |
-| `updateChatInfo(_ cInfo:)` | Update chat metadata | [L556](../Shared/Model/ChatModel.swift#L556) |
+| `updateChatInfo(_ cInfo:)` | Update chat metadata, keeping chat settings | [L623](../Shared/Model/ChatModel.swift#L623) |
+| `setChatSettings(_ chatId:, _ chatSettings:)` | Set chat settings after the user changes them | [L635](../Shared/Model/ChatModel.swift#L635) |
 | `replaceChat(_ id:, _ chat:)` | Replace chat in list | [L608](../Shared/Model/ChatModel.swift#L608) |
 | `removeChat(_ id:)` | Remove chat from list | [L1217](../Shared/Model/ChatModel.swift#L1217) |
 | `popChat(_ id:)` | Move chat to top of list | [L1193](../Shared/Model/ChatModel.swift#L1193) |

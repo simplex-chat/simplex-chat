@@ -204,7 +204,8 @@ The secondary context is used for:
 
 - `addChat(chat)` -- adds chat at index 0, triggers pop animation
 - `reorderChat(chat, toIndex)` -- reorders chat list (e.g., when a chat receives a new message)
-- `updateChatInfo(rhId, cInfo)` -- updates chat metadata while preserving connection stats
+- `updateChatInfo(rhId, cInfo)` -- updates chat metadata while preserving connection stats and chat settings
+- `setChatSettings(rhId, chatId, chatSettings)` -- sets chat settings after the user changes them
 - `hasChat(rhId, id)` / `getChat(id)` -- lookup methods
 
 ### ActiveChatState

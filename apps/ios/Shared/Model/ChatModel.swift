@@ -622,12 +622,19 @@ final class ChatModel: ObservableObject {
     // Spec: spec/state.md#updateChatInfo
     func updateChatInfo(_ cInfo: ChatInfo) {
         if let i = getChatIndex(cInfo.id) {
+            let cInfo = cInfo.keepingChatSettings(of: chats[i].chatInfo)
             if case let .group(groupInfo, groupChatScope) = cInfo, groupChatScope != nil {
                 chats[i].chatInfo = .group(groupInfo: groupInfo, groupChatScope: nil)
             } else {
                 chats[i].chatInfo = cInfo
             }
             chats[i].created = Date.now
+        }
+    }
+
+    func setChatSettings(_ chatId: ChatId, _ chatSettings: ChatSettings) {
+        if let i = getChatIndex(chatId) {
+            chats[i].chatInfo = chats[i].chatInfo.withChatSettings(chatSettings)
         }
     }
 
@@ -1410,6 +1417,25 @@ struct ShowingInvitation {
 
 struct NTFContactRequest {
     var chatId: String
+}
+
+extension ChatInfo {
+    func withChatSettings(_ chatSettings: ChatSettings) -> ChatInfo {
+        switch self {
+        case var .direct(contact):
+            contact.chatSettings = chatSettings
+            return .direct(contact: contact)
+        case .group(var groupInfo, let groupChatScope):
+            groupInfo.chatSettings = chatSettings
+            return .group(groupInfo: groupInfo, groupChatScope: groupChatScope)
+        default:
+            return self
+        }
+    }
+
+    func keepingChatSettings(of current: ChatInfo) -> ChatInfo {
+        current.chatSettings.map { withChatSettings($0) } ?? self
+    }
 }
 
 // Spec: spec/state.md#Chat
