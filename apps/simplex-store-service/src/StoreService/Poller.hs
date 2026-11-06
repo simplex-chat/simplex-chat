@@ -37,10 +37,10 @@ import StoreService.Config (PollConfig (..))
 import StoreService.Names.LateCredits (CreditOutcome (..), LateMoney (..), creditLateInvoice, lateMoneyOf)
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Store (CleanupKept (..), LateAlert (..), LateCredit (..), LateCreditState (..), LatePending (..), LateSupport (..), claimLateAlert, deleteUnpaidRegistration, lateAlertDue, latePending, uncreditedLateInvoices, unpaidCleanupCandidates)
-import StoreService.Orders (decide, expireOverdue, settleOrder)
+import StoreService.Orders (decide, expireOverdue, settleOrder, signalReceived)
 import StoreService.Providers (ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), expiresItself, settleWindow, unitName)
 import StoreService.Safely (safely, safelyWith)
-import StoreService.Store.Invoices (InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), cryptoCurrencyText, getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
+import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), cryptoCurrencyText, getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
 import StoreService.Waiters (Waiters, waitingCount, waitingCountSTM)
 import Control.Concurrent.STM
 import Control.Logger.Simple (logError, logNote, logWarn)
@@ -230,12 +230,25 @@ listPass env now p =
         settleWhat (ref, _) = "badge poller: settling " <> tshow (pProvider p) <> " invoice " <> ref
         skipWhat (ref, _) = "badge poller: reading the skipped " <> tshow (pProvider p) <> " invoice " <> fromMaybe "the provider did not name" ref
 
+-- | Money a paid name invoice receives later is written nowhere, so only this alert tells support to refund it.
+moneyAfterPaid :: PollerEnv -> UTCTime -> InvoiceRow -> PaymentSignal -> IO ()
+moneyAfterPaid env now InvoiceRow {irInvoiceId = InvoiceId invId, irProduct, irPayment} signal
+  | IPName _ <- irProduct,
+    Just stored <- ipUnits =<< irPayment,
+    Received {rcvUnits = Just units, rcvCrypto} <- signalReceived signal,
+    units > stored = do
+      let alert = "names: invoice " <> invId <> " was paid, and its provider now reads " <> fromMaybe "" rcvCrypto <> " received, more than recorded; the extra is credited nowhere and needs a refund by support"
+      due <- dueToWarn env now alert
+      when due $ logError alert
+  | otherwise = pure ()
+
 -- | provider_ref is unique table-wide, not per provider, so check the provider too.
 -- A name invoice's late money is credited after the settlement that recorded it commits.
 settleMoved :: PollerEnv -> PaymentProvider -> UTCTime -> (Text, PaymentSignal) -> IO ()
 settleMoved env@PollerEnv {peStore, peWaiters, pePhases, peProviders} provider now (ref, signal) =
   getInvoiceByProviderRef peStore ref >>= \case
-    Just InvoiceRow {irInvoiceId, irStatus, irProvider, irProduct} | irProvider == provider ->
+    Just row@InvoiceRow {irInvoiceId, irStatus, irProvider, irProduct} | irProvider == provider -> do
+      when (irStatus == ISPaid) $ moneyAfterPaid env now row signal
       when (isJust (decide irStatus signal)) $
         settleOrder peStore peWaiters pePhases irInvoiceId signal now >>= \case
           Left e -> logError ("badge poller: settling order " <> ref <> " failed: " <> e)

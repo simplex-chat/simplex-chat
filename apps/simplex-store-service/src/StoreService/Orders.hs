@@ -10,6 +10,7 @@ module StoreService.Orders
     expireOverdue,
     publishRegistration,
     decide,
+    signalReceived,
     codeLifetime,
   )
 where
@@ -64,8 +65,8 @@ paidInFull = \case
   SigSettled {} -> True
   SigClosed _ f -> f == PaidInFull
 
-received :: PaymentSignal -> Received
-received = \case
+signalReceived :: PaymentSignal -> Received
+signalReceived = \case
   SigFunded r _ -> r
   SigSettled r _ -> r
   SigClosed r _ -> r
@@ -153,11 +154,11 @@ settleOrder st waiters phases invId signal now' = do
                   || confirmedCents > heldCents
                   || maybe False (> fromMaybe 0 heldUnits) confirmedUnits
       where
-        Received {rcvAmount, rcvCrypto, rcvConfirmed = Confirmed {cfCents = CurrencyAmount confirmedCents, cfUnits = confirmedUnits}} = received signal
+        Received {rcvAmount, rcvCrypto, rcvConfirmed = Confirmed {cfCents = CurrencyAmount confirmedCents, cfUnits = confirmedUnits}} = signalReceived signal
         CurrencyAmount minor = rcvAmount
     settle :: DB.Connection -> InvoiceRow -> Write -> Product -> IO (Either Text (InvoiceStatus, Published, [NameOutcome]))
     settle db row@InvoiceRow {irStatus} w@Write {wStatus, wPayment} sold = do
-      let money@Received {rcvUncreditable} = received signal
+      let money@Received {rcvUncreditable} = signalReceived signal
           wrotePayment = newPayment row w
       when wrotePayment $ do
         upsertPayment db row wPayment money (paidInFull signal) at

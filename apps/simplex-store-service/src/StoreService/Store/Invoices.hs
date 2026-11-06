@@ -113,7 +113,9 @@ data InvoicePayment = InvoicePayment
     ipPaidInFull :: Bool,
     ipStatus :: Text,
     ipUpdatedAt :: UTCTime,
-    ipConfirmed :: Confirmed
+    ipConfirmed :: Confirmed,
+    -- | the crypto received in the smallest unit, Nothing for card or when uncounted
+    ipUnits :: Maybe Int64
   }
   deriving (Eq, Show)
 
@@ -211,7 +213,7 @@ invoiceRowSelect =
     <> ", bc.badge_type, bc.months, ni.registration_id, "
     <> "i.price, i.amount, i.currency, i.payment_url, i.payment_address, i.payment_crypto_currency, "
     <> "i.payment_crypto_amount, i.expires_at, i.status, i.created_at, "
-    <> "p.amount, p.crypto_paid, p.crypto_due, p.paid_in_full, p.status, p.updated_at, p.confirmed_amount, p.confirmed_units "
+    <> "p.amount, p.crypto_paid, p.crypto_due, p.paid_in_full, p.status, p.updated_at, p.confirmed_amount, p.confirmed_units, p.received_units "
     <> "FROM @invoices i "
     <> productJoins
     <> "LEFT JOIN @payments p ON p.invoice_id = i.invoice_id "
@@ -426,6 +428,7 @@ type InvoiceCols =
     :. (Word32, Word32, Text, Maybe Text, Maybe Text, Maybe Text)
     :. (Maybe Text, UTCTime, Text, UTCTime)
     :. (Maybe Word32, Maybe Text, Maybe Text, Maybe Int, Maybe Text, Maybe UTCTime, Maybe Word32, Maybe Int64)
+    :. Only (Maybe Int64)
 
 mkInvoiceRow :: InvoiceCols -> Either Text InvoiceRow
 mkInvoiceRow
@@ -433,6 +436,7 @@ mkInvoiceRow
       :. (price, amount, currency, url, addr, cryptoCur)
       :. (cryptoAmt, expiresAt, statusTxt, createdAt)
       :. (pAmount, pCryptoPaid, pCryptoDue, pPaidInFull, pStatus, pUpdatedAt, pConfirmedAmount, pConfirmedUnits)
+      :. Only pUnits
     ) = do
     provider <- note "invoices.provider" (textDecode providerTxt)
     invoiceProduct <- case (badgeType, months, registrationId) of
@@ -454,15 +458,16 @@ mkInvoiceRow
           irExpiresAt = expiresAt,
           irStatus = status,
           irCreatedAt = createdAt,
-          irPayment = mkPayment pAmount pCryptoPaid pCryptoDue pPaidInFull pStatus pUpdatedAt pConfirmedAmount pConfirmedUnits
+          irPayment = mkPayment pAmount pCryptoPaid pCryptoDue pPaidInFull pStatus pUpdatedAt pConfirmedAmount pConfirmedUnits pUnits
         }
 
-mkPayment :: Maybe Word32 -> Maybe Text -> Maybe Text -> Maybe Int -> Maybe Text -> Maybe UTCTime -> Maybe Word32 -> Maybe Int64 -> Maybe InvoicePayment
-mkPayment amt cryptoPaid cryptoDue paidInFull status updatedAt confirmedAmount confirmedUnits =
+mkPayment :: Maybe Word32 -> Maybe Text -> Maybe Text -> Maybe Int -> Maybe Text -> Maybe UTCTime -> Maybe Word32 -> Maybe Int64 -> Maybe Int64 -> Maybe InvoicePayment
+mkPayment amt cryptoPaid cryptoDue paidInFull status updatedAt confirmedAmount confirmedUnits units =
   InvoicePayment (CurrencyAmount <$> amt) cryptoPaid cryptoDue (paidInFull == Just 1)
     <$> status
     <*> updatedAt
     <*> ((\cents -> Confirmed {cfCents = CurrencyAmount cents, cfUnits = confirmedUnits}) <$> confirmedAmount)
+    <*> pure units
 
 selectInvoiceRow :: DB.Connection -> Query -> Text -> IO (Maybe InvoiceRow)
 selectInvoiceRow db q param = do

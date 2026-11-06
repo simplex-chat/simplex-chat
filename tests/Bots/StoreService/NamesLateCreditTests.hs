@@ -87,6 +87,7 @@ namesLateCreditTests = describe "StoreService names: balance life" $ do
     it "credits the extra of an invoice overpaid in time to its order's balance, logged, once, and nothing for an exact or card payment" testOverpaidInTime
     it "credits the extra at the next pass when its credit step could not read the rate" testOverpaidByPass
     it "alerts the extra of an overpaid HighSpeed invoice to support, naming the invoiced units, and nothing for an exact one" testOverpaidHighSpeed
+    it "alerts money a paid invoice receives after its settlement once an hour, crediting none of it" testMoneyAfterPaid
   describe "balances with late credits" $ do
     it "keeps a credit made while the balance is held, the held spend settling" testCreditWhileHeld
     it "refuses a covered spend that read the amount before a credit" testSpendBeforeCredit
@@ -657,6 +658,18 @@ testOverpaidByPass = withLate $ \l@Late {lStore = st} -> do
   void $ passAt l (at 20)
   balanceOf st "over" `shouldReturn` Just (9600, 9600, 0)
   withTransaction st uncreditedLateInvoices `shouldReturn` []
+
+testMoneyAfterPaid :: IO ()
+testMoneyAfterPaid = withLate $ \l@Late {lStore = st} -> do
+  placeOrderRow st "paid" False 20000 (at 60)
+  let paid units = SigSettled (btcPaidOf lateUnits units units) (at 10)
+      alerted = logged "ERROR" "invoice inv-paid was paid, and its provider now reads 480000 received, more than recorded"
+  void $ readSignal l "paid" (paid lateUnits)
+  readSignal l "paid" (paid lateUnits) >>= (`shouldNotSatisfy` logged "ERROR" "was paid, and its provider")
+  readSignal l "paid" (paid 480000) >>= (`shouldSatisfy` alerted)
+  readSignal l "paid" (paid 480000) >>= (`shouldNotSatisfy` alerted)
+  void $ passAt l (at 20)
+  balanceOf st "paid" `shouldReturn` Nothing
 
 testOverpaidHighSpeed :: IO ()
 testOverpaidHighSpeed = withLate $ \l@Late {lStore = st} -> do
