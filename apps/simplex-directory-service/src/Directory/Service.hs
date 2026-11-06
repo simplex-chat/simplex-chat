@@ -30,6 +30,7 @@ import Control.Monad.Except
 import Control.Monad.IO.Class
 import Control.Monad.Reader (runReaderT)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.Text as A
 import Data.Bifunctor (first)
@@ -165,7 +166,11 @@ welcomeGetOpts = do
 directoryServiceCLI :: DirectoryOpts -> IO ()
 directoryServiceCLI opts = do
   env@ServiceState {eventQ} <- newServiceState opts
-  let eventHook _cc resp = atomically $ resp <$ mapM_ (writeTQueue eventQ) (crDirectoryEvent resp)
+  let eventHook _cc resp = do
+        atomically $ mapM_ (writeTQueue eventQ) (crDirectoryEvent resp)
+        pure $ case resp of
+          Right (CEvtServiceRequest u reqId sigKey _) -> Right $ CEvtServiceRequest u reqId sigKey JM.empty
+          _ -> resp
       chatHooks =
         defaultChatHooks
           { preStartHook = Just $ directoryPreStartHook opts,
