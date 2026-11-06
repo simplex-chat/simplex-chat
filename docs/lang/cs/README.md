@@ -1,6 +1,6 @@
-| Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/docs/README.md), [FR](/docs/lang/fr/README.md), [PL](/docs/lang/pl/README.md) |
+| Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/README.md), [FR](/docs/lang/fr/README.md), [PL](/docs/lang/pl/README.md) |
 
-<img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
+<img src="/images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
 # SimpleX - první platforma pro zasílání zpráv, která neobsahuje žádné identifikační údaje uživatelů - 100% soukromá!
 
@@ -116,7 +116,7 @@ curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/inst
 
 Po instalaci chatovacího klienta jednoduše spusťte `simplex-chat` z terminálu.
 
-![simplex-chat](./images/connection.gif)
+![simplex-chat](/images/connection.gif)
 
 Více informací o [instalaci a používání terminálové aplikace](./CLI.md).
 
@@ -164,8 +164,8 @@ Plánujeme brzy přidat:
 Můžete:
 
 - použít knihovnu SimpleX Chat k integraci funkcí chatu do svých mobilních aplikací.
-- vytvářet chatovací boty a služby v jazyce Haskell - viz [simple](./apps/simplex-bot/) a více [advanced chat bot example](./apps/simplex-bot-advanced/).
-- vytvářet chatovací boty a služby v libovolném jazyce se spuštěným terminálem SimpleX Chat CLI jako lokálním serverem WebSocket. Viz [TypeScript SimpleX Chat client](./packages/simplex-chat-client/) a [JavaScript chat bot example](./packages/simplex-chat-client/typescript/examples/squaring-bot.js).
+- vytvářet chatovací boty a služby v jazyce Haskell - viz [simple](/apps/simplex-bot/) a více [advanced chat bot example](/apps/simplex-bot-advanced/).
+- vytvářet chatovací boty a služby v libovolném jazyce se spuštěným terminálem SimpleX Chat CLI jako lokálním serverem WebSocket. Viz [TypeScript SimpleX Chat client](/packages/simplex-chat-client/) a [JavaScript chat bot example](/packages/simplex-chat-client/typescript/examples/squaring-bot.js).
 - spustit [simplex-chat terminal CLI](./CLI.md) pro provádění jednotlivých příkazů chatu, např. pro odesílání zpráv v rámci provádění shellových skriptů.
 
 Pokud uvažujete o vývoji s platformou SimpleX, obraťte se na nás pro případné rady a podporu.
@@ -304,7 +304,7 @@ Nikdy jsme neposkytli ani jsme nebyli požádáni o přístup k našim serverům
 
 Nezaznamenáváme IP adresy uživatelů a na našich serverech neprovádíme žádnou korelaci provozu. Pokud je pro vás bezpečnost na úrovni přenosu kritická, musíte pro přístup k serverům pro zasílání zpráv používat Tor nebo jinou podobnou síť. Klientské aplikace budeme vylepšovat, abychom omezili možnosti korelace provozu.
 
-Více informací naleznete v [Podmínky a zásady ochrany osobních údajů](./PRIVACY.md).
+Více informací naleznete v [Podmínky a zásady ochrany osobních údajů](/PRIVACY.md).
 
 ## Bezpečnostní kontakt
 
@@ -314,7 +314,7 @@ Jakákoli zjištění možných útoků korelace provozu umožňujících korelo
 
 ## Licence
 
-[AGPL v3](./LICENSE)
+[AGPL v3](/LICENSE)
 
 [<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apple_store.svg" alt="Aplikace iOS" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
 &nbsp;
