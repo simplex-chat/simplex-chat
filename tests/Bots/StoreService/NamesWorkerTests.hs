@@ -11,7 +11,7 @@ import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, ownerA, paidOrder, reveal)
-import Bots.StoreService.WebTests (capturingStderr, jsonObject, statusOf, stubCalls, webGet, webRequestBody)
+import Bots.StoreService.WebTests (capturingStderr, jsonObject, statusOf, stubCalls, webGet)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
@@ -20,7 +20,7 @@ import Control.Concurrent.Async (wait, withAsync)
 import qualified Control.Exception as E
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
-import Control.Monad (forM_, replicateM, replicateM_, void, when)
+import Control.Monad (forM_, replicateM_, void, when)
 import Data.ByteString (ByteString)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
@@ -135,7 +135,6 @@ workerTests = describe "StoreService names: worker" $ do
     it "requeues a lapsed committed order, which reads failed, answering an old version at once after it" testRetryLapsed
     it "answers registration_changed with the current view when the order changed during its checks, writing nothing" testRetryLostRace
     it "runs in the name's turn, answering registration_changed for an order moved to another name meanwhile" testRetryInNameTurn
-    it "takes one create token per request" testRetryLimit
 
 -- fixtures
 
@@ -1260,10 +1259,3 @@ testRetryInNameTurn = withWorker $ \W {wCtx = ctx@Ctx {cOrders}} -> do
   (status', v') <- whileHeld (retryOf ctx moving) (void $ rewrite ctx moving $ \o -> o {nrLabelHash = labelHash "dynamis", nrLength = 7})
   (status', field "error" =<< v') `shouldBe` (409, Just "registration_changed")
   nrPhase <$> stored ctx moving `shouldReturn` PFailed
-
-testRetryLimit :: IO ()
-testRetryLimit = withWorker $ \W {wCtx = ctx@Ctx {cClient}} -> do
-  r <- paidIn ctx aliceOrder id
-  let fromClient = statusOf <$> webRequestBody cClient "POST" (registrationPath (nrId r) <> "/retry") [("X-Forwarded-For", "203.0.113.8")] ""
-  replicateM 5 fromClient `shouldReturn` replicate 5 400
-  fromClient `shouldReturn` 429

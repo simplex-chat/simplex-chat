@@ -16,7 +16,7 @@ import Bots.StoreService.WebTests (bounded, jsonObject, statusOf, webGet, webReq
 import Control.Concurrent.Async (Async, async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM
-import Control.Monad (forM_, replicateM)
+import Control.Monad (forM_)
 import Crypto.Number.Serialize (i2ospOf_, os2ip)
 import qualified Crypto.PubKey.ECC.Types as ECC
 import qualified Data.Aeson as J
@@ -84,7 +84,6 @@ namesRevealTests = describe "StoreService names: reveal" $ do
   describe "races" $ do
     it "answers registration_changed with the current view when the registration changed during the checks" testLostRace
     it "runs one at a time with /name for the name, exactly one of them taking effect" testRacesName
-    it "takes one read token per request, whatever its outcome" testReadToken
 
 -- fixtures
 
@@ -594,20 +593,3 @@ testRacesName = bounded "races /name" $ withReveals $ \Fx {fCtx = ctx} -> do
     `shouldBe` (409, Just "registration_changed", field "version" movedView, Just "queued", Just (J.String $ hex dynamit), Just (J.Number 1))
   NameRegistration {nrLabelHash = movedHash, nrReveal = movedReveal, nrLinksRefusedAt} <- stored ctx refusedRid
   (movedHash, movedReveal, nrLinksRefusedAt) `shouldBe` (labelHash "dynamit", Nothing, Nothing)
-
-testReadToken :: IO ()
-testReadToken = withReveals $ \Fx {fCtx = ctx@Ctx {cClient}} -> do
-  rid <- committed ctx (orderOf alice)
-  body <- J.encode <$> ownerBody ctx alice
-  let client = [(hContentType, "application/json"), ("X-Forwarded-For", "203.0.113.9")]
-      from verb path b = statusOf <$> webRequestBody cClient verb path client b
-      round' =
-        sequence
-          [ from "POST" (revealPath rid) body,
-            from "POST" (revealPath rid) "{}",
-            from "POST" (revealPath $ RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g") body,
-            from "GET" (registrationPath rid) ""
-          ]
-  concat <$> replicateM 15 round' `shouldReturn` concat (replicate 15 [200, 400, 404, 200])
-  from "POST" (revealPath rid) body `shouldReturn` 429
-  from "GET" (registrationPath rid) "" `shouldReturn` 429

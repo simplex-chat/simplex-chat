@@ -55,7 +55,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
-import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, responseBody, responseHeaders, responseStatus)
+import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, requestHeaders, responseBody, responseHeaders, responseStatus)
 import Network.HTTP.Types.Status (statusCode)
 import Network.Socket (Family (..), SockAddr (..), SocketType (..), close, connect, defaultProtocol, socket, tupleToHostAddress)
 import Network.Wai.Handler.Warp (openFreePort)
@@ -149,7 +149,7 @@ namesBootTests = do
   it "warns naming the indexes of trusted dev_keys, and says nothing without them" testDevKeysWarned
   it "refuses a node serving another chain than chain_id, and dev_keys unless the node answers, only warning without them" testNodeChain
   it "boots codes-only, refusing paid name orders 403 codes_only and answering code orders and code checks, the badges shell as built" testNamesBootCodesOnly
-  it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, the community terms and registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, code checks and orders under one limit, and another name and retries under another" testNamesBoot
+  it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, the community terms and registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, and each route under its limit, shared by the routes of that limit" testNamesBoot
 
 testDevKeysWarned :: HasCallStack => TestParams -> IO ()
 testDevKeysWarned _ = do
@@ -186,7 +186,7 @@ testNodeChain _ = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
 testNamesBoot :: HasCallStack => TestParams -> IO ()
 testNamesBoot ps = do
   svc <- prepareGroupService ps
-  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> chainSection} Nothing
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> chainSection, gsListener = ["trust_forwarded_for = on"]} Nothing
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
     mgr <- newManager defaultManagerSettings
@@ -243,13 +243,24 @@ testNamesBoot ps = do
     answer retried {method = "POST"} `shouldReturn` (404, Just $ J.object ["error" J..= ("not_found" :: Text)])
     retriedByGet <- httpLbs retried mgr
     (statusCode $ responseStatus retriedByGet, lookup "Allow" $ responseHeaders retriedByGet) `shouldBe` (405, Just "POST")
-    -- another name, the spend and the retry above took 3 of this client's 5 create requests a minute
-    replicateM_ 2 $ statusCode . responseStatus <$> httpLbs retried {method = "POST"} mgr `shouldReturn` 404
-    statusCode . responseStatus <$> httpLbs retried {method = "POST"} mgr `shouldReturn` 429
-    -- the register above took the first of this client's 10 code requests a minute, which the code check shares
-    let codeRequest path = request path >>= \r -> statusCode . responseStatus <$> httpLbs r {method = "POST", requestBody = RequestBodyLBS "{}"} mgr
-    forM_ (take 9 $ cycle ["/api/code/check", "/api/name/register"]) $ \path -> (path,) <$> codeRequest path `shouldReturn` (path, 400)
-    forM_ ["/api/code/check", "/api/name/register"] $ \path -> (path,) <$> codeRequest path `shouldReturn` (path, 429)
+    -- each limit's routes share one client's minute, whatever they answer; a client of its own per limit
+    let rid = "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g"
+        limits =
+          [ ("create", 5, [("POST", rid <> "/name"), ("POST", rid <> "/retry"), ("POST", rid <> "/spend")]),
+            ("code", 10, [("POST", "/api/name/register"), ("POST", "/api/code/check")]),
+            ("read", 60, [("GET", rid), ("POST", rid <> "/reveal")]),
+            ("search", 30, [("GET", "/api/name/" <> T.unpack aliceHex <> "?length=5"), ("GET", "/api/terms/0x12")]),
+            ("preview", 20, [("POST", "/api/link/preview")]),
+            ("find", 5, [("POST", "/api/registration/find")]),
+            ("records", 10, [("POST", "/api/name/records")])
+          ]
+    forM_ (zip [1 :: Int ..] limits) $ \(i, (limit, perMinute, routes)) -> do
+      let from (m, path) = do
+            req <- request path
+            r <- httpLbs req {method = m, requestBody = RequestBodyLBS "{}", requestHeaders = [("X-Forwarded-For", fromString $ "203.0.113." <> show i)]} mgr
+            pure (limit, path, statusCode $ responseStatus r, isJust $ lookup "Retry-After" $ responseHeaders r)
+      forM_ (take perMinute $ cycle routes) $ \route -> from route >>= \(_, path, status, _) -> (limit, path, status == 429) `shouldBe` (limit :: Text, path, False)
+      forM_ routes $ \route@(_, path) -> from route `shouldReturn` (limit, path, 429, True)
     poll t >>= (`shouldSatisfy` isNothing)
 
 testNamesBootCodesOnly :: HasCallStack => TestParams -> IO ()
@@ -601,6 +612,8 @@ data GroupSvc = GroupSvc
     gsKey :: BadgeIssuerKey,
     gsStaticDir :: FilePath,
     gsIniSections :: [Text],
+    -- | settings added to [listener]
+    gsListener :: [Text],
     gsPs :: TestParams
   }
 
@@ -614,7 +627,7 @@ prepareGroupService ps@TestParams {tmpPath} =
           gsStaticDir = tmpPath </> "badge_group_static"
       createDirectoryIfMissing True gsStaticDir
       withNewTestChatCfg ps gsCfg serviceDbPrefix badgeProfile $ \_ -> pure ()
-      pure GroupSvc {gsCfg, gsKey, gsStaticDir, gsIniSections = [], gsPs = ps}
+      pure GroupSvc {gsCfg, gsKey, gsStaticDir, gsIniSections = [], gsListener = [], gsPs = ps}
 
 runGroupService :: HasCallStack => GroupSvc -> (ChatController -> ServiceState -> Int64 -> IO a) -> IO a
 runGroupService svc = runGroupServiceAs svc (Just testGroupConfig)
@@ -661,7 +674,7 @@ stopChat cc = stopStoreService cc >> disposeAgentClient (smpAgent cc)
 
 -- It writes the service's ini on free ports, the names site's too with [names]; Nothing omits the [group] section.
 groupServiceOpts :: GroupSvc -> Maybe GroupConfig -> IO (StoreServiceOpts, ServiceConfig, Int)
-groupServiceOpts GroupSvc {gsKey = BadgeIssuerKey {secretKey}, gsStaticDir, gsIniSections, gsPs = ps@TestParams {tmpPath}} groupCfg = do
+groupServiceOpts GroupSvc {gsKey = BadgeIssuerKey {secretKey}, gsStaticDir, gsIniSections, gsListener, gsPs = ps@TestParams {tmpPath}} groupCfg = do
   (port, sock) <- openFreePort
   (namesPort, namesSock) <- openFreePort
   close sock >> close namesSock
@@ -676,6 +689,7 @@ groupServiceOpts GroupSvc {gsKey = BadgeIssuerKey {secretKey}, gsStaticDir, gsIn
         "badges_port = " <> show port,
         "badges_static_dir = " <> gsStaticDir
       ]
+        <> map T.unpack gsListener
         <> namesSite
         <> maybe [] groupSection groupCfg
         <> map T.unpack gsIniSections

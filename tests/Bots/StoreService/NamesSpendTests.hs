@@ -17,7 +17,7 @@ import ChatTests.DBUtils (TestParams)
 import Control.Concurrent.Async (Async, async, cancel, concurrently, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
-import Control.Monad (forM_, join, replicateM_, void)
+import Control.Monad (forM_, join, void)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
@@ -33,7 +33,6 @@ import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Network.HTTP.Client (defaultManagerSettings, newManager)
-import Network.HTTP.Types (hContentType)
 import Network.Wai (Application)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Controller (ChatController (..))
@@ -82,7 +81,6 @@ namesSpendTests = describe "StoreService names: spend" $ do
     it "runs its checks in the contract's order" testCheckOrder
     it "refuses a card difference below the card minimum after the price check, accepting it by crypto and at the minimum" testCardMinimum
     it "refuses sealed missing or over 11095 characters and a body over 16384 bytes, accepting the longest" testSpendSizes
-    it "counts spends against the create limit" testSpendLimit
     it "answers 403 codes_only to a covered spend, a difference, a malformed body and an unknown order, spending nothing and reaching no provider" testSpendCodesOnly
   describe "terms" $ do
     it "answers terms_changed for other terms or the other kind, listed or not, and stores the community terms, covered and by difference" testSpendTermsChanged
@@ -525,11 +523,6 @@ testSpendSizes = withSpend $ \ctx -> do
   LB.length (J.encode longest) `shouldSatisfy` (< 16384)
   fst <$> postSpend ctx src longest `shouldReturn` 200
 
-testSpendLimit :: IO ()
-testSpendLimit = withSpend $ \Ctx {cClient} -> do
-  let attempt = statusOf <$> webRequestBody cClient "POST" "/api/registration/src/spend" [(hContentType, "application/json"), ("X-Forwarded-For", "203.0.113.9")] "{}"
-  replicateM_ 5 $ attempt `shouldReturn` 400
-  attempt `shouldReturn` 429
 
 testOverdueHolderSpent :: IO ()
 testOverdueHolderSpent = withSpend $ \ctx@Ctx {cStore, cClock} -> do

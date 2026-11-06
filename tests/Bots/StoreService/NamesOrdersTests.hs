@@ -166,7 +166,6 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "refuses sealed over 11095 characters, a body over 16384 bytes and malformed fields, accepting the longest order" testCodeSizes
     it "runs code orders in the code's turn, one of two spending one code for two names winning, the other answered code_reserved" testConcurrentCodeOrders
     it "answers the code's refusal when its reservation fails in the insert, writing nothing" testCodeNotReservable
-    it "counts code orders and code checks against one code limit" testCodeLimitShared
   describe "terms" $ do
     it "answers terms_changed with the current terms and community for an old version, other terms or the other kind, listed or not, creating nothing, and takes an ini-only name under the general terms" testTermsChanged
     it "accepts the community terms for a listed name as viem signs them, storing them" testCommunityTerms
@@ -1246,17 +1245,6 @@ testCodeNotReservable = withOrders $ \ctx@Ctx {cStore} -> do
   length <$> registrationsOf ctx ownerA `shouldReturn` 0
 
 -- | One client's code checks and code orders share its 10 a minute; another client is not limited by them.
-testCodeLimitShared :: IO ()
-testCodeLimitShared = withOrders $ \ctx@Ctx {cClient} -> do
-  (code, _) <- issueCode ctx 8 2 id
-  body <- J.encode <$> signedCodeBody ctx code aliceOrder
-  let from path b = statusOf <$> webRequestBody cClient "POST" path [(hContentType, "application/json"), ("X-Forwarded-For", "203.0.113.7")] b
-      codeCheck = from "/api/code/check" (J.encode $ J.object ["code" .= code])
-      codeOrder = from "/api/name/register" body
-  sequence (concat $ replicate 5 [codeCheck, codeOrder]) `shouldReturn` replicate 10 200
-  codeCheck `shouldReturn` 429
-  codeOrder `shouldReturn` 429
-  fst <$> register ctx code aliceOrder `shouldReturn` 200
 
 -- | A response held before it is written, as for a client that reads it slowly, must not hold the name's turn.
 testSlowReaderHoldsNoTurn :: IO ()

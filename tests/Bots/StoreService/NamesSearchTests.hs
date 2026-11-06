@@ -32,7 +32,7 @@ import Bots.StoreService.NamesStoreTests (atNonce, issue, newEdit, order, ownerA
 import Bots.StoreService.WebTests (withServiceStore)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
-import Control.Monad (forM_, replicateM_)
+import Control.Monad (forM_)
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
@@ -91,14 +91,12 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "fails a search whose terms text arrives past the deadline, and answers the text that fetch kept to the next search" $ testSlowTerms g
     it "answers bad_request to a hash not in 0x and 64 lowercase hex, before the length" $ testBadHash g
     it "answers invalid_name to a length not a decimal integer in 6-63" $ testBadLength g
-    it "takes a search token for every request, whatever its outcome, and answers another method 405" $ testSearchLimit g
   describe "link preview" $ do
     it "answers each kind of chat as an entity without its links" $ testPreviewKinds g
     it "answers invalid_link to anything but one short link within 4096 bytes" $ testPreviewInvalid g
     it "answers bad_request to a body that is not a JSON object or is over its cap" $ testPreviewBadBody g
     it "accepts a link to a private host with its profile unavailable, never fetching it" $ testPreviewPrivateHost g
     it "answers a link whose profile was not read unread" $ testPreviewUnread g
-    it "takes a preview token for every request, whatever its outcome, and answers another method 405" $ testPreviewLimit g
   describe "terms" $ do
     it "answers either current terms' link and text by its hash, not_found to another hash, an unset or untaken link, terms_unavailable with Retry-After to a text not fetched now, provider_unavailable when unread and bad_request to a malformed hash" $ testTerms g
 
@@ -612,15 +610,6 @@ testBadLength g = withSearch g id id $ \s@Search {node} -> do
   forM_ ["?length=6", "?length=63", "?length=007"] $ \q ->
     searchName s aliceHex q >>= \a -> (q, a) `shouldBe` (q, reservedAnswer)
 
-testSearchLimit :: TVar ChaChaDRG -> IO ()
-testSearchLimit g = withSearch g id id $ \s -> do
-  replicateM_ 30 $ searchName s "0x00" "?length=12" `shouldReturn` refused 400 "bad_request"
-  r <- send s ("/api/name/" <> T.unpack aliceHex <> "?length=12") id
-  answerOf r `shouldBe` refused 429 "rate_limited"
-  lookup "Retry-After" (responseHeaders r) `shouldSatisfy` maybe False (> "0")
-  r' <- send s ("/api/name/" <> T.unpack aliceHex <> "?length=12") $ \req -> req {method = "POST"}
-  answerOf r' `shouldBe` refused 405 "method_not_allowed"
-  lookup "Allow" (responseHeaders r') `shouldBe` Just "GET"
 
 -- link preview
 
@@ -659,13 +648,3 @@ testPreviewUnread :: TVar ChaChaDRG -> IO ()
 testPreviewUnread g = withSearch g id id $ \s -> do
   previewOf s (taggedLink "smp8.simplex.im" 'c' "Gone") `shouldReturn` ok (unreadChat "channel" "channel" "unread")
   length <$> fetchedLinks s `shouldReturn` 1
-
-testPreviewLimit :: TVar ChaChaDRG -> IO ()
-testPreviewLimit g = withSearch g id id $ \s -> do
-  replicateM_ 20 $ previewOf s "hello" `shouldReturn` refused 400 "invalid_link"
-  r <- postPreview s (J.encode $ J.object ["link" .= bakeryLink])
-  answerOf r `shouldBe` refused 429 "rate_limited"
-  lookup "Retry-After" (responseHeaders r) `shouldSatisfy` maybe False (> "0")
-  r' <- send s "/api/link/preview" id
-  answerOf r' `shouldBe` refused 405 "method_not_allowed"
-  lookup "Allow" (responseHeaders r') `shouldBe` Just "POST"

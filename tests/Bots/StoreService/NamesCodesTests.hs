@@ -10,10 +10,9 @@ import Bots.StoreService.WebTests (withServiceStore)
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently)
-import Control.Monad (forM_, replicateM_)
+import Control.Monad (forM_)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
-import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.Maybe (fromJust, fromMaybe)
@@ -51,7 +50,6 @@ namesCodesTests = describe "StoreService names: prepaid codes" $ do
     it "folds a code typed in lower case with spaces to the issued one" testCheckFolded
     it "answers code_invalid to an unknown, mistyped, zero-padded, owner or badge code" testCheckInvalid
     it "answers bad_request to a body that is not an object with a code text, and 405 to GET" testCheckBadBody
-    it "takes a code token for every check, whatever its outcome" testCheckLimit
   describe "reservations" $ do
     it "reserves an unused code after the registration's write, in its transaction" testReserve
     it "refuses each unusable code with its tag, before the write runs" testReserveRefusals
@@ -212,17 +210,6 @@ testCheckBadBody = withCodeCheck $ \_ client@(mgr, base) -> do
   lookup "Allow" (responseHeaders r) `shouldBe` Just "POST"
   lookup hContentType (responseHeaders r) `shouldBe` Just "application/json"
 
-testCheckLimit :: IO ()
-testCheckLimit = withCodeCheck $ \st client -> do
-  issued <- newCode 8
-  _ <- issueAs st issued usable
-  unknown <- newCode 8
-  replicateM_ 5 $ checkCode client issued >>= (`shouldBe` 200) . fst . answerOf
-  replicateM_ 4 $ checkCode client unknown >>= (`shouldBe` 400) . fst . answerOf
-  postCheck client "{}" >>= (`shouldBe` 400) . fst . answerOf
-  limited <- checkCode client issued
-  answerOf limited `shouldBe` refused 429 "rate_limited"
-  lookup "Retry-After" (responseHeaders limited) `shouldSatisfy` maybe False (BC.all (`elem` ['0' .. '9']))
 
 -- | Two paid orders, so a code can be reserved for either.
 withOrders :: (Turns -> DBStore -> IO a) -> IO a
