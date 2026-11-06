@@ -125,7 +125,7 @@ webApp env = siteApp env (weBadgesSite env)
 siteApp :: WebEnv -> Maybe Site -> Application
 siteApp env@WebEnv {weHttp} served req respond = case pathInfo req of
   path | Just site <- served, sitePath path -> only "GET" req respond $ serveSite site path respond
-  ["api", "invoice"] -> only "POST" req respond $ limited weHttp createLimit req respond $ limitedForAll weHttp invoicesLimit respond $ createInvoiceHandler env req respond
+  ["api", "invoice"] -> only "POST" req respond $ limited weHttp createLimit req respond $ createInvoiceHandler env req respond
   ["api", "invoice", iid] -> only "GET" req respond $ limited weHttp readLimit req respond $ readInvoiceHandler env (InvoiceId iid) req respond
   ["api", "invoice", iid, "cancel"] -> only "POST" req respond $ limited weHttp createLimit req respond $ cancelInvoiceHandler env (InvoiceId iid) respond
   ["webhooks", "btcpay"] -> only "POST" req respond $ webhookHandler env PPCrypto "POST /webhooks/btcpay" req respond
@@ -413,7 +413,7 @@ createInvoiceHandler env@WebEnv {weStore, weConfig, weProviders, weWaiters} req 
         Nothing
           | LB.length body > fromIntegral maxBodyBytes -> refuse "body over the size limit" badRequest
           | otherwise -> maybe (refuse "malformed body" badRequest) badgeInvoice (parseCreateRequest o)
-        Just (J.String "name") | Just orders <- weOrders env -> nameInvoiceHandler orders weConfig weProviders weWaiters o respond
+        Just (J.String "name") | Just orders <- weOrders env -> nameInvoiceHandler orders (weHttp env) weConfig weProviders weWaiters o respond
         Just kind -> refuse ("no order of kind " <> tshow kind) badRequest
       _ -> refuse "malformed body" badRequest
   where
@@ -432,8 +432,8 @@ createInvoiceHandler env@WebEnv {weStore, weConfig, weProviders, weWaiters} req 
 
 -- | Once the provider call succeeds an invoice exists at BTCPay, and any path below that does not write our rows leaves it stranded.
 createAtProvider :: WebEnv -> Provider -> CreateRequest -> PricedOffer -> Respond -> IO ResponseReceived
-createAtProvider WebEnv {weStore, weConfig} provider CreateRequest {crPriceId, crOfferId, crMethod, crCodeHash} priced respond =
-  do
+createAtProvider WebEnv {weStore, weConfig, weHttp} provider CreateRequest {crPriceId, crOfferId, crMethod, crCodeHash} priced respond =
+  limitedForAll weHttp invoicesLimit respond $ do
       invId@(InvoiceId orderId) <- newInvoiceId
       -- truncate once, so the response, the row and the provider get the same value
       now <- truncateToSecond <$> getCurrentTime

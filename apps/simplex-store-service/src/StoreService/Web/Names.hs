@@ -40,7 +40,7 @@ namesRoutes cfg http env@NamesEnv {neConfig, neStore, neContracts, neProfiles, n
   ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler (ordersEnv env) rid}
   ["api", "registration", rid, "reveal"] -> Just Route {rMethod = "POST", rLimit = readLimit, rHandler = revealHandler (ordersEnv env) rid}
   ["api", "registration", rid, "retry"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retryHandler (ordersEnv env) rid}
-  ["api", "registration", rid, "spend"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = spendHandler (ordersEnv env) cfg neProviders neWaiters rid}
+  ["api", "registration", rid, "spend"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = spendHandler (ordersEnv env) http cfg neProviders neWaiters rid}
   _ -> Nothing
 
 -- | Nothing for a path no route knows. The limit is taken only once the route and the method match.

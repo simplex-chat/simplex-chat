@@ -212,9 +212,9 @@ limited env limit req respond action =
     Nothing -> action
     Just seconds -> respond (rateLimited seconds)
 
--- | A limit every client shares.
-limitedForAll :: HttpEnv -> Limit -> Respond -> IO ResponseReceived -> IO ResponseReceived
-limitedForAll env limit respond action = takeToken env limit "" >>= maybe action (respond . rateLimited)
+-- | A limit every client shares, taken just before the provider is asked, so refused requests do not use it.
+limitedForAll :: HttpEnv -> Limit -> (Response -> IO a) -> IO a -> IO a
+limitedForAll env limit refuse action = takeToken env limit "" >>= maybe action (refuse . rateLimited)
 
 only :: Method -> Request -> Respond -> IO ResponseReceived -> IO ResponseReceived
 only method req respond action

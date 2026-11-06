@@ -53,7 +53,7 @@ import StoreService.Orders (publishRegistration)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderError (..), ProviderInvoice (..), expiresItself)
 import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId, truncateToSecond)
 import StoreService.Waiters (Waiters, publish)
-import StoreService.Web.Http (Respond, badRequest, confirmationsFor, internalError, invalidName, invoiceAt, invoicePairs, invoiceWindow, jsonError, jsonResponse, nameBodyBytes, notFound, providerFor, providerNamed, providerUnavailable, readBoundedBody, termsUnavailable)
+import StoreService.Web.Http (HttpEnv, Respond, badRequest, confirmationsFor, internalError, invalidName, invoiceAt, invoicesLimit, invoicePairs, invoiceWindow, jsonError, jsonResponse, limitedForAll, nameBodyBytes, notFound, providerFor, providerNamed, providerUnavailable, readBoundedBody, termsUnavailable)
 import StoreService.Web.Names.Codes (codeRefusalResponse)
 
 data InvoiceOrder = InvoiceOrder
@@ -83,8 +83,8 @@ sendAnswer :: Respond -> Answer -> IO ResponseReceived
 sendAnswer respond Answer {aResponse, aAfter} = aAfter >> respond aResponse
 
 -- | POST /api/invoice for a name, its body already read and its kind checked.
-nameInvoiceHandler :: OrdersEnv -> ServiceConfig -> [Provider] -> Waiters -> J.Object -> Respond -> IO ResponseReceived
-nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} cfg providers waiters body respond
+nameInvoiceHandler :: OrdersEnv -> HttpEnv -> ServiceConfig -> [Provider] -> Waiters -> J.Object -> Respond -> IO ResponseReceived
+nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} http cfg providers waiters body respond
   | nCodesOnly (oeConfig env) = sendAnswer respond =<< refuse ORCodesOnly
   | otherwise = sendAnswer respond =<< case parseInvoiceOrder body of
     Left refusal -> refuse refusal
@@ -115,7 +115,7 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} cfg providers waiters
           insert new paid db at = first (const OROrderExists) <$> createPaidRegistration db new (OTInvoice ioMethod price) paid at
       firstRefusal checks >>= \case
         Just refusal -> refuse refusal
-        Nothing -> createAtProvider env cfg providers waiters what InvoicedOrder {ivRequest = req, ivOrderHash = orderHash orOwner fields (OTInvoice ioMethod price), ivHolders = [], ivMethod = ioMethod, ivPrice = price, ivAmount = ioPrice, ivInsert = insert}
+        Nothing -> createAtProvider env http cfg providers waiters what InvoicedOrder {ivRequest = req, ivOrderHash = orderHash orOwner fields (OTInvoice ioMethod price), ivHolders = [], ivMethod = ioMethod, ivPrice = price, ivAmount = ioPrice, ivInsert = insert}
 
 -- | An order paid by invoice: its order hash, the holders its transaction closes, the order's price, what its invoice asks
 -- (less than the price when a balance paid the rest), and its insert after the invoice row's.
@@ -130,13 +130,13 @@ data InvoicedOrder = InvoicedOrder
   }
 
 -- | The invoice is made at the provider first, then the order is written with its invoice row; an order not written has its invoice cancelled there.
-createAtProvider :: OrdersEnv -> ServiceConfig -> [Provider] -> Waiters -> Text -> InvoicedOrder -> IO Answer
-createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} cfg providers waiters what InvoicedOrder {ivRequest = req@OrderRequest {orOwner, orFields}, ivOrderHash, ivHolders, ivMethod, ivPrice, ivAmount, ivInsert} =
+createAtProvider :: OrdersEnv -> HttpEnv -> ServiceConfig -> [Provider] -> Waiters -> Text -> InvoicedOrder -> IO Answer
+createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} http cfg providers waiters what InvoicedOrder {ivRequest = req@OrderRequest {orOwner, orFields}, ivOrderHash, ivHolders, ivMethod, ivPrice, ivAmount, ivInsert} =
   case providerFor providers ivMethod of
     Nothing -> do
       logNote (what <> " refused: no provider configured for " <> tshow ivMethod)
       pure $ answerNow providerUnavailable
-    Just provider -> do
+    Just provider -> limitedForAll http invoicesLimit (pure . answerNow) $ do
       invId <- newInvoiceId
       now <- truncateToSecond <$> oeNow
       let amount = CurrencyAmount ivAmount
@@ -235,8 +235,8 @@ parseCodeOrder o = do
 
 -- | POST /api/registration/:id/spend, another name paid from this order's balance, in the contract's order of checks,
 -- under the new name's turn and then the balance's.
-spendHandler :: OrdersEnv -> ServiceConfig -> [Provider] -> Waiters -> Text -> Request -> Respond -> IO ResponseReceived
-spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} cfg providers waiters ridText req respond
+spendHandler :: OrdersEnv -> HttpEnv -> ServiceConfig -> [Provider] -> Waiters -> Text -> Request -> Respond -> IO ResponseReceived
+spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} http cfg providers waiters ridText req respond
   | nCodesOnly oeConfig = sendAnswer respond =<< refuse ORCodesOnly
   | otherwise = readBoundedBody nameBodyBytes req >>= requested >>= sendAnswer respond
   where
@@ -280,7 +280,7 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} cfg 
       Just (SPMCard _)
         | spPrice - spBalance < minCardChargeCents -> refuse ORBadRequest
       Just method ->
-        createAtProvider env cfg providers waiters what $
+        createAtProvider env http cfg providers waiters what $
           InvoicedOrder {ivRequest = order, ivOrderHash = orderHash orOwner orFields (spendTerms spend), ivHolders = maybeToList holder, ivMethod = method, ivPrice = spPrice, ivAmount = fromIntegral (spPrice - spBalance), ivInsert = differenceOrderInsert spend}
 
 -- | Stripe refuses a USD charge under 50 cents, so the page offers only crypto for a smaller difference.

@@ -260,7 +260,7 @@ badgeWebTests = do
     it "takes the client from X-Forwarded-For only when it is trusted" testForwardedForOnlyWhenTrusted
     it "uses a forwarded client only when it parses as an IP address" testForwardedForMustBeAnAddress
     it "keys an IPv6 client by its /64 and an IPv4-mapped one by its IPv4 address" testIPv6ClientKey
-    it "caps checkouts of every client together" testInvoicesLimitForAll
+    it "caps checkouts of every client together, counting only those that reach the provider" testInvoicesLimitForAll
     it "refuses every badly signed webhook, logging only the first few of a minute" testWebhookRefusalLogCapped
     it "answers a poll at once with rate_limited while every hold slot is taken, and frees each slot after its hold" testHoldSlots
     it "answers a search at once with rate_limited while every search slot is taken, and frees each slot after its search" testSearchSlots
@@ -1920,9 +1920,12 @@ testIPv6ClientKey = bounded "IPv6 client key" $ withWebAppForwarded True $ \_ cl
   from "::ffff:192.0.2.44" `shouldReturn` 429
 
 testInvoicesLimitForAll :: IO ()
-testInvoicesLimitForAll = bounded "checkouts for all" $ withWebAppForwarded True $ \_ client -> do
-  let checkout i = statusOf <$> webRequestBody client "POST" "/api/invoice" [(hContentType, "application/json"), ("X-Forwarded-For", BC.pack ("198.51.100." <> show (i :: Int)))] "{}"
-  mapM checkout [1 .. lmPerMinute invoicesLimit] >>= (`shouldSatisfy` all (== 400))
+testInvoicesLimitForAll = bounded "checkouts for all" $ withSeededCheckout $ \client -> do
+  let malformed i = statusOf <$> postCreateAs client i "{}"
+      checkout i = statusOf <$> postCreateAs client i (createBody "price_legend" (Just "offer_12m") "btc" (codeHashText $ "code" <> tshow i))
+  -- refused requests never reach the provider, so they take none of the shared checkouts
+  mapM malformed [1 .. lmPerMinute invoicesLimit + 1] >>= (`shouldSatisfy` all (== 400))
+  mapM checkout [1 .. lmPerMinute invoicesLimit] >>= (`shouldSatisfy` notElem 429)
   checkout (lmPerMinute invoicesLimit + 1) `shouldReturn` 429
 
 testHoldSlots :: IO ()
