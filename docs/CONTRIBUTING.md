@@ -23,6 +23,10 @@ Please discuss the problem you want to solve and your detailed implementation pl
 
 CLAUDE.md in the repository root imports these files, this guide and ../scripts/ci/README.md for Claude Code; apps/ios/CLAUDE.md and apps/multiplatform/CLAUDE.md import the README of each app.
 
+## Building the core library
+
+All client apps link against the Haskell core library, which is not in the repo and is not built by the app build systems. ./contributing/CORE-LIBS.md has the commands per target (Android, desktop, iOS) and their prerequisites.
+
 ## Compiling with SQLCipher encryption enabled
 
 Add `cabal.project.local` to project root with the location of OpenSSL headers and libraries and flag setting encryption mode:
