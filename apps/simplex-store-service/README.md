@@ -1359,8 +1359,11 @@ after the invoice closed, and when its invoice was paid more crypto than it aske
 buyer spends a balance on another name from Your names, or asks for it back: the page tells them to
 write to chat@simplex.chat with the order's reference, which is its invoice id, or its registration
 id for an order without an invoice. Nothing is refunded automatically, and the service never learns
-where to send money. Support records each refund in `--run-cli` mode with the service stopped, like
-the other `//` commands:
+where to send money. A reference is not proof of who paid: it is in the service's logs, the provider's
+Dashboard and its emails. Before paying, have the buyer prove they hold the order's owner code: they
+open Your names on simplex.domains with it and read back the balance and the order's name as shown
+there, which only the owner code reveals. Support records each refund in `--run-cli` mode with the
+service stopped, like the other `//` commands:
 
 ```
 //refund <reference>
