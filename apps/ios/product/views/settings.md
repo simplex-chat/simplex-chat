@@ -136,7 +136,7 @@ Database row shows exclamation octagon icon in red when `chatRunning == false`.
 |---|---|---|---|
 | How to use it | `questionmark` | `ChatHelp` | Usage guide with user's display name |
 | What's new | `plus` | `WhatsNewView` | Changelog and new features |
-| About SimpleX Chat | `info` | `SimpleXInfo` | About page with privacy explanation |
+| About SimpleX Chat | `info` | `SimpleXInfo` | About page with privacy explanation and the link "Why SimpleX is built." |
 | Send questions and ideas | `number` | Opens SimpleX team chat link | Direct contact with developers |
 | Send us email | `envelope` | `mailto:chat@simplex.chat` | Email link |
 
