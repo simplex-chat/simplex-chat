@@ -26,6 +26,16 @@ When `ChatModel.chatInitialized` transitions to `true`, the chat list appears fu
 
 ---
 
+## UI: Chat List Filters
+
+### GAP: Filter counts don't follow a chat changing in place
+**Source:** [spec/client/chat-list.md](../spec/client/chat-list.md)
+A chat's preset filters are counted when it is added and when it is removed. A chat that changes in place keeps its old count until the next full load: a deleted conversation that returns with a new message, or a contact card that starts connecting.
+
+**REC:** Update the counts where these chats change, or derive the counts from the chat list.
+
+---
+
 ## Flows: Group Lifecycle
 
 ### GAP: Bulk member role change — API supports batch but UI uses single-member calls

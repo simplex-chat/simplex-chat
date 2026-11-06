@@ -174,9 +174,9 @@ ChatTagsModel (singleton -- filter state)
 | `updateUser(_ user:)` | Update user in list and current | [L466](../Shared/Model/ChatModel.swift#L466) |
 | `removeUser(_ user:)` | Remove user from list | [L476](../Shared/Model/ChatModel.swift#L476) |
 | `getChat(_ id:)` | Find chat by ID | [L487](../Shared/Model/ChatModel.swift#L487) |
-| `addChat(_ chat:)` | Add chat to list | [L542](../Shared/Model/ChatModel.swift#L542) |
+| `addChat(_ chat:)` | Add chat to list and count it in `presetTags` | [L609](../Shared/Model/ChatModel.swift#L609) |
 | `updateChatInfo(_ cInfo:)` | Update chat metadata | [L556](../Shared/Model/ChatModel.swift#L556) |
-| `replaceChat(_ id:, _ chat:)` | Replace chat in list | [L608](../Shared/Model/ChatModel.swift#L608) |
+| `replaceChat(_ id:, _ chat:)` | Replace chat in list, or add it when missing | [L675](../Shared/Model/ChatModel.swift#L675) |
 | `removeChat(_ id:)` | Remove chat from list | [L1217](../Shared/Model/ChatModel.swift#L1217) |
 | `popChat(_ id:)` | Move chat to top of list | [L1193](../Shared/Model/ChatModel.swift#L1193) |
 | `totalUnreadCountForAllUsers()` | Sum unread across all users | [L1093](../Shared/Model/ChatModel.swift#L1093) |

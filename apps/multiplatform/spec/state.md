@@ -202,7 +202,7 @@ The secondary context is used for:
 
 ### Key Operations
 
-- `addChat(chat)` -- adds chat at index 0, triggers pop animation
+- `addChat(chat)` -- adds chat at index 0, counts it in `presetTags` in the primary context, triggers pop animation
 - `reorderChat(chat, toIndex)` -- reorders chat list (e.g., when a chat receives a new message)
 - `updateChatInfo(rhId, cInfo)` -- updates chat metadata while preserving connection stats
 - `hasChat(rhId, id)` / `getChat(id)` -- lookup methods
