@@ -674,7 +674,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "refuses a bad service key without quoting it" testNamesBadServiceKey
   it "keeps the RPC URL and the service key out of errors and the shown config" testNamesSecretsHidden
   it "takes an http rpc_url only to a node on loopback, any other only as https" testNamesRpcUrlHttps
-  it "names a [names] or [chain] setting nothing reads, terms_version among them, and still boots" testNamesUnknownKeys
+  it "refuses a [names] or [chain] setting nothing reads, terms_version among them, naming each" testNamesUnknownKeys
   it "reads codes_only on and off as a known setting, off when absent, and refuses any other value" testNamesCodesOnly
   it "reads record_edits_per_year as a known setting, 3 when absent, and refuses a value outside 1-100" testNamesRecordEdits
   it "accepts [issuer] dev_keys on chain 31337 only, with [names] on" testDevKeysLocalChain
@@ -886,8 +886,10 @@ testNamesUnknownKeys = do
   withIni t $ \p -> do
     Right ini <- readIniFile p
     unknownKeys ini `shouldMatchList` ["names.yeers", "names.terms_version", "chain.rpc"]
-  NamesConfig {nYears} <- parsedNames (namesSection <> ["yeers = 3", "terms_version = 2026-10-23"]) (chainSection <> ["rpc = x"])
-  nYears `shouldBe` 2
+  namesRefusal (namesSection <> ["yeers = 3", "terms_version = 2026-10-23"]) (chainSection <> ["rpc = x"])
+    `shouldReturn` "nothing reads names.yeers, names.terms_version, chain.rpc, and a mistyped [names] or [chain] setting would change what is sold: correct or remove it"
+  namesRefusal (namesSection <> ["code_only = on"]) chainSection
+    `shouldReturn` "nothing reads names.code_only, and a mistyped [names] or [chain] setting would change what is sold: correct or remove it"
 
 testNamesCodesOnly :: IO ()
 testNamesCodesOnly = do

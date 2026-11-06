@@ -348,7 +348,7 @@ readServiceConfig path =
       Right (written, ini) -> case colonSetting text <|> repeatedSetting written of
         Just e -> pure (Left e)
         Nothing -> do
-          mapM_ (\k -> logWarn (T.pack path <> ": nothing reads " <> k <> ", so it was ignored")) (unknownKeys ini)
+          mapM_ (\k -> logWarn (T.pack path <> ": nothing reads " <> k <> ", so it was ignored")) (filter (not . salesKey) $ unknownKeys ini)
           let cfg = parseConfig ini
           forM_ (either (const Nothing) names cfg) $ \NamesConfig {nCommunity} ->
             logNote ("names: " <> tshow (M.size nCommunity) <> " community names loaded")
@@ -404,6 +404,10 @@ knownSettings =
     ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap", "max_fee_per_gas"])
   ]
 
+-- | A mistyped [names] or [chain] setting, such as codes_only, would change what is sold, so it is refused rather than ignored.
+salesKey :: Text -> Bool
+salesKey k = any (`T.isPrefixOf` k) ["names.", "chain."]
+
 unknownKeys :: Ini -> [Text]
 unknownKeys ini = beforeAnySection <> unknownSections <> settings
   where
@@ -422,6 +426,9 @@ parseConfig ini = do
   case [e | (k, e) <- retiredListenerKeys, isJust (look "listener" k)] of
     [] -> pure ()
     es -> Left (intercalate "; " es)
+  case filter salesKey (unknownKeys ini) of
+    [] -> pure ()
+    ks -> Left ("nothing reads " <> T.unpack (T.intercalate ", " ks) <> ", and a mistyped [names] or [chain] setting would change what is sold: correct or remove it")
   lHost <- optional "listener" "host" "127.0.0.1"
   lBadgesPort <- listenerPort "badges_port" defaultBadgesPort
   let lBadgesStaticDir = maybe defaultBadgesStaticDir T.unpack (present "listener" "badges_static_dir")

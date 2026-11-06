@@ -145,8 +145,8 @@ transaction's receipt must be before the service settles it and reads the chain'
 the receipt's own block, so it must be at least 1. An optional `[community]` section gives what each
 community name is for (see [Terms and community names](#terms-and-community-names)). Write every setting as
 `key = value`. A `key: value` line, which the parser would read with the first character of its
-value dropped, a key written twice in one section, or a section header written twice, stops the
-service at startup.
+value dropped, a key written twice in one section, a section header written twice, or a `[names]` or
+`[chain]` setting nothing reads, stops the service at startup.
 `store_service.ini.example` is the committed template; `store_service.ini` itself is
 gitignored, since a real one holds API keys and webhook secrets.
 
@@ -773,8 +773,8 @@ can add to. A listed name is sold under the community terms, which include the g
 apply to it, and any other name under the general terms. A name is registered only after its owner
 accepts the current terms of its kind on chain, once.
 
-**Upgrading:** `[names] terms_version` and `terms_url` are no longer read: the service warns at
-startup that nothing reads them, and ignores them.
+**Upgrading:** remove `[names] terms_version` and `terms_url`. Nothing reads them now, and the
+service refuses to start with any `[names]` or `[chain]` setting it does not read.
 
 A later `setNamePolicy` takes effect for the service after a restart, so restart it
 at once. Until then the service reads the reservations, the list, the terms and the nonces from the
