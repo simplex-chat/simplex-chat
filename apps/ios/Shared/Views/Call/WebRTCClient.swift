@@ -618,8 +618,11 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         if var key: [CChar] = activeCall?.aesKey?.cString(using: .utf8),
            let pointer: UnsafeMutableRawPointer = malloc(encrypted.count) {
             memcpy(pointer, (encrypted as NSData).bytes, encrypted.count)
-            logCrypto("decrypt", chat_decrypt_media(&key, pointer.advanced(by: clearTextBytesSize), Int32(encrypted.count - clearTextBytesSize)))
-            return Data(bytes: pointer, count: encrypted.count - WebRTCClient.ivTagBytes)
+            guard checkCrypto("decrypt", chat_decrypt_media(&key, pointer.advanced(by: clearTextBytesSize), Int32(encrypted.count - clearTextBytesSize))) else {
+                free(pointer)
+                return nil
+            }
+            return Data(bytesNoCopy: pointer, count: encrypted.count - WebRTCClient.ivTagBytes, deallocator: .free)
         } else {
             return nil
         }
@@ -633,22 +636,24 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         if var key: [CChar] = activeCall?.aesKey?.cString(using: .utf8),
            let pointer: UnsafeMutableRawPointer = malloc(unencrypted.count + WebRTCClient.ivTagBytes) {
             memcpy(pointer, (unencrypted as NSData).bytes, unencrypted.count)
-            logCrypto("encrypt", chat_encrypt_media(chat_ctrl, &key, pointer.advanced(by: clearTextBytesSize), Int32(unencrypted.count + WebRTCClient.ivTagBytes - clearTextBytesSize)))
-            return Data(bytes: pointer, count: unencrypted.count + WebRTCClient.ivTagBytes)
+            guard checkCrypto("encrypt", chat_encrypt_media(chat_ctrl, &key, pointer.advanced(by: clearTextBytesSize), Int32(unencrypted.count + WebRTCClient.ivTagBytes - clearTextBytesSize))) else {
+                free(pointer)
+                return nil
+            }
+            return Data(bytesNoCopy: pointer, count: unencrypted.count + WebRTCClient.ivTagBytes, deallocator: .free)
         } else {
             return nil
         }
     }
 
-    private func logCrypto(_ op: String, _ r: UnsafeMutablePointer<CChar>?) {
-        if let r = r {
-            let err = fromCString(r)
-            if err != "" {
-                logger.error("\(op) error: \(err)")
-//            } else {
-//                logger.debug("\(op) ok")
-            }
+    private func checkCrypto(_ op: String, _ r: UnsafeMutablePointer<CChar>?) -> Bool {
+        guard let r = r else { return true }
+        let err = fromCString(r)
+        if err != "" {
+            logger.error("\(op) error: \(err)")
+            return false
         }
+        return true
     }
 
     func addRemoteCameraRenderer(_ renderer: RTCVideoRenderer) {
