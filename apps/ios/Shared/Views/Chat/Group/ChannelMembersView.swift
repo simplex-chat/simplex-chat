@@ -31,10 +31,10 @@ struct ChannelMembersView: View {
                 Section(header: Text(subscriberCountStr(subscriberCount)).foregroundColor(theme.colors.secondary)) {
                     searchFieldView(text: $searchText, focussed: $searchFocussed, theme.colors.onBackground, theme.colors.secondary)
                         .padding(.leading, 8)
-                    memberRow(GMember(groupInfo.membership), user: true, showRole: true)
+                    MemberRow(chat: chat, groupInfo: groupInfo, gMember: GMember(groupInfo.membership), user: true, showRole: true)
                     let filteredMembers = s == "" ? members : members.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
                     ForEach(filteredMembers) { member in
-                        memberRow(member, user: false, showRole: member.wrapped.memberRole >= .member)
+                        MemberRow(chat: chat, groupInfo: groupInfo, gMember: member, user: false, showRole: member.wrapped.memberRole >= .member)
                     }
                 }
             }
@@ -48,57 +48,66 @@ struct ChannelMembersView: View {
                     searchFieldView(text: $searchText, focussed: $searchFocussed, theme.colors.onBackground, theme.colors.secondary)
                         .padding(.leading, 8)
                     if groupInfo.membership.memberRole >= .member {
-                        memberRow(GMember(groupInfo.membership), user: true, showRole: true)
+                        MemberRow(chat: chat, groupInfo: groupInfo, gMember: GMember(groupInfo.membership), user: true, showRole: true)
                     }
                     let filteredContributors = s == "" ? contributors : contributors.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
                     ForEach(filteredContributors) { member in
-                        memberRow(member, user: false, showRole: member.wrapped.memberRole >= .moderator)
+                        MemberRow(chat: chat, groupInfo: groupInfo, gMember: member, user: false, showRole: member.wrapped.memberRole >= .moderator)
                     }
                 }
             }
         }
     }
 
-    @ViewBuilder private func memberRow(_ gMember: GMember, user: Bool, showRole: Bool) -> some View {
-        let member = gMember.wrapped
-        let nameText = Text(member.chatViewName)
-            .foregroundColor(member.memberIncognito ? .indigo : theme.colors.onBackground)
-        let displayName = member.verified
-            ? (Text(Image(systemName: "checkmark.shield")) + textSpace)
-                .font(.caption).baselineOffset(2).kerning(-2)
-                .foregroundColor(theme.colors.secondary) + nameText
-            : nameText
-        let row = HStack {
-            MemberProfileImage(member, size: 38)
-                .padding(.trailing, 2)
-            VStack(alignment: .leading) {
-                NameWithBadge(displayName, member.nameBadge)
-                    .lineLimit(1)
-                if user {
-                    Text("you")
-                        .font(.caption)
+    private struct MemberRow: View {
+        var chat: Chat
+        var groupInfo: GroupInfo
+        @ObservedObject var gMember: GMember
+        @EnvironmentObject var theme: AppTheme
+        var user: Bool
+        var showRole: Bool
+
+        var body: some View {
+            let member = gMember.wrapped
+            let nameText = Text(member.chatViewName)
+                .foregroundColor(member.memberIncognito ? .indigo : theme.colors.onBackground)
+            let displayName = member.verified
+                ? (Text(Image(systemName: "checkmark.shield")) + textSpace)
+                    .font(.caption).baselineOffset(2).kerning(-2)
+                    .foregroundColor(theme.colors.secondary) + nameText
+                : nameText
+            let row = HStack {
+                MemberProfileImage(member, size: 38)
+                    .padding(.trailing, 2)
+                VStack(alignment: .leading) {
+                    NameWithBadge(displayName, member.nameBadge)
+                        .lineLimit(1)
+                    if user {
+                        Text("you")
+                            .font(.caption)
+                            .foregroundColor(theme.colors.secondary)
+                    }
+                }
+                Spacer()
+                if showRole {
+                    Text(member.memberRole.text(isChannel: groupInfo.isChannel))
                         .foregroundColor(theme.colors.secondary)
                 }
             }
-            Spacer()
-            if showRole {
-                Text(member.memberRole.text(isChannel: groupInfo.isChannel))
-                    .foregroundColor(theme.colors.secondary)
-            }
-        }
-        if user {
-            row
-        } else {
-            NavigationLink {
-                GroupMemberInfoView(
-                    groupInfo: groupInfo,
-                    chat: chat,
-                    groupMember: gMember,
-                    scrollToItemId: Binding.constant(nil)
-                )
-                .navigationBarHidden(false)
-            } label: {
+            if user {
                 row
+            } else {
+                NavigationLink {
+                    GroupMemberInfoView(
+                        groupInfo: groupInfo,
+                        chat: chat,
+                        groupMember: gMember,
+                        scrollToItemId: Binding.constant(nil)
+                    )
+                    .navigationBarHidden(false)
+                } label: {
+                    row
+                }
             }
         }
     }
