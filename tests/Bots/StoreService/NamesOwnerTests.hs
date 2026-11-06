@@ -410,8 +410,9 @@ testMoveRefusedPhases = withOwner $ \ctx -> do
   committedOrder <- paidIn ctx aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds orderTime + 1} committedPhase
   queuedOrder <- paidIn ctx dynamisOrder id
   takenOrder <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 4} takenPhase
-  forM_ [registeredOrder, committedOrder, queuedOrder, takenOrder] $ \r -> do
-    (nrPhase r,) <$> move ctx keyA r to `shouldReturn` (nrPhase r, refusedWith 400 "bad_request")
+  -- each by its own owner, so only the phase can refuse it
+  forM_ [(keyA, registeredOrder), (keyA, committedOrder), (keyA, queuedOrder), (keyB, takenOrder)] $ \(key, r) -> do
+    (nrPhase r,) <$> move ctx key r to `shouldReturn` (nrPhase r, refusedWith 400 "bad_request")
     stored ctx r `shouldReturn` r
 
 testMoveAccepted :: IO ()

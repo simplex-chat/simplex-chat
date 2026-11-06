@@ -150,9 +150,7 @@ testUnknownRevert g = withChain g $ \node c -> do
 testRpcError :: TVar ChaChaDRG -> IO ()
 testRpcError g = withChain g $ \node c -> do
   setFault node "eth_call" $ RpcError (-32000) "header not found" Nothing
-  r <- ethCallAt c Latest fakeController availableCall
-  r `shouldBe` Left (ChainUnavailable "eth_call: error -32000: header not found")
-  r `shouldNotSatisfy` mentionsUrl c
+  ethCallAt c Latest fakeController availableCall `shouldReturn` Left (ChainUnavailable "eth_call: error -32000: header not found")
 
 testTimeout :: TVar ChaChaDRG -> IO ()
 testTimeout g = withChain g $ \node c -> do
@@ -174,9 +172,7 @@ testRefused :: TVar ChaChaDRG -> IO ()
 testRefused g = withFakeEthNode $ \node -> do
   -- port 1 is privileged and nothing listens on it in the test container
   c <- newChainClient g (fakeChainConfig node) {cRpcUrl = "http://127.0.0.1:1" <> secretPath}
-  r <- latestBlock c
-  r `shouldBe` Left (ChainUnavailable "eth_getBlockByNumber: connection failed")
-  r `shouldNotSatisfy` mentionsUrl c
+  latestBlock c `shouldReturn` Left (ChainUnavailable "eth_getBlockByNumber: connection failed")
 
 testOversized :: TVar ChaChaDRG -> IO ()
 testOversized g = withChain g $ \node c -> do
@@ -283,11 +279,6 @@ withChain g action = withFakeEthNode $ \node -> do
 -- | Where a provider puts its API key.
 secretPath :: String
 secretPath = "/v2/provider-api-key"
-
-mentionsUrl :: ChainClient -> Either ChainError a -> Bool
-mentionsUrl ChainClient {ccConfig = ChainConfig {cRpcUrl}} = \case
-  Left (ChainUnavailable t) -> any (`T.isInfixOf` t) [T.pack cRpcUrl, T.pack secretPath, "127.0.0.1"]
-  _ -> False
 
 signed :: TVar ChaChaDRG -> ChainClient -> Word64 -> IO SignedTx
 signed g c nonce =

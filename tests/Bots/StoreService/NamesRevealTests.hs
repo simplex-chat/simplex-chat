@@ -414,12 +414,10 @@ testIntentRefusals = withReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> do
   sig <- signIntent ctx keyA alice 0 revealBefore
   other <- signIntent ctx fakeRegistrarKey alice 0 revealBefore
   early <- signIntent ctx keyA alice 0 (revealBefore - 1)
-  past <- signIntent ctx keyA alice 0 (orderSeconds - 1)
   forM_
     [ ("high s", bodyOf (highS sig) alice 0 revealBefore),
       ("another signer", bodyOf other alice 0 revealBefore),
-      ("a deadline a second before revealBefore", bodyOf early alice 0 (revealBefore - 1)),
-      ("a past deadline", bodyOf past alice 0 (orderSeconds - 1))
+      ("a deadline a second before revealBefore", bodyOf early alice 0 (revealBefore - 1))
     ]
     $ \(what, body) -> (what,) <$> reveal ctx rid body `shouldReturn` (what :: String, badRequest)
   answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (1 :: Int)

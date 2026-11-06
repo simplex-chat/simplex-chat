@@ -128,6 +128,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "answers a released code's error while it cannot pay again, before any read for the intent, and reserves it again while unused" testRetryReleasedCode
     it "requeues clearing failed_at, error and the register's hashes, waking a held poll" testRetryRequeue
     it "keeps the intent while our commitment is live with revealMargin left, going straight to committed" testRetryLiveCommitment
+    it "clears an intent whose deadline ends before our live commitment lapses" testRetryShortDeadline
     it "clears the label and intent when the sponsor nonce moved, our live commit keeping its hashes" testRetryNonceMoved
     it "clears the label and an intent the worker would refuse, while our commitment is live with revealMargin left" testRetryRefusedIntent
     it "clears the intent of a third party's live re-commit, and the worker the commit's hashes" testRetryThirdParty
@@ -1144,6 +1145,17 @@ testRetryLiveCommitment = withWorker $ \w@W {wCtx = ctx} -> do
   x <- stored ctx f
   (nrPhase x, nrReveal x, nrCommitTx x, nrCommitBlock x, nrRevealBefore x) `shouldBe` (PCommitted, nrReveal f, nrCommitTx f, nrCommitBlock f, Just (t + maxAge))
   length <$> sent w `shouldReturn` 1
+
+testRetryShortDeadline :: IO ()
+testRetryShortDeadline = withWorker $ \w@W {wCtx = ctx} -> do
+  (r, _) <- paidIn ctx aliceOrder id >>= committedByUs w
+  f <- failedAfterRegister w r
+  rv <- signedReveal ctx keyA reveal {rvDeadline = fromJust (nrRevealBefore r) - 1} r
+  short <- rewrite ctx f $ \o -> o {nrReveal = Just rv}
+  answerNonce w $ rvNonce rv
+  v <- retried ctx short
+  (field "phase" v, field "label" v) `shouldBe` (Just "queued", Just J.Null)
+  nrReveal <$> stored ctx short `shouldReturn` Nothing
 
 testRetryNonceMoved :: IO ()
 testRetryNonceMoved = withWorker $ \w@W {wCtx = ctx} -> do
