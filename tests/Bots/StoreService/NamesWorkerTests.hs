@@ -91,6 +91,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "keeps the phase on NameNotAvailable while the name still reads available, as for a pending competitor" testPendingCompetitor
     it "ends failed on a revert while the name is available, keeping a code" testRevertFailed
     it "keeps an order committed while the sponsor allowance is used up, alerting, and registers it after a top-up" testAllowanceUsedUp
+    it "fails an order that sent the most registers an order may, sending nothing, and refuses its Try again" testSendsCapped
     it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed, and reads the name policy again on TermsNotAccepted" testInvalidNonce
     it "relays no intent past its deadline, ending failed" testExpiredIntent
     it "keeps the phase when a read of the final check fails" testCheckUnread
@@ -668,6 +669,18 @@ testAllowanceUsedUp = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   dryRunsPass w
   void $ steps w r >>= awaiting
   length <$> sent w `shouldReturn` 1
+
+testSendsCapped :: IO ()
+testSendsCapped = withWorker $ \w@W {wCtx = ctx} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
+  answerAvailable w True
+  answerUnowned ctx "alicebakery"
+  mapM_ (\n -> sentRegister ctx r n TSReverted) [1 .. fromIntegral maxSendsPerKind]
+  steps w r >>= done
+  x <- stored ctx r
+  (nrPhase x, nrError x) `shouldBe` (PFailed, Just "The name could not be registered")
+  sent w `shouldReturn` []
+  fst <$> retryOf ctx x `shouldReturn` 400
 
 testInvalidNonce :: IO ()
 testInvalidNonce = forM_ [("InvalidNonce()", fakeNamePolicy), ("TermsNotAccepted(string)", newPolicy)] $ \(revert, policyAfter) -> withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders = OrdersEnv {oeContracts}}} -> do

@@ -135,6 +135,7 @@ retryHandler env@OrdersEnv {oeStore, oeTurns, oePhases} ridText _ respond =
         respond $ case refusal of
           RFNotFailed -> badRequest
           RFLinksRefused -> badRequest
+          RFSendsUsedUp -> badRequest
           RFCode code -> codeRefusalResponse code
           RFUnread -> providerUnavailable
 

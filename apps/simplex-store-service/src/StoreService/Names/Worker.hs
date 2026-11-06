@@ -17,6 +17,7 @@ module StoreService.Names.Worker
     Retried (..),
     RetryRefusal (..),
     retryRegistration,
+    maxSendsPerKind,
   )
 where
 
@@ -27,6 +28,7 @@ import Control.Exception (finally, mask_)
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (forM, forM_, forever, void, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
+import Data.Containers.ListUtils (nubOrd)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
 import Data.Map.Strict (Map)
@@ -227,7 +229,7 @@ ourCommit Worker {wkOrders = OrdersEnv {oeStore}, wkChain} NameRegistration {nrI
 
 sendCommit :: Worker -> UTCTime -> NameRegistration -> IO Next
 sendCommit w@Worker {wkOrders = OrdersEnv {oeConfig}, wkSender} now r@NameRegistration {nrId, nrCommitment} =
-  submitTransaction wkSender (TxCommit nrId) (cController $ nChain oeConfig) (commitCalldata nrCommitment) >>= \case
+  withinSends w now r isCommit $ submitTransaction wkSender (TxCommit nrId) (cController $ nChain oeConfig) (commitCalldata nrCommitment) >>= \case
     Right p -> commitSent w now r p
     Left SEInFlight -> pure Again
     -- UnexpiredCommitmentExists among them: a commit mined since the read, or a latest block still at the lapse second
@@ -272,7 +274,7 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
         Left e -> pure $ Just $ failure r e
         Right (policy, listed, accepted)
           | accepted == taTermsHash -> pure Nothing
-          | otherwise -> Just <$> relay policy (termsKind listed)
+          | otherwise -> Just <$> withinSends w now r isAccept (relay policy (termsKind listed))
   where
     held = acceptedTerms oeContracts nrCommitment nrOwner
     relay policy kind =
@@ -299,7 +301,7 @@ sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain 
       logWarn $ "names worker: registration " <> rid <> ": its stored intent is refused, " <> T.pack refusal
       judge w now r Nothing
     Right () ->
-      submitTransaction wkSender (TxRegister regId) cSponsor (registerWithCreditCalldata intent) >>= \case
+      withinSends w now r isRegister $ submitTransaction wkSender (TxRegister regId) cSponsor (registerWithCreditCalldata intent) >>= \case
         Right p -> registerSent w now r p
         Left SEInFlight -> pure Again
         Left (SEChain (ChainReverted reason)) -> judge w now r reason
@@ -400,7 +402,7 @@ secondsTime = posixSecondsToUTCTime . fromInteger
 -- | What Try again did: the version it wrote, the order changed since it was read, or a refusal.
 data Retried = RTWritten Int64 | RTChanged | RTRefused RetryRefusal
 
-data RetryRefusal = RFNotFailed | RFLinksRefused | RFCode CodeRefusal | RFUnread
+data RetryRefusal = RFNotFailed | RFLinksRefused | RFCode CodeRefusal | RFUnread | RFSendsUsedUp
   deriving (Eq, Show)
 
 -- | Try again, in the caller's turn of the order's name: registered when its register went through; else a code order's code
@@ -416,8 +418,39 @@ retryRegistration oe@OrdersEnv {oeNow} current = do
         LRegistered v -> pure $ RTWritten v
         LChanged -> pure RTChanged
         LUnread -> pure $ RTRefused RFUnread
-        LNotLanded -> retryCode oe now r >>= either (pure . RTRefused . RFCode) (requeue oe now r)
+        LNotLanded ->
+          sendsUsedUp oe r >>= \case
+            True -> pure $ RTRefused RFSendsUsedUp
+            False -> retryCode oe now r >>= either (pure . RTRefused . RFCode) (requeue oe now r)
     _ -> pure $ RTRefused RFNotFailed
+
+-- | An owner who changes their terms acceptance on chain makes every relay and register revert at the service's gas, so each
+-- kind of transaction is sent at most this many times for one order, its moves included.
+maxSendsPerKind :: Int
+maxSendsPerKind = 5
+
+-- | The send while the order has sent fewer than maxSendsPerKind transactions of its kind, else the order fails.
+withinSends :: Worker -> UTCTime -> NameRegistration -> (TxFor -> Bool) -> IO Next -> IO Next
+withinSends w@Worker {wkOrders} now r@NameRegistration {nrId = RegistrationId rid} ofKind send = do
+  sent <- sendsOf wkOrders r ofKind
+  if sent < maxSendsPerKind
+    then send
+    else do
+      logWarn $ "names worker: registration " <> rid <> " failed: it sent " <> tshow sent <> " transactions of one kind, the most an order may"
+      save w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notRegistered}
+
+sendsUsedUp :: OrdersEnv -> NameRegistration -> IO Bool
+sendsUsedUp oe r = any (>= maxSendsPerKind) <$> mapM (sendsOf oe r) [isCommit, isAccept, isRegister]
+
+-- | One per nonce, as a fee replacement is the same send.
+sendsOf :: OrdersEnv -> NameRegistration -> (TxFor -> Bool) -> IO Int
+sendsOf OrdersEnv {oeStore} NameRegistration {nrId} ofKind =
+  length . nubOrd . map ntNonce . filter (ofKind . ntFor) <$> withTransaction oeStore (`registrationTransactions` nrId)
+
+isCommit, isAccept, isRegister :: TxFor -> Bool
+isCommit = \case TxCommit _ -> True; _ -> False
+isAccept = \case TxAccept _ -> True; _ -> False
+isRegister = \case TxRegister _ -> True; _ -> False
 
 -- | The code a code order still holds, though revoked or expired since, or a released one it can reserve again.
 retryCode :: OrdersEnv -> UTCTime -> NameRegistration -> IO (Either CodeRefusal (Maybe PrepaidCode))

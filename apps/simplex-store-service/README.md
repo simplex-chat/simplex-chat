@@ -1119,6 +1119,11 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
 - `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over max_fee_per_gas
   <cap>` when a transaction stuck in the pool cannot be bumped within the cap.
 
+An order sends at most 5 commits, 5 terms acceptances and 5 registers, its moves included, since an
+owner who changes their terms acceptance on chain can make each acceptance and register revert at the
+service's gas. Past that the order fails, Try again answers `400 bad_request`, and support refunds it.
+The log line is `[WARN …] names worker: registration <id> failed: it sent <n> transactions of one kind`.
+
 Try again or a move of a failed order, and the worker's judgment of a register that did not go
 through, first run `confirmLanded`. It marks the order registered when `ownerOf` at the confirmation
 depth shows the order's owner holding the name, even if this order's register never landed: an
