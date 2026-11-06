@@ -384,7 +384,7 @@ stateDiagram-v2
 
 Only chat ids from the store are compared; fields written by the directory are excluded. An entry repeated across pages is dropped by its link, which is also the row key. A page whose results are all chats already listed adds neither row nor note. On the chat list, plan results are read again when a connection started from a result ends.
 
-**Opening.** A tap calls `planAndConnect(link)` with `prepareGroup = open`, which makes the online plan, with the spinner of §3, and opens the prepared chat with its Join button. `planAndConnect` shows the alert for a plan with a signature result or another name; Open's plan of a link without a signature has neither, so Open goes straight to the prepared chat. A prepared channel's banner shows its subscriber count from the link data when it is above 0. A Joining result uses the default, `confirm`, which keeps the pending join's alert. Prepared chats the user opened but didn't join stay in the chat list, as for a pasted link. A long press (iOS 16 and later, Android) or a right click on desktop shows a menu with Open.
+**Opening.** A tap calls `planAndConnect(link)` with `prepareGroup = open`, which makes the online plan, with the spinner of §3, and opens the prepared chat with its Join button. `planAndConnect` shows the alert for a plan with a signature result or another name; Open's plan of a link without a signature has neither, so Open goes straight to the prepared chat. A listing with only a full link has no link data, so its Open shows the existing "Join group" sheet on iOS and alert on Kotlin. A prepared channel's banner shows its subscriber count from the link data when it is above 0. A Joining result uses the default, `confirm`, which keeps the pending join's alert. Prepared chats the user opened but didn't join stay in the chat list, as for a pasted link. A long press (iOS 16 and later, Android) or a right click on desktop shows a menu with Open.
 
 ```mermaid
 flowchart TD
@@ -499,10 +499,11 @@ stateDiagram-v2
   Loading --> Hidden: text change, profile switch
   LoadMore --> Hidden: text change, profile switch
   Retry --> Hidden: text change, profile switch
+  Loading --> Stopped: chat stopped
   LoadMore --> Stopped: chat stopped
   Retry --> Stopped: chat stopped
-  Stopped --> LoadMore: chat running, cursor set
   Stopped --> Retry: chat running, failed
+  Stopped --> LoadMore: chat running, not failed, cursor set
   Stopped --> Hidden: text change, profile switch
 ```
 
