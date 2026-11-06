@@ -303,6 +303,7 @@ mobileChatOpts dbOptions tbqSize =
             chatRelayServer = Nothing,
             headless = False,
             highlyAvailable = False,
+            serviceRequests = False,
             yesToUpMigrations = False,
             migrationBackupPath = Just "",
             maintenance = True

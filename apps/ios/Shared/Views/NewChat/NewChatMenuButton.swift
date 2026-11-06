@@ -43,6 +43,7 @@ struct NewChatSheet: View {
     @State private var searchChatFilteredBySimplexLink: String? = nil
     // when the search text is a SimpleX name, the string to connect to (with @/# preserved); nil otherwise
     @State private var connectNameCandidate: String? = nil
+    @StateObject private var onlineSearch = OnlineSearchModel()
     @State private var alert: SomeAlert?
 
     // Sheet height management
@@ -83,6 +84,7 @@ struct NewChatSheet: View {
 
     private func viewBody(_ showArchive: Bool) -> some View {
         List {
+            let showsSearchInDirectory = isDirectorySearchable(searchText, showingLink: searchShowingSimplexLink) && !onlineSearch.showResults
             VStack(spacing: 12) {
                 ContactsListSearchBar(
                     searchMode: $searchMode,
@@ -90,7 +92,8 @@ struct NewChatSheet: View {
                     searchText: $searchText,
                     searchShowingSimplexLink: $searchShowingSimplexLink,
                     searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
-                    connectNameCandidate: $connectNameCandidate
+                    connectNameCandidate: $connectNameCandidate,
+                    onSearch: { onlineSearch.search(searchText) }
                 )
                 .frame(maxWidth: .infinity)
                 if let candidate = connectNameCandidate {
@@ -101,6 +104,9 @@ struct NewChatSheet: View {
                         searchFocussed: $searchFocussed,
                         dismiss: true
                     )
+                }
+                if showsSearchInDirectory {
+                    SearchInDirectoryRow(searchFocussed: $searchFocussed, onSearch: { onlineSearch.search(searchText) })
                 }
             }
             .listRowSeparator(.hidden)
@@ -155,18 +161,48 @@ struct NewChatSheet: View {
                     }
                 }
             }
-            
+
+            let rows = onlineSearch.rows(shownChatIds: [])
             ContactsList(
                 chatPredicate: contactListChatPredicate,
                 searchMode: $searchMode,
                 searchText: $searchText,
-                header: "Your Contacts",
+                header: onlineSearch.showResults ? nil : "Your Contacts",
                 searchFocussed: $searchFocussed,
                 searchShowingSimplexLink: $searchShowingSimplexLink,
                 searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
-                showDeletedChatIcon: true
+                showDeletedChatIcon: true,
+                showsEmptyState: !onlineSearch.loading && rows.isEmpty && !showsSearchInDirectory,
+                moreRows: rows.isEmpty ? nil : AnyView(onlineSearchSection(rows))
             )
         }
+        .onChange(of: searchText) { _ in
+            onlineSearch.reset()
+        }
+        .onChange(of: chatModel.currentUser?.userId) { _ in
+            onlineSearch.reset()
+        }
+    }
+
+    @ViewBuilder private func onlineSearchSection(_ rows: OnlineSearchRows) -> some View {
+        ForEach(rows.yourChats.compactMap { chatModel.getChat($0) }, id: \.viewId) { chat in
+            ContactListNavLink(chat: chat, showDeletedChatIcon: true)
+                .disabled(chatModel.chatRunning != true)
+        }
+        ForEach(rows.results) { result in
+            DirectorySearchRow(entry: result.entry, imageSize: 30, state: result.state, showsOpen: chatModel.chatRunning == true)
+                .modifier(DirectoryResultMenu(result: result, imageSize: 30, onOpen: { openResult(result) }))
+                .onTapGesture { openResult(result) }
+                .disabled(chatModel.chatRunning != true)
+        }
+        if let footer = rows.footer {
+            DirectoryFooterRow(footer: footer, onlineSearch: onlineSearch)
+        }
+    }
+
+    private func openResult(_ result: DirectoryResult) {
+        searchFocussed = false
+        openDirectoryResult(result, theme: theme, dismiss: true, cleanup: nil)
     }
 
     private func contactListChatPredicate(_ chat: Chat, _ withSearch: Bool) -> Bool {
@@ -231,8 +267,10 @@ struct ContactsList: View {
     @Binding var searchShowingSimplexLink: Bool
     @Binding var searchChatFilteredBySimplexLink: String?
     var showDeletedChatIcon: Bool
+    var showsEmptyState = true
+    var moreRows: AnyView? = nil
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
-    
+
     var body: some View {
         let contactChats = chatModel.chats.filter { chat in chatPredicate(chat, !searchText.isEmpty) }
         let filteredContactChats = filteredContactChats(
@@ -242,8 +280,8 @@ struct ContactsList: View {
             searchText: searchText,
             contactChats: contactChats
         )
-        
-        if !filteredContactChats.isEmpty {
+
+        if !filteredContactChats.isEmpty || moreRows != nil {
             Section(header: Group {
                 if let header = header {
                     Text(header)
@@ -256,13 +294,16 @@ struct ContactsList: View {
                     ContactListNavLink(chat: chat, showDeletedChatIcon: showDeletedChatIcon)
                         .disabled(chatModel.chatRunning != true)
                 }
+                moreRows
             }
         }
         
-        if filteredContactChats.isEmpty && !contactChats.isEmpty {
-            noResultSection(text: "No filtered contacts")
-        } else if contactChats.isEmpty {
-            noResultSection(text: "No contacts")
+        if showsEmptyState {
+            if filteredContactChats.isEmpty && !contactChats.isEmpty {
+                noResultSection(text: "No filtered contacts")
+            } else if contactChats.isEmpty {
+                noResultSection(text: "No contacts")
+            }
         }
     }
     
@@ -305,7 +346,7 @@ struct ContactsList: View {
 
         return meetsPredicate
     }
-    
+
     func filteredContactChats(
         showUnreadAndFavorites: Bool,
         searchShowingSimplexLink: Bool,
@@ -340,6 +381,7 @@ struct ContactsListSearchBar: View {
     @Binding var searchShowingSimplexLink: Bool
     @Binding var searchChatFilteredBySimplexLink: String?
     @Binding var connectNameCandidate: String?
+    var onSearch: (() -> Void)? = nil
     @State private var ignoreSearchTextChange = false
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
@@ -357,6 +399,10 @@ struct ContactsListSearchBar: View {
                     .disabled(searchShowingSimplexLink)
                     .focused($searchFocussed)
                     .frame(maxWidth: .infinity)
+                    .autocorrectionDisabled(onSearch != nil)
+                    .textInputAutocapitalization(onSearch == nil ? nil : .never)
+                    .submitLabel(onSearch == nil ? .return : .search)
+                    .onSubmit { onSearch?() }
                 if connectProgressManager.showConnectProgress != nil {
                     ProgressView()
                 }

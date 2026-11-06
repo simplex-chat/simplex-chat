@@ -184,9 +184,9 @@ When the user taps a notification:
 3. Sets `ChatModel.chatId = chatId` to navigate to the conversation
 4. If the app was in background: the notification response is stored in `ChatModel.notificationResponse` and processed when the app becomes active
 
-### [URL Deep Link](../../Shared/ContentView.swift#L281)
+### [URL Deep Link](../../Shared/ContentView.swift#L288)
 
-SimpleX links (`simplex:/chat#...`) are handled via [`connectViaUrl()`](../../Shared/ContentView.swift#L439):
+SimpleX links (`simplex:/chat#...`) are handled via [`connectViaUrl()`](../../Shared/ContentView.swift#L456):
 
 ```swift
 .onOpenURL { url in
@@ -198,7 +198,7 @@ SimpleX links (`simplex:/chat#...`) are handled via [`connectViaUrl()`](../../Sh
 }
 ```
 
-URL processing routes to the appropriate connection flow (join group, add contact, etc.) via [`planAndConnect()`](../../Shared/Views/NewChat/NewChatView.swift#L1181).
+URL processing routes to the appropriate connection flow (join group, add contact, etc.) via [`planAndConnect()`](../../Shared/Views/NewChat/NewChatView.swift#L1342).
 
 App links use the app's own scheme, `simplexchat:`, for everything that is not a connection link. `connectViaUrl_()` branches on that scheme before the path switch, so an app link never reaches `planAndConnect()`, and `openAppLink()` dispatches on its path. A badge link (`simplexchat:/badge/code/<code>`) goes to `openBadgeLink()` in [`BadgesRedeemCodeView.swift`](../../Shared/Views/Badges/BadgesRedeemCodeView.swift), which presents `BadgesRedeemLinkView` as an app sheet. The sheet names the active profile and asks before redeeming, since any web page can send the link and a profile holds one badge at a time. On *Add badge* it redeems the code into that profile and then shows `BadgesView`; *Cancel* sends nothing. If that profile already shows a badge (read from `BadgeModel` when the sheet renders), which core would refuse, the sheet does not offer to add it: it says nothing was added, says where a code for another badge is (on the page it was bought on, under *Show code*), and offers *View your badge*; it cannot tell a repeated link for the badge it shows from another badge's code, so it asserts neither. While the code is being redeemed, *Dismiss* or a swipe closes the sheet without cancelling anything; if the redemption then succeeds with the sheet closed or covered, an alert says the badge was added and names the profile, unless the profile is hidden and no longer active, when nothing is shown (`showBadgeAddedAlert()`, which the store lane shares). While the sheet shows a redemption in flight (`isBadgeLinkIssuing()`), `connectViaUrl_()` ignores a further app link; otherwise it dismisses the sheets as for any link, which replaces an earlier badge link sheet. Any other path is a link type from a later version, and gets an alert asking to check for app updates. An app link can carry a secret, so `onOpenURL` logs it as "app link" rather than the URL.
 
@@ -253,7 +253,7 @@ ZStack {
 
 ## 7. Authentication Gate
 
-### [Local Authentication](../../Shared/ContentView.swift#L359)
+### [Local Authentication](../../Shared/ContentView.swift#L366)
 
 When [`DEFAULT_PERFORM_LA`](../../Shared/ContentView.swift#L44) is enabled:
 
@@ -267,8 +267,8 @@ When [`DEFAULT_PERFORM_LA`](../../Shared/ContentView.swift#L44) is enabled:
 - Custom numeric passcode
 - Custom alphanumeric passcode
 
-### [Extended Authentication](../../Shared/ContentView.swift#L351)
-- After successful auth, a grace period prevents re-auth for brief background/foreground cycles ([`unlockedRecently()`](../../Shared/ContentView.swift#L351))
+### [Extended Authentication](../../Shared/ContentView.swift#L358)
+- After successful auth, a grace period prevents re-auth for brief background/foreground cycles ([`unlockedRecently()`](../../Shared/ContentView.swift#L358))
 - [`contentAccessAuthenticationExtended`](../../Shared/ContentView.swift#L35) is computed at `ContentView.init` to avoid render-time race conditions
 - The `enteredBackgroundAuthenticated` timestamp tracks when the app was last authenticated in background
 
@@ -276,7 +276,7 @@ When [`DEFAULT_PERFORM_LA`](../../Shared/ContentView.swift#L44) is enabled:
 
 ## 8. [Onboarding Flow](../../Shared/Views/Onboarding/OnboardingView.swift#L13)
 
-First-launch experience controlled by [`ChatModel.onboardingStage`](../../Shared/Views/Onboarding/OnboardingView.swift#L46):
+First-launch experience controlled by [`ChatModel.onboardingStage`](../../Shared/Views/Onboarding/OnboardingView.swift#L47):
 
 ```swift
 enum OnboardingStage: String, Identifiable {
@@ -289,7 +289,7 @@ enum OnboardingStage: String, Identifiable {
 }
 ```
 
-Each stage is a dedicated view presented in place of `ChatListView` within [`ContentView`](../../Shared/ContentView.swift#L174).
+Each stage is a dedicated view presented in place of `ChatListView` within [`ContentView`](../../Shared/ContentView.swift#L24).
 
 Migration state (`ChatModel.migrationState != nil`) takes precedence over onboarding.
 
@@ -324,7 +324,7 @@ Migration state (`ChatModel.migrationState != nil`) takes precedence over onboar
 
 ## 10. Relay URL Interception
 
-**Source:** [`Shared/ContentView.swift`](../../Shared/ContentView.swift#L454)
+**Source:** [`Shared/ContentView.swift`](../../Shared/ContentView.swift#L471)
 
 In `connectViaUrl_()`, relay address links (URL path `/r`) are intercepted before processing:
 
@@ -351,6 +351,8 @@ When `groupShortLinkInfo?.direct == false` (channel relay link), the prepare ale
 - `apiPrepareGroup` call passes `directLink: false`
 - Stores `groupShortLinkInfo.groupRelays` in `ChatModel.shared.channelRelayHostnames`
 
+The alert's confirm calls `prepareAndOpenGroup`, which prepares the group, stores the relays, adds the chat and opens it. `planAndConnect(…, prepareGroup: .open)`, which the online search's Open uses, calls `prepareAndOpenGroup` without the alert when the plan has no owner verification and no other name (see [Chat List, Opening a result](chat-list.md#opening-a-result)); with either, and with the default `.confirm`, the alert shows.
+
 ### Own Link Confirmation (`showOwnGroupLinkConfirmConnectSheet`)
 
 For channels: shows "This is your link for channel" with only "Open channel" + "Cancel" buttons. No incognito or profile selection options.
@@ -358,6 +360,27 @@ For channels: shows "This is your link for channel" with only "Open channel" + "
 ### Known Group Alert (`showOpenKnownGroupAlert`)
 
 For channels (`groupInfo.useRelays`): the title is "Open channel"; for groups, "Open group"; business chats keep "Open chat" / "Open new chat". Unless the chat is merely prepared (`nextConnectPrepared`) or a business chat, the alert shows an information line with the user's membership role (`memberRoleInformation`) in the secondary color: subscriber/contributor for channels, observer/member for groups, moderator/admin/owner for both.
+
+## 12. New Chat Online Search
+
+**Source:** [`Shared/Views/NewChat/NewChatMenuButton.swift`](../../Shared/Views/NewChat/NewChatMenuButton.swift)
+
+[`NewChatSheet`](../../Shared/Views/NewChat/NewChatMenuButton.swift#L36) offers the chat list's online search (see [Chat List, Online Search](chat-list.md#11-online-search)) with its own [`OnlineSearchModel`](../../Shared/Views/NewChat/NewChatMenuButton.swift#L46), reset on every change of `searchText` ([L179](../../Shared/Views/NewChat/NewChatMenuButton.swift#L179)) and of `currentUser?.userId` ([L182](../../Shared/Views/NewChat/NewChatMenuButton.swift#L182)). The sheet's `onDisappear` calls `cancelConnectProgress()`, which cancels a search still in flight.
+
+| Element | Where | Behavior |
+|---------|-------|----------|
+| Search key | [`ContactsListSearchBar`](../../Shared/Views/NewChat/NewChatMenuButton.swift#L374) with `onSearch` ([L384](../../Shared/Views/NewChat/NewChatMenuButton.swift#L384)) | `.submitLabel(.search)` and `.onSubmit` run `search(text)`, the directory only; the field is disabled while a link shows, and neither autocorrects nor capitalizes |
+| "Connect to …" row | below the field ([L99](../../Shared/Views/NewChat/NewChatMenuButton.swift#L99)) | shown whenever there is a name candidate, results or not |
+| "Search in Directory" row | below the field ([L108](../../Shared/Views/NewChat/NewChatMenuButton.swift#L108)) | shown for non-empty, non-link text (`isDirectorySearchable`) while no results show or load (`!onlineSearch.showResults`); runs `search(text)`; hidden while the chat isn't running, as `isDirectorySearchable` is then false |
+| Results card | `ContactsList`'s section while `showResults`, with [`onlineSearchSection(_:)`](../../Shared/Views/NewChat/NewChatMenuButton.swift#L187) as its `moreRows` when `rows` isn't empty | One `Section`, without a header as `header` is nil while `showResults`: the shown contacts (`ContactListNavLink(chat:showDeletedChatIcon: true)`), your chats (`rows.yourChats`, the loaded ones), then the results, then the retry or load row. While the chat isn't running, the rows are disabled, and the retry or load row and each result's Open are hidden. Your chats are drawn as [`ContactListNavLink`](../../Shared/Views/Contacts/ContactListNavLink.swift#L12)`(chat:showDeletedChatIcon: true)`, whose [`groupNavLink`](../../Shared/Views/Contacts/ContactListNavLink.swift#L170) opens the group and closes the sheet (`dismissAllSheets` then `loadOpenChat`; avatar, name, favourite star, incognito mask; no swipe actions). Results are `DirectorySearchRow(imageSize: 30)`, New chat's 30-pt icons, with Open or "Already joining" and the same long-press menu as in the chat list; a tap or the menu's Open runs [`openResult(_:)`](../../Shared/Views/NewChat/NewChatMenuButton.swift#L203): `openDirectoryResult(result, dismiss: true)`, so the opened chat closes the sheet |
+
+Both triggers do nothing for empty text, a pasted link, or while the chat isn't running, and go through `confirmDirectorySearch`, which shows the "Enable Directory search?" alert while the switch is off. The list is `insetGrouped` and not flipped, so the card is an ordinary `Section` with default row backgrounds, and its load row is the last row.
+
+**De-duplication against the contacts list.** `contactListChatPredicate` keeps only contacts and contact requests, and `rows.yourChats` holds only groups (`directoryResultState`), so the sheet calls `rows(shownChatIds: [])` ([L165](../../Shared/Views/NewChat/NewChatMenuButton.swift#L165)).
+
+**Empty state.** [`ContactsList`](../../Shared/Views/NewChat/NewChatMenuButton.swift#L259) has `showsEmptyState` (default `true`, [L270](../../Shared/Views/NewChat/NewChatMenuButton.swift#L270)); the sheet passes `!onlineSearch.loading && rows.isEmpty && !showsSearchInDirectory`, so "No filtered contacts" / "No contacts" are omitted while the online search runs, while it has rows and while "Search in Directory" is offered for the text (`showsSearchInDirectory`, the same condition as the row's): they show only after a directory search for the text finds nothing and no contact matches.
+
+**Archived contacts.** [`DeletedChats`](../../Shared/Views/NewChat/NewChatMenuButton.swift#L504) passes neither `onSearch` nor `showsEmptyState`: its search field keeps the `.return` label with a no-op submit, and its empty states are unchanged.
 
 ---
 

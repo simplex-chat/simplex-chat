@@ -17,20 +17,26 @@ module Directory.Service
     newServiceState,
     directoryService,
     directoryServiceCLI,
+    forkWithinCap,
+    omitServiceRequestData,
   )
 where
 
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.STM
-import Control.Exception (SomeException, try)
+import Control.Exception (SomeException, finally, try)
 import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Control.Monad.Reader (runReaderT)
+import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as JM
+import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.Text as A
 import Data.Bifunctor (first)
 import Data.Either (fromRight)
+import Data.Functor (($>))
 import Data.List (intercalate)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
@@ -46,6 +52,7 @@ import Directory.Captcha
 import Directory.Events
 import Directory.Listing
 import Directory.Options
+import Directory.Rpc
 import Directory.Search
 import Directory.Store
 import Directory.Store.Migrate
@@ -101,7 +108,8 @@ data ServiceState = ServiceState
     pendingCaptchas :: TMap GroupMemberId PendingCaptcha,
     serviceCC :: TMVar ChatController,
     eventQ :: TQueue DirectoryEvent,
-    updateListingsJob :: TMVar ()
+    updateListingsJob :: TMVar (),
+    serviceRequestsInFlight :: TVar Int
   }
 
 data CaptchaMode = CMText | CMAudio
@@ -130,7 +138,11 @@ newServiceState opts = do
   serviceCC <- newEmptyTMVarIO
   eventQ <- newTQueueIO
   updateListingsJob <- newEmptyTMVarIO
-  pure ServiceState {searchRequests, blockedWordsCfg, pendingCaptchas, serviceCC, eventQ, updateListingsJob}
+  serviceRequestsInFlight <- newTVarIO 0
+  pure ServiceState {searchRequests, blockedWordsCfg, pendingCaptchas, serviceCC, eventQ, updateListingsJob, serviceRequestsInFlight}
+
+maxSearchTextLength :: Int
+maxSearchTextLength = 100
 
 welcomeGetOpts :: IO DirectoryOpts
 welcomeGetOpts = do
@@ -155,7 +167,9 @@ welcomeGetOpts = do
 directoryServiceCLI :: DirectoryOpts -> IO ()
 directoryServiceCLI opts = do
   env@ServiceState {eventQ} <- newServiceState opts
-  let eventHook _cc resp = atomically $ resp <$ mapM_ (writeTQueue eventQ) (crDirectoryEvent resp)
+  let eventHook _cc resp = do
+        atomically $ mapM_ (writeTQueue eventQ) (crDirectoryEvent resp)
+        pure $ omitServiceRequestData resp
       chatHooks =
         defaultChatHooks
           { preStartHook = Just $ directoryPreStartHook opts,
@@ -177,6 +191,11 @@ directoryServiceCLI opts = do
         forever $ do
           event <- atomically $ readTQueue eventQ
           directoryServiceEvent opts env user cc event
+
+omitServiceRequestData :: Either ChatError ChatEvent -> Either ChatError ChatEvent
+omitServiceRequestData = \case
+  Right (CEvtServiceRequest u reqId sigKey _) -> Right $ CEvtServiceRequest u reqId sigKey JM.empty
+  resp -> resp
 
 updateListingDelay :: Int
 updateListingDelay = 5 * 60 * 1000000 -- update every 5 minutes
@@ -218,7 +237,7 @@ directoryPostStartHook opts@DirectoryOpts {noAddress, testing} env cc =
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
     Just User {userId, profile = p@LocalProfile {preferences}} -> do
-      unless noAddress $ initializeBotAddress' (not testing) Nothing True cc
+      unless noAddress $ initializeBotAddress' (not testing) (Just True) True cc
       void $ atomically $ tryPutTMVar (serviceCC env) cc
       listingsUpdated env
       let cmds = fromMaybe [] $ preferences >>= commands_
@@ -314,8 +333,14 @@ readBlockedWordsConfig DirectoryOpts {blockedFragmentsFile, blockedWordsFile, na
   unless testing $ putStrLn $ "Blocked fragments: " <> show (length blockedFragments) <> ", blocked words: " <> show (length blockedWords) <> ", spelling rules: " <> show (M.size spelling)
   pure BlockedWordsConfig {blockedFragments, blockedWords, extensionRules, spelling}
 
+forkWithinCap :: TVar Int -> Int -> IO () -> IO Bool
+forkWithinCap inFlight cap action = do
+  accepted <- atomically $ stateTVar inFlight $ \n -> if n < cap then (True, n + 1) else (False, n)
+  when accepted $ void $ forkIO $ action `finally` atomically (modifyTVar' inFlight (subtract 1))
+  pure accepted
+
 directoryServiceEvent :: DirectoryOpts -> ServiceState -> User -> ChatController -> DirectoryEvent -> IO ()
-directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults, prohibitedToObserver, alwaysCaptcha, alwaysObserver} env@ServiceState {searchRequests} user@User {userId} cc = \case
+directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults, maxServiceRequestsInFlight, prohibitedToObserver, alwaysCaptcha, alwaysObserver} env@ServiceState {searchRequests, serviceRequestsInFlight} user@User {userId} cc = \case
     DEContactConnected ct -> deContactConnected ct
     DEGroupInvitation {contact = ct, groupInfo = g, fromMemberRole, memberRole} -> deGroupInvitation ct g fromMemberRole memberRole
     DEServiceJoinedGroup ctId g owner -> deServiceJoinedGroup ctId g owner
@@ -341,9 +366,37 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
         SDRUser -> deUserCommand ct ciId cmd
         SDRAdmin -> deAdminCommand ct ciId cmd
         SDRSuperUser -> deSuperUserCommand ct ciId cmd
+    DEServiceRequest reqId req -> deServiceRequest reqId req
     DEVoiceUploadEnded filePath -> void (try $ removeFile filePath :: IO (Either SomeException ()))
     DELogChatResponse r -> logInfo r
   where
+    deServiceRequest :: AgentInvId -> J.Object -> IO ()
+    deServiceRequest reqId req = do
+      accepted <- forkWithinCap serviceRequestsInFlight maxServiceRequestsInFlight (respond =<< requestResponse)
+      unless accepted $ reject "service is busy"
+      where
+        reject reason =
+          sendChatCmd cc (APIRejectServiceRequest userId reqId $ Just reason) >>= \case
+            Right _ -> pure ()
+            Left e -> logError $ "service reject error: " <> tshow e
+        requestResponse = case JT.parseMaybe JT.parseJSON (J.Object req) of
+          Nothing -> pure $ DRError "unsupported request"
+          Just DRSearch {searchText, searchCursor}
+            | T.length searchText > maxSearchTextLength -> pure $ DRError "search text is too long"
+            | otherwise -> directorySearch searchText searchCursor
+        respond resp =
+          sendChatCmd cc (APISendServiceResponse userId reqId $ responseObject resp) >>= \case
+            Right _ -> pure ()
+            Left e -> logError $ "service response error: " <> tshow e
+    directorySearch :: Text -> Maybe SearchCursor -> IO DirectoryResponse
+    directorySearch searchText cursor_ =
+      searchListedGroups cc user (STSearch searchText) cursor_ searchResults >>= \case
+        Left e -> logError ("searchListedGroups error: " <> T.pack e) $> DRError "search failed"
+        Right (gs, n) -> do
+          now <- getCurrentTime
+          pure $ searchResultsPage rowCursor n [(row, searchEntry now g gLink_) | row@(g, _, gLink_) <- gs]
+      where
+        rowCursor (GroupInfo {groupId, groupSummary = GroupSummary {currentMembers}}, _, _) = SCMembers currentMembers groupId
     groupLinkText (CCLink cReq sLnk_) = maybe (strEncodeTxt $ simplexChatContact cReq) strEncodeTxt sLnk_
     withAdminUsers action = void . forkIO $ do
       forM_ superUsers $ \KnownContact {contactId} -> action contactId
@@ -1074,14 +1127,14 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
           groupLinkUri fts = listToMaybe [uri | FormattedText (Just SimplexLink {linkType, simplexUri = uri}) _ <- fts, linkType == XLGroup || linkType == XLChannel]
       DCSearchNext ->
         atomically (TM.lookup (contactId' ct) searchRequests) >>= \case
-          Just SearchRequest {searchType, searchTime, lastGroup} -> do
+          Just SearchRequest {searchType, searchTime, searchCursor} -> do
             currentTime <- getCurrentTime
             if diffUTCTime currentTime searchTime > 300 -- 5 minutes
               then do
                 atomically $ TM.delete (contactId' ct) searchRequests
                 showAllGroups
               else
-                sendFoundListedGroups searchType (Just lastGroup) "No more groups" $ \gs _ ->
+                sendFoundListedGroups searchType (Just searchCursor) "No more groups" $ \gs _ ->
                   "Sending " <> tshow (length gs) <> " more group(s)."
           Nothing -> showAllGroups
         where
@@ -1231,8 +1284,8 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
               | maybe True (displayName ==) gName_ -> action g gr
               | otherwise -> sendReply $ "Group ID " <> tshow ugrId <> " has the display name " <> displayName
         sendReply = mkSendReply ct ciId
-        sendFoundListedGroups searchType lastGroup_ notFound replyStr =
-          searchListedGroups cc user searchType lastGroup_ searchResults >>= \case
+        sendFoundListedGroups searchType cursor_ notFound replyStr =
+          searchListedGroups cc user searchType cursor_ searchResults >>= \case
             Right ([], _) -> do
               atomically $ TM.delete (contactId' ct) searchRequests
               sendReply notFound
@@ -1246,9 +1299,13 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
           let more = if n > length gs then ", sending " <> sortName <> " " <> tshow (length gs) else ""
            in tshow n <> " group(s) listed" <> more <> "."
         updateSearchRequest :: SearchType -> (GroupInfo, GroupReg, Maybe CreatedLinkContact) -> IO ()
-        updateSearchRequest searchType (GroupInfo {groupId}, _, _) = do
+        updateSearchRequest searchType (GroupInfo {groupId, groupSummary = GroupSummary {currentMembers}}, GroupReg {createdAt}, _) = do
           searchTime <- getCurrentTime
-          let search = SearchRequest {searchType, searchTime, lastGroup = groupId}
+          let searchCursor = case searchType of
+                STAll -> SCMembers currentMembers groupId
+                STRecent -> SCRecent createdAt groupId
+                STSearch _ -> SCMembers currentMembers groupId
+              search = SearchRequest {searchType, searchTime, searchCursor}
           atomically $ TM.insert (contactId' ct) search searchRequests
         getRegisteredGroupByLink :: AConnectionLink -> IO (Maybe (GroupInfo, GroupReg, CreatedLinkContact))
         getRegisteredGroupByLink uri =

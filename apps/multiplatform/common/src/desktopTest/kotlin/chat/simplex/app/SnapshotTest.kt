@@ -97,6 +97,8 @@ private val previewScenes = listOf(
   SnapshotScene("ChatListNavLinkView.PreviewChatListNavLinkGroup") { PreviewChatListNavLinkGroup() },
   SnapshotScene("ChatListNavLinkView.PreviewChatListNavLinkContactRequest") { PreviewChatListNavLinkContactRequest() },
   SnapshotScene("ChatPreviewView.PreviewChatPreviewView") { PreviewChatPreviewView() },
+  SnapshotScene("DirectorySearchView.PreviewDirectorySearchRows", chatItemFontScales) { PreviewDirectorySearchRows() },
+  SnapshotScene("DirectorySearchView.PreviewDirectorySearchActionRows", chatItemFontScales) { PreviewDirectorySearchActionRows() },
   SnapshotScene("DatabaseEncryptionView.PreviewDatabaseEncryptionLayout") { PreviewDatabaseEncryptionLayout() },
   SnapshotScene("DatabaseErrorView.PreviewChatInfoLayout") { chat.simplex.common.views.database.PreviewChatInfoLayout() },
   SnapshotScene("DatabaseView.PreviewDatabaseLayout") { PreviewDatabaseLayout() },

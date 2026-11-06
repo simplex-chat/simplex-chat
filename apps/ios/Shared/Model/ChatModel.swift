@@ -298,30 +298,44 @@ class ChatItemDummyModel: ObservableObject {
     func sendUpdate() { objectWillChange.send() }
 }
 
+enum ConnectProgressOwner {
+    case connect
+    case directorySearch
+}
+
 class ConnectProgressManager: ObservableObject {
     @Published private var connectInProgress: String? = nil
     @Published private var connectProgressByTimeout: Bool = false
     private var onCancel: (() -> Void)?
+    private var owner: ConnectProgressOwner?
 
     static let shared = ConnectProgressManager()
 
-    func startConnectProgress(_ text: String, onCancel: (() -> Void)? = nil) {
+    func startConnectProgress(_ text: String, owner: ConnectProgressOwner = .connect, onCancel: (() -> Void)? = nil) {
+        if owner == .directorySearch && self.owner == .connect { return }
         connectInProgress = text
+        self.owner = owner
         self.onCancel = onCancel
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             self.connectProgressByTimeout = self.connectInProgress != nil
         }
     }
 
-    func stopConnectProgress() {
+    func stopConnectProgress(_ owner: ConnectProgressOwner = .connect) {
+        if let current = self.owner, current != owner { return }
         connectInProgress = nil
+        self.owner = nil
         onCancel = nil
         connectProgressByTimeout = false
     }
 
     func cancelConnectProgress() {
-        onCancel?()
-        stopConnectProgress()
+        let cancel = onCancel
+        owner = nil
+        onCancel = nil
+        connectInProgress = nil
+        connectProgressByTimeout = false
+        cancel?()
     }
 
     var showConnectProgress: String? {

@@ -260,9 +260,19 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
   }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
+  val searchShowingSimplexLink = remember { mutableStateOf(false) }
+  val searchChatFilteredBySimplexLink = remember { mutableStateOf<Set<String>>(emptySet()) }
+  val connectNameCandidate = remember { mutableStateOf<String?>(null) }
+  val onlineSearch = remember { OnlineSearchModel() }
+  KeyChangeEffect(searchText.value.text) {
+    onlineSearch.reset()
+  }
+  KeyChangeEffect(chatModel.remoteHostId(), chatModel.currentUser.value?.userId) {
+    onlineSearch.reset()
+  }
   Box(Modifier.fillMaxSize()) {
     if (oneHandUI.value) {
-      ChatListWithLoadingScreen(searchText, listState)
+      ChatListWithLoadingScreen(searchText, listState, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate, onlineSearch)
       Column(Modifier.align(Alignment.BottomCenter)) {
         ChatListToolbar(
           userPickerState,
@@ -272,7 +282,7 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
         )
       }
     } else {
-      ChatListWithLoadingScreen(searchText, listState)
+      ChatListWithLoadingScreen(searchText, listState, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate, onlineSearch)
       Column {
         ChatListToolbar(
           userPickerState,
@@ -468,33 +478,75 @@ private fun ConnectBannerCard() {
 }
 
 @Composable
-private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState) {
+private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<Set<String>>, connectNameCandidate: MutableState<String?>, onlineSearch: OnlineSearchModel) {
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
   if (chatModel.chatRunning.value == null) {
     Text(stringResource(MR.strings.loading_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
   } else if (shouldShowOnboarding()) {
-    if (appPlatform.isAndroid) AndroidOnboardingCards()
+    val topPad = topPaddingToContent(false)
+    val bottomPad = if (oneHandUI.value) {
+      WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier
+    } else {
+      WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    }
+    val keyboardState by getKeyboardState()
+    var pagesHeight by remember { mutableStateOf(0) }
+    Column(Modifier.fillMaxSize().padding(top = topPad, bottom = bottomPad).consumeWindowInsets(WindowInsets.navigationBars)) {
+      if (!oneHandUI.value) {
+        ChatListSearchBarWithTags(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate, onlineSearch)
+      }
+      BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().onSizeChanged { if (keyboardState == KeyboardState.Closed) pagesHeight = it.height }) {
+        if (onlineSearch.showResults) {
+          val rows = onlineSearch.rows(shownChatIds = emptySet())
+          val resultsState = rememberLazyListState()
+          LazyColumnWithScrollBarNoAppBar(
+            if (!oneHandUI.value) Modifier.fillMaxSize().imePadding() else Modifier.fillMaxSize(),
+            state = resultsState,
+            reverseLayout = oneHandUI.value
+          ) {
+            directoryRows(rows, onlineSearch)
+            if (!onlineSearch.loading && rows.isEmpty) {
+              item {
+                Text(
+                  stringResource(MR.strings.no_chats_found),
+                  Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
+                  color = MaterialTheme.colors.secondary,
+                  textAlign = TextAlign.Center
+                )
+              }
+            }
+          }
+        } else if (appPlatform.isAndroid) {
+          val pagesHeightDp = if (pagesHeight > 0) with(LocalDensity.current) { pagesHeight.toDp() } else maxHeight
+          Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState(), reverseScrolling = true)) {
+            Box(Modifier.height(pagesHeightDp)) {
+              ConnectOnboardingView()
+            }
+          }
+        }
+      }
+      if (oneHandUI.value) {
+        ChatListSearchBarWithTags(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate, onlineSearch)
+      }
+    }
   } else {
     if (!chatModel.desktopNoUserNoRemote) {
-      ChatList(searchText = searchText, listState)
+      ChatList(searchText = searchText, listState, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate, onlineSearch)
     }
-    if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
+    if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote && !onlineSearch.showResults) {
       Text(stringResource(MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
     }
   }
 }
 
-@Composable
-private fun AndroidOnboardingCards() {
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
-  val topPad = topPaddingToContent(false)
-  val bottomPad = if (oneHandUI.value) {
-    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier
-  } else {
-    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+private fun LazyListScope.directoryRows(rows: OnlineSearchRows, onlineSearch: OnlineSearchModel) {
+  items(rows.yourChats.mapNotNull { chatModel.getChat(it) }, key = { it.remoteHostId to it.id }) { chat ->
+    ChatListNavLinkView(chat, remember { mutableStateOf(false) })
   }
-  Box(Modifier.fillMaxSize().padding(top = topPad, bottom = bottomPad)) {
-    ConnectOnboardingView()
+  items(rows.results, key = { it.id }) { result ->
+    DirectoryResultNavLink(result, imageSize = 72.dp * fontSizeSqrtMultiplier, close = null, cleanup = { onlineSearch.refreshStates() })
   }
+  rows.footer?.let { footer -> item { DirectoryFooterRow(footer, onlineSearch) } }
 }
 
 @Composable
@@ -836,11 +888,10 @@ private fun openAppLink(rhId: Long?, uri: String) {
 }
 
 @Composable
-private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<Set<String>>, connectNameCandidate: MutableState<String?>) {
+private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<Set<String>>, connectNameCandidate: MutableState<String?>, onlineSearch: OnlineSearchModel, focused: MutableState<Boolean>) {
   Box {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
       val focusRequester = remember { FocusRequester() }
-      var focused by remember { mutableStateOf(false) }
       Icon(
         painterResource(MR.images.ic_search),
         contentDescription = null,
@@ -848,7 +899,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
         tint = MaterialTheme.colors.secondary
       )
       SearchTextField(
-        Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
+        Modifier.weight(1f).onFocusChanged { focused.value = it.hasFocus }.focusRequester(focusRequester),
         placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
         alwaysVisible = true,
         searchText = searchText,
@@ -856,6 +907,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
         trailingContent = null,
         // the clear button must line up with the filter icon it replaces, so no reduction here
         reducedCloseButtonPadding = 0.dp,
+        onSearch = { onlineSearch.search(searchText.value.text) },
       ) {
         searchText.value = searchText.value.copy(it)
       }
@@ -876,7 +928,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
       val focusManager = LocalFocusManager.current
       val keyboardState = getKeyboardState()
       LaunchedEffect(keyboardState.value) {
-        if (keyboardState.value == KeyboardState.Closed && focused) {
+        if (keyboardState.value == KeyboardState.Closed && focused.value) {
           focusManager.clearFocus()
         }
       }
@@ -992,7 +1044,7 @@ fun BoxScope.NavigationBarBackground(modifier: Modifier, color: Color = Material
 }
 
 @Composable
-private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listState: LazyListState) {
+private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listState: LazyListState, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<Set<String>>, connectNameCandidate: MutableState<String?>, onlineSearch: OnlineSearchModel) {
   var scrollDirection by remember { mutableStateOf(ScrollDirection.Idle) }
   var previousIndex by remember { mutableStateOf(0) }
   var previousScrollOffset by remember { mutableStateOf(0) }
@@ -1033,10 +1085,10 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   // In some not always reproducible situations this code produce IndexOutOfBoundsException on Compose's side
   // which is related to [derivedStateOf]. Using safe alternative instead
   // val chats by remember(search, showUnreadAndFavorites) { derivedStateOf { filteredChats(showUnreadAndFavorites, search, allChats.toList()) } }
-  val searchShowingSimplexLink = remember { mutableStateOf(false) }
-  val searchChatFilteredBySimplexLink = remember { mutableStateOf<Set<String>>(emptySet()) }
-  val connectNameCandidate = remember { mutableStateOf<String?>(null) }
   val chats = filteredChats(searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList(), activeFilter.value)
+  val rows = onlineSearch.rows(shownChatIds = chats.map { it.id }.toSet())
+  val showsCards = !onlineSearch.showResults
+  val showsSearchInDirectory = isDirectorySearchable(searchText.value.text, searchShowingSimplexLink.value) && !onlineSearch.showResults
   val topPaddingToContent = topPaddingToContent(false)
   val blankSpaceSize = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else topPaddingToContent
   LazyColumnWithScrollBar(
@@ -1065,38 +1117,17 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           }
           .background(MaterialTheme.colors.background)
         ) {
-        if (oneHandUI.value) {
-          Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
-            Divider()
-            // bottom toolbar: search bar below, so on desktop the connect row goes below the tags
-            TagsOrConnectByName(searchText, connectNameCandidate) { candidate ->
-              TagsView(searchText)
-              Divider()
-              ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
-            }
-            ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate)
-            Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
-          }
-        } else {
-          ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate)
-          // top toolbar: search bar above, so on desktop the connect row goes above the tags
-          TagsOrConnectByName(searchText, connectNameCandidate) { candidate ->
-            ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
-            Divider()
-            TagsView(searchText)
-          }
-          Divider()
-        }
+        ChatListSearchBarWithTags(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate, onlineSearch)
       }
     }
-    if (!oneHandUICardShown.value) {
+    if (showsCards && !oneHandUICardShown.value) {
       item {
         ToggleChatListCard()
       }
     }
     // one slot: an alert about a badge the user paid for outranks the pitch to get one
     val alert = bannerBadgeAlert()
-    if (alert != null) {
+    if (showsCards && alert != null) {
       item {
         SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeAlert }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
@@ -1123,7 +1154,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           }
         }
       }
-    } else if (chatModel.bannerSlotFree(ChatListBanner.BadgePitch) && !supporterBannerShown.value && noShownBadge() && chatModel.chats.value.size > 3) {
+    } else if (showsCards && chatModel.bannerSlotFree(ChatListBanner.BadgePitch) && !supporterBannerShown.value && noShownBadge() && chatModel.chats.value.size > 3) {
       item {
         SideEffect { chatModel.chatListBanner = ChatListBanner.BadgePitch }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
@@ -1137,7 +1168,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           )
         }
       }
-    } else if (chatModel.bannerSlotFree(ChatListBanner.GetStake) && crowdfunding && !getStakeBannerDismissed.value) {
+    } else if (showsCards && chatModel.bannerSlotFree(ChatListBanner.GetStake) && crowdfunding && !getStakeBannerDismissed.value) {
       item {
         SideEffect { chatModel.chatListBanner = ChatListBanner.GetStake }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
@@ -1155,7 +1186,8 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
       } }
       ChatListNavLinkView(chat, nextChatSelected)
     }
-    if (!addressCreationCardShown.value) {
+    directoryRows(rows, onlineSearch)
+    if (showsCards && !addressCreationCardShown.value) {
       item {
         ChatListFeatureCards()
       }
@@ -1164,7 +1196,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
       item { Spacer(if (oneHandUI.value) Modifier.windowInsetsTopHeight(WindowInsets.statusBars) else Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars)) }
     }
   }
-  if (chats.isEmpty() && chatModel.chats.value.isNotEmpty()) {
+  if (chats.isEmpty() && (chatModel.chats.value.isNotEmpty() || onlineSearch.searched) && !onlineSearch.loading && rows.isEmpty && !showsSearchInDirectory) {
     Box(Modifier.fillMaxSize().imePadding().padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
       NoChatsView(searchText = searchText)
     }
@@ -1184,6 +1216,34 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
 
   LaunchedEffect(activeFilter.value) {
     searchText.value = TextFieldValue("")
+  }
+}
+
+@Composable
+private fun ChatListSearchBarWithTags(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<Set<String>>, connectNameCandidate: MutableState<String?>, onlineSearch: OnlineSearchModel) {
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val searchFocused = remember { mutableStateOf(false) }
+  if (oneHandUI.value) {
+    Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
+      Divider()
+      TagsOrConnectByName(searchText, searchShowingSimplexLink, connectNameCandidate, onlineSearch) { rows ->
+        TagsView(searchText)
+        Divider()
+        rows()
+      }
+      ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate, onlineSearch, searchFocused)
+      if (searchFocused.value) {
+        Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
+      }
+    }
+  } else {
+    ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate, onlineSearch, searchFocused)
+    TagsOrConnectByName(searchText, searchShowingSimplexLink, connectNameCandidate, onlineSearch) { rows ->
+      rows()
+      Divider()
+      TagsView(searchText)
+    }
+    Divider()
   }
 }
 
@@ -1239,20 +1299,59 @@ internal suspend fun knownChatId(rhId: Long?, result: ConnectionPlanResult?): St
   else -> null
 }
 
-// The list tags and the connect-by-name row share one slot. When there is no name, the tags show; on
-// mobile the row replaces the tags while shown. On desktop both show, arranged by the caller (which
-// knows whether the search bar is above or below), passed as desktopView.
 @Composable
 private fun TagsOrConnectByName(
   searchText: MutableState<TextFieldValue>,
+  searchShowingSimplexLink: State<Boolean>,
   connectNameCandidate: MutableState<String?>,
-  desktopView: @Composable (candidate: String) -> Unit,
+  onlineSearch: OnlineSearchModel,
+  desktopView: @Composable (rows: @Composable () -> Unit) -> Unit,
 ) {
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
   val candidate = connectNameCandidate.value
+  val searchInDirectoryRow: @Composable () -> Unit = {
+    SearchInDirectoryRow(onSearch = { onlineSearch.search(searchText.value.text) })
+  }
+  val searchesText = isDirectorySearchable(searchText.value.text, searchShowingSimplexLink.value)
+  val showsSearchInDirectory = searchesText && !onlineSearch.showResults
   when {
-    candidate == null -> TagsView(searchText)
-    !appPlatform.isDesktop -> ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
-    else -> desktopView(candidate)
+    appPlatform.isDesktop ->
+      if (candidate != null || showsSearchInDirectory) {
+        desktopView {
+          if (candidate != null) {
+            ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
+          }
+          if (showsSearchInDirectory) {
+            if (candidate != null) Divider()
+            searchInDirectoryRow()
+          }
+        }
+      } else {
+        TagsView(searchText)
+      }
+    oneHandUI.value ->
+      if (candidate != null) {
+        ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
+        if (showsSearchInDirectory) {
+          Divider()
+          searchInDirectoryRow()
+        }
+      } else if (searchesText) {
+        if (showsSearchInDirectory) searchInDirectoryRow()
+      } else {
+        TagsView(searchText)
+      }
+    else -> {
+      if (candidate != null) {
+        ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
+      } else {
+        TagsView(searchText)
+      }
+      if (showsSearchInDirectory) {
+        Divider()
+        searchInDirectoryRow()
+      }
+    }
   }
 }
 

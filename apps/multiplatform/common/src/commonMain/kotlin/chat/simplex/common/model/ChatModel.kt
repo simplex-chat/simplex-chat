@@ -45,15 +45,20 @@ import kotlin.collections.ArrayList
 import kotlin.random.Random
 import kotlin.time.*
 
+enum class ConnectProgressOwner { Connect, DirectorySearch }
+
 object ConnectProgressManager {
   private val connectInProgress = mutableStateOf<String?>(null)
   private val connectProgressByTimeout = mutableStateOf(false)
   private var onCancel: (() -> Unit)? = null
+  private var owner: ConnectProgressOwner? = null
 
   private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-  fun startConnectProgress(text: String, onCancel: (() -> Unit)? = null) {
+  fun startConnectProgress(text: String, owner: ConnectProgressOwner = ConnectProgressOwner.Connect, onCancel: (() -> Unit)? = null) {
+    if (owner == ConnectProgressOwner.DirectorySearch && this.owner == ConnectProgressOwner.Connect) return
     connectInProgress.value = text
+    this.owner = owner
     this.onCancel = onCancel
     coroutineScope.launch {
       delay(1000)
@@ -61,15 +66,21 @@ object ConnectProgressManager {
     }
   }
 
-  fun stopConnectProgress() {
+  fun stopConnectProgress(owner: ConnectProgressOwner = ConnectProgressOwner.Connect) {
+    if (this.owner != null && this.owner != owner) return
     connectInProgress.value = null
+    this.owner = null
     onCancel = null
     connectProgressByTimeout.value = false
   }
 
   fun cancelConnectProgress() {
-    onCancel?.invoke()
-    stopConnectProgress()
+    val cancel = onCancel
+    owner = null
+    onCancel = null
+    connectInProgress.value = null
+    connectProgressByTimeout.value = false
+    cancel?.invoke()
   }
 
   val showConnectProgress: String? get() =

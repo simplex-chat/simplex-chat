@@ -80,9 +80,13 @@ listings_query="SELECT gp.display_name AS name, gp.short_descr AS description, g
   WHERE r.group_reg_status = 'active'
   ORDER BY g.summary_current_members_count DESC, r.group_id"
 
-start_relay() {
-  nohup "$bin/simplex-chat" -d "$work/relay" --relay --headless --user-display-name ci_relay < /dev/null > "$work/relay.log" 2>&1 &
+run_relay() {
+  nohup "$bin/simplex-chat" -d "$work/relay" --relay --headless --user-display-name ci_relay < /dev/null >> "$work/relay.log" 2>&1 &
   echo $! > "$work/relay.pid"
+}
+
+start_relay() {
+  run_relay
   local deadline=$((SECONDS + 120))
   until grep -qE '^https://[^ ]+/r#' "$work/relay.log"; do
     if ! kill -0 "$(cat "$work/relay.pid")" 2> /dev/null || [ "$SECONDS" -ge "$deadline" ]; then
@@ -107,17 +111,21 @@ create_directory() {
 }
 
 start_directory() {
-  local pid deadline=$((SECONDS + 60))
   # -y: the service adds its own tables to the database the CLI created, and would otherwise ask on stdin
   nohup "$bin/simplex-directory-service" -d "$work/directory" -y --super-users "$1" < /dev/null >> "$work/directory.log" 2>&1 &
-  pid=$!
-  echo "$pid" > "$work/directory.pid"
+  echo $! > "$work/directory.pid"
   echo "$1" > "$work/super-user"
+  wait_connected directory
+}
+
+wait_connected() {
+  local pid deadline=$((SECONDS + 60))
+  pid=$(cat "$work/$1.pid")
   # its output is block-buffered, so it shows that its chat has started by connecting to its servers
   until lsof -a -p "$pid" -iTCP -sTCP:ESTABLISHED > /dev/null 2>&1; do
     if ! kill -0 "$pid" 2> /dev/null || [ "$SECONDS" -ge "$deadline" ]; then
-      echo "error: the directory service did not start"
-      cat "$work/directory.log"
+      echo "error: $1 did not start"
+      cat "$work/$1.log"
       return 1
     fi
     sleep 1
@@ -250,8 +258,6 @@ seed_avatars() {
 # A local SMP server whose [NAMES] section points at names-resolver.py, which answers from names.json.
 start_names() {
   echo "{}" > "$work/names.json"
-  nohup python3 "$(dirname "$0")/names-resolver.py" "$names_resolver_port" "$work/names.json" < /dev/null > "$work/names-resolver.log" 2>&1 &
-  echo $! > "$work/names-resolver.pid"
   export SMP_SERVER_CFG_PATH=$work/smp-server/etc SMP_SERVER_LOG_PATH=$work/smp-server/log
   "$bin/smp-server" init -y --disable-store-log --no-password --fqdn localhost --disable-web > "$work/out" 2>&1 || {
     cat "$work/out"
@@ -265,7 +271,16 @@ start_names() {
     -e 's/^port = 5223,443$/port = 5223/' \
     "$SMP_SERVER_CFG_PATH/smp-server.ini"
   grep -E '^(enable: on|resolver_endpoint|port = )' "$SMP_SERVER_CFG_PATH/smp-server.ini"
-  nohup "$bin/smp-server" start < /dev/null > "$work/smp-server.log" 2>&1 &
+  run_names
+  echo "$names_server" > "$work/names-server"
+  echo "names server: $names_server"
+}
+
+run_names() {
+  nohup python3 "$(dirname "$0")/names-resolver.py" "$names_resolver_port" "$work/names.json" < /dev/null >> "$work/names-resolver.log" 2>&1 &
+  echo $! > "$work/names-resolver.pid"
+  export SMP_SERVER_CFG_PATH=$work/smp-server/etc SMP_SERVER_LOG_PATH=$work/smp-server/log
+  nohup "$bin/smp-server" start < /dev/null >> "$work/smp-server.log" 2>&1 &
   echo $! > "$work/smp-server.pid"
   local deadline=$((SECONDS + 60))
   until nc -z 127.0.0.1 5223 2> /dev/null; do
@@ -276,8 +291,6 @@ start_names() {
     fi
     sleep 1
   done
-  echo "$names_server" > "$work/names-server"
-  echo "names server: $names_server"
 }
 
 register_name() {
@@ -299,8 +312,13 @@ start_contact() {
   register_name "$name" "$address" ""
   named "$db" "$display_name" 5 "/_set domain 1 $name"
   expect_out "^new contact address set$"
+  run_contact "$db" "$display_name"
+}
+
+run_contact() {
+  local db=$1 display_name=$2
   # --headless is for relays only; a command with a long -t keeps the client online, accepting contacts, for 6 hours
-  nohup "$bin/simplex-chat" -d "$work/$db" -e "/auto_accept on" -t 21600 --user-display-name "$display_name" < /dev/null > "$work/$db.log" 2>&1 &
+  nohup "$bin/simplex-chat" -d "$work/$db" -e "/auto_accept on" -t 21600 --user-display-name "$display_name" < /dev/null >> "$work/$db.log" 2>&1 &
   echo $! > "$work/$db.pid"
 }
 
@@ -365,6 +383,51 @@ probe_search() {
   echo "search for \"$search_text\" found ci_group and ci_channel"
 }
 
+probe_pages() {
+  local text=$1 expected=$2
+  local page=0 cursor=null req resp names=""
+  {
+    echo "## Search \"$text\", page by page"
+    echo
+    echo "| Page | Entries (avatar characters) | JSON bytes | zstd -3 bytes | More |"
+    echo "|---|---|---|---|---|"
+  } >> "$work/seed.md"
+  while [ "$cursor" != end ]; do
+    page=$((page + 1))
+    if [ "$page" -gt 20 ]; then
+      echo "error: more than 20 pages"
+      return 1
+    fi
+    req=$(jq -cn --arg t "$text" --argjson c "$cursor" '{type: "search", searchText: $t} + (if $c == null then {} else {searchCursor: $c} end)')
+    chat probe 1 "/_service_request 1 $directory_link timeout=30 $req" --user-display-name ci_probe
+    resp=$(sed -n 's/^service response: //p' "$work/out")
+    if [ -z "$resp" ]; then
+      echo "error: no service response for page $page"
+      return 1
+    fi
+    if jq -e '.searchCursor != null' <<< "$resp" > /dev/null; then
+      cursor=$(jq -c '.searchCursor' <<< "$resp")
+    else
+      cursor=end
+    fi
+    names="$names$(jq -r '.entries[].displayName' <<< "$resp")"$'\n'
+    echo "| $page | $(jq -r '[.entries[] | "\(.displayName) (\(.image // "" | length))"] | join(", ")' <<< "$resp") | $(printf '%s' "$resp" | wc -c | tr -d ' ') | $(printf '%s' "$resp" | zstd -3 -q -c --no-check | wc -c | tr -d ' ') | $([ "$cursor" = end ] && echo no || echo yes) |" >> "$work/seed.md"
+  done
+  local found repeated
+  found=$(grep -c . <<< "$names" || true)
+  repeated=$({ grep . <<< "$names" || true; } | sort | uniq -d | paste -sd ' ' -)
+  {
+    echo
+    echo "$found entries in $page pages, $expected expected; repeated: ${repeated:-none}."
+    echo
+  } >> "$work/seed.md"
+  echo "search for \"$text\": $found entries in $page pages, $expected expected, repeated: ${repeated:-none}"
+  if [ "$found" -ne "$expected" ] || [ -n "$repeated" ]; then
+    echo "error: search for \"$text\" returned $found entries ($expected expected), repeated: ${repeated:-none}"
+    return 1
+  fi
+}
+
 write_seed() {
   {
     echo "# Test directory"
@@ -375,12 +438,12 @@ write_seed() {
     echo
     echo "| Search with | Entries | Seeded for |"
     echo "|---|---|---|"
-    echo "| \`$search_text\` | ci_group (group), ci_channel (channel), each with a small avatar (64 px) | a group and a channel to find |"
-    echo "| \`ci cards\` | ci_cards (channel, with a small avatar) | a channel to join, so that the profile has a conversation |"
-    echo "| \`$avatar_search_text\` | ci_avatar_g1…3 (groups), ci_avatar_c1…3 (channels), each with an avatar the size the app makes | images at the size limit |"
+    echo "| \`$search_text\` | ci_group (group), ci_channel (channel), each with a small avatar (64 px) | the smoke test; results on one page |"
+    echo "| \`ci cards\` | ci_cards (channel, with a small avatar) | the smoke test joins it, so that the chat list shows its cards |"
+    echo "| \`$avatar_search_text\` | ci_avatar_g1…3 (groups), ci_avatar_c1…3 (channels), each with an avatar the size the app makes | avatars and the response size limit: about one entry per page |"
     echo "| \`ci long\` | $long_name (group): a long name and a two-line description | truncation |"
     echo "| \`ci markdown\` | ci_markdown (group): markdown in the description | markdown shown literally |"
-    echo "| \`cinews\` | cinews (channel, with the name cinews.testing), cinews_digest and cinews_weekly (groups) | a search that matches a SimpleX name and listed entries |"
+    echo "| \`cinews\` | cinews (channel, with the name cinews.testing), cinews_digest and cinews_weekly (groups) | the Search key with a name typed: directory results, with Connect to cinews.testing still shown |"
     echo
     sqlite3 -markdown "$work/directory_chat.db" "$listings_query"
     echo
@@ -431,6 +494,21 @@ start() {
   probe_search
   probe_names
   write_seed
+  probe_pages "$search_text" 2
+  probe_pages "$avatar_search_text" 6
+}
+
+resume() {
+  bin=$work/bin
+  mkdir -p "$bin"
+  unzip -o -q "$1" -d "$bin"
+  run_names
+  run_relay
+  wait_connected relay
+  start_directory "$(cat "$work/super-user")"
+  run_contact ci_alice cialice
+  run_contact ci_robert Robert
+  echo "resumed: directory $(cat "$work/directory-link"), names server $(cat "$work/names-server")"
 }
 
 stop() {
@@ -457,6 +535,10 @@ case "${1:-}" in
     mkdir -p "$work"
     start "$2"
     ;;
+  resume)
+    work=$3
+    resume "$2"
+    ;;
   stop)
     work=$2
     stop
@@ -475,7 +557,7 @@ case "${1:-}" in
     sqlite3 -markdown "$work/directory_chat.db" "$listings_query"
     ;;
   *)
-    echo "usage: $0 start <backend zip> <work dir> | stop <work dir> | directory-stop <work dir> | directory-start <work dir> | listings <work dir>"
+    echo "usage: $0 start <backend zip> <work dir> | resume <backend zip> <work dir> | stop <work dir> | directory-stop <work dir> | directory-start <work dir> | listings <work dir>"
     exit 1
     ;;
 esac

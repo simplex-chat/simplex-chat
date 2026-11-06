@@ -156,7 +156,7 @@ The sealed class representing all commands the app can send to the Haskell core 
 
 **Groups:** `ApiNewGroup`, `ApiAddMember`, `ApiJoinGroup`, `ApiAcceptMember`, `ApiMembersRole`, `ApiBlockMembersForAll`, `ApiRemoveMembers`, `ApiLeaveGroup`, `ApiListMembers`, `ApiUpdateGroupProfile`, `APICreateGroupLink`, `APIDeleteGroupLink`, `APIGetGroupLink`, `ApiAddGroupShortLink`
 
-**Connections:** `APIAddContact`, `APIConnect`, `APIConnectPlan`, `APIPrepareContact`, `APIPrepareGroup`, `APIConnectPreparedContact`, `APIConnectPreparedGroup`, `ApiConnectContactViaAddress`
+**Connections:** `APIAddContact`, `APIConnect`, `APIConnectPlan`, `APIPrepareContact`, `APIPrepareGroup`, `APIConnectPreparedContact`, `APIConnectPreparedGroup`, `ApiConnectContactViaAddress`, `APISendServiceRequest`
 
 **Contacts:** `ApiDeleteChat`, `ApiClearChat`, `ApiListContacts`, `ApiUpdateProfile`, `ApiSetContactPrefs`, `ApiSetContactAlias`
 
@@ -455,9 +455,9 @@ Singleton for displaying alert dialogs. Provides `showAlertMsg`, `showAlertDialo
 Holds the chat list state for a particular scope (main or secondary). Manages `chats` (State<List<Chat>>), provides `updateChats()` to refresh, and supports filtering/keeping specific chats during updates.
 
 ### ConnectProgressManager
-Tracks and displays connection progress in the UI. Methods: `startConnectProgress(text, onCancel)`, `stopConnectProgress()`, `cancelConnectProgress()`. Exposes `showConnectProgress` (nullable string indicating active progress text).
+Tracks and displays connection progress in the UI. The single spinner is shared by connections and the online search, so it records its owner (`ConnectProgressOwner.Connect` or `ConnectProgressOwner.DirectorySearch`). Methods: `startConnectProgress(text, owner = Connect, onCancel)` (a search does not take the spinner from a running connection), `stopConnectProgress(owner = Connect)` (ignored when another owner holds the spinner), `cancelConnectProgress()` (cancels whoever owns it, running its `onCancel`). Exposes `showConnectProgress` (nullable string indicating active progress text, after about a second).
 
-*See:* `ChatModel.kt:48` -- `object ConnectProgressManager`
+*See:* `ChatModel.kt:52` -- `object ConnectProgressManager`; `ChatModel.kt:50` -- `enum class ConnectProgressOwner`
 
 ### withBGApi / withLongRunningApi
 Utility functions for launching coroutines on background threads. Used throughout the codebase to perform API calls without blocking the UI thread.

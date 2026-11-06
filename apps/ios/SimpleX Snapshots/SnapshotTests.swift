@@ -183,12 +183,14 @@ private struct SnapshotScene {
     var height: CGFloat? = nil
     var allSizes: Bool
     var device: Bool
+    var waitsForLoad: Bool
     var view: AnyView
 
-    init<P: PreviewProvider>(_ preview: P.Type, allSizes: Bool = false, device: Bool = false) {
+    init<P: PreviewProvider>(_ preview: P.Type, allSizes: Bool = false, device: Bool = false, waitsForLoad: Bool = false) {
         name = String(describing: preview).replacingOccurrences(of: "_Previews", with: "")
         self.allSizes = allSizes
         self.device = device
+        self.waitsForLoad = waitsForLoad
         view = AnyView(preview.previews)
     }
 }
@@ -255,6 +257,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(DeletedItemView_Previews.self, allSizes: true),
         SnapshotScene(DetermineWidth_Previews.self),
         SnapshotScene(DeveloperView_Previews.self),
+        SnapshotScene(DirectorySearchView_Previews.self, allSizes: true),
         SnapshotScene(EmojiItemView_Previews.self, allSizes: true),
         SnapshotScene(FramedCIVoiceView_Previews.self, allSizes: true),
         SnapshotScene(FramedItemView_Deleted_Previews.self, allSizes: true),
@@ -263,7 +266,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(GetStakeBanner_Previews.self),
         SnapshotScene(GroupChatInfoView_Previews.self, device: true),
         SnapshotScene(GroupLinkView_Previews.self),
-        SnapshotScene(GroupMemberInfoView_Previews.self, device: true),
+        SnapshotScene(GroupMemberInfoView_Previews.self, device: true, waitsForLoad: true),
         SnapshotScene(GroupPreferencesView_Previews.self, device: true),
         SnapshotScene(GroupProfileView_Previews.self, device: true),
         SnapshotScene(GroupWelcomeView_Previews.self),
@@ -362,6 +365,10 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
     window.frame = CGRect(x: 0, y: 0, width: width, height: scene.height ?? screen.bounds.height)
     window.isHidden = false
     settle()
+    if scene.waitsForLoad {
+        settle()
+        settle()
+    }
     if scene.height == nil && !scene.device {
         for _ in 0..<2 {
             let fit = host.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
