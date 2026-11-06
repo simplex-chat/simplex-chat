@@ -123,9 +123,10 @@ Other options:
 
 Name links are read for their profiles through an SMP proxy, as the default `--smp-proxy` reads
 every link of a server the service does not use, so the service connects to no host a buyer chose.
-Onion links are allowed and read through the proxy too, whose relay needs Tor to reach them. A link
-whose host is or resolves to a loopback, private or other non-public address is refused before it is
-read. Leave `--smp-proxy` and `--smp-proxy-fallback` at their defaults: `--smp-proxy never` or
+Onion links, and links whose host name does not resolve on the service's machine, are allowed and
+read through the proxy too; an onion link needs Tor on the proxy's relay. A link whose host is or
+resolves to a loopback, private or other non-public address is refused before it is read. Leave
+`--smp-proxy` and `--smp-proxy-fallback` at their defaults: `--smp-proxy never` or
 `--smp-proxy-fallback yes` would connect to a link's host directly.
 
 The service logs to stderr: its routine lines at note level, its warnings and errors at their own.

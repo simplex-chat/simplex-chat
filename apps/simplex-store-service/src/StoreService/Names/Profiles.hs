@@ -323,9 +323,9 @@ imageURI (ImageData uri)
 data HostCheck = HostPublic | HostRefused | HostUnanswered
   deriving (Eq, Show)
 
--- | Refused when any host does not resolve, is or resolves to an address outside the public internet,
--- or finds no lookup slot before the deadline; unanswered when a lookup does not answer by the deadline.
--- An onion host is allowed without a lookup, as only the proxy or Tor can reach it.
+-- | Refused when any host is or resolves to an address outside the public internet, or finds no lookup slot
+-- before the deadline; unanswered when a lookup does not answer by the deadline. An onion host, or a name that
+-- does not resolve here, is allowed, as the proxy reaches it.
 checkHosts :: Profiles -> Deadline -> NonEmpty TransportHost -> IO HostCheck
 checkHosts ps = checkHostsIn ps []
 
@@ -362,14 +362,13 @@ lookupHost Profiles {limits = ProfileLimits {refusedHostSeconds, maxRefusedHosts
         Just _ -> maybe HostUnanswered (bool HostRefused HostPublic) <$> waitUntil deadline (readTMVar answer)
   where
     finish answer resolved = do
-      let public = either (\(_ :: SomeException) -> False) allPublic resolved
+      let public = either (\(_ :: SomeException) -> True) (all publicAddress) resolved
       now <- clock
       atomically $ do
         unless public $ modifyTVar' refusedHosts $ insertBounded maxRefusedHosts now name (now + refusedHostSeconds, ())
         putTMVar answer public
         mapM_ releaseSlot slots
     slots = lookupSlots : pools
-    allPublic addresses = not (null addresses) && all publicAddress addresses
 
 publicAddress :: TransportHost -> Bool
 publicAddress = \case

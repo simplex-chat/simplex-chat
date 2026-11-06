@@ -69,7 +69,7 @@ namesProfilesTests = describe "StoreService names: profiles" $ do
     H.it "lets a fetch wait for a slot that frees within the timeout" testSlotFreesInTime
   describe "host rule" $ do
     H.it "passes public addresses and names resolving to them, and refuses private, loopback, CGNAT, link-local, unique-local, unspecified, multicast, reserved, broadcast, benchmarking and site-local ones, also IPv4-mapped, IPv4-compatible and NAT64" testHostsChecked
-    H.it "allows .onion hosts without resolving them, and refuses unresolvable names" testOnionUnresolvable
+    H.it "allows .onion hosts without resolving them, and names that do not resolve here" testOnionUnresolvable
     H.it "refuses a link with one public and one private host, and a name with one private address" testMixedHosts
     H.it "answers a refused link unavailable without fetching it" testRefusedNotFetched
   describe "host lookups" $ do
@@ -433,7 +433,7 @@ testOnionUnresolvable = do
   hostCheck (stubResolver asked) (THDomainName "abcdefghij234567.ONION." :| []) `shouldReturn` HostPublic
   hostCheck (stubResolver asked) ("abcdefghij234567.onion" :| ["127.0.0.1"]) `shouldReturn` HostRefused
   readTVarIO asked `shouldReturn` []
-  hostCheck (stubResolver asked) ("unknown.test" :| []) `shouldReturn` HostRefused
+  hostCheck (stubResolver asked) ("unknown.test" :| []) `shouldReturn` HostPublic
   readTVarIO asked `shouldReturn` ["unknown.test"]
 
 -- | An IPv4-mapped IPv6 address, @::ffff:a.b.c.d@.
@@ -468,7 +468,7 @@ heldResolver :: TVar [String] -> TQueue () -> TMVar () -> HostResolver
 heldResolver asked started gate name = do
   atomically $ modifyTVar' asked (name :)
   if "held" `isPrefixOf` name
-    then [] <$ (atomically (writeTQueue started ()) >> uninterruptibleMask_ (atomically $ readTMVar gate))
+    then ["10.0.0.1"] <$ (atomically (writeTQueue started ()) >> uninterruptibleMask_ (atomically $ readTMVar gate))
     else pure ["1.1.1.1"]
 
 testLookupBound :: IO ()
