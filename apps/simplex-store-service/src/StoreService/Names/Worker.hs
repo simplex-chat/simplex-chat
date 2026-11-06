@@ -73,6 +73,8 @@ data Next
     WaitUntil Int64 UTCTime
   | -- | a chain read or a send failed, and the phase is kept
     Retry Int64 Text
+  | -- | as Retry, for a cause only the operator removes, logged as an error
+    Stalled Int64 Text
   | -- | a transaction of the registration is in flight
     Await PendingTx
 
@@ -137,13 +139,15 @@ follow w@Worker {wkOrders = OrdersEnv {oeStore, oePhases, oeNow}} rid@(Registrat
     Done -> pure ()
     Again -> follow w rid Nothing
     WaitUntil v t -> waitFor v t >> follow w rid Nothing
-    Retry v reason -> do
-      when (Just reason /= lastFailure) $ logWarn $ "names worker: registration " <> ridText <> " waits: " <> reason
+    Retry v reason -> waitAgain logWarn v reason
+    Stalled v reason -> waitAgain logError v reason
+    Await p -> awaitOutcome outcomeWait p >> follow w rid Nothing
+  where
+    waitAgain logAt v reason = do
+      when (Just reason /= lastFailure) $ logAt $ "names worker: registration " <> ridText <> " waits: " <> reason
       now <- oeNow
       waitFor v $ addUTCTime retryInterval now
       follow w rid $ Just reason
-    Await p -> awaitOutcome outcomeWait p >> follow w rid Nothing
-  where
     waitFor v t = do
       now <- oeNow
       let micros = max 0 $ ceiling $ min maxWait (diffUTCTime t now) * 1000000
@@ -340,8 +344,8 @@ registering w@Worker {wkSender} now r@NameRegistration {nrId} =
 
 -- | A register that did not go through, by its dry run's revert or once every transaction settled: registered when one mined
 -- with status 1 or the owner holds the name; committed again on InvalidNonce or a refused terms acceptance, for the page to sign again, the name
--- policy read again on TermsNotAccepted; taken on any revert while the name is not available at the latest block; failed otherwise, unless the
--- dry run named the name as gone.
+-- policy read again on TermsNotAccepted; kept waiting while the sponsor allowance is used up; taken on any revert while the name is not
+-- available at the latest block; failed otherwise, unless the dry run named the name as gone.
 judge :: Worker -> UTCTime -> NameRegistration -> Maybe RevertName -> IO Next
 judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {nrReveal} reason =
   inTurn w r $
@@ -354,6 +358,7 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
           when (e == RNTermsNotAccepted) $ forgetNamePolicy oeContracts
           store w now r {nrReveal = Nothing}
         Just RNCommitmentTooNew -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
+        Just RNInsufficientAllowance -> pure (Nothing, Stalled (nrVersion r) "the registrar's allowance on the sponsor is used up; the guardian raises it with setRegistrarAllowance")
         _ -> case nrReveal of
           Just NameReveal {rvLabel} ->
             controllerAvailable oeContracts rvLabel >>= \case
@@ -362,8 +367,8 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
               -- the dry run runs on the pending block, where a competitor's register that may never mine can hold the name
               Right True
                 | reason `elem` map Just [RNNameNotAvailable, RNNameReserved] -> pure (Nothing, Retry (nrVersion r) "the dry run reverted the name as gone, but it reads available")
-                | otherwise -> failed w now r reason
-          Nothing -> failed w now r reason
+                | otherwise -> failed w now r
+          Nothing -> failed w now r
 
 -- | A paid order keeps its whole price as a balance of its own, credited in the taken write's transaction, registration before balance,
 -- in the balance's turn after the name's; a code order's code is released.
@@ -377,11 +382,8 @@ taken Worker {wkOrders = OrdersEnv {oeStore, oeTurns}} now r@NameRegistration {n
     credited = written r <$> withBalanceTurn oeTurns nrId (withTransaction oeStore $ \db -> write db >>= traverse (\v -> v <$ creditBalance db nrId nrPrice now))
 
 -- | A code order keeps its code for Try again.
-failed :: Worker -> UTCTime -> NameRegistration -> Maybe RevertName -> IO (Maybe Int64, Next)
-failed w now r@NameRegistration {nrId = RegistrationId rid} reason = do
-  when (reason == Just RNInsufficientAllowance) $
-    logError $ "names worker: registration " <> rid <> " failed: the registrar's allowance on the sponsor is used up; the guardian raises it with setRegistrarAllowance"
-  store w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notRegistered}
+failed :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)
+failed w now r = store w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notRegistered}
 
 -- | A compare-and-set on the version read, in the caller's turn of the name.
 store :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)

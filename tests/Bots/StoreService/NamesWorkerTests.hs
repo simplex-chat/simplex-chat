@@ -89,7 +89,8 @@ workerTests = describe "StoreService names: worker" $ do
     it "ends the later of two wallets' paid orders for one name taken, not live, with a balance of its price" testTwoWallets
     it "ends taken on any revert while the name is not available, releasing a code and keeping no balance" testRevertTaken
     it "keeps the phase on NameNotAvailable while the name still reads available, as for a pending competitor" testPendingCompetitor
-    it "ends failed on a revert while the name is available, alerting on InsufficientAllowance and keeping a code" testRevertFailed
+    it "ends failed on a revert while the name is available, keeping a code" testRevertFailed
+    it "keeps an order committed while the sponsor allowance is used up, alerting, and registers it after a top-up" testAllowanceUsedUp
     it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed, and reads the name policy again on TermsNotAccepted" testInvalidNonce
     it "relays no intent past its deadline, ending failed" testExpiredIntent
     it "keeps the phase when a read of the final check fails" testCheckUnread
@@ -221,6 +222,7 @@ shape = \case
   Again -> "Again"
   WaitUntil v t -> "WaitUntil " <> show v <> " " <> show t
   Retry v reason -> "Retry " <> show v <> " " <> T.unpack reason
+  Stalled v reason -> "Stalled " <> show v <> " " <> T.unpack reason
   Await p -> "Await " <> show (ptHash p)
 
 awaiting :: Next -> IO PendingTx
@@ -237,6 +239,11 @@ retrying :: Next -> IO ()
 retrying = \case
   Retry {} -> pure ()
   next -> fail $ "not retrying: " <> shape next
+
+stalled :: Next -> IO Text
+stalled = \case
+  Stalled _ reason -> pure reason
+  next -> fail $ "not stalled: " <> shape next
 
 done :: Next -> IO ()
 done = \case
@@ -636,10 +643,8 @@ testRevertFailed :: IO ()
 testRevertFailed = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   (r, code) <- codeIn ctx 8 aliceOrder openPhase >>= traverseFst (revealed ctx keyA "alicebakery")
   answerAvailable w True
-  -- viem's encodeErrorResult of InsufficientAllowance(10000, 2500)
-  setFault cNode "eth_estimateGas" $ revertFault $ unhex "2a1b2dd8000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000009c4"
-  logs <- capturingStderr $ steps w r >>= done
-  logs `shouldSatisfy` T.isInfixOf "setRegistrarAllowance"
+  dryRunsRevert w "SignatureExpired()" ""
+  steps w r >>= done
   now <- nowOf ctx
   x <- stored ctx r
   (nrPhase x, nrFailedAt x, nrError x, nrLive x) `shouldBe` (PFailed, Just now, Just "The name could not be registered", True)
@@ -652,6 +657,20 @@ testRevertFailed = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   steps w p >>= done
   nrPhase <$> stored ctx p `shouldReturn` PFailed
   sent w `shouldReturn` []
+
+testAllowanceUsedUp :: IO ()
+testAllowanceUsedUp = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
+  answerAvailable w True
+  -- viem's encodeErrorResult of InsufficientAllowance(10000, 2500)
+  setFault cNode "eth_estimateGas" $ revertFault $ unhex "2a1b2dd8000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000009c4"
+  steps w r >>= stalled >>= (`shouldSatisfy` T.isInfixOf "setRegistrarAllowance")
+  x <- stored ctx r
+  (nrPhase x, nrError x, nrVersion x) `shouldBe` (PCommitted, Nothing, nrVersion r)
+  sent w `shouldReturn` []
+  dryRunsPass w
+  void $ steps w r >>= awaiting
+  length <$> sent w `shouldReturn` 1
 
 testInvalidNonce :: IO ()
 testInvalidNonce = forM_ [("InvalidNonce()", fakeNamePolicy), ("TermsNotAccepted(string)", newPolicy)] $ \(revert, policyAfter) -> withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders = OrdersEnv {oeContracts}}} -> do

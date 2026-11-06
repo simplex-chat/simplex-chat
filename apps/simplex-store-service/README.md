@@ -1100,9 +1100,11 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
 - `[ERROR …] names sender: nonce <n>: not sent: …`, with the node's `insufficient funds` message,
   when the key cannot pay. The transaction is saved and sent again every few seconds, so funding the
   key is enough and needs no restart. The line is logged again only when the node's message changes.
-- `[ERROR …] names worker: registration <id> failed: the registrar's allowance on the sponsor is
+- `[ERROR …] names worker: registration <id> waits: the registrar's allowance on the sponsor is
   used up; the guardian raises it with setRegistrarAllowance` when the sponsor refuses a register
-  with `InsufficientAllowance`. The order is failed; a code order keeps its code for Try again.
+  with `InsufficientAllowance`. The order keeps its phase and its register is tried again every 15
+  seconds, so a top-up before its commitment lapses registers it with no restart. The line is
+  logged once per order. An order whose commitment lapses first fails, and the buyer can Try again.
 - `[WARN …] names sender: the latest block needs <wei> wei per gas, above max_fee_per_gas <cap>;
   the transaction waits` when fees are above the cap. Nothing is signed until they fall.
 - `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over max_fee_per_gas
