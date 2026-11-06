@@ -377,7 +377,7 @@ struct ChatView: View {
                 theme = buildTheme()
                 closeSearch()
                 mergedItems.boxedValue = MergedItems.create(im, revealedItems)
-                scrollView.updateItems(mergedItems.boxedValue.items)
+                scrollView.updateItems(mergedItems.boxedValue.items, true)
 
                 if let openAround = chatModel.openAroundItemId, let index = mergedItems.boxedValue.indexInParentItems[openAround] {
                     scrollView.scrollToItem(index)
