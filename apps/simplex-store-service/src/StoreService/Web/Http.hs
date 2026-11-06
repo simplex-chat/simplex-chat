@@ -27,7 +27,7 @@ module StoreService.Web.Http
     maxHolds,
     withHoldSlot,
     maxSearches,
-    limitedSearch,
+    searchSlot,
     holdsFull,
     jsonResponse,
     jsonError,
@@ -129,9 +129,9 @@ holdsFull = rateLimited holdsFullSeconds
 maxSearches :: Int
 maxSearches = 16
 
--- | A search answered while a slot is free, else rate_limited at once.
-limitedSearch :: HttpEnv -> Respond -> IO ResponseReceived -> IO ResponseReceived
-limitedSearch HttpEnv {heSearches} respond search = inSlot heSearches maxSearches search >>= maybe (respond $ rateLimited 1) pure
+-- | A search's chain reads, run while a slot is free; Nothing when none is.
+searchSlot :: HttpEnv -> IO a -> IO (Maybe a)
+searchSlot HttpEnv {heSearches} = inSlot heSearches maxSearches
 
 inSlot :: TVar Int -> Int -> IO a -> IO (Maybe a)
 inSlot slots most action = bracket takeSlot releaseSlot $ \taken -> if taken then Just <$> action else pure Nothing

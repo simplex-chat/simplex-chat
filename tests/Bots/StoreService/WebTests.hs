@@ -78,7 +78,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (toLower)
 import Data.Either (isLeft)
 import Data.Functor ((<&>))
-import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef, writeIORef)
+import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef)
 import Data.Int (Int64)
 import Data.List (isInfixOf, sort, sortOn)
 import qualified Data.Map.Strict as Map
@@ -96,9 +96,7 @@ import qualified GHC.IO.FD as FD
 import GHC.IO.Handle.FD (handleToFd)
 import Network.HTTP.Client (Manager, Request (..), RequestBody (..), Response, defaultManagerSettings, httpLbs, newManager, parseRequest, responseBody, responseHeaders, responseStatus, responseTimeoutMicro)
 import Network.HTTP.Types (Header, HeaderName, hCacheControl, hContentType)
-import Network.HTTP.Types.Status (status200, statusCode)
-import qualified Network.Wai as Wai
-import Network.Wai.Internal (ResponseReceived (..))
+import Network.HTTP.Types.Status (statusCode)
 import Network.Wai (Application)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeType (..))
@@ -1946,14 +1944,10 @@ testHoldSlots = bounded "hold slots" $ withWebApp $ \env client -> do
 testSearchSlots :: IO ()
 testSearchSlots = bounded "search slots" $ withWebApp $ \env _ -> do
   let http@HttpEnv {heSearches} = weHttp env
-  answered <- newIORef Nothing
-  let respond r = ResponseReceived <$ writeIORef answered (Just $ statusCode $ Wai.responseStatus r)
   atomically $ writeTVar heSearches maxSearches
-  void $ limitedSearch http respond (fail "the search ran with no slot free")
-  readIORef answered `shouldReturn` Just 429
+  searchSlot http (fail "the search ran with no slot free" :: IO ()) `shouldReturn` Nothing
   atomically $ writeTVar heSearches (maxSearches - 1)
-  void $ limitedSearch http respond (readTVarIO heSearches >>= (`shouldBe` maxSearches) >> respond (Wai.responseLBS status200 [] ""))
-  readIORef answered `shouldReturn` Just 200
+  searchSlot http (readTVarIO heSearches) `shouldReturn` Just maxSearches
   readTVarIO heSearches `shouldReturn` maxSearches - 1
 
 testWebhookRefusalLogCapped :: IO ()

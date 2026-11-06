@@ -11,7 +11,7 @@ import Network.Wai (Request, ResponseReceived, pathInfo)
 import StoreService.Config (ServiceConfig)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Orders (ordersEnv)
-import StoreService.Web.Http (HttpEnv, Limit, Respond, codeLimit, createLimit, findLimit, holdMicros, limited, limitedSearch, only, previewLimit, readLimit, recordsLimit, searchLimit)
+import StoreService.Web.Http (HttpEnv, Limit, Respond, codeLimit, createLimit, findLimit, holdMicros, limited, only, previewLimit, readLimit, recordsLimit, searchLimit)
 import StoreService.Web.Names.Codes (codeCheckHandler)
 import StoreService.Web.Names.Orders (codeOrderHandler, spendHandler)
 import StoreService.Web.Names.Owner (findHandler, retargetHandler)
@@ -33,7 +33,7 @@ namesRoutes cfg http env@NamesEnv {neConfig, neStore, neContracts, neProfiles, n
   ["api", "link", "preview"] -> Just Route {rMethod = "POST", rLimit = previewLimit, rHandler = previewHandler neProfiles}
   ["api", "terms", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = termsHandler neContracts hash}
   -- below every fixed /api/name/<word> route, which it would otherwise match
-  ["api", "name", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = \req respond -> limitedSearch http respond $ searchHandler neConfig neStore neContracts neProfiles getCurrentTime hash req respond}
+  ["api", "name", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = searchHandler neConfig http neStore neContracts neProfiles getCurrentTime hash}
   -- above /api/registration/:id, which it would otherwise match
   ["api", "registration", "find"] -> Just Route {rMethod = "POST", rLimit = findLimit, rHandler = findHandler (ordersEnv env)}
   ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler (ordersEnv env) http holdMicros rid}

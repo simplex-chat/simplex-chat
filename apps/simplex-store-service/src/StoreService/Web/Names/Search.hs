@@ -36,7 +36,7 @@ import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
 import StoreService.Names.Records (nameEditsLeft)
 import StoreService.Names.Store (isLabelRegistering)
 import StoreService.Names.View (addressText, tldText)
-import StoreService.Web.Http (Respond, badRequest, invalidLink, invalidName, jsonResponse, maxBodyBytes, notFound, providerUnavailable, readBoundedBody, termsUnavailable)
+import StoreService.Web.Http (HttpEnv, Respond, badRequest, invalidLink, invalidName, jsonResponse, maxBodyBytes, notFound, providerUnavailable, rateLimited, readBoundedBody, searchSlot, termsUnavailable)
 import StoreService.Web.Names.Records (editsLeftJSON)
 import System.Timeout (timeout)
 import Text.Read (readMaybe)
@@ -49,17 +49,19 @@ data Found
   | FRegistered RegisteredName (Maybe NameRecords)
 
 -- | The chain reads of one search share one deadline, so a node that answers slowly fails the search once.
-searchHandler :: NamesConfig -> DBStore -> Contracts -> Profiles -> IO UTCTime -> Text -> Request -> Respond -> IO ResponseReceived
-searchHandler cfg@NamesConfig {nYears} st ct ps clock hashText req respond = case LabelHash <$> bytes32FromHex hashText of
+-- Only they hold a search slot: the profile reads after them have their own bound.
+searchHandler :: NamesConfig -> HttpEnv -> DBStore -> Contracts -> Profiles -> IO UTCTime -> Text -> Request -> Respond -> IO ResponseReceived
+searchHandler cfg@NamesConfig {nYears} http st ct ps clock hashText req respond = case LabelHash <$> bytes32FromHex hashText of
   Nothing -> respond badRequest
   Just lh -> case queryLength req of
     Nothing -> respond invalidName
     Just len -> do
       registering <- withTransaction st (`isLabelRegistering` lh)
-      timeout (ctDeadline ct) (runExceptT $ found lh len registering) >>= \case
-        Just (Right (f, listed)) -> respond =<< searchAnswer cfg st ps clock lh listed f
-        Just (Left e) -> unavailable $ tshow e
-        Nothing -> unavailable "timed out"
+      searchSlot http (timeout (ctDeadline ct) (runExceptT $ found lh len registering)) >>= \case
+        Nothing -> respond $ rateLimited 1
+        Just (Just (Right (f, listed))) -> respond =<< searchAnswer cfg st ps clock lh listed f
+        Just (Just (Left e)) -> unavailable $ tshow e
+        Just Nothing -> unavailable "timed out"
   where
     found lh len registering = do
       (status, listed) <- ExceptT $ together $ (,) <$> concurrent (nameStatus ct lh) <*> concurrent (communityName ct lh)
