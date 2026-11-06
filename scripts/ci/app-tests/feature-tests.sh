@@ -68,4 +68,4 @@ if [ "$failed" -gt 0 ]; then
   echo "error: $failed of $# feature tests failed"
   exit 1
 fi
-echo "feature tests passed: $*"
+echo "feature tests finished without a failure: $*"

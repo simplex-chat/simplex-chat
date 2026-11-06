@@ -102,7 +102,7 @@ elif [ -z "$keyword" ]; then
   done <<< "$changed"
   for name in $tests; do
     if [ -n "$shared" ]; then
-      select_test "$name" "$shared changed, which every $platform test uses"
+      select_test "$name" "$shared changed, a shared file of the $platform tests"
     elif grep -qxF "$platform_dir/tests/$name.sh" <<< "$changed"; then
       select_test "$name" "changed on this branch"
     elif covered=$(covered_file "$name"); then
