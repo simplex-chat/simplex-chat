@@ -96,10 +96,10 @@ settleOrder :: DBStore -> Waiters -> Maybe Phases -> InvoiceId -> PaymentSignal 
 settleOrder st waiters phases invId signal now' = do
   outcome <- withTransaction st $ \db ->
     settlementInvoice db invId >>= \case
-      Just InvoiceRow {irStatus}
+      Just InvoiceRow {irStatus, irProduct = IPName _}
         | isJust (decide irStatus signal) -> do
-            -- On Postgres, a concurrent overdue close holding the row is waited for, and the read below sees its writes;
-            -- a close that comes later waits for this payment and then sees it.
+            -- On Postgres, a concurrent overdue close of the name order holding the row is waited for, and the read below sees
+            -- its writes; a close that comes later waits for this payment and then sees it.
             lockInvoice db invId now
             settlementInvoice db invId >>= settleRow db
       row_ -> settleRow db row_
