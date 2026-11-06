@@ -34,7 +34,7 @@ import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.SimplexName (labelHash)
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (bytes32FromHex)
 import StoreService.Names.Community (AcceptanceAsked (..), currentAcceptance)
@@ -64,7 +64,7 @@ data RevealFields = RevealFields
 -- | The signature's format and low s, and the label as text.
 parseSignedLabel :: J.Object -> Maybe SignedLabel
 parseSignedLabel o = do
-  slSignature <- either (const Nothing) Just . parseSignature =<< textField o "signature"
+  slSignature <- eitherToMaybe . parseSignature =<< textField o "signature"
   slLabel <- textField o "label"
   pure SignedLabel {slLabel, slSignature}
 
@@ -87,7 +87,7 @@ parseRevealFields o = do
     acceptance a = do
       taTermsHash <- bytes32FromHex =<< textField a "termsHash"
       taNonce <- integerField =<< KM.lookup "nonce" a
-      taSignature <- either (const Nothing) Just . parseSignature =<< textField a "signature"
+      taSignature <- eitherToMaybe . parseSignature =<< textField a "signature"
       pure TermsAcceptance {taTermsHash, taNonce, taSignature}
     links key records = case KM.lookup key records of
       Just (J.Array items) -> mapM text $ toList items

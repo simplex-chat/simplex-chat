@@ -39,6 +39,7 @@ import Data.Word (Word64)
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
+import Simplex.Messaging.Util (eitherToMaybe)
 
 data AbiValue = Static ByteString | Dynamic ByteString
 
@@ -86,7 +87,7 @@ hex bs = "0x" <> decodeLatin1 (convertToBase Base16 bs)
 -- | A hash as 'hex' writes it, and only so: upper-case digits would give a second spelling of one hash.
 bytes32FromHex :: Text -> Maybe ByteString
 bytes32FromHex t = case T.stripPrefix "0x" t of
-  Just h | T.length h == 2 * abiWordSize && T.all lowerHex h -> either (const Nothing) Just $ convertFromBase Base16 $ encodeUtf8 h
+  Just h | T.length h == 2 * abiWordSize && T.all lowerHex h -> eitherToMaybe $ convertFromBase Base16 $ encodeUtf8 h
   _ -> Nothing
   where
     lowerHex c = isDigit c || (isAsciiLower c && isHexDigit c)
@@ -107,7 +108,7 @@ decodeAddress ret = do
 
 -- | Address has no exported constructor; its parser takes lowercase hex without the EIP-55 check.
 addressFromBytes :: ByteString -> Maybe Address
-addressFromBytes = either (const Nothing) Just . strDecode . convertToBase Base16
+addressFromBytes = eitherToMaybe . strDecode . convertToBase Base16
 
 decodeBool :: ByteString -> Either AbiError Bool
 decodeBool ret =

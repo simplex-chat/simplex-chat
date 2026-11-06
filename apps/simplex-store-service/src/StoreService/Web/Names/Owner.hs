@@ -6,7 +6,7 @@
 module StoreService.Web.Names.Owner (findHandler, retargetHandler) where
 
 import Control.Concurrent.STM (atomically)
-import Control.Logger.Simple (logError, logNote)
+import Control.Logger.Simple (logError)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
@@ -21,7 +21,7 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash (..))
-import Simplex.Messaging.Util (eitherToMaybe, tshow)
+import Simplex.Messaging.Util (eitherToMaybe)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Orders
@@ -31,7 +31,7 @@ import StoreService.Names.Store (NamePhase (..), NameRegistration (..), Registra
 import StoreService.Names.Turns (withLabelTurns)
 import StoreService.Names.View (registrationAt, registrationView)
 import StoreService.Web.Http (Respond, internalError, jsonResponse, maxBodyBytes, nameBodyBytes, notFound, readBoundedBody)
-import StoreService.Web.Names.Orders (Answer (..), answerNow, firstRefusal, orderRefusalResponse, sendAnswer)
+import StoreService.Web.Names.Orders (Answer (..), answerNow, firstRefusal, refused, sendAnswer)
 import StoreService.Web.Names.Registration (registrationChangedResponse, registrationRefusalResponse)
 
 data FindRequest = FindRequest
@@ -147,5 +147,3 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
 written :: OrdersEnv -> RegistrationId -> Int64 -> Response -> Answer
 written OrdersEnv {oePhases} rid v aResponse = Answer {aResponse, aAfter = atomically $ publish oePhases rid v}
 
-refused :: Text -> OrderRefusal -> IO Answer
-refused what refusal = answerNow (orderRefusalResponse refusal) <$ logNote (what <> " refused: " <> tshow refusal)

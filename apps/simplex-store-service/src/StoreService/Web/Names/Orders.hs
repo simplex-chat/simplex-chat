@@ -7,6 +7,7 @@ module StoreService.Web.Names.Orders
     answerNow,
     sendAnswer,
     firstRefusal,
+    refused,
     nameInvoiceHandler,
     codeOrderHandler,
     spendHandler,

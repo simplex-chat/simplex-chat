@@ -15,6 +15,7 @@ module StoreService.Names.Orders
     Landing (..),
     maxSealedChars,
     signedRequestSeconds,
+    unixSeconds,
     parseOrderRequest,
     parseOrderFields,
     textField,
@@ -66,7 +67,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..))
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
 import StoreService.Names.Community (agreedTermsHash, communityJSON, communityTermsPrefix, nameTerms, readableTerms, termsFor, termsJSON, yearsFor)
@@ -148,7 +149,7 @@ signedRequestSeconds = 600
 -- | Every format check; the length's range is checkLength's, after the formats a kind of order adds.
 parseOrderRequest :: J.Object -> Maybe OrderRequest
 parseOrderRequest o = do
-  orOwner <- either (const Nothing) Just . parseChecksumAddress =<< textField o "owner"
+  orOwner <- eitherToMaybe . parseChecksumAddress =<< textField o "owner"
   (orFields, orTimestamp, orSignature) <- parseOrderFields o
   pure OrderRequest {orOwner, orFields, orTimestamp, orSignature}
 
@@ -164,7 +165,7 @@ parseOrderFields o = do
   ofAgreedTerms <- textField o "terms"
   unless (agreedTermsFormat ofAgreedTerms) Nothing
   timestamp <- integerField =<< KM.lookup "timestamp" o
-  signature <- either (const Nothing) Just . parseSignature =<< textField o "signature"
+  signature <- eitherToMaybe . parseSignature =<< textField o "signature"
   pure (OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms}, timestamp, signature)
 
 agreedTermsFormat :: Text -> Bool

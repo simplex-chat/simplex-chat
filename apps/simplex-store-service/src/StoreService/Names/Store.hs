@@ -101,7 +101,6 @@ where
 import qualified Control.Exception as E
 import Control.Monad (when)
 import Crypto.Number.Serialize (i2ospOf_)
-import Data.ByteArray.Encoding (Base (Base16), convertToBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Int (Int64)
@@ -121,18 +120,18 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), FromField (.
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (sha256Hash)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
-import Simplex.Messaging.Encoding.String (TextEncoding (..), strDecode)
+import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (maybeFirstRow, tshow)
-import StoreService.Names.Abi (hex)
+import StoreService.Names.Abi (addressFromBytes, hex)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (TermsAcceptance (..))
 import StoreService.Names.Signatures (OrderFields (..), parseSignature)
 import StoreService.Store (RevokeResult (..))
-import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, newInvoiceId, textToCryptoCurrency, truncateToSecond, unfundedQuery)
+import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, newInvoiceId, note, textToCryptoCurrency, truncateToSecond, unfundedQuery)
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
@@ -1550,13 +1549,10 @@ word64 = fromIntegral
 
 -- | Address has no exported constructor; its parser takes lowercase hex without the EIP-55 check.
 decodeAddress :: ByteString -> Either Text Address
-decodeAddress bs = either (const $ Left "address column") Right $ strDecode $ convertToBase Base16 bs
+decodeAddress = note "address column" . addressFromBytes
 
 decodeSignature :: ByteString -> Either Text RecoverableSignature
 decodeSignature bs = either (Left . ("signature column: " <>) . tshow) Right $ parseSignature $ hex bs
-
-note :: Text -> Maybe a -> Either Text a
-note err = maybe (Left err) Right
 
 decodeAll :: (row -> Either Text a) -> [row] -> IO [a]
 decodeAll decode = either (E.throwIO . StoreDecodeError) pure . traverse decode

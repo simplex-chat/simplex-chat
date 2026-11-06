@@ -24,6 +24,7 @@ import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Protocol (ProtocolServer (..))
 import Simplex.Messaging.Transport.Client (TransportHost)
+import Simplex.Messaging.Util (eitherToMaybe)
 
 data LinkKind = LKContact | LKChannel
   deriving (Eq, Show)
@@ -35,7 +36,7 @@ linkMaxBytes = 4096
 linkKindOf :: Text -> Maybe LinkKind
 linkKindOf link
   | B.length (encodeUtf8 link) > linkMaxBytes = Nothing
-  | otherwise = either (const Nothing) Just $ A.parseOnly (shortLinkP <* A.endOfInput) link
+  | otherwise = eitherToMaybe $ A.parseOnly (shortLinkP <* A.endOfInput) link
 
 shortLinkP :: Parser LinkKind
 shortLinkP = do
@@ -53,7 +54,7 @@ shortLinkP = do
 
 -- the link as the chat core reads it
 parseShortLink :: Text -> Maybe (ConnShortLink 'CMContact)
-parseShortLink = either (const Nothing) Just . strDecode . encodeUtf8
+parseShortLink = eitherToMaybe . strDecode . encodeUtf8
 
 shortLinkHosts :: ConnShortLink 'CMContact -> NonEmpty TransportHost
 shortLinkHosts (CSLContact _ _ ProtocolServer {host} _) = host

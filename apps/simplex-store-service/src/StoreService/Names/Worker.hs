@@ -34,7 +34,7 @@ import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
-import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Util (tshow, ($>>=))
@@ -42,7 +42,7 @@ import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient, ChainError (..), TxHash, blockAt)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, releaseCode, reserveCode)
 import StoreService.Names.Contracts (CommitmentAges (..), acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy, sponsorNonce)
-import StoreService.Names.Orders (Landing (..), OrdersEnv (..), WriteRefusal (..), confirmLanded, versionWritten)
+import StoreService.Names.Orders (Landing (..), OrdersEnv (..), WriteRefusal (..), confirmLanded, unixSeconds, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Reveal (intentOf)
@@ -393,9 +393,6 @@ failure r e = Retry (nrVersion r) $ tshow e
 
 waitUntil :: NameRegistration -> UTCTime -> Next
 waitUntil r = WaitUntil (nrVersion r)
-
-unixSeconds :: UTCTime -> Integer
-unixSeconds = floor . utcTimeToPOSIXSeconds
 
 secondsTime :: Integer -> UTCTime
 secondsTime = posixSecondsToUTCTime . fromInteger

@@ -10,6 +10,7 @@ module StoreService.Store.Invoices
     InvoiceProduct (..),
     InvoicePayment (..),
     paymentHolds,
+    note,
     NewInvoice (..),
     NewNameInvoice (..),
     CreateError (..),

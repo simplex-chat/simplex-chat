@@ -14,8 +14,6 @@ import qualified Data.List.NonEmpty as L
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
-import Data.Time.Clock (UTCTime)
-import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Network.HTTP.Types (status200, status409, status429, status504)
 import Network.Wai (Request, Response, ResponseReceived)
@@ -23,6 +21,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..))
 import StoreService.Names.Abi (bytes32FromHex, hex)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
+import StoreService.Names.Orders (unixSeconds)
 import StoreService.Names.Records (EditAnswer (..), EditRequest (..), EditsLeft (..), Records, relayEdit)
 import StoreService.Names.Registration (channelRecordKey, contactRecordKey)
 import StoreService.Names.Signatures (parseSignature)
@@ -90,5 +89,3 @@ editResponse = \case
 editsLeftJSON :: EditsLeft -> J.Value
 editsLeftJSON EditsLeft {elLeft, elNextAt} = J.object ["left" .= elLeft, "nextAt" .= (unixSeconds <$> elNextAt)]
 
-unixSeconds :: UTCTime -> Integer
-unixSeconds = floor . utcTimeToPOSIXSeconds
