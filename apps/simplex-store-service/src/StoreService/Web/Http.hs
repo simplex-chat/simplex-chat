@@ -21,6 +21,8 @@ module StoreService.Web.Http
     codeLimit,
     findLimit,
     recordsLimit,
+    invoicesLimit,
+    limitedForAll,
     holdMicros,
     jsonResponse,
     jsonError,
@@ -104,6 +106,11 @@ codeLimit = Limit {lmName = "code", lmPerMinute = 10}
 findLimit = Limit {lmName = "find", lmPerMinute = 5}
 recordsLimit = Limit {lmName = "records", lmPerMinute = 10}
 
+-- | Checkouts of every client together, each a provider invoice or card PaymentIntent, so a flood from many addresses
+-- still meets a ceiling.
+invoicesLimit :: Limit
+invoicesLimit = Limit {lmName = "invoices", lmPerMinute = 30}
+
 maxBodyBytes :: Int
 maxBodyBytes = 8192
 
@@ -162,6 +169,10 @@ limited env limit req respond action =
   takeToken env limit (clientKey env req) >>= \case
     Nothing -> action
     Just seconds -> respond (rateLimited seconds)
+
+-- | A limit every client shares.
+limitedForAll :: HttpEnv -> Limit -> Respond -> IO ResponseReceived -> IO ResponseReceived
+limitedForAll env limit respond action = takeToken env limit "" >>= maybe action (respond . rateLimited)
 
 only :: Method -> Request -> Respond -> IO ResponseReceived -> IO ResponseReceived
 only method req respond action

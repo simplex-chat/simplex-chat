@@ -256,6 +256,7 @@ badgeWebTests = do
     it "takes the client from X-Forwarded-For only when it is trusted" testForwardedForOnlyWhenTrusted
     it "uses a forwarded client only when it parses as an IP address" testForwardedForMustBeAnAddress
     it "keys an IPv6 client by its /64 and an IPv4-mapped one by its IPv4 address" testIPv6ClientKey
+    it "caps checkouts of every client together" testInvoicesLimitForAll
     it "holds the bucket map under its cap through a flood of distinct clients" testBucketsStayBounded
     it "answers a hold from the row it read, not from the status it woke on" testHoldReportsTheRowNotTheWake
     it "answers a hold that timed out with a change nothing published" testHoldTimeoutReportsAnUnpublishedChange
@@ -1911,6 +1912,12 @@ testIPv6ClientKey = bounded "IPv6 client key" $ withWebAppForwarded True $ \_ cl
   from "2001:db8:1:3::1" `shouldReturn` 404
   replicateM_ readsPerMinute $ from "192.0.2.44" `shouldReturn` 404
   from "::ffff:192.0.2.44" `shouldReturn` 429
+
+testInvoicesLimitForAll :: IO ()
+testInvoicesLimitForAll = bounded "checkouts for all" $ withWebAppForwarded True $ \_ client -> do
+  let checkout i = statusOf <$> webRequestBody client "POST" "/api/invoice" [(hContentType, "application/json"), ("X-Forwarded-For", BC.pack ("198.51.100." <> show (i :: Int)))] "{}"
+  mapM checkout [1 .. lmPerMinute invoicesLimit] >>= (`shouldSatisfy` all (== 400))
+  checkout (lmPerMinute invoicesLimit + 1) `shouldReturn` 429
 
 testBucketsStayBounded :: IO ()
 testBucketsStayBounded = bounded "bucket cap" $ withWebApp $ \env _ -> do

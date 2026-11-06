@@ -171,6 +171,8 @@ then the header is whatever the caller wrote. The last entry is the one read, wh
 proxy appends.
 An IPv6 client is counted by its /64, since one host gets a whole /64, and an IPv4-mapped address
 by its IPv4 address.
+Checkouts (`POST /api/invoice`, each a provider invoice or card PaymentIntent) are also capped at 30 a
+minute for all clients together.
 
 The BTCPay API key needs four permissions, each scoped to the one store:
 `cancreateinvoice` and `canviewinvoices` for checkout and the poller,

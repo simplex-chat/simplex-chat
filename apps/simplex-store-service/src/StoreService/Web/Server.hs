@@ -124,7 +124,7 @@ webApp env = siteApp env (weBadgesSite env)
 siteApp :: WebEnv -> Maybe Site -> Application
 siteApp env@WebEnv {weHttp} served req respond = case pathInfo req of
   path | Just site <- served, sitePath path -> only "GET" req respond $ serveSite site path respond
-  ["api", "invoice"] -> only "POST" req respond $ limited weHttp createLimit req respond $ createInvoiceHandler env req respond
+  ["api", "invoice"] -> only "POST" req respond $ limited weHttp createLimit req respond $ limitedForAll weHttp invoicesLimit respond $ createInvoiceHandler env req respond
   ["api", "invoice", iid] -> only "GET" req respond $ limited weHttp readLimit req respond $ readInvoiceHandler env (InvoiceId iid) req respond
   ["api", "invoice", iid, "cancel"] -> only "POST" req respond $ limited weHttp createLimit req respond $ cancelInvoiceHandler env (InvoiceId iid) respond
   ["webhooks", "btcpay"] -> only "POST" req respond $ webhookHandler env PPCrypto "POST /webhooks/btcpay" req respond
