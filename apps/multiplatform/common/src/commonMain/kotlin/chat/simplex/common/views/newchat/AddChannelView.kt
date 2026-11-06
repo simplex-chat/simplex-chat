@@ -38,14 +38,14 @@ import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*
 
 @Composable
-fun AddChannelView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, closeAll: () -> Unit) {
+fun ModalData.AddChannelView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, closeAll: () -> Unit) {
   val rhId = rh?.remoteHostId
   val view = LocalMultiplatformView()
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
-  val displayName = rememberSaveable { mutableStateOf("") }
-  val chosenImage = rememberSaveable { mutableStateOf<URI?>(null) }
-  val profileImage = rememberSaveable { mutableStateOf<String?>(null) }
+  val displayName = remember { stateGetOrPut("displayName") { "" } }
+  val chosenImage = remember { stateGetOrPutNullable<URI>("chosenImage") { null } }
+  val profileImage = remember { stateGetOrPutNullable<String>("profileImage") { null } }
   val focusRequester = remember { FocusRequester() }
   val hasRelays = rememberSaveable { mutableStateOf(true) }
   val groupInfo = remember { mutableStateOf<GroupInfo?>(null) }
@@ -664,6 +664,6 @@ fun RelayProgressIndicator(active: Int, total: Int) {
 @Composable
 fun PreviewAddChannelView() {
   SimpleXTheme {
-    AddChannelView(chatModel = ChatModel, rh = null, close = {}, closeAll = {})
+    ModalData().AddChannelView(chatModel = ChatModel, rh = null, close = {}, closeAll = {})
   }
 }
