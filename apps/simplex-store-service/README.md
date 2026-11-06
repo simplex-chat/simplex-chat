@@ -138,7 +138,9 @@ the poll cadence, optional `[apple]` and `[google]` sections that verify store p
 [Store purchases](#store-purchases-app-store-and-google-play)), and optional `[names]` and `[chain]` sections for the names store (omitting both
 turns it off), whose `[chain] service_key` is [the gas key](#the-gas-key). `[chain] rpc_url` must be
 https, as it can carry a provider's API key, unless the node is on the same machine (`127.0.0.1`,
-`::1` or `localhost`), which `http://` may reach. `[chain] confirmations` (default 3) is how deep a
+`::1` or `localhost`), which `http://` may reach. The service refuses to start when the node there
+answers `eth_chainId` with another chain than `[chain] chain_id`, and only warns when it does not
+answer. `[chain] confirmations` (default 3) is how deep a
 transaction's receipt must be before the service settles it and reads the chain's state, counting
 the receipt's own block, so it must be at least 1. An optional `[community]` section gives what each
 community name is for (see [Terms and community names](#terms-and-community-names)). Write every setting as

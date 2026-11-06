@@ -10,7 +10,7 @@ module StoreService.Service
     configureStoreVerifier,
     welcomeGetOpts,
     trustDevKeys,
-    checkDevChain,
+    checkNodeChain,
     logNamePolicy,
     requireDevKeys,
     checkIssuerKey,
@@ -42,7 +42,7 @@ where
 
 import StoreService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
 import StoreService.Codes (issueFailedText, issueOneCode, singleUse)
-import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ChainConfig (..), NamesConfig (..), PlayStoreConfig (..), ServiceConfig (..), localChainId, minNameYears, readServiceConfig)
+import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ChainConfig (..), NamesConfig (..), PlayStoreConfig (..), ServiceConfig (..), minNameYears, readServiceConfig)
 import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
 import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, maxNameYears, nameCodeP, prepaidCodeP, textTokenP)
 import StoreService.Names.Abi (hex)
@@ -160,19 +160,19 @@ trustDevKeys serviceCfg cfg@ChatConfig {badgePublicKeys} = do
       | M.member keyIdx badgePublicKeys = pure $ Left $ "issuer.dev_keys index " <> show keyIdx <> " is the index of a key clients trust"
       | otherwise = fmap (keyIdx,) . first (("issuer.dev_keys secret at index " <> show keyIdx <> " is not a valid key: ") <>) <$> bbsPublicKey secretKey
 
--- | With dev keys, the node itself must be the local chain, not only the ini's chain_id.
-checkDevChain :: Maybe ServiceConfig -> IO (Either String ())
-checkDevChain = \case
-  Just ServiceConfig {devIssuerKeys = _ : _, names = Just NamesConfig {nChain}} -> do
-    chain <- C.newRandom >>= (`newChainClient` nChain)
-    nodeChainId chain <&> \case
+-- | The node at rpc_url must serve chain_id. One that does not answer is only warned of, unless dev keys need it to be the local chain.
+checkNodeChain :: Maybe ServiceConfig -> IO (Either String ())
+checkNodeChain = \case
+  Just ServiceConfig {devIssuerKeys, names = Just NamesConfig {nChain = cc@ChainConfig {cChainId}}} -> do
+    chain <- C.newRandom >>= (`newChainClient` cc)
+    nodeChainId chain >>= \case
       Right chainId
-        | chainId == localChainId -> Right ()
-        | otherwise -> Left $ refused <> "is " <> show chainId <> ", not " <> show localChainId
-      Left _ -> Left $ refused <> "could not be read"
+        | chainId == cChainId -> pure $ Right ()
+        | otherwise -> pure $ Left $ "chain.chain_id is " <> show cChainId <> ", but the node at chain.rpc_url serves chain " <> show chainId
+      Left e
+        | null devIssuerKeys -> Right () <$ logWarn ("names: the node's chain id could not be read, so it is not checked: " <> tshow e)
+        | otherwise -> pure $ Left "issuer.dev_keys is refused: the node's chain id could not be read"
   _ -> pure $ Right ()
-  where
-    refused = "issuer.dev_keys is refused: the node's chain id "
 
 checkIssuerKey :: StoreServiceOpts -> Maybe ServiceConfig -> ChatConfig -> IO (Either String BadgeIssuerKey)
 checkIssuerKey StoreServiceOpts {issuerKey} serviceCfg cfg = case issuerKey of
@@ -197,7 +197,7 @@ requireIssuerKey opts serviceCfg cfg =
 
 requireDevKeys :: Maybe ServiceConfig -> ChatConfig -> IO ChatConfig
 requireDevKeys serviceCfg cfg = do
-  checkDevChain serviceCfg >>= orExit
+  checkNodeChain serviceCfg >>= orExit
   trustDevKeys serviceCfg cfg >>= orExit
 
 orExit :: Either String a -> IO a
