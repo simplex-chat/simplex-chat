@@ -56,7 +56,13 @@ actual fun QRCodeScanner(
 
   DisposableEffect(lifecycleOwner) {
     onDispose {
-      cameraProviderFuture?.get()?.unbindAll()
+      cameraProviderFuture?.addListener({
+        try {
+          cameraProviderFuture?.get()?.unbindAll()
+        } catch (e: Exception) {
+          Log.d(TAG, "CameraPreview: ${e.localizedMessage}")
+        }
+      }, ContextCompat.getMainExecutor(context))
     }
   }
 
