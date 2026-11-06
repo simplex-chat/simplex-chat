@@ -82,7 +82,7 @@ struct DirectorySearchResults {
 }
 
 func isDirectorySearchable(_ text: String, showingLink: Bool) -> Bool {
-    !text.trimmingCharacters(in: .whitespaces).isEmpty && !showingLink
+    !text.trimmingCharacters(in: .whitespaces).isEmpty && !showingLink && ChatModel.shared.chatRunning == true
 }
 
 func directorySearchRequest(_ text: String, _ cursor: JSONValue?) -> JSONValue {

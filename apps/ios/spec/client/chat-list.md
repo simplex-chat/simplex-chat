@@ -333,7 +333,7 @@ The search text can be sent online on request to SimpleX Directory, to find publ
 | Keyboard Search key (`.submitLabel(.search)`) | `.onSubmit`; the field is disabled while a SimpleX link shows | `search(text)` |
 | "Search in Directory" row ([`SearchInDirectoryRow`](../../Shared/Views/ChatList/DirectorySearchView.swift#L155)) | `onSearch`; the row is shown only for `isDirectorySearchable` text | `search(text)` |
 
-Both triggers run the same directory search, which never resolves SimpleX names: a name is looked up only by "Connect to …" (`ConnectByNameRow`). The field neither autocorrects nor capitalizes, so the Search key searches what was typed. Both triggers do nothing for empty (trimmed) text or a pasted SimpleX link, and both go through [`confirmDirectorySearch()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L358), which runs the search at once when the "Directory search" switch is on (`DEFAULT_PRIVACY_DIRECTORY_SEARCH`, default false, in Privacy settings › Chats after "Send link previews") and otherwise shows the alert [`showDirectorySearchAlert`](../../Shared/Views/ChatList/DirectorySearchView.swift#L366): "Enable Directory search?", with the message "Search text is sent to SimpleX Directory, each search separately and without your profile." and two actions, Cancel (sends nothing) and Enable (turns the switch on, then searches). So the alert is shown before every search while the switch is off. The key is not in `hintDefaults`: "Reset all hints" leaves the switch as it is.
+Both triggers run the same directory search, which never resolves SimpleX names: a name is looked up only by "Connect to …" (`ConnectByNameRow`). The field neither autocorrects nor capitalizes, so the Search key searches what was typed. Both triggers do nothing for empty (trimmed) text, a pasted SimpleX link, or while the chat isn't running, and both go through [`confirmDirectorySearch()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L358), which runs the search at once when the "Directory search" switch is on (`DEFAULT_PRIVACY_DIRECTORY_SEARCH`, default false, in Privacy settings › Chats after "Send link previews") and otherwise shows the alert [`showDirectorySearchAlert`](../../Shared/Views/ChatList/DirectorySearchView.swift#L366): "Enable Directory search?", with the message "Search text is sent to SimpleX Directory, each search separately and without your profile." and two actions, Cancel (sends nothing) and Enable (turns the switch on, then searches). So the alert is shown before every search while the switch is off. The key is not in `hintDefaults`: "Reset all hints" leaves the switch as it is.
 
 The rows above or below the search field follow the toolbar mode. "Search in Directory" hides while results for the current text show or load (`!onlineSearch.showResults`); "Connect to …" stays next to them:
 
@@ -361,13 +361,13 @@ The rows above or below the search field follow the toolbar mode. "Search in Dir
 | Computed | Definition |
 |----------|------------|
 | [`showResults`](../../Shared/Views/ChatList/DirectorySearchView.swift#L30) | `loading \|\| searched` |
-| [`footer`](../../Shared/Views/ChatList/DirectorySearchView.swift#L31) | `DirectoryFooter.retry` when `failed`, else `.loadMore` when a cursor exists, else nil |
+| [`footer`](../../Shared/Views/ChatList/DirectorySearchView.swift#L31) | nil while the chat isn't running, else `DirectoryFooter.retry` when `failed`, else `.loadMore` when a cursor exists, else nil |
 
 | Method | Description |
 |--------|-------------|
 | [`reset()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L33) | Clears all results, `moreCount` and flags, bumps `generation` (text change, profile switch, each new search) |
 | [`cancelRequest()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L44) | The spinner's `onCancel`: bumps `generation` and clears `loading`; results already shown stay |
-| `search(_:)` | Both triggers: trims the text and, unless it is empty, runs `searchDirectory` through `confirmDirectorySearch` |
+| `search(_:)` | Both triggers: trims the text and, unless it is empty or the chat isn't running, runs `searchDirectory` through `confirmDirectorySearch` |
 | [`searchDirectory(_:)`](../../Shared/Views/ChatList/DirectorySearchView.swift#L56) | Private: ignored for empty text or while `loading` for the same text; otherwise resets, then the first page |
 | [`loadMore()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L63) | The load row: runs the private `requestNextPage` through `confirmDirectorySearch`: the next page, appended |
 | [`retry()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L68) | The retry row: runs the private `retryRequest` through `confirmDirectorySearch`, which resumes the page when a cursor exists, else calls `searchDirectory` with the text searched, so a cancelled retry offers "Search in Directory" again; that call does nothing after a reset, whose text is empty (its consent alert can remain open after a reset) |
@@ -428,7 +428,7 @@ On iOS 16 and later a long press on a result shows a context menu, [`DirectoryRe
 
 A result tap first sets `searchFocussed = false`. Text from the directory is rendered with `Text(String)` (never parsed as markdown) with line limits.
 
-While the chat isn't running, the result, load and retry rows and "Search in Directory" are disabled by `.disabled(chatRunning != true)` at their call sites, as chat rows are, and keep their colours. The layouts don't test it, as previews use them. The Search key still runs the search, which then shows the retry row, disabled until the chat runs.
+While the chat isn't running (`ChatModel.shared.chatRunning != true`), `isDirectorySearchable` is false, so "Search in Directory" is hidden, the one-hand layout shows the tags, and the empty state is not held back by the offer; `search` sends nothing; `footer` is nil, so neither the load row nor the retry row shows. Result rows are disabled by `.disabled(chatRunning != true)` at their call sites, as chat rows are. The layouts don't test it, as previews use them.
 
 ### Opening a result
 

@@ -46,7 +46,7 @@ class OnlineSearchModel {
   private var generation = 0
 
   val showResults: Boolean get() = loading || searched
-  val footer: DirectoryFooter? get() = if (failed) DirectoryFooter.Retry else if (cursor != null) DirectoryFooter.LoadMore else null
+  val footer: DirectoryFooter? get() = if (chatModel.chatRunning.value == false) null else if (failed) DirectoryFooter.Retry else if (cursor != null) DirectoryFooter.LoadMore else null
 
   fun reset() {
     generation += 1
@@ -66,7 +66,7 @@ class OnlineSearchModel {
 
   fun search(text: String) {
     val text = text.trim()
-    if (text.isNotEmpty()) {
+    if (text.isNotEmpty() && chatModel.chatRunning.value != false) {
       confirmDirectorySearch { withApi { searchDirectory(text) } }
     }
   }
@@ -183,7 +183,7 @@ fun SearchInDirectoryRow(onSearch: () -> Unit) {
   Row(
     Modifier
       .fillMaxWidth()
-      .clickable(enabled = chatModel.chatRunning.value != false) {
+      .clickable {
         hideKeyboard(view)
         onSearch()
       }
@@ -275,7 +275,7 @@ private fun DirectoryLoadMoreRowLayout(moreCount: Int?, loading: Boolean, onLoad
   Row(
     Modifier
       .fillMaxWidth()
-      .clickable(enabled = !loading && chatModel.chatRunning.value != false) {
+      .clickable(enabled = !loading) {
         onLoadMore()
       }
       .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
@@ -295,7 +295,7 @@ private fun DirectoryRetryRowLayout(onRetry: () -> Unit) {
   Row(
     Modifier
       .fillMaxWidth()
-      .clickable(enabled = chatModel.chatRunning.value != false) {
+      .clickable {
         onRetry()
       }
       .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),

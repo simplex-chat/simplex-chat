@@ -107,7 +107,6 @@ struct NewChatSheet: View {
                 }
                 if showsSearchInDirectory {
                     SearchInDirectoryRow(searchFocussed: $searchFocussed, onSearch: { onlineSearch.search(searchText) })
-                        .disabled(chatModel.chatRunning != true)
                 }
             }
             .listRowSeparator(.hidden)
@@ -198,7 +197,6 @@ struct NewChatSheet: View {
         }
         if let footer = rows.footer {
             DirectoryFooterRow(footer: footer, onlineSearch: onlineSearch)
-                .disabled(chatModel.chatRunning != true)
         }
     }
 

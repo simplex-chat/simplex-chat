@@ -22,7 +22,10 @@ class OnlineSearchModel: ObservableObject {
     private var generation = 0
 
     var showResults: Bool { loading || searched }
-    var footer: DirectoryFooter? { failed ? .retry : cursor != nil ? .loadMore : nil }
+    var footer: DirectoryFooter? {
+        guard ChatModel.shared.chatRunning == true else { return nil }
+        return failed ? .retry : cursor != nil ? .loadMore : nil
+    }
 
     func reset() {
         generation += 1
@@ -42,7 +45,7 @@ class OnlineSearchModel: ObservableObject {
 
     func search(_ text: String) {
         let text = text.trimmingCharacters(in: .whitespaces)
-        if !text.isEmpty {
+        if !text.isEmpty && ChatModel.shared.chatRunning == true {
             confirmDirectorySearch { Task { await self.searchDirectory(text) } }
         }
     }

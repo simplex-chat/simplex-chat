@@ -135,7 +135,7 @@ Triggers `reconnectAllServers()` after user confirmation alert ("Reconnect serve
 | Loading more results | The "Load more" row is greyed and can't be tapped until the page arrives |
 | Directory search failed | "Search failed, tap to retry" row at the end of the results, in place of the load row |
 | Online search found nothing | No result rows; "No chats found" when no local chat matches either (in onboarding, a "No chats found" row) |
-| Chat stopped | Result, load and retry rows and "Search in Directory" can't be tapped; the Search key still searches, and its "Search failed, tap to retry" row can't be tapped until chat runs |
+| Chat stopped | "Search in Directory" and the load and retry rows are hidden, and the Search key sends nothing; result rows can't be tapped, as chat rows can't |
 
 ## Related Specs
 

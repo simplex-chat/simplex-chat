@@ -70,7 +70,7 @@ data class DirectorySearchResults(
 )
 
 fun isDirectorySearchable(text: String, showingLink: Boolean): Boolean =
-  text.trim().isNotEmpty() && !showingLink
+  text.trim().isNotEmpty() && !showingLink && ChatModel.chatRunning.value != false
 
 fun directorySearchRequest(text: String, cursor: JsonObject?): JsonObject = buildJsonObject {
   put("type", JsonPrimitive("search"))
