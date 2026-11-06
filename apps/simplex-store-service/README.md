@@ -576,7 +576,7 @@ badge-only service included, so fetch it before the build:
 
 ```
 docker compose -p badge-service down
-git submodule update --init apps/simplex-domains
+git submodule update --init ../../apps/simplex-domains
 docker compose up -d --build
 ```
 
