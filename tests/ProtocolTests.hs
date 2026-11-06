@@ -94,9 +94,9 @@ serviceBodyTests = describe "service payload compression" $ do
     incompressible <- atomically $ C.randomBytes (maxServiceBodyLength * 2) g
     compressServiceBody incompressible `shouldBe` Left "service payload is too large"
   it "rejects a payload that expands past the decompressed bound" $ do
-    let bomb = compressedBatchMsgBody_ $ B.replicate (maxDecompressedMsgLength + 1) 'a'
-    B.length bomb `shouldSatisfy` (< maxServiceBodyLength)
-    decompressServiceBody bomb `shouldSatisfy` isLeft
+    let expanding = compressedBatchMsgBody_ $ B.replicate (maxDecompressedMsgLength + 1) 'a'
+    B.length expanding `shouldSatisfy` (< maxServiceBodyLength)
+    decompressServiceBody expanding `shouldSatisfy` isLeft
   it "rejects a payload over the decompressed bound, however well it compresses" $
     compressServiceBody (B.replicate 70000 'a') `shouldBe` Left "service payload is too large"
   it "compresses to the bound it is given" $ do

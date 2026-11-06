@@ -14,7 +14,7 @@ import ChatTests.Utils
 import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
 import Control.Concurrent.Async (async, cancel)
 import Control.Concurrent.STM (atomically, newTVarIO, peekTQueue, readTVar, readTVarIO, retry, tryReadTMVar)
-import Control.Exception (finally)
+import Control.Exception (finally, throwIO)
 import Control.Monad (forM_, replicateM, when, void)
 import Control.Monad.Except (runExceptT)
 import Data.Aeson ((.:), (.:?), (.=))
@@ -77,7 +77,7 @@ directoryServiceTests = do
   it "should match LIKE wildcards in search text literally" testDirectorySearchRpcLiteral
   it "should reject service requests over the cap" testDirectorySearchRpcBusy
   it "should take a new service request once the previous one is answered" testDirectorySearchRpcSlotReleased
-  it "should hold a place under the in-flight cap until the request is answered" testServiceRequestSlotHeld
+  it "should hold a place under the in-flight cap until the request ends" testServiceRequestSlotHeld
   it "should send every entry field the apps render" testDirectorySearchEntryFields
   it "should send a channel entry with its published link" testDirectorySearchChannelEntry
   it "should drop an image that is oversize or not JPEG or PNG and keep the entry" testSearchEntryImageBound
@@ -736,6 +736,8 @@ testDirectorySearchRpcLiteral ps =
         none `shouldBe` []
         (none', _) <- searchNames cath dsShortLink "privacy_roup" Nothing
         none' `shouldBe` []
+        (none'', _) <- searchNames cath dsShortLink "priv\\acy" Nothing
+        none'' `shouldBe` []
         cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"" <> replicate 101 'a' <> "\"}")
         cath <## "service response: {\"errorMessage\":\"search text is too long\",\"type\":\"error\"}"
 
@@ -761,10 +763,13 @@ testServiceRequestSlotHeld :: HasCallStack => TestParams -> IO ()
 testServiceRequestSlotHeld _ = do
   inFlight <- newTVarIO 0
   answer <- newEmptyMVar
+  let placeFreed = timeout 5000000 (atomically $ readTVar inFlight >>= \n -> when (n /= 0) retry) `shouldReturn` Just ()
   forkWithinCap inFlight 1 (takeMVar answer) `shouldReturn` True
   forkWithinCap inFlight 1 (pure ()) `shouldReturn` False
   putMVar answer ()
-  timeout 5000000 (atomically $ readTVar inFlight >>= \n -> when (n /= 0) retry) `shouldReturn` Just ()
+  placeFreed
+  forkWithinCap inFlight 1 (throwIO $ userError "request failed") `shouldReturn` True
+  placeFreed
   forkWithinCap inFlight 1 (pure ()) `shouldReturn` True
 
 searchDirectoryCounts :: TestCC -> String -> String -> Maybe J.Value -> IO ([DirectorySearchEntry], Maybe J.Value, Int)

@@ -134,7 +134,7 @@ chatDirectTests = do
     it "service request dropped when service processing is off" testServiceRequestDroppedWhenOff
     it "service request to a non-DR address fails fast" testServiceRequestNonDRAddress
     it "service request to an address upgraded by key rotation" testServiceRequestUpgradedAddress
-    it "service request over the size bound travels compressed" testServiceRequestCompressed
+    it "service request over the size bound is compressed" testServiceRequestCompressed
     it "service request rejected without a reason times out" testServiceRequestRejectedNoReason
     it "create user with same servers" testCreateUserSameServers
     it "delete user" testDeleteUser
