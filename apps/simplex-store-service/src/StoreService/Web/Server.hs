@@ -131,7 +131,7 @@ siteApp env@WebEnv {weHttp} served req respond = case pathInfo req of
   ["webhooks", "stripe"] -> only "POST" req respond $ webhookHandler env PPStripe "POST /webhooks/stripe" req respond
   _ -> fromMaybe (respond notFound) names
   where
-    names = weNames env >>= \n -> namesApp weHttp (namesRoutes (weConfig env) n) req respond
+    names = weNames env >>= \n -> namesApp weHttp (namesRoutes (weConfig env) weHttp n) req respond
 
 -- | The names build keeps files at its root, so every path outside the API and the webhooks is the site's.
 sitePath :: [Text] -> Bool
@@ -271,10 +271,10 @@ readInvoiceHandler env@WebEnv {weStore} invId req respond =
     Just row@InvoiceRow {irProduct = IPName rid} | Just orders <- weOrders env -> readNameInvoice env orders row rid req respond
     Just row -> case holdFor row of
       Nothing -> respondInvoice env row respond
-      Just seen -> do
+      Just seen ->
         -- Settlement publishes after it commits, so the row read below is at least as new as whatever woke us.
-        _ <- awaitStatus (weWaiters env) invId (readSeen env invId (pure id)) seen (weHoldMicros env)
-        respondCurrent env invId respond
+        withHoldSlot (weHttp env) (awaitStatus (weWaiters env) invId (readSeen env invId (pure id)) seen (weHoldMicros env))
+          >>= maybe (respond holdsFull) (const $ respondCurrent env invId respond)
   where
     holdFor :: InvoiceRow -> Maybe Seen
     holdFor row@InvoiceRow {irStatus} = case waitParam req of
@@ -284,11 +284,11 @@ readInvoiceHandler env@WebEnv {weStore} invId req respond =
 -- | A name invoice also holds while its registration's version is seenVersion, a paid one on that alone,
 -- except one paid after its order closed, which has nothing more to wait for.
 readNameInvoice :: WebEnv -> OrdersEnv -> InvoiceRow -> RegistrationId -> Request -> Respond -> IO ResponseReceived
-readNameInvoice env@WebEnv {weConfig, weWaiters, weHoldMicros} orders@OrdersEnv {oeStore, oeNow, oePhases} stored@InvoiceRow {irInvoiceId = invId} rid req respond =
+readNameInvoice env@WebEnv {weConfig, weWaiters, weHoldMicros, weHttp} orders@OrdersEnv {oeStore, oeNow, oePhases} stored@InvoiceRow {irInvoiceId = invId} rid req respond =
   readName orders stored rid >>= \case
     Nothing -> respond notFound
     Just (now, row, r) -> case waitParam req of
-      Just wait | holds wait row r -> hold now row r >> respondCurrent env invId respond
+      Just wait | holds wait row r -> withHoldSlot weHttp (hold now row r) >>= maybe (respond holdsFull) (const $ respondCurrent env invId respond)
       _ -> respond . jsonResponse status200 =<< nameInvoiceView orders (confirmationsFor weConfig) row r
   where
     seenVersion = versionParam req

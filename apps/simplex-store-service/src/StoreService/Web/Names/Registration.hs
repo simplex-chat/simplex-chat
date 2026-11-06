@@ -38,19 +38,19 @@ import StoreService.Names.Store (NamePhase (..), NameRegistration (..), VersionW
 import StoreService.Names.Turns (withLabelTurn)
 import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion, registrationView)
 import StoreService.Names.Worker (Retried (..), RetryRefusal (..), retryRegistration)
-import StoreService.Web.Http (Respond, badRequest, invalidLink, jsonResponse, nameBodyBytes, notFound, providerUnavailable, readBoundedBody)
+import StoreService.Web.Http (HttpEnv, Respond, badRequest, holdsFull, invalidLink, jsonResponse, nameBodyBytes, notFound, providerUnavailable, readBoundedBody, withHoldSlot)
 import StoreService.Web.Names.Codes (codeRefusalResponse)
 import Text.Read (readMaybe)
 
 -- | GET /api/registration/:id, held while its version is seenVersion.
-registrationHandler :: OrdersEnv -> Int -> Text -> Request -> Respond -> IO ResponseReceived
-registrationHandler OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} hold ridText req respond =
+registrationHandler :: OrdersEnv -> HttpEnv -> Int -> Text -> Request -> Respond -> IO ResponseReceived
+registrationHandler OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} http hold ridText req respond =
   readNow >>= \case
     Nothing -> respond notFound
     Just (now, r@NameRegistration {nrVersion})
-      | versionParam req == Just nrVersion -> do
-          _ <- awaitChange oePhases rid (registrationVersion oeStore rid) nrVersion (heldFor hold now $ maybeToList $ lapseMoment r)
-          readNow >>= maybe (respond notFound) answer
+      | versionParam req == Just nrVersion ->
+          withHoldSlot http (awaitChange oePhases rid (registrationVersion oeStore rid) nrVersion (heldFor hold now $ maybeToList $ lapseMoment r))
+            >>= maybe (respond holdsFull) (const $ readNow >>= maybe (respond notFound) answer)
       | otherwise -> answer (now, r)
   where
     rid = RegistrationId ridText

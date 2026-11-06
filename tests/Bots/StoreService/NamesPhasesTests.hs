@@ -72,7 +72,7 @@ withPolls hold action = withOrders $ \ctx@Ctx {cClock, cOrders, cWeb} -> do
       orders = cOrders {oeNow = running}
       web = cWeb {weOrders = Just orders}
       routes = \case
-        ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler orders hold rid}
+        ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler orders (weHttp web) hold rid}
         _ -> Nothing
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
       pSetNow t = elapsed >>= \e -> writeIORef cClock (addUTCTime (negate e) t)

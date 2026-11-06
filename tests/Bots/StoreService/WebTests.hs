@@ -61,7 +61,7 @@ import Control.Concurrent (forkIO, forkOn, getNumCapabilities, threadDelay)
 import Control.Concurrent.Async (async, wait)
 import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.MVar (MVar, newEmptyMVar, newMVar, putMVar, takeMVar, withMVar)
-import Control.Concurrent.STM (atomically, modifyTVar', readTVarIO)
+import Control.Concurrent.STM (atomically, modifyTVar', readTVarIO, writeTVar)
 import qualified Control.Exception as E
 import Control.Logger.Simple (LogLevel (..), logNote, setLogLevel)
 import Control.Monad (forM_, join, replicateM, replicateM_, void, when)
@@ -257,6 +257,7 @@ badgeWebTests = do
     it "uses a forwarded client only when it parses as an IP address" testForwardedForMustBeAnAddress
     it "keys an IPv6 client by its /64 and an IPv4-mapped one by its IPv4 address" testIPv6ClientKey
     it "caps checkouts of every client together" testInvoicesLimitForAll
+    it "answers a poll at once with rate_limited while every hold slot is taken, and frees each slot after its hold" testHoldSlots
     it "holds the bucket map under its cap through a flood of distinct clients" testBucketsStayBounded
     it "answers a hold from the row it read, not from the status it woke on" testHoldReportsTheRowNotTheWake
     it "answers a hold that timed out with a change nothing published" testHoldTimeoutReportsAnUnpublishedChange
@@ -1918,6 +1919,21 @@ testInvoicesLimitForAll = bounded "checkouts for all" $ withWebAppForwarded True
   let checkout i = statusOf <$> webRequestBody client "POST" "/api/invoice" [(hContentType, "application/json"), ("X-Forwarded-For", BC.pack ("198.51.100." <> show (i :: Int)))] "{}"
   mapM checkout [1 .. lmPerMinute invoicesLimit] >>= (`shouldSatisfy` all (== 400))
   checkout (lmPerMinute invoicesLimit + 1) `shouldReturn` 429
+
+testHoldSlots :: IO ()
+testHoldSlots = bounded "hold slots" $ withWebApp $ \env client -> do
+  let http@HttpEnv {heHolds} = weHttp env
+      held = atomically . writeTVar heHolds
+  held maxHolds
+  withHoldSlot http (pure ()) `shouldReturn` Nothing
+  seedBadgePrice (weStore env) "price1"
+  iid <- seedOpenRef (weStore env) 1 "p-holds" someExpiry
+  let InvoiceId inv = iid
+  r <- webRequest client "GET" ("/api/invoice/" <> T.unpack inv <> "?wait=open") []
+  (statusOf r, headerOf r "Retry-After") `shouldBe` (429, Just "5")
+  held (maxHolds - 1)
+  withHoldSlot http (readTVarIO heHolds) `shouldReturn` Just maxHolds
+  readTVarIO heHolds `shouldReturn` maxHolds - 1
 
 testBucketsStayBounded :: IO ()
 testBucketsStayBounded = bounded "bucket cap" $ withWebApp $ \env _ -> do

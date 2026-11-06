@@ -71,7 +71,7 @@ import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCas
 import StoreService.Names.Store hiding (findLimit)
 import StoreService.Names.Turns (withLabelTurn)
 import StoreService.Store (RevokeResult (..))
-import StoreService.Web.Http (createLimit, findLimit, holdMicros, readLimit)
+import StoreService.Web.Http (HttpEnv, createLimit, findLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Owner (findHandler, retargetHandler)
 import StoreService.Web.Names.Registration (registrationHandler)
@@ -128,15 +128,15 @@ withOwnerAs change action = withOrders $ \ctx -> do
 -- | The owner routes over the context's settings.
 serveOwner :: Ctx -> (Ctx -> IO a) -> IO a
 serveOwner ctx@Ctx {cOrders = orders, cWeb = web} action = do
-  let routes path = ownerRoutes orders path <|> codeRoutes orders (weProviders web) (weWaiters web) path
+  let routes path = ownerRoutes orders (weHttp web) path <|> codeRoutes orders (weProviders web) (weWaiters web) path
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
   mgr <- newManager defaultManagerSettings
   Warp.testWithApplication (pure app) $ \port -> action ctx {cClient = (mgr, "http://127.0.0.1:" <> show port)}
 
-ownerRoutes :: OrdersEnv -> [Text] -> Maybe Route
-ownerRoutes orders = \case
+ownerRoutes :: OrdersEnv -> HttpEnv -> [Text] -> Maybe Route
+ownerRoutes orders http = \case
   ["api", "registration", "find"] -> Just Route {rMethod = "POST", rLimit = findLimit, rHandler = findHandler orders}
-  ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler orders holdMicros rid}
+  ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler orders http holdMicros rid}
   ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler orders rid}
   _ -> Nothing
 

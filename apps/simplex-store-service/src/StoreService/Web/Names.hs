@@ -25,8 +25,8 @@ data Route = Route
     rHandler :: Request -> Respond -> IO ResponseReceived
   }
 
-namesRoutes :: ServiceConfig -> NamesEnv -> [Text] -> Maybe Route
-namesRoutes cfg env@NamesEnv {neConfig, neStore, neContracts, neProfiles, neRecords, neWaiters, neProviders} = \case
+namesRoutes :: ServiceConfig -> HttpEnv -> NamesEnv -> [Text] -> Maybe Route
+namesRoutes cfg http env@NamesEnv {neConfig, neStore, neContracts, neProfiles, neRecords, neWaiters, neProviders} = \case
   ["api", "name", "records"] -> Just Route {rMethod = "POST", rLimit = recordsLimit, rHandler = recordsHandler neRecords}
   ["api", "name", "register"] -> Just Route {rMethod = "POST", rLimit = codeLimit, rHandler = codeOrderHandler (ordersEnv env) neProviders neWaiters}
   ["api", "code", "check"] -> Just Route {rMethod = "POST", rLimit = codeLimit, rHandler = codeCheckHandler neStore}
@@ -36,7 +36,7 @@ namesRoutes cfg env@NamesEnv {neConfig, neStore, neContracts, neProfiles, neReco
   ["api", "name", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = searchHandler neConfig neStore neContracts neProfiles getCurrentTime hash}
   -- above /api/registration/:id, which it would otherwise match
   ["api", "registration", "find"] -> Just Route {rMethod = "POST", rLimit = findLimit, rHandler = findHandler (ordersEnv env)}
-  ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler (ordersEnv env) holdMicros rid}
+  ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler (ordersEnv env) http holdMicros rid}
   ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler (ordersEnv env) rid}
   ["api", "registration", rid, "reveal"] -> Just Route {rMethod = "POST", rLimit = readLimit, rHandler = revealHandler (ordersEnv env) rid}
   ["api", "registration", rid, "retry"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retryHandler (ordersEnv env) rid}

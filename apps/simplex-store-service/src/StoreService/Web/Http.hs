@@ -24,6 +24,9 @@ module StoreService.Web.Http
     invoicesLimit,
     limitedForAll,
     holdMicros,
+    maxHolds,
+    withHoldSlot,
+    holdsFull,
     jsonResponse,
     jsonError,
     notFound,
@@ -53,6 +56,8 @@ module StoreService.Web.Http
 where
 
 import Control.Concurrent.STM
+import Control.Exception (bracket)
+import Control.Monad (when)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import Data.Aeson.Types (Pair)
@@ -83,19 +88,40 @@ import Text.Read (readMaybe)
 
 data HttpEnv = HttpEnv
   { heBuckets :: TVar (Map Text Bucket),
-    heTrustForwardedFor :: Bool
+    heTrustForwardedFor :: Bool,
+    -- | the long polls held now, of every client
+    heHolds :: TVar Int
   }
 
 newHttpEnv :: ListenerConfig -> IO HttpEnv
 newHttpEnv ListenerConfig {lTrustForwardedFor} = do
   heBuckets <- newTVarIO Map.empty
-  pure HttpEnv {heBuckets, heTrustForwardedFor = lTrustForwardedFor}
+  heHolds <- newTVarIO 0
+  pure HttpEnv {heBuckets, heTrustForwardedFor = lTrustForwardedFor, heHolds}
 
 type Respond = Response -> IO ResponseReceived
 
 -- | Short enough to stay under the idle timeout of any proxy in front of us.
 holdMicros :: Int
 holdMicros = 30 * 1000000
+
+-- | Held long polls of every client together, each a connection and a waiter.
+maxHolds :: Int
+maxHolds = 500
+
+-- | When every hold is taken, how soon a poll is asked to come back.
+holdsFullSeconds :: Int
+holdsFullSeconds = 5
+
+-- | The hold in one of the shared slots, Nothing when every slot is taken.
+withHoldSlot :: HttpEnv -> IO a -> IO (Maybe a)
+withHoldSlot HttpEnv {heHolds} hold = bracket takeSlot releaseSlot $ \taken -> if taken then Just <$> hold else pure Nothing
+  where
+    takeSlot = atomically $ stateTVar heHolds $ \n -> if n < maxHolds then (True, n + 1) else (False, n)
+    releaseSlot taken = when taken $ atomically $ modifyTVar' heHolds (subtract 1)
+
+holdsFull :: Response
+holdsFull = rateLimited holdsFullSeconds
 
 readLimit, createLimit, searchLimit, previewLimit, codeLimit, findLimit, recordsLimit :: Limit
 readLimit = Limit {lmName = "read", lmPerMinute = 60}

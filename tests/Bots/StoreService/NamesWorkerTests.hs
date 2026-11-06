@@ -160,7 +160,7 @@ withWorkerAs settings action = withOrders $ \open -> do
   let web = cWeb {weOrders = Just cOrders}
       routes path = registrationRoute path <|> codeRoutes cOrders (weProviders web) (weWaiters web) path
       registrationRoute = \case
-        ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders holdMicros rid}
+        ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders (weHttp web) holdMicros rid}
         ["api", "registration", rid, "retry"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retryHandler cOrders rid}
         _ -> Nothing
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
