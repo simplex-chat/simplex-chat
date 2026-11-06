@@ -845,11 +845,14 @@ isLabelRegistering db (LabelHash lh) =
             IO [Only Int]
         )
 
--- | The registrations a worker moves on, oldest first.
-activeRegistrations :: DB.Connection -> IO [NameRegistration]
+-- | The registrations a worker moves on, oldest first, by id alone, so a row that does not decode stops only its own worker.
+activeRegistrations :: DB.Connection -> IO [RegistrationId]
 activeRegistrations db =
-  DB.query db (selectRegistrations <> " WHERE r.phase IN (?,?,?,?) ORDER BY r.created_at, r.registration_id") (PQueued, PCommitting, PCommitted, PRegistering)
-    >>= decodeAll toRegistration
+  map (RegistrationId . fromOnly)
+    <$> DB.query
+      db
+      "SELECT registration_id FROM sx_badge_service_name_registrations WHERE phase IN (?,?,?,?) ORDER BY created_at, registration_id"
+      (PQueued, PCommitting, PCommitted, PRegistering)
 
 -- | Unpaid orders whose invoice expired before the cutoff, without a recorded payment.
 unpaidCleanupCandidates :: DB.Connection -> UTCTime -> IO [(RegistrationId, InvoiceId)]

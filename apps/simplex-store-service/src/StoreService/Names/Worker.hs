@@ -127,7 +127,7 @@ startWorkers w@Worker {wkOrders = OrdersEnv {oeStore}, wkThreads} = do
   running <- readTVarIO wkThreads >>= M.traverseMaybeWithKey (\_ a -> maybe (Just a) (const Nothing) <$> poll a)
   atomically $ writeTVar wkThreads running
   active <- withTransaction oeStore activeRegistrations
-  forM_ [nrId | NameRegistration {nrId} <- active, M.notMember nrId running] $ \rid ->
+  forM_ (filter (`M.notMember` running) active) $ \rid ->
     mask_ $ asyncWithUnmask (\unmask -> unmask $ work w rid) >>= atomically . modifyTVar' wkThreads . M.insert rid
 
 work :: Worker -> RegistrationId -> IO ()

@@ -753,7 +753,7 @@ testSameSecondOrder = withServiceStore $ \st -> do
     r <- reg st rid
     write st r {nrPhase = PQueued} `shouldReturn` Written 2
   map (nrId . fst) <$> withTransaction st (\db -> findRegistrations db ownerA t0) `shouldReturn` map RegistrationId ["r3", "r2", "r1"]
-  map nrId <$> withTransaction st activeRegistrations `shouldReturn` map RegistrationId ["r1", "r2", "r3"]
+  withTransaction st activeRegistrations `shouldReturn` map RegistrationId ["r1", "r2", "r3"]
   forM_ ["r5", "r4"] $ \rid -> do
     placePaid st rid ownerB o (at 60) `shouldReturn` Right ()
     r <- reg st rid
@@ -784,7 +784,8 @@ testActive = withServiceStore $ \st -> do
     r <- reg st rid
     void $ write st r {nrPhase = phase}
   active <- withTransaction st activeRegistrations
-  sort (map (fromEnum . nrPhase) active) `shouldBe` map fromEnum [PQueued, PCommitting, PCommitted, PRegistering]
+  phasesOf <- mapM (fmap nrPhase . reg st . (\(RegistrationId rid) -> rid)) active
+  sort (map fromEnum phasesOf) `shouldBe` map fromEnum [PQueued, PCommitting, PCommitted, PRegistering]
 
 testUnpaidCleanup :: IO ()
 testUnpaidCleanup = withServiceStore $ \st -> do
