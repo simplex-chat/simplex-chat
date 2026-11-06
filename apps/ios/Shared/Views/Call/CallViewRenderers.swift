@@ -222,7 +222,7 @@ struct CallViewLocal: UIViewRepresentable {
 
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
-        let localRenderer = RTCEAGLVideoView(frame: .zero)
+        let localRenderer = RTCMTLVideoView(frame: .zero)
         context.coordinator.renderer = localRenderer
         client.addLocalRenderer(localRenderer)
         addSubviewAndResize(localRenderer, nil, into: view)
@@ -245,7 +245,7 @@ struct CallViewLocal: UIViewRepresentable {
 
     // MARK: - Coordinator
     class Coordinator: NSObject, AVPictureInPictureControllerDelegate {
-        var renderer: RTCEAGLVideoView?
+        var renderer: RTCMTLVideoView?
         var client: WebRTCClient
 
         required init(_ client: WebRTCClient) {

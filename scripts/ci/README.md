@@ -115,13 +115,27 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 - CI, in build-linux: `scope-tests.sh ci-scripts` (step "Test changed scopes").
 - Local: `python3 scripts/ci/test_packages_release.py`; Python 3.11 or newer is required for tomllib (packages_release.py).
 
+#### website
+
+- Globs:
+  - website/src/js/simplex-lib.jsc
+  - website/test/**
+  - website/package.json
+- CI:
+  - in build-linux: `scope-tests.sh website` (step "Test changed scopes");
+  - on master pushes: build and deploy of website/**, images/**, blog/**, docs/** and PRIVACY.md (web.yml).
+- Local:
+  ```sh
+  cd website
+  npm test
+  ```
+
 #### Scopes lacking CI tests
 
 | Scope | Paths | CI |
 |---|---|---|
 | ios | apps/ios/** | compile only |
 | types package | packages/simplex-chat-client/types/typescript/** | compile only |
-| website | website/**<br>images/**<br>blog/**<br>docs/**<br>PRIVACY.md | build and deploy on master pushes (web.yml) |
 | ts-client | packages/simplex-chat-client/typescript/** | - |
 | webrtc | packages/simplex-chat-webrtc/** | - |
 | mcp | packages/simplex-chat-mcp/** | - |
