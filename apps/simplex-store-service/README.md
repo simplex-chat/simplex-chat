@@ -169,6 +169,8 @@ cabal run simplex-store-service -- \
 reads and 5 checkouts a minute. Where the listener is reached directly it must be `off`, because
 then the header is whatever the caller wrote. The last entry is the one read, which is the one a
 proxy appends.
+An IPv6 client is counted by its /64, since one host gets a whole /64, and an IPv4-mapped address
+by its IPv4 address.
 
 The BTCPay API key needs four permissions, each scoped to the one store:
 `cancreateinvoice` and `canviewinvoices` for checkout and the poller,

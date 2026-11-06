@@ -62,7 +62,7 @@ import qualified Data.ByteString.Lazy as LB
 import Data.List (find, sortOn)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8', encodeUtf8)
@@ -71,7 +71,7 @@ import Data.Word (Word16)
 import Network.HTTP.Types (Header, Method, Status, hCacheControl, hContentType, status400, status404, status405, status409, status429, status500, status503)
 import Network.Socket (SockAddr (..), hostAddress6ToTuple, hostAddressToTuple)
 import Network.Wai
-import Numeric (showHex)
+import Numeric (readHex, showHex)
 import Simplex.Chat.PaymentService.Types (CardProvider (..), CurrencyAmount (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultExpiryMinutes, defaultSessionMinutes)
@@ -169,20 +169,20 @@ only method req respond action
   | otherwise = respond (methodNotAllowed method)
 
 -- | Every line is joined first, so a second header line a caller adds cannot leave its own line the one we read.
+-- An IPv6 client is keyed by its /64, as one host holds a whole /64.
 clientKey :: HttpEnv -> Request -> Text
 clientKey HttpEnv {heTrustForwardedFor} req = fromMaybe (peerText (remoteHost req)) forwarded
   where
     forwarded
       | not heTrustForwardedFor = Nothing
       | otherwise = case reverse (concatMap entries (requestHeaders req)) of
-          (ip : _) | isIpAddress ip -> Just ip
+          (ip : _)
+            | isIPv4 ip -> Just ip
+            | isIPv6 ip -> v6Key <$> v6Groups ip
           _ -> Nothing
     entries (name, raw)
       | name /= "x-forwarded-for" = []
       | otherwise = either (const []) (filter (not . T.null) . map T.strip . T.splitOn ",") (decodeUtf8' raw)
-
-isIpAddress :: Text -> Bool
-isIpAddress t = isIPv4 t || isIPv6 t
 
 asciiDigit :: Char -> Bool
 asciiDigit c = c >= '0' && c <= '9'
@@ -229,16 +229,38 @@ peerText :: SockAddr -> Text
 peerText = \case
   SockAddrInet _ addr ->
     let (a, b, c, d) = hostAddressToTuple addr
-     in T.intercalate "." (map tshowInt [a, b, c, d])
+     in v4Text [a, b, c, d]
   SockAddrInet6 _ _ addr _ ->
     let (a, b, c, d, e, f, g, h) = hostAddress6ToTuple addr
-     in T.intercalate ":" (map hex16 [a, b, c, d, e, f, g, h])
+     in v6Key [a, b, c, d, e, f, g, h]
   SockAddrUnix p -> "unix:" <> T.pack p
+
+-- | The eight groups of an address isIPv6 accepts.
+v6Groups :: Text -> Maybe [Word16]
+v6Groups t = case T.splitOn "::" t of
+  [full] -> exactly 8 (parts full)
+  [before, after] -> do
+    b <- parts before
+    a <- parts after
+    pure $ b <> replicate (8 - length b - length a) 0 <> a
+  _ -> Nothing
   where
-    tshowInt :: Show a => a -> Text
-    tshowInt = T.pack . show
-    hex16 :: Word16 -> Text
-    hex16 w = T.pack (showHex w "")
+    parts s = concat <$> mapM part (if T.null s then [] else T.splitOn ":" s)
+    part g
+      | isIPv4 g = case mapM (readMaybe . T.unpack) (T.splitOn "." g) :: Maybe [Word16] of
+          Just [a, b, c, d] -> Just [a * 256 + b, c * 256 + d]
+          _ -> Nothing
+      | otherwise = (: []) . fst <$> listToMaybe (readHex $ T.unpack g)
+    exactly n gs = gs >>= \xs -> if length xs == n then Just xs else Nothing
+
+-- | The /64 an address is in, or the IPv4 address an IPv4-mapped one carries.
+v6Key :: [Word16] -> Text
+v6Key gs = case splitAt 6 gs of
+  ([0, 0, 0, 0, 0, 0xffff], [ab, cd]) -> v4Text [ab `div` 256, ab `mod` 256, cd `div` 256, cd `mod` 256]
+  _ -> T.intercalate ":" (map (T.pack . (`showHex` "")) (take 4 gs)) <> "::/64"
+
+v4Text :: Show a => [a] -> Text
+v4Text = T.intercalate "." . map (T.pack . show)
 
 apiHeaders :: [Header]
 apiHeaders = [(hContentType, "application/json"), (hCacheControl, "no-store")]

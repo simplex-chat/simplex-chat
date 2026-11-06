@@ -255,6 +255,7 @@ badgeWebTests = do
     it "refuses over sixty reads a minute from one IP" testReadRateLimit
     it "takes the client from X-Forwarded-For only when it is trusted" testForwardedForOnlyWhenTrusted
     it "uses a forwarded client only when it parses as an IP address" testForwardedForMustBeAnAddress
+    it "keys an IPv6 client by its /64 and an IPv4-mapped one by its IPv4 address" testIPv6ClientKey
     it "holds the bucket map under its cap through a flood of distinct clients" testBucketsStayBounded
     it "answers a hold from the row it read, not from the status it woke on" testHoldReportsTheRowNotTheWake
     it "answers a hold that timed out with a change nothing published" testHoldTimeoutReportsAnUnpublishedChange
@@ -1898,6 +1899,18 @@ testForwardedForMustBeAnAddress = bounded "forwarded-for is an address" $ withWe
         (v, statusOf r) `shouldBe` (v, 404)
     )
     ["192.0.2.7", "2001:db8::1", "::1", "::", "::ffff:192.0.2.1", "1:2:3:4:5:6:7:8"]
+
+testIPv6ClientKey :: IO ()
+testIPv6ClientKey = bounded "IPv6 client key" $ withWebAppForwarded True $ \_ client -> do
+  let target = "/api/invoice/no-such-invoice"
+      from v = statusOf <$> webRequest client "GET" target [("X-Forwarded-For", v)]
+  -- addresses in one /64, written in different forms
+  statuses <- mapM from (take readsPerMinute $ cycle ["2001:db8:1:2::1", "2001:db8:1:2:ffff:ffff:ffff:ffff", "2001:0db8:0001:0002:0:0:0:9"])
+  statuses `shouldSatisfy` all (== 404)
+  from "2001:db8:1:2::abcd" `shouldReturn` 429
+  from "2001:db8:1:3::1" `shouldReturn` 404
+  replicateM_ readsPerMinute $ from "192.0.2.44" `shouldReturn` 404
+  from "::ffff:192.0.2.44" `shouldReturn` 429
 
 testBucketsStayBounded :: IO ()
 testBucketsStayBounded = bounded "bucket cap" $ withWebApp $ \env _ -> do
