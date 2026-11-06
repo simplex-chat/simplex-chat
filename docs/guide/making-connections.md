@@ -135,8 +135,10 @@ To find public groups and channels in SimpleX Directory:
 
 The results show after your matching chats. Tap a result or its "Open" to open
 the group or channel, then tap "Join group" or "Join channel". Tap "Load more"
-for the next results. A group or channel you joined by its link shows as your
-chat; one you were invited to can also show as a result.
+for the next results. A group or channel you joined by the link SimpleX
+Directory lists shows as your chat. A group you were invited to, or joined by
+another link, can also show as a result, and opening that result can add a
+second copy of the group to your chats.
 
 Results are not saved: they go away when you change the search text or switch
 chat profile.
