@@ -42,7 +42,7 @@ Searching beyond the user's own chats happens only when the user asks, and the r
 
 | Element | Behavior |
 |---|---|
-| "Search in Directory" row | Shown for non-empty text that is not a SimpleX link, until results for that text show or load. With the one-hand UI it takes the place of the tags above the search field (the tags don't come back while the text is there); with the top bar it is below the field. Searches SimpleX Directory for public groups and channels |
+| "Search in Directory" row | Shown for non-empty text that is not a SimpleX link, until results for that text show or load. With the one-hand UI it takes the place of the tags above the search field (while chat runs, the tags don't come back while the text is there); with the top bar it is below the field. Searches SimpleX Directory for public groups and channels |
 | Keyboard Search key | The same directory search. It never looks up SimpleX names |
 | "Connect to …" row | Shown for a SimpleX name (e.g. `alice` or `#news.testing`), and stays next to the results; it is the only way to look up a name |
 | "Directory search" switch | In Settings › Privacy › Chats, after "Send link previews"; off by default |
@@ -130,12 +130,12 @@ Triggers `reconnectAllServers()` after user confirmation alert ("Reconnect serve
 | Chat database not started | Settings row shows exclamation icon; chat running == false disables interactions |
 | No conversations yet | `ConnectOnboardingView` pages replace the list, with the crowdfunding banner below them where it applies |
 | Connection in progress | `ConnectProgressManager` overlay with connecting text |
-| Search with no results | "No chats found" in the middle of the list, only after a directory search for the text finds nothing: not while "Search in Directory" is offered, a search runs or results show |
+| Search with no results | "No chats found" in the middle of the list; while chat runs, only after a directory search for the text finds nothing: not while "Search in Directory" is offered, a search runs or results show |
 | Online search running | Progress indicator in the search field (after about a second); tapping a result or clearing the search cancels it |
 | Loading more results | The "Load more" row is greyed and can't be tapped until the page arrives |
 | Directory search failed | "Search failed, tap to retry" row at the end of the results, in place of the load row |
 | Online search found nothing | No result rows; "No chats found" when no local chat matches either (in onboarding, a "No chats found" row) |
-| Chat stopped | "Search in Directory" and the load and retry rows are hidden, and the Search key sends nothing; result rows can't be tapped, as chat rows can't |
+| Chat stopped | "Search in Directory", the load and retry rows and each result's "Open" are hidden, and the Search key sends nothing; result rows can't be tapped, as chat rows can't. With the one-hand UI the tags come back, and "No chats found" shows for text that matches no chat or result |
 
 ## Related Specs
 

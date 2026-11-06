@@ -428,7 +428,7 @@ On iOS 16 and later a long press on a result shows a context menu, [`DirectoryRe
 
 A result tap first sets `searchFocussed = false`. Text from the directory is rendered with `Text(String)` (never parsed as markdown) with line limits.
 
-While the chat isn't running (`ChatModel.shared.chatRunning != true`), `isDirectorySearchable` is false, so "Search in Directory" is hidden, the one-hand layout shows the tags, and the empty state is not held back by the offer; `search` sends nothing; `footer` is nil, so neither the load row nor the retry row shows. Result rows are disabled by `.disabled(chatRunning != true)` at their call sites, as chat rows are. The layouts don't test it, as previews use them.
+While the chat isn't running (`ChatModel.shared.chatRunning != true`), `isDirectorySearchable` is false, so "Search in Directory" is hidden, the one-hand layout shows the tags, and the empty state is not held back by the offer; `search` sends nothing; `footer` is nil, so neither the load row nor the retry row shows. Result rows are disabled by `.disabled(chatRunning != true)` at their call sites, as chat rows are, and pass `showsOpen: chatRunning == true`, which hides "Open". The layouts don't test it, as previews use them.
 
 ### Opening a result
 
@@ -454,5 +454,5 @@ The chat banner of a prepared channel (`nextConnectPrepared && useRelays`) shows
 | Server summary | [`ServersSummaryView.swift`](../../Shared/Views/ChatList/ServersSummaryView.swift) | | |
 | One-hand UI card | [`OneHandUICard.swift`](../../Shared/Views/ChatList/OneHandUICard.swift) | | |
 | Crowdfunding banner | [`GetStakeBanner.swift`](../../Shared/Views/ChatList/GetStakeBanner.swift) | `GetStakeBanner` | [13](../../Shared/Views/ChatList/GetStakeBanner.swift#L13) |
-| Online search model and rows | [`DirectorySearchView.swift`](../../Shared/Views/ChatList/DirectorySearchView.swift) | `OnlineSearchModel` | [17](../../Shared/Views/ChatList/DirectorySearchView.swift#L13) |
-| Directory response and online result types | [`DirectorySearch.swift`](../../Shared/Model/DirectorySearch.swift) | `DirectorySearchEntry` | [32](../../Shared/Model/DirectorySearch.swift#L30) |
+| Online search model and rows | [`DirectorySearchView.swift`](../../Shared/Views/ChatList/DirectorySearchView.swift) | `OnlineSearchModel` | [13](../../Shared/Views/ChatList/DirectorySearchView.swift#L13) |
+| Directory response and online result types | [`DirectorySearch.swift`](../../Shared/Model/DirectorySearch.swift) | `DirectorySearchEntry` | [30](../../Shared/Model/DirectorySearch.swift#L30) |

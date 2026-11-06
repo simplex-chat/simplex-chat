@@ -244,7 +244,7 @@ private fun DirectorySearchRow(
         color = MaterialTheme.colors.secondary
       )
     }
-    if (!joining) {
+    if (!joining && chatModel.chatRunning.value != false) {
       Text(
         stringResource(MR.strings.open_verb),
         color = MaterialTheme.colors.primary,

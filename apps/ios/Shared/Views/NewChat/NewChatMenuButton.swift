@@ -190,7 +190,7 @@ struct NewChatSheet: View {
                 .disabled(chatModel.chatRunning != true)
         }
         ForEach(rows.results) { result in
-            DirectorySearchRow(entry: result.entry, imageSize: 30, state: result.state)
+            DirectorySearchRow(entry: result.entry, imageSize: 30, state: result.state, showsOpen: chatModel.chatRunning == true)
                 .modifier(DirectoryResultMenu(result: result, imageSize: 30, onOpen: { openResult(result) }))
                 .onTapGesture { openResult(result) }
                 .disabled(chatModel.chatRunning != true)

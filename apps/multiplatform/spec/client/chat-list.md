@@ -488,7 +488,7 @@ The onboarding `Column` takes the toolbar and navigation-bar paddings and consum
 
 A result's menu is `ChatListNavLinkLayout`'s dropdown, opened by a long press, or by a right click on desktop, with one item, `ItemAction(open_verb, ic_chat_bubble)`, which does what a tap does. It has no lifted preview, unlike the iOS context menu, so `DirectorySearchRow` has no `showsOpen` parameter. Text from the directory is rendered with `Text(String)` (never parsed as markdown) with line limits.
 
-While the chat is stopped (`chatRunning.value == false`), `isDirectorySearchable` is false, so "Search in Directory" is hidden, the one-hand layout shows the tags, and the empty state is not held back by the offer; `search` sends nothing; `footer` is null, so neither the load row nor the retry row shows. `DirectoryResultNavLink` passes `disabled` to `ChatListNavLinkLayout`, as chat rows do.
+While the chat is stopped (`chatRunning.value == false`), `isDirectorySearchable` is false, so "Search in Directory" is hidden, the one-hand layout shows the tags, and the empty state is not held back by the offer; `search` sends nothing; `footer` is null, so neither the load row nor the retry row shows. `DirectoryResultNavLink` passes `disabled` to `ChatListNavLinkLayout`, as chat rows do, and `DirectorySearchRow` omits "Open"; `chatRunning` is null in previews, which keeps it.
 
 ### Opening a result
 

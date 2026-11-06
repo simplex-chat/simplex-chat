@@ -515,7 +515,7 @@ struct ChatListView: View {
         }
         let imageSize = dynamicSize(userFont).profileImageSize
         ForEach(rows.results) { result in
-            DirectorySearchRow(entry: result.entry, imageSize: imageSize, state: result.state)
+            DirectorySearchRow(entry: result.entry, imageSize: imageSize, state: result.state, showsOpen: chatModel.chatRunning == true)
                 .modifier(DirectoryResultMenu(result: result, imageSize: imageSize, onOpen: { openResult(result) }))
                 .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                 .listRowBackground(Color.clear)
