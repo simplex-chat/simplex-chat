@@ -984,6 +984,149 @@ jobs:
           TAG: ${{ needs.maybe-release.outputs.libs_tag }}
         run: gh release upload "$TAG" postgres-libs/*.zip --clobber --repo "${{ github.repository }}-libs"
 
+# =============================
+#   Store service on Postgres
+# =============================
+
+# Production runs the store service on PostgreSQL only, so its tests run on Postgres when a pull request changes it.
+  test-store-postgres:
+    name: "ubuntu-22.04-x86_64 (store service, Postgres), GHC: ${{ needs.variables.outputs.GHC_VER }}"
+    needs: [maybe-release, variables]
+    if: github.event_name == 'pull_request' && needs.maybe-release.outputs.haskell == 'true'
+    runs-on: ubuntu-22.04
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-store-postgres
+      cancel-in-progress: true
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      # the checkout is the merge commit, whose first parent is the base
+      - name: Check store changes
+        id: store
+        shell: bash
+        run: |
+          if ! git diff --quiet HEAD^1 HEAD -- apps/simplex-store-service tests/Bots/StoreService; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Get UID and GID
+        if: steps.store.outputs.changed
+        id: ids
+        run: |
+          echo "uid=$(id -u)" >> $GITHUB_OUTPUT
+          echo "gid=$(id -g)" >> $GITHUB_OUTPUT
+
+      - name: Free disk space
+        if: steps.store.outputs.changed
+        shell: bash
+        run: ./scripts/ci/linux_util_free_space.sh
+
+      - name: Set up Docker Buildx
+        if: steps.store.outputs.changed
+        uses: simplex-chat/docker-setup-buildx-action@v3
+
+      - name: Build and cache Docker image
+        if: steps.store.outputs.changed
+        uses: simplex-chat/docker-build-push-action@v6
+        with:
+          context: .
+          load: true
+          file: Dockerfile.build
+          tags: build/22.04:latest
+          build-args: |
+            TAG=22.04
+            HASH=sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5
+            GHC=${{ needs.variables.outputs.GHC_VER }}
+            USER_UID=${{ steps.ids.outputs.uid }}
+            USER_GID=${{ steps.ids.outputs.gid }}
+
+      # the parallel test suites open more connections than the default 100
+      - name: Start PostgreSQL
+        if: steps.store.outputs.changed
+        shell: bash
+        run: |
+          docker run -d --name postgres --network host -e POSTGRES_HOST_AUTH_METHOD=trust postgres:17 \
+            -c listen_addresses=127.0.0.1 -c max_connections=1500
+          for _ in $(seq 60); do
+            docker exec postgres pg_isready -q -h 127.0.0.1 && exit 0
+            sleep 1
+          done
+          docker logs postgres
+          exit 1
+
+      # the tests' connection string names no host, so PGHOST points it at the server
+      - name: Start container
+        if: steps.store.outputs.changed
+        shell: bash
+        run: |
+          mkdir -p ~/.cabal
+          docker run -t -d \
+            --name builder \
+            --network host \
+            -e CABAL_DIR=/home/builder/.cabal \
+            -e PGHOST=127.0.0.1 \
+            -v ~/.cabal:/home/builder/.cabal \
+            -v /home/runner/work/_temp:/home/runner/work/_temp \
+            -v ${{ github.workspace }}:/project \
+            build/22.04:latest
+
+      - name: Compute cache key prefix
+        if: steps.store.outputs.changed
+        id: keys
+        run: |
+          toolchain=$(docker exec builder dpkg-query -W -f '${db:Status-Status} ${binary:Package} ${Version}\n' 'binutils*' 'cpp*' 'gcc*' '*-dev' | grep '^installed ' | sha256sum | cut -c1-16)
+          echo "deps=deps-ubuntu-22.04-x86_64-postgres-tests-ghc${{ needs.variables.outputs.GHC_VER }}-$toolchain" >> "$GITHUB_OUTPUT"
+
+      - name: Restore dependencies from cache
+        if: steps.store.outputs.changed
+        id: restore-deps
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cabal/store
+          key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ github.sha }}
+          restore-keys: |
+            ${{ steps.keys.outputs.deps }}-${{ env.branch }}-
+            ${{ steps.keys.outputs.deps }}-
+
+      - name: Prepare cabal.project.local
+        if: steps.store.outputs.changed
+        shell: bash
+        run: |
+          echo "ignore-project: False"    >> cabal.project.local
+          echo "package direct-sqlcipher" >> cabal.project.local
+          echo "    flags: +openssl"      >> cabal.project.local
+
+      - name: Build tests
+        if: steps.store.outputs.changed
+        shell: docker exec -t builder sh -eu {0}
+        run: |
+          cabal update
+          cabal build -j --enable-tests ${{ env.ghc_options }} --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' simplex-chat-test
+
+      - name: Compute dependency cache key
+        if: steps.store.outputs.changed
+        id: hash-deps
+        shell: bash
+        run: echo "hash=$(ls ~/.cabal/store/ghc-*/ | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Save dependencies to cache
+        if: steps.store.outputs.changed && steps.restore-deps.outputs.cache-matched-key != format('{0}-{1}-{2}', steps.keys.outputs.deps, env.branch, steps.hash-deps.outputs.hash)
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cabal/store
+          key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ steps.hash-deps.outputs.hash }}
+
+      - name: Run store tests
+        if: steps.store.outputs.changed
+        timeout-minutes: 60
+        shell: docker exec -t builder sh -eu {0}
+        run: |
+          test=$(cabal list-bin --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' simplex-chat-test | tail -n 1)
+          "$test" -m "Supporter badges" -m "SimpleX store service" -m "StoreService names"
+
 # =========================
 #        MacOS Build
 # =========================
