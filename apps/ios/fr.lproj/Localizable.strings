@@ -752,7 +752,7 @@ swipe action */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Autoriser la suppression irréversible de messages envoyés. (24 heures)";
 
 /* No comment provided by engineer. */
-"Allow to report messsages to moderators." = "Permettre de signaler des messages aux modérateurs.";
+"Allow to report messages to moderators." = "Permettre de signaler des messages aux modérateurs.";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Permet l'envoi de fichiers et de médias.";
@@ -4084,7 +4084,7 @@ servers warning */
 "Members can irreversibly delete sent messages. (24 hours)" = "Les membres du groupe peuvent supprimer de manière irréversible les messages envoyés. (24 heures)";
 
 /* No comment provided by engineer. */
-"Members can report messsages to moderators." = "Les membres peuvent signaler les messages aux modérateurs.";
+"Members can report messages to moderators." = "Les membres peuvent signaler les messages aux modérateurs.";
 
 /* No comment provided by engineer. */
 "Members can send direct messages." = "Les membres du groupe peuvent envoyer des messages directs.";
@@ -6504,7 +6504,7 @@ report reason */
 "Subscribers can irreversibly delete sent messages. (24 hours)" = "Les abonnés peuvent supprimer définitivement les messages envoyés. (24 heures)";
 
 /* No comment provided by engineer. */
-"Subscribers can report messsages to moderators." = "Les abonnés peuvent signaler les messages aux modérateurs.";
+"Subscribers can report messages to moderators." = "Les abonnés peuvent signaler les messages aux modérateurs.";
 
 /* No comment provided by engineer. */
 "Subscribers can send direct messages." = "Les abonnés peuvent envoyer des messages directs.";

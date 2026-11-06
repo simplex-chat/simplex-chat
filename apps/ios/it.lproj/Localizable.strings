@@ -758,7 +758,7 @@ swipe action */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Permetti di eliminare irreversibilmente i messaggi inviati. (24 ore)";
 
 /* No comment provided by engineer. */
-"Allow to report messsages to moderators." = "Consenti di segnalare messaggi ai moderatori.";
+"Allow to report messages to moderators." = "Consenti di segnalare messaggi ai moderatori.";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Consenti l'invio di file e contenuti multimediali.";
@@ -4105,7 +4105,7 @@ servers warning */
 "Members can irreversibly delete sent messages. (24 hours)" = "I membri del gruppo possono eliminare irreversibilmente i messaggi inviati. (24 ore)";
 
 /* No comment provided by engineer. */
-"Members can report messsages to moderators." = "I membri possono segnalare messaggi ai moderatori.";
+"Members can report messages to moderators." = "I membri possono segnalare messaggi ai moderatori.";
 
 /* No comment provided by engineer. */
 "Members can send direct messages." = "I membri del gruppo possono inviare messaggi diretti.";
@@ -6537,7 +6537,7 @@ report reason */
 "Subscribers can irreversibly delete sent messages. (24 hours)" = "Gli iscritti al canale possono eliminare irreversibilmente i messaggi inviati. (24 ore)";
 
 /* No comment provided by engineer. */
-"Subscribers can report messsages to moderators." = "Gli iscritti possono segnalare messaggi ai moderatori.";
+"Subscribers can report messages to moderators." = "Gli iscritti possono segnalare messaggi ai moderatori.";
 
 /* No comment provided by engineer. */
 "Subscribers can send direct messages." = "Gli iscritti al canale possono inviare messaggi diretti.";

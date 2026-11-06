@@ -659,7 +659,7 @@ swipe action */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Gönderilen mesajların kalıcı olarak silinmesine izin ver. (24 saat içinde)";
 
 /* No comment provided by engineer. */
-"Allow to report messsages to moderators." = "Mesajları moderatörlere bildirmeye izin ver.";
+"Allow to report messages to moderators." = "Mesajları moderatörlere bildirmeye izin ver.";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Dosya ve medya göndermeye izin ver.";
@@ -3563,7 +3563,7 @@ servers warning */
 "Members can irreversibly delete sent messages. (24 hours)" = "Grup üyeleri, gönderilen mesajları kalıcı olarak silebilir. (24 saat içinde)";
 
 /* No comment provided by engineer. */
-"Members can report messsages to moderators." = "Üyeler mesajları moderatörlere bildirebilir.";
+"Members can report messages to moderators." = "Üyeler mesajları moderatörlere bildirebilir.";
 
 /* No comment provided by engineer. */
 "Members can send direct messages." = "Grup üyeleri doğrudan mesajlar gönderebilir.";

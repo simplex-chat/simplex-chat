@@ -9486,8 +9486,8 @@ More improvements are coming soon!</source>
         <source>All reports will be archived for you.</source>
         <target state="translated">所有檢舉報告都會為你封存。</target>
       </trans-unit>
-      <trans-unit id="Allow to report messsages to moderators." xml:space="preserve" approved="no">
-        <source>Allow to report messsages to moderators.</source>
+      <trans-unit id="Allow to report messages to moderators." xml:space="preserve" approved="no">
+        <source>Allow to report messages to moderators.</source>
         <target state="translated">允許向審核員檢舉訊息。</target>
       </trans-unit>
       <trans-unit id="Archive %lld reports?" xml:space="preserve" approved="no">
@@ -9558,8 +9558,8 @@ More improvements are coming soon!</source>
         <source>Member reports</source>
         <target state="translated">成員檢舉報告</target>
       </trans-unit>
-      <trans-unit id="Members can report messsages to moderators." xml:space="preserve" approved="no">
-        <source>Members can report messsages to moderators.</source>
+      <trans-unit id="Members can report messages to moderators." xml:space="preserve" approved="no">
+        <source>Members can report messages to moderators.</source>
         <target state="translated">成員可以向審核員檢舉訊息。</target>
       </trans-unit>
       <trans-unit id="Mute all" xml:space="preserve" approved="no">
@@ -11176,8 +11176,8 @@ The most secure encryption.</source>
         <source>Subscribers can irreversibly delete sent messages. (24 hours)</source>
         <target state="translated">訂閱者可以刪除已傳送的訊息，且無法復原。（24 小時）</target>
       </trans-unit>
-      <trans-unit id="Subscribers can report messsages to moderators." xml:space="preserve" approved="no">
-        <source>Subscribers can report messsages to moderators.</source>
+      <trans-unit id="Subscribers can report messages to moderators." xml:space="preserve" approved="no">
+        <source>Subscribers can report messages to moderators.</source>
         <target state="translated">訂閱者可以向審核員檢舉訊息。</target>
       </trans-unit>
       <trans-unit id="Subscribers can send SimpleX links." xml:space="preserve" approved="no">

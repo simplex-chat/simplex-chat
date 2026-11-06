@@ -716,7 +716,7 @@ swipe action */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Дозволяє безповоротно видаляти надіслані повідомлення. (24 години)";
 
 /* No comment provided by engineer. */
-"Allow to report messsages to moderators." = "Дозволити надсилати скаргу на повідомлення модераторам.";
+"Allow to report messages to moderators." = "Дозволити надсилати скаргу на повідомлення модераторам.";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Дозволяє надсилати файли та медіа.";
@@ -3608,7 +3608,7 @@ servers warning */
 "Members can irreversibly delete sent messages. (24 hours)" = "Учасники групи можуть безповоротно видаляти надіслані повідомлення. (24 години)";
 
 /* No comment provided by engineer. */
-"Members can report messsages to moderators." = "Учасники можуть повідомляти повідомлення модераторам.";
+"Members can report messages to moderators." = "Учасники можуть повідомляти повідомлення модераторам.";
 
 /* No comment provided by engineer. */
 "Members can send direct messages." = "Учасники групи можуть надсилати прямі повідомлення.";

@@ -618,7 +618,7 @@ swipe action */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Zezwól na nieodwracalne usunięcie wysłanych wiadomości. (24 godziny)";
 
 /* No comment provided by engineer. */
-"Allow to report messsages to moderators." = "Zezwól na zgłaszanie wiadomości moderatorom.";
+"Allow to report messages to moderators." = "Zezwól na zgłaszanie wiadomości moderatorom.";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Pozwól na wysyłanie plików i mediów.";
@@ -3577,7 +3577,7 @@ servers warning */
 "Members can irreversibly delete sent messages. (24 hours)" = "Członkowie grupy mogą nieodwracalnie usuwać wysłane wiadomości. (24 godziny)";
 
 /* No comment provided by engineer. */
-"Members can report messsages to moderators." = "Członkowie mogą zgłaszać wiadomości moderatorom.";
+"Members can report messages to moderators." = "Członkowie mogą zgłaszać wiadomości moderatorom.";
 
 /* No comment provided by engineer. */
 "Members can send direct messages." = "Członkowie grupy mogą wysyłać bezpośrednie wiadomości.";
