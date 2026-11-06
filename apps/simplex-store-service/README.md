@@ -1146,7 +1146,8 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
 
 An order sends at most 5 commits, 5 terms acceptances and 5 registers, its moves included, since an
 owner who changes their terms acceptance on chain can make each acceptance and register revert at the
-service's gas. Past that the order fails, Try again answers `400 bad_request`, and support refunds it.
+service's gas. Past that the order fails, Try again and a move answer `400 bad_request`, and support refunds it
+at the provider: `//refund` records nothing for such an order, which has no balance.
 The log line is `[WARN …] names worker: registration <id> failed: it sent <n> transactions of one kind`.
 
 Try again or a move of a failed order, and the worker's judgment of a register that did not go

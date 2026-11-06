@@ -8,7 +8,7 @@ module Bots.StoreService.NamesWorkerTests (namesWorkerTests) where
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, newPolicy, noncesCall, registrarOf, unhex)
 import Bots.StoreService.NamesOrdersTests
-import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
+import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, move, moveTo, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, ownerA, paidOrder, reveal)
 import Bots.StoreService.WebTests (capturingStderr, jsonObject, statusOf, stubCalls, webGet, withApp)
@@ -55,6 +55,7 @@ import StoreService.Names.Turns (labelTurnCount, withLabelTurn)
 import StoreService.Names.Worker
 import StoreService.Web.Http (createLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
+import StoreService.Web.Names.Owner (retargetHandler)
 import StoreService.Web.Names.Registration (registrationHandler, retryHandler)
 import StoreService.Web.Server (WebEnv (..), webApp)
 import System.Timeout (timeout)
@@ -90,7 +91,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "keeps the phase on NameNotAvailable while the name still reads available, as for a pending competitor" testPendingCompetitor
     it "ends failed on a revert while the name is available, keeping a code" testRevertFailed
     it "keeps an order committed while the sponsor allowance is used up, and registers it after a top-up" testAllowanceUsedUp
-    it "fails an order that sent the most registers an order may, sending nothing, and refuses its Try again" testSendsCapped
+    it "fails an order that sent the most registers an order may, sending nothing, and refuses its Try again and a move" testSendsCapped
     it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed, and reads the name policy again on TermsNotAccepted" testInvalidNonce
     it "relays no intent past its deadline, ending failed" testExpiredIntent
     it "keeps the phase when a read of the final check fails" testCheckUnread
@@ -159,6 +160,7 @@ withWorkerAs settings action = withOrders $ \open -> do
       registrationRoute = \case
         ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders (weHttp web) holdMicros rid}
         ["api", "registration", rid, "retry"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retryHandler cOrders rid}
+        ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler cOrders rid}
         _ -> Nothing
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
   withApp app $ \client -> started ctx {cWeb = web, cClient = client} >>= action
@@ -676,6 +678,10 @@ testSendsCapped = withWorker $ \w@W {wCtx = ctx} -> do
   (nrPhase x, nrError x) `shouldBe` (PFailed, Just "The name could not be registered")
   sent w `shouldReturn` []
   fst <$> retryOf ctx x `shouldReturn` 400
+  answerFree ctx "alicebakers"
+  to <- moveTo ctx "alicebakers" 10
+  fst <$> move ctx keyA x to `shouldReturn` 400
+  stored ctx x `shouldReturn` x
 
 testInvalidNonce :: IO ()
 testInvalidNonce = forM_ [("InvalidNonce()", fakeNamePolicy), ("TermsNotAccepted(string)", newPolicy)] $ \(revert, policyAfter) -> withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders = OrdersEnv {oeContracts}}} -> do

@@ -31,6 +31,7 @@ import StoreService.Names.Store (NamePhase (..), NameRegistration (..), Registra
 import StoreService.Names.Turns (withLabelTurns)
 import StoreService.Names.View (registrationAt, registrationView)
 import StoreService.Web.Http (Respond, internalError, jsonResponse, maxBodyBytes, nameBodyBytes, notFound, readBoundedBody)
+import StoreService.Names.Worker (sendsUsedUp)
 import StoreService.Web.Names.Orders (Answer (..), answerNow, firstRefusal, refused, sendAnswer)
 import StoreService.Web.Names.Registration (registrationChangedResponse, registrationRefusalResponse)
 
@@ -114,11 +115,14 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
       | Left refusal <- checkTimestamp now timestamp = refuse refusal
       | not (movable r) = refuse ORBadRequest
       | nrPhase == PFailed =
-          confirmLanded env r >>= \case
-            LNotLanded -> moveChecked now r fields
-            LRegistered v -> written env rid v <$> registrationChangedResponse env rid
-            LChanged -> changed
-            LUnread -> refuse ORNameCheckUnavailable
+          sendsUsedUp env r >>= \case
+            True -> refuse ORBadRequest
+            False ->
+              confirmLanded env r >>= \case
+                LNotLanded -> moveChecked now r fields
+                LRegistered v -> written env rid v <$> registrationChangedResponse env rid
+                LChanged -> changed
+                LUnread -> refuse ORNameCheckUnavailable
       | otherwise = moveChecked now r fields
     moveChecked now r@NameRegistration {nrMoves, nrYears, nrPrice, nrPayment} fields@OrderFields {ofLabelHash, ofLength, ofDuration}
       | nrMoves >= nMaxOrderMoves oeConfig = answerNow <$> registrationRefusalResponse env "move_limit" rid

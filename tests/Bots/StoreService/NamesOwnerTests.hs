@@ -16,6 +16,7 @@ module Bots.StoreService.NamesOwnerTests
     failedPhase,
     findBody,
     labelBytes,
+    move,
     moveBody,
     moveTo,
     ownerOfSelector,

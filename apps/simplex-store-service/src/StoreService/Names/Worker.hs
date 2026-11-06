@@ -18,6 +18,7 @@ module StoreService.Names.Worker
     RetryRefusal (..),
     retryRegistration,
     maxSendsPerKind,
+    sendsUsedUp,
   )
 where
 
