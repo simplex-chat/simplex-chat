@@ -128,7 +128,7 @@ Versions unpublished after a failure: published by the next push to the branch.
 
 The package tests of 5 platforms are not required.
 
-A version pinned in the same commit that bumps `simplex-chat` or `@simplex-chat/types` is on npm after that run: the MCP version is published by a later push to the branch.
+A version pinned in the same commit that bumps `simplex-chat` or `@simplex-chat/types` is on npm after that run: the MCP version is published by a later push to the branch, and the run shows a notice that names the pinned version.
 
 ## Local publication
 

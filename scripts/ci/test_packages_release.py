@@ -561,6 +561,7 @@ class PackageStateTest(GitRepoTest):
         self.write(PYTHON_VERSION_FILE, render_python_version("1.0.0b1.post1", Pins("core-1", {})))
         self.write("pyproject.toml", "")
         output = io.StringIO()
+        notices = io.StringIO()
         with (
             mock.patch.object(packages_release, "ROOT", self.repo),
             mock.patch.object(packages_release, "read_releases", return_value=(releases, "blob")),
@@ -568,8 +569,10 @@ class PackageStateTest(GitRepoTest):
             mock.patch.object(packages_release, "npm_published", lambda name, version: (name, version) in npm_versions),
             mock.patch.object(packages_release, "pypi_published", return_value=False),
             contextlib.redirect_stdout(output),
+            contextlib.redirect_stderr(notices),
         ):
             publish_plan()
+        self.notices = notices.getvalue()
         return output.getvalue().splitlines()
 
     def test_publish_plan_skips_recorded_versions_before_the_registries_list_them(self):
@@ -589,18 +592,23 @@ class PackageStateTest(GitRepoTest):
                 "python_version=",
             ],
         )
+        self.assertEqual(self.notices, "")
 
     def test_publish_plan_lists_mcp_when_its_pinned_versions_are_on_npm(self):
         pins = {("simplex-chat", "1.0.0-beta.1.1"), ("@simplex-chat/types", "0.1.0")}
         self.assertIn("mcp_version=0.2.0", self.plan_output({}, pins))
+        self.assertEqual(self.notices, "")
 
     def test_publish_plan_counts_a_recorded_pinned_version_as_published(self):
         releases = {"npm": {"simplex-chat": {"1.0.0-beta.1.1": "c"}}}
         self.assertIn("mcp_version=0.2.0", self.plan_output(releases, {("@simplex-chat/types", "0.1.0")}))
 
     def test_publish_plan_leaves_mcp_for_a_later_push_while_a_pinned_version_is_not_on_npm(self):
+        notice = "::notice title=Package release::@simplex-chat/mcp 0.2.0 waits for "
         self.assertIn("mcp_version=", self.plan_output({}, {("simplex-chat", "1.0.0-beta.1.1")}))
+        self.assertEqual(self.notices, f"{notice}@simplex-chat/types 0.1.0\n")
         self.assertIn("mcp_version=", self.plan_output({}, {("@simplex-chat/types", "0.1.0")}))
+        self.assertEqual(self.notices, f"{notice}simplex-chat 1.0.0-beta.1.1\n")
 
     def test_record_adds_the_mcp_version(self):
         self.write(f"{TYPES_DIR}/package.json", '{"name": "@simplex-chat/types"}')

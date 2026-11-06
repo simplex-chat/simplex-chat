@@ -580,6 +580,11 @@ def npm_released(releases: dict, name: str, version: str) -> bool:
     return recorded_commit(releases, f"npm/{name}", version) is not None or npm_published(name, version)
 
 
+def unreleased_pins(releases: dict, package: dict, pinned: list[str]) -> list[str]:
+    versions = [(name, package["dependencies"][name].removeprefix("^")) for name in pinned]
+    return [f"{name} {version}" for name, version in versions if not npm_released(releases, name, version)]
+
+
 def python_project() -> str:
     return read_field(f"{PYTHON_DIR}/pyproject.toml", r'^name = "([^"]+)"')
 
@@ -853,10 +858,12 @@ def publish_plan() -> None:
     releases, _ = read_releases()
     for key, directory, pinned in [("types", TYPES_DIR, []), ("nodejs", NODEJS_DIR, []), ("mcp", MCP_DIR, MCP_PINNED)]:
         package = read_json(f"{directory}/package.json")
-        publishable = not npm_released(releases, package["name"], package["version"]) and all(
-            npm_released(releases, name, package["dependencies"][name].removeprefix("^")) for name in pinned
-        )
-        print(f"{key}_version={package['version'] if publishable else ''}")
+        published = npm_released(releases, package["name"], package["version"])
+        unreleased = [] if published else unreleased_pins(releases, package, pinned)
+        if unreleased:
+            waits_for = ", ".join(unreleased)
+            print(f"::notice title=Package release::{package['name']} {package['version']} waits for {waits_for}", file=sys.stderr)
+        print(f"{key}_version={'' if published or unreleased else package['version']}")
         print(f"{key}_dist_tag={dist_tag(package['version'])}")
     version, _ = parse_python_version(read_text(PYTHON_VERSION_FILE))
     published = recorded_commit(releases, pypi_key(), version) or pypi_published(version)

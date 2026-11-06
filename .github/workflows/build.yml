@@ -1828,26 +1828,6 @@ jobs:
           npm publish --provenance --access public --tag "$DIST_TAG"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Build and test @simplex-chat/mcp
-        if: steps.plan.outputs.mcp_version
-        working-directory: packages/simplex-chat-mcp
-        run: |
-          npm ci --no-audit --no-fund
-          npx tsc
-          npx tsc -p test/tsconfig.json --noEmit
-          npm test
-
-      - name: Publish @simplex-chat/mcp
-        id: mcp
-        if: steps.plan.outputs.mcp_version
-        working-directory: packages/simplex-chat-mcp
-        env:
-          VERSION: ${{ steps.plan.outputs.mcp_version }}
-          DIST_TAG: ${{ steps.plan.outputs.mcp_dist_tag }}
-        run: |
-          npm publish --provenance --access public --tag "$DIST_TAG"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
       - name: Build and test simplex-chat (PyPI)
         if: steps.plan.outputs.python_version
         working-directory: packages/simplex-chat-python
@@ -1870,6 +1850,26 @@ jobs:
         env:
           VERSION: ${{ steps.plan.outputs.python_version }}
         run: echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build and test @simplex-chat/mcp
+        if: steps.plan.outputs.mcp_version
+        working-directory: packages/simplex-chat-mcp
+        run: |
+          npm ci --no-audit --no-fund
+          npx tsc
+          npx tsc -p test/tsconfig.json --noEmit
+          npm test
+
+      - name: Publish @simplex-chat/mcp
+        id: mcp
+        if: steps.plan.outputs.mcp_version
+        working-directory: packages/simplex-chat-mcp
+        env:
+          VERSION: ${{ steps.plan.outputs.mcp_version }}
+          DIST_TAG: ${{ steps.plan.outputs.mcp_dist_tag }}
+        run: |
+          npm publish --provenance --access public --tag "$DIST_TAG"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
   record:
     needs: publish
