@@ -69,6 +69,7 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
     it "refuses a leaf the intermediate did not sign, though the intermediate is genuine" testAppleForgedLeaf
     it "fails, rather than refuses, a leaf signature the library cannot check" testAppleLeafUncheckable
     it "refuses a tampered payload" testAppleTamperedPayload
+    it "refuses a payload signed when the chain was not valid, and fails one with no signedDate" testAppleSignedOutsideValidity
     it "fails, rather than refuses, a chain that is not exactly leaf, intermediate and root, a shape Apple may yet adopt" testAppleChainLength
     it "fails, rather than refuses, a header that names another algorithm, a shape Apple may yet adopt" testAppleOtherAlgorithm
     it "fails, rather than refuses, another app's bundle id, since ours may be misconfigured" testAppleOtherBundle
@@ -325,6 +326,15 @@ testAppleTamperedPayload = do
       let tampered = T.intercalate "." [header, decodeUtf8 $ segment $ transactionPayload [("productId", "BADGE_LEGEND_01")] [], signature]
       outcome <$> appleVerdict (rootCert chain) tampered `shouldReturn` Invalid
     _ -> expectationFailure "not a JWS"
+
+testAppleSignedOutsideValidity :: IO ()
+testAppleSignedOutsideValidity = do
+  chain <- trustedChain
+  -- the test chain is valid from 2020 to 2040
+  late <- signedBy chain $ transactionPayload [("signedDate", J.toJSON (2240000000000 :: Int))] []
+  outcome <$> appleVerdict (rootCert chain) late `shouldReturn` Invalid
+  undated <- signedBy chain $ transactionPayload [] ["signedDate"]
+  outcome <$> appleVerdict (rootCert chain) undated >>= (`shouldNotBe` Invalid)
 
 testAppleChainLength :: IO ()
 testAppleChainLength = do

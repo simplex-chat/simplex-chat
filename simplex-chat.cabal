@@ -523,6 +523,7 @@ executable simplex-store-service
     , crypton-x509-validation ==1.6.*
     , directory ==1.3.*
     , filepath ==1.4.*
+    , hourglass ==0.2.*
     , http-client ==0.7.*
     , http-client-tls ==0.3.*
     , http-types ==0.12.*
