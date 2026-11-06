@@ -130,6 +130,21 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
   npm test
   ```
 
+#### mcp
+
+- Globs:
+  - packages/simplex-chat-mcp/**
+  - packages/simplex-chat-nodejs/**
+  - packages/simplex-chat-client/types/typescript/**
+- CI:
+  - in build-linux: `scope-tests.sh mcp` (step "Test changed scopes"):
+    - the types package and the Node.js library built from the branch without the add-on, as package-tests.sh builds them;
+    - `npm ci`, then both installed into the MCP package with `npm install --no-save`;
+    - `npx tsc` and `npx tsc -p test/tsconfig.json --noEmit`;
+    - `npm test`, the unit tests;
+    - `npm run test:e2e`, the end-to-end tests. They download libsimplex and the add-on pinned in packages/simplex-chat-nodejs/src/release.ts, and smp-server and xftp-server of the simplexmq release in test/e2e/smpServer.ts.
+- Local: `scripts/ci/scope-tests.sh mcp`.
+
 #### Scopes lacking CI tests
 
 | Scope | Paths | CI |
@@ -157,32 +172,6 @@ For a scope lacking CI tests, in the pull request that changes it:
 6. Checks: `python3 scripts/ci/test_packages_release.py`, the new case of scope-tests.sh locally, then a dispatch of the reduced build.
 
 The scope commands run in build-linux after the core tests, with Node 22 and Python 3.12 (steps "Setup Node.js" and "Setup Python"). For a scope that needs other versions, a setup step is added before "Test changed scopes", conditioned on the scope name in `needs.maybe-release.outputs.scopes`. A scope that needs macOS is a BUILD_CHANGES entry with a separate maybe-release output, as ios is, and a step in build-ios; the `if` of build-ios includes that output.
-
-## MCP server
-
-The workflow `mcp` (mcp.yml) tests packages/simplex-chat-mcp in one job, test (ubuntu-22.04), apart from build.yml: on a pull request that changes it or the libraries it uses, and on a dispatch.
-
-- Globs:
-  - packages/simplex-chat-mcp/**
-  - packages/simplex-chat-nodejs/**
-  - packages/simplex-chat-client/types/typescript/**
-  - .github/workflows/mcp.yml
-- CI, in test:
-  - the types package and the Node.js library built from the branch without the add-on, as package-tests.sh builds them (step "Build the types and the Node.js library");
-  - `npm ci`, then both installed into the MCP package with `npm install --no-save` (step "Install");
-  - `npx tsc` and `npx tsc -p test/tsconfig.json --noEmit` (step "Type-check and build");
-  - `npm test`, the unit tests (step "Unit tests");
-  - `npm run test:e2e`, the end-to-end tests (step "End-to-end tests"). They download libsimplex and the add-on pinned in packages/simplex-chat-nodejs/src/release.ts, and smp-server and xftp-server of the simplexmq release in test/e2e/smpServer.ts.
-- Dispatch, once mcp.yml is on the repository's default branch: `POST /repos/<owner>/simplex-chat/actions/workflows/mcp.yml/dispatches` with `{"ref": "<branch>"}`.
-- Local, after the types package and the Node.js library are built as in CI:
-  ```sh
-  cd packages/simplex-chat-mcp
-  npm ci
-  npm install --no-save ../simplex-chat-nodejs ../simplex-chat-client/types/typescript
-  npx tsc
-  npm test
-  npm run test:e2e
-  ```
 
 ## Starting a run
 
