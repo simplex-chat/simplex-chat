@@ -40,7 +40,7 @@ import qualified Data.ByteArray as BA
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Char (GeneralCategory (..), generalCategory, isControl)
+import Data.Char (GeneralCategory (..), generalCategory, isAsciiLower, isAsciiUpper, isControl, isDigit)
 import Data.Ini (Ini, iniGlobals, iniParser, keyValueParser, keys, lookupValue, sectionParser, sections)
 import Data.List (intercalate, nub, (\\))
 import Data.List.NonEmpty (NonEmpty)
@@ -274,6 +274,11 @@ requireHttps :: Text -> Either String Text
 requireHttps u
   | "https://" `T.isPrefixOf` u = Right u
   | otherwise = Left "btcpay.host must be an absolute https URL"
+
+publishableKey :: Text -> Bool
+publishableKey k = case T.stripPrefix "pk_live_" k <|> T.stripPrefix "pk_test_" k of
+  Just rest -> not (T.null rest) && T.all (\c -> isAsciiUpper c || isAsciiLower c || isDigit c) rest
+  Nothing -> False
 
 maxCommunityTextLength :: Int
 maxCommunityTextLength = 200
@@ -604,6 +609,8 @@ parseConfig ini = do
       | otherwise = do
           sSecretKey <- required "stripe" "secret_key"
           sPublishableKey <- required "stripe" "publishable_key"
+          -- it is written into the sites' HTML as it is
+          unless (publishableKey sPublishableKey) $ Left "stripe.publishable_key must be pk_live_ or pk_test_ followed by letters and digits"
           sWebhookSecret <- required "stripe" "webhook_secret"
           sSessionMinutes <- sessionMinutes
           let sHost = defaultStripeHost

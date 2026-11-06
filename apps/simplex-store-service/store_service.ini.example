@@ -38,7 +38,7 @@ payment_tolerance = 0.5
 [stripe]
 ; restricted key (rk_): Payment Intents write + Charges read — never a full secret key (sk_)
 secret_key = rk_test_replace-me
-publishable_key = pk_test_replace-me
+publishable_key = pk_test_REPLACEME
 ; the signing secret of the /webhooks/stripe endpoint configured in the Dashboard
 webhook_secret = whsec_replace-me
 ; minutes the service holds an unpaid card invoice open before it expires it; 1-1440

@@ -38,6 +38,7 @@ badgeConfigTests = describe "store service config" $ do
   it "applies every documented stripe default" testStripeDefaults
   it "disables stripe when the section is absent" testStripeAbsent
   it "refuses an incomplete stripe section, naming the key" testStripeIncomplete
+  it "takes a publishable key only as pk_live_ or pk_test_ and letters and digits" testStripePublishableKey
   it "bounds stripe session_minutes to 1-1440" testStripeSessionMinutesRange
   it "accepts HighSpeed" (testSpeedPolicyAccepted "HighSpeed" HighSpeed)
   it "refuses HighSpeed beside [names], which settles with no confirmation" testHighSpeedWithNames
@@ -197,6 +198,13 @@ fullStripeIni =
         "publishable_key = pk_test_x",
         "webhook_secret = whsec_x"
       ]
+
+testStripePublishableKey :: IO ()
+testStripePublishableKey = do
+  let withKey k = parseIni (T.replace "publishable_key = pk_test_x" ("publishable_key = " <> k) fullStripeIni)
+  forM_ ["pk_test_51Hx", "pk_live_AbC123"] $ \k -> (\r -> (k, isRight r)) <$> withKey k `shouldReturn` (k, True)
+  forM_ ["pk_test_", "sk_test_x", "pk_test_x\"><script>", "pk_live_a-b"] $ \k ->
+    withKey k `shouldReturn` Left "stripe.publishable_key must be pk_live_ or pk_test_ followed by letters and digits"
 
 testStripeDefaults :: IO ()
 testStripeDefaults = withIni fullStripeIni $ \p -> do
