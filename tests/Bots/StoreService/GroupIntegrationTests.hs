@@ -20,7 +20,7 @@ import StoreService.Names.Store (NamePhase (..), NameRegistration (..), PrepaidC
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Orders (cancelOpenInvoice, expireOverdue)
-import StoreService.Service (ServiceState (..), checkNodeChain, newServiceState, requireDevKeys, storeService, trustDevKeys)
+import StoreService.Service (ServiceState (..), checkNodeChain, newServiceState, redactPassword, requireDevKeys, storeService, trustDevKeys)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Waiters (newWaiters)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
@@ -148,6 +148,7 @@ namesBootTests :: SpecWith TestParams
 namesBootTests = do
   it "warns naming the indexes of trusted dev_keys, and says nothing without them" testDevKeysWarned
   it "refuses a node serving another chain than chain_id, and dev_keys unless the node answers, only warning without them" testNodeChain
+  it "masks the database password in the start line, in a URI or as a keyword" testRedactPassword
   it "boots codes-only, refusing paid name orders 403 codes_only and answering code orders and code checks, the badges shell as built" testNamesBootCodesOnly
   it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, the community terms and registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, and each route under its limit, shared by the routes of that limit" testNamesBoot
 
@@ -162,6 +163,13 @@ testDevKeysWarned _ = do
   Right withoutDev <- devKeysIni chainSection testIssuerKeyIdx sk []
   quiet <- capturingStderr $ trustDevKeys (Just withoutDev) cfg >>= (`shouldSatisfy` isRight) . fmap badgePublicKeys
   filter ("dev_keys" `T.isInfixOf`) (T.lines quiet) `shouldBe` []
+
+testRedactPassword :: HasCallStack => TestParams -> IO ()
+testRedactPassword _ = do
+  redactPassword "postgresql://simplex:s3cr@t:x@127.0.0.1:5432/badge_service" `shouldBe` "postgresql://simplex:***@127.0.0.1:5432/badge_service"
+  redactPassword "postgresql://simplex@127.0.0.1:5432/badge_service" `shouldBe` "postgresql://simplex@127.0.0.1:5432/badge_service"
+  redactPassword "host=127.0.0.1 user=simplex password=s3cret dbname=badge_service" `shouldBe` "host=127.0.0.1 user=simplex password=*** dbname=badge_service"
+  redactPassword "/var/opt/simplex_badge_service" `shouldBe` "/var/opt/simplex_badge_service"
 
 testNodeChain :: HasCallStack => TestParams -> IO ()
 testNodeChain _ = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
