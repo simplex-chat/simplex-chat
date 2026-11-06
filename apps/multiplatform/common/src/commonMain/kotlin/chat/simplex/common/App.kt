@@ -91,7 +91,7 @@ fun MainScreen() {
     showChatDatabaseError = chatModel.chatDbStatus.value != DBMigrationResult.OK && chatModel.chatDbStatus.value != null
   }
   var showAdvertiseLAAlert by remember { mutableStateOf(false) }
-  LaunchedEffect(showAdvertiseLAAlert) {
+  LaunchedEffect(showAdvertiseLAAlert, chatModel.chatRunning.value) {
     if (
       !chatModel.controller.appPrefs.laNoticeShown.get()
       && !appPrefs.performLA.get()
