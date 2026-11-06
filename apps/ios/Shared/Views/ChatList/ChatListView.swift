@@ -517,11 +517,13 @@ struct ChatListView: View {
                 .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                 .listRowBackground(Color.clear)
                 .onTapGesture { openResult(result) }
+                .disabled(chatModel.chatRunning != true)
         }
         if let footer = rows.footer {
             DirectoryFooterRow(footer: footer, onlineSearch: onlineSearch)
                 .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                 .listRowBackground(Color.clear)
+                .disabled(chatModel.chatRunning != true)
         }
     }
 
@@ -872,6 +874,7 @@ struct ChatListSearchBar: View {
             }
             if oneHandUI && showsSearchInDirectory {
                 SearchInDirectoryRow(searchFocussed: $searchFocussed, onSearch: { onlineSearch.search(searchText) })
+                    .disabled(m.chatRunning != true)
             }
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
@@ -922,6 +925,7 @@ struct ChatListSearchBar: View {
             }
             if !oneHandUI && showsSearchInDirectory {
                 SearchInDirectoryRow(searchFocussed: $searchFocussed, onSearch: { onlineSearch.search(searchText) })
+                    .disabled(m.chatRunning != true)
             }
         }
         .onChange(of: searchFocussed) { sf in

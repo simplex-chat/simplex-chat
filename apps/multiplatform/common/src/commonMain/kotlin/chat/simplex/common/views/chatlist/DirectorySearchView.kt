@@ -183,7 +183,7 @@ fun SearchInDirectoryRow(onSearch: () -> Unit) {
   Row(
     Modifier
       .fillMaxWidth()
-      .clickable {
+      .clickable(enabled = chatModel.chatRunning.value != false) {
         hideKeyboard(view)
         onSearch()
       }
@@ -275,7 +275,7 @@ private fun DirectoryLoadMoreRowLayout(moreCount: Int?, loading: Boolean, onLoad
   Row(
     Modifier
       .fillMaxWidth()
-      .clickable(enabled = !loading) {
+      .clickable(enabled = !loading && chatModel.chatRunning.value != false) {
         onLoadMore()
       }
       .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
@@ -295,7 +295,7 @@ private fun DirectoryRetryRowLayout(onRetry: () -> Unit) {
   Row(
     Modifier
       .fillMaxWidth()
-      .clickable {
+      .clickable(enabled = chatModel.chatRunning.value != false) {
         onRetry()
       }
       .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
@@ -335,7 +335,7 @@ fun DirectoryResultNavLink(result: DirectoryResult, imageSize: Dp, previewModifi
       })
     },
     showMenu = showMenu,
-    disabled = false,
+    disabled = chatModel.chatRunning.value == false,
     selectedChat = remember { mutableStateOf(false) },
     nextChatSelected = remember { mutableStateOf(false) },
   )

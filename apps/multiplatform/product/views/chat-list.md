@@ -155,6 +155,7 @@ Each chat type provides specific dropdown menu items:
 | Loading more results | The "Load more" row is greyed and can't be tapped until the page arrives |
 | Directory search failed | "Search failed, tap to retry" row at the end of the results, in place of the load row |
 | Online search found nothing | No result rows; "No chats found" when no local chat matches either (in onboarding, a "No chats found" row) |
+| Chat stopped | Result, load and retry rows and "Search in Directory" can't be tapped; the Search key still searches, and its "Search failed, tap to retry" row can't be tapped until chat runs |
 
 ## Source Files
 

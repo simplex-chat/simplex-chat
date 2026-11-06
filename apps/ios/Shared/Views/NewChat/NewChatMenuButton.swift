@@ -108,6 +108,7 @@ struct NewChatSheet: View {
                 }
                 if showsSearchInDirectory {
                     SearchInDirectoryRow(searchFocussed: $searchFocussed, onSearch: { onlineSearch.search(searchText) })
+                        .disabled(chatModel.chatRunning != true)
                 }
             }
             .listRowSeparator(.hidden)
@@ -204,14 +205,17 @@ struct NewChatSheet: View {
             }
             ForEach(rows.yourChats.compactMap { chatModel.getChat($0) }, id: \.viewId) { chat in
                 ContactListNavLink(chat: chat, showDeletedChatIcon: true)
+                    .disabled(chatModel.chatRunning != true)
             }
             ForEach(rows.results) { result in
                 DirectorySearchRow(entry: result.entry, imageSize: 30, state: result.state)
                     .modifier(DirectoryResultMenu(result: result, imageSize: 30, onOpen: { openResult(result) }))
                     .onTapGesture { openResult(result) }
+                    .disabled(chatModel.chatRunning != true)
             }
             if let footer = rows.footer {
                 DirectoryFooterRow(footer: footer, onlineSearch: onlineSearch)
+                    .disabled(chatModel.chatRunning != true)
             }
         }
     }
