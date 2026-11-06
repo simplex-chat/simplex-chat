@@ -26,6 +26,8 @@ module StoreService.Web.Http
     holdMicros,
     maxHolds,
     withHoldSlot,
+    maxSearches,
+    limitedSearch,
     holdsFull,
     jsonResponse,
     jsonError,
@@ -90,14 +92,17 @@ data HttpEnv = HttpEnv
   { heBuckets :: TVar (Map Text Bucket),
     heTrustForwardedFor :: Bool,
     -- | the long polls held now, of every client
-    heHolds :: TVar Int
+    heHolds :: TVar Int,
+    -- | the name searches answering now, of every client, each several chain reads
+    heSearches :: TVar Int
   }
 
 newHttpEnv :: ListenerConfig -> IO HttpEnv
 newHttpEnv ListenerConfig {lTrustForwardedFor} = do
   heBuckets <- newTVarIO Map.empty
   heHolds <- newTVarIO 0
-  pure HttpEnv {heBuckets, heTrustForwardedFor = lTrustForwardedFor, heHolds}
+  heSearches <- newTVarIO 0
+  pure HttpEnv {heBuckets, heTrustForwardedFor = lTrustForwardedFor, heHolds, heSearches}
 
 type Respond = Response -> IO ResponseReceived
 
@@ -115,13 +120,24 @@ holdsFullSeconds = 5
 
 -- | The hold in one of the shared slots, Nothing when every slot is taken.
 withHoldSlot :: HttpEnv -> IO a -> IO (Maybe a)
-withHoldSlot HttpEnv {heHolds} hold = bracket takeSlot releaseSlot $ \taken -> if taken then Just <$> hold else pure Nothing
-  where
-    takeSlot = atomically $ stateTVar heHolds $ \n -> if n < maxHolds then (True, n + 1) else (False, n)
-    releaseSlot taken = when taken $ atomically $ modifyTVar' heHolds (subtract 1)
+withHoldSlot HttpEnv {heHolds} = inSlot heHolds maxHolds
 
 holdsFull :: Response
 holdsFull = rateLimited holdsFullSeconds
+
+-- | Name searches of every client answering at once, so a flood cannot multiply into the chain node's load.
+maxSearches :: Int
+maxSearches = 16
+
+-- | A search answered while a slot is free, else rate_limited at once.
+limitedSearch :: HttpEnv -> Respond -> IO ResponseReceived -> IO ResponseReceived
+limitedSearch HttpEnv {heSearches} respond search = inSlot heSearches maxSearches search >>= maybe (respond $ rateLimited 1) pure
+
+inSlot :: TVar Int -> Int -> IO a -> IO (Maybe a)
+inSlot slots most action = bracket takeSlot releaseSlot $ \taken -> if taken then Just <$> action else pure Nothing
+  where
+    takeSlot = atomically $ stateTVar slots $ \n -> if n < most then (True, n + 1) else (False, n)
+    releaseSlot taken = when taken $ atomically $ modifyTVar' slots (subtract 1)
 
 readLimit, createLimit, searchLimit, previewLimit, codeLimit, findLimit, recordsLimit :: Limit
 readLimit = Limit {lmName = "read", lmPerMinute = 60}

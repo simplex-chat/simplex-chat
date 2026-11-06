@@ -408,8 +408,8 @@ testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
   let registered = registeredAnswer [] (recordsOf fullLink "") resolverText (J.toJSON (0 :: Int))
   searchAlice s 12 `shouldReturn` listed registered
   -- new terms on chain: the available answer carries them; a listing that cannot be read: no answer
-  setCommunityTerms node fakeNewCommunityTermsText
   available node
+  setCommunityTerms node fakeNewCommunityTermsText
   setPhase store PRegistered
   searchAlice s 12 `shouldReturn` listedUnder fakeNewCommunityTermsText (availableAnswer 10000)
   answerListing node alice $ Reverts ""
@@ -427,6 +427,7 @@ testTermsUnavailable g = withSearch g listAlice id $ \s@Search {node} -> do
   searchAlice s 12 `shouldReturn` withTerms J.Null (listed $ availableAnswer 10000)
   answerListing node alice $ Returns $ uint256 (0 :: Int)
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Returns $ textAnswer "https://example.org/terms.md"
+  nextBlock node
   searchAlice s 12 `shouldReturn` withTerms J.Null (availableAnswer 10000)
   setGeneralTerms node fakeNewGeneralTermsText
   answerText node (fakeTermsPath fakeNewGeneralTermsText) $ TextAnswer status429 [("Retry-After", "2")] ""
@@ -447,6 +448,7 @@ testTerms g = withSearch g id id $ \s@Search {node} -> do
   answerOf <$> terms (hex $ C.keccak256 "") `shouldReturn` refused 404 "not_found"
   answerOf <$> terms (hex fakeGeneralTerms) `shouldReturn` refused 404 "not_found"
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Returns $ textAnswer otherLink
+  nextBlock node
   answerOf <$> terms (hex $ C.keccak256 $ encodeUtf8 otherLink) `shouldReturn` refused 404 "not_found"
   setGeneralTerms node fakeNewGeneralTermsText
   answerText node (fakeTermsPath fakeNewGeneralTermsText) $ TextAnswer status429 [("Retry-After", "60")] ""
@@ -455,6 +457,7 @@ testTerms g = withSearch g id id $ \s@Search {node} -> do
   answerText node (fakeTermsPath fakeNewGeneralTermsText) $ TextAnswer status404 [] ""
   answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` termsAnswer fakeNewCommunityTermsText
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Reverts ""
+  nextBlock node
   answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` refused 503 "provider_unavailable"
   forM_ [T.toUpper (hex fakeGeneralTerms), T.drop 2 (hex fakeGeneralTerms), "0x12"] $ \h ->
     answerOf <$> terms h `shouldReturn` refused 400 "bad_request"
@@ -561,6 +564,7 @@ testFailedReads g = withSearch g id id $ \s@Search {node} -> do
   answerCall node (resolverOf node) noncesCall $ Returns $ uint256 (0 :: Int)
   fst <$> searchAlice s 12 `shouldReturn` 200
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Reverts ""
+  nextBlock node
   fst <$> searchAlice s 12 `shouldReturn` 200
 
 -- | Each slow read takes 40% of the deadline: the status's two concurrent rounds meet it, the records' third round passes it.

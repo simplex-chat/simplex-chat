@@ -77,7 +77,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (toLower)
 import Data.Either (isLeft)
 import Data.Functor ((<&>))
-import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef)
+import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef, writeIORef)
 import Data.Int (Int64)
 import Data.List (isInfixOf, sort, sortOn)
 import qualified Data.Map.Strict as Map
@@ -95,7 +95,9 @@ import qualified GHC.IO.FD as FD
 import GHC.IO.Handle.FD (handleToFd)
 import Network.HTTP.Client (Manager, Request (..), RequestBody (..), Response, defaultManagerSettings, httpLbs, newManager, parseRequest, responseBody, responseHeaders, responseStatus, responseTimeoutMicro)
 import Network.HTTP.Types (Header, HeaderName, hCacheControl, hContentType)
-import Network.HTTP.Types.Status (statusCode)
+import Network.HTTP.Types.Status (status200, statusCode)
+import qualified Network.Wai as Wai
+import Network.Wai.Internal (ResponseReceived (..))
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeType (..))
 import Simplex.Chat.Badges.Ledger (addMonths, debitEntry, emptyEntry, grantEntry, issueEntry)
@@ -258,6 +260,7 @@ badgeWebTests = do
     it "keys an IPv6 client by its /64 and an IPv4-mapped one by its IPv4 address" testIPv6ClientKey
     it "caps checkouts of every client together" testInvoicesLimitForAll
     it "answers a poll at once with rate_limited while every hold slot is taken, and frees each slot after its hold" testHoldSlots
+    it "answers a search at once with rate_limited while every search slot is taken, and frees each slot after its search" testSearchSlots
     it "holds the bucket map under its cap through a flood of distinct clients" testBucketsStayBounded
     it "answers a hold from the row it read, not from the status it woke on" testHoldReportsTheRowNotTheWake
     it "answers a hold that timed out with a change nothing published" testHoldTimeoutReportsAnUnpublishedChange
@@ -1934,6 +1937,19 @@ testHoldSlots = bounded "hold slots" $ withWebApp $ \env client -> do
   held (maxHolds - 1)
   withHoldSlot http (readTVarIO heHolds) `shouldReturn` Just maxHolds
   readTVarIO heHolds `shouldReturn` maxHolds - 1
+
+testSearchSlots :: IO ()
+testSearchSlots = bounded "search slots" $ withWebApp $ \env _ -> do
+  let http@HttpEnv {heSearches} = weHttp env
+  answered <- newIORef Nothing
+  let respond r = ResponseReceived <$ writeIORef answered (Just $ statusCode $ Wai.responseStatus r)
+  atomically $ writeTVar heSearches maxSearches
+  void $ limitedSearch http respond (fail "the search ran with no slot free")
+  readIORef answered `shouldReturn` Just 429
+  atomically $ writeTVar heSearches (maxSearches - 1)
+  void $ limitedSearch http respond (readTVarIO heSearches >>= (`shouldBe` maxSearches) >> respond (Wai.responseLBS status200 [] ""))
+  readIORef answered `shouldReturn` Just 200
+  readTVarIO heSearches `shouldReturn` maxSearches - 1
 
 testBucketsStayBounded :: IO ()
 testBucketsStayBounded = bounded "bucket cap" $ withWebApp $ \env _ -> do

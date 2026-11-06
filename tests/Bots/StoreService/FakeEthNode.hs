@@ -20,6 +20,7 @@ module Bots.StoreService.FakeEthNode
     releaseGate,
     pausedAt,
     setBlock,
+    nextBlock,
     setFees,
     revertDryRun,
     mine,
@@ -205,10 +206,17 @@ setGeneralTerms, setCommunityTerms :: FakeEthNode -> ByteString -> IO ()
 setGeneralTerms node = setTerms node "generalTermsLink()"
 setCommunityTerms node = setTerms node "communityTermsLink()"
 
+-- | In a block of its own, as a policy change is, since the service reads the terms links once per block.
 setTerms :: FakeEthNode -> ByteString -> ByteString -> IO ()
 setTerms node getter text = do
   answerText node (fakeTermsPath text) (servedText text)
   answerCall node fakeNamePolicy (selector getter) $ Returns $ linkAnswer $ if B.null text then "" else fakeTermsLink text
+  nextBlock node
+
+-- | The next block, at the same time.
+nextBlock :: FakeEthNode -> IO ()
+nextBlock FakeEthNode {fnState} = atomically $ modifyTVar' fnState $ \s@FakeState {fsBlock = (number, time)} ->
+  s {fsBlock = (number + 1, time), fsBlockTimes = M.insert (number + 1) time $ fsBlockTimes s}
 
 servedText :: ByteString -> TextAnswer
 servedText text = TextAnswer ok200 [(hContentType, "text/markdown; charset=utf-8")] (LB.fromStrict text)

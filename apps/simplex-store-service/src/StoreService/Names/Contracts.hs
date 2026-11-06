@@ -45,6 +45,7 @@ import Control.Concurrent.MVar (MVar, newMVar, withMVar)
 import Control.Logger.Simple (logWarn)
 import Control.Monad (guard)
 import Control.Monad.Except (ExceptT (..), runExceptT)
+import Control.Monad.IO.Class (liftIO)
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -79,6 +80,8 @@ data Contracts = Contracts
     ctCommitmentAges :: IORef (Maybe CommitmentAges),
     ctNamePolicy :: IORef (Maybe Address),
     ctTermsTexts :: IORef (Map ByteString Text),
+    -- | the terms links as read at a block, which each search for an available name would read again
+    ctTermsLinks :: IORef (Maybe (Word64, (Text, Text))),
     ctFetchAfter :: IORef UTCTime,
     ctFetching :: MVar (),
     -- | microseconds for all the reads of one name status or of one name's records
@@ -138,9 +141,10 @@ newContracts ctTLD ctChain = do
   ctCommitmentAges <- newIORef Nothing
   ctNamePolicy <- newIORef Nothing
   ctTermsTexts <- newIORef M.empty
+  ctTermsLinks <- newIORef Nothing
   ctFetchAfter <- newIORef =<< getCurrentTime
   ctFetching <- newMVar ()
-  pure Contracts {ctChain, ctTLD, ctRegistrar, ctCommitmentAges, ctNamePolicy, ctTermsTexts, ctFetchAfter, ctFetching, ctDeadline = nameReadsDeadline, ctTermsBackoff = termsBackoffSeconds}
+  pure Contracts {ctChain, ctTLD, ctRegistrar, ctCommitmentAges, ctNamePolicy, ctTermsTexts, ctTermsLinks, ctFetchAfter, ctFetching, ctDeadline = nameReadsDeadline, ctTermsBackoff = termsBackoffSeconds}
 
 -- | Registered while @nameExpires + GRACE_PERIOD@ is not before the latest block's time.
 nameStatus :: Contracts -> LabelHash -> IO (Either ChainError NameStatus)
@@ -203,11 +207,16 @@ communityName :: Contracts -> LabelHash -> IO (Either ChainError Bool)
 communityName ct lh = policyCall ct ("communityNames(bytes32)", labelHashArg lh) decodeBool
 
 termsLinks :: Contracts -> IO (Either ChainError (Text, Text))
-termsLinks ct@Contracts {ctChain} = runExceptT $ do
+termsLinks ct@Contracts {ctChain, ctTermsLinks} = runExceptT $ do
   policy <- ExceptT $ namePolicy ct
   Block {blockNumber} <- ExceptT $ latestBlock ctChain
-  let link signature = concurrent $ callAt ct (AtBlock blockNumber) policy (signature, "") decodeString
-  ExceptT $ together $ (,) <$> link "generalTermsLink()" <*> link "communityTermsLink()"
+  liftIO (readIORef ctTermsLinks) >>= \case
+    Just (at, links) | at == blockNumber -> pure links
+    _ -> do
+      let link signature = concurrent $ callAt ct (AtBlock blockNumber) policy (signature, "") decodeString
+      links <- ExceptT $ together $ (,) <$> link "generalTermsLink()" <*> link "communityTermsLink()"
+      liftIO $ atomicWriteIORef ctTermsLinks $ Just (blockNumber, links)
+      pure links
 
 termsOf :: Text -> Maybe Terms
 termsOf link

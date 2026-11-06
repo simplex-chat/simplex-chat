@@ -86,7 +86,7 @@ namesContractsTests = describe "StoreService names: contracts" $ do
   describe "name policy" $ do
     it "reads the policy from the controller once, and again after a zero answer, a failed read or once forgotten, and the reservations, listing, terms links, nonces and acceptances from it" $ testNamePolicy g
   describe "terms" $ do
-    it "reads both terms links at one block, \"\" for one not set, and hashes a set link with keccak256 as viem does" $ testTermsLinks g
+    it "reads both terms links at one block, once per block, \"\" for one not set, and hashes a set link with keccak256 as viem does" $ testTermsLinks g
     it "fetches a terms text once, keeping it by its link's hash" $ testTermsTextKept g
     it "takes only a git.simplex.chat link of one .md file at one commit with the file's SHA-256, or a loopback link on the local chain, fetching nothing else" $ testTermsLinkForms g
     it "refuses an answer other than a 200 UTF-8 text of at most 256 KB with the link's SHA-256, following no redirect" $ testTermsTextRefused g
@@ -154,6 +154,9 @@ testTermsLinks g = withContracts g $ \node ct -> do
   setBlock node 100 now
   answerCallFrom node 101 fakeNamePolicy (selector "generalTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes ""]
   answerCallFrom node 101 fakeNamePolicy (selector "communityTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes $ encodeUtf8 $ fakeTermsLink fakeNewCommunityTermsText]
+  termsLinks ct `shouldReturn` Right (fakeTermsLink fakeGeneralTermsText, fakeTermsLink fakeCommunityTermsText)
+  -- read once per block: a changed answer at the same block is not read again
+  answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes "changed"]
   termsLinks ct `shouldReturn` Right (fakeTermsLink fakeGeneralTermsText, fakeTermsLink fakeCommunityTermsText)
   setBlock node 101 now
   termsLinks ct `shouldReturn` Right ("", fakeTermsLink fakeNewCommunityTermsText)

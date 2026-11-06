@@ -4,7 +4,7 @@
 module Bots.StoreService.NamesCommunityTests (namesCommunityTests) where
 
 import Bots.StoreService.ConfigTests (chainSection, namesIni, namesRefusal, namesSection, parseIni, parsedNames, withIni)
-import Bots.StoreService.FakeEthNode (CallAnswer (..), answerCall, answerListing, fakeCommunityTerms, fakeCommunityTermsText, fakeController, fakeGeneralTerms, fakeGeneralTermsText, fakeNamePolicy, fakeTermsLink, fetchedTexts, setCommunityTerms, setGeneralTerms)
+import Bots.StoreService.FakeEthNode (CallAnswer (..), answerCall, answerListing, fakeCommunityTerms, fakeCommunityTermsText, fakeController, fakeGeneralTerms, fakeGeneralTermsText, fakeNamePolicy, fakeTermsLink, fetchedTexts, setCommunityTerms, setGeneralTerms, nextBlock)
 import Bots.StoreService.NamesContractsTests (withContracts)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import Bots.StoreService.WebTests (capturingStderr)
@@ -167,7 +167,9 @@ testStartupWarnings g = withContracts g $ \node ct -> do
   setCommunityTerms node ""
   warns "names: the name policy has no community terms yet, so community names cannot be ordered until the owner sets them"
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes $ encodeUtf8 otherLink]
+  nextBlock node
   warns $ "names: the name policy's general terms are not a link the service takes, so plain names cannot be ordered: " <> otherLink
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Reverts ""
+  nextBlock node
   warns "names: the name policy's terms could not be read: "
   fetchedTexts node `shouldReturn` []
