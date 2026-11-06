@@ -259,6 +259,7 @@ badgeWebTests = do
     it "uses a forwarded client only when it parses as an IP address" testForwardedForMustBeAnAddress
     it "keys an IPv6 client by its /64 and an IPv4-mapped one by its IPv4 address" testIPv6ClientKey
     it "caps checkouts of every client together" testInvoicesLimitForAll
+    it "refuses every badly signed webhook, logging only the first few of a minute" testWebhookRefusalLogCapped
     it "answers a poll at once with rate_limited while every hold slot is taken, and frees each slot after its hold" testHoldSlots
     it "answers a search at once with rate_limited while every search slot is taken, and frees each slot after its search" testSearchSlots
     it "holds the bucket map under its cap through a flood of distinct clients" testBucketsStayBounded
@@ -1950,6 +1951,11 @@ testSearchSlots = bounded "search slots" $ withWebApp $ \env _ -> do
   void $ limitedSearch http respond (readTVarIO heSearches >>= (`shouldBe` maxSearches) >> respond (Wai.responseLBS status200 [] ""))
   readIORef answered `shouldReturn` Just 200
   readTVarIO heSearches `shouldReturn` maxSearches - 1
+
+testWebhookRefusalLogCapped :: IO ()
+testWebhookRefusalLogCapped = bounded "webhook refusal log cap" $ withFakePoller $ \_ _ env client -> do
+  replicateM_ (lmPerMinute refusalLogLimit + 2) $ statusOf <$> postWebhook client someSig hookedEvent `shouldReturn` 400
+  takeToken (weHttp env) refusalLogLimit "POST /webhooks/btcpay" >>= (`shouldSatisfy` isJust)
 
 testBucketsStayBounded :: IO ()
 testBucketsStayBounded = bounded "bucket cap" $ withWebApp $ \env _ -> do

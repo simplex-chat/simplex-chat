@@ -8,6 +8,7 @@ module StoreService.Web.Server
     newWebEnv,
     exportWebapp,
     maxWebhookBytes,
+    refusalLogLimit,
     webApp,
     webListeners,
     webSettings,
@@ -331,6 +332,10 @@ respondCurrent env@WebEnv {weStore} invId respond = getInvoice weStore invId >>=
 respondInvoice :: WebEnv -> InvoiceRow -> Respond -> IO ResponseReceived
 respondInvoice env row respond = invoiceViewOf env row >>= respond . either id (jsonResponse status200)
 
+-- | Refused webhook deliveries logged per route in a minute.
+refusalLogLimit :: Limit
+refusalLogLimit = Limit {lmName = "webhook refusal logs", lmPerMinute = 10}
+
 -- | A badge's view, or a name's with its registration.
 invoiceViewOf :: WebEnv -> InvoiceRow -> IO (Either Response J.Value)
 invoiceViewOf env@WebEnv {weConfig} row@InvoiceRow {irInvoiceId = InvoiceId invId, irProduct} = case irProduct of
@@ -510,17 +515,19 @@ webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
         respond webhookRefused
       Just p ->
         readBoundedBody maxWebhookBytes req >>= \case
-          Nothing -> logNote (route <> ": body over the " <> tshow maxWebhookBytes <> "-byte cap") >> respond webhookTooLarge
+          Nothing -> logRefusal logNote (route <> ": body over the " <> tshow maxWebhookBytes <> "-byte cap") >> respond webhookTooLarge
           Just body -> do
             now <- getCurrentTime
             -- a provider signs the exact bytes it sent, so parsing and re-encoding here would fail the signature on every event
             case pVerifyWebhook p now (requestHeaders req) (LB.toStrict body) of
               Left (WebhookError e) -> refuse e
-              Left (WebhookStale e) -> logWarn (route <> " refused: " <> e) >> respond webhookRefused
+              Left (WebhookStale e) -> logRefusal logWarn (route <> " refused: " <> e) >> respond webhookRefused
               Right Nothing -> ignore body "nothing this service acts on"
               Right (Just ref) -> resolve body ref
     refuse :: Text -> IO ResponseReceived
-    refuse why = logNote (route <> " refused: " <> why) >> respond webhookRefused
+    refuse why = logRefusal logNote (route <> " refused: " <> why) >> respond webhookRefused
+    -- anyone can post here, so the lines a flood would write are capped, not the refusals
+    logRefusal logAt line = takeToken (weHttp env) refusalLogLimit route >>= maybe (logAt line) (const $ pure ())
     ignore :: LB.ByteString -> Text -> IO ResponseReceived
     ignore body why = logEvent body why >> respond webhookOk
     logEvent :: LB.ByteString -> Text -> IO ()
