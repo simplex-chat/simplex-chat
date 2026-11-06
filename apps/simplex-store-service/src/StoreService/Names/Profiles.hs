@@ -69,6 +69,8 @@ data ProfileLimits = ProfileLimits
     previewFetchSlots :: Int,
     -- | Host name lookups in flight across the service, each holding a thread until the resolver answers.
     hostLookupSlots :: Int,
+    -- | of hostLookupSlots, those previews may hold, so lookups left hanging by previews cannot starve search
+    previewLookupSlots :: Int,
     -- | Microseconds for one fetch, the wait for its slot and its host check included.
     fetchTimeout :: Int,
     cacheSeconds :: Word64,
@@ -83,6 +85,7 @@ defaultProfileLimits =
     { searchFetchSlots = 4,
       previewFetchSlots = 2,
       hostLookupSlots = 8,
+      previewLookupSlots = 2,
       fetchTimeout = 3000000,
       cacheSeconds = 600,
       maxCachedProfiles = 2048,
@@ -104,18 +107,20 @@ data Profiles = Profiles
     searchSlots :: TVar Int,
     previewSlots :: TVar Int,
     lookupSlots :: TVar Int,
+    previewLookups :: TVar Int,
     cache :: TVar (Map Text (Word64, LinkProfile)),
     refusedHosts :: TVar (Map HostName (Word64, ()))
   }
 
 newProfiles :: ProfileLimits -> IO Word64 -> ProfileFetcher -> HostResolver -> IO Profiles
-newProfiles limits@ProfileLimits {searchFetchSlots, previewFetchSlots, hostLookupSlots} clock fetchLink resolveHost = do
+newProfiles limits@ProfileLimits {searchFetchSlots, previewFetchSlots, hostLookupSlots, previewLookupSlots} clock fetchLink resolveHost = do
   searchSlots <- newTVarIO searchFetchSlots
   previewSlots <- newTVarIO previewFetchSlots
   lookupSlots <- newTVarIO hostLookupSlots
+  previewLookups <- newTVarIO previewLookupSlots
   cache <- newTVarIO Map.empty
   refusedHosts <- newTVarIO Map.empty
-  pure Profiles {limits, clock, fetchLink, resolveHost, searchSlots, previewSlots, lookupSlots, cache, refusedHosts}
+  pure Profiles {limits, clock, fetchLink, resolveHost, searchSlots, previewSlots, lookupSlots, previewLookups, cache, refusedHosts}
 
 monotonicSeconds :: IO Word64
 monotonicSeconds = (`div` 1000000000) <$> getMonotonicTimeNSec
@@ -231,25 +236,26 @@ chatKindText = \case
 -- The deep link is the core's @simplex:/@ form, which carries the server; a link the core cannot parse has none.
 linkEntity :: Profiles -> LinkKind -> Text -> IO Entity
 linkEntity ps@Profiles {searchSlots} t link = do
-  r <- boundedProfile ps searchSlots link sl_
+  r <- boundedProfile ps searchSlots [] link sl_
   pure Entity {entityPreview = Preview t r, link, deepLink = safeDecodeUtf8 . strEncode . simplexShortLink <$> sl_}
   where
     sl_ = parseShortLink link
 
 -- | A link preview, within the preview bound.
 linkPreview :: Profiles -> LinkKind -> Text -> IO Preview
-linkPreview ps@Profiles {previewSlots} t link = Preview t <$> boundedProfile ps previewSlots link (parseShortLink link)
+linkPreview ps@Profiles {previewSlots, previewLookups} t link = Preview t <$> boundedProfile ps previewSlots [previewLookups] link (parseShortLink link)
 
--- | A link the chat core cannot parse names no server it could fetch from, so it is not fetched.
-boundedProfile :: Profiles -> TVar Int -> Text -> Maybe (ConnShortLink 'CMContact) -> IO ProfileRead
-boundedProfile ps@Profiles {limits = ProfileLimits {fetchTimeout, cacheSeconds, maxCachedProfiles}, clock, fetchLink, cache} slots link sl_ =
+-- | A link the chat core cannot parse names no server it could fetch from, so it is not fetched. Each host lookup also takes
+-- a slot of every pool given, beside the shared one.
+boundedProfile :: Profiles -> TVar Int -> [TVar Int] -> Text -> Maybe (ConnShortLink 'CMContact) -> IO ProfileRead
+boundedProfile ps@Profiles {limits = ProfileLimits {fetchTimeout, cacheSeconds, maxCachedProfiles}, clock, fetchLink, cache} slots lookupPools link sl_ =
   cached >>= \case
     Just p -> pure $ ProfileOk p
     Nothing -> case sl_ of
       Nothing -> pure ProfileUnavailable
       Just sl -> do
         deadline <- deadlineIn fetchTimeout
-        checkHosts ps deadline (shortLinkHosts sl) >>= \case
+        checkHostsIn ps lookupPools deadline (shortLinkHosts sl) >>= \case
           HostRefused -> pure ProfileUnavailable
           HostUnanswered -> pure ProfileUnread
           HostPublic -> maybe ProfileUnread ProfileOk . join <$> withSlot deadline slots (fetchLink sl >>= mapM remember)
@@ -319,7 +325,10 @@ data HostCheck = HostPublic | HostRefused | HostUnanswered
 -- | Refused when any host is an onion address, does not resolve, is or resolves to an address outside the public internet,
 -- or finds no lookup slot before the deadline; unanswered when a lookup does not answer by the deadline.
 checkHosts :: Profiles -> Deadline -> NonEmpty TransportHost -> IO HostCheck
-checkHosts ps deadline = checkAll . L.toList
+checkHosts ps = checkHostsIn ps []
+
+checkHostsIn :: Profiles -> [TVar Int] -> Deadline -> NonEmpty TransportHost -> IO HostCheck
+checkHostsIn ps pools deadline = checkAll . L.toList
   where
     checkAll = \case
       [] -> pure HostPublic
@@ -330,21 +339,21 @@ checkHosts ps deadline = checkAll . L.toList
     checkHost = \case
       THDomainName name
         | onionName name -> pure HostRefused
-        | otherwise -> lookupHost ps deadline name
+        | otherwise -> lookupHost ps pools deadline name
       host -> pure $ if publicAddress host then HostPublic else HostRefused
     onionName name = ".onion" `isSuffixOf` dropWhileEnd (== '.') (map toLower name)
 
 -- | getAddrInfo is a foreign call that a timeout cannot interrupt, so each lookup runs in its own thread,
 -- which holds its lookup slot until the resolver answers, also after the caller has given up.
-lookupHost :: Profiles -> Deadline -> HostName -> IO HostCheck
-lookupHost Profiles {limits = ProfileLimits {refusedHostSeconds, maxRefusedHosts}, clock, resolveHost, lookupSlots, refusedHosts} deadline name = do
+lookupHost :: Profiles -> [TVar Int] -> Deadline -> HostName -> IO HostCheck
+lookupHost Profiles {limits = ProfileLimits {refusedHostSeconds, maxRefusedHosts}, clock, resolveHost, lookupSlots, refusedHosts} pools deadline name = do
   now <- clock
   cachedRefusal <- isJust . freshEntry now name <$> readTVarIO refusedHosts
   if cachedRefusal
     then pure HostRefused
     else do
       answer <- newEmptyTMVarIO
-      started <- mask_ $ waitUntil deadline (takeSlot lookupSlots) >>= mapM (\() -> forkIOWithUnmask $ \unmask -> try (unmask $ resolveHost name) >>= finish answer)
+      started <- mask_ $ waitUntil deadline (mapM_ takeSlot slots) >>= mapM (\() -> forkIOWithUnmask $ \unmask -> try (unmask $ resolveHost name) >>= finish answer)
       case started of
         Nothing -> pure HostRefused
         Just _ -> maybe HostUnanswered (bool HostRefused HostPublic) <$> waitUntil deadline (readTMVar answer)
@@ -355,7 +364,8 @@ lookupHost Profiles {limits = ProfileLimits {refusedHostSeconds, maxRefusedHosts
       atomically $ do
         unless public $ modifyTVar' refusedHosts $ insertBounded maxRefusedHosts now name (now + refusedHostSeconds, ())
         putTMVar answer public
-        releaseSlot lookupSlots
+        mapM_ releaseSlot slots
+    slots = lookupSlots : pools
     allPublic addresses = not (null addresses) && all publicAddress addresses
 
 publicAddress :: TransportHost -> Bool

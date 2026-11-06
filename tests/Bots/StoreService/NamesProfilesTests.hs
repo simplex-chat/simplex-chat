@@ -79,6 +79,7 @@ namesProfilesTests = describe "StoreService names: profiles" $ do
     H.it "answers a refused link unavailable without fetching it" testRefusedNotFetched
   describe "host lookups" $ do
     H.it "bounds the lookups in flight across searches and previews, and a lookup with no slot in time is unavailable" testLookupBound
+    H.it "leaves search its lookups while previews hold all of theirs" testPreviewLookupShare
     H.it "remembers a refused host until its time passes, also when its lookup answers after the caller gave up" testRefusedHostCache
 
 namesProfilesChatTests :: SpecWith TestParams
@@ -510,6 +511,19 @@ testLookupBound = do
   atomically $ putTMVar gate ()
   preview fake (at "free.test") `shouldReturn` ProfileOk (profileFor (at "free.test"))
   fetchCount fake `shouldReturn` 1
+
+testPreviewLookupShare :: IO ()
+testPreviewLookupShare = do
+  asked <- newTVarIO []
+  started <- newTQueueIO
+  gate <- newEmptyTMVarIO
+  fake <- newFake testLimits {hostLookupSlots = 3, previewLookupSlots = 1} answerAll (heldResolver asked started gate)
+  let at host = addressLinkAt host 1
+  preview fake (at "held-1.test") `shouldReturn` ProfileUnread
+  atomically $ readTQueue started
+  preview fake (at "free.test") `shouldReturn` ProfileUnavailable
+  search fake (at "free.test") `shouldReturn` ProfileOk (profileFor (at "free.test"))
+  atomically $ putTMVar gate ()
 
 testRefusedHostCache :: IO ()
 testRefusedHostCache = do
