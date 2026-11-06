@@ -358,9 +358,9 @@ testCommitmentTime g = withContracts g $ \node ct -> do
 testAvailability :: TVar ChaChaDRG -> IO ()
 testAvailability g = withContracts g $ \node ct -> do
   answerCall node fakeController availableCall $ Returns $ uint256 (1 :: Int)
-  controllerAvailable ct "alicebakery" `shouldReturn` Right True
+  controllerAvailable ct Latest "alicebakery" `shouldReturn` Right True
   answerCall node fakeController availableCall $ Returns $ uint256 (0 :: Int)
-  controllerAvailable ct "alicebakery" `shouldReturn` Right False
+  controllerAvailable ct Latest "alicebakery" `shouldReturn` Right False
   answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (now + year)
   nameExpires ct Latest alice `shouldReturn` Right (now + year)
 

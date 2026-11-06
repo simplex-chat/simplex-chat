@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 -- | Each registration from queued to registered, taken or failed: its commit, the wait for the page's reveal, its acceptance relay, and its register;
 -- and Try again, which queues a failed one again. A step starts from the stored registration, the sender's transactions in flight
@@ -39,9 +40,9 @@ import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Util (tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
-import StoreService.Names.Chain (Block (..), ChainClient, ChainError (..), TxHash, blockAt)
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient, ChainError (..), TxHash, blockAt)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, releaseCode, reserveCode)
-import StoreService.Names.Contracts (CommitmentAges (..), acceptedTerms, commitmentAges, commitmentTime, communityName, controllerAvailable, forgetNamePolicy, namePolicy, sponsorNonce)
+import StoreService.Names.Contracts (CommitmentAges (..), acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy, sponsorNonce)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), WriteRefusal (..), confirmLanded, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
@@ -345,7 +346,7 @@ registering w@Worker {wkSender} now r@NameRegistration {nrId} =
 -- | A register that did not go through, by its dry run's revert or once every transaction settled: registered when one mined
 -- with status 1 or the owner holds the name; committed again on InvalidNonce or a refused terms acceptance, for the page to sign again, the name
 -- policy read again on TermsNotAccepted; kept waiting while the sponsor allowance is used up; taken on any revert while the name is not
--- available at the latest block; failed otherwise, unless the dry run named the name as gone.
+-- available at the confirmation depth; failed otherwise, unless the dry run named the name as gone.
 judge :: Worker -> UTCTime -> NameRegistration -> Maybe RevertName -> IO Next
 judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {nrReveal} reason =
   inTurn w r $
@@ -361,14 +362,20 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
         Just RNInsufficientAllowance -> pure (Nothing, Stalled (nrVersion r) "the registrar's allowance on the sponsor is used up; the guardian raises it with setRegistrarAllowance")
         _ -> case nrReveal of
           Just NameReveal {rvLabel} ->
-            controllerAvailable oeContracts rvLabel >>= \case
+            availability rvLabel >>= \case
               Left e -> pure (Nothing, failure r e)
-              Right False -> taken w now r
+              Right (False, False) -> taken w now r
+              Right (False, True) -> pure (Nothing, Retry (nrVersion r) "the name reads taken only above the confirmation depth, where a reorg can undo it")
               -- the dry run runs on the pending block, where a competitor's register that may never mine can hold the name
-              Right True
+              Right (True, _)
                 | reason `elem` map Just [RNNameNotAvailable, RNNameReserved] -> pure (Nothing, Retry (nrVersion r) "the dry run reverted the name as gone, but it reads available")
                 | otherwise -> failed w now r
           Nothing -> failed w now r
+  where
+    -- at the latest block, and at the confirmation depth while the latest reads it taken
+    availability label = runExceptT $ do
+      latest <- ExceptT $ controllerAvailable oeContracts Latest label
+      if latest then pure (True, True) else (False,) <$> (ExceptT (confirmedTag oeContracts) >>= \tag -> ExceptT (controllerAvailable oeContracts tag label))
 
 -- | A paid order keeps its whole price as a balance of its own, credited in the taken write's transaction, registration before balance,
 -- in the balance's turn after the name's; a code order's code is released.

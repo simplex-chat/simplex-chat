@@ -88,6 +88,7 @@ workerTests = describe "StoreService names: worker" $ do
   describe "register" $ do
     it "ends the later of two wallets' paid orders for one name taken, not live, with a balance of its price" testTwoWallets
     it "ends taken on any revert while the name is not available, releasing a code and keeping no balance" testRevertTaken
+    it "waits while the name reads taken only above the confirmation depth, and ends taken once it reads so at the depth" testTakenAtDepth
     it "keeps the phase on NameNotAvailable while the name still reads available, as for a pending competitor" testPendingCompetitor
     it "ends failed on a revert while the name is available, keeping a code" testRevertFailed
     it "keeps an order committed while the sponsor allowance is used up, alerting, and registers it after a top-up" testAllowanceUsedUp
@@ -637,6 +638,22 @@ testRevertTaken = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   PrepaidCode {pcReservedBy, pcSpentAt} <- codeOf ctx code
   (pcReservedBy, pcSpentAt) `shouldBe` (Nothing, Nothing)
   balanceFigures ctx (nrId r) `shouldReturn` Nothing
+  sent w `shouldReturn` []
+
+testTakenAtDepth :: IO ()
+testTakenAtDepth = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
+  answerAvailable w True
+  dryRunsRevert w "NameNotAvailable(string)" (abiTuple [Dynamic $ abiBytes "alicebakery"])
+  -- a rival's register, mined in the latest block
+  latest <- mine cNode []
+  answerCallFrom cNode latest fakeController availableCall $ Returns $ uint256 (0 :: Int)
+  steps w r >>= retrying
+  (nrPhase <$> stored ctx r) `shouldReturn` PCommitted
+  -- confirmations 3: two more blocks put it at the depth
+  replicateM_ 2 $ mine cNode []
+  steps w r >>= done
+  (nrPhase <$> stored ctx r) `shouldReturn` PTaken
   sent w `shouldReturn` []
 
 testRevertFailed :: IO ()

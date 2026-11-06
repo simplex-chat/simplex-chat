@@ -312,8 +312,8 @@ commitmentTime ct commitment = fmap nonZero <$> call ct (controller ct) ("commit
   where
     nonZero t = if t == 0 then Nothing else Just t
 
-controllerAvailable :: Contracts -> Text -> IO (Either ChainError Bool)
-controllerAvailable ct label = call ct (controller ct) ("available(string)", abiTuple [Dynamic $ abiBytes $ encodeUtf8 label]) decodeBool
+controllerAvailable :: Contracts -> BlockTag -> Text -> IO (Either ChainError Bool)
+controllerAvailable ct tag label = callAt ct tag (controller ct) ("available(string)", abiTuple [Dynamic $ abiBytes $ encodeUtf8 label]) decodeBool
 
 commitmentAges :: Contracts -> IO (Either ChainError CommitmentAges)
 commitmentAges ct@Contracts {ctCommitmentAges} = readOnce ctCommitmentAges $ runExceptT $ do
