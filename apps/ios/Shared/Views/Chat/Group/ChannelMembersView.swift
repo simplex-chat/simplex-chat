@@ -58,7 +58,6 @@ struct ChannelMembersView: View {
             }
         }
     }
-
 }
 
 private struct ChannelMemberRow: View {
