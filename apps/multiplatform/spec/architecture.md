@@ -305,7 +305,7 @@ private fun startReceiver() {
 
 ### Event Processing
 
-[`processReceivedMsg()`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2969) is a large `when` block that dispatches on the `CR` (ChatResponse) type:
+[`processReceivedMsg()`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2968) is a large `when` block that dispatches on the `CR` (ChatResponse) type:
 
 - `CR.ContactConnected` -- update contact in `ChatModel`
 - `CR.NewChatItems` -- add items to chat, trigger notifications

@@ -5,7 +5,7 @@
 > Related specs: [README](README.md) | [API Reference](api.md) | [State Management](state.md) | [Database](database.md)
 > Related product: [Product Overview](../product/README.md)
 
-**Source:** [`SimpleXApp.swift`](../Shared/SimpleXApp.swift#L1-L186) | [`AppDelegate.swift`](../Shared/AppDelegate.swift#L1-L211) | [`ContentView.swift`](../Shared/ContentView.swift#L1-L554) | [`ChatModel.swift`](../Shared/Model/ChatModel.swift#L1-L1538) | [`SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift#L1-L3342) | [`AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift#L1-L2671) | [`APITypes.swift`](../SimpleXChat/APITypes.swift#L1-L1270) | [`API.swift`](../SimpleXChat/API.swift#L1-L415)
+**Source:** [`SimpleXApp.swift`](../Shared/SimpleXApp.swift#L1-L186) | [`AppDelegate.swift`](../Shared/AppDelegate.swift#L1-L211) | [`ContentView.swift`](../Shared/ContentView.swift#L1-L554) | [`ChatModel.swift`](../Shared/Model/ChatModel.swift#L1-L1537) | [`SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift#L1-L3342) | [`AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift#L1-L2671) | [`APITypes.swift`](../SimpleXChat/APITypes.swift#L1-L1270) | [`API.swift`](../SimpleXChat/API.swift#L1-L415)
 
 ---
 
@@ -55,7 +55,7 @@ The app follows a strict layered model where each layer communicates only with i
 |-------|------|------|------|
 | Views | [`Shared/Views/ChatList/ChatListView.swift`](../Shared/Views/ChatList/ChatListView.swift) | Chat list rendering | |
 | Views | [`Shared/Views/Chat/ChatView.swift`](../Shared/Views/Chat/ChatView.swift) | Conversation rendering | |
-| State | [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L408) | `ChatModel`, `ItemsModel`, `Chat` classes | L412, L74, L1435 |
+| State | [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L407) | `ChatModel`, `ItemsModel`, `Chat` classes | L407, L74, L1430 |
 | API | [`Shared/Model/SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift#L93) | FFI bridge functions | L93 |
 | API | [`Shared/Model/AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift#L15) | `ChatCommand`, `ChatResponse`, `ChatEvent` enums | L15, L784, L1240 |
 | FFI | [`SimpleXChat/SimpleX.h`](../SimpleXChat/SimpleX.h#L1-L63) | C header declaring Haskell exports | |
@@ -266,7 +266,7 @@ Optional desktop pairing allows controlling the mobile app from a desktop client
 
 - **Pairing**: Encrypted QR code scanned by desktop client establishes a session
 - **Commands**: [`connectRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1759), [`findKnownRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1766), [`confirmRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1770), [`verifyRemoteCtrlSession`](../Shared/Model/SimpleXAPI.swift#L1776), [`listRemoteCtrls`](../Shared/Model/SimpleXAPI.swift#L1782), [`stopRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1788), [`deleteRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1792)
-- **State**: [`ChatModel.remoteCtrlSession`](../Shared/Model/ChatModel.swift#L470)`: RemoteCtrlSession?` tracks the active session
+- **State**: [`ChatModel.remoteCtrlSession`](../Shared/Model/ChatModel.swift#L469)`: RemoteCtrlSession?` tracks the active session
 - **Transport**: Encrypted reverse HTTP transport between mobile and desktop
 - **Source**: [`Shared/Views/RemoteAccess/ConnectDesktopView.swift`](../Shared/Views/RemoteAccess/ConnectDesktopView.swift#L1-L544), see `Remote.hs` in `../../src/Simplex/Chat/`
 
@@ -330,7 +330,7 @@ Chat relays are SMP servers that forward messages to channel subscribers. They a
 | Root view | [`Shared/ContentView.swift`](../Shared/ContentView.swift#L24) | L24 |
 | FFI bridge | [`Shared/Model/SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift#L93) | L93 |
 | Low-level FFI | [`SimpleXChat/API.swift`](../SimpleXChat/API.swift#L120) | L120 |
-| App state | [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L408) | L412 |
+| App state | [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L407) | L407 |
 | API types | [`Shared/Model/AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift#L15) | L15 |
 | Shared types | [`SimpleXChat/APITypes.swift`](../SimpleXChat/APITypes.swift#L27) | L27 |
 | C header | [`SimpleXChat/SimpleX.h`](../SimpleXChat/SimpleX.h#L1-L63) | |

@@ -210,7 +210,7 @@ Both delegate to the Haskell core via `CC.ApiStorageEncryption(DBEncryptionConfi
 
 <a id="DBEncryptionConfig"></a>
 
-`DBEncryptionConfig` ([SimpleXAPI.kt#L4769](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4769)):
+`DBEncryptionConfig` ([SimpleXAPI.kt#L4768](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4768)):
 
 ```kotlin
 class DBEncryptionConfig(val currentKey: String, val newKey: String)
@@ -324,7 +324,7 @@ The `apiSetEncryptLocalFiles(enable)` command ([SimpleXAPI.kt#L1159](../common/s
 
 ### ArchiveConfig
 
-Defined at [SimpleXAPI.kt#L4765](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4765):
+Defined at [SimpleXAPI.kt#L4764](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4764):
 
 ```kotlin
 class ArchiveConfig(
@@ -355,7 +355,7 @@ class ArchiveConfig(
 
 ### ArchiveError
 
-Defined at [SimpleXAPI.kt#L8683](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L8683):
+Defined at [SimpleXAPI.kt#L8682](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L8682):
 
 ```kotlin
 sealed class ArchiveError {

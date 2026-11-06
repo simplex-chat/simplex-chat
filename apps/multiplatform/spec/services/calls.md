@@ -138,14 +138,14 @@ Defined in [`SimpleXAPI.kt`](../../common/src/commonMain/kotlin/chat/simplex/com
 
 | Function | Line | Description |
 |---|---|---|
-| `apiGetCallInvitations` | [L2192](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2192) | Retrieve pending call invitations from the backend |
-| `apiSendCallInvitation` | [L2199](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2199) | Send call invitation to a contact with `CallType` |
-| `apiRejectCall` | [L2204](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2204) | Reject an incoming call |
-| `apiSendCallOffer` | [L2209](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2209) | Send SDP offer with ICE candidates and capabilities |
-| `apiSendCallAnswer` | [L2216](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2216) | Send SDP answer with ICE candidates |
-| `apiSendCallExtraInfo` | [L2222](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2222) | Send additional ICE candidates discovered after initial exchange, or ICE restart offer/answer in `rtcSession` |
-| `apiEndCall` | [L2228](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2228) | Terminate a call |
-| `apiCallStatus` | [L2233](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2233) | Report WebRTC connection status to the backend |
+| `apiGetCallInvitations` | [L2191](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2191) | Retrieve pending call invitations from the backend |
+| `apiSendCallInvitation` | [L2198](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2198) | Send call invitation to a contact with `CallType` |
+| `apiRejectCall` | [L2203](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2203) | Reject an incoming call |
+| `apiSendCallOffer` | [L2208](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2208) | Send SDP offer with ICE candidates and capabilities |
+| `apiSendCallAnswer` | [L2215](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2215) | Send SDP answer with ICE candidates |
+| `apiSendCallExtraInfo` | [L2221](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2221) | Send additional ICE candidates discovered after initial exchange, or ICE restart offer/answer in `rtcSession` |
+| `apiEndCall` | [L2227](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2227) | Terminate a call |
+| `apiCallStatus` | [L2232](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2232) | Report WebRTC connection status to the backend |
 
 All functions send commands via `sendCmd()` to the chat core and return `Boolean` success status (except `apiGetCallInvitations` which returns `List<RcvCallInvitation>`).
 

@@ -44,10 +44,10 @@ Kotlin suspend fun api*()
 
 | Type | Role | Location |
 |------|------|----------|
-| `CC` (sealed class) | Command definitions (~165 subclasses) | [SimpleXAPI.kt#L4021](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4021) |
-| `API` (sealed class) | Top-level response wrapper (`Result` / `Error`) | [SimpleXAPI.kt#L6715](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L6715) |
-| `CR` (sealed class) | Chat response variants (~180 subclasses) | [SimpleXAPI.kt#L6854](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L6854) |
-| `ChatError` (sealed class) | Error hierarchy | [SimpleXAPI.kt#L7943](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L7943) |
+| `CC` (sealed class) | Command definitions (~165 subclasses) | [SimpleXAPI.kt#L4020](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4020) |
+| `API` (sealed class) | Top-level response wrapper (`Result` / `Error`) | [SimpleXAPI.kt#L6714](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L6714) |
+| `CR` (sealed class) | Chat response variants (~180 subclasses) | [SimpleXAPI.kt#L6853](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L6853) |
+| `ChatError` (sealed class) | Error hierarchy | [SimpleXAPI.kt#L7942](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L7942) |
 | `ChatController` (object) | Singleton hosting all `api*` functions | [SimpleXAPI.kt#L547](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L547) |
 
 **JNI bridge functions** (declared in [Core.kt#L25](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L25)):
@@ -77,7 +77,7 @@ external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
 
 **Asynchronous event receiver** (`startReceiver`, [SimpleXAPI.kt#L836](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L836)):
 
-A long-running coroutine on `Dispatchers.IO` repeatedly calls `chatRecvMsgWait` (blocking JNI). Each received `API` message is dispatched to `processReceivedMsg` ([SimpleXAPI.kt#L2969](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2969)), which pattern-matches on `CR` subclasses to update `ChatModel` state and trigger notifications.
+A long-running coroutine on `Dispatchers.IO` repeatedly calls `chatRecvMsgWait` (blocking JNI). Each received `API` message is dispatched to `processReceivedMsg` ([SimpleXAPI.kt#L2968](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2968)), which pattern-matches on `CR` subclasses to update `ChatModel` state and trigger notifications.
 
 ---
 
@@ -104,9 +104,9 @@ All functions below are `suspend fun` members of `ChatController` ([SimpleXAPI.k
 | `apiMuteUser` | `u: User` | Mute all notifications for a user profile | [L1110](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1110) |
 | `apiUnmuteUser` | `u: User` | Unmute notifications for a user profile | [L1113](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1113) |
 | `apiDeleteUser` | `u: User, delSMPQueues: Boolean, viewPwd: String?` | Delete a user profile and optionally its SMP queues | [L1122](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1122) |
-| `apiUpdateProfile` | `rh: Long?, profile: Profile` | Update the active user's display profile | [L1993](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1993) |
-| `apiSetProfileAddress` | `rh: Long?, on: Boolean` | Enable/disable including address in user profile | [L2007](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2007) |
-| `apiSetUserUIThemes` | `rh: Long?, userId: Long, themes: ThemeModeOverrides?` | Set UI theme overrides for a user | [L2082](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2082) |
+| `apiUpdateProfile` | `rh: Long?, profile: Profile` | Update the active user's display profile | [L1992](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1992) |
+| `apiSetProfileAddress` | `rh: Long?, on: Boolean` | Enable/disable including address in user profile | [L2006](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2006) |
+| `apiSetUserUIThemes` | `rh: Long?, userId: Long, themes: ThemeModeOverrides?` | Set UI theme overrides for a user | [L2081](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2081) |
 
 ### 2.2 Chat Lifecycle
 
@@ -121,11 +121,11 @@ All functions below are `suspend fun` members of `ChatController` ([SimpleXAPI.k
 | `apiGetChats` | `rh: Long?` | Fetch the list of all chats for the active user | [L1205](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1205) |
 | `apiGetChat` | `rh, type, id, scope, contentTag, pagination, search` | Fetch a single chat with paginated messages | [L1223](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1223) |
 | `apiGetChatContentTypes` | `rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?` | Get available content type filters for a chat | [L1236](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1236) |
-| `apiClearChat` | `rh: Long?, type: ChatType, id: Long` | Delete all messages in a chat | [L1986](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1986) |
-| `apiDeleteChat` | `rh: Long?, type: ChatType, id: Long, chatDeleteMode: ChatDeleteMode` | Delete a chat (contact, group, connection, etc.) | [L1931](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1931) |
-| `apiChatRead` | `rh: Long?, type: ChatType, id: Long` | Mark a chat as read | [L2238](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2238) |
-| `apiChatItemsRead` | `rh, type, id, scope, itemIds` | Mark specific chat items as read | [L2252](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2252) |
-| `apiChatUnread` | `rh: Long?, type: ChatType, id: Long, unreadChat: Boolean` | Toggle a chat's unread flag | [L2259](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2259) |
+| `apiClearChat` | `rh: Long?, type: ChatType, id: Long` | Delete all messages in a chat | [L1985](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1985) |
+| `apiDeleteChat` | `rh: Long?, type: ChatType, id: Long, chatDeleteMode: ChatDeleteMode` | Delete a chat (contact, group, connection, etc.) | [L1930](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1930) |
+| `apiChatRead` | `rh: Long?, type: ChatType, id: Long` | Mark a chat as read | [L2237](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2237) |
+| `apiChatItemsRead` | `rh, type, id, scope, itemIds` | Mark specific chat items as read | [L2251](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2251) |
+| `apiChatUnread` | `rh: Long?, type: ChatType, id: Long, unreadChat: Boolean` | Toggle a chat's unread flag | [L2258](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2258) |
 | `getChatItemTTL` | `rh: Long?` | Get the auto-delete TTL for chat items | [L1500](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1500) |
 | `setChatItemTTL` | `rh: Long?, chatItemTTL: ChatItemTTL` | Set the auto-delete TTL for chat items | [L1513](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1513) |
 | `setChatTTL` | `rh: Long?, chatType, id, chatItemTTL` | Set TTL for a specific chat | [L1520](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1520) |
@@ -152,28 +152,28 @@ All functions below are `suspend fun` members of `ChatController` ([SimpleXAPI.k
 
 | Command | Parameters | Description | Line |
 |---------|-----------|-------------|------|
-| `apiNewGroup` | `rh: Long?, incognito: Boolean, groupProfile: GroupProfile` | Create a new group | [L2442](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2442) |
-| `apiAddMember` | `rh: Long?, groupId: Long, contactId: Long, memberRole: GroupMemberRole` | Invite a contact to a group | [L2483](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2483) |
-| `apiJoinGroup` | `rh: Long?, groupId: Long` | Accept a group invitation | [L2492](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2492) |
-| `apiAcceptMember` | `rh: Long?, groupId: Long, groupMemberId: Long, memberRole: GroupMemberRole` | Accept a member joining via group link | [L2518](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2518) |
-| `apiDeleteMemberSupportChat` | `rh: Long?, groupId: Long, groupMemberId: Long` | Delete a member's support chat | [L2527](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2527) |
-| `apiRemoveMembers` | `rh: Long?, groupId: Long, memberIds: List<Long>, withMessages: Boolean` | Remove members from a group | [L2534](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2534) |
-| `apiMembersRole` | `rh: Long?, groupId: Long, memberIds: List<Long>, memberRole: GroupMemberRole` | Change the role of group members | [L2543](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2543) |
-| `apiBlockMembersForAll` | `rh: Long?, groupId: Long, memberIds: List<Long>, blocked: Boolean` | Block/unblock members for all group participants | [L2552](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2552) |
-| `apiLeaveGroup` | `rh: Long?, groupId: Long` | Leave a group | [L2561](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2561) |
-| `apiListMembers` | `rh: Long?, groupId: Long` | List all members of a group | [L2568](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2568) |
-| `apiUpdateGroup` | `rh: Long?, groupId: Long, groupProfile: GroupProfile` | Update group profile (name, image, etc.) | [L2575](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2575) |
-| `apiCreateGroupLink` | `rh: Long?, groupId: Long, memberRole: GroupMemberRole` | Create a group invitation link | [L2612](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2612) |
-| `apiGroupLinkMemberRole` | `rh: Long?, groupId: Long, memberRole: GroupMemberRole` | Update the default role for group link joins | [L2627](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2627) |
-| `apiDeleteGroupLink` | `rh: Long?, groupId: Long` | Delete the group invitation link | [L2636](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2636) |
-| `apiGetGroupLink` | `rh: Long?, groupId: Long` | Retrieve the current group invitation link | [L2646](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2646) |
-| `apiAddGroupShortLink` | `rh: Long?, groupId: Long` | Create a short link for the group | [L2653](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2653) |
-| `apiCreateMemberContact` | `rh: Long?, groupId: Long, groupMemberId: Long` | Create a direct contact from a group member | [L2663](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2663) |
-| `apiSendMemberContactInvitation` | `rh: Long?, contactId: Long, mc: MsgContent` | Send a direct message invitation to a group member | [L2672](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2672) |
-| `apiAcceptMemberContact` | `rh: Long?, contactId: Long` | Accept a member's direct contact invitation | [L2681](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2681) |
+| `apiNewGroup` | `rh: Long?, incognito: Boolean, groupProfile: GroupProfile` | Create a new group | [L2441](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2441) |
+| `apiAddMember` | `rh: Long?, groupId: Long, contactId: Long, memberRole: GroupMemberRole` | Invite a contact to a group | [L2482](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2482) |
+| `apiJoinGroup` | `rh: Long?, groupId: Long` | Accept a group invitation | [L2491](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2491) |
+| `apiAcceptMember` | `rh: Long?, groupId: Long, groupMemberId: Long, memberRole: GroupMemberRole` | Accept a member joining via group link | [L2517](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2517) |
+| `apiDeleteMemberSupportChat` | `rh: Long?, groupId: Long, groupMemberId: Long` | Delete a member's support chat | [L2526](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2526) |
+| `apiRemoveMembers` | `rh: Long?, groupId: Long, memberIds: List<Long>, withMessages: Boolean` | Remove members from a group | [L2533](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2533) |
+| `apiMembersRole` | `rh: Long?, groupId: Long, memberIds: List<Long>, memberRole: GroupMemberRole` | Change the role of group members | [L2542](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2542) |
+| `apiBlockMembersForAll` | `rh: Long?, groupId: Long, memberIds: List<Long>, blocked: Boolean` | Block/unblock members for all group participants | [L2551](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2551) |
+| `apiLeaveGroup` | `rh: Long?, groupId: Long` | Leave a group | [L2560](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2560) |
+| `apiListMembers` | `rh: Long?, groupId: Long` | List all members of a group | [L2567](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2567) |
+| `apiUpdateGroup` | `rh: Long?, groupId: Long, groupProfile: GroupProfile` | Update group profile (name, image, etc.) | [L2574](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2574) |
+| `apiCreateGroupLink` | `rh: Long?, groupId: Long, memberRole: GroupMemberRole` | Create a group invitation link | [L2611](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2611) |
+| `apiGroupLinkMemberRole` | `rh: Long?, groupId: Long, memberRole: GroupMemberRole` | Update the default role for group link joins | [L2626](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2626) |
+| `apiDeleteGroupLink` | `rh: Long?, groupId: Long` | Delete the group invitation link | [L2635](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2635) |
+| `apiGetGroupLink` | `rh: Long?, groupId: Long` | Retrieve the current group invitation link | [L2645](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2645) |
+| `apiAddGroupShortLink` | `rh: Long?, groupId: Long` | Create a short link for the group | [L2652](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2652) |
+| `apiCreateMemberContact` | `rh: Long?, groupId: Long, groupMemberId: Long` | Create a direct contact from a group member | [L2662](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2662) |
+| `apiSendMemberContactInvitation` | `rh: Long?, contactId: Long, mc: MsgContent` | Send a direct message invitation to a group member | [L2671](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2671) |
+| `apiAcceptMemberContact` | `rh: Long?, contactId: Long` | Accept a member's direct contact invitation | [L2680](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2680) |
 | `apiSetMemberSettings` | `rh: Long?, groupId: Long, groupMemberId: Long, memberSettings: GroupMemberSettings` | Configure per-member settings (e.g., mentions) | [L1557](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1557) |
 | `apiGroupMemberInfo` | `rh: Long?, groupId: Long, groupMemberId: Long` | Get a group member's info and connection stats | [L1573](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1573) |
-| `apiSetGroupAlias` | `rh: Long?, groupId: Long, localAlias: String` | Set a local alias for a group | [L2068](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2068) |
+| `apiSetGroupAlias` | `rh: Long?, groupId: Long, localAlias: String` | Set a local alias for a group | [L2067](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2067) |
 
 ### 2.5 Contact Operations
 
@@ -182,24 +182,24 @@ All functions below are `suspend fun` members of `ChatController` ([SimpleXAPI.k
 | `apiAddContact` | `rh: Long?, incognito: Boolean` | Create a one-time invitation link for a new contact | [L1664](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1664) |
 | `apiSetConnectionIncognito` | `rh: Long?, connId: Long, incognito: Boolean` | Toggle incognito on a pending connection | [L1675](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1675) |
 | `apiChangeConnectionUser` | `rh: Long?, connId: Long, userId: Long` | Change the user profile on a pending connection | [L1684](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1684) |
-| `apiConnectPlan` | `rh: Long?, connLink: String, resolveMode: PlanResolveMode = PRMUnknown, linkOwnerSig: LinkOwnerSig? = null, inProgress: MutableState<Boolean>` | Analyze a connection link (or resolve a SimpleX name) before connecting; returns `ConnectionPlanResult?`. Failure handling: see [section 7](#7-directory-search-and-connection-plans) | [L1708](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1708-L1716) |
-| `apiConnect` | `rh: Long?, incognito: Boolean, connLink: CreatedConnLink` | Connect via an invitation or address link | [L1718](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1718) |
-| `apiPrepareContact` | `rh, connLink, contactShortLinkData` | Prepare a contact chat from a short link (before connecting) | [L1857](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1857) |
-| `apiPrepareGroup` | `rh, connLink, groupShortLinkData` | Prepare a group chat from a short link (before connecting) | [L1866](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1866) |
-| `apiConnectPreparedContact` | `rh, contactId, incognito, msg` | Connect to a previously prepared contact | [L1891](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1891) |
-| `apiConnectPreparedGroup` | `rh, groupId, incognito, msg` | Join a previously prepared group | [L1901](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1901) |
-| `apiConnectContactViaAddress` | `rh: Long?, incognito: Boolean, contactId: Long` | Connect to a contact using their public address | [L1911](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1911) |
-| `apiDeleteContact` | `rh: Long?, id: Long, chatDeleteMode: ChatDeleteMode` | Delete a contact and return the deleted Contact | [L1955](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1955) |
+| `apiConnectPlan` | `rh: Long?, connLink: String, resolveMode: PlanResolveMode = PRMUnknown, linkOwnerSig: LinkOwnerSig? = null, inProgress: MutableState<Boolean>` | Analyze a connection link (or resolve a SimpleX name) before connecting; returns `ConnectionPlanResult?`. Failure handling: see [section 7](#7-directory-search-and-connection-plans) | [L1707](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1707-L1715) |
+| `apiConnect` | `rh: Long?, incognito: Boolean, connLink: CreatedConnLink` | Connect via an invitation or address link | [L1717](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1717) |
+| `apiPrepareContact` | `rh, connLink, contactShortLinkData` | Prepare a contact chat from a short link (before connecting) | [L1856](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1856) |
+| `apiPrepareGroup` | `rh, connLink, groupShortLinkData` | Prepare a group chat from a short link (before connecting) | [L1865](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1865) |
+| `apiConnectPreparedContact` | `rh, contactId, incognito, msg` | Connect to a previously prepared contact | [L1890](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1890) |
+| `apiConnectPreparedGroup` | `rh, groupId, incognito, msg` | Join a previously prepared group | [L1900](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1900) |
+| `apiConnectContactViaAddress` | `rh: Long?, incognito: Boolean, contactId: Long` | Connect to a contact using their public address | [L1910](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1910) |
+| `apiDeleteContact` | `rh: Long?, id: Long, chatDeleteMode: ChatDeleteMode` | Delete a contact and return the deleted Contact | [L1954](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1954) |
 | `apiContactInfo` | `rh: Long?, contactId: Long` | Get a contact's connection stats and custom profile | [L1566](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1566) |
-| `apiSetContactAlias` | `rh: Long?, contactId: Long, localAlias: String` | Set a local display alias for a contact | [L2061](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2061) |
-| `apiSetConnectionAlias` | `rh: Long?, connId: Long, localAlias: String` | Set a local display alias for a pending connection | [L2075](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2075) |
-| `apiSetContactPrefs` | `rh: Long?, contactId: Long, prefs: ChatPreferences` | Update feature preferences for a contact | [L2054](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2054) |
-| `apiCreateUserAddress` | `rh: Long?` | Create a long-term public contact address | [L2096](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2096) |
-| `apiDeleteUserAddress` | `rh: Long?` | Delete the user's public contact address | [L2112](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2112) |
-| `apiAddMyAddressShortLink` | `rh: Long?` | Create a short link for the user's address | [L2134](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2134) |
-| `apiSetUserAddressSettings` | `rh: Long?, settings: AddressSettings` | Configure auto-accept for incoming contact requests | [L2145](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2145) |
-| `apiAcceptContactRequest` | `rh: Long?, incognito: Boolean, contactReqId: Long` | Accept an incoming contact request | [L2159](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2159) |
-| `apiRejectContactRequest` | `rh: Long?, contactReqId: Long` | Reject an incoming contact request | [L2182](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2182) |
+| `apiSetContactAlias` | `rh: Long?, contactId: Long, localAlias: String` | Set a local display alias for a contact | [L2060](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2060) |
+| `apiSetConnectionAlias` | `rh: Long?, connId: Long, localAlias: String` | Set a local display alias for a pending connection | [L2074](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2074) |
+| `apiSetContactPrefs` | `rh: Long?, contactId: Long, prefs: ChatPreferences` | Update feature preferences for a contact | [L2053](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2053) |
+| `apiCreateUserAddress` | `rh: Long?` | Create a long-term public contact address | [L2095](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2095) |
+| `apiDeleteUserAddress` | `rh: Long?` | Delete the user's public contact address | [L2111](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2111) |
+| `apiAddMyAddressShortLink` | `rh: Long?` | Create a short link for the user's address | [L2133](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2133) |
+| `apiSetUserAddressSettings` | `rh: Long?, settings: AddressSettings` | Configure auto-accept for incoming contact requests | [L2144](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2144) |
+| `apiAcceptContactRequest` | `rh: Long?, incognito: Boolean, contactReqId: Long` | Accept an incoming contact request | [L2158](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2158) |
+| `apiRejectContactRequest` | `rh: Long?, contactReqId: Long` | Reject an incoming contact request | [L2181](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2181) |
 | `apiSwitchContact` | `rh: Long?, contactId: Long` | Initiate SMP server switch for a contact | [L1594](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1594) |
 | `apiAbortSwitchContact` | `rh: Long?, contactId: Long` | Abort an in-progress server switch | [L1608](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1608) |
 | `apiSyncContactRatchet` | `rh: Long?, contactId: Long, force: Boolean` | Force ratchet synchronization with a contact | [L1622](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1622) |
@@ -210,26 +210,26 @@ All functions below are `suspend fun` members of `ChatController` ([SimpleXAPI.k
 
 | Command | Parameters | Description | Line |
 |---------|-----------|-------------|------|
-| `receiveFiles` | `rhId, user, fileIds, userApprovedRelays, auto` | Accept and download one or more files (handles relay approval) | [L2296](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2296) |
-| `receiveFile` | `rhId, user, fileId, userApprovedRelays, auto` | Accept and download a single file (convenience wrapper) | [L2412](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2412) |
-| `cancelFile` | `rh: Long?, user: User, fileId: Long` | Cancel an in-progress file transfer and clean up | [L2422](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2422) |
-| `apiCancelFile` | `rh: Long?, fileId: Long, ctrl: ChatCtrl?` | Cancel a file transfer (low-level, returns updated chat item) | [L2430](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2430) |
-| `uploadStandaloneFile` | `user: UserLike, file: CryptoFile, ctrl: ChatCtrl?` | Upload a standalone file (used for migration) | [L2266](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2266) |
-| `downloadStandaloneFile` | `user: UserLike, url: String, file: CryptoFile, ctrl: ChatCtrl?` | Download a standalone file by URL | [L2276](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2276) |
-| `standaloneFileInfo` | `url: String, ctrl: ChatCtrl?` | Retrieve metadata for a standalone file link | [L2286](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2286) |
+| `receiveFiles` | `rhId, user, fileIds, userApprovedRelays, auto` | Accept and download one or more files (handles relay approval) | [L2295](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2295) |
+| `receiveFile` | `rhId, user, fileId, userApprovedRelays, auto` | Accept and download a single file (convenience wrapper) | [L2411](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2411) |
+| `cancelFile` | `rh: Long?, user: User, fileId: Long` | Cancel an in-progress file transfer and clean up | [L2421](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2421) |
+| `apiCancelFile` | `rh: Long?, fileId: Long, ctrl: ChatCtrl?` | Cancel a file transfer (low-level, returns updated chat item) | [L2429](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2429) |
+| `uploadStandaloneFile` | `user: UserLike, file: CryptoFile, ctrl: ChatCtrl?` | Upload a standalone file (used for migration) | [L2265](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2265) |
+| `downloadStandaloneFile` | `user: UserLike, url: String, file: CryptoFile, ctrl: ChatCtrl?` | Download a standalone file by URL | [L2275](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2275) |
+| `standaloneFileInfo` | `url: String, ctrl: ChatCtrl?` | Retrieve metadata for a standalone file link | [L2285](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2285) |
 
 ### 2.7 Call Operations
 
 | Command | Parameters | Description | Line |
 |---------|-----------|-------------|------|
-| `apiGetCallInvitations` | `rh: Long?` | Retrieve pending call invitations | [L2192](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2192) |
-| `apiSendCallInvitation` | `rh: Long?, contact: Contact, callType: CallType` | Initiate a call by sending an invitation | [L2199](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2199) |
-| `apiRejectCall` | `rh: Long?, contact: Contact` | Reject an incoming call | [L2204](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2204) |
-| `apiSendCallOffer` | `rh, contact, rtcSession, rtcIceCandidates, media, capabilities` | Send a WebRTC call offer | [L2209](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2209) |
-| `apiSendCallAnswer` | `rh: Long?, contact: Contact, rtcSession: String, rtcIceCandidates: String` | Send a WebRTC call answer | [L2216](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2216) |
-| `apiSendCallExtraInfo` | `rh: Long?, contact: Contact, rtcSession: String?, rtcIceCandidates: String` | Send additional ICE candidates or ICE restart offer/answer during a call | [L2222](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2222) |
-| `apiEndCall` | `rh: Long?, contact: Contact` | End an active call | [L2228](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2228) |
-| `apiCallStatus` | `rh: Long?, contact: Contact, status: WebRTCCallStatus` | Report call status updates to the core | [L2233](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2233) |
+| `apiGetCallInvitations` | `rh: Long?` | Retrieve pending call invitations | [L2191](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2191) |
+| `apiSendCallInvitation` | `rh: Long?, contact: Contact, callType: CallType` | Initiate a call by sending an invitation | [L2198](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2198) |
+| `apiRejectCall` | `rh: Long?, contact: Contact` | Reject an incoming call | [L2203](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2203) |
+| `apiSendCallOffer` | `rh, contact, rtcSession, rtcIceCandidates, media, capabilities` | Send a WebRTC call offer | [L2208](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2208) |
+| `apiSendCallAnswer` | `rh: Long?, contact: Contact, rtcSession: String, rtcIceCandidates: String` | Send a WebRTC call answer | [L2215](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2215) |
+| `apiSendCallExtraInfo` | `rh: Long?, contact: Contact, rtcSession: String?, rtcIceCandidates: String` | Send additional ICE candidates or ICE restart offer/answer during a call | [L2221](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2221) |
+| `apiEndCall` | `rh: Long?, contact: Contact` | End an active call | [L2227](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2227) |
+| `apiCallStatus` | `rh: Long?, contact: Contact, status: WebRTCCallStatus` | Report call status updates to the core | [L2232](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2232) |
 
 ### 2.8 Settings & Network
 
@@ -243,7 +243,7 @@ All functions below are `suspend fun` members of `ChatController` ([SimpleXAPI.k
 | `testProtoServer` | `rh: Long?, server: String` | Test connectivity to a protocol server | [L1417](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1417) |
 | `reconnectServer` | `rh: Long?, server: String` | Reconnect to a specific server | [L1540](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1540) |
 | `reconnectAllServers` | `rh: Long?` | Reconnect to all servers | [L1545](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1545) |
-| `apiSetChatUIThemes` | `rh: Long?, chatId: ChatId, themes: ThemeModeOverrides?` | Set per-chat UI theme overrides | [L2089](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2089) |
+| `apiSetChatUIThemes` | `rh: Long?, chatId: ChatId, themes: ThemeModeOverrides?` | Set per-chat UI theme overrides | [L2088](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2088) |
 | `apiContactQueueInfo` | `rh: Long?, contactId: Long` | Get server queue diagnostics for a contact | [L1580](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1580) |
 | `apiGroupMemberQueueInfo` | `rh: Long?, groupId: Long, groupMemberId: Long` | Get server queue diagnostics for a group member | [L1587](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1587) |
 
@@ -280,7 +280,7 @@ All functions below are `suspend fun` members of `ChatController` ([SimpleXAPI.k
 
 <a id="ArchiveConfig"></a>
 
-`ArchiveConfig` ([SimpleXAPI.kt#L4765](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4765)):
+`ArchiveConfig` ([SimpleXAPI.kt#L4764](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4764)):
 
 ```kotlin
 class ArchiveConfig(
@@ -294,7 +294,7 @@ class ArchiveConfig(
 
 | Command | Parameters | Description | Line |
 |---------|-----------|-------------|------|
-| `apiSearchDirectory` | `rh: Long?, text: String, cursor: JsonObject?` | Sends [`CC.APISendServiceRequest`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4136) (`userId, target, timeoutSec: Double?, request: JsonObject`; `/_service_request`) to SimpleX Directory and waits for its response, `CRServiceResponse`, up to the timeout from sending; the lookup of the address before it has its own network timeout; see [section 7](#7-directory-search-and-connection-plans) | [L1695](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1695-L1706) |
+| `apiSearchDirectory` | `rh: Long?, text: String, cursor: JsonObject?` | Sends [`CC.APISendServiceRequest`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4135) (`userId, target, timeoutSec: Double?, request: JsonObject`; `/_service_request`) to SimpleX Directory and waits for its response, `CRServiceResponse`, up to the timeout from sending; the lookup of the address before it has its own network timeout; see [section 7](#7-directory-search-and-connection-plans) | [L1694](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1694-L1705) |
 
 ---
 
@@ -302,7 +302,7 @@ class ArchiveConfig(
 
 ## 3. Response Types
 
-All command responses are deserialized into the `API` sealed class ([SimpleXAPI.kt#L6715](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L6715)):
+All command responses are deserialized into the `API` sealed class ([SimpleXAPI.kt#L6714](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L6714)):
 
 ```kotlin
 sealed class API {
@@ -313,7 +313,7 @@ sealed class API {
 
 <a id="CR"></a>
 
-The `CR` sealed class ([SimpleXAPI.kt#L6854](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L6854)) contains approximately 180 response variants. Key categories:
+The `CR` sealed class ([SimpleXAPI.kt#L6853](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L6853)) contains approximately 180 response variants. Key categories:
 
 | Category | Examples | Lines |
 |----------|---------|-------|
@@ -330,7 +330,7 @@ The `CR` sealed class ([SimpleXAPI.kt#L6854](../common/src/commonMain/kotlin/cha
 | Remote ctrl | `RemoteCtrlList`, `RemoteCtrlFound`, `RemoteCtrlConnected`, `RemoteCtrlStopped` | L6925-L6930 |
 | Encryption | `ContactPQAllowed`, `ContactPQEnabled` | L6932-L6933 |
 | Misc | `CmdOk`, `ArchiveExported`, `ArchiveImported`, `AppSettingsR`, `VersionInfo` | L6935-L6939 |
-| Service | `CRServiceResponse` (`user, responseData: JsonObject`): a service's response to `APISendServiceRequest`, left undecoded for the caller | [L6895](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L6895) |
+| Service | `CRServiceResponse` (`user, responseData: JsonObject`): a service's response to `APISendServiceRequest`, left undecoded for the caller | [L6894](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L6894) |
 | Fallback | `Response` (unknown type + raw JSON), `Invalid` (unparseable) | L6950-L6951 |
 
 Each `CR` subclass is annotated with `@Serializable @SerialName("jsonTag")` for polymorphic JSON deserialization.
@@ -339,7 +339,7 @@ Each `CR` subclass is annotated with `@Serializable @SerialName("jsonTag")` for 
 
 ## 4. Event Types
 
-The chat core pushes asynchronous events through the same `CR` type hierarchy. The `startReceiver` coroutine ([SimpleXAPI.kt#L836](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L836)) continuously calls `chatRecvMsgWait` (blocking JNI), then dispatches each message to `processReceivedMsg` ([SimpleXAPI.kt#L2969](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2969)).
+The chat core pushes asynchronous events through the same `CR` type hierarchy. The `startReceiver` coroutine ([SimpleXAPI.kt#L836](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L836)) continuously calls `chatRecvMsgWait` (blocking JNI), then dispatches each message to `processReceivedMsg` ([SimpleXAPI.kt#L2968](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2968)).
 
 Events handled in `processReceivedMsg` include:
 
@@ -379,7 +379,7 @@ Each event triggers updates to `ChatModel` (reactive Compose state) and optional
 
 ## 5. Error Types
 
-### ChatError ([SimpleXAPI.kt#L7943](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L7943))
+### ChatError ([SimpleXAPI.kt#L7942](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L7942))
 
 ```kotlin
 sealed class ChatError {
@@ -393,7 +393,7 @@ sealed class ChatError {
 }
 ```
 
-### ChatErrorType ([SimpleXAPI.kt#L7973](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L7973))
+### ChatErrorType ([SimpleXAPI.kt#L7972](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L7972))
 
 Common application error codes (~70 variants):
 
@@ -412,11 +412,11 @@ Common application error codes (~70 variants):
 | `HasCurrentCall` / `NoCurrentCall` | Call state conflicts |
 | `CommandError` / `InternalError` / `CEException` | Generic/internal errors |
 
-### StoreError ([SimpleXAPI.kt#L8147](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L8147))
+### StoreError ([SimpleXAPI.kt#L8146](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L8146))
 
 Database-level errors: `DuplicateName`, `UserNotFound`, `GroupNotFound`, `ChatItemNotFound`, `LargeMsg`, `UserContactLinkNotFound`, etc.
 
-### ArchiveError ([SimpleXAPI.kt#L8683](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L8683))
+### ArchiveError ([SimpleXAPI.kt#L8682](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L8682))
 
 ```kotlin
 sealed class ArchiveError {
@@ -451,8 +451,8 @@ sealed class ArchiveError {
 
 | Function | Description | Line |
 |----------|-------------|------|
-| `apiSearchDirectory(rh, text, cursor)` | Sends `CC.APISendServiceRequest` to [`DIRECTORY_SERVICE_LINK`](../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L13) with [`DIRECTORY_SEARCH_TIMEOUT_SEC`](../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L15) and the request built by [`directorySearchRequest`](../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L76-L80); returns [`parseDirectorySearchResponse`](../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L92-L102)`(responseData)` (the entries, the cursor and `moreCount`), or null on any error (logged: a failed command with `responseType` and `details`, an unusable response with a fixed line and nothing from it). Blocks for the address lookup, then for up to the timeout; uses plain `sendCmd`, so a timeout gives a retry row rather than the alert `sendCmdWithRetry` would show | [L1695](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1695-L1706) |
-| `apiConnectPlan(rh, connLink, resolveMode, linkOwnerSig, inProgress)` | Plans a connection; returns `ConnectionPlanResult?`. `NotResolvedLocally` (a `PRMNever` lookup that matched nothing) returns null silently; any other failure shows `apiConnectResponseAlert` only while `inProgress.value` is true, so the background lookups, which pass false, and a cancelled `planAndConnect` show none. The online search treats null from a `PRMNever` plan of a directory result as "not one of your chats" | [L1708](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1708-L1716) |
+| `apiSearchDirectory(rh, text, cursor)` | Sends `CC.APISendServiceRequest` to [`DIRECTORY_SERVICE_LINK`](../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L11) with [`DIRECTORY_SEARCH_TIMEOUT_SEC`](../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L13) and the request built by [`directorySearchRequest`](../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L75-L79); returns [`parseDirectorySearchResponse`](../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L91-L101)`(responseData)` (the entries, the cursor and `moreCount`), or null on any error (logged: a failed command with `responseType` and `details`, an unusable response with a fixed line and nothing from it). Blocks for the address lookup, then for up to the timeout; uses plain `sendCmd`, so a timeout gives a retry row rather than the alert `sendCmdWithRetry` would show | [L1694](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1694-L1705) |
+| `apiConnectPlan(rh, connLink, resolveMode, linkOwnerSig, inProgress)` | Plans a connection; returns `ConnectionPlanResult?`. `NotResolvedLocally` (a `PRMNever` lookup that matched nothing) returns null silently; any other failure shows `apiConnectResponseAlert` only while `inProgress.value` is true, so the background lookups, which pass false, and a cancelled `planAndConnect` show none. The online search treats null from a `PRMNever` plan of a directory result as "not one of your chats" | [L1707](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1707-L1715) |
 
 A service response is represented as a kotlinx `JsonObject` (any JSON), so the API layer does not depend on a service's own types; `parseDirectorySearchResponse` reads its fields and decodes each entry with `json.decodeFromJsonElement`.
 
