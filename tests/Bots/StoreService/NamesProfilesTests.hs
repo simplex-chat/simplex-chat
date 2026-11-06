@@ -74,7 +74,7 @@ namesProfilesTests = describe "StoreService names: profiles" $ do
     H.it "refuses names resolving to those addresses" testPrivateNames
     H.it "refuses unspecified, multicast and IPv4-mapped private addresses" testOtherRefused
     H.it "refuses reserved, broadcast, benchmarking and site-local addresses, and private IPv4 in IPv4-compatible and NAT64 addresses" testEmbeddedAndReserved
-    H.it "refuses .onion hosts without resolving them, and unresolvable names" testOnionUnresolvable
+    H.it "allows .onion hosts without resolving them, and refuses unresolvable names" testOnionUnresolvable
     H.it "refuses a link with one public and one private host, and a name with one private address" testMixedHosts
     H.it "answers a refused link unavailable without fetching it" testRefusedNotFetched
   describe "host lookups" $ do
@@ -455,8 +455,9 @@ testEmbeddedAndReserved = do
 testOnionUnresolvable :: IO ()
 testOnionUnresolvable = do
   asked <- newTVarIO []
-  hostCheck (stubResolver asked) ("abcdefghij234567.onion" :| []) `shouldReturn` HostRefused
-  hostCheck (stubResolver asked) (THDomainName "abcdefghij234567.ONION." :| []) `shouldReturn` HostRefused
+  hostCheck (stubResolver asked) ("abcdefghij234567.onion" :| []) `shouldReturn` HostPublic
+  hostCheck (stubResolver asked) (THDomainName "abcdefghij234567.ONION." :| []) `shouldReturn` HostPublic
+  hostCheck (stubResolver asked) ("abcdefghij234567.onion" :| ["127.0.0.1"]) `shouldReturn` HostRefused
   readTVarIO asked `shouldReturn` []
   hostCheck (stubResolver asked) ("unknown.test" :| []) `shouldReturn` HostRefused
   readTVarIO asked `shouldReturn` ["unknown.test"]

@@ -121,6 +121,13 @@ Other options:
   `--socks-proxy`, `--log-level`/`-l`, and the rest — run `simplex-store-service --help`
   for the complete list.
 
+Name links are read for their profiles through an SMP proxy, as the default `--smp-proxy` reads
+every link of a server the service does not use, so the service connects to no host a buyer chose.
+Onion links are allowed and read through the proxy too, whose relay needs Tor to reach them. A link
+whose host is or resolves to a loopback, private or other non-public address is refused before it is
+read. Leave `--smp-proxy` and `--smp-proxy-fallback` at their defaults: `--smp-proxy never` or
+`--smp-proxy-fallback yes` would connect to a link's host directly.
+
 The service logs to stderr: its routine lines at note level, its warnings and errors at their own.
 `[log] level` in `store_service.ini` sets the lowest level printed, one of `trace`, `debug`, `info`,
 `note` (the default), `warn` or `error`, in both run modes. The level applies to the whole process,

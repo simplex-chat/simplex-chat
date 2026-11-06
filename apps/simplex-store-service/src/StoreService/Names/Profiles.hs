@@ -5,7 +5,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
--- | The host rule is best effort: the chat core resolves a host again when it connects, so the deployment's egress rule is the real guard.
+-- | The chat core reads a link of an unknown server through an SMP proxy, so the service opens no connection to a link's host.
+-- The host rule refuses internal addresses as a backstop to that; the chat core resolves a name again when it connects.
 module StoreService.Names.Profiles
   ( Profiles,
     ProfileLimits (..),
@@ -322,8 +323,9 @@ imageURI (ImageData uri)
 data HostCheck = HostPublic | HostRefused | HostUnanswered
   deriving (Eq, Show)
 
--- | Refused when any host is an onion address, does not resolve, is or resolves to an address outside the public internet,
+-- | Refused when any host does not resolve, is or resolves to an address outside the public internet,
 -- or finds no lookup slot before the deadline; unanswered when a lookup does not answer by the deadline.
+-- An onion host is allowed without a lookup, as only the proxy or Tor can reach it.
 checkHosts :: Profiles -> Deadline -> NonEmpty TransportHost -> IO HostCheck
 checkHosts ps = checkHostsIn ps []
 
@@ -337,8 +339,9 @@ checkHostsIn ps pools deadline = checkAll . L.toList
           HostPublic -> checkAll hosts
           result -> pure result
     checkHost = \case
+      THOnionHost _ -> pure HostPublic
       THDomainName name
-        | onionName name -> pure HostRefused
+        | onionName name -> pure HostPublic
         | otherwise -> lookupHost ps pools deadline name
       host -> pure $ if publicAddress host then HostPublic else HostRefused
     onionName name = ".onion" `isSuffixOf` dropWhileEnd (== '.') (map toLower name)
