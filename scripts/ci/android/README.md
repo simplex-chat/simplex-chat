@@ -20,7 +20,7 @@ Every run builds the core library, and the backend when it's asked for, from the
 | `release` (opt-in) | the latest release's arm64 APK, its signer checked against SimpleX's key, onboarding only | about 4 min |
 | `core-armv7a` (opt-in) | `build-core.sh` with `armv7a`: `lib:simplex-chat` and `lib:support` for armv7a-android, with GHC 8.10.7; the app and the emulator use only arm64 | not measured yet |
 
-Results are artifacts: `android-smoke-test` (numbered screenshots, the accessibility tree and the text of each, `steps.log`, `checks.txt`, logcat as `app.log`, `emulator.log`, and after a failed test the emulator's crash reports in `emulator-crashes/`), `android-release-smoke-test`, `android-claude-test`, and the backend's logs; `android-app`, the APK for manual tests and the Claude job, is kept 14 days. The job summaries list the checks and the Claude usage.
+Results are artifacts: `android-smoke-test` (numbered screenshots, the accessibility tree and the text of each, `steps.log`, `checks.txt`, logcat as `app.log`, `emulator.log`, after a failed test the emulator's crash reports in `emulator-crashes/`, the feature tests in `tests/<feature>/`), `android-release-smoke-test`, `android-claude-test`, and the backend's logs; `android-app`, the APK for manual tests and the Claude job, is kept 14 days. The job summaries list the checks and the Claude usage.
 
 ## The emulator
 
@@ -30,6 +30,7 @@ A Google APIs x86_64 system image of API 34 (revision 14) with KVM, on the x86_6
 
 - `ui`: the UI driver, with desktop's command names: text and positions from uiautomator's accessibility tree, taps and keys with adb. `ui` alone prints its commands: start (with app settings), shot, text, tree, find, wait, click, click-text, scroll, type, key, layout (the `OneHandUI` preference and a restart), relaunch, text-size, do, stop. `screen-tree.py` reads the tree; `prefs.py` writes the settings, which only a debug build accepts (`run-as`).
 - `smoke-test.sh <apk> <out dir> [start|onboarding|layouts|backend]`: the scripted cases; the default is onboarding, a local group, both layouts, and `tests/fixtures/test.jpg` and `logo-large-rgba.png` pushed to Pictures, picked in the system's picker, resized by the core, previewed and sent in the group. Onboarding on Android includes the app's instant notifications alert and the system's battery dialog. `backend` also adds the test SMP server under Your servers and checks that it passes Test servers.
+- `lib.sh`: the steps used by the smoke test and by the feature tests in `tests/` ([feature tests](../feature-tests.md)).
 - `install-sdk.sh`, `emulator.sh`: the emulator, above.
 - `build-core.sh`, `install-core.sh`, `release-apk.sh`: builds and the release.
 - `claude-test.md` (the prompt) and `claude-scope` (whether it uses the test backend): the Claude job, which runs desktop-linux's `claude-test.sh`, `claude-guard.py` and `claude-usage.py`.
@@ -44,7 +45,7 @@ It needs the GitHub environment `app-sim-claude` with the secret `CLAUDE_CODE_OA
 
 ## Known limits
 
-- **The app runs under ARM translation**, Google's closed-source `libndk_translation`, not natively: it's slower than on a phone and can hit bugs that only translation has. In one of the debug build's first ten starts here, the app died at start with a SIGSEGV inside the translator (`ndk_translation_HandleNoExec`); the smoke test then fails at once and prints the crash. The slowed app also dropped the end of a long text typed at once, so `ui type` types a few characters at a time and checks each part on the field. Before calling a failure an app bug, run the workflow with `release` and check the released app in the same emulator.
+- **The app runs under ARM translation**, Google's closed-source `libndk_translation`, not natively: it's slower than on a phone and can hit bugs that only translation has. In one of the debug build's first ten starts here, the app died at start with a SIGSEGV inside the translator (`ndk_translation_HandleNoExec`); the smoke test then fails at once and prints the crash. The slowed app also dropped the end of a long text typed at once, so `ui type` types a few characters at a time and checks each part on the field, typing a dropped end again, twice at most. Before calling a failure an app bug, run the workflow with `release` and check the released app in the same emulator.
 - **The core build relies on cache.zw3rk.com**, the zw3rk Hydra's cache, for the cross-compiling toolchain and the dependencies: with it only simplex-chat itself is compiled. A change of the flake's inputs (`flake.lock`, the haskell.nix pin, the index state) that the cache doesn't hold yet, or the cache being down, turns the build into compiling GHC and every dependency, 12 to 24 hours, longer than a job may run. The core job then times out; a branch whose Haskell and Nix sources are unchanged keeps reusing its last build for 30 days.
 - On a first start the app can show its What's new sheet over the first onboarding screen; the smoke test closes it and notes it in `checks.txt`.
 

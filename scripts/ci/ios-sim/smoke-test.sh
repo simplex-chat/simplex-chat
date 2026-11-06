@@ -15,8 +15,7 @@ set -euo pipefail
 app=$1
 export UI_OUT=$2
 cases=${3:-}
-bundle_id=chat.simplex.app
-ui=$(dirname "$0")/ui
+. "$(dirname "$0")/lib.sh"
 fixtures=$(cd "$(dirname "$0")/../../../tests/fixtures" && pwd)
 test_card_x=66
 logo_x=200
@@ -24,6 +23,7 @@ photo_y=412
 picker_done_x=363
 picker_done_y=144
 mkdir -p "$UI_OUT"
+: > "$checks"
 
 axe --version
 runtime=com.apple.CoreSimulator.SimRuntime.iOS-$(xcrun --sdk iphonesimulator --show-sdk-version | tr . -)
@@ -56,18 +56,10 @@ finish() {
     head -n 200 "$report"
     echo "::endgroup::"
   done || true
+  report_checks "Smoke test checks"
   exit "$status"
 }
 trap finish EXIT
-
-expect_in_tree() {
-  local tree
-  tree=$("$ui" tree)
-  if ! grep -q "$@" <<< "$tree"; then
-    echo "error: ${*: -1} is not in the accessibility tree"
-    exit 1
-  fi
-}
 
 # iOS asks once whether the app may send notifications. The tree sometimes shows the app under this alert rather than
 # the alert (run 38895987656), so its Allow button is also looked for at its place.
@@ -89,11 +81,10 @@ allow_notifications() {
 
 # a profile without conversations sees the onboarding pages in place of the list
 expect_chat_list() {
-  expect_in_tree -F '"Talk to someone"'
-  expect_in_tree -F 'Button "Let someone connect to you"'
-  expect_in_tree -F 'Button "Connect via link or QR code"'
-  expect_in_tree -F 'Button "Compose"'
-  echo "in the $1 layout the chat list shows the onboarding pages and the toolbar"
+  check "$1: \"Talk to someone\" shown" in_tree -F '"Talk to someone"'
+  check "$1: Button \"Let someone connect to you\" shown" in_tree -F 'Button "Let someone connect to you"'
+  check "$1: Button \"Connect via link or QR code\" shown" in_tree -F 'Button "Connect via link or QR code"'
+  check "$1: Button \"Compose\" shown" in_tree -F 'Button "Compose"'
 }
 
 tap_element() {
@@ -126,11 +117,6 @@ disable_file_encryption() {
   xcrun simctl terminate "$SIM_UDID" "$bundle_id" 2> /dev/null || true
   xcrun simctl spawn "$SIM_UDID" defaults write "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" group.chat.simplex.app)/Library/Preferences/group.chat.simplex.app" privacyEncryptLocalFiles -bool false
   "$ui" relaunch
-}
-
-fail() {
-  echo "error: $*"
-  exit 1
 }
 
 create_group() {
@@ -210,13 +196,15 @@ expect_chat_list reachable
 "$ui" shot chat-list-top
 expect_chat_list top
 "$ui" layout reachable
+fail_on_failed_checks "the smoke test"
 echo "smoke test passed: onboarding reaches the chat list, which shows its onboarding pages and toolbar with the one-hand UI and with the top bar"
 
 products=$(dirname "$app")
+snapshots_status=0
 if [[ "$products" == */Build/Products/Debug-iphonesimulator ]]; then
   # the previews read the app's settings, and their references have the default private routing
   xcrun simctl spawn "$SIM_UDID" defaults delete "$prefs" networkSMPProxyMode
-  "$(dirname "$0")/snapshots.sh" "${products%/Build/Products/Debug-iphonesimulator}" "$UI_OUT/snapshots"
+  "$(dirname "$0")/snapshots.sh" "${products%/Build/Products/Debug-iphonesimulator}" "$UI_OUT/snapshots" || snapshots_status=$?
   xcrun simctl spawn "$SIM_UDID" defaults write "$prefs" networkSMPProxyMode -string unknown
 fi
 
@@ -225,7 +213,12 @@ if [ "$cases" = images ]; then
   disable_file_encryption
   xcrun simctl addmedia "$SIM_UDID" "$fixtures/test.jpg" "$fixtures/logo-large-rgba.png"
   create_group
+  xcrun simctl spawn "$SIM_UDID" defaults write "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" data)/Library/Preferences/$bundle_id" localAuthenticationNoticeShown -bool true
   send_image jpg "$test_card_x" 1280x720
   send_image png "$logo_x" 1630x466
   echo "smoke test passed: images"
 fi
+if [ -n "${GITHUB_OUTPUT:-}" ]; then
+  echo "checks=passed" >> "$GITHUB_OUTPUT"
+fi
+exit "$snapshots_status"

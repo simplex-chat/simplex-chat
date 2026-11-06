@@ -1,0 +1,71 @@
+#!/bin/bash
+
+set -euo pipefail
+
+if [ $# -lt 3 ]; then
+  echo "usage: scripts/ci/app-tests/feature-tests.sh <platform dir> <out dir> <test>..."
+  exit 2
+fi
+here=$(dirname "$0")
+platform_dir=${1%/}
+out_dir=$2
+shift 2
+ui=$platform_dir/ui
+export BACKEND_DIR=${BACKEND_DIR:-}
+
+for name in "$@"; do
+  if ! [[ "$name" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+    echo "error: \"$name\" is not a test name"
+    exit 2
+  fi
+  if [ ! -f "$platform_dir/tests/$name.sh" ]; then
+    echo "error: no test $platform_dir/tests/$name.sh"
+    exit 2
+  fi
+done
+
+needs_backend() {
+  sed -n 's/^# needs://p' "$1" | grep -qw backend
+}
+
+failed=0
+for name in "$@"; do
+  file=$platform_dir/tests/$name.sh
+  export UI_OUT=$out_dir/$name
+  mkdir -p "$UI_OUT"
+  . "$here/checks.sh"
+  : > "$checks"
+  echo "::group::feature test $name"
+  if needs_backend "$file" && [ -z "$BACKEND_DIR" ]; then
+    note "skipped: requires the test backend, absent from this run"
+    result=skipped
+  else
+    status=0
+    if "$ui" layout reachable; then
+      bash "$file" 2>&1 | tee "$UI_OUT/test.log" || status=$?
+    else
+      check "the app restarted at the chat list in the reachable layout" false
+    fi
+    if [ "$status" -ne 0 ]; then
+      reason=$(sed -n 's/^error: //p' "$UI_OUT/test.log" | tail -n 1)
+      [ -z "$reason" ] || note "stopped: $reason"
+      note "the test exited with status $status"
+    fi
+    if [ "$status" -ne 0 ] || grep -q '^FAIL' "$checks"; then
+      result=failed
+      failed=$((failed + 1))
+      "$ui" shot final || true
+    else
+      result=passed
+      [ -s "$checks" ] || note "no checks were recorded"
+    fi
+  fi
+  echo "::endgroup::"
+  report_checks "Feature test $name: $result"
+done
+
+if [ "$failed" -gt 0 ]; then
+  echo "error: $failed of $# feature tests failed"
+  exit 1
+fi
+echo "feature tests finished without a failure: $*"

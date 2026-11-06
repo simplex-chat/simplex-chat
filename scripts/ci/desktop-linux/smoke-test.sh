@@ -28,8 +28,7 @@ esac
 # backend.sh registered seeded.testing for ci_contact
 name_label=seeded
 local_chat="seeded notes"
-ui=$(dirname "$0")/ui
-checks=$UI_OUT/checks.txt
+. "$(dirname "$0")/lib.sh"
 # switches are at the right of the left pane, where Settings open
 switch_x=335
 fixtures=$(cd "$(dirname "$0")/../../../tests/fixtures" && pwd)
@@ -44,20 +43,6 @@ if [ -n "${GITHUB_ENV:-}" ]; then
   echo "UI_OUT=$UI_OUT" >> "$GITHUB_ENV"
 fi
 
-report_checks() {
-  [ -s "$checks" ] || return 0
-  echo "::group::checks"
-  cat "$checks"
-  echo "::endgroup::"
-  if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
-    {
-      echo "### Smoke test checks"
-      echo
-      sed 's/^/- /' "$checks"
-    } >> "$GITHUB_STEP_SUMMARY"
-  fi
-}
-
 finish() {
   local status=$?
   if [ "$status" -ne 0 ]; then
@@ -66,77 +51,10 @@ finish() {
   echo "::group::app log, last 300 lines"
   tail -n 300 "$UI_OUT/app.log" || true
   echo "::endgroup::"
-  report_checks
+  report_checks "Smoke test checks"
   exit "$status"
 }
 trap finish EXIT
-
-fail() {
-  echo "error: $*"
-  exit 1
-}
-
-check() {
-  local what=$1
-  shift
-  if "$@"; then
-    echo "PASS $what" | tee -a "$checks"
-  else
-    echo "FAIL $what" | tee -a "$checks"
-    echo "::error::$what"
-  fi
-}
-
-# text compared as ui compares it: letters and digits, lowercase, a lowercase l read as i
-normalise() {
-  tr -cd '[:alnum:]' <<< "$1" | tr '[:upper:]' '[:lower:]' | tr l i
-}
-
-# Prints "x y" of the text in the chat list pane, left of x 390: a phrase equal to it, else, unless the second argument
-# is "exact", the first containing it. The chats, results and Settings are there; the right pane shows the open chat,
-# which can have the same names.
-left_pane_position() {
-  local target line x y found=""
-  target=$(normalise "$1")
-  while IFS= read -r line; do
-    x=${line%%,*}
-    y=${line#*,}
-    y=${y%% *}
-    [ "$x" -lt 390 ] || continue
-    case "$(normalise "${line#* }")" in
-      "$target")
-        echo "$x $y"
-        return 0
-        ;;
-      *"$target"*)
-        found=${found:-"$x $y"}
-        ;;
-    esac
-  done < <("$ui" text)
-  [ -n "$found" ] && [ "${2:-}" != exact ] || return 1
-  echo "$found"
-}
-
-on_screen() {
-  left_pane_position "$1" > /dev/null
-}
-
-not_on_screen() {
-  ! left_pane_position "$1" > /dev/null
-}
-
-y_of() {
-  local pos
-  pos=$(left_pane_position "$1") || return 1
-  cut -d ' ' -f 2 <<< "$pos"
-}
-
-above() {
-  local a b
-  a=$(y_of "$1") || return 1
-  b=$(y_of "$2") || return 1
-  [ "$a" -lt "$b" ]
-}
 
 # the value is on the same line as its setting's title
 in_line_with() {
@@ -144,38 +62,6 @@ in_line_with() {
   value=$(y_of "$1") || return 1
   title=$(y_of "$2") || return 1
   [ $((value - title)) -lt 10 ] && [ $((title - value)) -lt 10 ]
-}
-
-# Scrolls the left pane down until the text shows above its bottom toolbar.
-scroll_to() {
-  local y
-  for _ in 1 2 3 4 5 6 7 8; do
-    if y=$(y_of "$1") && [ "$y" -lt 640 ]; then
-      return 0
-    fi
-    "$ui" scroll 195 400 down
-  done
-  return 1
-}
-
-# Escape closes one screen at a time, and clears the search field
-back_to_chat_list() {
-  for _ in 1 2 3 4 5 6; do
-    on_chat_list && return 0
-    "$ui" key Escape
-  done
-  on_chat_list
-}
-
-# New chat has the same search field
-on_chat_list() {
-  not_on_screen "Settings" && not_on_screen "Chat preferences" && not_on_screen "Network" && not_on_screen "New chat" && on_screen "Search or paste SimpleX link"
-}
-
-# Opens Settings from the user menu, behind the profile picture at the left of the bottom toolbar.
-open_settings() {
-  "$ui" click 27 730
-  "$ui" click-text "Settings" 10
 }
 
 # Turns "Reachable app toolbars" off in Settings > Appearance, which moves the toolbar and the search field to the top.
@@ -458,7 +344,5 @@ use_top_toolbar
 check_layout top
 send_images
 
-if grep -q '^FAIL' "$checks"; then
-  fail "the smoke test failed checks: $(grep -c '^FAIL' "$checks") of $(grep -cE '^(PASS|FAIL)' "$checks")"
-fi
+fail_on_failed_checks "the smoke test"
 echo "smoke test passed: onboarding reached the chat list, which shows \"$local_chat\" with the toolbar at the bottom and at the top"
