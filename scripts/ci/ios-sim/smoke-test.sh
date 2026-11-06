@@ -536,7 +536,7 @@ load_row_states() {
     sleep 5
   done
   "$ui" shot load-more-retried
-  echo "the load row says how many results are left, is disabled while its page loads, offers a retry when it fails, and the retry loads the page"
+  echo "the load row shows how many results are left, is disabled while its page loads, offers a retry when it fails, and the retry loads the page"
   clear_search
 }
 
