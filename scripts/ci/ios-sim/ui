@@ -134,7 +134,6 @@ key() {
   sleep 1
 }
 
-# The snapshot tests' previews ask for the camera, and the prompt then covers the restarted app until it is answered.
 launch() {
   local deadline t=""
   xcrun simctl terminate "$SIM_UDID" "$bundle_id" 2> /dev/null || true

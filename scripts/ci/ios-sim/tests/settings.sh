@@ -7,7 +7,6 @@
 set -euo pipefail
 . "$(dirname "$0")/../lib.sh"
 
-# The toolbar's profile image is 32x32; the picker's own Image "Account" (44x44) is in the tree even while it is closed.
 tap_profile_image() {
   local x y
   read -r x y < <("$ui" tree | sed -n -E 's/^Image "Account" .* at ([0-9]+),([0-9]+) size 32x32.*/\1 \2/p' | head -n 1) ||

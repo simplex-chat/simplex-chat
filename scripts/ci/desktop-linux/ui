@@ -117,8 +117,6 @@ window_geometry() {
   grep -E '^ *(Position|Geometry):' "$@"
 }
 
-# settings.properties, read at start, also holds the database passphrase: every line stays as it was except OneHandUI,
-# which is set, and DesktopWindowState, which is dropped so the window opens where the first start put it.
 layout() {
   local one_hand settings=$state/config/simplex/settings.properties geometry deadline lines y seen=""
   case "$1" in
@@ -138,7 +136,6 @@ layout() {
     "$settings" > "$settings.new"
   mv "$settings.new" "$settings"
   launch_app "$(cat "$state/app-dir")"
-  # lib.sh clicks fixed points of the window, so it must come back where the first start put it
   geometry=$(xdotool getwindowgeometry "$(head -n 1 "$state/window")" | window_geometry)
   if [ "$geometry" != "$(window_geometry "$state/window-geometry")" ]; then
     echo "error: the window moved or changed size after the restart:"
@@ -165,7 +162,6 @@ layout() {
   return 1
 }
 
-# While the app starts, OCR can read "Chats" elsewhere on the screen.
 toolbar_title_y() {
   awk '{
     split($1, at, ",")

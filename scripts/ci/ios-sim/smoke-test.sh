@@ -213,7 +213,6 @@ if [ "$cases" = images ]; then
   disable_file_encryption
   xcrun simctl addmedia "$SIM_UDID" "$fixtures/test.jpg" "$fixtures/logo-large-rgba.png"
   create_group
-  # with a third chat the app's next start shows its SimpleX Lock notice, which would cover the feature tests' first screen
   xcrun simctl spawn "$SIM_UDID" defaults write "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" data)/Library/Preferences/$bundle_id" localAuthenticationNoticeShown -bool true
   send_image jpg "$test_card_x" 1280x720
   send_image png "$logo_x" 1630x466

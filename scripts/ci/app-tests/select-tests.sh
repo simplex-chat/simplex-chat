@@ -23,7 +23,6 @@ for file in "$platform_dir"/tests/*.sh; do
   tests="$tests $name"
 done
 
-# the input's words and the covers patterns are split on spaces, never expanded as file names
 set -f
 
 keyword=""
@@ -86,7 +85,6 @@ elif [ -z "$keyword" ] && [ "$words" -gt 0 ]; then
     if [ -f "$platform_dir/tests/$name.sh" ]; then
       select_test "$name" "named in the tests input"
     elif [ -n "$(find "$platform_dir/.." -mindepth 3 -maxdepth 3 -path "*/tests/$name.sh")" ]; then
-      # noted, not refused: one input can name the tests of several platforms
       echo "$name: no test on $platform" >&2
     else
       echo "error: \"$name\" is not a test on any platform" >&2

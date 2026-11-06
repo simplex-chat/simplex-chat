@@ -10,7 +10,6 @@ set -euo pipefail
 note_text="scripted note"
 row_spacing=230
 
-# An empty compose field has its hint as its text; Send and Record voice message both show either way.
 compose_empty() {
   local tree
   for _ in 1 2 3 4 5 6 7 8 9 10; do

@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# Runs under macOS's bash 3.2 on the iOS runner.
-
 checks=$UI_OUT/checks.txt
 
 report_checks() {

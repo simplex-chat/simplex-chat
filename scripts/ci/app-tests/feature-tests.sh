@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# Runs under macOS's bash 3.2 on the iOS runner.
-
 set -euo pipefail
 
 if [ $# -lt 3 ]; then
@@ -35,7 +33,6 @@ for name in "$@"; do
   file=$platform_dir/tests/$name.sh
   export UI_OUT=$out_dir/$name
   mkdir -p "$UI_OUT"
-  # sourced per test: its checks file is the one in UI_OUT
   . "$here/checks.sh"
   : > "$checks"
   echo "::group::feature test $name"
