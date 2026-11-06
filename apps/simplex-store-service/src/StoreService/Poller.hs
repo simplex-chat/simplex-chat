@@ -238,7 +238,7 @@ moneyAfterPaid env now InvoiceRow {irInvoiceId = InvoiceId invId, irProduct, irP
     Just stored <- ipUnits =<< irPayment,
     Received {rcvUnits = Just units, rcvCrypto} <- signalReceived signal,
     units > stored = do
-      let alert = "names: invoice " <> invId <> " was paid, and its provider now reads " <> fromMaybe "" rcvCrypto <> " received, more than recorded; the extra is credited nowhere and needs a refund by support"
+      let alert = "names: invoice " <> invId <> " was paid, and its provider now reads " <> fromMaybe "" rcvCrypto <> " received, more than recorded; the extra is credited nowhere; refund by hand only a transaction confirmed on chain"
       due <- dueToWarn env now alert
       when due $ logError alert
   | otherwise = pure ()
