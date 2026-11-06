@@ -2673,7 +2673,7 @@ object ChatController {
   }
 
   suspend fun allowFeatureToContact(rh: Long?, contact: Contact, feature: ChatFeature, param: Int? = null) {
-    val prefs = contact.userPreferences.setAllowed(feature, param = param ?: contact.mergedPreferences.timedMessages.userPreference.pref.ttl)
+    val prefs = contact.userPreferences.setAllowed(feature, param = param)
     val toContact = apiSetContactPrefs(rh, contact.contactId, prefs)
     if (toContact != null) {
       withContext(Dispatchers.Main) {
