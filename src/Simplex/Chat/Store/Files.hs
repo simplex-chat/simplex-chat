@@ -366,7 +366,7 @@ getGroupRcvFileId db userId groupId fromMemberId sharedMsgId = do
   case fileType_ of
     Just fileType ->
       maybeFirstRow fromOnly $
-        DB.query db (rcvFileIdQ <> " AND r.group_member_id = ?") (userId, groupId, sharedMsgId, fileType, fromMemberId)
+        DB.query db rcvFileIdQ (userId, groupId, sharedMsgId, fileType, fromMemberId)
     Nothing -> pure Nothing
   where
     getFileType :: IO (Maybe FileType)
@@ -377,7 +377,7 @@ getGroupRcvFileId db userId groupId fromMemberId sharedMsgId = do
       [sql|
         SELECT f.file_id FROM files f
         JOIN rcv_files r ON r.file_id = f.file_id
-        WHERE f.user_id = ? AND f.group_id = ? AND f.shared_msg_id = ? AND f.file_type = ?
+        WHERE f.user_id = ? AND f.group_id = ? AND f.shared_msg_id = ? AND f.file_type = ? AND r.group_member_id = ?
       |]
 
 -- The roster scratch file for a transfer (for fs/handle cleanup before deleting the transfer).
