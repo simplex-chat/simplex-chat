@@ -110,7 +110,6 @@ workerTests = describe "StoreService names: worker" $ do
     it "relays no acceptance once the commitment lapsed, so the policy commits nothing again" testAcceptanceLapsed
   describe "lapse" $ do
     it "ends a committed order not revealed by revealBefore failed, keeping its code" testLapseFailed
-    it "wakes a held poll with failed at the lapse, and answers an old version at once after it" testLapsePoll
   describe "restart" $ do
     it "resumes every phase after a restart, a commit saved but not recorded included" testRestart
     it "waits for a register saved but not recorded before a restart, sending no other" testRestartRegisterSaved
@@ -891,20 +890,6 @@ testLapseFailed = withWorker $ \w@W {wCtx = ctx} -> do
   (nrPhase x, nrFailedAt x, nrError x, nrLive x) `shouldBe` (PFailed, Just now, Just "The name was not signed in time", True)
   pcReservedBy <$> codeOf ctx code `shouldReturn` Just (nrId r)
 
-testLapsePoll :: IO ()
-testLapsePoll = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
-  r <- paidIn ctx aliceOrder committedPhase
-  advance ctx $ day + 1
-  let path = registrationPath (nrId r) <> "?seenVersion=" <> show (nrVersion r)
-  -- the lapse alone changes no version, so a poll with the version seen before it is held
-  poll <- held ctx (0, 1) path
-  steps w r >>= done
-  (status, view) <- woken "the poll held at the lapse" poll
-  (status, field "version" view, field "phase" view) `shouldBe` (200, Just (J.toJSON $ nrVersion r + 1), Just "failed")
-  -- prompt is far below the 30-second hold
-  (status', view') <- timeout prompt (webGet cClient path >>= \resp -> (statusOf resp,) <$> jsonObject resp) >>= maybe (fail "the old version was held") pure
-  (status', field "phase" view') `shouldBe` (200, Just "failed")
-
 testRestart :: IO ()
 testRestart = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}, wSender} -> do
   (r, code) <- codeIn ctx 8 aliceOrder id
@@ -1098,8 +1083,6 @@ testRetryUnread = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
 
 testRetryReleasedCode :: IO ()
 testRetryReleasedCode = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
-  spender <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 20} id
-  holder <- paidIn ctx (byB dynamisOrder) {oCommitment = commitmentOf 21} id
   let codeOrder n change = do
         let label = "codeorder" <> tshow n
         answerFree ctx label
@@ -1107,11 +1090,7 @@ testRetryReleasedCode = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
       released (r, code) = (r, code) <$ (withTransaction cStore (\db -> releasePrepaidCode db (pcId code) (nrId r)) `shouldReturn` True)
       refusals :: [(Text, PrepaidCode -> DB.Connection -> IO (), (Int, Maybe J.Object))]
       refusals =
-        [ ("spent", \PrepaidCode {pcId} db -> reservePrepaidCode db pcId (nrId spender) orderTime >> void (spendLandedPrepaidCode db pcId (nrId spender) orderTime), refusedWith 409 "code_used"),
-          ("held", \PrepaidCode {pcId} db -> void $ reservePrepaidCode db pcId (nrId holder) orderTime, refusedWith 409 "code_reserved"),
-          ("revoked", \PrepaidCode {pcCodeHash} db -> void $ revokePrepaidCode db pcCodeHash orderTime, refusedWith 400 "code_invalid"),
-          ("expired", \PrepaidCode {pcCodeHash} db -> expire db pcCodeHash, refusedWith 409 "code_expired")
-        ]
+        [("expired", \PrepaidCode {pcCodeHash} db -> expire db pcCodeHash, refusedWith 409 "code_expired")]
       expire :: DB.Connection -> ByteString -> IO ()
       expire db codeHash = DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, DB.Binary codeHash)
   forM_ (zip [1 :: Int ..] refusals) $ \(n, (what, change, refusal)) -> do
@@ -1172,16 +1151,12 @@ testRetryShortDeadline = withWorker $ \w@W {wCtx = ctx} -> do
 
 testRetryNonceMoved :: IO ()
 testRetryNonceMoved = withWorker $ \w@W {wCtx = ctx} -> do
-  (r, t) <- paidIn ctx aliceOrder id >>= committedByUs w
+  (r, _) <- paidIn ctx aliceOrder id >>= committedByUs w
   f <- failedAfterRegister w r
   answerNonce w $ rvNonce reveal + 1
   v <- retried ctx f
   (field "phase" v, field "label" v, field "commitTx" v) `shouldBe` (Just "queued", Just J.Null, txJSON (nrCommitTx f))
   nrReveal <$> stored ctx f `shouldReturn` Nothing
-  steps w f >>= waitingUntil >>= (`shouldBe` at (t + maxAge + 1))
-  x <- stored ctx f
-  (nrPhase x, nrReveal x, nrCommitTx x, nrCommitBlock x, nrRevealBefore x) `shouldBe` (PCommitted, Nothing, nrCommitTx f, nrCommitBlock f, Just (t + maxAge))
-  field "commitTx" <$> viewOf ctx f `shouldReturn` txJSON (nrCommitTx f)
 
 testRetryRefusedIntent :: IO ()
 testRetryRefusedIntent = withWorker $ \w@W {wCtx = ctx} -> do

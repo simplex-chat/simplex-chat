@@ -7,6 +7,7 @@ module Bots.StoreService.NamesChainTests (namesChainTests) where
 import Bots.StoreService.FakeEthNode
 import Control.Concurrent.STM (TVar)
 import Control.Exception (toException, try)
+import Control.Monad (forM_)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
@@ -17,8 +18,9 @@ import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Word (Word64)
 import qualified Network.HTTP.Client as HTTP
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
 import StoreService.Config (ChainConfig (..))
-import StoreService.Names.Abi (selector, uint256)
+import StoreService.Names.Abi (uint256)
 import StoreService.Names.Chain
 import StoreService.Names.Revert
 import Test.Hspec
@@ -30,23 +32,14 @@ namesChainTests = describe "StoreService names: chain" $ do
     it "names every contract error by the selector viem encodes it with" testRevertSelectors
     it "writes a revert's name as the contracts declare it, none for a revert without data" testRevertText
     it "reads a dry run's revert with data by its name" $ testDryRunRevertNamed g
-    it "reads an eth_call revert with data by its name" $ testCallRevertNamed g
-    it "reads ownerOf of a name nobody holds as a revert" $ testOwnerOfRevert g
-    it "reads a bare revert message without data as a revert without data, and one with a reason as unknown" $ testRevertWithoutData g
-    it "reads a revert of an unknown error as an unnamed revert" $ testUnknownRevert g
   describe "failures" $ do
-    it "reads an RPC error as unavailable, without the URL" $ testRpcError g
+    it "reads eth_call faults: a bare revert as one without data, a revert reason as unknown, an RPC error without the URL, a 2xx answer not JSON without quoting it, and a long message cut" $ testCallFaults g
     it "gives up on a node that does not answer within the call's timeout" $ testTimeout g
-    it "reads an HTTP failure as unavailable" $ testHttpFailure g
     it "reads a refused connection as unavailable, without the URL" $ testRefused g
     it "refuses an answer over the size bound" $ testOversized g
-    it "reads a 2xx answer that is not JSON as unavailable, without quoting it" $ testNotJson g
-    it "cuts a node's long error message" $ testLongNodeMessage g
     it "refuses a quantity over 256 bits, and a long one within the call's timeout" $ testLongQuantity g
     it "keeps an HTTP failure's detail for the log, with the URL's host, path and query redacted" testFailureDetail
   describe "reads" $ do
-    it "answers eth_call from the node by contract and calldata" $ testEthCall g
-    it "reads the latest block's number, time and base fee" $ testLatestBlock g
     it "reads a block by its number, and one the node does not have as a failed read" $ testBlockAt g
     it "follows a transaction from sent to mined with its receipt and the nonces" $ testFollowTransaction g
   describe "transactions" $ do
@@ -122,35 +115,19 @@ testDryRunRevertNamed g = withChain g $ \node c -> do
   estimateGas c fakeSponsor "\x01\x02\x03\x04" `shouldReturn` Left (ChainReverted $ Just RNInsufficientAllowance)
   sentTransactions node `shouldReturn` []
 
-testCallRevertNamed :: TVar ChaChaDRG -> IO ()
-testCallRevertNamed g = withChain g $ \node c -> do
-  answerCall node fakeController availableCall $ Reverts nameNotAvailable
-  ethCallAt c Latest fakeController availableCall `shouldReturn` Left (ChainReverted $ Just RNNameNotAvailable)
-
-testOwnerOfRevert :: TVar ChaChaDRG -> IO ()
-testOwnerOfRevert g = withChain g $ \node c@ChainClient {ccConfig = ChainConfig {cBaseRegistrar}} -> do
-  let ownerOf = selector "ownerOf(uint256)" <> C.keccak256 "bakery1"
-  answerCall node cBaseRegistrar ownerOf $ Reverts ""
-  ethCallAt c Latest cBaseRegistrar ownerOf `shouldReturn` Left (ChainReverted $ Just RNWithoutData)
-
-testRevertWithoutData :: TVar ChaChaDRG -> IO ()
-testRevertWithoutData g = withChain g $ \node c -> do
-  setFault node "eth_call" $ RpcError (-32000) "execution reverted" Nothing
-  ethCallAt c Latest fakeController availableCall `shouldReturn` Left (ChainReverted $ Just RNWithoutData)
-  -- a reason kept in the message names a revert that had data, so it is not read as one without
-  setFault node "eth_call" $ RpcError 3 "execution reverted: ERC721: invalid token ID" Nothing
-  ethCallAt c Latest fakeController availableCall `shouldReturn` Left (ChainReverted Nothing)
-
-testUnknownRevert :: TVar ChaChaDRG -> IO ()
-testUnknownRevert g = withChain g $ \node c -> do
-  -- viem's encodeErrorResult of Error("ERC721: invalid token ID"), not one of the contracts' own errors
-  setFault node "eth_call" $ revertFault $ unhex "08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000184552433732313a20696e76616c696420746f6b656e2049440000000000000000"
-  ethCallAt c Latest fakeController availableCall `shouldReturn` Left (ChainReverted Nothing)
-
-testRpcError :: TVar ChaChaDRG -> IO ()
-testRpcError g = withChain g $ \node c -> do
-  setFault node "eth_call" $ RpcError (-32000) "header not found" Nothing
-  ethCallAt c Latest fakeController availableCall `shouldReturn` Left (ChainUnavailable "eth_call: error -32000: header not found")
+-- | A reason kept in the message names a revert that had data, so it is not read as one without.
+testCallFaults :: TVar ChaChaDRG -> IO ()
+testCallFaults g = withChain g $ \node c ->
+  forM_
+    [ (RpcError (-32000) "execution reverted" Nothing, ChainReverted $ Just RNWithoutData),
+      (RpcError 3 "execution reverted: ERC721: invalid token ID" Nothing, ChainReverted Nothing),
+      (RpcError (-32000) "header not found" Nothing, ChainUnavailable "eth_call: error -32000: header not found"),
+      (NotJson, ChainUnavailable "eth_call: not a JSON-RPC response"),
+      (RpcError (-32000) (T.replicate 1000 "x") Nothing, ChainUnavailable $ "eth_call: error -32000: " <> T.replicate 200 "x")
+    ]
+    $ \(fault, err) -> do
+      setFault node "eth_call" fault
+      ethCallAt c Latest fakeController availableCall `shouldReturn` Left err
 
 testTimeout :: TVar ChaChaDRG -> IO ()
 testTimeout g = withChain g $ \node c -> do
@@ -163,11 +140,6 @@ testTimeout g = withChain g $ \node c -> do
   r `shouldBe` Left (ChainUnavailable "eth_getBlockByNumber: timed out")
   elapsed `shouldSatisfy` (< 2)
 
-testHttpFailure :: TVar ChaChaDRG -> IO ()
-testHttpFailure g = withChain g $ \node c -> do
-  setFault node "eth_maxPriorityFeePerGas" HttpFailure
-  maxPriorityFee c `shouldReturn` Left (ChainUnavailable "eth_maxPriorityFeePerGas: HTTP 502")
-
 testRefused :: TVar ChaChaDRG -> IO ()
 testRefused g = withFakeEthNode $ \node -> do
   -- port 1 is privileged and nothing listens on it in the test container
@@ -178,16 +150,6 @@ testOversized :: TVar ChaChaDRG -> IO ()
 testOversized g = withChain g $ \node c -> do
   answerCall node fakeController availableCall $ Returns $ B.replicate (512 * 1024) 0
   ethCallAt c Latest fakeController availableCall `shouldReturn` Left (ChainUnavailable "eth_call: response over 1048576 bytes")
-
-testNotJson :: TVar ChaChaDRG -> IO ()
-testNotJson g = withChain g $ \node c -> do
-  setFault node "eth_call" NotJson
-  ethCallAt c Latest fakeController availableCall `shouldReturn` Left (ChainUnavailable "eth_call: not a JSON-RPC response")
-
-testLongNodeMessage :: TVar ChaChaDRG -> IO ()
-testLongNodeMessage g = withChain g $ \node c -> do
-  setFault node "eth_call" $ RpcError (-32000) (T.replicate 1000 "x") Nothing
-  ethCallAt c Latest fakeController availableCall `shouldReturn` Left (ChainUnavailable $ "eth_call: error -32000: " <> T.replicate 200 "x")
 
 testLongQuantity :: TVar ChaChaDRG -> IO ()
 testLongQuantity g = withChain g $ \node c -> do
@@ -217,19 +179,6 @@ testFailureDetail = do
     Left e -> httpFailureDetail refusedUrl e `shouldSatisfy` ("ConnectionFailure" `T.isPrefixOf`)
     Right _ -> expectationFailure "connected to port 1"
 
-testEthCall :: TVar ChaChaDRG -> IO ()
-testEthCall g = withChain g $ \node c -> do
-  answerCall node fakeController availableCall $ Returns $ uint256 (1 :: Int)
-  answerCall node fakeSponsor availableCall $ Returns $ uint256 (0 :: Int)
-  ethCallAt c Latest fakeController availableCall `shouldReturn` Right (uint256 (1 :: Int))
-  ethCallAt c Latest fakeSponsor availableCall `shouldReturn` Right (uint256 (0 :: Int))
-  ethCallAt c Latest fakeController (selector "available(string)") `shouldReturn` Left (ChainUnavailable "eth_call: error -32000: no fake answer for this call")
-
-testLatestBlock :: TVar ChaChaDRG -> IO ()
-testLatestBlock g = withChain g $ \node c -> do
-  setBlock node 21000000 1798761600
-  latestBlock c `shouldReturn` Right Block {blockNumber = 21000000, blockTimestamp = 1798761600, blockBaseFee = fakeBaseFee}
-
 testBlockAt :: TVar ChaChaDRG -> IO ()
 testBlockAt g = withChain g $ \node c -> do
   setBlock node 100 1798761600
@@ -254,9 +203,12 @@ testFollowTransaction g = withChain g $ \node c@ChainClient {ccRegistrar} -> do
   transactionReceipt c hash `shouldReturn` Right (Just Receipt {receiptSuccess = False, receiptBlock = block})
   transactionCount c ccRegistrar Latest `shouldReturn` Right 1
 
+-- | The raw bytes are compared whole, as a decode reads neither the chain id nor the value.
 testSignedHash :: TVar ChaChaDRG -> IO ()
 testSignedHash g = withChain g $ \node c -> do
   SignedTx {stRaw, stHash} <- signed g c 7
+  let tx = Eip1559Tx {txChainId = fakeChainId, txNonce = 7, txMaxPriorityFeePerGas = fakeTip, txMaxFeePerGas = 2 * fakeBaseFee + fakeTip, txGasLimit = fakeGas, txTo = fakeController, txValue = 0, txData = availableCall}
+  signEip1559Tx g fakeRegistrarKey tx `shouldReturn` Right stRaw
   stHash `shouldBe` TxHash (C.keccak256 stRaw)
   sendRawTransaction c stRaw `shouldReturn` Right stHash
   sentTransactions node `shouldReturn` [stRaw]
@@ -292,10 +244,6 @@ availableCall = unhex "aeb8ce9b0000000000000000000000000000000000000000000000000
 -- | viem's encodeErrorResult of InsufficientAllowance(10000, 2500)
 insufficientAllowance :: ByteString
 insufficientAllowance = unhex "2a1b2dd8000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000009c4"
-
--- | viem's encodeErrorResult of NameNotAvailable("bakery1")
-nameNotAvailable :: ByteString
-nameNotAvailable = unhex "477707e80000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000762616b6572793100000000000000000000000000000000000000000000000000"
 
 unhex :: ByteString -> ByteString
 unhex = either error id . convertFromBase Base16

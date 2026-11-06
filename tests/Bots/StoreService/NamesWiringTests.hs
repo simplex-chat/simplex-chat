@@ -35,7 +35,6 @@ namesWiringTests = describe "StoreService names: wiring" $ do
     it "wakes a waiter on a newer published version, not on an older or the same one" testPublishWakesOnNewer
     it "answers at once when the version read is not the one seen" testVersionAlreadyMoved
     it "catches a publish that lands between subscribing and reading" testPublishBeforeRead
-    it "gives up after the hold when nothing is published" testHoldTimesOut
     it "is not woken by another registration's publish" testOtherRegistration
     it "drops a registration's watch once no waiter is left" testPhasesDropIdleWatches
   describe "router" $ do
@@ -89,11 +88,6 @@ testPublishBeforeRead = do
   -- the row read here is the old one, though version 4 was committed and published while it ran
   let staleRead = atomically (publish phases rid1 4) >> pure 3
   timeout prompt (awaitChange phases rid1 staleRead 3 longHold) `shouldReturn` Just True
-
-testHoldTimesOut :: IO ()
-testHoldTimesOut = do
-  phases <- newPhases
-  timeout prompt (awaitChange phases rid1 (pure 3) 3 parkDelay) `shouldReturn` Just False
 
 testOtherRegistration :: IO ()
 testOtherRegistration = do

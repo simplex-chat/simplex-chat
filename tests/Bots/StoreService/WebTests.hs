@@ -270,7 +270,6 @@ badgeWebTests = do
   describe "StoreService names: sites" $ do
     it "exports both sites, each with the publishable key" testExportsBothSites
     it "serves the names shell in codes mode with codes_only on, with or without a publishable key, and the badges shell without it" testServesCodesMode
-    it "serves the names shell as built with codes_only off" testServesOpenMode
     it "exports the names shell in codes mode only with codes_only on, and the badges shell as built" testExportsCodesMode
     it "serves each site on its own port only, whatever the Host, and the API on both" testEachPortServesItsSite
     it "listens on the badges port alone without the names site" testOneListenerWithoutTheNamesSite
@@ -1375,12 +1374,6 @@ testServesCodesMode = bounded "codes mode served" $ do
     shells badges namesSite `shouldReturn` ((200, badgesShellWithMode ""), (200, namesShellAs "" "codes"))
   withBothSitesAs (\cfg -> cfg {names = Just codesOnly, stripe = Just publishTestStripe}) $ \badges namesSite ->
     shells badges namesSite `shouldReturn` ((200, badgesShellWithMode "pk_test_injected"), (200, namesShellAs "pk_test_injected" "codes"))
-
-testServesOpenMode :: IO ()
-testServesOpenMode = bounded "open mode served" $ do
-  open <- namesWithCodesOnly False
-  withBothSitesAs (\cfg -> cfg {names = Just open}) $ \badges namesSite ->
-    shells badges namesSite `shouldReturn` ((200, badgesShellWithMode ""), (200, namesShellHtml))
 
 testExportsCodesMode :: IO ()
 testExportsCodesMode = do

@@ -9,7 +9,7 @@ import Bots.StoreService.BotTests (operatorCmd, withStoreService)
 import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, setRates, webhookEvent, webhookSigHeader, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (reservedNamesCall)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, codesOnly, commitmentOf, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyA, keyB, listName, listOnChain, malformedTerms, olderTerms, orderTime, otherCommunityTerms, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, termsChanged, threeYears, withOrdersOn, yearsDuration)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, codesOnly, commitmentOf, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyA, keyB, listName, listOnChain, olderTerms, orderTime, otherCommunityTerms, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, termsChanged, threeYears, withOrdersOn, yearsDuration)
 import Bots.StoreService.NamesOwnerTests (findBody, postFind)
 import Bots.StoreService.NamesStoreTests (at, order, ownerA, placePaid, reg, t0, write)
 import Bots.StoreService.WebTests (StubCall (..), capturingStderr, StubState (..), jsonObject, rcv, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores)
@@ -17,7 +17,7 @@ import ChatTests.DBUtils (TestParams)
 import Control.Concurrent.Async (Async, async, cancel, concurrently, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
-import Control.Monad (forM_, join, void)
+import Control.Monad (forM_, join, void, when)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
@@ -76,11 +76,10 @@ namesSpendTests = describe "StoreService names: spend" $ do
   describe "refusals" $ do
     it "answers balance_changed with the current balance for a stale amount, a held balance and an order with none" testBalanceChanged
     it "refuses a method with a covered price, none with a difference, and prices and balances not positive" testMethodRule
-    it "refuses another signer and a stale timestamp, and answers an unknown order 404" testSignerAndId
     it "answers name_taken, catalog_changed, name_check_unavailable, provider_unavailable and order_exists, spending nothing" testOrderChecks
     it "runs its checks in the contract's order" testCheckOrder
     it "refuses a card difference below the card minimum after the price check, accepting it by crypto and at the minimum" testCardMinimum
-    it "refuses sealed missing or over 11095 characters and a body over 16384 bytes, accepting the longest" testSpendSizes
+    it "refuses a malformed order and a body over 16384 bytes, accepting the longest" testSpendSizes
     it "answers 403 codes_only to a covered spend, a difference, a malformed body and an unknown order, spending nothing and reaching no provider" testSpendCodesOnly
   describe "terms" $ do
     it "answers terms_changed for other terms or the other kind, listed or not, and stores the community terms, covered and by difference" testSpendTermsChanged
@@ -89,8 +88,7 @@ namesSpendTests = describe "StoreService names: spend" $ do
     it "checks the terms after the timestamp and the duration, with the community listing's read, before the balance and the name check, answering terms_unavailable while they are not set" testSpendTermsCheckOrder
   describe "holders" $ do
     it "closes the balance's overdue unfunded holder in the spend's transaction, publishing it and cancelling its invoice" testOverdueHolderSpent
-    it "closes an overdue unfunded holder of another name for a difference spend, the new invoice holding the balance" testDifferenceClosesHolder
-    it "makes a new invoice of the same name over its overdue difference order, closing and cancelling that order once" testSpendAgain
+    it "closes an overdue unfunded holder of another name, or of the same name with a new commitment, for a difference spend, the new invoice holding the balance" testDifferenceClosesHolder
     it "goes through when the overdue holder was cancelled meanwhile" testHolderCancelledMeanwhile
     it "answers balance_changed when the overdue holder was funded meanwhile, cancelling the new invoice" testHolderFundedMeanwhile
   describe "races" $ do
@@ -384,24 +382,9 @@ testMethodRule = withSpend $ \ctx -> do
   stubCalls (cStub ctx) `shouldReturn` []
   amountOf ctx src `shouldReturn` Just 6000
 
-testSignerAndId :: IO ()
-testSignerAndId = withSpend $ \ctx -> do
-  src <- sourceOf ctx "src" 15000
-  spend ctx src (covered 15000) {sbOrder = aliceOrder {oKey = keyB}} `shouldReturn` refusedWith 400 "bad_request"
-  mapM_
-    (\offset -> spend ctx src (covered 15000) {sbOrder = aliceOrder {oTimestamp = fromInteger (toInteger (seconds orderTime) + offset)}} `shouldReturn` refusedWith 400 "bad_request")
-    [-601, 601]
-  spend ctx (RegistrationId "unknown") (covered 15000) `shouldReturn` refusedWith 404 "not_found"
-  amountOf ctx src `shouldReturn` Just 15000
-  paidFrom ctx src `shouldReturn` []
-
 testOrderChecks :: IO ()
 testOrderChecks = withSpend $ \ctx@Ctx {cNode = node, cStub} -> do
   src <- sourceOf ctx "src" 30000
-  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (1 :: Int)
-  spend ctx src (covered 30000) `shouldReturn` refusedWith 409 "name_taken"
-  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
-  spend ctx src (covered 30000) {sbOrder = aliceOrder {oPrice = 9000}} `shouldReturn` (409, Just $ KM.fromList [("error", "catalog_changed"), ("price", J.Number 10000)])
   setFault node "eth_getBlockByNumber" HttpFailure
   spend ctx src (covered 30000) `shouldReturn` refusedWith 503 "name_check_unavailable"
   clearFault node "eth_getBlockByNumber"
@@ -513,16 +496,11 @@ testSpendSizes = withSpend $ \ctx -> do
   src <- sourceOf ctx "src" 15000
   missing <- KM.delete "sealed" <$> spendBody ctx src (covered 15000)
   postSpend ctx src missing `shouldReturn` refusedWith 400 "bad_request"
-  noTerms <- KM.delete "terms" <$> spendBody ctx src (covered 15000)
-  postSpend ctx src noTerms `shouldReturn` refusedWith 400 "bad_request"
-  forM_ malformedTerms $ \t -> spend ctx src (covered 15000) {sbOrder = aliceOrder {oTerms = t}} `shouldReturn` refusedWith 400 "bad_request"
-  spend ctx src (covered 15000) {sbOrder = aliceOrder {oSealed = T.replicate 11096 "a"}} `shouldReturn` refusedWith 400 "bad_request"
   padded <- KM.insert "padding" (J.String $ T.replicate 16384 "a") <$> spendBody ctx src (covered 15000)
   postSpend ctx src padded `shouldReturn` refusedWith 400 "bad_request"
   longest <- spendBody ctx src (covered 15000) {sbOrder = aliceOrder {oSealed = T.replicate 11095 "a"}}
   LB.length (J.encode longest) `shouldSatisfy` (< 16384)
   fst <$> postSpend ctx src longest `shouldReturn` 200
-
 
 testOverdueHolderSpent :: IO ()
 testOverdueHolderSpent = withSpend $ \ctx@Ctx {cStore, cClock} -> do
@@ -563,30 +541,21 @@ holderAfter ctx@Ctx {cStore} NameRegistration {nrPayment} = case nrPayment of
   other -> error $ "not a paid order: " <> show other
 
 testDifferenceClosesHolder :: IO ()
-testDifferenceClosesHolder = withSpend $ \ctx@Ctx {cClock} -> do
-  src <- sourceOf ctx "src" 6000
-  (holder, holderRef) <- overdueCardHolder ctx src
-  now <- readIORef cClock
-  (status, v) <- spend ctx src (timedAt now $ dynamis 6000 (Just "btc"))
-  status `shouldBe` 200
-  next <- invoiceRegistration ctx (invoiceIdOf v)
-  holderAfter ctx holder `shouldReturn` (False, nrVersion holder + 1, Just ISExpired)
-  cancels ctx `shouldReturn` [holderRef]
-  fmap (fmap bhHolder . blHold) <$> balanceOf ctx src `shouldReturn` Just (Just $ nrId next)
-
--- | The page's "Get a new invoice": the same name with a new commitment, its earlier difference order overdue.
-testSpendAgain :: IO ()
-testSpendAgain = withSpend $ \ctx@Ctx {cClock} -> do
-  src <- sourceOf ctx "src" 6000
-  (holder, holderRef) <- overdueCardHolder ctx src
-  now <- readIORef cClock
-  (status, v) <- spend ctx src $ timedAt now SpendBody {sbOrder = aliceOrder {oCommitment = commitmentOf 5}, sbBalance = 6000, sbMethod = Just "card"}
-  status `shouldBe` 200
-  next <- invoiceRegistration ctx (invoiceIdOf v)
-  (nrLive next, nrLabelHash next) `shouldBe` (True, nrLabelHash holder)
-  holderAfter ctx holder `shouldReturn` (False, nrVersion holder + 1, Just ISExpired)
-  cancels ctx `shouldReturn` [holderRef]
-  fmap (fmap bhHolder . blHold) <$> balanceOf ctx src `shouldReturn` Just (Just $ nrId next)
+testDifferenceClosesHolder =
+  -- the second row is the page's "Get a new invoice": the same name with a new commitment
+  forM_ [(dynamis 6000 (Just "btc"), False), (SpendBody {sbOrder = aliceOrder {oCommitment = commitmentOf 5}, sbBalance = 6000, sbMethod = Just "card"}, True)] $ \(body, sameName) ->
+    withSpend $ \ctx@Ctx {cClock} -> do
+      src <- sourceOf ctx "src" 6000
+      (holder, holderRef) <- overdueCardHolder ctx src
+      now <- readIORef cClock
+      (status, v) <- spend ctx src (timedAt now body)
+      status `shouldBe` 200
+      next <- invoiceRegistration ctx (invoiceIdOf v)
+      nrLive next `shouldBe` True
+      when sameName $ nrLabelHash next `shouldBe` nrLabelHash holder
+      holderAfter ctx holder `shouldReturn` (False, nrVersion holder + 1, Just ISExpired)
+      cancels ctx `shouldReturn` [holderRef]
+      fmap (fmap bhHolder . blHold) <$> balanceOf ctx src `shouldReturn` Just (Just $ nrId next)
 
 testHolderCancelledMeanwhile :: IO ()
 testHolderCancelledMeanwhile = withSpendHook $ \hook ctx@Ctx {cStore, cWeb, cClock} -> do

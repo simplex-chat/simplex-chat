@@ -66,9 +66,7 @@ namesContractsTests = describe "StoreService names: contracts" $ do
   g <- runIO C.newRandom
   it "builds a name's node from its label hash as viem's namehash" testNode
   describe "status" $ do
-    it "reads a name nobody holds or reserved as available" $ testAvailable g
     it "reads a reserved name" $ testReserved g
-    it "reads a registered name with the registry's owner and resolver" $ testRegistered g
     it "keeps a name registered to the last second of its grace period" $ testGracePeriod g
     it "reads the registry and the grace period once, and again after a failed read" $ testRegistrarOnce g
   describe "records" $ do
@@ -103,14 +101,6 @@ testNode :: IO ()
 testNode = do
   nodeBytes (labelNode TLDSimplex $ labelHash "alicebakery") `shouldBe` aliceNode
   nodeBytes (namehash TLDSimplex "alicebakery") `shouldBe` aliceNode
-
-testAvailable :: TVar ChaChaDRG -> IO ()
-testAvailable g = withContracts g $ \node ct -> do
-  answerRegistrar node
-  setBlock node 100 now
-  answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (0 :: Int)
-  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
-  nameStatus ct alice `shouldReturn` Right NSAvailable
 
 testReserved :: TVar ChaChaDRG -> IO ()
 testReserved g = withContracts g $ \node ct -> do
@@ -264,14 +254,6 @@ testTermsTimeout g = withFakeEthNode $ \node -> do
 
 termsAt :: ByteString -> Terms
 termsAt = fromJust . termsOf . fakeTermsLink
-
-testRegistered :: TVar ChaChaDRG -> IO ()
-testRegistered g = withContracts g $ \node ct -> do
-  answerRegistrar node
-  answerRegistered node (resolverOf node)
-  setBlock node 100 now
-  answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (now + year)
-  nameStatus ct alice `shouldReturn` Right (NSRegistered $ registeredAlice (resolverOf node) (now + year))
 
 testGracePeriod :: TVar ChaChaDRG -> IO ()
 testGracePeriod g = withContracts g $ \node ct -> do

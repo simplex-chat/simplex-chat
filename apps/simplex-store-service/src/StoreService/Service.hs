@@ -39,6 +39,8 @@ module StoreService.Service
     survive,
     IssueCodeOpts (..),
     issueBadgeCode,
+    heldText,
+    chainText,
   )
 where
 
@@ -668,7 +670,6 @@ badgeErrorRetryAfter = \case
   STEProviderUnavailable -> Just 300
   STERateLimited -> Just 60
   _ -> Nothing
-
 
 -- | The agent verified the signature, so sigKey is a key the sender holds; a differing purchaseKey would let a client claim a purchase it cannot sign for.
 storeServiceResponse :: BadgeIssuerKey -> StoreVerifier -> PurchaseChecks -> ChatController -> Maybe (TQueue GroupEvent) -> Maybe C.PublicKeyEd25519 -> J.Object -> IO StoreServiceResponse

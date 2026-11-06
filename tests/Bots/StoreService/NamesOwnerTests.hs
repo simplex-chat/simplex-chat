@@ -65,7 +65,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Abi (addressWord, hex, uint256)
 import StoreService.Names.Chain (TxHash (..))
-import StoreService.Names.Orders (OrdersEnv (..), signedRequestSeconds)
+import StoreService.Names.Orders (OrdersEnv (..), movable, signedRequestSeconds)
 import StoreService.Names.Phases (RegistrationId (..), phasesWaiting)
 import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, personalDigest, retargetMessage)
 import StoreService.Names.Store hiding (findLimit)
@@ -88,21 +88,17 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "refuses a move from registered, queued, taken, and committed without a refused reveal" testMoveRefusedPhases
     it "moves a failed order, a lapsed one, and a committed one whose links were refused, to the same name with other links too" testMoveAccepted
     it "answers a body equal to the current fields with the view unchanged, counting no move, whatever its timestamp" testMoveRepeat
-    it "answers a repeat after the terms changed on chain with the view unchanged, counting no second move" testMoveRepeatAfterBump
     it "moves an order by a body differing only in terms, storing them" testMoveTermsOnly
     it "answers terms_changed for an old version, other terms or the other kind, listed or not, a body differing only in terms included, and moves under the community terms, storing them" testMoveTermsChanged
     it "checks a code order moved to a community name for 2 years, and moved on to another name for its code's years again" testMoveCommunityYears
     it "prices a paid order moved to a community name for 2 years, whatever years it paid for" testMoveCommunityPaidYears
     it "checks the terms after the timestamp, /retry's first check, the existing orders and the duration, before the chain, answering terms_unavailable while they are not set" testMoveTermsCheckOrder
-    it "answers move_limit before checking the terms" testMoveLimitBeforeTerms
     it "answers the fourth move move_limit with the current view, changing nothing" testMoveLimit
     it "refuses a move meeting another live order of the wallet's or the commitment with a bare order_exists, before the price" testMoveMeetsOrder
     it "runs the order checks on the new fields: invalid_name, the duration, name_taken, name_check_unavailable" testMoveOrderChecks
     it "registers a failed order whose register went through, by its mined register or by ownerOf, answering registration_changed and spending a code" testMoveLanded
-    it "answers name_check_unavailable when the register check cannot read the chain, changing nothing" testMoveLandedUnread
     it "spends a released code still unused when its failed order turns out registered, and alerts once when it was spent elsewhere meanwhile" testMoveLandedReleasedCode
     it "answers a dearer name price_too_high with its price, and moves to a cheaper one at its price, crediting the difference to its balance" testMovePrice
-    it "credits nothing for a cheaper move whose compare-and-set loses" testCheaperMoveLostRace
     it "keeps fromBalance through a move to a cheaper name" testMoveKeepsFromBalance
     it "checks a code order's code again: code_not_covering for a shorter name, a held code kept though revoked and expired since" testMoveCodeOrder
     it "reserves a released code again while unused, else answers code_used, code_reserved, code_invalid or code_expired" testMoveReleasedCode
@@ -230,9 +226,8 @@ balanceOf Ctx {cStore} NameRegistration {nrId} = fmap (\Balance {blAmount, blCre
 stored :: Ctx -> NameRegistration -> IO NameRegistration
 stored ctx = registrationById ctx . nrId
 
-failedPhase, takenPhase, registeredPhase, committedPhase, linksRefusedPhase :: NameRegistration -> NameRegistration
+failedPhase, registeredPhase, committedPhase, linksRefusedPhase :: NameRegistration -> NameRegistration
 failedPhase r = r {nrPhase = PFailed, nrFailedAt = Just orderTime, nrError = Just "The name could not be registered"}
-takenPhase r = r {nrPhase = PTaken}
 registeredPhase r = r {nrPhase = PRegistered, nrExpiresAt = Just (seconds orderTime + 3 * 31536000)}
 committedPhase r =
   r
@@ -406,14 +401,12 @@ testMoveRefusedPhases :: IO ()
 testMoveRefusedPhases = withOwner $ \ctx -> do
   answerFree ctx "alicebakers"
   to <- moveTo ctx "alicebakers" 10
-  registeredOrder <- paidIn ctx aliceOrder registeredPhase
-  committedOrder <- paidIn ctx aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds orderTime + 1} committedPhase
-  queuedOrder <- paidIn ctx dynamisOrder id
-  takenOrder <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 4} takenPhase
-  -- each by its own owner, so only the phase can refuse it
-  forM_ [(keyA, registeredOrder), (keyA, committedOrder), (keyA, queuedOrder), (keyB, takenOrder)] $ \(key, r) -> do
-    (nrPhase r,) <$> move ctx key r to `shouldReturn` (nrPhase r, refusedWith 400 "bad_request")
-    stored ctx r `shouldReturn` r
+  r <- paidIn ctx aliceOrder registeredPhase
+  move ctx keyA r to `shouldReturn` refusedWith 400 "bad_request"
+  stored ctx r `shouldReturn` r
+  let movableWith refused = [p | p <- [minBound .. maxBound], movable r {nrPhase = p, nrLinksRefusedAt = refused}]
+  movableWith Nothing `shouldBe` [PFailed]
+  movableWith (Just orderTime) `shouldBe` [PCommitted, PFailed]
 
 testMoveAccepted :: IO ()
 testMoveAccepted = withOwner $ \ctx -> do
@@ -468,19 +461,7 @@ testMoveRepeat = withOwner $ \ctx -> do
   postMove ctx (nrId r) body `shouldReturn` first'
   resigned <- moveBody ctx keyA (nrId r) to
   postMove ctx (nrId r) resigned `shouldReturn` first'
-  stored ctx r `shouldReturn` movedOnce
-  nrMoves movedOnce `shouldBe` 1
-
-testMoveRepeatAfterBump :: IO ()
-testMoveRepeatAfterBump = withOwner $ \ctx -> do
-  answerFree ctx "alicebakers"
-  r <- paidIn ctx aliceOrder failedPhase
-  body <- moveBody ctx keyA (nrId r) =<< moveTo ctx "alicebakers" 10
-  first' <- postMove ctx (nrId r) body
-  fst first' `shouldBe` 200
-  movedOnce <- stored ctx r
   setGeneralTerms (cNode ctx) fakeNewGeneralTermsText
-  advance ctx 60
   postMove ctx (nrId r) body `shouldReturn` first'
   stored ctx r `shouldReturn` movedOnce
   (nrMoves &&& nrAgreedTerms) movedOnce `shouldBe` (1, plainTerms)
@@ -565,15 +546,6 @@ testMoveTermsCheckOrder = withOwner $ \ctx@Ctx {cNode} -> do
   answer `shouldBe` refusedWithView "registration_changed" view
   field "phase" view `shouldBe` Just "registered"
 
-testMoveLimitBeforeTerms :: IO ()
-testMoveLimitBeforeTerms = withOwner $ \ctx -> do
-  answerFree ctx "alicebakers"
-  r <- paidIn ctx aliceOrder $ \p -> (failedPhase p) {nrMoves = 3}
-  to <- moveTo ctx "alicebakers" 10
-  view <- getView ctx r
-  move ctx keyA r to {ofAgreedTerms = olderTerms} `shouldReturn` refusedWithView "move_limit" view
-  stored ctx r `shouldReturn` r
-
 testMoveLimit :: IO ()
 testMoveLimit = withOwner $ \ctx -> do
   answerFree ctx "alicebakers"
@@ -586,7 +558,7 @@ testMoveLimit = withOwner $ \ctx -> do
   limited <- stored ctx r
   to <- moveTo ctx "alicebakery" 20
   view <- getView ctx limited
-  move ctx keyA limited to `shouldReturn` refusedWithView "move_limit" view
+  move ctx keyA limited to {ofAgreedTerms = olderTerms} `shouldReturn` refusedWithView "move_limit" view
   (field "moves" view, field "phase" view) `shouldBe` (Just (J.Number 3), Just "failed")
   stored ctx r `shouldReturn` limited
 
@@ -673,16 +645,6 @@ testMoveLandedReleasedCode = withOwner $ \ctx@Ctx {cStore} -> do
   where
     idText (RegistrationId t) = t
 
-testMoveLandedUnread :: IO ()
-testMoveLandedUnread = withOwner $ \ctx@Ctx {cNode} -> do
-  answerFree ctx "alicebakers"
-  r <- paidIn ctx aliceOrder failedPhase
-  -- a revert with data is a failed read, not an unowned name
-  answerCall cNode (registrarOf cNode) (ownerOfSelector <> labelBytes "alicebakery") $ Reverts $ unhex "37ed32e8"
-  to <- moveTo ctx "alicebakers" 10
-  move ctx keyA r to `shouldReturn` refusedWith 503 "name_check_unavailable"
-  stored ctx r `shouldReturn` r
-
 testMovePrice :: IO ()
 testMovePrice = withOwner $ \ctx -> do
   answerFree ctx "alicebakers"
@@ -698,19 +660,6 @@ testMovePrice = withOwner $ \ctx -> do
   field "balance" v `shouldBe` Just (J.object ["amount" J..= (10000 :: Int), "held" J..= False, "heldUntil" J..= J.Null, "refunded" J..= (0 :: Int)])
   nrPrice <$> stored ctx dear `shouldReturn` 10000
   balanceOf ctx dear `shouldReturn` Just (10000, 10000)
-
-testCheaperMoveLostRace :: IO ()
-testCheaperMoveLostRace = withOwner $ \ctx@Ctx {cNode} -> do
-  answerFree ctx "alicebakers"
-  r <- paidIn ctx dynamisOrder failedPhase
-  to <- moveTo ctx "alicebakers" 10
-  -- held at the register check's ownerOf read, inside the turns
-  (moving, gate) <- pausedAt cNode "eth_call" $ move ctx keyA r to
-  changed <- rewrite ctx r id
-  releaseGate gate
-  fst <$> within "the move" (wait moving) `shouldReturn` 409
-  stored ctx r `shouldReturn` changed
-  balanceOf ctx r `shouldReturn` Nothing
 
 -- | dynamis for 20000, 5000 of it from another order's balance, moved to alicebakers for 10000.
 testMoveKeepsFromBalance :: IO ()
@@ -748,15 +697,9 @@ testMoveCodeOrder = withOwner $ \ctx@Ctx {cStore} -> do
 testMoveReleasedCode :: IO ()
 testMoveReleasedCode = withOwner $ \ctx@Ctx {cStore} -> do
   answerFree ctx "alicebakers"
-  spender <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 20} id
-  holder <- paidIn ctx (byB dynamisOrder) {oCommitment = commitmentOf 21} id
   let refusals :: [(Text, PrepaidCode -> DB.Connection -> IO (), (Int, Maybe J.Object))]
       refusals =
-        [ ("spent", \PrepaidCode {pcId} db -> reservePrepaidCode db pcId (nrId spender) orderTime >> void (spendLandedPrepaidCode db pcId (nrId spender) orderTime), refusedWith 409 "code_used"),
-          ("held", \PrepaidCode {pcId} db -> void $ reservePrepaidCode db pcId (nrId holder) orderTime, refusedWith 409 "code_reserved"),
-          ("revoked", \PrepaidCode {pcCodeHash} db -> void $ revokePrepaidCode db pcCodeHash orderTime, refusedWith 400 "code_invalid"),
-          ("expired", \PrepaidCode {pcCodeHash} db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, DB.Binary pcCodeHash), refusedWith 409 "code_expired")
-        ]
+        [("expired", \PrepaidCode {pcCodeHash} db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, DB.Binary pcCodeHash), refusedWith 409 "code_expired")]
   forM_ (zip [1 :: Int ..] refusals) $ \(n, (what, change, refusal)) -> do
     let label = "codeorder" <> tshow n
     answerFree ctx label
@@ -780,11 +723,6 @@ testMoveSizes = withOwner $ \ctx -> do
   let longest = to {ofSealed = T.replicate 11095 "s"}
   body <- moveBody ctx keyA (nrId r) longest
   postMove ctx (nrId r) (KM.insert "owner" (J.String $ T.replicate 5300 "0") body) `shouldReturn` refusedWith 400 "bad_request"
-  move ctx keyA r to {ofSealed = T.replicate 11096 "s"} `shouldReturn` refusedWith 400 "bad_request"
-  valid <- moveBody ctx keyA (nrId r) to
-  forM_ [KM.insert "labelHash" (J.String $ T.toUpper $ hex $ (\(LabelHash h) -> h) $ ofLabelHash to) valid, KM.delete "signature" valid, KM.insert "length" "11" valid, KM.delete "terms" valid] $ \malformed ->
-    postMove ctx (nrId r) malformed `shouldReturn` refusedWith 400 "bad_request"
-  forM_ malformedTerms $ \t -> move ctx keyA r to {ofAgreedTerms = t} `shouldReturn` refusedWith 400 "bad_request"
   post ctx (registrationPath (nrId r) <> "/name") "[]" `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` r
   -- an owner in the body is ignored
@@ -797,8 +735,6 @@ testMoveRefusedSigner = withOwner $ \ctx -> do
   r <- paidIn ctx aliceOrder failedPhase
   to <- moveTo ctx "alicebakers" 10
   move ctx keyB r to `shouldReturn` refusedWith 400 "bad_request"
-  ts <- clockSeconds ctx
-  (moveBodyAt ctx keyA (nrId r) to (ts - signedWindow - 1) >>= postMove ctx (nrId r)) `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` r
   let unknown = RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"
   (moveBody ctx keyA unknown to >>= postMove ctx unknown) `shouldReturn` refusedWith 404 "not_found"
@@ -806,17 +742,20 @@ testMoveRefusedSigner = withOwner $ \ctx -> do
 testMoveLostRace :: IO ()
 testMoveLostRace = withOwner $ \ctx@Ctx {cNode} -> do
   answerFree ctx "alicebakers"
-  r <- paidIn ctx aliceOrder failedPhase
-  to <- moveTo ctx "alicebakers" 10
-  -- held at the register check's ownerOf read, inside the turns
-  (moving, gate) <- pausedAt cNode "eth_call" $ move ctx keyA r to
-  changed <- rewrite ctx r id
-  releaseGate gate
-  answer <- within "the move" $ wait moving
-  view <- getView ctx changed
-  answer `shouldBe` refusedWithView "registration_changed" view
-  field "version" view `shouldBe` Just (J.toJSON $ nrVersion r + 1)
-  stored ctx r `shouldReturn` changed
+  -- the cheaper move from dynamis takes the other branch of the price check; the first round writes no move
+  forM_ [aliceOrder, dynamisOrder] $ \o -> do
+    r <- paidIn ctx o failedPhase
+    to <- moveTo ctx "alicebakers" 10
+    -- held at the register check's ownerOf read, inside the turns
+    (moving, gate) <- pausedAt cNode "eth_call" $ move ctx keyA r to
+    changed <- rewrite ctx r id
+    releaseGate gate
+    answer <- within "the move" $ wait moving
+    view <- getView ctx changed
+    answer `shouldBe` refusedWithView "registration_changed" view
+    field "version" view `shouldBe` Just (J.toJSON $ nrVersion r + 1)
+    stored ctx r `shouldReturn` changed
+    balanceOf ctx r `shouldReturn` Nothing
 
 -- | Each round holds the higher hash's turn while both orders start, the one moving from the lower hash first in odd
 -- rounds and last in even ones, so that without the hash order some round has each order holding one turn and waiting

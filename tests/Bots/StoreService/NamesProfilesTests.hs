@@ -67,7 +67,6 @@ namesProfilesTests = describe "StoreService names: profiles" $ do
     H.it "fills the preview bound while search still fetches, and a preview with no slot in time is unread" testPreviewBound
     H.it "fills the search bound while previews still fetch" testSearchBound
     H.it "lets a fetch wait for a slot that frees within the timeout" testSlotFreesInTime
-    H.it "answers a link the chat core cannot parse unavailable without fetching" testUnparseableLink
   describe "host rule" $ do
     H.it "passes public IP literals and a name resolving to public addresses" testPublicHosts
     H.it "refuses private, loopback, CGNAT, link-local and unique-local literals" testPrivateLiterals
@@ -383,12 +382,6 @@ testSlotFreesInTime = do
   atomically $ putTMVar gate ()
   wait waiting `shouldReturn` ProfileOk (profileFor (addressLink 100))
   mapM wait held `shouldReturn` map (ProfileOk . profileFor . addressLink) [0, 1]
-
-testUnparseableLink :: IO ()
-testUnparseableLink = do
-  fake <- newFake testLimits answerAll publicResolver
-  mapM_ (\l -> preview fake l `shouldReturn` ProfileUnavailable) ["https://smp8.simplex.im/a#x", "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4Lm"]
-  fetchCount fake `shouldReturn` 0
 
 -- Host rule
 

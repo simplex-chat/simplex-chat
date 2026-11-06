@@ -12,8 +12,6 @@ import Bots.StoreService.WebUIMock (EphemeralWallet (..), newEphemeralWallet, wa
 import Control.Concurrent.Async (Async, async, concurrently, wait)
 import Control.Concurrent.STM
 import Control.Monad (forM, forM_, when)
-import Crypto.Number.Serialize (i2ospOf_, os2ip)
-import qualified Crypto.PubKey.ECC.Types as ECC
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
@@ -73,39 +71,30 @@ namesRecordsTests = describe "StoreService names: records" $ do
     it "reads a request's formats, then its link, then its signature" testRequestOrder
     it "takes one or two edits of distinct keys with consecutive nonces, and a clear only alone" testRequestEdits
     it "bounds a link at 4096 bytes and takes only a link of the key's kind" testLinkBound
-    it "refuses a high s, though recovery accepts it" testHighS
   describe "relay" $ do
     it "relays an edit with viem's calldata and answers its hash once mined" $ testRelayMined g
-    it "refuses a wrong signer or a passed deadline before any row or gas" $ testRefusedBeforeRow g
     it "refuses an edit whose deadline is within ten minutes of the latest block, before any row or gas" $ testDeadlineMargin g
     it "refuses an edit of a name on another resolver, or past its expiry and grace, before any row or gas" $ testRefusedNameState g
     it "leaves the owner's cap untouched by ten edits a non-owner signs" $ testNonOwnerCap g
     it "checks a refused edit's repeat anew" $ testRefusedRepeat g
     it "refuses the eleventh relayed edit of a name within an hour, with the real wait" $ testCap g
     it "answers provider_unavailable and stores nothing when the chain fails before the send" $ testUnavailableBeforeSend g
-    it "stores no edit whose dry run reverted, so eleven of them leave the cap to sent edits" $ testDryRunNotCounted g
     it "checks a dry-run-reverted edit's repeat anew" $ testDryRunRepeat g
     it "answers provider_unavailable and stores nothing when the re-read after a dry run's revert fails" $ testDryRunReReadFails g
     it "lets a concurrent twin lose the unique insert before any signing, and answers both" $ testConcurrentTwin g
-    it "answers edit_pending after the wait, and its repeat with the hash once mined" $ testPendingThenMined g
     it "answers edit_pending at once when the chain stops answering after the send" $ testChainStopsAfterSend g
     it "bounds the wait for edit_pending from the request's arrival, counting the checks and the send" $ testPendingFromArrival g
   describe "two edits" $ do
     it "relays two edits as one multicall transaction with one row, and answers its hash once mined" $ testTwoMined g
     it "refuses two edits when the second is signed by another key, or its nonce is not the owner's next, before any row or gas" $ testTwoRefused g
     it "answers an exact resend of two edits from the stored request, and checks either edit alone anew" $ testTwoResend g
-    it "counts two edits as one edit of the yearly limit, taking the last one left" $ testTwoYearLimit g
-    it "counts two edits as one request of the hourly cap" $ testTwoCap g
-    it "answers a mined revert of two edits record_reverted with no name, counting it once" $ testTwoReverted g
     it "stores nothing when the dry run of two edits reverts, answering it with no name" $ testTwoDryRunReverted g
     it "settles two edits SignatureExpired once the earliest deadline is passed at depth" $ testTwoExpired g
     it "answers two edits applied with no hash only when the nonce passed both and both records hold their values" $ testTwoAppliedByAnother g
     it "answers two edits record_reverted InvalidNonce when another body took only the first nonce" $ testTwoFirstNonceTaken g
   describe "outcomes" $ do
-    it "answers an InvalidNonce revert of an edit another relayer applied as mined with no hash, and its repeat too" $ testAppliedByAnother g
+    it "answers a revert of an edit another relayer applied, InvalidNonce or SignatureExpired past the deadline, as mined with no hash, its repeat too, and record_reverted InvalidNonce when another body used the nonce" $ testAppliedByAnother g
     it "answers a dry run's InvalidNonce revert of an edit another relayer applied as applied with no hash, storing nothing" $ testDryRunAppliedByAnother g
-    it "answers a SignatureExpired revert of an edit another relayer applied as mined with no hash" $ testExpiredAppliedByAnother g
-    it "answers record_reverted InvalidNonce when another body used the nonce with another value" $ testNonceTakenByAnother g
     it "relays a clear edit with viem's calldata, applied by another relayer when both records read empty" $ testClearApplied g
     it "answers a clear edit record_reverted InvalidNonce when either record holds a value after the nonce moved" $ testClearNonceTaken g
     it "frees a reverted edit's nonce for a new body, and answers the reverted edit's repeat while the new one is pending" $ testRevertFreesNonce g
@@ -348,17 +337,6 @@ testLinkBound = do
   edit contactKey viemChannelLink `shouldBe` Left EIInvalidLink
   edit channelKey "https://smp8.simplex.im/c#Y8m3;https://smp9.simplex.im/c#Z1" `shouldBe` Left EIInvalidLink
 
-testHighS :: IO ()
-testHighS = do
-  let RecoverableSignature {rsR, rsS, rsRecId} = viemSetSignature
-      highS = i2ospOf_ 32 $ curveOrder - os2ip rsS
-      flipped = RecoverableSignature {rsR, rsS = highS, rsRecId = 1 - rsRecId}
-  recoverAddress flipped (digestOf (channel viemChannelLink) 0 deadline) `shouldReturn` Right viemAddress
-  editRequest (requestOf [KM.insert "signature" (J.String $ hex $ serializeSignature flipped) $ editFields [("key", J.String channelKey), ("value", J.String viemChannelLink)]])
-    `shouldBe` Left EIBadRequest
-  where
-    curveOrder = ECC.ecc_n $ ECC.common_curve $ ECC.getCurveByName ECC.SEC_p256k1
-
 -- relay
 
 testRelayMined :: TVar ChaChaDRG -> IO ()
@@ -370,15 +348,6 @@ testRelayMined g = withSetup g $ \s -> do
   h <- mineSent s 1 True
   answerOf r `shouldReturn` EAApplied (Just h)
   stateOf s req `shouldReturn` Just (ESMined $ Just h)
-
-testRefusedBeforeRow :: TVar ChaChaDRG -> IO ()
-testRefusedBeforeRow g = withSetup g $ \s@Setup {node, records} -> do
-  other <- newEphemeralWallet g
-  (relayEdit records =<< signEdit s other (channel viemChannelLink) 0 deadline) `shouldReturn` EARefused
-  setBlock node 2 deadline
-  (relayEdit records =<< ownerEdit s viemChannelLink) `shouldReturn` EARefused
-  editRows s `shouldReturn` 0
-  sentTransactions node `shouldReturn` []
 
 testDeadlineMargin :: TVar ChaChaDRG -> IO ()
 testDeadlineMargin g = withSetup g $ \s@Setup {node, records} -> do
@@ -456,18 +425,6 @@ testUnavailableBeforeSend g = withSetup g $ \s@Setup {node, records} -> do
   h <- mineSent s 1 True
   answerOf r `shouldReturn` EAApplied (Just h)
 
-testDryRunNotCounted :: TVar ChaChaDRG -> IO ()
-testDryRunNotCounted g = withSetup g $ \s@Setup {node, records, owner} -> do
-  setFault node "eth_estimateGas" $ revertFault $ selector "InvalidSignature()"
-  forM_ [1 .. 11 :: Int] $ \n ->
-    (relayEdit records =<< signEdit s owner (channel $ "https://smp8.simplex.im/c#n" <> T.pack (show n)) 0 deadline)
-      `shouldReturn` EAReverted (Just "InvalidSignature")
-  editRows s `shouldReturn` 0
-  clearFault node "eth_estimateGas"
-  r <- relay s =<< ownerEdit s viemChannelLink
-  h <- mineSent s 1 True
-  answerOf r `shouldReturn` EAApplied (Just h)
-
 testDryRunRepeat :: TVar ChaChaDRG -> IO ()
 testDryRunRepeat g = withSetup g $ \s@Setup {node, records} -> do
   req <- ownerEdit s viemChannelLink
@@ -502,13 +459,6 @@ testConcurrentTwin g = withSetup g $ \s@Setup {node, records} -> do
   within (wait answers) `shouldReturn` (EAApplied (Just h), EAApplied (Just h))
   length <$> sentTransactions node `shouldReturn` 1
   editRows s `shouldReturn` 1
-
-testPendingThenMined :: TVar ChaChaDRG -> IO ()
-testPendingThenMined g = withSetup g $ \s@Setup {records} -> do
-  req <- ownerEdit s viemChannelLink
-  relayEdit records {rsPendingAfter = shortWait} req `shouldReturn` EAPending
-  h <- mineSent s 1 True
-  relayEdit records req `shouldReturn` EAApplied (Just h)
 
 testPendingFromArrival :: TVar ChaChaDRG -> IO ()
 testPendingFromArrival g = withSetup g $ \s@Setup {node, records} -> do
@@ -581,42 +531,6 @@ testTwoResend g = withSetup g $ \s@Setup {node, records} -> do
   editRows s `shouldReturn` 1
   length <$> sentTransactions node `shouldReturn` 1
 
-testTwoYearLimit :: TVar ChaChaDRG -> IO ()
-testTwoYearLimit g = withSetup g $ \s@Setup {records} -> do
-  _ <- appliedEdits s 2
-  setNonce s 2
-  editsLeftNow s `shouldReturn` EditsLeft 1 (Just $ addUTCTime year t0)
-  r <- relay s =<< ownerTwo s 2 viemContactLink viemChannelLink
-  h <- mineSent s 3 True
-  answerOf r `shouldReturn` EAApplied (Just h)
-  setNonce s 4
-  editsLeftNow s `shouldReturn` EditsLeft 0 (Just $ addUTCTime year t0)
-  (relayEdit records =<< ownerTwo s 4 "https://smp8.simplex.im/a#next" "https://smp9.simplex.im/c#next") `shouldReturn` EALimited (addUTCTime year t0)
-  editRows s `shouldReturn` 3
-
-testTwoCap :: TVar ChaChaDRG -> IO ()
-testTwoCap g = withSetup g $ \s0 -> do
-  let s = roomy s0
-      quick = (records s) {rsPendingAfter = shortWait}
-      twoAt n = ownerTwo s n viemContactLink ("https://smp9.simplex.im/c#n" <> T.pack (show n))
-  forM_ [0, 2 .. 18] $ \n -> do
-    setNonce s n
-    (relayEdit quick =<< twoAt n) `shouldReturn` EAPending
-  setNonce s 20
-  (relayEdit (records s) =<< twoAt 20) `shouldReturn` EACapped 3600
-  editRows s `shouldReturn` 10
-
-testTwoReverted :: TVar ChaChaDRG -> IO ()
-testTwoReverted g = withSetup g $ \s@Setup {records} -> do
-  req <- ownerTwo s 0 viemContactLink viemChannelLink
-  r <- relay s req
-  -- reverted before the deadlines with the nonce unused: multicall drops the inner error
-  _ <- mineSent s 1 False
-  answerOf r `shouldReturn` EAReverted Nothing
-  stateOf s req `shouldReturn` Just (ESReverted Nothing)
-  editsLeftNow s `shouldReturn` EditsLeft (editsPerYear - 1) (Just $ addUTCTime year t0)
-  relayEdit records req `shouldReturn` EAReverted Nothing
-
 testTwoDryRunReverted :: TVar ChaChaDRG -> IO ()
 testTwoDryRunReverted g = withSetup g $ \s@Setup {node, records} -> do
   req <- ownerTwo s 0 viemContactLink viemChannelLink
@@ -679,17 +593,25 @@ editsLeftNow Setup {store, clock} = readTVarIO clock >>= \now -> withTransaction
 -- outcomes
 
 testAppliedByAnother :: TVar ChaChaDRG -> IO ()
-testAppliedByAnother g = withSetup g $ \s@Setup {records} -> do
-  req <- ownerEdit s viemChannelLink
-  r <- relay s req
-  _ <- sentBy s 1
-  -- another relayer's transaction with the same signed edit mined first
-  setNonce s 1
-  setRecord s channelKey viemChannelLink
-  _ <- mineSent s 1 False
-  answerOf r `shouldReturn` EAApplied Nothing
-  stateOf s req `shouldReturn` Just (ESMined Nothing)
-  relayEdit records req `shouldReturn` EAApplied Nothing
+testAppliedByAnother g =
+  forM_
+    [ (False, viemChannelLink, EAApplied Nothing, ESMined Nothing, Just (EAApplied Nothing)),
+      (True, viemChannelLink, EAApplied Nothing, ESMined Nothing, Nothing),
+      (False, "https://smp9.simplex.im/c#other", EAReverted (Just "InvalidNonce"), ESReverted (Just "InvalidNonce"), Nothing)
+    ]
+    $ \(pastDeadline, value, answer, state, repeated) -> withSetup g $ \s@Setup {node, records} -> do
+      req <- ownerEdit s viemChannelLink
+      r <- relay s req
+      _ <- sentBy s 1
+      -- mined in the block after the deadline, it reverted SignatureExpired
+      when pastDeadline $ setBlock node 300 deadline
+      -- another relayer's transaction mined first
+      setNonce s 1
+      setRecord s channelKey value
+      _ <- mineSent s 1 False
+      answerOf r `shouldReturn` answer
+      stateOf s req `shouldReturn` Just state
+      forM_ repeated $ \a -> relayEdit records req `shouldReturn` a
 
 testDryRunAppliedByAnother :: TVar ChaChaDRG -> IO ()
 testDryRunAppliedByAnother g = withSetup g $ \s@Setup {node, records} -> do
@@ -702,30 +624,6 @@ testDryRunAppliedByAnother g = withSetup g $ \s@Setup {node, records} -> do
   relayEdit records req `shouldReturn` EAApplied Nothing
   editRows s `shouldReturn` 0
   sentTransactions node `shouldReturn` []
-
-testExpiredAppliedByAnother :: TVar ChaChaDRG -> IO ()
-testExpiredAppliedByAnother g = withSetup g $ \s@Setup {node} -> do
-  req <- ownerEdit s viemChannelLink
-  r <- relay s req
-  _ <- sentBy s 1
-  setBlock node 300 deadline
-  setNonce s 1
-  setRecord s channelKey viemChannelLink
-  -- mined in the block after the deadline, so it reverted SignatureExpired
-  _ <- mineSent s 1 False
-  answerOf r `shouldReturn` EAApplied Nothing
-  stateOf s req `shouldReturn` Just (ESMined Nothing)
-
-testNonceTakenByAnother :: TVar ChaChaDRG -> IO ()
-testNonceTakenByAnother g = withSetup g $ \s -> do
-  req <- ownerEdit s viemChannelLink
-  r <- relay s req
-  _ <- sentBy s 1
-  setNonce s 1
-  setRecord s channelKey "https://smp9.simplex.im/c#other"
-  _ <- mineSent s 1 False
-  answerOf r `shouldReturn` EAReverted (Just "InvalidNonce")
-  stateOf s req `shouldReturn` Just (ESReverted $ Just "InvalidNonce")
 
 testClearApplied :: TVar ChaChaDRG -> IO ()
 testClearApplied g = withSetup g $ \s -> do

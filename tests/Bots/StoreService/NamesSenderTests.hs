@@ -23,7 +23,6 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import StoreService.Config (ChainConfig (..))
-import StoreService.Names.Abi (selector, uint256)
 import StoreService.Names.Chain
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (commitCalldata)
@@ -43,11 +42,9 @@ namesSenderTests = describe "StoreService names: sender" $ do
   it "keeps a transaction whose send failed, and sends it in the next round" $ testFailedSend g
   it "replaces a stuck transaction once the market's fees pass its own, and settles it under the new hash" $ testFeeBump g
   it "rebroadcasts a saved raw transaction after a restart while the node does not know it" $ testRestartRebroadcast g
-  it "hands a dropped transaction whose nonce was used to its owner, who judges it from chain state before any new signature" $ testDroppedNonceUsed g
-  it "hands a mined transaction whose receipt was pruned to its owner, signing nothing more" $ testPrunedReceipt g
+  it "hands a dropped transaction whose nonce was used, or a mined one whose receipt was pruned, to its owner, who may send again at the next nonce" $ testDroppedNonceUsed g
   it "logs a round that fails on the store, and settles the transaction in the next round" $ testFailedRound g
-  it "logs a send the node keeps refusing once per error, an underfunded key as an error" $ testRefusedSendLogged g
-  it "logs anvil's capitalized underfunded refusal as an error once" $ testCapitalizedUnderfundedLogged g
+  it "logs a send the node keeps refusing once per error, an underfunded key as an error, in anvil's capitalized form too" $ testRefusedSendLogged g
   it "refuses a transaction whose block needs more than the fee cap, saving nothing, and signs at most the cap" $ testFeeCapSubmit g
   it "clamps a replacement at the fee cap, and keeps rebroadcasting once a replacement would pass it" $ testFeeCapReplace g
 
@@ -211,42 +208,23 @@ testRestartRebroadcast g = withSetup g $ \s@Setup {node, store} -> do
   map (\(_, status, _) -> status) <$> statuses store r1 `shouldReturn` [TSMined]
 
 testDroppedNonceUsed :: TVar ChaChaDRG -> IO ()
-testDroppedNonceUsed g = withSetup g $ \s@Setup {node, store, chain} -> do
-  sender <- start s
-  Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
-  let TxHash h = ptHash p
-  dropTransaction node h
-  useNextNonce node
-  followTransactions sender
-  settled sender (TxCommit r1) `shouldReturn` False
-  _ <- mine node []
-  followTransactions sender
-  outcomeOf p `shouldReturn` TONonceUsed
-  statuses store r1 `shouldReturn` [(ptHash p, TSDropped, Nothing)]
-  length <$> sentTransactions node `shouldReturn` 1
-  -- the owner: the commitment reads 0, so the commit never mined and is sent again
-  answerCall node fakeController commitmentsCall $ Returns $ uint256 (0 :: Int)
-  ethCallAt chain Latest fakeController commitmentsCall `shouldReturn` Right (uint256 (0 :: Int))
-  Right again <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
-  ptNonce again `shouldBe` 1
-  length <$> sentTransactions node `shouldReturn` 2
-
-testPrunedReceipt :: TVar ChaChaDRG -> IO ()
-testPrunedReceipt g = withSetup g $ \s@Setup {node, store} -> do
-  sender <- start s
-  Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
-  let TxHash h = ptHash p
-  _ <- mine node [(h, True)]
-  pruneReceipt node h
-  followTransactions sender
-  settled sender (TxCommit r1) `shouldReturn` False
-  _ <- mine node []
-  followTransactions sender
-  outcomeOf p `shouldReturn` TONonceUsed
-  statuses store r1 `shouldReturn` [(ptHash p, TSDropped, Nothing)]
-  followTransactions sender
-  length <$> sentTransactions node `shouldReturn` 1
-  withTransaction store pendingTransactions `shouldReturn` []
+testDroppedNonceUsed g =
+  forM_ [\node h -> dropTransaction node h >> useNextNonce node, \node h -> mine node [(h, True)] >> pruneReceipt node h] $ \lose ->
+    withSetup g $ \s@Setup {node, store} -> do
+      sender <- start s
+      Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+      let TxHash h = ptHash p
+      lose node h
+      followTransactions sender
+      settled sender (TxCommit r1) `shouldReturn` False
+      _ <- mine node []
+      followTransactions sender
+      outcomeOf p `shouldReturn` TONonceUsed
+      statuses store r1 `shouldReturn` [(ptHash p, TSDropped, Nothing)]
+      length <$> sentTransactions node `shouldReturn` 1
+      Right again <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+      ptNonce again `shouldBe` 1
+      length <$> sentTransactions node `shouldReturn` 2
 
 testFailedRound :: TVar ChaChaDRG -> IO ()
 testFailedRound g = withSetup g $ \s@Setup {node, store} -> do
@@ -279,30 +257,18 @@ testRefusedSendLogged g = withSetup g $ \s@Setup {node} -> do
     setFault node "eth_sendRawTransaction" HttpFailure
     followTransactions sender
     followTransactions sender
+    setFault node "eth_sendRawTransaction" $ RpcError (-32003) "Insufficient funds for gas * price + value" Nothing
+    followTransactions sender
+    followTransactions sender
     clearFault node "eth_sendRawTransaction"
     followTransactions sender
   let linesWith tag message = length $ filter (\l -> tag `T.isPrefixOf` l && message `T.isInfixOf` l) $ T.lines logged
   linesWith "[ERROR" "names sender: nonce 9: not sent: ChainUnavailable \"eth_sendRawTransaction: error -32000: insufficient funds" `shouldBe` 1
   linesWith "[WARN" "names sender: nonce 9: not sent: ChainUnavailable \"eth_sendRawTransaction: HTTP 502\"" `shouldBe` 1
-  linesWith "[" "names sender: nonce 9" `shouldBe` 2
+  linesWith "[ERROR" "names sender: nonce 9: not sent: ChainUnavailable \"eth_sendRawTransaction: error -32003: Insufficient funds" `shouldBe` 1
+  linesWith "[" "names sender: nonce 9" `shouldBe` 3
   linesWith "[" "names sender: rebroadcasting nonce 9" `shouldBe` 0
   length <$> sentTransactions node `shouldReturn` 1
-
-testCapitalizedUnderfundedLogged :: TVar ChaChaDRG -> IO ()
-testCapitalizedUnderfundedLogged g = withSetup g $ \s@Setup {node} -> do
-  sender <- start s
-  -- a nonce no other spec reaches, as in testRefusedSendLogged
-  replicateM_ 13 $ useNextNonce node
-  logged <- capturingStderr $ do
-    setFault node "eth_sendRawTransaction" $ RpcError (-32003) "Insufficient funds for gas * price + value" Nothing
-    Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
-    ptNonce p `shouldBe` 13
-    followTransactions sender
-    followTransactions sender
-  let linesWith :: T.Text -> T.Text -> Int
-      linesWith tag message = length $ filter (\l -> tag `T.isPrefixOf` l && message `T.isInfixOf` l) $ T.lines logged
-  linesWith "[ERROR" "names sender: nonce 13: not sent: ChainUnavailable \"eth_sendRawTransaction: error -32003: Insufficient funds" `shouldBe` 1
-  linesWith "[" "names sender: nonce 13" `shouldBe` 1
 
 testFeeCapSubmit :: TVar ChaChaDRG -> IO ()
 testFeeCapSubmit g = withSetup g $ \s@Setup {node, store} -> do
@@ -355,9 +321,6 @@ r2 = RegistrationId "r2"
 
 commit :: Word8 -> ByteString
 commit = commitCalldata . digestFixture
-
-commitmentsCall :: ByteString
-commitmentsCall = selector "commitments(bytes32)" <> digestFixture 1
 
 -- | viem's encodeErrorResult of InsufficientAllowance(10000, 2500)
 insufficientAllowance :: ByteString

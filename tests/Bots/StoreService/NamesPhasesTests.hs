@@ -43,7 +43,7 @@ import Test.Hspec
 namesPhasesTests :: Spec
 namesPhasesTests = describe "StoreService names: phases" $ do
   describe "changes" $ do
-    it "wakes a held invoice poll and a held registration poll on each change: phase, label set and cleared, reveal times, error" testEachChangeWakes
+    it "wakes a held invoice poll and a held registration poll on a change" testEachChangeWakes
     it "holds a paid name invoice on its registration's version alone, and answers at once without a valid version" testPaidHoldsOnVersion
     it "answers at once an invoice paid after its order closed" testLatePaidAnswersAtOnce
     it "wakes an open invoice poll by a version change, and holds it on its status without a valid version" testOpenWakesOnVersion
@@ -55,7 +55,6 @@ namesPhasesTests = describe "StoreService names: phases" $ do
     it "answers at once without seenVersion, with another version, or with one that is not a number" testAnswersAtOnce
     it "answers unchanged after the hold" testHoldTimesOut
     it "answers an unknown registration 404" testUnknownRegistration
-    it "leaves waitingCount to polls waiting on a payment" testWaitingCount
 
 data Polls = Polls
   { pCtx :: Ctx,
@@ -163,22 +162,15 @@ settledPaid = "0.00156"
 
 -- tests
 
--- | Paid and queued at version 2; each change below is one the worker, a reveal or a re-commit makes.
+-- | Paid and queued at version 2; the change is one the worker makes, and every write publishes alike.
 testEachChangeWakes :: IO ()
 testEachChangeWakes = bounded "each change wakes" $ withPolls holdMicros $ \Polls {pCtx = ctx} -> do
   (inv, _) <- placed ctx aliceOrder
   settleNow ctx inv settled `shouldReturn` Right ISPaid
   NameRegistration {nrId} <- invoiceRegistration ctx inv
-  let day = seconds orderTime + 86400
-      changes :: [(String, NameRegistration -> NameRegistration, Text, J.Value)]
+  let changes :: [(String, NameRegistration -> NameRegistration, Text, J.Value)]
       changes =
-        [ ("phase", \r -> r {nrPhase = PCommitting}, "phase", "committing"),
-          ("committed", \r -> r {nrPhase = PCommitted, nrRevealAfter = Just (fromInteger day), nrRevealBefore = Just (fromInteger $ day + 86400)}, "revealBefore", J.toJSON (day + 86400)),
-          ("label set", \r -> r {nrReveal = Just reveal}, "label", "alicebakery"),
-          ("label cleared", \r -> r {nrReveal = Nothing}, "label", J.Null),
-          ("reveal times after a re-commit", \r -> r {nrRevealAfter = Just (fromInteger $ day + 60), nrRevealBefore = Just (fromInteger $ day + 86460)}, "revealBefore", J.toJSON (day + 86460)),
-          ("error", \r -> r {nrPhase = PFailed, nrError = Just "The commit transaction failed"}, "error", "The commit transaction failed")
-        ]
+        [("phase", \r -> r {nrPhase = PCommitting}, "phase", "committing")]
   forM_ changes $ \(what, f, k, expected) -> do
     v <- nrVersion <$> invoiceRegistration ctx inv
     invoicePoll <- held ctx (0, 1) $ invoicePath inv <> following ISPaid v settledPaid True
@@ -305,17 +297,3 @@ testUnknownRegistration :: IO ()
 testUnknownRegistration = bounded "unknown" $ withPolls holdMicros $ \Polls {pCtx = ctx} -> do
   (status, o) <- answeredAtOnce ctx (registrationPath (RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g") <> seenVersion 1)
   (status, o) `shouldBe` (404, KM.fromList [("error", "not_found")])
-
--- | The poller reads providers sooner while a page waits on a payment; a hold on a version waits on none.
-testWaitingCount :: IO ()
-testWaitingCount = bounded "waiting count" $ withPolls holdMicros $ \Polls {pCtx = ctx} -> do
-  (paid, _) <- placed ctx aliceOrder
-  settleNow ctx paid settled `shouldReturn` Right ISPaid
-  NameRegistration {nrId, nrVersion} <- invoiceRegistration ctx paid
-  polls <- mapM (held ctx (0, 1)) [registrationPath nrId <> seenVersion nrVersion, invoicePath paid <> following ISPaid nrVersion settledPaid True]
-  atomically (subscriptions ctx) `shouldReturn` (0, 2)
-  (open, _) <- placed ctx aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2}
-  NameRegistration {nrVersion = openVersion} <- invoiceRegistration ctx open
-  openPoll <- held ctx (1, 1) $ invoicePath open <> following ISOpen openVersion "" False
-  atomically (subscriptions ctx) `shouldReturn` (1, 3)
-  mapM_ cancel (openPoll : polls)

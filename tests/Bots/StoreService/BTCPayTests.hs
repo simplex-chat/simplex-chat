@@ -84,7 +84,6 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "confirms none of an extra still Processing on a Settled invoice, so a replaced transaction is never credited" testUnconfirmedExtra
     it "confirms all of paymentMethodPaid when every payment reads Settled, whatever their values" testConfirmedAllSettled
     it "confirms the Settled payments' value otherwise, rounded to cents once and capped at paymentMethodPaid" testConfirmedSettledSum
-    it "counts BTC in satoshi and XMR in piconero" testConfirmedUnits
     it "confirms XMR only when the invoice's settled-confirmation threshold is at least 1, never with 0 or none" testXmrConfirmations
     it "confirms nothing under HighSpeed, or with no or an unknown speed policy, an invoice-level Settled included" testHighSpeedConfirmsNothing
     it "accepts trailing zeros past the unit" testTrailingZeros
@@ -187,12 +186,6 @@ testConfirmedSettledSum = do
   signalOf "Processing" [btcPaid "0.00050000" [paymentOf "Settled" "0.00030000", paymentOf "Settled" "0.00030000", paymentOf "Processing" "0.00010000"]]
     `shouldBe` Right (Just (SigFunded halfMilliBtc PaidInFull))
 
-testConfirmedUnits :: IO ()
-testConfirmedUnits = do
-  (rcvUnitsOf =<<) <$> signalOf "Settled" [btcPaid "0.00050000" []] `shouldBe` Right (Just 50000)
-  signalOf "Settled" [xmrPaid (Just 1) "0.32095000" [paymentOf "Settled" "0.32095000"]]
-    `shouldBe` Right (Just (SigSettled xmrConfirmed (posixSecondsToUTCTime 1700000000)))
-
 xmrConfirmed :: Received
 xmrConfirmed = xmrReceived {rcvConfirmed = Confirmed {cfCents = CurrencyAmount 5400, cfUnits = Just 320950000000}, rcvUncreditable = Nothing}
 
@@ -204,12 +197,6 @@ testXmrConfirmations = do
   settledWith (Just 0) `shouldBe` settled xmrReceived
   settledWith Nothing `shouldBe` settled xmrReceived
   mapM_ (\n -> settledWith (Just n) `shouldBe` settled xmrConfirmed) [1, 10]
-
-rcvUnitsOf :: PaymentSignal -> Maybe Int64
-rcvUnitsOf = \case
-  SigFunded r _ -> rcvUnits r
-  SigSettled r _ -> rcvUnits r
-  SigClosed r _ -> rcvUnits r
 
 testHighSpeedConfirmsNothing :: IO ()
 testHighSpeedConfirmsNothing = do

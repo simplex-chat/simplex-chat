@@ -78,8 +78,7 @@ badgeTests = do
     it "encodes an owner code's entropy and its checksum" testNameOwnerCodeVectors
     it "rejects an owner code with a wrong character" testNameOwnerCodeChecksum
     it "reads the webapp's prepaid codes: length, canonical form, display and hash, and refuses lengths outside 6 to 63" testNamePrepaidCodeVectors
-    it "never reads an owner code as prepaid, nor the reverse" testNameCodeKinds
-    it "reads random codes of both kinds back, as typed" testNameCodeRoundTrip
+    it "reads random codes of both kinds back, as typed, and never a prepaid code as an owner code" testNameCodeRoundTrip
     it "refuses a prepaid code with one character changed or two adjacent swapped, except 0 and Z" testNamePrepaidCodeCheck
     it "refuses a prepaid code whose length is not plain ASCII digits" testNamePrepaidCodeLengthDigits
   describe "ledger transitions" $ do
@@ -421,17 +420,6 @@ namePrepaidCodeVectors =
     ("SN63-N0N9J-5D292-HPSYA-R911D", 63, "SN63N0N9J5D292HPSYAR911D", "SN63-N0N9J-5D292-HPSYA-R911D", "U-Nh_Kw3-xDlQuFJffkuCAyolK5m9EfN3QuYiJ28A0A")
   ]
 
-testNameCodeKinds :: IO ()
-testNameCodeKinds = do
-  drg <- C.newRandom
-  forM_ [1 :: Int .. 100] $ \_ -> do
-    owner <- randomNameOwnerCode drg
-    parseNameCode (formatNameOwnerCode owner) `shouldBe` Just (NCOwner owner)
-  forM_ [6 .. 63] $ \len -> do
-    prepaid <- randomNamePrepaidCode drg len
-    parseNameCode (namePrepaidCodeText prepaid) `shouldBe` Just (NCPrepaid prepaid)
-    parseNameOwnerCode (namePrepaidCodeText prepaid) `shouldBe` Nothing
-
 testNameCodeRoundTrip :: IO ()
 testNameCodeRoundTrip = do
   drg <- C.newRandom
@@ -442,6 +430,7 @@ testNameCodeRoundTrip = do
     let display = formatNameCode (NCPrepaid prepaid)
     T.length display `shouldBe` T.length (namePrepaidCodeText prepaid) + 4 -- four separators
     T.isPrefixOf ("SN" <> tshow len <> "-") display `shouldBe` True
+    parseNameOwnerCode (namePrepaidCodeText prepaid) `shouldBe` Nothing
     forM_ (namePrepaidCodeText prepaid : typings display) $ \typed -> parseNameCode typed `shouldBe` Just (NCPrepaid prepaid)
   where
     typings display = [display, T.toLower display, T.replace "-" " " display, misreadAfterLength display]

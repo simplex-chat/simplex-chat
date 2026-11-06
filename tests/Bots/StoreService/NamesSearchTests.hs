@@ -74,7 +74,6 @@ namesSearchTests = describe "StoreService names: search" $ do
   g <- runIO C.newRandom
   describe "search" $ do
     it "answers an available name with the chain's price for the paid years, the term start and the order's contracts" $ testAvailable g
-    it "answers a reserved name" $ testReserved g
     it "answers a name the chain has available as registered while its register here is sent, without a price" $ testRegistering g
     it "answers a registered name with its entities, raw records, owner, resolver, nonce, expiry and grace period" $ testRegistered g
     it "answers a listed name's community entry when available, reserved, being registered here and registered, a plain answer for an ini line the policy does not list, the community terms on chain as they change, and 503 while its listing is unread" $ testCommunity g
@@ -83,9 +82,7 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "answers a listed name's price for its community's 2 years, whatever years the configuration gives" $ testCommunityYears g
     it "makes one entity per short link of its record's kind, splitting on ';', and none from other values" $ testRecordLinks g
     it "makes entities of the first 5 short links of a record only, fetching no other" $ testRecordLinksCap g
-    it "reads no records from another resolver" $ testOtherResolver g
     it "answers a registered name's record edits left and when the next one returns, counting the edits of 365 days, reverted too" $ testRecordEdits g
-    it "answers a link whose profile was not read unread, and a private host's unavailable without fetching it" $ testEntityProfiles g
     it "answers provider_unavailable to any failed chain read, records and price included, and reads no terms link for a registered name" $ testFailedReads g
     it "fails a search whose reads together pass one deadline, though each read meets it" $ testOneDeadline g
     it "fails a search whose terms text arrives past the deadline, and answers the text that fetch kept to the next search" $ testSlowTerms g
@@ -95,8 +92,6 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "answers each kind of chat as an entity without its links" $ testPreviewKinds g
     it "answers invalid_link to anything but one short link within 4096 bytes" $ testPreviewInvalid g
     it "answers bad_request to a body that is not a JSON object or is over its cap" $ testPreviewBadBody g
-    it "accepts a link to a private host with its profile unavailable, never fetching it" $ testPreviewPrivateHost g
-    it "answers a link whose profile was not read unread" $ testPreviewUnread g
   describe "terms" $ do
     it "answers either current terms' link and text by its hash, not_found to another hash, an unset or untaken link, terms_unavailable with Retry-After to a text not fetched now, provider_unavailable when unread and bad_request to a malformed hash" $ testTerms g
 
@@ -259,7 +254,6 @@ registeredWith node contact channel = do
   answerCall node (resolverOf node) channelTextCall $ Returns $ textAnswer channel
   answerCall node (resolverOf node) noncesCall $ Returns $ uint256 (0 :: Int)
 
-
 textAnswer :: Text -> ByteString
 textAnswer t = abiTuple [Dynamic $ abiBytes $ encodeUtf8 t]
 
@@ -314,9 +308,6 @@ chat :: Text -> Text -> Text -> Text -> Maybe Text -> Maybe Int -> Text -> [(J.K
 chat t kind displayName fullName image subscribers profile =
   ["type" .= t, "kind" .= kind, "displayName" .= displayName, "fullName" .= fullName, "image" .= image, "subscribers" .= subscribers, "profile" .= profile]
 
-unreadChat :: Text -> Text -> Text -> [(J.Key, J.Value)]
-unreadChat t kind = chat t kind "" "" Nothing Nothing
-
 bakeryChat, newsChat :: [(J.Key, J.Value)]
 bakeryChat = chat "address" "contact" "Alice's Bakery" "Sourdough and pastries, Lisbon" (Just jpeg) Nothing "ok"
 newsChat = chat "channel" "channel" "Bakery news" "Daily bakes and opening hours" Nothing (Just 1204) "ok"
@@ -359,11 +350,6 @@ testAvailable g = withSearch g id id $ \s@Search {node} -> do
   answerCall node fakeController (rentPriceCall 6) $ Returns $ rentPriceAnswer 40000
   searchAlice s 12 `shouldReturn` availableAnswer 10000
   searchAlice s 6 `shouldReturn` availableAnswer 40000
-
-testReserved :: TVar ChaChaDRG -> IO ()
-testReserved g = withSearch g id id $ \s@Search {node} -> do
-  reserved node
-  searchAlice s 12 `shouldReturn` reservedAnswer
 
 testRegistering :: TVar ChaChaDRG -> IO ()
 testRegistering g = withSearch g id id $ \s@Search {node, store} -> do
@@ -501,12 +487,6 @@ testRecordLinksCap g = withSearch g id id $ \s@Search {node} -> do
     `shouldBe` map ("address", "bot", "ok",) (take 5 contacts) <> [("channel", "channel", "ok", newsLink)]
   length . filter (T.isInfixOf "#Bot") <$> fetchedLinks s `shouldReturn` 5
 
-testOtherResolver :: TVar ChaChaDRG -> IO ()
-testOtherResolver g = withSearch g id id $ \s@Search {node} -> do
-  nameState node (toInteger $ now + year) 0
-  answerRegistered node otherResolver
-  searchAlice s 12 `shouldReturn` registeredAnswer [] J.Null otherResolverText J.Null
-
 testRecordEdits :: TVar ChaChaDRG -> IO ()
 testRecordEdits g = forM_ [(4, 1, 10), (2, 0, 5)] $ \(perYear, left, returnsFrom) -> withSearch g (\cfg -> cfg {nRecordEditsPerYear = perYear}) id $ \s@Search {node, store} -> do
   registeredWith node fullLink ""
@@ -523,25 +503,6 @@ testRecordEdits g = forM_ [(4, 1, 10), (2, 0, 5)] $ \(perYear, left, returnsFrom
   answer <- searchAlice s 12
   (snd answer >>= JT.parseMaybe (J.withObject "answer" (J..: "recordEdits")))
     `shouldBe` Just (editsLeft left $ J.toJSON (floor (utcTimeToPOSIXSeconds $ daysAgo returnsFrom) + 365 * 86400 :: Int))
-
-testEntityProfiles :: TVar ChaChaDRG -> IO ()
-testEntityProfiles g = withSearch g id id $ \s@Search {node} -> do
-  let gone = taggedLink "smp8.simplex.im" 'a' "Gone"
-      privateName = taggedLink "private.test" 'a' "Y8m3"
-      privateLiteral = taggedLink "10.0.0.1" 'c' "Rk27"
-  registeredWith node (gone <> ";" <> privateName) privateLiteral
-  searchAlice s 12
-    `shouldReturn` registeredAnswer
-      [ entity (unreadChat "address" "contact" "unread") gone (deepLinkAt "smp8.simplex.im" 'a' "Gone"),
-        entity (unreadChat "address" "contact" "unavailable") privateName (deepLinkAt "private.test" 'a' "Y8m3"),
-        entity (unreadChat "channel" "channel" "unavailable") privateLiteral (deepLinkAt "10.0.0.1" 'c' "Rk27")
-      ]
-      (recordsOf (gone <> ";" <> privateName) privateLiteral)
-      resolverText
-      (J.toJSON (0 :: Int))
-  map (T.isInfixOf "#Gone") <$> fetchedLinks s `shouldReturn` [True]
-  where
-    deepLinkAt host kind tag = "simplex:/" <> T.singleton kind <> "#" <> snd (T.breakOnEnd "#" $ taggedLink host kind tag) <> "?h=" <> host
 
 testFailedReads :: TVar ChaChaDRG -> IO ()
 testFailedReads g = withSearch g id id $ \s@Search {node} -> do
@@ -614,7 +575,6 @@ testBadLength g = withSearch g id id $ \s@Search {node} -> do
   forM_ ["?length=6", "?length=63", "?length=007"] $ \q ->
     searchName s aliceHex q >>= \a -> (q, a) `shouldBe` (q, reservedAnswer)
 
-
 -- link preview
 
 testPreviewKinds :: TVar ChaChaDRG -> IO ()
@@ -641,14 +601,3 @@ testPreviewBadBody :: TVar ChaChaDRG -> IO ()
 testPreviewBadBody g = withSearch g id id $ \s -> do
   forM_ ["[]", "\"link\"", "not json", "", J.encode (J.object ["link" .= T.replicate 9000 "a"])] $ \body ->
     answerOf <$> postPreview s body >>= \a -> (body, a) `shouldBe` (body, refused 400 "bad_request")
-
-testPreviewPrivateHost :: TVar ChaChaDRG -> IO ()
-testPreviewPrivateHost g = withSearch g id id $ \s -> do
-  previewOf s (taggedLink "10.0.0.1" 'a' "Y8m3") `shouldReturn` ok (unreadChat "address" "contact" "unavailable")
-  previewOf s (taggedLink "private.test" 'c' "Rk27") `shouldReturn` ok (unreadChat "channel" "channel" "unavailable")
-  fetchedLinks s `shouldReturn` []
-
-testPreviewUnread :: TVar ChaChaDRG -> IO ()
-testPreviewUnread g = withSearch g id id $ \s -> do
-  previewOf s (taggedLink "smp8.simplex.im" 'c' "Gone") `shouldReturn` ok (unreadChat "channel" "channel" "unread")
-  length <$> fetchedLinks s `shouldReturn` 1

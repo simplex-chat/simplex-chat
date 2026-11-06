@@ -4,7 +4,6 @@
 module Bots.StoreService.WebUIMock
   ( EphemeralWallet (..),
     newEphemeralWallet,
-    redemptionCode,
     walletFromCode,
     signRegisterIntent,
   )
@@ -15,7 +14,7 @@ import Control.Concurrent.STM (TVar)
 import Crypto.Random (ChaChaDRG)
 import Data.Text (Text)
 import Data.Word (Word64)
-import Simplex.Chat.Badges.Code (NameOwnerCode, formatNameOwnerCode, nameOwnerCodeEntropy, parseNameOwnerCode, randomNameOwnerCode)
+import Simplex.Chat.Badges.Code (NameOwnerCode, nameOwnerCodeEntropy, parseNameOwnerCode, randomNameOwnerCode)
 import Simplex.Messaging.Crypto.BIP32 (masterKey, xkKey)
 import Simplex.Messaging.Crypto.BIP39 (entropySeed)
 import Simplex.Messaging.Crypto.BIP44 (CoinType (..), bip44Path, mkAccountIndex)
@@ -31,9 +30,6 @@ data EphemeralWallet = EphemeralWallet
 
 newEphemeralWallet :: TVar ChaChaDRG -> IO EphemeralWallet
 newEphemeralWallet g = randomNameOwnerCode g >>= walletFromNameOwnerCode g
-
-redemptionCode :: EphemeralWallet -> Text
-redemptionCode = formatNameOwnerCode . ewCode
 
 walletFromCode :: TVar ChaChaDRG -> Text -> IO EphemeralWallet
 walletFromCode g = maybe (fail "invalid name code") (walletFromNameOwnerCode g) . parseNameOwnerCode

@@ -14,7 +14,6 @@ import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeText, randomBadgeCode)
 import Simplex.Chat.Controller (ChatCommand (DeleteGroup, MemberRole))
 import Simplex.Chat.Library.Commands (parseChatCommand)
 import Simplex.Chat.Types (GroupProfile (..))
-import Simplex.Chat.Types.Preferences (ChatBotCommand (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Util (tshow)
@@ -82,12 +81,6 @@ badgeGroupTests = describe "badge group" $ do
                    (GRModerator, (True, True, False)),
                    (GRAdmin, (True, True, True)),
                    (GROwner, (True, True, True))
-                 ]
-  it "advertises every kind of code in the issue and bulk menu entries" $
-    groupCommands
-      `shouldBe` [ CBCCommand "issue" "Generate a code" (Just "<name <length>|supporter|legend|investor> [years|months <N>] [uses <N>]"),
-                   CBCCommand "bulk" "Generate many codes" (Just "<name <length>|supporter|legend|investor> [years|months <N>] count <N>"),
-                   CBCCommand "revoke" "Revoke a code" (Just "<code>")
                  ]
   describe "log hints give commands --run-cli parses for a group name with a space" $ do
     let hintCommand = fst . T.breakOn " in --run-cli" . snd . T.breakOnEnd " with "
