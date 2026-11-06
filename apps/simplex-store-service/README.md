@@ -435,7 +435,8 @@ Without a store verifier every store purchase is answered `provider_not_configur
 the service accepts any well-formed receipt without asking or verifying anything: an Apple JWS for
 the `transactionId` and `productId` its payload names, unsigned or not, and a Play product id and
 token as given. It applies to both run modes, since `--run-cli` answers service requests too, and
-the service logs a warning at every start while it is on. Off by default, and only `on`/`off`
+the service logs a warning at every start while it is on, and refuses to start when the issuer key
+is at an index clients trust, as any receipt would then mint badges they accept. Off by default, and only `on`/`off`
 parse. The service refuses to start with it on beside an `[apple]` or `[google]` section.
 
 It answers subscriptions too, each as renewing, charged from a minute before the check for the

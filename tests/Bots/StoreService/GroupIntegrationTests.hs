@@ -10,7 +10,7 @@
 -- Members' messages reach a console over separate connections in no fixed order, so gating is asserted from the bot's store.
 module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, namesBootTests, namesCodesChatTests, namesRefundChatTests, namesWorkerBootTests) where
 
-import StoreService.Config (BadgeIssuerKey (..), GroupConfig (..), ServiceConfig, readServiceConfig)
+import StoreService.Config (BadgeIssuerKey (..), GroupConfig (..), ServiceConfig (devAcceptUnverifiedStoreReceipts), readServiceConfig)
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup)
 import StoreService.Group.Command (CmdAction (..), groupCmdAction, maxUses)
 import StoreService.Names.Abi (selector, uint256)
@@ -20,7 +20,7 @@ import StoreService.Names.Store (NamePhase (..), NameRegistration (..), PrepaidC
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Orders (cancelOpenInvoice, expireOverdue)
-import StoreService.Service (ServiceState (..), checkNodeChain, newServiceState, redactPassword, requireDevKeys, storeService, trustDevKeys)
+import StoreService.Service (ServiceState (..), checkNodeChain, checkUnverifiedReceipts, newServiceState, redactPassword, requireDevKeys, storeService, trustDevKeys)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Store.Migrate (withInstanceLock)
 import StoreService.Waiters (newWaiters)
@@ -150,6 +150,7 @@ namesBootTests = do
   it "warns naming the indexes of trusted dev_keys, and says nothing without them" testDevKeysWarned
   it "refuses a node serving another chain than chain_id, and dev_keys unless the node answers, only warning without them" testNodeChain
   it "masks the database password in the start line, in a URI or as a keyword" testRedactPassword
+  it "refuses unverified store receipts with an issuer key clients trust, and takes them with a dev key" testUnverifiedReceiptsKey
   it "refuses a second instance on the same Postgres database until the first ends, and takes no lock on SQLite" testInstanceLock
   it "boots codes-only, refusing paid name orders 403 codes_only and answering code orders and code checks, the badges shell as built" testNamesBootCodesOnly
   it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, the community terms and registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, and each route under its limit, shared by the routes of that limit" testNamesBoot
@@ -176,6 +177,17 @@ testInstanceLock ps = do
   withInstanceLock opts (withInstanceLock opts (pure ()))
 #endif
   withInstanceLock opts (pure True) `shouldReturn` True
+
+testUnverifiedReceiptsKey :: HasCallStack => TestParams -> IO ()
+testUnverifiedReceiptsKey _ = do
+  Right (pk, sk) <- bbsKeyGen
+  Right withDev <- devKeysIni chainSection 9 sk [(9, sk)]
+  let unverified = Just withDev {devAcceptUnverifiedStoreReceipts = True}
+      cfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk}
+  checkUnverifiedReceipts unverified cfg BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk}
+    `shouldBe` Left ("[dev] accept_unverified_store_receipts is refused: issuer key index " <> show testIssuerKeyIdx <> " is one clients trust, so any receipt would mint badges they accept")
+  checkUnverifiedReceipts unverified cfg BadgeIssuerKey {keyIdx = 9, secretKey = sk} `shouldBe` Right ()
+  checkUnverifiedReceipts (Just withDev) cfg BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk} `shouldBe` Right ()
 
 testRedactPassword :: HasCallStack => TestParams -> IO ()
 testRedactPassword _ = do

@@ -12,6 +12,7 @@ module StoreService.Service
     trustDevKeys,
     checkNodeChain,
     redactPassword,
+    checkUnverifiedReceipts,
     logNamePolicy,
     requireDevKeys,
     checkIssuerKey,
@@ -211,6 +212,14 @@ requireIssuerKey :: StoreServiceOpts -> Maybe ServiceConfig -> ChatConfig -> IO 
 requireIssuerKey opts serviceCfg cfg =
   checkIssuerKey opts serviceCfg cfg >>= orExit >>= \k@BadgeIssuerKey {keyIdx} -> logNote ("signing badges with issuer key " <> tshow keyIdx) $> k
 
+-- | Unverified store receipts would mint badges, so they are refused with an issuer key clients trust, as dev_keys are.
+checkUnverifiedReceipts :: Maybe ServiceConfig -> ChatConfig -> BadgeIssuerKey -> Either String ()
+checkUnverifiedReceipts serviceCfg ChatConfig {badgePublicKeys} BadgeIssuerKey {keyIdx} = case serviceCfg of
+  Just ServiceConfig {devAcceptUnverifiedStoreReceipts = True}
+    | M.member keyIdx badgePublicKeys ->
+        Left $ "[dev] accept_unverified_store_receipts is refused: issuer key index " <> show keyIdx <> " is one clients trust, so any receipt would mint badges they accept"
+  _ -> Right ()
+
 requireDevKeys :: Maybe ServiceConfig -> ChatConfig -> IO ChatConfig
 requireDevKeys serviceCfg cfg = do
   checkNodeChain serviceCfg >>= orExit
@@ -271,6 +280,7 @@ storeService opts serviceCfg baseCfg env = do
   forM_ serviceCfg $ \sc -> checkSiteDirs (listener sc) >>= orExit
   cfg <- requireDevKeys serviceCfg baseCfg
   key <- requireIssuerKey opts serviceCfg cfg
+  orExit $ checkUnverifiedReceipts serviceCfg baseCfg key
   waiters <- newWaiters
   -- The hooks' //revoke takes a prepaid code's turn, so the turns exist before the chat starts.
   turns <- newTurns
@@ -370,6 +380,7 @@ storeServiceCLI :: StoreServiceOpts -> Maybe ServiceConfig -> IO ()
 storeServiceCLI opts serviceCfg = do
   cfg <- requireDevKeys serviceCfg terminalChatConfig
   key <- requireIssuerKey opts serviceCfg cfg
+  orExit $ checkUnverifiedReceipts serviceCfg terminalChatConfig key
   env <- newServiceState >>= configureStoreVerifier serviceCfg
   -- This mode runs no names lanes, so only its own //revoke takes these turns.
   turns <- newTurns
