@@ -47,7 +47,7 @@ fun ModalData.AddChannelView(chatModel: ChatModel, rh: RemoteHostInfo?, close: (
   val chosenImage = remember { stateGetOrPutNullable<URI>("chosenImage") { null } }
   val profileImage = remember { stateGetOrPutNullable<String>("profileImage") { null } }
   val focusRequester = remember { FocusRequester() }
-  val hasRelays = rememberSaveable { mutableStateOf(true) }
+  val hasRelays = remember { stateGetOrPut("hasRelays") { true } }
   val groupInfo = remember { stateGetOrPutNullable<GroupInfo>("groupInfo") { null } }
   val groupLink = remember { stateGetOrPutNullable<GroupLink>("groupLink") { null } }
   val groupRelays = remember { stateGetOrPut("groupRelays") { emptyList<GroupRelay>() } }
