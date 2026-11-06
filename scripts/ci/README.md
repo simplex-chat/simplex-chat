@@ -138,7 +138,7 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 | types package | packages/simplex-chat-client/types/typescript/** | compile only |
 | ts-client | packages/simplex-chat-client/typescript/** | - |
 | webrtc | packages/simplex-chat-webrtc/** | - |
-| mcp | packages/simplex-chat-mcp/** | - |
+| mcp | packages/simplex-chat-mcp/** | type check and unit tests in job `publish` of build.yml, before a publication |
 | calculator-bot | apps/simplex-calculator-bot/** | - |
 | support-bot | apps/simplex-support-bot/** | - |
 | support-bot-light | apps/simplex-support-bot-light/** | - |
