@@ -18,6 +18,7 @@ module Directory.Service
     directoryService,
     directoryServiceCLI,
     forkWithinCap,
+    omitServiceRequestData,
   )
 where
 
@@ -168,9 +169,7 @@ directoryServiceCLI opts = do
   env@ServiceState {eventQ} <- newServiceState opts
   let eventHook _cc resp = do
         atomically $ mapM_ (writeTQueue eventQ) (crDirectoryEvent resp)
-        pure $ case resp of
-          Right (CEvtServiceRequest u reqId sigKey _) -> Right $ CEvtServiceRequest u reqId sigKey JM.empty
-          _ -> resp
+        pure $ omitServiceRequestData resp
       chatHooks =
         defaultChatHooks
           { preStartHook = Just $ directoryPreStartHook opts,
@@ -192,6 +191,11 @@ directoryServiceCLI opts = do
         forever $ do
           event <- atomically $ readTQueue eventQ
           directoryServiceEvent opts env user cc event
+
+omitServiceRequestData :: Either ChatError ChatEvent -> Either ChatError ChatEvent
+omitServiceRequestData = \case
+  Right (CEvtServiceRequest u reqId sigKey _) -> Right $ CEvtServiceRequest u reqId sigKey JM.empty
+  resp -> resp
 
 updateListingDelay :: Int
 updateListingDelay = 5 * 60 * 1000000 -- update every 5 minutes

@@ -19,6 +19,7 @@ import Control.Monad (forM_, replicateM, when, void)
 import Control.Monad.Except (runExceptT)
 import Data.Aeson ((.:), (.:?), (.=))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.Types as JT
 import Data.Bifunctor (first)
 import qualified Data.ByteString.Char8 as B
@@ -37,7 +38,7 @@ import Directory.Search (SearchCursor (..))
 import Directory.Service
 import System.Directory (emptyPermissions, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
 import Simplex.Chat.Bot.KnownContacts
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatResponse (..), storeCxt)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatEvent (CEvtCustomChatEvent, CEvtServiceRequest), ChatResponse (..), storeCxt)
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Library.Commands (maxProfileImageSize, maxShortDescrLength)
 import qualified Simplex.Chat.Markdown as MD
@@ -45,7 +46,7 @@ import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Protocol (maxDecompressedMsgLength, memberSupportVoiceVersion)
 import qualified Simplex.Chat.Store.Groups as Store
-import Simplex.Chat.Types (ChatPeerType (..), GroupInfo (..), GroupLink, GroupProfile (..), GroupSummary (..), GroupType (..), ImageData (..), Profile (..), safeImageData)
+import Simplex.Chat.Types (AgentInvId (..), ChatPeerType (..), GroupInfo (..), GroupLink, GroupProfile (..), GroupSummary (..), GroupType (..), ImageData (..), Profile (..), safeImageData)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
@@ -78,6 +79,7 @@ directoryServiceTests = do
   it "should reject service requests over the cap" testDirectorySearchRpcBusy
   it "should take a new service request once the previous one is answered" testDirectorySearchRpcSlotReleased
   it "should hold a place under the in-flight cap until the request ends" testServiceRequestSlotHeld
+  it "should omit service request data from the terminal's event and keep other events" testServiceRequestDataOmitted
   it "should send every entry field the apps render" testDirectorySearchEntryFields
   it "should send a channel entry with its published link" testDirectorySearchChannelEntry
   it "should drop an image that is oversize or not JPEG or PNG and keep the entry" testSearchEntryImageBound
@@ -771,6 +773,21 @@ testServiceRequestSlotHeld _ = do
   forkWithinCap inFlight 1 (throwIO $ userError "request failed") `shouldReturn` True
   placeFreed
   forkWithinCap inFlight 1 (pure ()) `shouldReturn` True
+
+testServiceRequestDataOmitted :: HasCallStack => TestParams -> IO ()
+testServiceRequestDataOmitted ps =
+  withNewTestChat ps "bob" bobProfile $ \TestCC {chatController = ChatController {currentUser}} -> do
+    user <- maybe (fail "no current user") pure =<< readTVarIO currentUser
+    let reqId = AgentInvId "request"
+        request = JM.fromList [("searchText", J.String "privacy")]
+    case omitServiceRequestData $ Right $ CEvtServiceRequest user reqId Nothing request of
+      Right (CEvtServiceRequest _ reqId' _ shown) -> do
+        reqId' `shouldBe` reqId
+        shown `shouldBe` JM.empty
+      r -> expectationFailure $ "unexpected event: " <> show r
+    case omitServiceRequestData $ Right $ CEvtCustomChatEvent Nothing "other" of
+      Right (CEvtCustomChatEvent Nothing t) -> t `shouldBe` "other"
+      r -> expectationFailure $ "unexpected event: " <> show r
 
 searchDirectoryCounts :: TestCC -> String -> String -> Maybe J.Value -> IO ([DirectorySearchEntry], Maybe J.Value, Int)
 searchDirectoryCounts TestCC {chatController = cc} dsLink text cursor_ = do
