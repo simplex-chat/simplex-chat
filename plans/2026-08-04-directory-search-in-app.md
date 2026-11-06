@@ -329,7 +329,7 @@ Text from the directory is drawn as plain text, with line limits. The image chec
 
 **Keyboard.** `SearchTextField` has an optional `onSearch`, passed only from the chat list's field and New chat's, and excluded from Archived contacts, which shares New chat's bar: on Android through `KeyboardActions`, on desktop on the Enter key's release while the field is enabled. iOS uses `.submitLabel(.search)` and `.onSubmit`. A field with `onSearch` has autocorrect and capitalization off; other search fields keep autocorrect.
 
-**Actions.** The key and the row run the same directory search. A SimpleX name is looked up only by "Connect to …". The search is skipped for empty or whitespace-only text and for a pasted SimpleX link. `isDirectorySearchable` is that condition; the views add `!onlineSearch.showResults` for the row.
+**Actions.** The key and the row run the same directory search. A SimpleX name is looked up only by "Connect to …". The search is skipped for empty or whitespace-only text, for a pasted SimpleX link and while chat is stopped. `isDirectorySearchable` is that condition; the views add `!onlineSearch.showResults` for the row.
 
 ```mermaid
 flowchart TD
@@ -337,7 +337,9 @@ flowchart TD
   link -- yes --> nothing[Nothing sent]
   link -- no --> empty{Empty after trimming?}
   empty -- yes --> nothing
-  empty -- no --> consent[Consent, §7]
+  empty -- no --> stopped{Chat stopped?}
+  stopped -- yes --> nothing
+  stopped -- no --> consent[Consent, §7]
   consent --> search[searchDirectory]
 ```
 
@@ -362,7 +364,7 @@ With the toolbar at the bottom the list is mirrored, so the user's own chats are
 - the member or subscriber count from `entryType.summary`, a channel when `groupType` is channel
 - trailing "Open"
 
-**Nothing is shown twice.** Each new entry's link is planned store-only (§2, `apiConnectPlan` with `.never`, logging failures without an alert) and mapped by `directoryResultState`:
+**Nothing is shown twice.** Each new entry's link is planned store-only (§2, `apiConnectPlan` with `.never`, without an alert) and mapped by `directoryResultState`:
 
 | State | Plan | Drawn as |
 |---|---|---|
@@ -396,7 +398,7 @@ flowchart TD
   confirm --> pending[The pending join's alert]
 ```
 
-**While chat is stopped** "Search in Directory" and the load and retry rows are hidden, the Search key sends nothing, and result rows are disabled, as chat rows are.
+**While chat is stopped** "Search in Directory", the load and retry rows and each result's Open are hidden, the Search key sends nothing, and result rows are disabled, as chat rows are.
 
 **Cards.** While a search runs or has run, the chat list hides its banner and cards, even after a search that found nothing; filtering by typing keeps them.
 
@@ -405,6 +407,7 @@ flowchart TD
 - online search not run, with text: "Search in Directory" is shown, and "No chats found" and New chat's "No filtered contacts" are hidden
 - running, or anything found: both messages hidden
 - finished, nothing found: "No chats found" on the chat list (in onboarding, as a row); in New chat "No filtered contacts", or "No contacts" with no contacts
+- chat stopped, with text: "Search in Directory" is hidden, and both messages are shown for text that matches no chat or result
 
 "You have no chats" on Android and desktop hides while a search runs or has run.
 
@@ -434,7 +437,7 @@ OnlineSearchModel
   generation: Int
 
 showResults = loading or searched
-footer = retry when failed, else loadMore when cursor is set, else none
+footer = none while chat is stopped, else retry when failed, else loadMore when cursor is set, else none
 ```
 
 ```
@@ -449,7 +452,7 @@ cancelRequest():
 
 search(text):
   text = trim(text)
-  when text is not empty: after consent, searchDirectory(text)
+  when text is not empty and chat is running: after consent, searchDirectory(text)
 
 searchDirectory(text):
   return when text is empty, or loading and text == searchedText
@@ -496,6 +499,11 @@ stateDiagram-v2
   Loading --> Hidden: text change, profile switch
   LoadMore --> Hidden: text change, profile switch
   Retry --> Hidden: text change, profile switch
+  LoadMore --> Stopped: chat stopped
+  Retry --> Stopped: chat stopped
+  Stopped --> LoadMore: chat running, cursor set
+  Stopped --> Retry: chat running, failed
+  Stopped --> Hidden: text change, profile switch
 ```
 
 The app shows the entries of each response, often one when the entry has a full-size image (§1).
