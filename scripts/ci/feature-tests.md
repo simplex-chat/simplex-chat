@@ -59,7 +59,7 @@ Each test has a section in the job summary, and its screens and `checks.txt` are
 
 ## After the feature is merged
 
-The tests remain on master, and a test is selected for any branch with changes to the code it covers. When it fails, the test or the app is updated in that branch's pull request, as with a core test.
+The tests remain on master, and a test is selected for any branch with changes to the code it covers. When it fails, the test or the app is updated in that branch's pull request, as with a core test. Before a release, each workflow is run with `tests: all`.
 
 ## Writing a test
 
