@@ -164,6 +164,8 @@ struct ChatListView: View {
     @State private var searchText = ""
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: Set<String> = []
+    // when the search text is a SimpleX name, the string to connect to (with @/# preserved); nil otherwise
+    @State private var connectNameCandidate: String? = nil
     @State private var scrollToSearchBar = false
     @State private var userPickerShown: Bool = false
     @State private var sheet: SomeSheet<AnyView>? = nil
@@ -468,6 +470,7 @@ struct ChatListView: View {
                     searchText: $searchText,
                     searchShowingSimplexLink: $searchShowingSimplexLink,
                     searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
+                    connectNameCandidate: $connectNameCandidate,
                     parentSheet: $sheet,
                     onlineSearch: onlineSearch
                 )
@@ -550,6 +553,7 @@ struct ChatListView: View {
                         searchText: $searchText,
                         searchShowingSimplexLink: $searchShowingSimplexLink,
                         searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
+                        connectNameCandidate: $connectNameCandidate,
                         parentSheet: $sheet,
                         onlineSearch: onlineSearch
                     )
@@ -846,12 +850,11 @@ struct ChatListSearchBar: View {
     @Binding var searchText: String
     @Binding var searchShowingSimplexLink: Bool
     @Binding var searchChatFilteredBySimplexLink: Set<String>
+    @Binding var connectNameCandidate: String?
     @Binding var parentSheet: SomeSheet<AnyView>?
     @ObservedObject var onlineSearch: OnlineSearchModel
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @State private var ignoreSearchTextChange = false
-    // when the search text is a SimpleX name, the string to connect to (with @/# preserved); nil otherwise
-    @State private var connectNameCandidate: String? = nil
     @State private var nameSearchTask: Task<Void, Never>? = nil
 
     var body: some View {
