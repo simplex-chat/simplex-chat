@@ -60,6 +60,7 @@ badgeStripeTests = describe "badge stripe adapter" $ do
     it "refuses to cancel an intent while it is processing" testFakeCancelRefusedWhileProcessing
     it "reads the expand query on every read" testFakeReadExpands
     it "closes on a canceled intent" testFakeCanceled
+    it "cancels an intent waiting for a card after three declines in a row, and keeps one with fewer" testDeclinesCancel
     it "makes a 500 at checkout a ProviderError, creating nothing" testFakeCreate500
     it "makes a 500 on a read a ProviderError the next read recovers from" testFakeRead500
     it "refuses a crypto method, since Stripe offers none" testRefusesCrypto
@@ -234,6 +235,16 @@ testFakeCancelRefusedWhileProcessing = withProvider $ \fake p -> do
   setIntentState fake pid ["status" .= ("processing" :: Text)]
   pCancelInvoice p pid >>= (`shouldSatisfy` namesInError "payment_intent_unexpected_state")
   fakeIntentStatus fake pid `shouldReturn` Just "processing"
+
+testDeclinesCancel :: IO ()
+testDeclinesCancel = withProvider $ \fake p -> do
+  ProviderInvoice {piProviderRef = pid} <- createdInvoice p (SPMCard CPStripe)
+  setIntentState fake pid ["declines" .= (2 :: Int)]
+  pReadInvoice p pid `shouldReturn` Right Nothing
+  fakeIntentStatus fake pid `shouldReturn` Just "requires_payment_method"
+  setIntentState fake pid ["declines" .= (3 :: Int)]
+  pReadInvoice p pid >>= (`shouldSatisfy` \case Right (Just SigClosed {}) -> True; _ -> False)
+  fakeIntentStatus fake pid `shouldReturn` Just "canceled"
 
 testFakeCancel :: IO ()
 testFakeCancel = withProvider $ \fake p -> do

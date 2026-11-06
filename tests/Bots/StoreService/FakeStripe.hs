@@ -92,7 +92,9 @@ data FakeRequest = FakeRequest
 data IntentState = IntentState
   { isStatus :: Text,
     isAmount :: Int,
-    isCurrency :: Text
+    isCurrency :: Text,
+    -- | its card payments declined in a row, the latest charge's
+    isDeclines :: Int
   }
   deriving (Eq, Show)
 
@@ -188,8 +190,9 @@ intentFixture IntentState {isStatus} = case isStatus of
   _ -> "intent-open"
 
 patchIntent :: Text -> IntentState -> J.Value -> J.Value
-patchIntent pid IntentState {isStatus, isAmount, isCurrency} =
-  setField "id" (J.String pid)
+patchIntent pid IntentState {isStatus, isAmount, isCurrency, isDeclines} =
+  (if isDeclines > 0 then setField "latest_charge" (J.object ["id" J..= ("ch_" <> pid), "status" J..= ("failed" :: Text), "created" J..= (1700000000 :: Int)]) else id)
+    . setField "id" (J.String pid)
     . setField "client_secret" (J.String (pid <> "_secret_test"))
     . setField "status" (J.String isStatus)
     . setField "amount_received" (J.toJSON (if isStatus == "succeeded" then isAmount else (0 :: Int)))
@@ -209,6 +212,7 @@ fakeApp stv req respond0 = do
     ["_paging"] | isPost -> control body setPaging
     ["_fixtures"] | isPost -> control body setFixtures
     "v1" : "payment_intents" : rest -> apiCall body rest
+    ["v1", "charges"] | isGet -> listCharges
     _ -> refuse notFound404 "no such path on the fake stripe"
   where
     verb = requestMethod req
@@ -241,7 +245,7 @@ fakeApp stv req respond0 = do
         case M.lookup pid (fsIntents st) of
           Nothing -> pure (Just ("no intent " <> pid <> " was created here"))
           Just s -> do
-            let s' = s {isStatus = fromMaybe (isStatus s) (textField "status" o)}
+            let s' = s {isStatus = fromMaybe (isStatus s) (textField "status" o), isDeclines = fromMaybe (isDeclines s) (intField "declines" o)}
             writeTVar stv st {fsIntents = M.insert pid s' (fsIntents st)}
             pure Nothing
 
@@ -307,7 +311,7 @@ fakeApp stv req respond0 = do
       (pid, s) <- atomically $ do
         st <- readTVar stv
         let pid = "pi_test_" <> T.justifyRight 4 '0' (tshow (fsNextId st))
-            s = IntentState {isStatus = "requires_payment_method", isAmount = amount, isCurrency = currency}
+            s = IntentState {isStatus = "requires_payment_method", isAmount = amount, isCurrency = currency, isDeclines = 0}
         writeTVar stv st {fsNextId = fsNextId st + 1, fsIntents = M.insert pid s (fsIntents st)}
         pure (pid, s)
       serve (intentFixture s) (patchIntent pid s)
@@ -330,6 +334,15 @@ fakeApp stv req respond0 = do
           respond . stripeError badRequest400 "payment_intent_unexpected_state" $
             "You cannot cancel this PaymentIntent because it has a status of " <> isStatus s <> "."
         Just (Right s') -> serve (intentFixture s') (patchIntent pid s')
+
+    -- the declined charges of the intent named, the newest first, as many as asked
+    listCharges = do
+      intents <- fsIntents <$> readTVarIO stv
+      let pid = fromMaybe "" (queryText "payment_intent" (queryString req))
+          limit = fromMaybe 10 (queryText "limit" (queryString req) >>= readMaybe . T.unpack)
+          failed = maybe 0 isDeclines (M.lookup pid intents)
+          charge i = J.object ["id" J..= ("ch_" <> pid <> "_" <> tshow i), "status" J..= ("failed" :: Text)]
+      respond (jsonResponse ok200 (J.object ["object" J..= ("list" :: Text), "data" J..= map charge (take limit [1 .. failed]), "has_more" J..= (failed > limit)]))
 
     listIntents = do
       st <- readTVarIO stv
@@ -386,7 +399,7 @@ stripeError :: Status -> Text -> Text -> Response
 stripeError st code message = jsonResponse st (J.object ["error" J..= J.object ["message" J..= message, "code" J..= code]])
 
 stateKeys :: [Key]
-stateKeys = ["status"]
+stateKeys = ["status", "declines"]
 
 unknownKeys :: [Key] -> J.Object -> Maybe Text
 unknownKeys known o = case filter (`notElem` known) (KM.keys o) of

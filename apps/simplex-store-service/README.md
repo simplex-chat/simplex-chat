@@ -254,6 +254,11 @@ replays it, an error included. A replayed error, or a replayed intent that has b
 creates the intent again without the key. A badge order's reference is new on every request, so
 its key never repeats.
 
+A PaymentIntent waiting for a card is cancelled once its last 3 charges were all declined (the log
+line is `stripe: intent <id> is cancelled after 3 declined card payments in a row`), so stolen cards
+cannot be tried on it one after another, and the buyer starts a new checkout. Add Radar rules in the
+Dashboard too, such as blocking a card fingerprint or IP address that has failed several times.
+
 The service fills `publishable_key` into the shell at boot: the built `index.html` ships
 with an empty `<meta id="stripe-publishable-key" name="stripe-publishable-key" content="">`
 (`web/public/index.html`), and the listener serves a copy with the configured key

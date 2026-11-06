@@ -25,6 +25,7 @@ import StoreService.Providers
     WebhookError (..),
   )
 import Control.Exception (try)
+import Control.Logger.Simple (logWarn)
 import Control.Monad (unless)
 import Crypto.Hash (Digest, SHA256)
 import Crypto.MAC.HMAC (HMAC, hmac, hmacGetDigest)
@@ -271,13 +272,39 @@ cancelInvoice :: StripeEnv -> Text -> IO (Either ProviderError ())
 cancelInvoice env pid =
   fmap (fmap (const ())) $ stripeApi env "cancel intent" methodPost ["v1", "payment_intents", pid, "cancel"] [] (Just [])
 
+-- | Declined card payments one intent takes before it is cancelled, so stolen cards cannot be tried on it one after another.
+maxDeclines :: Int
+maxDeclines = 3
+
+-- | An intent waiting for a card after a charge is cancelled once its last maxDeclines charges all failed.
 readInvoice :: StripeEnv -> Text -> IO (Either ProviderError (Maybe PaymentSignal))
 readInvoice env pid = do
   now <- getCurrentTime
   got <- stripeApi env what methodGet ["v1", "payment_intents", pid] [("expand[]", Just "latest_charge")] Nothing
-  pure $ got >>= decodeStripe what >>= signalOf now
+  case got >>= decodeStripe what of
+    Right intent@IntentRead {irStatus = "requires_payment_method", irChargeCreated = Just _} ->
+      declines >>= \case
+        Right n | n >= maxDeclines -> do
+          logWarn $ "stripe: intent " <> pid <> " is cancelled after " <> tshow n <> " declined card payments in a row"
+          (>>= const (signalOf now intent {irStatus = "canceled"})) <$> cancelInvoice env pid
+        Right _ -> pure $ signalOf now intent
+        Left e -> pure $ Left e
+    intent -> pure $ intent >>= signalOf now
   where
     what = "read intent " <> pid
+    declines =
+      fmap (length . filter (== Just "failed") . map chargeStatus . clData) . (>>= decodeStripe "list charges")
+        <$> stripeApi env "list charges" methodGet ["v1", "charges"] [("payment_intent", Just $ TE.encodeUtf8 pid), ("limit", Just $ B8.pack $ show maxDeclines)] Nothing
+    chargeStatus = \case
+      J.Object c -> case KM.lookup "status" c of
+        Just (J.String s) -> Just s
+        _ -> Nothing
+      _ -> Nothing
+
+newtype ChargeList = ChargeList {clData :: [J.Value]}
+
+instance J.FromJSON ChargeList where
+  parseJSON = J.withObject "charge list" $ \o -> ChargeList <$> o J..: "data"
 
 signalOf :: UTCTime -> IntentRead -> Either ProviderError (Maybe PaymentSignal)
 signalOf now IntentRead {irStatus, irAmountReceived, irChargeCreated} =
