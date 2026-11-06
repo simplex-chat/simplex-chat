@@ -564,7 +564,10 @@ The service refuses to start with a key from the left column, naming the key tha
 Move `scripts/badge-service/config/` to `scripts/store-service/config/` (a deployment from before
 the config folder creates it and moves `badge_service.ini` into it), rename `badge_service.ini` in it
 to `store_service.ini`, and change its keys and paths as the table says, the
-`/etc/simplex-badge-service/` files under `[apple]` and `[google]` among them. Point Caddy's badges root at
+`/etc/simplex-badge-service/` files under `[apple]` and `[google]` among them. Where Caddy runs on the
+same machine, also set `[listener] host = 127.0.0.1`: an ini copied from the earlier template binds
+`0.0.0.0` with `trust_forwarded_for = on`, so a caller reaching the port past Caddy picks its own rate
+limit bucket. Point Caddy's badges root at
 `scripts/store-service/badges`, which the service fills at boot. Compose names a project after its
 folder, so the new `store-service` project does not see the old `badge-service` container, which
 would keep running on the same port and database: stop it first, from `scripts/badge-service/` or
