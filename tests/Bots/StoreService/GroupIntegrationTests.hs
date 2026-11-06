@@ -390,21 +390,18 @@ testOperatorNameCodes ps = do
   (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : codesOnlyNames <> chainSection} Nothing
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
-    forM_ ["name", "name 5", "name 64", "name 07", "name 7 years 1", "name 7 years 11", "name 7 gratis"] $ \args ->
+    forM_ ["name", "name 5", "name 64", "name 07", "name 7 years 1", "name 7 years 11", "name 7 gratis", "name 6 unpaid"] $ \args ->
       (args,) <$> issueRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
     forM_ [(5, 2), (64, 2), (7, 1), (7, 11)] $ \(len, years) ->
       ((len, years),) . isLeft <$> issueNameCode cc len years CPSFree `shouldReturn` ((len, years), True)
     countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 0
     paid <- issueNameRaw cc "name 7 years 3 paid"
-    unpaid <- issueNameRaw cc "name 6 unpaid"
     prepaidTerms cc paid `shouldReturn` Just (7, 3, CPSPaid)
-    prepaidTerms cc unpaid `shouldReturn` Just (6, 2, CPSUnpaid)
     let check code = checkPrepaid port (formatNameCode (NCPrepaid code))
         coverage :: Int -> Int -> Text -> (Int, Maybe J.Value)
         coverage minLength years state = (200, Just $ J.object ["minLength" J..= minLength, "years" J..= years, "state" J..= state])
         revoke = revokeRaw cc . formatNameCode . NCPrepaid
     check paid `shouldReturn` coverage 7 3 "unused"
-    check unpaid `shouldReturn` coverage 6 2 "unpaid"
     revokeRaw cc (formatNameCode (NCPrepaid paid) <> " junk") `shouldReturn` Left badgeCmdUsage
     revoke paid `shouldReturn` Right "Revoked."
     revoke paid `shouldReturn` Right "Already revoked."

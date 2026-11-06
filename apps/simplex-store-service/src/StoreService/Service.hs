@@ -425,7 +425,7 @@ runBadgeCmd turns cc cmd
       pure $ chatCmdError $
         "Usage: //issue supporter|legend|investor [months 1-" <> show maxMonths <> "] [paid|unpaid|free], //issue name <length "
           <> show minNameLength <> "-" <> show maxNameLength <> "> [years " <> show minNameYears <> "-" <> show maxNameYears
-          <> "] [paid|unpaid|free], //revoke <code>, or //refund <reference> [<cents>]"
+          <> "] [paid|free], //revoke <code>, or //refund <reference> [<cents>]"
   where
     issuedReply :: (c -> T.Text) -> Either String c -> Either ChatError ChatResponse
     issuedReply format = \case
@@ -530,10 +530,12 @@ dollars cents = "$" <> tshow whole <> "." <> T.justifyRight 2 '0' (tshow part)
     (whole, part) = cents `quotRem` centsPerDollar
     centsPerDollar = 100
 
+-- | Nothing marks a name code paid later, so an unpaid one would be refused for good.
 issueNameCmdP :: A.Parser (Int, Int, BadgeCodePaymentStatus)
 issueNameCmdP = do
   (len, years) <- "issue " *> nameCodeP
   paymentStatus <- fromMaybe CPSFree <$> optional (A.space *> textTokenP)
+  when (paymentStatus == CPSUnpaid) $ fail "unpaid name code"
   A.skipSpace
   A.endOfInput
   pure (len, years, paymentStatus)

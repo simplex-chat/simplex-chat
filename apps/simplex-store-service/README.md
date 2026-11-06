@@ -1244,7 +1244,7 @@ The command is sent to the running service in `--run-cli` mode, not a way to sta
 ```
 //issue <badge_type> [months] [paid|unpaid|free]
 //issue supporter 12
-//issue name <length> [years <Y>] [paid|unpaid|free]
+//issue name <length> [years <Y>] [paid|free]
 //issue name 7 years 5
 ```
 
@@ -1254,8 +1254,8 @@ whether the code was sold (`paid`), is awaiting payment (`unpaid`), or was issue
 code row when the invoice is created, and settlement is what marks it paid.
 
 `//issue name` makes a prepaid name code (`SN<length>-…`): it pays for one name of at least
-`<length>` letters, 6 to 63, for `years` years, 2 to 10 (default 2), or 2 for a community name. The status is as above: an
-order refuses an `unpaid` name code with `payment_pending`.
+`<length>` letters, 6 to 63, for `years` years, 2 to 10 (default 2), or 2 for a community name. Its status is
+`paid` or `free`: nothing marks a name code paid later, so `unpaid` is refused.
 
 The code is printed once and only its `SHA-256` is stored, so a code that is not copied when it is
 shown cannot be recovered.
