@@ -78,7 +78,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "waits for a pending commit without sending another, following its fee-bumped replacement" testPendingCommit
     it "goes to committed when the commit reverts UnexpiredCommitmentExists, in its dry run or mined, with the commitment's times" testUnexpiredCommitment
     it "sends a commit mined out of gas again" testCommitOutOfGas
-    it "waits a second at the lapse second, and again when the dry run still reverts, then commits" testLapseSecond
+    it "waits a second at the lapse second, retries as usual when the dry run still reverts, then commits" testLapseSecond
     it "clears a requeued order's stale intent before committing again after a lapse, and a third party's commitment's" testStaleIntent
     it "keeps the phase while the latest block needs more than the fee cap, then commits" testFeeAboveCap
   describe "writes" $ do
@@ -90,7 +90,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "waits while the name reads taken only above the confirmation depth, and ends taken once it reads so at the depth" testTakenAtDepth
     it "keeps the phase on NameNotAvailable while the name still reads available, as for a pending competitor" testPendingCompetitor
     it "ends failed on a revert while the name is available, keeping a code" testRevertFailed
-    it "keeps an order committed while the sponsor allowance is used up, alerting, and registers it after a top-up" testAllowanceUsedUp
+    it "keeps an order committed while the sponsor allowance is used up, and registers it after a top-up" testAllowanceUsedUp
     it "fails an order that sent the most registers an order may, sending nothing, and refuses its Try again" testSendsCapped
     it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed, and reads the name policy again on TermsNotAccepted" testInvalidNonce
     it "relays no intent past its deadline, ending failed" testExpiredIntent
@@ -369,7 +369,7 @@ testPendingCommit = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wSender} -> do
   length <$> sent w `shouldReturn` 1
   -- the market's fees pass the commit's, so the sender replaces it
   setFees cNode (2 * fakeTip) (2 * fakeBaseFee)
-  advance ctx 181
+  advance ctx 37
   followTransactions wSender
   replacement <- newestHash w
   replacement `shouldNotBe` first

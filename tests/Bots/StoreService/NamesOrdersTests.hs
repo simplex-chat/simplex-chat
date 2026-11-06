@@ -1244,8 +1244,6 @@ testCodeNotReservable = withOrders $ \ctx@Ctx {cStore} -> do
     either Just (const Nothing) placedOrder `shouldBe` Just (Orders.ORCode refusal)
   length <$> registrationsOf ctx ownerA `shouldReturn` 0
 
--- | One client's code checks and code orders share its 10 a minute; another client is not limited by them.
-
 -- | A response held before it is written, as for a client that reads it slowly, must not hold the name's turn.
 testSlowReaderHoldsNoTurn :: IO ()
 testSlowReaderHoldsNoTurn = withOrders $ \ctx@Ctx {cWeb, cOrders} -> do

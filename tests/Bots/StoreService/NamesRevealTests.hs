@@ -47,6 +47,7 @@ import StoreService.Names.Links (linkMaxBytes)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (Registration (..), TermsAcceptance (..), acceptanceDigest, makeCommitment, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
+import StoreService.Names.Reveal (RevealFields (..), parseRevealFields)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), NameReveal (..), getRegistration)
 import StoreService.Names.Turns (labelTurnCount)
 import StoreService.Web.Http (createLimit, holdMicros, maxBodyBytes, nameBodyBytes, readLimit)
@@ -78,8 +79,9 @@ namesRevealTests = describe "StoreService names: reveal" $ do
     it "records no refusal for links that do not rebuild the commitment, or for another signer" testNoRefusalRecorded
   describe "terms acceptance" $ do
     it "stores the owner's acceptance of the policy's current community terms, at the intent's deadline, with a listed name's reveal" testAcceptanceStored
-    it "refuses a reveal without an acceptance, or by another signer, for other terms, of the other kind, at another nonce or another deadline, a listed name's and a plain one's" testAcceptanceRefusals
-    it "refuses a listed name's reveal whose acceptance is not an object or has a malformed field, storing nothing" testAcceptanceMalformed
+    it "refuses a reveal without an acceptance, or by another signer, for other terms, of the other kind or at another nonce, a listed name's and a plain one's" testAcceptanceRefusals
+    it "refuses a listed name's reveal whose acceptance is not an object, storing nothing" testAcceptanceMalformed
+    it "reads an acceptance only with a 32-byte terms hash, a number nonce and a signature" testAcceptanceFields
     it "answers 503 for a listed name's reveal while its listing or the owner's policy nonce cannot be read, or before the policy has community terms, storing nothing" testAcceptanceUnavailable
   describe "races" $ do
     it "answers registration_changed with the current view when the registration changed during the checks" testLostRace
@@ -254,9 +256,7 @@ testAcceptanceRefusals = do
     refusedWith Nothing
     refusedWith . Just =<< signAcceptance ctx fakeRegistrarKey True fakeCommunityTerms 2
     refusedWith . Just =<< signAcceptance ctx keyA True (C.keccak256 "SimpleX community terms v0") 2
-    refusedWith . Just =<< signAcceptance ctx keyA False fakeCommunityTerms 2
     refusedWith . Just =<< signAcceptance ctx keyA True fakeCommunityTerms 1
-    refusedWith . Just =<< acceptanceOf ctx keyA alice True fakeCommunityTerms 2 (revealBefore + 3600)
     nrReveal <$> stored ctx rid `shouldReturn` Nothing
   withReveals $ \Fx {fCtx = ctx} -> do
     rid <- committed ctx (orderOf alice)
@@ -273,9 +273,17 @@ testAcceptanceMalformed :: IO ()
 testAcceptanceMalformed = withListedReveals $ \Fx {fCtx = ctx} -> do
   rid <- committed ctx listedOrder
   sig <- signIntent ctx keyA alice 0 revealBefore
-  TermsAcceptance {taSignature} <- signAcceptance ctx keyA True fakeCommunityTerms 2
-  let fields = KM.fromList ["termsHash" .= hex fakeCommunityTerms, "nonce" .= (2 :: Int), "signature" .= hex (serializeSignature taSignature)]
+  reveal ctx rid (KM.insert "acceptance" (J.String "acceptance") $ bodyOf sig alice 0 revealBefore) `shouldReturn` badRequest
+  nrReveal <$> stored ctx rid `shouldReturn` Nothing
+
+testAcceptanceFields :: IO ()
+testAcceptanceFields = do
+  g <- C.newRandom
+  sig <- either error id <$> signRecoverable g keyA (C.keccak256 "acceptance")
+  let fields = KM.fromList ["termsHash" .= hex fakeCommunityTerms, "nonce" .= (2 :: Int), "signature" .= hex (serializeSignature sig)]
       replaced k v = J.Object $ KM.insert k v fields
+      acceptanceRead a = rfAcceptance <$> parseRevealFields (KM.insert "acceptance" a $ bodyOf sig alice 0 revealBefore)
+  acceptanceRead (J.Object fields) `shouldBe` Just (Just TermsAcceptance {taTermsHash = fakeCommunityTerms, taNonce = 2, taSignature = sig})
   forM_
     [ J.String "acceptance",
       replaced "termsHash" $ J.String $ "0x" <> T.toUpper (T.drop 2 $ hex fakeCommunityTerms),
@@ -283,8 +291,7 @@ testAcceptanceMalformed = withListedReveals $ \Fx {fCtx = ctx} -> do
       replaced "nonce" "2",
       replaced "signature" "0x00"
     ]
-    $ \a -> reveal ctx rid (KM.insert "acceptance" a $ bodyOf sig alice 0 revealBefore) `shouldReturn` badRequest
-  nrReveal <$> stored ctx rid `shouldReturn` Nothing
+    $ \a -> acceptanceRead a `shouldBe` Nothing
 
 testAcceptanceUnavailable :: IO ()
 testAcceptanceUnavailable = withListedReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> do
