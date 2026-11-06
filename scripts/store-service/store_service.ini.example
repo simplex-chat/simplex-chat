@@ -1,5 +1,6 @@
 [listener]
-host = 0.0.0.0
+; loopback, where only Caddy reaches it: trust_forwarded_for below believes any caller's X-Forwarded-For
+host = 127.0.0.1
 ; the API and the webhooks, and the badges site when serve_webapp = on
 badges_port = 8080
 ; the builds are read from the image's /srv/badges and /srv/names, the defaults of badges_static_dir
