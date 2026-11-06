@@ -31,12 +31,12 @@ fun MemberAdmissionView(m: ChatModel, rhId: Long?, chatId: String, close: () -> 
     if (g == null || ch.remoteHostId != rhId) null else g
   }}
   val gInfo = groupInfo.value ?: return
-  var admission by rememberSaveable(gInfo, stateSaver = serializableSaver()) { mutableStateOf(gInfo.groupProfile.memberAdmission) }
-  var currentAdmission by rememberSaveable(gInfo, stateSaver = serializableSaver()) { mutableStateOf(admission) }
+  var admission by rememberSaveable(gInfo.groupProfile.memberAdmission, gInfo.isOwner, stateSaver = serializableSaver()) { mutableStateOf(gInfo.groupProfile.memberAdmission) }
+  var currentAdmission by rememberSaveable(gInfo.groupProfile.memberAdmission, gInfo.isOwner, stateSaver = serializableSaver()) { mutableStateOf(admission) }
 
   fun saveAdmission(afterSave: () -> Unit = {}) {
     withBGApi {
-      val gp = gInfo.groupProfile.copy(memberAdmission = admission)
+      val gp = (groupInfo.value ?: gInfo).groupProfile.copy(memberAdmission = admission)
       val g = m.controller.apiUpdateGroup(rhId, gInfo.groupId, gp, gInfo.useRelays)
       if (g != null) {
         withContext(Dispatchers.Main) {

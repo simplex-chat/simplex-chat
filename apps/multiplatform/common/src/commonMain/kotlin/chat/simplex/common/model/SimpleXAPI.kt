@@ -5673,8 +5673,8 @@ data class TimedMessagesPreference(
 
 @Serializable
 sealed class ChatBotCommand {
-  @Serializable @SerialName("command") class Command(val keyword: String, val label: String, val params: String?): ChatBotCommand()
-  @Serializable @SerialName("menu") class Menu(val label: String, val commands: List<ChatBotCommand>): ChatBotCommand()
+  @Serializable @SerialName("command") data class Command(val keyword: String, val label: String, val params: String?): ChatBotCommand()
+  @Serializable @SerialName("menu") data class Menu(val label: String, val commands: List<ChatBotCommand>): ChatBotCommand()
 }
 
 @Serializable
