@@ -2,6 +2,7 @@
 
 module Bots.StoreService.NamesLinksTests (namesLinksTests) where
 
+import Control.Monad (forM_)
 import Data.ByteString (ByteString)
 import qualified Data.List.NonEmpty as L
 import Data.Text (Text)
@@ -57,25 +58,20 @@ namesLinksTests = describe "StoreService names: links" $ do
       T.length atBound `shouldBe` linkMaxBytes
       linkKindOf atBound `shouldBe` Just LKContact
       linkKindOf (padded $ linkMaxBytes + 1) `shouldBe` Nothing
-  describe "hosts" $ do
-    it "reads the authority of an https link" $
-      linkHosts presetContact `shouldBe` [THDomainName "smp6.simplex.im"]
-    it "reads an IP literal authority" $
-      linkHosts "https://1.2.3.4/c#MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY" `shouldBe` [THIPv4 (1, 2, 3, 4)]
-    it "reads the authority and the extra hosts of an https link" $
-      linkHosts "https://smp.simplex.im/a#MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY?h=jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&p=5223&c=1234-w"
-        `shouldBe` [THDomainName "smp.simplex.im", THOnionHost onionHost]
-    it "reads the one server host of a simplex link" $
-      linkHosts "simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im" `shouldBe` [THDomainName "smp6.simplex.im"]
-    it "reads every server host of a simplex link" $ do
-      linkHosts multiHostContact `shouldBe` [THDomainName "smp.simplex.im", THOnionHost onionHost]
-      linkHosts multiHostChannel `shouldBe` [THDomainName "smp.simplex.im", THOnionHost onionHost]
-    it "reads the hosts of a channel link" $
-      linkHosts "simplex:/c#AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg?h=smp.simplex.im&p=5223&c=1234-w" `shouldBe` [THDomainName "smp.simplex.im"]
-    it "has no hosts for a link the chat core cannot read" $ do
-      linkHosts pageChannel `shouldBe` []
-      linkHosts "https://simplex.chat/contact#/?v=2&smp=smp%3A%2F%2Fabc" `shouldBe` []
-      linkHosts "hello" `shouldBe` []
+  it "reads every host of a link: an https authority, an IP literal, its extra hosts, a simplex link's server hosts, a channel link's, and none of a link the chat core cannot read" $
+    forM_
+      [ (presetContact, [THDomainName "smp6.simplex.im"]),
+        ("https://1.2.3.4/c#MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY", [THIPv4 (1, 2, 3, 4)]),
+        ("https://smp.simplex.im/a#MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY?h=jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&p=5223&c=1234-w", [THDomainName "smp.simplex.im", THOnionHost onionHost]),
+        ("simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im", [THDomainName "smp6.simplex.im"]),
+        (multiHostContact, [THDomainName "smp.simplex.im", THOnionHost onionHost]),
+        (multiHostChannel, [THDomainName "smp.simplex.im", THOnionHost onionHost]),
+        ("simplex:/c#AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg?h=smp.simplex.im&p=5223&c=1234-w", [THDomainName "smp.simplex.im"]),
+        (pageChannel, []),
+        ("https://simplex.chat/contact#/?v=2&smp=smp%3A%2F%2Fabc", []),
+        ("hello", [])
+      ]
+      $ \(l, hosts) -> (l, linkHosts l) `shouldBe` (l, hosts)
   where
     refused l = (l, linkKindOf l) `shouldBe` (l, Nothing)
     padded n = let base = presetContact <> "?x=" in base <> T.replicate (n - T.length base) "a"

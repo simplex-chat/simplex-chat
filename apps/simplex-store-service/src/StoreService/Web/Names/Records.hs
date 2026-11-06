@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module StoreService.Web.Names.Records (EditInvalid (..), recordsHandler, editRequest, editsLeftJSON) where
+module StoreService.Web.Names.Records (EditInvalid (..), recordsHandler, editRequest, editResponse, editsLeftJSON) where
 
 import Control.Monad (forM_, unless)
 import Data.Aeson ((.:), (.:?), (.=))

@@ -9,12 +9,13 @@ import Bots.StoreService.BotTests (operatorCmd, withStoreService)
 import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, setRates, webhookEvent, webhookSigHeader, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (reservedNamesCall)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, codesOnly, commitmentOf, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyA, keyB, listName, listOnChain, olderTerms, orderTime, otherCommunityTerms, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, termsChanged, threeYears, withOrdersOn, yearsDuration)
-import Bots.StoreService.NamesOwnerTests (findBody, postFind)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, codesOnly, commitmentOf, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyA, keyB, listName, listOnChain, olderTerms, orderTime, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, termsChanged, threeYears, withOrdersOn, yearsDuration)
+import Bots.StoreService.NamesOwnerTests (findBody, postFind, woken)
+import Bots.StoreService.NamesPhasesTests (registrationPath)
 import Bots.StoreService.NamesStoreTests (at, order, ownerA, placePaid, reg, t0, write)
-import Bots.StoreService.WebTests (StubCall (..), capturingStderr, StubState (..), jsonObject, rcv, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores)
+import Bots.StoreService.WebTests (StubCall (..), capturingStderr, StubState (..), jsonObject, rcv, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores, withApp)
 import ChatTests.DBUtils (TestParams)
-import Control.Concurrent.Async (Async, async, cancel, concurrently, wait)
+import Control.Concurrent.Async (Async, async, concurrently, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
 import Control.Monad (forM_, join, void, when)
@@ -32,9 +33,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
-import Network.HTTP.Client (defaultManagerSettings, newManager)
 import Network.Wai (Application)
-import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -138,8 +137,7 @@ serveSpend ctx@Ctx {cOrders, cWeb} action = do
         _ -> Nothing
       app :: Application
       app req respond = fromMaybe (webApp cWeb req respond) (namesApp (weHttp cWeb) routes req respond)
-  mgr <- newManager defaultManagerSettings
-  Warp.testWithApplication (pure app) $ \port -> action ctx {cClient = (mgr, "http://127.0.0.1:" <> show port)}
+  withApp app $ \client -> action ctx {cClient = client}
 
 withSpend :: (Ctx -> IO a) -> IO a
 withSpend action = withSpendHook (const action)
@@ -224,9 +222,6 @@ invoiceIdOf v = case field "invoiceId" =<< v of
   Just (J.String t) -> InvoiceId t
   other -> error $ "not an invoice view: " <> show other
 
-registrationPath :: RegistrationId -> String
-registrationPath (RegistrationId rid) = "/api/registration/" <> T.unpack rid
-
 viewOf :: Ctx -> RegistrationId -> IO J.Object
 viewOf Ctx {cClient} rid = webGet cClient (registrationPath rid) >>= jsonObject
 
@@ -237,9 +232,6 @@ heldPoll Ctx {cOrders, cClient} NameRegistration {nrId, nrVersion} = do
   poll <- async $ webGet cClient (registrationPath nrId <> "?seenVersion=" <> show nrVersion) >>= \resp -> (statusOf resp,) <$> jsonObject resp
   timeout pollSeconds (atomically $ phasesWaiting (oePhases cOrders) >>= check . (> waiting)) >>= maybe (error "the poll was not held") pure
   pure poll
-
-woken :: Async (Int, J.Object) -> IO (Int, J.Object)
-woken poll = timeout pollSeconds (wait poll) >>= maybe (cancel poll >> error "the poll was not woken") pure
 
 pollSeconds :: Int
 pollSeconds = 5000000
@@ -424,10 +416,8 @@ testSpendTermsChanged :: IO ()
 testSpendTermsChanged = withSpend $ \ctx0 -> serveSpend (configured (listName "dynamis") ctx0) $ \ctx -> do
   listOnChain ctx "dynamis"
   src <- sourceOf ctx "src" 30000
-  forM_ [olderTerms, communityTerms] $ \t ->
-    spend ctx src (covered 30000) {sbOrder = aliceOrder {oTerms = t}} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
-  forM_ [plainTerms, olderTerms, otherCommunityTerms] $ \t ->
-    spend ctx src (dynamis 30000 Nothing) {sbOrder = dynamisOrder {oTerms = t}} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
+  spend ctx src (covered 30000) {sbOrder = aliceOrder {oTerms = olderTerms}} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
+  spend ctx src (dynamis 30000 Nothing) {sbOrder = dynamisOrder {oTerms = plainTerms}} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
   amountOf ctx src `shouldReturn` Just 30000
   rid <- registrationAnswer . snd <$> spend ctx src (dynamis 30000 Nothing) {sbOrder = dynamisOrder {oTerms = communityTerms}}
   nrAgreedTerms <$> registrationById ctx rid `shouldReturn` communityTerms

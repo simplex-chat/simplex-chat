@@ -11,7 +11,7 @@ import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, ownerA, paidOrder, reveal)
-import Bots.StoreService.WebTests (capturingStderr, jsonObject, statusOf, stubCalls, webGet)
+import Bots.StoreService.WebTests (capturingStderr, jsonObject, statusOf, stubCalls, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
@@ -31,8 +31,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
-import Network.HTTP.Client (defaultManagerSettings, newManager, responseBody)
-import qualified Network.Wai.Handler.Warp as Warp
+import Network.HTTP.Client (responseBody)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -43,7 +42,7 @@ import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig)
 import StoreService.Names.Abi (abiBytes, abiTuple, addressWord, AbiValue (..), hex, selector, uint256)
-import StoreService.Names.Chain (Block (..), ChainClient, Receipt (..), TxHash (..), TxRequest (..), blockAt, decodeSignedTx, newChainClient)
+import StoreService.Names.Chain (Block (..), ChainClient, TxHash (..), TxRequest (..), blockAt, decodeSignedTx, newChainClient)
 import StoreService.Names.Contracts (namePolicy)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange)
@@ -118,8 +117,6 @@ workerTests = describe "StoreService names: worker" $ do
     it "releases the codes of code orders failed for 30 days, and no others" testCodeSweep
   describe "confirmation depth" $
     it "judges a register landed by ownerOf only once the owner holds the name at the confirmation depth" testLandedAtDepth
-  describe "sender" $
-    it "bounds the wait for a transaction's outcome" testOutcomeBound
   describe "retry" $ do
     it "refuses Try again outside failed with bad_request, changing nothing, and answers an unknown order 404" testRetryNotFailed
     it "refuses Try again of a failed order whose links were refused with bad_request, changing nothing" testRetryLinksRefused
@@ -164,8 +161,7 @@ withWorkerAs settings action = withOrders $ \open -> do
         ["api", "registration", rid, "retry"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retryHandler cOrders rid}
         _ -> Nothing
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
-  mgr <- newManager defaultManagerSettings
-  Warp.testWithApplication (pure app) $ \port -> started ctx {cWeb = web, cClient = (mgr, "http://127.0.0.1:" <> show port)} >>= action
+  withApp app $ \client -> started ctx {cWeb = web, cClient = client} >>= action
 
 -- | A new sender and worker over the same store, as after a restart.
 started :: Ctx -> IO W
@@ -974,22 +970,6 @@ testLandedAtDepth = withOrders $ \ctx@Ctx {cNode, cOrders} -> do
   confirmLanded cOrders r `shouldReturn` LRegistered (nrVersion r + 1)
   x <- stored ctx r
   (nrPhase x, nrExpiresAt x, nrRegisterTx x) `shouldBe` (PRegistered, Just expiry, Nothing)
-
-testOutcomeBound :: IO ()
-testOutcomeBound = withOrders $ \ctx@Ctx {cNode, cStore, cRandom, cClock} -> do
-  r@NameRegistration {nrId, nrCommitment} <- paidIn ctx aliceOrder id
-  chain <- newChainClient cRandom $ fakeChainConfig cNode
-  sender <- newSender cRandom chain cStore (readIORef cClock)
-  Right p <- submitTransaction sender (TxCommit nrId) fakeController (commitCalldata nrCommitment)
-  timeout prompt (awaitOutcome shortWait p) `shouldReturn` Just Nothing
-  let TxHash h = ptHash p
-  block <- mine cNode [(h, True)]
-  replicateM_ 2 $ mine cNode []
-  followTransactions sender
-  awaitOutcome shortWait p `shouldReturn` Just (TOConfirmed (ptHash p) Receipt {receiptSuccess = True, receiptBlock = block})
-  stored ctx r `shouldReturn` r
-  where
-    shortWait = 300000
 
 -- retry
 

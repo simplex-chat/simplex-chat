@@ -26,10 +26,10 @@ import Bots.StoreService.NamesContractsTests
     withContracts,
     year,
   )
-import Bots.StoreService.NamesOrdersTests (communityEntry, termsEntry, threeYears)
+import Bots.StoreService.NamesOrdersTests (communityEntry, termsEntry, testNamesConfig, threeYears)
 import Bots.StoreService.NamesProfilesTests (bakeryLink, jpeg, newsLink)
 import Bots.StoreService.NamesStoreTests (atNonce, issue, newEdit, order, ownerA, placeCode, setChannel, t0, usable)
-import Bots.StoreService.WebTests (withServiceStore)
+import Bots.StoreService.WebTests (withServiceStore, withApp)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
 import Control.Monad (forM_)
@@ -45,28 +45,26 @@ import Data.Maybe (fromJust, fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
-import Network.HTTP.Client (Manager, Request, RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, responseBody, responseHeaders, responseStatus)
+import Network.HTTP.Client (Manager, Request, RequestBody (..), httpLbs, method, parseRequest, requestBody, responseBody, responseHeaders, responseStatus)
 import qualified Network.HTTP.Client as HTTP
 import Network.HTTP.Types (status404, status429)
 import Network.HTTP.Types.Status (statusCode)
-import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import StoreService.Config (ListenerConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, selector, uint256)
 import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Links (LinkKind (..))
 import StoreService.Names.Profiles (ChatKind (..), HostResolver, LinkProfile (..), ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
 import StoreService.Names.Store (EditState (..), NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, insertRecordEdit, settleRecordEdit, updateRegistration)
 import StoreService.Web.Http (newHttpEnv, notFound, previewLimit, searchLimit)
 import StoreService.Web.Names (Route (..), namesApp)
-import StoreService.Web.Names.Search (previewHandler, searchHandler, termsHandler)
+import StoreService.Web.Names.Search (previewHandler, recordLinks, searchHandler, termsHandler)
 import Test.Hspec
 
 namesSearchTests :: Spec
@@ -80,8 +78,7 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "answers an available name's terms null while the terms of its kind cannot be read: not set, of a link the service does not take, or of a text not fetched now" $ testTermsUnavailable g
     it "answers a name the policy lists without an ini line as a community name without its text" $ testCommunityWithoutText g
     it "answers a listed name's price for its community's 2 years, whatever years the configuration gives" $ testCommunityYears g
-    it "makes one entity per short link of its record's kind, splitting on ';', and none from other values" $ testRecordLinks g
-    it "makes entities of the first 5 short links of a record only, fetching no other" $ testRecordLinksCap g
+    it "takes the first 5 short links of a record's kind, splitting on ';', and none from other values" testRecordLinks
     it "answers a registered name's record edits left and when the next one returns, counting the edits of 365 days, reverted too" $ testRecordEdits g
     it "answers provider_unavailable to any failed chain read, records and price included, and reads no terms link for a registered name" $ testFailedReads g
     it "fails a search whose reads together pass one deadline, though each read meets it" $ testOneDeadline g
@@ -105,30 +102,14 @@ withSearch g adjustConfig adjust action = withServiceStore $ \store -> withContr
   fetched <- newTVarIO []
   ps <- newProfiles defaultProfileLimits {fetchTimeout = fetchMicros} monotonicSeconds (fakeFetch fetched) stubResolver
   http <- newHttpEnv ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = "", lServeWebapp = False, lBadgesExportDir = Nothing, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesPort = Nothing}
-  let cfg = adjustConfig $ namesConfig node
+  let cfg = adjustConfig $ testNamesConfig node
       routes = \case
         ["api", "link", "preview"] -> Just Route {rMethod = "POST", rLimit = previewLimit, rHandler = previewHandler ps}
         ["api", "terms", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = termsHandler (adjust ct) hash}
         ["api", "name", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = searchHandler cfg store (adjust ct) ps (pure t0) hash}
         _ -> Nothing
       app req respond = fromMaybe (respond notFound) (namesApp http routes req respond)
-  mgr <- newManager defaultManagerSettings
-  Warp.testWithApplication (pure app) $ \port -> action Search {node, store, client = (mgr, "http://127.0.0.1:" <> show port), fetched}
-
-namesConfig :: FakeEthNode -> NamesConfig
-namesConfig node =
-  NamesConfig
-    { nTLD = TLDSimplex,
-      nYears = 2,
-      nTermStart = UTCTime (fromGregorian 2027 1 1) 0,
-      nTermSlackSeconds = 3600,
-      nRevealMarginSeconds = 900,
-      nMaxOrderMoves = 3,
-      nCodesOnly = False,
-      nRecordEditsPerYear = 3,
-      nCommunity = M.empty,
-      nChain = fakeChainConfig node
-    }
+  withApp app $ \client -> action Search {node, store, client, fetched}
 
 aliceCommunity :: Text
 aliceCommunity = "bakers and bakeries in Lisbon"
@@ -315,14 +296,6 @@ newsChat = chat "channel" "channel" "Bakery news" "Daily bakes and opening hours
 entity :: [(J.Key, J.Value)] -> Text -> Text -> J.Value
 entity fields l deepLink = J.object $ fields <> ["link" .= l, "deepLink" .= deepLink]
 
--- | Each entity's type, kind, profile and link.
-entitySummaries :: Answer -> [(Text, Text, Text, Text)]
-entitySummaries = \case
-  (200, Just v) -> fromMaybe [] $ JT.parseMaybe summaries v
-  _ -> []
-  where
-    summaries = J.withObject "answer" $ \o -> o J..: "entities" >>= mapM (J.withObject "entity" $ \e -> (,,,) <$> e J..: "type" <*> e J..: "kind" <*> e J..: "profile" <*> e J..: "link")
-
 fullLink :: Text
 fullLink = "https://simplex.chat/contact#/?v=2&smp=smp%3A%2F%2Fabc"
 
@@ -464,28 +437,15 @@ testCommunityYears g = withSearch g threeYears id $ \s@Search {node} -> do
   answer <- searchAlice s 12
   (snd answer >>= JT.parseMaybe (J.withObject "answer" $ \o -> (,,) <$> o J..: "years" <*> o J..: "price" <*> (o J..: "community" >>= (J..: "years")))) `shouldBe` Just (3 :: Int, 10000 :: Int, 2 :: Int)
 
-testRecordLinks :: TVar ChaChaDRG -> IO ()
-testRecordLinks g = withSearch g id id $ \s@Search {node} -> do
+testRecordLinks :: IO ()
+testRecordLinks = do
   let botLink = taggedLink "smp8.simplex.im" 'a' "Bot"
-      contact = bakeryLink <> ";" <> botLink <> " ; " <> newsLink <> ";" <> fullLink <> ";;"
-      channel = " " <> newsLink <> ";" <> bakeryLink <> ";hello"
-  registeredWith node contact channel
-  answer <- searchAlice s 12
-  entitySummaries answer
-    `shouldBe` [("address", "contact", "ok", bakeryLink), ("address", "bot", "ok", botLink), ("channel", "channel", "ok", newsLink)]
-  (snd answer >>= JT.parseMaybe (J.withObject "answer" (J..: "records"))) `shouldBe` Just (recordsOf contact channel)
-  registeredWith node fullLink ""
-  searchAlice s 12 `shouldReturn` registeredAnswer [] (recordsOf fullLink "") resolverText (J.toJSON (0 :: Int))
-
-testRecordLinksCap :: TVar ChaChaDRG -> IO ()
-testRecordLinksCap g = withSearch g id id $ \s@Search {node} -> do
-  let contacts = map (\n -> taggedLink "smp8.simplex.im" 'a' ("Bot" <> T.pack (show n))) [1 .. 7 :: Int]
+      bots = map (\n -> taggedLink "smp8.simplex.im" 'a' ("Bot" <> T.pack (show n))) [1 .. 7 :: Int]
+  recordLinks LKContact (bakeryLink <> ";" <> botLink <> " ; " <> newsLink <> ";" <> fullLink <> ";;") `shouldBe` [(LKContact, bakeryLink), (LKContact, botLink)]
+  recordLinks LKChannel (" " <> newsLink <> ";" <> bakeryLink <> ";hello") `shouldBe` [(LKChannel, newsLink)]
+  recordLinks LKContact fullLink `shouldBe` []
   -- a value of another kind first, so the cap counts only the record's own links
-  registeredWith node (T.intercalate ";" $ newsLink : contacts) newsLink
-  answer <- searchAlice s 12
-  entitySummaries answer
-    `shouldBe` map ("address", "bot", "ok",) (take 5 contacts) <> [("channel", "channel", "ok", newsLink)]
-  length . filter (T.isInfixOf "#Bot") <$> fetchedLinks s `shouldReturn` 5
+  recordLinks LKContact (T.intercalate ";" $ newsLink : bots) `shouldBe` map (LKContact,) (take 5 bots)
 
 testRecordEdits :: TVar ChaChaDRG -> IO ()
 testRecordEdits g = forM_ [(4, 1, 10), (2, 0, 5)] $ \(perYear, left, returnsFrom) -> withSearch g (\cfg -> cfg {nRecordEditsPerYear = perYear}) id $ \s@Search {node, store} -> do

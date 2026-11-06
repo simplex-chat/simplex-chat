@@ -7,6 +7,7 @@
 
 module Bots.StoreService.WebTests
   ( badgeWebTests,
+    withApp,
     withServiceStore,
     withServiceStores,
     columnsOf,
@@ -98,6 +99,7 @@ import Network.HTTP.Types (Header, HeaderName, hCacheControl, hContentType)
 import Network.HTTP.Types.Status (status200, statusCode)
 import qualified Network.Wai as Wai
 import Network.Wai.Internal (ResponseReceived (..))
+import Network.Wai (Application)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeType (..))
 import Simplex.Chat.Badges.Ledger (addMonths, debitEntry, emptyEntry, grantEntry, issueEntry)
@@ -1530,6 +1532,12 @@ webRequestBody (mgr, base) verb target hdrs body = do
         responseTimeout = responseTimeoutMicro clientTimeout
       }
     mgr
+
+-- | Serves the app on a free port, with a client for it.
+withApp :: Application -> (WebClient -> IO a) -> IO a
+withApp app action = do
+  mgr <- newManager defaultManagerSettings
+  Warp.testWithApplication (pure app) $ \port -> action (mgr, "http://127.0.0.1:" <> show port)
 
 webGet :: WebClient -> String -> IO (Response LB.ByteString)
 webGet client target = webRequest client "GET" target []

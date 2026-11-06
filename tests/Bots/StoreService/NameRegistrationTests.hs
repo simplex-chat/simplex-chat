@@ -16,8 +16,6 @@ import qualified Data.Text as T
 import Data.Word (Word64)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (signRecoverable)
-import Simplex.Messaging.Encoding.String (strDecode)
-import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import StoreService.Names.Signatures (parseSignature)
@@ -129,9 +127,6 @@ testVerifyAcceptance g = do
   verify True other acceptanceDeadline acceptance `shouldReturn` Left "acceptance is not signed by the owner"
   verify True owner (acceptanceDeadline + 1) acceptance `shouldReturn` Left "acceptance is not signed by the owner"
   verify False owner acceptanceDeadline acceptance `shouldReturn` Left "acceptance is not signed by the owner"
-
-address :: ByteString -> Address
-address = right . strDecode
 
 toHex :: ByteString -> ByteString
 toHex = convertToBase Base16

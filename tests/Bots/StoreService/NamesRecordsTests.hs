@@ -19,6 +19,7 @@ import qualified Data.Aeson.KeyMap as KM
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import Data.ByteString.Builder (toLazyByteString)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import qualified Data.ByteString.Lazy as LB
@@ -31,13 +32,13 @@ import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, requestHeaders, responseBody, responseHeaders, responseStatus)
 import Network.HTTP.Types (hContentType, statusCode)
+import qualified Network.Wai as W
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), signRecoverable)
-import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress, unAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain, serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
@@ -51,7 +52,7 @@ import StoreService.Names.Sender (Sender, followTransactions, newSender)
 import StoreService.Names.Signatures (parseSignature)
 import StoreService.Names.Store (EditState (..), NewRecordEdit (..), RecordChange (..), RecordEdit (..), SignedChange (..), getRecordEditByBody, insertRecordEdit)
 import StoreService.Names.Turns (newTurns)
-import StoreService.Web.Names.Records (EditInvalid (..), editRequest, recordsHandler)
+import StoreService.Web.Names.Records (EditInvalid (..), editRequest, editResponse, recordsHandler)
 import System.Timeout (timeout)
 import Test.Hspec
 #if defined(dbPostgres)
@@ -113,8 +114,7 @@ namesRecordsTests = describe "StoreService names: records" $ do
     it "counts a pending edit and one reverted on chain, and no edit refused or never sent" $ testYearFailedRelays g
   describe "http" $ do
     it "answers the contract's statuses and bodies" $ testHttp g
-    it "answers 503, 504, and 429 with the real wait in Retry-After" $ testHttpUnsettled g
-    it "answers 429 edit_limit with nextAt in unix seconds and no Retry-After" $ testHttpEditLimit g
+    it "answers 504 edit_pending, 503, 429 with the real wait in Retry-After, and 429 edit_limit with nextAt in unix seconds and no Retry-After" testEditResponses
     it "relays a body of two edits with links of 4096 bytes, above the 8192-byte cap of other endpoints" $ testHttpTwoLongLinks g
 
 data Setup = Setup
@@ -899,28 +899,23 @@ testHttp g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post 
   _ <- mineSent s 2 False
   within (wait next) `shouldReturn` (409, Just $ J.object ["error" .= ("record_reverted" :: Text), "revert" .= J.Null], Nothing)
 
-testHttpUnsettled :: TVar ChaChaDRG -> IO ()
-testHttpUnsettled g = withSetup g $ \s@Setup {node, owner} -> do
-  let quick = (records $ roomy s) {rsPendingAfter = shortWait}
-      edit n = signEdit s owner (channel viemChannelLink) n deadline
-  withRecordsApp quick $ \post -> do
-    setFault node "eth_call" HttpFailure
-    (post . J.encode . editJson =<< edit 0) `shouldReturn` (503, Just $ errorJson "provider_unavailable", Nothing)
-    clearFault node "eth_call"
-    (post . J.encode . editJson =<< edit 0) `shouldReturn` (504, Just $ errorJson "edit_pending", Nothing)
-    forM_ [1 .. 9] $ \n -> do
-      setNonce s n
-      (relayEdit quick =<< edit n) `shouldReturn` EAPending
-    setNonce s 10
-    (post . J.encode . editJson =<< edit 10) `shouldReturn` (429, Just $ errorJson "rate_limited", Just "3600")
+testEditResponses :: IO ()
+testEditResponses =
+  mapM (responseParts . editResponse) [EAPending, EAUnavailable, EACapped 3600, EALimited (addUTCTime (fromIntegral yearSeconds) t0)]
+    `shouldReturn` [ (504, Just $ errorJson "edit_pending", Nothing),
+                     (503, Just $ errorJson "provider_unavailable", Nothing),
+                     (429, Just $ errorJson "rate_limited", Just "3600"),
+                     (429, Just $ J.object ["error" .= ("edit_limit" :: Text), "nextAt" .= (t0Seconds + yearSeconds)], Nothing)
+                   ]
 
-testHttpEditLimit :: TVar ChaChaDRG -> IO ()
-testHttpEditLimit g = withSetup g $ \s@Setup {records, owner} -> do
-  _ <- appliedEdits s 3
-  setNonce s 3
-  withRecordsApp records $ \post ->
-    (post . J.encode . editJson =<< signEdit s owner (channel viemChannelLink) 3 deadline)
-      `shouldReturn` (429, Just $ J.object ["error" .= ("edit_limit" :: Text), "nextAt" .= (t0Seconds + yearSeconds)], Nothing)
+-- | A response's status, JSON body and Retry-After, as withRecordsApp reads them over HTTP.
+responseParts :: W.Response -> IO (Int, Maybe J.Value, Maybe ByteString)
+responseParts r = do
+  let (status, headers, withBody) = W.responseToStream r
+  chunks <- newTVarIO mempty
+  withBody $ \stream -> stream (\b -> atomically $ modifyTVar' chunks (<> b)) (pure ())
+  bytes <- toLazyByteString <$> readTVarIO chunks
+  pure (statusCode status, J.decode bytes, lookup "Retry-After" headers)
 
 testHttpTwoLongLinks :: TVar ChaChaDRG -> IO ()
 testHttpTwoLongLinks g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post -> do
@@ -1057,6 +1052,3 @@ viemClearCall = unhex "6463e6140f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7
 
 unhex :: ByteString -> ByteString
 unhex = either error id . convertFromBase Base16
-
-address :: ByteString -> Address
-address = either error id . strDecode

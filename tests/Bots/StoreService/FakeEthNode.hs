@@ -4,6 +4,7 @@
 
 module Bots.StoreService.FakeEthNode
   ( FakeEthNode (..),
+    address,
     CallAnswer (..),
     TextAnswer (..),
     Fault (..),

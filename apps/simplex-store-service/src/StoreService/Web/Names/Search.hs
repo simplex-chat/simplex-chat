@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module StoreService.Web.Names.Search (searchHandler, previewHandler, termsHandler) where
+module StoreService.Web.Names.Search (searchHandler, previewHandler, termsHandler, recordLinks) where
 
 import Control.Concurrent.Async (async, mapConcurrently, wait)
 import Control.Logger.Simple (logWarn)
@@ -116,8 +116,9 @@ searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nCh
 recordEntities :: Profiles -> NameRecords -> IO [Entity]
 recordEntities ps NameRecords {rdContact, rdChannel} =
   mapConcurrently (uncurry $ linkEntity ps) $ recordLinks LKContact rdContact <> recordLinks LKChannel rdChannel
-  where
-    recordLinks kind = map (kind,) . take maxEntitiesPerKey . filter ((Just kind ==) . linkKindOf) . map T.strip . T.splitOn linkSeparator
+
+recordLinks :: LinkKind -> Text -> [(LinkKind, Text)]
+recordLinks kind = map (kind,) . take maxEntitiesPerKey . filter ((Just kind ==) . linkKindOf) . map T.strip . T.splitOn linkSeparator
 
 linkSeparator :: Text
 linkSeparator = ";"

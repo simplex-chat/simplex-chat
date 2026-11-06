@@ -16,7 +16,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, concurrently, replicateConcurrently, wait)
 import Control.Concurrent.STM
 import Control.Exception (uninterruptibleMask_)
-import Control.Monad (replicateM_)
+import Control.Monad (forM_, replicateM_)
 import qualified Data.Aeson as J
 import Data.Int (Int64)
 import qualified Data.ByteString.Base64.URL as B64URL
@@ -68,11 +68,7 @@ namesProfilesTests = describe "StoreService names: profiles" $ do
     H.it "fills the search bound while previews still fetch" testSearchBound
     H.it "lets a fetch wait for a slot that frees within the timeout" testSlotFreesInTime
   describe "host rule" $ do
-    H.it "passes public IP literals and a name resolving to public addresses" testPublicHosts
-    H.it "refuses private, loopback, CGNAT, link-local and unique-local literals" testPrivateLiterals
-    H.it "refuses names resolving to those addresses" testPrivateNames
-    H.it "refuses unspecified, multicast and IPv4-mapped private addresses" testOtherRefused
-    H.it "refuses reserved, broadcast, benchmarking and site-local addresses, and private IPv4 in IPv4-compatible and NAT64 addresses" testEmbeddedAndReserved
+    H.it "passes public addresses and names resolving to them, and refuses private, loopback, CGNAT, link-local, unique-local, unspecified, multicast, reserved, broadcast, benchmarking and site-local ones, also IPv4-mapped, IPv4-compatible and NAT64" testHostsChecked
     H.it "allows .onion hosts without resolving them, and refuses unresolvable names" testOnionUnresolvable
     H.it "refuses a link with one public and one private host, and a name with one private address" testMixedHosts
     H.it "answers a refused link unavailable without fetching it" testRefusedNotFetched
@@ -350,27 +346,27 @@ gatedFake = do
 
 testPreviewBound :: IO ()
 testPreviewBound = do
-  (fake, started, gate) <- gatedFake
-  held <- mapM (async . preview fake . addressLink) [0, 1]
-  replicateM_ 2 (atomically $ readTQueue started)
-  (searched, waited) <- concurrently (search fake (addressLink 100)) (preview fake (addressLink 101))
-  searched `shouldBe` ProfileOk (profileFor (addressLink 100))
-  waited `shouldBe` ProfileUnread
-  readTVarIO (fetched fake) >>= (`shouldNotContain` [addressLink 101])
-  atomically $ putTMVar gate ()
-  mapM wait held >>= (`shouldSatisfy` all (`elem` [ProfileUnread, ProfileOk (profileFor (addressLink 0)), ProfileOk (profileFor (addressLink 1))]))
+  (raced, fetchedThen) <- boundFilled preview 2
+  raced `shouldBe` (ProfileOk (profileFor (addressLink 100)), ProfileUnread)
+  fetchedThen `shouldNotContain` [addressLink 101]
 
 testSearchBound :: IO ()
 testSearchBound = do
+  (raced, fetchedThen) <- boundFilled search 4
+  raced `shouldBe` (ProfileUnread, ProfileOk (profileFor (addressLink 101)))
+  fetchedThen `shouldNotContain` [addressLink 100]
+
+-- | Holds a full pool of one kind of read, then races a search and a preview against it, and lets the held reads go.
+boundFilled :: (Fake -> Text -> IO ProfileRead) -> Int -> IO ((ProfileRead, ProfileRead), [Text])
+boundFilled hold n = do
   (fake, started, gate) <- gatedFake
-  held <- mapM (async . search fake . addressLink) [0 .. 3]
-  replicateM_ 4 (atomically $ readTQueue started)
-  (waited, previewed) <- concurrently (search fake (addressLink 100)) (preview fake (addressLink 101))
-  waited `shouldBe` ProfileUnread
-  previewed `shouldBe` ProfileOk (profileFor (addressLink 101))
-  readTVarIO (fetched fake) >>= (`shouldNotContain` [addressLink 100])
+  held <- mapM (async . hold fake . addressLink) [0 .. n - 1]
+  replicateM_ n (atomically $ readTQueue started)
+  raced <- concurrently (search fake (addressLink 100)) (preview fake (addressLink 101))
+  fetchedThen <- readTVarIO (fetched fake)
   atomically $ putTMVar gate ()
   mapM_ wait held
+  pure (raced, fetchedThen)
 
 testSlotFreesInTime :: IO ()
 testSlotFreesInTime = do
@@ -414,34 +410,19 @@ hostCheck resolver hosts = do
 fetchable :: [TransportHost] -> IO Bool
 fetchable hosts = newTVarIO [] >>= \asked -> (== HostPublic) <$> hostCheck (stubResolver asked) (L.fromList hosts)
 
-testPublicHosts :: IO ()
-testPublicHosts = do
-  fetchable ["1.1.1.1"] `shouldReturn` True
-  fetchable ["2606:4700::1111"] `shouldReturn` True
-  fetchable ["smp8.simplex.im"] `shouldReturn` True
+testHostsChecked :: IO ()
+testHostsChecked = do
   fetchable ["smp8.simplex.im", "8.8.8.8"] `shouldReturn` True
-
-testPrivateLiterals :: IO ()
-testPrivateLiterals =
-  mapM_ (\h -> (h,) <$> fetchable [h] `shouldReturn` (h, False)) ["127.0.0.1", "10.0.0.1", "172.16.5.4", "192.168.1.1", "100.64.0.1", "169.254.1.1", "::1", "fe80::1", "fd00::1"]
-
-testPrivateNames :: IO ()
-testPrivateNames =
-  mapM_ (\h -> (h,) <$> fetchable [h] `shouldReturn` (h, False)) ["loopback.test", "private.test", "cgnat.test", "link-local.test", "unique-local.test"]
-
-testOtherRefused :: IO ()
-testOtherRefused = do
-  mapM_ (\h -> (h,) <$> fetchable [h] `shouldReturn` (h, False)) ["0.0.0.0", "::", "224.0.0.1", "ff02::1", mapped (127, 0, 0, 1), mapped (10, 0, 0, 1)]
-  fetchable [mapped (1, 1, 1, 1)] `shouldReturn` True
-
-testEmbeddedAndReserved :: IO ()
-testEmbeddedAndReserved = do
-  mapM_ (\h -> (h,) <$> fetchable [h] `shouldReturn` (h, False)) $
-    ["240.0.0.1", "255.255.255.255", "198.18.0.1", "198.19.255.254", "fec0::1"]
-      <> map compatible [(127, 0, 0, 1), (10, 0, 0, 1)]
-      <> map nat64 [(127, 0, 0, 1), (192, 168, 1, 1), (100, 64, 0, 1)]
-  mapM_ (\h -> (h,) <$> fetchable [h] `shouldReturn` (h, True)) ["198.20.0.1", "198.17.255.255", compatible (1, 1, 1, 1), nat64 (1, 1, 1, 1)]
+  forM_ (map (,True) public <> map (,False) refused) $ \(h, ok) -> (h,) <$> fetchable [h] `shouldReturn` (h, ok)
   where
+    public = ["1.1.1.1", "2606:4700::1111", "smp8.simplex.im", mapped (1, 1, 1, 1), "198.20.0.1", "198.17.255.255", compatible (1, 1, 1, 1), nat64 (1, 1, 1, 1)]
+    refused =
+      ["127.0.0.1", "10.0.0.1", "172.16.5.4", "192.168.1.1", "100.64.0.1", "169.254.1.1", "::1", "fe80::1", "fd00::1"]
+        <> ["loopback.test", "private.test", "cgnat.test", "link-local.test", "unique-local.test"]
+        <> ["0.0.0.0", "::", "224.0.0.1", "ff02::1", mapped (127, 0, 0, 1), mapped (10, 0, 0, 1)]
+        <> ["240.0.0.1", "255.255.255.255", "198.18.0.1", "198.19.255.254", "fec0::1"]
+        <> map compatible [(127, 0, 0, 1), (10, 0, 0, 1)]
+        <> map nat64 [(127, 0, 0, 1), (192, 168, 1, 1), (100, 64, 0, 1)]
     compatible = THIPv6 . (0, 0, 0,) . ipv4
     nat64 = THIPv6 . (0x0064ff9b, 0, 0,) . ipv4
 

@@ -12,6 +12,7 @@ module Bots.StoreService.NamesOrdersTests
     withOrdersCancelling,
     withSettings,
     configured,
+    testNamesConfig,
     codesOnly,
     aliceOrder,
     commitmentOf,
@@ -164,7 +165,8 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "runs code orders in the code's turn, one of two spending one code for two names winning, the other answered code_reserved" testConcurrentCodeOrders
     it "answers the code's refusal when its reservation fails in the insert, writing nothing" testCodeNotReservable
   describe "terms" $ do
-    it "answers terms_changed with the current terms and community for an old version, other terms or the other kind, listed or not, creating nothing, and takes an ini-only name under the general terms" testTermsChanged
+    it "answers terms_changed with the current terms and community, listed or not, creating nothing, and takes an ini-only name under the general terms" testTermsChanged
+    it "takes only the current terms of the name's kind: not an old version, other terms or the other kind, listed or not" testCheckTerms
     it "accepts the community terms for a listed name as viem signs them, storing them" testCommunityTerms
     it "takes orders of one kind of name under their terms after the other kind's terms changed" testOtherKindTerms
     it "answers terms_unavailable, before any payment, while the terms of the name's kind are not set, of a link the service does not take, or of a text not fetched now, with Retry-After, creating nothing" testTermsUnavailable
@@ -800,15 +802,23 @@ listOnChain Ctx {cNode} label = listCommunityName cNode $ labelHash label
 malformedTerms :: [Text]
 malformedTerms = ["", T.replicate 75 "a", "community " <> plainTerms, "community+" <> plainTerms, "communit\233/" <> plainTerms]
 
+-- | 74 characters pass the format and meet the terms check; alicebakery's ini line without the policy's listing is a plain name.
+testCheckTerms :: IO ()
+testCheckTerms = withOrders $ \ctx0 -> withSettings (listName "dynamis" . listName "alicebakery") ctx0 $ \ctx@Ctx {cOrders = OrdersEnv {oeConfig, oeContracts}} -> do
+  listOnChain ctx "dynamis"
+  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000}
+      checked o = Orders.checkTerms oeConfig oeContracts (fieldsOf o)
+      changed o = (\v -> ((oLabel o, oTerms o), v)) . (\case Left (Orders.ORTermsChanged _ _) -> True; _ -> False) <$> checked o
+  forM_ ([aliceOrder {oTerms = t} | t <- [olderTerms, communityTerms, newerTerms, T.replicate 74 "a"]] <> [dynamis {oTerms = t} | t <- [plainTerms, olderTerms, otherCommunityTerms, "community/" <> newerTerms]]) $ \o ->
+    changed o `shouldReturn` ((oLabel o, oTerms o), True)
+  mapM checked [aliceOrder, dynamis {oTerms = communityTerms}] `shouldReturn` [Right (), Right ()]
+
 testTermsChanged :: IO ()
 testTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis" . listName "alicebakery") ctx0 $ \ctx -> do
   listOnChain ctx "dynamis"
   let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000}
-  -- 74 characters pass the format and meet the terms check; alicebakery's ini line without the policy's listing is a plain name
-  forM_ [olderTerms, communityTerms, newerTerms, T.replicate 74 "a"] $ \t ->
-    placeOrder ctx aliceOrder {oTerms = t} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
-  forM_ [plainTerms, olderTerms, otherCommunityTerms, "community/" <> newerTerms] $ \t ->
-    placeOrder ctx dynamis {oTerms = t} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
+  placeOrder ctx aliceOrder {oTerms = olderTerms} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
+  placeOrder ctx dynamis {oTerms = plainTerms} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
   stubCalls (cStub ctx) `shouldReturn` []
   registrationsOf ctx ownerA `shouldReturn` []
   (invId, v) <- placed ctx dynamis {oTerms = communityTerms}
@@ -973,10 +983,8 @@ testCodeTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis") c
   listOnChain ctx "dynamis"
   (code, issued) <- issueCode ctx 7 2 id
   let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2}
-  forM_ [olderTerms, communityTerms] $ \t ->
-    register ctx code aliceOrder {oTerms = t} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
-  forM_ [plainTerms, olderTerms, otherCommunityTerms] $ \t ->
-    register ctx code dynamis {oTerms = t} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
+  register ctx code aliceOrder {oTerms = olderTerms} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
+  register ctx code dynamis {oTerms = plainTerms} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
   pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
   rid <- registered ctx code dynamis {oTerms = communityTerms}
   nrAgreedTerms <$> registrationById ctx rid `shouldReturn` communityTerms

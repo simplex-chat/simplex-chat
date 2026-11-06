@@ -6,7 +6,7 @@
 module Bots.StoreService.NamesCodesTests (namesCodesTests) where
 
 import Bots.StoreService.NamesStoreTests (order, ownerA, ownerB, placeCode, placePaid, usable)
-import Bots.StoreService.WebTests (withServiceStore)
+import Bots.StoreService.WebTests (withServiceStore, withApp)
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently)
@@ -19,9 +19,8 @@ import Data.Maybe (fromJust, fromMaybe)
 import Data.Text (Text)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), addUTCTime)
-import Network.HTTP.Client (Manager, Response, RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, responseBody, responseStatus)
+import Network.HTTP.Client (Manager, Response, RequestBody (..), httpLbs, method, parseRequest, requestBody, responseBody, responseStatus)
 import Network.HTTP.Types.Status (statusCode)
-import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges.Code (NameCode (..), NamePrepaidCode, formatNameCode, namePrepaidCodeHash, parseNameCode, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -110,8 +109,7 @@ withCodeCheck action = withServiceStore $ \st -> do
         ["api", "code", "check"] -> Just Route {rMethod = "POST", rLimit = codeLimit, rHandler = codeCheckHandler st}
         _ -> Nothing
       app req respond = fromMaybe (respond notFound) (namesApp http routes req respond)
-  mgr <- newManager defaultManagerSettings
-  Warp.testWithApplication (pure app) $ \port -> action st (mgr, "http://127.0.0.1:" <> show port)
+  withApp app (action st)
 
 type Client = (Manager, String)
 

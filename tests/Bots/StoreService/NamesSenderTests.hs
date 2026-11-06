@@ -29,6 +29,7 @@ import StoreService.Names.Registration (commitCalldata)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Sender
 import StoreService.Names.Store (NameTransaction (..), TxFor (..), TxStatus (..), pendingTransactions, registrationTransactions)
+import System.Timeout (timeout)
 import Test.Hspec
 
 namesSenderTests :: Spec
@@ -132,6 +133,8 @@ testConfirmationDepth :: TVar ChaChaDRG -> IO ()
 testConfirmationDepth g = withSetup g $ \s@Setup {node, store} -> do
   sender <- start s
   Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  -- a wait for an outcome not reached yet ends at its bound
+  timeout 5000000 (awaitOutcome 300000 p) `shouldReturn` Just Nothing
   let TxHash h = ptHash p
   block <- mine node [(h, False)]
   followTransactions sender

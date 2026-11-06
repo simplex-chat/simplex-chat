@@ -25,6 +25,7 @@ module Bots.StoreService.NamesOwnerTests
     rewrite,
     sentRegister,
     stored,
+    woken,
   )
 where
 
@@ -32,7 +33,8 @@ import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (registrarOf, rentPriceAnswer, unhex)
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, order, ownerA, paidOrder, t0)
-import Bots.StoreService.WebTests (capturingStderr, digestFixture, jsonObject, statusOf, webGet)
+import Bots.StoreService.NamesPhasesTests (registrationPath)
+import Bots.StoreService.WebTests (capturingStderr, digestFixture, jsonObject, statusOf, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
@@ -52,8 +54,6 @@ import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, addUTCTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Word (Word64, Word8)
-import Network.HTTP.Client (defaultManagerSettings, newManager)
-import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -126,8 +126,7 @@ serveOwner :: Ctx -> (Ctx -> IO a) -> IO a
 serveOwner ctx@Ctx {cOrders = orders, cWeb = web} action = do
   let routes path = ownerRoutes orders (weHttp web) path <|> codeRoutes orders (weProviders web) (weWaiters web) path
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
-  mgr <- newManager defaultManagerSettings
-  Warp.testWithApplication (pure app) $ \port -> action ctx {cClient = (mgr, "http://127.0.0.1:" <> show port)}
+  withApp app $ \client -> action ctx {cClient = client}
 
 ownerRoutes :: OrdersEnv -> HttpEnv -> [Text] -> Maybe Route
 ownerRoutes orders http = \case
@@ -275,9 +274,6 @@ moved ctx key r fields =
   move ctx key r fields >>= \case
     (200, Just v) -> pure v
     other -> error $ "move refused: " <> show other
-
-registrationPath :: RegistrationId -> String
-registrationPath (RegistrationId rid) = "/api/registration/" <> T.unpack rid
 
 getView :: Ctx -> NameRegistration -> IO J.Object
 getView ctx NameRegistration {nrId} = webGet (cClient ctx) (registrationPath nrId) >>= jsonObject
@@ -478,12 +474,10 @@ testMoveTermsChanged = withOwnerAs (listName "alicebakers") $ \ctx -> do
   listOnChain ctx "alicebakers"
   answerFree ctx "alicebakers"
   r <- paidIn ctx aliceOrder failedPhase
-  forM_ [olderTerms, communityTerms] $ \t ->
-    move ctx keyA r (currentFields r) {ofCommitment = commitmentOf 11, ofAgreedTerms = t} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
+  move ctx keyA r (currentFields r) {ofCommitment = commitmentOf 11, ofAgreedTerms = communityTerms} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
   move ctx keyA r (currentFields r) {ofAgreedTerms = olderTerms} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
   to <- moveTo ctx "alicebakers" 10
-  forM_ [plainTerms, olderTerms, otherCommunityTerms] $ \t ->
-    move ctx keyA r to {ofAgreedTerms = t} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
+  move ctx keyA r to {ofAgreedTerms = plainTerms} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
   stored ctx r `shouldReturn` r
   v <- moved ctx keyA r to {ofAgreedTerms = communityTerms}
   fieldsIn v [("terms", J.String communityTerms), ("community", communityEntry bakers)]

@@ -47,7 +47,6 @@ import Data.Time.Clock (NominalDiffTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word64)
 import Network.HTTP.Types (hContentType, hLocation, status200, status302, status404, status429, status503)
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (tshow)
@@ -519,6 +518,3 @@ maxCommitmentAgeCall = unhex "ce1e09c0"
 
 unhex :: ByteString -> ByteString
 unhex = either error id . convertFromBase Base16
-
-address :: ByteString -> Address
-address = either error id . strDecode
