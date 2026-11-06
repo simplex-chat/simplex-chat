@@ -48,10 +48,10 @@ fun ModalData.AddChannelView(chatModel: ChatModel, rh: RemoteHostInfo?, close: (
   val profileImage = remember { stateGetOrPutNullable<String>("profileImage") { null } }
   val focusRequester = remember { FocusRequester() }
   val hasRelays = rememberSaveable { mutableStateOf(true) }
-  val groupInfo = remember { mutableStateOf<GroupInfo?>(null) }
-  val groupLink = rememberSaveable(stateSaver = GroupLink.nullableStateSaver) { mutableStateOf<GroupLink?>(null) }
-  val groupRelays = remember { mutableStateOf<List<GroupRelay>>(emptyList()) }
-  val creationInProgress = rememberSaveable { mutableStateOf(false) }
+  val groupInfo = remember { stateGetOrPutNullable<GroupInfo>("groupInfo") { null } }
+  val groupLink = remember { stateGetOrPutNullable<GroupLink>("groupLink") { null } }
+  val groupRelays = remember { stateGetOrPut("groupRelays") { emptyList<GroupRelay>() } }
+  val creationInProgress = remember { stateGetOrPut("creationInProgress") { false } }
   val showLinkStep = rememberSaveable { mutableStateOf(false) }
   val relayListExpanded = rememberSaveable { mutableStateOf(false) }
 
