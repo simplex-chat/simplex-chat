@@ -988,12 +988,17 @@ jobs:
 #   Store service on Postgres
 # =============================
 
-# Production runs the store service on PostgreSQL only, so its tests run on Postgres when a pull request changes it.
+# Production runs the store service on PostgreSQL only, so its tests run on Postgres when a pull request changes it, and on every manual run.
   test-store-postgres:
     name: "ubuntu-22.04-x86_64 (store service, Postgres), GHC: ${{ needs.variables.outputs.GHC_VER }}"
     needs: [maybe-release, variables]
-    if: github.event_name == 'pull_request' && needs.maybe-release.outputs.haskell == 'true'
+    if: (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') && needs.maybe-release.outputs.haskell == 'true'
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: read
+    env:
+      image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:22.04-x86_64-ghc${{ needs.variables.outputs.GHC_VER }}
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-store-postgres
       cancel-in-progress: true
@@ -1003,12 +1008,14 @@ jobs:
         with:
           fetch-depth: 2
 
-      # the checkout is the merge commit, whose first parent is the base
+      # a pull request's checkout is the merge commit, whose first parent is the base; a manual run's is not, so it always tests
       - name: Check store changes
         id: store
         shell: bash
         run: |
-          if ! git diff --quiet HEAD^1 HEAD -- apps/simplex-store-service tests/Bots/StoreService; then
+          if [ "${{ github.event_name }}" = workflow_dispatch ] || ! git diff --quiet HEAD^1 HEAD -- \
+            apps/simplex-store-service tests/Bots/StoreService tests/Test.hs src/Simplex/Chat/PaymentService src/Simplex/Chat/Badges \
+            cabal.project simplex-chat.cabal .github/workflows/build.yml; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -1028,6 +1035,19 @@ jobs:
         if: steps.store.outputs.changed
         uses: simplex-chat/docker-setup-buildx-action@v3
 
+      - name: Log in to GitHub Container Registry
+        if: steps.store.outputs.changed
+        shell: bash
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Compute image cache week
+        if: steps.store.outputs.changed
+        id: week
+        run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      # reads the image layers that build-linux writes on master
       - name: Build and cache Docker image
         if: steps.store.outputs.changed
         uses: simplex-chat/docker-build-push-action@v6
@@ -1042,6 +1062,7 @@ jobs:
             GHC=${{ needs.variables.outputs.GHC_VER }}
             USER_UID=${{ steps.ids.outputs.uid }}
             USER_GID=${{ steps.ids.outputs.gid }}
+          cache-from: type=registry,ref=${{ env.image_cache }}-${{ steps.week.outputs.week }}
 
       # the parallel test suites open more connections than the default 100
       - name: Start PostgreSQL
@@ -1126,7 +1147,7 @@ jobs:
         shell: docker exec -t builder sh -eu {0}
         run: |
           test=$(cabal list-bin --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' simplex-chat-test | tail -n 1)
-          "$test" -m "Supporter badges" -m "SimpleX store service" -m "StoreService names"
+          "$test" --fail-on=empty -m "Supporter badges" -m "SimpleX store service" -m "StoreService names"
 
 # =========================
 #        MacOS Build

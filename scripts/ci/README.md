@@ -99,7 +99,7 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 
 - Globs: apps/simplex-store-service/web/**. These paths are also in the core globs (apps/simplex-store-service/**), and web/src/catalog.ts is read by core tests (tests/Bots/StoreService/CatalogTests.hs, WebTests.hs).
 - CI, in build-linux: core build and tests, then `scope-tests.sh badge-web` (step "Test changed scopes").
-- Selected core tests: `/SimpleX badge service/` and `/SimpleX badge service e2e/`.
+- Selected core tests: `/SimpleX store service/`, which includes `/SimpleX store service e2e/`.
 - Local:
   ```sh
   cd apps/simplex-store-service/web
@@ -114,6 +114,17 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
   - scripts/ci/test_packages_release.py
 - CI, in build-linux: `scope-tests.sh ci-scripts` (step "Test changed scopes").
 - Local: `python3 scripts/ci/test_packages_release.py`; Python 3.11 or newer is required for tomllib (packages_release.py).
+
+#### store service on Postgres
+
+- Job: test-store-postgres (ubuntu-22.04 x86_64), on a pull request that changes the store service, its tests, `tests/Test.hs`, `src/Simplex/Chat/PaymentService`, `src/Simplex/Chat/Badges`, `cabal.project`, `simplex-chat.cabal` or build.yml, and on every dispatch. Production runs the store service on Postgres only, and the SQLite jobs do not cover it.
+- CI: the build-linux Docker image, a `postgres:17` container on the host network, `cabal build` with `+client_postgres`, then simplex-chat-test with `--fail-on=empty -m "Supporter badges" -m "SimpleX store service" -m "StoreService names"`.
+- Local, with a Postgres 17 on 127.0.0.1 that trusts the `postgres` user and allows 1500 connections:
+  ```sh
+  cabal build --builddir dist-postgres --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' simplex-chat-test
+  mkdir -p tests/tmp
+  PGHOST=127.0.0.1 LANG=C.UTF-8 "$(cabal list-bin --builddir dist-postgres --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' simplex-chat-test)" -m "Supporter badges" -m "SimpleX store service" -m "StoreService names"
+  ```
 
 #### Scopes lacking CI tests
 
