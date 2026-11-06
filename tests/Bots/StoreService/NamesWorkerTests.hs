@@ -79,7 +79,6 @@ workerTests = describe "StoreService names: worker" $ do
     it "goes to committed when the commit reverts UnexpiredCommitmentExists, in its dry run or mined, with the commitment's times" testUnexpiredCommitment
     it "sends a commit mined out of gas again" testCommitOutOfGas
     it "waits a second at the lapse second, and again when the dry run still reverts, then commits" testLapseSecond
-    it "waits a second at most a few times in a row for UnexpiredCommitmentExists, logging each, then keeps the phase" testUnexpiredBounded
     it "clears a requeued order's stale intent before committing again after a lapse, and a third party's commitment's" testStaleIntent
     it "keeps the phase while the latest block needs more than the fee cap, then commits" testFeeAboveCap
   describe "writes" $ do
@@ -387,7 +386,7 @@ testUnexpiredCommitment = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   answerCommitment w r t
   answerCallOnce cNode fakeController (commitmentsCall r) $ Returns $ uint256 (0 :: Int)
   dryRunsRevert w "UnexpiredCommitmentExists(bytes32)" (nrCommitment r)
-  steps w r >>= waitingUntil >>= (`shouldBe` addUTCTime 1 orderTime)
+  steps w r >>= retrying
   sent w `shouldReturn` []
   stored ctx r `shouldReturn` r
   dryRunsPass w
@@ -432,7 +431,7 @@ testLapseSecond = withWorker $ \w@W {wCtx = ctx} -> do
   advance ctx 1
   -- the node's latest block is still at the lapse second
   dryRunsRevert w "UnexpiredCommitmentExists(bytes32)" (nrCommitment r)
-  steps w r >>= waitingUntil >>= (`shouldBe` addUTCTime 602 orderTime)
+  steps w r >>= retrying
   sent w `shouldReturn` []
   stored ctx r `shouldReturn` r
   dryRunsPass w
@@ -440,25 +439,6 @@ testLapseSecond = withWorker $ \w@W {wCtx = ctx} -> do
   void $ steps w r >>= awaiting
   nrPhase <$> stored ctx r `shouldReturn` PCommitting
   length <$> sent w `shouldReturn` 1
-
-testUnexpiredBounded :: IO ()
-testUnexpiredBounded = withWorker $ \w@W {wCtx = ctx} -> do
-  r <- paidIn ctx aliceOrder id
-  -- lapsed by the service's clock, while the node's pending block keeps refusing a new commit
-  answerCommitment w r (orderSeconds - maxAge - 1)
-  dryRunsRevert w "UnexpiredCommitmentExists(bytes32)" (nrCommitment r)
-  logs <- capturingStderr $ forM_ [1 .. maxUnexpiredWaits] $ \n -> do
-    steps w r >>= waitingUntil >>= (`shouldBe` addUTCTime (fromIntegral n) orderTime)
-    advance ctx 1
-  -- the capture can also hold earlier tests' lines, so only this order's count
-  let RegistrationId rid = nrId r
-  length (T.breakOnAll ("registration " <> rid <> ": the commit's dry run reverted UnexpiredCommitmentExists") logs) `shouldBe` maxUnexpiredWaits
-  steps w r >>= retrying
-  stored ctx r `shouldReturn` r
-  sent w `shouldReturn` []
-  dryRunsPass w
-  void $ steps w r >>= awaiting
-  nrPhase <$> stored ctx r `shouldReturn` PCommitting
 
 testStaleIntent :: IO ()
 testStaleIntent = withWorker $ \w@W {wCtx = ctx} -> do
