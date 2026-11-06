@@ -22,14 +22,7 @@ schemaMigrations =
     ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
     ("20260925_badge_store_receipts", m20260925_badge_store_receipts, Just down_m20260925_badge_store_receipts),
     ("20261012_badge_subscriptions", m20261012_badge_subscriptions, Just down_m20261012_badge_subscriptions),
-    ("20261013_names", m20261013_names, Just down_m20261013_names),
-    ("20261022_drop_taken_codes", m20261022_drop_taken_codes, Just down_m20261022_drop_taken_codes),
-    ("20261022_name_balances", m20261022_name_balances, Just down_m20261022_name_balances),
-    ("20261022_name_late_wait", m20261022_name_late_wait, Just down_m20261022_name_late_wait),
-    ("20261023_name_terms", m20261023_name_terms, Just down_m20261023_name_terms),
-    ("20261027_name_invoiced_units", m20261027_name_invoiced_units, Just down_m20261027_name_invoiced_units),
-    ("20261029_name_record_changes", m20261029_name_record_changes, Just down_m20261029_name_record_changes),
-    ("20261102_name_terms_acceptance", m20261102_name_terms_acceptance, Just down_m20261102_name_terms_acceptance)
+    ("20261013_names", m20261013_names, Just down_m20261013_names)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -283,6 +276,9 @@ DROP TABLE @subscription_charges;
 
 -- A registration is live as Names.Store's orderLive decides.
 -- reserved_by is added after the registrations table, which references the codes table.
+-- A balance's amount = credited - spent - refunded, spent being the balance_used of the orders it paid for that went past unpaid.
+-- Crypto is counted in integer units (satoshi, piconero), so every sum is exact; rates are decimal text, never summed.
+-- invoiced_units is the crypto a payment's invoice asks, network fee included, which late and overpaid crypto is a price share of.
 m20261013_names :: Query
 m20261013_names =
   withPrefix
@@ -311,11 +307,14 @@ CREATE TABLE @name_registrations(
   owner BLOB NOT NULL,
   commitment BLOB NOT NULL,
   sealed TEXT NOT NULL,
+  agreed_terms TEXT NOT NULL,
   phase TEXT NOT NULL,
   years INTEGER NOT NULL,
   price INTEGER NOT NULL,
   method TEXT,
   name_prepaid_code_id INTEGER REFERENCES @name_prepaid_codes,
+  balance_source TEXT REFERENCES @name_registrations,
+  balance_used INTEGER NOT NULL,
   label TEXT,
   secret BLOB,
   contact_link TEXT,
@@ -323,6 +322,9 @@ CREATE TABLE @name_registrations(
   intent_nonce INTEGER,
   intent_deadline INTEGER,
   intent_signature BLOB,
+  accept_terms BLOB,
+  accept_nonce INTEGER,
+  accept_signature BLOB,
   commit_tx BLOB,
   commit_block INTEGER,
   register_tx BLOB,
@@ -330,7 +332,6 @@ CREATE TABLE @name_registrations(
   reveal_after INTEGER,
   reveal_before INTEGER,
   expires_at INTEGER,
-  issued_code_id INTEGER REFERENCES @name_prepaid_codes,
   registered_at TEXT,
   failed_at TEXT,
   error TEXT,
@@ -360,12 +361,30 @@ CREATE INDEX @idx_name_registrations_order_hash ON @name_registrations(order_has
 
 CREATE INDEX @idx_name_registrations_prepaid_code ON @name_registrations(name_prepaid_code_id);
 
-CREATE INDEX @idx_name_registrations_issued_code ON @name_registrations(issued_code_id);
+CREATE INDEX @idx_name_registrations_balance_source ON @name_registrations(balance_source);
 
+CREATE TABLE @name_balances(
+  registration_id TEXT NOT NULL PRIMARY KEY REFERENCES @name_registrations,
+  amount INTEGER NOT NULL CHECK (amount >= 0),
+  credited INTEGER NOT NULL DEFAULT 0 CHECK (credited >= 0),
+  refunded INTEGER NOT NULL DEFAULT 0 CHECK (refunded >= 0),
+  reserved_by TEXT REFERENCES @name_registrations,
+  refunded_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
+
+CREATE UNIQUE INDEX @idx_name_balances_reserved_by ON @name_balances(reserved_by);
+
+-- late_support says why a closed order's late money will not be credited by itself:
+-- high_speed, units, rate_floor, unconfirmed or no_confirmation. It is never cleared.
 CREATE TABLE @name_invoices(
   invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices ON DELETE CASCADE,
   registration_id TEXT NOT NULL REFERENCES @name_registrations ON DELETE CASCADE,
   provider_ref TEXT NOT NULL,
+  late_alerted_at TEXT,
+  late_alerted_units INTEGER,
+  late_support TEXT,
   created_at TEXT NOT NULL
 ) STRICT;
 
@@ -373,15 +392,40 @@ CREATE UNIQUE INDEX @idx_name_invoices_registration ON @name_invoices(registrati
 
 CREATE UNIQUE INDEX @idx_name_invoices_provider_ref ON @name_invoices(provider_ref);
 
+ALTER TABLE @payments ADD COLUMN confirmed_amount INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE @payments ADD COLUMN received_units INTEGER;
+
+ALTER TABLE @payments ADD COLUMN confirmed_units INTEGER;
+
+ALTER TABLE @payments ADD COLUMN invoiced_units INTEGER;
+
+ALTER TABLE @payments ADD COLUMN invoice_rate TEXT;
+
+-- The poller's credit pass reads the overpaid payments on every pass.
+CREATE INDEX @idx_payments_overpaid ON @payments(invoice_id) WHERE received_units > invoiced_units;
+
+CREATE TABLE @name_late_credits(
+  name_late_credit_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  invoice_id TEXT NOT NULL REFERENCES @invoices,
+  credit_no INTEGER NOT NULL,
+  registration_id TEXT NOT NULL REFERENCES @name_registrations,
+  units INTEGER,
+  invoice_rate TEXT,
+  current_rate TEXT,
+  rate_used TEXT,
+  cents INTEGER NOT NULL CHECK (cents >= 0),
+  created_at TEXT NOT NULL,
+  UNIQUE(invoice_id, credit_no)
+) STRICT;
+
+CREATE INDEX @idx_name_late_credits_registration ON @name_late_credits(registration_id);
+
 CREATE TABLE @name_record_edits(
   name_record_edit_id INTEGER PRIMARY KEY AUTOINCREMENT,
   label_hash BLOB NOT NULL,
   owner BLOB NOT NULL,
   nonce INTEGER NOT NULL,
-  record_key TEXT,
-  record_value TEXT,
-  deadline INTEGER NOT NULL,
-  signature BLOB NOT NULL,
   body_hash BLOB NOT NULL,
   state TEXT NOT NULL,
   revert TEXT,
@@ -395,6 +439,17 @@ CREATE UNIQUE INDEX @idx_name_record_edits_owner_nonce ON @name_record_edits(own
 CREATE INDEX @idx_name_record_edits_body_hash ON @name_record_edits(body_hash);
 
 CREATE INDEX @idx_name_record_edits_label_created ON @name_record_edits(label_hash, created_at);
+
+-- An edit is one request of the page, relayed as one transaction; its signed changes are its rows here, one per nonce.
+CREATE TABLE @name_record_changes(
+  name_record_edit_id INTEGER NOT NULL REFERENCES @name_record_edits ON DELETE CASCADE,
+  nonce INTEGER NOT NULL,
+  record_key TEXT,
+  record_value TEXT,
+  deadline INTEGER NOT NULL,
+  signature BLOB NOT NULL,
+  PRIMARY KEY (name_record_edit_id, nonce)
+) STRICT;
 
 CREATE TABLE @name_transactions(
   name_transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -431,10 +486,22 @@ DROP INDEX @idx_name_transactions_edit;
 DROP INDEX @idx_name_transactions_registration;
 DROP TABLE @name_transactions;
 
+DROP TABLE @name_record_changes;
+
 DROP INDEX @idx_name_record_edits_label_created;
 DROP INDEX @idx_name_record_edits_body_hash;
 DROP INDEX @idx_name_record_edits_owner_nonce;
 DROP TABLE @name_record_edits;
+
+DROP INDEX @idx_name_late_credits_registration;
+DROP TABLE @name_late_credits;
+
+DROP INDEX @idx_payments_overpaid;
+ALTER TABLE @payments DROP COLUMN invoice_rate;
+ALTER TABLE @payments DROP COLUMN invoiced_units;
+ALTER TABLE @payments DROP COLUMN confirmed_units;
+ALTER TABLE @payments DROP COLUMN received_units;
+ALTER TABLE @payments DROP COLUMN confirmed_amount;
 
 DELETE FROM @invoices WHERE invoice_id IN (
   SELECT ni.invoice_id FROM @name_invoices ni
@@ -444,7 +511,10 @@ DROP INDEX @idx_name_invoices_provider_ref;
 DROP INDEX @idx_name_invoices_registration;
 DROP TABLE @name_invoices;
 
-DROP INDEX @idx_name_registrations_issued_code;
+DROP INDEX @idx_name_balances_reserved_by;
+DROP TABLE @name_balances;
+
+DROP INDEX @idx_name_registrations_balance_source;
 DROP INDEX @idx_name_registrations_prepaid_code;
 DROP INDEX @idx_name_registrations_order_hash;
 DROP INDEX @idx_name_registrations_phase;
@@ -457,244 +527,6 @@ UPDATE @name_prepaid_codes SET reserved_by = NULL;
 DROP TABLE @name_registrations;
 
 DROP TABLE @name_prepaid_codes;
-|]
-
--- A code_issued order's worth went into its code, which stays a valid prepaid code, so it ends taken with nothing left.
-m20261022_drop_taken_codes :: Query
-m20261022_drop_taken_codes =
-  withPrefix
-    servicePrefix
-    [sql|
-UPDATE @name_registrations SET version = version + 1, phase = 'taken', price = 0, live = 0 WHERE phase = 'code_issued';
-
-DROP INDEX @idx_name_registrations_issued_code;
-
-ALTER TABLE @name_registrations DROP COLUMN issued_code_id;
-|]
-
-down_m20261022_drop_taken_codes :: Query
-down_m20261022_drop_taken_codes =
-  withPrefix
-    servicePrefix
-    [sql|
-ALTER TABLE @name_registrations ADD COLUMN issued_code_id INTEGER REFERENCES @name_prepaid_codes;
-
-CREATE INDEX @idx_name_registrations_issued_code ON @name_registrations(issued_code_id);
-|]
-
--- amount = credited - spent - refunded, spent being the balance_used of the orders it paid for that went past unpaid.
--- Crypto is counted in integer units (satoshi, piconero), so every sum is exact; rates are decimal text, never summed.
-m20261022_name_balances :: Query
-m20261022_name_balances =
-  withPrefix
-    servicePrefix
-    [sql|
-CREATE TABLE @name_balances(
-  registration_id TEXT NOT NULL PRIMARY KEY REFERENCES @name_registrations,
-  amount INTEGER NOT NULL CHECK (amount >= 0),
-  credited INTEGER NOT NULL DEFAULT 0 CHECK (credited >= 0),
-  refunded INTEGER NOT NULL DEFAULT 0 CHECK (refunded >= 0),
-  reserved_by TEXT REFERENCES @name_registrations,
-  refunded_at TEXT,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-) STRICT;
-
-CREATE UNIQUE INDEX @idx_name_balances_reserved_by ON @name_balances(reserved_by);
-
-ALTER TABLE @name_registrations ADD COLUMN balance_source TEXT REFERENCES @name_registrations;
-
-ALTER TABLE @name_registrations ADD COLUMN balance_used INTEGER NOT NULL DEFAULT 0;
-
-CREATE INDEX @idx_name_registrations_balance_source ON @name_registrations(balance_source);
-
-ALTER TABLE @payments ADD COLUMN confirmed_amount INTEGER NOT NULL DEFAULT 0;
-
-ALTER TABLE @payments ADD COLUMN received_units INTEGER;
-
-ALTER TABLE @payments ADD COLUMN confirmed_units INTEGER;
-
-ALTER TABLE @payments ADD COLUMN invoice_rate TEXT;
-
-ALTER TABLE @name_invoices ADD COLUMN late_alerted_at TEXT;
-
-ALTER TABLE @name_invoices ADD COLUMN late_alerted_units INTEGER;
-
-CREATE TABLE @name_late_credits(
-  name_late_credit_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  invoice_id TEXT NOT NULL REFERENCES @invoices,
-  credit_no INTEGER NOT NULL,
-  registration_id TEXT NOT NULL REFERENCES @name_registrations,
-  units INTEGER,
-  invoice_rate TEXT,
-  current_rate TEXT,
-  rate_used TEXT,
-  cents INTEGER NOT NULL CHECK (cents >= 0),
-  created_at TEXT NOT NULL,
-  UNIQUE(invoice_id, credit_no)
-) STRICT;
-
-CREATE INDEX @idx_name_late_credits_registration ON @name_late_credits(registration_id);
-
-UPDATE @name_registrations SET live = 0 WHERE phase = 'taken';
-
-INSERT INTO @name_balances (registration_id, amount, credited, refunded, created_at, updated_at)
-SELECT registration_id, price, price, 0, updated_at, updated_at FROM @name_registrations
-WHERE phase = 'taken' AND name_prepaid_code_id IS NULL AND price > 0;
-|]
-
--- Taken orders stay not live.
-down_m20261022_name_balances :: Query
-down_m20261022_name_balances =
-  withPrefix
-    servicePrefix
-    [sql|
-DROP INDEX @idx_name_late_credits_registration;
-DROP TABLE @name_late_credits;
-
-ALTER TABLE @name_invoices DROP COLUMN late_alerted_units;
-ALTER TABLE @name_invoices DROP COLUMN late_alerted_at;
-
-ALTER TABLE @payments DROP COLUMN invoice_rate;
-ALTER TABLE @payments DROP COLUMN confirmed_units;
-ALTER TABLE @payments DROP COLUMN received_units;
-ALTER TABLE @payments DROP COLUMN confirmed_amount;
-
-DROP INDEX @idx_name_registrations_balance_source;
-ALTER TABLE @name_registrations DROP COLUMN balance_used;
-ALTER TABLE @name_registrations DROP COLUMN balance_source;
-
-DROP INDEX @idx_name_balances_reserved_by;
-DROP TABLE @name_balances;
-|]
-
--- Why a closed order's late money will not be credited by itself: high_speed, units, rate_floor, unconfirmed or no_confirmation. Never cleared.
-m20261022_name_late_wait :: Query
-m20261022_name_late_wait =
-  withPrefix
-    servicePrefix
-    [sql|
-ALTER TABLE @name_invoices ADD COLUMN late_support TEXT;
-|]
-
-down_m20261022_name_late_wait :: Query
-down_m20261022_name_late_wait =
-  withPrefix
-    servicePrefix
-    [sql|
-ALTER TABLE @name_invoices DROP COLUMN late_support;
-|]
-
--- The terms an order signed; '' for an order stored before orders signed them.
-m20261023_name_terms :: Query
-m20261023_name_terms =
-  withPrefix
-    servicePrefix
-    [sql|
-ALTER TABLE @name_registrations ADD COLUMN agreed_terms TEXT NOT NULL DEFAULT '';
-|]
-
-down_m20261023_name_terms :: Query
-down_m20261023_name_terms =
-  withPrefix
-    servicePrefix
-    [sql|
-ALTER TABLE @name_registrations DROP COLUMN agreed_terms;
-|]
-
--- The crypto a payment's invoice asks in atomic units, network fee included, which late and overpaid crypto is a price share of.
--- The partial index holds the overpaid payments, which the poller's credit pass reads on every pass.
-m20261027_name_invoiced_units :: Query
-m20261027_name_invoiced_units =
-  withPrefix
-    servicePrefix
-    [sql|
-ALTER TABLE @payments ADD COLUMN invoiced_units INTEGER;
-
-CREATE INDEX @idx_payments_overpaid ON @payments(invoice_id) WHERE received_units > invoiced_units;
-|]
-
-down_m20261027_name_invoiced_units :: Query
-down_m20261027_name_invoiced_units =
-  withPrefix
-    servicePrefix
-    [sql|
-DROP INDEX @idx_payments_overpaid;
-
-ALTER TABLE @payments DROP COLUMN invoiced_units;
-|]
-
--- An edit is one request of the page, relayed as one transaction; its signed changes are its rows here, one per nonce.
-m20261029_name_record_changes :: Query
-m20261029_name_record_changes =
-  withPrefix
-    servicePrefix
-    [sql|
-CREATE TABLE @name_record_changes(
-  name_record_edit_id INTEGER NOT NULL REFERENCES @name_record_edits ON DELETE CASCADE,
-  nonce INTEGER NOT NULL,
-  record_key TEXT,
-  record_value TEXT,
-  deadline INTEGER NOT NULL,
-  signature BLOB NOT NULL,
-  PRIMARY KEY (name_record_edit_id, nonce)
-) STRICT;
-
-INSERT INTO @name_record_changes (name_record_edit_id, nonce, record_key, record_value, deadline, signature)
-SELECT name_record_edit_id, nonce, record_key, record_value, deadline, signature FROM @name_record_edits;
-
-ALTER TABLE @name_record_edits DROP COLUMN record_key;
-
-ALTER TABLE @name_record_edits DROP COLUMN record_value;
-
-ALTER TABLE @name_record_edits DROP COLUMN deadline;
-
-ALTER TABLE @name_record_edits DROP COLUMN signature;
-|]
-
--- An edit of two changes keeps only its first, the one its nonce names.
-down_m20261029_name_record_changes :: Query
-down_m20261029_name_record_changes =
-  withPrefix
-    servicePrefix
-    [sql|
-ALTER TABLE @name_record_edits ADD COLUMN record_key TEXT;
-
-ALTER TABLE @name_record_edits ADD COLUMN record_value TEXT;
-
-ALTER TABLE @name_record_edits ADD COLUMN deadline INTEGER NOT NULL DEFAULT 0;
-
-ALTER TABLE @name_record_edits ADD COLUMN signature BLOB NOT NULL DEFAULT x'';
-
-UPDATE @name_record_edits SET
-  record_key = (SELECT c.record_key FROM @name_record_changes c WHERE c.name_record_edit_id = @name_record_edits.name_record_edit_id AND c.nonce = @name_record_edits.nonce),
-  record_value = (SELECT c.record_value FROM @name_record_changes c WHERE c.name_record_edit_id = @name_record_edits.name_record_edit_id AND c.nonce = @name_record_edits.nonce),
-  deadline = (SELECT c.deadline FROM @name_record_changes c WHERE c.name_record_edit_id = @name_record_edits.name_record_edit_id AND c.nonce = @name_record_edits.nonce),
-  signature = (SELECT c.signature FROM @name_record_changes c WHERE c.name_record_edit_id = @name_record_edits.name_record_edit_id AND c.nonce = @name_record_edits.nonce);
-
-DROP TABLE @name_record_changes;
-|]
-
--- The owner's acceptance of the terms of the name's kind, stored with its reveal.
-m20261102_name_terms_acceptance :: Query
-m20261102_name_terms_acceptance =
-  withPrefix
-    servicePrefix
-    [sql|
-ALTER TABLE @name_registrations ADD COLUMN accept_terms BLOB;
-ALTER TABLE @name_registrations ADD COLUMN accept_nonce INTEGER;
-ALTER TABLE @name_registrations ADD COLUMN accept_signature BLOB;
-|]
-
-down_m20261102_name_terms_acceptance :: Query
-down_m20261102_name_terms_acceptance =
-  withPrefix
-    servicePrefix
-    [sql|
-DELETE FROM @name_transactions WHERE kind = 'accept';
-ALTER TABLE @name_registrations DROP COLUMN accept_signature;
-ALTER TABLE @name_registrations DROP COLUMN accept_nonce;
-ALTER TABLE @name_registrations DROP COLUMN accept_terms;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.

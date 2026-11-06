@@ -574,9 +574,9 @@ from `scripts/store-service/`. The database `badge_service`,
 `simplex_badge_service` are unchanged.
 
 A badge-service database upgrades in place: the store's own migrations run after every badge
-migration, `20261012_badge_subscriptions` included. A store database created before the names
-migration became `20261013_names` (it was `20261010_names`) does not start, as the service refuses
-migrations applied out of the order it lists. Recreate such a database.
+migration, `20261012_badge_subscriptions` included. A database that ran the names migrations of
+an earlier draft (`20261010_names`, or the steps dated after `20261013_names`) does not start, as
+the service refuses to roll back migrations it does not list. Recreate such a database.
 
 ### Two sites
 
