@@ -444,6 +444,8 @@ parseConfig ini = do
   grp <- groupSection
   serviceLogLevel <- logLevel
   nms <- namesSection
+  when (isJust nms && fmap bSpeedPolicy btc == Just HighSpeed) $
+    Left "btcpay.speed_policy = HighSpeed settles an invoice with no confirmation, which a double spend would turn into a free name, so it is refused with [names]"
   devKeys <- devKeysSetting
   unless (null devKeys || maybe False onLocalChain nms) $
     Left ("issuer.dev_keys is accepted only with [names] on the local chain, [chain] chain_id = " <> show localChainId)

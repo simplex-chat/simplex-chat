@@ -182,13 +182,11 @@ rates for late crypto credits, and
 `canmodifyinvoices` so `POST /api/invoice/:id/cancel` can invalidate an invoice at BTCPay
 rather than only in this store.
 
-**Do not set `speed_policy = HighSpeed` when names are sold** (`[names]` configured). Under it
-BTCPay can mark a payment `Settled` with no confirmation, so the service never credits crypto that
-reaches a name invoice after the invoice closed: the money stays pending, the poller alerts about it
-once it is older than its read window (about 72 hours), and support settles it by hand. The service
-judges each invoice by the policy it was created with, so changing the setting later credits nothing
-that arrived under `HighSpeed`. With `MediumSpeed` (the template's value) or a slower policy, late
-bitcoin is credited to the order's balance once confirmed.
+**`speed_policy = HighSpeed` is refused beside `[names]`**: under it BTCPay marks a payment `Settled`
+with no confirmation, which a double spend would turn into a free name, and crypto reaching a name
+invoice after it closed could never be credited. The service judges each invoice by the policy it was
+created with. With `MediumSpeed` (the template's value) or a slower policy, late bitcoin is credited to
+the order's balance once confirmed.
 
 A credit is the money's share of the invoice's price: the price times the crypto received, divided by
 the crypto the invoice asked, which includes the network fee BTCPay adds (to every Monero invoice, and

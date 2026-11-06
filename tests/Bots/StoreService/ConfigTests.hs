@@ -9,7 +9,7 @@ import Control.Logger.Simple (LogLevel (..))
 import Control.Monad (forM_)
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Char8 as B
-import Data.Either (isLeft)
+import Data.Either (isLeft, isRight)
 import Data.Ini (readIniFile)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Text as T
@@ -40,6 +40,7 @@ badgeConfigTests = describe "store service config" $ do
   it "refuses an incomplete stripe section, naming the key" testStripeIncomplete
   it "bounds stripe session_minutes to 1-1440" testStripeSessionMinutesRange
   it "accepts HighSpeed" (testSpeedPolicyAccepted "HighSpeed" HighSpeed)
+  it "refuses HighSpeed beside [names], which settles with no confirmation" testHighSpeedWithNames
   it "accepts LowMediumSpeed" (testSpeedPolicyAccepted "LowMediumSpeed" LowMediumSpeed)
   it "accepts LowSpeed" (testSpeedPolicyAccepted "LowSpeed" LowSpeed)
   it "refuses a numeric speed policy" testSpeedPolicyName
@@ -612,6 +613,13 @@ testUtf8File = do
     let p = d </> "store_service.ini"
     B.writeFile p "[listener]\n[group]\ndisplay_name = \xff\n"
     readServiceConfig p `shouldReturn` Left "is not UTF-8"
+
+testHighSpeedWithNames :: IO ()
+testHighSpeedWithNames = do
+  let withPolicy p = parseIni (fullIni <> "speed_policy = " <> p <> "\n" <> T.unlines (namesSection <> chainSection))
+  withPolicy "HighSpeed"
+    `shouldReturn` Left "btcpay.speed_policy = HighSpeed settles an invoice with no confirmation, which a double spend would turn into a free name, so it is refused with [names]"
+  withPolicy "MediumSpeed" >>= (`shouldSatisfy` isRight)
 
 parseIni :: T.Text -> IO (Either String ServiceConfig)
 parseIni t = withIni t readServiceConfig
