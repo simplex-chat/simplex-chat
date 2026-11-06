@@ -576,6 +576,7 @@ class SelectTestsTest(GitRepoTest):
 
     def test_other_words_in_the_input_fail(self):
         self.assertEqual(self.select("../alpha").returncode, 2)
+        self.assertEqual(self.select("../tests/alpha").returncode, 2)
         self.assertEqual(self.select("-x").returncode, 2)
         self.assertEqual(self.select("Alpha").returncode, 2)
         self.assertEqual(self.select("all beta").returncode, 2)
@@ -678,7 +679,11 @@ class FeatureTestsTest(unittest.TestCase):
         self.backend = work / "backend"
         (self.platform / "tests").mkdir(parents=True)
         ui = self.platform / "ui"
-        ui.write_text('#!/bin/bash\necho "$* $UI_OUT" >> "$UI_LOG"\n[ "$1" != layout ] || [ -z "$UI_LAYOUT_FAILS" ]\n')
+        ui.write_text(
+            '#!/bin/bash\necho "$* $UI_OUT" >> "$UI_LOG"\n'
+            '[ "$1" != layout ] || [ -z "$UI_LAYOUT_FAILS" ] || exit 1\n'
+            '[ "$1" != shot ] || [ -z "$UI_SHOT_FAILS" ]\n'
+        )
         ui.chmod(0o755)
         checks = packages_release.ROOT / "scripts/ci/app-tests/checks.sh"
         (self.platform / "lib.sh").write_text(f'ui="{ui}"\n. "{checks}"\n')
@@ -687,13 +692,14 @@ class FeatureTestsTest(unittest.TestCase):
                 f'#!/bin/bash\nset -euo pipefail\n. "$(dirname "$0")/../lib.sh"\n{steps}'
             )
 
-    def run_tests(self, *names, backend_dir="", layout_fails=False):
+    def run_tests(self, *names, backend_dir="", layout_fails=False, shot_fails=False):
         script = packages_release.ROOT / "scripts/ci/app-tests/feature-tests.sh"
         env = {
             "GITHUB_STEP_SUMMARY": str(self.summary),
             "UI_LOG": str(self.ui_log),
             "BACKEND_DIR": backend_dir,
             "UI_LAYOUT_FAILS": "1" if layout_fails else "",
+            "UI_SHOT_FAILS": "1" if shot_fails else "",
         }
         with mock.patch.dict("os.environ", env):
             return subprocess.run([script, self.platform, self.out, *names], capture_output=True, text=True)
@@ -776,6 +782,10 @@ class FeatureTestsTest(unittest.TestCase):
         self.assertEqual(self.checks("passes"), ["FAIL the app restarted at the chat list in the reachable layout"])
         self.assertEqual(self.summary.read_text().splitlines()[0], "### Feature test passes: failed")
 
+    def test_failed_screenshot_leaves_the_remaining_tests_running(self):
+        self.assertEqual(self.run_tests("stops", "passes", shot_fails=True).returncode, 1)
+        self.assertEqual(self.checks("passes"), ["PASS one", "PASS two"])
+
     def test_test_without_checks_passes_with_a_note_in_the_summary(self):
         self.assertEqual(self.run_tests("no-checks").returncode, 0)
         self.assertEqual(
@@ -793,12 +803,12 @@ class ChecksTest(unittest.TestCase):
                     ["bash", "-c", "\n".join([f'. "{script}"', *steps])], capture_output=True, text=True
                 )
 
-    def test_failed_check_fails_the_final_gate(self):
+    def test_fail_on_failed_checks_exits_1_after_a_failed_check(self):
         result = self.run_checks('check "good" true', 'check "bad" false', 'fail_on_failed_checks "the smoke test"')
         self.assertEqual(result.returncode, 1)
         self.assertIn("error: the smoke test failed checks: 1 of 2", result.stdout)
 
-    def test_passed_checks_and_notes_pass_the_final_gate(self):
+    def test_fail_on_failed_checks_returns_0_for_passed_checks_and_notes(self):
         result = self.run_checks('check "good" true', 'note "remark"', 'fail_on_failed_checks "the smoke test"')
         self.assertEqual(result.returncode, 0)
 
@@ -819,7 +829,8 @@ class ChooseFeatureTestsTest(GitRepoTest):
         origin = self.work / "origin.git"
         self.git("clone", "-q", "--bare", ".", str(origin))
         self.git("-C", str(origin), "config", "uploadpack.allowAnySHA1InWant", "true")
-        self.git("remote", "add", "origin", f"file://{origin}")
+        self.checkout = self.work / "checkout"
+        self.git("clone", "-q", "--depth=1", f"file://{origin}", str(self.checkout))
         self.gh_log = self.work / "gh.log"
         self.output = self.work / "output"
         self.summary = self.work / "summary"
@@ -849,7 +860,7 @@ class ChooseFeatureTestsTest(GitRepoTest):
         }
         with mock.patch.dict("os.environ", env):
             return subprocess.run(
-                [script, "scripts/ci/desktop-linux"], cwd=self.repo, capture_output=True, text=True
+                [script, "scripts/ci/desktop-linux"], cwd=self.checkout, capture_output=True, text=True
             )
 
     def test_blank_input_selects_from_the_changes_since_the_root_repository_master(self):
