@@ -210,7 +210,7 @@ object ConnectProgressManager {
 2. After a 1-second delay, a progress indicator appears if the operation is still in progress.
 3. On completion (success or failure), `stopConnectProgress` is called.
 4. The user can cancel via `cancelConnectProgress`.
-5. The online search shares the spinner with owner `DirectorySearch`: its `startConnectProgress` does nothing while a connection owns the spinner, and a `stopConnectProgress` from an owner that does not hold the spinner is ignored. `planAndConnect` calls `cancelConnectProgress()` first, so tapping a search result cancels the search before the connection takes the spinner.
+5. The online search shares the spinner with owner `DirectorySearch`: its `startConnectProgress` does nothing while a connection owns the spinner, and a `stopConnectProgress` from an owner that does not hold the spinner is ignored. `planAndConnect` calls `cancelConnectProgress()` first, so tapping a search result cancels the search before the connection starts its own progress.
 
 ### 6.2 Pending Connection States
 

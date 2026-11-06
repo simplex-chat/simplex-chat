@@ -381,7 +381,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 | `privacyProtectScreen` | `Boolean` | `true` | FLAG_SECURE on Android |
 | `privacyAcceptImages` | `Boolean` | `true` | Auto-accept images |
 | `privacyLinkPreviews` | `Boolean` | `true` | Generate link previews |
-| [`privacyDirectorySearch`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L130) (`"PrivacyDirectorySearch"`) | `Boolean` | `false` | "Directory search" in Privacy settings; while it is off, every online search asks "Enable Directory search?", and Enable turns it on (see [Chat List, Online Search](client/chat-list.md#11-online-search)) |
+| [`privacyDirectorySearch`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L130) (`"PrivacyDirectorySearch"`) | `Boolean` | `false` | "Directory search" in Privacy settings; while it is off, "Enable Directory search?" is shown before every online search, and Enable turns it on (see [Chat List, Online Search](client/chat-list.md#11-online-search)) |
 | `privacySanitizeLinks` | `Boolean` | `false` | Remove tracking params from links |
 | `simplexLinkMode` | `SimplexLinkMode` | `DESCRIPTION` | DESCRIPTION / FULL / BROWSER |
 | `privacyShowChatPreviews` | `Boolean` | `true` | Show chat previews in list |

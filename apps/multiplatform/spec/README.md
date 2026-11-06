@@ -106,8 +106,8 @@ Common Module (commonMain)
 | Overview | [product/README.md](../product/README.md) | Product overview, capability map, navigation map |
 | Concepts | [product/concepts.md](../product/concepts.md) | 33 product concepts (PC1-PC33) mapped to docs + source |
 | Glossary | [product/glossary.md](../product/glossary.md) | Domain term definitions (9 sections) |
-| Rules | [product/rules.md](../product/rules.md) | 18 business rules in 6 categories |
-| Gaps | [product/gaps.md](../product/gaps.md) | 8 known gaps with recommendations |
+| Rules | [product/rules.md](../product/rules.md) | 23 business rules in 7 categories |
+| Gaps | [product/gaps.md](../product/gaps.md) | 12 known gaps with recommendations |
 | Flows | [product/flows/](../product/flows/) | onboarding, messaging, connection, calling, file-transfer, group-lifecycle |
 | Views | [product/views/](../product/views/) | chat-list, chat, settings, onboarding, call, new-chat, contact-info, group-info, user-profiles |
 
@@ -124,9 +124,9 @@ Common Module (commonMain)
 | Desktop Init | [`AppCommon.desktop.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/platform/AppCommon.desktop.kt#L21) | `fun initApp()` | 21 |
 | Common App Screen | [`App.kt`](../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L48) | `fun AppScreen()` | 48 |
 | JNI Bridge | [`Core.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L18) | `external fun initHS()` | 18 |
-| Chat Controller | [`SimpleXAPI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L547) | `object ChatController` | 541 |
-| Chat Model | [`ChatModel.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L154) | `object ChatModel` | 157 |
-| App Preferences | [`SimpleXAPI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L107) | `class AppPreferences` | 105 |
+| Chat Controller | [`SimpleXAPI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L547) | `object ChatController` | 547 |
+| Chat Model | [`ChatModel.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L154) | `object ChatModel` | 153 |
+| App Preferences | [`SimpleXAPI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L107) | `class AppPreferences` | 107 |
 | Platform Interface | [`Platform.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Platform.kt#L20) | `interface PlatformInterface` | 20 |
 | Notification Manager | [`NtfManager.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/NtfManager.kt#L20) | `abstract class NtfManager` | 20 |
 | Theme Manager | [`ThemeManager.kt`](../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/ThemeManager.kt#L18) | `object ThemeManager` | 18 |

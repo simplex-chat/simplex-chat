@@ -395,7 +395,7 @@ A directory entry is matched to a local chat by a store-only plan of its link (`
 - a group joined with a full link (an older app) when the directory sends the short link: Open's online plan finds it known and shows the "Open group" alert;
 - a member added by invitation, or one who joined through a link the owner has since replaced: the online plan is `Ok`, so Open prepares and opens a second copy of the group without asking (before, the "Open group?" confirm led to the same copy).
 
-Accepted for now: channels, the directory's main content, are always joined through a prepared group. "Already joining" is reachable for a short-link entry with a pending `/c` join and for entries the directory sends with a full link. The core tests "short link without resolving: prepared and /c-joined groups known, invited member not found" and "short link without resolving: pending /c join is connecting" (tests/ChatTests/Groups.hs) pin the store-only contract, including the `/c` and invited-member cases.
+Accepted for now: channels are always joined through a prepared group. "Already joining" is reachable for a short-link entry with a pending `/c` join and for entries the directory sends with a full link. The core tests "short link without resolving: prepared and /c-joined groups known, invited member not found" and "short link without resolving: pending /c join is connecting" (tests/ChatTests/Groups.hs) cover the store-only contract, including the `/c` and invited-member cases.
 
 ### Affected Locations
 
@@ -421,7 +421,7 @@ Recognising invited members needs a link in the group record that matches the li
 
 ### Description
 
-The directory's `moreCount` counts the matching listings after the page, including listings without a public link, which it never sends. "Load more · N left" can therefore promise more results than loading brings, and a last page can come back empty.
+The directory's `moreCount` counts the matching listings after the page, including listings without a public link, which it never sends. "Load more · N left" can therefore show a count above the results still to come, and a last page can come back empty.
 
 ### Affected Locations
 

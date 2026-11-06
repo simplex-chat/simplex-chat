@@ -77,6 +77,7 @@ Organized in sections:
 | Setting | Preference Key | Description |
 |---|---|---|
 | Send link previews | `privacyLinkPreviews` | Auto-generate link preview cards |
+| Directory search | `privacyDirectorySearch` | Off by default; while off, "Enable Directory search?" is shown before every online search |
 | Sanitize links | `privacySanitizeLinks` | Strip tracking parameters from URLs |
 | Show last messages | `privacyShowChatPreviews` | Show message previews in chat list |
 | Message draft | `privacySaveLastDraft` | Save unsent message draft for each chat |

@@ -97,7 +97,7 @@ The search field of the New chat sheet filters "Your contacts" and offers the sa
 | Online search running | Progress indicator in the search bar; closing the sheet cancels the search |
 | Directory search failed | "Search failed, tap to retry" row at the end of the results card |
 
-While the "Directory search" switch is off, every online search asks with the same "Enable Directory search?" alert as on the chat list. Results disappear when the text changes or the user switches profile (which also closes the sheet), and when a sheet opened from New chat covers it. Archived contacts keep their own search field without online results; their Search key does nothing.
+While the "Directory search" switch is off, every online search first shows the same "Enable Directory search?" alert as on the chat list. Results disappear when the text changes or the user switches profile (which also closes the sheet), and when a sheet opened from New chat covers it. Archived contacts keep their own search field without online results; their Search key does nothing.
 
 ## Source Files
 

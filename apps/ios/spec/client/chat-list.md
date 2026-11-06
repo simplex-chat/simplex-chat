@@ -82,10 +82,10 @@ The root list view. Key responsibilities:
 | Function | Line | Description |
 |----------|------|-------------|
 | [`body`](../../Shared/Views/ChatList/ChatListView.swift#L189) | 189 | Main view body |
-| [`filteredChats()`](../../Shared/Views/ChatList/ChatListView.swift#L745) | 723 | Applies active filter and search to chat list |
-| [`searchString()`](../../Shared/Views/ChatList/ChatListView.swift#L788) | 766 | Normalizes search text for comparison |
-| [`unreadBadge()`](../../Shared/Views/ChatList/ChatListView.swift#L719) | 697 | Renders unread count circle badge |
-| [`stopAudioPlayer()`](../../Shared/Views/ChatList/ChatListView.swift#L739) | 717 | Stops any playing voice message |
+| [`filteredChats()`](../../Shared/Views/ChatList/ChatListView.swift#L745) | 733 | Applies active filter and search to chat list |
+| [`searchString()`](../../Shared/Views/ChatList/ChatListView.swift#L788) | 776 | Normalizes search text for comparison |
+| [`unreadBadge()`](../../Shared/Views/ChatList/ChatListView.swift#L719) | 707 | Renders unread count circle badge |
+| [`stopAudioPlayer()`](../../Shared/Views/ChatList/ChatListView.swift#L739) | 727 | Stops any playing voice message |
 
 ---
 
@@ -198,7 +198,7 @@ class ChatTagsModel: ObservableObject {
 |------|------|------|-------------|
 | [`PresetTag`](../../Shared/Views/ChatList/ChatListView.swift#L36) | ChatListView.swift | 36 | Enum of built-in filter categories |
 | [`ActiveFilter`](../../Shared/Views/ChatList/ChatListView.swift#L53) | ChatListView.swift | 53 | Enum wrapping preset, user-tag, or unread filter |
-| [`setActiveFilter()`](../../Shared/Views/ChatList/ChatListView.swift#L1326) | ChatListView.swift | 1314 | Applies a filter and persists selection |
+| [`setActiveFilter()`](../../Shared/Views/ChatList/ChatListView.swift#L1326) | ChatListView.swift | 1306 | Applies a filter and persists selection |
 
 ### Tag Management Commands
 - `apiCreateChatTag(tag: ChatTagData)` -- create tag
@@ -324,7 +324,7 @@ Tapping the card opens [`GetStakeView`](../../Shared/Views/Onboarding/WhatsNewVi
 
 **Files**: `Shared/Views/ChatList/DirectorySearchView.swift` (model and rows), `Shared/Model/DirectorySearch.swift` (response and result types), `Shared/Views/ChatList/ChatListView.swift` (triggers and rendering)
 
-The search text can be sent online on request to SimpleX Directory, to find public groups and channels. Results are shown below the local chats as one list without headers: your chats first, then the other results. They are never saved and live only as long as the search text and the active profile: [`ChatListView`](../../Shared/Views/ChatList/ChatListView.swift#L154), which owns `searchText` and the model, calls `reset()` from `viewBody`, which is shown in every state, on every change of `searchText` ([L240](../../Shared/Views/ChatList/ChatListView.swift#L240)) and of `currentUser?.userId` ([L243](../../Shared/Views/ChatList/ChatListView.swift#L243)). The search bar is a different instance in the onboarding branch and in the list, so a profile switch that also switches between them would replace the bar before it could see the change. The New chat sheet uses the same model and rows (see [Navigation, New Chat Online Search](navigation.md#12-new-chat-online-search)).
+The search text can be sent online on request to SimpleX Directory, to find public groups and channels. Results are shown below the local chats as one list without headers: your chats first, then the other results. They are never saved and are kept only while the search text and the active profile are unchanged: [`ChatListView`](../../Shared/Views/ChatList/ChatListView.swift#L154), which owns `searchText` and the model, calls `reset()` from `viewBody`, which is shown in every state, on every change of `searchText` ([L240](../../Shared/Views/ChatList/ChatListView.swift#L240)) and of `currentUser?.userId` ([L243](../../Shared/Views/ChatList/ChatListView.swift#L243)). The search bar is a different instance in the onboarding branch and in the list, so a profile switch that also switches between them would replace the bar before it observed the change. The New chat sheet uses the same model and rows (see [Navigation, New Chat Online Search](navigation.md#12-new-chat-online-search)).
 
 ### Triggers
 
@@ -333,7 +333,7 @@ The search text can be sent online on request to SimpleX Directory, to find publ
 | Keyboard Search key (`.submitLabel(.search)`) | `.onSubmit`; the field is disabled while a SimpleX link shows | `search(text)` |
 | "Search in Directory" row ([`SearchInDirectoryRow`](../../Shared/Views/ChatList/DirectorySearchView.swift#L155)) | `onSearch`; the row is shown only for `isDirectorySearchable` text | `search(text)` |
 
-Both triggers run the same directory search, which never resolves SimpleX names: a name is looked up only by "Connect to …" (`ConnectByNameRow`). The field neither autocorrects nor capitalizes, so the Search key searches what was typed. Both triggers do nothing for empty (trimmed) text or a pasted SimpleX link, and both go through [`confirmDirectorySearch()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L358), which runs the search at once when the "Directory search" switch is on (`DEFAULT_PRIVACY_DIRECTORY_SEARCH`, default false, in Privacy settings › Chats after "Send link previews") and otherwise shows the alert [`showDirectorySearchAlert`](../../Shared/Views/ChatList/DirectorySearchView.swift#L366): "Enable Directory search?", with the message "Search text is sent to SimpleX Directory, each search separately and without your profile." and two actions, Cancel (sends nothing) and Enable (turns the switch on, then searches). So every search asks while the switch is off. The key is not in `hintDefaults`: "Reset all hints" leaves the switch as it is.
+Both triggers run the same directory search, which never resolves SimpleX names: a name is looked up only by "Connect to …" (`ConnectByNameRow`). The field neither autocorrects nor capitalizes, so the Search key searches what was typed. Both triggers do nothing for empty (trimmed) text or a pasted SimpleX link, and both go through [`confirmDirectorySearch()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L358), which runs the search at once when the "Directory search" switch is on (`DEFAULT_PRIVACY_DIRECTORY_SEARCH`, default false, in Privacy settings › Chats after "Send link previews") and otherwise shows the alert [`showDirectorySearchAlert`](../../Shared/Views/ChatList/DirectorySearchView.swift#L366): "Enable Directory search?", with the message "Search text is sent to SimpleX Directory, each search separately and without your profile." and two actions, Cancel (sends nothing) and Enable (turns the switch on, then searches). So the alert is shown before every search while the switch is off. The key is not in `hintDefaults`: "Reset all hints" leaves the switch as it is.
 
 The rows above or below the search field follow the toolbar mode. "Search in Directory" hides while results for the current text show or load (`!onlineSearch.showResults`); "Connect to …" stays next to them:
 
@@ -351,10 +351,10 @@ The rows above or below the search field follow the toolbar mode. "Search in Dir
 | State | Description |
 |-------|-------------|
 | `directory: [DirectoryResult]` | Directory entries shown so far, each with its `DirectoryResultState` (see Directory requests) |
-| `moreCount: Int?` | The count of matches left that the last successful page carried; nil when the directory sent none or an invalid one |
+| `moreCount: Int?` | The count of matches left contained in the last successful page; nil when the directory sent none or an invalid one |
 | `loading` | A directory request is in flight |
 | `failed` | The last directory request failed |
-| `searched` | A directory request for the current text completed, successfully or not (tells "not searched" from "found nothing") |
+| `searched` | A directory request for the current text completed, successfully or not (distinguishes "not searched" from "found nothing") |
 | `cursor` (private) | Opaque `JSONValue` from the last page, echoed back for the next one; nil when there are no more |
 | `generation` (private) | Bumped by `reset()` and `cancelRequest()`; a reply whose captured generation differs never writes model state |
 
@@ -370,11 +370,11 @@ The rows above or below the search field follow the toolbar mode. "Search in Dir
 | `search(_:)` | Both triggers: trims the text and, unless it is empty, runs `searchDirectory` through `confirmDirectorySearch` |
 | [`searchDirectory(_:)`](../../Shared/Views/ChatList/DirectorySearchView.swift#L56) | Private: ignored for empty text or while `loading` for the same text; otherwise resets, then the first page |
 | [`loadMore()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L63) | The load row: runs the private `requestNextPage` through `confirmDirectorySearch`: the next page, appended |
-| [`retry()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L68) | The retry row: runs the private `retryRequest` through `confirmDirectorySearch`, which resumes the page when a cursor exists, else calls `searchDirectory` with the text searched, so a cancelled retry offers "Search in Directory" again; that call does nothing after a reset, whose text is empty (its consent alert can outlast one) |
+| [`retry()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L68) | The retry row: runs the private `retryRequest` through `confirmDirectorySearch`, which resumes the page when a cursor exists, else calls `searchDirectory` with the text searched, so a cancelled retry offers "Search in Directory" again; that call does nothing after a reset, whose text is empty (its consent alert can remain open after a reset) |
 | [`rows(shownChatIds:)`](../../Shared/Views/ChatList/DirectorySearchView.swift#L76) | The rows to render, given the ids of the local chats shown (see De-duplication) |
 | [`refreshStates()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L94) | The `cleanup` of a connection started from a result row, run when its flow ends: plans every result that is not `.yourChat` again, store-only, unless the generation changed. A chat opened from a result is created during that flow, so its result then becomes `.yourChat`: hidden like any shown chat, or drawn as its chat row when the list doesn't show it |
 
-**Spinner.** `loading` has a `didSet` that calls [`updateSpinner()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L139) when its value changes, which starts the "Searching directory…" progress with owner `.directorySearch` when `loading` becomes true and stops it when it becomes false. The search field shows it as a spinner once it has run for a second. The spinner is shared with connections: [`ConnectProgressOwner`](../../Shared/Model/ChatModel.swift#L301) records whose it is, [`startConnectProgress`](../../Shared/Model/ChatModel.swift#L314) does not let a search take it from a running connection, and [`stopConnectProgress`](../../Shared/Model/ChatModel.swift#L325) ignores a stop from another owner. Tapping a result calls `planAndConnect`, whose `cancelConnectProgress()` ([L333](../../Shared/Model/ChatModel.swift#L333)) cancels the search through its `onCancel` before the connection takes the spinner.
+**Spinner.** `loading` has a `didSet` that calls [`updateSpinner()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L139) when its value changes, which starts the "Searching directory…" progress with owner `.directorySearch` when `loading` becomes true and stops it when it becomes false. The search field shows it as a spinner once it has run for a second. The spinner is shared with connections: [`ConnectProgressOwner`](../../Shared/Model/ChatModel.swift#L301) records whose it is, [`startConnectProgress`](../../Shared/Model/ChatModel.swift#L314) does nothing for a search while a connection is the owner, and [`stopConnectProgress`](../../Shared/Model/ChatModel.swift#L325) ignores a stop from another owner. Tapping a result calls `planAndConnect`, whose `cancelConnectProgress()` ([L333](../../Shared/Model/ChatModel.swift#L333)) cancels the search through its `onCancel` before the connection starts its own progress.
 
 ### Directory requests
 
@@ -382,7 +382,7 @@ The rows above or below the search field follow the toolbar mode. "Search in Dir
 
 The directory's response (`DRSearchResults`, apps/simplex-directory-service/src/Directory/Rpc.hs) is `{"type": "searchResults", "entries": […], "searchCursor": …, "moreCount": N}`. `searchCursor` is absent when there are no more results. `moreCount` is the number of matches after the cursor, 0 without one. A page is cut to fit the service envelope, so the number of entries varies. The app keeps `moreCount` only when it is a JSON number that is an integer in 0…`Int32.max` ([L102](../../Shared/Model/DirectorySearch.swift#L102)); anything else becomes nil without failing the response. It is only shown as text in the load row. An older directory sends no count, and the row then reads "Load more".
 
-[GAP] `moreCount` counts the matching listings, including ones without a public link that the directory never sends, so the load row can promise more results than it brings.
+[GAP] `moreCount` counts the matching listings, including ones without a public link that the directory never sends, so the load row can show a count above the results still to come.
 
 [`DirectorySearchEntry`](../../Shared/Model/DirectorySearch.swift#L32-L62) has a custom [`init(from:)`](../../Shared/Model/DirectorySearch.swift#L46): its `link` is the wire `groupLink.connShortLink`, else `connFullLink`, and decoding throws unless [`simplexLinkType`](../../Shared/Model/DirectorySearch.swift#L64) classifies it as `.group` or `.channel`. `simplexLinkType` returns the link type only when [`strConnectTarget`](../../Shared/Views/NewChat/NewChatView.swift#L860) finds exactly one SimpleX link whose text is the whole string. `link` is also the entry's `id`. The directory sends only the short link when an entry has one. The entry's `image` is kept only when [`isSafeImageData`](../../Shared/Model/DirectorySearch.swift#L68) finds a JPEG or PNG data URI (`data:image/jpg;base64,/9j/` or `data:image/png;base64,iVBORw0KGgo`, the formats' magic numbers in base64) of at most 12,500 characters (`DIRECTORY_SEARCH_MAX_IMAGE_LENGTH`, the profile image size); any other value gives the entry no image, and the rest of the entry is kept. The directory leaves out an image over its size limit or that isn't a JPEG or PNG data URI.
 
@@ -404,9 +404,9 @@ With the link-type check, the lookup reads only the store: under `.never` the co
 - `results`: the other results, in directory order; a `.yourChat` result whose chat is not loaded becomes `.open`, and Open's online plan then finds the known chat;
 - `footer` passes through.
 
-So nothing is shown twice: a result that is a chat the list shows is hidden, a chat the list doesn't show (the local filter doesn't match it) is drawn once as its own row, and a link repeated across pages was already dropped by the request. A page whose results are all chats the list shows adds no row and no note. Only store-derived chat ids decide this, never a field the directory wrote. A mismatch in link encoding can only produce a duplicate row.
+So nothing is shown twice: a result that is a chat the list shows is hidden, a chat the list doesn't show (the local filter doesn't match it) is drawn once as its own row, and a link repeated across pages was already dropped by the request. A page whose results are all chats the list shows adds no row and no note. Only chat ids from the store are compared; fields written by the directory are excluded. A mismatch in link encoding can only produce a duplicate row.
 
-[GAP] The store-only plan finds a group only when it was prepared from that short link (every short-link join in current apps, Open included), joined with `/c` and that short link (the join connection stores the full link under it), or joined with the full link the directory sends. A group joined otherwise shows as a result with Open beside its own chat row. For a group joined with a full link (an older app) when the directory sends the short link, Open's online plan finds it known and shows the "Open group" alert. For a member added by invitation, or one who joined through a link the owner has since replaced, the online plan is `.ok`, so Open prepares and opens a second copy of the group without asking. The core tests "short link without resolving: prepared and /c-joined groups known, invited member not found" and "short link without resolving: pending /c join is connecting" (tests/ChatTests/Groups.hs) pin this.
+[GAP] The store-only plan finds a group only when it was prepared from that short link (every short-link join in current apps, Open included), joined with `/c` and that short link (the join connection stores the full link under it), or joined with the full link the directory sends. A group joined otherwise shows as a result with Open beside its own chat row. For a group joined with a full link (an older app) when the directory sends the short link, Open's online plan finds it known and shows the "Open group" alert. For a member added by invitation, or one who joined through a link the owner has since replaced, the online plan is `.ok`, so Open prepares and opens a second copy of the group without asking. The core tests "short link without resolving: prepared and /c-joined groups known, invited member not found" and "short link without resolving: pending /c join is connecting" (tests/ChatTests/Groups.hs) cover this.
 
 ### Rendering
 
@@ -415,7 +415,7 @@ So nothing is shown twice: a result that is a chat the list shows is hidden, a c
 | [`chatListContent`](../../Shared/Views/ChatList/ChatListView.swift#L540) | `rows(shownChatIds:)` with the ids of the shown chats ([L542](../../Shared/Views/ChatList/ChatListView.swift#L542)); after the local chats, [`directoryRows`](../../Shared/Views/ChatList/ChatListView.swift#L510). While `showResults` ([`showsCards`](../../Shared/Views/ChatList/ChatListView.swift#L543) false), the list leaves out `OneHandUICard`, the banner slot and `ConnectBannerCard`; they return when the search text is cleared, which resets the model | `noChatsView()` overlay only when no chat is shown, there are chats or `searched`, the model is not `loading`, `rows.isEmpty` and "Search in Directory" is not offered (`showsSearchInDirectory`: `isDirectorySearchable` text while not `showResults`) ([L658](../../Shared/Views/ChatList/ChatListView.swift#L658)) |
 | Onboarding branch of [`chatList`](../../Shared/Views/ChatList/ChatListView.swift#L463) | While `showResults`, a list of the same rows with `shownChatIds: []` ([L478](../../Shared/Views/ChatList/ChatListView.swift#L478)) in place of the onboarding pages | A centred "No chats found" row when not searching and `rows.isEmpty` |
 
-`directoryRows` draws one list without headers, in this order: your chats (`rows.yourChats`), the results, then the footer row. So the load or retry row is the last row of the results: at the bottom with the top bar, and at the top with the one-hand UI, the list being flipped, which puts it farthest from the field. Every row carries the per-row flip and a clear background.
+`directoryRows` draws one list without headers, in this order: your chats (`rows.yourChats`), the results, then the footer row. So the load or retry row is the last row of the results: at the bottom with the top bar, and at the top with the one-hand UI, the list being flipped, which puts it farthest from the field. Every row has the per-row flip and a clear background.
 
 | Row | View | Tap |
 |-----|------|-----|

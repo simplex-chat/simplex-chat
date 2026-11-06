@@ -64,19 +64,19 @@ Searching beyond the user's own chats happens only when the user asks, and the r
 | Keyboard Search key | On Android the keyboard's Search action, on desktop Enter. The same directory search; it never looks up SimpleX names |
 | "Connect to …" row | Shown for a SimpleX name (e.g. `alice` or `#news.testing`; on Android with the top bar it takes the tags' place), and stays next to the results; it is the only way to look up a name |
 | "Directory search" switch | In Settings › Privacy › Chats, after "Send link previews"; off by default |
-| "Enable Directory search?" alert | Every search asks while the switch is off: search text is sent to SimpleX Directory, each search separately and without the user's profile. Enable turns the switch on and searches; Cancel sends nothing. Once it is on, searches don't ask |
+| "Enable Directory search?" alert | Shown before every search while the switch is off. It states that search text is sent to SimpleX Directory, each search separately and without the user's profile. Enable turns the switch on and searches; Cancel sends nothing. With the switch on, it is not shown |
 | Results | One list without headers below the local chats. First your chats among the results that the list above doesn't show (for example because the name doesn't match the typed text), as their regular chat rows; then the other results, laid out as chat rows with the same avatar size: avatar, `#` name, the directory's SimpleX name, description, then the member or subscriber count and "Open" on the right. A join still in progress without a chat shows "Already joining" in place of the count and no "Open" |
-| Open | Tapping a result loads the group's or channel's profile and opens the chat straight away, with its Join button and no "Open channel?" question; a channel's banner shows its subscriber count. The user joins from there. If the link's signature was checked or its name also leads to another chat, the question shows first, as for a pasted link, with the signature result or the other chat's button. A result that is already joining shows the same alert as pasting its link would |
+| Open | Tapping a result loads the group's or channel's profile and opens the chat straight away, with its Join button and no "Open channel?" question; a channel's banner shows its subscriber count. The user joins from there. A result that is already joining shows the same alert as pasting its link would |
 | Result menu | A long press (or a right click on desktop) on a result shows a menu with Open |
-| Load row | The last row of the results: "Load more · N left" when the directory says how many matches are left, "Load more" otherwise; greyed while a page loads. A failed request turns it into "Search failed, tap to retry". Nothing loads more pages automatically |
+| Load row | The last row of the results: "Load more · N left" when the response contains the number of matches left, "Load more" otherwise; greyed while a page loads. A failed request turns it into "Search failed, tap to retry". Nothing loads more pages automatically |
 
 A result is not shown twice: an entry for a chat already shown in the list is hidden, and one the list doesn't show is drawn once, as the chat. A group joined without the listed short link (with a full link from an older app, or added by invitation) is not recognised: it appears as a result with "Open" beside its own chat (see GAP-11). Directory entries that are not group or channel links are ignored.
 
 With the one-hand UI the whole list is reversed: going up from the search field at the bottom come the local chats, then your chats from the results, then the other results, with the load row at the top, farthest from the field. This order is intended, so the user's own chats stay nearest the field.
 
-While an online search runs or has results, the list shows no banner, no one-hand UI card and no connect cards. Typing alone, which only filters the chats, keeps them; they come back when the results go (the text changes or is cleared) or when a search is cancelled before showing anything.
+While an online search runs or after it has run, even one that found nothing, the list shows no banner, no one-hand UI card and no connect cards. Typing alone, which only filters the chats, keeps them; they come back when the results go (the text changes or is cleared) or when a search is cancelled before showing anything.
 
-With no conversations yet (onboarding), the search bar is shown above the onboarding pages (below them with the one-hand UI) on Android, and the online results replace the pages while a search runs or has results. On desktop the onboarding pages are in the centre pane, so the chat list pane shows the search bar and the results only. Once a result is opened and the onboarding state ends, the search is cleared.
+With no conversations yet (onboarding), the search bar is shown above the onboarding pages (below them with the one-hand UI) on Android, and the online results replace the pages while a search runs or has run. On desktop the onboarding pages are in the centre pane, so the chat list pane shows the search bar and the results only. Once a result is opened and the onboarding state ends, the search is cleared.
 
 ### Chat Filter Tags (`TagsView`)
 
@@ -148,7 +148,7 @@ Each chat type provides specific dropdown menu items:
 | State | Display |
 |---|---|
 | Loading | "Loading chats..." centered text |
-| No chats | "You have no chats" centered text, unless an online search runs or shows results |
+| No chats | "You have no chats" centered text, unless an online search runs or has run |
 | No filtered chats | "No chats in list [tag name]" or "No unread chats" with clickable filter reset |
 | No search results | "No chats found" centered text, only after a directory search for the text finds nothing: not while "Search in Directory" is offered, a search runs or results show |
 | Online search running | Progress indicator in the toolbar (after about a second); tapping a result or clearing the search cancels it |

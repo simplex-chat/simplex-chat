@@ -611,9 +611,9 @@ Wrappers in [`Shared/Model/SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift) 
 | Function | Description | Source |
 |----------|-------------|--------|
 | `apiSearchDirectory(_ text:, cursor:)` | Sends `apiSendServiceRequest` to `DIRECTORY_SERVICE_LINK` with `DIRECTORY_SEARCH_TIMEOUT_SEC` and the search request; returns `parseDirectorySearchResponse(responseData)` (the entries, the cursor and `moreCount`), or nil on any error (logged: an unusable response with a fixed line and nothing from it). Blocks for the address lookup, then for up to the timeout | [L1044](../Shared/Model/SimpleXAPI.swift#L1044) |
-| `apiConnectPlan(connLink:, resolveMode:, linkOwnerSig:, inProgress:)` | Plans a connection; returns `ConnectionPlanResult?`. `notResolvedLocally` (a `.never` lookup that matched nothing) returns nil silently; any other failure shows `apiConnectResponseAlert` only while `inProgress` is true, so the background lookups, which pass false, and a cancelled `planAndConnect` show none. The online search reads nil from a `.never` plan of a directory result as "not one of your chats" | [L1062](../Shared/Model/SimpleXAPI.swift#L1062) |
+| `apiConnectPlan(connLink:, resolveMode:, linkOwnerSig:, inProgress:)` | Plans a connection; returns `ConnectionPlanResult?`. `notResolvedLocally` (a `.never` lookup that matched nothing) returns nil silently; any other failure shows `apiConnectResponseAlert` only while `inProgress` is true, so the background lookups, which pass false, and a cancelled `planAndConnect` show none. The online search treats nil from a `.never` plan of a directory result as "not one of your chats" | [L1062](../Shared/Model/SimpleXAPI.swift#L1062) |
 
-A service response is carried as [`JSONValue`](../SimpleXChat/APITypes.swift#L720) (any JSON), so the framework does not depend on a service's own types; callers decode it with [`decodeJSONValue`](../SimpleXChat/APITypes.swift#L754).
+A service response is represented as [`JSONValue`](../SimpleXChat/APITypes.swift#L720) (any JSON), so the framework does not depend on a service's own types; callers decode it with [`decodeJSONValue`](../SimpleXChat/APITypes.swift#L754).
 
 ---
 
