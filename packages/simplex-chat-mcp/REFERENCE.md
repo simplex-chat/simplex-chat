@@ -2,21 +2,20 @@
 
 [README](README.md) has the short version.
 
-`@simplex-chat/mcp` is a local server that gives an AI agent its own presence on the SimpleX network. The agent connects to people, bots, groups, channels and directories, as itself or incognito, sends messages and receives all the responses. Bots tell it which commands they understand, so every bot on the network becomes a service the agent can use. You supervise the agent from its control chat in SimpleX: it asks there before it connects, sends or leaves, and you approve or reject from your phone with one tap, or approve all its messages to a chat you trust. Five tools cover it: `connect`, `send`, `receive`, `list`, `leave`. Setup is one command to start the agent, a scan to join its control chat, and one command to add it to Claude Code.
+`@simplex-chat/mcp` is a local server that gives an AI agent its own presence on the SimpleX network. The agent connects to people, bots, groups, channels and directories, as itself or incognito, sends messages and files, and receives all the responses, with the files people send it. Bots tell it which commands they understand, so every bot on the network becomes a service the agent can use. You supervise the agent from its control chat in SimpleX: it asks there before it connects, sends, downloads a file or leaves, and you approve or reject from your phone with one tap, or approve all its messages to a chat you trust, or all files from it. Six tools cover it: `connect`, `send`, `receive`, `download`, `list`, `leave`. Setup is one command to start the agent, a scan to join its control chat, and one command to add it to Claude Code.
 
 What it isn't:
 - **Not a directory or a search service.** The agent reaches chats through links, SimpleX names and the directories it connects to.
 - **Not a push channel into the agent.** An MCP server can't start a turn of the agent, so news reaches it only as results of calls it makes: waits inside `send` and `receive`, or polling.
 - **Not an always-on service.** The agent acts while its session runs; services that must always be up should be bots.
 - **Not hosted.** It runs on your machine, one process per agent.
-- **Not in v0.1:**
+- **Not in v0.2:**
   - an address for the agent: nobody can contact it first;
   - your approval of incoming messages;
-  - files;
   - a Claude Code plugin or channel;
   - registration in other hosts.
 
-Status: v0.1. [`TESTING.md`](TESTING.md) describes a local build and test. The design, the tools and the scenarios are in [`PLAN.md`](PLAN.md).
+Status: v0.2. [`TESTING.md`](TESTING.md) describes a local build and test. The design, the tools and the scenarios are in [`PLAN.md`](PLAN.md).
 
 - [Requirements](#requirements)
 - [Quick start](#quick-start)
@@ -55,7 +54,7 @@ At its first start the server downloads the SimpleX core library, 29 to 50 MB de
    The first start prints, after two lines about downloading the SimpleX core library and the Node.js add-on:
 
    ```
-   SimpleX MCP server 0.1.1, agent "my-agent"
+   SimpleX MCP server 0.2.0, agent "my-agent"
    Data folder: /home/alice/.simplex-mcp/my-agent
    Approval mode: requests
    Agent control chat "My Agent" created.
@@ -69,7 +68,7 @@ At its first start the server downloads the SimpleX core library, 29 to 50 MB de
 
    `-y` answers npm's prompt to install the package. The server asks no questions: every choice is an option. The QR code of such a link is 37 columns wide and 19 lines high; `--qr-code large` draws it twice as wide and twice as high.
 
-2. In the SimpleX app, scan the QR code or open the link, and tap Join. The chat "My Agent" appears in the chat list, and the agent writes: `I'm your agent. I ask here before I connect or send.` The terminal prints:
+2. In the SimpleX app, scan the QR code or open the link, and tap Join. The chat "My Agent" appears in the chat list, and the agent writes: `I'm your agent. I ask here before I connect, send, download a file or leave a chat.` The terminal prints:
 
    ```
    Alice joined (member 3) and is now an owner. The link is deleted.
@@ -120,7 +119,7 @@ With `--owners`, only the owners listed in it approve actions. An owner added la
    Alice joined (member 3). Restart the server with --owners 3:Alice
    ```
 
-   Until the restart, the agent's `connect`, `send` and `leave` fail.
+   Until the restart, the agent's `connect`, `send`, `download` and `leave` fail.
 
 3. Stop the server with Ctrl-C and start it with the list:
 
@@ -183,22 +182,22 @@ The token is created at the agent's first start and saved in its data folder; ev
 
 `--approve MODE` sets what the owner approves. It is set only by this option.
 
-| Mode | The agent's actions: connect, send, leave | Messages to the agent |
+| Mode | The agent's actions: connect, send, download, leave | Messages to the agent |
 |---|---|---|
-| `requests` (default) | Performed after `/approve N`; a send to a chat approved for all messages at once, with a copy posted in the agent control chat. | Passed to the agent. |
-| `host` | Performed at once; a copy is posted in the agent control chat. | Passed to the agent. |
+| `requests` (default) | Performed after `/approve N`, or `/receive N` for a download; a send to a chat approved for all messages at once, with a copy posted in the agent control chat; a download from a chat approved for all files at once, with no post, when the file is on the agent's XFTP servers. | Passed to the agent. |
+| `host` | Performed at once; a copy is posted in the agent control chat, except for downloads. A download of a file on other servers fails. | Passed to the agent. |
 
 Claude Code's own permission check applies to every tool call too. In mode `requests`, add the agent's server, for example `"mcp__simplex-my-agent"`, to `permissions.allow` in `~/.claude/settings.json`; otherwise Claude Code prompts for each call, or in auto mode its classifier decides it.
 
-In `host` mode, approval is left to the MCP host. The server marks `connect`, `send` and `leave` with `_meta["anthropic/requiresUserInteraction"]: true`, so Claude Code shows its permission prompt on every call, in `acceptEdits`, `auto` and `bypassPermissions` modes as well, and allow rules do not skip it. In `dontAsk` mode and in `claude -p` runs Claude Code denies these calls.
+In `host` mode, approval is left to the MCP host. The server marks `connect`, `send`, `download` and `leave` with `_meta["anthropic/requiresUserInteraction"]: true`, so Claude Code shows its permission prompt on every call, in `acceptEdits`, `auto` and `bypassPermissions` modes as well, and allow rules do not skip it. In `dontAsk` mode and in `claude -p` runs Claude Code denies these calls.
 
 ## Expiry
 
 A pending action expires after `--expire HOURS`, 23 by default and at most: SimpleX allows edits of a message for 24 hours, and the outcome of a pending action is an edit of its card. Cards don't show the time; `/pending` does. The last line of its card is edited to `Expired.`, and the agent's call returns `{"action": N, "status": "expired"}`. For the same reason, a `connect` waits for the other side at most until 23 hours 50 minutes after the action was created.
 
-A result that no call has returned is dropped after the action's expiry time; a repeated call after that creates a new action. At most 20 actions are pending at once; a further `connect`, `send` or `leave` fails until the owner decides.
+A result that no call has returned is dropped after the action's expiry time; a repeated call after that creates a new action. At most 20 actions are pending at once; a further `connect`, `send`, `download` or `leave` fails until the owner decides.
 
-Actions last only while the server runs. When the server stops, the last line of each pending card is edited to `Cancelled: the server stopped.`; after a restart, `/approve` of an earlier number replies `Action N is not pending.`, and the agent's repeated call posts a new card. Action numbers continue across restarts.
+Actions last only while the server runs. When the server stops, the last line of each pending card is edited to `Cancelled: the server stopped.`, and the server waits up to 10 seconds, `--stop-wait`, for these edits to be sent: it prints `Stopping: sending 2 cancelled cards, up to 10 s. Ctrl-C to stop now.`, and a second Ctrl-C ends the wait. After a restart, `/approve` of an earlier number replies `Action N is not pending.`, and the agent's repeated call posts a new card. Action numbers continue across restarts.
 
 ## What the owner sees
 
@@ -215,7 +214,23 @@ My Agent: I want to send a message to business Ridgeline, where I am incognito:
 
 My Agent: I want to leave business Ridgeline (#9).
           /approve #9 12 or /reject #9 12
+
+My Agent: I want to download a file from Alice in group Builders (#3):
+          `report.pdf`, 2.4 MB
+          Servers: `xftp.example.com`, unknown: downloading shows it this computer's IP address.
+          /receive #3 7, /forward #3 7 or /reject #3 7
 ```
+
+The download card of an image or a video shows the sender's preview. Its servers line says `Servers: known.` when the file is on the agent's XFTP servers; otherwise it names the other servers, which see this computer's IP address during the download, and the card leaves out `/receive #3 7 all`. The agent waits until the sender finishes the upload before it asks, because the file's servers are known only then. A file without a file description is not downloaded: no card appears, and the agent's call ends with an error. A send with a file names the file's type, full path and size after the text, and shows an image's or video's preview:
+
+```
+My Agent: I want to send a message to group Builders:
+          `The trail map.`
+          attaching image `/home/alice/trail.jpg`, 3.1 MB
+          /approve #3 8, /approve #3 all or /reject #3 8
+```
+
+When the agent asks to send a private key or a file of the server's data folder, the server refuses it and posts ``Refused to send `/home/alice/.ssh/id_ed25519` to group Builders (#3): private keys and the server's own files are not sent.`` When the upload of a sent file fails, the agent posts, for example, ``The file `trail.jpg` was not sent to group Builders (#3): `File server error: Server address is incompatible with network settings.`.``; both lines are logged too.
 
 After the decision the card is edited, and its commands removed:
 
@@ -229,14 +244,22 @@ Commands:
 
 | Command | Effect |
 |---|---|
-| `/approve N`, `/approve #9 N` | Performs action N; the cards of sends and leaves name the chat. |
+| `/approve N`, `/approve #9 N` | Performs a connect, send or leave action N; the cards of sends and leaves name the chat. |
 | `/reject N`, `/reject #9 N` | Rejects action N. |
 | `/approve #9 all` | Approves all the agent's messages to chat #9: the pending ones and later ones. |
 | `/revoke #9` | Ends that approval: each message to #9 needs approval again. |
+| `/receive #3 7` | The agent receives the file of download 7: the server downloads it, and the agent's call returns its path. |
+| `/receive #3 7 all` | The same, and the agent receives its later downloads from chat #3 of files on its XFTP servers without asking. Other pending downloads of #3 stay pending. |
+| `/receive #3 off` | Ends that: each download from #3 needs approval again. |
+| `/forward #3 7` | Downloads the file of action 7 and sends it to you in the agent control chat, as a reply to the card when the file's preview and the card fit in one message. The card stays pending, and the agent gets nothing: its messages show the file as offered, without a path. The server keeps the file outside the chat's folder until `/receive #3 7`, which then uses it. |
+| `/leave #9`, `/leave @4` | Makes the agent leave group #9, or delete contact @4, at once, in both approval modes, and rejects the agent's pending actions for that chat. The reply, for example `Left business Ridgeline (#9), requested by Alice.`, is logged too. |
+| `/delete #9 files` | Cancels the running downloads from chat #9, which then fail, also those the core continues after a restart, and deletes the chat's files in the data folder, forwarded ones included, for a current or a left chat: `Deleted 3 files from #9, 2.1 MB.` or `No files from #9.` |
 | `/pending` | Lists pending actions. |
-| `/list` | Lists the agent's 100 most recent chats, one line each, and which of them are approved for all messages; a last line counts the older chats. |
+| `/list` | Lists the agent's 100 most recent chats, one line each, and which of them are approved for all messages or all files: `, approved for this chat by NAME` and `, files approved by NAME`; a last line counts the older chats. |
 
-`/pending` and `/list` are in the chat's command menu; the cards carry the others. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](PLAN.md), section "What the owner sees: the agent control chat".
+After `/leave #9`, or after the agent's `leave` of #9 is performed in either mode, when the chat's folder has files, the agent posts ``Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/group-9`: 3 files, 2.1 MB. /delete #9 files``. The files forwarded from #9 are deleted when the agent leaves it.
+
+`/pending`, `/list` and `/leave` are in the chat's command menu, and the cards carry the others. Tapping `/leave` in the menu puts `/leave <chat ID>` into the entry field: replace `<chat ID>` with the chat's ID from `/list`, such as `#9`, and send it. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](PLAN.md), section "What the owner sees: the agent control chat".
 
 ### Approval of all messages to a chat
 
@@ -253,19 +276,44 @@ My Agent: I sent a message to business Ridgeline, where I am incognito:
 - With it, the agent can send anything it can read, without asking, to everyone in that chat.
 - It applies in mode `requests` only: in mode `host`, `list` and `/list` show no approvals.
 
+### Receiving all files from a chat
+
+After `/receive #3 7 all`, the agent's later downloads from #3 are performed at once, and nothing is posted in the agent control chat.
+
+- It covers files on the agent's XFTP servers. A download of a file on other servers gets a card, as without it.
+- Cards already pending in #3, other than card 7, stay pending. A file you rejected, or whose card expired, gets a card again.
+- It covers downloads only, and the approval of messages covers no downloads: each is given and ended by its own command.
+- It lasts as the approval of messages does, until `/receive #3 off`, and is kept next to it in the chat's custom data.
+- `/list` shows it as `, files approved by Alice`.
+
 ## What the agent sees
 
-Five tools:
+Six tools:
 
 | Tool | What it does |
 |---|---|
 | `connect` | Joins a contact, bot, business, group or channel by a link or a SimpleX name, as the agent's profile or incognito. Returns the chat, its profile, welcome message, the commands a bot advertises, and the messages so far. |
-| `send` | Sends a message and returns every message received in that chat after it, until none arrives for `idle` seconds (30 by default). A directory bot's search results arrive this way. |
+| `send` | Sends a message, with a file of this computer when asked, and returns every message received in that chat after it, until none arrives for `idle` seconds (30 by default). A directory bot's search results arrive this way. |
 | `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked. |
+| `download` | Downloads the file of a received message to the data folder and returns its full path. |
 | `list` | Lists the agent's chats with unread counts and `approved: true` for chats approved for all messages, and its actions without a result. |
 | `leave` | Deletes a contact, or leaves a group, business chat or channel, and deletes the chat; the contact or the members are notified. |
 
 A `send` to a chat that `list` shows with `connected: false` is refused before any card. A `send` is refused with `text: too long for its approval card; shorten it.` when its card, in its longest outcome form, would exceed 15000 bytes in the SimpleX message, which holds at most 15602; a text of many lines or multi-byte characters reaches it below 12000 characters.
+
+A received message with a file has a `file` field: its name, size, type (image, video, voice or file) and status. Status `offered` means `download` can fetch it; `received` comes with the path of the file that `download` downloaded; a file `/forward` sent to you stays `offered`; `rejected` means you rejected its download, or it expired; `failed` comes with the error, also for a file above the size its sender may send, and for a received file that is not in the chat's folder, for example after `/delete #3 files`. A downloaded file is named by its file ID and the extension of its name, when the extension has only letters and digits: the name the sender gave stays in the `name` field. `download` first waits, up to `wait` seconds, for the sender to finish the upload; when it has not finished by then, the call returns an error that asks to call again later. A `download` that runs past its `wait` after the approval returns status `performing`, and the same call again picks it up. A download fails when the sender cancels the file, when the message or its chat is deleted, or when no part of the file arrives for 30 minutes; the server then cancels it.
+
+A short voice message can arrive with its file already received. The server moves such a file into the chat's folder under the same naming when it is received in full, and its message shows it as `offered`; `download` returns its path there after the approval. A partial file of a download, or of a short voice message that arrives while the server runs, is deleted when its transfer fails or is cancelled.
+
+`send` with `file`, an absolute path, sends that file with `text` as its caption:
+- `.jpg`, `.jpeg` and `.png` as an image, resized by the SimpleX core to the size the apps send, with a preview the core makes;
+- `.gif` and `.webp` as an image, unchanged, with a gray preview;
+- `.mp4` and `.mov` as a video, unchanged, with the first frame as its preview and its duration when `ffmpeg` and `ffprobe` are installed, otherwise a gray preview;
+- other files as a file, unchanged; `as: "file"` sends an image or video this way too.
+
+An empty file is refused, and so is `as` without `file`. A message holds at most 15602 bytes with its text, the file's name and preview, the message `reply_to` quotes and the mentioned names. The quote is the quoted text when the message is an image or video; otherwise it is the quoted content, an image's preview included. A `send` over it is refused with `text: too long for a message with this image; shorten it.`, or without a file `text: too long for the message with its quote; shorten it.` An image's preview takes up to 14000 bytes, so its text has about 1 KB.
+
+The server checks the file by its real path, after symbolic links, and refuses files under `~/.ssh` and `~/.gnupg`, files named `id_*`, `*.pem`, `*.key`, `*.p12` and `*.pfx`, and the files under its data folder and under `~/.simplex-mcp`, except those under `files/` of its own data folder; each folder is taken by its real path too. The card shows the real path. A file whose real path, size, inode or change time differs at the send from the request is not sent: the action fails.
 
 Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in [`PLAN.md`](PLAN.md), section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
 
@@ -298,8 +346,8 @@ Add an entry with the URL `http://127.0.0.1:5226/mcp` and the header `Authorizat
 | The server was not running when Claude Code started | Start the server, then run `/mcp reconnect all` in Claude Code (2.1.284 or later). |
 | The server restarted while Claude Code was running | Claude Code reconnects up to five times within about 30 seconds. After that, in an interactive session, run `/mcp reconnect all`; `claude -p` runs and Agent SDK sessions keep retrying for about half an hour. Open calls fail, and pending actions are cancelled; the agent's repeated call creates a new request. |
 | A second server was started on the same data folder | It exits with `Another server uses <folder> (PID N). If no server runs, remove <folder>/lock.` |
-| Every owner left the agent control chat or was removed | `connect`, `send` and `leave` fail. Without `--owners`, the server logs `No owners in the agent control chat.` and prints a new link; join with it. With an `--owners` list, the agent posts and the server logs `No owners remain: restart the server with --reset-owners --owners`. |
-| The agent was removed from the agent control chat, the chat was deleted, or the agent lost its owner role | `connect`, `send` and `leave` fail, and the server logs `The agent lost its control chat. Restart the server with --reset-owners.` |
+| Every owner left the agent control chat or was removed | `connect`, `send`, `download` and `leave` fail. Without `--owners`, the server logs `No owners in the agent control chat.` and prints a new link; join with it. With an `--owners` list, the agent posts and the server logs `No owners remain: restart the server with --reset-owners --owners`. |
+| The agent was removed from the agent control chat, the chat was deleted, or the agent lost its owner role | `connect`, `send`, `download` and `leave` fail, and the server logs `The agent lost its control chat. Restart the server with --reset-owners.` |
 | The QR code does not scan | Start with `--qr-code large`, or paste the link into the app. |
 | The wrong person joined by the link | Start with `--reset-owners`. |
 | The token leaked | Start with `--new-token`; Claude Code reads the new token at its next connection. |
@@ -319,13 +367,16 @@ serve options:
   --data DIR             data folder (default: ~/.simplex-mcp/NAME)
   --display-name TEXT    the agent's name in SimpleX (default at the first start: NAME)
   --approve MODE         what the owner approves in the agent control chat:
-                           requests  the agent's connections and messages (default)
+                           requests  the agent's connections, messages, downloads
+                                     and leaving chats (default)
                            host      nothing; the MCP host asks
   --owners [ID:NAME,...] only these owners approve; without a list, the link
                          adds an observer and its ID is printed at the join.
                          Without --owners, whoever joins becomes an owner and
                          every owner approves.
   --expire HOURS         pending actions expire after HOURS, 1 to 23 (default: 23)
+  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards to be sent,
+                         0 to 60 (default: 10)
   --reset-owners         replace the owners: a new agent control chat and link
   --new-token            replace the access token
   --port N               HTTP port on 127.0.0.1 (default: 5226)
@@ -348,11 +399,18 @@ register options:
   headers.json       the token as the Authorization header for Claude Code, readable only by the user
   server.json        name, port and expiry of the server, read by register
   lock               PID of the running server
+  tmp/               the SimpleX core's work folder for files in transfer
+  files/group-3/     files downloaded from chat #3, and files received there without a download, each named by its file ID
+                     and the extension of its name, such as 12.pdf; files/contact-4/ for contact @4
+  files/sent/        resized copies of the images the agent sends, and copies of the files /forward sends you under their names;
+                     each is deleted when its upload completes or fails, and all at start
+  forwarded/group-3/ files /forward downloaded from chat #3, until /receive moves them into files/group-3/; deleted when the agent
+                     leaves the chat, and by /delete #3 files
 ```
 
 The folder is readable only by the user: every start sets its mode to 0700, except on Windows.
 
-The server keeps its action counter in the chat database, as custom data of the agent control chat, the approvals of all messages to a chat as custom data of that chat, and its actions in memory.
+The server keeps its action counter in the chat database, as custom data of the agent control chat, the approvals of all messages to a chat and of all files from it as custom data of that chat, and its actions in memory.
 
 The server keeps no log file: it writes its log to the terminal where `serve` runs, events to stdout and errors to stderr.
 
@@ -365,7 +423,9 @@ One server runs per data folder: a second one exits, because two processes on on
 - Names written by peers are folded to one line, with control and format characters replaced by spaces, in the terminal and in the agent control chat; there, a name that is not a valid display name is shown as code.
 - Without `--owners`, whoever opens the link first becomes an owner. The link works once.
 - With `--owners`, only the listed owners approve.
-- After `/approve #N all`, the agent sends to that chat without asking; `/revoke #N` ends it.
+- After `/approve #N all`, the agent sends to that chat without asking, files included; `/revoke #N` ends it.
+- The server refuses to send private keys, its own files and the files under `~/.simplex-mcp`, where agents keep their data, except the files under `files/` of its own data folder; other files the agent can read are sent after approval.
+- After `/receive #N 7 all`, the agent's later downloads from that chat, of files on its XFTP servers, run without asking; `/receive #N off` ends it. A file on other servers is downloaded only by `/receive` or `/forward` of the card that names them; any other download of it fails, unless the IP address is protected.
 - Peers of a chat connected as the agent see its profile; peers of an incognito chat see a random profile made for that chat only.
 - The agent has no address, so nobody can contact it first.
 - The agent uses private message routing: the SMP server that holds a contact's queue does not see the agent's IP address.
