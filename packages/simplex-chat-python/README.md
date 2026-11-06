@@ -46,6 +46,18 @@ Three decorators: `@bot.on_message(...)`, `@bot.on_command(name)`, `@bot.on_even
 
 See [`examples/squaring_bot.py`](./examples/squaring_bot.py) for the full example.
 
+## Runtime options
+
+The native library runs on the Haskell runtime, started once per process with GC options `-A64m -H64m -xn` (`-A64m -H64m` on Windows). A process that needs less memory can replace them before the first `ChatApi`, `Client` or `Bot` starts:
+
+```python
+import simplex_chat
+
+simplex_chat.set_runtime_options(["-A4m"])
+```
+
+A smaller allocation area (`-A`) uses less memory at the cost of more frequent garbage collection. Calling it after the runtime has started raises `RuntimeInitializedError`. An invalid option makes the runtime print an error and exit the process.
+
 ## Development
 
 ```bash
