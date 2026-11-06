@@ -543,9 +543,12 @@ Move `scripts/badge-service/config/` to `scripts/store-service/config/` (a deplo
 the config folder creates it and moves `badge_service.ini` into it), rename `badge_service.ini` in it
 to `store_service.ini`, and change its keys and paths as the table says, the
 `/etc/simplex-badge-service/` files under `[apple]` and `[google]` among them. Point Caddy's badges root at
-`scripts/store-service/badges`, which the service fills at boot. Then start the new service with
+`scripts/store-service/badges`, which the service fills at boot. The image builds the names site from
+the `apps/simplex-domains` submodule, a badge-only service included, so fetch it and start the new
+service:
 
 ```
+git submodule update --init apps/simplex-domains
 docker compose up -d --build --remove-orphans
 ```
 

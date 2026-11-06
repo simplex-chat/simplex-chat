@@ -12,6 +12,7 @@ Production, with PostgreSQL at `BADGE_DB_CONN` (by default
 `postgresql://simplex@127.0.0.1:5432/badge_service`), and the ini filled in before the last command:
 
 ```
+git submodule update --init ../../apps/simplex-domains
 install -d -m 700 config
 install -m 600 store_service.ini.example config/store_service.ini
 docker compose up -d --build
