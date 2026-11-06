@@ -130,6 +130,22 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
   npm test
   ```
 
+#### mcp
+
+- Globs:
+  - packages/simplex-chat-mcp/**
+  - packages/simplex-chat-nodejs/**
+  - packages/simplex-chat-client/types/typescript/**
+- CI:
+  - in build-linux: `scope-tests.sh mcp` (step "Test changed scopes"):
+    - the types package and the Node.js library built from the branch without the add-on, as package-tests.sh builds them;
+    - `npm ci`, then both installed into the MCP package with `npm install --no-save`;
+    - `npx tsc` and `npx tsc -p test/tsconfig.json --noEmit`;
+    - `npm test`, the unit tests;
+    - `npm run test:e2e`, the end-to-end tests. They download libsimplex and the add-on pinned in packages/simplex-chat-nodejs/src/release.ts, and smp-server and xftp-server of the simplexmq release in test/e2e/smpServer.ts;
+  - before a publication: the package with its published dependencies, type-checked and unit tested in job `publish` of build.yml (docs/contributing/RELEASES.md, "MCP server release").
+- Local: `scripts/ci/scope-tests.sh mcp`.
+
 #### Scopes lacking CI tests
 
 | Scope | Paths | CI |
@@ -138,7 +154,6 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 | types package | packages/simplex-chat-client/types/typescript/** | compile only |
 | ts-client | packages/simplex-chat-client/typescript/** | - |
 | webrtc | packages/simplex-chat-webrtc/** | - |
-| mcp | packages/simplex-chat-mcp/** | type check and unit tests in job `publish` of build.yml, before a publication |
 | calculator-bot | apps/simplex-calculator-bot/** | - |
 | support-bot | apps/simplex-support-bot/** | - |
 | support-bot-light | apps/simplex-support-bot-light/** | - |
