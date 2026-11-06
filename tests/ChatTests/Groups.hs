@@ -163,6 +163,7 @@ chatGroupTests = do
   describe "group delivery receipts" $ do
     it "should send delivery receipts in group" testSendGroupDeliveryReceipts
     it "should send delivery receipts in group depending on configuration" testConfigureGroupDeliveryReceipts
+    it "should clear delivery receipts overrides in groups only for the current user" testClearGroupReceiptsOverridesCurrentUser
   describe "link content filter" $ do
     it "filter group chat by link content" testGroupLinkContentFilter
   describe "direct connections in group are not established based on chat protocol version" $ do
@@ -4708,6 +4709,44 @@ testConfigureGroupDeliveryReceipts ps =
       cc2 .<## ("> " <> msg)
       cc3 .<## ("> " <> msg)
       cc1 <// 50000
+
+testClearGroupReceiptsOverridesCurrentUser :: HasCallStack => TestParams -> IO ()
+testClearGroupReceiptsOverridesCurrentUser ps =
+  withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
+        bob ##> "/_set receipts contacts 1 off"
+        bob <## "ok"
+        cath ##> "/_set receipts contacts 1 off"
+        cath <## "ok"
+
+        createGroup2 "team" alice bob
+        alice ##> "/receipts #team off"
+        alice <## "ok"
+
+        alice ##> "/create user alisa"
+        showActiveUser alice "alisa"
+        createGroup2 "club" alice cath
+        alice ##> "/set receipts groups off"
+        alice <## "ok"
+        alice ##> "/receipts #club on"
+        alice <## "ok"
+        threadDelay 1000000
+
+        alice ##> "/user alice"
+        showActiveUser alice "alice (Alice)"
+        alice ##> "/set receipts groups on clear_overrides=on"
+        alice <## "ok"
+
+        bob #> "#team hi"
+        alice <# "#team bob> hi"
+        bob ⩗ "#team hi"
+
+        cath #> "#club hey"
+        (alice, "alisa") $<# "#club cath> hey"
+        cath ⩗ "#club hey"
+  where
+    cfg = testCfg {showReceipts = True}
 
 testNoGroupDirectConns :: HasCallStack => TestParams -> IO ()
 testNoGroupDirectConns =
