@@ -844,6 +844,7 @@ private fun afterSetCiTTL(
         // this is using current remote host on purpose - if it changes during update, it will load correct chats
         val chats = m.controller.apiGetChats(m.remoteHostId())
         chatModel.chatsContext.updateChats(chats)
+        chatModel.updateChatTags(m.remoteHostId())
       }
     } catch (e: Exception) {
       Log.e(TAG, "apiGetChats error: ${e.message}")

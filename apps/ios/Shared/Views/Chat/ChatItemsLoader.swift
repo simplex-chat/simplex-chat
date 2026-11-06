@@ -46,10 +46,10 @@ func apiLoadMessages(
     switch pagination {
     case .initial:
         let newSplits: [Int64] = if !chat.chatItems.isEmpty && navInfo.afterTotal > 0 { [chat.chatItems.last!.id] } else { [] }
-        if im.secondaryIMFilter == nil && chatModel.getChat(chat.id) == nil {
-            chatModel.addChat(chat)
-        }
         await MainActor.run {
+            if im.secondaryIMFilter == nil && chatModel.getChat(chat.id) == nil {
+                chatModel.addChat(chat)
+            }
             im.reversedChatItems = chat.chatItems.reversed()
             if im.secondaryIMFilter == nil {
                 chatModel.updateChatInfo(chat.chatInfo)
