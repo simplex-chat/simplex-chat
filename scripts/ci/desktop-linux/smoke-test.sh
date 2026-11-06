@@ -3,10 +3,10 @@
 # Starts the desktop app on a virtual display and runs the scripted UI cases with the ui helper: onboarding to the
 # chat list, a local group, then the chat list with the toolbar at the bottom (the default) and at the top, then
 # tests/fixtures/test.jpg and logo-large-rgba.png picked in the file dialog and sent in the group.
-# Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|layouts|setup|backend|search]
+# Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|layouts|setup|search]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
 # "setup" creates the group, makes the test SMP server (backend.sh) the one that resolves SimpleX names, and stops;
-# "backend" does the same, connects to the name that backend.sh registered, and goes on to both layouts.
+# "search" does the same, connects to the name that backend.sh registered, and goes on to both layouts.
 # Both need NAMES_SERVER, the test SMP server's address.
 # Each step saves a numbered screenshot and the text read from it to the output dir, prints the text to the log,
 # and adds a line to steps.log there. What the screens show is checked without stopping: every check is listed in
@@ -19,9 +19,9 @@ app_dir=$1
 export UI_OUT=$2
 cases=${3:-layouts}
 case "$cases" in
-  start | onboarding | layouts | setup | backend | search) ;;
+  start | onboarding | layouts | setup | search) ;;
   *)
-    echo "error: unknown case \"$cases\": start, onboarding, layouts (the default), setup, backend or search"
+    echo "error: unknown case \"$cases\": start, onboarding, layouts (the default), setup or search"
     exit 1
     ;;
 esac
@@ -32,8 +32,7 @@ name_label=seeded
 local_chat="seeded notes"
 ui=$(dirname "$0")/ui
 checks=$UI_OUT/checks.txt
-# the Wefunder banner, the reachable toolbars card and the connect cards, which the chat list hides while it shows online results
-cards=("Invest in SimpleX Chat" "Top bar" "New 1-time link")
+cards_hidden_by_results=("Invest in SimpleX Chat" "Top bar" "New 1-time link")
 # switches are at the right of the left pane, where Settings open
 switch_x=335
 fixtures=$(cd "$(dirname "$0")/../../../tests/fixtures" && pwd)
@@ -42,6 +41,14 @@ compose_y=730
 paperclip_x=415
 message_x=700
 compose_area=976x200+390+500
+pane_edge_x=390
+row_height=45
+pencil_x=363
+back_arrow_x=27
+outside_menu_x=900
+outside_menu_y=450
+search_field_y_top=104
+search_field_y_bottom=674
 mkdir -p "$UI_OUT"
 : > "$checks"
 if [ -n "${GITHUB_ENV:-}" ]; then
@@ -106,7 +113,7 @@ left_pane_position() {
     x=${line%%,*}
     y=${line#*,}
     y=${y%% *}
-    [ "$x" -lt 390 ] || continue
+    [ "$x" -lt "$pane_edge_x" ] || continue
     case "$(normalise "${line#* }")" in
       "$target")
         echo "$x $y"
@@ -119,6 +126,15 @@ left_pane_position() {
   done < <("$ui" text)
   [ -n "$found" ] && [ "${2:-}" != exact ] || return 1
   echo "$found"
+}
+
+left_pane_lines() {
+  local line
+  "$ui" text | while IFS= read -r line; do
+    if [ "${line%%,*}" -lt "$pane_edge_x" ]; then
+      echo "$line"
+    fi
+  done
 }
 
 on_screen() {
@@ -151,12 +167,11 @@ in_order() {
   done
 }
 
-# the label is in the row headed by the name: below the name, by less than a row's height
 in_row_of() {
   local label name
   label=$(y_of "$1") || return 1
   name=$(y_of "$2") || return 1
-  [ "$label" -ge "$name" ] && [ $((label - name)) -lt 45 ]
+  [ "$label" -ge "$name" ] && [ $((label - name)) -lt "$row_height" ]
 }
 
 not_on_screen_exact() {
@@ -164,32 +179,25 @@ not_on_screen_exact() {
 }
 
 open_in_row_of() {
-  local name line x y
+  local name x y phrase
   name=$(y_of "$1") || return 1
-  while IFS= read -r line; do
-    x=${line%%,*}
-    y=${line#*,}
-    y=${y%% *}
-    if [ "$x" -lt 390 ] && [ "$(normalise "${line#* }")" = open ] && [ "$y" -ge "$name" ] && [ $((y - name)) -lt 45 ]; then
+  while IFS=', ' read -r x y phrase; do
+    if [ "$(normalise "$phrase")" = open ] && [ "$y" -ge "$name" ] && [ $((y - name)) -lt "$row_height" ]; then
       echo "$x $y"
       return 0
     fi
-  done < <("$ui" text)
+  done < <(left_pane_lines)
   return 1
 }
 
-# how many phrases are the text in the chat list pane (left), the open chat's pane (right) or anywhere (all)
 count_phrases() {
-  local pane=$1 target line x n=0
-  target=$(normalise "$2")
+  local target line n=0
+  target=$(normalise "$1")
   while IFS= read -r line; do
-    x=${line%%,*}
-    if [ "$pane" = all ] || { [ "$pane" = left ] && [ "$x" -lt 390 ]; } || { [ "$pane" = right ] && [ "$x" -ge 390 ]; }; then
-      if [ "$(normalise "${line#* }")" = "$target" ]; then
-        n=$((n + 1))
-      fi
+    if [ "$(normalise "${line#* }")" = "$target" ]; then
+      n=$((n + 1))
     fi
-  done < <("$ui" text)
+  done
   echo "$n"
 }
 
@@ -223,11 +231,9 @@ count_text_smaller() {
 
 left_pane_text() {
   local line
-  "$ui" text | while IFS= read -r line; do
-    if [ "${line%%,*}" -lt 390 ]; then
-      normalise "${line#* }"
-      echo
-    fi
+  left_pane_lines | while IFS= read -r line; do
+    normalise "${line#* }"
+    echo
   done
 }
 
@@ -239,12 +245,11 @@ is_in() {
   grep -qF "$(normalise "$2")" <<< "$1"
 }
 
-# Records which of the cards the chat list shows while the typed text only filters it, in shown_cards.
-cards_while_typing() {
+record_cards_shown_while_typing() {
   local layout=$1 screen card
   screen=$(left_pane_text)
   shown_cards=()
-  for card in "${cards[@]}"; do
+  for card in "${cards_hidden_by_results[@]}"; do
     if is_in "$screen" "$card"; then
       shown_cards+=("$card")
     fi
@@ -272,10 +277,7 @@ clear_search_and_check_cards() {
   done
 }
 
-# Loads more results until both seeded entries are listed: their avatars make each response hold one of them.
-# The load row's text after the first page is recorded before its shot, in load_more_shown and one_left_shown:
-# OCR may misread its middle dot, so "Load more" and "1 left" are read separately. Sets pages and retries.
-show_all_results() {
+load_until_both_results_listed() {
   local layout=$1 missing
   pages=1
   retries=0
@@ -341,21 +343,31 @@ enable_directory_search() {
   "$ui" click-text "Enable"
 }
 
-# Directory search was enabled at the first search, so no later one may ask
-no_consent_alert() {
-  ! "$ui" find "Enable Directory search" > /dev/null 2>&1
+not_found() {
+  ! "$ui" find "$1" > /dev/null 2>&1
+}
+
+type_search() {
+  "$ui" click-text "Search or paste SimpleX link"
+  "$ui" type "$1"
+}
+
+search_in_directory() {
+  type_search "$1"
+  "$ui" wait "Search in Directory" 15
+  "$ui" click-text "Search in Directory"
 }
 
 result_menu() {
   local layout=$1 pos opens
   pos=$(left_pane_position "#ci_group") || { check "$layout: #ci_group shown for its menu" false; return; }
-  opens=$(count_phrases all Open)
+  opens=$(count_phrases Open < <("$ui" text))
   "$ui" right-click "${pos% *}" "${pos#* }"
-  check "$layout: a right click on #ci_group opens a menu with \"Open\"" [ "$(count_phrases all Open)" -gt "$opens" ]
+  check "$layout: a right click on #ci_group opens a menu with \"Open\"" [ "$(count_phrases Open < <("$ui" text))" -gt "$opens" ]
   "$ui" shot "$layout-result-menu"
-  "$ui" click 900 450
+  "$ui" click "$outside_menu_x" "$outside_menu_y"
   sleep 1
-  check "$layout: a click elsewhere closes the result's menu" [ "$(count_phrases all Open)" -eq "$opens" ]
+  check "$layout: a click elsewhere closes the result's menu" [ "$(count_phrases Open < <("$ui" text))" -eq "$opens" ]
 }
 
 search_directory() {
@@ -365,9 +377,9 @@ search_directory() {
   else
     "$ui" click-text "Search in Directory"
     sleep 2
-    check "$layout: no alert before the search" no_consent_alert
+    check "$layout: no alert before the search" not_found "Enable Directory search"
   fi
-  show_all_results "$layout-directory"
+  load_until_both_results_listed "$layout-directory"
   check_directory_rows "$layout"
   check "$layout: no \"Search in Directory\" while the results show" not_on_screen "Search in Directory"
   check "$layout: the count's text is smaller than the description's" count_text_smaller
@@ -378,18 +390,15 @@ search_directory() {
   clear_search_and_check_cards "$layout directory search"
 }
 
-# Types a SimpleX name and presses Enter, the desktop's Search key: it searches the directory only, so the local chat
-# that matches is nearest the search field, then the directory's results; "Connect to …" stays and nothing is resolved.
-full_search() {
+search_with_enter() {
   local layout=$1
-  "$ui" click-text "Search or paste SimpleX link"
-  "$ui" type "$name_label"
+  type_search "$name_label"
   "$ui" wait "Connect to $name_label.testing" 15
   "$ui" shot "$layout-name-typed"
   "$ui" key Return
   sleep 2
-  check "$layout full search: no alert before the search" no_consent_alert
-  show_all_results "$layout-full"
+  check "$layout full search: no alert before the search" not_found "Enable Directory search"
+  load_until_both_results_listed "$layout-full"
   check_directory_rows "$layout full search"
   check "$layout full search: \"$local_chat\" listed" on_screen "$local_chat"
   check "$layout full search: no \"Names\" header" not_on_screen_exact "Names"
@@ -408,10 +417,20 @@ full_search() {
   clear_search_and_check_cards "$layout full search"
 }
 
+directory_search_checks() {
+  local layout=$1
+  type_search "$search_text"
+  "$ui" wait "$search_text" 15
+  "$ui" wait "Search in Directory" 15
+  "$ui" shot "$layout-search-typed"
+  record_cards_shown_while_typing "$layout"
+  search_directory "$layout"
+  search_with_enter "$layout"
+}
+
 no_match_search() {
   local layout=$1
-  "$ui" click-text "Search or paste SimpleX link"
-  "$ui" type "$no_match_text"
+  type_search "$no_match_text"
   "$ui" wait "Search in Directory" 15 || true
   "$ui" shot "$layout-no-match-typed"
   check "$layout: \"Search in Directory\" offered for \"$no_match_text\"" on_screen "Search in Directory"
@@ -426,31 +445,28 @@ no_match_search() {
   clear_search_field "$layout"
 }
 
-# the pencil at the right of the bottom toolbar opens New chat; the chat list behind it has the same search field
 open_new_chat() {
-  "$ui" click 363 730
+  "$ui" click "$pencil_x" 730
   "$ui" wait "Create group" 10
 }
 
-# with the toolbar at the bottom Escape only clears the sheet's search; its back arrow closes it
 close_new_chat() {
   "$ui" key Escape
   "$ui" wait "Create group" 10
-  "$ui" click 27 730
+  "$ui" click "$back_arrow_x" 730
   back_to_chat_list || fail "no chat list after the New chat sheet"
 }
 
-# "Open new chat" for the registered name prepares ci_contact, so New chat has a contact to filter. A text that matches
-# no contact offers the directory, and the empty state waits for its search to find nothing.
-new_chat_no_match_search() {
-  "$ui" click-text "Search or paste SimpleX link"
-  "$ui" type "$name_label"
+prepare_ci_contact() {
+  type_search "$name_label"
   "$ui" click-text "Connect to $name_label.testing" 15
   "$ui" click-text "Open new chat" 60 || fail "no \"Open new chat\" for $name_label.testing"
   back_to_chat_list || fail "no chat list after opening the new chat with ci_contact"
+}
+
+new_chat_no_match_search() {
   open_new_chat
-  "$ui" click-text "Search or paste SimpleX link"
-  "$ui" type "$no_match_text"
+  type_search "$no_match_text"
   "$ui" wait "Search in Directory" 15 || true
   "$ui" shot new-chat-no-match-typed
   check "New chat: \"Search in Directory\" offered for \"$no_match_text\"" on_screen "Search in Directory"
@@ -464,13 +480,12 @@ new_chat_no_match_search() {
 
 new_chat_sheet_search() {
   open_new_chat
-  "$ui" click-text "Search or paste SimpleX link"
-  "$ui" type "$name_label"
+  type_search "$name_label"
   "$ui" wait "Connect to $name_label.testing" 15
   "$ui" key Return
   sleep 2
-  check "New chat: no alert before the search" no_consent_alert
-  show_all_results new-chat
+  check "New chat: no alert before the search" not_found "Enable Directory search"
+  load_until_both_results_listed new-chat
   check "New chat: the first page held one result, \"Load more\" loaded the other" [ "$pages" -eq 2 ]
   check "New chat: no more results offered" not_on_screen "Load more"
   check "New chat: no \"Names\" header" not_on_screen_exact "Names"
@@ -484,15 +499,10 @@ new_chat_sheet_search() {
 no_ci_channel_directory_row() {
   local line
   while IFS= read -r line; do
-    if [ "${line%%,*}" -lt 390 ] && grep -qE '#ci_ ?chan' <<< "${line#* }"; then
+    if grep -qE '#ci_ ?chan' <<< "${line#* }"; then
       return 1
     fi
-  done < <("$ui" text)
-}
-
-# the alert of a directory entry the user has, which a chat's own row doesn't show
-no_subscriber_alert() {
-  ! "$ui" find "You are a subscriber" > /dev/null 2>&1
+  done < <(left_pane_lines)
 }
 
 wait_in_list() {
@@ -509,16 +519,12 @@ click_in_list() {
   "$ui" click "${pos% *}" "${pos#* }"
 }
 
-# Clicks the lowest text in the right pane, where the open chat is: its bars are at the bottom, below its messages.
-click_in_chat() {
-  local target line x y found=""
+click_lowest_in_chat() {
+  local target x y phrase found=""
   target=$(normalise "$1")
-  while IFS= read -r line; do
-    x=${line%%,*}
-    y=${line#*,}
-    y=${y%% *}
-    [ "$x" -ge 390 ] || continue
-    case "$(normalise "${line#* }")" in
+  while IFS=', ' read -r x y phrase; do
+    [ "$x" -ge "$pane_edge_x" ] || continue
+    case "$(normalise "$phrase")" in
       *"$target"*) found="$x $y" ;;
     esac
   done < <("$ui" text)
@@ -527,8 +533,8 @@ click_in_chat() {
 }
 
 clear_search_field() {
-  local y=104
-  [ "$1" = bottom ] && y=674
+  local y=$search_field_y_top
+  [ "$1" = bottom ] && y=$search_field_y_bottom
   "$ui" click 200 "$y"
   "$ui" key ctrl+a BackSpace
   "$ui" wait "Search or paste SimpleX link" 10 || fail "$1: the search field is not empty"
@@ -546,7 +552,7 @@ wait_prepared_channel() {
     if grep -qiF "tap join channel" <<< "$screen"; then
       local line
       while IFS= read -r line; do
-        if [ "${line%%,*}" -ge 390 ] && grep -qiE '[0-9]+ subscribers?' <<< "$line"; then
+        if [ "${line%%,*}" -ge "$pane_edge_x" ] && grep -qiE '[0-9]+ subscribers?' <<< "$line"; then
           prepared_subscribers=$((prepared_subscribers + 1))
         fi
       done <<< "$screen"
@@ -557,28 +563,23 @@ wait_prepared_channel() {
   done
 }
 
-# Joins ci_channel through its result's Open, with the toolbar at the top, so that it is a chat the later searches find.
-join_directory_channel() {
+join_ci_channel_with_open() {
   local pos
-  "$ui" click-text "Search or paste SimpleX link"
-  "$ui" type "$search_text"
-  "$ui" wait "Search in Directory" 15
-  "$ui" click-text "Search in Directory"
-  show_all_results top-join
+  search_in_directory "$search_text"
+  load_until_both_results_listed top-join
   pos=$(open_in_row_of "#ci_channel") || fail "no \"Open\" in #ci_channel's row"
   "$ui" click "${pos% *}" "${pos#* }"
   check "top: Open on #ci_channel opens the prepared channel" wait_prepared_channel
   check "top: Open on #ci_channel shows no \"Open channel\" alert" [ "$alert_shown" = false ]
   check "top: the prepared channel shows its subscriber count in the toolbar and the banner" [ "$prepared_subscribers" -ge 2 ]
   "$ui" shot top-prepared-channel
-  click_in_chat "Join channel" || fail "no \"Join channel\" in the opened channel"
+  click_lowest_in_chat "Join channel" || fail "no \"Join channel\" in the opened channel"
   check "top: ci_channel joined through Open" "$ui" wait "you are subscriber" 60
   "$ui" shot top-joined-channel
   clear_search_field top
 }
 
-# With ci_channel joined, "ci seed" finds it on the first page, as its chat row, and #ci_group on the second.
-show_known_results() {
+load_results_after_join() {
   local what=$1
   if ! wait_in_list "Load more" && on_screen "Search failed, tap to retry"; then
     "$ui" click-text "Search failed, tap to retry"
@@ -592,10 +593,7 @@ show_known_results() {
 
 known_channel_searches() {
   local layout=$1
-  "$ui" click-text "Search or paste SimpleX link"
-  "$ui" type ci_channel
-  "$ui" wait "Search in Directory" 15
-  "$ui" click-text "Search in Directory"
+  search_in_directory ci_channel
   sleep 20
   if on_screen "Search failed, tap to retry"; then
     "$ui" click-text "Search failed, tap to retry"
@@ -609,33 +607,27 @@ known_channel_searches() {
   check "$layout: no \"Open\" next to the listed chat" not_on_screen_exact "Open"
   clear_search_field "$layout"
   click_in_list "$local_chat"
-  "$ui" click-text "Search or paste SimpleX link"
-  "$ui" type "$search_text"
-  "$ui" wait "Search in Directory" 15
-  "$ui" click-text "Search in Directory"
-  show_known_results "$layout-known"
+  search_in_directory "$search_text"
+  load_results_after_join "$layout-known"
   check "$layout: ci_channel is listed among the results" on_screen "ci_channel"
   check "$layout: ci_channel is its chat's row, not #ci_channel" no_ci_channel_directory_row
-  check "$layout: only #ci_group has \"Open\", not ci_channel" [ "$(count_phrases left Open)" -eq 1 ]
+  check "$layout: only #ci_group has \"Open\", not ci_channel" [ "$(count_phrases Open < <(left_pane_lines))" -eq 1 ]
   check "$layout: #ci_group row has \"Open\"" open_in_row_of "#ci_group"
   click_in_list ci_channel
   sleep 2
   "$ui" shot "$layout-known-opened"
-  check "$layout: clicking ci_channel's row shows no alert" no_subscriber_alert
+  check "$layout: clicking ci_channel's row shows no alert" not_found "You are a subscriber"
   check "$layout: clicking ci_channel's row opens the channel" "$ui" wait "you are subscriber" 15
   clear_search_field "$layout"
 }
 
 new_chat_known_channel() {
   open_new_chat
-  "$ui" click-text "Search or paste SimpleX link"
-  "$ui" type "$search_text"
-  "$ui" wait "Search in Directory" 15
-  "$ui" click-text "Search in Directory"
-  show_known_results new-chat-known
+  search_in_directory "$search_text"
+  load_results_after_join new-chat-known
   check "New chat: ci_channel is listed among the results" on_screen "ci_channel"
   check "New chat: ci_channel is its chat's row, not #ci_channel" no_ci_channel_directory_row
-  check "New chat: only #ci_group has \"Open\", not ci_channel" [ "$(count_phrases left Open)" -eq 1 ]
+  check "New chat: only #ci_group has \"Open\", not ci_channel" [ "$(count_phrases Open < <(left_pane_lines))" -eq 1 ]
   check "New chat: #ci_group row has \"Open\"" open_in_row_of "#ci_group"
   close_new_chat
 }
@@ -662,13 +654,13 @@ open_settings() {
 }
 
 switch_toolbar() {
-  local to=$1 y
-  "$ui" key Escape
+  local to=$1 settings_y=48 field_test=(-gt 600) y
   if [ "$to" = top ]; then
-    open_settings 730
-  else
-    open_settings 48
+    settings_y=730
+    field_test=(-lt 200)
   fi
+  "$ui" key Escape
+  open_settings "$settings_y"
   "$ui" click-text "Appearance" 10
   "$ui" wait "Reachable app toolbars" 10
   "$ui" shot appearance
@@ -678,11 +670,7 @@ switch_toolbar() {
   back_to_chat_list || true
   "$ui" shot "$to-chat-list"
   y=$(y_of "Search or paste SimpleX link") || fail "no search field after closing Settings"
-  if [ "$to" = top ]; then
-    [ "$y" -lt 200 ] || fail "the search field is still at the bottom (y $y) after switching Reachable app toolbars"
-  else
-    [ "$y" -gt 600 ] || fail "the search field is still at the top (y $y) after switching Reachable app toolbars"
-  fi
+  [ "$y" "${field_test[@]}" ] || fail "the search field is at y $y after switching to $to"
 }
 
 # The search field and "Add list" next to it: at the bottom of the chat list, "Add list" above the field; at the top, below it.
@@ -704,7 +692,7 @@ check_layout() {
 create_local_chat() {
   local y
   # the pencil at the right of the bottom toolbar opens New chat
-  "$ui" click 363 730
+  "$ui" click "$pencil_x" 730
   "$ui" click-text "Create group" 10
   "$ui" wait "Enter group name" 10
   y=$(y_of "Enter group name")
@@ -721,27 +709,23 @@ create_local_chat() {
   "$ui" shot local-chat
 }
 
-# Clicks a server role's value until its dropdown shows. The menu is open when an item reads exactly "yes", which no
-# role's value does ("default (yes)", "default (no)", "no"); it can take longer to show than OCR takes to read the screen.
-# The first item of the dropdown opened from the line at y $2, which repeats that line's value below it.
 menu_first_item() {
-  local target line x y deadline=$((SECONDS + 10))
-  target=$(normalise "$1")
+  local value=$1 line_y=$2 target x y phrase deadline=$((SECONDS + 10))
+  target=$(normalise "$value")
   while [ "$SECONDS" -lt "$deadline" ]; do
-    while IFS= read -r line; do
-      x=${line%%,*}
-      y=${line#*,}
-      y=${y%% *}
-      if [ "$x" -lt 390 ] && [ "$y" -gt $(($2 + 20)) ] && [ "$(normalise "${line#* }")" = "$target" ]; then
+    while IFS=', ' read -r x y phrase; do
+      if [ "$y" -gt $((line_y + 20)) ] && [ "$(normalise "$phrase")" = "$target" ]; then
         echo "$x $y"
         return 0
       fi
-    done < <("$ui" text)
+    done < <(left_pane_lines)
     sleep 1
   done
   return 1
 }
 
+# Clicks a server role's value until its dropdown shows. The menu is open when an item reads exactly "yes", which no
+# role's value does ("default (yes)", "default (no)", "no"); it can take longer to show than OCR takes to read the screen.
 open_role_menu() {
   for _ in 1 2 3; do
     "$ui" click-text "$1" 10 || return 1
@@ -888,6 +872,15 @@ send_images() {
   send_image logo-large-rgba.png png
 }
 
+restart_with_no_chat_open() {
+  "$ui" stop
+  "$ui" start "$app_dir"
+  if "$ui" wait "Check for updates" 60; then
+    "$ui" click-text "Disable"
+  fi
+  "$ui" wait "Search or paste SimpleX link" 120 || fail "no chat list after restarting the app"
+}
+
 # private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP
 # server on 127.0.0.1; developer tools at the debug level put the app's debug log in app.log
 "$ui" start "$app_dir" NetworkSMPProxyMode=Unknown DeveloperTools=true LogLevel=DEBUG
@@ -932,7 +925,7 @@ if [ "$cases" = onboarding ]; then
 fi
 
 create_local_chat
-if [ "$cases" = setup ] || [ "$cases" = backend ] || [ "$cases" = search ]; then
+if [ "$cases" = setup ] || [ "$cases" = search ]; then
   : "${NAMES_SERVER:?NAMES_SERVER must be the test SMP server address}"
   use_names_server
   if [ "$cases" = setup ]; then
@@ -944,40 +937,21 @@ fi
 
 check_layout bottom
 if [ "$cases" = search ]; then
-  "$ui" click-text "Search or paste SimpleX link"
-  "$ui" type "$search_text"
-  "$ui" wait "$search_text" 15
-  "$ui" wait "Search in Directory" 15
-  "$ui" shot bottom-search-typed
-  cards_while_typing bottom
-  search_directory bottom
-  full_search bottom
+  directory_search_checks bottom
   new_chat_sheet_search
 fi
 switch_toolbar top
 check_layout top
 if [ "$cases" = search ]; then
-  "$ui" click-text "Search or paste SimpleX link"
-  "$ui" type "$search_text"
-  "$ui" wait "$search_text" 15
-  "$ui" wait "Search in Directory" 15
-  "$ui" shot top-search-typed
-  cards_while_typing top
-  search_directory top
-  full_search top
-  join_directory_channel
+  directory_search_checks top
+  join_ci_channel_with_open
   known_channel_searches top
   switch_toolbar bottom
   known_channel_searches bottom
   new_chat_known_channel
-  # the chat list always shows the chat open in the right pane, and only a restart closes it
-  "$ui" stop
-  "$ui" start "$app_dir"
-  if "$ui" wait "Check for updates" 60; then
-    "$ui" click-text "Disable"
-  fi
-  "$ui" wait "Search or paste SimpleX link" 120 || fail "no chat list after restarting the app"
+  restart_with_no_chat_open
   no_match_search bottom
+  prepare_ci_contact
   new_chat_no_match_search
   switch_toolbar top
 fi
@@ -985,9 +959,5 @@ send_images
 
 if grep -q '^FAIL' "$checks"; then
   fail "the smoke test failed checks: $(grep -c '^FAIL' "$checks") of $(grep -cE '^(PASS|FAIL)' "$checks")"
-fi
-if [ "$cases" = search ]; then
-  echo "smoke test passed: onboarding reached the chat list with the toolbar at the bottom and at the top, the first search enabled Directory search, the searches showed one list of results with Open and the load row, \"No chats found\" and New chat's \"No filtered contacts\" waited for a directory search that found nothing, Open opened the prepared ci_channel without an alert, and the joined ci_channel is a chat row among the results (chat list in both layouts, New chat), and a page of chats already listed adds nothing"
-  exit 0
 fi
 echo "smoke test passed: onboarding reached the chat list, which shows \"$local_chat\" with the toolbar at the bottom and at the top"
