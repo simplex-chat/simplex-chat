@@ -524,6 +524,7 @@ class ChangesTest(GitRepoTest):
         for file in ["scripts/ci/android/ui", "scripts/ci/android/screen-tree.py"]:
             self.assertEqual(self.builds(file), set())
             self.assertEqual(self.values["scopes"], "ci-scripts")
+            self.base = self.head()
 
 
 class SelectTestsTest(GitRepoTest):
