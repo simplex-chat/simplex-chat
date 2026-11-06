@@ -60,7 +60,7 @@ import Simplex.Chat.Types.UITheme (ChatLayout)
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.Messaging.Agent.Protocol (e2eEncConnInfoLength)
 import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder, fromTextField_)
-import Simplex.Messaging.Compression (Compressed, compress1, decompress1, decompressedSize)
+import Simplex.Messaging.Compression (Compressed, compress1, decompress1, decompressedSize, limitDecompress1)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOn)
 import Simplex.Messaging.Encoding
@@ -1086,13 +1086,10 @@ maxServiceBodyLength = e2eEncConnInfoLength PQSupportOn - 2 - maxReplyQueueFrami
 decompressServiceBody :: ByteString -> Either String ByteString
 decompressServiceBody body = case B.uncons body of
   Nothing -> Left "empty service payload"
-  Just ('X', body') -> case smpDecode body' :: Either String (L.NonEmpty Compressed) of
-    Left e -> Left e
-    Right (c L.:| []) -> case decompressedSize c of
-      Just size | size > maxDecompressedMsgLength -> Left "decompressed size exceeds limit"
-      Just _ -> decompress1 c
-      Nothing -> Left "compressed size not specified"
-    Right _ -> Left "unexpected compressed batch"
+  Just ('X', body') ->
+    smpDecode body' >>= \case
+      c L.:| [] -> limitDecompress1 maxDecompressedMsgLength c
+      _ -> Left "unexpected compressed batch"
   _ -> Right body
 
 -- Bounded here rather than in each client, as no service needs more than a few levels.
