@@ -1068,6 +1068,7 @@ jobs:
             --network host \
             -e CABAL_DIR=/home/builder/.cabal \
             -e PGHOST=127.0.0.1 \
+            -e LANG=C.UTF-8 \
             -v ~/.cabal:/home/builder/.cabal \
             -v /home/runner/work/_temp:/home/runner/work/_temp \
             -v ${{ github.workspace }}:/project \
