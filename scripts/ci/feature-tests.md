@@ -53,7 +53,7 @@ Changes to workflow files are excluded from selection, so a branch with changes 
 
 The run's `tests` input overrides the selection: feature names separated by spaces, `all` or `none` (Actions tab, or `gh workflow run <workflow>.yml --ref <branch> -f tests="private-notes"`). The plan job fails for a name with a test on no platform. The reason for each selected test is printed in the plan job's log, and the selected tests are listed in its summary.
 
-`SelectTestsTest`, `ChooseFeatureTestsTest`, `FeatureTestsTest` and `ChecksTest` in `scripts/ci/test_packages_release.py` verify these rules and the runner; the reduced build runs them when a file in `scripts/ci/app-tests/` is changed.
+`SelectTestsTest`, `ChooseFeatureTestsTest`, `FeatureTestsTest` and `ChecksTest` in `scripts/ci/test_packages_release.py` verify these rules and the runner, and `AndroidTypeTest` verifies Android's `ui type`; the reduced build runs them when a file in `scripts/ci/app-tests/`, `scripts/ci/android/ui` or `scripts/ci/android/screen-tree.py` is changed.
 
 Each test has a section in the job summary, and its screens and `checks.txt` are stored in `tests/<feature>/` of the smoke-test artifact. After a failed test the remaining tests still run, and the step fails if any test failed. The app job fails when a feature test fails, and GitHub then skips the Claude job. With `tests: none`, feature tests are excluded from the run.
 

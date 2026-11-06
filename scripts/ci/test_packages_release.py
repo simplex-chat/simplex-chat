@@ -12,6 +12,7 @@ import tomllib
 import urllib.error
 import tempfile
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
 from unittest import mock
@@ -519,6 +520,11 @@ class ChangesTest(GitRepoTest):
         self.assertEqual(self.builds("scripts/ci/app-tests/select-tests.sh"), set())
         self.assertEqual(self.values["scopes"], "ci-scripts")
 
+    def test_android_driver_change_tests_the_ci_scripts(self):
+        for file in ["scripts/ci/android/ui", "scripts/ci/android/screen-tree.py"]:
+            self.assertEqual(self.builds(file), set())
+            self.assertEqual(self.values["scopes"], "ci-scripts")
+
 
 class SelectTestsTest(GitRepoTest):
     SHARED_FILES = [
@@ -648,6 +654,12 @@ class SelectTestsTest(GitRepoTest):
     def test_test_file_whose_name_cannot_be_selected_fails(self):
         self.change_from_base("scripts/ci/desktop-linux/tests/Bad_Name.sh")
         self.assertEqual(self.select().returncode, 2)
+
+    def test_platform_without_tests_selects_nothing(self):
+        self.git("rm", "-q", "-r", "scripts/ci/desktop-linux/tests")
+        self.commit("delete the tests")
+        self.assertEqual(self.selected(), [])
+        self.assertEqual(self.selected("all"), [])
 
     def test_only_changes_between_the_base_and_head_count(self):
         self.change_from_base("apps/mp/views/chat/Compose.kt")
@@ -792,6 +804,108 @@ class FeatureTestsTest(unittest.TestCase):
             self.summary.read_text().splitlines(),
             ["### Feature test no-checks: passed", "", "- NOTE no checks were recorded"],
         )
+
+
+class AndroidTypeTest(unittest.TestCase):
+    ADB = r"""#!/bin/bash
+case "$*" in
+  "shell rm -f /sdcard/ui.xml" | "shell uiautomator dump /sdcard/ui.xml") ;;
+  "exec-out cat /sdcard/ui.xml")
+    printf '<hierarchy><node class="android.widget.EditText" text="%s" bounds="[0,0][100,50]" focused="true" /></hierarchy>\n' "$(cat "$STUB_DIR/field")"
+    ;;
+  shell\ input\ text\ *)
+    word=${2#input text \'}
+    word=${word%\'}
+    word=${word//%s/ }
+    word=$(cat "$STUB_DIR/late")$word
+    : > "$STUB_DIR/late"
+    drops=$(cat "$STUB_DIR/drops")
+    if [ "$drops" -gt 0 ]; then
+      echo $((drops - 1)) > "$STUB_DIR/drops"
+      case "$LOSS" in
+        end) word=${word%?} ;;
+        late)
+          printf '%s' "${word: -1}" > "$STUB_DIR/late"
+          word=${word%?}
+          ;;
+        all) word="" ;;
+      esac
+    fi
+    printf '%s' "$word" >> "$STUB_DIR/field"
+    ;;
+  *) exit 1 ;;
+esac
+"""
+    CASES = {
+        "no_loss": {"drops": 0},
+        "two_lost_ends": {"drops": 2},
+        "three_lost_ends": {"drops": 3},
+        "late_end": {"drops": 1, "loss": "late"},
+        "lost_input": {"drops": 1, "loss": "all"},
+        "other_text": {"drops": 1, "start": "other"},
+    }
+
+    @classmethod
+    def setUpClass(cls):
+        directory = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(directory.cleanup)
+        cls.work = Path(directory.name)
+        adb = cls.work / "sdk" / "platform-tools" / "adb"
+        adb.parent.mkdir(parents=True)
+        adb.write_text(cls.ADB)
+        adb.chmod(0o755)
+        with ThreadPoolExecutor(len(cls.CASES)) as pool:
+            cls.results = dict(zip(cls.CASES, pool.map(cls.type_text, cls.CASES)))
+
+    @classmethod
+    def type_text(cls, name):
+        case = cls.CASES[name]
+        stub = cls.work / name
+        stub.mkdir()
+        (stub / "field").write_text(case.get("start", ""))
+        (stub / "drops").write_text(str(case["drops"]))
+        (stub / "late").write_text("")
+        result = subprocess.run(
+            [packages_release.ROOT / "scripts/ci/android/ui", "type", "scripted note"],
+            env={
+                **os.environ,
+                "ANDROID_HOME": str(cls.work / "sdk"),
+                "UI_OUT": str(stub / "out"),
+                "UI_STATE": str(stub / "ui"),
+                "STUB_DIR": str(stub),
+                "LOSS": case.get("loss", "end"),
+            },
+            capture_output=True,
+            text=True,
+        )
+        return result.returncode, result.stdout, (stub / "field").read_text()
+
+    def assert_typed(self, name):
+        status, output, field = self.results[name]
+        self.assertEqual((status, field), (0, "scripted note"), output)
+
+    def assert_field_error(self, name, shown):
+        status, output, _ = self.results[name]
+        self.assertEqual(status, 1, output)
+        self.assertIn(f'error: the field shows "{shown}", not "scripted"', output)
+
+    def test_text_without_a_loss_is_typed_once(self):
+        self.assert_typed("no_loss")
+
+    def test_two_lost_ends_are_typed_again(self):
+        self.assert_typed("two_lost_ends")
+
+    def test_third_lost_end_fails(self):
+        self.assert_field_error("three_lost_ends", "scripte")
+
+    def test_late_end_arriving_with_the_retry_fails(self):
+        self.assert_field_error("late_end", "scriptedd")
+
+    def test_empty_field_fails(self):
+        self.assert_field_error("lost_input", "")
+
+    def test_field_starting_with_other_text_fails(self):
+        self.assert_field_error("other_text", "otherscripte")
 
 
 class ChecksTest(unittest.TestCase):

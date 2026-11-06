@@ -39,6 +39,8 @@ on:
       - "scripts/ci/packages_release.py"
       - "scripts/ci/test_packages_release.py"
       - "scripts/ci/app-tests/**"
+      - "scripts/ci/android/ui"
+      - "scripts/ci/android/screen-tree.py"
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:

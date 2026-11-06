@@ -210,7 +210,7 @@ type_text() {
       if [ "$SECONDS" -ge "$deadline" ]; then
         shown=$(screen field) || shown=""
         rest=${typed#"$shown"}
-        if [ "$retries" -ge 2 ] || [ -z "$shown" ] || [ -z "$rest" ] || [ "$rest" = "$typed" ]; then
+        if [ "$retries" -ge 2 ] || [ -z "$rest" ] || [ "$rest" = "$typed" ]; then
           echo "error: the field shows \"$shown\", not \"$typed\""
           return 1
         fi
