@@ -91,7 +91,8 @@ fun MainScreen() {
     showChatDatabaseError = chatModel.chatDbStatus.value != DBMigrationResult.OK && chatModel.chatDbStatus.value != null
   }
   var showAdvertiseLAAlert by remember { mutableStateOf(false) }
-  LaunchedEffect(showAdvertiseLAAlert, chatModel.chatRunning.value != null) {
+  val chatsLoaded = chatModel.chatRunning.value != null
+  LaunchedEffect(showAdvertiseLAAlert, chatsLoaded) {
     if (
       !chatModel.controller.appPrefs.laNoticeShown.get()
       && !appPrefs.performLA.get()
