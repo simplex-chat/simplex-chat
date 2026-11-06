@@ -37,23 +37,23 @@ The app in the state left by the smoke test, restarted at the chat list with the
 |---|---|---|---|
 | desktop | onboarded as citester | "seeded notes", a group with the two images sent by the smoke test; "Private notes" | the test SMP server is the only one resolving names (`seeded.testing` resolves to ci_contact) |
 | Android | onboarded | "seeded notes", a group with the two images sent by the smoke test; "Private notes" | the test SMP server added under Your servers |
-| iOS | onboarded, local files unencrypted, SimpleX Lock notice marked as shown | "image notes", a group with the two images sent by the smoke test; "Private notes" | — |
+| iOS | onboarded, local files unencrypted, SimpleX Lock notice marked as shown | "Image notes", a group with the two images sent by the smoke test; "Private notes" | — |
 
 Tests run one after another in name order, in one profile, and each test must pass with the state left by earlier tests.
 
 ## Test selection
 
-The smoke test always runs. Once its checks pass (on iOS, also when `snapshots.sh` fails, for example on differing preview snapshots), the step "Run feature tests" runs the tests selected by comparing the branch with the upstream master. A deleted or moved file counts as changed. The selected tests are:
+The smoke test always runs. Once its checks pass (on iOS, also when `snapshots.sh` fails, for example on differing preview snapshots), the step "Run feature tests" runs the tests selected by comparing the branch with the upstream master. A deleted or moved file is treated as changed. The selected tests are:
 
 - tests added or changed on the branch;
 - tests whose `covers` patterns match a file changed on the branch;
-- every test of a platform when a shared file changes: a file in `scripts/ci/app-tests/`, or a file in the platform's folder other than `tests/`, `*.md` and `claude-*`.
+- every test of a platform when a shared file is changed: a file in `scripts/ci/app-tests/`, or a file in the platform's folder other than `tests/`, `*.md` and `claude-*`.
 
 Changes to workflow files are excluded from selection, so a branch with changes to the feature test step is run with `tests: all`.
 
 The run's `tests` input overrides the selection: feature names separated by spaces, `all` or `none` (Actions tab, or `gh workflow run <workflow>.yml --ref <branch> -f tests="private-notes"`). The plan job fails for a name with a test on no platform. The reason for each selected test is printed in the plan job's log, and the selected tests are listed in its summary.
 
-`SelectTestsTest` and `FeatureTestsTest` in `scripts/ci/test_packages_release.py` verify these rules and the runner; the reduced build runs them when a file in `scripts/ci/app-tests/` changes.
+`SelectTestsTest`, `ChooseFeatureTestsTest`, `FeatureTestsTest` and `ChecksTest` in `scripts/ci/test_packages_release.py` verify these rules and the runner; the reduced build runs them when a file in `scripts/ci/app-tests/` is changed.
 
 Each test has a section in the job summary, and its screens and `checks.txt` are stored in `tests/<feature>/` of the smoke-test artifact. After a failed test the remaining tests still run, and the step fails if any test failed. The app job fails when a feature test fails, and GitHub then skips the Claude job. With `tests: none`, feature tests are excluded from the run.
 
