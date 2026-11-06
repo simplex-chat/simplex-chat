@@ -656,7 +656,7 @@ testMoveLandedReleasedCode = withOwner $ \ctx@Ctx {cStore} -> do
     withTransaction cStore (\db -> releasePrepaidCode db (pcId code) (nrId r)) `shouldReturn` True
   withTransaction cStore $ \db -> do
     reservePrepaidCode db (pcId spentCode) (nrId spender) orderTime `shouldReturn` True
-    spendPrepaidCode db (pcId spentCode) (nrId spender) orderTime `shouldReturn` True
+    spendLandedPrepaidCode db (pcId spentCode) (nrId spender) orderTime `shouldReturn` True
   spenderBefore <- stored ctx spender
   spentBefore <- codeRow ctx spentCode
   to <- moveTo ctx "alicebakers" 10
@@ -751,7 +751,7 @@ testMoveReleasedCode = withOwner $ \ctx@Ctx {cStore} -> do
   holder <- paidIn ctx (byB dynamisOrder) {oCommitment = commitmentOf 21} id
   let refusals :: [(Text, PrepaidCode -> DB.Connection -> IO (), (Int, Maybe J.Object))]
       refusals =
-        [ ("spent", \PrepaidCode {pcId} db -> reservePrepaidCode db pcId (nrId spender) orderTime >> void (spendPrepaidCode db pcId (nrId spender) orderTime), refusedWith 409 "code_used"),
+        [ ("spent", \PrepaidCode {pcId} db -> reservePrepaidCode db pcId (nrId spender) orderTime >> void (spendLandedPrepaidCode db pcId (nrId spender) orderTime), refusedWith 409 "code_used"),
           ("held", \PrepaidCode {pcId} db -> void $ reservePrepaidCode db pcId (nrId holder) orderTime, refusedWith 409 "code_reserved"),
           ("revoked", \PrepaidCode {pcCodeHash} db -> void $ revokePrepaidCode db pcCodeHash orderTime, refusedWith 400 "code_invalid"),
           ("expired", \PrepaidCode {pcCodeHash} db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, DB.Binary pcCodeHash), refusedWith 409 "code_expired")

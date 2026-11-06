@@ -125,32 +125,32 @@ testDryRunRevertNamed g = withChain g $ \node c -> do
 testCallRevertNamed :: TVar ChaChaDRG -> IO ()
 testCallRevertNamed g = withChain g $ \node c -> do
   answerCall node fakeController availableCall $ Reverts nameNotAvailable
-  ethCall c fakeController availableCall `shouldReturn` Left (ChainReverted $ Just RNNameNotAvailable)
+  ethCallAt c Latest fakeController availableCall `shouldReturn` Left (ChainReverted $ Just RNNameNotAvailable)
 
 testOwnerOfRevert :: TVar ChaChaDRG -> IO ()
 testOwnerOfRevert g = withChain g $ \node c@ChainClient {ccConfig = ChainConfig {cBaseRegistrar}} -> do
   let ownerOf = selector "ownerOf(uint256)" <> C.keccak256 "bakery1"
   answerCall node cBaseRegistrar ownerOf $ Reverts ""
-  ethCall c cBaseRegistrar ownerOf `shouldReturn` Left (ChainReverted $ Just RNWithoutData)
+  ethCallAt c Latest cBaseRegistrar ownerOf `shouldReturn` Left (ChainReverted $ Just RNWithoutData)
 
 testRevertWithoutData :: TVar ChaChaDRG -> IO ()
 testRevertWithoutData g = withChain g $ \node c -> do
   setFault node "eth_call" $ RpcError (-32000) "execution reverted" Nothing
-  ethCall c fakeController availableCall `shouldReturn` Left (ChainReverted $ Just RNWithoutData)
+  ethCallAt c Latest fakeController availableCall `shouldReturn` Left (ChainReverted $ Just RNWithoutData)
   -- a reason kept in the message names a revert that had data, so it is not read as one without
   setFault node "eth_call" $ RpcError 3 "execution reverted: ERC721: invalid token ID" Nothing
-  ethCall c fakeController availableCall `shouldReturn` Left (ChainReverted Nothing)
+  ethCallAt c Latest fakeController availableCall `shouldReturn` Left (ChainReverted Nothing)
 
 testUnknownRevert :: TVar ChaChaDRG -> IO ()
 testUnknownRevert g = withChain g $ \node c -> do
   -- viem's encodeErrorResult of Error("ERC721: invalid token ID"), not one of the contracts' own errors
   setFault node "eth_call" $ revertFault $ unhex "08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000184552433732313a20696e76616c696420746f6b656e2049440000000000000000"
-  ethCall c fakeController availableCall `shouldReturn` Left (ChainReverted Nothing)
+  ethCallAt c Latest fakeController availableCall `shouldReturn` Left (ChainReverted Nothing)
 
 testRpcError :: TVar ChaChaDRG -> IO ()
 testRpcError g = withChain g $ \node c -> do
   setFault node "eth_call" $ RpcError (-32000) "header not found" Nothing
-  r <- ethCall c fakeController availableCall
+  r <- ethCallAt c Latest fakeController availableCall
   r `shouldBe` Left (ChainUnavailable "eth_call: error -32000: header not found")
   r `shouldNotSatisfy` mentionsUrl c
 
@@ -181,17 +181,17 @@ testRefused g = withFakeEthNode $ \node -> do
 testOversized :: TVar ChaChaDRG -> IO ()
 testOversized g = withChain g $ \node c -> do
   answerCall node fakeController availableCall $ Returns $ B.replicate (512 * 1024) 0
-  ethCall c fakeController availableCall `shouldReturn` Left (ChainUnavailable "eth_call: response over 1048576 bytes")
+  ethCallAt c Latest fakeController availableCall `shouldReturn` Left (ChainUnavailable "eth_call: response over 1048576 bytes")
 
 testNotJson :: TVar ChaChaDRG -> IO ()
 testNotJson g = withChain g $ \node c -> do
   setFault node "eth_call" NotJson
-  ethCall c fakeController availableCall `shouldReturn` Left (ChainUnavailable "eth_call: not a JSON-RPC response")
+  ethCallAt c Latest fakeController availableCall `shouldReturn` Left (ChainUnavailable "eth_call: not a JSON-RPC response")
 
 testLongNodeMessage :: TVar ChaChaDRG -> IO ()
 testLongNodeMessage g = withChain g $ \node c -> do
   setFault node "eth_call" $ RpcError (-32000) (T.replicate 1000 "x") Nothing
-  ethCall c fakeController availableCall `shouldReturn` Left (ChainUnavailable $ "eth_call: error -32000: " <> T.replicate 200 "x")
+  ethCallAt c Latest fakeController availableCall `shouldReturn` Left (ChainUnavailable $ "eth_call: error -32000: " <> T.replicate 200 "x")
 
 testLongQuantity :: TVar ChaChaDRG -> IO ()
 testLongQuantity g = withChain g $ \node c -> do
@@ -225,9 +225,9 @@ testEthCall :: TVar ChaChaDRG -> IO ()
 testEthCall g = withChain g $ \node c -> do
   answerCall node fakeController availableCall $ Returns $ uint256 (1 :: Int)
   answerCall node fakeSponsor availableCall $ Returns $ uint256 (0 :: Int)
-  ethCall c fakeController availableCall `shouldReturn` Right (uint256 (1 :: Int))
-  ethCall c fakeSponsor availableCall `shouldReturn` Right (uint256 (0 :: Int))
-  ethCall c fakeController (selector "available(string)") `shouldReturn` Left (ChainUnavailable "eth_call: error -32000: no fake answer for this call")
+  ethCallAt c Latest fakeController availableCall `shouldReturn` Right (uint256 (1 :: Int))
+  ethCallAt c Latest fakeSponsor availableCall `shouldReturn` Right (uint256 (0 :: Int))
+  ethCallAt c Latest fakeController (selector "available(string)") `shouldReturn` Left (ChainUnavailable "eth_call: error -32000: no fake answer for this call")
 
 testLatestBlock :: TVar ChaChaDRG -> IO ()
 testLatestBlock g = withChain g $ \node c -> do
@@ -245,16 +245,16 @@ testBlockAt g = withChain g $ \node c -> do
 testFollowTransaction :: TVar ChaChaDRG -> IO ()
 testFollowTransaction g = withChain g $ \node c@ChainClient {ccRegistrar} -> do
   let unknown = TxHash $ B.replicate 32 0xee
-  transactionByHash c unknown `shouldReturn` Right Nothing
+  transactionKnown c unknown `shouldReturn` Right False
   transactionReceipt c unknown `shouldReturn` Right Nothing
   SignedTx {stRaw, stHash = hash@(TxHash h)} <- signed g c 0
   sendRawTransaction c stRaw `shouldReturn` Right hash
-  transactionByHash c hash `shouldReturn` Right (Just TxPending)
+  transactionKnown c hash `shouldReturn` Right True
   transactionReceipt c hash `shouldReturn` Right Nothing
   transactionCount c ccRegistrar Latest `shouldReturn` Right 0
   transactionCount c ccRegistrar Pending `shouldReturn` Right 1
   block <- mine node [(h, False)]
-  transactionByHash c hash `shouldReturn` Right (Just $ TxMined block)
+  transactionKnown c hash `shouldReturn` Right True
   transactionReceipt c hash `shouldReturn` Right (Just Receipt {receiptSuccess = False, receiptBlock = block})
   transactionCount c ccRegistrar Latest `shouldReturn` Right 1
 

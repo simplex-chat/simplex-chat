@@ -16,7 +16,7 @@ import StoreService.Group.Command (CmdAction (..), groupCmdAction, maxUses)
 import StoreService.Names.Abi (selector, uint256)
 import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..), PrepaidCode (..), VersionWrite (..), getPrepaidCode, spendPrepaidCode)
+import StoreService.Names.Store (NamePhase (..), NameRegistration (..), PrepaidCode (..), VersionWrite (..), getPrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Orders (cancelOpenInvoice, expireOverdue)
@@ -364,7 +364,7 @@ testOperatorNameCodes ps = do
     rowOf spent >>= placeCode st "r2" ownerA (order "bobsbakery" 2) >>= (`shouldBe` Right ())
     spentAt <- getCurrentTime
     PrepaidCode {pcId = spentId} <- rowOf spent
-    withTransaction st (\db -> spendPrepaidCode db spentId (RegistrationId "r2") spentAt) `shouldReturn` True
+    withTransaction st (\db -> spendLandedPrepaidCode db spentId (RegistrationId "r2") spentAt) `shouldReturn` True
     revoke held `shouldReturn` Right "Revoked. The order holding it keeps it."
     revoke spent `shouldReturn` Left "Already used. It cannot be revoked."
     check spent `shouldReturn` coverage 8 2 "used"

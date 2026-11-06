@@ -12,17 +12,15 @@ module StoreService.Names.Chain
     TxRequest (..),
     Block (..),
     Receipt (..),
-    TxState (..),
     BlockTag (..),
     newChainClient,
-    ethCall,
     ethCallAt,
     latestBlock,
     nodeChainId,
     blockAt,
     confirmedNumber,
     transactionReceipt,
-    transactionByHash,
+    transactionKnown,
     transactionCount,
     estimateGas,
     maxPriorityFee,
@@ -51,6 +49,7 @@ import qualified Data.ByteString.Lazy as LB
 import Data.Char (isDigit)
 import Data.Functor ((<&>))
 import Data.List (foldl')
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -108,9 +107,6 @@ data Block = Block {blockNumber :: Word64, blockTimestamp :: Word64, blockBaseFe
 data Receipt = Receipt {receiptSuccess :: Bool, receiptBlock :: Word64}
   deriving (Eq, Show)
 
-data TxState = TxPending | TxMined Word64
-  deriving (Eq, Show)
-
 data BlockTag = Latest | Pending | AtBlock Word64
 
 rpcTimeout :: Int
@@ -139,9 +135,6 @@ newChainClient g ccConfig@ChainConfig {cServiceKey} = do
   ccManager <- newTlsManager
   ccRegistrar <- addressFromPrivateKey g cServiceKey
   pure ChainClient {ccManager, ccConfig, ccRegistrar, ccTimeout = rpcTimeout}
-
-ethCall :: ChainClient -> Address -> ByteString -> IO (Either ChainError ByteString)
-ethCall c = ethCallAt c Latest
 
 ethCallAt :: ChainClient -> BlockTag -> Address -> ByteString -> IO (Either ChainError ByteString)
 ethCallAt c tag to calldata = rpc c "eth_call" [J.object ["to" .= to, "data" .= hex calldata], blockTagParam tag] bytes
@@ -177,11 +170,10 @@ transactionReceipt c (TxHash h) =
         0 -> pure False
         _ -> fail "not a receipt status"
 
--- | Nothing when the node does not know the transaction.
-transactionByHash :: ChainClient -> TxHash -> IO (Either ChainError (Maybe TxState))
-transactionByHash c (TxHash h) =
-  rpc c "eth_getTransactionByHash" [J.String $ hex h] $ nullable $ J.withObject "transaction" $ \t ->
-    maybe TxPending TxMined <$> (traverse quantity =<< t .:? "blockNumber")
+-- | Whether the node knows the transaction, pending or mined.
+transactionKnown :: ChainClient -> TxHash -> IO (Either ChainError Bool)
+transactionKnown c (TxHash h) =
+  rpc c "eth_getTransactionByHash" [J.String $ hex h] $ fmap isJust . nullable (J.withObject "transaction" $ \_ -> pure ())
 
 transactionCount :: ChainClient -> Address -> BlockTag -> IO (Either ChainError Word64)
 transactionCount c a tag = rpc c "eth_getTransactionCount" [J.toJSON a, blockTagParam tag] quantity

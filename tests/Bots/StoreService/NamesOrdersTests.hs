@@ -992,7 +992,7 @@ testCodeResend = withOrders $ \ctx -> do
   now <- readIORef (cClock ctx)
   withTransaction (cStore ctx) $ \db -> do
     updateRegistration db r {nrPhase = PRegistered} now `shouldReturn` Written 2
-    spendPrepaidCode db pcId rid now `shouldReturn` True
+    spendLandedPrepaidCode db pcId rid now `shouldReturn` True
   advance ctx 3600
   setFault (cNode ctx) "eth_call" HttpFailure
   postRegister ctx body `shouldReturn` registrationAnswer rid
@@ -1134,7 +1134,7 @@ testCodeRefusals = withOrders $ \ctx@Ctx {cStore} -> do
   register ctx reserved aliceOrder `shouldReturn` refusedWith 409 "code_reserved"
   (used, usedCode) <- issueCode ctx 8 2 id
   placeCode cStore "spender" ownerB (order "spendertwo" 2) usedCode `shouldReturn` Right ()
-  withTransaction cStore (\db -> spendPrepaidCode db (pcId usedCode) (RegistrationId "spender") t0) `shouldReturn` True
+  withTransaction cStore (\db -> spendLandedPrepaidCode db (pcId usedCode) (RegistrationId "spender") t0) `shouldReturn` True
   register ctx used aliceOrder `shouldReturn` refusedWith 409 "code_used"
   (expired, _) <- issueCode ctx 8 2 $ \c -> c {npcExpiresAt = Just orderTime}
   register ctx expired aliceOrder `shouldReturn` refusedWith 409 "code_expired"

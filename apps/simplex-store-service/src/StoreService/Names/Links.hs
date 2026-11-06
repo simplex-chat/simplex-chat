@@ -9,7 +9,6 @@ module StoreService.Names.Links
     linkKindOf,
     parseShortLink,
     shortLinkHosts,
-    linkHosts,
   )
 where
 
@@ -19,7 +18,6 @@ import qualified Data.Attoparsec.Text as A
 import qualified Data.ByteString as B
 import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import Data.List.NonEmpty (NonEmpty)
-import qualified Data.List.NonEmpty as L
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..))
@@ -59,7 +57,3 @@ parseShortLink = either (const Nothing) Just . strDecode . encodeUtf8
 
 shortLinkHosts :: ConnShortLink 'CMContact -> NonEmpty TransportHost
 shortLinkHosts (CSLContact _ _ ProtocolServer {host} _) = host
-
--- the hosts as the chat core reads them, empty for a link it cannot read
-linkHosts :: Text -> [TransportHost]
-linkHosts = maybe [] (L.toList . shortLinkHosts) . parseShortLink

@@ -231,11 +231,11 @@ resend s@Sender {snChain = c, snNow} nonce tx@InFlight {ifRaw, ifHashes = newest
   now <- snNow
   replaced <- if now >= ifReplaceAt then replace s nonce tx now else pure False
   unless replaced $
-    transactionByHash c newest >>= \case
-      Right Nothing -> do
+    transactionKnown c newest >>= \case
+      Right False -> do
         when (isNothing ifLastWarning) $ logNote $ "names sender: rebroadcasting nonce " <> tshow nonce
         broadcast s nonce ifRaw
-      Right (Just _) -> pure ()
+      Right True -> pure ()
       Left e -> warnNonce s nonce $ tshow e
 
 replace :: Sender -> Word64 -> InFlight -> UTCTime -> IO Bool

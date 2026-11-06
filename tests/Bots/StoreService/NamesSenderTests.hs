@@ -156,7 +156,7 @@ testFailedSend g = withSetup g $ \s@Setup {node, store} -> do
   ntHash `shouldBe` ptHash p
   followTransactions sender
   sentTransactions node `shouldReturn` [ntRaw]
-  transactionByHash' s (ptHash p) `shouldReturn` Just TxPending
+  known s (ptHash p) `shouldReturn` True
 
 testFeeBump :: TVar ChaChaDRG -> IO ()
 testFeeBump g = withSetup g $ \s@Setup {node, store} -> do
@@ -178,8 +178,8 @@ testFeeBump g = withSetup g $ \s@Setup {node, store} -> do
   [_, bumpedRaw] <- sentTransactions node
   let bumpedHash = TxHash $ C.keccak256 bumpedRaw
   decodeSignedTx bumpedRaw `shouldBe` Right first {trMaxPriorityFeePerGas = fakeTip + fakeTip `div` 8 + 1, trMaxFeePerGas = 4 * fakeBaseFee + fakeTip}
-  transactionByHash' s (ptHash p) `shouldReturn` Nothing
-  transactionByHash' s bumpedHash `shouldReturn` Just TxPending
+  known s (ptHash p) `shouldReturn` False
+  known s bumpedHash `shouldReturn` True
   map (\(h, status, _) -> (h, status)) <$> statuses store r1 `shouldReturn` [(ptHash p, TSPending), (bumpedHash, TSPending)]
   mineHash node bumpedHash
   _ <- mine node []
@@ -226,7 +226,7 @@ testDroppedNonceUsed g = withSetup g $ \s@Setup {node, store, chain} -> do
   length <$> sentTransactions node `shouldReturn` 1
   -- the owner: the commitment reads 0, so the commit never mined and is sent again
   answerCall node fakeController commitmentsCall $ Returns $ uint256 (0 :: Int)
-  ethCall chain fakeController commitmentsCall `shouldReturn` Right (uint256 (0 :: Int))
+  ethCallAt chain Latest fakeController commitmentsCall `shouldReturn` Right (uint256 (0 :: Int))
   Right again <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
   ptNonce again `shouldBe` 1
   length <$> sentTransactions node `shouldReturn` 2
@@ -380,8 +380,8 @@ settled sender for = null <$> inFlightTransaction sender for
 statuses :: DBStore -> RegistrationId -> IO [(TxHash, TxStatus, Maybe Word64)]
 statuses store rid = withTransaction store $ \db -> map (\NameTransaction {ntHash, ntStatus, ntMinedBlock} -> (ntHash, ntStatus, ntMinedBlock)) <$> registrationTransactions db rid
 
-transactionByHash' :: Setup -> TxHash -> IO (Maybe TxState)
-transactionByHash' Setup {chain} h = either (error . show) id <$> transactionByHash chain h
+known :: Setup -> TxHash -> IO Bool
+known Setup {chain} h = either (error . show) id <$> transactionKnown chain h
 
 refusedWith :: IO (Either SendError PendingTx) -> SendError -> Expectation
 refusedWith submit expected =

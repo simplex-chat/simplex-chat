@@ -34,7 +34,7 @@ import StoreService.Config (ListenerConfig (..))
 import StoreService.Group.Command (CmdAction (..), GroupCmd (..), groupCmdAction)
 import StoreService.Names.Codes
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Store (NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, insertPrepaidCode, reservePrepaidCode, revokePrepaidCode, spendPrepaidCode)
+import StoreService.Names.Store (NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, insertPrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Store (RevokeResult (..))
 import StoreService.Web.Http (codeLimit, newHttpEnv, notFound)
@@ -163,7 +163,7 @@ testCheckStates = withCodeCheck $ \st client -> do
   unpaidRow <- issueAs st unpaid usable {npcMinLength = 63, npcYears = 10, npcPaymentStatus = CPSUnpaid}
   placeCode st "r1" ownerA (order "alicebakery" 1) reservedRow `shouldReturn` Right ()
   placeCode st "r2" ownerA (order "bobsbakery" 2) usedRow `shouldReturn` Right ()
-  withTransaction st (\db -> spendPrepaidCode db (pcId usedRow) r2 tNow) `shouldReturn` True
+  withTransaction st (\db -> spendLandedPrepaidCode db (pcId usedRow) r2 tNow) `shouldReturn` True
   withTransaction st (\db -> revokePrepaidCode db (pcCodeHash revokedRow) tNow) `shouldReturn` Revoked (pcId revokedRow)
   let rows = [unusedRow, reservedRow, usedRow, revokedRow, expiredRow, unpaidRow]
   rowsBefore <- mapM (readCode st) rows
@@ -255,7 +255,7 @@ testReserveRefusals = withOrders $ \turns st -> do
   shortRow <- issueAs st short usable
   placeCode st "r5" ownerA (order "erinsbakery" 5) reservedRow `shouldReturn` Right ()
   placeCode st "r3" ownerB (order "carolsbakery" 4) usedRow `shouldReturn` Right ()
-  withTransaction st (\db -> spendPrepaidCode db (pcId usedRow) (RegistrationId "r3") tNow) `shouldReturn` True
+  withTransaction st (\db -> spendLandedPrepaidCode db (pcId usedRow) (RegistrationId "r3") tNow) `shouldReturn` True
   withTransaction st (\db -> revokePrepaidCode db (pcCodeHash revokedRow) tNow) `shouldReturn` Revoked (pcId revokedRow)
   wrote <- newIORef False
   let reserve hash len = reserveCode turns st tNow hash r1 len (\_ -> Right () <$ writeIORef wrote True :: IO (Either Text ()))
@@ -294,7 +294,7 @@ testReserveSpent = withOrders $ \turns st -> do
   row@PrepaidCode {pcCodeHash} <- issueAs st code usable
   placeCode st "r3" ownerB (order "carolsbakery" 3) row `shouldReturn` Right ()
   let r3 = RegistrationId "r3"
-  withTransaction st (\db -> spendPrepaidCode db (pcId row) r3 tNow) `shouldReturn` True
+  withTransaction st (\db -> spendLandedPrepaidCode db (pcId row) r3 tNow) `shouldReturn` True
   spent <- readCode st row
   wrote <- newIORef False
   reserveCode turns st tNow pcCodeHash r3 8 (\_ -> Right () <$ writeIORef wrote True :: IO (Either Text ())) `shouldReturn` Left CRUsed
@@ -341,10 +341,10 @@ testReleaseSpend = withOrders $ \turns st -> do
       r4 = RegistrationId "r4"
       holderInWrite row db = Right . (pcReservedBy =<<) <$> getPrepaidCode db (pcCodeHash row) :: IO (Either Text (Maybe RegistrationId))
       changed _ = pure (Left "registration_changed") :: IO (Either Text ())
-  spendCode turns st tNow (pcId spentRow) r3 changed `shouldReturn` Left "registration_changed"
+  spendLandedCode turns st tNow (pcId spentRow) r3 changed `shouldReturn` Left "registration_changed"
   (pcSpentAt =<<) <$> readCode st spentRow `shouldReturn` Nothing
-  spendCode turns st tNow (pcId spentRow) r1 writeOk `shouldReturn` Right ((), False)
-  spendCode turns st tNow (pcId spentRow) r3 writeOk `shouldReturn` Right ((), True)
+  spendLandedCode turns st tNow (pcId spentRow) r1 writeOk `shouldReturn` Right ((), False)
+  spendLandedCode turns st tNow (pcId spentRow) r3 writeOk `shouldReturn` Right ((), True)
   ((pcReservedBy =<<) &&& (pcSpentAt =<<)) <$> readCode st spentRow `shouldReturn` (Just r3, Just tNow)
   releaseCode turns st (pcId spentRow) r3 writeOk `shouldReturn` Right ((), False)
   releaseCode turns st (pcId releasedRow) r4 changed `shouldReturn` Left "registration_changed"

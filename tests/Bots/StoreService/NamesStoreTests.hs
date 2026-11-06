@@ -866,17 +866,16 @@ testReserveReleaseSpend = withServiceStore $ \st -> do
       run :: (DB.Connection -> IO a) -> IO a
       run = withTransaction st
   run (\db -> releasePrepaidCode db pcId r1) `shouldReturn` False
-  run (\db -> spendPrepaidCode db pcId r1 t0) `shouldReturn` False
   run (\db -> reservePrepaidCode db pcId r1 (at 1)) `shouldReturn` True
   run (\db -> reservePrepaidCode db pcId r2 (at 1)) `shouldReturn` False
   run (\db -> releasePrepaidCode db pcId r2) `shouldReturn` False
-  run (\db -> spendPrepaidCode db pcId r2 (at 2)) `shouldReturn` False
+  run (\db -> spendLandedPrepaidCode db pcId r2 (at 2)) `shouldReturn` False
   run (\db -> releasePrepaidCode db pcId r1) `shouldReturn` True
   run (\db -> reservePrepaidCode db pcId r2 (at 2)) `shouldReturn` True
-  run (\db -> spendPrepaidCode db pcId r2 (at 3)) `shouldReturn` True
+  run (\db -> spendLandedPrepaidCode db pcId r2 (at 3)) `shouldReturn` True
   run (\db -> releasePrepaidCode db pcId r2) `shouldReturn` False
   run (\db -> reservePrepaidCode db pcId r1 (at 4)) `shouldReturn` False
-  run (\db -> spendPrepaidCode db pcId r2 (at 4)) `shouldReturn` False
+  run (\db -> spendLandedPrepaidCode db pcId r2 (at 4)) `shouldReturn` False
   spent <- run $ \db -> getPrepaidCodeById db pcId
   (pcReservedBy =<< spent, pcSpentAt =<< spent) `shouldBe` (Just r2, Just (at 3))
 
@@ -908,7 +907,7 @@ testRevoke = withServiceStore $ \st -> do
   unused <- issue st 3 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) reserved `shouldReturn` Right ()
   placeCode st "r2" ownerA (order "bobsbakery" 2) spent `shouldReturn` Right ()
-  withTransaction st (\db -> spendPrepaidCode db (pcId spent) (RegistrationId "r2") t0) `shouldReturn` True
+  withTransaction st (\db -> spendLandedPrepaidCode db (pcId spent) (RegistrationId "r2") t0) `shouldReturn` True
   let revoke code = withTransaction st $ \db -> revokePrepaidCode db (pcCodeHash code) (at 1)
   revoke reserved `shouldReturn` Revoked (pcId reserved)
   revoke unused `shouldReturn` Revoked (pcId unused)
@@ -988,7 +987,6 @@ testEditNonceUnique = withServiceStore $ \st -> do
   other `shouldNotBe` first
   run (\db -> settleRecordEdit db first (ESReverted (Just "SignatureExpired"))) `shouldReturn` True
   Just second <- run $ \db -> insertRecordEdit db (newEdit ownerA 2 RCClear) (at 1)
-  fmap reId <$> run (\db -> getRecordEditByNonce db ownerA 4) `shouldReturn` Just second
   fmap reState <$> run (\db -> getRecordEditByBody db (digestFixture 1)) `shouldReturn` Just (ESReverted (Just "SignatureExpired"))
   run (\db -> settleRecordEdit db second (ESMined Nothing)) `shouldReturn` True
   run (\db -> insertRecordEdit db (newEdit ownerA 5 setChannel) (at 2)) `shouldReturn` Nothing
@@ -1023,8 +1021,6 @@ testTwoChangeEdit = withServiceStore $ \st -> do
       changes = signedAt 4 setContact :| [(signedAt 5 setChannel) {scDeadline = 1792832460}]
   Just editId <- run $ \db -> insertRecordEdit db (newEdit ownerA 1 setContact) {nreChanges = changes} t0
   fmap reChanges <$> run (\db -> getRecordEdit db editId) `shouldReturn` Just changes
-  fmap reId <$> run (\db -> getRecordEditByNonce db ownerA 4) `shouldReturn` Just editId
-  fmap reId <$> run (\db -> getRecordEditByNonce db ownerA 5) `shouldReturn` Just editId
   fmap reChanges <$> run (\db -> getRecordEditByBody db (digestFixture 1)) `shouldReturn` Just changes
   -- the first nonce is the edit's: another edit starting there waits for it to settle
   run (\db -> insertRecordEdit db (newEdit ownerA 2 setChannel) t0) `shouldReturn` Nothing

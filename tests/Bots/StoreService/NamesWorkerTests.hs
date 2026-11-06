@@ -1114,7 +1114,7 @@ testRetryReleasedCode = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
       released (r, code) = (r, code) <$ (withTransaction cStore (\db -> releasePrepaidCode db (pcId code) (nrId r)) `shouldReturn` True)
       refusals :: [(Text, PrepaidCode -> DB.Connection -> IO (), (Int, Maybe J.Object))]
       refusals =
-        [ ("spent", \PrepaidCode {pcId} db -> reservePrepaidCode db pcId (nrId spender) orderTime >> void (spendPrepaidCode db pcId (nrId spender) orderTime), refusedWith 409 "code_used"),
+        [ ("spent", \PrepaidCode {pcId} db -> reservePrepaidCode db pcId (nrId spender) orderTime >> void (spendLandedPrepaidCode db pcId (nrId spender) orderTime), refusedWith 409 "code_used"),
           ("held", \PrepaidCode {pcId} db -> void $ reservePrepaidCode db pcId (nrId holder) orderTime, refusedWith 409 "code_reserved"),
           ("revoked", \PrepaidCode {pcCodeHash} db -> void $ revokePrepaidCode db pcCodeHash orderTime, refusedWith 400 "code_invalid"),
           ("expired", \PrepaidCode {pcCodeHash} db -> expire db pcCodeHash, refusedWith 409 "code_expired")
@@ -1131,7 +1131,7 @@ testRetryReleasedCode = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
   -- a registration holds one code at most
   answerFree ctx "anotherpays"
   spender' <- paidIn ctx (byB aliceOrder) {oLabel = "anotherpays", oCommitment = commitmentOf 22} id
-  withTransaction cStore $ \db -> reservePrepaidCode db (pcId spentCode) (nrId spender') orderTime >> void (spendPrepaidCode db (pcId spentCode) (nrId spender') orderTime)
+  withTransaction cStore $ \db -> reservePrepaidCode db (pcId spentCode) (nrId spender') orderTime >> void (spendLandedPrepaidCode db (pcId spentCode) (nrId spender') orderTime)
   retryOf ctx withIntent `shouldReturn` refusedWith 409 "code_used"
   -- a code its order still holds stays good for it, though revoked and expired since
   (holding, heldCode@PrepaidCode {pcCodeHash}) <- codeOrder 6 failedPhase

@@ -81,7 +81,6 @@ module StoreService.Names.Store
     getPrepaidCodeById,
     reservePrepaidCode,
     releasePrepaidCode,
-    spendPrepaidCode,
     spendLandedPrepaidCode,
     revokePrepaidCode,
     insertTransaction,
@@ -92,7 +91,6 @@ module StoreService.Names.Store
     insertRecordEdit,
     getRecordEdit,
     getRecordEditByBody,
-    getRecordEditByNonce,
     settleRecordEdit,
     pendingEditIds,
     deleteUnsentEdit,
@@ -1322,15 +1320,6 @@ releasePrepaidCode db codeId (RegistrationId rid) =
       |]
       (codeId, rid)
 
--- | A spent code keeps reserved_by, naming the registration it paid for.
-spendPrepaidCode :: DB.Connection -> Int64 -> RegistrationId -> UTCTime -> IO Bool
-spendPrepaidCode db codeId (RegistrationId rid) now =
-  (> 0)
-    <$> executeChanging
-      db
-      "UPDATE sx_badge_service_name_prepaid_codes SET spent_at = ? WHERE name_prepaid_code_id = ? AND reserved_by = ? AND spent_at IS NULL"
-      (truncateToSecond now, codeId, rid)
-
 -- | For a registration whose register went through: spends the code it holds, or one released and still usable; False otherwise.
 spendLandedPrepaidCode :: DB.Connection -> Int64 -> RegistrationId -> UTCTime -> IO Bool
 spendLandedPrepaidCode db codeId (RegistrationId rid) now' =
@@ -1513,17 +1502,6 @@ getRecordEditByBody :: DB.Connection -> ByteString -> IO (Maybe RecordEdit)
 getRecordEditByBody db bodyHash =
   firstRecordEdit db $
     DB.query db (recordEditColumns <> " WHERE body_hash = ? ORDER BY name_record_edit_id DESC LIMIT 1") (Only $ Binary bodyHash)
-
--- | The pending or mined edit holding the owner's nonce among its changes.
-getRecordEditByNonce :: DB.Connection -> Address -> Word64 -> IO (Maybe RecordEdit)
-getRecordEditByNonce db owner nonce =
-  firstRecordEdit db $
-    DB.query
-      db
-      ( recordEditColumns
-          <> " WHERE owner = ? AND state IN (?,?) AND name_record_edit_id IN (SELECT name_record_edit_id FROM sx_badge_service_name_record_changes WHERE nonce = ?)"
-      )
-      (Binary $ unAddress owner, pendingEdit, minedEdit, int64 nonce)
 
 -- | Settles a pending edit; False when it was settled already.
 settleRecordEdit :: DB.Connection -> Int64 -> EditState -> IO Bool
