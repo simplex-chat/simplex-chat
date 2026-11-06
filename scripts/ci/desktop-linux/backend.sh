@@ -19,7 +19,6 @@ admin=ci_admin
 search_text="ci seed"
 # the longest profile image data URI the apps make and the core accepts (maxProfileImageSize)
 max_image_size=12500
-max_service_body=10737
 name_label=seeded
 resolver_port=8090
 
@@ -310,7 +309,7 @@ page_summary() {
     compressed=", $(printf '%s' "$resp" | zstd -3 -q -c | wc -c) bytes zstd-compressed"
   fi
   jq -r '[.entries[] | "\(.displayName) (image: \(.image // "" | length) characters)"] | join(", ") | "entries: " + .' <<< "$resp"
-  echo "body: ${#resp} bytes$compressed, limit $max_service_body"
+  echo "body: ${#resp} bytes$compressed"
 }
 
 probe_search() {

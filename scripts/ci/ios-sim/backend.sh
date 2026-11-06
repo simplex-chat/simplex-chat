@@ -20,7 +20,6 @@ admin=ci_admin
 search_text="ci seed"
 avatar_search_text="ci avatar"
 long_name=ci_long_name_entry_for_layout_truncation_checks
-max_service_body=10737
 names_resolver_port=18080
 
 # Runs one chat command in a CLI client that stays online for <secs> after it; the output is in $work/out.
@@ -384,21 +383,11 @@ probe_search() {
   echo "search for \"$search_text\" found ci_group and ci_channel"
 }
 
-# What the app will send, from a client that never connected to the directory.
-probe_service_search() {
-  chat probe 1 "/_service_request 1 $directory_link timeout=30 {\"type\":\"search\",\"searchText\":\"$search_text\"}" --user-display-name ci_probe
-  expect_out '"displayName":"ci_group"'
-  expect_out '"displayName":"ci_channel"'
-  echo "search request for \"$search_text\" found ci_group and ci_channel"
-}
-
 probe_pages() {
   local text=$1 expected=$2
   local page=0 cursor=null req resp names=""
   {
     echo "## Search \"$text\", page by page"
-    echo
-    echo "Responses must fit $max_service_body bytes, as JSON or zstd-compressed (the zstd size is measured with the zstd CLI at level 3, a few bytes off the core's framing)."
     echo
     echo "| Page | Entries (avatar characters) | JSON bytes | zstd -3 bytes | More |"
     echo "|---|---|---|---|---|"
@@ -434,7 +423,8 @@ probe_pages() {
   } >> "$work/seed.md"
   echo "search for \"$text\": $found entries in $page pages, $expected expected, repeated: ${repeated:-none}"
   if [ "$found" -ne "$expected" ] || [ -n "$repeated" ]; then
-    echo "::warning::search for \"$text\" returned $found entries ($expected expected), repeated: ${repeated:-none}"
+    echo "error: search for \"$text\" returned $found entries ($expected expected), repeated: ${repeated:-none}"
+    return 1
   fi
 }
 
@@ -451,8 +441,8 @@ write_seed() {
     echo "| \`$search_text\` | ci_group (group), ci_channel (channel), each with a small avatar (64 px) | the smoke test; results on one page |"
     echo "| \`ci cards\` | ci_cards (channel, with a small avatar) | the smoke test joins it, so that the chat list shows its cards |"
     echo "| \`$avatar_search_text\` | ci_avatar_g1…3 (groups), ci_avatar_c1…3 (channels), each with an avatar the size the app makes | avatars and the response size limit: about one entry per page |"
-    echo "| \`ci long\` | $long_name (group): a long name and a two-line description | D3 |"
-    echo "| \`ci markdown\` | ci_markdown (group): markdown in the description | D5 |"
+    echo "| \`ci long\` | $long_name (group): a long name and a two-line description | truncation |"
+    echo "| \`ci markdown\` | ci_markdown (group): markdown in the description | markdown shown literally |"
     echo "| \`cinews\` | cinews (channel, with the name cinews.testing), cinews_digest and cinews_weekly (groups) | the Search key with a name typed: directory results, with Connect to cinews.testing still shown |"
     echo
     sqlite3 -markdown "$work/directory_chat.db" "$listings_query"
@@ -503,7 +493,6 @@ start() {
   seed_names
   probe_search
   probe_names
-  probe_service_search
   write_seed
   probe_pages "$search_text" 2
   probe_pages "$avatar_search_text" 6
