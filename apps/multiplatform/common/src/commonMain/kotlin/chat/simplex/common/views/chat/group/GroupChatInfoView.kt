@@ -237,7 +237,7 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
         chat,
         title,
         text = text + "\n" + String.format(generalGetString(MR.strings.contact_will_be_notified), groupInfo.displayName),
-        keepConversationText = if (chatModel.userAddress.value != null) String.format(generalGetString(MR.strings.customer_can_connect_again_via_business_address), groupInfo.displayName) else null,
+        keepConversationText = if (chatModel.userAddress.value?.addressSettings?.businessAddress == true) String.format(generalGetString(MR.strings.customer_can_connect_again_via_business_address), groupInfo.displayName) else null,
         close
       )
     else ->
