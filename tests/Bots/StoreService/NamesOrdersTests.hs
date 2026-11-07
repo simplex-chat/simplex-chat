@@ -65,7 +65,7 @@ import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (TVar, atomically, check, modifyTVar', newTVarIO, readTVar)
 import qualified Control.Exception as E
 import Control.Arrow ((&&&))
-import Control.Monad (forM_, void)
+import Control.Monad (forM_, replicateM_, void)
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
@@ -118,7 +118,7 @@ import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers (Funded (..), OrderDraft (..), PaymentSignal (..), Provider (..), ProviderError (..), ProviderInvoice (..))
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), ProviderRefConflict (..), getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
 import StoreService.Waiters (Waiters, newWaiters)
-import StoreService.Web.Http (codeLimit)
+import StoreService.Web.Http (Limit (..), codeLimit, invoicesLimit, takeToken)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Codes (codeCheckHandler)
 import StoreService.Web.Names.Orders (codeOrderHandler)
@@ -144,6 +144,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "cancels the provider invoice and logs it when the order's insert fails" testInsertFailureCancels
     it "checks the duration within the slack, before and after the term start" testDurationSlack
     it "answers catalog_changed with the chain price" testCatalogChanged
+    it "counts toward the checkouts of every client only an order that reaches the provider" testOrdersLimitForAll
     it "answers name_taken for a registered, reserved or being registered name" testNameTaken
     it "answers name_check_unavailable when a status or price read fails" testNameCheckUnavailable
     it "refuses a body over 16384 bytes, accepting the longest order" testSizes
@@ -670,6 +671,14 @@ testCatalogChanged :: IO ()
 testCatalogChanged = withOrders $ \ctx -> do
   placeOrder ctx aliceOrder {oPrice = 9000} `shouldReturn` (409, Just $ KM.fromList [("error", "catalog_changed"), ("price", J.Number 10000)])
   stubCalls (cStub ctx) `shouldReturn` []
+
+testOrdersLimitForAll :: IO ()
+testOrdersLimitForAll = withOrders $ \ctx -> do
+  replicateM_ (lmPerMinute invoicesLimit) $ fst <$> placeOrder ctx aliceOrder {oPrice = 9000} `shouldReturn` 409
+  void $ placed ctx aliceOrder
+  replicateM_ (lmPerMinute invoicesLimit - 1) $ takeToken (weHttp $ cWeb ctx) invoicesLimit ""
+  placeOrder ctx aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2} `shouldReturn` refusedWith 429 "rate_limited"
+  length <$> stubCalls (cStub ctx) `shouldReturn` 1
 
 testNameTaken :: IO ()
 testNameTaken = withOrders $ \ctx@Ctx {cNode = node} -> do

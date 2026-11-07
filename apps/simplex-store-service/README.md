@@ -178,9 +178,10 @@ then the header is whatever the caller wrote. The last entry is the one read, wh
 proxy appends.
 An IPv6 client is counted by its /64, since one host gets a whole /64, and an IPv4-mapped address
 by its IPv4 address.
-Checkouts (`POST /api/invoice`, each a provider invoice or card PaymentIntent) are also capped at 30 a
-minute for all clients together.
-Searches answer at most 16 at a time and long polls hold at most 500 at a time, for all clients
+Checkouts that reach the provider (`POST /api/invoice` and `POST /api/registration/:id/spend` with a
+difference to pay, each a provider invoice or card PaymentIntent) are also capped at 30 a minute for
+all clients together.
+Searches read the chain at most 16 at a time and long polls hold at most 500 at a time, for all clients
 together; past that they answer `429 rate_limited` with a short `Retry-After` at once.
 
 The BTCPay API key needs four permissions, each scoped to the one store:
@@ -1377,7 +1378,8 @@ write to chat@simplex.chat with the order's reference, which is its invoice id, 
 id for an order without an invoice. Nothing is refunded automatically, and the service never learns
 where to send money. A reference is not proof of who paid: it is in the service's logs, the
 provider's Dashboard and its emails, and anyone holding it reads the balance and the order's name
-from `/api/invoice/:id`. Only a card refund is safe on the reference alone, as Stripe returns it to
+from `/api/invoice/:id`, or from `/api/registration/:id` for a registration id. Only a card refund is
+safe on the reference alone, as Stripe returns it to
 the card that paid; a crypto refund goes to an address the buyer gives, which nothing here ties to
 the order. Support records each refund in `--run-cli` mode with the service stopped, like the other
 `//` commands:

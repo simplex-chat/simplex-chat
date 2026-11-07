@@ -93,7 +93,7 @@ data HttpEnv = HttpEnv
     heTrustForwardedFor :: Bool,
     -- | the long polls held now, of every client
     heHolds :: TVar Int,
-    -- | the name searches answering now, of every client, each several chain reads
+    -- | the name searches reading the chain now, of every client
     heSearches :: TVar Int
   }
 
@@ -125,7 +125,7 @@ withHoldSlot HttpEnv {heHolds} = inSlot heHolds maxHolds
 holdsFull :: Response
 holdsFull = rateLimited holdsFullSeconds
 
--- | Name searches of every client answering at once, so a flood cannot multiply into the chain node's load.
+-- | Name searches of every client reading the chain at once, so a flood cannot multiply into the chain node's load.
 maxSearches :: Int
 maxSearches = 16
 

@@ -91,7 +91,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "keeps the phase on NameNotAvailable while the name still reads available, as for a pending competitor" testPendingCompetitor
     it "ends failed on a revert while the name is available, keeping a code" testRevertFailed
     it "keeps an order committed while the sponsor allowance is used up, and registers it after a top-up" testAllowanceUsedUp
-    it "fails an order that sent the most registers an order may, sending nothing, and refuses its Try again and a move" testSendsCapped
+    it "fails an order that sent the most registers an order may, sending nothing, refuses its Try again and a move, and registers it on a move once its owner holds the name" testSendsCapped
     it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed, and reads the name policy again on TermsNotAccepted" testInvalidNonce
     it "relays no intent past its deadline, ending failed" testExpiredIntent
     it "keeps the phase when a read of the final check fails" testCheckUnread
@@ -144,7 +144,7 @@ data W = W
     wWorker :: Worker
   }
 
--- | The worker over the orders' store and fake node, with the registration poll and Try again as namesRoutes registers them.
+-- | The worker over the orders' store and fake node, with the registration poll, Try again and another name as namesRoutes registers them.
 withWorker :: (W -> IO a) -> IO a
 withWorker = withWorkerAs id
 
@@ -682,6 +682,10 @@ testSendsCapped = withWorker $ \w@W {wCtx = ctx} -> do
   to <- moveTo ctx "alicebakers" 10
   fst <$> move ctx keyA x to `shouldReturn` 400
   stored ctx x `shouldReturn` x
+  answerOwner ctx "alicebakery" (nrOwner x)
+  answerExpiry ctx "alicebakery" expiry
+  fst <$> move ctx keyA x to `shouldReturn` 409
+  nrPhase <$> stored ctx x `shouldReturn` PRegistered
 
 testInvalidNonce :: IO ()
 testInvalidNonce = forM_ [("InvalidNonce()", fakeNamePolicy), ("TermsNotAccepted(string)", newPolicy)] $ \(revert, policyAfter) -> withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders = OrdersEnv {oeContracts}}} -> do

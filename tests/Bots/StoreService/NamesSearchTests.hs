@@ -62,7 +62,7 @@ import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Links (LinkKind (..))
 import StoreService.Names.Profiles (ChatKind (..), HostResolver, LinkProfile (..), ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
 import StoreService.Names.Store (EditState (..), NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, insertRecordEdit, settleRecordEdit, updateRegistration)
-import StoreService.Web.Http (newHttpEnv, notFound, previewLimit, searchLimit)
+import StoreService.Web.Http (HttpEnv (..), maxSearches, newHttpEnv, notFound, previewLimit, searchLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Search (previewHandler, recordLinks, searchHandler, termsHandler)
 import Test.Hspec
@@ -74,6 +74,7 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "answers an available name with the chain's price for the paid years, the term start and the order's contracts" $ testAvailable g
     it "answers a name the chain has available as registered while its register here is sent, without a price" $ testRegistering g
     it "answers a registered name with its entities, raw records, owner, resolver, nonce, expiry and grace period" $ testRegistered g
+    it "holds a search slot through the chain reads only, answering rate_limited while every slot is taken" $ testSearchSlot g
     it "answers a listed name's community entry when available, reserved, being registered here and registered, a plain answer for an ini line the policy does not list, the community terms on chain as they change, and 503 while its listing is unread" $ testCommunity g
     it "answers an available name's terms null while the terms of its kind cannot be read: not set, of a link the service does not take, or of a text not fetched now" $ testTermsUnavailable g
     it "answers a name the policy lists without an ini line as a community name without its text" $ testCommunityWithoutText g
@@ -94,14 +95,16 @@ namesSearchTests = describe "StoreService names: search" $ do
 
 -- harness
 
-data Search = Search {node :: FakeEthNode, store :: DBStore, client :: (Manager, String), fetched :: TVar [Text]}
+data Search = Search {node :: FakeEthNode, store :: DBStore, client :: (Manager, String), fetched :: TVar [Text], searches :: TVar Int, searchesAtFetch :: TVar [Int]}
 
 -- | The routes as namesRoutes registers them, since a NamesEnv needs a running chat controller.
 withSearch :: TVar ChaChaDRG -> (NamesConfig -> NamesConfig) -> (Contracts -> Contracts) -> (Search -> IO a) -> IO a
 withSearch g adjustConfig adjust action = withServiceStore $ \store -> withContracts g $ \node ct -> do
   fetched <- newTVarIO []
-  ps <- newProfiles defaultProfileLimits {fetchTimeout = fetchMicros} monotonicSeconds (fakeFetch fetched) stubResolver
-  http <- newHttpEnv ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = "", lServeWebapp = False, lBadgesExportDir = Nothing, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesPort = Nothing}
+  searchesAtFetch <- newTVarIO []
+  http@HttpEnv {heSearches} <- newHttpEnv ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = "", lServeWebapp = False, lBadgesExportDir = Nothing, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesPort = Nothing}
+  let fetch sl = atomically (readTVar heSearches >>= modifyTVar' searchesAtFetch . (:)) >> fakeFetch fetched sl
+  ps <- newProfiles defaultProfileLimits {fetchTimeout = fetchMicros} monotonicSeconds fetch stubResolver
   let cfg = adjustConfig $ testNamesConfig node
       routes = \case
         ["api", "link", "preview"] -> Just Route {rMethod = "POST", rLimit = previewLimit, rHandler = previewHandler ps}
@@ -109,7 +112,7 @@ withSearch g adjustConfig adjust action = withServiceStore $ \store -> withContr
         ["api", "name", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = searchHandler cfg http store (adjust ct) ps (pure t0) hash}
         _ -> Nothing
       app req respond = fromMaybe (respond notFound) (namesApp http routes req respond)
-  withApp app $ \client -> action Search {node, store, client, fetched}
+  withApp app $ \client -> action Search {node, store, client, fetched, searches = heSearches, searchesAtFetch}
 
 aliceCommunity :: Text
 aliceCommunity = "bakers and bakeries in Lisbon"
@@ -347,6 +350,14 @@ testRegistered g = withSearch g id id $ \s@Search {node} -> do
       (recordsOf bakeryLink newsLink)
       resolverText
       (J.toJSON (0 :: Int))
+
+testSearchSlot :: TVar ChaChaDRG -> IO ()
+testSearchSlot g = withSearch g id id $ \s@Search {node, searches, searchesAtFetch} -> do
+  registeredWith node bakeryLink newsLink
+  fst <$> searchAlice s 12 `shouldReturn` 200
+  readTVarIO searchesAtFetch `shouldReturn` [0, 0]
+  atomically $ writeTVar searches maxSearches
+  searchAlice s 12 `shouldReturn` refused 429 "rate_limited"
 
 testCommunity :: TVar ChaChaDRG -> IO ()
 testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
