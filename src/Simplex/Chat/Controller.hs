@@ -1152,6 +1152,7 @@ data ChatPagination
   | CPBefore {chatItemId :: ChatItemId, count :: Int}
   | CPAround {chatItemId :: ChatItemId, count :: Int}
   | CPInitial {count :: Int}
+  | CPFrom {fromTs :: UTCTime, count :: Int}
   deriving (Show)
 
 data PaginationByTime

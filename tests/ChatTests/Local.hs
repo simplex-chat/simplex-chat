@@ -21,6 +21,7 @@ chatLocalChatsTests = do
     it "switch users" testUserNotes
     it "preview pagination for notes" testPreviewsPagination
     it "chat pagination" testChatPagination
+    it "chat pagination from time" testChatPaginationFrom
     it "stores files" testFiles
     it "deleting files does not interfere with other chat types" testOtherFiles
   describe "batch create messages" $ do
@@ -116,6 +117,18 @@ testChatPagination ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice #$> ("/_get chat *1 before=4 count=2", chat, [(1, "memento mori"), (1, "knock-knock")])
 
   alice #$> ("/_get chat *1 count=10 search=k-k", chat, [(1, "knock-knock")])
+
+testChatPaginationFrom :: TestParams -> IO ()
+testChatPaginationFrom ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  createCCNoteFolder alice
+
+  alice >* "hello world"
+  ts <- iso8601Show <$> getCurrentTime
+  alice >* "memento mori"
+  alice >* "knock-knock"
+
+  alice #$> ("/_get chat *1 from=" <> ts <> " count=10", chat, [(1, "memento mori"), (1, "knock-knock")])
+  alice #$> ("/_get chat *1 from=" <> ts <> " count=1", chat, [(1, "memento mori")])
 
 testFiles :: TestParams -> IO ()
 testFiles ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do

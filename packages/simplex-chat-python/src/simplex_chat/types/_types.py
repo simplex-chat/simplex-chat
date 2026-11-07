@@ -1364,19 +1364,25 @@ class ChatPagination_initial(TypedDict):
     type: Literal["initial"]
     count: int  # int
 
+class ChatPagination_from(TypedDict):
+    type: Literal["from"]
+    fromTs: str  # ISO-8601 timestamp
+    count: int  # int
+
 ChatPagination = (
     ChatPagination_last
     | ChatPagination_after
     | ChatPagination_before
     | ChatPagination_around
     | ChatPagination_initial
+    | ChatPagination_from
 )
 
-ChatPagination_Tag = Literal["last", "after", "before", "around", "initial"]
+ChatPagination_Tag = Literal["last", "after", "before", "around", "initial", "from"]
 
 
 def ChatPagination_cmd_string(self: ChatPagination) -> str:
-    return 'count=' + str(self['count']) if str(self['type']) == 'last' else 'after=' + str(self['chatItemId']) + ' count=' + str(self['count']) if str(self['type']) == 'after' else 'before=' + str(self['chatItemId']) + ' count=' + str(self['count']) if str(self['type']) == 'before' else 'around=' + str(self['chatItemId']) + ' count=' + str(self['count']) if str(self['type']) == 'around' else 'initial=' + str(self['count'])  # type: ignore[typeddict-item]
+    return 'count=' + str(self['count']) if str(self['type']) == 'last' else 'after=' + str(self['chatItemId']) + ' count=' + str(self['count']) if str(self['type']) == 'after' else 'before=' + str(self['chatItemId']) + ' count=' + str(self['count']) if str(self['type']) == 'before' else 'around=' + str(self['chatItemId']) + ' count=' + str(self['count']) if str(self['type']) == 'around' else 'from=' + str(self['fromTs']) + ' count=' + str(self['count']) if str(self['type']) == 'from' else 'initial=' + str(self['count'])  # type: ignore[typeddict-item]
 
 ChatPeerType = Literal["human", "bot", "business", "agent"]
 
