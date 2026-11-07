@@ -19,7 +19,7 @@ Two tests cover the OpenSSL of the mobile apps' core beyond opening a database:
 
 The workflow runs only when started by hand, on any branch: in the Actions tab, `build-apps` → Run workflow, or `gh workflow run build-apps.yml --ref <branch>`. A newer run on the same branch cancels the older one. Start it on master or a branch of master: armv7a is built from the same commit, which `stable` only supports once it carries the armv7a build of master.
 
-It needs the repository secret `SIMPLEX_ART_SSH_KEY`, the private half of a read-only deploy key of simplex-chat/simplex-chat-art, for the iOS brand assets; without it, as on forks, the archive has the default icons and the build warns.
+It needs the repository secret `SIMPLEX_ART_SSH_KEY`, the private half of a read-only deploy key of simplex-chat/simplex-chat-art, for the iOS brand assets; without it, as on forks, the archive has the default icons and the build warns. A fork with its own copy of the assets sets the repository variable `SIMPLEX_ART_REPO` to that repository (`owner/name`) and the secret to a deploy key of it.
 
 ## Jobs and artifacts
 

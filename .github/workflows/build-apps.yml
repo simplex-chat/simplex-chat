@@ -210,7 +210,7 @@ jobs:
         if: env.HAS_ART_KEY == 'true'
         uses: actions/checkout@v6
         with:
-          repository: simplex-chat/simplex-chat-art
+          repository: ${{ vars.SIMPLEX_ART_REPO || 'simplex-chat/simplex-chat-art' }}
           ssh-key: ${{ secrets.SIMPLEX_ART_SSH_KEY }}
           path: simplex-chat-art
 
