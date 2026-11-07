@@ -434,7 +434,7 @@ struct ChatListNavLink: View {
 
             if canShowGroupDelete, let gi = groupInfo, gi.canDelete {
                 buttons.append(.destructive(Text("Delete")) {
-                    AlertManager.shared.showAlert(deleteGroupAlert(gi))
+                    AlertManager.shared.showAlert(deleteGroupAlert(chat, gi))
                 })
             }
             
@@ -472,7 +472,7 @@ struct ChatListNavLink: View {
 
     private func deleteGroupChatButton(_ groupInfo: GroupInfo) -> some View {
         Button {
-            AlertManager.shared.showAlert(deleteGroupAlert(groupInfo))
+            AlertManager.shared.showAlert(deleteGroupAlert(chat, groupInfo))
         } label: {
             deleteLabel
         }
@@ -548,18 +548,6 @@ struct ChatListNavLink: View {
 
     private var deleteLabel: some View {
         SwipeLabel(NSLocalizedString("Delete", comment: "swipe action"), systemImage: "trash.fill", inverted: oneHandUI)
-    }
-
-    private func deleteGroupAlert(_ groupInfo: GroupInfo) -> Alert {
-        let label: LocalizedStringKey = groupInfo.useRelays ? "Delete channel?" : groupInfo.businessChat == nil ? "Delete group?" : "Delete chat?"
-        return Alert(
-            title: Text(label),
-            message: Text(chat.chatInfo.displayName + "\n\n") + deleteGroupAlertMessage(groupInfo),
-            primaryButton: .destructive(Text("Delete")) {
-                Task { await deleteChat(chat) }
-            },
-            secondaryButton: .cancel()
-        )
     }
 
     private func archiveAllReportsAlert() -> Alert {

@@ -3078,6 +3078,10 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
         return membership.memberRole == .owner && membership.memberCurrent
     }
 
+    public var isCustomerChatOwner: Bool {
+        isOwner && businessChat?.chatType == .customer
+    }
+
     public var canDelete: Bool {
         return membership.memberRole == .owner || !membership.memberCurrentOrPending
     }
@@ -3414,6 +3418,12 @@ public struct BusinessChatInfo: Decodable, Hashable {
     public var businessId: String
     public var customerId: String
     public var businessDomain: SimplexDomainClaim?
+
+    public static let sampleData = BusinessChatInfo(
+        chatType: .customer,
+        businessId: "business",
+        customerId: "customer"
+    )
 }
 
 public enum BusinessChatType: String, Codable, Hashable {

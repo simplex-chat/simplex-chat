@@ -1270,14 +1270,15 @@ func apiConnectContactViaAddress(incognito: Bool, contactId: Int64) async -> Con
     return nil
 }
 
-func apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async throws {
+@discardableResult
+func apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async throws -> GroupInfo? {
     let chatId = type.rawValue + id.description
     DispatchQueue.main.async { ChatModel.shared.deletedChats.insert(chatId) }
     defer { DispatchQueue.main.async { ChatModel.shared.deletedChats.remove(chatId) } }
     let r: ChatResponse1 = try await chatSendCmd(.apiDeleteChat(type: type, id: id, chatDeleteMode: chatDeleteMode), bgTask: false)
-    if case .direct = type, case .contactDeleted = r { return }
-    if case .contactConnection = type, case .contactConnectionDeleted = r { return }
-    if case .group = type, case .groupDeletedUser = r { return }
+    if case .direct = type, case .contactDeleted = r { return nil }
+    if case .contactConnection = type, case .contactConnectionDeleted = r { return nil }
+    if case .group = type, case let .groupDeletedUser(_, groupInfo) = r { return groupInfo }
     throw r.unexpected
 }
 
@@ -1297,17 +1298,26 @@ func apiDeleteContact(id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: 
     throw r.unexpected
 }
 
-func deleteChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async {
+@discardableResult
+func deleteChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async -> Bool {
     do {
         let cInfo = chat.chatInfo
-        try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId, chatDeleteMode: chatDeleteMode)
-        await MainActor.run { ChatModel.shared.removeChat(cInfo.id) }
+        let groupInfo = try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId, chatDeleteMode: chatDeleteMode)
+        await MainActor.run {
+            if chatDeleteMode.isEntity, let groupInfo {
+                ChatModel.shared.updateGroup(groupInfo)
+            } else {
+                ChatModel.shared.removeChat(cInfo.id)
+            }
+        }
+        return true
     } catch let error {
         logger.error("deleteChat apiDeleteChat error: \(responseError(error))")
         AlertManager.shared.showAlertMsg(
             title: "Error deleting chat!",
             message: "Error: \(responseError(error))"
         )
+        return false
     }
 }
 

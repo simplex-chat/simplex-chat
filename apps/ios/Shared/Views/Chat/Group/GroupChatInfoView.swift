@@ -279,7 +279,11 @@ struct GroupChatInfoView: View {
         }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
-            case .deleteGroupAlert: return deleteGroupAlert()
+            case .deleteGroupAlert:
+                return deleteGroupAlert(chat, groupInfo) {
+                    dismiss()
+                    chatModel.chatId = nil
+                }
             case .clearChatAlert: return clearChatAlert()
             case .leaveGroupAlert: return leaveGroupAlert()
             case .cantInviteIncognitoAlert: return cantInviteIncognitoAlert()
@@ -899,29 +903,6 @@ struct GroupChatInfoView: View {
     }
 
     // TODO reuse this and clearChatAlert with ChatInfoView
-    private func deleteGroupAlert() -> Alert {
-        let label: LocalizedStringKey = groupInfo.useRelays ? "Delete channel?" : groupInfo.businessChat == nil ? "Delete group?" : "Delete chat?"
-        return Alert(
-            title: Text(label),
-            message: Text(chat.chatInfo.displayName + "\n\n") + deleteGroupAlertMessage(groupInfo),
-            primaryButton: .destructive(Text("Delete")) {
-                Task {
-                    do {
-                        try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
-                        await MainActor.run {
-                            dismiss()
-                            chatModel.chatId = nil
-                            chatModel.removeChat(chat.chatInfo.id)
-                        }
-                    } catch let error {
-                        logger.error("deleteGroupAlert apiDeleteChat error: \(error.localizedDescription)")
-                    }
-                }
-            },
-            secondaryButton: .cancel()
-        )
-    }
-
     private func clearChatAlert() -> Alert {
         Alert(
             title: Text("Clear conversation?"),
@@ -1069,8 +1050,33 @@ func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, withMessages: Bool
     }
 }
 
+func deleteGroupAlert(_ chat: Chat, _ groupInfo: GroupInfo, afterDeletion: @escaping () -> Void = {}) -> Alert {
+    let label: LocalizedStringKey = groupInfo.useRelays ? "Delete channel?" : groupInfo.businessChat == nil ? "Delete group?" : "Delete chat?"
+    return Alert(
+        title: Text(label),
+        message: Text(chat.chatInfo.displayName + "\n\n") + deleteGroupAlertMessage(groupInfo),
+        primaryButton: .destructive(Text("Delete")) {
+            if (groupInfo.isOwner && groupInfo.businessChat == nil) || groupInfo.isCustomerChatOwner {
+                showClosableAppSheet { close in
+                    deleteGroupKeepDialog(groupInfo, close: close) { keepConversation in
+                        deleteGroup(chat, keepConversation: keepConversation, afterDeletion)
+                    }
+                }
+            } else {
+                deleteGroup(chat, keepConversation: false, afterDeletion)
+            }
+        },
+        secondaryButton: .cancel()
+    )
+}
+
 func deleteGroupAlertMessage(_ groupInfo: GroupInfo) -> Text {
-    groupInfo.useRelays ? (
+    if groupInfo.isCustomerChatOwner {
+        return Text("Chat will be deleted for all members - this cannot be undone!")
+            + Text(verbatim: "\n")
+            + Text("\(groupInfo.displayName) will be notified.")
+    }
+    return groupInfo.useRelays ? (
         groupInfo.membership.memberCurrent
             ? Text("Channel will be deleted for all subscribers - this cannot be undone!")
             : Text("Channel will be deleted for you - this cannot be undone!")
@@ -1083,6 +1089,25 @@ func deleteGroupAlertMessage(_ groupInfo: GroupInfo) -> Text {
             ? Text("Chat will be deleted for all members - this cannot be undone!")
             : Text("Chat will be deleted for you - this cannot be undone!")
     )
+}
+
+private func deleteGroupKeepDialog(_ groupInfo: GroupInfo, close: @escaping CloseSheet, delete: @escaping (_ keepConversation: Bool) -> Void) -> KeepConversationDialog {
+    KeepConversationDialog(
+        actionTitle: NSLocalizedString("Delete", comment: "delete group dialog"),
+        footer: groupInfo.isCustomerChatOwner
+            ? String.localizedStringWithFormat(NSLocalizedString("%@ can connect to you again via your business address.", comment: "delete business chat dialog"), groupInfo.displayName)
+            : nil,
+        close: close,
+        delete: delete
+    )
+}
+
+private func deleteGroup(_ chat: Chat, keepConversation: Bool, _ afterDeletion: @escaping () -> Void) {
+    Task {
+        if await deleteChat(chat, chatDeleteMode: ChatDeleteMode(keepConversation: keepConversation, notify: true)) {
+            await MainActor.run { afterDeletion() }
+        }
+    }
 }
 
 struct GroupPreferencesButton: View {
@@ -1232,5 +1257,30 @@ struct GroupChatInfoView_Previews: PreviewProvider {
             onSearch: {},
             localAlias: ""
         )
+    }
+}
+
+private func previewCustomerChat() -> GroupInfo {
+    var groupInfo = GroupInfo.sampleData
+    groupInfo.localDisplayName = "alice"
+    groupInfo.groupProfile = GroupProfile(displayName: "alice", fullName: "")
+    groupInfo.businessChat = .sampleData
+    groupInfo.membership.memberRole = .owner
+    return groupInfo
+}
+
+struct DeleteGroupKeepDialog_Previews: PreviewProvider {
+    static var previews: some View {
+        deleteGroupKeepDialog(GroupInfo.sampleData, close: { _ in }) { _ in }
+        deleteGroupKeepDialog(previewCustomerChat(), close: { _ in }) { _ in }
+    }
+}
+
+struct DeleteBusinessChatAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        let groupInfo = previewCustomerChat()
+        return Color.clear.alert(isPresented: .constant(true)) {
+            deleteGroupAlert(Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil)), groupInfo)
+        }
     }
 }
