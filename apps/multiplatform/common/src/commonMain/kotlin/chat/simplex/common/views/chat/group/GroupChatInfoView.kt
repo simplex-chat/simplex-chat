@@ -231,7 +231,7 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
   val text = "${groupInfo.displayName}\n\n${generalGetString(messageId)}"
   when {
     groupInfo.isOwner && groupInfo.membership.memberActive && groupInfo.businessChat == null ->
-      deleteOwnGroupDialog(chat, title, text, keepConversationText = groupInfo.displayName, close)
+      deleteOwnGroupDialog(chat, title, text, keepConversationText = null, close)
     groupInfo.isCustomerChatOwner ->
       deleteOwnGroupDialog(
         chat,
@@ -1633,7 +1633,7 @@ fun PreviewDeleteGroupDialog() {
 @Composable
 fun PreviewDeleteGroupKeepConversationDialog() {
   SimpleXTheme {
-    AlertPreview { keepGroupConversationDialog(previewGroupChat(previewOwnerGroupInfo), generalGetString(MR.strings.delete_group_question), previewOwnerGroupInfo.displayName, close = null) }
+    AlertPreview { keepGroupConversationDialog(previewGroupChat(previewOwnerGroupInfo), generalGetString(MR.strings.delete_group_question), text = null, close = null) }
   }
 }
 
