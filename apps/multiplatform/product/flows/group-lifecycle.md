@@ -133,7 +133,7 @@ suspend fun apiBlockMembersForAll(rh: Long?, groupId: Long, memberIds: List<Long
 ```
 
 1. Owner, Admin, or Moderator selects a member and taps "Ban member", or selects several members and taps the ban button.
-2. "Ban member?" (`banMemberDialog`, `banMembersDialog`) offers "Ban for" 1 day (default), 1 week or Forever; admins and owners also get "Ban and remove" and "Ban, remove and delete messages".
+2. "Ban member?" (`banMemberDialog`, `banMembersDialog`) offers "Ban for" 1 day (default), 1 week or Forever; admins and owners also get "Ban and remove" and "Ban, remove and delete messages". The `initialDuration` parameter of `showBanDialog`, `banMemberDialog` and `removeBannedMembersDialog` defaults to 1 day; only previews pass Forever.
 3. `CC.ApiBlockMembersForAll(groupId, memberIds, blocked, ttl)` is sent; `ttl` is absent for Forever.
 4. `CR.MembersBlockedForAllUser` returns the updated member list; `GroupMember.blockedUntil` is the end time.
 5. Banned members' messages are hidden for all members; only moderators and above see placeholders.

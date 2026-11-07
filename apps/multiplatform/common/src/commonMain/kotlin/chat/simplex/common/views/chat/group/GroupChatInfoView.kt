@@ -451,7 +451,7 @@ fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMember) {
 
 private fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, members: List<GroupMember>, onSuccess: () -> Unit = {}) {
   if (members.any { it.blockedByAdmin } && members.all { it.canBanAndRemove(groupInfo) }) {
-    removeBannedMembersDialog(rhId, groupInfo, members, onSuccess)
+    removeBannedMembersDialog(rhId, groupInfo, members, onSuccess = onSuccess)
     return
   }
   val memberIds = members.map { it.groupMemberId }
@@ -1617,6 +1617,11 @@ val previewBusinessChatInfo = previewOwnerGroupInfo.copy(
   businessChat = BusinessChatInfo(BusinessChatType.Customer, businessId = "business", customerId = "customer")
 )
 
+val previewChannelInfo = previewOwnerGroupInfo.copy(
+  useRelays = true,
+  groupProfile = GroupProfile.sampleData.copy(displayName = "news", fullName = "News", publicGroup = PublicGroupProfile(GroupType.Channel, groupLink = "", publicGroupId = "news"))
+)
+
 val previewBanMember = GroupMember.sampleData.copy(groupMemberId = 2, activeConn = Connection.sampleData.copy(peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)))
 
 private fun previewGroupChat(groupInfo: GroupInfo) = Chat(remoteHostId = null, chatInfo = ChatInfo.Group(groupInfo, groupChatScope = null), chatItems = listOf())
@@ -1634,6 +1639,22 @@ fun PreviewDeleteGroupDialog() {
 fun PreviewDeleteGroupKeepConversationDialog() {
   SimpleXTheme {
     AlertPreview { keepGroupConversationDialog(null, previewOwnerGroupInfo, generalGetString(MR.strings.delete_group_question), text = null, close = null) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDeleteChannelDialog() {
+  SimpleXTheme {
+    AlertPreview { deleteGroupDialog(previewGroupChat(previewChannelInfo), previewChannelInfo, ChatModel) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDeleteChannelKeepConversationDialog() {
+  SimpleXTheme {
+    AlertPreview { keepGroupConversationDialog(null, previewChannelInfo, generalGetString(MR.strings.delete_channel_question), text = null, close = null) }
   }
 }
 
