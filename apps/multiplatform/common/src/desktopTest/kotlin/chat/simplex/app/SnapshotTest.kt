@@ -24,6 +24,7 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.group.*
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chatlist.*
+import chat.simplex.common.views.contacts.PreviewArchivedContactMenu
 import chat.simplex.common.views.database.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
@@ -130,6 +131,7 @@ private val previewScenes = listOf(
   SnapshotScene("ChatListNavLinkView.PreviewContactMenu") { PreviewContactMenu() },
   SnapshotScene("ChatListNavLinkView.PreviewGroupMenu") { PreviewGroupMenu() },
   SnapshotScene("ChatListNavLinkView.PreviewBusinessChatMenu") { PreviewBusinessChatMenu() },
+  SnapshotScene("ContactListNavView.PreviewArchivedContactMenu") { PreviewArchivedContactMenu() },
   SnapshotScene("ChatPreviewView.PreviewChatPreviewView") { PreviewChatPreviewView() },
   SnapshotScene("TagListView.PreviewTagListView") { PreviewTagListView() },
   SnapshotScene("DatabaseEncryptionView.PreviewDatabaseEncryptionLayout") { PreviewDatabaseEncryptionLayout() },
