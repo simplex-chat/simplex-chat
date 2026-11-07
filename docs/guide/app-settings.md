@@ -226,6 +226,15 @@ link preview from the website. The first time you type a link, the app asks
 - Tap on "Your privacy".
 - Toggle on "Send link previews".
 
+#### Contact deletion
+
+This option chooses whether the contact is notified when you delete it:
+
+- _Notify_ (default for new users): the contact is notified.
+- _Ask_ (default when you update the app): the app asks each time, with "Delete and notify" and "Delete silently".
+
+See [Deleting and archiving contacts](./making-connections.md#deleting-and-archiving-contacts).
+
 #### SimpleX Links
 
 This option is in [Developer tools](#developer-tools), in the section
