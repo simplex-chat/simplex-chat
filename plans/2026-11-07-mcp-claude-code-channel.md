@@ -13,7 +13,7 @@ Outcome:
 
 Agreed on 2026-11-06:
 1. `serve`, `register` and HTTP stay.
-2. #7810's design is ported onto master in five PRs; shum reviews each; #7810 is closed by its author when PR 4 merges.
+2. #7810's code is adopted with `serve` kept; shum reviews the result.
 3. The plugin is released as 0.3.0.
 
 Design:
@@ -29,10 +29,11 @@ Design:
 13. The SimpleX profile of a session is created at its first SimpleX tool call; the session is known to the hub from its start.
 
 Open, with recommendations:
+- D0 building on #7810: (a) branch `ep/mcp-plugin` from `sh/mcp-known` in the agents' fork, master merged into it, PR A against master replacing #7810, and the channel as PR B on top, recommended; (b) a PR into `sh/mcp-known`, merged by shum, then #7810 merged; (c) five PRs on master that copy #7810's code.
 - D1 prompt addressing: (a) reply or `N:` prefix in the Main group, recommended; (b) one group per session.
 - D2 tool-use approvals relayed to SimpleX: (a) every tool prompt, recommended; (b) SimpleX actions only.
 - D3 profile name seen by peers: (a) `Claude Code N` unless the person names it, recommended; (b) the project folder name.
-- D4 files in prompts: (a) in PR 5, recommended; (b) text only in 0.3.0.
+- D4 files in prompts: (a) in the channel PR, recommended; (b) text only in 0.3.0.
 - D5 request to Anthropic for the channel allowlist: (a) after 0.3.0 is published, recommended; (b) now.
 
 ## Components
@@ -203,12 +204,34 @@ The development flag works in interactive sessions only. Without either flag the
 
 ## Pull requests
 
+D0 (a):
 ```mermaid
 flowchart LR
-  P0[plan] --> P1[1 actions per session] --> P2[2 hub and session agents] --> P3[3 daemon and stdio session] --> P4[4 plugin] --> P5[5 channel] --> R[0.3.0 on npm]
+  K[sh/mcp-known, 49 commits] --> M[ep/mcp-plugin: master merged, serve kept, 0.2 features wired]
+  M --> R[owner rules]
+  R --> A[PR A: Claude Code plugin]
+  A --> B[PR B: SimpleX channel, 0.3.0]
+  A -. replaces .-> X[#7810, closed by shum]
 ```
 
-Size budgets, source lines without tests:
+```
+PR  branch                               base           commits
+A   ep/mcp-plugin                        master         #7810's 49 commits
+                                                        merge of master: serve, register and HTTP kept; 0.2 features addressed by S:CHAT
+                                                        owner rules, decisions 5-13
+B   ep/mcp-channel                       ep/mcp-plugin  channel, reply tool, tool-use relay, files in prompts, version 0.3.0
+```
+
+Size budgets, source lines written on top of `sh/mcp-known`, without tests:
+```
+PR  budget
+A   600
+B   300
+```
+
+PR B is based on master after PR A merges.
+
+D0 (c), five PRs on master, source lines without tests:
 ```
 PR  title                                                      budget
 1   mcp: actions with a session and their own timers           150
@@ -218,7 +241,7 @@ PR  title                                                      budget
 5   mcp: SimpleX channel for Claude Code                       300
 ```
 
-Sources ported from #7810:
+Sources ported from #7810 under D0 (c):
 ```
 PR 1
   src/actions.ts
@@ -246,4 +269,4 @@ PR 5
   none
 ```
 
-Each PR keeps `serve` and its end-to-end tests passing. PR 5 sets the version to 0.3.0; `build.yml` publishes it after the merge.
+Each PR keeps `serve` and its end-to-end tests passing. The channel PR sets the version to 0.3.0; `build.yml` publishes it after the merge.
