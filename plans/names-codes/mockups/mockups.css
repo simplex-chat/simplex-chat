@@ -1,0 +1,58 @@
+/* Rules for the board's frames that are not the names store, on top of the badges webapp's styles.css:
+   the badges landing's link to simplex.domains, and the app and operator frames, which never ship.
+   The names screens have their own stylesheet, domains.css. */
+
+/* the badges landing's link to simplex.domains, under the investor link */
+.names-link { margin: 10px 0 0; font-size: .9375rem; }
+.names-link .link { font-size: inherit; font-weight: 600; }
+
+body.plain { display: block; padding: 0; min-height: 0; background: #ffffff; background-image: none; }
+#shot { display: inline-block; }
+
+/* the app, drawn in its iOS idiom */
+.app-screen {
+  width: 390px;
+  min-height: 720px;
+  padding: 14px 16px 24px;
+  background: #f2f2f7;
+  color: #000000;
+  font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+}
+.app-nav { color: #007aff; font-size: 16px; }
+.app-title { margin: 10px 0 18px; font-size: 30px; font-weight: 700; }
+.app-label { margin: 18px 0 6px 14px; color: #6d6d72; font-size: 12px; letter-spacing: .03em; }
+.app-card { border-radius: 10px; background: #ffffff; }
+.app-row { display: flex; justify-content: space-between; padding: 12px 14px; }
+.app-ok { color: #34c759; font-weight: 600; }
+.app-note { margin: 8px 14px 0; color: #6d6d72; font-size: 12px; }
+.app-button { margin-top: 28px; padding: 13px; border-radius: 12px; background: #007aff; color: #ffffff; font-weight: 600; text-align: center; }
+.app-alert { margin: 120px 24px 0; padding: 18px 16px 0; border-radius: 14px; background: #ffffff; text-align: center; }
+.app-alert p { color: #3c3c43; font-size: 13px; }
+.app-alert-button { margin: 14px -16px 0; padding: 12px; border-top: 1px solid #d1d1d6; color: #007aff; font-weight: 600; }
+
+/* the operator's terminal and the managed group */
+.term-screen {
+  width: 720px;
+  margin: 0;
+  padding: 18px 20px;
+  border-radius: 10px;
+  background: #15171c;
+  color: #e7eaf0;
+  font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+}
+.term-screen .out { color: #8fd18b; }
+.chat-screen {
+  width: 480px;
+  padding: 14px 16px 18px;
+  border-radius: 10px;
+  background: #ffffff;
+  font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+}
+.chat-title { padding-bottom: 10px; border-bottom: 1px solid #e5e5ea; font-weight: 700; }
+.bubble { max-width: 86%; margin-top: 10px; padding: 8px 12px; border-radius: 14px; background: #e9e9eb; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+.bubble b { display: block; margin-bottom: 2px; font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 12px; color: #6d6d72; }
+.bubble.out { margin-left: auto; background: #dbeafe; }
+.chat-note { margin-top: 10px; color: #8e8e93; font-size: 12px; text-align: center; }
