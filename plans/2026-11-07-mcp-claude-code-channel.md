@@ -24,23 +24,50 @@ Decided on 2026-11-07:
 8. D3 (a): peers see the session profile as `Claude Code N` unless the person names it.
 9. D4 (a): files in prompts and in replies are in this PR.
 10. D5 (a): the user asks Anthropic to list the channel after 0.3.0 is published.
-11. D6 (a): the hub, the plugin's main profile, speaks for Claude: it posts the session's answers and cards in the session's group.
+11. D6 (a): the hub, the plugin's main profile, speaks for Claude: it posts the session's answers and cards in the session's group. Its profile name is `Claude`.
+12. D7 (a): prompts typed in the terminal are posted in the session's group by a local profile named `User`, one per data root, a member of every session group.
 
 Design:
-12. One code base: `serve` and the plugin share `Control`, `Actions` and `AgentTools`.
-13. Prompts, approvals and tool-use verdicts count only from session group members whose Main group member is an owner.
-14. The owner link reaches the person only: the `systemMessage` of the SessionStart hook and `simplex-mcp link` in a terminal; hook context and tool results never contain it.
-15. A session's approval mode changes to `host` only after an owner approves a card in the session's group.
-16. While owners exist, an owner reset runs only after an owner approves a card in the Main group; without owners it runs from a terminal.
-17. The launcher runs `npx` with the plugin folder as its working folder.
-18. Refused paths cover the whole data root.
-19. Standing approvals of closed sessions are listed by `/list` and removed by `/revoke` in the session's group.
-20. The channel is part of the plugin's session server; the daemon pushes events on the session's `/attach` stream.
-21. The SimpleX profile of a session is created at its first SimpleX tool call; the session and its group exist from its start.
-22. Claude's final answer of every turn is posted by the hub from the Stop hook's `last_assistant_message`; the `reply` tool sends files only.
+13. One code base: `serve` and the plugin share `Control`, `Actions` and `AgentTools`.
+14. Prompts, approvals and tool-use verdicts count only from session group members whose Main group member is an owner.
+15. The owner link reaches the person only: the `systemMessage` of the SessionStart hook and `simplex-mcp link` in a terminal; hook context and tool results never contain it.
+16. A session's approval mode changes to `host` only after an owner approves a card in the session's group.
+17. While owners exist, an owner reset runs only after an owner approves a card in the Main group; without owners it runs from a terminal.
+18. The launcher runs `npx` with the plugin folder as its working folder.
+19. Refused paths cover the whole data root.
+20. Standing approvals of closed sessions are listed by `/list` and removed by `/revoke` in the session's group.
+21. The channel is part of the plugin's session server; the daemon pushes events on the session's `/attach` stream.
+22. The session and its group exist from the session's start.
+23. Claude's final answer of every turn is posted by `Claude` from the Stop hook's `last_assistant_message`; the `reply` tool sends files only.
 
-Open, with a recommendation:
-- D7 prompts typed in the terminal: (a) posted in the session's group by a local profile `Terminal`, one per data root, a member of every session group, recommended; (b) posted by the hub, marked as typed in the terminal; (c) not posted.
+Open, with recommendations:
+- D8 Claude's SimpleX profile for chats with peers: (a) the one `Claude` profile for all sessions; each chat belongs to the session that connected it, and owners hand a chat to another session with `/give CHAT N`, recommended; (b) a profile per session, as in #7810.
+- D9 model and effort: (a) shown in the session group's profile and updated on change; changed in the terminal or from the Claude app by Remote Control, recommended; (b) also `/model` and `/effort` in the session group, which set the defaults for new sessions in `~/.claude/settings.json`.
+
+## Model and effort
+
+Sources (https://code.claude.com/docs/en/hooks, https://code.claude.com/docs/en/settings, https://code.claude.com/docs/en/remote-control):
+```
+value    read from                                          updated on
+model    SessionStart model (optional)                       PostModelSwitch to_model
+effort   effort.level, common field of PreToolUse,           the next such event; no event for an effort change
+         PostToolUse and Stop
+```
+
+```
+on SessionStart(m):       group description = model m
+on PostModelSwitch(t):    group description = model t
+on Stop or tool event(e): if e.effort.level differs: group description = effort e.effort.level
+```
+
+Changing them from SimpleX, per the docs:
+```
+route                                   effect on the running session
+model or effortLevel in settings files  none: read once at session start
+hook output                             none: no field sets them
+channel message "/model sonnet"         not documented; tested in this PR, added if it runs as a command
+Remote Control from the Claude app      changes both
+```
 
 ## Components
 
@@ -169,14 +196,13 @@ reply   file, text?                 sends the file to the session group, text as
 
 Server instructions, added: messages in a `simplex` channel are the owners' prompts; the final answer of the turn reaches them; `reply` sends them files.
 
-## Terminal mirroring
+## Session mirroring
 
 Hooks of the plugin (https://code.claude.com/docs/en/hooks):
 ```
 hook               input used                 action
-UserPromptSubmit   prompt                     D7 (a): the Terminal profile posts it in the session group
-                                              D7 (b): the hub posts it, marked as typed in the terminal
-Stop               last_assistant_message     the hub posts it in the session group, quoting the turn's prompt
+UserPromptSubmit   prompt                     User posts it in the session group
+Stop               last_assistant_message     Claude posts it in the session group, quoting the turn's prompt
 ```
 
 ```
@@ -186,17 +212,16 @@ on Stop(m):              post m; if the turn's prompt came from the group: quote
 
 The docs do not state whether a channel prompt fires UserPromptSubmit; the skip covers both cases.
 
-Terminal profile, D7 (a):
 ```
-TerminalProfile
-  folder           ROOT/_terminal
-  name             Terminal
-  contact          the hub, connected once at the first start
-  groups           every session group, added by the hub through the contact, joins automatically
+UserProfile
+  folder           ROOT/_user
+  name             User
+  contact          Claude, connected once at the first start
+  groups           every session group, added by Claude through the contact, joins automatically
   visible to       session group members only
 ```
 
-The hub ignores the Terminal member's messages as prompts: its member was not invited through a Main group owner (decision 13).
+Claude ignores User's messages as prompts: User was not invited through a Main group owner (decision 14).
 
 A prompt to a session started without the channel flag is dropped by Claude Code; the hub cannot detect it.
 
@@ -299,8 +324,8 @@ branch   ep/mcp-plugin, from sh/mcp-known, in the agents' fork
 base     master
 commits  #7810's 49 commits
          merge of master: serve, register and HTTP kept; 0.2 features in session groups
-         session groups and owner rules: decisions 6, 11, 13-19
-         channel and mirroring: decisions 7, 9, 20-22, D7, reply tool, version 0.3.0
+         session groups and owner rules: decisions 6, 11, 14-20, D8
+         channel and mirroring: decisions 7, 9, 12, 21-23, D9, reply tool, version 0.3.0
 ```
 
 Size budget, source lines written on top of `sh/mcp-known`, without tests:
