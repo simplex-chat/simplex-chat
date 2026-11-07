@@ -583,6 +583,21 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
                 }
             }
         }
+        setAudioSendersActive(pc)
+    }
+
+    // WebRTC starts an audio sender's stream without a track too, and sends the microphone on it unmuted (M156): the screen
+    // audio sender, which has no track, sent the microphone, also when it was muted. So only senders with a track are active.
+    func setAudioSendersActive(_ connection: RTCPeerConnection) {
+        for transceiver in connection.transceivers where transceiver.mediaType == .audio {
+            let sender = transceiver.sender
+            let active = sender.track != nil
+            let parameters = sender.parameters
+            if parameters.encodings.contains(where: { $0.isActive != active }) {
+                parameters.encodings.forEach { $0.isActive = active }
+                sender.parameters = parameters
+            }
+        }
     }
 
     func mediaSourceFromTransceiverMid(_ mid: String?) -> CallMediaSource {
@@ -1070,6 +1085,9 @@ extension WebRTCClient {
         if activeCall != nil {
             activeCall?.localAudioTrack = enabled ? createAudioTrack() : nil
             activeCall?.connection.transceivers.first(where: { t in mediaSourceFromTransceiverMid(t.mid) == .mic })?.sender.track = activeCall?.localAudioTrack
+            if let connection = activeCall?.connection {
+                setAudioSendersActive(connection)
+            }
         } else if notConnectedCall != nil {
             notConnectedCall?.audioTrack = enabled ? createAudioTrack() : nil
         }
