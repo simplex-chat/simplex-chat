@@ -93,6 +93,9 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDel
                                 DeleteContactAction(chat, chatModel, showMenu)
                             }
                         } else {
+                            if (contactType == ContactType.CHAT_DELETED && chat.chatInfo.contact.canDeleteAndBan) {
+                                DeleteAndBanContactAction(chat, chat.chatInfo.contact, chatModel, showMenu)
+                            }
                             DeleteContactAction(chat, chatModel, showMenu)
                         }
                     }

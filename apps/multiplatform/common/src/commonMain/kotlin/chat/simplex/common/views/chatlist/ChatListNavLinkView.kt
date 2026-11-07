@@ -299,6 +299,9 @@ fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMen
     if (!contact.chatDeleted) {
       ArchiveContactAction(chat, contact, chatModel, showMenu)
     }
+    if (contact.canDeleteAndBan) {
+      DeleteAndBanContactAction(chat, contact, chatModel, showMenu)
+    }
     DeleteContactAction(chat, chatModel, showMenu)
   }
 }
@@ -470,6 +473,19 @@ fun ArchiveContactAction(chat: Chat, contact: Contact, chatModel: ChatModel, sho
       archiveContact(chat, contact, chatModel)
       showMenu.value = false
     }
+  )
+}
+
+@Composable
+fun DeleteAndBanContactAction(chat: Chat, contact: Contact, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+  ItemAction(
+    stringResource(MR.strings.delete_and_ban),
+    painterResource(MR.images.ic_back_hand),
+    onClick = {
+      deleteAndBanContactDialog(chat, contact, chatModel)
+      showMenu.value = false
+    },
+    color = Color.Red
   )
 }
 
@@ -1186,7 +1202,8 @@ private fun ChatMenuPreview(chatInfo: ChatInfo, menuItems: @Composable (Chat, Mu
 @Preview
 @Composable
 fun PreviewContactMenu() {
-  ChatMenuPreview(ChatInfo.Direct.sampleData) { chat, showMenu ->
-    ContactMenuItems(chat, Contact.sampleData, ChatModel, showMenu, showMarkRead = false)
+  val contact = Contact.sampleData.copy(activeConn = Connection.sampleData.copy(viaUserContactLink = 1, peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)))
+  ChatMenuPreview(ChatInfo.Direct(contact)) { chat, showMenu ->
+    ContactMenuItems(chat, contact, ChatModel, showMenu, showMarkRead = false)
   }
 }

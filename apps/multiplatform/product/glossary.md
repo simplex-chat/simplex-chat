@@ -118,7 +118,7 @@ Enumeration of group roles, ordered for comparison: `Observer` < `Author` < `Mem
 *See:* `ChatModel.kt:2369` -- `enum class GroupMemberRole`
 
 ### Connection
-An active or pending cryptographic connection to a peer. Fields: `connId`, `agentConnId`, `peerChatVRange` (VersionRange), `connStatus` (ConnStatus), `connLevel`, `viaGroupLink`, `customUserProfileId`, `connectionCode` (SecurityCode?), `pqSupport`, `pqEncryption`, `pqSndEnabled`, `pqRcvEnabled`, `connectionStats`, `authErrCounter`, `quotaErrCounter`.
+An active or pending cryptographic connection to a peer. Fields: `connId`, `agentConnId`, `peerChatVRange` (VersionRange), `connStatus` (ConnStatus), `connLevel`, `viaGroupLink`, `viaUserContactLink` (Long? -- set when the contact connected via the user's address), `customUserProfileId`, `connectionCode` (SecurityCode?), `pqSupport`, `pqEncryption`, `pqSndEnabled`, `pqRcvEnabled`, `connectionStats`, `authErrCounter`, `quotaErrCounter`.
 
 *See:* `ChatModel.kt:1882` -- `data class Connection`
 

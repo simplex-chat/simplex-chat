@@ -1229,7 +1229,7 @@ fun removeBannedMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<Group
   }
 }
 
-private const val FOREVER_CONFIRMATION_WORD = "yes"
+const val FOREVER_CONFIRMATION_WORD = "yes"
 
 fun removeBannedMembers(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember>, duration: BanDuration, withMessages: Boolean, onSuccess: () -> Unit = {}) {
   val memberIds = members.map { it.groupMemberId }
@@ -1253,12 +1253,13 @@ fun removeBannedMembers(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember
   }
 }
 
-fun showTypedConfirmationDialog(title: String, text: String, word: String, confirmText: String, confirm: () -> Unit) {
+fun showTypedConfirmationDialog(title: String, text: String, word: String, confirmText: String, content: @Composable () -> Unit = {}, confirm: () -> Unit) {
   AlertManager.shared.showAlertDialogButtonsColumn(title) {
     val field = remember { mutableStateOf("") }
     val matches = field.value.trim().lowercase() == word
     Column(Modifier.verticalScroll(rememberScrollState())) {
       BanDialogText(text)
+      content()
       val focusRequester = remember { FocusRequester() }
       TextEditor(field, Modifier, word, focusRequester = focusRequester, maxLines = 1)
       LaunchedEffect(Unit) {

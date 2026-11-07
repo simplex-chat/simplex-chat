@@ -748,6 +748,12 @@
   <string name="conversation_deleted">Contact archived!</string>
   <string name="you_can_still_send_messages_to_contact">You can send messages to %1$s from Archived contacts.</string>
   <string name="you_can_view_conversation_in_archived_contacts">You can view the conversation with %1$s in Archived contacts.</string>
+  <string name="delete_and_ban_question">Delete and ban?</string>
+  <string name="delete_and_ban">Delete and ban</string>
+  <string name="delete_and_ban_contact_desc">%s won\'t be notified and won\'t be able to connect to you while banned.</string>
+  <string name="contact_cant_connect_for_duration">%1$s won\'t be able to connect to you for %2$s.</string>
+  <string name="delete_and_ban_forever_question">Delete and ban forever?</string>
+  <string name="delete_and_ban_contact_forever_desc">%1$s won\'t be notified and won\'t be able to connect to you via your address from this app, with no end time. You can\'t lift this block.\nThe block is stored only in %1$s\'s app: %1$s can still connect from another device, or after reinstalling the app.</string>
   <string name="contact_deleted">Contact deleted!</string>
   <string name="you_can_still_view_conversation_with_contact">You can still view conversation with %1$s in the list of chats.</string>
   <string name="text_field_set_contact_placeholder">Set contact name…</string>

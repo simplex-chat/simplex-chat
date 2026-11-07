@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.*
 import chat.simplex.common.views.call.CallMediaType
 import chat.simplex.common.views.chatlist.*
 import androidx.compose.ui.text.*
+import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -39,7 +40,11 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.chat.group.BanDialogAction
 import chat.simplex.common.views.chat.group.ChatTTLOption
+import chat.simplex.common.views.chat.group.FOREVER_CONFIRMATION_WORD
+import chat.simplex.common.views.chat.group.showBanDialog
+import chat.simplex.common.views.chat.group.showTypedConfirmationDialog
 import chat.simplex.common.views.chat.item.LocalTerminalLayout
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.chatlist.updateChatSettings
@@ -115,6 +120,7 @@ fun ChatInfoView(
         }
       },
       deleteContact = { deleteContactDialog(chat, chatModel, close) },
+      deleteAndBan = { deleteAndBanContactDialog(chat, contact, chatModel, close) },
       clearChat = { clearChatDialog(chat, close) },
       switchContactAddress = {
         showSwitchAddressAlert(switchAddress = {
@@ -409,11 +415,11 @@ private fun showDeleteContactNotice(contact: Contact) {
   )
 }
 
-fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)) {
+fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true), notice: LinkNotice? = null) {
   val chatInfo = chat.chatInfo
   withBGApi {
     val chatRh = chat.remoteHostId
-    val ct = chatModel.controller.apiDeleteContact(chatRh, chatInfo.apiId, chatDeleteMode)
+    val ct = chatModel.controller.apiDeleteContact(chatRh, chatInfo.apiId, chatDeleteMode, notice)
     if (ct != null) {
       withContext(Dispatchers.Main) {
         when (chatDeleteMode) {
@@ -439,6 +445,51 @@ fun archiveContact(chat: Chat, contact: Contact, chatModel: ChatModel) {
   deleteContact(chat, chatModel, close = null, chatDeleteMode = ChatDeleteMode.Archive())
   if (chatModel.controller.appPrefs.showDeleteConversationNotice.get()) {
     showDeleteConversationNotice(contact)
+  }
+}
+
+fun deleteAndBanContactDialog(chat: Chat, contact: Contact, chatModel: ChatModel, close: (() -> Unit)? = null) {
+  deleteAndBanDialog(contact.displayName, MR.strings.delete_contact_cannot_undo_warning, MR.strings.delete_and_ban_contact_forever_desc) { chatDeleteMode, notice ->
+    deleteContact(chat, chatModel, close, chatDeleteMode, notice)
+    if (chatDeleteMode is ChatDeleteMode.Entity && !contact.chatDeleted && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
+      showDeleteContactNotice(contact)
+    }
+  }
+}
+
+fun deleteAndBanDialog(name: String, deletionWarningId: StringResource, foreverDescId: StringResource, delete: (ChatDeleteMode, LinkNotice) -> Unit) {
+  val deleteAndBan = BanDialogAction(generalGetString(MR.strings.delete_and_ban)) { duration ->
+    if (duration == BanDuration.Forever) {
+      deleteAndBanForeverDialog(name, foreverDescId) { delete(it, duration.notice) }
+    } else {
+      deleteAndBanKeepConversationDialog(name, duration) { delete(it, duration.notice) }
+    }
+  }
+  showBanDialog(generalGetString(MR.strings.delete_and_ban_question), listOf(deleteAndBan)) {
+    "$name\n\n${generalGetString(deletionWarningId)}\n${String.format(generalGetString(MR.strings.delete_and_ban_contact_desc), name)}"
+  }
+}
+
+private fun deleteAndBanKeepConversationDialog(name: String, duration: BanDuration, delete: (ChatDeleteMode) -> Unit) {
+  showKeepConversationDialog(
+    title = generalGetString(MR.strings.delete_and_ban_question),
+    text = String.format(generalGetString(MR.strings.contact_wont_be_notified), name) + "\n" + String.format(generalGetString(MR.strings.contact_cant_connect_for_duration), name, duration.text),
+    confirmText = generalGetString(MR.strings.delete_and_ban),
+    notify = false,
+    confirm = delete
+  )
+}
+
+private fun deleteAndBanForeverDialog(name: String, foreverDescId: StringResource, delete: (ChatDeleteMode) -> Unit) {
+  val contactDeleteMode = mutableStateOf<ContactDeleteMode>(ContactDeleteMode.Full())
+  showTypedConfirmationDialog(
+    title = generalGetString(MR.strings.delete_and_ban_forever_question),
+    text = String.format(generalGetString(foreverDescId), name) + "\n\n" + String.format(generalGetString(MR.strings.type_to_confirm), FOREVER_CONFIRMATION_WORD),
+    word = FOREVER_CONFIRMATION_WORD,
+    confirmText = generalGetString(MR.strings.delete_and_ban),
+    content = { KeepConversationToggle(contactDeleteMode) }
+  ) {
+    delete(contactDeleteMode.value.toChatDeleteMode(notify = false))
   }
 }
 
@@ -480,6 +531,7 @@ fun ChatInfoLayout(
   onLocalAliasChanged: (String) -> Unit,
   openPreferences: () -> Unit,
   deleteContact: () -> Unit,
+  deleteAndBan: () -> Unit,
   clearChat: () -> Unit,
   switchContactAddress: () -> Unit,
   abortSwitchContactAddress: () -> Unit,
@@ -628,6 +680,9 @@ fun ChatInfoLayout(
 
     SectionView {
       ClearChatButton(clearChat)
+      if (contact.canDeleteAndBan) {
+        DeleteAndBanButton(deleteAndBan)
+      }
       DeleteContactButton(deleteContact)
     }
 
@@ -1209,6 +1264,17 @@ fun ClearChatButton(onClick: () -> Unit) {
 }
 
 @Composable
+fun DeleteAndBanButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_back_hand),
+    stringResource(MR.strings.delete_and_ban),
+    click = onClick,
+    textColor = Color.Red,
+    iconColor = Color.Red,
+  )
+}
+
+@Composable
 private fun DeleteContactButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_delete),
@@ -1472,37 +1538,54 @@ private suspend fun afterSetChatTTL(chatsCtx: ChatModel.ChatsContext, rhId: Long
 @Composable
 fun PreviewChatInfoLayout() {
   SimpleXTheme {
-    ChatInfoLayout(
-      chat = Chat(
-        remoteHostId = null,
-        chatInfo = ChatInfo.Direct.sampleData,
-        chatItems = arrayListOf()
-      ),
-      Contact.sampleData,
-      User.sampleData,
-      sendReceipts = remember { mutableStateOf(SendReceipts.Yes) },
-      setSendReceipts = {},
-      chatItemTTL = remember { mutableStateOf(ChatItemTTL.fromSeconds(0)) },
-      setChatItemTTL = {},
-      localAlias = "",
-      connectionCode = "123",
-      developerTools = false,
-      connStats = remember { mutableStateOf(null) },
-      onLocalAliasChanged = {},
-      customUserProfile = null,
-      openPreferences = {},
-      deleteContact = {},
-      clearChat = {},
-      switchContactAddress = {},
-      abortSwitchContactAddress = {},
-      syncContactConnection = {},
-      syncContactConnectionForce = {},
-      verifyClicked = {},
-      close = {},
-      onSearchClicked = {},
-      deletingItems = remember { mutableStateOf(false) }
-    )
+    ChatInfoLayoutPreview(Contact.sampleData)
   }
+}
+
+@Preview
+@Composable
+fun PreviewChatInfoLayoutDeleteAndBan() {
+  val contact = Contact.sampleData.copy(activeConn = Connection.sampleData.copy(viaUserContactLink = 1, peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)))
+  SimpleXTheme {
+    CompositionLocalProvider(LocalAppBarHandler provides remember { AppBarHandler(null, null, scrollState = ScrollState(Int.MAX_VALUE)) }) {
+      ChatInfoLayoutPreview(contact)
+    }
+  }
+}
+
+@Composable
+private fun ChatInfoLayoutPreview(contact: Contact) {
+  ChatInfoLayout(
+    chat = Chat(
+      remoteHostId = null,
+      chatInfo = ChatInfo.Direct(contact),
+      chatItems = arrayListOf()
+    ),
+    contact,
+    User.sampleData,
+    sendReceipts = remember { mutableStateOf(SendReceipts.Yes) },
+    setSendReceipts = {},
+    chatItemTTL = remember { mutableStateOf(ChatItemTTL.fromSeconds(0)) },
+    setChatItemTTL = {},
+    localAlias = "",
+    connectionCode = "123",
+    developerTools = false,
+    connStats = remember { mutableStateOf(null) },
+    onLocalAliasChanged = {},
+    customUserProfile = null,
+    openPreferences = {},
+    deleteContact = {},
+    deleteAndBan = {},
+    clearChat = {},
+    switchContactAddress = {},
+    abortSwitchContactAddress = {},
+    syncContactConnection = {},
+    syncContactConnectionForce = {},
+    verifyClicked = {},
+    close = {},
+    onSearchClicked = {},
+    deletingItems = remember { mutableStateOf(false) }
+  )
 }
 
 @Preview
@@ -1542,5 +1625,29 @@ fun PreviewContactArchivedAlert() {
 fun PreviewDeletedContactArchivedAlert() {
   SimpleXTheme {
     AlertPreview { showDeleteConversationNotice(Contact.sampleData.copy(contactStatus = ContactStatus.DeletedByUser)) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDeleteAndBanContactDialog() {
+  SimpleXTheme {
+    AlertPreview { deleteAndBanContactDialog(Chat.sampleData, Contact.sampleData, ChatModel) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDeleteAndBanKeepConversationDialog() {
+  SimpleXTheme {
+    AlertPreview { deleteAndBanKeepConversationDialog(Contact.sampleData.displayName, BanDuration.Day) {} }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDeleteAndBanContactForeverDialog() {
+  SimpleXTheme {
+    AlertPreview { deleteAndBanForeverDialog(Contact.sampleData.displayName, MR.strings.delete_and_ban_contact_forever_desc) {} }
   }
 }

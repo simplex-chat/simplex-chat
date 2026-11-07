@@ -1934,7 +1934,7 @@ object ChatController {
 
   suspend fun apiDeleteChat(rh: Long?, type: ChatType, id: Long, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)): Boolean {
     chatModel.deletedChats.value += rh to type.type + id
-    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode))
+    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode, notice = null))
     val res = r.result
     val success = when {
       res is CR.ContactDeleted && type == ChatType.Direct -> true
@@ -1956,10 +1956,10 @@ object ChatController {
     return success
   }
 
-  suspend fun apiDeleteContact(rh: Long?, id: Long, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)): Contact? {
+  suspend fun apiDeleteContact(rh: Long?, id: Long, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true), notice: LinkNotice? = null): Contact? {
     val type = ChatType.Direct
     chatModel.deletedChats.value += rh to type.type + id
-    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode))
+    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode, notice))
     val contact = if (r is API.Result && r.res is CR.ContactDeleted) {
       r.res.contact
     } else {
@@ -4145,7 +4145,7 @@ sealed class CC {
   class APIConnectPreparedGroup(val groupId: Long, val incognito: Boolean, val msg: MsgContent?): CC()
   class APIConnect(val userId: Long, val incognito: Boolean, val connLink: CreatedConnLink): CC()
   class ApiConnectContactViaAddress(val userId: Long, val incognito: Boolean, val contactId: Long): CC()
-  class ApiDeleteChat(val type: ChatType, val id: Long, val chatDeleteMode: ChatDeleteMode): CC()
+  class ApiDeleteChat(val type: ChatType, val id: Long, val chatDeleteMode: ChatDeleteMode, val notice: LinkNotice?): CC()
   class ApiClearChat(val type: ChatType, val id: Long): CC()
   class ApiListContacts(val userId: Long): CC()
   class ApiUpdateProfile(val userId: Long, val profile: Profile): CC()
@@ -4367,7 +4367,7 @@ sealed class CC {
     is APIConnectPreparedGroup -> "/_connect group #$groupId incognito=${onOff(incognito)}${maybeContent(msg)}"
     is APIConnect -> "/_connect $userId incognito=${onOff(incognito)} ${connLink.connFullLink} ${connLink.connShortLink ?: ""}"
     is ApiConnectContactViaAddress -> "/_connect contact $userId incognito=${onOff(incognito)} $contactId"
-    is ApiDeleteChat -> "/_delete ${chatRef(type, id, scope = null)} ${chatDeleteMode.cmdString}"
+    is ApiDeleteChat -> "/_delete ${chatRef(type, id, scope = null)} ${chatDeleteMode.cmdString}" + (if (notice != null) " notice=${json.encodeToString(notice)}" else "")
     is ApiClearChat -> "/_clear chat ${chatRef(type, id, scope = null)}"
     is ApiListContacts -> "/_contacts $userId"
     is ApiUpdateProfile -> "/_profile $userId ${json.encodeToString(profile)}"

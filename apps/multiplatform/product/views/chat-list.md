@@ -102,7 +102,7 @@ Each chat type provides specific dropdown menu items:
 
 | Chat Type | Menu Items |
 |---|---|
-| Direct contact | Mark read/unread, toggle favorite, toggle notify, tag list, clear chat, archive (when not archived), delete contact |
+| Direct contact | Mark read/unread, toggle favorite, toggle notify, tag list, clear chat, archive (when not archived), delete and ban (when `Contact.canDeleteAndBan`), delete contact |
 | Group | Mark read/unread, toggle favorite, toggle notify, tag list, clear chat, archive all reports (moderator, when reports exist), leave group, delete group |
 | Note folder | Mark read/unread, clear notes |
 | Contact request | Accept, reject |

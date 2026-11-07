@@ -93,6 +93,7 @@ Shown when `developerTools` preference is enabled:
 | Action | Description |
 |---|---|
 | Clear chat | Deletes all messages in chat (with confirmation via `clearChatDialog`) |
+| Delete and ban | Shown when `Contact.canDeleteAndBan`; see Delete and Ban below |
 | Delete contact | Removes the contact (with confirmation via `deleteContactDialog`); see Contact Deletion below |
 
 ### Contact Deletion
@@ -104,6 +105,15 @@ A contact that is ready and active, archived or not, is deleted in two dialogs:
 Any other contact gets "Confirm contact deletion?" with Confirm (`deleteNotReadyContact`).
 
 "Archive" in the chat list menu (`archiveContact`) moves the contact to Archived contacts without clearing the conversation (`ChatDeleteMode.Archive`), with no confirmation, then shows "Contact archived!" with "You can send messages to <name> from Archived contacts.", or "You can view the conversation with <name> in Archived contacts." for a deleted contact; "Don't show again" sets `showDeleteConversationNotice`.
+
+### Delete and Ban
+
+Offered in contact info, in the chat list menu and in the Archived contacts menu when `Contact.canDeleteAndBan`: the contact is ready and active, connected via the user's address (`Connection.viaUserContactLink`), and supports `LINK_NOTICE_VERSION`. The contact is deleted without notification, and the contact's app does not connect via the user's address for the chosen duration (`deleteAndBanContactDialog`):
+1. "Delete and ban?" (`deleteAndBanDialog`): the name, "Contact will be deleted - this cannot be undone!" and "<name> won't be notified and won't be able to connect to you while banned."; "Ban for" 1 day (default), 1 week or Forever; "Delete and ban".
+2. For 1 day or 1 week, "Delete and ban?": "<name> won't be notified." and "<name> won't be able to connect to you for <duration>."; "Keep conversation" and "Delete and ban".
+3. For Forever, "Delete and ban forever?": the text on the block that can't be lifted and is stored only in the contact's app, then "Type yes to confirm."; "Keep conversation", the field and "Delete and ban", enabled when the field is "yes".
+
+The deletion is `apiDeleteContact` with `ChatDeleteMode.Entity` (Keep conversation) or `ChatDeleteMode.Full`, `notify` off, and the `LinkNotice` of the duration. A one-time link is not affected by the ban.
 
 ## Source Files
 
