@@ -312,9 +312,10 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, notify: Bool
     confirmText = generalGetString(MR.strings.delete_verb),
     notify = notify
   ) { chatDeleteMode ->
-    deleteContact(chat, chatModel, close, chatDeleteMode)
-    if (chatDeleteMode is ChatDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
-      showDeleteContactNotice(contact)
+    deleteContact(chat, chatModel, close, chatDeleteMode) {
+      if (chatDeleteMode is ChatDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
+        showDeleteContactNotice(contact)
+      }
     }
   }
 }
@@ -416,7 +417,7 @@ private fun showDeleteContactNotice(contact: Contact) {
   )
 }
 
-fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true), notice: LinkNotice? = null) {
+fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true), notice: LinkNotice? = null, onSuccess: () -> Unit = {}) {
   val chatInfo = chat.chatInfo
   withBGApi {
     val chatRh = chat.remoteHostId
@@ -438,22 +439,25 @@ fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDe
       }
       ntfManager.cancelNotificationsForChat(chatInfo.id)
       close?.invoke()
+      onSuccess()
     }
   }
 }
 
 fun archiveContact(chat: Chat, contact: Contact, chatModel: ChatModel) {
-  deleteContact(chat, chatModel, close = null, chatDeleteMode = ChatDeleteMode.Archive())
-  if (chatModel.controller.appPrefs.showDeleteConversationNotice.get()) {
-    showDeleteConversationNotice(contact)
+  deleteContact(chat, chatModel, close = null, chatDeleteMode = ChatDeleteMode.Archive()) {
+    if (chatModel.controller.appPrefs.showDeleteConversationNotice.get()) {
+      showDeleteConversationNotice(contact)
+    }
   }
 }
 
 fun deleteAndBanContactDialog(chat: Chat, contact: Contact, chatModel: ChatModel, close: (() -> Unit)? = null) {
   deleteAndBanDialog(contact.displayName, MR.strings.delete_contact_cannot_undo_warning, MR.strings.delete_and_ban_contact_forever_desc) { chatDeleteMode, notice ->
-    deleteContact(chat, chatModel, close, chatDeleteMode, notice)
-    if (chatDeleteMode is ChatDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
-      showDeleteContactNotice(contact)
+    deleteContact(chat, chatModel, close, chatDeleteMode, notice) {
+      if (chatDeleteMode is ChatDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
+        showDeleteContactNotice(contact)
+      }
     }
   }
 }
