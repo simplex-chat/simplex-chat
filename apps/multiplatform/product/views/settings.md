@@ -78,7 +78,7 @@ Organized in sections:
 |---|---|---|
 | Send link previews | `privacyLinkPreviews` | Auto-generate link preview cards |
 | Sanitize links | `privacySanitizeLinks` | Strip tracking parameters from URLs |
-| Contact deletion | `privacyContactDeletion` | Notify: deleting a contact notifies it; Ask: each deletion offers "Delete and notify" and "Delete silently". Default Ask; Notify for new users |
+| Contact deletion | `privacyContactDeletion` | Notify: deleting a contact notifies it; Ask: each deletion offers "Delete and notify" and "Delete silently". Default Ask; Notify for new users. The Chats section footer: "Ask: choose each time whether the contact is notified." |
 | Show last messages | `privacyShowChatPreviews` | Show message previews in chat list |
 | Message draft | `privacySaveLastDraft` | Save unsent message draft for each chat |
 

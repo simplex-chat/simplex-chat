@@ -1516,6 +1516,7 @@
   <string name="privacy_contact_deletion">Contact deletion</string>
   <string name="privacy_contact_deletion_notify">Notify</string>
   <string name="privacy_contact_deletion_ask">Ask</string>
+  <string name="privacy_contact_deletion_footer">Ask: choose each time whether the contact is notified.</string>
   <string name="privacy_show_last_messages">Show last messages</string>
   <string name="privacy_message_draft">Message draft</string>
   <string name="full_backup">App data backup</string>

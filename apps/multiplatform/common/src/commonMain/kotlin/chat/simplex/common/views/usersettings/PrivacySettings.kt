@@ -83,6 +83,7 @@ fun PrivacySettingsView(
         onSelected = { appPrefs.privacyContactDeletion.set(it) }
       )
     }
+    SectionTextFooter(stringResource(MR.strings.privacy_contact_deletion_footer))
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_files)) {
