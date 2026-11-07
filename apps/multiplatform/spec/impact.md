@@ -198,7 +198,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 |-------------|--------------------------|------------|-------|
 | `views/newchat/NewChatView.kt` | PC12, PC29 | High | New connection creation — onramp for all contacts |
 | `views/newchat/NewChatSheet.kt` | PC12 | Medium | Bottom sheet with connection options |
-| `views/newchat/ConnectPlan.kt` | PC12, PC15 | Medium | Link parsing and connection plan resolution |
+| `views/newchat/ConnectPlan.kt` | PC12, PC15, PC33 | Medium | Link parsing and connection plan resolution; "Not allowed" alert for a banned link |
 | `views/newchat/AddGroupView.kt` | PC3, PC14 | Medium | New group creation flow |
 | `views/newchat/AddChannelView.kt` | PC31 | Medium | Public channel creation, channel link card, `RelayStatusIndicator` |
 | `views/newchat/ContactConnectionInfoView.kt` | PC12 | Low | Pending connection details |
@@ -538,7 +538,7 @@ The Haskell core is compiled as a shared native library (`libsimplex.so` / `libs
 | `src/Simplex/Chat/Operators.hs` | PC25 | Medium | Server operator management |
 | `src/Simplex/Chat/Operators/Presets.hs` | PC25 | Low | Preset server operators |
 | `src/Simplex/Chat/Operators/Conditions.hs` | PC25 | Low | Operator usage conditions |
-| `src/Simplex/Chat/AppSettings.hs` | PC25, PC32 | Low | App settings sync types |
+| `src/Simplex/Chat/AppSettings.hs` | PC25, PC32, PC34 | Low | App settings sync types |
 | `src/Simplex/Chat/Mobile.hs` | PC1 through PC32 | High | C FFI exports — JNI bridge target |
 | `src/Simplex/Chat/Mobile/File.hs` | PC10 | Medium | Mobile file read/write FFI |
 | `src/Simplex/Chat/Mobile/Shared.hs` | PC1 through PC32 | Medium | Shared FFI helpers |
