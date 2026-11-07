@@ -55,7 +55,6 @@ struct ChatListNavLink: View {
     @State private var showInvalidJSON = false
     @State private var alert: SomeAlert? = nil
     @State private var actionSheet: SomeActionSheet? = nil
-    @State private var sheet: SomeSheet<AnyView>? = nil
     @State private var showConnectContactViaAddressDialog = false
     @State private var inProgress = false
     @State private var progressByTimeout = false
@@ -104,8 +103,7 @@ struct ChatListNavLink: View {
                                 contact,
                                 dismissToChatList: false,
                                 showAlert: { alert = $0 },
-                                showActionSheet: { actionSheet = $0 },
-                                showSheetContent: { sheet = $0 }
+                                showActionSheet: { actionSheet = $0 }
                             )
                         } label: {
                             deleteLabel
@@ -172,8 +170,7 @@ struct ChatListNavLink: View {
                                     contact,
                                     dismissToChatList: false,
                                     showAlert: { alert = $0 },
-                                    showActionSheet: { actionSheet = $0 },
-                                    showSheetContent: { sheet = $0 }
+                                    showActionSheet: { actionSheet = $0 }
                                 )
                             } label: {
                                 deleteLabel
@@ -191,8 +188,7 @@ struct ChatListNavLink: View {
                                 contact,
                                 dismissToChatList: false,
                                 showAlert: { alert = $0 },
-                                showActionSheet: { actionSheet = $0 },
-                                showSheetContent: { sheet = $0 }
+                                showActionSheet: { actionSheet = $0 }
                             )
                         } label: {
                             deleteLabel
@@ -203,14 +199,6 @@ struct ChatListNavLink: View {
             }
         }
         .alert(item: $alert) { $0.alert }
-        .sheet(item: $sheet) {
-            if #available(iOS 16.0, *) {
-                $0.content
-                    .presentationDetents([.fraction($0.fraction)])
-            } else {
-                $0.content
-            }
-        }
     }
 
     // Spec: spec/client/chat-list.md#groupNavLink

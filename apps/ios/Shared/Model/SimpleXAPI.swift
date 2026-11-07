@@ -1319,17 +1319,11 @@ func deleteContactChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(noti
             switch chatDeleteMode {
             case .full:
                 ChatModel.shared.removeChat(cInfo.id)
-            case .entity:
+            case .entity, .archive:
                 ChatModel.shared.removeChat(cInfo.id)
                 ChatModel.shared.addChat(Chat(
                     chatInfo: .direct(contact: ct),
                     chatItems: chat.chatItems
-                ))
-            case .messages:
-                ChatModel.shared.removeChat(cInfo.id)
-                ChatModel.shared.addChat(Chat(
-                    chatInfo: .direct(contact: ct),
-                    chatItems: []
                 ))
             }
         }

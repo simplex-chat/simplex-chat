@@ -15,7 +15,6 @@ struct ContactListNavLink: View {
     var showDeletedChatIcon: Bool
     @State private var alert: SomeAlert? = nil
     @State private var actionSheet: SomeActionSheet? = nil
-    @State private var sheet: SomeSheet<AnyView>? = nil
     @State private var showConnectContactViaAddressDialog = false
     @State private var showContactRequestDialog = false
 
@@ -40,14 +39,6 @@ struct ContactListNavLink: View {
         }
         .alert(item: $alert) { $0.alert }
         .actionSheet(item: $actionSheet) { $0.actionSheet }
-        .sheet(item: $sheet) {
-            if #available(iOS 16.0, *) {
-                $0.content
-                    .presentationDetents([.fraction(0.4)])
-            } else {
-                $0.content
-            }
-        }
     }
 
     func recentContactNavLink(_ contact: Contact) -> some View {
@@ -65,8 +56,7 @@ struct ContactListNavLink: View {
                     contact,
                     dismissToChatList: false,
                     showAlert: { alert = $0 },
-                    showActionSheet: { actionSheet = $0 },
-                    showSheetContent: { sheet = $0 }
+                    showActionSheet: { actionSheet = $0 }
                 )
             } label: {
                 Label("Delete", systemImage: "trash")
@@ -125,8 +115,7 @@ struct ContactListNavLink: View {
                         contact,
                         dismissToChatList: false,
                         showAlert: { alert = $0 },
-                        showActionSheet: { actionSheet = $0 },
-                        showSheetContent: { sheet = $0 }
+                        showActionSheet: { actionSheet = $0 }
                     )
                 } label: {
                     Label("Delete", systemImage: "trash")
@@ -155,8 +144,7 @@ struct ContactListNavLink: View {
                     contact,
                     dismissToChatList: false,
                     showAlert: { alert = $0 },
-                    showActionSheet: { actionSheet = $0 },
-                    showSheetContent: { sheet = $0 }
+                    showActionSheet: { actionSheet = $0 }
                 )
             } label: {
                 Label("Delete", systemImage: "trash")
@@ -227,8 +215,7 @@ struct ContactListNavLink: View {
                     contact,
                     dismissToChatList: false,
                     showAlert: { alert = $0 },
-                    showActionSheet: { actionSheet = $0 },
-                    showSheetContent: { sheet = $0 }
+                    showActionSheet: { actionSheet = $0 }
                 )
             } label: {
                 Label("Delete", systemImage: "trash")

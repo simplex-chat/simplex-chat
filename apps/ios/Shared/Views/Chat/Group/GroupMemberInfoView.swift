@@ -911,7 +911,7 @@ struct BanDialog: View {
     var title: String
     var actions: [BanDialogAction]
     var footer: (BanDuration) -> String
-    var close: (@escaping () -> Void) -> Void
+    var close: CloseSheet
     @State private var duration: BanDuration = .day
 
     var body: some View {
@@ -967,15 +967,8 @@ func showBanMemberSheet(_ gInfo: GroupInfo, _ mem: GroupMember, dismiss: Dismiss
 }
 
 private func showBanDialog(title: String, actions: [BanDialogAction], footer: @escaping (BanDuration) -> String) {
-    weak var sheet: UIViewController?
-    sheet = showAppSheet(detents: [.medium(), .large()]) {
-        BanDialog(title: title, actions: actions, footer: footer) { then in
-            if let sheet {
-                sheet.dismiss(animated: true, completion: then)
-            } else {
-                then()
-            }
-        }
+    showClosableAppSheet { close in
+        BanDialog(title: title, actions: actions, footer: footer, close: close)
     }
 }
 

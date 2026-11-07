@@ -1615,13 +1615,17 @@ enum BanDuration: Identifiable, Hashable, CaseIterable {
 enum ChatDeleteMode: Codable {
     case full(notify: Bool)
     case entity(notify: Bool)
-    case messages
+    case archive
+
+    init(keepConversation: Bool, notify: Bool) {
+        self = keepConversation ? .entity(notify: notify) : .full(notify: notify)
+    }
 
     var cmdString: String {
         switch self {
         case let .full(notify): "full notify=\(onOff(notify))"
         case let .entity(notify): "entity notify=\(onOff(notify))"
-        case .messages: "messages"
+        case .archive: "archive"
         }
     }
 

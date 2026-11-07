@@ -48,6 +48,21 @@ func showAppSheet<Content: View>(detents: [UISheetPresentationController.Detent]
     return nil
 }
 
+typealias CloseSheet = (_ then: @escaping () -> Void) -> Void
+
+func showClosableAppSheet<Content: View>(@ViewBuilder content: (@escaping CloseSheet) -> Content) {
+    weak var sheet: UIViewController?
+    sheet = showAppSheet(detents: [.medium(), .large()]) {
+        content { then in
+            if let sheet {
+                sheet.dismiss(animated: true, completion: then)
+            } else {
+                then()
+            }
+        }
+    }
+}
+
 extension View {
     func appSheet<Content>(
         isPresented: Binding<Bool>,
