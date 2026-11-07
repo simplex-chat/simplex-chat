@@ -375,18 +375,15 @@ struct ChatListNavLink: View {
     private func setTagChatSheet(_ chat: Chat) {
         let screenHeight = UIScreen.main.bounds.height
         let reservedSpace: Double = 4 * 44 // 2 for padding, 1 for "Create list" and another for extra tag
+        let favoritesSpace: Double = 2 * 44
         let tagsSpace = Double(max(chatTagsModel.userTags.count, 3)) * 44
-        let fraction = min((reservedSpace + tagsSpace) / screenHeight, 0.62)
-        
+        let fraction = min((reservedSpace + favoritesSpace + tagsSpace) / screenHeight, 0.62)
+
         parentSheet = SomeSheet(
             content: {
                 AnyView(
                     NavigationView {
-                        if chatTagsModel.userTags.isEmpty {
-                            TagListEditor(chat: chat)
-                        } else {
-                            TagListView(chat: chat)
-                        }
+                        TagListView(chat: chat)
                     }
                 )
             },

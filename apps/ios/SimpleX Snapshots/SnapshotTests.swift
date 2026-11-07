@@ -336,6 +336,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(SimpleXInfo_Previews.self, device: true),
         SnapshotScene(SmallLinkPreview_Previews.self),
         SnapshotScene(SupportSimpleXBanner_Previews.self),
+        SnapshotScene(TagListView_Previews.self),
         SnapshotScene(TerminalAvatars_Previews.self, allSizes: true),
         SnapshotScene(TerminalMedia_Previews.self),
         SnapshotScene(TerminalNames_Previews.self, allSizes: true),

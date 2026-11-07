@@ -30,6 +30,11 @@ struct TagListView: View {
     
     var body: some View {
         List {
+            if let chat {
+                Section {
+                    favoritesRow(chat)
+                }
+            }
             Section {
                 ForEach(chatTagsModel.userTags, id: \.id) { tag in
                     let text = tag.chatTagText
@@ -136,6 +141,22 @@ struct TagListView: View {
         }
     }
     
+    private func favoritesRow(_ chat: Chat) -> some View {
+        let favorite = chat.chatInfo.chatSettings?.favorite == true
+        return HStack {
+            Text("Favorites")
+            Spacer()
+            Image(systemName: favorite ? "star.fill" : "star")
+                .imageScale(.large)
+                .foregroundColor(.yellow)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            toggleChatFavorite(chat, favorite: !favorite)
+            dismiss()
+        }
+    }
+
     private func radioButton(selected: Bool) -> some View {
         Image(systemName: selected ? "checkmark.circle.fill" : "circle")
             .imageScale(.large)
@@ -402,5 +423,22 @@ struct TagListEditor: View {
                 }
             }
         }
+    }
+}
+
+struct TagListView_Previews: PreviewProvider {
+    static var previews: some View {
+        let chatTagsModel = ChatTagsModel()
+        chatTagsModel.userTags = [
+            ChatTag(chatTagId: 1, chatTagText: "Family", chatTagEmoji: "🏠"),
+            ChatTag(chatTagId: 2, chatTagText: "Work", chatTagEmoji: "💼")
+        ]
+        var contact = Contact.sampleData
+        contact.chatSettings.favorite = true
+        contact.chatTags = [2]
+        return NavigationView {
+            TagListView(chat: Chat(chatInfo: .direct(contact: contact)))
+        }
+        .environmentObject(chatTagsModel)
     }
 }
