@@ -318,15 +318,15 @@ fun deleteAndBanCustomer(chat: Chat, groupInfo: GroupInfo) {
     if (canDeleteAndBanCustomer(groupInfo, members)) {
       deleteAndBanCustomerDialog(chat, groupInfo)
     } else {
-      showCantDeleteAndBanCustomerAlert(groupInfo)
+      showCantBanCustomerAlert(groupInfo)
     }
   }
 }
 
-private fun showCantDeleteAndBanCustomerAlert(groupInfo: GroupInfo) {
+private fun showCantBanCustomerAlert(groupInfo: GroupInfo) {
   AlertManager.shared.showAlertDialogButtonsColumn(
-    title = generalGetString(MR.strings.cant_delete_and_ban),
-    text = String.format(generalGetString(MR.strings.cant_delete_and_ban_customer_desc), groupInfo.displayName),
+    title = generalGetString(MR.strings.cant_ban),
+    text = String.format(generalGetString(MR.strings.cant_ban_customer_desc), groupInfo.displayName),
     parseHtml = false,
     buttons = {
       SectionItemView({
@@ -1662,8 +1662,8 @@ fun PreviewDeleteAndBanCustomerDialog() {
 
 @Preview
 @Composable
-fun PreviewCantDeleteAndBanCustomerAlert() {
+fun PreviewCantBanCustomerAlert() {
   SimpleXTheme {
-    AlertPreview { showCantDeleteAndBanCustomerAlert(previewBusinessChatInfo) }
+    AlertPreview { showCantBanCustomerAlert(previewBusinessChatInfo) }
   }
 }

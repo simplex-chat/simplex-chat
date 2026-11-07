@@ -313,7 +313,7 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, notify: Bool
     notify = notify
   ) { chatDeleteMode ->
     deleteContact(chat, chatModel, close, chatDeleteMode)
-    if (chatDeleteMode is ChatDeleteMode.Entity && !contact.chatDeleted && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
+    if (chatDeleteMode is ChatDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
       showDeleteContactNotice(contact)
     }
   }
@@ -407,7 +407,7 @@ private fun deleteNotReadyContact(chat: Chat, chatModel: ChatModel, close: (() -
 private fun showDeleteContactNotice(contact: Contact) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.contact_deleted),
-    text = String.format(generalGetString(MR.strings.you_can_still_view_conversation_with_contact), contact.displayName),
+    text = String.format(generalGetString(if (contact.chatDeleted) MR.strings.you_can_still_view_conversation_in_archived_contacts else MR.strings.you_can_still_view_conversation_with_contact), contact.displayName),
     confirmText = generalGetString(MR.strings.ok),
     dismissText = generalGetString(MR.strings.dont_show_again),
     onDismiss = {
@@ -452,7 +452,7 @@ fun archiveContact(chat: Chat, contact: Contact, chatModel: ChatModel) {
 fun deleteAndBanContactDialog(chat: Chat, contact: Contact, chatModel: ChatModel, close: (() -> Unit)? = null) {
   deleteAndBanDialog(contact.displayName, MR.strings.delete_contact_cannot_undo_warning, MR.strings.delete_and_ban_contact_forever_desc) { chatDeleteMode, notice ->
     deleteContact(chat, chatModel, close, chatDeleteMode, notice)
-    if (chatDeleteMode is ChatDeleteMode.Entity && !contact.chatDeleted && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
+    if (chatDeleteMode is ChatDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
       showDeleteContactNotice(contact)
     }
   }
@@ -1626,6 +1626,14 @@ fun PreviewContactArchivedAlert() {
 fun PreviewDeletedContactArchivedAlert() {
   SimpleXTheme {
     AlertPreview { showDeleteConversationNotice(Contact.sampleData.copy(contactStatus = ContactStatus.DeletedByUser)) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewContactDeletedFromArchiveAlert() {
+  SimpleXTheme {
+    AlertPreview { showDeleteContactNotice(Contact.sampleData.copy(chatDeleted = true)) }
   }
 }
 
