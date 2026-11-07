@@ -1608,7 +1608,9 @@ private fun ModalData.GroupChatInfoLayoutPreview(chat: Chat, groupInfo: GroupInf
   )
 }
 
-val previewOwnerGroupInfo = GroupInfo.sampleData.copy(membership = GroupMember.sampleData.copy(memberRole = GroupMemberRole.Owner))
+val previewOwnerGroupInfo = GroupInfo.sampleData.copy(
+  membership = GroupMember.sampleData.copy(memberRole = GroupMemberRole.Owner, memberProfile = LocalProfile.sampleData.copy(displayName = "bob", fullName = "Bob"))
+)
 
 val previewBusinessChatInfo = previewOwnerGroupInfo.copy(
   groupProfile = GroupProfile.sampleData.copy(displayName = "alice", fullName = "Alice"),
