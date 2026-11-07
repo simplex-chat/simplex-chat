@@ -261,7 +261,7 @@ badgeWebTests = do
     it "caps checkouts of every client together, counting only those that reach the provider" testInvoicesLimitForAll
     it "refuses every badly signed webhook, logging only the first few of a minute" testWebhookRefusalLogCapped
     it "answers a poll at once with rate_limited while every hold slot is taken, and frees each slot after its hold" testHoldSlots
-    it "answers a search at once with rate_limited while every search slot is taken, and frees each slot after its search" testSearchSlots
+    it "runs a search's chain reads only in a free search slot, and frees each slot after them" testSearchSlots
     it "holds the bucket map under its cap through a flood of distinct clients" testBucketsStayBounded
     it "answers a hold from the row it read, not from the status it woke on" testHoldReportsTheRowNotTheWake
     it "answers a hold that timed out with a change nothing published" testHoldTimeoutReportsAnUnpublishedChange

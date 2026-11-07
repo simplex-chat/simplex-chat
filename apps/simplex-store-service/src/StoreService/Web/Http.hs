@@ -93,7 +93,7 @@ data HttpEnv = HttpEnv
     heTrustForwardedFor :: Bool,
     -- | the long polls held now, of every client
     heHolds :: TVar Int,
-    -- | the name searches reading the chain now, of every client, each several chain reads
+    -- | the name searches reading the chain now, of every client
     heSearches :: TVar Int
   }
 

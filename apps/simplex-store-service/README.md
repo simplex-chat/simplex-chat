@@ -1378,7 +1378,8 @@ write to chat@simplex.chat with the order's reference, which is its invoice id, 
 id for an order without an invoice. Nothing is refunded automatically, and the service never learns
 where to send money. A reference is not proof of who paid: it is in the service's logs, the
 provider's Dashboard and its emails, and anyone holding it reads the balance and the order's name
-from `/api/invoice/:id`. Only a card refund is safe on the reference alone, as Stripe returns it to
+from `/api/invoice/:id`, or from `/api/registration/:id` for a registration id. Only a card refund is
+safe on the reference alone, as Stripe returns it to
 the card that paid; a crypto refund goes to an address the buyer gives, which nothing here ties to
 the order. Support records each refund in `--run-cli` mode with the service stopped, like the other
 `//` commands:
