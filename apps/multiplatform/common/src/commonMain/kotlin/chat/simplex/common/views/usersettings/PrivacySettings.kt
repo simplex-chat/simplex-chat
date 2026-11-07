@@ -5,6 +5,7 @@ import SectionItemView
 import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -73,6 +74,13 @@ fun PrivacySettingsView(
         painterResource(MR.images.ic_link),
         stringResource(MR.strings.sanitize_links_toggle),
         chatModel.controller.appPrefs.privacySanitizeLinks
+      )
+      ExposedDropDownSettingRow(
+        stringResource(MR.strings.privacy_contact_deletion),
+        ContactDeletion.entries.map { it to it.text },
+        remember { appPrefs.privacyContactDeletion.state },
+        icon = painterResource(MR.images.ic_person_off),
+        onSelected = { appPrefs.privacyContactDeletion.set(it) }
       )
     }
     SectionDividerSpaced()
@@ -878,3 +886,11 @@ fun laUnavailableTurningOffAlert() = AlertManager.shared.showAlertMsg(
   generalGetString(MR.strings.auth_unavailable),
   generalGetString(MR.strings.auth_device_authentication_is_disabled_turning_off)
 )
+
+@Preview
+@Composable
+fun PreviewPrivacySettingsView() {
+  SimpleXTheme {
+    PrivacySettingsView(ChatModel, showSettingsModal = { {} }, setPerformLA = {})
+  }
+}

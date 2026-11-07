@@ -1496,6 +1496,9 @@
   <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Without Tor or VPN, your IP address will be visible to file servers.</string>
   <string name="send_link_previews">Send link previews</string>
   <string name="sanitize_links_toggle">Remove link tracking</string>
+  <string name="privacy_contact_deletion">Contact deletion</string>
+  <string name="privacy_contact_deletion_notify">Notify</string>
+  <string name="privacy_contact_deletion_ask">Ask</string>
   <string name="privacy_show_last_messages">Show last messages</string>
   <string name="privacy_message_draft">Message draft</string>
   <string name="full_backup">App data backup</string>

@@ -140,6 +140,7 @@ class AppPreferences {
   val privacyShowChatPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS, true)
   val privacyShowSignature = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_SIGNATURE, true)
   val privacyShowEncryption = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_FILE_ENCRYPTION, true)
+  val privacyContactDeletion: SharedPreference<ContactDeletion> = mkSafeEnumPreference(SHARED_PREFS_PRIVACY_CONTACT_DELETION, ContactDeletion.Ask)
   val privacySaveLastDraft = mkBoolPreference(SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT, true)
   val privacyDeliveryReceiptsSet = mkBoolPreference(SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET, false)
   val privacyEncryptLocalFiles = mkBoolPreference(SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES, true)
@@ -433,6 +434,7 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS = "PrivacyShowChatPreviews"
     private const val SHARED_PREFS_PRIVACY_SHOW_SIGNATURE = "PrivacyShowSignature"
     private const val SHARED_PREFS_PRIVACY_SHOW_FILE_ENCRYPTION = "PrivacyShowEncryption"
+    private const val SHARED_PREFS_PRIVACY_CONTACT_DELETION = "PrivacyContactDeletion"
     private const val SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT = "PrivacySaveLastDraft"
     private const val SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET = "PrivacyDeliveryReceiptsSet"
     private const val SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES = "PrivacyEncryptLocalFiles"
@@ -8791,6 +8793,17 @@ enum class PrivacyChatListOpenLinksMode {
 }
 
 @Serializable
+enum class ContactDeletion {
+  @SerialName("notify") Notify,
+  @SerialName("ask") Ask;
+
+  val text: String get() = when (this) {
+    Notify -> generalGetString(MR.strings.privacy_contact_deletion_notify)
+    Ask -> generalGetString(MR.strings.privacy_contact_deletion_ask)
+  }
+}
+
+@Serializable
 data class AppSettings(
   var networkConfig: NetCfg? = null,
   var networkProxy: NetworkProxy? = null,
@@ -8804,6 +8817,7 @@ data class AppSettings(
   var privacySaveLastDraft: Boolean? = null,
   var privacyProtectScreen: Boolean? = null,
   var privacyMediaBlurRadius: Int? = null,
+  var privacyContactDeletion: ContactDeletion? = null,
   var notificationMode: AppSettingsNotificationMode? = null,
   var notificationPreviewMode: AppSettingsNotificationPreviewMode? = null,
   var webrtcPolicyRelay: Boolean? = null,
@@ -8842,6 +8856,7 @@ data class AppSettings(
     if (privacySaveLastDraft != def.privacySaveLastDraft) { empty.privacySaveLastDraft = privacySaveLastDraft }
     if (privacyProtectScreen != def.privacyProtectScreen) { empty.privacyProtectScreen = privacyProtectScreen }
     if (privacyMediaBlurRadius != def.privacyMediaBlurRadius) { empty.privacyMediaBlurRadius = privacyMediaBlurRadius }
+    if (privacyContactDeletion != def.privacyContactDeletion) { empty.privacyContactDeletion = privacyContactDeletion }
     if (notificationMode != def.notificationMode) { empty.notificationMode = notificationMode }
     if (notificationPreviewMode != def.notificationPreviewMode) { empty.notificationPreviewMode = notificationPreviewMode }
     if (webrtcPolicyRelay != def.webrtcPolicyRelay) { empty.webrtcPolicyRelay = webrtcPolicyRelay }
@@ -8891,6 +8906,7 @@ data class AppSettings(
     privacySaveLastDraft?.let { def.privacySaveLastDraft.set(it) }
     privacyProtectScreen?.let { def.privacyProtectScreen.set(it) }
     privacyMediaBlurRadius?.let { def.privacyMediaBlurRadius.set(it) }
+    privacyContactDeletion?.let { def.privacyContactDeletion.set(it) }
     notificationMode?.let { def.notificationsMode.set(it.toNotificationsMode()) }
     notificationPreviewMode?.let { def.notificationPreviewMode.set(it.toNotificationPreviewMode().name) }
     webrtcPolicyRelay?.let { def.webrtcPolicyRelay.set(it) }
@@ -8930,6 +8946,7 @@ data class AppSettings(
         privacySaveLastDraft = true,
         privacyProtectScreen = false,
         privacyMediaBlurRadius = 0,
+        privacyContactDeletion = ContactDeletion.Ask,
         notificationMode = AppSettingsNotificationMode.INSTANT,
         notificationPreviewMode = AppSettingsNotificationPreviewMode.MESSAGE,
         webrtcPolicyRelay = true,
@@ -8970,6 +8987,7 @@ data class AppSettings(
           privacySaveLastDraft = def.privacySaveLastDraft.get(),
           privacyProtectScreen = def.privacyProtectScreen.get(),
           privacyMediaBlurRadius = def.privacyMediaBlurRadius.get(),
+          privacyContactDeletion = def.privacyContactDeletion.get(),
           notificationMode = AppSettingsNotificationMode.from(def.notificationsMode.get()),
           notificationPreviewMode = AppSettingsNotificationPreviewMode.from(NotificationPreviewMode.valueOf(def.notificationPreviewMode.get()!!)),
           webrtcPolicyRelay = def.webrtcPolicyRelay.get(),
