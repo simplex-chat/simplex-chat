@@ -746,7 +746,8 @@
   <string name="delete_and_notify_contact">Delete and notify</string>
   <string name="delete_without_notification">Delete silently</string>
   <string name="button_delete_contact">Delete contact</string>
-  <string name="conversation_deleted">Contact archived!</string>
+  <string name="conversation_deleted">Conversation deleted!</string>
+  <string name="contact_archived">Contact archived!</string>
   <string name="you_can_still_send_messages_to_contact">You can send messages to %1$s from Archived contacts.</string>
   <string name="you_can_view_conversation_in_archived_contacts">You can view the conversation with %1$s in Archived contacts.</string>
   <string name="delete_and_ban_question">Delete and ban?</string>

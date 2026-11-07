@@ -282,7 +282,7 @@ private fun confirmActiveContactDeletion(chat: Chat, contact: Contact, contactDe
 
 private fun showDeleteConversationNotice(contact: Contact) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.conversation_deleted),
+    title = generalGetString(MR.strings.contact_archived),
     text = String.format(generalGetString(if (contact.active) MR.strings.you_can_still_send_messages_to_contact else MR.strings.you_can_view_conversation_in_archived_contacts), contact.displayName),
     confirmText = generalGetString(MR.strings.ok),
     dismissText = generalGetString(MR.strings.dont_show_again),
