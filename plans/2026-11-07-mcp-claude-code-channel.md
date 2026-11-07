@@ -43,6 +43,7 @@ Design:
 Open, with recommendations:
 - D8 Claude's SimpleX profile for chats with peers: (a) the one `Claude` profile for all sessions; each chat belongs to the session that connected it, and owners hand a chat to another session with `/give CHAT N`, recommended; (b) a profile per session, as in #7810.
 - D9 model and effort: (a) shown in the session group's profile and updated on change; changed in the terminal or from the Claude app by Remote Control, recommended; (b) also `/model` and `/effort` in the session group, which set the defaults for new sessions in `~/.claude/settings.json`.
+- D10 sessions inside one group: (a) group sessions first, using the reserved `sessions` preference (`SessionsGroupPreference`, `src/Simplex/Chat/Types/Preferences.hs:407`) and a new group chat scope (`GroupChatScope`, `src/Simplex/Chat/Messages.hs:119`), with an RFC and UI in the apps; the plugin then has one Main group with a session per Claude Code session, and D1 (b) is dropped, recommended; (b) the plugin ships with a group per session and moves to sessions when the apps support them.
 
 ## Model and effort
 
