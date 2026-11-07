@@ -247,7 +247,7 @@ Layout logic:
 
 ### TagListView
 
-**Location:** [`TagListView.kt#L47`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/TagListView.kt#L47)
+**Location:** [`TagListView.kt#L48`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/TagListView.kt#L48)
 
 Full-screen tag management view opened from the "+" button or long-press menu.
 
