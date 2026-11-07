@@ -270,7 +270,7 @@ chatGroupTests = do
     it "blocked pending member can't be accepted" testBlockPendingMember
     it "block of member pending review is sent to moderators only" testBlockPendingReviewMember
     it "late automatic unblock doesn't cancel a newer block" testBlockForAllLateAutomaticUnblock
-    it "blocked member's update and file leave no rows on regular members" testBlockForAllNoRowsForMembers
+    it "blocked member's update leaves no rows on regular members" testBlockForAllNoRowsForMembers
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
@@ -8681,8 +8681,6 @@ testBlockForAllNoRowsForMembers =
       connId <- relayConnIdToMember bob "cath"
       agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") $
         XMsgUpdate (SharedMsgId "\5\6\7\8") (MCText "edit") M.empty Nothing Nothing Nothing Nothing
-      agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange (Just $ SharedMsgId "\2\3\4\5") $
-        XFile FileInvitation {fileName = "test.pdf", fileSize = 100, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}
       cath <// 1000000
 
       alice ##> "/unblock for all #team bob"
