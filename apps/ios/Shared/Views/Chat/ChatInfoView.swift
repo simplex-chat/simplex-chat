@@ -1651,7 +1651,7 @@ struct ChatInfoView_DeleteAndBan_Previews: PreviewProvider {
             currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences),
             onSearch: {}
         )
-        .frame(height: 1400)
+        .frame(height: 1200)
     }
 }
 

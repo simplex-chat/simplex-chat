@@ -192,12 +192,14 @@ private struct SnapshotScene {
     var height: CGFloat? = nil
     var allSizes: Bool
     var device: Bool
+    var alert: Bool
     var view: AnyView
 
-    init<P: PreviewProvider>(_ preview: P.Type, allSizes: Bool = false, device: Bool = false) {
+    init<P: PreviewProvider>(_ preview: P.Type, allSizes: Bool = false, device: Bool = false, alert: Bool = false) {
         name = String(describing: preview).replacingOccurrences(of: "_Previews", with: "")
         self.allSizes = allSizes
         self.device = device
+        self.alert = alert
         view = AnyView(preview.previews)
     }
 }
@@ -251,7 +253,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ClassicParagraphs_Previews.self, allSizes: true),
         SnapshotScene(ComposeVoiceView_Previews.self),
         SnapshotScene(ConnectDesktopView_Previews.self, device: true),
-        SnapshotScene(ContactArchivedAlert_Previews.self),
+        SnapshotScene(ContactArchivedAlert_Previews.self, alert: true),
         SnapshotScene(ContactConnectionInfo_Previews.self),
         SnapshotScene(ContactConnectionView_Previews.self),
         SnapshotScene(ContactPreferencesView_Previews.self, device: true),
@@ -271,10 +273,10 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(DeleteAndBanContactForeverDialog_Previews.self),
         SnapshotScene(DeleteAndBanCustomerDialog_Previews.self),
         SnapshotScene(DeleteAndBanCustomerForeverDialog_Previews.self),
-        SnapshotScene(DeleteAndBanUnavailableAlert_Previews.self),
-        SnapshotScene(DeleteBusinessChatAlert_Previews.self),
+        SnapshotScene(DeleteAndBanUnavailableAlert_Previews.self, alert: true),
+        SnapshotScene(DeleteBusinessChatAlert_Previews.self, alert: true),
         SnapshotScene(DeleteContactActionSheet_Previews.self),
-        SnapshotScene(DeleteContactAlert_Previews.self),
+        SnapshotScene(DeleteContactAlert_Previews.self, alert: true),
         SnapshotScene(DeleteContactKeepDialog_Previews.self),
         SnapshotScene(DeletedItemView_Previews.self, allSizes: true),
         SnapshotScene(DeleteGroupKeepDialog_Previews.self),
@@ -383,6 +385,7 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
     if #available(iOS 16.4, *) {
         host.safeAreaRegions = scene.device ? .container : []
     }
+    let earlierWindows = windowScene.windows
     let window = UIWindow(windowScene: windowScene)
     window.overrideUserInterfaceStyle = dark ? .dark : .light
     window.rootViewController = host
@@ -398,13 +401,27 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
         }
     }
     window.endEditing(true)
+    let alertWindows = scene.alert ? windowScene.windows.filter { $0 !== window && !$0.isHidden && !earlierWindows.contains($0) } : []
+    if scene.alert {
+        print("snapshot alert \(scene.name): presented \(String(describing: host.presentedViewController)), windows \(windowScene.windows.map { "\(type(of: $0)) level \($0.windowLevel.rawValue) hidden \($0.isHidden) new \(!earlierWindows.contains($0))" })")
+    }
+    for alertWindow in alertWindows {
+        alertWindow.overrideUserInterfaceStyle = window.overrideUserInterfaceStyle
+    }
+    if !alertWindows.isEmpty {
+        settle()
+    }
     removeAnimations(window.layer)
+    alertWindows.forEach { removeAnimations($0.layer) }
     let format = UIGraphicsImageRendererFormat.default()
     format.scale = 1
     format.preferredRange = .standard
     format.opaque = true
     let image = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { _ in
         _ = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        for alertWindow in alertWindows {
+            _ = alertWindow.drawHierarchy(in: alertWindow.bounds, afterScreenUpdates: true)
+        }
         if scene.device {
             drawStatusBar(dark: dark)
         }

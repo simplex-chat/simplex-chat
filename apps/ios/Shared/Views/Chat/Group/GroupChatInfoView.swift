@@ -1287,6 +1287,7 @@ func previewCustomerChat() -> GroupInfo {
     groupInfo.groupProfile = GroupProfile(displayName: "alice", fullName: "")
     groupInfo.businessChat = .sampleData
     groupInfo.membership.memberRole = .owner
+    groupInfo.membership.memberProfile = LocalProfile(profileId: 99, displayName: "SimpleX", fullName: "", localAlias: "")
     return groupInfo
 }
 
@@ -1309,7 +1310,7 @@ struct GroupChatInfoView_DeleteAndBan_Previews: PreviewProvider {
             localAlias: ""
         )
         .environmentObject(chatModel)
-        .frame(height: 1600)
+        .frame(height: 1450)
     }
 }
 
