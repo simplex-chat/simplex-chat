@@ -78,6 +78,14 @@ class CallManager(val chatModel: ChatModel) {
       // If there is active call currently and it's with other contact, don't interrupt it
       if (activeCall.value != null && !(activeCall.value?.remoteHostId == call.remoteHostId && activeCall.value?.contact?.id == call.contact.id)) return
 
+      // the peer sees the media stop and reconnects until the end message arrives, so it is sent first
+      if (call.callState == CallState.Ended) {
+        Log.d(TAG, "CallManager.endCall: call ended")
+      } else {
+        Log.d(TAG, "CallManager.endCall: ending call...")
+        //callCommand.add(WCallCommand.End)
+        controller.apiEndCall(call.remoteHostId, call.contact)
+      }
       // Don't destroy WebView if you plan to accept next call right after this one
       if (!switchingCall.value) {
         AppLock.appWasHidden()
@@ -86,13 +94,6 @@ class CallManager(val chatModel: ChatModel) {
         activeCall.value = null
         activeCallViewIsCollapsed.value = false
         platform.androidCallEnded()
-      }
-      if (call.callState == CallState.Ended) {
-        Log.d(TAG, "CallManager.endCall: call ended")
-      } else {
-        Log.d(TAG, "CallManager.endCall: ending call...")
-        //callCommand.add(WCallCommand.End)
-        controller.apiEndCall(call.remoteHostId, call.contact)
       }
     }
   }
