@@ -19,6 +19,7 @@ import packages_release
 from packages_release import (
     ADDON_ASSETS,
     CABAL_FILE,
+    MCP_DIR,
     NODEJS_DIR,
     PYTHON_DIR,
     PYTHON_VERSION_FILE,
@@ -27,6 +28,7 @@ from packages_release import (
     TYPES_README,
     ADDON_PLATFORMS,
     BUILD_CHANGES,
+    SCOPE_CHANGES,
     LIBS_ASSETS,
     Package,
     Pins,
@@ -245,7 +247,7 @@ class BuildPlanTest(unittest.TestCase):
         found = re.search(r'^  pull_request:\n    paths:\n((?:      - ".*"\n)+)', workflow, re.M)
         self.assertIsNotNone(found, "no pull_request paths in build.yml")
         paths = re.findall(r'^      - "(.*)"$', found[1], re.M)
-        globs = {path for build in BUILD_CHANGES.values() for path in build if not path.startswith(":")}
+        globs = {path for build in (BUILD_CHANGES | SCOPE_CHANGES).values() for path in build if not path.startswith(":")}
         self.assertEqual(sorted(paths), sorted(globs))
         self.assertEqual(len(paths), len(set(paths)), "duplicate pull_request paths in build.yml")
 
@@ -463,8 +465,8 @@ class ChangesTest(GitRepoTest):
         output = io.StringIO()
         with mock.patch.object(packages_release, "ROOT", self.repo), contextlib.redirect_stdout(output):
             changes(self.base)
-        values = dict(line.split("=", 1) for line in output.getvalue().splitlines())
-        return {build for build in BUILD_CHANGES if values[build] == "true"}
+        self.values = dict(line.split("=", 1) for line in output.getvalue().splitlines())
+        return {build for build in BUILD_CHANGES if self.values[build] == "true"}
 
     def test_ios_change_builds_only_ios(self):
         self.assertEqual(self.builds("apps/ios/Shared/View.swift"), {"ios"})
@@ -484,14 +486,46 @@ class ChangesTest(GitRepoTest):
     def test_other_ci_script_builds_the_core(self):
         self.assertEqual(self.builds("scripts/ci/prune-old-builds.sh"), {"haskell"})
 
+    def test_app_test_scripts_build_nothing(self):
+        self.assertEqual(self.builds("scripts/ci/ios-sim/smoke-test.sh", "scripts/ci/desktop-linux/smoke-test.sh", "scripts/ci/android/ui", "scripts/ci/snapshots-compare.py", "scripts/ci/README.md"), set())
+
     def test_build_image_change_builds_the_core_and_kotlin(self):
         self.assertEqual(self.builds("Dockerfile.build"), {"haskell", "kotlin"})
 
-    def test_workflow_change_builds_everything(self):
-        self.assertEqual(self.builds(".github/workflows/build.yml"), {"haskell", "kotlin", "ios"})
+    def test_workflow_change_builds_the_core_and_kotlin(self):
+        self.assertEqual(self.builds(".github/workflows/build.yml"), {"haskell", "kotlin"})
+
+    def test_build_action_change_builds_the_core_and_kotlin(self):
+        self.assertEqual(self.builds(".github/actions/prepare-build/action.yml"), {"haskell", "kotlin"})
+
+    def test_other_workflow_change_builds_nothing(self):
+        self.assertEqual(self.builds(".github/workflows/ios-sim.yml", ".github/workflows/desktop-linux.yml", ".github/ISSUE_TEMPLATE/bug.md"), set())
 
     def test_unrelated_change_builds_nothing(self):
         self.assertEqual(self.builds("docs/guide.md", "packages/pkg/src.txt"), set())
+
+    def test_package_change_builds_only_packages(self):
+        self.assertEqual(self.builds("packages/simplex-chat-python/src/simplex_chat/client.py"), {"packages"})
+
+    def test_badge_web_change_builds_the_core_and_tests_its_scope(self):
+        self.assertEqual(self.builds("apps/simplex-badge-service/web/src/catalog.ts"), {"haskell"})
+        self.assertEqual(self.values["scopes"], "badge-web")
+
+    def test_release_script_change_tests_the_ci_scripts(self):
+        self.assertEqual(self.builds("scripts/ci/packages_release.py"), set())
+        self.assertEqual(self.values["scopes"], "ci-scripts")
+
+    def test_website_library_change_tests_its_scope(self):
+        self.assertEqual(self.builds("website/src/js/simplex-lib.jsc"), set())
+        self.assertEqual(self.values["scopes"], "website")
+
+    def test_mcp_change_tests_its_scope(self):
+        self.assertEqual(self.builds("packages/simplex-chat-mcp/src/tools.ts"), set())
+        self.assertEqual(self.values["scopes"], "mcp")
+
+    def test_library_change_builds_packages_and_tests_the_mcp_scope(self):
+        self.assertEqual(self.builds("packages/simplex-chat-nodejs/src/api.ts"), {"packages"})
+        self.assertEqual(self.values["scopes"], "mcp")
 
 
 class PackageStateTest(GitRepoTest):
@@ -523,32 +557,103 @@ class PackageStateTest(GitRepoTest):
         self.assertFalse(self.state(registry_published=False).published)
         self.assertTrue(self.state(registry_published=True).published)
 
-    def test_publish_plan_skips_recorded_versions_before_the_registries_list_them(self):
+    def plan_output(self, releases, npm_versions):
+        mcp = {
+            "name": "@simplex-chat/mcp",
+            "version": "0.2.0",
+            "dependencies": {"simplex-chat": "^1.0.0-beta.1.1", "@simplex-chat/types": "^0.1.0", "qrcode": "^1.5"},
+        }
         self.write(f"{TYPES_DIR}/package.json", '{"name": "@simplex-chat/types", "version": "0.1.0"}')
         self.write(f"{NODEJS_DIR}/package.json", '{"name": "simplex-chat", "version": "1.0.0-beta.1.1"}')
+        self.write(f"{MCP_DIR}/package.json", json.dumps(mcp))
         self.write(PYTHON_VERSION_FILE, render_python_version("1.0.0b1.post1", Pins("core-1", {})))
         self.write("pyproject.toml", "")
-        self.commit("packages")
-        releases = {"npm": {"simplex-chat": {"1.0.0-beta.1.1": "c"}}, "pypi": {"simplex-chat": {"1.0.0b1.post1": "c"}}}
         output = io.StringIO()
+        notices = io.StringIO()
         with (
             mock.patch.object(packages_release, "ROOT", self.repo),
             mock.patch.object(packages_release, "read_releases", return_value=(releases, "blob")),
             mock.patch.object(packages_release, "python_project", return_value="simplex-chat"),
-            mock.patch.object(packages_release, "npm_published", return_value=False),
+            mock.patch.object(packages_release, "npm_published", lambda name, version: (name, version) in npm_versions),
             mock.patch.object(packages_release, "pypi_published", return_value=False),
             contextlib.redirect_stdout(output),
+            contextlib.redirect_stderr(notices),
         ):
             publish_plan()
+        self.notices = notices.getvalue()
+        return output.getvalue().splitlines()
+
+    def test_publish_plan_skips_recorded_versions_before_the_registries_list_them(self):
+        releases = {
+            "npm": {"simplex-chat": {"1.0.0-beta.1.1": "c"}, "@simplex-chat/mcp": {"0.2.0": "c"}},
+            "pypi": {"simplex-chat": {"1.0.0b1.post1": "c"}},
+        }
         self.assertEqual(
-            output.getvalue().splitlines(),
+            self.plan_output(releases, set()),
             [
                 "types_version=0.1.0",
                 "types_dist_tag=latest",
                 "nodejs_version=",
                 "nodejs_dist_tag=beta",
+                "mcp_version=",
+                "mcp_dist_tag=latest",
                 "python_version=",
             ],
+        )
+        self.assertEqual(self.notices, "")
+
+    def test_publish_plan_lists_mcp_when_its_pinned_versions_are_on_npm(self):
+        pins = {("simplex-chat", "1.0.0-beta.1.1"), ("@simplex-chat/types", "0.1.0")}
+        self.assertIn("mcp_version=0.2.0", self.plan_output({}, pins))
+        self.assertEqual(self.notices, "")
+
+    def test_publish_plan_counts_a_recorded_pinned_version_as_published(self):
+        releases = {"npm": {"simplex-chat": {"1.0.0-beta.1.1": "c"}}}
+        self.assertIn("mcp_version=0.2.0", self.plan_output(releases, {("@simplex-chat/types", "0.1.0")}))
+
+    def test_publish_plan_leaves_mcp_for_a_later_push_while_a_pinned_version_is_not_on_npm(self):
+        notice = "::notice title=Package release::@simplex-chat/mcp 0.2.0 waits for "
+        self.assertIn("mcp_version=", self.plan_output({}, {("simplex-chat", "1.0.0-beta.1.1")}))
+        self.assertEqual(self.notices, f"{notice}@simplex-chat/types 0.1.0\n")
+        self.assertIn("mcp_version=", self.plan_output({}, {("@simplex-chat/types", "0.1.0")}))
+        self.assertEqual(self.notices, f"{notice}simplex-chat 1.0.0-beta.1.1\n")
+
+    def test_record_adds_the_mcp_version(self):
+        self.write(f"{TYPES_DIR}/package.json", '{"name": "@simplex-chat/types"}')
+        self.write(f"{NODEJS_DIR}/package.json", '{"name": "simplex-chat"}')
+        self.write(f"{MCP_DIR}/package.json", '{"name": "@simplex-chat/mcp"}')
+        with (
+            mock.patch.object(packages_release, "ROOT", self.repo),
+            mock.patch.object(packages_release, "python_project", return_value="simplex-chat"),
+            mock.patch.object(packages_release, "record_releases", return_value="libs1") as record,
+            contextlib.redirect_stdout(io.StringIO()),
+        ):
+            packages_release.main(["record", "--commit", "sx1", "--mcp", "0.2.0"])
+        record.assert_called_once_with([("npm/@simplex-chat/mcp", "0.2.0")], "sx1")
+
+    def test_test_names_rename_mcp_and_its_pinned_dependencies(self):
+        repository = {"type": "git", "url": "git+https://github.com/simplex-chat/simplex-chat.git"}
+        types = {"name": "@simplex-chat/types", "repository": repository}
+        nodejs = {"name": "simplex-chat", "repository": repository, "dependencies": {"@simplex-chat/types": "^0.1.0"}}
+        dependencies = {"simplex-chat": "^1.0.0-beta.1.1", "@simplex-chat/types": "^0.1.0", "qrcode": "^1.5"}
+        mcp = {"name": "@simplex-chat/mcp", "repository": repository, "dependencies": dependencies}
+        for directory, package in [(TYPES_DIR, types), (NODEJS_DIR, nodejs), (MCP_DIR, mcp)]:
+            self.write(f"{directory}/package.json", json.dumps(package))
+        with (
+            mock.patch.object(packages_release, "ROOT", self.repo),
+            mock.patch.dict("os.environ", {"NPM_SCOPE": "@test", "GITHUB_REPOSITORY": "a/b", "PYPI_PROJECT": ""}),
+        ):
+            packages_release.test_names()
+        renamed = json.loads((self.repo / MCP_DIR / "package.json").read_text())
+        self.assertEqual(renamed["name"], "@test/mcp")
+        self.assertEqual(renamed["repository"]["url"], "git+https://github.com/a/b.git")
+        self.assertEqual(
+            renamed["dependencies"],
+            {
+                "simplex-chat": "npm:@test/simplex-chat@^1.0.0-beta.1.1",
+                "@simplex-chat/types": "npm:@test/types@^0.1.0",
+                "qrcode": "^1.5",
+            },
         )
 
     def test_unknown_recorded_commit_falls_back_to_the_version_commit(self):

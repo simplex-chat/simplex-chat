@@ -514,5 +514,6 @@ func updateOperatorsConditionsAcceptance(_ usvs: Binding<[UserOperatorServers]>,
 struct NetworkServersView_Previews: PreviewProvider {
     static var previews: some View {
         NetworkAndServers()
+            .environmentObject(SaveableSettings())
     }
 }

@@ -45,27 +45,35 @@ struct BadgesSupportSimplexView: View {
 
                 Spacer(minLength: 0)
 
-                // In-app purchase is not released: the badge is chosen on the site, and the code
-                // redeemed here. Revert this commit to restore the block below.
-                // VStack(spacing: 10) {
-                //     chooseLevelButton()
-                //         .padding(.vertical, 10)
-                //     Group {
-                //         if badgeBrowserAllowed {
-                //             buyInBrowserButton()
-                //         } else {
-                //             RedeemCodeButton()
-                //         }
-                //     }
-                //     .frame(height: 22)
-                // }
                 VStack(spacing: 10) {
-                    chooseBadgeOnSiteButton()
-                        .padding(.vertical, 10)
-                    Group {
-                        RedeemCodeButton()
+                    if store.servedByAppStore {
+                        chooseLevelButton()
+                            .padding(.vertical, 10)
+                        Group {
+                            if badgeBrowserAllowed {
+                                buyInBrowserButton()
+                            } else {
+                                RedeemCodeButton()
+                            }
+                        }
+                        .frame(height: 22)
+                        RestorePurchasesButton()
+                            .frame(height: 22)
+                            .padding(.top, 10)
+                        Text("If you were charged but have no badge, this adds it. A subscription bought with this App Store account moves to this profile, and the device or profile that had it loses its badge at its next renewal.")
+                            .font(.footnote)
+                            .foregroundColor(theme.colors.secondary)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } else {
+                        chooseBadgeOnSiteButton()
+                            .padding(.vertical, 10)
+                        Group {
+                            RedeemCodeButton()
+                        }
+                        .frame(height: 22)
+                        BadgeInvestorOffer(level: .supporter).hidden()
                     }
-                    .frame(height: 22)
                 }
                 .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
             }
@@ -78,6 +86,7 @@ struct BadgesSupportSimplexView: View {
         }
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
+        .task { await store.readEnvironment() }
     }
 
     private func chooseLevelButton() -> some View {
@@ -141,7 +150,6 @@ struct BadgesSupportSimplexView: View {
         }
     }
 
-    // In-app purchase is not released: delete with the commented block above to restore it.
     private func chooseBadgeOnSiteButton() -> some View {
         Button {
             UIApplication.shared.open(URL(string: badgePageUrl)!)

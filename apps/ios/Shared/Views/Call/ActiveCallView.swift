@@ -533,9 +533,9 @@ struct ActiveCallOverlay: View {
 struct ActiveCallOverlay_Previews: PreviewProvider {
     static var previews: some View {
         Group{
-            ActiveCallOverlay(call: Call(direction: .incoming, contact: Contact.sampleData, callUUID: UUID().uuidString.lowercased(), callState: .offerSent, initialCallType: .video), client: WebRTCClient({ _ in }, Binding.constant(nil)))
+            ActiveCallOverlay(call: Call(direction: .incoming, contact: Contact.sampleData, callUUID: "00000000-0000-0000-0000-000000000001", callState: .offerSent, initialCallType: .video), client: WebRTCClient({ _ in }, Binding.constant(nil)))
                 .background(.black)
-            ActiveCallOverlay(call: Call(direction: .incoming, contact: Contact.sampleData, callUUID: UUID().uuidString.lowercased(), callState: .offerSent, initialCallType: .audio), client: WebRTCClient({ _ in }, Binding.constant(nil)))
+            ActiveCallOverlay(call: Call(direction: .incoming, contact: Contact.sampleData, callUUID: "00000000-0000-0000-0000-000000000002", callState: .offerSent, initialCallType: .audio), client: WebRTCClient({ _ in }, Binding.constant(nil)))
                 .background(.black)
         }
     }

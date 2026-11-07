@@ -40,10 +40,6 @@
         <target>%1$@ 曾是 SimpleX Chat 支持者。徽章已于 %2$@ 过期。</target>
         <note>badge alert</note>
       </trans-unit>
-      <trans-unit id="%02d hrs %02d min %02d sec" xml:space="preserve">
-        <source>%1$02d hrs %2$02d min %3$02d sec</source>
-        <note>countdown</note>
-      </trans-unit>
       <trans-unit id="%@" xml:space="preserve">
         <source>%@</source>
         <target>%@</target>
@@ -68,10 +64,6 @@
         <source>%@ / %@</source>
         <target>%@ / %@</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="%@ accepted the call without end-to-end encryption." xml:space="preserve">
-        <source>%@ accepted the call without end-to-end encryption.</source>
-        <note>alert message</note>
       </trans-unit>
       <trans-unit id="%@ and %@" xml:space="preserve">
         <source>%@ and %@</source>
@@ -160,10 +152,12 @@
       </trans-unit>
       <trans-unit id="%@/month" xml:space="preserve">
         <source>%@/month</source>
+        <target>%@/月</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@/year" xml:space="preserve">
         <source>%@/year</source>
+        <target>%@/年</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@:" xml:space="preserve">
@@ -173,6 +167,7 @@
       </trans-unit>
       <trans-unit id="%d day" xml:space="preserve">
         <source>%d day</source>
+        <target>%d 天</target>
         <note>time interval</note>
       </trans-unit>
       <trans-unit id="%d days" xml:space="preserve">
@@ -217,11 +212,12 @@
       </trans-unit>
       <trans-unit id="%d month" xml:space="preserve">
         <source>%d month</source>
+        <target>%d 个月</target>
         <note>time interval</note>
       </trans-unit>
       <trans-unit id="%d months" xml:space="preserve">
         <source>%d months</source>
-        <target>%d 月</target>
+        <target>%d 个月</target>
         <note>time interval</note>
       </trans-unit>
       <trans-unit id="%d owner" xml:space="preserve">
@@ -397,10 +393,6 @@ channel relay bar</note>
       <trans-unit id="%lld seconds" xml:space="preserve">
         <source>%lld seconds</source>
         <target>%lld 秒</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="%lld%% off" xml:space="preserve">
-        <source>%lld%% off</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldd" xml:space="preserve">
@@ -655,10 +647,12 @@ time interval</note>
       </trans-unit>
       <trans-unit id="A badge can be added to another profile, or here once this badge ends." xml:space="preserve">
         <source>A badge can be added to another profile, or here once this badge ends.</source>
+        <target>徽章可以添加到另一个个人资料，或在此徽章结束后添加到这里。</target>
         <note>badge link, profile has a badge</note>
       </trans-unit>
       <trans-unit id="A badge is an anonymous credential stored in your profile on your device. This credential is never sent to anyone." xml:space="preserve">
         <source>A badge is an anonymous credential stored in your profile on your device. This credential is never sent to anyone.</source>
+        <target>徽章是存储在你设备上个人资料中的匿名凭证。此凭证永远不会发送给任何人。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A few more things" xml:space="preserve">
@@ -681,6 +675,11 @@ time interval</note>
         <target>创建一个随机的共享文件。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="A purchase is being added to this profile. Try again later." xml:space="preserve">
+        <source>A purchase is being added to this profile. Try again later.</source>
+        <target>一项购买正在被添加到此个人资料。请稍后重试。</target>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve">
         <source>A separate TCP connection will be used **for each chat profile you have in the app**.</source>
         <target>一个单独的 TCP 连接将被用于**您在应用程序中的每个聊天资料**。</target>
@@ -692,6 +691,11 @@ time interval</note>
         <target>每个联系人和群成员将使用一个独立的 TCP 连接。
 请注意：如果您有许多连接，将会消耗更多的电量和流量，并且某些连接可能会失败。</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="A store purchase is being added to this profile." xml:space="preserve">
+        <source>A store purchase is being added to this profile.</source>
+        <target>一项商店购买正在被添加到此个人资料。</target>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Abort" xml:space="preserve">
         <source>Abort</source>
@@ -809,18 +813,12 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Add badge" xml:space="preserve">
         <source>Add badge</source>
+        <target>添加徽章</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add badge to your profile?" xml:space="preserve">
         <source>Add badge to your profile?</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Add contributors." xml:space="preserve">
-        <source>Add contributors.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Add description" xml:space="preserve">
-        <source>Add description</source>
+        <target>将徽章添加到你的个人资料？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add friends" xml:space="preserve">
@@ -837,6 +835,11 @@ swipe action</note>
         <source>Add message</source>
         <target>添加信息</target>
         <note>placeholder for sending contact request</note>
+      </trans-unit>
+      <trans-unit id="Add moderators and sign every message." xml:space="preserve">
+        <source>Add moderators and sign every message.</source>
+        <target>添加协管并签署每条消息。</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add profile" xml:space="preserve">
         <source>Add profile</source>
@@ -1245,10 +1248,12 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Anchor" xml:space="preserve">
         <source>Anchor</source>
+        <target>锚定时间</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Annual" xml:space="preserve">
         <source>Annual</source>
+        <target>年度</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Another reason" xml:space="preserve">
@@ -1324,6 +1329,11 @@ swipe action</note>
       <trans-unit id="Appearance" xml:space="preserve">
         <source>Appearance</source>
         <target>外观</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Apple did not sign this purchase, so it cannot be verified." xml:space="preserve">
+        <source>Apple did not sign this purchase, so it cannot be verified.</source>
+        <target>Apple 未签署此购买，因此无法验证。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Apply" xml:space="preserve">
@@ -1478,6 +1488,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Badge added" xml:space="preserve">
         <source>Badge added</source>
+        <target>徽章已添加</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Badge cannot be verified" xml:space="preserve">
@@ -1487,26 +1498,37 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Badge ledger" xml:space="preserve">
         <source>Badge ledger</source>
+        <target>徽章账本</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Badge payment problem" xml:space="preserve">
+        <source>Badge payment problem</source>
+        <target>徽章付款问题</target>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Badge renewal failed" xml:space="preserve">
         <source>Badge renewal failed</source>
+        <target>徽章续订失败</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Badge type" xml:space="preserve">
         <source>Badge type</source>
+        <target>徽章类型</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Badges cannot be bought in the app yet." xml:space="preserve">
         <source>Badges cannot be bought in the app yet.</source>
+        <target>暂时还无法在应用内购买徽章。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Balance" xml:space="preserve">
         <source>Balance</source>
+        <target>余额</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Balance start" xml:space="preserve">
         <source>Balance start</source>
+        <target>余额起始时间</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Be free&#10;in your network" xml:space="preserve">
@@ -1526,13 +1548,14 @@ in your network</source>
         <target>因为我们摧毁了知道你是谁的权力，因而您的权利永远不会被夺走。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Benefits" xml:space="preserve">
+        <source>Benefits</source>
+        <target>福利</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Better calls" xml:space="preserve">
         <source>Better calls</source>
         <target>更佳的通话</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Better channels 📢" xml:space="preserve">
-        <source>Better channels 📢</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better groups" xml:space="preserve">
@@ -1715,8 +1738,14 @@ in your network</source>
         <target>企业</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Buy badges in the App Store version of the app." xml:space="preserve">
+        <source>Buy badges in the App Store version of the app.</source>
+        <target>请在 App Store 版本的应用中购买徽章。</target>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Buy in browser" xml:space="preserve">
         <source>Buy in browser</source>
+        <target>在浏览器中购买</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
@@ -1728,10 +1757,6 @@ in your network</source>
         <source>Call already ended!</source>
         <target>通话已结束！</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Call is not encrypted" xml:space="preserve">
-        <source>Call is not encrypted</source>
-        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Calls prohibited!" xml:space="preserve">
         <source>Calls prohibited!</source>
@@ -1805,10 +1830,6 @@ new chat action</note>
         <target>无法转发消息</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cannot generate random database passphrase" xml:space="preserve">
-        <source>Cannot generate random database passphrase</source>
-        <note>alert message</note>
-      </trans-unit>
       <trans-unit id="Cannot receive file" xml:space="preserve">
         <source>Cannot receive file</source>
         <target>无法接收文件</target>
@@ -1816,10 +1837,12 @@ new chat action</note>
       </trans-unit>
       <trans-unit id="Cannot redeem code" xml:space="preserve">
         <source>Cannot redeem code</source>
+        <target>无法兑换代码</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Cannot verify this purchase" xml:space="preserve">
         <source>Cannot verify this purchase</source>
+        <target>无法验证此购买</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Capacity exceeded - recipient did not receive previously sent messages." xml:space="preserve">
@@ -1900,6 +1923,7 @@ set passcode view</note>
       </trans-unit>
       <trans-unit id="Channel SimpleX name" xml:space="preserve">
         <source>Channel SimpleX name</source>
+        <target>频道的 SimpleX 名称</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Channel display name" xml:space="preserve">
@@ -1980,6 +2004,7 @@ alert subtitle</note>
       </trans-unit>
       <trans-unit id="Charge ID" xml:space="preserve">
         <source>Charge ID</source>
+        <target>扣款 ID</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Chat" xml:space="preserve">
@@ -2175,10 +2200,12 @@ chat toolbar</note>
       </trans-unit>
       <trans-unit id="Check your order" xml:space="preserve">
         <source>Check your order</source>
+        <target>检查你的订单</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Checking your purchases" xml:space="preserve">
         <source>Checking your purchases</source>
+        <target>正在检查你的购买</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chinese and Spanish interface" xml:space="preserve">
@@ -2203,6 +2230,7 @@ chat toolbar</note>
       </trans-unit>
       <trans-unit id="Choose your badge" xml:space="preserve">
         <source>Choose your badge</source>
+        <target>选择你的徽章</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chunks deleted" xml:space="preserve">
@@ -2594,6 +2622,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Contact SimpleX team" xml:space="preserve">
         <source>Contact SimpleX team</source>
+        <target>联系 SimpleX 团队</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact address" xml:space="preserve">
@@ -2653,10 +2682,12 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Contact's badge expired." xml:space="preserve">
         <source>Contact's badge expired.</source>
+        <target>联系人徽章已过期。</target>
         <note>file alert</note>
       </trans-unit>
       <trans-unit id="Contact's badge verification failed." xml:space="preserve">
         <source>Contact's badge verification failed.</source>
+        <target>联系人徽章验证失败。</target>
         <note>file alert</note>
       </trans-unit>
       <trans-unit id="Contacts" xml:space="preserve">
@@ -2706,6 +2737,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Copy purchase key" xml:space="preserve">
         <source>Copy purchase key</source>
+        <target>复制购买密钥</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Core version: v%@" xml:space="preserve">
@@ -2788,10 +2820,6 @@ This is your own one-time link!</source>
         <target>创建队列</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Create web preview." xml:space="preserve">
-        <source>Create web preview.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Create your address" xml:space="preserve">
         <source>Create your address</source>
         <target>创建地址</target>
@@ -2844,18 +2872,12 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Credential" xml:space="preserve">
         <source>Credential</source>
+        <target>凭证</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)" xml:space="preserve">
         <source>Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve">
-        <source>Crowdfunding on Wefunder</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Crowdfunding on Wefunder." xml:space="preserve">
-        <source>Crowdfunding on Wefunder.</source>
+        <target>众筹投资者可在销售开始前保留名称：[simplex.domains](https://simplex.domains/)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current Passcode" xml:space="preserve">
@@ -3008,6 +3030,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Date" xml:space="preserve">
         <source>Date</source>
+        <target>日期</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Debug delivery" xml:space="preserve">
@@ -3262,14 +3285,6 @@ alert button</note>
         <target>删除举报</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete temp data" xml:space="preserve">
-        <source>Delete temp data</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Delete temp data?" xml:space="preserve">
-        <source>Delete temp data?</source>
-        <note>alert title</note>
-      </trans-unit>
       <trans-unit id="Delete up to 20 messages at once." xml:space="preserve">
         <source>Delete up to 20 messages at once.</source>
         <target>一次最多删除 20 条信息。</target>
@@ -3517,6 +3532,7 @@ alert button</note>
       </trans-unit>
       <trans-unit id="Dismiss" xml:space="preserve">
         <source>Dismiss</source>
+        <target>关闭</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Do NOT send messages directly, even if your or destination server does not support private routing." xml:space="preserve">
@@ -3537,10 +3553,6 @@ alert button</note>
       <trans-unit id="Do it later" xml:space="preserve">
         <source>Do it later</source>
         <target>稍后再做</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Do not require signing messages." xml:space="preserve">
-        <source>Do not require signing messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do not send history to new members." xml:space="preserve">
@@ -3577,10 +3589,6 @@ alert button</note>
         <source>Don't miss important messages.</source>
         <target>不错过重要消息。</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Don't save" xml:space="preserve">
-        <source>Don't save</source>
-        <note>alert action</note>
       </trans-unit>
       <trans-unit id="Don't show again" xml:space="preserve">
         <source>Don't show again</source>
@@ -3663,10 +3671,6 @@ chat item action</note>
         <target>邀请好友更简单 👋</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Easier to read." xml:space="preserve">
-        <source>Easier to read.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Edit" xml:space="preserve">
         <source>Edit</source>
         <target>编辑</target>
@@ -3675,10 +3679,6 @@ chat item action</note>
       <trans-unit id="Edit channel profile" xml:space="preserve">
         <source>Edit channel profile</source>
         <target>编辑频道简介</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Edit description" xml:space="preserve">
-        <source>Edit description</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Edit group profile" xml:space="preserve">
@@ -3744,6 +3744,11 @@ chat item action</note>
       <trans-unit id="Enable for all" xml:space="preserve">
         <source>Enable for all</source>
         <target>全部启用</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enable in Appearance settings." xml:space="preserve">
+        <source>Enable in Appearance settings.</source>
+        <target>在外观设置中启用。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable in direct chats (BETA)!" xml:space="preserve">
@@ -3866,16 +3871,24 @@ chat item action</note>
         <target>正进行加密重协商。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="End call" xml:space="preserve">
-        <source>End call</source>
-        <note>alert action</note>
+      <trans-unit id="Ended" xml:space="preserve">
+        <source>Ended</source>
+        <target>已结束</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Ends" xml:space="preserve">
         <source>Ends</source>
+        <target>结束</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Ends %@" xml:space="preserve">
+        <source>Ends %@</source>
+        <target>结束于 %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Ends on %@." xml:space="preserve">
         <source>Ends on %@.</source>
+        <target>结束于 %@。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter Passcode" xml:space="preserve">
@@ -3892,10 +3905,6 @@ chat item action</note>
         <source>Enter correct passphrase.</source>
         <target>输入正确密码。</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Enter description (optional)" xml:space="preserve">
-        <source>Enter description (optional)</source>
-        <note>placeholder</note>
       </trans-unit>
       <trans-unit id="Enter group name…" xml:space="preserve">
         <source>Enter group name…</source>
@@ -3959,6 +3968,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Entry ID" xml:space="preserve">
         <source>Entry ID</source>
+        <target>条目 ID</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Error" xml:space="preserve">
@@ -4206,10 +4216,6 @@ chat item action</note>
         <target>打开聊天时出错</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error reading file" xml:space="preserve">
-        <source>Error reading file</source>
-        <note>alert title</note>
-      </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
         <source>Error receiving file</source>
         <target>接收文件错误</target>
@@ -4272,6 +4278,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error saving name" xml:space="preserve">
         <source>Error saving name</source>
+        <target>保存名称出错</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error saving passcode" xml:space="preserve">
@@ -4283,10 +4290,6 @@ chat item action</note>
         <source>Error saving passphrase to keychain</source>
         <target>保存密码到钥匙串错误</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Error saving profile" xml:space="preserve">
-        <source>Error saving profile</source>
-        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error saving servers" xml:space="preserve">
         <source>Error saving servers</source>
@@ -4332,10 +4335,6 @@ chat item action</note>
         <source>Error setting delivery receipts!</source>
         <target>设置送达回执出错！</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Error sharing address" xml:space="preserve">
-        <source>Error sharing address</source>
-        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error sharing channel" xml:space="preserve">
         <source>Error sharing channel</source>
@@ -4468,6 +4467,7 @@ server test error</note>
       </trans-unit>
       <trans-unit id="Expires" xml:space="preserve">
         <source>Expires</source>
+        <target>到期</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
@@ -4535,10 +4535,6 @@ server test error</note>
         <target>收藏</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File available until" xml:space="preserve">
-        <source>File available until</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="File error" xml:space="preserve">
         <source>File error</source>
         <target>文件错误</target>
@@ -4550,10 +4546,6 @@ server test error</note>
         <target>文件错误：
 %@</target>
         <note>alert message</note>
-      </trans-unit>
-      <trans-unit id="File expired" xml:space="preserve">
-        <source>File expired</source>
-        <note>file error alert title</note>
       </trans-unit>
       <trans-unit id="File is blocked by server operator:&#10;%@." xml:space="preserve">
         <source>File is blocked by server operator:
@@ -4572,14 +4564,6 @@ server test error</note>
         <target>文件服务器错误：%@</target>
         <note>file error text</note>
       </trans-unit>
-      <trans-unit id="File servers" xml:space="preserve">
-        <source>File servers</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="File servers: %@" xml:space="preserve">
-        <source>File servers: %@</source>
-        <note>copied message info</note>
-      </trans-unit>
       <trans-unit id="File status" xml:space="preserve">
         <source>File status</source>
         <target>文件状态</target>
@@ -4589,14 +4573,6 @@ server test error</note>
         <source>File status: %@</source>
         <target>文件状态：%@</target>
         <note>copied message info</note>
-      </trans-unit>
-      <trans-unit id="File was available until" xml:space="preserve">
-        <source>File was available until</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="File was available until %@." xml:space="preserve">
-        <source>File was available until %@.</source>
-        <note>file error text</note>
       </trans-unit>
       <trans-unit id="File will be deleted from servers." xml:space="preserve">
         <source>File will be deleted from servers.</source>
@@ -4653,20 +4629,24 @@ server test error</note>
         <target>禁止文件和媒体！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Files being sent or received will never complete. Videos in unsent drafts will be sent without the file." xml:space="preserve">
-        <source>Files being sent or received will never complete. Videos in unsent drafts will be sent without the file.</source>
-        <note>alert message</note>
-      </trans-unit>
-      <trans-unit id="Files larger than %@ cannot be sent in incognito chats." xml:space="preserve">
-        <source>Files larger than %@ cannot be sent in incognito chats.</source>
-        <note>file alert</note>
-      </trans-unit>
       <trans-unit id="Files up to 2 GB" xml:space="preserve">
         <source>Files up to 2 GB</source>
+        <target>文件最大 2 GB</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Files up to 2 GB, stored for 7 days." xml:space="preserve">
+        <source>Files up to 2 GB, stored for 7 days.</source>
+        <target>文件最大 2 GB，保留 7 天。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Files up to 5 GB" xml:space="preserve">
         <source>Files up to 5 GB</source>
+        <target>文件最大 5 GB</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Files up to 5 GB, stored for 21 days." xml:space="preserve">
+        <source>Files up to 5 GB, stored for 21 days.</source>
+        <target>文件最大 5 GB，保留 21 天。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Filter" xml:space="preserve">
@@ -4750,12 +4730,9 @@ server test error</note>
         <target>修复群组成员不支持的问题</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Follow SimpleX Network News" xml:space="preserve">
-        <source>Follow SimpleX Network News</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="For %@ only" xml:space="preserve">
-        <source>For %@ only</source>
+      <trans-unit id="Flat layout and markdown" xml:space="preserve">
+        <source>Flat layout and markdown</source>
+        <target>扁平布局和 Markdown</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For all moderators" xml:space="preserve">
@@ -4797,10 +4774,6 @@ servers warning</note>
       <trans-unit id="For social media" xml:space="preserve">
         <source>For social media</source>
         <target>用于社交媒体</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="For you only" xml:space="preserve">
-        <source>For you only</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forward" xml:space="preserve">
@@ -4889,6 +4862,7 @@ Error: %2$@</source>
       </trans-unit>
       <trans-unit id="From purchase key" xml:space="preserve">
         <source>From purchase key</source>
+        <target>来源购买密钥</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Full link" xml:space="preserve">
@@ -4923,14 +4897,17 @@ Error: %2$@</source>
       </trans-unit>
       <trans-unit id="Get SimpleX name (BETA)" xml:space="preserve">
         <source>Get SimpleX name (BETA)</source>
+        <target>获得 SimpleX 名称 (测试)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Get a badge to send larger files (2-5GB) that stay available longer (7-21 days), and to show it on your profile." xml:space="preserve">
         <source>Get a badge to send larger files (2-5GB) that stay available longer (7-21 days), and to show it on your profile.</source>
+        <target>获取徽章即可发送更大的文件（2-5 GB），文件保留时间更长（7-21 天），并可在个人资料上展示徽章。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Get badge + better files" xml:space="preserve">
         <source>Get badge + better files</source>
+        <target>获得徽章+更好的文件功能</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Get link" xml:space="preserve">
@@ -5001,10 +4978,6 @@ Error: %2$@</source>
       <trans-unit id="Group invitation is no longer valid, it was removed by sender." xml:space="preserve">
         <source>Group invitation is no longer valid, it was removed by sender.</source>
         <target>群组邀请不再有效，已被发件人删除。</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group invitations" xml:space="preserve">
-        <source>Group invitations</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group link" xml:space="preserve">
@@ -5087,10 +5060,6 @@ Error: %2$@</source>
         <target>帮助管理员管理群组。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Help keep the network running — send files up to 2 GB." xml:space="preserve">
-        <source>Help keep the network running — send files up to 2 GB.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Hidden" xml:space="preserve">
         <source>Hidden</source>
         <target>隐藏</target>
@@ -5148,6 +5117,7 @@ Error: %2$@</source>
       </trans-unit>
       <trans-unit id="How badges protect your privacy" xml:space="preserve">
         <source>How badges protect your privacy</source>
+        <target>徽章如何保护你的隐私</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How it affects privacy" xml:space="preserve">
@@ -5167,6 +5137,7 @@ Error: %2$@</source>
       </trans-unit>
       <trans-unit id="How long?" xml:space="preserve">
         <source>How long?</source>
+        <target>多长时间？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to" xml:space="preserve">
@@ -5176,6 +5147,7 @@ Error: %2$@</source>
       </trans-unit>
       <trans-unit id="How to register a test name" xml:space="preserve">
         <source>How to register a test name</source>
+        <target>如何注册测试名</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to use it" xml:space="preserve">
@@ -5502,12 +5474,19 @@ More improvements are coming soon!</source>
         <target>无效状态</target>
         <note>item status text</note>
       </trans-unit>
-      <trans-unit id="Invest in SimpleX Chat!" xml:space="preserve">
-        <source>Invest in SimpleX Chat!</source>
+      <trans-unit id="Invest $100+ and get a free badge." xml:space="preserve">
+        <source>Invest $100+ and get a free badge.</source>
+        <target>投资 $100+ 即可免费获得徽章。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Invest $1000+ and get a free legend badge." xml:space="preserve">
+        <source>Invest $1000+ and get a free legend badge.</source>
+        <target>投资 $1000+ 即可免费获得传奇徽章。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Investor" xml:space="preserve">
         <source>Investor</source>
+        <target>投资人</target>
         <note>badge type</note>
       </trans-unit>
       <trans-unit id="Invitation expired!" xml:space="preserve">
@@ -5547,6 +5526,7 @@ More improvements are coming soon!</source>
       </trans-unit>
       <trans-unit id="Invoice ID" xml:space="preserve">
         <source>Invoice ID</source>
+        <target>发票 ID</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Irreversible message deletion" xml:space="preserve">
@@ -5566,6 +5546,7 @@ More improvements are coming soon!</source>
       </trans-unit>
       <trans-unit id="Issuing your badge" xml:space="preserve">
         <source>Issuing your badge</source>
+        <target>正在颁发你的徽章</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve">
@@ -5611,6 +5592,7 @@ More improvements are coming soon!</source>
       </trans-unit>
       <trans-unit id="Its code is on the page you bought it on, under Show code." xml:space="preserve">
         <source>Its code is on the page you bought it on, under Show code.</source>
+        <target>其代码位于你购买它的页面上的“显示代码”下。</target>
         <note>badge link, profile has a badge</note>
       </trans-unit>
       <trans-unit id="Japanese interface" xml:space="preserve">
@@ -5715,18 +5697,30 @@ This is your link for group %@!</source>
         <target>大文件！</target>
         <note>file alert title</note>
       </trans-unit>
+      <trans-unit id="Larger files available for longer." xml:space="preserve">
+        <source>Larger files available for longer.</source>
+        <target>更大的文件，保留更久。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Larger files that stay available longer." xml:space="preserve">
         <source>Larger files that stay available longer.</source>
+        <target>更大的文件，保留更久。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Last attempt" xml:space="preserve">
         <source>Last attempt</source>
+        <target>上次尝试</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Learn more" xml:space="preserve">
         <source>Learn more</source>
         <target>了解更多</target>
         <note>badge alert button</note>
+      </trans-unit>
+      <trans-unit id="Learn more on Wefunder" xml:space="preserve">
+        <source>Learn more on Wefunder</source>
+        <target>在 Wefunder 上了解更多</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Leave" xml:space="preserve">
         <source>Leave</source>
@@ -5765,10 +5759,12 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Legend" xml:space="preserve">
         <source>Legend</source>
+        <target>传奇</target>
         <note>badge type</note>
       </trans-unit>
       <trans-unit id="Legend: 5 GB files available for 21 days." xml:space="preserve">
         <source>Legend: 5 GB files available for 21 days.</source>
+        <target>传奇：5 GB 文件，可保留 21 天。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Less traffic on mobile networks." xml:space="preserve">
@@ -5863,6 +5859,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Loading…" xml:space="preserve">
         <source>Loading…</source>
+        <target>加载中…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">
@@ -5900,8 +5897,9 @@ This is your link for group %@!</source>
         <target>确保 WebRTC ICE 服务器地址格式正确、每行分开且不重复。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Manage your relays." xml:space="preserve">
-        <source>Manage your relays.</source>
+      <trans-unit id="Manage subscription" xml:space="preserve">
+        <source>Manage subscription</source>
+        <target>管理订阅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Mark deleted for everyone" xml:space="preserve">
@@ -5931,6 +5929,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Maximum supported file size is %1$@, with a %2$@." xml:space="preserve">
         <source>Maximum supported file size is %1$@, with a %2$@.</source>
+        <target>拥有%2$@时，支持的最大文件大小为 %1$@。</target>
         <note>file alert</note>
       </trans-unit>
       <trans-unit id="Media &amp; file servers" xml:space="preserve">
@@ -6123,14 +6122,6 @@ This is your link for group %@!</source>
         <target>消息形状</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message signing is not required." xml:space="preserve">
-        <source>Message signing is not required.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Message signing is required." xml:space="preserve">
-        <source>Message signing is required.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Message source remains private." xml:space="preserve">
         <source>Message source remains private.</source>
         <target>消息来源保持私密。</target>
@@ -6293,10 +6284,12 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Monthly" xml:space="preserve">
         <source>Monthly</source>
+        <target>月度</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Months left" xml:space="preserve">
         <source>Months left</source>
+        <target>剩余月数</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="More" xml:space="preserve">
@@ -6351,6 +6344,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="My nickname" xml:space="preserve">
         <source>My nickname</source>
+        <target>我的昵称</target>
         <note>badges preview placeholder</note>
       </trans-unit>
       <trans-unit id="Name" xml:space="preserve">
@@ -6527,12 +6521,18 @@ who talks to whom</source>
       </trans-unit>
       <trans-unit id="Next check" xml:space="preserve">
         <source>Next check</source>
+        <target>下次检查</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No" xml:space="preserve">
         <source>No</source>
         <target>否</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No App Store purchase waiting to be added was found." xml:space="preserve">
+        <source>No App Store purchase waiting to be added was found.</source>
+        <target>未找到等待添加的 App Store 购买。</target>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="No account. No phone. No email. No ID.&#10;The most secure encryption." xml:space="preserve">
         <source>No account. No phone. No email. No ID.
@@ -6613,6 +6613,7 @@ The most secure encryption.</source>
       </trans-unit>
       <trans-unit id="No entries" xml:space="preserve">
         <source>No entries</source>
+        <target>无条目</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No filtered chats" xml:space="preserve">
@@ -6637,6 +6638,7 @@ The most secure encryption.</source>
       </trans-unit>
       <trans-unit id="No key to verify contact's badge." xml:space="preserve">
         <source>No key to verify contact's badge.</source>
+        <target>没有密钥来验证联系人的徽章。</target>
         <note>file alert</note>
       </trans-unit>
       <trans-unit id="No media &amp; file servers." xml:space="preserve">
@@ -6694,6 +6696,11 @@ The most secure encryption.</source>
         <target>没有中继</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="No renewal: the badge ends when the prepaid months run out." xml:space="preserve">
+        <source>No renewal: the badge ends when the prepaid months run out.</source>
+        <target>不会续订：预付费月份用完后徽章到期。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="No servers for private message routing." xml:space="preserve">
         <source>No servers for private message routing.</source>
         <target>无私密消息路由服务器。</target>
@@ -6736,6 +6743,7 @@ The most secure encryption.</source>
       </trans-unit>
       <trans-unit id="Nobody can link two different proofs to each other or to the purchase." xml:space="preserve">
         <source>Nobody can link two different proofs to each other or to the purchase.</source>
+        <target>任何人都无法将两个不同的证明相互关联，也无法将其与购买关联。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." xml:space="preserve">
@@ -6765,6 +6773,7 @@ The most secure encryption.</source>
       </trans-unit>
       <trans-unit id="Not available" xml:space="preserve">
         <source>Not available</source>
+        <target>不可用</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Not compatible!" xml:space="preserve">
@@ -6779,6 +6788,7 @@ The most secure encryption.</source>
       </trans-unit>
       <trans-unit id="Nothing has been charged." xml:space="preserve">
         <source>Nothing has been charged.</source>
+        <target>未产生任何扣款。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Nothing selected" xml:space="preserve">
@@ -6789,6 +6799,11 @@ The most secure encryption.</source>
       <trans-unit id="Nothing to forward!" xml:space="preserve">
         <source>Nothing to forward!</source>
         <target>无可转发！</target>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Nothing to restore" xml:space="preserve">
+        <source>Nothing to restore</source>
+        <target>没有可恢复的内容</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Notifications" xml:space="preserve">
@@ -7165,6 +7180,16 @@ alert button</note>
 %@</target>
         <note>alert message</note>
       </trans-unit>
+      <trans-unit id="Own a part of SimpleX Chat" xml:space="preserve">
+        <source>Own a part of SimpleX Chat</source>
+        <target>拥有 SimpleX Chat 的一部分</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Own a part of SimpleX Chat! 🚀" xml:space="preserve">
+        <source>Own a part of SimpleX Chat! 🚀</source>
+        <target>拥有 SimpleX Chat 的一部分！🚀</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Owner" xml:space="preserve">
         <source>Owner</source>
         <target>所有者</target>
@@ -7227,6 +7252,7 @@ alert button</note>
       </trans-unit>
       <trans-unit id="Paste" xml:space="preserve">
         <source>Paste</source>
+        <target>粘贴</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste desktop address" xml:space="preserve">
@@ -7251,6 +7277,7 @@ alert button</note>
       </trans-unit>
       <trans-unit id="Paste the code you received." xml:space="preserve">
         <source>Paste the code you received.</source>
+        <target>粘贴你收到的代码。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste the link you received" xml:space="preserve">
@@ -7260,18 +7287,32 @@ alert button</note>
       </trans-unit>
       <trans-unit id="Paused since" xml:space="preserve">
         <source>Paused since</source>
+        <target>暂停自</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Pay %@" xml:space="preserve">
         <source>Pay %@</source>
+        <target>支付 %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Pay %@/month" xml:space="preserve">
         <source>Pay %@/month</source>
+        <target>支付 %@/月</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Pay %@/year" xml:space="preserve">
         <source>Pay %@/year</source>
+        <target>支付 %@/年</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Payment failed. Update your payment method in the App Store." xml:space="preserve">
+        <source>Payment failed. Update your payment method in the App Store.</source>
+        <target>付款失败。请在 App Store 中更新你的付款方式。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Payment problem" xml:space="preserve">
+        <source>Payment problem</source>
+        <target>付款问题</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Pending" xml:space="preserve">
@@ -7413,10 +7454,6 @@ Error: %@</source>
         <target>端口</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out." xml:space="preserve">
-        <source>Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
         <source>Preserve the last message draft, with attachments.</source>
         <target>保留最后的消息草稿及其附件。</target>
@@ -7514,6 +7551,7 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Profile already has a badge" xml:space="preserve">
         <source>Profile already has a badge</source>
+        <target>个人资料已有徽章</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
@@ -7664,17 +7702,20 @@ Enable in *Network &amp; servers* settings.</source>
         <target>公开频道 - 自由发言 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Public names for your channel or business." xml:space="preserve">
-        <source>Public names for your channel or business.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Purchase ID" xml:space="preserve">
         <source>Purchase ID</source>
+        <target>购买 ID</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Purchase error" xml:space="preserve">
         <source>Purchase error</source>
+        <target>购买错误</target>
         <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Purchases are off on this device." xml:space="preserve">
+        <source>Purchases are off on this device.</source>
+        <target>此设备已关闭购买功能。</target>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
         <source>Push notifications</source>
@@ -7728,6 +7769,7 @@ Enable in *Network &amp; servers* settings.</source>
       </trans-unit>
       <trans-unit id="Read more in our blog." xml:space="preserve">
         <source>Read more in our blog.</source>
+        <target>在我们的博客中了解更多。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receipts are disabled" xml:space="preserve">
@@ -7787,7 +7829,7 @@ Enable in *Network &amp; servers* settings.</source>
       </trans-unit>
       <trans-unit id="Recent history and improved [directory bot](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." xml:space="preserve">
         <source>Recent history and improved [directory bot](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).</source>
-        <target>最近的历史记录和改进的 [目录机器人]（simplex：/contact#/？v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion）.</target>
+        <target>最近的历史记录和改进的 [目录机器人](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Recipient(s) can't see who this message is from." xml:space="preserve">
@@ -7847,14 +7889,17 @@ Enable in *Network &amp; servers* settings.</source>
       </trans-unit>
       <trans-unit id="Redeem" xml:space="preserve">
         <source>Redeem</source>
+        <target>兑换</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Redeem badge code" xml:space="preserve">
         <source>Redeem badge code</source>
+        <target>兑换徽章代码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Redeem code" xml:space="preserve">
         <source>Redeem code</source>
+        <target>兑换代码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reduced battery usage" xml:space="preserve">
@@ -7956,6 +8001,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Remind me later" xml:space="preserve">
         <source>Remind me later</source>
+        <target>稍后提醒</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Remove" xml:space="preserve">
@@ -7995,6 +8041,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Remove name" xml:space="preserve">
         <source>Remove name</source>
+        <target>删除名称</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove passphrase from keychain?" xml:space="preserve">
@@ -8037,8 +8084,54 @@ swipe action</note>
         <target>重新协商加密？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Renewing" xml:space="preserve">
+        <source>Renewing</source>
+        <target>正在续订</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews %@" xml:space="preserve">
+        <source>Renews %@</source>
+        <target>%@ 续订</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews %@ · %@" xml:space="preserve">
+        <source>Renews %@ · %@</source>
+        <target>%@ 续订 · %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews at %@ a month until you cancel it in the App Store." xml:space="preserve">
+        <source>Renews at %@ a month until you cancel it in the App Store.</source>
+        <target>每月 %@ 自动续订，直到你在 App Store 中取消。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews at %@ a year until you cancel it in the App Store." xml:space="preserve">
+        <source>Renews at %@ a year until you cancel it in the App Store.</source>
+        <target>每年 %@ 自动续订，直到你在 App Store 中取消。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews automatically until you cancel it in the App Store." xml:space="preserve">
+        <source>Renews automatically until you cancel it in the App Store.</source>
+        <target>自动续订，直到你在 App Store 中取消。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews on %@ for %@." xml:space="preserve">
+        <source>Renews on %@ for %@.</source>
+        <target>将于 %@ 以 %@ 续订。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews on %@." xml:space="preserve">
+        <source>Renews on %@.</source>
+        <target>将于 %@ 续订。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Renews on %@. Cancel anytime." xml:space="preserve">
         <source>Renews on %@. Cancel anytime.</source>
+        <target>将于 %@ 续订。可随时取消。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews once the App Store charges your subscription." xml:space="preserve">
+        <source>Renews once the App Store charges your subscription.</source>
+        <target>App Store 扣款成功后续订。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Repeat download" xml:space="preserve">
@@ -8116,10 +8209,6 @@ swipe action</note>
         <target>举报</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Require signing messages." xml:space="preserve">
-        <source>Require signing messages.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Required" xml:space="preserve">
         <source>Required</source>
         <target>必须</target>
@@ -8167,6 +8256,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Resolver error: %@" xml:space="preserve">
         <source>Resolver error: %@</source>
+        <target>解析错误：%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Restart the app to create a new chat profile" xml:space="preserve">
@@ -8197,6 +8287,16 @@ swipe action</note>
       <trans-unit id="Restore database error" xml:space="preserve">
         <source>Restore database error</source>
         <target>恢复数据库错误</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Restore failed" xml:space="preserve">
+        <source>Restore failed</source>
+        <target>恢复失败</target>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Restore purchases" xml:space="preserve">
+        <source>Restore purchases</source>
+        <target>恢复购买</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Retry" xml:space="preserve">
@@ -8294,18 +8394,20 @@ swipe action</note>
         <target>安全接收文件</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Safer channels" xml:space="preserve">
+        <source>Safer channels</source>
+        <target>更安全的频道</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Safer groups" xml:space="preserve">
         <source>Safer groups</source>
         <target>更安全的群组</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sandbox purchase" xml:space="preserve">
-        <source>Sandbox purchase</source>
-        <note>alert title</note>
-      </trans-unit>
-      <trans-unit id="Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app." xml:space="preserve">
-        <source>Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app.</source>
-        <note>alert message</note>
+      <trans-unit id="Sale starts on December 12." xml:space="preserve">
+        <source>Sale starts on December 12.</source>
+        <target>12 月 12 日开始销售。</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
         <source>Save</source>
@@ -8331,6 +8433,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Save SimpleX name?" xml:space="preserve">
         <source>Save SimpleX name?</source>
+        <target>保存 SimpleX 名称？</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Save admission settings?" xml:space="preserve">
@@ -8825,11 +8928,8 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Server %@ does not support name resolution. Configure servers, or use a connection link." xml:space="preserve">
         <source>Server %@ does not support name resolution. Configure servers, or use a connection link.</source>
+        <target>%@ 服务器不支持名称解析。配置服务器或使用连接链接。</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Server %@ has more than two host names." xml:space="preserve">
-        <source>Server %@ has more than two host names.</source>
-        <note>servers error</note>
       </trans-unit>
       <trans-unit id="Server added to operator %@." xml:space="preserve">
         <source>Server added to operator %@.</source>
@@ -9142,10 +9242,6 @@ chat item action</note>
         <target>显示开发者选项</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show encryption" xml:space="preserve">
-        <source>Show encryption</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Show last messages" xml:space="preserve">
         <source>Show last messages</source>
         <target>显示最近的消息</target>
@@ -9174,31 +9270,6 @@ chat item action</note>
       <trans-unit id="Show:" xml:space="preserve">
         <source>Show:</source>
         <target>显示：</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Sign message" xml:space="preserve">
-        <source>Sign message</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Sign messages" xml:space="preserve">
-        <source>Sign messages</source>
-        <note>chat feature</note>
-      </trans-unit>
-      <trans-unit id="Signature missing" xml:space="preserve">
-        <source>Signature missing</source>
-        <note>alert title
-copied message info</note>
-      </trans-unit>
-      <trans-unit id="Signed" xml:space="preserve">
-        <source>Signed</source>
-        <note>copied message info</note>
-      </trans-unit>
-      <trans-unit id="Signed &amp; verified" xml:space="preserve">
-        <source>Signed &amp; verified</source>
-        <note>copied message info</note>
-      </trans-unit>
-      <trans-unit id="Signing proves you authored this message and can't be denied later." xml:space="preserve">
-        <source>Signing proves you authored this message and can't be denied later.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX" xml:space="preserve">
@@ -9313,6 +9384,7 @@ copied message info</note>
       </trans-unit>
       <trans-unit id="SimpleX name sale starts in" xml:space="preserve">
         <source>SimpleX name sale starts in</source>
+        <target>SimpleX 名称销售倒计时</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
@@ -9325,8 +9397,9 @@ copied message info</note>
         <target>SimpleX 协议由 Trail of Bits 审阅。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX public names (BETA)" xml:space="preserve">
-        <source>SimpleX public names (BETA)</source>
+      <trans-unit id="SimpleX public names" xml:space="preserve">
+        <source>SimpleX public names</source>
+        <target>SimpleX 公开名称</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX relay address" xml:space="preserve">
@@ -9341,6 +9414,7 @@ copied message info</note>
       </trans-unit>
       <trans-unit id="Since" xml:space="preserve">
         <source>Since</source>
+        <target>开始于</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Size" xml:space="preserve">
@@ -9461,10 +9535,6 @@ report reason</note>
         <target>停止聊天程序</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop chat in Settings → Chat data → Database passphrase &amp; export to delete temp data." xml:space="preserve">
-        <source>Stop chat in Settings → Chat data → Database passphrase &amp; export to delete temp data.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve">
         <source>Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped.</source>
         <target>停止聊天以便导出、导入或删除聊天数据库。在聊天停止期间，您将无法收发消息。</target>
@@ -9512,10 +9582,12 @@ report reason</note>
       </trans-unit>
       <trans-unit id="Stored for 7 days" xml:space="preserve">
         <source>Stored for 7 days</source>
+        <target>保留 7 天</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Stored for 21 days" xml:space="preserve">
         <source>Stored for 21 days</source>
+        <target>保留 21 天</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Strong" xml:space="preserve">
@@ -9532,6 +9604,11 @@ report reason</note>
         <source>Subscribed</source>
         <target>已订阅</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscribed on another profile." xml:space="preserve">
+        <source>Subscribed on another profile.</source>
+        <target>已在另一个个人资料上订阅。</target>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Subscriber" xml:space="preserve">
         <source>Subscriber</source>
@@ -9605,6 +9682,21 @@ Relay address was used to set up this relay for the channel.</source>
 中继地址曾用于为此频道设置此中继。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Subscription" xml:space="preserve">
+        <source>Subscription</source>
+        <target>订阅</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscription cancelled" xml:space="preserve">
+        <source>Subscription cancelled</source>
+        <target>订阅已取消</target>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Subscription ended. The badge will be removed." xml:space="preserve">
+        <source>Subscription ended. The badge will be removed.</source>
+        <target>订阅已结束。徽章将被移除。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Subscription errors" xml:space="preserve">
         <source>Subscription errors</source>
         <target>订阅错误</target>
@@ -9617,11 +9709,18 @@ Relay address was used to set up this relay for the channel.</source>
       </trans-unit>
       <trans-unit id="Support SimpleX" xml:space="preserve">
         <source>Support SimpleX</source>
+        <target>支持 SimpleX</target>
         <note>alert button
 alert title</note>
       </trans-unit>
+      <trans-unit id="Support SimpleX and get a badge." xml:space="preserve">
+        <source>Support SimpleX and get a badge.</source>
+        <target>支持 SimpleX 并获得徽章。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Support SimpleX to send larger files that stay available longer" xml:space="preserve">
         <source>Support SimpleX to send larger files that stay available longer</source>
+        <target>支持 SimpleX 即可发送更大的文件，且保留更久</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Support the project" xml:space="preserve">
@@ -9631,18 +9730,17 @@ alert title</note>
       </trans-unit>
       <trans-unit id="Supporter" xml:space="preserve">
         <source>Supporter</source>
+        <target>支持者</target>
         <note>badge type</note>
       </trans-unit>
-      <trans-unit id="Supporter badge ❤️" xml:space="preserve">
-        <source>Supporter badge ❤️</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Supporter perks" xml:space="preserve">
-        <source>Supporter perks</source>
+      <trans-unit id="Supporter badges" xml:space="preserve">
+        <source>Supporter badges</source>
+        <target>支持者徽章</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Supporter: 2 GB files available for 7 days." xml:space="preserve">
         <source>Supporter: 2 GB files available for 7 days.</source>
+        <target>支持者：2 GB 文件，可保留 7 天。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Switch audio and video during the call." xml:space="preserve">
@@ -9745,10 +9843,6 @@ alert title</note>
         <target>点击按钮 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap for details" xml:space="preserve">
-        <source>Tap for details</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Tap to Connect" xml:space="preserve">
         <source>Tap to Connect</source>
         <target>轻按连接</target>
@@ -9844,18 +9938,22 @@ It can happen because of some bug or when the connection is compromised.</source
       </trans-unit>
       <trans-unit id="The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page." xml:space="preserve">
         <source>The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page.</source>
+        <target>SimpleX 名称 #%@ 已注册但没有频道链接。通过注册页添加频道链接到名称。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The SimpleX name %@ is registered, but it has no valid link." xml:space="preserve">
         <source>The SimpleX name %@ is registered, but it has no valid link.</source>
+        <target>SimpleX 名称 %@ 已注册但没有有效链接。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner." xml:space="preserve">
         <source>The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.</source>
+        <target>SimpleX 名称 %@ 已注册但未添加到资料中。如果你是所有者，请将其添加到你的地址或频道资料。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page." xml:space="preserve">
         <source>The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page.</source>
+        <target>SimpleX 名称 @%@ 已注册但没有 SimpleX 地址。通过注册页将你的 SimpleX 地址添加到名称。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve">
@@ -9895,54 +9993,62 @@ It can happen because of some bug or when the connection is compromised.</source
       </trans-unit>
       <trans-unit id="The badge issued by the service cannot be verified." xml:space="preserve">
         <source>The badge issued by the service cannot be verified.</source>
+        <target>服务颁发的徽章无法被验证。</target>
         <note>badge renewal error</note>
       </trans-unit>
       <trans-unit id="The badge service could not be reached." xml:space="preserve">
         <source>The badge service could not be reached.</source>
+        <target>无法连接到徽章服务。</target>
         <note>badge renewal error</note>
       </trans-unit>
       <trans-unit id="The badge service did not respond." xml:space="preserve">
         <source>The badge service did not respond.</source>
+        <target>徽章服务没有响应。</target>
         <note>badge renewal error</note>
       </trans-unit>
       <trans-unit id="The badge service does not recognize this badge." xml:space="preserve">
         <source>The badge service does not recognize this badge.</source>
+        <target>徽章服务无法识别此徽章。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The badge service refused the purchase: %@" xml:space="preserve">
         <source>The badge service refused the purchase: %@</source>
+        <target>徽章服务拒绝了购买：%@</target>
         <note>badge purchase error</note>
       </trans-unit>
       <trans-unit id="The badge service refused the renewal: %@" xml:space="preserve">
         <source>The badge service refused the renewal: %@</source>
+        <target>徽章服务拒绝了续订：%@</target>
         <note>badge renewal error</note>
       </trans-unit>
       <trans-unit id="The badge service reported an internal error." xml:space="preserve">
         <source>The badge service reported an internal error.</source>
+        <target>徽章服务报告了内部错误。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The badge service sent an unexpected response: %@" xml:space="preserve">
         <source>The badge service sent an unexpected response: %@</source>
+        <target>徽章服务发送了意料之外的响应：%@</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The badge was added to the profile %@." xml:space="preserve">
         <source>The badge was added to the profile %@.</source>
+        <target>徽章已添加到个人资料 %@。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The badge will be added to the profile %@." xml:space="preserve">
         <source>The badge will be added to the profile %@.</source>
+        <target>徽章将被添加到个人资料 %@。</target>
         <note>badge link confirmation</note>
       </trans-unit>
       <trans-unit id="The badge will be added to this profile." xml:space="preserve">
         <source>The badge will be added to this profile.</source>
+        <target>徽章将被添加到此个人资料。</target>
         <note>badge link, being issued</note>
-      </trans-unit>
-      <trans-unit id="The channel required this message to be signed, but the signature is missing." xml:space="preserve">
-        <source>The channel required this message to be signed, but the signature is missing.</source>
-        <note>alert message</note>
       </trans-unit>
       <trans-unit id="The code was accepted, but the badge it grants has already ended." xml:space="preserve">
         <source>The code was accepted, but the badge it grants has already ended.</source>
+        <target>代码被接受，但其授予的徽章已过期。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The code you scanned is not a SimpleX link QR code." xml:space="preserve">
@@ -9952,6 +10058,7 @@ It can happen because of some bug or when the connection is compromised.</source
       </trans-unit>
       <trans-unit id="The code you scanned is not a badge code." xml:space="preserve">
         <source>The code you scanned is not a badge code.</source>
+        <target>你扫描的代码不是徽章代码。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The connection reached the limit of undelivered messages" xml:space="preserve">
@@ -10033,6 +10140,7 @@ your contacts and groups.</source>
       </trans-unit>
       <trans-unit id="The payment has not been confirmed yet." xml:space="preserve">
         <source>The payment has not been confirmed yet.</source>
+        <target>付款尚未确认。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve">
@@ -10070,21 +10178,20 @@ your contacts and groups.</source>
         <target>当前聊天个人资料 **%@** 的新文件服务器。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The service did not respond. Please try again." xml:space="preserve">
-        <source>The service did not respond. Please try again.</source>
-        <note>alert message</note>
-      </trans-unit>
       <trans-unit id="The store could not be reached." xml:space="preserve">
         <source>The store could not be reached.</source>
+        <target>无法连接到商店。</target>
         <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="The store could not charge your payment method." xml:space="preserve">
+        <source>The store could not charge your payment method.</source>
+        <target>商店无法从你的付款方式扣款。</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The store did not confirm this purchase." xml:space="preserve">
         <source>The store did not confirm this purchase.</source>
+        <target>商店未确认此购买。</target>
         <note>alert message</note>
-      </trans-unit>
-      <trans-unit id="The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store." xml:space="preserve">
-        <source>The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store.</source>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve">
         <source>The text you pasted is not a SimpleX link.</source>
@@ -10128,6 +10235,7 @@ your contacts and groups.</source>
       </trans-unit>
       <trans-unit id="This SimpleX name is not registered. Please check the name." xml:space="preserve">
         <source>This SimpleX name is not registered. Please check the name.</source>
+        <target>SimpleX 名称未注册。请检查该名称。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
@@ -10152,18 +10260,17 @@ your contacts and groups.</source>
       </trans-unit>
       <trans-unit id="This app version cannot buy badges." xml:space="preserve">
         <source>This app version cannot buy badges.</source>
+        <target>此应用版本无法购买徽章。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This app version cannot redeem badge codes." xml:space="preserve">
         <source>This app version cannot redeem badge codes.</source>
+        <target>此应用版本无法兑换徽章代码。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This app version cannot verify this badge. Please update the app." xml:space="preserve">
         <source>This app version cannot verify this badge. Please update the app.</source>
-        <note>alert message</note>
-      </trans-unit>
-      <trans-unit id="This app version is too old for the badge service. Please update the app." xml:space="preserve">
-        <source>This app version is too old for the badge service. Please update the app.</source>
+        <target>此应用版本无法验证该徽章。请更新应用。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This badge could not be verified and may not be genuine." xml:space="preserve">
@@ -10173,6 +10280,7 @@ your contacts and groups.</source>
       </trans-unit>
       <trans-unit id="This badge is not on sale." xml:space="preserve">
         <source>This badge is not on sale.</source>
+        <target>此徽章未在出售。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This chat is protected by end-to-end encryption." xml:space="preserve">
@@ -10187,18 +10295,22 @@ your contacts and groups.</source>
       </trans-unit>
       <trans-unit id="This code has already been used." xml:space="preserve">
         <source>This code has already been used.</source>
+        <target>此代码已使用。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This code has expired." xml:space="preserve">
         <source>This code has expired.</source>
+        <target>此代码已过期。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This code is not valid." xml:space="preserve">
         <source>This code is not valid.</source>
+        <target>此代码无效。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This code was not recognized." xml:space="preserve">
         <source>This code was not recognized.</source>
+        <target>未识别此代码。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This device name" xml:space="preserve">
@@ -10209,10 +10321,6 @@ your contacts and groups.</source>
       <trans-unit id="This display name is invalid. Please choose another name." xml:space="preserve">
         <source>This display name is invalid. Please choose another name.</source>
         <target>显示名无效。请另选一个名称。</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="This file has text direction characters. The text can be shown in a different order than it is written." xml:space="preserve">
-        <source>This file has text direction characters. The text can be shown in a different order than it is written.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve">
@@ -10246,10 +10354,6 @@ alert subtitle</note>
         <target>这是你的频道 %@ 链接！</target>
         <note>new chat action</note>
       </trans-unit>
-      <trans-unit id="This link is not supported by this app version. Please check for app updates." xml:space="preserve">
-        <source>This link is not supported by this app version. Please check for app updates.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." xml:space="preserve">
         <source>This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</source>
         <target>此链接需要更新的应用版本。请升级应用或请求你的联系人发送相容的链接。</target>
@@ -10267,14 +10371,17 @@ alert subtitle</note>
       </trans-unit>
       <trans-unit id="This profile already has a badge." xml:space="preserve">
         <source>This profile already has a badge.</source>
+        <target>此个人资料已有徽章。</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="This profile already has a badge. Redeem the code on another profile, or once this badge ends." xml:space="preserve">
-        <source>This profile already has a badge. Redeem the code on another profile, or once this badge ends.</source>
+      <trans-unit id="This purchase is already used on another profile." xml:space="preserve">
+        <source>This purchase is already used on another profile.</source>
+        <target>此购买已在另一个个人资料上使用。</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="This purchase was already credited to a badge on another device or profile." xml:space="preserve">
-        <source>This purchase was already credited to a badge on another device or profile.</source>
+      <trans-unit id="This purchase was moved to another device or profile recently." xml:space="preserve">
+        <source>This purchase was moved to another device or profile recently.</source>
+        <target>此购买最近已被转移到另一台设备或个人资料。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
@@ -10346,10 +10453,12 @@ You will be prompted to complete authentication before this feature is enabled.<
       </trans-unit>
       <trans-unit id="To prove to a contact or a server that you have a badge, the app generates a new proof that reveals only the badge type and the expiry date, rounded to a week." xml:space="preserve">
         <source>To prove to a contact or a server that you have a badge, the app generates a new proof that reveals only the badge type and the expiry date, rounded to a week.</source>
+        <target>为了向联系人或服务器证明你拥有徽章，应用会生成一个新的证明，该证明只透露徽章类型和精确到周的到期日期。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To purchase key" xml:space="preserve">
         <source>To purchase key</source>
+        <target>目标购买密钥</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="To receive" xml:space="preserve">
@@ -10374,6 +10483,7 @@ You will be prompted to complete authentication before this feature is enabled.<
       </trans-unit>
       <trans-unit id="To resolve names" xml:space="preserve">
         <source>To resolve names</source>
+        <target>用于解析名称</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve">
@@ -10411,10 +10521,6 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>要与您的联系人验证端到端加密，请比较（或扫描）您设备上的代码。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To verify keys with this subscriber, compare (or scan) the code on your devices." xml:space="preserve">
-        <source>To verify keys with this subscriber, compare (or scan) the code on your devices.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
         <source>Toggle incognito when connecting.</source>
         <target>在连接时切换隐身模式。</target>
@@ -10427,6 +10533,7 @@ You will be prompted to complete authentication before this feature is enabled.<
       </trans-unit>
       <trans-unit id="Too many attempts. Please try again later." xml:space="preserve">
         <source>Too many attempts. Please try again later.</source>
+        <target>尝试次数过多。请稍后重试。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Toolbar opacity" xml:space="preserve">
@@ -10511,6 +10618,7 @@ You will be prompted to complete authentication before this feature is enabled.<
       </trans-unit>
       <trans-unit id="Unconfirmed name" xml:space="preserve">
         <source>Unconfirmed name</source>
+        <target>未确认的名称</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Undelivered messages" xml:space="preserve">
@@ -10520,6 +10628,7 @@ You will be prompted to complete authentication before this feature is enabled.<
       </trans-unit>
       <trans-unit id="Unexpected error: %@" xml:space="preserve">
         <source>Unexpected error: %@</source>
+        <target>意外错误：%@</target>
         <note>badge renewal error</note>
       </trans-unit>
       <trans-unit id="Unexpected migration state" xml:space="preserve">
@@ -10649,7 +10758,13 @@ You will be prompted to complete authentication before this feature is enabled.<
       </trans-unit>
       <trans-unit id="Update the app to register a SimpleX domain" xml:space="preserve">
         <source>Update the app to register a SimpleX domain</source>
+        <target>更新应用来注册 SimpleX 域名</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Update the app to use badges." xml:space="preserve">
+        <source>Update the app to use badges.</source>
+        <target>请更新应用以使用徽章。</target>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Updated conditions" xml:space="preserve">
         <source>Updated conditions</source>
@@ -10879,6 +10994,7 @@ alert title</note>
       </trans-unit>
       <trans-unit id="Verify SimpleX names" xml:space="preserve">
         <source>Verify SimpleX names</source>
+        <target>验证 SimpleX 名称</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify code with desktop" xml:space="preserve">
@@ -10908,6 +11024,7 @@ alert title</note>
       </trans-unit>
       <trans-unit id="Verify name" xml:space="preserve">
         <source>Verify name</source>
+        <target>验证名称</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify passphrase" xml:space="preserve">
@@ -10972,6 +11089,7 @@ alert title</note>
       </trans-unit>
       <trans-unit id="View your badge" xml:space="preserve">
         <source>View your badge</source>
+        <target>查看你的徽章</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Visible history" xml:space="preserve">
@@ -11021,6 +11139,7 @@ alert title</note>
       </trans-unit>
       <trans-unit id="Waiting for approval" xml:space="preserve">
         <source>Waiting for approval</source>
+        <target>等待批准</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Waiting for channel owner to add relays." xml:space="preserve">
@@ -11218,14 +11337,15 @@ alert title</note>
         <target>您允许</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You already have a badge!" xml:space="preserve">
+        <source>You already have a badge!</source>
+        <target>你已经拥有徽章！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You already have a chat profile with the same display name. Please choose another name." xml:space="preserve">
         <source>You already have a chat profile with the same display name. Please choose another name.</source>
         <target>您已经有一个显示名相同的聊天资料。请选择另一个名字。</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You are a contributor" xml:space="preserve">
-        <source>You are a contributor</source>
-        <note>new chat alert</note>
       </trans-unit>
       <trans-unit id="You are a member" xml:space="preserve">
         <source>You are a member</source>
@@ -11369,14 +11489,6 @@ Repeat join request?</source>
         <target>您现在可以给 %@ 发送消息</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="You can now invest in SimpleX Chat" xml:space="preserve">
-        <source>You can now invest in SimpleX Chat</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You can now invest in SimpleX Chat! 🚀" xml:space="preserve">
-        <source>You can now invest in SimpleX Chat! 🚀</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="You can send messages to %@ from Archived contacts." xml:space="preserve">
         <source>You can send messages to %@ from Archived contacts.</source>
         <target>您可以从存档的联系人向%@发送消息。</target>
@@ -11419,6 +11531,7 @@ Repeat join request?</source>
       </trans-unit>
       <trans-unit id="You can support SimpleX later in Settings." xml:space="preserve">
         <source>You can support SimpleX later in Settings.</source>
+        <target>你可以之后在设置中支持 SimpleX。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve">
@@ -11509,6 +11622,7 @@ Repeat connection request?</source>
       </trans-unit>
       <trans-unit id="You need a %1$@ to send files larger than %2$@." xml:space="preserve">
         <source>You need a %1$@ to send files larger than %2$@.</source>
+        <target>你需要一枚 %1$@ 来发送超过 %2$@ 的文件。</target>
         <note>file alert</note>
       </trans-unit>
       <trans-unit id="You need to allow your contact to call to be able to call them." xml:space="preserve">
@@ -11618,23 +11732,48 @@ Repeat connection request?</source>
       </trans-unit>
       <trans-unit id="Your SimpleX name" xml:space="preserve">
         <source>Your SimpleX name</source>
+        <target>你的 SimpleX 名称</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your badge" xml:space="preserve">
         <source>Your badge</source>
+        <target>你的徽章</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your badge could not be renewed." xml:space="preserve">
+        <source>Your badge could not be renewed.</source>
+        <target>你的徽章无法续订。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your badge expired" xml:space="preserve">
         <source>Your badge expired</source>
+        <target>你的徽章已过期</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Your badge expired on %@." xml:space="preserve">
         <source>Your badge expired on %@.</source>
+        <target>你的徽章已于 %@ 过期。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your badge expired." xml:space="preserve">
         <source>Your badge expired.</source>
+        <target>你的徽章过期了。</target>
         <note>file alert</note>
+      </trans-unit>
+      <trans-unit id="Your badge renews soon" xml:space="preserve">
+        <source>Your badge renews soon</source>
+        <target>你的徽章即将续订</target>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Your badge stays until %@." xml:space="preserve">
+        <source>Your badge stays until %@.</source>
+        <target>你的徽章将保留到 %@。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your badge subscription ended on %@." xml:space="preserve">
+        <source>Your badge subscription ended on %@.</source>
+        <target>你的徽章订阅已于 %@ 结束。</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your business contact" xml:space="preserve">
         <source>Your business contact</source>
@@ -11723,6 +11862,11 @@ To connect, ask your contact to create a new link.</source>
         <target>你的群</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your legend badge" xml:space="preserve">
+        <source>Your legend badge</source>
+        <target>你的传奇徽章</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your network" xml:space="preserve">
         <source>Your network</source>
         <target>您的网络</target>
@@ -11737,6 +11881,7 @@ If you cancel, the channel will be deleted - you can create it again.</source>
       </trans-unit>
       <trans-unit id="Your payment is complete. The badge will be added to this profile." xml:space="preserve">
         <source>Your payment is complete. The badge will be added to this profile.</source>
+        <target>你的付款已完成。徽章将被添加到此个人资料。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your preferences" xml:space="preserve">
@@ -11814,6 +11959,16 @@ Relays can access channel messages.</source>
       <trans-unit id="Your settings" xml:space="preserve">
         <source>Your settings</source>
         <target>您的设置</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your subscription ended" xml:space="preserve">
+        <source>Your subscription ended</source>
+        <target>你的订阅已结束</target>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Your subscription is cancelled. The badge stays until %@." xml:space="preserve">
+        <source>Your subscription is cancelled. The badge stays until %@.</source>
+        <target>你的订阅已取消。徽章将保留到 %@。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="[Send us email](mailto:chat@simplex.chat)" xml:space="preserve">
@@ -12132,10 +12287,6 @@ marked deleted chat item preview text</note>
         <target>联系人应当接受…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="contributor" xml:space="preserve">
-        <source>contributor</source>
-        <note>member role</note>
-      </trans-unit>
       <trans-unit id="creator" xml:space="preserve">
         <source>creator</source>
         <target>创建者</target>
@@ -12317,10 +12468,6 @@ pref value</note>
         <target>已转发</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="forwarded from" xml:space="preserve">
-        <source>forwarded from</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="group" xml:space="preserve">
         <source>group</source>
         <target>群</target>
@@ -12443,6 +12590,7 @@ pref value</note>
       </trans-unit>
       <trans-unit id="legend badge" xml:space="preserve">
         <source>legend badge</source>
+        <target>传奇徽章</target>
         <note>badge required to send a large file</note>
       </trans-unit>
       <trans-unit id="link" xml:space="preserve">
@@ -12484,10 +12632,6 @@ pref value</note>
         <source>message received</source>
         <target>消息已收到</target>
         <note>notification</note>
-      </trans-unit>
-      <trans-unit id="message rejected: bad signature" xml:space="preserve">
-        <source>message rejected: bad signature</source>
-        <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="minutes" xml:space="preserve">
         <source>minutes</source>
@@ -12642,10 +12786,6 @@ time to disappear</note>
         <target>已受到确认……</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="reconnecting…" xml:space="preserve">
-        <source>reconnecting…</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="rejected" xml:space="preserve">
         <source>rejected</source>
         <target>被拒绝</target>
@@ -12792,6 +12932,7 @@ last received msg: %2$@</source>
       </trans-unit>
       <trans-unit id="shown on your profile" xml:space="preserve">
         <source>shown on your profile</source>
+        <target>在个人资料页上展示</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="standard end-to-end encryption" xml:space="preserve">
@@ -12809,12 +12950,9 @@ last received msg: %2$@</source>
         <target>删去</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="subscriber" xml:space="preserve">
-        <source>subscriber</source>
-        <note>member role</note>
-      </trans-unit>
       <trans-unit id="supporter badge" xml:space="preserve">
         <source>supporter badge</source>
+        <target>支持者徽章</target>
         <note>badge required to send a large file</note>
       </trans-unit>
       <trans-unit id="this contact" xml:space="preserve">
@@ -12849,6 +12987,7 @@ last received msg: %2$@</source>
       </trans-unit>
       <trans-unit id="until you can register a SimpleX domain" xml:space="preserve">
         <source>until you can register a SimpleX domain</source>
+        <target>后即可注册 SimpleX 域名</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="updated channel profile" xml:space="preserve">
@@ -13065,14 +13204,6 @@ last received msg: %2$@</source>
       <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.6" build-num="17F113"/>
     </header>
     <body>
-      <trans-unit id="CFBundleName" translate="no" xml:space="preserve">
-        <source>SimpleXChat</source>
-        <note>Bundle name</note>
-      </trans-unit>
-      <trans-unit id="NSHumanReadableCopyright" translate="no" xml:space="preserve">
-        <source>Copyright © 2022 SimpleX Chat. All rights reserved.</source>
-        <note>Copyright (human-readable)</note>
-      </trans-unit>
     </body>
   </file>
   <file original="SimpleX NSE/en.lproj/InfoPlist.strings" source-language="en" target-language="zh-Hans" datatype="plaintext">
@@ -13179,10 +13310,6 @@ last received msg: %2$@</source>
       <trans-unit id="Cannot forward message" xml:space="preserve">
         <source>Cannot forward message</source>
         <target>无法转发消息</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Cannot generate random database passphrase" xml:space="preserve">
-        <source>Cannot generate random database passphrase</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Comment" xml:space="preserve">

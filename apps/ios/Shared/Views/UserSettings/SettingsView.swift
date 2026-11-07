@@ -57,6 +57,7 @@ let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle" // deprecated, only used
 let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
 let DEFAULT_CHAT_ITEM_ROUNDNESS = "chatItemRoundness"
 let DEFAULT_CHAT_ITEM_TAIL = "chatItemTail"
+let DEFAULT_CHAT_LAYOUT = "chatLayout"
 let DEFAULT_ONE_HAND_UI_CARD_SHOWN = "oneHandUICardShown"
 let DEFAULT_ADDRESS_CREATION_CARD_SHOWN = "addressCreationCardShown"
 let DEFAULT_SUPPORTER_BANNER_SHOWN = "supporterBannerShown"
@@ -123,6 +124,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
     DEFAULT_CHAT_ITEM_ROUNDNESS: defaultChatItemRoundness,
     DEFAULT_CHAT_ITEM_TAIL: true,
+    DEFAULT_CHAT_LAYOUT: ChatLayout.classic.rawValue,
     DEFAULT_ONE_HAND_UI_CARD_SHOWN: false,
     DEFAULT_ADDRESS_CREATION_CARD_SHOWN: false,
     DEFAULT_SUPPORTER_BANNER_SHOWN: false,
@@ -214,6 +216,8 @@ let shouldDeleteDatabaseBackupsDefault = BoolDefault(defaults: UserDefaults.stan
 
 let connectViaLinkTabDefault = EnumDefault<ConnectViaLinkTab>(defaults: UserDefaults.standard, forKey: DEFAULT_CONNECT_VIA_LINK_TAB, withDefault: .scan)
 
+let chatLayoutDefault = EnumDefault<ChatLayout>(defaults: UserDefaults.standard, forKey: DEFAULT_CHAT_LAYOUT, withDefault: .classic)
+
 let privacySimplexLinkModeDefault = EnumDefault<SimpleXLinkMode>(defaults: UserDefaults.standard, forKey: DEFAULT_PRIVACY_SIMPLEX_LINK_MODE, withDefault: .description)
 
 let privacyLocalAuthModeDefault = EnumDefault<LAMode>(defaults: UserDefaults.standard, forKey: DEFAULT_LA_MODE, withDefault: .system)
@@ -303,6 +307,7 @@ struct SettingsView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @EnvironmentObject var theme: AppTheme
+    @ObservedObject private var badgeModel = BadgeModel.shared
     @State private var showProgress: Bool = false
 
     var body: some View {
@@ -360,6 +365,7 @@ struct SettingsView: View {
                 }
             }
 
+            let badgeRow = badgeRowTexts()
             Section {
                 NavigationLink {
                     BadgesView()
@@ -371,9 +377,12 @@ struct SettingsView: View {
                             .resizable()
                             .scaledToFit()
                             .frame(width: 24, height: 24)
-                        Text("Supporter perks").padding(.leading, indent)
+                        Text(badgeRow.label).padding(.leading, indent)
                     }
                 }
+            } footer: {
+                Text(badgeRow.benefits)
+                    .foregroundColor(theme.colors.secondary)
             }
 
             Section(header: Text("Advanced settings").foregroundColor(theme.colors.secondary)) {
@@ -391,10 +400,8 @@ struct SettingsView: View {
                         .navigationTitle("Notifications")
                         .modifier(ThemedBackground(grouped: true))
                 } label: {
-                    HStack {
-                        notificationsIcon()
-                        Text("Notifications")
-                    }
+                    let (icon, color) = notificationsIcon()
+                    settingsRow(icon, color: color) { Text("Notifications") }
                 }
                 .disabled(chatModel.chatRunning != true)
 
@@ -417,7 +424,7 @@ struct SettingsView: View {
             }
 
             if isInUS {
-                Section(header: Text("You can now invest in SimpleX Chat").foregroundColor(theme.colors.secondary)) {
+                Section(header: Text("Own a part of SimpleX Chat").foregroundColor(theme.colors.secondary)) {
                     NavigationLink {
                         GetStakeView(fromSettings: true, showFirstImage: true)
                             .navigationBarTitle("", displayMode: .inline)
@@ -432,6 +439,14 @@ struct SettingsView: View {
         .onDisappear {
             chatModel.showingTerminal = false
             chatModel.terminalItems = []
+        }
+    }
+
+    private func badgeRowTexts() -> (label: LocalizedStringKey, benefits: LocalizedStringKey) {
+        switch currentShownBadge()?.badgeType {
+        case nil: return ("Support SimpleX", "Larger files available for longer.")
+        case .legend?: return ("Your legend badge", "Files up to 5 GB, stored for 21 days.")
+        default: return ("Your badge", "Files up to 2 GB, stored for 7 days.")
         }
     }
 
@@ -551,7 +566,7 @@ struct SettingsView: View {
         case error(LocalizedStringKey, String)
     }
 
-    private func notificationsIcon() -> some View {
+    private func notificationsIcon() -> (String, Color) {
         let icon: String
         let color: Color
         switch (chatModel.tokenStatus) {
@@ -581,9 +596,7 @@ struct SettingsView: View {
             icon = "bolt"
             color = theme.colors.secondary
         }
-        return Image(systemName: icon)
-            .padding(.trailing, 9)
-            .foregroundColor(color)
+        return (icon, color)
     }
 }
 

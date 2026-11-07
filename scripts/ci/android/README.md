@@ -4,7 +4,7 @@
 
 ## Running it
 
-The workflow runs only when started by hand, on any branch: in the Actions tab, `android-emu` → Run workflow, or `gh workflow run android-emu.yml --ref <branch>` with `-f claude=true`, `-f backend=true` or `-f release=true`. [App tests on GitHub's runners](../README.md) lists the inputs. A newer run on the same branch cancels the older one.
+The workflow runs only when started by hand, on any branch: in the Actions tab, `android-emu` → Run workflow, or `gh workflow run android-emu.yml --ref <branch>` with `-f claude=true`, `-f backend=true`, `-f release=true` or `-f armv7a=true`. [CI on GitHub's runners](../README.md) lists the inputs. A newer run on the same branch cancels the older one.
 
 Every run builds the core library, and the backend when it's asked for, from the branch's own Haskell code. It reuses an earlier build only when the sources are unchanged, as an artifact of the same branch named after a hash of its sources (30 days): for the core `src/**`, `cabal.project`, `simplex-chat.cabal`, `PRIVACY.md`, the Nix files (`flake.nix`, `flake.lock`, `scripts/nix/**`) and `build-core.sh`; the backend is desktop-linux's, under its name and hash, so a backend either workflow built is reused by both. The workflow saves no Actions caches, which this repository evicts within hours and shares with `build.yml`.
 
@@ -18,8 +18,9 @@ Every run builds the core library, and the backend when it's asked for, from the
 | `claude` (opt-in) | after `app` passed: its APK in a new emulator at the first screen, then Claude Code drives it | about 5 min, Claude 2.5 |
 | `backend` (opt-in) | desktop-linux's `build-backend.sh` | about 30 min, skipped when reused |
 | `release` (opt-in) | the latest release's arm64 APK, its signer checked against SimpleX's key, onboarding only | about 4 min |
+| `core-armv7a` (opt-in) | `build-core.sh` with `armv7a`: `lib:simplex-chat` and `lib:support` for armv7a-android, with GHC 8.10.7; the app and the emulator use only arm64 | not measured yet |
 
-Results are artifacts: `android-smoke-test` (numbered screenshots, the accessibility tree and the text of each, `steps.log`, `checks.txt`, logcat as `app.log`, `emulator.log`), `android-release-smoke-test`, `android-claude-test`, and the backend's logs; `android-app`, the APK for the Claude job, is kept a day. The job summaries list the checks and the Claude usage.
+Results are artifacts: `android-smoke-test` (numbered screenshots, the accessibility tree and the text of each, `steps.log`, `checks.txt`, logcat as `app.log`, `emulator.log`), `android-release-smoke-test`, `android-claude-test`, and the backend's logs; `android-app`, the APK for manual tests and the Claude job, is kept 14 days. The job summaries list the checks and the Claude usage.
 
 ## The emulator
 
@@ -28,7 +29,7 @@ A Google APIs x86_64 system image of API 34 (revision 14) with KVM, on the x86_6
 ## Scripts
 
 - `ui`: the UI driver, with desktop's command names: text and positions from uiautomator's accessibility tree, taps and keys with adb. `ui` alone prints its commands: start (with app settings), shot, text, tree, find, wait, click, click-text, scroll, type, key, layout (the `OneHandUI` preference and a restart), relaunch, text-size, do, stop. `screen-tree.py` reads the tree; `prefs.py` writes the settings, which only a debug build accepts (`run-as`).
-- `smoke-test.sh <apk> <out dir> [start|onboarding|layouts|backend]`: the scripted cases; the default is onboarding, a local group and both layouts. Onboarding on Android includes the app's instant notifications alert and the system's battery dialog. `backend` also adds the test SMP server under Your servers and checks that it passes Test servers.
+- `smoke-test.sh <apk> <out dir> [start|onboarding|layouts|backend]`: the scripted cases; the default is onboarding, a local group, both layouts, and `tests/fixtures/test.jpg` and `logo-large-rgba.png` pushed to Pictures, picked in the system's picker, resized by the core, previewed and sent in the group. Onboarding on Android includes the app's instant notifications alert and the system's battery dialog. `backend` also adds the test SMP server under Your servers and checks that it passes Test servers.
 - `install-sdk.sh`, `emulator.sh`: the emulator, above.
 - `build-core.sh`, `install-core.sh`, `release-apk.sh`: builds and the release.
 - `claude-test.md` (the prompt) and `claude-scope` (whether it uses the test backend): the Claude job, which runs desktop-linux's `claude-test.sh`, `claude-guard.py` and `claude-usage.py`.
@@ -39,7 +40,7 @@ Desktop-linux's `backend.sh` starts it on the runner as it does for desktop: [it
 
 ## The Claude job
 
-It needs the GitHub environment `app-sim-claude` with the secret `CLAUDE_CODE_OAUTH_TOKEN`, a Claude subscription token. Which branches may use it is decided only by that environment's branch rule in the repository settings: on a branch the rule doesn't allow, a requested Claude run fails at the environment check. It runs once the app job has passed, on that job's APK in a new emulator, one per branch at a time. The token goes only to the step that runs `claude`; `claude-test.sh` passes it to the `claude` process alone, and every `ui` call unsets it too; it never reaches the emulator. The job starts the test backend when `claude-scope` says `backend: yes`; a run that asks for Claude must then ask for the backend too, or the plan job fails. On master it says `no`, since this prompt doesn't use the backend. The job installs Claude Code at the version the other app workflows pin, and runs `claude-haiku-5-5` with desktop's harness: `--max-turns 60`, `--max-budget-usd 3`, Bash limited to single `ui` commands by `claude-guard.py`, file tools limited to the session's directory, and its output checked for the token before anything is printed or uploaded. It passes when Claude's final message ends with `CLAUDE-TEST: PASS`.
+It needs the GitHub environment `app-sim-claude` with the secret `CLAUDE_CODE_OAUTH_TOKEN`, a Claude subscription token. Which branches may use it is decided only by that environment's branch rule in the repository settings: on a branch the rule doesn't allow, a requested Claude run fails at the environment check. It runs once the app job has passed, on that job's APK in a new emulator, one per branch at a time. Before Claude starts, the job pushes two images from `tests/fixtures` to the emulator's Pictures, for the prompt's image part. The token goes only to the step that runs `claude`; `claude-test.sh` passes it to the `claude` process alone, and every `ui` call unsets it too; it never reaches the emulator. The job starts the test backend when `claude-scope` says `backend: yes`; a run that asks for Claude must then ask for the backend too, or the plan job fails. On master it says `no`, since this prompt doesn't use the backend. The job installs Claude Code at the version the other app workflows pin, and runs `claude-haiku-5-5` with desktop's harness: `--max-turns 90`, `--max-budget-usd 3`, Bash limited to single `ui` commands by `claude-guard.py`, file tools limited to the session's directory, and its output checked for the token before anything is printed or uploaded. It passes when Claude's final message ends with `CLAUDE-TEST: PASS`.
 
 ## Known limits
 

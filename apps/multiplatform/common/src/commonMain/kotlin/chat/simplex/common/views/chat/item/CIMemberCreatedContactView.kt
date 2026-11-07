@@ -32,39 +32,42 @@ fun CIMemberCreatedContactView(
     }
   }
 
-  Row(
-    Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(4.dp)
-  ) {
-    if (chatItem.chatDir is CIDirection.GroupRcv && chatItem.chatDir.groupMember.memberContactId != null) {
-      val openChatStyle = SpanStyle(color = MaterialTheme.colors.primary, fontSize = 12.sp)
-      val annotatedText = buildAnnotatedString {
-        append(eventText())
-        append("  ")
-        withAnnotation(tag = "Open", annotation = "Open") {
-          withStyle(openChatStyle) { append(generalGetString(MR.strings.rcv_group_event_open_chat) + "  ") }
-        }
-        withStyle(chatEventStyle) { append(chatItem.timestampText) }
-      }
-
-      fun open(offset: Int): Boolean = annotatedText.getStringAnnotations(tag = "Open", start = offset, end = offset).isNotEmpty()
-      ClickableText(
-        annotatedText,
-        onClick = {
-          if (open(it)) {
-            openDirectChat(chatItem.chatDir.groupMember.memberContactId)
+  ChatEventWithMeta(chatItem) { separator, ts ->
+    Row(
+      Modifier.padding(chatEventPadding()),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+      if (chatItem.chatDir is CIDirection.GroupRcv && chatItem.chatDir.groupMember.memberContactId != null) {
+        val openChatStyle = SpanStyle(color = MaterialTheme.colors.primary, fontSize = 12.sp)
+        val annotatedText = buildAnnotatedString {
+          append(eventText())
+          append("  ")
+          withAnnotation(tag = "Open", annotation = "Open") {
+            withStyle(openChatStyle) { append(generalGetString(MR.strings.rcv_group_event_open_chat)); append(separator) }
           }
-        },
-        shouldConsumeEvent = ::open
-      )
-    } else {
-      val annotatedText = buildAnnotatedString {
-        append(eventText())
-        append("  ")
-        withStyle(chatEventStyle) { append(chatItem.timestampText) }
+          withStyle(chatEventStyle) { append(ts) }
+        }
+
+        fun open(offset: Int): Boolean = annotatedText.getStringAnnotations(tag = "Open", start = offset, end = offset).isNotEmpty()
+        ClickableText(
+          annotatedText,
+          style = chatEventTextStyle(TextStyle.Default),
+          onClick = {
+            if (open(it)) {
+              openDirectChat(chatItem.chatDir.groupMember.memberContactId)
+            }
+          },
+          shouldConsumeEvent = ::open
+        )
+      } else {
+        val annotatedText = buildAnnotatedString {
+          append(eventText())
+          append(separator)
+          withStyle(chatEventStyle) { append(ts) }
+        }
+        Text(annotatedText, style = chatEventTextStyle())
       }
-      Text(annotatedText)
     }
   }
 }

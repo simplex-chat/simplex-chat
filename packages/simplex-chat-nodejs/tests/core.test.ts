@@ -1,6 +1,8 @@
 import {execFile, spawnSync} from "child_process";
+import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
+import * as zlib from "zlib";
 import {core} from "../src/index";
 import * as libs from "../src/libs";
 import * as simplex from "../src/simplex";
@@ -140,8 +142,100 @@ describe("Core tests", () => {
 
     await expect(core.chatEncryptFile(ctrl, path.join(tmpDir, "unknown.txt"), encryptedPath)).rejects.toThrow();
     await expect(core.chatDecryptFile(path.join(tmpDir, "unknown.txt"), cryptoArgs, decryptedPath)).rejects.toThrow();
-    
+
     await stopAndClose(ctrl);
+  });
+
+  describe("image resizing", () => {
+    const notImage = Buffer.from("not an image");
+    const resizeError = "image cannot be decoded or does not fit maxSize";
+    const oldLibraryError = (name: string) => `loaded libsimplex does not export ${name}; image resizing needs a newer libsimplex`;
+    let imageResizing = false;
+
+    beforeAll(async () => {
+      const error = await core.chatResizeImageUri(notImage, 14000).then(() => "", (e: Error) => e.message);
+      imageResizing = error !== oldLibraryError("chat_resize_image_uri");
+    });
+
+    function noisePng(width: number, height: number, alpha = false): Buffer {
+      const rowLength = width * (alpha ? 4 : 3) + 1;
+      const rows = crypto.randomBytes(rowLength * height);
+      for (let y = 0; y < height; y++) rows[y * rowLength] = 0;
+      const header = Buffer.alloc(13);
+      header.writeUInt32BE(width, 0);
+      header.writeUInt32BE(height, 4);
+      header.set([8, alpha ? 6 : 2, 0, 0, 0], 8);
+      const chunk = (type: string, data: Buffer) => {
+        const body = Buffer.concat([Buffer.from(type), data]);
+        const length = Buffer.alloc(4);
+        length.writeUInt32BE(data.length);
+        const crc = Buffer.alloc(4);
+        crc.writeUInt32BE(zlib.crc32(body));
+        return Buffer.concat([length, body, crc]);
+      };
+      const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+      return Buffer.concat([signature, chunk("IHDR", header), chunk("IDAT", zlib.deflateSync(rows)), chunk("IEND", Buffer.alloc(0))]);
+    }
+
+    it("should resize image to data URI", async () => {
+      const resize = core.chatResizeImageUri(noisePng(256, 256), 14000);
+      if (!imageResizing) return expect(resize).rejects.toThrow(oldLibraryError("chat_resize_image_uri"));
+      const uri = await resize;
+      expect(uri.startsWith("data:image/jpg;base64,")).toBe(true);
+      expect(uri.length).toBeLessThanOrEqual(14000);
+    });
+
+    it("should resize the view of a Uint8Array to JPEG and PNG", async () => {
+      const image = noisePng(256, 256);
+      const view = Buffer.concat([Buffer.alloc(3), image]).subarray(3);
+      const resize = core.chatResizeImage(view, 20000, "jpeg");
+      if (!imageResizing) return expect(resize).rejects.toThrow(oldLibraryError("chat_resize_image"));
+      const jpeg = await resize;
+      expect(jpeg.subarray(0, 3)).toEqual(Buffer.from([0xff, 0xd8, 0xff]));
+      expect(jpeg.length).toBeLessThanOrEqual(20000);
+      const png = await core.chatResizeImage(new Uint8Array(image).buffer, 20000, "png");
+      expect(png.subarray(0, 8)).toEqual(image.subarray(0, 8));
+      expect(png.length).toBeLessThanOrEqual(20000);
+    });
+
+    it("should resize image to each ImageSize", async () => {
+      const image = noisePng(512, 512);
+      const resize = core.resizeImage(image, core.ImageSize.Image);
+      if (!imageResizing) return expect(resize).rejects.toThrow(oldLibraryError("chat_resize_image"));
+      const jpeg = await resize;
+      expect(jpeg.subarray(0, 3)).toEqual(Buffer.from([0xff, 0xd8, 0xff]));
+      expect(jpeg.length).toBeLessThanOrEqual(261120);
+      const profile = await core.resizeImage(image, core.ImageSize.ProfilePreview);
+      expect(profile.startsWith("data:image/jpg;base64,")).toBe(true);
+      expect(profile.length).toBeLessThanOrEqual(12500);
+      const preview = await core.resizeImage(image, core.ImageSize.MessagePreview);
+      expect(preview.startsWith("data:image/jpg;base64,")).toBe(true);
+      expect(preview.length).toBeLessThanOrEqual(14000);
+    });
+
+    it("should resize image with transparency to PNG for each ImageSize", async () => {
+      const image = noisePng(256, 256, true);
+      const resize = core.resizeImage(image, core.ImageSize.Image);
+      if (!imageResizing) return expect(resize).rejects.toThrow(oldLibraryError("chat_resize_image"));
+      const png = await resize;
+      expect(png.subarray(0, 8)).toEqual(image.subarray(0, 8));
+      expect(png.length).toBeLessThanOrEqual(261120);
+      const profile = await core.resizeImage(image, core.ImageSize.ProfilePreview);
+      expect(profile.startsWith("data:image/png;base64,")).toBe(true);
+      expect(profile.length).toBeLessThanOrEqual(12500);
+      const preview = await core.resizeImage(image, core.ImageSize.MessagePreview);
+      expect(preview.startsWith("data:image/png;base64,")).toBe(true);
+      expect(preview.length).toBeLessThanOrEqual(14000);
+    });
+
+    it("should reject data that is not an image", async () => {
+      await expect(core.chatResizeImage(notImage, 20000, "jpeg")).rejects.toThrow(imageResizing ? resizeError : oldLibraryError("chat_resize_image"));
+    });
+
+    it("should reject maxSize outside 32-bit integers", async () => {
+      const error = imageResizing ? "Expected 32-bit integer maxSize" : oldLibraryError("chat_resize_image_uri");
+      await expect(core.chatResizeImageUri(noisePng(8, 8), 2 ** 31)).rejects.toThrow(error);
+    });
   });
 
   it("should not block the libuv pool while receiving", async () => {

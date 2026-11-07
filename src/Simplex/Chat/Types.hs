@@ -220,6 +220,7 @@ data Contact = Contact
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
+    chatLayout :: Maybe ChatLayout,
     chatDeleted :: Bool,
     customData :: Maybe CustomData
   }
@@ -919,7 +920,8 @@ data GroupProfile = GroupProfile
     image :: Maybe ImageData,
     publicGroup :: Maybe PublicGroupProfile,
     groupPreferences :: Maybe GroupPreferences,
-    memberAdmission :: Maybe GroupMemberAdmission
+    memberAdmission :: Maybe GroupMemberAdmission,
+    chatLayout :: Maybe ChatLayout
   }
   deriving (Eq, Show)
 
@@ -948,7 +950,10 @@ instance ToJSON ImageData where
 
 safeImageData :: Text -> Text
 safeImageData t
-  | "data:" `T.isPrefixOf` t = t
+  | Just b64 <- T.stripPrefix "data:image/jpg;base64," t <|> T.stripPrefix "data:image/png;base64," t,
+    Right header <- B64.decode $ encodeUtf8 $ T.take 12 b64,
+    any (`B.isPrefixOf` header) ["\xFF\xD8\xFF", "\x89PNG\r\n\x1a\n"] =
+      t
   | otherwise = ""
 
 instance ToField ImageData where toField (ImageData t) = toField t

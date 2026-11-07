@@ -25,7 +25,7 @@ import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Either (lefts, partitionEithers, rights)
+import Data.Either (isLeft, lefts, partitionEithers, rights)
 import Data.Foldable (foldr', foldrM)
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -1092,8 +1092,6 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               XMsgDel sharedMsgId memberId_ scope_ onlyHistory ->
                 groupMessageDelete gInfo' (Just m'') sharedMsgId memberId_ scope_ onlyHistory msg brokerTs
               XMsgReact sharedMsgId memberId scope_ reaction add -> groupMsgReaction gInfo' m'' sharedMsgId memberId scope_ reaction add msg brokerTs
-              -- TODO discontinue XFile
-              XFile fInv -> Nothing <$ processGroupFileInvitation' gInfo' m'' fInv msg brokerTs
               XFileCancel sharedMsgId -> xFileCancelGroup gInfo' (Just m'') sharedMsgId
               XFileAcptInv sharedMsgId fileConnReq_ fName -> Nothing <$ xFileAcptInvGroup gInfo' m'' sharedMsgId fileConnReq_ fName
               XInfo p mKey -> fmap ctx <$> xInfoMember gInfo' m'' p mKey msg brokerTs
@@ -1130,7 +1128,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               XInfoProbeOk probe -> Nothing <$ xInfoProbeOk (COMGroupMember m'') probe
               BFileChunk sharedMsgId chunk -> Nothing <$ bFileChunkGroup (GIK gInfo' gks) m'' sharedMsgId chunk msgMeta
               _ -> Nothing <$ messageError ("unsupported message: " <> tshow event)
-            forM deliveryTaskContext_ $ \taskContext -> do
+            forM (if memberStatus m'' == GSMemPendingApproval then Nothing else deliveryTaskContext_) $ \taskContext -> do
               let contentChanged :: CM ()
                   contentChanged = atomically $ channelContentChanged cc groupId
               case event of
@@ -1497,7 +1495,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             -- ##### Contact requests (regular and business contacts) #####
             Nothing -> do
               let UserContactLink {connLinkContact = CCLink connReq _, shortLinkDataSet, addressSettings} = ucl
-                  AddressSettings {autoAccept} = addressSettings
+                  AddressSettings {autoAccept, chatLayout} = addressSettings
                   isSimplexTeam = sameConnReqContact connReq adminContactReq
               gVar <- asks random
               withStore (\db -> createOrUpdateContactRequest db gVar cxt user uclId ucl isSimplexTeam invId chatVRange (Just reqHeader) p xContactId_ welcomeMsgId_ requestMsg_ reqPQSup rejectionSupported) >>= \case
@@ -1540,7 +1538,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                         ct' <- acceptContactRequestAsync user uclId ct ucr incognitoProfile
                         toView $ CEvtAcceptingContactRequest user ct'
                   Just (REBusinessChat g@(GIK gInfo _) clientMember) -> do
-                    (_gInfo', _clientMember') <- acceptBusinessJoinRequestAsync user uclId g clientMember ucr
+                    (_gInfo', _clientMember') <- acceptBusinessJoinRequestAsync user uclId chatLayout g clientMember ucr
                     let cd = CDGroupRcv gInfo Nothing clientMember
                     void $ case prevUcr_ of
                       Just UserContactRequest {requestSharedMsgId = prevSharedMsgId_} ->
@@ -1688,22 +1686,26 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               User {userChatRelay} = user
         -- TODO [relays] owner, relays: TBC how to communicate member rejection rules from owner to relays
         memberJoinRequestViaRelay :: InvitationId -> VersionRangeChat -> Maybe SignedMsg -> Profile -> MemberId -> MemberKey -> Maybe MemberId -> CM ()
-        memberJoinRequestViaRelay invId chatVRange signedMsg_ p joiningMemberId joiningMemberKey@(MemberKey joiningKey) viaRelay = do
+        memberJoinRequestViaRelay invId chatVRange signedMsg_ p@Profile {displayName} joiningMemberId joiningMemberKey@(MemberKey joiningKey) viaRelay = do
           (_ucl, gLinkInfo_) <- withStore $ \db -> getUserContactLinkById db userId uclId
           case gLinkInfo_ of
             Just GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
               g@(GIK gInfo _) <- withStore $ \db -> getGroupInfoKeys db cxt user groupId
-              existing_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupMemberByMemberId db cxt user gInfo joiningMemberId)
-              let signed = memberSigned gInfo joiningMemberId joiningKey signedMsg_
-              case existing_ of
-                Just rosterMem
-                  -- a privileged memberId's key is owner-authoritative (the roster); the joiner must prove
-                  -- possession of that exact key, otherwise this is an attempt to impersonate it
-                  | isRosterRole (memberRole' rosterMem) ->
-                      if verifyKey gInfo rosterMem signed
-                        then acceptJoin g signed (Just rosterMem) (memberRole' rosterMem)
-                        else messageError "memberJoinRequestViaRelay: rejected join claiming privileged memberId (key mismatch or invalid signature)"
-                _ -> acceptJoin g signed Nothing gLinkMemRole
+              if
+                | not (useRelays' gInfo) ->
+                    messageWarning $ "memberJoinRequestViaRelay (group " <> groupName' gInfo <> "): ignored relay join request from " <> displayName <> " (group does not use relays)"
+                | otherwise -> do
+                    existing_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupMemberByMemberId db cxt user gInfo joiningMemberId)
+                    let signed = memberSigned gInfo joiningMemberId joiningKey signedMsg_
+                    case existing_ of
+                      Just rosterMem
+                        -- a privileged memberId's key is owner-authoritative (the roster); the joiner must prove
+                        -- possession of that exact key, otherwise this is an attempt to impersonate it
+                        | isRosterRole (memberRole' rosterMem) ->
+                            if verifyKey gInfo rosterMem signed
+                              then acceptJoin g signed (Just rosterMem) (memberRole' rosterMem)
+                              else messageError "memberJoinRequestViaRelay: rejected join claiming privileged memberId (key mismatch or invalid signature)"
+                      _ -> acceptJoin g signed Nothing gLinkMemRole
             Nothing ->
               messageError "memberJoinRequestViaRelay: no group link info for relay link"
           where
@@ -2529,23 +2531,6 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       where
         brokerTs = metaBrokerTs msgMeta
 
-    -- TODO remove once XFile is discontinued
-    processGroupFileInvitation' :: GroupInfo -> GroupMember -> FileInvitation -> RcvMessage -> UTCTime -> CM ()
-    processGroupFileInvitation' gInfo m fInv msg@RcvMessage {sharedMsgId_} brokerTs
-      | blockedForUser gInfo m = deleteRcvMsg msg
-      | otherwise = do
-          ChatConfig {fileChunkSize} <- asks config
-          fInv'@FileInvitation {fileName, fileSize} <- validateFileInvitation fInv
-          fileProhibited <- rcvGroupFileProhibited gInfo (Just m) False fInv'
-          inline <- receiveInlineMode fInv' Nothing fileChunkSize
-          RcvFileTransfer {fileId, xftpRcvFile} <- withStore $ \db -> createRcvGroupFileTransfer db userId gInfo (Just m) FTNormal sharedMsgId_ fInv' fileProhibited inline fileChunkSize
-          let fileProtocol = if isJust xftpRcvFile then FPXFTP else FPSMP
-              ciFile = Just $ CIFile {fileId, fileName, fileSize, fileSource = Nothing, fileStatus = CIFSRcvInvitation, fileProtocol, fileExpires = Nothing, fileProhibited}
-              content = ciContentNoParse $ CIRcvMsgContent $ MCFile ""
-          (ci, cInfo) <- saveRcvChatItem' user (CDGroupRcv gInfo Nothing m) msg sharedMsgId_ brokerTs content ciFile Nothing False M.empty
-          ci' <- blockedMemberCI gInfo m ci
-          groupMsgToView cInfo ci'
-
     blockedMemberCI :: GroupInfo -> GroupMember -> ChatItem 'CTGroup 'MDRcv -> CM (ChatItem 'CTGroup 'MDRcv)
     blockedMemberCI gInfo m ci
       | blockedByAdmin m =
@@ -2634,8 +2619,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       receiveInlineChunk ft chunk meta
 
     -- A group BFileChunk is a normal inline file chunk or a roster blob chunk, both located by
-    -- (group_id, shared_msg_id). A chunk matching no in-flight transfer (an orphaned re-served roster
-    -- chunk, or a missing normal file) is ignored; the outer withAckMessage acks it.
+    -- (group_id, shared_msg_id, sending member). A chunk matching no in-flight transfer (an orphaned re-served
+    -- roster chunk, or a missing or another member's normal file) is ignored; the outer withAckMessage acks it.
     bFileChunkGroup :: GroupInfoKeys -> GroupMember -> SharedMsgId -> FileChunk -> MsgMeta -> CM ()
     bFileChunkGroup gInfo@(GIK GroupInfo {groupId} _) fromMember sharedMsgId chunk meta = do
       fileId_ <- withStore' $ \db -> getGroupRcvFileId db userId groupId (groupMemberId' fromMember) sharedMsgId
@@ -2649,6 +2634,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     receiveInlineChunk RcvFileTransfer {fileId, fileStatus = RFSNew} FileChunk {chunkNo} _
       | chunkNo == 1 = throwChatError $ CEInlineFileProhibited fileId
       | otherwise = pure ()
+    receiveInlineChunk ft FileChunk {} _ | rcvFileCompleteOrCancelled ft = pure ()
     receiveInlineChunk ft@RcvFileTransfer {fileId} chunk meta = do
       case chunk of
         FileChunk {chunkNo} -> when (chunkNo == 1) $ startReceivingFile user fileId
@@ -3332,7 +3318,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         GCHostMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db cxt user gInfo memId) >>= \case
             Right existingMember
-              | useRelays' gInfo -> do
+              | useRelays' gInfo && not (sameMemberId memId (membership gInfo)) -> do
                   updatedMember <- withStore $ \db -> updatePreparedChannelMember db cxt user existingMember memInfo (memberPresHeader gInfo memId (memberPubKey existingMember))
                   toView $ CEvtGroupMemberUpdated user gInfo existingMember updatedMember
               | otherwise ->
@@ -3378,10 +3364,11 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfoKeys -> GroupMember -> MemberInfo -> IntroInvitation -> CM ()
-    xGrpMemFwd g@(GIK gInfo@GroupInfo {membership, chatSettings} _) m memInfo@(MemberInfo memId memRole memChatVRange _ _) IntroInvitation {groupConnReq} = do
+    xGrpMemFwd g@(GIK gInfo@GroupInfo {membership, chatSettings} _) m@GroupMember {localDisplayName = c} memInfo@(MemberInfo memId memRole memChatVRange _ _) IntroInvitation {groupConnReq} = do
       let GroupMember {memberId = membershipMemId} = membership
       checkHostRole m memRole
-      toMember <- withStore $ \db -> do
+      when (memId == membershipMemId) $ throwChatError CEGroupDuplicateMemberId
+      (toMember, fromAnnouncer) <- withStore $ \db -> do
         toMember <-
           getGroupMemberByMemberId db cxt user gInfo memId
             -- TODO if the missed messages are correctly sent as soon as there is connection before anything else is sent
@@ -3391,12 +3378,14 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             `catchError` \case
               SEGroupMemberNotFoundByMemberId _ -> createNewGroupMember db cxt user gInfo m memInfo (memberInfoPresHeader gInfo memInfo) GCPostMember GSMemAnnounced
               e -> throwError e
+        let fromAnnouncer = not (memberRemoved toMember) && (invitedByGroupMemberId toMember == Just (groupMemberId' m) || memberStatus toMember == GSMemUnknown)
         -- TODO [knocking] separate pending statuses from GroupMemberStatus?
         -- TODO            add GSMemIntroInvitedPending, GSMemConnectedPending, etc.?
         -- TODO            keep as is? (GSMemIntroInvited has no purpose)
         let newMemberStatus = if memberPending toMember then memberStatus toMember else GSMemIntroInvited
-        liftIO $ updateGroupMemberStatus db userId toMember newMemberStatus
-        pure toMember
+        when fromAnnouncer $ liftIO $ updateGroupMemberStatus db userId toMember newMemberStatus
+        pure (toMember, fromAnnouncer)
+      unless fromAnnouncer $ throwChatError (CEGroupContactRole c)
       subMode <- chatReadVar subscriptionMode
       let mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
           chatV = vr cxt `peerConnChatVersion` mcvr
@@ -3473,11 +3462,13 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           let allowCreate = useRelays' gInfo && senderRole == GROwner && isRosterRole memRole && isJust memberKey_
           withStore' (\db -> runExceptT $ getCreateUnknownGMByMemberId db cxt user gInfo memId (nameFromMemberId memId) defaultRole allowCreate) >>= \case
             Right (Just (member, created))
-              -- just created (keyless, and allowCreate ensured the event carries its key): pin key + role
-              | created, Just (MemberKey pubKey) <- memberKey_ ->
-                  let gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
-                   in changeMemberRole gInfo member created (\db -> void $ applyMemberKeyRole db member pubKey memRole) gEvent (not $ useRelays' gInfo)
-              -- known member: apply the role (its key is established via roster/intro; the event's key is ignored)
+              -- allowCreate ensured the event carries its key: keep a different stored key, else pin the key if absent and set the role
+              | allowCreate, Just (MemberKey pubKey) <- memberKey_ -> case memberPubKey member of
+                  Just k | k /= pubKey -> messageError ("x.grp.mem.role: member key conflict, keeping trusted key, memberId=" <> safeDecodeUtf8 (strEncode memId)) $> Nothing
+                  _ ->
+                    let gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
+                     in changeMemberRole gInfo member created (\db -> void $ applyMemberKeyRole db member pubKey memRole) gEvent (not $ useRelays' gInfo)
+              -- known member: apply the role (the event's key is ignored)
               | otherwise ->
                   let gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
                    in changeMemberRole gInfo member created (\db -> updateGroupMemberRole db user member memRole) gEvent (not $ useRelays' gInfo)
@@ -3486,7 +3477,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               | otherwise -> messageError "x.grp.mem.role with unknown member ID" $> Nothing
       where
         GroupMember {memberId = membershipMemId} = membership
-        -- applyMember writes the change (role, or role + pinned key for a freshly TOFU-created member);
+        -- applyMember writes the change (role, or role + pinned key for a keyless member);
         -- the delivery scope (relay forwarding) is computed on the pre-change role
         changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} created applyMember gEvent createItem
           | fromRole == GRRelay =
@@ -4220,11 +4211,16 @@ resumeDeliveryTaskWork :: DeliveryWorkerKey -> CM' ()
 resumeDeliveryTaskWork = void . getDeliveryTaskWorker False
 
 getDeliveryTaskWorker :: Bool -> DeliveryWorkerKey -> CM' Worker
-getDeliveryTaskWorker hasWork deliveryKey = do
+getDeliveryTaskWorker hasWork deliveryKey@(groupId, _) = do
   ws <- asks deliveryTaskWorkers
   a <- asks smpAgent
-  getAgentWorker "delivery_task" hasWork a deliveryKey ws $
-    runDeliveryTaskWorker a deliveryKey
+  getAgentWorker "delivery_task" hasWork a deliveryKey ws $ \w ->
+    runDeliveryTaskWorker a deliveryKey w `catchAllErrors` \e -> do
+      whenM (groupDeleted groupId) $ atomically $ TM.delete deliveryKey ws
+      throwError e
+
+groupDeleted :: GroupId -> CM Bool
+groupDeleted groupId = isLeft <$> withStore' (\db -> runExceptT $ getUserByGroupId db groupId)
 
 runDeliveryTaskWorker :: AgentClient -> DeliveryWorkerKey -> Worker -> CM ()
 runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
@@ -4247,7 +4243,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
         processDeliveryTask task
           `catchAllErrors` \e -> do
             withStore' $ \db -> setDeliveryTaskErrStatus db (deliveryTaskId task) (tshow e)
-            eToView e
+            unlessM (groupDeleted groupId) $ eToView e
       where
         processDeliveryTask :: MessageDeliveryTask -> CM ()
         processDeliveryTask task@MessageDeliveryTask {jobScope} =
@@ -4288,11 +4284,13 @@ resumeDeliveryJobWork :: DeliveryWorkerKey -> CM' ()
 resumeDeliveryJobWork = void . getDeliveryJobWorker False
 
 getDeliveryJobWorker :: Bool -> DeliveryWorkerKey -> CM' Worker
-getDeliveryJobWorker hasWork deliveryKey = do
+getDeliveryJobWorker hasWork deliveryKey@(groupId, _) = do
   ws <- asks deliveryJobWorkers
   a <- asks smpAgent
-  getAgentWorker "delivery_job" hasWork a deliveryKey ws $
-    runDeliveryJobWorker a deliveryKey
+  getAgentWorker "delivery_job" hasWork a deliveryKey ws $ \w ->
+    runDeliveryJobWorker a deliveryKey w `catchAllErrors` \e -> do
+      whenM (groupDeleted groupId) $ atomically $ TM.delete deliveryKey ws
+      throwError e
 
 -- TODO [relays] dissemination here is unsigned (relay-asserted profile).
 -- Future: members sign an XMember on channel join, relay stores it per
@@ -4335,7 +4333,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
         processDeliveryJob job
           `catchAllErrors` \e -> do
             withStore' $ \db -> setDeliveryJobErrStatus db (deliveryJobId job) (tshow e)
-            eToView e
+            unlessM (groupDeleted groupId) $ eToView e
       where
         processDeliveryJob :: MessageDeliveryJob -> CM ()
         processDeliveryJob job =

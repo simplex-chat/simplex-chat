@@ -49,7 +49,8 @@ export function botAddressSettings({addressSettings}: T.UserContactLink): BotAdd
   return {
     autoAccept: addressSettings.autoAccept ? true : false,
     welcomeMessage: addressSettings.autoReply,
-    businessAddress: addressSettings.businessAddress
+    businessAddress: addressSettings.businessAddress,
+    chatLayout: addressSettings.chatLayout
   }
 }
 

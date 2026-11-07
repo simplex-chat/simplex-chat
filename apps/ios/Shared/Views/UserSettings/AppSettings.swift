@@ -67,6 +67,7 @@ extension AppSettings {
         if let val = uiThemes { themeOverridesDefault.set(val.skipDuplicates()) }
         if let val = oneHandUI { groupDefaults.setValue(val, forKey: GROUP_DEFAULT_ONE_HAND_UI) }
         if let val = chatBottomBar { groupDefaults.setValue(val, forKey: GROUP_DEFAULT_CHAT_BOTTOM_BAR) }
+        if let val = uiChatLayout { chatLayoutDefault.set(val) }
     }
 
     public static var current: AppSettings {
@@ -104,6 +105,7 @@ extension AppSettings {
         c.uiThemes = themeOverridesDefault.get()
         c.oneHandUI = groupDefaults.bool(forKey: GROUP_DEFAULT_ONE_HAND_UI)
         c.chatBottomBar = groupDefaults.bool(forKey: GROUP_DEFAULT_CHAT_BOTTOM_BAR)
+        c.uiChatLayout = chatLayoutDefault.get()
         return c
     }
 }

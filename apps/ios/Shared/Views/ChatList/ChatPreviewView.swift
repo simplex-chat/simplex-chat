@@ -573,25 +573,25 @@ struct ChatPreviewView_Previews: PreviewProvider {
             ), progressByTimeout: Binding.constant(false))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
-                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete))]
+                chatItems: [ChatItem.getSample(1, .directSnd, previewDate, "hello", .sndSent(sndProgress: .complete))]
             ), progressByTimeout: Binding.constant(false))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
-                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete))],
+                chatItems: [ChatItem.getSample(1, .directSnd, previewDate, "hello", .sndSent(sndProgress: .complete))],
                 chatStats: ChatStats(unreadCount: 11, minUnreadItemId: 0)
             ), progressByTimeout: Binding.constant(false))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
-                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now))]
+                chatItems: [ChatItem.getSample(1, .directSnd, previewDate, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: previewDate))]
             ), progressByTimeout: Binding.constant(false))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
-                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete))],
+                chatItems: [ChatItem.getSample(1, .directSnd, previewDate, "hello", .sndSent(sndProgress: .complete))],
                 chatStats: ChatStats(unreadCount: 3, minUnreadItemId: 0)
             ), progressByTimeout: Binding.constant(false))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.group,
-                chatItems: [ChatItem.getSample(1, .directSnd, .now, "Lorem ipsum dolor sit amet, d. consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")],
+                chatItems: [ChatItem.getSample(1, .directSnd, previewDate, "Lorem ipsum dolor sit amet, d. consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")],
                 chatStats: ChatStats(unreadCount: 11, minUnreadItemId: 0)
             ), progressByTimeout: Binding.constant(false))
         }
