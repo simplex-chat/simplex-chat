@@ -2338,6 +2338,7 @@ struct AppSettings: Codable, Equatable {
     var privacySaveLastDraft: Bool? = nil
     var privacyProtectScreen: Bool? = nil
     var privacyMediaBlurRadius: Int? = nil
+    var privacyContactDeletion: ContactDeletion? = nil
     var notificationMode: AppSettingsNotificationMode? = nil
     var notificationPreviewMode: NotificationPreviewMode? = nil
     var webrtcPolicyRelay: Bool? = nil
@@ -2375,6 +2376,7 @@ struct AppSettings: Codable, Equatable {
         if privacySaveLastDraft != def.privacySaveLastDraft { empty.privacySaveLastDraft = privacySaveLastDraft }
         if privacyProtectScreen != def.privacyProtectScreen { empty.privacyProtectScreen = privacyProtectScreen }
         if privacyMediaBlurRadius != def.privacyMediaBlurRadius { empty.privacyMediaBlurRadius = privacyMediaBlurRadius }
+        if privacyContactDeletion != def.privacyContactDeletion { empty.privacyContactDeletion = privacyContactDeletion }
         if notificationMode != def.notificationMode { empty.notificationMode = notificationMode }
         if notificationPreviewMode != def.notificationPreviewMode { empty.notificationPreviewMode = notificationPreviewMode }
         if webrtcPolicyRelay != def.webrtcPolicyRelay { empty.webrtcPolicyRelay = webrtcPolicyRelay }
@@ -2413,6 +2415,7 @@ struct AppSettings: Codable, Equatable {
             privacySaveLastDraft: true,
             privacyProtectScreen: false,
             privacyMediaBlurRadius: 0,
+            privacyContactDeletion: .ask,
             notificationMode: AppSettingsNotificationMode.instant,
             notificationPreviewMode: NotificationPreviewMode.message,
             webrtcPolicyRelay: true,

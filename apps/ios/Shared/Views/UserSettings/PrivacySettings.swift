@@ -27,6 +27,7 @@ struct PrivacySettings: View {
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var currentLAMode = privacyLocalAuthModeDefault.get()
     @AppStorage(DEFAULT_PRIVACY_MEDIA_BLUR_RADIUS) private var privacyMediaBlurRadius: Int = 0
+    @AppStorage(DEFAULT_PRIVACY_CONTACT_DELETION) private var contactDeletion: ContactDeletion = .ask
     @State private var contactReceipts = false
     @State private var contactReceiptsReset = false
     @State private var contactReceiptsOverrides = 0
@@ -86,8 +87,16 @@ struct PrivacySettings: View {
                     settingsRow("link", color: theme.colors.secondary) {
                         Toggle("Remove link tracking", isOn: $privacySanitizeLinks)
                     }
+                    settingsRow("person.badge.minus", color: theme.colors.secondary) {
+                        WrappedPicker("Contact deletion", selection: $contactDeletion) {
+                            ForEach(ContactDeletion.allCases) { Text($0.text) }
+                        }
+                    }
                 } header: {
                     Text("Chats")
+                        .foregroundColor(theme.colors.secondary)
+                } footer: {
+                    Text("Ask: choose each time whether the contact is notified.")
                         .foregroundColor(theme.colors.secondary)
                 }
 
@@ -495,6 +504,20 @@ enum LAMode: String, Identifiable, CaseIterable {
         switch self {
         case .system: return "System"
         case .passcode: return "Passcode"
+        }
+    }
+}
+
+enum ContactDeletion: String, Codable, CaseIterable, Identifiable {
+    case notify
+    case ask
+
+    var id: Self { self }
+
+    var text: LocalizedStringKey {
+        switch self {
+        case .notify: "Notify"
+        case .ask: "Ask"
         }
     }
 }
