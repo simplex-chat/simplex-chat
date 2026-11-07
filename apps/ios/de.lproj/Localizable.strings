@@ -414,11 +414,17 @@ time interval */
 /* No comment provided by engineer. */
 "A new random profile will be shared." = "Es wird ein neues Zufallsprofil geteilt.";
 
+/* alert message */
+"A purchase is being added to this profile. Try again later." = "Ein Kauf wird diesem Profil hinzugefügt. Versuchen Sie es später erneut.";
+
 /* No comment provided by engineer. */
 "A separate TCP connection will be used **for each chat profile you have in the app**." = "**Für jedes von Ihnen in der App genutzte Chat-Profil** wird eine separate TCP-Verbindung (und SOCKS-Berechtigung) genutzt.";
 
 /* No comment provided by engineer. */
 "A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "**Für jeden Kontakt und jedes Gruppenmitglied** wird eine separate TCP-Verbindung genutzt.\n**Bitte beachten Sie**: Wenn Sie viele Verbindungen haben, kann der Batterieverbrauch und die Datennutzung wesentlich höher sein und einige Verbindungen können scheitern.";
+
+/* alert message */
+"A store purchase is being added to this profile." = "Ein Kauf aus dem Store wird diesem Profil hinzugefügt.";
 
 /* No comment provided by engineer. */
 "Abort" = "Beenden";
@@ -534,6 +540,9 @@ swipe action */
 
 /* placeholder for sending contact request */
 "Add message" = "Nachricht hinzufügen";
+
+/* No comment provided by engineer. */
+"Add moderators and sign every message." = "Moderatoren hinzufügen und jede Nachricht signieren.";
 
 /* No comment provided by engineer. */
 "Add profile" = "Profil hinzufügen";
@@ -854,6 +863,9 @@ swipe action */
 "Appearance" = "Darstellung";
 
 /* No comment provided by engineer. */
+"Apple did not sign this purchase, so it cannot be verified." = "Apple hat diesen Kauf nicht signiert, daher kann er nicht verifiziert werden.";
+
+/* No comment provided by engineer. */
 "Apply" = "Anwenden";
 
 /* No comment provided by engineer. */
@@ -971,6 +983,9 @@ swipe action */
 "Badge ledger" = "Badge-Verlauf";
 
 /* alert title */
+"Badge payment problem" = "Problem bei der Badge-Bezahlung";
+
+/* alert title */
 "Badge renewal failed" = "Badge-Verlängerung fehlgeschlagen";
 
 /* ledger entry field */
@@ -993,6 +1008,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Because we destroyed the power to know who you are. So that your power can never be taken." = "Weil wir die Macht zerstört haben, zu wissen, wer Sie sind. Damit Ihnen Ihre Macht niemals genommen werden kann.";
+
+/* No comment provided by engineer. */
+"Benefits" = "Vorteile";
 
 /* No comment provided by engineer. */
 "Better calls" = "Verbesserte Anrufe";
@@ -1120,6 +1138,9 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "Businesses" = "Unternehmen";
+
+/* alert message */
+"Buy badges in the App Store version of the app." = "Kaufen Sie Badges in der App-Store-Version der App.";
 
 /* No comment provided by engineer. */
 "Buy in browser" = "Im Browser kaufen";
@@ -1923,9 +1944,6 @@ server test step */
 "Crowdfunding on Wefunder" = "Crowdfunding auf Wefunder";
 
 /* No comment provided by engineer. */
-"Crowdfunding on Wefunder." = "Crowdfunding auf Wefunder.";
-
-/* No comment provided by engineer. */
 "Current conditions text couldn't be loaded, you can review conditions via this link:" = "Der Text der aktuellen Nutzungsbedingungen konnte nicht geladen werden. Sie können die Nutzungsbedingungen unter diesem Link einsehen:";
 
 /* No comment provided by engineer. */
@@ -2506,6 +2524,9 @@ chat item action */
 "Enable for all" = "Für Alle aktivieren";
 
 /* No comment provided by engineer. */
+"Enable in Appearance settings." = "In den Einstellungen unter \"Darstellung\" aktivieren.";
+
+/* No comment provided by engineer. */
 "Enable in direct chats (BETA)!" = "Kann in direkten Chats aktiviert werden (BETA)!";
 
 /* No comment provided by engineer. */
@@ -2622,11 +2643,17 @@ chat item action */
 /* No comment provided by engineer. */
 "ended" = "beendet";
 
+/* No comment provided by engineer. */
+"Ended" = "Beendet";
+
 /* call status */
 "ended call %@" = "Anruf beendet %@";
 
 /* No comment provided by engineer. */
 "Ends" = "Endet";
+
+/* No comment provided by engineer. */
+"Ends %@" = "Endet am %@";
 
 /* No comment provided by engineer. */
 "Ends on %@." = "Endet am %@.";
@@ -3125,7 +3152,13 @@ server test error */
 "Files up to 2 GB" = "Dateien bis zu 2 GB";
 
 /* No comment provided by engineer. */
+"Files up to 2 GB, stored for 7 days." = "Dateien bis zu 2 GB, für 7 Tage gespeichert.";
+
+/* No comment provided by engineer. */
 "Files up to 5 GB" = "Dateien bis zu 5 GB";
+
+/* No comment provided by engineer. */
+"Files up to 5 GB, stored for 21 days." = "Dateien bis zu 5 GB, für 21 Tage gespeichert.";
 
 /* No comment provided by engineer. */
 "Filter" = "Filter";
@@ -3175,6 +3208,9 @@ server test error */
 
 /* No comment provided by engineer. */
 "Fix not supported by group member" = "Reparatur wird vom Gruppenmitglied nicht unterstützt";
+
+/* No comment provided by engineer. */
+"Flat layout and markdown" = "Flaches Layout und Markdown";
 
 /* No comment provided by engineer. */
 "Follow SimpleX Network News" = "Folgen Sie den SimpleX-Netzwerk-Neuigkeiten";
@@ -3398,9 +3434,6 @@ servers warning */
 
 /* No comment provided by engineer. */
 "Help admins moderating their groups." = "Helfen Sie Administratoren bei der Moderation ihrer Gruppen.";
-
-/* No comment provided by engineer. */
-"Help keep the network running — send files up to 2 GB." = "Unterstützen Sie den Betrieb des Netzwerks und senden Sie Dateien bis zu 2 GB.";
 
 /* No comment provided by engineer. */
 "Hidden" = "Verborgen";
@@ -3676,6 +3709,12 @@ servers warning */
 "Invalid status" = "Ungültiger Status";
 
 /* No comment provided by engineer. */
+"Invest $100+ and get a free badge." = "Investieren Sie ab $100 und erhalten Sie einen kostenlosen Badge.";
+
+/* No comment provided by engineer. */
+"Invest $1000+ and get a free legend badge." = "Investieren Sie ab $1000 und erhalten Sie einen kostenlosen Legenden-Badge.";
+
+/* No comment provided by engineer. */
 "Invest in SimpleX Chat!" = "Investieren Sie in SimpleX-Chat!";
 
 /* badge type */
@@ -3829,6 +3868,9 @@ servers warning */
 "Large file!" = "Große Datei!";
 
 /* No comment provided by engineer. */
+"Larger files available for longer." = "Größere Dateien, die länger verfügbar bleiben.";
+
+/* No comment provided by engineer. */
 "Larger files that stay available longer." = "Größere Dateien, die länger verfügbar bleiben.";
 
 /* No comment provided by engineer. */
@@ -3836,6 +3878,9 @@ servers warning */
 
 /* badge alert button */
 "Learn more" = "Mehr erfahren";
+
+/* No comment provided by engineer. */
+"Learn more on Wefunder" = "Mehr erfahren auf Wefunder";
 
 /* swipe action */
 "Leave" = "Verlassen";
@@ -3953,6 +3998,9 @@ servers warning */
 
 /* No comment provided by engineer. */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Stellen Sie sicher, dass die WebRTC ICE-Server Adressen das richtige Format haben, zeilenweise getrennt und nicht doppelt vorhanden sind.";
+
+/* No comment provided by engineer. */
+"Manage subscription" = "Abonnement verwalten";
 
 /* No comment provided by engineer. */
 "Manage your relays." = "Ihre Relais verwalten.";
@@ -4401,6 +4449,9 @@ servers warning */
 /* Authentication unavailable */
 "No app password" = "Kein App-Passwort";
 
+/* alert message */
+"No App Store purchase waiting to be added was found." = "Es wurde kein ausstehender App-Store-Kauf gefunden, der hinzugefügt werden kann.";
+
 /* No comment provided by engineer. */
 "No available relays" = "Keine verfügbaren Relais";
 
@@ -4491,6 +4542,9 @@ servers warning */
 /* No comment provided by engineer. */
 "No relays" = "Keine Relais";
 
+/* No comment provided by engineer. */
+"No renewal: the badge ends when the prepaid months run out." = "Keine Verlängerung: Der Badge endet, wenn die vorausbezahlten Monate aufgebraucht sind.";
+
 /* servers error */
 "No servers for private message routing." = "Keine Router für privates Nachrichten-Routing.";
 
@@ -4559,6 +4613,9 @@ servers warning */
 
 /* alert title */
 "Nothing to forward!" = "Es gibt nichts zum Weiterleiten!";
+
+/* alert title */
+"Nothing to restore" = "Nichts zum Wiederherstellen vorhanden";
 
 /* No comment provided by engineer. */
 "Notifications" = "Benachrichtigungen";
@@ -4800,6 +4857,12 @@ alert button */
 /* alert message */
 "Other file errors:\n%@" = "Andere(r) Datei-Fehler:\n%@";
 
+/* No comment provided by engineer. */
+"Own a part of SimpleX Chat" = "Werden Sie Miteigentümer von SimpleX Chat";
+
+/* No comment provided by engineer. */
+"Own a part of SimpleX Chat! 🚀" = "Werden Sie Miteigentümer von SimpleX Chat! 🚀";
+
 /* member role */
 "owner" = "Eigentümer";
 
@@ -4868,6 +4931,12 @@ alert button */
 
 /* No comment provided by engineer. */
 "Pay %@/year" = "Bezahlen Sie %@/Jahr";
+
+/* No comment provided by engineer. */
+"Payment failed. Update your payment method in the App Store." = "Zahlung fehlgeschlagen. Aktualisieren Sie Ihre Zahlungsmethode im App Store.";
+
+/* No comment provided by engineer. */
+"Payment problem" = "Zahlungsproblem";
 
 /* No comment provided by engineer. */
 "peer-to-peer" = "Peer-to-Peer";
@@ -4967,9 +5036,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Port" = "Port";
-
-/* No comment provided by engineer. */
-"Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out." = "Für vorausbezahlte Monate gibt es kein Abrechnungsdatum. Der Badge wird monatlich aus Ihrem Guthaben erneuert und endet, wenn dieses aufgebraucht ist.";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Den letzten Nachrichtenentwurf, auch mit seinen Anhängen, aufbewahren.";
@@ -5127,6 +5193,9 @@ alert title */
 
 /* No comment provided by engineer. */
 "Purchase ID" = "Kauf-ID";
+
+/* alert message */
+"Purchases are off on this device." = "Käufe sind auf diesem Gerät deaktiviert.";
 
 /* No comment provided by engineer. */
 "Push notifications" = "Push-Benachrichtigungen";
@@ -5395,7 +5464,34 @@ swipe action */
 "Renegotiate encryption?" = "Verschlüsselung neu aushandeln?";
 
 /* No comment provided by engineer. */
+"Renewing" = "Wird verlängert…";
+
+/* No comment provided by engineer. */
+"Renews %@" = "Verlängert sich am %@";
+
+/* No comment provided by engineer. */
+"Renews %@ · %@" = "Verlängert sich am %@ · %@";
+
+/* No comment provided by engineer. */
+"Renews at %@ a month until you cancel it in the App Store." = "Verlängert sich zu %@ pro Monat, bis Sie es im App Store kündigen.";
+
+/* No comment provided by engineer. */
+"Renews at %@ a year until you cancel it in the App Store." = "Verlängert sich zu %@ pro Jahr, bis Sie es im App Store kündigen.";
+
+/* No comment provided by engineer. */
+"Renews automatically until you cancel it in the App Store." = "Verlängert sich automatisch, bis Sie es im App Store kündigen.";
+
+/* No comment provided by engineer. */
+"Renews on %@ for %@." = "Verlängert sich am %@ für %@.";
+
+/* No comment provided by engineer. */
+"Renews on %@." = "Verlängert sich am %@.";
+
+/* No comment provided by engineer. */
 "Renews on %@. Cancel anytime." = "Verlängert sich am %@. Jederzeit kündbar.";
+
+/* No comment provided by engineer. */
+"Renews once the App Store charges your subscription." = "Wird verlängert, sobald der App Store die Zahlung für Ihr Abonnement einzieht.";
 
 /* No comment provided by engineer. */
 "Repeat download" = "Herunterladen wiederholen";
@@ -5508,6 +5604,12 @@ swipe action */
 /* No comment provided by engineer. */
 "Restore database error" = "Fehler bei der Wiederherstellung der Datenbank";
 
+/* alert title */
+"Restore failed" = "Wiederherstellung fehlgeschlagen";
+
+/* No comment provided by engineer. */
+"Restore purchases" = "Käufe wiederherstellen";
+
 /* alert action */
 "Retry" = "Wiederholen";
 
@@ -5566,13 +5668,16 @@ swipe action */
 "Safely receive files" = "Dateien sicher herunterladen";
 
 /* No comment provided by engineer. */
+"Safer channels" = "Sicherere Kanäle";
+
+/* No comment provided by engineer. */
 "Safer groups" = "Sicherere Gruppen";
+
+/* No comment provided by engineer. */
+"Sale starts on December 12." = "Der Verkauf startet am 12. Dezember.";
 
 /* alert title */
 "Sandbox purchase" = "Test-Kauf";
-
-/* alert message */
-"Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app." = "Test-Käufe werden nicht angerechnet. Badges können nur in der App-Store-Version der App gekauft werden.";
 
 /* alert action
 alert button
@@ -6227,6 +6332,9 @@ copied message info */
 "SimpleX protocols reviewed by Trail of Bits." = "Die SimpleX-Protokolle wurden von Trail of Bits überprüft.";
 
 /* No comment provided by engineer. */
+"SimpleX public names" = "Öffentliche SimpleX-Namen";
+
+/* No comment provided by engineer. */
 "SimpleX public names (BETA)" = "Öffentliche SimpleX-Namen (BETA)";
 
 /* simplex link type */
@@ -6368,6 +6476,9 @@ report reason */
 /* No comment provided by engineer. */
 "Subscribed" = "Abonniert";
 
+/* alert message */
+"Subscribed on another profile." = "Auf einem anderen Profil abonniert.";
+
 /* member role */
 "subscriber" = "Abonnent";
 
@@ -6414,6 +6525,15 @@ report reason */
 "Subscribers use relay link to connect to the channel.\nRelay address was used to set up this relay for the channel." = "Abonnenten verbinden sich über den Relais‑Link mit dem Kanal.\nDie Relais-Adresse wurde zur Einrichtung dieses Relais für diesen Kanal verwendet.";
 
 /* No comment provided by engineer. */
+"Subscription" = "Abonnement";
+
+/* alert title */
+"Subscription cancelled" = "Abonnement gekündigt";
+
+/* No comment provided by engineer. */
+"Subscription ended. The badge will be removed." = "Abonnement beendet. Der Badge wird entfernt.";
+
+/* No comment provided by engineer. */
 "Subscription errors" = "Fehler beim Abonnieren";
 
 /* No comment provided by engineer. */
@@ -6422,6 +6542,9 @@ report reason */
 /* alert button
 alert title */
 "Support SimpleX" = "SimpleX unterstützen";
+
+/* No comment provided by engineer. */
+"Support SimpleX and get a badge." = "Unterstützen Sie SimpleX und erhalten Sie einen Badge.";
 
 /* No comment provided by engineer. */
 "Support SimpleX to send larger files that stay available longer" = "Unterstützen Sie SimpleX, um größere Dateien zu senden, die länger verfügbar bleiben";
@@ -6436,10 +6559,7 @@ alert title */
 "supporter badge" = "Unterstützer-Badge";
 
 /* No comment provided by engineer. */
-"Supporter badge ❤️" = "Unterstützer-Badge ❤️";
-
-/* No comment provided by engineer. */
-"Supporter perks" = "Vorteile für Unterstützer";
+"Supporter badges" = "Unterstützer-Badges";
 
 /* No comment provided by engineer. */
 "Supporter: 2 GB files available for 7 days." = "Unterstützer: Dateien bis 2 GB sind 7 Tage lang verfügbar.";
@@ -6709,11 +6829,11 @@ server test failure */
 /* alert message */
 "The store could not be reached." = "Der Store konnte nicht erreicht werden.";
 
+/* No comment provided by engineer. */
+"The store could not charge your payment method." = "Der Store konnte Ihre Zahlungsmethode nicht belasten.";
+
 /* alert message */
 "The store did not confirm this purchase." = "Der Store hat diesen Kauf nicht bestätigt.";
-
-/* No comment provided by engineer. */
-"The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store." = "Der Store hat eine nicht von Apple signierte Transaktion zurückgegeben. SimpleX kann diesen Kauf daher nicht mit dem App Store verifizieren.";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Der von Ihnen eingefügte Text ist kein SimpleX-Link.";
@@ -6759,9 +6879,6 @@ server test failure */
 
 /* alert message */
 "This app version cannot verify this badge. Please update the app." = "Diese App-Version kann diesen Badge nicht überprüfen. Bitte aktualisieren Sie die App.";
-
-/* alert message */
-"This app version is too old for the badge service. Please update the app." = "Diese App-Version ist für den Badge-Dienst zu alt. Bitte aktualisieren Sie die App.";
 
 /* badge alert */
 "This badge could not be verified and may not be genuine." = "Dieser Badge konnte nicht verifiziert werden und ist möglicherweise nicht echt.";
@@ -6819,9 +6936,6 @@ alert subtitle */
 "This is your link for channel %@!" = "Dies ist Ihr Link für den Kanal %@!";
 
 /* No comment provided by engineer. */
-"This link is not supported by this app version. Please check for app updates." = "Dieser Link wird von dieser App-Version nicht unterstützt. Bitte prüfen Sie, ob ein App-Update verfügbar ist.";
-
-/* No comment provided by engineer. */
 "This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." = "Für diesen Link wird eine neuere App-Version benötigt. Bitte aktualisieren Sie die App oder bitten Sie Ihren Kontakt einen kompatiblen Link zu senden.";
 
 /* No comment provided by engineer. */
@@ -6834,10 +6948,10 @@ alert subtitle */
 "This profile already has a badge." = "Dieses Profil hat bereits einen Badge.";
 
 /* alert message */
-"This profile already has a badge. Redeem the code on another profile, or once this badge ends." = "Dieses Profil verfügt bereits über einen Badge. Lösen Sie den Code in einem anderen Profil ein oder warten Sie, bis dieser Badge abgelaufen ist.";
+"This purchase is already used on another profile." = "Dieser Kauf wird bereits auf einem anderen Profil verwendet.";
 
 /* alert message */
-"This purchase was already credited to a badge on another device or profile." = "Dieser Kauf wurde bereits einem Badge auf einem anderen Gerät oder Profil gutgeschrieben.";
+"This purchase was moved to another device or profile recently." = "Dieser Kauf wurde kürzlich auf ein anderes Gerät oder Profil übertragen.";
 
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Diese Einstellung gilt für Nachrichten in Ihrem aktuellen Chat-Profil **%@**.";
@@ -7086,7 +7200,13 @@ alert subtitle */
 "Update settings?" = "Einstellungen aktualisieren?";
 
 /* No comment provided by engineer. */
+"Update the app to open this link." = "Aktualisieren Sie die App, um diesen Link zu öffnen.";
+
+/* No comment provided by engineer. */
 "Update the app to register a SimpleX domain" = "Aktualisieren Sie die App, um eine SimpleX-Domain registrieren zu können";
+
+/* alert message */
+"Update the app to use badges." = "Aktualisieren Sie die App, um Badges zu verwenden.";
 
 /* rcv group event chat item */
 "updated channel profile" = "Kanalprofil aktualisiert";
@@ -7489,6 +7609,9 @@ alert title */
 "You allow" = "Sie erlauben";
 
 /* No comment provided by engineer. */
+"You already have a badge!" = "Sie haben bereits einen Badge!";
+
+/* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "Sie haben schon ein Chat-Profil mit dem gleichen Anzeigenamen. Bitte wählen Sie einen anderen Namen aus.";
 
 /* new chat alert */
@@ -7586,12 +7709,6 @@ alert title */
 
 /* notification body */
 "You can now chat with %@" = "Sie können nun Nachrichten an %@ versenden";
-
-/* No comment provided by engineer. */
-"You can now invest in SimpleX Chat" = "Sie können nun in SimpleX-Chat investieren";
-
-/* No comment provided by engineer. */
-"You can now invest in SimpleX Chat! 🚀" = "Sie können nun in SimpleX-Chat investieren! 🚀";
 
 /* No comment provided by engineer. */
 "You can send messages to %@ from Archived contacts." = "Sie können aus den archivierten Kontakten heraus Nachrichten an %@ versenden.";
@@ -7761,6 +7878,9 @@ alert title */
 /* No comment provided by engineer. */
 "Your badge" = "Ihr Badge";
 
+/* No comment provided by engineer. */
+"Your badge could not be renewed." = "Ihr Badge konnte nicht verlängert werden.";
+
 /* alert title */
 "Your badge expired" = "Ihr Badge ist abgelaufen";
 
@@ -7769,6 +7889,15 @@ alert title */
 
 /* file alert */
 "Your badge expired." = "Ihr Badge ist abgelaufen.";
+
+/* alert title */
+"Your badge renews soon" = "Ihr Badge wird bald verlängert";
+
+/* No comment provided by engineer. */
+"Your badge stays until %@." = "Ihr Badge bleibt bis %@ aktiv.";
+
+/* No comment provided by engineer. */
+"Your badge subscription ended on %@." = "Ihr Abonnement für den Badge endete am %@.";
 
 /* No comment provided by engineer. */
 "Your business contact" = "Ihr geschäftlicher Kontakt";
@@ -7823,6 +7952,9 @@ alert title */
 
 /* No comment provided by engineer. */
 "Your ICE servers" = "Ihre ICE-Server";
+
+/* No comment provided by engineer. */
+"Your legend badge" = "Ihr Legenden-Badge";
 
 /* No comment provided by engineer. */
 "Your network" = "Ihr Netzwerk";
@@ -7883,4 +8015,10 @@ alert title */
 
 /* No comment provided by engineer. */
 "Your SimpleX name" = "Ihr SimpleX-Name";
+
+/* alert title */
+"Your subscription ended" = "Ihr Abonnement ist abgelaufen";
+
+/* No comment provided by engineer. */
+"Your subscription is cancelled. The badge stays until %@." = "Ihr Abonnement wurde gekündigt. Der Badge bleibt bis %@ aktiv.";
 

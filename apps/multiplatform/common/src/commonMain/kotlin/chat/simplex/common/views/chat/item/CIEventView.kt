@@ -11,7 +11,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatItem
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.helpers.toDp
 
 @Composable
 fun CIEventView(text: AnnotatedString) {
@@ -24,7 +23,7 @@ fun chatEventTextStyle(base: TextStyle = LocalTextStyle.current): TextStyle =
 
 @Composable
 fun chatEventPadding(): PaddingValues =
-  if (LocalTerminalLayout.current) PaddingValues(start = CHAT_ITEM_TEXT_PADDING, top = TERMINAL_EVENT_TOP_GAP.toDp(), end = CHAT_ITEM_TEXT_PADDING, bottom = TERMINAL_EVENT_BOTTOM_GAP.toDp())
+  if (LocalTerminalLayout.current) PaddingValues(horizontal = CHAT_ITEM_TEXT_PADDING)
   else PaddingValues(horizontal = 6.dp, vertical = 6.dp)
 
 @Composable

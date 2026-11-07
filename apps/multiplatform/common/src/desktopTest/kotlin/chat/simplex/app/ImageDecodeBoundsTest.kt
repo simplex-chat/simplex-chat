@@ -69,10 +69,28 @@ class ImageDecodeBoundsTest {
     assertTrue(image.width >= 1000, "expected smaller side kept at or above target, got ${image.width}")
   }
 
-  private fun encodePng(width: Int, height: Int): ByteArray {
+  @Test
+  fun testDecodeAcceptsOnlyFormatsSentByApps() {
+    for (format in listOf("png", "jpg", "gif")) {
+      assertEquals(2, decodeBoundedBufferedImage(encodeImage(2, 2, format), 4320).width)
+    }
+    assertFailsWith<IOException> { decodeBoundedBufferedImage(encodeImage(2, 2, "bmp"), 4320) }
+    val bmp = ByteArray(54).also {
+      "BM".toByteArray().copyInto(it)
+      it[2] = 54; it[10] = 54; it[14] = 40
+      it[18] = 2; it[22] = 2; it[26] = 1
+      it[30] = 5
+      it[34] = -1; it[35] = -1; it[36] = -1; it[37] = 0x7f
+    }
+    assertFailsWith<IOException> { decodeBoundedBufferedImage(bmp, 4320) }
+  }
+
+  private fun encodePng(width: Int, height: Int): ByteArray = encodeImage(width, height, "png")
+
+  private fun encodeImage(width: Int, height: Int, format: String): ByteArray {
     val image = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
     return ByteArrayOutputStream().use { out ->
-      ImageIO.write(image, "png", out)
+      ImageIO.write(image, format, out)
       out.toByteArray()
     }
   }

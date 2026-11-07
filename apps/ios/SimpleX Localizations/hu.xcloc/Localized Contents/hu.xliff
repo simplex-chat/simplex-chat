@@ -455,6 +455,16 @@ channel relay bar</note>
         <target>%u üzenet kihagyva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="(chat)" xml:space="preserve">
+        <source>(chat)</source>
+        <target>(csevegés)</target>
+        <note>chat layout</note>
+      </trans-unit>
+      <trans-unit id="(default)" xml:space="preserve">
+        <source>(default)</source>
+        <target>(alapértelmezett)</target>
+        <note>chat layout</note>
+      </trans-unit>
       <trans-unit id="(from owner)" xml:space="preserve">
         <source>(from owner)</source>
         <target>(a tulajdonostól)</target>
@@ -690,6 +700,11 @@ time interval</note>
         <target>Egy új, véletlenszerű profil lesz megosztva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="A purchase is being added to this profile. Try again later." xml:space="preserve">
+        <source>A purchase is being added to this profile. Try again later.</source>
+        <target>Egy vásárlás hozzáadása folyamatban van ehhez a profilhoz. Próbálja újra később.</target>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve">
         <source>A separate TCP connection will be used **for each chat profile you have in the app**.</source>
         <target>**Az összes csevegési profiljához az alkalmazásban** külön TCP-kapcsolat lesz használva.</target>
@@ -701,6 +716,11 @@ time interval</note>
         <target>**Az összes partneréhez és csoporttaghoz** külön TCP-kapcsolat lesz használva.
 **Megjegyzés**: ha sok kapcsolata van, akkor az akkumulátor-használat és az adatforgalom jelentősen megnövekedhet, és néhány kapcsolódási kísérlet sikertelen lehet.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="A store purchase is being added to this profile." xml:space="preserve">
+        <source>A store purchase is being added to this profile.</source>
+        <target>Egy áruházi vásárlás hozzáadása folyamatban van ehhez a profilhoz.</target>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Abort" xml:space="preserve">
         <source>Abort</source>
@@ -850,6 +870,11 @@ swipe action</note>
         <source>Add message</source>
         <target>Üzenet hozzáadása</target>
         <note>placeholder for sending contact request</note>
+      </trans-unit>
+      <trans-unit id="Add moderators and sign every message." xml:space="preserve">
+        <source>Add moderators and sign every message.</source>
+        <target>Moderátorok hozzáadása a csatornákhoz és minden üzenet aláírása.</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add profile" xml:space="preserve">
         <source>Add profile</source>
@@ -1341,6 +1366,11 @@ swipe action</note>
         <target>Megjelenés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Apple did not sign this purchase, so it cannot be verified." xml:space="preserve">
+        <source>Apple did not sign this purchase, so it cannot be verified.</source>
+        <target>Az Apple nem írta alá ezt a vásárlást, ezért nem ellenőrizhető.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Apply" xml:space="preserve">
         <source>Apply</source>
         <target>Alkalmaz</target>
@@ -1506,6 +1536,11 @@ swipe action</note>
         <target>Kitűzők nyilvántartása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Badge payment problem" xml:space="preserve">
+        <source>Badge payment problem</source>
+        <target>Kitűzőfizetési probléma</target>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Badge renewal failed" xml:space="preserve">
         <source>Badge renewal failed</source>
         <target>Nem sikerült megújítani a kitűzőt</target>
@@ -1546,6 +1581,11 @@ a saját hálózatában</target>
       <trans-unit id="Because we destroyed the power to know who you are. So that your power can never be taken." xml:space="preserve">
         <source>Because we destroyed the power to know who you are. So that your power can never be taken.</source>
         <target>Mert felszámoltuk a lehetőségét is annak, hogy megtudjuk, Ön kicsoda. Így az önrendelkezése soha nem kerülhet idegen kezekbe.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Benefits" xml:space="preserve">
+        <source>Benefits</source>
+        <target>Előnyök</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better calls" xml:space="preserve">
@@ -1738,9 +1778,14 @@ a saját hálózatában</target>
         <target>Üzleti</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Buy badges in the App Store version of the app." xml:space="preserve">
+        <source>Buy badges in the App Store version of the app.</source>
+        <target>Kitűzőt az alkalmazás App Store-verziójában vásárolhat.</target>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Buy in browser" xml:space="preserve">
         <source>Buy in browser</source>
-        <target>Vásárlás a böngészőben</target>
+        <target>Vásárlás böngészőben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
@@ -2077,6 +2122,11 @@ alert subtitle</note>
         <target>A csevegés megállt. Ha ezt az adatbázist már használta egy másik eszközön, akkor a csevegés elindítása előtt vissza kell állítania azt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Chat layout" xml:space="preserve">
+        <source>Chat layout</source>
+        <target>Csevegés elrendezése</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chat list" xml:space="preserve">
         <source>Chat list</source>
         <target>Csevegési lista</target>
@@ -2252,6 +2302,11 @@ chat toolbar</note>
         <source>Chunks uploaded</source>
         <target>Feltöltött töredékek</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Classic" xml:space="preserve">
+        <source>Classic</source>
+        <target>Klasszikus</target>
+        <note>chat layout</note>
       </trans-unit>
       <trans-unit id="Clear" xml:space="preserve">
         <source>Clear</source>
@@ -2720,6 +2775,11 @@ Ez a saját egyszer használható meghívója!</target>
         <target>Közreműködés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Contributor" xml:space="preserve">
+        <source>Contributor</source>
+        <target>Közreműködő</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Conversation deleted!" xml:space="preserve">
         <source>Conversation deleted!</source>
         <target>Beszélgetés törölve!</target>
@@ -2893,11 +2953,6 @@ Ez a saját egyszer használható meghívója!</target>
       <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve">
         <source>Crowdfunding on Wefunder</source>
         <target>Közösségi finanszírozás a Wefunder oldalon</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Crowdfunding on Wefunder." xml:space="preserve">
-        <source>Crowdfunding on Wefunder.</source>
-        <target>Közösségi finanszírozás a Wefunder oldalon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current Passcode" xml:space="preserve">
@@ -3796,6 +3851,11 @@ chat item action</note>
         <target>Engedélyezés az összes tag számára</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Enable in Appearance settings." xml:space="preserve">
+        <source>Enable in Appearance settings.</source>
+        <target>Engedélyezheti a megjelenési beállításokban.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enable in direct chats (BETA)!" xml:space="preserve">
         <source>Enable in direct chats (BETA)!</source>
         <target>Engedélyezés a közvetlen csevegésekben (béta)!</target>
@@ -3921,9 +3981,19 @@ chat item action</note>
         <target>Hívás vége</target>
         <note>alert action</note>
       </trans-unit>
+      <trans-unit id="Ended" xml:space="preserve">
+        <source>Ended</source>
+        <target>Lejárt</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Ends" xml:space="preserve">
         <source>Ends</source>
         <target>Lejár</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Ends %@" xml:space="preserve">
+        <source>Ends %@</source>
+        <target>Lejár ekkor: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Ends on %@." xml:space="preserve">
@@ -4731,12 +4801,22 @@ server test error</note>
       </trans-unit>
       <trans-unit id="Files up to 2 GB" xml:space="preserve">
         <source>Files up to 2 GB</source>
-        <target>Legfeljebb 2 GB méretű fájlok</target>
+        <target>Legfeljebb 2 GB méretű fájlok küldése</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Files up to 2 GB, stored for 7 days." xml:space="preserve">
+        <source>Files up to 2 GB, stored for 7 days.</source>
+        <target>Legfeljebb 2 GB méretű fájlok küldése 7 napos tárolással.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Files up to 5 GB" xml:space="preserve">
         <source>Files up to 5 GB</source>
-        <target>Legfeljebb 5 GB méretű fájlok</target>
+        <target>Legfeljebb 5 GB méretű fájlok küldése</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Files up to 5 GB, stored for 21 days." xml:space="preserve">
+        <source>Files up to 5 GB, stored for 21 days.</source>
+        <target>Legfeljebb 5 GB méretű fájlok küldése 21 napos tárolással.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Filter" xml:space="preserve">
@@ -4818,6 +4898,16 @@ server test error</note>
       <trans-unit id="Fix not supported by group member" xml:space="preserve">
         <source>Fix not supported by group member</source>
         <target>Csoporttag általi javítás nem támogatott</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Flat" xml:space="preserve">
+        <source>Flat</source>
+        <target>Lapos</target>
+        <note>chat layout</note>
+      </trans-unit>
+      <trans-unit id="Flat layout and markdown" xml:space="preserve">
+        <source>Flat layout and markdown</source>
+        <target>Lapos elrendezés és markdown formázás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Follow SimpleX Network News" xml:space="preserve">
@@ -5163,11 +5253,6 @@ Hiba: %2$@</target>
       <trans-unit id="Help admins moderating their groups." xml:space="preserve">
         <source>Help admins moderating their groups.</source>
         <target>Segítsen az adminisztrátoroknak a csoportjaik moderálásában.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Help keep the network running — send files up to 2 GB." xml:space="preserve">
-        <source>Help keep the network running — send files up to 2 GB.</source>
-        <target>Segítsen fenntartani a hálózat működését és küldjön akár 2 GB méretű fájlokat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hidden" xml:space="preserve">
@@ -5584,6 +5669,16 @@ További fejlesztések hamarosan!</target>
         <target>Érvénytelen állapot</target>
         <note>item status text</note>
       </trans-unit>
+      <trans-unit id="Invest $100+ and get a free badge." xml:space="preserve">
+        <source>Invest $100+ and get a free badge.</source>
+        <target>Fektessen be legalább 100 dollárt, és szerezzen egy ingyenes kitűzőt.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Invest $1000+ and get a free legend badge." xml:space="preserve">
+        <source>Invest $1000+ and get a free legend badge.</source>
+        <target>Fektessen be legalább 1000 dollárt, és szerezzen egy ingyenes legendás kitűzőt.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Invest in SimpleX Chat!" xml:space="preserve">
         <source>Invest in SimpleX Chat!</source>
         <target>Fektessen be a SimpleX Chatbe!</target>
@@ -5802,6 +5897,11 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Nagy fájl!</target>
         <note>file alert title</note>
       </trans-unit>
+      <trans-unit id="Larger files available for longer." xml:space="preserve">
+        <source>Larger files available for longer.</source>
+        <target>A nagyméretű fájlok hosszabb ideig érhetők el az átjátszókon.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Larger files that stay available longer." xml:space="preserve">
         <source>Larger files that stay available longer.</source>
         <target>Nagyméretű fájlok küldése, amelyek tovább maradnak elérhetők az átjátszókon.</target>
@@ -5816,6 +5916,16 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <source>Learn more</source>
         <target>Tudjon meg többet</target>
         <note>badge alert button</note>
+      </trans-unit>
+      <trans-unit id="Learn more on Wefunder" xml:space="preserve">
+        <source>Learn more on Wefunder</source>
+        <target>Tudjon meg többet a Wefunder oldalon</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Learn more." xml:space="preserve">
+        <source>Learn more.</source>
+        <target>Tudjon meg többet.</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Leave" xml:space="preserve">
         <source>Leave</source>
@@ -5990,6 +6100,11 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
       <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
         <source>Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated.</source>
         <target>Győződjön meg arról, hogy a megadott WebRTC ICE-kiszolgálók címei megfelelő formátumúak, soronként elkülönítettek, és nincsenek duplikálva.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Manage subscription" xml:space="preserve">
+        <source>Manage subscription</source>
+        <target>Előfizetés kezelése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Manage your relays." xml:space="preserve">
@@ -6387,6 +6502,11 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Moderálva: %@</target>
         <note>copied message info</note>
       </trans-unit>
+      <trans-unit id="Moderator" xml:space="preserve">
+        <source>Moderator</source>
+        <target>Moderátor</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Monthly" xml:space="preserve">
         <source>Monthly</source>
         <target>Havonta</target>
@@ -6624,6 +6744,11 @@ hogy ki kivel beszélget</target>
         <target>Új kiszolgáló</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="New subscribers will see earlier messages as unsigned." xml:space="preserve">
+        <source>New subscribers will see earlier messages as unsigned.</source>
+        <target>Az új feliratkozók a korábbi üzeneteket aláíratlanként látják.</target>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Next check" xml:space="preserve">
         <source>Next check</source>
         <target>Következő ellenőrzés</target>
@@ -6633,6 +6758,11 @@ hogy ki kivel beszélget</target>
         <source>No</source>
         <target>Nem</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No App Store purchase waiting to be added was found." xml:space="preserve">
+        <source>No App Store purchase waiting to be added was found.</source>
+        <target>Nem található hozzáadásra váró App Store-vásárlás.</target>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="No account. No phone. No email. No ID.&#10;The most secure encryption." xml:space="preserve">
         <source>No account. No phone. No email. No ID.
@@ -6796,6 +6926,11 @@ A legbiztonságosabb titkosítás.</target>
         <target>Nincsenek átjátszók</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="No renewal: the badge ends when the prepaid months run out." xml:space="preserve">
+        <source>No renewal: the badge ends when the prepaid months run out.</source>
+        <target>Nincs megújítás: a kitűző lejár, amikor az előre fizetett hónapok elfogynak.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="No servers for private message routing." xml:space="preserve">
         <source>No servers for private message routing.</source>
         <target>Nincsenek kiszolgálók a privát üzenet-útválasztáshoz.</target>
@@ -6894,6 +7029,11 @@ A legbiztonságosabb titkosítás.</target>
       <trans-unit id="Nothing to forward!" xml:space="preserve">
         <source>Nothing to forward!</source>
         <target>Nincs mit továbbítani!</target>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Nothing to restore" xml:space="preserve">
+        <source>Nothing to restore</source>
+        <target>Nincs helyreállítható elem</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Notifications" xml:space="preserve">
@@ -7270,6 +7410,16 @@ alert button</note>
 %@</target>
         <note>alert message</note>
       </trans-unit>
+      <trans-unit id="Own a part of SimpleX Chat" xml:space="preserve">
+        <source>Own a part of SimpleX Chat</source>
+        <target>Legyen az Öné a SimpleX egy része</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Own a part of SimpleX Chat! 🚀" xml:space="preserve">
+        <source>Own a part of SimpleX Chat! 🚀</source>
+        <target>Legyen az Öné a SimpleX egy része! 🚀</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Owner" xml:space="preserve">
         <source>Owner</source>
         <target>Tulajdonos</target>
@@ -7383,6 +7533,16 @@ alert button</note>
       <trans-unit id="Pay %@/year" xml:space="preserve">
         <source>Pay %@/year</source>
         <target>Fizetés: %@/év</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Payment failed. Update your payment method in the App Store." xml:space="preserve">
+        <source>Payment failed. Update your payment method in the App Store.</source>
+        <target>Sikertelen fizetés. Frissítse a fizetési eljárást az App Store-ban.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Payment problem" xml:space="preserve">
+        <source>Payment problem</source>
+        <target>Fizetési probléma</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Pending" xml:space="preserve">
@@ -7522,11 +7682,6 @@ Hiba: %@</target>
       <trans-unit id="Port" xml:space="preserve">
         <source>Port</source>
         <target>Port</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out." xml:space="preserve">
-        <source>Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out.</source>
-        <target>Az előre fizetett hónapoknál nincs számlázási dátum. A kitűző minden hónapban újra kiállítódik a már kifizetett egyenlegből, és akkor jár le, amikor az egyenleg elfogy.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
@@ -7791,6 +7946,11 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
         <source>Purchase error</source>
         <target>Vásárlási hiba</target>
         <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Purchases are off on this device." xml:space="preserve">
+        <source>Purchases are off on this device.</source>
+        <target>Ezen az eszközön a vásárlások ki vannak kapcsolva.</target>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
         <source>Push notifications</source>
@@ -8159,9 +8319,54 @@ swipe action</note>
         <target>Újraegyezteti a titkosítást?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Renewing" xml:space="preserve">
+        <source>Renewing</source>
+        <target>Megújítás</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews %@" xml:space="preserve">
+        <source>Renews %@</source>
+        <target>Megújul ekkor: %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews %@ · %@" xml:space="preserve">
+        <source>Renews %@ · %@</source>
+        <target>Megújul ekkor: %@ · %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews at %@ a month until you cancel it in the App Store." xml:space="preserve">
+        <source>Renews at %@ a month until you cancel it in the App Store.</source>
+        <target>Havonta megújul %1$@ áron, amíg le nem mondja az App Store-ban.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews at %@ a year until you cancel it in the App Store." xml:space="preserve">
+        <source>Renews at %@ a year until you cancel it in the App Store.</source>
+        <target>Évente megújul %1$@ áron, amíg le nem mondja az App Store-ban.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews automatically until you cancel it in the App Store." xml:space="preserve">
+        <source>Renews automatically until you cancel it in the App Store.</source>
+        <target>Automatikusan megújul, amíg le nem mondja az App Store-ban.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews on %@ for %@." xml:space="preserve">
+        <source>Renews on %@ for %@.</source>
+        <target>Megújul ekkor: %@, ára: %@.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews on %@." xml:space="preserve">
+        <source>Renews on %@.</source>
+        <target>Megújul ekkor: %@.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Renews on %@. Cancel anytime." xml:space="preserve">
         <source>Renews on %@. Cancel anytime.</source>
         <target>Megújul ekkor: %@. Bármikor lemondható.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews once the App Store charges your subscription." xml:space="preserve">
+        <source>Renews once the App Store charges your subscription.</source>
+        <target>Megújul, amint az App Store kiszámlázza az előfizetését.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Repeat download" xml:space="preserve">
@@ -8324,6 +8529,16 @@ swipe action</note>
         <target>Hiba történt az adatbázis helyreállításakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Restore failed" xml:space="preserve">
+        <source>Restore failed</source>
+        <target>Nem sikerült a helyreállítás</target>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Restore purchases" xml:space="preserve">
+        <source>Restore purchases</source>
+        <target>Vásárlások helyreállítása</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Retry" xml:space="preserve">
         <source>Retry</source>
         <target>Újrapróbálkozás</target>
@@ -8419,20 +8634,25 @@ swipe action</note>
         <target>Fájlok biztonságos fogadása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Safer channels" xml:space="preserve">
+        <source>Safer channels</source>
+        <target>Biztonságosabb csatornák</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Safer groups" xml:space="preserve">
         <source>Safer groups</source>
         <target>Biztonságosabb csoportok</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sale starts on December 12." xml:space="preserve">
+        <source>Sale starts on December 12.</source>
+        <target>Az akció december 12-én kezdődik.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sandbox purchase" xml:space="preserve">
         <source>Sandbox purchase</source>
         <target>Tesztkörnyezeti vásárlás</target>
         <note>alert title</note>
-      </trans-unit>
-      <trans-unit id="Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app." xml:space="preserve">
-        <source>Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app.</source>
-        <target>A tesztkörnyezeti vásárlások nem lesznek jóváírva. Kitűzőt csak az App Store-ból származó alkalmazásverzióban lehet vásárolni.</target>
-        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
         <source>Save</source>
@@ -8911,6 +9131,11 @@ chat item action</note>
         <target>Elküldve: %@</target>
         <note>copied message info</note>
       </trans-unit>
+      <trans-unit id="Sent before the channel started signing, or fake." xml:space="preserve">
+        <source>Sent before the channel started signing, or fake.</source>
+        <target>A csatorna aláírásának bevezetése előtt küldték, vagy hamis.</target>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Sent directly" xml:space="preserve">
         <source>Sent directly</source>
         <target>Közvetlenül küldött</target>
@@ -9317,6 +9542,11 @@ chat item action</note>
         <target>Üzenetek aláírása</target>
         <note>chat feature</note>
       </trans-unit>
+      <trans-unit id="Sign messages?" xml:space="preserve">
+        <source>Sign messages?</source>
+        <target>Biztosan aláírja az üzeneteket?</target>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Signature missing" xml:space="preserve">
         <source>Signature missing</source>
         <target>Hiányzik az aláírás</target>
@@ -9461,6 +9691,11 @@ copied message info</note>
       <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve">
         <source>SimpleX protocols reviewed by Trail of Bits.</source>
         <target>A SimpleX protokollokat a Trail of Bits auditálta.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX public names" xml:space="preserve">
+        <source>SimpleX public names</source>
+        <target>Nyilvános SimpleX-nevek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX public names (BETA)" xml:space="preserve">
@@ -9676,6 +9911,11 @@ report reason</note>
         <target>Feliratkozva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Subscribed on another profile." xml:space="preserve">
+        <source>Subscribed on another profile.</source>
+        <target>Másik profilon fizetett elő.</target>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Subscriber" xml:space="preserve">
         <source>Subscriber</source>
         <target>Feliratkozó</target>
@@ -9748,6 +9988,21 @@ Relay address was used to set up this relay for the channel.</source>
 Az átjátszó címe ennek az átjátszónak a beállítására szolgált a csatornához.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Subscription" xml:space="preserve">
+        <source>Subscription</source>
+        <target>Előfizetés</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscription cancelled" xml:space="preserve">
+        <source>Subscription cancelled</source>
+        <target>Előfizetés megszakítva</target>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Subscription ended. The badge will be removed." xml:space="preserve">
+        <source>Subscription ended. The badge will be removed.</source>
+        <target>Lejárt az előfizetés. A kitűző el lesz távolítva.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Subscription errors" xml:space="preserve">
         <source>Subscription errors</source>
         <target>Feliratkozási hibák</target>
@@ -9764,6 +10019,11 @@ Az átjátszó címe ennek az átjátszónak a beállítására szolgált a csat
         <note>alert button
 alert title</note>
       </trans-unit>
+      <trans-unit id="Support SimpleX and get a badge." xml:space="preserve">
+        <source>Support SimpleX and get a badge.</source>
+        <target>Támogassa a SimpleXet és szerezzen egy kitűzőt.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Support SimpleX to send larger files that stay available longer" xml:space="preserve">
         <source>Support SimpleX to send larger files that stay available longer</source>
         <target>Támogassa a SimpleXet és küldjön nagyméretű fájlokat, amelyek tovább maradnak elérhetők az átjátszókon</target>
@@ -9779,14 +10039,9 @@ alert title</note>
         <target>Támogató</target>
         <note>badge type</note>
       </trans-unit>
-      <trans-unit id="Supporter badge ❤️" xml:space="preserve">
-        <source>Supporter badge ❤️</source>
-        <target>Támogatói kitűző ❤️</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Supporter perks" xml:space="preserve">
-        <source>Supporter perks</source>
-        <target>A támogatással járó előnyök</target>
+      <trans-unit id="Supporter badges" xml:space="preserve">
+        <source>Supporter badges</source>
+        <target>Támogatói kitűzők</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Supporter: 2 GB files available for 7 days." xml:space="preserve">
@@ -10239,15 +10494,15 @@ a saját kapcsolatait és csoportjait.</target>
         <target>Az áruház nem volt elérhető.</target>
         <note>alert message</note>
       </trans-unit>
+      <trans-unit id="The store could not charge your payment method." xml:space="preserve">
+        <source>The store could not charge your payment method.</source>
+        <target>Az áruháznak nem sikerült kiegyenlítenie a számlát a beállított fizetési eljárással.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The store did not confirm this purchase." xml:space="preserve">
         <source>The store did not confirm this purchase.</source>
         <target>Az áruház nem erősítette meg ezt a vásárlást.</target>
         <note>alert message</note>
-      </trans-unit>
-      <trans-unit id="The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store." xml:space="preserve">
-        <source>The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store.</source>
-        <target>Az áruház egy olyan tranzakciót adott vissza, amelyet az Apple nem írt alá. A SimpleX nem tudja ellenőrizni ezt a vásárlást az App Store-ban.</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve">
         <source>The text you pasted is not a SimpleX link.</source>
@@ -10327,11 +10582,6 @@ a saját kapcsolatait és csoportjait.</target>
       <trans-unit id="This app version cannot verify this badge. Please update the app." xml:space="preserve">
         <source>This app version cannot verify this badge. Please update the app.</source>
         <target>Az alkalmazás ezen verziója nem tudja ellenőrizni ezt a kitűzőt. Frissítse az alkalmazást.</target>
-        <note>alert message</note>
-      </trans-unit>
-      <trans-unit id="This app version is too old for the badge service. Please update the app." xml:space="preserve">
-        <source>This app version is too old for the badge service. Please update the app.</source>
-        <target>Az alkalmazás ezen verziója túl régi a kitűzőszolgáltatáshoz. Frissítse az alkalmazást.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This badge could not be verified and may not be genuine." xml:space="preserve">
@@ -10420,11 +10670,6 @@ alert subtitle</note>
         <target>Ez a saját hivatkozása a(z) %@ nevű csatornához!</target>
         <note>new chat action</note>
       </trans-unit>
-      <trans-unit id="This link is not supported by this app version. Please check for app updates." xml:space="preserve">
-        <source>This link is not supported by this app version. Please check for app updates.</source>
-        <target>Ezt a hivatkozást nem támogatja az alkalmazás ezen verziója. Ellenőrizze, hogy van-e elérhető alkalmazásfrissítés.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." xml:space="preserve">
         <source>This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</source>
         <target>Ez a hivatkozás újabb alkalmazásverziót igényel. Frissítse az alkalmazást vagy kérjen egy kompatibilis hivatkozást a partnerétől.</target>
@@ -10445,14 +10690,14 @@ alert subtitle</note>
         <target>Ehhez a profilhoz már tartozik kitűző.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="This profile already has a badge. Redeem the code on another profile, or once this badge ends." xml:space="preserve">
-        <source>This profile already has a badge. Redeem the code on another profile, or once this badge ends.</source>
-        <target>Ehhez a profilhoz már tartozik kitűző. Használja fel a kódot egy másik profilon, vagy miután a meglévő kitűző lejárt.</target>
+      <trans-unit id="This purchase is already used on another profile." xml:space="preserve">
+        <source>This purchase is already used on another profile.</source>
+        <target>Ezt a vásárlást már egy másik profilon használják.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="This purchase was already credited to a badge on another device or profile." xml:space="preserve">
-        <source>This purchase was already credited to a badge on another device or profile.</source>
-        <target>Ezt a vásárlást már jóváírták egy kitűzőhöz egy másik eszközön vagy profilon.</target>
+      <trans-unit id="This purchase was moved to another device or profile recently." xml:space="preserve">
+        <source>This purchase was moved to another device or profile recently.</source>
+        <target>Ezt a vásárlást nemrég egy másik eszközre vagy profilra helyezték át.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
@@ -10832,10 +11077,20 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
         <target>Frissíti a beállításokat?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Update the app to open this link." xml:space="preserve">
+        <source>Update the app to open this link.</source>
+        <target>Frissítse az alkalmazást a hivatkozás megnyitásához.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Update the app to register a SimpleX domain" xml:space="preserve">
         <source>Update the app to register a SimpleX domain</source>
         <target>Frissítse az alkalmazást egy SimpleX-domainnév regisztrálásához</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Update the app to use badges." xml:space="preserve">
+        <source>Update the app to use badges.</source>
+        <target>Frissítse az alkalmazást a kitűzők használatához.</target>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Updated conditions" xml:space="preserve">
         <source>Updated conditions</source>
@@ -11408,6 +11663,11 @@ alert title</note>
         <target>Ön engedélyezi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You already have a badge!" xml:space="preserve">
+        <source>You already have a badge!</source>
+        <target>Önnek már van egy kitűzője!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You already have a chat profile with the same display name. Please choose another name." xml:space="preserve">
         <source>You already have a chat profile with the same display name. Please choose another name.</source>
         <target>Már van egy csevegési profil ugyanezzel a megjelenítendő névvel. Válasszon egy másik nevet.</target>
@@ -11559,16 +11819,6 @@ Megismétli a csatlakozási kérést?</target>
         <source>You can now chat with %@</source>
         <target>Mostantól küldhet üzeneteket %@ számára</target>
         <note>notification body</note>
-      </trans-unit>
-      <trans-unit id="You can now invest in SimpleX Chat" xml:space="preserve">
-        <source>You can now invest in SimpleX Chat</source>
-        <target>Mostantól befektethet a SimpleX Chatbe</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You can now invest in SimpleX Chat! 🚀" xml:space="preserve">
-        <source>You can now invest in SimpleX Chat! 🚀</source>
-        <target>Mostantól befektethet a SimpleX Chatbe! 🚀</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can send messages to %@ from Archived contacts." xml:space="preserve">
         <source>You can send messages to %@ from Archived contacts.</source>
@@ -11821,6 +12071,11 @@ Megismétli a kapcsolódási kérést?</target>
         <target>Saját kitűző</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your badge could not be renewed." xml:space="preserve">
+        <source>Your badge could not be renewed.</source>
+        <target>Nem sikerült megújítani a kitűzőt.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your badge expired" xml:space="preserve">
         <source>Your badge expired</source>
         <target>Az Ön kitűzője lejárt</target>
@@ -11835,6 +12090,21 @@ Megismétli a kapcsolódási kérést?</target>
         <source>Your badge expired.</source>
         <target>Az Ön kitűzője lejárt.</target>
         <note>file alert</note>
+      </trans-unit>
+      <trans-unit id="Your badge renews soon" xml:space="preserve">
+        <source>Your badge renews soon</source>
+        <target>Hamarosan megújul a kitűzője</target>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Your badge stays until %@." xml:space="preserve">
+        <source>Your badge stays until %@.</source>
+        <target>A kitűzője megmarad eddig: %@.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your badge subscription ended on %@." xml:space="preserve">
+        <source>Your badge subscription ended on %@.</source>
+        <target>A kitűző-előfizetése lejárt ekkor: %@.</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your business contact" xml:space="preserve">
         <source>Your business contact</source>
@@ -11921,6 +12191,11 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
       <trans-unit id="Your group" xml:space="preserve">
         <source>Your group</source>
         <target>Saját csoport</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your legend badge" xml:space="preserve">
+        <source>Your legend badge</source>
+        <target>Saját legendás kitűző</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your network" xml:space="preserve">
@@ -12015,6 +12290,16 @@ Az átjátszók hozzáférhetnek a csatornaüzenetekhez.</target>
       <trans-unit id="Your settings" xml:space="preserve">
         <source>Your settings</source>
         <target>Beállítások</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your subscription ended" xml:space="preserve">
+        <source>Your subscription ended</source>
+        <target>Lejárt az előfizetése</target>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Your subscription is cancelled. The badge stays until %@." xml:space="preserve">
+        <source>Your subscription is cancelled. The badge stays until %@.</source>
+        <target>Az előfizetése meg lett szakítva. A kitűző eddig marad meg: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="[Send us email](mailto:chat@simplex.chat)" xml:space="preserve">

@@ -47,7 +47,7 @@ withNameResolver action = do
         _ -> pure (notFound404, "{}")
       send $ responseLBS st [(hContentType, "application/json")] body
     nameResponse (Just nameRecord) = NameResponse {lastBlockTs = Nothing, registration = NRRegistered {expires = Nothing, graceUntil = Nothing, reservedReason_ = Nothing, nameRecord}}
-    nameResponse Nothing = NameResponse {lastBlockTs = Nothing, registration = NRAvailable {pricing = NamePricing {registrationPrices = M.empty, basePrice = USDCents 1000, minLabelLength = 1}}}
+    nameResponse Nothing = NameResponse {lastBlockTs = Nothing, registration = NRAvailable {pricing = NamePricing {registrationPrices = M.empty, basePrice = USDCents 1000, minLabelLength = 1}, nameTerms = Nothing}}
 
 -- | Register a name's domain to resolve to the given record.
 registerName :: TVar (Map Text NameRecord) -> SimplexNameInfo -> NameRecord -> IO ()
