@@ -1,8 +1,10 @@
 package chat.simplex.common.views.newchat
 
 import SectionItemView
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
@@ -13,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.chat.item.bansGuideLink
 import chat.simplex.common.views.chat.subscriberCountStr
 import chat.simplex.common.views.chatlist.*
@@ -880,4 +883,20 @@ fun ownerVerificationMessage(ov: OwnerVerification?): String? = when (ov) {
   is OwnerVerification.Verified -> generalGetString(MR.strings.owner_verification_passed)
   is OwnerVerification.Failed -> String.format(generalGetString(MR.strings.owner_verification_failed), ov.reason)
   null -> null
+}
+
+@Preview
+@Composable
+fun PreviewLinkNoticeAlertGroup() {
+  SimpleXTheme {
+    AlertPreview(AlertManager.privacySensitive) { showLinkNoticeAlert(LinkNoticeTarget.Group, Instant.parse("2026-11-08T12:00:00Z")) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewLinkNoticeAlertContact() {
+  SimpleXTheme {
+    AlertPreview(AlertManager.privacySensitive) { showLinkNoticeAlert(LinkNoticeTarget.Contact, expiresAt = null) }
+  }
 }

@@ -551,12 +551,12 @@ private fun HostDeviceTitle(hostDevice: Pair<Long?, String>?, extraPadding: Bool
 }
 
 @Composable
-fun AlertPreview(show: () -> Unit) {
+fun AlertPreview(alertManager: AlertManager = AlertManager.shared, show: () -> Unit) {
   remember { show() }
   DisposableEffect(Unit) {
-    onDispose { AlertManager.shared.hideAllAlerts() }
+    onDispose { alertManager.hideAllAlerts() }
   }
   Box(Modifier.fillMaxSize()) {
-    AlertManager.shared.showInView()
+    alertManager.showInView()
   }
 }

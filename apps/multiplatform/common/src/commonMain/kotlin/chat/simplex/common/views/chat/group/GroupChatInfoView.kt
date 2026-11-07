@@ -1617,6 +1617,8 @@ val previewBusinessChatInfo = previewOwnerGroupInfo.copy(
   businessChat = BusinessChatInfo(BusinessChatType.Customer, businessId = "business", customerId = "customer")
 )
 
+val previewBanMember = GroupMember.sampleData.copy(groupMemberId = 2, activeConn = Connection.sampleData.copy(peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)))
+
 private fun previewGroupChat(groupInfo: GroupInfo) = Chat(remoteHostId = null, chatInfo = ChatInfo.Group(groupInfo, groupChatScope = null), chatItems = listOf())
 
 @Preview
@@ -1666,4 +1668,35 @@ fun PreviewCantBanCustomerAlert() {
   SimpleXTheme {
     AlertPreview { showCantBanCustomerAlert(previewBusinessChatInfo) }
   }
+}
+
+@Composable
+private fun MemberMenuPreview(groupInfo: GroupInfo, member: GroupMember) {
+  val showMenu = remember { mutableStateOf(true) }
+  SimpleXTheme {
+    Column(Modifier.fillMaxSize()) {
+      Box(Modifier.padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.CenterStart) {
+        DropDownMenuForMember(null, member, groupInfo, remember { mutableStateOf(null) }, showMenu)
+        MemberRow(member)
+      }
+    }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewMemberMenuOwner() {
+  MemberMenuPreview(previewOwnerGroupInfo, previewBanMember)
+}
+
+@Preview
+@Composable
+fun PreviewBannedMemberMenuOwner() {
+  MemberMenuPreview(previewOwnerGroupInfo, previewBanMember.copy(blockedByAdmin = true))
+}
+
+@Preview
+@Composable
+fun PreviewMemberMenuMember() {
+  MemberMenuPreview(GroupInfo.sampleData, previewBanMember)
 }

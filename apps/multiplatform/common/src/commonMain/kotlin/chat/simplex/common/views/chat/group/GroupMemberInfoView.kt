@@ -1357,3 +1357,87 @@ fun PreviewGroupMemberInfoLayout() {
     )
   }
 }
+
+private val previewModeratorGroupInfo = previewOwnerGroupInfo.copy(membership = previewOwnerGroupInfo.membership.copy(memberRole = GroupMemberRole.Moderator))
+
+private val previewBannedMembers = listOf(previewBanMember.copy(blockedByAdmin = true), previewBanMember.copy(groupMemberId = 3, blockedByAdmin = true))
+
+@Preview
+@Composable
+fun PreviewBanMemberDialog() {
+  SimpleXTheme {
+    AlertPreview { banMemberDialog(null, previewOwnerGroupInfo, previewBanMember) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewBanMemberDialogModerator() {
+  SimpleXTheme {
+    AlertPreview { banMemberDialog(null, previewModeratorGroupInfo, previewBanMember) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewBanMembersDialog() {
+  SimpleXTheme {
+    AlertPreview { banMembersDialog(null, previewOwnerGroupInfo, listOf(previewBanMember, previewBanMember.copy(groupMemberId = 3))) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewRemoveBannedMemberDialog() {
+  SimpleXTheme {
+    AlertPreview { removeBannedMembersDialog(null, previewOwnerGroupInfo, previewBannedMembers.take(1)) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewRemoveBannedMembersDialog() {
+  SimpleXTheme {
+    AlertPreview { removeBannedMembersDialog(null, previewOwnerGroupInfo, previewBannedMembers) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewRemoveForeverDialog() {
+  SimpleXTheme {
+    AlertPreview { removeBannedMembers(null, previewOwnerGroupInfo, previewBannedMembers.take(1), BanDuration.Forever, withMessages = false) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewLiftBanAlert() {
+  SimpleXTheme {
+    AlertPreview { unblockForAllAlert(null, previewOwnerGroupInfo, previewBannedMembers.first()) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewLiftBanMembersAlert() {
+  SimpleXTheme {
+    AlertPreview { unblockForAllAlert(null, previewOwnerGroupInfo, previewBannedMembers.map { it.groupMemberId }) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewHideMessagesAlert() {
+  SimpleXTheme {
+    AlertPreview { blockMemberAlert(null, GroupInfo.sampleData, previewBanMember) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewShowMessagesAlert() {
+  SimpleXTheme {
+    AlertPreview { unblockMemberAlert(null, GroupInfo.sampleData, previewBanMember.copy(memberSettings = GroupMemberSettings(showMessages = false))) }
+  }
+}
