@@ -231,10 +231,11 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
   val text = "${groupInfo.displayName}\n\n${generalGetString(messageId)}"
   when {
     groupInfo.isOwner && groupInfo.membership.memberActive && groupInfo.businessChat == null ->
-      deleteOwnGroupDialog(chat, title, text, keepConversationText = null, close)
+      deleteOwnGroupDialog(chat.remoteHostId, groupInfo, title, text, keepConversationText = null, close)
     groupInfo.isCustomerChatOwner ->
       deleteOwnGroupDialog(
-        chat,
+        chat.remoteHostId,
+        groupInfo,
         title,
         text = text + "\n" + String.format(generalGetString(MR.strings.contact_will_be_notified), groupInfo.displayName),
         keepConversationText = if (chatModel.userAddress.value?.addressSettings?.businessAddress == true) String.format(generalGetString(MR.strings.customer_can_connect_again_via_business_address), groupInfo.displayName) else null,
@@ -246,13 +247,13 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
         text = text,
         parseHtml = false,
         confirmText = generalGetString(MR.strings.delete_verb),
-        onConfirm = { deleteGroupChat(chat, ChatDeleteMode.Full(notify = true), notice = null, close) },
+        onConfirm = { deleteGroupChat(chat.remoteHostId, groupInfo, ChatDeleteMode.Full(notify = true), notice = null, close) },
         destructive = true,
       )
   }
 }
 
-private fun deleteOwnGroupDialog(chat: Chat, title: String, text: String, keepConversationText: String?, close: (() -> Unit)?) {
+private fun deleteOwnGroupDialog(rhId: Long?, groupInfo: GroupInfo, title: String, text: String, keepConversationText: String?, close: (() -> Unit)?) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = title,
     text = text,
@@ -261,7 +262,7 @@ private fun deleteOwnGroupDialog(chat: Chat, title: String, text: String, keepCo
       Column {
         SectionItemView({
           AlertManager.shared.hideAlert()
-          keepGroupConversationDialog(chat, title, keepConversationText, close)
+          keepGroupConversationDialog(rhId, groupInfo, title, keepConversationText, close)
         }) {
           Text(generalGetString(MR.strings.delete_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
         }
@@ -275,28 +276,27 @@ private fun deleteOwnGroupDialog(chat: Chat, title: String, text: String, keepCo
   )
 }
 
-private fun keepGroupConversationDialog(chat: Chat, title: String, text: String?, close: (() -> Unit)?) {
+private fun keepGroupConversationDialog(rhId: Long?, groupInfo: GroupInfo, title: String, text: String?, close: (() -> Unit)?) {
   showKeepConversationDialog(title, text, generalGetString(MR.strings.delete_verb), notify = true) { chatDeleteMode ->
-    deleteGroupChat(chat, chatDeleteMode, notice = null, close)
+    deleteGroupChat(rhId, groupInfo, chatDeleteMode, notice = null, close)
   }
 }
 
-fun deleteGroupChat(chat: Chat, chatDeleteMode: ChatDeleteMode, notice: LinkNotice?, close: (() -> Unit)?) {
-  val chatInfo = chat.chatInfo
+fun deleteGroupChat(rhId: Long?, groupInfo: GroupInfo, chatDeleteMode: ChatDeleteMode, notice: LinkNotice?, close: (() -> Unit)?) {
   withBGApi {
-    val groupInfo = chatModel.controller.apiDeleteGroup(chat.remoteHostId, chatInfo.apiId, chatDeleteMode, notice)
-    if (groupInfo != null) {
+    val deletedGroupInfo = chatModel.controller.apiDeleteGroup(rhId, groupInfo.apiId, chatDeleteMode, notice)
+    if (deletedGroupInfo != null) {
       withContext(Dispatchers.Main) {
         if (chatDeleteMode is ChatDeleteMode.Entity) {
-          chatModel.chatsContext.updateGroup(chat.remoteHostId, groupInfo)
+          chatModel.chatsContext.updateGroup(rhId, deletedGroupInfo)
         } else {
-          chatModel.chatsContext.removeChat(chat.remoteHostId, chatInfo.id)
+          chatModel.chatsContext.removeChat(rhId, groupInfo.id)
         }
-        if (chatModel.chatId.value == chatInfo.id) {
+        if (chatModel.chatId.value == groupInfo.id) {
           chatModel.chatId.value = null
           ModalManager.end.closeModals()
         }
-        ntfManager.cancelNotificationsForChat(chatInfo.id)
+        ntfManager.cancelNotificationsForChat(groupInfo.id)
         close?.invoke()
       }
     }
@@ -308,7 +308,7 @@ fun canDeleteAndBanCustomer(groupInfo: GroupInfo, members: List<GroupMember>): B
 
 fun deleteAndBanCustomerDialog(chat: Chat, groupInfo: GroupInfo, close: (() -> Unit)? = null) {
   deleteAndBanDialog(groupInfo.displayName, MR.strings.delete_chat_for_all_members_cannot_undo_warning, MR.strings.delete_and_ban_customer_forever_desc) { chatDeleteMode, notice ->
-    deleteGroupChat(chat, chatDeleteMode, notice, close)
+    deleteGroupChat(chat.remoteHostId, groupInfo, chatDeleteMode, notice, close)
   }
 }
 
@@ -1633,7 +1633,7 @@ fun PreviewDeleteGroupDialog() {
 @Composable
 fun PreviewDeleteGroupKeepConversationDialog() {
   SimpleXTheme {
-    AlertPreview { keepGroupConversationDialog(previewGroupChat(previewOwnerGroupInfo), generalGetString(MR.strings.delete_group_question), text = null, close = null) }
+    AlertPreview { keepGroupConversationDialog(null, previewOwnerGroupInfo, generalGetString(MR.strings.delete_group_question), text = null, close = null) }
   }
 }
 
@@ -1650,7 +1650,7 @@ fun PreviewDeleteBusinessChatDialog() {
 fun PreviewDeleteBusinessChatKeepConversationDialog() {
   val canConnectAgain = String.format(generalGetString(MR.strings.customer_can_connect_again_via_business_address), previewBusinessChatInfo.displayName)
   SimpleXTheme {
-    AlertPreview { keepGroupConversationDialog(previewGroupChat(previewBusinessChatInfo), generalGetString(MR.strings.delete_chat_question), canConnectAgain, close = null) }
+    AlertPreview { keepGroupConversationDialog(null, previewBusinessChatInfo, generalGetString(MR.strings.delete_chat_question), canConnectAgain, close = null) }
   }
 }
 

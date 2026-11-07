@@ -940,7 +940,7 @@ fun acceptGroupInvitationAlertDialog(rhId: Long?, groupInfo: GroupInfo, chatMode
       }
     },
     dismissText = generalGetString(MR.strings.delete_verb),
-    onDismiss = { deleteGroup(rhId, groupInfo, chatModel) },
+    onDismiss = { deleteGroupChat(rhId, groupInfo, ChatDeleteMode.Full(notify = true), notice = null, close = null) },
     hostDevice = hostDevice(rhId),
   )
 }
@@ -951,22 +951,6 @@ fun cantInviteIncognitoAlert() {
     text = generalGetString(MR.strings.alert_title_cant_invite_contacts_descr),
     confirmText = generalGetString(MR.strings.ok),
   )
-}
-
-fun deleteGroup(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
-  withBGApi {
-    val r = chatModel.controller.apiDeleteChat(rhId, ChatType.Group, groupInfo.apiId)
-    if (r) {
-      withContext(Dispatchers.Main) {
-        chatModel.chatsContext.removeChat(rhId, groupInfo.id)
-      }
-      if (chatModel.chatId.value == groupInfo.id) {
-        chatModel.chatId.value = null
-        ModalManager.end.closeModals()
-      }
-      ntfManager.cancelNotificationsForChat(groupInfo.id)
-    }
-  }
 }
 
 fun groupInvitationAcceptedAlert(rhId: Long?) {
