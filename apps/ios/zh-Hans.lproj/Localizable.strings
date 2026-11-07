@@ -3682,7 +3682,7 @@ servers warning */
 "It can happen when you or your connection used the old database backup." = "当您或您的连接使用旧数据库备份时，可能会发生这种情况。";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "它可能在以下情况发生：\n1. 消息在发送客户端 2 天后或在服务器上 30 天后过期。\n2. 消息解密失败，因为您或您的联系人使用了旧的数据库备份。\n3.连接被破坏。";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 21 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "它可能在以下情况发生：\n1. 消息在发送客户端 2 天后或在服务器上 21 天后过期。\n2. 消息解密失败，因为您或您的联系人使用了旧的数据库备份。\n3.连接被破坏。";
 
 /* No comment provided by engineer. */
 "It protects your IP address and connections." = "它可以保护您的 IP 地址和连接。";

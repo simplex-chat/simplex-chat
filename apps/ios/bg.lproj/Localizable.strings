@@ -2564,7 +2564,7 @@ server test error */
 "It can happen when you or your connection used the old database backup." = "Това може да се случи, когато вие или вашата връзка използвате старо резервно копие на базата данни.";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Това може да се случи, когато:\n1. Времето за пазене на съобщенията е изтекло - в изпращащия клиент е 2 дена а на сървъра е 30.\n2. Декриптирането на съобщението е неуспешно, защото вие или вашият контакт сте използвали старо копие на базата данни.\n3. Връзката е била компрометирана.";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 21 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Това може да се случи, когато:\n1. Времето за пазене на съобщенията е изтекло - в изпращащия клиент е 2 дена а на сървъра е 21.\n2. Декриптирането на съобщението е неуспешно, защото вие или вашият контакт сте използвали старо копие на базата данни.\n3. Връзката е била компрометирана.";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Изглежда, че вече сте свързани чрез този линк. Ако не е така, има грешка (%@).";

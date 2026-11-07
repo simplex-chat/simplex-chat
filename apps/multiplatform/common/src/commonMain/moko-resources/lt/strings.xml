@@ -741,7 +741,7 @@
     <string name="invalid_name">Netinkamas vardas!</string>
     <string name="create_your_profile">Sukurti savo profilį</string>
     <string name="onboarding_notifications_mode_subtitle">Tai gali būti pakeista vėliau nustatymuose.</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Tai gali įvykti kai: \n1. Žinutės galiojimo laikas baigėsi siuntėjo programoje po 2 dienų arba serveryje po 30 dienų. \n2. Žinutės atšifravimas nepavyko, nes jūs ar jūsų kontaktas naudojo seną duomenų bazės atsarginę kopiją. \n3. Prisijungimas buvo kompromisuotas.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Tai gali įvykti kai: \n1. Žinutės galiojimo laikas baigėsi siuntėjo programoje po 2 dienų arba serveryje po 21 dienos. \n2. Žinutės atšifravimas nepavyko, nes jūs ar jūsų kontaktas naudojo seną duomenų bazės atsarginę kopiją. \n3. Prisijungimas buvo kompromisuotas.</string>
     <string name="passcode_changed">Prieigos kodas pakeistas!</string>
     <string name="confirm_new_passphrase">Patvirtinti naują slaptafrazę…</string>
     <string name="enter_correct_current_passphrase">Prašome įvesti tinkamą dabartinę slaptafrazę.</string>

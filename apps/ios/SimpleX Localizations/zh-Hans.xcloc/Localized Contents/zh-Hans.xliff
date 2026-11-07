@@ -5559,13 +5559,13 @@ More improvements are coming soon!</source>
         <target>当您或您的连接使用旧数据库备份时，可能会发生这种情况。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
+      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 21 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
         <source>It can happen when:
-1. The messages expired in the sending client after 2 days or on the server after 30 days.
+1. The messages expired in the sending client after 2 days or on the server after 21 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</source>
         <target>它可能在以下情况发生：
-1. 消息在发送客户端 2 天后或在服务器上 30 天后过期。
+1. 消息在发送客户端 2 天后或在服务器上 21 天后过期。
 2. 消息解密失败，因为您或您的联系人使用了旧的数据库备份。
 3.连接被破坏。</target>
         <note>No comment provided by engineer.</note>

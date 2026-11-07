@@ -5759,13 +5759,13 @@ További fejlesztések hamarosan!</target>
         <target>Ez akkor fordulhat elő, ha Ön vagy a partnere egy régi adatbázis biztonsági mentését használta.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
+      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 21 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
         <source>It can happen when:
-1. The messages expired in the sending client after 2 days or on the server after 30 days.
+1. The messages expired in the sending client after 2 days or on the server after 21 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</source>
         <target>Ez akkor fordulhat elő, ha:
-1. Az üzenetek 2 nap után, vagy a kiszolgálón 30 nap után lejártak.
+1. Az üzenetek 2 nap után, vagy a kiszolgálón 21 nap után lejártak.
 2. Nem sikerült az üzenetet visszafejteni, mert Ön, vagy a partnere egy régi adatbázis biztonsági mentését használta.
 3. A kapcsolat sérült.</target>
         <note>No comment provided by engineer.</note>

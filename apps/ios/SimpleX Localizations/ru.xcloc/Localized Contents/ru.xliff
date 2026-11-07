@@ -5618,13 +5618,13 @@ More improvements are coming soon!</source>
         <target>Это может произойти, когда Вы или Ваш контакт используете старую копию базы данных.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
+      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 21 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
         <source>It can happen when:
-1. The messages expired in the sending client after 2 days or on the server after 30 days.
+1. The messages expired in the sending client after 2 days or on the server after 21 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</source>
         <target>Это может произойти, когда:
-1. Клиент отправителя удалил неотправленные сообщения через 2 дня, или сервер – через 30 дней.
+1. Клиент отправителя удалил неотправленные сообщения через 2 дня, или сервер – через 21 день.
 2. Расшифровка сообщения была невозможна, когда Вы или Ваш контакт использовали старую копию базы данных.
 3. Соединение компроментировано.</target>
         <note>No comment provided by engineer.</note>

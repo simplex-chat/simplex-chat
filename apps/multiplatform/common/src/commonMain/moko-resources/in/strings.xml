@@ -917,7 +917,7 @@
     <string name="add_address_to_your_profile">Tambahkan alamat ke profil Anda, sehingga kontak SimpleX dapat membagikannya dengan orang lain. Pembaruan profil akan dikirim ke kontak SimpleX Anda.</string>
     <string name="keychain_allows_to_receive_ntfs">Android Keystore digunakan untuk simpan frasa sandi dengan aman setelah Anda memulai ulang aplikasi atau ubah frasa sandi - ini mungkin dapat menerima notifikasi.</string>
     <string name="allow_accepting_calls_from_lock_screen">Aktifkan panggilan dari layar kunci melalui Pengaturan.</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Hal ini dapat terjadi ketika:\n1. Pesan kedaluwarsa di klien pengirim setelah 2 hari atau di server setelah 30 hari.\n2. Dekripsi pesan gagal, karena Anda atau kontak Anda menggunakan cadangan basis data lama.\n3. Koneksi terganggu.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Hal ini dapat terjadi ketika:\n1. Pesan kedaluwarsa di klien pengirim setelah 2 hari atau di server setelah 21 hari.\n2. Dekripsi pesan gagal, karena Anda atau kontak Anda menggunakan cadangan basis data lama.\n3. Koneksi terganggu.</string>
     <string name="theme_remove_image">Hapus gambar</string>
     <string name="appearance_font_size">Ukuran huruf</string>
     <string name="prohibit_direct_messages">Kirim pesan pribadi ke anggota dilarang.</string>

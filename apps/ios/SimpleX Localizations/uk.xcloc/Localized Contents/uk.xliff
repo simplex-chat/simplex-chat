@@ -5060,13 +5060,13 @@ More improvements are coming soon!</source>
         <target>Це може статися, якщо ви або ваше з'єднання використовували стару резервну копію бази даних.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
+      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 21 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
         <source>It can happen when:
-1. The messages expired in the sending client after 2 days or on the server after 30 days.
+1. The messages expired in the sending client after 2 days or on the server after 21 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</source>
         <target>Це може статися, коли:
-1. Термін дії повідомлень закінчився в клієнті-відправнику через 2 дні або на сервері через 30 днів.
+1. Термін дії повідомлень закінчився в клієнті-відправнику через 2 дні або на сервері через 21 день.
 2. Не вдалося розшифрувати повідомлення, тому що ви або ваш контакт використовували стару резервну копію бази даних.
 3. З'єднання було скомпрометовано.</target>
         <note>No comment provided by engineer.</note>
