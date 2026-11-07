@@ -348,7 +348,7 @@ fun GroupMenuItems(
       if (groupInfo.membership.memberCurrentOrPending && !(groupInfo.useRelays && groupInfo.isOwner)) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
       }
-      if (groupInfo.isBusinessChatOwner) {
+      if (groupInfo.isCustomerChatOwner) {
         DeleteAndBanCustomerAction(chat, groupInfo, showMenu)
       }
       if (groupInfo.canDelete) {

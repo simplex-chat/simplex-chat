@@ -209,7 +209,7 @@ Routes each chat to the appropriate click action and context menu based on `chat
 | ChatInfo Type | Click Action | Context Menu |
 |---|---|---|
 | `ChatInfo.Direct` | `directChatAction` (opens chat) | `ContactMenuItems`: mark read/unread, mute, tag, clear, archive (`ArchiveContactAction`, when `!contact.chatDeleted`), delete and ban (`DeleteAndBanContactAction`, when `contact.canDeleteAndBan`), delete |
-| `ChatInfo.Group` | `groupChatAction` (opens chat or joins) | `GroupMenuItems`: mark read/unread, mute, tag, clear, leave, delete and ban (`DeleteAndBanCustomerAction`, when `groupInfo.isBusinessChatOwner`: `deleteAndBanCustomer` loads the members with `apiListMembers` and shows `deleteAndBanCustomerDialog` when `canDeleteAndBanCustomer`, otherwise "Can't ban"), delete |
+| `ChatInfo.Group` | `groupChatAction` (opens chat or joins) | `GroupMenuItems`: mark read/unread, mute, tag, clear, leave, delete and ban (`DeleteAndBanCustomerAction`, when `groupInfo.isCustomerChatOwner`, the active owner of the business side: `deleteAndBanCustomer` loads the members with `apiListMembers` and shows `deleteAndBanCustomerDialog` when `canDeleteAndBanCustomer`, otherwise "Can't ban"), delete |
 | `ChatInfo.Local` | `noteFolderChatAction` (opens notes) | `NoteFolderMenuItems`: mark read, clear, delete |
 | `ChatInfo.ContactRequest` | `contactRequestAlertDialog` (accept/reject) | `ContactRequestMenuItems`: reject |
 | `ChatInfo.ContactConnection` | Sets `chatModel.chatId` (opens connection info) | `ContactConnectionMenuItems`: delete |

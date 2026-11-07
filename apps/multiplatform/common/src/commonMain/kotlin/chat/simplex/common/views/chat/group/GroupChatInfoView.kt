@@ -230,9 +230,9 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
   val title = generalGetString(titleId)
   val text = "${groupInfo.displayName}\n\n${generalGetString(messageId)}"
   when {
-    groupInfo.isOwner && groupInfo.businessChat == null ->
+    groupInfo.isOwner && groupInfo.membership.memberActive && groupInfo.businessChat == null ->
       deleteOwnGroupDialog(chat, title, text, keepConversationText = groupInfo.displayName, close)
-    groupInfo.isBusinessChatOwner ->
+    groupInfo.isCustomerChatOwner ->
       deleteOwnGroupDialog(
         chat,
         title,
@@ -304,7 +304,7 @@ fun deleteGroupChat(chat: Chat, chatDeleteMode: ChatDeleteMode, notice: LinkNoti
 }
 
 fun canDeleteAndBanCustomer(groupInfo: GroupInfo, members: List<GroupMember>): Boolean =
-  groupInfo.isBusinessChatOwner && members.any { it.memberId == groupInfo.businessChat?.customerId && it.canBanAndRemove(groupInfo) }
+  groupInfo.isCustomerChatOwner && members.any { it.memberId == groupInfo.businessChat?.customerId && it.canBanAndRemove(groupInfo) }
 
 fun deleteAndBanCustomerDialog(chat: Chat, groupInfo: GroupInfo, close: (() -> Unit)? = null) {
   deleteAndBanDialog(groupInfo.displayName, MR.strings.delete_chat_for_all_members_cannot_undo_warning, MR.strings.delete_and_ban_customer_forever_desc) { chatDeleteMode, notice ->
