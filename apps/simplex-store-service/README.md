@@ -17,6 +17,8 @@ Earlier plans (`2026-07-30-supporter-badges-v3-ux.md`, `2026-07-31-badges-core-i
 `2026-08-04-badges-mvp-scope.md`) predate the web checkout and describe the RPC-only
 scaffold this service started as.
 
+The names part, its parts and its scenarios are drawn in [`docs/names.md`](docs/names.md).
+
 At this stage the service:
 
 - creates a double-ratchet contact address on first start (service RPC requires DR, see [`docs/protocol/badges-rpc.md`](../../docs/protocol/badges-rpc.md)),
@@ -25,7 +27,7 @@ At this stage the service:
 - does not accept contact requests: the address is for RPC only,
 - in service mode with `[group]` in the ini, manages one SimpleX group and serves `/issue`, `/bulk`
   and `/revoke` in it (see [Issuing codes](#issuing-codes)),
-- in service mode with `--service-config`, also serves the built web app (`npm run build` in `web/`), `POST /api/invoice` and `GET /api/invoice/:id`, the BTCPay and Stripe webhook routes, and a payment poller, seeding its price/offer catalog on every start,
+- in service mode with `--service-config`, also serves the built web app (`npm run build` in `web/`) on `badges_port` and, with `[names]`, the names site on `names_port` (see [Two sites](#two-sites)), `POST /api/invoice` and `GET /api/invoice/:id`, the BTCPay and Stripe webhook routes, and a payment poller, seeding its price/offer catalog on every start,
 - owns the `sx_badge_service_`-prefixed tables and its own migrations table (`sx_badge_service_migrations`).
 
 Every other command answers `unsupported_version`, or `unknown_purchase_key` when the key that
@@ -80,11 +82,39 @@ Note that a secret passed as a flag is visible to every user on the machine thro
 in the ini is only as readable as the file: `store_service.ini` is gitignored and already holds the
 provider API keys and webhook secrets.
 
+For a local run, where no client key's secret is at hand, `[issuer] dev_keys` lists keys the service
+trusts beside the clients' keys, as `<index>:<secret>` entries separated by commas, each secret from
+`simplex-chat badge keygen`:
+
+```ini
+[issuer]
+index = 999
+private_key = <secret>
+dev_keys = 999:<secret>
+```
+
+With `dev_keys`, the service refuses to start:
+
+- unless `[names]` is on and `[chain] chain_id` is 31337, anvil's local chain;
+- unless the node at `rpc_url` answers `eth_chainId` with 31337 as the service starts;
+- when `[stripe]` holds a live key: `secret_key` must be a test key (`sk_test_` or `rk_test_`), and
+  `publishable_key` too (`pk_test_`);
+- when `[btcpay]`'s `host` is not on loopback (`127.0.0.1`, `::1` or `localhost`);
+- when a dev key has the index of a key clients trust.
+
+So a run with dev keys takes test payments only: Stripe in test mode, and a BTCPay on the same machine,
+such as one on regtest. `host` must still be https, so put a TLS proxy in front of a local BTCPay and
+have the service trust the proxy's certificate authority with `SYSTEM_CERTIFICATE_PATH`.
+
+It logs a warning naming the dev keys' indexes at every start. Clients never trust a dev key, but the
+service's own chat core does, for the badges it receives, so a contact's badge signed by a dev key is
+accepted in that run. Leave `dev_keys` out everywhere else.
+
 Other options:
 
 - `--service-config INI_FILE`: path to `store_service.ini`. Omit it to run the chat/RPC side
   only; the process never starts a web listener without it, and never starts one under
-  `--run-cli`, which parses and validates the whole file (`[listener] static_dir` included) but
+  `--run-cli`, which parses and validates the whole file (`[listener]` included) but
   uses only its `[issuer]`, `[apple]`, `[google]`, `[dev]` and `[log]` sections. An issuer key is
   still required either way.
 - `--service-name NAME`: the bot's display name, without `*`s or spaces (default `SimpleX Badges`).
@@ -93,20 +123,39 @@ Other options:
   `--socks-proxy`, `--log-level`/`-l`, and the rest — run `simplex-store-service --help`
   for the complete list.
 
+Name links are read for their profiles through an SMP proxy, as the default `--smp-proxy` reads
+every link of a server the service does not use, so the service connects to no host a buyer chose.
+Onion links, and links whose host name does not resolve on the service's machine, are allowed and
+read through the proxy too; an onion link needs Tor on the proxy's relay. A link whose host is or
+resolves to a loopback, private or other non-public address is refused before it is read. Leave
+`--smp-proxy` and `--smp-proxy-fallback` at their defaults: `--smp-proxy never` or
+`--smp-proxy-fallback yes` would connect to a link's host directly.
+
 The service logs to stderr: its routine lines at note level, its warnings and errors at their own.
 `[log] level` in `store_service.ini` sets the lowest level printed, one of `trace`, `debug`, `info`,
 `note` (the default), `warn` or `error`, in both run modes. The level applies to the whole process,
-so below `note` the SMP agent's lines print too, and above it the group's join link is not logged
-on the start that creates the group; the link is still stored (see "From the group"). With
+so below `note` the SMP agent's lines print too. With
 `--log-agent` or `-l debug`, the level is set from `-l` instead, `important` counting as `info`.
 
 ### Running the web checkout
 
-`store_service.ini` holds the listener bind address and `static_dir`, an optional
+`store_service.ini` holds the listener bind address, its ports and `badges_static_dir`, an optional
 `[btcpay]` section (omitting it disables Bitcoin and Monero), an optional `[stripe]`
 section (omitting it disables card payments), an optional `[group]` section (omitting it
-turns off the group's commands, though a group created earlier still has its code messages updated)
-and the poll cadence.
+turns off the group's commands, though a group created earlier still has its code messages updated),
+the poll cadence, optional `[apple]` and `[google]` sections that verify store purchases (see
+[Store purchases](#store-purchases-app-store-and-google-play)), and optional `[names]` and `[chain]` sections for the names store (omitting both
+turns it off), whose `[chain] service_key` is [the gas key](#the-gas-key). `[chain] rpc_url` must be
+https, as it can carry a provider's API key, unless the node is on the same machine (`127.0.0.1`,
+`::1` or `localhost`), which `http://` may reach. The service refuses to start when the node there
+answers `eth_chainId` with another chain than `[chain] chain_id`, and only warns when it does not
+answer. `[chain] confirmations` (default 3) is how deep a
+transaction's receipt must be before the service settles it and reads the chain's state, counting
+the receipt's own block, so it must be at least 1. An optional `[community]` section gives what each
+community name is for (see [Terms and community names](#terms-and-community-names)). Write every setting as
+`key = value`. A `key: value` line, which the parser would read with the first character of its
+value dropped, a key written twice in one section, a section header written twice, or a `[names]` or
+`[chain]` setting nothing reads, stops the service at startup.
 `store_service.ini.example` is the committed template; `store_service.ini` itself is
 gitignored, since a real one holds API keys and webhook secrets.
 
@@ -129,17 +178,55 @@ cabal run simplex-store-service -- \
 reads and 5 checkouts a minute. Where the listener is reached directly it must be `off`, because
 then the header is whatever the caller wrote. The last entry is the one read, which is the one a
 proxy appends.
+An IPv6 client is counted by its /64, since one host gets a whole /64, and an IPv4-mapped address
+by its IPv4 address.
+Checkouts that reach the provider (`POST /api/invoice` and `POST /api/registration/:id/spend` with a
+difference to pay, each a provider invoice or card PaymentIntent) are also capped at 30 a minute for
+all clients together.
+Searches read the chain at most 16 at a time and long polls hold at most 500 at a time, for all clients
+together; past that they answer `429 rate_limited` with a short `Retry-After` at once.
 
 The BTCPay API key needs four permissions, each scoped to the one store:
 `cancreateinvoice` and `canviewinvoices` for checkout and the poller,
-`canviewstoresettings` to log the store's live payment methods at startup, and
+`canviewstoresettings` to log the store's live payment methods at startup and to read the store's
+rates for late crypto credits, and
 `canmodifyinvoices` so `POST /api/invoice/:id/cancel` can invalidate an invoice at BTCPay
 rather than only in this store.
+
+**`speed_policy = HighSpeed` is refused beside `[names]`**: under it BTCPay marks a payment `Settled`
+with no confirmation, which a double spend would turn into a free name, and crypto reaching a name
+invoice after it closed could never be credited. The service judges each invoice by the policy it was
+created with. With `MediumSpeed` (the template's value) or a slower policy, late bitcoin is credited to
+the order's balance once confirmed.
+
+A credit is the money's share of the invoice's price: the price times the crypto received, divided by
+the crypto the invoice asked, which includes the network fee BTCPay adds (to every Monero invoice, and
+to a Bitcoin invoice after a part payment), so the fee is never credited. It is also taken at the
+lower of the invoice's rate and the rate when it is credited, rounded down to the cent. So a whole
+late payment credits at most the price. A current rate below half the invoice's credits nothing: the
+money goes to support for good.
+
+**Overpayment.** Crypto above what an invoice asks is credited to the order's balance in the same
+way, once confirmed, also on an invoice paid in time: the extra's share of the price, at the lower
+rate. The service logs it at note as `names: invoice <id> was overpaid; credited <cents> cents of the
+extra to the balance of registration <id>`, and an extra it cannot credit is alerted as late money is.
+An extra still unconfirmed when BTCPay settles the invoice is never credited, as its transaction can
+still be replaced: it is alerted, and support refunds it by hand once it confirms.
+Crypto sent to a name invoice after the service recorded it paid is not credited either: the poller
+logs an error naming the invoice, at most once an hour while it still lists it, and support refunds it
+once its transaction is confirmed on chain.
 
 BTCPay keeps an invoice it has closed `Expired` (or `Invalid` after a cancel) when money arrives late.
 The invoice view reports `paidInFull` on such an invoice only once BTCPay reads it `PaidLate` or
 `PaidOver`: BTCPay's paid amount counts unconfirmed payments too, so a due of 0 or less is not
 enough. It reports an overpaid invoice's `cryptoAmountDue` as `0`, never below.
+
+**Set the Monero plugin's settled-confirmation threshold (`InvoiceSettledConfirmationThreshold`) to
+at least 1.** BTCPay's API does not show how many confirmations a Monero payment has, only that
+threshold, so late Monero is credited only on an invoice made while it was 1 or more; it is then
+credited as late bitcoin is. Left unset (the plugin's default) or at 0,
+every late Monero payment stays pending and goes to support, as under `HighSpeed`. Each invoice
+keeps the threshold it was made with, so raising it later credits nothing already paid.
 
 Give the service a BTCPay store of its own, and a Stripe account of its own if card payments are
 on. The poller lists every invoice and payment intent of the last three days or so, and one it did
@@ -164,14 +251,30 @@ absent `[btcpay]` does for Bitcoin and Monero. Its keys:
   it expired and logs an error. Check such orders in the Stripe Dashboard. After a restart, the
   hour starts again.
 
-The service creates each payment intent with `metadata[order]`, the order's id, which the page
-shows the buyer as "Reference" (`invoice_id` in `sx_badge_service_invoices`). It is not a secret,
-and support finds the intent of the reference a buyer quotes from it in the Dashboard.
+The service creates each payment intent with `metadata[order]`, the order's reference. A badge
+order's is its id, which the page shows the buyer as "Reference" (`invoice_id` in
+`sx_badge_service_invoices`); a name order's is `name:0x<order hash>` (`order_hash` in
+`sx_badge_service_name_registrations`). Neither is a secret, and support finds an intent's order
+from it in the Dashboard.
+
+The create also sends an `Idempotency-Key` of that reference with the amount and currency. The
+page sends a name order again as it was, so a resend after the first answer was lost gets the
+intent the first create made, not a second one. Stripe keeps a key's first answer for 24 hours and
+replays it, an error included. A replayed error, or a replayed intent that has been cancelled since
+(the service cancels the intent of an order it could not write), is not passed on: the service
+creates the intent again without the key. A badge order's reference is new on every request, so
+its key never repeats.
+
+A PaymentIntent waiting for a card is cancelled once its last 3 charges were all declined (the log
+line is `stripe: intent <id> is cancelled after 3 declined card payments in a row`), so stolen cards
+cannot be tried on it one after another, and the buyer starts a new checkout. Add Radar rules in the
+Dashboard too, such as blocking a card fingerprint or IP address that has failed several times.
 
 The service fills `publishable_key` into the shell at boot: the built `index.html` ships
 with an empty `<meta id="stripe-publishable-key" name="stripe-publishable-key" content="">`
 (`web/public/index.html`), and the listener serves a copy with the configured key
-substituted in, so the ini is the only place the key is set. With no `[stripe]` section the
+substituted in, so the ini is the only place the key is set. The names site's shell carries the
+same meta without the `id`, and is filled the same way. With no `[stripe]` section the
 pristine (empty) shell is served and the page shows its development stand-in card form. The
 dev mock (`web/mock/server.py`) does the same substitution from `$STRIPE_PUBLISHABLE_KEY`,
 since it runs without an ini.
@@ -189,6 +292,8 @@ script:
 script-src 'self' https://js.stripe.com https://*.js.stripe.com;
 frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com
 ```
+
+The full policies of both sites are in [Caddy](#caddy).
 
 **Stripe Link must be disabled in the Dashboard.** Left on, it needs `link.com` in the
 CSP above and reintroduces an email prompt of its own, which this design otherwise avoids.
@@ -342,7 +447,8 @@ Without a store verifier every store purchase is answered `provider_not_configur
 the service accepts any well-formed receipt without asking or verifying anything: an Apple JWS for
 the `transactionId` and `productId` its payload names, unsigned or not, and a Play product id and
 token as given. It applies to both run modes, since `--run-cli` answers service requests too, and
-the service logs a warning at every start while it is on. Off by default, and only `on`/`off`
+the service logs a warning at every start while it is on, and refuses to start when the issuer key
+is at an index clients trust, as any receipt would then mint badges they accept. Off by default, and only `on`/`off`
 parse. The service refuses to start with it on beside an `[apple]` or `[google]` section.
 
 It answers subscriptions too, each as renewing, charged from a minute before the check for the
@@ -425,6 +531,22 @@ badge without paying.
 
 ## Deployment
 
+`scripts/store-service/` holds the production deployment: the image (`Dockerfile`, built from
+the repository root), `compose.yml` and the ini template `store_service.ini.example`; `dev/` holds
+the scripts of the dev setup and the webapp's cases. The service
+runs with `+client_postgres` and host networking; one Caddy serves both sites from the folders the
+service exports at boot and proxies the API to it.
+
+`compose.yml` mounts the folder `scripts/store-service/config/` read-only at
+`/etc/simplex-store-service`. It holds `store_service.ini`, and the App Store root and the Play
+service account key when `[apple]` and `[google]` are configured. The folder must exist before
+`docker compose up`: compose refuses to start rather than create it empty.
+
+On PostgreSQL the service holds an advisory lock on its database for as long as it runs, so a second
+process on the same database, `--run-cli` included, stops at start with `another store service holds
+this database`: two would send with the gas key's nonces and run the chat agent's queues together. Stop
+the service before the console.
+
 ### Upgrading from the badge service
 
 The rename to StoreService changed what the operator runs:
@@ -437,21 +559,682 @@ The rename to StoreService changed what the operator runs:
 | the folder `config`, mounted read-only at `/etc/simplex-badge-service` (before it, `badge_service.ini` alone, mounted at `/etc/simplex-badge-service/badge_service.ini`) | the folder `config`, mounted read-only at `/etc/simplex-store-service` |
 | `[apple] root_certificates` and `[google] service_account_file` under `/etc/simplex-badge-service/` | the same files under `/etc/simplex-store-service/` |
 | the binary `simplex-badge-service` | `simplex-store-service` |
+| `port = 8080` | `badges_port = 8080`, the default, which can be omitted |
+| `static_dir = /srv/web` | `badges_static_dir = /srv/badges`, the image's build and the default, which can be omitted in Docker |
+| `webapp_export_dir = /srv/webapp`, host folder `web` | `badges_export_dir = /srv/badges-export`, host folder `badges` |
+| `names_hosts`, the hosts that got the names site by `Host` | `names_port = 8081`, the default: the names site on its own port (see [Two sites](#two-sites)) |
 
+The service refuses to start with a key from the left column, naming the key that replaced it.
 Move `scripts/badge-service/config/` to `scripts/store-service/config/` (a deployment from before
 the config folder creates it and moves `badge_service.ini` into it), rename `badge_service.ini` in it
-to `store_service.ini`, and change its paths as the table says, the
-`/etc/simplex-badge-service/` files under `[apple]` and `[google]` among them. Point Caddy's badges root at
-`scripts/store-service/web`, which the service fills at boot. Then start the new service with
+to `store_service.ini`, and change its keys and paths as the table says, the
+`/etc/simplex-badge-service/` files under `[apple]` and `[google]` among them. Where Caddy runs on the
+same machine, also set `[listener] host = 127.0.0.1`: an ini copied from the earlier template binds
+`0.0.0.0` with `trust_forwarded_for = on`, so a caller reaching the port past Caddy picks its own rate
+limit bucket. Point Caddy's badges root at
+`scripts/store-service/badges`, which the service fills at boot. Compose names a project after its
+folder, so the new `store-service` project does not see the old `badge-service` container, which
+would keep running on the same port and database: stop it first, from `scripts/badge-service/` or
+anywhere with `-p`. The image builds the names site from the `apps/simplex-domains` submodule, a
+badge-only service included, so fetch it before the build:
 
 ```
-docker compose up -d --build --remove-orphans
+docker compose -p badge-service down
+git submodule update --init ../../apps/simplex-domains
+docker compose up -d --build
 ```
 
-from `scripts/store-service/`. Without `--remove-orphans` the old `badge-service` container keeps
-running beside the new one, on the same port and database. The database `badge_service`,
+from `scripts/store-service/`. The database `badge_service`,
 `BADGE_DB_CONN`, the `sx_badge_service_` tables and the chat database prefix
 `simplex_badge_service` are unchanged.
+
+A badge-service database upgrades in place: the store's own migrations run after every badge
+migration, `20261012_badge_subscriptions` included. A database that ran the names migrations of
+an earlier draft (`20261010_names`, or the steps dated after `20261013_names`) does not start, as
+the service refuses to roll back migrations it does not list. Recreate such a database.
+
+### Two sites
+
+The image carries the badges build at `/srv/badges` and the names build at `/srv/names`, the
+defaults of `badges_static_dir` and `names_static_dir`; a run outside the image sets both. The names
+site (simplex.domains) comes from the `apps/simplex-domains` submodule, the simplex.domains
+repository, and is configured beside the badges site in `[listener]`. Fetch the submodule before
+building the image:
+
+```
+git submodule update --init apps/simplex-domains
+```
+
+A new names site ships by moving the submodule to its commit and committing that here:
+
+```
+git -C apps/simplex-domains fetch origin
+git -C apps/simplex-domains checkout <commit>
+git add apps/simplex-domains
+```
+
+`.gitmodules` names `branch = sh/names-webapp`, the branch of simplex.domains#6, which is not merged
+yet; it only sets what `git submodule update --remote` fetches, and moves to the main branch once
+that pull request merges. The commit committed here is what builds.
+
+The names site is on when, and only when, the ini has `[names]`. Its `[listener]` keys:
+
+- `names_static_dir`: the names build, by default `/srv/names`, the image's;
+- `names_export_dir`: where the service writes the names site at boot, with the Stripe
+  publishable key in its shell, as `badges_export_dir` is for the badges site. `compose.yml`
+  bind-mounts `./names` there (`/srv/names-export`), and `./badges` at `/srv/badges-export`;
+- `names_port`: the port the names site is served on when `serve_webapp = on`, by default 8081,
+  beside `badges_port` (by default 8080), which serves the badges site. The two must differ.
+
+The service refuses to start with any of these keys but no `[names]`, and with `names_port` and
+`serve_webapp = off`. It also refuses to start when a build it serves or exports is not a
+directory, naming the setting, so a local run that keeps a default path stops there.
+
+With `serve_webapp = on` (all in one), the service listens on both ports, and each serves only its
+own site: every path outside `/api/` and `/webhooks/` is a file of that site, `/` and `/index.html`
+its shell. Both ports answer `/api/` and `/webhooks/`, whatever the `Host`. A reverse proxy sends
+each domain to its own port, as the all-in-one example in [Caddy](#caddy) does. With
+`serve_webapp = off`, the service listens on `badges_port` alone, for the API and the webhooks.
+
+### Development with a local chain
+
+`compose.dev.yml` adds two containers, so a dev deployment needs nothing on the host but Docker:
+
+- `chain`: an anvil chain on `127.0.0.1:8545` (chain id 31337) with the names contracts, deployed
+  on its first start. Its state is kept in `./data/chain`, so restarts keep the contracts, balances
+  and registered names. Its keys are anvil's public test keys, so never use it beside a real chain.
+- `postgres`: PostgreSQL 17 on `127.0.0.1:5433`, user `simplex`, database `store_service`, without a
+  password, kept in `./data/postgres`. The service uses it in place of `BADGE_DB_CONN`.
+
+From a fresh clone:
+
+```
+git clone https://github.com/simplex-chat/simplex-chat && cd simplex-chat
+git checkout names && git submodule update --init apps/simplex-domains
+cd scripts/store-service
+echo "COMPOSE_FILE=compose.yml:compose.dev.yml" > .env
+docker compose up -d --build
+```
+
+The names site is then on `http://127.0.0.1:8081` and the badges site on `http://127.0.0.1:8080`.
+
+On its first start, the chain writes `config/store_service.ini` for its deployment, unless the file
+exists; it never rewrites it, so edits there are kept. The file serves both sites all in one, with
+`[names]` on the `.simplex` TLD, `[chain]` at the local chain with 1 confirmation, and `[issuer]`
+signing with a public test key at index 999, which no client trusts, through `dev_keys`. That key is
+in `dev/chain.sh`, as public as anvil's: never use it elsewhere. The service starts once the chain
+and the database are healthy. `USER_UID` and `USER_GID` in `.env` (by default 1000) own the file,
+mode 600, and its folder, mode 700.
+
+Names are paid for with prepaid codes, so no payment provider is needed. To issue one, stop the
+service and run its console against the dev database:
+
+```
+docker compose stop store-service
+docker compose run --rm store-service -d postgresql://simplex@127.0.0.1:5433/store_service --run-cli --service-config /etc/simplex-store-service/store_service.ini
+```
+
+There, `//issue name 6` prints a code for one name of 6 letters or more (see
+[From the command line](#from-the-command-line)). Leave with `/quit`, then
+`docker compose start store-service`.
+
+The service key's account starts with 10,000 ETH and a sponsor allowance. To top it up, or set any
+account's balance:
+
+```
+docker compose exec chain chain.sh topup [address] [eth]
+```
+
+Registrations wait 10 seconds after their commit (`MIN_COMMITMENT_AGE` in `compose.dev.yml`).
+
+Card payments in Stripe's test mode: uncomment `[stripe]` in `config/store_service.ini` (as the
+`USER_UID` user, or with `sudo`), put in the test keys and the webhook secret, which
+`stripe listen --forward-to 127.0.0.1:8080/webhooks/stripe` prints, and run
+`docker compose restart store-service`. With `dev_keys`, the service refuses live keys, and a
+BTCPay that is not on loopback.
+
+To start over, delete the containers and every dev state together, since orders in the database
+point at names on the chain. `./data` belongs to root and to Postgres's user, so:
+
+```
+docker compose down
+sudo rm -rf data config
+```
+
+### Caddy
+
+The Caddyfile is not in this repository. Its two host blocks for the split deployment
+(`serve_webapp = off`), with the exported folders at `/srv/store-service/badges` and
+`/srv/store-service/names` and the listener at `127.0.0.1:8080`:
+
+```
+badges.simplex.chat {
+	encode zstd gzip
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle /webhooks/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle {
+		root * /srv/store-service/badges
+		file_server
+	}
+	@shell path / /index.html /sw.js
+	header @shell Cache-Control "no-cache"
+	header /assets/* {
+		Cache-Control "public, max-age=31536000, immutable"
+		match status 2xx
+	}
+	header Content-Security-Policy "default-src 'self'; script-src 'self' https://js.stripe.com https://*.js.stripe.com; frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com; connect-src 'self' https://api.stripe.com; img-src 'self' https://*.stripe.com; frame-ancestors 'self' https://simplex.chat https://*.simplex.chat"
+}
+
+simplex.domains {
+	encode zstd gzip
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle {
+		root * /srv/store-service/names
+		file_server
+	}
+	@shell path / /index.html /sw.js
+	header @shell Cache-Control "no-cache"
+	header /assets/* {
+		Cache-Control "public, max-age=31536000, immutable"
+		match status 2xx
+	}
+	header /manifest.webmanifest Content-Type "application/manifest+json"
+	@media path /fonts/* /img/*
+	header @media {
+		Cache-Control "public, max-age=86400"
+		match status 2xx
+	}
+	header {
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-i5ar+ITNdQiucbmin4/AN6DAY5LbAWeq3at+RiFoUoY=' 'sha256-lxURZtAGLIPkeIfIfFjl4UIJp4ElJWSbFqE1ktKB8hk=' 'sha256-djvAKNENifE9sLU9+NrLdzdGftMgCwpvCvH/MAbkElY=' https://js.stripe.com https://*.js.stripe.com; frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com; connect-src 'self' https://api.stripe.com; img-src 'self' data: https://*.stripe.com; style-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+		Strict-Transport-Security "max-age=63072000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Cross-Origin-Opener-Policy "same-origin-allow-popups"
+	}
+}
+```
+
+- Both sites call `/api/*` on their own origin, so there is no CORS.
+- `/webhooks/*` is proxied on badges.simplex.chat only. BTCPay and Stripe send every event there,
+  names payments included.
+- The shell and `/sw.js` are `no-cache`, since they name the build's hashed files, and Caddy's
+  `file_server` sends no `Cache-Control` of its own. `/assets/*` file names carry a content hash.
+  The long lifetimes apply to found files only, so a missing asset is not cached for a year.
+- `file_server` sends no type for `.webmanifest`, which the names site's manifest needs.
+- The badges policy is `web/README.md`'s. The names policy is the names webapp's (its README,
+  "Hosting"), with `https://*.stripe.com` added to `img-src` beside `data:`, which the link
+  profiles' pictures need. Its two hashes are those of the inline theme and font-preload scripts
+  in the names `index.html`, and change with them. It allows no inline style.
+- Stripe.js runs on simplex.domains itself, in the document that keeps the owner codes and prepaid
+  codes in `localStorage`. The owner accepted this on 2026-10-20, rather than a Checkout redirect
+  or a separate card origin. Scripts and frames are allowed only from this origin and Stripe's
+  hosts.
+
+With `serve_webapp = on`, the service serves both sites itself, so each host block proxies
+everything to its site's port, `badges_port` and `names_port`:
+
+```
+badges.simplex.chat {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8080
+	# the Content-Security-Policy header of the badges.simplex.chat block above
+}
+
+simplex.domains {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8081
+	# the last header { } block, the policy with it, of the simplex.domains block above
+}
+```
+
+The service sets each file's type and `Cache-Control` itself: `no-cache`, and a year for
+`/assets/*`, so the names site's fonts and images are revalidated rather than kept for a day.
+
+### Terms and community names
+
+The controller's name policy (`SimplexNamePolicy`, read from `namePolicy()` once at startup and
+logged, or on first use when that read fails or finds none, or after a register reverts
+`TermsNotAccepted`) holds the links of two sets of terms:
+`generalTermsLink()`, the general terms, and `communityTermsLink()`, the community terms. It keeps
+the list of community names, which the contracts' owner edits on chain and the guardian
+can add to. A listed name is sold under the community terms, which include the general terms that
+apply to it, and any other name under the general terms. A name is registered only after its owner
+accepts the current terms of its kind on chain, once.
+
+**Upgrading:** remove `[names] terms_version` and `terms_url`. Nothing reads them now, and the
+service refuses to start with any `[names]` or `[chain]` setting it does not read.
+
+A later `setNamePolicy` takes effect for the service after a restart, so restart it
+at once. Until then the service reads the reservations, the list, the terms and the nonces from the
+old policy, so an order of a name the new policy reserves ends taken. Each order whose acceptance
+went to the old policy fails one register, `TermsNotAccepted`, and its page signs again; the first
+such failure makes the service read `namePolicy()` again, so the page signs for the new policy.
+
+A community name is registered for 2 paid years, plus the free days before `[names] term_start`,
+whatever years `[names] years` or its prepaid code gives, since the controller registers a community
+name for at most 1095 days.
+
+Each link names one file at one commit of simplex-chat/simplex-chat on git.simplex.chat, with the
+sha256 of the file's bytes:
+
+```
+https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/<40 lower-case hex>/<path>#sha256=<64 lower-case hex>
+```
+
+The path is one or more segments of letters, digits, `_`, `-` and `.`, separated by `/`, with no empty,
+`.` or `..` segment, and ends in `.md`. The terms' hash, which orders sign and the policy records with
+each acceptance, is the keccak256 of the link. With `[chain] chain_id = 31337` and a node of that chain
+id, the service also takes a link of a file on this machine, `http://127.0.0.1:<port>/<path>#sha256=<64
+lower-case hex>`, as the dev scripts set.
+
+The service reads both links at one block for each request that needs them, so a change on chain
+applies at once. It fetches each text once, without the link's fragment, following no redirect, within
+10 seconds: a `200` answer of at most 256 KB, valid UTF-8, whose sha256 is the link's. It keeps each text by its hash, and
+fetches one at a time. After a failed fetch it fetches no text for 30 seconds, or for longer, up to an
+hour, when the answer's `Retry-After` asks, and logs why. `GET /api/terms/<hash>` answers
+`{"link", "text"}` for the hash of either current link, `404` for any other hash or a link the service
+does not take, and meanwhile `503 terms_unavailable` with `Retry-After` for a text not fetched yet.
+
+The terms of a name's kind are unavailable while their link is not set, is not a link the service
+takes, or has a text the service cannot fetch now. An available name's search answer then carries
+`"terms": null`, and an order, a code order, a move or a spend of such a name answers
+`503 terms_unavailable` before any payment, with `Retry-After` while the fetch waits. The service
+logs both links and their hashes at startup, and warns for each that is not set or not a link it
+takes; it fetches the texts on first use. A search reads the links only for an available name, and
+waits for its text within the search's deadline. To change the terms,
+the contracts' owner calls `setGeneralTerms(link)` or `setCommunityTerms(link)`; an order signed
+under the old terms is asked to agree again before its reveal.
+
+`[community]` gives what each community name is for, one line per name: the label, as it is searched,
+then `=` and the text:
+
+```
+[community]
+bakers = bakers and bakeries in Portugal
+```
+
+Search answers carry a listed name's text, and the registration view the text of an order that signed the community terms, which the page shows with the
+name as a community name. A name the policy lists without a line here shows as a community name
+without a text, and the service warns at startup, when it reads the policy, for each line naming a
+name the policy does not list, which is sold as a plain name. Each label must be a valid name in lower case and listed once; each text is
+1 to 200 characters with no control, format or line separator characters, and should not end with a
+full stop, since the page adds one. The service refuses to start, naming the setting, on any other
+entry, on `[community]` without `[names]`, on a key written twice in a section (only the first would
+be read) and on a section header written twice in the file (only the last would be read). It logs
+how many community names it loaded.
+
+The `[community]` texts are read only at startup, so an edit applies after a restart; the policy's
+list and its terms apply as soon as they change on chain. After a restart, search each listed name on
+the names site and check that it shows as a community name.
+
+Every order signs the terms the buyer agreed to: the 64 lower-case hex digits of the hash of the
+terms of the name's kind, without `0x`, after `community/` for a listed name. The service stores them
+with the order, so an open order keeps the terms it signed after a change, and every move signs the
+current terms for the name it moves to, and stores them. An order or a move signed with any other
+value answers `409 terms_changed` with the current terms of the name's kind, `{"hash", "link"}`, and
+the name's community entry, and the page asks again; an order signed with a terms version, as pages
+before signed, meets it once. An exact resend is still answered after the terms changed.
+
+**Upgrading:** a page that sends no `terms` gets `bad_request` on every order, spend and move, so the
+page and the service are deployed together.
+
+On chain the order is the same for every name: the service commits, the page signs the reveal, the
+service registers. With the reveal the page signs the acceptance of the terms of the name's kind for
+the commitment, `AcceptGeneralTerms` or `AcceptCommunityTerms`, at the policy's nonce and the
+reveal's deadline, and the service relays it with `commitUnderGeneralTermsWithSig` or
+`commitUnderCommunityTermsWithSig` as soon as the reveal is stored, then registers. A relay or a
+register refused for the acceptance (new terms, a used nonce), an acceptance of the other kind of
+terms, or one signed for the name policy before a `setNamePolicy`, clears the reveal, and the page
+signs again. A relay that reverts while the policy holds that acceptance for the commitment, as when
+another sent it first, is followed by the register.
+
+### Codes-only launch
+
+`[names] codes_only = on` lets only prepaid codes register names, as for the launch to the investors
+who hold them before anyone can pay. It is `off` by default. While it is on:
+
+- the names site's shell is served and exported with `<meta name="simplex-names-mode" content="codes">`
+  in place of the build's `content="open"`, and the page then offers only codes. The badges site's
+  shell is unchanged;
+- `POST /api/invoice` for a name and `POST /api/registration/:id/spend` answer
+  `403 {"error": "codes_only"}`, before they read the order, so no order takes money for a name;
+- search, link previews, code checks, code orders (`POST /api/name/register`), the registration
+  view, `find`, the reveal, Try again, another name and record edits work as before. Webhooks and the
+  poller still settle the invoices already open, and badges sell as before.
+
+The setting is read at startup, and the export is written then, so switching it is an edit of the
+ini and a restart, with the same build. Codes for investors come from the group (needs `[group]`, see
+[From the group](#from-the-group)) or from `//issue name` in `--run-cli` (see
+[From the command line](#from-the-command-line)).
+
+### Link edits
+
+Each "Edit links" save is one request, relayed by the service as one transaction whose gas it pays
+(see [The gas key](#the-gas-key)): one changed link as `setTextWithSig` (or `clearRecordsWithSig`),
+both links as the resolver's `multicall` of two `setTextWithSig` calls, which lands both or neither.
+
+A request whose earliest signed deadline is within 10 minutes of the latest block's time is refused
+(`400 bad_request`) before any row or gas: a closer deadline could pass while the transaction waits
+for the sender's fee replacements (36 seconds apart), and the edit would revert after paying gas. The
+names page signs a deadline one hour ahead.
+
+`[names] record_edits_per_year` (default 3, from 1 to 100, read at startup) bounds them per name in
+any 365 days:
+
+- each accepted request counts once, from when it is stored to be sent, whether it changes one link
+  or both, or clears them;
+- links set at registration ride on the register transaction and count nothing;
+- an edit that reverts on chain (or expires) counts as well, since its transaction may have paid
+  gas, so the limit bounds repeats of failing edits too;
+- a request refused before any transaction, a dry run that reverts, and a send the chain fails count
+  nothing;
+- an exact resend of an accepted request is answered as before and counts nothing more.
+
+When a name has none left, `POST /api/name/records` answers
+`429 {"error": "edit_limit", "nextAt": <unix seconds>}` before any chain read, and the search answer
+for the name carries `recordEdits: {"left": 0, "nextAt": …}`, from which the page shows when the
+owner can edit again. Lowering the setting keeps the edits already counted. The hourly cap of 10
+relayed requests per name still applies.
+
+### The gas key
+
+`[chain] service_key` is the registrar key: an Ethereum account (EOA) that sends every names
+transaction, `commit` to the controller, each name's terms acceptance (`commitUnderGeneralTermsWithSig` or `commitUnderCommunityTermsWithSig`) to the name policy, `registerWithCredit` to the sponsor, and the owners' record
+edits (`setTextWithSig`, `clearRecordsWithSig`, or a `multicall` of two) to the resolver. It pays
+only their gas, in ETH. The names' rent is spent from its allowance on the sponsor, in USD, which the
+guardian sets. It holds no names.
+
+The commands run from `scripts/store-service/` on the service host, with Foundry's `cast`
+([getfoundry.sh](https://getfoundry.sh), checked with 1.5.1) and `jq`. They read the ini through this
+shell function, which takes a `[chain]` key's value without surrounding spaces, tabs or a CR:
+
+```
+ini() { sudo sed -n "/^\[chain\]/,/^\[/s/^$1[[:space:]]*=[[:space:]]*\([^[:space:]]*\).*/\1/p" "${2:-config/store_service.ini}"; }
+```
+
+Keys and the RPC URL are read through `ini`, so they stay out of the shell history. A key is in
+cast's arguments, and the RPC URL in curl's, visible to `ps` while it runs.
+
+The ini is never edited in place. `sudoedit` refuses a file in a directory the invoking user can
+write (sudo(8), sudoers(5) `sudoedit_checkdir`), as `scripts/store-service/config/` of the checkout is.
+`sudo <editor>` would leave swap or backup files holding the key beside it, which git does not
+ignore. So each change is made in a copy in a root-only directory and copied over the ini, which
+keeps its owner and mode. `next/store_service.ini` and
+the other copies below are ignored by git, as every `store_service.ini` is, and are outside the
+image.
+
+#### Create the key
+
+Fill `[names]` and `[chain]` in a copy, with a `service_key = 0x...` line under `[chain]`. Then
+generate the key into that line, so it is never printed, and put the copy in place:
+
+```
+sudo install -d -m 700 next && sudo cp -p config/store_service.ini next/store_service.ini
+sudoedit next/store_service.ini
+cast wallet new --json | jq -r '"s/^service_key[[:space:]]*=.*/service_key = " + .[0].private_key + "/"' | sudo sed -i -f - next/store_service.ini
+cast wallet address "$(ini service_key next/store_service.ini)"
+sudo cp next/store_service.ini config/store_service.ini && sudo rm -r next
+```
+
+The address check prints the key's address, as in `0xB2590B3a4fa5bEdda803F5f1F605803438C3F71E`, and
+fails when the line was not replaced. The key is `0x` and 64 hex digits.
+
+The ini holds the only copy of the key. It is gitignored, every `*.ini` is kept out of the image,
+and compose mounts its folder read-only. Keep it owned by the service user with mode 600. The
+service never logs the key; keep it out of logs and tickets too.
+If a key was ever shown on a terminal, clear the screen and its scrollback (`clear && printf
+'\e[3J'`, and `tmux clear-history` in tmux), and never show one in a recorded session.
+
+#### Set up the shell
+
+```
+export ETH_RPC_URL="$(ini rpc_url)"
+CONTROLLER=$(ini controller)
+SPONSOR=$(ini sponsor)
+REGISTRAR=$(cast wallet address "$(ini service_key)")
+```
+
+cast reads the node from `ETH_RPC_URL`, so no command below names it. The address check reads the
+ini on disk, not the running service, which logs no address. To confirm the service runs with the
+key, check that `cast nonce $REGISTRAR --block pending` rises after its next transaction.
+
+#### Grant the allowance
+
+Only the guardian, the controller's beneficiary, can set the allowance:
+
+```
+cast call $CONTROLLER 'beneficiary()(address)'
+```
+
+The guardian sends this call to `$SPONSOR`, with no value, from whatever wallet holds its key. Its
+calldata, here for $1,000:
+
+```
+cast calldata 'setRegistrarAllowance(address,uint256)' $REGISTRAR $(cast parse-units 1000)
+```
+
+```
+0x7f8ac8b8000000000000000000000000b2590b3a4fa5bedda803f5f1f605803438c3f71e00000000000000000000000000000000000000000000003635c9adc5dea00000
+```
+
+- From a key, with cast (`--interactive` prompts for the key; `--ledger` signs on a Ledger instead):
+
+  ```
+  cast send $SPONSOR 'setRegistrarAllowance(address,uint256)' $REGISTRAR $(cast parse-units 1000) --interactive
+  ```
+
+- From a multisig such as Safe: submit that calldata to the sponsor address as a transaction with
+  value 0 in the Safe app.
+
+Then anyone can check the result:
+
+```
+cast call $SPONSOR 'registrarAllowance(address)(uint256)' $REGISTRAR
+```
+
+```
+1000000000000000000000 [1e21]
+```
+
+- The amount is in attoUSD: dollars × 10^18, or cents × 10^16. `cast parse-units 1000` gives $1,000.
+- It replaces the allowance and does not add to it. To top it up, read what is left and send the
+  new total.
+- Zero is the kill switch: `setRegistrarAllowance($REGISTRAR, 0)` stops every register from that
+  key in one transaction. A sender that is not the guardian is refused with `NotBeneficiary`.
+- Each register spends the name's list price (`rentPriceUSD`, base plus premium) for its whole
+  duration, the free days before `[names] term_start` included. For example, 2 years of a name of 8
+  letters or more:
+
+  ```
+  cast call $CONTROLLER 'rentPriceUSD(string,uint256)((uint256,uint256))' examplename 63072000
+  ```
+
+  ```
+  (100000000000000000000 [1e20], 0)
+  ```
+
+#### Fund the key
+
+Send ETH on the chain of `[chain] chain_id` from any wallet, and top it up the same way. With cast:
+
+```
+cast send $REGISTRAR --value 1ether --interactive
+```
+
+The gas below was measured on a local anvil deployment of the contracts (the names webapp's
+`dev/deploy.ts`), with a 63-letter label and links of 4096 bytes, the most the service accepts,
+before the terms became links accepted for every name. The acceptance's figures are those of the
+community names' acceptance then, whose work its two functions repeat; a plain name's register now also
+reads, clears and logs its acceptance, as a community name's did:
+
+| Transaction | Gas limit | Gas used | Limit × 100 gwei |
+|---|---|---|---|
+| `commit` | 58,983 | 53,521 | 0.0059 ETH |
+| `commitUnderGeneralTermsWithSig` or `commitUnderCommunityTermsWithSig`, the acceptance | 95,795 | 94,791 | 0.0096 ETH |
+| `registerWithCredit`, no links | 568,116 | 504,408 | 0.0568 ETH |
+| `registerWithCredit`, one link | 3,673,412 | 3,489,551 | 0.3673 ETH |
+| `registerWithCredit`, two links | 6,791,417 | 6,467,815 | 0.6791 ETH |
+| `setTextWithSig`, a new link | 3,026,449 | 3,026,449 | 0.3026 ETH |
+| `setTextWithSig`, a link replacing one | 462,289 | 462,289 | 0.0462 ETH |
+| `setTextWithSig`, a link removed | 698,644 | 558,916 | 0.0699 ETH |
+| `clearRecordsWithSig` | 80,312 | 80,312 | 0.0080 ETH |
+| `multicall`, two new links | 6,054,042 | 6,008,868 | 0.6054 ETH |
+
+- The service sets each transaction's gas limit a fifth above its estimate, within `gas_limit_cap`,
+  and its max fee to at most `max_fee_per_gas` (default 100 gwei). The node accepts a transaction only
+  while the balance covers its limit × max fee, so each needs held about 1.2 × the last column. What
+  it is charged is gas used × the block's base fee plus tip, usually far less.
+- An order is one commit, one acceptance relay and one register: 0.6946 ETH at the cap with two links, 0.0723 ETH with
+  none. The expected orders × 0.6946 ETH, plus 0.6054 ETH per expected Save of both links (0.3026 ETH
+  for one), pays for all of them even at the cap. A name's link edits are at most
+  `record_edits_per_year` (3) a year, see [Link edits](#link-edits). The figures scale with
+  `max_fee_per_gas`.
+- A Save of both links in one `multicall` uses 26,906 gas less than the same two edits sent as two
+  transactions with links of 4096 bytes, and 28,082 less with short links.
+- `gas_limit_cap` (default 8,000,000) must stay above 6,791,417: a transaction whose estimate is
+  above it is not sent.
+
+#### Check the balance and transactions in flight
+
+```
+cast balance $REGISTRAR --ether
+cast nonce $REGISTRAR --block latest
+cast nonce $REGISTRAR --block pending
+```
+
+The balance prints as `1.000000000000000000`. The `latest` nonce counts the key's mined
+transactions, and the `pending` one adds those waiting in the node's pool; the difference is what is
+in flight. The same reads through JSON-RPC answer in hex wei and hex counts
+(`{"jsonrpc":"2.0","id":1,"result":"0xde0b6b3a7640000"}`, which `cast to-unit 0xde0b6b3a7640000 ether`
+prints as `1`):
+
+```
+curl -s -X POST -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_getBalance","params":["'"$REGISTRAR"'","latest"]}' "$ETH_RPC_URL"
+curl -s -X POST -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_getTransactionCount","params":["'"$REGISTRAR"'","latest"]}' "$ETH_RPC_URL"
+curl -s -X POST -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_getTransactionCount","params":["'"$REGISTRAR"'","pending"]}' "$ETH_RPC_URL"
+```
+
+A transaction the node refused is in neither count. The service's own list is the `pending` rows of
+its transactions table, here with compose's default database and schema:
+
+```
+psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_nonce, kind, sent_at FROM simplex_v1_chat_schema.sx_badge_service_name_transactions WHERE status = 'pending' ORDER BY registrar_nonce"
+```
+
+#### When funds or the allowance run out
+
+`docker compose logs store-service` shows:
+
+- `[ERROR …] names sender: nonce <n>: not sent: …`, with the node's `insufficient funds` message,
+  when the key cannot pay. The transaction is saved and sent again every few seconds, so funding the
+  key is enough and needs no restart. The line is logged again only when the node's message changes.
+- `[ERROR …] names worker: registration <id> waits: the registrar's allowance on the sponsor is
+  used up; the guardian raises it with setRegistrarAllowance` when the sponsor refuses a register
+  with `InsufficientAllowance`. The order keeps its phase and its register is tried again every 15
+  seconds, so a top-up before its commitment lapses registers it with no restart. The line is
+  logged once per order. An order whose commitment lapses first fails, and the buyer can Try again.
+  This holds when the register's dry run is refused. A register that passes its dry run and reverts
+  once mined, as two registers sent while the allowance covers one can, fails its order with no
+  such line; the next order's dry run logs it, and the buyer can Try again.
+- `[WARN …] names sender: the latest block needs <wei> wei per gas, above max_fee_per_gas <cap>;
+  the transaction waits` when fees are above the cap. Nothing is signed until they fall.
+- `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over max_fee_per_gas
+  <cap>` when a transaction stuck in the pool cannot be bumped within the cap.
+
+An order sends at most 5 commits, 5 terms acceptances and 5 registers, its moves included, since an
+owner who changes their terms acceptance on chain can make each acceptance and register revert at the
+service's gas. Past that the order fails, Try again and a move answer `400 bad_request`, and support refunds it
+at the provider: `//refund` records nothing for such an order, which has no balance.
+The log line is `[WARN …] names worker: registration <id> failed: it sent <n> transactions of one kind`.
+
+Try again or a move of a failed order, and the worker's judgment of a register that did not go
+through, first run `confirmLanded`. It marks the order registered when `ownerOf` at the confirmation
+depth shows the order's owner holding the name, even if this order's register never landed: an
+owner who got the name another way counts as served, and a code order spends its code.
+
+#### Rotate the key
+
+The service resumes its saved transactions at start and gives new ones nonces after theirs. Those
+are signed by the key that sent them, so started on another key it would give that key's
+transactions nonces it has not reached, and they would never be mined. Rotate only with no `pending`
+row, at a quiet time: every stop takes the store offline, and each order sends its register about a
+minute after its commit.
+
+1. Keep a copy of the old ini, create the new key in another, fund it, and have the guardian grant
+   it an allowance, as above for `$NEW`:
+
+   ```
+   sudo install -d -m 700 prev next
+   sudo cp -p config/store_service.ini prev/store_service.ini && sudo cp -p config/store_service.ini next/store_service.ini
+   cast wallet new --json | jq -r '"s/^service_key[[:space:]]*=.*/service_key = " + .[0].private_key + "/"' | sudo sed -i -f - next/store_service.ini
+   OLD=$(cast wallet address "$(ini service_key prev/store_service.ini)")
+   NEW=$(cast wallet address "$(ini service_key next/store_service.ini)")
+   ```
+
+2. Stop the service and count the `pending` rows:
+
+   ```
+   docker compose stop store-service
+   psql "postgresql://simplex@127.0.0.1:5432/badge_service" -tAc "SELECT count(*) FROM simplex_v1_chat_schema.sx_badge_service_name_transactions WHERE status = 'pending'"
+   ```
+
+   On `0`, go to step 3. Otherwise `docker compose start store-service` on the old key, let them
+   settle (`confirmations` blocks after they are mined), wait for a pause in the orders, and repeat
+   this step. For a drain that new orders cannot hold up, start the old key with
+   `max_fee_per_gas = 1` under `[chain]` instead:
+
+   ```
+   sudo install -d -m 700 drain && sudo cp -p config/store_service.ini drain/store_service.ini
+   sudoedit drain/store_service.ini
+   sudo cp drain/store_service.ini config/store_service.ini
+   docker compose start store-service
+   ```
+
+   With a cap of 1 wei the service signs no new transaction. Each new one waits and logs the fee
+   warning, and an owner's link edit is answered as unavailable. The saved transactions are still
+   followed and settle. They are not bumped above the cap, so one that stays pending for long needs
+   the old ini back (`sudo cp prev/store_service.ini config/store_service.ini` and a restart) to be
+   replaced. Step 3 puts the full cap back, since `next/` was copied before.
+3. Put the new ini in place, start, and check that the ini on disk now holds the new key:
+
+   ```
+   sudo cp next/store_service.ini config/store_service.ini
+   docker compose start store-service
+   cast wallet address "$(ini service_key)"
+   ```
+
+   It prints `$NEW`. After the next order's commit, `cast nonce $NEW --block pending` is above 0,
+   and `cast nonce $OLD --block pending` stays where it was.
+4. The guardian zeroes the old key's allowance, sending this calldata as in
+   [Grant the allowance](#grant-the-allowance), then anyone checks it reads 0:
+
+   ```
+   cast calldata 'setRegistrarAllowance(address,uint256)' $OLD 0
+   cast call $SPONSOR 'registrarAllowance(address)(uint256)' $OLD
+   ```
+
+5. Send the old key's ETH back to a plain account (a transfer to a contract such as a Safe needs
+   more than the 21,000 gas used here), then delete the copies. The first send leaves 0.01 ETH for
+   the fees. The second sweeps the rest, as a legacy transaction that pays exactly its gas price,
+   twice the node's current one, so the balance ends at 0:
+
+   ```
+   cast balance $OLD --ether
+   cast send <account> --value <balance - 0.01>ether --private-key "$(ini service_key prev/store_service.ini)"
+   P=$(( 2 * $(cast gas-price) ))
+   cast send <account> --legacy --gas-limit 21000 --gas-price $P --value $(( $(cast balance $OLD) - 21000 * P )) --private-key "$(ini service_key prev/store_service.ini)"
+   cast balance $OLD
+   sudo rm -rf prev next drain
+   ```
+
+   The last balance prints `0`. A negative value, from fees above about 150 gwei, makes cast refuse
+   the sweep; run it again when they fall.
 
 ## Issuing codes
 
@@ -466,6 +1249,8 @@ The command is sent to the running service in `--run-cli` mode, not a way to sta
 ```
 //issue <badge_type> [months] [paid|unpaid|free]
 //issue supporter 12
+//issue name <length> [years <Y>] [paid|free]
+//issue name 7 years 5
 ```
 
 `months` defaults to 1 and must be between 1 and 255; the status defaults to `free` and records
@@ -473,10 +1258,14 @@ whether the code was sold (`paid`), is awaiting payment (`unpaid`), or was issue
 (`free`). Redemption refuses an `unpaid` code with `payment_pending`: the web checkout writes the
 code row when the invoice is created, and settlement is what marks it paid.
 
+`//issue name` makes a prepaid name code (`SN<length>-…`): it pays for one name of at least
+`<length>` letters, 6 to 63, for `years` years, 2 to 10 (default 2), or 2 for a community name. Its status is
+`paid` or `free`: nothing marks a name code paid later, so `unpaid` is refused.
+
 The code is printed once and only its `SHA-256` is stored, so a code that is not copied when it is
 shown cannot be recovered.
 
-A code that leaked, or that was refunded, is withdrawn the same way:
+A code that leaked, or that was refunded, is withdrawn the same way, badge and name codes alike:
 
 ```
 //revoke <code>
@@ -490,15 +1279,33 @@ were already given out, and the command answers with an error. A multi-use code 
 be revoked, which stops the uses that remain.
 
 Core parses `//...` into `CustomChatCommand` and leaves it to the service's `preCmdHook`, which is
-why issuing codes lives in the service rather than in core.
+why issuing codes lives in the service rather than in core. `//refund`, the other command of this
+console, is in [Refunding a name balance](#refunding-a-name-balance).
 
 ### From the group
 
 With `[group]` in `store_service.ini`, the service manages one group and serves three commands in
-it: `/issue <type> [months <M>] [uses <N>]` and `/bulk <type> [months <M>] count <B>` for moderators
-and above, `/revoke <code>` for admins and owners. `months` is 1 to 255, `uses` 1 to 1000 and
-`count` 1 to 100; a value outside these gets the usage reply. A member's role is checked as the
-service last saw it, so a command sent by a moderator just demoted or removed can still run if it
+it: `/issue` and `/bulk` for moderators and above, `/revoke <code>` for admins and owners. Name codes
+need an admin or owner too, as each one registers at the sponsor allowance's and the gas key's cost,
+and the group issues at most 100 of them in 24 hours (`//issue name` in `--run-cli` has no limit). Both
+code commands take every kind of code in one form:
+
+```
+/issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]
+/bulk <kind> [<length>] [years <Y> | months <M>] count <N>
+```
+
+`/issue` makes one code and `/bulk` makes `<N>` single-use codes of the kind. `<kind>` is `name`
+with a length, or a badge type: `supporter`, `legend` or `investor`. A name takes `years`, with the
+bounds of `//issue name` (length 6 to 63, years 2 to 10, 2 by default); a name code issued in the
+group is single-use and `free`. A badge takes `months`, 1 to 255 and 1 by default, and in `/issue`
+also `uses`, 1 to 1000. `count` is 1 to 100. A value outside these bounds, a length for a badge, or
+the other kind's unit gets the usage reply, which lists the form, each kind's bounds and an example
+of each. The group's command menu shows every kind in each command's hint and fills the hint into
+the message box. Without `[names]`, `/issue name` and `/bulk name` get a reply that names are not
+enabled, and issue nothing. `/revoke` takes badge and name codes, so a name code issued before names
+were turned off can still be withdrawn. The group has no `/refund`. A member's role
+is checked as the service last saw it, so a command sent by a moderator just demoted or removed can still run if it
 reaches the service first; revoke any code the service posts for them after the change. `uses`
 above 1 makes a multi-use code, tracked by a group message showing its remaining uses and the time
 of the last one; when every use is redeemed, the same message says so. Every reply carrying a code is read by every member,
@@ -529,11 +1336,17 @@ is logged at the next start or join. Then make the member you choose owner with 
 that the log line names, in `--run-cli` mode; the service never promotes anyone once the first
 promotion was attempted.
 
-The join link logged when the group is created stays valid: anyone who has it can join later, as a
-member, and read every code posted or edited from then on. That includes a removed member, who can
-rejoin through it, so removing a member does not stop them seeing new codes. Keep the log that holds
-it private. The link is also stored in the `group_link` column of `sx_badge_service_group`, where it
-can be read again.
+The join link is never logged, as anyone who has it can join. The service stores it in the
+`group_link` column of `sx_badge_service_group`, and the operator reads it there to join, in the chat
+schema (`simplex_v1_chat_schema` by default):
+
+```
+psql "$BADGE_DB_CONN" -Atc 'SELECT group_link FROM simplex_v1_chat_schema.sx_badge_service_group'
+```
+
+The link stays valid: anyone who has it can join later, as a member, and read every code posted or
+edited from then on. That includes a removed member, who can rejoin through it, so removing a member
+does not stop them seeing new codes. A database copy holds it, as it holds the codes.
 
 If an owner deletes the group, or removes the service from it, the service logs an error on start
 and stops serving the group. To create a new group, stop the service, delete the row, and start it
@@ -556,3 +1369,126 @@ join link still works and its messages hold every code posted there.
 
 The configured `display_name` and `description` apply only to the group the service creates. Editing
 them later is logged as not applied and changes nothing.
+
+## Refunding a name balance
+
+A paid name order keeps its money as a balance when it ends `taken` (another buyer registered the
+name first), when it moves to a cheaper name (the difference), when a payment reaches its invoice
+after the invoice closed, and when its invoice was paid more crypto than it asked (the extra). The
+buyer spends a balance on another name from Your names, or asks for it back: the page tells them to
+write to chat@simplex.chat with the order's reference, which is its invoice id, or its registration
+id for an order without an invoice. Nothing is refunded automatically, and the service never learns
+where to send money. A reference is not proof of who paid: it is in the service's logs, the
+provider's Dashboard and its emails, and anyone holding it reads the balance and the order's name
+from `/api/invoice/:id`, or from `/api/registration/:id` for a registration id. Only a card refund is
+safe on the reference alone, as Stripe returns it to
+the card that paid; a crypto refund goes to an address the buyer gives, which nothing here ties to
+the order. Support records each refund in `--run-cli` mode with the service stopped, like the other
+`//` commands:
+
+```
+//refund <reference>
+//refund <reference> <cents>
+```
+
+1. Run `//refund <reference>` with the reference the buyer sent. It records nothing and answers the
+   balance, what paid for it and the command that refunds it:
+
+   ```
+   Order <id>: balance $100.00 (credited $100.00, refunded $0.00). Paid by: order <id>: $100.00 by btc on invoice <invoice id>. To record its refund: //refund <reference> 10000
+   ```
+
+   `Paid by` starts at this order and follows every balance the money came through back to the
+   first order: each order with what its invoice paid and by which method (`card`, `btc` or
+   `xmr`), the part paid from the balance of the next order listed, and money credited from its
+   invoice later: marked `late` when it arrived after the invoice closed, and `overpaid` when it is
+   the extra of an invoice that paid the order.
+2. Run the command the answer ends with. The cents must equal the whole balance: a refund zeroes it,
+   and part of a balance is never refunded. Other cents record nothing, and the answer gives the
+   balance.
+3. The answer, `Recorded a refund of $100.00 for order <id>. Refund it now, by: …`, repeats the
+   chain. Pay the balance's amount in US dollars back now, by the methods it lists. The refund is
+   recorded first so that the buyer cannot spend the money while it is paid
+   back. The service logs each recorded refund at note with the order's registration id and the
+   cents.
+
+A balance that an open order holds is never refunded: that order is buying another name with it and
+its invoice is waiting for the difference. The command names the order instead, with its invoice's
+expiry unless money reached the invoice:
+
+- `its invoice open until <time>`: if the buyer pays it, the balance is spent; if not, it is released
+  once the invoice expires and the poller, in service mode, closes the order. Run the command again
+  then.
+- `its invoice expired at <time>; start the service so the poller closes that order, 10 minutes
+  after the expiry at the earliest, then stop it and run //refund again`: the poller runs only in
+  service mode. Its first pass from 10 minutes after the expiry closes the order and releases the
+  hold; a card order closes only once Stripe accepts the cancel.
+- `whose invoice holds money`: a payment reached the invoice, before or after its expiry; the hold
+  stays until that payment settles, which spends the balance, or the provider closes the invoice,
+  which releases it.
+
+The command also answers when the reference matches no order, when the order has no balance, and
+when the cents are not the balance. A refunded balance shows `amount` 0 and its `refunded` total in
+Your names; a later late payment credits it again, and a second refund adds to `refunded`.
+
+## Running the webapp's cases against the service
+
+`scripts/store-service/dev/contract-run.sh` runs the names webapp's end-to-end cases that need no
+payment against this service in Chromium, as they run against the webapp's mock. It:
+
+1. starts anvil on 8545 and deploys the contracts with the webapp's `dev/deploy.ts`, with a commitment
+   age of 5 seconds, and the webapp's `dev/serve-terms.ts` on 8098, which serves the texts of the terms'
+   links that the deploy sets;
+2. builds the names site (`vite build`) into the run's folder;
+3. writes an ini for that deployment with `[names]` and `[chain]` and no `[btcpay]` or `[stripe]`,
+   with the one community name `bakers`, which the webapp's community cases search for,
+   serving the names site all in one on `SERVICE_PORT` and the badges site, from an empty folder, on
+   `BADGES_PORT`, and signing with the test suite's
+   public issuer secret (`issuerSecret` in `tests/Bots/StoreService/ConfigTests.hs`), trusted through
+   `[issuer] dev_keys`. That secret is public: never use it outside this script;
+4. starts the service once to make its database, stops it, and issues the prepaid codes the cases
+   need with `//issue name` in `--run-cli`;
+5. starts the service on 8180 (the names site) and 8181 (the badges site) and a code server on 8199,
+   and runs the cases with `BASE_URL` at the names site and `MOCK_URL` at the code server.
+
+The code server answers the cases' `POST /control/code` with the issued codes, the reset of
+`/control/search` that `search.spec.ts` sends after each case as done, and any other `/control/` with
+`501`, which fails the case that sends it. It passes `/api/` to the service with the case's
+`X-Forwarded-For`.
+
+It needs bash 5.1 or later (for `wait -n -p`), `cabal` (for the default `STORE_SERVICE_BIN`),
+Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts` as TypeScript, as its
+`dev/start.sh` does), `jq`, `curl` and `python3`; the webapp with its packages and
+Playwright's Chromium (`npm install`, `npx playwright install chromium`); and the compiled
+`ens-contracts` submodule (simplex-network/ens-contracts#47) of a simplex-namespace-contract checkout
+(brenzi/simplex-namespace-contract main, since #10), whose `test/fixtures/terms/` the deploy links
+as the terms, as the webapp's `dev/start.sh` needs. The cases read the chain's addresses from the webapp's
+`dev/local-chain-0.json`, so the script stops when its deployment differs from it; run the webapp's
+`SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8098, 8180, 8181 and 8199 must be free:
+the script stops before starting anything when one of them answers, and stops at once when anvil,
+the terms server, the service or the code server exits before it answers.
+
+```
+cabal build exe:simplex-store-service
+ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/dev/contract-run.sh
+```
+
+- `WEBAPP_DIR`: the names webapp (default: the `apps/simplex-domains` submodule's `webapp/`).
+- `STORE_SERVICE_BIN`: the service binary (default: `cabal list-bin exe:simplex-store-service`).
+- `SERVICE_PORT`, `BADGES_PORT`, `CODES_PORT`: the service's names and badges ports and the code
+  server's (8180, 8181 and 8199).
+- Arguments, if given, are passed to `playwright test` in place of the default cases' title filter.
+
+The default cases cover search answers for an available name, Check your code and its rate-limit
+countdown, code orders to `registered` with and without links, one whose register records its buyer's
+acceptance of the general terms, a code order's name code restored and
+revealed in another browser, Edit links on a name registered with a code (the other Edit links case
+answers its own name and record requests in the page), a link whose data cannot be read now, a
+community name's marker and its Check your order wording, and a code order of a name the contracts'
+owner lists on chain, whose register records its buyer's acceptance of the community terms. "search answers every kind of name" is not among them: it takes the chain down
+with `/control/search`.
+
+Each case sends its own `X-Forwarded-For`, and the ini sets `trust_forwarded_for = on`, so each case
+is its own client for the service's per-client limits, as for the mock's code limit. The script stops
+everything it started, deletes its folder when the cases pass, and keeps it with the logs, the ini and
+Playwright's results when they fail.

@@ -25,5 +25,6 @@ services:
         read_only: true
         bind:
           create_host_path: false
-      - ./web:/srv/webapp
+      - ./badges:/srv/badges-export
+      - ./names:/srv/names-export
     stop_grace_period: 10s

@@ -19,6 +19,7 @@ module StoreService.Group
     TrackerAction (..),
     trackerDecision,
     codeInTracker,
+    fmtTime,
     noOwnerHint,
     orphanHint,
   )
@@ -27,6 +28,9 @@ where
 import StoreService.Codes (issueFailedText, issueOneCode, revokeBadgeCode, singleUse)
 import StoreService.Config (GroupConfig (..))
 import StoreService.Group.Command (CmdAction (..), GroupCmd (..), groupCmdAction, groupCommands)
+import StoreService.Names.Codes (issueNameCode, revokeNameCode)
+import StoreService.Names.Store (nameCodesIssuedSince)
+import StoreService.Names.Turns (Turns)
 import StoreService.Store (CodeTracker (..), ManagedGroup (..), RevokeResult (..), clearCodeGroupItems, getCodeTracker, getEditableTrackers, getManagedGroup, insertManagedGroup, markOwnerBootstrapped, setCodeGroupItem)
 import StoreService.Store.Invoices (truncateToSecond)
 import Control.Concurrent.STM (TQueue, atomically, flushTQueue, readTQueue, readTVarIO, writeTQueue)
@@ -46,7 +50,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import GHC.Stack (HasCallStack, withFrozenCallStack)
-import Simplex.Chat.Badges.Code (BadgeCode, formatBadgeCode, parseBadgeCode)
+import Simplex.Chat.Badges.Code (BadgeCode, NameCode (..), formatBadgeCode, formatNameCode, parseBadgeCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller
@@ -86,7 +90,7 @@ ensureManagedGroup cc gc =
     -- A read error must not fall through to create, which would orphan a second group.
     -- The service stops instead, so a restart retries rather than leaving the group unserved.
     Left _ -> logError "badge group lookup failed, stopping" >> exitFailure
-    -- The join link is a bearer secret, logged only where it is created.
+    -- The join link is a bearer secret, so it is never logged.
     Right (Just ManagedGroup {mgGroupId}) ->
       sendChatCmd cc (APIGroupInfo mgGroupId) >>= \case
         Right CRGroupInfo {groupInfo = GroupInfo {membership, groupProfile = p}}
@@ -119,7 +123,7 @@ createManagedGroup cc gc userId =
           let linkText = groupLinkText connLinkContact
           withDB' "insertManagedGroup" cc (\db -> insertManagedGroup db groupId linkText now >> clearCodeGroupItems db) >>= \case
             Right () -> do
-              logNote $ "badge group created, join link: " <> linkText
+              logNote "badge group created; its join link is in group_link of sx_badge_service_group"
               pure (Just groupId)
             Left _ -> logError ("badge group " <> tshow groupId <> " not recorded - " <> orphanHint (groupName' g)) >> pure Nothing
         r -> logError ("badge group " <> tshow groupId <> " link failed: " <> tshow r <> " - " <> orphanHint (groupName' g)) >> pure Nothing
@@ -195,8 +199,8 @@ coalesceTrackerRefreshes = snd . foldr keepLast (S.empty, [])
 logUncaught :: HasCallStack => IO () -> IO ()
 logUncaught a = a `catchOwn'` withFrozenCallStack (logError . tshow)
 
-handleGroupEvent :: ChatController -> GroupId -> GroupEvent -> IO ()
-handleGroupEvent cc groupId ev = logUncaught (handle ev)
+handleGroupEvent :: ChatController -> Turns -> Bool -> GroupId -> GroupEvent -> IO ()
+handleGroupEvent cc turns namesOn groupId ev = logUncaught (handle ev)
   where
     handle = \case
       GEInGroup gid action
@@ -204,7 +208,7 @@ handleGroupEvent cc groupId ev = logUncaught (handle ev)
         | otherwise -> case action of
             GAJoined -> promoteOwner cc groupId
             GACommand role t -> case groupCmdAction role t of
-              RunCmd cmd -> runGroupCmd cc groupId cmd
+              RunCmd cmd -> runGroupCmd cc turns namesOn groupId cmd
               ReplyText txt -> void $ sendGroupText cc groupId "command reply" txt
               IgnoreMsg -> pure ()
       GETracker badgeCodeId code -> updateTracker cc groupId badgeCodeId code
@@ -221,15 +225,15 @@ promoteFirstOwner cc g@GroupInfo {groupId} member =
     _ -> pure ()
 
 -- Nothing is a group that is not served, so its events are drained.
-runGroupLane :: ChatController -> TQueue GroupEvent -> Maybe GroupId -> IO ()
-runGroupLane cc q groupId_ = case groupId_ of
+runGroupLane :: ChatController -> Turns -> Bool -> TQueue GroupEvent -> Maybe GroupId -> IO ()
+runGroupLane cc turns namesOn q groupId_ = case groupId_ of
   Just groupId -> do
     promoteOwner cc groupId
     -- Reconciling precedes the first batch, so queued events write after the correction.
     reconcileTrackers cc groupId
     forever $ do
       evs <- atomically $ (:) <$> readTQueue q <*> flushTQueue q
-      mapM_ (handleGroupEvent cc groupId) (coalesceTrackerRefreshes evs)
+      mapM_ (handleGroupEvent cc turns namesOn groupId) (coalesceTrackerRefreshes evs)
   Nothing -> forever $ void $ atomically (readTQueue q)
 
 -- The earliest joined member is promoted, not the one who just joined, so a join the lane never handled
@@ -256,8 +260,8 @@ promoteOwner cc groupId =
 noOwnerHint :: GroupName -> Text
 noOwnerHint gName = "the badge group has no member owner, make one with /mr #" <> viewName gName <> " <member> owner in --run-cli mode"
 
-runGroupCmd :: ChatController -> GroupId -> GroupCmd -> IO ()
-runGroupCmd cc groupId = \case
+runGroupCmd :: ChatController -> Turns -> Bool -> GroupId -> GroupCmd -> IO ()
+runGroupCmd cc turns namesOn groupId = \case
   GCIssue bt months uses ->
     issueOneCode cc bt months CPSFree uses >>= \case
       Left _ -> reply issueFailedText
@@ -267,19 +271,40 @@ runGroupCmd cc groupId = \case
             now <- truncateToSecond <$> getCurrentTime
             sendGroupText cc groupId ("tracker, code " <> tshow badgeCodeId <> " is lost") (initialTrackerBody code uses)
               >>= mapM_ (\iid -> withDB' "setCodeGroupItem" cc $ \db -> setCodeGroupItem db badgeCodeId iid now)
-  GCBulk bt months count -> do
-    codes <- replicateM count (issueOneCode cc bt months CPSFree singleUse)
-    let (errs, ok) = partitionEithers codes
-        issued = map (formatBadgeCode . fst) ok
-    reply . T.intercalate "\n" $ case errs of
-      [] -> issued
-      _ : _ -> issued <> ["Issued " <> tshow (length issued) <> " of " <> tshow count <> " codes. The remaining codes could not be issued."]
+  GCBulk bt months count -> issueMany count (fmap (formatBadgeCode . fst) <$> issueOneCode cc bt months CPSFree singleUse)
+  GCIssueName {} | not namesOn -> reply namesOffText
+  GCBulkName {} | not namesOn -> reply namesOffText
+  GCIssueName len years ->
+    withinNameCodes 1 $ issueNameCode cc len years CPSFree >>= reply . either (const issueFailedText) (("Code: " <>) . formatNameCode . NCPrepaid)
+  GCBulkName len years count -> withinNameCodes count $ issueMany count (fmap (formatNameCode . NCPrepaid) <$> issueNameCode cc len years CPSFree)
   -- Naming the code tells concurrent revokes apart; the command already made it public.
   GCRevoke code -> do
     outcome <- either id id <$> revokeWithTracker cc code
     reply (formatBadgeCode code <> ": " <> outcome)
+  GCRevokeName code -> do
+    outcome <- either id id <$> revokeNameCode turns cc code
+    reply (formatNameCode (NCPrepaid code) <> ": " <> outcome)
   where
     reply = void . sendGroupText cc groupId "reply, any codes in it are lost"
+    withinNameCodes n issue = do
+      since <- addUTCTime (negate nominalDay) <$> getCurrentTime
+      withDB' "nameCodesIssuedSince" cc (`nameCodesIssuedSince` since) >>= \case
+        Right issued
+          | issued + n <= maxNameCodesPerDay -> issue
+          | otherwise -> reply $ "At most " <> tshow maxNameCodesPerDay <> " name codes are issued in a day, " <> tshow issued <> " so far. Issue more with //issue name in --run-cli."
+        Left _ -> reply issueFailedText
+    issueMany count issueOne = do
+      (errs, issued) <- partitionEithers <$> replicateM count issueOne
+      reply . T.intercalate "\n" $ case errs of
+        [] -> issued
+        _ : _ -> issued <> ["Issued " <> tshow (length issued) <> " of " <> tshow count <> " codes. The remaining codes could not be issued."]
+
+-- | Each registers at the sponsor allowance's and the gas key's cost, so a member's account taken over issues few.
+maxNameCodesPerDay :: Int
+maxNameCodesPerDay = 100
+
+namesOffText :: Text
+namesOffText = "Names are not enabled on this service, so name codes cannot be issued."
 
 -- The label says what is lost when the send fails, since the log line is its only trace.
 sendGroupText :: HasCallStack => ChatController -> GroupId -> Text -> Text -> IO (Maybe ChatItemId)
