@@ -112,7 +112,7 @@ The `ChatCommand` enum ([`AppAPITypes.swift` L15](../Shared/Model/AppAPITypes.sw
 | `apiConnectContactViaAddress` | `userId, incognito, contactId` | Connect via address | [L137](../Shared/Model/AppAPITypes.swift#L137) |
 | `apiAcceptContact` | `incognito, contactReqId` | Accept contact request | [L154](../Shared/Model/AppAPITypes.swift#L154) |
 | `apiRejectContact` | `contactReqId` | Reject contact request | [L155](../Shared/Model/AppAPITypes.swift#L155) |
-| `apiDeleteChat` | `type, id, chatDeleteMode` | Delete conversation | [L138](../Shared/Model/AppAPITypes.swift#L138) |
+| `apiDeleteChat` | `type, id, chatDeleteMode, notice` | Delete or archive a chat; `ChatDeleteMode`: `.full`, `.entity` (keep conversation; for groups only an active owner), `.archive` (contacts); with `notice`, a contact or a business chat customer is deleted silently and blocked from connecting via the user's address | [L145](../Shared/Model/AppAPITypes.swift#L145) |
 | `apiClearChat` | `type, id` | Clear conversation history | [L139](../Shared/Model/AppAPITypes.swift#L139) |
 | `apiListContacts` | `userId` | List all contacts | [L140](../Shared/Model/AppAPITypes.swift#L140) |
 | `apiSetContactPrefs` | `contactId, preferences` | Set contact preferences | [L142](../Shared/Model/AppAPITypes.swift#L142) |

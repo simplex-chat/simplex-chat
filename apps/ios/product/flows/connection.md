@@ -139,6 +139,41 @@ Establishing contact between two SimpleX Chat users. SimpleX uses no user identi
 5. Incognito status is shown with a mask icon in the chat.
 6. Can also be toggled for pending connections via `apiSetConnectionIncognito(connId:incognito:)`.
 
+### 8. Delete, Archive or Ban a Contact
+
+Entry points: "Delete contact" and "Delete and ban" in contact info; the chat list swipe "Delete", "Ban" and "Archive"; the swipe "Delete" in contact lists and "Ban" in Archived contacts. The functions are in `ChatInfoView.swift`.
+
+```mermaid
+flowchart TD
+    D[Delete] --> R{ready and active}
+    R -->|no| C["Confirm contact deletion?"]
+    R -->|yes| S{Contact deletion setting}
+    S -->|Notify| A["alert: Delete"]
+    S -->|Ask| AS["action sheet: Delete and notify, Delete silently"]
+    A --> K["sheet: Keep conversation, Delete"]
+    AS --> K
+    B[Delete and ban] --> BD["sheet: Ban for, Delete and ban"]
+    BD -->|1 day, 1 week| BK["sheet: Keep conversation, Delete and ban"]
+    BD -->|Forever| BF["sheet: Keep conversation, typed yes, Delete and ban"]
+```
+
+Delete (`deleteContactDialog`):
+1. A contact that is ready and active, archived or not, gets two dialogs.
+2. Dialog 1 by the Contact deletion setting (`privacyContactDeletionDefault`): Notify shows "Delete contact?" with Delete; Ask shows "Delete contact?" with "Delete and notify" and "Delete silently". The message: the name, "Contact will be deleted - this cannot be undone!", "You won't be able to reconnect unless <name> sends you a new link."
+3. Dialog 2 (`KeepConversationDialog`): "Keep conversation", Delete, Cancel; the footer "<name> will be notified." or "<name> won't be notified.", and "<name> can connect to you again via your address." when the user has an address.
+4. "Keep conversation" off: `apiDeleteChat` with `.full(notify:)`; on: `.entity(notify:)`, and an archived contact stays in Archived contacts.
+5. Other contacts: "Confirm contact deletion?" with Confirm, as before.
+
+Archive (`archiveContact`):
+1. `apiDeleteChat` with `.archive`: the contact moves to Archived contacts and keeps the conversation.
+2. "Contact archived!" with "Don't show again" (`showDeleteConversationNoticeDefault`): "You can send messages to <name> from Archived contacts." or, for a deleted contact, "You can view the conversation with <name> in Archived contacts."
+
+Delete and ban (`deleteAndBanContactDialog`), when `Contact.canDeleteAndBan`: the contact is ready and active, connected via the user's address (`Connection.viaUserContactLink`), and supports `LINK_NOTICE_VERSION`:
+1. "Delete and ban?": "Ban for" 1 day (default), 1 week or Forever; "Delete and ban"; Cancel.
+2. 1 day or 1 week: "Delete and ban?" with "Keep conversation" and the duration in the footer.
+3. Forever: "Delete and ban forever?" with "Keep conversation" and a field; "Delete and ban" is enabled when the field is "yes".
+4. `apiDeleteChat` with `notify=off` and a `LinkNotice`: the contact is not notified, whatever the setting, and the contact's app does not connect via the user's address for the duration; one-time links are not affected.
+
 ## Data Structures
 
 | Type | Location | Description |

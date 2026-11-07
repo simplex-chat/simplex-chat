@@ -41,6 +41,8 @@
 | PC29 | User Address |
 | PC30 | Member Support Chat |
 | PC31 | Channels (Relays) |
+| PC34 | Chat Deletion, Archive and Delete and Ban |
+| PC35 | Chat List Actions |
 
 ---
 
@@ -52,12 +54,15 @@
 | Shared/SimpleXApp.swift | PC1 through PC31 | High | App entry point — initialization affects everything |
 | Shared/AppDelegate.swift | PC18 | Medium | Push notification registration |
 | Shared/Views/ChatList/ChatListView.swift | PC1, PC28 | High | Main screen rendering and filtering |
+| Shared/Views/ChatList/ChatListNavLink.swift | PC1, PC28, PC34, PC35 | High | Chat list rows: navigation, swipe actions, "More" |
+| Shared/Views/ChatList/TagListView.swift | PC28, PC35 | Low | List sheet with the Favorites row |
+| Shared/Views/Contacts/ContactListNavLink.swift | PC34, PC35 | Medium | Contact list rows; "Delete" and, in Archived contacts, "Ban" |
 | Shared/Views/ChatList/GetStakeBanner.swift | PC1 | Low | Crowdfunding banner and shared banner card chrome |
 | Shared/Views/Chat/ChatView.swift | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC11, PC31 | High | Core conversation UI — most messaging features, channel message rendering |
 | Shared/Views/Chat/ComposeMessage/ComposeView.swift | PC4, PC6, PC9, PC11, PC31 | High | Message composition — send path for all messages, channel sendAsGroup |
 | Shared/Views/Chat/ChatItem/ | PC2, PC3, PC5, PC7, PC8, PC9, PC10, PC11 | Medium | Individual message rendering components |
-| Shared/Views/Chat/ChatInfoView.swift | PC2, PC13, PC20 | Medium | Contact details and verification |
-| Shared/Views/Chat/Group/GroupChatInfoView.swift | PC3, PC14, PC15, PC16, PC30, PC31 | High | Group management hub, channel info adaptations |
+| Shared/Views/Chat/ChatInfoView.swift | PC2, PC13, PC20, PC34 | Medium | Contact details and verification; contact deletion, archive and Delete and ban dialogs |
+| Shared/Views/Chat/Group/GroupChatInfoView.swift | PC3, PC14, PC15, PC16, PC30, PC31, PC34 | High | Group management hub, channel info adaptations; group deletion with "Keep conversation", business chat Delete and ban |
 | Shared/Views/Chat/Group/ChannelMembersView.swift | PC31 | Medium | Channel owners/subscribers list |
 | Shared/Views/Chat/Group/ChannelRelaysView.swift | PC31 | Medium | Channel relay status list |
 | Shared/Views/Chat/Group/AddGroupMembersView.swift | PC14, PC16 | Medium | Member invitation flow |
@@ -68,11 +73,12 @@
 | Shared/Views/Call/ActiveCallView.swift | PC17 | Medium | Call UI rendering |
 | Shared/Views/Call/CallController.swift | PC17 | High | CallKit integration — call lifecycle |
 | Shared/Views/Call/WebRTCClient.swift | PC17 | High | WebRTC session management |
-| Shared/Views/UserSettings/SettingsView.swift | PC18, PC22, PC23, PC24, PC25, PC29 | Medium | Settings navigation hub |
+| Shared/Views/UserSettings/SettingsView.swift | PC18, PC22, PC23, PC24, PC25, PC29, PC34 | Medium | Settings navigation hub; the Contact deletion default |
+| Shared/Views/UserSettings/PrivacySettings.swift | PC22, PC34 | Medium | Privacy screen, Contact deletion setting |
 | Shared/Views/UserSettings/AppearanceSettings.swift | PC24 | Low | Theme customization UI |
 | Shared/Views/UserSettings/NetworkAndServers/ | PC25, PC31 | High | Server configuration — affects connectivity and relay validation |
 | Shared/Views/UserSettings/UserProfilesView.swift | PC19, PC21 | Medium | Profile management |
-| Shared/Views/Onboarding/ | PC1 | Medium | First-time setup — affects initial state |
+| Shared/Views/Onboarding/ | PC1, PC34 | Medium | First-time setup — affects initial state; Notify for new users |
 | Shared/Views/LocalAuth/ | PC22 | Medium | App lock functionality |
 | Shared/Views/Database/ | PC23, PC26 | High | Database encryption and export |
 | Shared/Views/Migration/ | PC26 | High | Device migration — data portability |

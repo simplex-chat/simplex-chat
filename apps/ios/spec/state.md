@@ -465,6 +465,7 @@ App-level UI settings stored in `UserDefaults.standard`:
 |--------------|------|-------------|
 | `DEFAULT_PERFORM_LA` | `Bool` | Enable local authentication |
 | `DEFAULT_PRIVACY_PROTECT_SCREEN` | `Bool` | Hide screen in app switcher |
+| `DEFAULT_PRIVACY_CONTACT_DELETION` | `ContactDeletion` (`privacyContactDeletionDefault`) | Contact deletion: `.ask` (registered default) or `.notify` (set when the first profile is created); `AppSettings.privacyContactDeletion` |
 | `DEFAULT_SHOW_LA_NOTICE` | `Bool` | Show LA setup notice |
 | `DEFAULT_NOTIFICATION_ALERT_SHOWN` | `Bool` | Notification permission alert shown |
 | `DEFAULT_CALL_KIT_CALLS_IN_RECENTS` | `Bool` | Show CallKit calls in recents |

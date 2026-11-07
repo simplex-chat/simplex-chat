@@ -95,7 +95,8 @@ Member list is sorted by role (owners first) and filtered to exclude `memLeft` a
 |---|---|
 | Clear chat | Deletes all messages locally (with confirmation alert) |
 | Leave group | Leave the group (with confirmation alert) |
-| Delete group | Delete entire group -- only for owners (with confirmation alert) |
+| Delete group | Delete entire group -- only for owners (with confirmation alert); for an owner of a group or channel, and for the owner of a business chat with a customer, a sheet with "Keep conversation" follows ([group lifecycle 9](../flows/group-lifecycle.md#9-delete-group)) |
+| Delete and ban | Owner of a business chat with a customer, when the customer is a current member that supports bans (`GroupInfo.canDeleteAndBanCustomer`): the Delete and ban dialogs of contacts with the customer's name and "your business address" |
 
 ### Developer Section
 
@@ -120,7 +121,9 @@ Shown when `developerTools` is enabled:
 
 | Alert | Trigger |
 |---|---|
-| `deleteGroupAlert` | Tap delete group |
+| `deleteGroupAlert` | Tap delete group; also shown by the chat list swipe "Delete" |
+| `KeepConversationDialog` | After `deleteGroupAlert`, for owners: "Keep conversation", Delete, Cancel |
+| `deleteAndBanCustomerDialog` | Tap "Delete and ban" |
 | `clearChatAlert` | Tap clear chat |
 | `leaveGroupAlert` | Tap leave group |
 | `cantInviteIncognitoAlert` | Tap invite members while incognito |

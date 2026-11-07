@@ -544,6 +544,65 @@ Members below moderator get "Hide messages" / "Show messages" (`blockMemberAlert
 
 ---
 
+## ChatInfoView and GroupChatInfoView — Deletion, Archive, Delete and Ban
+
+Sheets: `showClosableAppSheet` (`AppSheet.swift`) presents a sheet with `showAppSheet` at the medium and large detents and passes it a `CloseSheet`, which dismisses the sheet and then runs the next step; `BanDialog` and `KeepConversationDialog` close before their action runs.
+
+`KeepConversationDialog` (`ChatInfoView.swift`):
+
+```
+title          optional navigation title
+toggle         Keep conversation, off
+confirmWord    optional field; the action is enabled when the trimmed, lowercased text equals the word
+action         destructive button, actionTitle; delete(keepConversation) after closing
+Cancel         closes
+footer         optional text
+```
+
+`ChatDeleteMode(keepConversation:notify:)` maps the toggle: on gives `.entity(notify:)`, off `.full(notify:)`.
+
+Contact deletion (`deleteContactDialog`):
+
+```
+ready and active    deleteActiveContactDialog: privacyContactDeletionDefault
+  .notify           deleteContactAlert (Alert): Delete, Cancel → dialog 2, notify on
+  .ask              deleteContactActionSheet: Delete and notify, Delete silently → dialog 2
+  dialog 2          deleteContactKeepDialog: Delete; footer "<name> will be notified." or "won't be notified.",
+                    "<name> can connect to you again via your address." when ChatModel.userAddress is set
+otherwise           deleteNotReadyContact: Confirm contact deletion?
+```
+
+`deleteContactMessage` is the message of both dialog 1 forms. `deleteContactMaybeErrorAlert` deletes with `deleteContactChat` and an optional `LinkNotice`, then shows "Contact deleted!" after `.entity`.
+
+Archive (`archiveContact`): `deleteContactChat` with `.archive` (`/_delete @<id> archive`), then `deleteConversationNotice` through `AlertManager`: "Contact archived!", with the text for an active contact or for a deleted one. `deleteContactChat` replaces the chat in `ChatModel` with the returned contact and the same items for `.entity` and `.archive`.
+
+Delete and ban (`showDeleteAndBanDialog`), for a `DeleteAndBanTarget` (`.contact` or `.customer`), which gives the name, the deletion line and the texts with the address or the business address:
+
+```
+dialog 1        deleteAndBanDialog: BanDialog "Delete and ban?", "Ban for", Delete and ban, Cancel
+1 day, 1 week   deleteAndBanKeepDialog: "Delete and ban?", Keep conversation; timedBanText
+Forever         deleteAndBanKeepDialog: "Delete and ban forever?", Keep conversation, field "yes"; foreverText
+result          delete(keepConversation, duration.notice)
+```
+
+- contact: `deleteAndBanContactDialog`, shown when `Contact.canDeleteAndBan` (`sndReady`, `active`, `activeConn.viaUserContactLink` set, `peerChatVRange.maxVersion >= LINK_NOTICE_VERSION`): `deleteContactMaybeErrorAlert` with `notify: false` and the notice; entries: `ChatInfoView.deleteAndBanButton`, the chat list "Ban", the Archived contacts "Ban" (`ContactListNavLink.deletedChatNavLink`)
+- customer: `deleteAndBanCustomerDialog` (`GroupChatInfoView.swift`): `deleteChat` with the notice; `GroupChatInfoView.deleteAndBanButton` is shown when `GroupInfo.canDeleteAndBanCustomer(members)`: `isCustomerChatOwner` and the member with `businessChat.customerId` passes `canBanAndRemove`
+
+Group deletion (`deleteGroupAlert`, `GroupChatInfoView.swift`, also used by the chat list):
+
+```
+alert           title and message as before; deleteGroupAlertMessage adds "<name> will be notified."
+                for isCustomerChatOwner
+owner           (isOwner && businessChat == nil) || isCustomerChatOwner: deleteGroupKeepDialog, Delete;
+                footer "<name> can connect to you again via your business address." for isCustomerChatOwner
+others          deletion after the alert
+deletion        deleteGroup → deleteChat(chatDeleteMode, notice); afterDeletion on success
+```
+
+`deleteChat` (`SimpleXAPI.swift`) returns whether the deletion succeeded; with `.entity` it updates the group that `apiDeleteChat` returns (membership `memGroupDeleted`), otherwise it removes the chat. From group info, `afterDeletion` dismisses the sheet and closes the chat.
+
+---
+
 ## GroupChatInfoView — Channel Adaptations
 
 When `groupInfo.useRelays == true`, [`GroupChatInfoView`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L16) adapts its sections:

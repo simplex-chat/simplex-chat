@@ -89,6 +89,7 @@ Server validation (`validateServers_`) now returns both errors and warnings.
 | Encrypt local files | Encrypt media and files stored on device |
 | Auto-accept images | Automatically download received images |
 | Link previews | Generate link previews for sent URLs |
+| Contact deletion | Notify: deleting a contact notifies it after one confirmation; Ask: the confirmation asks whether to notify. Stored default Ask; set to Notify when the first profile is created; migrated with the app settings (`privacyContactDeletion`) |
 | SimpleX link mode | Description / Full link / Via browser |
 | Chat previews | Show message previews in chat list |
 | Save last draft | Remember unsent message drafts |

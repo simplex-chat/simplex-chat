@@ -107,7 +107,8 @@ Shown when `contact.ready && contact.active`:
 | Action | Description |
 |---|---|
 | Clear chat | Delete all messages locally (confirmation alert) |
-| Delete contact | Remove contact entirely (confirmation alert) |
+| Delete contact | Two dialogs for a ready, active contact: the confirmation, then "Keep conversation"; one dialog, "Confirm contact deletion?", for other contacts ([connection flow 8](../flows/connection.md#8-delete-archive-or-ban-a-contact)) |
+| Delete and ban | Shown when the contact is ready and active, connected via the user's address and supports bans (`Contact.canDeleteAndBan`): "Ban for", then "Keep conversation"; the contact is not notified and can't connect via the address while banned |
 
 ### Developer Section
 

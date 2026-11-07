@@ -146,3 +146,17 @@
 **Rule:** CallKit MUST be disabled in regions where it is restricted (China). The app uses in-app call UI as fallback.
 **Enforced by:** `CallController.swift` checks `useCallKit()` based on region; `ActiveCallView.swift` provides fallback UI.
 **Spec:** [spec/services/calls.md](../spec/services/calls.md)
+
+---
+
+## Deletion and Bans
+
+### RULE-24: Delete and ban is never notified
+**Rule:** "Delete and ban" MUST delete the contact or the business chat without notifying the contact or the customer, whatever the Contact deletion setting.
+**Enforced by:** `ChatInfoView.swift` (`deleteAndBanContactDialog` sends `notify: false`); `Commands.hs` (`APIDeleteChat` sends a silent `XDirectDel` with the notice, and removes the customer with `APIRemoveMembers` and the notice).
+**Spec:** [spec/client/chat-view.md](../spec/client/chat-view.md)
+
+### RULE-25: Delete and ban only for peers that apply the ban
+**Rule:** "Delete and ban" MUST be offered only for a ready, active contact connected via the user's address whose app supports `LINK_NOTICE_VERSION`, and for the customer of a business chat owned by the user who is a current member with that version.
+**Enforced by:** `ChatTypes.swift` (`Contact.canDeleteAndBan`, `GroupInfo.canDeleteAndBanCustomer`); `Commands.hs` (`APIDeleteChat` and `APIRemoveMembers` refuse a notice otherwise).
+**Spec:** [spec/client/chat-view.md](../spec/client/chat-view.md) | [spec/client/chat-list.md](../spec/client/chat-list.md)

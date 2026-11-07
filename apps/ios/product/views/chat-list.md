@@ -85,9 +85,23 @@ When a relay address link (`/r` path) is opened via URL deep link, `ContentView.
 
 ### Swipe Actions
 
-- **Trailing swipe**: Mute/unmute, pin/unpin, tag management
-- **Leading swipe**: Mark as read/unread
-- **Context menu** (long press): Full set of actions including delete, clear chat, toggle favorite
+Contacts and groups the user is a member of; contact requests, contact cards, invitations, pending connections and note folders keep their own actions.
+
+- **Leading swipe**: Read / Unread, List (green, opens the list sheet), Mute / Unmute
+- **Trailing swipe**, from the screen edge; a full swipe performs the first:
+
+  | Chat | Actions |
+  |---|---|
+  | Contact | Delete, Ban, More (Clear, Archive) |
+  | Business chat, owner on the business side | Delete, Ban, More (Clear, Leave) |
+  | Group, channel, other business chats | Delete, Leave, More (Clear, Archive reports) |
+
+- "More" is shown when it holds two actions; a single action is shown in its place, and "More" is an action sheet without a title
+- Delete: for contacts, and for groups the user can delete; Leave: while the membership is current or pending, except for channel owners; Clear: when the chat has messages; Archive reports: for moderators and above when the group has reports
+- Ban (orange): opens "Delete and ban?" for a contact connected via the user's address whose app supports bans; for the owner of a business chat the customer is checked on tap, and "Can't ban" is shown when the customer left or uses an older app version
+- Archive: moves the contact to Archived contacts with the conversation and shows "Contact archived!"
+- List sheet: a Favorites row with a star, filled for a favorite, at the top; tapping it changes the favorite and closes the sheet. The sheet opens also when no lists exist.
+- Archived contacts: Delete, and Ban under the same conditions as in the chat list
 
 ### Floating Elements
 
