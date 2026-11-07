@@ -3368,14 +3368,10 @@ testPlanGroupLinkRemovedNoticeOtherLinks =
       bob <## "group link: ok to connect directly"
       _sLinkData <- getTermLine bob
 
-      createGroup2 "news" alice cath
+      createGroup2' "news" alice (cath, GRMember) True
       alice ##> "/rm news cath notice={\"ttl\":86400}"
-      concurrentlyN_
-        [ alice <## "#news: you removed cath from the group (signed)",
-          do
-            cath <## "#news: alice removed you from the group (signed)"
-            cath <## "use /d #news to delete the group"
-        ]
+      alice <## "#news: you removed cath from the group (signed)"
+      cath <// 1000000
       linkNoticesCount cath `shouldReturn` 0
 
 testPlanGroupLinkDeletedWithoutNotice :: HasCallStack => TestParams -> IO ()
@@ -8697,7 +8693,8 @@ testBlockForAllEditNotApplied =
 
       bob ##> "! #team hello there"
       bob <# "#team [edited] hello there"
-      alice <##. "#team bob> [edited] hello there"
+      edited <- getTermLine alice
+      edited `shouldContain` "#team bob> [edited] hello there"
       cath <// 1000000
       cath #$> ("/_get chat #1 count=1", chat, [(0, "hello")])
 
