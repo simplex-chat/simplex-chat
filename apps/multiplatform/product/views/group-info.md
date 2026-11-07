@@ -128,7 +128,7 @@ Shown when `developerTools` preference is enabled:
 |---|---|---|
 | Clear chat | Any member | Deletes all messages locally (`clearChatDialog`) |
 | Leave group | Non-owner | Leave the group (`leaveGroupDialog`) |
-| Delete group | Owner or non-current member | Delete group for all (owner) or for self (`deleteGroupDialog`) |
+| Delete group | Owner or non-current member | Delete group for all (owner) or for self (`deleteGroupDialog`); an owner, also of the business side of a business chat, then chooses "Keep conversation" (see [flows/group-lifecycle.md](../flows/group-lifecycle.md) 7.1) |
 
 Business chats use alternative labels: "Delete chat" instead of "Delete group".
 

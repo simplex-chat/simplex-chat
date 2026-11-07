@@ -244,6 +244,27 @@ suspend fun apiLeaveGroup(rh: Long?, groupId: Long): GroupInfo?
 5. The user's membership status changes and they can no longer send or receive messages.
 6. The group remains in the chat list in a "left" state, and can be deleted locally.
 
+### 7.1 Deleting a Group
+
+```kotlin
+suspend fun apiDeleteGroup(rh: Long?, id: Long, chatDeleteMode: ChatDeleteMode, notice: LinkNotice?): GroupInfo?
+```
+
+```mermaid
+flowchart TD
+  A["Delete (group info or chat list menu)"] --> B{"owner, and not the customer side of a business chat?"}
+  B -- no --> C["today's alert: Delete"] --> F["ChatDeleteMode.Full: chat removed"]
+  B -- yes --> D["Delete group? / Delete channel? / Delete chat?<br>business chat: '&lt;customer&gt; will be notified.'"]
+  D -- Delete --> E["Keep conversation dialog<br>business chat: '&lt;customer&gt; can connect to you again via your business address.'"]
+  E -- off --> F
+  E -- on --> G["ChatDeleteMode.Entity: chat kept, membership 'group deleted'"]
+```
+
+1. `deleteGroupDialog` shows today's alert to members who left or were removed, and to the customer side of a business chat; "Delete" deletes the chat with `ChatDeleteMode.Full`.
+2. An owner (`GroupInfo.isOwner`) of a group, a channel or the business side of a business chat (`businessChat.chatType == Customer`) gets the same text with "Delete" and "Cancel"; a business chat adds "<customer> will be notified.".
+3. "Delete" opens `showKeepConversationDialog` with "Keep conversation": the group name for groups and channels; for a business chat, "<customer> can connect to you again via your business address." when the user has an address.
+4. `deleteGroupChat` sends `CC.ApiDeleteChat(Group, groupId, mode, notice)`; `CR.GroupDeletedUser` returns the group. Keep conversation on (`ChatDeleteMode.Entity`) keeps the chat in the list with membership status "group deleted"; off (`ChatDeleteMode.Full`) removes it. In both cases the open chat is closed and its notifications are cancelled.
+
 ---
 
 ## 8. Listing Members

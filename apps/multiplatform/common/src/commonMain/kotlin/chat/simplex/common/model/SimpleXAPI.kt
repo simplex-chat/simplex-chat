@@ -1971,6 +1971,20 @@ object ChatController {
     return contact
   }
 
+  suspend fun apiDeleteGroup(rh: Long?, id: Long, chatDeleteMode: ChatDeleteMode, notice: LinkNotice?): GroupInfo? {
+    val type = ChatType.Group
+    chatModel.deletedChats.value += rh to type.type + id
+    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode, notice))
+    val groupInfo = if (r is API.Result && r.res is CR.GroupDeletedUser) {
+      r.res.groupInfo
+    } else {
+      apiErrorAlert("apiDeleteChat", generalGetString(MR.strings.error_deleting_group), r)
+      null
+    }
+    chatModel.deletedChats.value -= rh to type.type + id
+    return groupInfo
+  }
+
   fun clearChat(chat: Chat, close: (() -> Unit)? = null) {
     withBGApi {
       val updatedChatInfo = apiClearChat(chat.remoteHostId, chat.chatInfo.chatType, chat.chatInfo.apiId)
