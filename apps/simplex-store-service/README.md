@@ -178,8 +178,9 @@ then the header is whatever the caller wrote. The last entry is the one read, wh
 proxy appends.
 An IPv6 client is counted by its /64, since one host gets a whole /64, and an IPv4-mapped address
 by its IPv4 address.
-Checkouts (`POST /api/invoice`, each a provider invoice or card PaymentIntent) are also capped at 30 a
-minute for all clients together.
+Checkouts that reach the provider (`POST /api/invoice` and `POST /api/registration/:id/spend` with a
+difference to pay, each a provider invoice or card PaymentIntent) are also capped at 30 a minute for
+all clients together.
 Searches answer at most 16 at a time and long polls hold at most 500 at a time, for all clients
 together; past that they answer `429 rate_limited` with a short `Retry-After` at once.
 
