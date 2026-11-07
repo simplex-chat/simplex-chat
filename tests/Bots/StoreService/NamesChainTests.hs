@@ -18,6 +18,7 @@ import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Word (Word64)
 import qualified Network.HTTP.Client as HTTP
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi (uint256)
 import StoreService.Names.Chain
@@ -202,9 +203,12 @@ testFollowTransaction g = withChain g $ \node c@ChainClient {ccRegistrar} -> do
   transactionReceipt c hash `shouldReturn` Right (Just Receipt {receiptSuccess = False, receiptBlock = block})
   transactionCount c ccRegistrar Latest `shouldReturn` Right 1
 
+-- | The raw bytes are compared whole, as a decode reads neither the chain id nor the value.
 testSignedHash :: TVar ChaChaDRG -> IO ()
 testSignedHash g = withChain g $ \node c -> do
   SignedTx {stRaw, stHash} <- signed g c 7
+  let tx = Eip1559Tx {txChainId = fakeChainId, txNonce = 7, txMaxPriorityFeePerGas = fakeTip, txMaxFeePerGas = 2 * fakeBaseFee + fakeTip, txGasLimit = fakeGas, txTo = fakeController, txValue = 0, txData = availableCall}
+  signEip1559Tx g fakeRegistrarKey tx `shouldReturn` Right stRaw
   stHash `shouldBe` TxHash (C.keccak256 stRaw)
   sendRawTransaction c stRaw `shouldReturn` Right stHash
   sentTransactions node `shouldReturn` [stRaw]
