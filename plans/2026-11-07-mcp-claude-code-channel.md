@@ -4,7 +4,7 @@ Status: draft for review. Code references: master `2abd48450` (MCP 0.2.0); #7810
 
 Outcome:
 - Claude Code users install SimpleX with `/plugin install`, scan one QR code and join the Main group.
-- Each Claude Code session has its own group with its owners, and its own SimpleX profile for its chats.
+- Each Claude Code session has its own group with its owners; one `Claude` profile holds the chats of all sessions.
 - Owners prompt a running session in its group; the session receives the prompt without polling.
 - Owners approve the session's tool use (`Bash`, `Write`, `Edit`) in its group.
 - `simplex-mcp serve` keeps serving other MCP hosts over HTTP.
@@ -21,29 +21,40 @@ Decided on 2026-11-07:
 5. The PR reaches the user as one page that presents it; an independent reviewer checks the page against the diff before the user sees it.
 6. D1 (b): one group per session. The hub invites the Main group's owners to it through the Main group; other members of the Main group join it by `/join N`.
 7. D2 (a): every tool prompt of a session is relayed to its group.
-8. D3 (a): peers see the session profile as `Claude Code N` unless the person names it.
+8. D3 (a), replaced by D8 (a): peers see `Claude`, or an incognito name in a chat connected incognito.
 9. D4 (a): files in prompts and in replies are in this PR.
 10. D5 (a): the user asks Anthropic to list the channel after 0.3.0 is published.
 11. D6 (a): the hub, the plugin's main profile, speaks for Claude: it posts the session's answers and cards in the session's group. Its profile name is `Claude`.
 12. D7 (a): prompts typed in the terminal are posted in the session's group by a local profile named `User`, one per data root, a member of every session group.
+13. D8 (a): one `Claude` profile, in the daemon's one process, serves all sessions of a data root: it hosts the Main group and the session groups and holds the chats with peers. A chat belongs to the session that connected it; tools of other sessions do not show it; owners hand it to another session with `/give CHAT N` in the session's group.
+14. D9 (a): the session group's description shows the model and the effort level and is updated when they change; they are changed in the terminal or from the Claude app by Remote Control.
+15. D10 (b): 0.3.0 ships with a group per session; the plugin moves each session group into a session of the Main group when the apps support group sessions. A UX proposal for group sessions is prepared separately, now.
 
 Design:
-13. One code base: `serve` and the plugin share `Control`, `Actions` and `AgentTools`.
-14. Prompts, approvals and tool-use verdicts count only from session group members whose Main group member is an owner.
-15. The owner link reaches the person only: the `systemMessage` of the SessionStart hook and `simplex-mcp link` in a terminal; hook context and tool results never contain it.
-16. A session's approval mode changes to `host` only after an owner approves a card in the session's group.
-17. While owners exist, an owner reset runs only after an owner approves a card in the Main group; without owners it runs from a terminal.
-18. The launcher runs `npx` with the plugin folder as its working folder.
-19. Refused paths cover the whole data root.
-20. Standing approvals of closed sessions are listed by `/list` and removed by `/revoke` in the session's group.
-21. The channel is part of the plugin's session server; the daemon pushes events on the session's `/attach` stream.
-22. The session and its group exist from the session's start.
-23. Claude's final answer of every turn is posted by `Claude` from the Stop hook's `last_assistant_message`; the `reply` tool sends files only.
+16. One code base: `serve` and the plugin share `Control`, `Actions` and `AgentTools`.
+17. Prompts, approvals and tool-use verdicts count only from session group members whose Main group member is an owner.
+18. The owner link reaches the person only: the `systemMessage` of the SessionStart hook and `simplex-mcp link` in a terminal; hook context and tool results never contain it.
+19. A session's approval mode changes to `host` only after an owner approves a card in the session's group.
+20. While owners exist, an owner reset runs only after an owner approves a card in the Main group; without owners it runs from a terminal.
+21. The launcher runs `npx` with the plugin folder as its working folder.
+22. Refused paths cover the whole data root.
+23. Standing approvals of closed sessions are listed by `/list` and removed by `/revoke` in the session's group.
+24. The channel is part of the plugin's session server; the daemon pushes events on the session's `/attach` stream.
+25. The session and its group exist from the session's start.
+26. Claude's final answer of every turn is posted by `Claude` from the Stop hook's `last_assistant_message`; the `reply` tool sends files only.
 
-Open, with recommendations:
-- D8 Claude's SimpleX profile for chats with peers: (a) the one `Claude` profile for all sessions; each chat belongs to the session that connected it, and owners hand a chat to another session with `/give CHAT N`, recommended; (b) a profile per session, as in #7810.
-- D9 model and effort: (a) shown in the session group's profile and updated on change; changed in the terminal or from the Claude app by Remote Control, recommended; (b) also `/model` and `/effort` in the session group, which set the defaults for new sessions in `~/.claude/settings.json`.
-- D10 sessions inside one group: (a) group sessions first, using the reserved `sessions` preference (`SessionsGroupPreference`, `src/Simplex/Chat/Types/Preferences.hs:407`) and a new group chat scope (`GroupChatScope`, `src/Simplex/Chat/Messages.hs:119`), with an RFC and UI in the apps; sessions are subgroups of a group: short-lived, open or by invitation, referenced in the main chat; the plugin then has one Main group, each Claude Code session a session in it, by invitation for owners and referenced in the main chat by a card, and D1 (b) is dropped, recommended; (b) the plugin ships with a group per session and moves to sessions when the apps support them.
+Chat ownership, D8 (a):
+```
+ChatOwner, in the chat's custom data
+  session        Claude Code session ID that connected the chat
+```
+
+```
+on connect by session s:     owner = s
+on any tool call by s:       chats with owner = s only
+on "/give CHAT N" by owner:  owner of CHAT = session N
+on resume of s:              its chats are shown again
+```
 
 ## Model and effort
 
@@ -80,22 +91,23 @@ flowchart LR
   subgraph Host[computer]
     CC[Claude Code session N] -- stdio MCP --> S[simplex-mcp session]
     S -- Unix socket --> D[daemon]
-    D --> H[hub profile]
-    D --> A[session profile N]
+    D --> H[Claude profile]
+    D --> U[User profile]
     SV[simplex-mcp serve, HTTP] --> A0[agent profile]
   end
   H -- Main group --> O
   H -- session N group --> O
-  A <-- SimpleX --> P[peers]
+  U -- session N group --> O
+  H <-- SimpleX --> P[peers]
   A0 <-- SimpleX --> P
 ```
 
 ```
 process               runs                                   holds
 simplex-mcp session   one per Claude Code session, stdio     tools, channel capability
-daemon                one per data root, Unix socket          hub, session profiles, actions
-hub                   inside the daemon                       Main group, session groups, owners, cards
-session profile       inside the daemon, from the first tool  the session's chats and files
+daemon                one per data root, Unix socket          Claude and User profiles, actions
+Claude                inside the daemon                       Main group, session groups, owners, cards, chats with peers
+User                  inside the daemon                       membership in every session group
 simplex-mcp serve     one per agent, HTTP 127.0.0.1           agent profile, control chat
 ```
 
@@ -222,7 +234,7 @@ UserProfile
   visible to       session group members only
 ```
 
-Claude ignores User's messages as prompts: User was not invited through a Main group owner (decision 14).
+Claude ignores User's messages as prompts: User was not invited through a Main group owner (decision 17).
 
 A prompt to a session started without the channel flag is dropped by Claude Code; the hub cannot detect it.
 
@@ -325,8 +337,8 @@ branch   ep/mcp-plugin, from sh/mcp-known, in the agents' fork
 base     master
 commits  #7810's 49 commits
          merge of master: serve, register and HTTP kept; 0.2 features in session groups
-         session groups and owner rules: decisions 6, 11, 14-20, D8
-         channel and mirroring: decisions 7, 9, 12, 21-23, D9, reply tool, version 0.3.0
+         one Claude profile, session groups and owner rules: decisions 6, 11, 13, 17-23
+         channel and mirroring: decisions 7, 9, 12, 14, 24-26, reply tool, version 0.3.0
 ```
 
 Size budget, source lines written on top of `sh/mcp-known`, without tests:
