@@ -17,6 +17,8 @@ Earlier plans (`2026-07-30-supporter-badges-v3-ux.md`, `2026-07-31-badges-core-i
 `2026-08-04-badges-mvp-scope.md`) predate the web checkout and describe the RPC-only
 scaffold this service started as.
 
+The names part, its parts and its scenarios are drawn in [`docs/names.md`](docs/names.md).
+
 At this stage the service:
 
 - creates a double-ratchet contact address on first start (service RPC requires DR, see [`docs/protocol/badges-rpc.md`](../../docs/protocol/badges-rpc.md)),
