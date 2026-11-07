@@ -291,7 +291,6 @@ fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMen
       } else {
         MarkUnreadChatAction(chat, chatModel, showMenu)
       }
-      ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
       ToggleNotificationsChatAction(chat, chatModel, contact.chatSettings.enableNtfs.nextMode(false), showMenu)
       TagListAction(chat, showMenu)
       ClearChatAction(chat, showMenu)
@@ -338,7 +337,6 @@ fun GroupMenuItems(
       } else {
         MarkUnreadChatAction(chat, chatModel, showMenu)
       }
-      ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
       ToggleNotificationsChatAction(chat, chatModel, groupInfo.chatSettings.enableNtfs.nextMode(true), showMenu)
       TagListAction(chat, showMenu)
       if (chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
@@ -400,30 +398,13 @@ fun TagListAction(
   chat: Chat,
   showMenu: MutableState<Boolean>
 ) {
-  val userTags = remember { chatModel.userTags }
   ItemAction(
     stringResource(if (chat.chatInfo.chatTags.isNullOrEmpty()) MR.strings.add_to_list else MR.strings.change_list),
     painterResource(MR.images.ic_label),
     onClick = {
       ModalManager.start.showModalCloseable { close ->
-        if (userTags.value.isEmpty()) {
-          TagListEditor(rhId = chat.remoteHostId, chat = chat, close = close)
-        } else {
-          TagListView(rhId = chat.remoteHostId, chat = chat, close = close, reorderMode = false)
-        }
+        TagListView(rhId = chat.remoteHostId, chat = chat, close = close, reorderMode = false)
       }
-      showMenu.value = false
-    }
-  )
-}
-
-@Composable
-fun ToggleFavoritesChatAction(chat: Chat, chatModel: ChatModel, favorite: Boolean, showMenu: MutableState<Boolean>) {
-  ItemAction(
-    if (favorite) stringResource(MR.strings.unfavorite_chat) else stringResource(MR.strings.favorite_chat),
-    if (favorite) painterResource(MR.images.ic_star_off) else painterResource(MR.images.ic_star),
-    onClick = {
-      toggleChatFavorite(chat.remoteHostId, chat.chatInfo, !favorite, chatModel)
       showMenu.value = false
     }
   )
@@ -1221,6 +1202,14 @@ fun PreviewContactMenu() {
   val contact = Contact.sampleData.copy(activeConn = Connection.sampleData.copy(viaUserContactLink = 1, peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)))
   ChatMenuPreview(ChatInfo.Direct(contact)) { chat, showMenu ->
     ContactMenuItems(chat, contact, ChatModel, showMenu, showMarkRead = false)
+  }
+}
+
+@Preview
+@Composable
+fun PreviewGroupMenu() {
+  ChatMenuPreview(ChatInfo.Group.sampleData) { chat, showMenu ->
+    GroupMenuItems(chat, GroupInfo.sampleData, ChatModel, showMenu, remember { mutableStateOf(false) }, showMarkRead = false)
   }
 }
 
