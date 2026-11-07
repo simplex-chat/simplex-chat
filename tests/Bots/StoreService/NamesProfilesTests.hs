@@ -435,6 +435,7 @@ testOnionUnresolvable = do
   readTVarIO asked `shouldReturn` []
   hostCheck (stubResolver asked) ("unknown.test" :| []) `shouldReturn` HostPublic
   readTVarIO asked `shouldReturn` ["unknown.test"]
+  hostCheck (const $ ioError $ userError "no such name") ("unknown.test" :| []) `shouldReturn` HostPublic
 
 -- | An IPv4-mapped IPv6 address, @::ffff:a.b.c.d@.
 mapped :: (Word32, Word32, Word32, Word32) -> TransportHost
@@ -463,7 +464,7 @@ testRefusedNotFetched = do
 -- Host lookups
 
 -- | A resolver for which names starting with "held" report that their lookup started, then block past any timeout until the gate opens,
--- as getAddrInfo does; held names then do not resolve, and every other name resolves to a public address.
+-- as getAddrInfo does; held names then resolve to a private address, and every other name to a public one.
 heldResolver :: TVar [String] -> TQueue () -> TMVar () -> HostResolver
 heldResolver asked started gate name = do
   atomically $ modifyTVar' asked (name :)
