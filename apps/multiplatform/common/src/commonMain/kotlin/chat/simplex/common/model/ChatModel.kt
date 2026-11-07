@@ -2693,6 +2693,9 @@ data class GroupInfo (
   val isOwner: Boolean
     get() = membership.memberRole == GroupMemberRole.Owner && membership.memberCurrent
 
+  val isBusinessChatOwner: Boolean
+    get() = isOwner && businessChat?.chatType == BusinessChatType.Customer
+
   val canDelete: Boolean
     get() = membership.memberRole == GroupMemberRole.Owner || !membership.memberCurrentOrPending
 

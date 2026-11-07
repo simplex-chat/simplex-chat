@@ -103,7 +103,7 @@ Each chat type provides specific dropdown menu items:
 | Chat Type | Menu Items |
 |---|---|
 | Direct contact | Mark read/unread, toggle favorite, toggle notify, tag list, clear chat, archive (when not archived), delete and ban (when `Contact.canDeleteAndBan`), delete contact |
-| Group | Mark read/unread, toggle favorite, toggle notify, tag list, clear chat, archive all reports (moderator, when reports exist), leave group, delete group |
+| Group | Mark read/unread, toggle favorite, toggle notify, tag list, clear chat, archive all reports (moderator, when reports exist), leave group, delete and ban (owner of the business side of a business chat: the members are loaded, then "Delete and ban?" or, when the customer left or lacks `LINK_NOTICE_VERSION`, "Can't delete and ban"), delete group |
 | Note folder | Mark read/unread, clear notes |
 | Contact request | Accept, reject |
 | Contact connection | Set name/alias, delete |

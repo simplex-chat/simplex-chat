@@ -43,6 +43,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.group.BanDialogAction
 import chat.simplex.common.views.chat.group.ChatTTLOption
 import chat.simplex.common.views.chat.group.FOREVER_CONFIRMATION_WORD
+import chat.simplex.common.views.chat.group.previewBusinessChatInfo
 import chat.simplex.common.views.chat.group.showBanDialog
 import chat.simplex.common.views.chat.group.showTypedConfirmationDialog
 import chat.simplex.common.views.chat.item.LocalTerminalLayout
@@ -1649,5 +1650,13 @@ fun PreviewDeleteAndBanKeepConversationDialog() {
 fun PreviewDeleteAndBanContactForeverDialog() {
   SimpleXTheme {
     AlertPreview { deleteAndBanForeverDialog(Contact.sampleData.displayName, MR.strings.delete_and_ban_contact_forever_desc) {} }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDeleteAndBanCustomerForeverDialog() {
+  SimpleXTheme {
+    AlertPreview { deleteAndBanForeverDialog(previewBusinessChatInfo.displayName, MR.strings.delete_and_ban_customer_forever_desc) {} }
   }
 }

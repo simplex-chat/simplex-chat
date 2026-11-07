@@ -350,6 +350,9 @@ fun GroupMenuItems(
       if (groupInfo.membership.memberCurrentOrPending && !(groupInfo.useRelays && groupInfo.isOwner)) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
       }
+      if (groupInfo.isBusinessChatOwner) {
+        DeleteAndBanCustomerAction(chat, groupInfo, showMenu)
+      }
       if (groupInfo.canDelete) {
         DeleteGroupAction(chat, groupInfo, chatModel, showMenu)
       }
@@ -496,6 +499,19 @@ fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState
     painterResource(MR.images.ic_delete),
     onClick = {
       deleteContactDialog(chat, chatModel)
+      showMenu.value = false
+    },
+    color = Color.Red
+  )
+}
+
+@Composable
+fun DeleteAndBanCustomerAction(chat: Chat, groupInfo: GroupInfo, showMenu: MutableState<Boolean>) {
+  ItemAction(
+    stringResource(MR.strings.delete_and_ban),
+    painterResource(MR.images.ic_back_hand),
+    onClick = {
+      deleteAndBanCustomer(chat, groupInfo)
       showMenu.value = false
     },
     color = Color.Red
@@ -1205,5 +1221,13 @@ fun PreviewContactMenu() {
   val contact = Contact.sampleData.copy(activeConn = Connection.sampleData.copy(viaUserContactLink = 1, peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)))
   ChatMenuPreview(ChatInfo.Direct(contact)) { chat, showMenu ->
     ContactMenuItems(chat, contact, ChatModel, showMenu, showMarkRead = false)
+  }
+}
+
+@Preview
+@Composable
+fun PreviewBusinessChatMenu() {
+  ChatMenuPreview(ChatInfo.Group(previewBusinessChatInfo, groupChatScope = null)) { chat, showMenu ->
+    GroupMenuItems(chat, previewBusinessChatInfo, ChatModel, showMenu, remember { mutableStateOf(false) }, showMarkRead = false)
   }
 }
