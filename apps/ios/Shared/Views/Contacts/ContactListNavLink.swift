@@ -150,6 +150,14 @@ struct ContactListNavLink: View {
                 Label("Delete", systemImage: "trash")
             }
             .tint(.red)
+            if contact.canDeleteAndBan {
+                Button {
+                    deleteAndBanContactDialog(chat, contact, dismissToChatList: false, showAlert: { alert = $0 })
+                } label: {
+                    Label("Ban", systemImage: "hand.raised")
+                }
+                .tint(.orange)
+            }
         }
     }
 

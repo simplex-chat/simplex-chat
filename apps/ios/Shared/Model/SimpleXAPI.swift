@@ -1271,18 +1271,18 @@ func apiConnectContactViaAddress(incognito: Bool, contactId: Int64) async -> Con
 }
 
 @discardableResult
-func apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async throws -> GroupInfo? {
+func apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true), notice: LinkNotice? = nil) async throws -> GroupInfo? {
     let chatId = type.rawValue + id.description
     DispatchQueue.main.async { ChatModel.shared.deletedChats.insert(chatId) }
     defer { DispatchQueue.main.async { ChatModel.shared.deletedChats.remove(chatId) } }
-    let r: ChatResponse1 = try await chatSendCmd(.apiDeleteChat(type: type, id: id, chatDeleteMode: chatDeleteMode), bgTask: false)
+    let r: ChatResponse1 = try await chatSendCmd(.apiDeleteChat(type: type, id: id, chatDeleteMode: chatDeleteMode, notice: notice), bgTask: false)
     if case .direct = type, case .contactDeleted = r { return nil }
     if case .contactConnection = type, case .contactConnectionDeleted = r { return nil }
     if case .group = type, case let .groupDeletedUser(_, groupInfo) = r { return groupInfo }
     throw r.unexpected
 }
 
-func apiDeleteContact(id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async throws -> Contact {
+func apiDeleteContact(id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true), notice: LinkNotice? = nil) async throws -> Contact {
     let type: ChatType = .direct
     let chatId = type.rawValue + id.description
     if case .full = chatDeleteMode {
@@ -1293,16 +1293,16 @@ func apiDeleteContact(id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: 
             DispatchQueue.main.async { ChatModel.shared.deletedChats.remove(chatId) }
         }
     }
-    let r: ChatResponse1 = try await chatSendCmd(.apiDeleteChat(type: type, id: id, chatDeleteMode: chatDeleteMode), bgTask: false)
+    let r: ChatResponse1 = try await chatSendCmd(.apiDeleteChat(type: type, id: id, chatDeleteMode: chatDeleteMode, notice: notice), bgTask: false)
     if case let .contactDeleted(_, contact) = r { return contact }
     throw r.unexpected
 }
 
 @discardableResult
-func deleteChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async -> Bool {
+func deleteChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(notify: true), notice: LinkNotice? = nil) async -> Bool {
     do {
         let cInfo = chat.chatInfo
-        let groupInfo = try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId, chatDeleteMode: chatDeleteMode)
+        let groupInfo = try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId, chatDeleteMode: chatDeleteMode, notice: notice)
         await MainActor.run {
             if chatDeleteMode.isEntity, let groupInfo {
                 ChatModel.shared.updateGroup(groupInfo)
@@ -1321,10 +1321,10 @@ func deleteChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(notify: tru
     }
 }
 
-func deleteContactChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async -> Alert? {
+func deleteContactChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(notify: true), notice: LinkNotice? = nil) async -> Alert? {
     do {
         let cInfo = chat.chatInfo
-        let ct = try await apiDeleteContact(id: cInfo.apiId, chatDeleteMode: chatDeleteMode)
+        let ct = try await apiDeleteContact(id: cInfo.apiId, chatDeleteMode: chatDeleteMode, notice: notice)
         await MainActor.run {
             switch chatDeleteMode {
             case .full:

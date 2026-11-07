@@ -142,7 +142,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiConnectPreparedGroup(groupId: Int64, incognito: Bool, msg: MsgContent?)
     case apiConnect(userId: Int64, incognito: Bool, connLink: CreatedConnLink)
     case apiConnectContactViaAddress(userId: Int64, incognito: Bool, contactId: Int64)
-    case apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode)
+    case apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode, notice: LinkNotice?)
     case apiClearChat(type: ChatType, id: Int64)
     case apiListContacts(userId: Int64)
     case apiUpdateProfile(userId: Int64, profile: Profile)
@@ -374,7 +374,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiConnectPreparedGroup(groupId, incognito, mc): return "/_connect group #\(groupId) incognito=\(onOff(incognito))\(maybeContent(mc))"
             case let .apiConnect(userId, incognito, connLink): return "/_connect \(userId) incognito=\(onOff(incognito)) \(connLink.connFullLink) \(connLink.connShortLink ?? "")"
             case let .apiConnectContactViaAddress(userId, incognito, contactId): return "/_connect contact \(userId) incognito=\(onOff(incognito)) \(contactId)"
-            case let .apiDeleteChat(type, id, chatDeleteMode): return "/_delete \(ref(type, id, scope: nil)) \(chatDeleteMode.cmdString)"
+            case let .apiDeleteChat(type, id, chatDeleteMode, notice): return "/_delete \(ref(type, id, scope: nil)) \(chatDeleteMode.cmdString)\(notice.map { " notice=\(encodeJSON($0))" } ?? "")"
             case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id, scope: nil))"
             case let .apiListContacts(userId): return "/_contacts \(userId)"
             case let .apiUpdateProfile(userId, profile): return "/_profile \(userId) \(encodeJSON(profile))"

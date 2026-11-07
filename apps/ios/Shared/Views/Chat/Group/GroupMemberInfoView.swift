@@ -1036,7 +1036,7 @@ func showRemoveBannedMemberSheet(_ gInfo: GroupInfo, _ mem: GroupMember, dismiss
     )
 }
 
-private let foreverConfirmationWord = "yes"
+let foreverConfirmationWord = "yes"
 
 func removeBannedMember(_ gInfo: GroupInfo, _ mem: GroupMember, _ duration: BanDuration, withMessages: Bool, dismiss: DismissAction?) {
     if duration == .forever {

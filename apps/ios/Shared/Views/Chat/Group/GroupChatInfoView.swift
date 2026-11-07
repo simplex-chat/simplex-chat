@@ -242,6 +242,9 @@ struct GroupChatInfoView: View {
                         if groupInfo.canDelete {
                             deleteGroupButton()
                         }
+                        if groupInfo.canDeleteAndBanCustomer(members.map(\.wrapped)) {
+                            deleteAndBanButton()
+                        }
                         if groupInfo.membership.memberCurrentOrPending {
                             if !groupInfo.useRelays || !groupInfo.isOwner
                                 || members.contains(where: { $0.wrapped.memberRole == .owner && $0.wrapped.groupMemberId != groupInfo.membership.groupMemberId }) {
@@ -883,6 +886,18 @@ struct GroupChatInfoView: View {
         }
     }
 
+    private func deleteAndBanButton() -> some View {
+        Button(role: .destructive) {
+            deleteAndBanCustomerDialog(chat, groupInfo) {
+                dismiss()
+                chatModel.chatId = nil
+            }
+        } label: {
+            Label("Delete and ban", systemImage: "hand.raised")
+                .foregroundColor(Color.red)
+        }
+    }
+
     private func clearChatButton() -> some View {
         Button() {
             alert = .clearChatAlert
@@ -1102,9 +1117,15 @@ private func deleteGroupKeepDialog(_ groupInfo: GroupInfo, close: @escaping Clos
     )
 }
 
-private func deleteGroup(_ chat: Chat, keepConversation: Bool, _ afterDeletion: @escaping () -> Void) {
+func deleteAndBanCustomerDialog(_ chat: Chat, _ groupInfo: GroupInfo, afterDeletion: @escaping () -> Void = {}) {
+    showDeleteAndBanDialog(.customer(groupInfo)) { keepConversation, notice in
+        deleteGroup(chat, keepConversation: keepConversation, notice: notice, afterDeletion)
+    }
+}
+
+private func deleteGroup(_ chat: Chat, keepConversation: Bool, notice: LinkNotice? = nil, _ afterDeletion: @escaping () -> Void) {
     Task {
-        if await deleteChat(chat, chatDeleteMode: ChatDeleteMode(keepConversation: keepConversation, notify: true)) {
+        if await deleteChat(chat, chatDeleteMode: ChatDeleteMode(keepConversation: keepConversation, notify: true), notice: notice) {
             await MainActor.run { afterDeletion() }
         }
     }
@@ -1260,13 +1281,36 @@ struct GroupChatInfoView_Previews: PreviewProvider {
     }
 }
 
-private func previewCustomerChat() -> GroupInfo {
+func previewCustomerChat() -> GroupInfo {
     var groupInfo = GroupInfo.sampleData
     groupInfo.localDisplayName = "alice"
     groupInfo.groupProfile = GroupProfile(displayName: "alice", fullName: "")
     groupInfo.businessChat = .sampleData
     groupInfo.membership.memberRole = .owner
     return groupInfo
+}
+
+struct GroupChatInfoView_DeleteAndBan_Previews: PreviewProvider {
+    static var previews: some View {
+        let groupInfo = previewCustomerChat()
+        var customer = GroupMember.sampleData
+        customer.groupMemberId = 2
+        customer.memberId = BusinessChatInfo.sampleData.customerId
+        customer.memberRole = .member
+        customer.activeConn?.peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)
+        let chatModel = ChatModel()
+        chatModel.groupMembers = [GMember(customer)]
+        return GroupChatInfoView(
+            chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil), chatItems: []),
+            groupInfo: Binding.constant(groupInfo),
+            scrollToItemId: Binding.constant(nil),
+            composeState: Binding.constant(ComposeState()),
+            onSearch: {},
+            localAlias: ""
+        )
+        .environmentObject(chatModel)
+        .frame(height: 1600)
+    }
 }
 
 struct DeleteGroupKeepDialog_Previews: PreviewProvider {

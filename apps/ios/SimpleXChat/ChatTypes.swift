@@ -2660,6 +2660,9 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var active: Bool { get { contactStatus == .active } }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
     public var callReconnectSupported: Bool { (activeConn?.peerChatVRange.maxVersion ?? 0) >= CALL_RECONNECT_VERSION }
+    public var canDeleteAndBan: Bool {
+        sndReady && active && activeConn?.viaUserContactLink != nil && (activeConn?.peerChatVRange.maxVersion ?? 0) >= LINK_NOTICE_VERSION
+    }
     public var nextConnectPrepared: Bool { active && preparedContact != nil && (activeConn == nil || activeConn?.connStatus == .prepared) }
     public var profileChangeProhibited: Bool { activeConn != nil }
     public var nextAcceptContactRequest: Bool {
@@ -2793,6 +2796,7 @@ public struct Connection: Decodable, Hashable {
     public var peerChatVRange: VersionRange
     public var connStatus: ConnStatus
     public var connLevel: Int
+    public var viaUserContactLink: Int64?
     public var viaGroupLink: Bool
     public var customUserProfileId: Int64?
     public var connectionCode: SecurityCode?
@@ -2806,7 +2810,7 @@ public struct Connection: Decodable, Hashable {
     public var connectionStats: ConnectionStats? = nil
 
     private enum CodingKeys: String, CodingKey {
-        case connId, agentConnId, peerChatVRange, connStatus, connLevel, viaGroupLink, customUserProfileId, connectionCode, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled, authErrCounter, quotaErrCounter
+        case connId, agentConnId, peerChatVRange, connStatus, connLevel, viaUserContactLink, viaGroupLink, customUserProfileId, connectionCode, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled, authErrCounter, quotaErrCounter
     }
 
     public var id: ChatId { get { ":\(connId)" } }
@@ -3080,6 +3084,10 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
 
     public var isCustomerChatOwner: Bool {
         isOwner && businessChat?.chatType == .customer
+    }
+
+    public func canDeleteAndBanCustomer(_ members: [GroupMember]) -> Bool {
+        isCustomerChatOwner && members.contains { $0.memberId == businessChat?.customerId && $0.canBanAndRemove(groupInfo: self) }
     }
 
     public var canDelete: Bool {
