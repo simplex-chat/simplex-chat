@@ -1171,12 +1171,12 @@ fun PreviewChatListNavLinkContactRequest() {
 }
 
 @Composable
-private fun ChatMenuPreview(chatInfo: ChatInfo, menuItems: @Composable (Chat, MutableState<Boolean>) -> Unit) {
+private fun ChatMenuPreview(chatInfo: ChatInfo, chatStats: Chat.ChatStats = Chat.ChatStats(), menuItems: @Composable (Chat, MutableState<Boolean>) -> Unit) {
   val chat = Chat(
     remoteHostId = null,
     chatInfo = chatInfo,
     chatItems = listOf(ChatItem.getSampleData(1, CIDirection.DirectSnd(), previewDate, "Hello")),
-    chatStats = Chat.ChatStats()
+    chatStats = chatStats
   )
   val showMenu = remember { mutableStateOf(true) }
   SimpleXTheme {
@@ -1216,7 +1216,7 @@ fun PreviewGroupMenu() {
 @Preview
 @Composable
 fun PreviewBusinessChatMenu() {
-  ChatMenuPreview(ChatInfo.Group(previewBusinessChatInfo, groupChatScope = null)) { chat, showMenu ->
+  ChatMenuPreview(ChatInfo.Group(previewBusinessChatInfo, groupChatScope = null), Chat.ChatStats(reportsCount = 1)) { chat, showMenu ->
     GroupMenuItems(chat, previewBusinessChatInfo, ChatModel, showMenu, remember { mutableStateOf(false) }, showMarkRead = false)
   }
 }
