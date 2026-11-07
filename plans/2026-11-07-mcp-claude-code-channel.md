@@ -16,20 +16,23 @@ Agreed on 2026-11-06:
 2. #7810's code is adopted with `serve` kept; shum reviews the result.
 3. The plugin is released as 0.3.0.
 
+Decided on 2026-11-07:
+4. One PR: branch `ep/mcp-plugin` from `sh/mcp-known` in the agents' fork, against master; it replaces #7810.
+5. The PR reaches the user as one page that presents it; an independent reviewer checks the page against the diff before the user sees it.
+
 Design:
-4. One code base: `serve` and the plugin share `Control`, `Actions` and `AgentTools`.
-5. Prompts, approvals and tool-use verdicts are accepted only from owners of the Main group.
-6. The owner link reaches the person only: the `systemMessage` of the SessionStart hook and `simplex-mcp link` in a terminal; hook context and tool results never contain it.
-7. A session's approval mode changes to `host` only after an owner approves a card in the Main group.
-8. While owners exist, an owner reset runs only after an owner approves a card in the Main group; without owners it runs from a terminal.
-9. The launcher runs `npx` with the plugin folder as its working folder.
-10. Refused paths cover the whole data root.
-11. Standing approvals of closed sessions are listed by `/list` and removed by `/revoke`.
-12. The channel is part of the plugin's session server; the daemon pushes events on the session's `/attach` stream.
-13. The SimpleX profile of a session is created at its first SimpleX tool call; the session is known to the hub from its start.
+6. One code base: `serve` and the plugin share `Control`, `Actions` and `AgentTools`.
+7. Prompts, approvals and tool-use verdicts are accepted only from owners of the Main group.
+8. The owner link reaches the person only: the `systemMessage` of the SessionStart hook and `simplex-mcp link` in a terminal; hook context and tool results never contain it.
+9. A session's approval mode changes to `host` only after an owner approves a card in the Main group.
+10. While owners exist, an owner reset runs only after an owner approves a card in the Main group; without owners it runs from a terminal.
+11. The launcher runs `npx` with the plugin folder as its working folder.
+12. Refused paths cover the whole data root.
+13. Standing approvals of closed sessions are listed by `/list` and removed by `/revoke`.
+14. The channel is part of the plugin's session server; the daemon pushes events on the session's `/attach` stream.
+15. The SimpleX profile of a session is created at its first SimpleX tool call; the session is known to the hub from its start.
 
 Open, with recommendations:
-- D0 building on #7810: (a) branch `ep/mcp-plugin` from `sh/mcp-known` in the agents' fork, master merged into it, PR A against master replacing #7810, and the channel as PR B on top, recommended; (b) a PR into `sh/mcp-known`, merged by shum, then #7810 merged; (c) five PRs on master that copy #7810's code.
 - D1 prompt addressing: (a) reply or `N:` prefix in the Main group, recommended; (b) one group per session.
 - D2 tool-use approvals relayed to SimpleX: (a) every tool prompt, recommended; (b) SimpleX actions only.
 - D3 profile name seen by peers: (a) `Claude Code N` unless the person names it, recommended; (b) the project folder name.
@@ -202,71 +205,33 @@ Team and Enterprise plans     an admin adds simplex@simplex-chat to allowedChann
 
 The development flag works in interactive sessions only. Without either flag the plugin works without prompts and tool-use relay.
 
-## Pull requests
+## Pull request
 
-D0 (a):
 ```mermaid
 flowchart LR
-  K[sh/mcp-known, 49 commits] --> M[ep/mcp-plugin: master merged, serve kept, 0.2 features wired]
+  K[sh/mcp-known, 49 commits] --> M[merge of master]
   M --> R[owner rules]
-  R --> A[PR A: Claude Code plugin]
-  A --> B[PR B: SimpleX channel, 0.3.0]
-  A -. replaces .-> X[#7810, closed by shum]
+  R --> C[channel, 0.3.0]
+  C --> P[PR against master]
+  P -. replaces .-> X[#7810]
+  P --> V[page presenting the PR, checked against the diff by an independent reviewer]
 ```
 
 ```
-PR  branch                               base           commits
-A   ep/mcp-plugin                        master         #7810's 49 commits
-                                                        merge of master: serve, register and HTTP kept; 0.2 features addressed by S:CHAT
-                                                        owner rules, decisions 5-13
-B   ep/mcp-channel                       ep/mcp-plugin  channel, reply tool, tool-use relay, files in prompts, version 0.3.0
+branch   ep/mcp-plugin, from sh/mcp-known, in the agents' fork
+base     master
+commits  #7810's 49 commits
+         merge of master: serve, register and HTTP kept; 0.2 features addressed by S:CHAT
+         owner rules: decisions 7-13
+         channel: decisions 14-15, reply tool, tool-use relay, files in prompts, version 0.3.0
 ```
 
-Size budgets, source lines written on top of `sh/mcp-known`, without tests:
+Size budget, source lines written on top of `sh/mcp-known`, without tests:
 ```
-PR  budget
-A   600
-B   300
-```
-
-PR B is based on master after PR A merges.
-
-D0 (c), five PRs on master, source lines without tests:
-```
-PR  title                                                      budget
-1   mcp: actions with a session and their own timers           150
-2   mcp: hub and session agents, S:CHAT owner commands         450
-3   mcp: daemon, Unix socket and stdio session                 900
-4   mcp: Claude Code plugin                                    250
-5   mcp: SimpleX channel for Claude Code                       300
+part                  budget
+merge and owner rules 600
+channel               300
 ```
 
-Sources ported from #7810 under D0 (c):
-```
-PR 1
-  src/actions.ts
-PR 2
-  src/hub.ts
-  src/agent.ts
-  src/core.ts
-  src/control.ts
-PR 3
-  src/daemon.ts
-  src/socket.ts
-  src/client.ts
-  src/session.ts
-  src/protocol.ts
-  src/config.ts
-  src/files.ts
-PR 4
-  .claude-plugin/
-  hooks/
-  skills/
-  plugin/
-  src/hook.ts
-  src/owner.ts
-PR 5
-  none
-```
+`serve` and its end-to-end tests keep passing. `build.yml` publishes 0.3.0 after the merge.
 
-Each PR keeps `serve` and its end-to-end tests passing. The channel PR sets the version to 0.3.0; `build.yml` publishes it after the merge.
