@@ -42,6 +42,9 @@
 | PC30 | Member Support Chat |
 | PC31 | Channels (Relays) |
 | PC32 | Terminal Chat Layout |
+| PC33 | Bans and Link Notices |
+| PC34 | Chat Deletion, Archive and Delete and Ban |
+| PC35 | Chat List Actions |
 
 ---
 
@@ -55,8 +58,8 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 |-------------|--------------------------|------------|-------|
 | `App.kt` | PC1 through PC32 | High | Root composable — navigation scaffold for all features |
 | `AppLock.kt` | PC22 | Medium | App lock state and authorization lifecycle |
-| `model/ChatModel.kt` | PC1 through PC33 | High | Central state object — every feature reads or writes here |
-| `model/SimpleXAPI.kt` | PC1 through PC33 | High | FFI bridge to Haskell core — all commands and responses |
+| `model/ChatModel.kt` | PC1 through PC35 | High | Central state object — every feature reads or writes here |
+| `model/SimpleXAPI.kt` | PC1 through PC35 | High | FFI bridge to Haskell core — all commands and responses |
 | `model/CryptoFile.kt` | PC10, PC23 | Medium | Encrypted file read/write helpers |
 | `platform/Core.kt` | PC1 through PC32 | High | Native FFI declarations (`chatMigrateInit`, `chatSendCmd`, etc.) — all API traffic |
 | `platform/AppCommon.kt` | PC1 through PC32 | Medium | Shared app initialization logic |
@@ -94,9 +97,9 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 |-------------|--------------------------|------------|-------|
 | `views/chatlist/ChatListView.kt` | PC1, PC28 | High | Main screen — chat list rendering and search |
 | `views/chatlist/GetStakeBanner.kt` | PC1 | Low | Crowdfunding banner and shared banner card chrome |
-| `views/chatlist/ChatListNavLinkView.kt` | PC1, PC2, PC3, PC28, PC33 | Medium | Navigation from chat list item to chat; chat menus with Archive and Delete and ban |
+| `views/chatlist/ChatListNavLinkView.kt` | PC1, PC2, PC3, PC28, PC34, PC35 | Medium | Navigation from chat list item to chat; chat menus with Archive and Delete and ban |
 | `views/chatlist/ChatPreviewView.kt` | PC1, PC2, PC3, PC11 | Medium | Chat row preview rendering |
-| `views/chatlist/TagListView.kt` | PC28 | Medium | Chat tag filter UI |
+| `views/chatlist/TagListView.kt` | PC28, PC35 | Medium | Chat tag filter UI; list sheet with the Favorites row |
 | `views/chatlist/UserPicker.kt` | PC19, PC21 | Medium | Multi-profile switcher overlay |
 | `views/chatlist/ShareListView.kt` | PC10 | Low | Share target list |
 | `views/chatlist/ShareListNavLinkView.kt` | PC10 | Low | Share target navigation |
@@ -118,7 +121,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/chat/ComposeImageView.kt` | PC10 | Low | Image attachment preview in compose area |
 | `views/chat/ContextItemView.kt` | PC6 | Low | Reply/edit quote preview |
 | `views/chat/SelectableChatItemToolbars.kt` | PC7, PC10 | Medium | Multi-select toolbar (delete, forward) |
-| `views/chat/ChatInfoView.kt` | PC2, PC13, PC20, PC32, PC33 | Medium | Contact details and verification; contact deletion, archive and Delete and ban |
+| `views/chat/ChatInfoView.kt` | PC2, PC13, PC20, PC32, PC34 | Medium | Contact details and verification; contact deletion, archive and Delete and ban |
 | `views/chat/ContactPreferences.kt` | PC2, PC8 | Medium | Per-contact feature preferences |
 | `views/chat/ChatItemInfoView.kt` | PC2, PC3 | Low | Message delivery detail |
 | `views/chat/ChatItemsLoader.kt` | PC2, PC3 | Medium | Pagination and message loading logic |
@@ -164,9 +167,9 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
-| `views/chat/group/GroupChatInfoView.kt` | PC3, PC14, PC15, PC16, PC30, PC33 | High | Group management hub; group deletion with Keep conversation, Delete and ban for business chats |
+| `views/chat/group/GroupChatInfoView.kt` | PC3, PC14, PC15, PC16, PC30, PC33, PC34 | High | Group management hub; ban dialogs of the member menu and the selection; group deletion with Keep conversation, Delete and ban for business chats |
 | `views/chat/group/AddGroupMembersView.kt` | PC14, PC16 | Medium | Member invitation flow |
-| `views/chat/group/GroupMemberInfoView.kt` | PC3, PC14, PC16, PC30, PC31, PC33 | Medium | Member details and role management; relay-address + rejected-status info rows; ban dialogs and the typed confirmation |
+| `views/chat/group/GroupMemberInfoView.kt` | PC3, PC14, PC16, PC30, PC31, PC33, PC34 | Medium | Member details and role management; relay-address + rejected-status info rows; ban dialogs; the typed confirmation, also of Delete and ban forever |
 | `views/chat/group/ChannelRelaysView.kt` | PC31 | Medium | Channel relay list, add/remove entries |
 | `views/chat/group/AddGroupRelayView.kt` | PC31 | Low | Add relay sheet |
 | `views/chat/group/GroupProfileView.kt` | PC3, PC14 | Medium | Group profile editing |
@@ -202,7 +205,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/newchat/AddContactLearnMore.kt` | PC12 | Low | Educational content |
 | `views/newchat/QRCode.kt` | PC12 | Low | QR code display |
 | `views/newchat/QRCodeScanner.kt` | PC12 | Low | QR code camera scanner |
-| `views/contacts/ContactListNavView.kt` | PC1, PC12, PC33 | Medium | Contact list navigation; Delete and ban in Archived contacts |
+| `views/contacts/ContactListNavView.kt` | PC1, PC12, PC34, PC35 | Medium | Contact list navigation; Delete and ban in Archived contacts |
 | `views/contacts/ContactPreviewView.kt` | PC12 | Low | Contact row preview |
 
 ### 1.9 Views — User Settings
@@ -211,7 +214,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 |-------------|--------------------------|------------|-------|
 | `views/usersettings/SettingsView.kt` | PC18, PC22, PC23, PC24, PC25, PC29 | Medium | Settings navigation hub |
 | `views/usersettings/Appearance.kt` | PC24, PC32 | Low | Theme and appearance customization |
-| `views/usersettings/PrivacySettings.kt` | PC2, PC20, PC22 | Medium | Privacy and lock settings; contact deletion setting |
+| `views/usersettings/PrivacySettings.kt` | PC20, PC22, PC34 | Medium | Privacy and lock settings; contact deletion setting |
 | `views/usersettings/UserProfileView.kt` | PC19 | Medium | Profile display name and image editing |
 | `views/usersettings/UserProfilesView.kt` | PC19, PC21 | Medium | Multi-profile management |
 | `views/usersettings/HiddenProfileView.kt` | PC21 | Medium | Hidden profile access |
@@ -316,7 +319,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 |-------------|--------------------------|------------|-------|
 | `views/TerminalView.kt` | — | Low | Developer chat console |
 | `views/SplashView.kt` | — | Low | Splash screen |
-| `views/WelcomeView.kt` | PC1, PC2 | Low | Empty-state welcome; the first profile sets the contact deletion setting to Notify |
+| `views/WelcomeView.kt` | PC1, PC34 | Low | Empty-state welcome; the first profile sets the contact deletion setting to Notify |
 | `views/Preview.kt` | — | Low | Compose preview utilities |
 
 ---
