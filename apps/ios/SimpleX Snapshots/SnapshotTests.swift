@@ -385,7 +385,6 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
     if #available(iOS 16.4, *) {
         host.safeAreaRegions = scene.device ? .container : []
     }
-    let earlierWindows = windowScene.windows
     let window = UIWindow(windowScene: windowScene)
     window.overrideUserInterfaceStyle = dark ? .dark : .light
     window.rootViewController = host
@@ -401,30 +400,27 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
         }
     }
     window.endEditing(true)
-    let alertWindows = scene.alert ? windowScene.windows.filter { $0 !== window && !$0.isHidden && !earlierWindows.contains($0) } : []
-    if scene.alert {
-        print("snapshot alert \(scene.name): presented \(String(describing: host.presentedViewController)), windows \(windowScene.windows.map { "\(type(of: $0)) level \($0.windowLevel.rawValue) hidden \($0.isHidden) new \(!earlierWindows.contains($0))" })")
+    if let alertView = host.presentedViewController?.view {
+        print("snapshot alert \(scene.name): in window \(alertView.isDescendant(of: window)), alpha \(alertView.alpha), opacity \(alertView.layer.opacity), presentation opacity \(String(describing: alertView.layer.presentation()?.opacity)), animations \(alertView.layer.animationKeys() ?? []), superview \(String(describing: alertView.superview)), frame \(alertView.frame)")
     }
-    for alertWindow in alertWindows {
-        alertWindow.overrideUserInterfaceStyle = window.overrideUserInterfaceStyle
+    if !scene.alert {
+        removeAnimations(window.layer)
     }
-    if !alertWindows.isEmpty {
-        settle()
-    }
-    removeAnimations(window.layer)
-    alertWindows.forEach { removeAnimations($0.layer) }
     let format = UIGraphicsImageRendererFormat.default()
     format.scale = 1
     format.preferredRange = .standard
     format.opaque = true
     let image = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { _ in
         _ = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
-        for alertWindow in alertWindows {
-            _ = alertWindow.drawHierarchy(in: alertWindow.bounds, afterScreenUpdates: true)
-        }
         if scene.device {
             drawStatusBar(dark: dark)
         }
+    }
+    if scene.alert, let dir = ProcessInfo.processInfo.environment["SNAPSHOT_DIR"] {
+        let layerImage = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { context in
+            window.layer.render(in: context.cgContext)
+        }
+        try? layerImage.pngData()?.write(to: URL(fileURLWithPath: dir).appendingPathComponent("debug-\(scene.name)-\(dark ? "dark" : "light")-layer.png"))
     }
     window.isHidden = true
     window.rootViewController = nil
