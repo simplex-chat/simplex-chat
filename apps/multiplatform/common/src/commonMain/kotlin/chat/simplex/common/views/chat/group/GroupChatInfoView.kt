@@ -232,16 +232,14 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
   when {
     groupInfo.isOwner && groupInfo.businessChat == null ->
       deleteOwnGroupDialog(chat, title, text, keepConversationText = groupInfo.displayName, close)
-    groupInfo.isBusinessChatOwner -> {
-      val canConnectAgain = String.format(generalGetString(MR.strings.customer_can_connect_again_via_business_address), groupInfo.displayName)
+    groupInfo.isBusinessChatOwner ->
       deleteOwnGroupDialog(
         chat,
         title,
         text = text + "\n" + String.format(generalGetString(MR.strings.contact_will_be_notified), groupInfo.displayName),
-        keepConversationText = if (chatModel.userAddress.value != null) canConnectAgain else null,
+        keepConversationText = if (chatModel.userAddress.value != null) String.format(generalGetString(MR.strings.customer_can_connect_again_via_business_address), groupInfo.displayName) else null,
         close
       )
-    }
     else ->
       AlertManager.shared.showAlertDialog(
         title = title,
