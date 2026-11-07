@@ -93,7 +93,17 @@ Shown when `developerTools` preference is enabled:
 | Action | Description |
 |---|---|
 | Clear chat | Deletes all messages in chat (with confirmation via `clearChatDialog`) |
-| Delete contact | Removes the contact and all associated data (with confirmation via `deleteContactDialog`) |
+| Delete contact | Removes the contact (with confirmation via `deleteContactDialog`); see Contact Deletion below |
+
+### Contact Deletion
+
+A contact that is ready and active, archived or not, is deleted in two dialogs:
+1. "Delete contact?" (`confirmActiveContactDeletion`): the name, "Contact will be deleted - this cannot be undone!" and "You won't be able to reconnect unless <name> sends you a new link." With the privacy setting "Contact deletion" Notify it has "Delete"; with Ask it has "Delete and notify" and "Delete silently".
+2. "Delete contact?" (`deleteActiveContactDialog`): "<name> will be notified." or "<name> won't be notified.", and "<name> can connect to you again via your address." when the user has an address; "Keep conversation" and "Delete" (`showKeepConversationDialog`). Keep conversation on deletes the contact and keeps the conversation (`ChatDeleteMode.Entity`); an archived contact then stays in Archived contacts, and "Contact deleted!" is shown only for a contact that is not archived. Off deletes the contact with the conversation (`ChatDeleteMode.Full`).
+
+Any other contact gets "Confirm contact deletion?" with Confirm (`deleteNotReadyContact`).
+
+"Archive" in the chat list menu (`archiveContact`) moves the contact to Archived contacts without clearing the conversation (`ChatDeleteMode.Archive`), with no confirmation, then shows "Contact archived!" with "You can send messages to <name> from Archived contacts.", or "You can view the conversation with <name> in Archived contacts." for a deleted contact; "Don't show again" sets `showDeleteConversationNotice`.
 
 ## Source Files
 

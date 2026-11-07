@@ -296,6 +296,9 @@ fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMen
       TagListAction(chat, showMenu)
       ClearChatAction(chat, showMenu)
     }
+    if (!contact.chatDeleted) {
+      ArchiveContactAction(chat, contact, chatModel, showMenu)
+    }
     DeleteContactAction(chat, chatModel, showMenu)
   }
 }
@@ -455,6 +458,18 @@ fun ClearNoteFolderAction(chat: Chat, showMenu: MutableState<Boolean>) {
       showMenu.value = false
     },
     color = WarningOrange
+  )
+}
+
+@Composable
+fun ArchiveContactAction(chat: Chat, contact: Contact, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+  ItemAction(
+    stringResource(MR.strings.archive_verb),
+    painterResource(MR.images.ic_inventory_2),
+    onClick = {
+      archiveContact(chat, contact, chatModel)
+      showMenu.value = false
+    }
   )
 }
 
@@ -1139,5 +1154,39 @@ fun PreviewChatListNavLinkContactRequest() {
       selectedChat = remember { mutableStateOf(false) },
       nextChatSelected = remember { mutableStateOf(false) },
     )
+  }
+}
+
+@Composable
+private fun ChatMenuPreview(chatInfo: ChatInfo, menuItems: @Composable (Chat, MutableState<Boolean>) -> Unit) {
+  val chat = Chat(
+    remoteHostId = null,
+    chatInfo = chatInfo,
+    chatItems = listOf(ChatItem.getSampleData(1, CIDirection.DirectSnd(), previewDate, "Hello")),
+    chatStats = Chat.ChatStats()
+  )
+  val showMenu = remember { mutableStateOf(true) }
+  SimpleXTheme {
+    Column(Modifier.fillMaxSize()) {
+      ChatListNavLinkLayout(
+        chatLinkPreview = {
+          ChatPreviewView(chat, true, null, null, null, disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
+        },
+        click = {},
+        dropdownMenuItems = { menuItems(chat, showMenu) },
+        showMenu = showMenu,
+        disabled = false,
+        selectedChat = remember { mutableStateOf(false) },
+        nextChatSelected = remember { mutableStateOf(false) },
+      )
+    }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewContactMenu() {
+  ChatMenuPreview(ChatInfo.Direct.sampleData) { chat, showMenu ->
+    ContactMenuItems(chat, Contact.sampleData, ChatModel, showMenu, showMarkRead = false)
   }
 }

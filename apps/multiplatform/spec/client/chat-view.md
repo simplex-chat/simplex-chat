@@ -295,6 +295,8 @@ Preloads `apiContactInfo` (connection stats, server profile) and `apiGetContactC
 
 Key sections: contact profile, local alias, connection stats, shared media, disappearing messages preference, voice/call/file feature toggles, encryption verification, and contact deletion.
 
+Contact deletion ([`deleteContactDialog`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatInfoView.kt#L233)): a contact with `sndReady && active` gets `confirmActiveContactDeletion` (one "Delete" button for `appPrefs.privacyContactDeletion` Notify, "Delete and notify" and "Delete silently" for Ask), then `deleteActiveContactDialog`, which shows [`showKeepConversationDialog`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatInfoView.kt#L315): "Keep conversation" selects `ChatDeleteMode.Entity` or `ChatDeleteMode.Full` with the chosen `notify`. Other contacts get `deleteNotReadyContact`. [`deleteContact`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatInfoView.kt#L412) calls `apiDeleteContact` and updates the model by mode: removes the chat (Full), updates the contact (Entity, Archive) or clears it (Messages). [`archiveContact`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatInfoView.kt#L438) deletes with `ChatDeleteMode.Archive`, which sets `chatDeleted` and keeps the items, then shows "Contact archived!" while `showDeleteConversationNotice` is set.
+
 ---
 
 ## 8. GroupChatInfoView
