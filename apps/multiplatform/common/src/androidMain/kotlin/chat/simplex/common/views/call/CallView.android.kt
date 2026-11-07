@@ -326,6 +326,8 @@ fun ActiveCallOverlayDisabled(call: Call) {
 private fun dropAudioManagerOverrides() {
   val am = androidAppContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
   am.mode = AudioManager.MODE_NORMAL
+  // muting in a call mutes the microphone for the next call and other apps until reset
+  am.isMicrophoneMute = false
   // Clear selected communication device to default value after we changed it in call
   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
     am.clearCommunicationDevice()
