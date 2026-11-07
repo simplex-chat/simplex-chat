@@ -127,6 +127,7 @@ jobs:
       publish_types: ${{ steps.libs.outputs.tag && steps.publish.outputs.types_version || '' }}
       publish_nodejs: ${{ steps.publish.outputs.nodejs_version }}
       publish_python: ${{ steps.publish.outputs.python_version }}
+      publish_mcp: ${{ steps.publish.outputs.mcp_version }}
       publish: ${{ steps.publish.outputs.nodejs_version || steps.publish.outputs.python_version }}
       packages: ${{ steps.changes.outputs.packages }}
       scopes: ${{ steps.changes.outputs.scopes }}
@@ -1731,7 +1732,7 @@ jobs:
 
   publish:
     needs: [maybe-release, build-linux, build-linux-full, build-linux-push, build-macos, build-ios, build-windows, releases]
-    if: ${{ !cancelled() && (needs.maybe-release.outputs.publish || needs.maybe-release.outputs.publish_types) }}
+    if: ${{ !cancelled() && (needs.maybe-release.outputs.publish || needs.maybe-release.outputs.publish_types || needs.maybe-release.outputs.publish_mcp) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -1740,6 +1741,7 @@ jobs:
     outputs:
       types: ${{ steps.types.outputs.version }}
       nodejs: ${{ steps.nodejs.outputs.version }}
+      mcp: ${{ steps.mcp.outputs.version }}
       python: ${{ steps.python.outputs.version }}
     env:
       NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -1778,7 +1780,7 @@ jobs:
         run: python3 scripts/ci/packages_release.py publish-plan >> "$GITHUB_OUTPUT"
 
       - name: Setup Node.js
-        if: steps.plan.outputs.types_version || steps.plan.outputs.nodejs_version
+        if: steps.plan.outputs.types_version || steps.plan.outputs.nodejs_version || steps.plan.outputs.mcp_version
         uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -1850,9 +1852,29 @@ jobs:
           VERSION: ${{ steps.plan.outputs.python_version }}
         run: echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Build and test @simplex-chat/mcp
+        if: steps.plan.outputs.mcp_version
+        working-directory: packages/simplex-chat-mcp
+        run: |
+          npm ci --no-audit --no-fund
+          npx tsc
+          npx tsc -p test/tsconfig.json --noEmit
+          npm test
+
+      - name: Publish @simplex-chat/mcp
+        id: mcp
+        if: steps.plan.outputs.mcp_version
+        working-directory: packages/simplex-chat-mcp
+        env:
+          VERSION: ${{ steps.plan.outputs.mcp_version }}
+          DIST_TAG: ${{ steps.plan.outputs.mcp_dist_tag }}
+        run: |
+          npm publish --provenance --access public --tag "$DIST_TAG"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
   record:
     needs: publish
-    if: ${{ !cancelled() && (needs.publish.outputs.types || needs.publish.outputs.nodejs || needs.publish.outputs.python) }}
+    if: ${{ !cancelled() && (needs.publish.outputs.types || needs.publish.outputs.nodejs || needs.publish.outputs.mcp || needs.publish.outputs.python) }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -1864,7 +1886,8 @@ jobs:
           LIBS_REPOSITORY: ${{ github.repository }}-libs
           TYPES: ${{ needs.publish.outputs.types }}
           NODEJS: ${{ needs.publish.outputs.nodejs }}
+          MCP: ${{ needs.publish.outputs.mcp }}
           PYTHON: ${{ needs.publish.outputs.python }}
         run: |
           python3 scripts/ci/packages_release.py record --commit "$GITHUB_SHA" \
-            --types "$TYPES" --nodejs "$NODEJS" --python "$PYTHON"
+            --types "$TYPES" --nodejs "$NODEJS" --mcp "$MCP" --python "$PYTHON"
