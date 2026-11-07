@@ -3151,7 +3151,7 @@ data class GroupMember (
   }
 
   fun canBanAndRemove(groupInfo: GroupInfo): Boolean =
-    canBeRemoved(groupInfo) && memberCurrentOrPending && supportsLinkNotice
+    canBeRemoved(groupInfo) && memberCurrentOrPending && memberRole < GroupMemberRole.Moderator && supportsLinkNotice
 
   val supportChatNotRead: Boolean get() =
     if (supportChat != null)

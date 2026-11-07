@@ -279,7 +279,7 @@ Group profile can include optional `chatLayout` property (`classic` or `terminal
 - the client of the removed member shows nothing, keeps the group and stops sending messages to its members. A client that forwards group messages (an admin or owner in a group without relays, a relay in a channel) processes its own removal as without this property.
 - clients of other members do not show the removal.
 
-Clients use `silent` and `notice` of a forwarded `x.grp.mem.del` message only when it is forwarded by a relay with a verified signature. Clients send `notice` only with `silent`, and only to members and contacts with chat protocol version 23 or later.
+Clients use `silent` and `notice` of a forwarded `x.grp.mem.del` message only when it is forwarded by a relay with a verified signature. Clients send `notice` only with `silent`, only to members below `moderator` role, and only to members and contacts with chat protocol version 23 or later.
 
 ### Channels: relay-mediated groups
 

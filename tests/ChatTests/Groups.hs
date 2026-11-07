@@ -161,7 +161,7 @@ chatGroupTests = do
     it "removal notice applies only to the link used to join" testPlanGroupLinkRemovedNoticeOtherLinks
     it "group deletion without notice leaves notices unchanged" testPlanGroupLinkDeletedWithoutNotice
     it "rejected pending member with notice can't re-join" testPlanGroupLinkRejectedNotice
-    it "removed admin with notice sees removal and can't re-join" testPlanGroupLinkRemovedAdminNotice
+    it "removal of a moderator with notice is refused" testRemoveModeratorNoticeRefused
     it "removal with notice forwarded by host is shown and notice ignored" testPlanGroupLinkForwardedRemovalNotice
     it "removal with notice of a member on previous version is prohibited" $
       runTestCfg2 testCfg testCfgVPrev testRemoveMemberNoticePrevVersion
@@ -271,6 +271,7 @@ chatGroupTests = do
     it "block of member pending review is sent to moderators only" testBlockPendingReviewMember
     it "late automatic unblock doesn't cancel a newer block" testBlockForAllLateAutomaticUnblock
     it "blocked member's update leaves no rows on regular members" testBlockForAllNoRowsForMembers
+    it "blocked member's edit of an earlier message is not applied for regular members" testBlockForAllEditNotApplied
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
@@ -3416,24 +3417,13 @@ testPlanGroupLinkRejectedNotice =
   where
     cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPendingApproval, GRObserver))}}
 
-testPlanGroupLinkRemovedAdminNotice :: HasCallStack => TestParams -> IO ()
-testPlanGroupLinkRemovedAdminNotice =
+testRemoveModeratorNoticeRefused :: HasCallStack => TestParams -> IO ()
+testRemoveModeratorNoticeRefused =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
-      gLink <- createTeamLink alice
-      joinTeamViaLink alice bob gLink "bob"
-      alice ##> "/mr team bob admin"
-      alice <## "#team: you changed the role of bob to admin (signed)"
-      bob <## "#team: alice changed your role from member to admin (signed)"
-
+      createGroup2' "team" alice (bob, GRModerator) True
       alice ##> "/rm team bob notice={\"ttl\":86400}"
-      removedFromTeam alice bob "bob"
-      linkNoticesCount bob `shouldReturn` 1
-      completeDeliveryJobsCount bob `shouldEventuallyReturn` 1
-      bob ##> "/d #team"
-      bob <## "#team: you deleted your local copy of the group"
-      bob ##> ("/_connect plan 1 " <> gLink)
-      bannedLine bob "group link: "
+      alice <## "bad chat command: notice is not supported for moderators, admins, owners, relays, members on old versions and members not in the group"
 
 testPlanGroupLinkForwardedRemovalNotice :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkForwardedRemovalNotice =
@@ -3475,7 +3465,7 @@ testRemoveMemberNoticePrevVersion :: HasCallStack => TestCC -> TestCC -> IO ()
 testRemoveMemberNoticePrevVersion alice bob = do
   createGroup2' "team" alice (bob, GRMember) True
   alice ##> "/rm team bob notice={}"
-  alice <## "bad chat command: notice is not supported for relays, members on old versions and members not in the group"
+  alice <## "bad chat command: notice is not supported for moderators, admins, owners, relays, members on old versions and members not in the group"
   alice ##> "/rm team bob"
   concurrentlyN_
     [ alice <## "#team: you removed bob from the group (signed)",
@@ -8691,6 +8681,26 @@ testBlockForAllNoRowsForMembers =
       rcvMsgCountFrom cath "bob" `shouldReturn` (rows + 1)
       cath #$> ("/_get chat #1 count=2", chat, [(0, "hello"), (0, "after")])
 
+testBlockForAllEditNotApplied :: HasCallStack => TestParams -> IO ()
+testBlockForAllEditNotApplied =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      threadDelay 1000000
+      bob #> "#team hello"
+      [alice, cath] *<# "#team bob> hello"
+
+      alice ##> "/block for all #team bob"
+      alice <## "#team: you blocked bob (signed)"
+      cath <## "#team: alice blocked bob (signed)"
+      bob <// 50000
+
+      bob ##> "! #team hello there"
+      bob <# "#team [edited] hello there"
+      alice <##. "#team bob> [edited] hello there"
+      cath <// 1000000
+      cath #$> ("/_get chat #1 count=1", chat, [(0, "hello")])
+
 rcvMsgCountFrom :: TestCC -> T.Text -> IO Int
 rcvMsgCountFrom cc name = do
   [Only n] <-
@@ -12226,7 +12236,7 @@ testChannelRemoveMemberNotice ps =
 
         threadDelay 1000000
         alice ##> "/rm #team bob notice={}"
-        alice <## "bad chat command: notice is not supported for relays, members on old versions and members not in the group"
+        alice <## "bad chat command: notice is not supported for moderators, admins, owners, relays, members on old versions and members not in the group"
         alice ##> "/rm #team cath notice={\"ttl\":86400}"
         alice <## "#team: you removed cath from the group (signed)"
         bob <## "#team: alice removed cath from the group (signed)"

@@ -3609,7 +3609,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     }
 
     public func canBanAndRemove(groupInfo: GroupInfo) -> Bool {
-        canBeRemoved(groupInfo: groupInfo) && memberCurrentOrPending && supportsLinkNotice
+        canBeRemoved(groupInfo: groupInfo) && memberCurrentOrPending && memberRole < .moderator && supportsLinkNotice
     }
 
     public var canReceiveReports: Bool {

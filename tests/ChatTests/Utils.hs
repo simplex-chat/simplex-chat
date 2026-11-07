@@ -698,11 +698,6 @@ waitLinkNoticesCount cc n = go (50 :: Int)
         then count `shouldBe` n
         else threadDelay 100000 >> go (attempts - 1)
 
-completeDeliveryJobsCount :: TestCC -> IO Int
-completeDeliveryJobsCount cc =
-  withCCTransaction cc $ \db ->
-    fromMaybe 0 <$> maybeFirstRow fromOnly (DB.query_ db "SELECT count(1) FROM delivery_jobs WHERE job_status = 'complete'")
-
 permanentLinkNoticesCount :: TestCC -> IO Int
 permanentLinkNoticesCount cc =
   withCCTransaction cc $ \db ->

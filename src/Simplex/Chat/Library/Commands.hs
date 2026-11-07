@@ -3174,7 +3174,7 @@ processChatCommand cxt nm = \case
       when (useRelays' gInfo && anyPrivilegedRemoved && memberRole' (membership gInfo) /= GROwner) $
         throwCmdError "only the group owner can remove members, moderators and admins"
       when (isJust notice && any noticeUnsupported (invitedMems <> pendingApprvMems <> pendingRvwMems <> currentMems)) $
-        throwCmdError "notice is not supported for relays, members on old versions and members not in the group"
+        throwCmdError "notice is not supported for moderators, admins, owners, relays, members on old versions and members not in the group"
       (errs1, deleted1) <- deleteInvitedMems user invitedMems
       let recipients = filter memberCurrent members
       let doBumpRoster = useRelays' gInfo && memberRole' (membership gInfo) == GROwner && anyRosterRemoved
@@ -3219,7 +3219,7 @@ processChatCommand cxt nm = \case
                       -- removed current member: alters the roster blob iff it currently holds a roster role
                       _ -> (n', invited, pendingApprv, pendingRvw, m : current, maxRole', anyAdmin', anyPrivRemoved', anyRosterRemoved || isRosterRole memberRole)
             | otherwise = acc
-      noticeUnsupported m = not (memberCurrentOrPending m) || isRelay m || not (m `supportsVersion` linkNoticeVersion)
+      noticeUnsupported m = not (memberCurrentOrPending m) || isRelay m || memberRole' m >= GRModerator || not (m `supportsVersion` linkNoticeVersion)
       deleteInvitedMems :: User -> [GroupMember] -> CM ([ChatError], [GroupMember])
       deleteInvitedMems user memsToDelete = do
         deleteMembersConnections user memsToDelete
