@@ -110,6 +110,7 @@ class CallManager {
                     m.activeCallViewIsCollapsed = false
                     m.showCallView = false
                     completed()
+                    CallController.shared.suspendOnEndCall()
                 }
             }
         }

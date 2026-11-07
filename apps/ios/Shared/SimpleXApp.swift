@@ -77,7 +77,8 @@ struct SimpleXApp: App {
                         chatModel.contentViewAccessAuthenticated = false
                         // authentication ---
 
-                        if CallController.useCallKit() && chatModel.activeCall != nil {
+                        // suspending reloads the core's calls on resume, which keeps only invitations, so the end of a call was lost
+                        if chatModel.activeCall != nil {
                             CallController.shared.shouldSuspendChat = true
                         } else {
                             suspendChat()
