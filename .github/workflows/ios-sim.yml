@@ -156,9 +156,7 @@ jobs:
           github-token: ${{ github.token }}
 
       - name: Prepare libraries
-        run: |
-          scripts/ci/ios-sim/prepare-libs.sh
-          scripts/ios/update-pbxproj.sh
+        run: scripts/ci/ios-sim/prepare-libs.sh
 
       - name: Build backend
         if: env.BUILD_BACKEND == 'true'
