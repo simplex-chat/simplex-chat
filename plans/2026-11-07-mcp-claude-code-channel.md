@@ -112,6 +112,7 @@ Proposed on 2026-11-08, each in its own commit, until the user decides:
 60. The group of a session closed for 7 days is deleted for all its members, with the standing approvals of the session's chats; the daemon checks at its start and every hour. A run whose `CLAUDE_CODE_ENTRYPOINT` is `sdk-cli` (`claude -p`), `sdk-ts` or `sdk-py` (the Agent SDK) gets no session and no group.
 61. The approved mode is kept in the session group's custom data, not in `session.json`. `GET /status` returns the owners without the Main group link; `GET /link` returns the link. These protections hold against Claude's tools, not against a shell running as the same user.
 62. Leaving, removal or demotion in the Main group is applied at once to every session group: a member who left or was removed is removed, and a lowered role is set there, also in a pending invitation. Changes made while the daemon was stopped apply when the session group opens.
+63. `reply` posts a file without a card only when every member of the session group is Claude, `User`, gone or an owner; otherwise an owner approves its card first, in mode `requests`.
 
 Pack of the package (decision 44):
 ```
@@ -482,7 +483,28 @@ notifications/claude/channel/permission_request    POST /permission {id, request
 New tool:
 ```
 tool    input                       action
-reply   file, text?                 sends the file to the session group, text as its caption; no card
+reply   file, text?                 sends the file to the session group, text as its caption; a card while members who are not owners are in it
+```
+
+`reply` (decision 63):
+```
+on reply {file, text}:   an action of the same session, file and text: attach to it
+                         the file checked as for send
+                         every member of the group is Claude, User, gone or an approver: send   -> {item}
+                         else: action reply, mode requests; card "I want to send a file to group N · NAME,
+                               where members who are not owners see it:", the caption, the file; /approve K /reject K
+                         approved: send                                                        -> {action, status: done, item}
+                         rejected, expired, failed                                             -> {action, status, error?}
+a member invited and not yet joined counts as a member
+```
+
+```mermaid
+flowchart LR
+  R[reply] --> C{only Claude, User, gone members and approvers}
+  C -- yes --> S[file sent]
+  C -- no --> K[card in the session group, mode requests]
+  K -- /approve K --> S
+  K -- /reject K, expiry --> E[no file]
 ```
 
 Server instructions, added: messages in a `simplex` channel are the owners' prompts; the final answer of the turn reaches them; `reply` sends them files.
