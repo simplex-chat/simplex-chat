@@ -2363,10 +2363,13 @@ testOwnerCardInContactRequest ps =
                    ConsoleString shortLink,
                    ConsoleString cSig
                  ]
-          cath .<## ": contact is connected"
           let notOwner = "'SimpleX Directory'> To add a channel to directory you must be the owner."
-          notOwnerFirst <- (notOwner ==) . dropTime <$> peekTermLine cath
-          when notOwnerFirst $ cath <# notOwner
+              readNotOwner = do
+                notOwnerNext <- (Just notOwner ==) . dropTime_ <$> peekTermLine cath
+                when notOwnerNext $ cath <# notOwner
+          readNotOwner
+          cath .<## ": contact is connected"
+          readNotOwner
           cath .<# "> Welcome to SimpleX Directory!"
           cath <## ""
           cath <## "🔍 Send search string to find groups - try security."
