@@ -77,6 +77,7 @@ export class Daemon {
   private readonly titled = new EventEmitter()
   private readonly registered = new EventEmitter()
   private readonly held = new Map<number, TitleRequest>()
+  private readonly deleting = new Map<string, Promise<void>>()
   private nextNumber: number
   private stopTimer?: NodeJS.Timeout
   private logTimer?: NodeJS.Timeout
@@ -138,12 +139,19 @@ export class Daemon {
   private async deleteClosedGroups(): Promise<void> {
     const before = Date.now() - closedDays * 86_400_000
     for (const {id, session} of storedSessions(this.deps.root)) {
-      if (session.group === undefined || session.closed === undefined || Date.parse(session.closed) > before || this.entries.has(id) || this.stopping !== undefined) continue
-      await this.hub.deleteGroup(session.number)
-      const {group, closed, ...kept} = readSessionFile(this.folder(id)) ?? session
-      writeSessionFile(this.folder(id), kept)
-      log(`The group of session ${session.number} is deleted: the session was closed for ${closedDays} days.`)
+      if (session.group === undefined || session.closed === undefined || Date.parse(session.closed) > before || this.entries.has(id) || this.deleting.has(id) || this.stopping !== undefined) continue
+      const deleted = this.deleteGroupOf(id, session).catch(error => logError(`group of session ${session.number}`, error))
+      this.deleting.set(id, deleted)
+      await deleted
+      this.deleting.delete(id)
     }
+  }
+
+  private async deleteGroupOf(id: string, session: SessionFile): Promise<void> {
+    await this.hub.deleteGroup(session.number)
+    const {group, closed, ...kept} = readSessionFile(this.folder(id)) ?? session
+    writeSessionFile(this.folder(id), kept)
+    log(`The group of session ${session.number} is deleted: the session was closed for ${closedDays} days.`)
   }
 
   private markClosed(id: string): void {
@@ -399,6 +407,7 @@ export class Daemon {
   }
 
   private async openAgent(id: string, folder: string, request: SessionRequest | undefined): Promise<SessionLike> {
+    await this.deleting.get(id)
     let stored = readSessionFile(folder)
     if (stored === undefined) {
       if (request === undefined) throw new SocketError("Unknown session; restart the Claude Code session.", 409)

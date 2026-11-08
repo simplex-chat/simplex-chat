@@ -120,7 +120,7 @@ function deps(root: string) {
     gates[name] = promise
     return resolve
   }
-  return {d, agents, configs, busy, stored, deletedGroups, expiryChecks: () => expiryChecks, hubStops, onStopped, stoppedCode: stopped.promise, opening: opening.promise, calling: calling.promise, aborted: aborted.promise, hubStopping: hubStopping.promise, gate}
+  return {d, hub, agents, configs, busy, stored, deletedGroups, expiryChecks: () => expiryChecks, hubStops, onStopped, stoppedCode: stopped.promise, opening: opening.promise, calling: calling.promise, aborted: aborted.promise, hubStopping: hubStopping.promise, gate}
 }
 
 let root: string
@@ -855,6 +855,53 @@ describe("daemon", () => {
     await jest.advanceTimersByTimeAsync(60 * minutes)
     await turnsUntil(() => deletedGroups.length === 2)
     expect(deletedGroups).toEqual([1, 2])
+  })
+
+  it("opens a session resumed while the daemon deletes its group once the deletion ends, without the deleted group", async () => {
+    const day = 24 * 60 * minutes
+    storeSession(id1, 1, "old", {group: 20, closed: new Date(Date.now() - 8 * day).toISOString()})
+    const {d, hub, deletedGroups} = deps(root)
+    const deleting = deferred()
+    const deleteGroup = hub.deleteGroup
+    hub.deleteGroup = async number => {
+      await deleting.promise
+      return deleteGroup(number)
+    }
+    const opened: SessionFile[] = []
+    const session = hub.session
+    hub.session = async (id, stored) => {
+      opened.push(stored)
+      return session(id, stored)
+    }
+    daemon = await Daemon.start(d, readDefaultConfig)
+    const resumed = register(id1)
+    await new Promise(resolve => setTimeout(resolve, 50))
+    expect(opened).toEqual([])
+    deleting.resolve()
+    expect(await resumed).toMatchObject({number: 1})
+    expect(deletedGroups).toEqual([1])
+    expect(opened).toEqual([{number: 1, name: "old", project: "/p/app", created: "2026-10-24T00:00:00.000Z"}])
+  })
+
+  it("deletes the groups of the other sessions closed for 7 days when the deletion of one fails, and logs the failure", async () => {
+    const day = 24 * 60 * minutes
+    const closed = new Date(Date.now() - 8 * day).toISOString()
+    storeSession(id1, 1, "first", {group: 20, closed})
+    storeSession(id2, 2, "second", {group: 21, closed})
+    const errors: string[] = []
+    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text)), true))
+    const {d, hub, deletedGroups} = deps(root)
+    const deleteGroup = hub.deleteGroup
+    let calls = 0
+    hub.deleteGroup = async number => {
+      if (calls++ === 0) throw new Error("no network")
+      return deleteGroup(number)
+    }
+    daemon = await Daemon.start(d, readDefaultConfig)
+    await turnsUntil(() => deletedGroups.length === 1)
+    const failed = deletedGroups[0] === 1 ? 2 : 1
+    expect(errors).toEqual([`group of session ${failed}: no network\n`])
+    expect(readSessionFile(sessionFolder(root, failed === 1 ? id1 : id2))).toMatchObject({group: 19 + failed, closed})
   })
 
   it("records when a session closes, also for a stored session at a daemon start, and removes the record when it opens", async () => {
