@@ -63,7 +63,7 @@ badgeTests = do
   it "should compute badge status correctly" testExpiryCheck
   it "should accept unknown badge types" testUnknownBadgeType
   it "credential serializes to a paste-able token and back" testCredentialSerialization
-  it "should accept a badge expiry only in years 1 to 9999" testExpiryRange
+  it "should accept a badge expiry only in years 1 to 9999, without leap seconds, to nanoseconds" testExpiryRange
   it "presentation headers encode and decode" testPresHeaderEncoding
   it "presentation headers with binary bytes round-trip through JSON" testPresHeaderJSON
   it "should reject a proof presented under another chat binding" testOtherChatBinding
@@ -229,8 +229,8 @@ testCredentialSerialization = do
 
 testExpiryRange :: IO ()
 testExpiryRange = do
-  map parsed ["0001-01-01T00:00:00Z", "9999-12-31T23:59:59Z"] `shouldBe` [True, True]
-  map parsed ["0000-12-31T23:59:59Z", "-0001-01-01T00:00:00Z", "10000-01-01T00:00:00Z", "0001-01-01T00:30:00+01:00"] `shouldBe` [False, False, False, False]
+  map parsed ["0001-01-01T00:00:00Z", "9999-12-31T23:59:59Z", "2030-01-01T00:00:00.123456789Z"] `shouldBe` [True, True, True]
+  map parsed ["0000-12-31T23:59:59Z", "-0001-01-01T00:00:00Z", "10000-01-01T00:00:00Z", "0001-01-01T00:30:00+01:00", "2030-12-31T23:59:60Z", "2030-01-01T00:00:00.1234567891Z"] `shouldBe` [False, False, False, False, False, False]
   where
     parsed :: ByteString -> Bool
     parsed expiry = isJust (J.decodeStrict' ("{\"badgeType\":\"supporter\",\"badgeExpiry\":\"" <> expiry <> "\",\"badgeExtra\":\"\"}") :: Maybe BadgeInfo)
