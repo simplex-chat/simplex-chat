@@ -212,8 +212,8 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | Session server | [`src/session.ts`](../src/session.ts#L39) | `startSession` | [39](../src/session.ts#L39) |
 | Session to daemon link | [`src/session.ts`](../src/session.ts#L67) | `DaemonLink` | [67](../src/session.ts#L67) |
 | Daemon start by a client | [`src/client.ts`](../src/client.ts#L35) | `DaemonClient.ensureDaemon` | [35](../src/client.ts#L35) |
-| Daemon process | [`src/daemon.ts`](../src/daemon.ts#L403) | `runDaemon` | [403](../src/daemon.ts#L403) |
-| Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L134) | `Daemon.routes` | [134](../src/daemon.ts#L134) |
+| Daemon process | [`src/daemon.ts`](../src/daemon.ts#L408) | `runDaemon` | [408](../src/daemon.ts#L408) |
+| Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L135) | `Daemon.routes` | [135](../src/daemon.ts#L135) |
 | Hub | [`src/hub.ts`](../src/hub.ts#L330) | `Hub.open` | [330](../src/hub.ts#L330) |
 | Session and its group | [`src/hub.ts`](../src/hub.ts#L48) | `Session` | [48](../src/hub.ts#L48) |
 | Main group | [`src/main-group.ts`](../src/main-group.ts#L25) | `MainGroup` | [25](../src/main-group.ts#L25) |
