@@ -205,10 +205,10 @@ function takeOver(file: string, pid: number | undefined): boolean {
     linkSync(file, claim)
   } catch (error) {
     const {code} = error as NodeJS.ErrnoException
-    if (code === "EEXIST" || code === "ENOENT") return false
+    if (code === "EEXIST" || code === "ENOENT" || !createExclusive(claim, "")) return false
   }
   try {
-    if (existsSync(claim) && lockPid(claim) !== pid) return false
+    if (!existsSync(file) || lockPid(file) !== pid) return false
     unlinkSync(file)
     return createLock(file)
   } finally {

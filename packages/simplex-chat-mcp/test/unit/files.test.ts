@@ -98,7 +98,7 @@ describe("lock", () => {
     expect(second).toBeInstanceOf(LockedError)
   })
 
-  it("lets only one of two starters take over the lock of a stopped process", () => {
+  function expectOneOfTwoTakeOvers(): void {
     const exited = spawnSync(process.execPath, ["-e", "process.stdout.write(String(process.pid))"], {encoding: "utf8"})
     const file = join(dir, "lock")
     writeFileSync(file, `${exited.stdout}\n`)
@@ -128,6 +128,21 @@ describe("lock", () => {
     expect([first, second].filter(result => result === "acquired")).toHaveLength(1)
     expect([first, second].find(result => result !== "acquired")).toBeInstanceOf(LockedError)
     expect(readdirSync(dir).filter(name => name.startsWith("lock"))).toEqual(["lock"])
+  }
+
+  it("lets only one of two starters take over the lock of a stopped process", () => {
+    expectOneOfTwoTakeOvers()
+  })
+
+  it("lets only one of two starters take over the lock of a stopped process where the file system has no hard links", () => {
+    const link = jest.spyOn(fs, "linkSync").mockImplementation(() => {
+      throw Object.assign(new Error("operation not permitted"), {code: "EPERM"})
+    })
+    try {
+      expectOneOfTwoTakeOvers()
+    } finally {
+      link.mockRestore()
+    }
   })
 })
 
