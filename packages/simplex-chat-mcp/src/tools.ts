@@ -373,7 +373,7 @@ const listOutput: Schema = {
         type: "object",
         properties: {
           action: actionField,
-          tool: {type: "string", description: "connect, send, download, leave, or reply in a Claude Code session."},
+          tool: {type: "string", description: "connect, send, download or leave."},
           input: {type: "object", description: "The input of the call; the same call again attaches to the action."},
           state: {type: "string", description: "pending: waits for the owner; performing; done, failed, rejected, expired: call the tool with the input to get the result."},
           open: {type: "boolean", description: "true when a call waits on it now."},

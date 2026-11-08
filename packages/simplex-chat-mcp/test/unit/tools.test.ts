@@ -28,6 +28,14 @@ describe("tool registration", () => {
     }
   })
 
+  it("describes the tools of the actions in the result of list as 0.2 did", async () => {
+    const client = await connectedServer("requests", async () => undefined)
+    await client.initialize()
+    const {result} = await client.request("tools/list")
+    const list = result.tools.find(({name}: {name: string}) => name === "list")
+    expect(list.outputSchema.properties.actions.items.properties.tool).toEqual({type: "string", description: "connect, send, download or leave."})
+  })
+
   it("passes calls to the handler and returns Cancelled when it returns nothing", async () => {
     const calls: [string, unknown][] = []
     const client = await connectedServer("requests", async (name, input) => {
