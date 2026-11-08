@@ -1112,7 +1112,7 @@ describe("Main group", () => {
       "1 · one\n2 · two, closed",
       `Sent you an invitation to "2 · two".`,
       "No session 5. /sessions lists the sessions.",
-      "Commands: /sessions, /join N. Owners decide a requested reset of the owners with /'approve reset' or /'reject reset'.",
+      "Unknown command.",
     ])
     expect(chat.invitations.at(-1)).toEqual({groupId: 21, viaGroupId: 10, groupMemberId: 7, memberRole: T.GroupMemberRole.Admin})
     hub.main.onMessage(mainMessage("/join 2", alice))

@@ -11,7 +11,7 @@ const mainCommands: T.ChatBotCommand[] = [
 ]
 const mainKey = "simplexMcpMain"
 const greeting = "I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N."
-const commandsReply = "Commands: /sessions, /join N. Owners decide a requested reset of the owners with /'approve reset' or /'reject reset'."
+const unknownCommand = "Unknown command."
 const resetRequest = "A terminal asks to replace the owners: this group is deleted, and a new Main group with a new link replaces it."
 const noOwners = "No owners in the Main group."
 const welcome = "Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that."
@@ -125,7 +125,7 @@ export class MainGroup {
     if (keyword === "sessions" && params === "") return this.sessions.sessionsText()
     if (keyword === "join" && /^\d+$/.test(params)) return this.sessions.join(sender, Number(params))
     if ((keyword === "approve" || keyword === "reject") && params === "reset") return this.decideReset(sender, keyword === "approve")
-    return commandsReply
+    return unknownCommand
   }
 
   private async decideReset(sender: T.GroupMember, approved: boolean): Promise<string | undefined> {

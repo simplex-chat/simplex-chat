@@ -878,7 +878,7 @@ Data flow of a prompt from the session group:
 | `SessionGroups` | [21](../src/main-group.ts#L21) | what the Main group asks of the hub |
 | `MainGroup.owners`, `isOwner` | [55-61](../src/main-group.ts#L55-L61) | human members with role `owner` while the group is not lost |
 | `MainGroup.load`, `start` | [63-82](../src/main-group.ts#L63-L82) | lost check, name, short description, welcome message and menu from the group's current profile, members; without owners, the existing link, or a new one |
-| `MainGroup.onMessage`, `command` | [89-129](../src/main-group.ts#L89-L129) | `/sessions`, `/join N`, `/approve reset`, `/reject reset`, help |
+| `MainGroup.onMessage`, `command` | [89-129](../src/main-group.ts#L89-L129) | `/sessions`, `/join N`, `/approve reset`, `/reject reset`; `Unknown command.` for another |
 | `MainGroup.onEvent`, `handleEvent`, `ownerJoined` | [101-166](../src/main-group.ts#L101-L166) | the members read again; the first human who joins becomes an owner; a new link when no owner remains; the statement of trust at each human's join; new owners invited to the open sessions |
 | `MainGroup.askReset`, `replace`, `decideReset` | [105-141](../src/main-group.ts#L105-L141) | reset card; a new Main group and a new link; the session groups kept |
 | `openLink`, `deleteLink` | [173-186](../src/main-group.ts#L173-L186) | group link with role `member` |
