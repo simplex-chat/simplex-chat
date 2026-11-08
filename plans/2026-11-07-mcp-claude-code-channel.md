@@ -119,9 +119,11 @@ Changing them from SimpleX, per the docs:
 route                                   effect on the running session
 model or effortLevel in settings files  none: read once at session start
 hook output                             none: no field sets them
-channel message "/model sonnet"         not documented; tested in this PR, added if it runs as a command
+message "/model sonnet" in the group    none: one-line "/" messages are commands of the session group
 Remote Control from the Claude app      changes both
 ```
+
+Model and effort change in the terminal or by Remote Control (D9).
 
 ## Components
 
