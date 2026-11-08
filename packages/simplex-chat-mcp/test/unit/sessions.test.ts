@@ -30,7 +30,7 @@ const modeCard = "I want to run in mode host: Claude Code asks you before each o
 const approverRights = "can send prompts and / commands to Claude, and approve tool use."
 const senderRights = "can send prompts to Claude; / commands and approvals need the role admin or owner."
 const aliceJoined = `Alice is an owner and ${approverRights}`
-const trusted = "Everyone in this group is trusted with all Claude Code sessions here: they can join each session's group by /join N, prompt Claude and approve its actions. Invite only people you trust with them."
+const joinRights = "They can join the group of any Claude Code session here, prompt Claude and approve its actions."
 
 type HubConstructor = new (chat: unknown, user: T.User, root: string, expireHours: number, mainGroup: T.GroupInfo, mainName: string) => Hub
 
@@ -1046,14 +1046,14 @@ describe("Main group", () => {
     await hub.main.onEvent({type: "joinedGroupMember", groupInfo: group(10, "SimpleX MCP", self), member: carol} as unknown as ChatEvent)
     expect(chat.roles).toEqual([{groupId: 10, members: [5], role: T.GroupMemberRole.Owner}])
     expect(chat.invitations).toEqual([{groupId: 20, viaGroupId: 10, groupMemberId: 5, memberRole: T.GroupMemberRole.Owner}])
-    expect(sentTo(chat, 10)).toEqual(["I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N.", `Carol joined. ${trusted}`])
+    expect(sentTo(chat, 10)).toEqual(["I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N.", `Carol joined. ${joinRights}`])
     expect(hub.owner()).toEqual({owners: ["Carol"]})
   })
 
   it("states in its description, its welcome message and a message at each join that everyone in it is trusted with all sessions", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
-    const texts = {shortDescr: "Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions.", description: `Supervise your Claude Code sessions: each one has its own group, and you get its invitation here. ${trusted}`}
+    const texts = {shortDescr: "Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions.", description: "Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that."}
     expect(chat.profiles).toEqual([{groupId: 10, groupProfile: expect.objectContaining(texts)}])
     await hub.main.load()
     expect(chat.profiles).toHaveLength(1)
@@ -1063,7 +1063,7 @@ describe("Main group", () => {
     chat.members.set(10, [self, alice, bob, dave])
     await hub.main.onEvent({type: "connectedToGroupMember", groupInfo: group(10, "SimpleX MCP", self), member: {...dave, memberStatus: T.GroupMemberStatus.Intro_inv}} as unknown as ChatEvent)
     await hub.main.onEvent({type: "joinedGroupMember", groupInfo: group(10, "SimpleX MCP", self), member: bob} as unknown as ChatEvent)
-    expect(sentTo(chat, 10)).toEqual([`Dave joined. ${trusted}`, `Bob joined. ${trusted}`])
+    expect(sentTo(chat, 10)).toEqual([`Dave joined. ${joinRights}`, `Bob joined. ${joinRights}`])
   })
 
   it("keeps the profile its owners changed, its preference for files and media included, at a rename, from the group's current profile", async () => {

@@ -320,15 +320,13 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   const mainGroupId = await joinByLink(alice, owner.link!)
   const groupOne = (await aliceInvited).get("1 · one")!
   await until(async () => (await alice.chat.apiListMembers(groupOne)).some(member => member.memberProfile.displayName === "User" && isActive(member)))
-  const trusted = "Everyone in this group is trusted with all Claude Code sessions here: they can join each session's group by /join N, prompt Claude and approve its actions. Invite only people you trust with them."
-
-  const bobInMain = received(alice.chat, inGroup(mainGroupId, ({chatItem}) => chatItem.meta.itemText === `Bob joined. ${trusted}`))
+  const bobInMain = received(alice.chat, inGroup(mainGroupId, ({chatItem}) => chatItem.meta.itemText === "Bob joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions."))
   const bobConnected = bob.chat.wait("connectedToGroupMember", ({member}) => member.memberProfile.displayName === "Claude", 60_000)
   const bobMain = await joinByLink(bob, await alice.chat.apiCreateGroupLink(mainGroupId, T.GroupMemberRole.Member))
   expect(await bobConnected).toBeDefined()
   await bobInMain
   const bobMainInfo = (await bob.chat.apiListGroups(bob.user.userId)).find(({groupId}) => groupId === bobMain)!
-  expect(bobMainInfo.groupProfile).toMatchObject({shortDescr: "Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions.", description: `Supervise your Claude Code sessions: each one has its own group, and you get its invitation here. ${trusted}`})
+  expect(bobMainInfo.groupProfile).toMatchObject({shortDescr: "Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions.", description: "Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that."})
   const bobInvited = joinSessionGroups(bob, ["1 · one"])
   const adminRights = "can send prompts and / commands to Claude, and approve tool use."
   const bobInOne = received(alice.chat, inGroup(groupOne, textStarts(`Bob is an admin and ${adminRights} You can change role to observer to stop it: /'observer #`)))

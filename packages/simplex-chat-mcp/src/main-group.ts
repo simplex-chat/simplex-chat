@@ -14,8 +14,8 @@ const greeting = "I'm Claude. Each Claude Code session has its own group, and yo
 const commandsReply = "Commands: /sessions, /join N. Owners decide a requested reset of the owners with /'approve reset' or /'reject reset'."
 const resetRequest = "A terminal asks to replace the owners: this group is deleted, and a new Main group with a new link replaces it."
 const noOwners = "No owners in the Main group."
-const trusted = "Everyone in this group is trusted with all Claude Code sessions here: they can join each session's group by /join N, prompt Claude and approve its actions. Invite only people you trust with them."
-const welcome = `Supervise your Claude Code sessions: each one has its own group, and you get its invitation here. ${trusted}`
+const welcome = "Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that."
+const joinRights = "They can join the group of any Claude Code session here, prompt Claude and approve its actions."
 const shortDescr = "Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions."
 
 export interface SessionGroups {
@@ -151,7 +151,7 @@ export class MainGroup {
       return this.openLink()
     }
     const joined = event.type === "joinedGroupMember" || event.type === "connectedToGroupMember" ? this.humans().find(({groupMemberId}) => groupMemberId === event.member.groupMemberId) : undefined
-    if (joined !== undefined) await this.post(`${safeName(joined.memberProfile.displayName)} joined. ${trusted}`)
+    if (joined !== undefined) await this.post(`${safeName(joined.memberProfile.displayName)} joined. ${joinRights}`)
     for (const owner of this.owners()) {
       if (!before.some(({groupMemberId}) => groupMemberId === owner.groupMemberId)) await this.sessions.inviteOwner(owner)
     }

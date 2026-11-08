@@ -796,7 +796,7 @@ sequenceDiagram
   C->>M: joinedGroupMember
   M->>C: apiDeleteGroupLink #35;M, apiSetMembersRole #35;M owner
   M->>O: I'm Claude. Each Claude Code session has its own group ...
-  M->>O: Alice joined. Everyone in this group is trusted with all Claude Code sessions here ...
+  M->>O: Alice joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.
   M->>N: inviteOwner: apiAddMemberViaGroup #35;G via #35;M, role owner
   O->>C: joins #35;G from the invitation in #35;M
   C->>N: joinedGroupMember
@@ -1231,7 +1231,7 @@ sequenceDiagram
   B->>C: joins #35;M
   C->>M: connectedToGroupMember, or joinedGroupMember by the hub's link
   M->>C: apiListMembers #35;M: Bob a current member
-  M->>B: Bob joined. Everyone in this group is trusted with all Claude Code sessions here ...
+  M->>B: Bob joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.
   B->>M: /join N in #35;M
   M->>N: Hub.join: role admin, or owner for an owner of #35;M
   N->>C: apiAddMemberViaGroup #35;G via #35;M, role admin
