@@ -269,6 +269,22 @@ describe("session groups", () => {
     expect(await session.control.ownerCommand(dan, {keyword: "pending", params: ""})).toBe(approversOnly)
   })
 
+  it("keep the profile an owner changed, its preference for files and media included, at the next update of the model and at a rename", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const session = await openSession(hub, id1, stored(1, "auth"))
+    const {groupInfo} = chat.chats.get("#20")!.chatInfo as T.ChatInfo.Group
+    const files = {enable: T.GroupFeatureEnabled.Off}
+    const toGroup = {...groupInfo, groupProfile: {...groupInfo.groupProfile, description: "Release work", groupPreferences: {...groupInfo.groupProfile.groupPreferences, files}}}
+    await hub["onEvent"]({type: "groupUpdated", fromGroup: groupInfo, toGroup, member_: invitedAlice} as unknown as ChatEvent)
+    await session.turn({id: id1, model: "claude-opus-5"})
+    await session.rename("deploy")
+    expect(chat.profiles.filter(({groupId}) => groupId === 20).map(({groupProfile}) => groupProfile)).toEqual([
+      expect.objectContaining({shortDescr: "claude-opus-5", description: "Release work", groupPreferences: expect.objectContaining({files})}),
+      expect.objectContaining({displayName: "1 · deploy", shortDescr: "claude-opus-5", description: "Release work", groupPreferences: expect.objectContaining({files})}),
+    ])
+  })
+
   it("make a member an observer by /observer #G ID, from a member whose role lets them change that member's role in SimpleX, and reply with the observer's rights", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)

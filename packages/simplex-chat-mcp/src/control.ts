@@ -128,6 +128,10 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     this.group = {...(await this.chat.apiUpdateGroupProfile(this.groupId, {...this.group.groupProfile, shortDescr})), customData: this.group.customData}
   }
 
+  profileUpdated(group: T.GroupInfo): void {
+    this.group = {...group, customData: this.group.customData}
+  }
+
   async start(): Promise<void> {
     if (this.actions.lost) return
     const {owners} = this.options

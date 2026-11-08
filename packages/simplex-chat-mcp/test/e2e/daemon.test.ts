@@ -300,7 +300,7 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   expect(chatItems.map(({meta}) => meta.itemText)).not.toContain("Session 1 is not running.")
 }, 600_000)
 
-test("a member of the Main group joins a session's group by /join as admin, prompts, sends // commands and approves there, also after removal from the Main group; a member added to the group by link as member prompts, and the plugin refuses its approvals and its // and /! commands; Claude posts each member's rights at the join and at a role change, after which the member approves; files of reply reach the group at once, and the group's preference for files makes the core refuse them; after a reset of the owners the members still prompt and approve there", async () => {
+test("a member of the Main group joins a session's group by /join as admin, prompts, sends // commands and approves there, also after removal from the Main group; a member added to the group by link as member prompts, and the plugin refuses its approvals and its // and /! commands; Claude posts each member's rights at the join and at a role change, after which the member approves; files of reply reach the group at once, the group's preference for files makes the core refuse them, and a change of the model keeps that preference; after a reset of the owners the members still prompt and approve there", async () => {
   const root = join(dir, "trust", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("trust", "Alice")
@@ -396,6 +396,9 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   await until(async () => (await carol.chat.apiListGroups(carol.user.userId)).find(({groupId}) => groupId === carolGroupOne)?.membership.memberRole === T.GroupMemberRole.Observer)
   await expect(carol.chat.apiSendTextMessage([T.ChatType.Group, carolGroupOne], "Delete the docs")).rejects.toThrow()
   expect((await alice.chat.apiListMembers(groupOne)).find(({memberProfile}) => memberProfile.displayName === "Bob")).toMatchObject({memberStatus: expect.stringMatching(/^(connected|complete)$/)})
+  const described = alice.chat.wait("groupUpdated", ({toGroup}) => toGroup.groupId === groupOne && toGroup.groupProfile.shortDescr === "claude-opus-5", 60_000)
+  await turn(JSON.stringify({session_id: one, hook_event_name: "PostModelSwitch", to_model: "claude-opus-5"}), {}, client)
+  expect((await described)?.toGroup.groupProfile.groupPreferences?.files?.enable).toBe(T.GroupFeatureEnabled.Off)
 
   const resetCard = received(alice.chat, inGroup(mainGroupId, textStarts("A terminal asks to replace the owners")))
   expect(await client.request("POST", "/reset-owners")).toEqual({})
