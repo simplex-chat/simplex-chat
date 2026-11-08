@@ -379,6 +379,9 @@ test("a member of the Main group joins a session's group by /join, prompts and a
   const rejecting = callTool(client, one, "reply", {file: notes})
   await bobSends(`/reject ${cardNumber(await again)}`)
   expect((await rejecting).result).toMatchObject({status: "rejected"})
+  const posted = async (groupId: number, start: string) => (await alice.chat.apiGetChat(T.ChatType.Group, groupId, 200)).chatItems.filter(({meta}) => meta.itemText.startsWith(start)).length
+  expect(await Promise.all([posted(mainGroupId, "Alice joined. "), posted(mainGroupId, "Bob joined. ")])).toEqual([1, 1])
+  expect(await Promise.all(["Alice joined from the Main group", "Bob joined from the Main group", "Carol joined as a guest"].map(start => posted(groupOne, start)))).toEqual([1, 1, 1])
   expect((await alice.chat.apiListMembers(groupOne)).find(({memberProfile}) => memberProfile.displayName === "Bob")).toMatchObject({memberStatus: expect.stringMatching(/^(connected|complete)$/)})
 }, 600_000)
 
