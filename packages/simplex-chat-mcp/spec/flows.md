@@ -1232,7 +1232,7 @@ sequenceDiagram
   M->>C: apiListMembers #M: Bob a current member
   M->>B: Bob joined. Everyone in this group is trusted with all Claude Code sessions here ...
   B->>M: /join N in #M
-  M->>N: Hub.join: role admin; owner for an owner of #M
+  M->>N: Hub.join: role admin, or owner for an owner of #M
   N->>C: apiAddMemberViaGroup #G via #M, role admin
   M->>B: Sent you an invitation to "N · NAME".
   B->>C: joins #G
@@ -1241,7 +1241,7 @@ sequenceDiagram
   A->>G: a group link of #G with role member, or an invitation of a contact with a role
   G->>C: joins #G
   C->>N: connectedToGroupMember: Control.onEvent, announceRights, askMode
-  N->>B: Carol is a member and can send prompts to Claude; // and /! commands and approvals of tool use need the role admin or owner. You can change role to observer to stop it: /'observer #G ID'
+  N->>B: Carol is a member and can send prompts to Claude ... You can change role to observer to stop it: /'observer #G ID'
   G->>C: a message in #G, /pending, /!ls
   C->>N: newChatItems: Session.onMessage, a prompt of Carol
   N->>G: Control: Only admins and owners of this group approve actions here.
