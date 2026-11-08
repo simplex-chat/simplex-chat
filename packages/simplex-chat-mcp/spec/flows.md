@@ -893,7 +893,7 @@ Source: [daemon.ts:326-345](../src/daemon.ts#L326-L345), [hub.ts:75-107](../src/
 
 ```mermaid
 sequenceDiagram
-  participant O as Owner
+  participant O as Member
   participant C as Core _hub
   participant N as Session N
   participant D as Daemon
@@ -901,37 +901,48 @@ sequenceDiagram
   participant CC as Claude Code
   O->>C: message in #G, with a file
   C->>N: newChatItems: Session.onMessage
-  N->>N: not a command of the group, sender an approver
-  N->>N: delivery = delivery then deliver: after the earlier prompts of the session
-  opt no attachment, in the first 30 s after the hub opened
-    N->>N: wait for an attachment until then
-  end
-  opt attached, with a file
-    N->>C: apiReceiveFile FILE_ID ROOT/_sessions/ID/files/group/FILE_ID.EXT, relays approved
-    alt rcvFileComplete within 10 minutes
-      C->>N: rcvFileComplete: fileDone
-    else rcvFileError, a failed receive, or 10 minutes
-      N->>O: reply: The file of this message was not received: ERROR
+  alt one-line "/" text, not "//" or "/!"
+    N->>N: Control.onMessage: a command of the group
+  else another message
+    N->>N: delivery = delivery then prompt: after the earlier messages of the session
+    alt from User
+      N->>N: nothing
+    else "/!" from a member who is not an owner of the Main group
+      N->>O: reply: Only owners of the Main group can send ! commands to Claude.
+    else "!"
+      N->>O: reply: Messages starting with ! reach Claude only from owners, as /!command.
+    else a prompt, "//" and "/!" without their first "/"
+      opt no attachment, in the first 30 s after the hub opened
+        N->>N: wait for an attachment until then
+      end
+      opt attached, with a file
+        N->>C: apiReceiveFile FILE_ID ROOT/_sessions/ID/files/group/FILE_ID.EXT, relays approved
+        alt rcvFileComplete within 10 minutes
+          C->>N: rcvFileComplete: fileDone
+        else rcvFileError, a failed receive, or 10 minutes
+          N->>O: reply: The file of this message was not received: ERROR
+        end
+      end
+      alt no attachment now
+        N->>O: reply: Session N is not running.
+      else attached
+        N->>N: pushed += (text, item), at most 20
+        N->>D: onLine {prompt: {text, from, item, file?}}
+        D->>S: the line on /attach
+        S->>CC: notifications/claude/channel {content, meta: {from, item, file?}}
+      end
     end
-  end
-  alt no attachment now
-    N->>O: reply: Session N is not running.
-  else attached
-    N->>N: pushed += (text, item), at most 20
-    N->>D: onLine {prompt: {text, from, item, file?}}
-    D->>S: the line on /attach
-    S->>CC: notifications/claude/channel {content, meta: {from, item, file?}}
   end
 ```
 
 Notes:
 
-- Messages of members who are not approvers, and one-line `/` commands with a keyword of the group's commands, are not prompts; an approver's other one-line `/` text, such as `/model sonnet`, is a prompt ([hub.ts:160](../src/hub.ts#L160), [control.ts:19](../src/control.ts#L19), [:219](../src/control.ts#L219), [:649-652](../src/control.ts#L649-L652)).
-- Prompts reach the session in arrival order: a prompt waits for the file of an earlier prompt ([hub.ts:161](../src/hub.ts#L161)).
+- Messages of every member but `User` are prompts, guests' included. One-line `/` texts that do not start with `//` or `/!` are commands of the group, and one outside its requests gets `Unknown command.`; `//model sonnet` reaches Claude as `/model sonnet`; `/!TEXT` from an approver whose member in the Main group is an owner reaches Claude as `!TEXT` ([hub.ts:157-163](../src/hub.ts#L157-L163), [:239-245](../src/hub.ts#L239-L245), [:308-315](../src/hub.ts#L308-L315), [control.ts:245](../src/control.ts#L245), [:640-645](../src/control.ts#L640-L645)).
+- Messages reach the session in arrival order: a prompt waits for the file of an earlier prompt, and a reply to `!` waits for the earlier prompts ([hub.ts:162](../src/hub.ts#L162)).
 - After a daemon start, a prompt that arrives before its session attaches again waits up to 30 s from the hub's open, so a prompt sent while the daemon was stopped reaches the session ([hub.ts:247-249](../src/hub.ts#L247-L249), [:376](../src/hub.ts#L376)).
 - A session started without the channel flag gets the notification and drops it.
 
-Source: [hub.ts:157-163](../src/hub.ts#L157-L163), [:247-271](../src/hub.ts#L247-L271), [daemon.ts:314](../src/daemon.ts#L314), [session.ts:53-56](../src/session.ts#L53-L56), [:199-203](../src/session.ts#L199-L203).
+Source: [hub.ts:157-163](../src/hub.ts#L157-L163), [:239-271](../src/hub.ts#L239-L271), [daemon.ts:314](../src/daemon.ts#L314), [session.ts:53-56](../src/session.ts#L53-L56), [:199-203](../src/session.ts#L199-L203).
 
 ---
 
@@ -962,7 +973,7 @@ sequenceDiagram
   N->>N: end pending permissions created before at
   N->>N: quote = the newest turn record before at; it and the older ones leave turns
   N->>N: a changed effort: description, session.json
-  N->>C: apiSendMessages #G parts, the first quoting the quote when it came from the group
+  N->>C: apiSendMessages #G parts, the first quoting the quote when it came from the group and fits with the first character
   opt the core refuses the quote
     N->>C: apiSendMessages #G parts without the quote
   end
@@ -977,14 +988,15 @@ Notes:
 - An empty answer takes its turn record too, without a post ([hub.ts:185](../src/hub.ts#L185), [:197](../src/hub.ts#L197)).
 - A prompt request whose hook started before an answer already handled records no turn, so that a later answer does not quote its prompt ([hub.ts:186](../src/hub.ts#L186), [:188](../src/hub.ts#L188)).
 - A blank prompt, as Claude Code sends for a prompt with images only, a prompt made only of this plugin's channel tags, as after a daemon restart lost the pushed prompts, and a prompt that is a one-line `/` command, such as `/simplex:link`, are not posted ([hub.ts:196](../src/hub.ts#L196)).
-- An answer whose quote the core refuses with `invalidQuote` or `chatItemNotFound`, as for a deleted prompt, is posted without the quote; so are the replies `Session N is not running.` and `The file of this message was not received: ERROR` ([hub.ts:290-296](../src/hub.ts#L290-L296), [:551-554](../src/hub.ts#L551-L554)).
+- An answer and a terminal prompt are posted in parts: the longest runs of whole characters that each fit one message as `send` measures it, the first part of an answer with its quote ([hub.ts:196](../src/hub.ts#L196), [:284-288](../src/hub.ts#L284-L288), [:532-549](../src/hub.ts#L532-L549), [tools.ts:1589-1592](../src/tools.ts#L1589-L1592)).
+- An answer whose quote the core refuses with `invalidQuote` or `chatItemNotFound`, as for a deleted prompt, is posted without the quote; so are the replies `Session N is not running.`, `The file of this message was not received: ERROR` and those to `!` and `/!` ([hub.ts:290-296](../src/hub.ts#L290-L296), [:551-554](../src/hub.ts#L551-L554)).
 - The hook cuts a prompt or an answer over 250,000 characters there, ending with `…`, so that the request fits the socket's 1 MiB ([hook.ts:15](../src/hook.ts#L15), [:95-97](../src/hook.ts#L95-L97)).
 - A card of a tool use that started after the hook is kept: the hook's start time `at` is earlier than its creation ([hook.ts:74](../src/hook.ts#L74), [hub.ts:204-208](../src/hub.ts#L204-L208)).
 - PostModelSwitch sends `{id, model}`; only the short description changes ([hook.ts:78](../src/hook.ts#L78), [hub.ts:190-201](../src/hub.ts#L190-L201)).
 - A Stop request with a changed effort posts the answer before it updates the short description, so that a prompt request handled meanwhile posts after the answer; the description is updated also when a post fails ([hub.ts:195-201](../src/hub.ts#L195-L201)).
 - A turn hook starts the daemon when none runs, repeats a turn refused with 409 up to 15 times 1 s apart, past the 10 s a held title waits, prints `{}`, and logs errors on its stderr ([hook.ts:74-93](../src/hook.ts#L74-L93)).
 
-Source: [hooks.json:5-7](../hooks/hooks.json#L5-L7), [hub.ts:183-202](../src/hub.ts#L183-L202), [:273-296](../src/hub.ts#L273-L296), [:511-531](../src/hub.ts#L511-L531), [user.ts:29-32](../src/user.ts#L29-L32).
+Source: [hooks.json:5-7](../hooks/hooks.json#L5-L7), [hub.ts:183-202](../src/hub.ts#L183-L202), [:273-296](../src/hub.ts#L273-L296), [:532-549](../src/hub.ts#L532-L549), [user.ts:29-32](../src/user.ts#L29-L32).
 
 ---
 
@@ -1229,6 +1241,8 @@ sequenceDiagram
   G->>C: joins #G
   C->>N: connectedToGroupMember: Control.onEvent, announceJoin, askMode
   N->>B: Carol joined as a guest, not from the Main group: their messages are not prompts ...
+  G->>C: a message in #G
+  C->>N: newChatItems: Session.onMessage, a prompt of Carol, as a message of Bob is
   Note over A,N: Bob leaves #M, is removed from it, or gets another role there
   C->>M: leftMember, deletedMember or memberRole in #M
   M->>C: apiListMembers #M; the session groups stay as they are
@@ -1238,7 +1252,9 @@ Notes:
 
 - A member invited through the Main group, at the session's start or by `/join N`, is an approver of that session group whatever their role in the Main group then or later; changes in the Main group leave the session groups and their `invited` lists as they are ([hub.ts:217-221](../src/hub.ts#L217-L221), [:304-306](../src/hub.ts#L304-L306), [main-group.ts:143-158](../src/main-group.ts#L143-L158)).
 - The Main group's post names a human joiner found among the refreshed members, as `connectedToGroupMember` carries the member's status before the connection ([main-group.ts:153-154](../src/main-group.ts#L153-L154)).
-- `User` joining a session group gets no post ([hub.ts:225](../src/hub.ts#L225)).
+- `User` joining a session group gets no post ([hub.ts:226](../src/hub.ts#L226), [:308-310](../src/hub.ts#L308-L310)).
+- Each join gets one post: the core raises `joinedGroupMember` for a member who joined through the hub, by its invitation or link, and `connectedToGroupMember` for a member another member added, one of the two for each connection; the end-to-end test counts one post for each join in both groups ([test/e2e/daemon.test.ts](../test/e2e/daemon.test.ts)).
+- A guest prompts the session as a member from the Main group does; a guest does not approve its actions ([hub.ts:239-245](../src/hub.ts#L239-L245), [control.ts:246](../src/control.ts#L246)).
 - A `/join N` of a member of that group already gets `You are a member of "N · NAME".` ([hub.ts:439-444](../src/hub.ts#L439-L444)).
 - A reset of the owners removes the members invited through the Main group from all session groups ([flow 25](#25-reset-owners)).
 
@@ -1257,9 +1273,11 @@ sequenceDiagram
   participant B as Member Bob
   CC->>T: reply {file, text}
   T->>T: the file checked
-  T->>N: withoutGuests: userContact, Control.onlyApprovers
-  N->>C: apiListMembers #G
-  alt only Claude, User, gone members and members from the Main group
+  T->>N: replyAtOnce: the option approve_guest_files, then userContact, Control.onlyApprovers
+  opt the option on
+    N->>C: apiListMembers #G
+  end
+  alt the option off, or only Claude, User, gone members and members from the Main group
     T->>C: apiSendMessages #G with the file
     T-->>CC: {item}
   else a guest, also one with a pending invitation
@@ -1287,6 +1305,7 @@ sequenceDiagram
 
 Notes:
 
+- With the plugin option `approve_guest_files` off, the file is sent at once also while the group has a guest; the daemon applies the option of each `/session` and each `/title` without `unattended` to all sessions ([hub.ts:100](../src/hub.ts#L100), [:394-397](../src/hub.ts#L394-L397)).
 - The card is posted in mode `requests` also for a session in mode `host`: `reply` is not an action tool, so Claude Code does not ask before it ([tools.ts:730](../src/tools.ts#L730), [:486](../src/tools.ts#L486)).
 - A call that ends without a result attaches to the same action when it is repeated with the same file and text ([tools.ts:723-725](../src/tools.ts#L723-L725)).
 - `/reject N` returns `{action, status: rejected}`, an expired card `{action, status: expired}`.
@@ -1294,7 +1313,7 @@ Notes:
 - `/approve N all` of a pending action that is not a reply gets `Action N is not a file to this group.`; the approval counts while its approver is an approver of `#G`, so it survives restarts in the custom data and ends when the approver leaves ([control.ts:163-166](../src/control.ts#L163-L166), [:265-272](../src/control.ts#L265-L272), [:317-332](../src/control.ts#L317-L332)).
 - `/approve N all` and `/revoke` without a chat are parsed in session groups only, so `serve` answers them with its commands reply ([control.ts:244](../src/control.ts#L244), [:826-827](../src/control.ts#L826-L827)).
 
-Source: [tools.ts:720-741](../src/tools.ts#L720-L741), [:563-565](../src/tools.ts#L563-L565), [hub.ts:99-100](../src/hub.ts#L99-L100), [control.ts:152-156](../src/control.ts#L152-L156), [:163-166](../src/control.ts#L163-L166), [:317-332](../src/control.ts#L317-L332), [:658](../src/control.ts#L658), [:690-693](../src/control.ts#L690-L693).
+Source: [tools.ts:720-741](../src/tools.ts#L720-L741), [:563-565](../src/tools.ts#L563-L565), [hub.ts:100](../src/hub.ts#L100), [control.ts:152-156](../src/control.ts#L152-L156), [:163-166](../src/control.ts#L163-L166), [:317-332](../src/control.ts#L317-L332), [:658](../src/control.ts#L658), [:690-693](../src/control.ts#L690-L693).
 
 ---
 
