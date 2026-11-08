@@ -846,6 +846,17 @@ describe("daemon", () => {
     expect([id1, id2, id3].map(id => existsSync(sessionFolder(root, id)))).toEqual([false, false, false])
   })
 
+  it("forgets the marks of unattended runs once they are 10 seconds old", async () => {
+    jest.useFakeTimers(fakeTimers)
+    const {d} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    const mark = (pid: number) => post("/title", {id: id1, pid, project: "/p/app", config: defaultConfig, unattended: true})
+    await mark(400)
+    await jest.advanceTimersByTimeAsync(10_001)
+    await mark(401)
+    expect([...daemon!["unattended"].keys()]).toEqual([401])
+  })
+
   it.each(["/session", "/title"])("answers 400 to %s with an invalid config", async route => {
     const {d, agents} = deps(root)
     daemon = await Daemon.start(d, readDefaultConfig)

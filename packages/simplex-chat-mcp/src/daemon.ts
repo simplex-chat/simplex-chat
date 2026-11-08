@@ -238,6 +238,8 @@ export class Daemon {
 
   private markUnattended(pid: number | undefined): void {
     if (pid === undefined) return
+    const recent = Date.now() - processWait
+    for (const [marked, at] of this.unattended) if (at <= recent) this.unattended.delete(marked)
     this.unattended.set(pid, Date.now())
     this.titled.emit(String(pid))
   }
