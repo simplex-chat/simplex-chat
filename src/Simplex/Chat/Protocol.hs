@@ -262,9 +262,14 @@ defaultRelayCapabilities = RelayCapabilities {webDomain = Nothing}
 
 $(pure [])
 
+knownLinkContent :: LinkContent -> Either String LinkContent
+knownLinkContent = \case
+  LCUnknown {} -> Left "unknown LinkContent"
+  c -> Right c
+
 instance FromJSON LinkContent where
   parseJSON v@(J.Object j) =
-    $(JQ.mkParseJSON (taggedObjectJSON $ dropPrefix "LC") ''LinkContent) v
+    knownLinkContent <$?> $(JQ.mkParseJSON (taggedObjectJSON $ dropPrefix "LC") ''LinkContent) v
       <|> LCUnknown <$> j .: "type" <*> pure (boundedProperties j)
   parseJSON invalid =
     JT.prependFailure "bad LinkContent, " (JT.typeMismatch "Object" invalid)

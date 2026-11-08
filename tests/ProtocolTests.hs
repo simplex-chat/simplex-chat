@@ -122,6 +122,9 @@ jsonLimitTests = describe "Chat message JSON limits" $ do
   it "drops unknown link content properties above the limits" $
     J.eitherDecodeStrict' ("{\"type\":\"future\"" <> aboveLimits <> ",\"ok\":1}")
       `shouldBe` Right (LCUnknown "future" $ jsonObject "{\"type\":\"future\",\"ok\":1}")
+  it "drops properties above the limits from link content of type \"unknown\"" $
+    J.eitherDecodeStrict' ("{\"type\":\"unknown\",\"tag\":\"future\",\"json\":{\"ok\":1" <> aboveLimits <> "}}")
+      `shouldBe` Right (LCUnknown "unknown" $ jsonObject "{\"type\":\"unknown\",\"tag\":\"future\"}")
   it "drops unknown reaction properties above the limits" $
     ("{\"v\":\"9\",\"event\":\"x.msg.react\",\"params\":{\"msgId\":\"AQIDBA==\",\"reaction\":{\"type\":\"future\"" <> aboveLimits <> ",\"ok\":1},\"add\":true}}")
       ==# XMsgReact (SharedMsgId "\1\2\3\4") Nothing Nothing (MRUnknown "future" $ jsonObject "{\"type\":\"future\",\"ok\":1}") True
