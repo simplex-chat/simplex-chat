@@ -111,6 +111,7 @@ Decided on 2026-11-08, review round 4:
 Proposed on 2026-11-08, each in its own commit, until the user decides:
 60. The group of a session closed for 7 days is deleted for all its members, with the standing approvals of the session's chats; the daemon checks at its start and every hour. A run whose `CLAUDE_CODE_ENTRYPOINT` is `sdk-cli` (`claude -p`), `sdk-ts` or `sdk-py` (the Agent SDK) gets no session and no group.
 61. The approved mode is kept in the session group's custom data, not in `session.json`. `GET /status` returns the owners without the Main group link; `GET /link` returns the link. These protections hold against Claude's tools, not against a shell running as the same user.
+62. Leaving, removal or demotion in the Main group is applied at once to every session group: a member who left or was removed is removed, and a lowered role is set there, also in a pending invitation. Changes made while the daemon was stopped apply when the session group opens.
 
 Pack of the package (decision 44):
 ```
@@ -300,6 +301,32 @@ on session resume:           reuse the group recorded in session.json
 on connect with a pending connection c:          pending += (c, now); entries older than one day dropped
 on contactConnected or userJoinedGroup of c:     the session whose pending has c, recorded in the last day: drop it; claim the chat
 on connect to a known chat without an owner:     claim the chat
+```
+
+Membership of the Main group in the session groups (decision 62):
+```
+when:  a membership event of the Main group, after its members are read again
+       the open of a stored session group, as at the daemon's start
+       the replacement of the Main group
+for each InvitedMember e of each session group:
+  main = Main group member e.mainMemberId; gone: absent, or rejected, removed, left, deleted
+  member = session group member e.groupMemberId
+  main gone:                                    member present and not gone: remove it, one member per request; drop e
+  member present, not gone, role above main's:  invited: send the invitation again with main's role
+                                                else: set its role to main's role
+  a failed request:                             log it; keep e
+roles, lowest first: observer, author, member, moderator, admin, owner
+```
+
+```mermaid
+sequenceDiagram
+  participant B as owner Bob
+  participant H as hub
+  participant G as session groups
+  B->>H: removes Alice from the Main group
+  H->>G: removes Alice's member from each session group
+  B->>H: makes Carol a member in the Main group
+  H->>G: Carol's role member in each session group, or her invitation sent again as member
 ```
 
 ```mermaid
