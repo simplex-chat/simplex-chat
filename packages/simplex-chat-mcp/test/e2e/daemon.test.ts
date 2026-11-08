@@ -7,6 +7,7 @@ import {DaemonClient} from "../../src/client"
 import {defaultConfig} from "../../src/config"
 import {Daemon, productionDeps} from "../../src/daemon"
 import {hubFolder, readSessionFile, sessionFolder} from "../../src/files"
+import {Hub} from "../../src/hub"
 import {sessionStart, turn} from "../../src/hook"
 import {AttachLine, OwnerState, SessionReply, StatusReply, TitleReply} from "../../src/protocol"
 import {Bot, ItemCheck, callTool, captureLog, cardNumber, isActive, joinByLink, lines, person, prepareRoot, received, startBot, textStarts, until, updated} from "./helpers"
@@ -415,13 +416,14 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   expect((await alice.chat.apiListMembers(groupOne)).filter(({memberProfile}) => memberProfile.displayName === "Bob").map(({memberStatus}) => memberStatus)).toEqual([expect.stringMatching(/^(connected|complete)$/)])
 }, 600_000)
 
-test("/observer ends the standing approvals of the member it makes an observer", async () => {
+test("/observer ends the standing approvals of the member it makes an observer, and answers that a member who has not joined yet is no member", async () => {
   const root = join(dir, "observer", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("observer", "Alice")
   const bob = await personIn("observer", "Bob")
+  const dave = await personIn("observer", "Dave")
   const directory = await botIn("observer", "Directory")
-  await startDaemon(root)
+  const daemon = await startDaemon(root)
   const client = DaemonClient.forRoot(root)
   await openSession(client, one, "one")
   const owner = await client.request<OwnerState>("GET", "/link")
@@ -459,6 +461,25 @@ test("/observer ends the standing approvals of the member it makes an observer",
   await aliceSends(`/${makeBobObserver}`)
   await bobObserver
   expect(await listed()).toBe(`${chat}  bot Directory`)
+
+  const daveConnected = dave.chat.wait("connectedToGroupMember", ({member}) => member.memberProfile.displayName === "Claude", 60_000)
+  const daveMain = await joinByLink(dave, mainLink)
+  await daveConnected
+  const daveInvited = dave.chat.wait("receivedGroupInvitationViaGroup", ({groupInfo}) => groupInfo.groupProfile.displayName === "1 · one", 60_000)
+  await dave.chat.apiSendTextMessage([T.ChatType.Group, daveMain], "/join 1")
+  const daveGroupOne = (await daveInvited)!.groupInfo.groupId
+  const claudeGroup = Number(/^observer #(\d+) /.exec(makeBobObserver)![1])
+  const hub = daemon["hub"] as unknown as Hub
+  const daveInClaude = (await hub.chat.apiListMembers(claudeGroup)).find(({memberProfile}) => memberProfile.displayName === "Dave")!
+  expect(daveInClaude.memberStatus).toBe(T.GroupMemberStatus.Invited)
+  const notMember = aliceSees(`No member ${daveInClaude.groupMemberId} in this group.`)
+  await aliceSends(`/observer #${claudeGroup} ${daveInClaude.groupMemberId}`)
+  await notMember
+  const daveRights = aliceSees("Dave is an admin and ")
+  const daveJoined = dave.chat.wait("userJoinedGroup", ({groupInfo}) => groupInfo.groupId === daveGroupOne, 60_000)
+  await dave.chat.apiJoinGroup(daveGroupOne)
+  await daveJoined
+  await daveRights
 }, 600_000)
 
 test("a new session has no chats", async () => {

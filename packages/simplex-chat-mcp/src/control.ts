@@ -6,7 +6,7 @@ import {chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "
 import {linkCommand} from "./owner"
 import {qrCodeText} from "./qr"
 import type {OwnerEntry, QrCodeSize} from "./serve"
-import {AgentTools, chatSubject, customDataOf, fitsMessage, isActive, isConnected, isGone, memberCurrent, refusedFileReason, setChatData} from "./tools"
+import {AgentTools, chatSubject, customDataOf, fitsMessage, isActive, isConnected, memberCurrent, memberCurrentOrPending, refusedFileReason, setChatData} from "./tools"
 
 export const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "pending", label: "Pending actions"},
@@ -364,7 +364,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (group !== this.chatRef) return `${group} is not this group.`
     await this.refreshMembers()
     const target = this.members.find(member => member.groupMemberId === groupMemberId)
-    if (target === undefined || isGone(target)) return `No member ${groupMemberId} in this group.`
+    if (target === undefined || !memberCurrentOrPending(target)) return `No member ${groupMemberId} in this group.`
     const name = safeName(target.memberProfile.displayName)
     const pending = target.memberStatus === T.GroupMemberStatus.Pending_approval || target.memberStatus === T.GroupMemberStatus.Pending_review
     if (groupMemberId === this.group.membership.groupMemberId || groupMemberId === sender.groupMemberId || target.memberRole === T.GroupMemberRole.Relay || pending) return `${name}'s role can't be changed.`

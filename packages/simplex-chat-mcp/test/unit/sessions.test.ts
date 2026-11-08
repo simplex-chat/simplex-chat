@@ -284,14 +284,14 @@ describe("session groups", () => {
     ])
   })
 
-  it("make a member an observer by /observer #G ID, from a member whose role lets them change that member's role in SimpleX, and reply with the observer's rights", async () => {
+  it("make a member an observer by /observer #G ID, from a member whose role lets them change that member's role in SimpleX, and reply with the observer's rights; a member who left or has not joined yet is no member", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     const session = await openSession(hub, id1, stored(1, "auth"))
     const dan = member(12, "Dan", T.GroupMemberRole.Admin)
     const eve = member(13, "Eve", T.GroupMemberRole.Owner)
     const mallory = member(9, "Mallory", T.GroupMemberRole.Member)
-    chat.members.set(20, [self, invitedAlice, dan, eve, mallory, {...member(14, "Fay"), memberStatus: T.GroupMemberStatus.Left}])
+    chat.members.set(20, [self, invitedAlice, dan, eve, mallory, member(14, "Fay", T.GroupMemberRole.Member, T.GroupMemberStatus.Left), member(15, "Gus", T.GroupMemberRole.Admin, T.GroupMemberStatus.Invited)])
     await session.control.load()
     const observer = (sender: T.GroupMember, params: string) => session.control.ownerCommand(sender, {keyword: "observer", params})
     expect(await observer(mallory, "#20 12")).toBe(approversOnly)
@@ -299,6 +299,7 @@ describe("session groups", () => {
     expect(await observer(dan, "#21 9")).toBe("#21 is not this group.")
     expect(await observer(dan, "#20 99")).toBe("No member 99 in this group.")
     expect(await observer(dan, "#20 14")).toBe("No member 14 in this group.")
+    expect(await observer(dan, "#20 15")).toBe("No member 15 in this group.")
     expect(await observer(dan, "#20 12")).toBe("Dan's role can't be changed.")
     expect(await observer(dan, "#20 1")).toBe("Claude's role can't be changed.")
     expect(await observer(dan, "20 9")).toBe(unknownCommand)
