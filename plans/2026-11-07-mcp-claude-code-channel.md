@@ -172,6 +172,7 @@ Recommended on the UX page (https://claude.ai/artifact/YCN4kj2ZRujUnUhNSxwMea), 
 98. A session group's description, set at its creation: `The Claude Code session N. Members send it prompts; admins and owners also send / commands and approve tool use.`
 100. T3: the Main group's short description is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does.`
 101. G6: the Main group replies `Unknown command.` to a one-line `/` text other than `/sessions`, `/join N`, `/approve reset` and `/reject reset`.
+102. `reply` answers the core's refusal `feature not allowed Files and media` of decision 87 with FILES OFF: `Files and media are off in the group of this session; its owners can turn them on in the group's preferences.` Other refusals of the core are returned as the core's text.
 
 Approved by the user on the PR page on 2026-11-08 (B1, B2):
 99. The Main group's welcome message is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.`, and its post at each join `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.`
@@ -703,7 +704,9 @@ reply   file, text?                 sends the file to the session group at once,
 on reply {file, text}:   the file checked as for send
                          its message with the caption and the preview does not fit: tool error (decision 76)
                          send, with the caption and the preview, in both modes                 -> {item}
-                         the core refuses it, as for the group's preference Files and media:   tool error, the core's text
+                         the core refuses it with "feature not allowed Files and media":
+                             tool error FILES OFF (decision 102)
+                         the core refuses it otherwise:                                        tool error, the core's text
 on Claude's profile update of the session group:   from the group's current profile, only Claude's fields changed (decision 90)
 ```
 
