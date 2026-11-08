@@ -1058,6 +1058,7 @@ formatsAcrossLines = describe "formats across line breaks" do
   it "delimiter runs and underscores inside words before the line break, as within a line" do
     "*a**b\nc*" ==>> [fmt boldF "a**b", "\n", fmt boldF "c"]
     "_a_b\nc_" ==>> [fmt Italic "a_b", "\n", fmt Italic "c"]
+    "*a `*`\nb*" ==>> [fmt boldF "a `*`", "\n", fmt boldF "b"]
   it "an unclosed delimiter is text to the line end" do
     "*a\n_b_" ==>> ["*a\n", fmt Italic "b"]
     "*a **b** c\n_d_" ==>> ["*a **b** c\n", fmt Italic "d"]
