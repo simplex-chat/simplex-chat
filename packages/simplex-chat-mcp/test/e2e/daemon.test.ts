@@ -294,7 +294,7 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   expect(chatItems.map(({meta}) => meta.itemText)).not.toContain("Session 1 is not running.")
 }, 600_000)
 
-test("a member of the Main group joins a session's group by /join, prompts and approves there, also after removal from the Main group; a guest added to the group directly gets files of reply after an approval, and /approve N all sends later files at once until /revoke", async () => {
+test("a member of the Main group joins a session's group by /join, prompts and approves there, also after removal from the Main group; a guest added to the group directly prompts, gets files of reply after an approval, and /approve N all sends later files at once until /revoke", async () => {
   const root = join(dir, "trust", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("trust", "Alice")
@@ -343,9 +343,10 @@ test("a member of the Main group joins a session's group by /join, prompts and a
   const carolGroupOne = await joinByLink(carol, await alice.chat.apiCreateGroupLink(groupOne, T.GroupMemberRole.Member))
   await carolInOne
   const refused = received(carol.chat, inGroup(carolGroupOne, textStarts("Only members who joined from the Main group approve actions here.")))
-  await carol.chat.apiSendTextMessage([T.ChatType.Group, carolGroupOne], "Delete the tests")
+  await carol.chat.apiSendTextMessage([T.ChatType.Group, carolGroupOne], "Write the docs")
   await carol.chat.apiSendTextMessage([T.ChatType.Group, carolGroupOne], "/pending")
   await refused
+  await until(() => attached.some(({prompt}) => prompt?.text === "Write the docs" && prompt.from === "Carol"))
   const request = "I want to send a file to group 1 · one, where guests see it:"
   const card = bobSees(request)
   const replying = callTool(client, one, "reply", {file: notes, text: "Trail notes"})
@@ -378,7 +379,6 @@ test("a member of the Main group joins a session's group by /join, prompts and a
   const rejecting = callTool(client, one, "reply", {file: notes})
   await bobSends(`/reject ${cardNumber(await again)}`)
   expect((await rejecting).result).toMatchObject({status: "rejected"})
-  expect(attached.some(({prompt}) => prompt?.text === "Delete the tests")).toBe(false)
   expect((await alice.chat.apiListMembers(groupOne)).find(({memberProfile}) => memberProfile.displayName === "Bob")).toMatchObject({memberStatus: expect.stringMatching(/^(connected|complete)$/)})
 }, 600_000)
 

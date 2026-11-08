@@ -160,8 +160,7 @@ export class Session {
     if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent") return
     const {text} = content.msgContent
     if (!text.startsWith("//") && !text.startsWith("/!") && parseCommand(text) !== undefined) return this.control.onMessage(ci)
-    if (!this.approves(chatDir.groupMember)) return
-    this.delivery = this.delivery.then(() => this.prompt(ci, text, chatDir.groupMember)).catch(error => logError(`prompt of session ${this.number}`, error))
+    this.delivery =this.delivery.then(() => this.prompt(ci, text, chatDir.groupMember)).catch(error => logError(`prompt of session ${this.number}`, error))
   }
 
   claimPending(connId: number, chat: string): void {
@@ -225,7 +224,7 @@ export class Session {
   async announceJoin(event: ChatEvent): Promise<void> {
     if (this.actions.lost || (event.type !== "joinedGroupMember" && event.type !== "connectedToGroupMember")) return
     const {member} = event
-    if (member.memberContactId !== undefined && member.memberContactId === (await userContact(this.hub.chat, this.hub.profile.userId))?.contactId) return
+    if (await this.isUser(member)) return
     const name = safeName(member.memberProfile.displayName)
     await this.post([this.approves(member)
       ? `${name} joined from the Main group: their messages are prompts of this session, and they can approve its actions.`
@@ -239,6 +238,7 @@ export class Session {
   }
 
   private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
+    if (await this.isUser(member)) return
     const item = ci.chatItem.meta.itemId
     if (text.startsWith("/!") && !this.mainOwner(member)) return this.post([bangOwnersOnly], item)
     if (text.startsWith("!")) return this.post([bangFromOwners], item)
@@ -304,6 +304,10 @@ export class Session {
 
   private approves(member: T.GroupMember): boolean {
     return this.data.invited.some(({groupMemberId}) => groupMemberId === member.groupMemberId)
+  }
+
+  private async isUser(member: T.GroupMember): Promise<boolean> {
+    return member.memberContactId !== undefined && member.memberContactId === (await userContact(this.hub.chat, this.hub.profile.userId))?.contactId
   }
 
   private mainOwner(member: T.GroupMember): boolean {

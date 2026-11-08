@@ -121,7 +121,7 @@ describe("session groups", () => {
     expect(readSessionFile(folder)).toEqual({...stored(1, "auth"), aliases: [id2], group: 20})
   })
 
-  it("count prompts and approvals from every member who joined from the Main group, whatever their role there then or later, and not from a member added to the group directly", async () => {
+  it("count approvals from every member who joined from the Main group, whatever their role there then or later, and not from a member added to the group directly, and prompts from every member but User", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     const session = await openSession(hub, id1, stored(1, "auth"))
@@ -140,10 +140,13 @@ describe("session groups", () => {
     const lines: AttachLine[] = []
     session.onLine = line => lines.push(line)
     const sessionGroup = groupChat(group(20, "1 · auth"))
-    session.onMessage(event(sessionGroup, item(42, "Delete the tests", {type: "groupRcv", groupMember: mallory})))
+    chat.chats.set("@6", {chatInfo: direct({...contact(6, "User"), customData: {simplexMcpUser: true}} as T.Contact), items: []})
+    const sessionUser = {...member(1006, "User"), memberContactId: 6}
+    session.onMessage(event(sessionGroup, item(41, "Run the tests", {type: "groupRcv", groupMember: sessionUser})))
+    session.onMessage(event(sessionGroup, item(42, "Write the docs", {type: "groupRcv", groupMember: mallory})))
     session.onMessage(event(sessionGroup, item(43, "Fix the build", {type: "groupRcv", groupMember: invitedBob})))
-    await until(() => lines.length === 1)
-    expect(lines).toEqual([{prompt: {text: "Fix the build", from: "Bob", item: 43}}])
+    await until(() => lines.length === 2)
+    expect(lines).toEqual([{prompt: {text: "Write the docs", from: "Mallory", item: 42}}, {prompt: {text: "Fix the build", from: "Bob", item: 43}}])
     chat.members.set(20, [self, mallory])
     await session.control.load()
     chat.chats.set("@4", {chatInfo: ownedContact(4, "SimpleX Directory", id1), items: []})
@@ -442,11 +445,10 @@ describe("session channel", () => {
     expect(card.split("\n")).toEqual(["I want to use `Edit`: `Edit a file`", `\`${first}\``, expect.stringMatching(/^`"new_string": "字+…`$/), "/'approve 1' or /'reject 1'"])
   })
 
-  it("passes the messages of owners to the session as prompts, with their files, and ignores commands and other members", async () => {
+  it("passes the messages of owners to the session as prompts, with their files, and not their commands", async () => {
     const chat = new FakeChat()
     const {hub, session, lines} = await channel(chat)
     session.onMessage(event(sessionGroup, item(40, "/pending", from(invitedAlice))))
-    session.onMessage(event(sessionGroup, item(41, "Delete the tests", from(mallory))))
     session.onMessage(event(sessionGroup, item(42, "Fix the build", from(invitedAlice))))
     await until(() => lines.length === 1 && chat.replies.length === 1)
     expect(lines).toEqual([{prompt: {text: "Fix the build", from: "Alice", item: 42}}])

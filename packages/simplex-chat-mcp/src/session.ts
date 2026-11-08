@@ -18,7 +18,7 @@ const stoppingStatus = 503
 const callAttempts = 2
 const firstRetry = 1_000
 const lastRetry = 30_000
-const channelInstructions = "Messages in the simplex channel are prompts of the members who joined the SimpleX group of this session from the Main group: from is the member's name, item the message ID, and file the path of a file they sent. Your final answer of each turn reaches them in that group; reply sends them a file."
+const channelInstructions = "Messages in the simplex channel are prompts of the members of the SimpleX group of this session: from is the member's name, item the message ID, and file the path of a file they sent. Your final answer of each turn reaches them in that group; reply sends them a file."
 const permissionFields = ["request_id", "tool_name", "description", "input_preview"] as const
 const permissionRequest = fromJsonSchema({type: "object", properties: Object.fromEntries(permissionFields.map(field => [field, {type: "string"}])), required: [...permissionFields]} as JsonSchemaType)
 
