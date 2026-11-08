@@ -215,9 +215,9 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | Daemon start by a client | [`src/client.ts`](../src/client.ts#L35) | `DaemonClient.ensureDaemon` | [35](../src/client.ts#L35) |
 | Daemon process | [`src/daemon.ts`](../src/daemon.ts#L433) | `runDaemon` | [433](../src/daemon.ts#L433) |
 | Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L138) | `Daemon.routes` | [138](../src/daemon.ts#L138) |
-| Hub | [`src/hub.ts`](../src/hub.ts#L365) | `Hub.open` | [365](../src/hub.ts#L365) |
+| Hub | [`src/hub.ts`](../src/hub.ts#L359) | `Hub.open` | [359](../src/hub.ts#L359) |
 | Session and its group | [`src/hub.ts`](../src/hub.ts#L50) | `Session` | [50](../src/hub.ts#L50) |
-| Main group | [`src/main-group.ts`](../src/main-group.ts#L28) | `MainGroup` | [28](../src/main-group.ts#L28) |
+| Main group | [`src/main-group.ts`](../src/main-group.ts#L27) | `MainGroup` | [27](../src/main-group.ts#L27) |
 | Profile `User` | [`src/user.ts`](../src/user.ts#L13) | `User` | [13](../src/user.ts#L13) |
 | Hooks | [`src/hook.ts`](../src/hook.ts#L41) | `sessionStart`, `turn` | [41](../src/hook.ts#L41), [74](../src/hook.ts#L74) |
 | `link`, `reset-owners` | [`src/owner.ts`](../src/owner.ts#L22) | `showLink`, `resetOwners` | [22](../src/owner.ts#L22), [28](../src/owner.ts#L28) |

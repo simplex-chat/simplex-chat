@@ -211,7 +211,7 @@ Notes:
 | other links | `apiConnectPreparedLink(USER, incognito, LINK)` |
 
 - After a failed prepared connect, the server deletes the prepared chat without notifying ([tools.ts:888-895](../src/tools.ts#L888-L895)).
-- The connection is matched by `contactConnected` or `userJoinedGroup`: by contact or group ID, or by the pending connection ID ([tools.ts:662-670](../src/tools.ts#L662-L670), [:897-902](../src/tools.ts#L897-L902)). In the plugin, a pending connection is also recorded in the session group's data, and its chat becomes the session's when it connects after the call returned, within a day of the record ([tools.ts:838](../src/tools.ts#L838), [hub.ts:165-170](../src/hub.ts#L165-L170), [:509-510](../src/hub.ts#L509-L510)).
+- The connection is matched by `contactConnected` or `userJoinedGroup`: by contact or group ID, or by the pending connection ID ([tools.ts:662-670](../src/tools.ts#L662-L670), [:897-902](../src/tools.ts#L897-L902)). In the plugin, a pending connection is also recorded in the session group's data, and its chat becomes the session's when it connects after the call returned, within a day of the record ([tools.ts:838](../src/tools.ts#L838), [hub.ts:165-170](../src/hub.ts#L165-L170), [:499-500](../src/hub.ts#L499-L500)).
 - In the perform step the server waits for the other side until `startedAt + wait`, at most until `created + 23 h 50 min`, and then reports `connected: false` ([tools.ts:155](../src/tools.ts#L155), [:826](../src/tools.ts#L826), [:852-855](../src/tools.ts#L852-L855)).
 - Without `message`, the idle time is counted from the connection; with `message`, from the first reply ([tools.ts:909](../src/tools.ts#L909), [messages.ts:327-335](../src/messages.ts#L327-L335)).
 - For a target the agent is connected to, the result is `status: known` with its chat fields, and no action is created; in the plugin, the chat becomes the session's when it has no owner ([tools.ts:749](../src/tools.ts#L749), [:762-767](../src/tools.ts#L762-L767)).
@@ -808,13 +808,13 @@ Notes:
 
 - The link reaches the person only: the hook's `systemMessage` carries it, and no hook context or tool result does ([hook.ts:54-56](../src/hook.ts#L54-L56)).
 - The core deletes the preset contact of a new profile, both in `_hub` and in `_user` ([core.ts:29](../src/core.ts#L29), [:45-53](../src/core.ts#L45-L53)).
-- `User` connects at the first start only: later starts find the hub's contact marked `simplexMcpUser`. The contact is the one whose connection is that of the invitation the hub created; when `User` does not connect in 60 s, the daemon runs without it, and terminal prompts are not posted ([user.ts:21](../src/user.ts#L21), [:38-48](../src/user.ts#L38-L48), [:60-62](../src/user.ts#L60-L62), [hub.ts:374](../src/hub.ts#L374)).
-- A later daemon start without owners keeps the Main group's link ([main-group.ts:73-81](../src/main-group.ts#L73-L81)).
-- Owners are invited to the groups of open sessions when they join; the groups of closed sessions are joined by `/join N` ([hub.ts:449-453](../src/hub.ts#L449-L453), [:436-447](../src/hub.ts#L436-L447)).
-- The Main group states its trust in its short description and welcome message, also set on an existing group at the daemon's start, and in a post at each human's `joinedGroupMember` or `connectedToGroupMember`, the second with the member's status before the connection, so the joiner is looked up among the refreshed members ([main-group.ts:17-19](../src/main-group.ts#L17-L19), [:67-68](../src/main-group.ts#L67-L68), [:153-154](../src/main-group.ts#L153-L154)).
-- A session group states the standing of each joiner other than `User`: from the Main group, or a guest ([hub.ts:223-231](../src/hub.ts#L223-L231), [:523](../src/hub.ts#L523)).
+- `User` connects at the first start only: later starts find the hub's contact marked `simplexMcpUser`. The contact is the one whose connection is that of the invitation the hub created; when `User` does not connect in 60 s, the daemon runs without it, and terminal prompts are not posted ([user.ts:21](../src/user.ts#L21), [:38-48](../src/user.ts#L38-L48), [:60-62](../src/user.ts#L60-L62), [hub.ts:368](../src/hub.ts#L368)).
+- A later daemon start without owners keeps the Main group's link ([main-group.ts:72-80](../src/main-group.ts#L72-L80)).
+- Owners are invited to the groups of open sessions when they join; the groups of closed sessions are joined by `/join N` ([hub.ts:443-447](../src/hub.ts#L443-L447), [:430-441](../src/hub.ts#L430-L441)).
+- The Main group states its trust in its short description and welcome message, also set on an existing group at the daemon's start, and in a post at each human's `joinedGroupMember` or `connectedToGroupMember`, the second with the member's status before the connection, so the joiner is looked up among the refreshed members ([main-group.ts:17-19](../src/main-group.ts#L17-L19), [:66-67](../src/main-group.ts#L66-L67), [:151-152](../src/main-group.ts#L151-L152)).
+- A session group states the standing of each joiner other than `User`: from the Main group, or a guest ([hub.ts:223-231](../src/hub.ts#L223-L231), [:513](../src/hub.ts#L513)).
 
-Source: [hook.ts:41-60](../src/hook.ts#L41-L60), [client.ts:35-92](../src/client.ts#L35-L92), [daemon.ts:93-120](../src/daemon.ts#L93-L120), [:220-264](../src/daemon.ts#L220-L264), [hub.ts:365-383](../src/hub.ts#L365-L383), [:407-425](../src/hub.ts#L407-L425), [:482-494](../src/hub.ts#L482-L494), [main-group.ts:143-166](../src/main-group.ts#L143-L166), [user.ts:16-57](../src/user.ts#L16-L57).
+Source: [hook.ts:41-60](../src/hook.ts#L41-L60), [client.ts:35-92](../src/client.ts#L35-L92), [daemon.ts:93-120](../src/daemon.ts#L93-L120), [:220-264](../src/daemon.ts#L220-L264), [hub.ts:359-377](../src/hub.ts#L359-L377), [:401-419](../src/hub.ts#L401-L419), [:472-484](../src/hub.ts#L472-L484), [main-group.ts:141-164](../src/main-group.ts#L141-L164), [user.ts:16-57](../src/user.ts#L16-L57).
 
 ---
 
@@ -881,7 +881,7 @@ sequenceDiagram
 
 Notes:
 
-- The approver check of the session group counts the members invited through the Main group, at the session's start or by `/join N`, whatever their role there then or later; a guest added to the group directly is not an approver ([hub.ts:304-306](../src/hub.ts#L304-L306), [:217-221](../src/hub.ts#L217-L221)).
+- The approver check of the session group counts the members invited through the Main group, at the session's start or by `/join N`, whatever their role there then or later; a guest added to the group directly is not an approver ([hub.ts:298-300](../src/hub.ts#L298-L300), [:217-221](../src/hub.ts#L217-L221)).
 - Without an approver in `#G`, the action is refused with the text of [API 4.4](api.md#44-tool-results-in-the-plugin).
 - The connected chat gets the session's ID as its owner ([tools.ts:588-592](../src/tools.ts#L588-L592), [:847](../src/tools.ts#L847)).
 
@@ -937,12 +937,12 @@ sequenceDiagram
 
 Notes:
 
-- Messages of every member but `User` are prompts, guests' included. One-line `/` texts that do not start with `//` or `/!` are commands of the group, and one outside its requests gets `Unknown command.`; `//model sonnet` reaches Claude as `/model sonnet`; `/!TEXT` from an approver whose member in the Main group is an owner reaches Claude as `!TEXT` ([hub.ts:157-163](../src/hub.ts#L157-L163), [:239-245](../src/hub.ts#L239-L245), [:308-315](../src/hub.ts#L308-L315), [control.ts:246](../src/control.ts#L246), [:641-646](../src/control.ts#L641-L646)).
+- Messages of every member but `User` are prompts, guests' included. One-line `/` texts that do not start with `//` or `/!` are commands of the group, and one outside its requests gets `Unknown command.`; `//model sonnet` reaches Claude as `/model sonnet`; `/!TEXT` from an approver whose member in the Main group is an owner reaches Claude as `!TEXT` ([hub.ts:157-163](../src/hub.ts#L157-L163), [:233-239](../src/hub.ts#L233-L239), [:302-309](../src/hub.ts#L302-L309), [control.ts:246](../src/control.ts#L246), [:641-646](../src/control.ts#L641-L646)).
 - Messages reach the session in arrival order: a prompt waits for the file of an earlier prompt, and a reply to `!` waits for the earlier prompts ([hub.ts:162](../src/hub.ts#L162)).
-- After a daemon start, a prompt that arrives before its session attaches again waits up to 30 s from the hub's open, so a prompt sent while the daemon was stopped reaches the session ([hub.ts:247-249](../src/hub.ts#L247-L249), [:376](../src/hub.ts#L376)).
+- After a daemon start, a prompt that arrives before its session attaches again waits up to 30 s from the hub's open, so a prompt sent while the daemon was stopped reaches the session ([hub.ts:241-243](../src/hub.ts#L241-L243), [:370](../src/hub.ts#L370)).
 - A session started without the channel flag gets the notification and drops it.
 
-Source: [hub.ts:157-163](../src/hub.ts#L157-L163), [:239-271](../src/hub.ts#L239-L271), [daemon.ts:316](../src/daemon.ts#L316), [session.ts:53-56](../src/session.ts#L53-L56), [:199-203](../src/session.ts#L199-L203).
+Source: [hub.ts:157-163](../src/hub.ts#L157-L163), [:233-265](../src/hub.ts#L233-L265), [daemon.ts:316](../src/daemon.ts#L316), [session.ts:53-56](../src/session.ts#L53-L56), [:199-203](../src/session.ts#L199-L203).
 
 ---
 
@@ -983,20 +983,20 @@ sequenceDiagram
 
 Notes:
 
-- `at` is `performance.timeOrigin` of the hook process. An answer quotes the newest prompt record whose hook started before its own, also when the request of the next prompt arrives first, or while the answer's request waits for the short description ([hook.ts:74](../src/hook.ts#L74), [hub.ts:183-189](../src/hub.ts#L183-L189), [:273-282](../src/hub.ts#L273-L282)).
-- A prompt from the group is not posted again: the pushed prompts in `<channel source="plugin:simplex:simplex" ... item="I" ...>` tags of the prompt with their item, or equal to the raw prompt and pushed in the last 60 s, leave the pushed prompts, and the oldest of them is the item of the turn record. Without a turn record before the answer, the answer quotes the oldest pushed prompt not quoted yet and marks it; it stays pushed, so that a prompt request handled after the Stop request still matches it and `User` does not post it ([hub.ts:23-27](../src/hub.ts#L23-L27), [:187-189](../src/hub.ts#L187-L189), [:275-279](../src/hub.ts#L275-L279), [:298-302](../src/hub.ts#L298-L302)).
+- `at` is `performance.timeOrigin` of the hook process. An answer quotes the newest prompt record whose hook started before its own, also when the request of the next prompt arrives first, or while the answer's request waits for the short description ([hook.ts:74](../src/hook.ts#L74), [hub.ts:183-189](../src/hub.ts#L183-L189), [:267-276](../src/hub.ts#L267-L276)).
+- A prompt from the group is not posted again: the pushed prompts in `<channel source="plugin:simplex:simplex" ... item="I" ...>` tags of the prompt with their item, or equal to the raw prompt and pushed in the last 60 s, leave the pushed prompts, and the oldest of them is the item of the turn record. Without a turn record before the answer, the answer quotes the oldest pushed prompt not quoted yet and marks it; it stays pushed, so that a prompt request handled after the Stop request still matches it and `User` does not post it ([hub.ts:23-27](../src/hub.ts#L23-L27), [:187-189](../src/hub.ts#L187-L189), [:269-273](../src/hub.ts#L269-L273), [:292-296](../src/hub.ts#L292-L296)).
 - An empty answer takes its turn record too, without a post ([hub.ts:185](../src/hub.ts#L185), [:197](../src/hub.ts#L197)).
 - A prompt request whose hook started before an answer already handled records no turn, so that a later answer does not quote its prompt ([hub.ts:186](../src/hub.ts#L186), [:188](../src/hub.ts#L188)).
 - A blank prompt, as Claude Code sends for a prompt with images only, a prompt made only of this plugin's channel tags, as after a daemon restart lost the pushed prompts, and a prompt that is a one-line `/` command, such as `/simplex:link`, are not posted ([hub.ts:196](../src/hub.ts#L196)).
-- An answer and a terminal prompt are posted in parts: the longest runs of whole characters that each fit one message as `send` measures it, the first part of an answer with its quote; each part is searched among the next 15602 characters. A part that `User` posts and that starts with `/` gets no command reply ([hub.ts:196](../src/hub.ts#L196), [:284-288](../src/hub.ts#L284-L288), [:532-549](../src/hub.ts#L532-L549), [tools.ts:1592-1595](../src/tools.ts#L1592-L1595), [control.ts:220](../src/control.ts#L220)).
-- An answer whose quote the core refuses with `invalidQuote` or `chatItemNotFound`, as for a deleted prompt, or which the core refuses with the quote as too large, `largeMsg`, is posted without the quote; so are the replies `Session N is not running.`, `The file of this message was not received: ERROR` and those to `!` and `/!` ([hub.ts:290-296](../src/hub.ts#L290-L296), [:551-554](../src/hub.ts#L551-L554)).
+- An answer and a terminal prompt are posted in parts: the longest runs of whole characters that each fit one message as `send` measures it, the first part of an answer with its quote; each part is searched among the next 15602 characters. A part that `User` posts and that starts with `/` gets no command reply ([hub.ts:196](../src/hub.ts#L196), [:278-282](../src/hub.ts#L278-L282), [:522-539](../src/hub.ts#L522-L539), [tools.ts:1592-1595](../src/tools.ts#L1592-L1595), [control.ts:220](../src/control.ts#L220)).
+- An answer whose quote the core refuses with `invalidQuote` or `chatItemNotFound`, as for a deleted prompt, or which the core refuses with the quote as too large, `largeMsg`, is posted without the quote; so are the replies `Session N is not running.`, `The file of this message was not received: ERROR` and those to `!` and `/!` ([hub.ts:284-290](../src/hub.ts#L284-L290), [:541-544](../src/hub.ts#L541-L544)).
 - The hook cuts a prompt or an answer over 250,000 characters there, ending with `…`, so that the request fits the socket's 1 MiB ([hook.ts:15](../src/hook.ts#L15), [:95-97](../src/hook.ts#L95-L97)).
 - A card of a tool use that started after the hook is kept: the hook's start time `at` is earlier than its creation ([hook.ts:74](../src/hook.ts#L74), [hub.ts:204-208](../src/hub.ts#L204-L208)).
 - PostModelSwitch sends `{id, model}`; only the short description changes ([hook.ts:78](../src/hook.ts#L78), [hub.ts:190-201](../src/hub.ts#L190-L201)).
 - A Stop request with a changed effort posts the answer before it updates the short description, so that a prompt request handled meanwhile posts after the answer; the description is updated also when a post fails ([hub.ts:195-201](../src/hub.ts#L195-L201)).
 - A turn hook starts the daemon when none runs, repeats a turn refused with 409 up to 15 times 1 s apart, past the 10 s a held title waits, prints `{}`, and logs errors on its stderr ([hook.ts:74-93](../src/hook.ts#L74-L93)).
 
-Source: [hooks.json:5-7](../hooks/hooks.json#L5-L7), [hub.ts:183-202](../src/hub.ts#L183-L202), [:273-296](../src/hub.ts#L273-L296), [:532-549](../src/hub.ts#L532-L549), [user.ts:29-32](../src/user.ts#L29-L32).
+Source: [hooks.json:5-7](../hooks/hooks.json#L5-L7), [hub.ts:183-202](../src/hub.ts#L183-L202), [:267-290](../src/hub.ts#L267-L290), [:522-539](../src/hub.ts#L522-L539), [user.ts:29-32](../src/user.ts#L29-L32).
 
 ---
 
@@ -1058,12 +1058,12 @@ sequenceDiagram
 Notes:
 
 - One `mode` card is pending at a time; a rejected or expired card forgets the request until the next `/session` ([hub.ts:144-155](../src/hub.ts#L144-L155)).
-- A rejected card sets `hostDeclined` in `session.json`: later `/session` requests of `host` post no card, also after a daemon restart, until a `/session` with `requests` clears it ([hub.ts:76-80](../src/hub.ts#L76-L80), [:140](../src/hub.ts#L140), [:145](../src/hub.ts#L145), [:149](../src/hub.ts#L149), [:322-325](../src/hub.ts#L322-L325)).
-- The approved mode is read from the custom data of `#G` when the session opens, `requests` without one; `session.json` holds no mode ([hub.ts:81](../src/hub.ts#L81), [:317-320](../src/hub.ts#L317-L320)).
+- A rejected card sets `hostDeclined` in `session.json`: later `/session` requests of `host` post no card, also after a daemon restart, until a `/session` with `requests` clears it ([hub.ts:76-80](../src/hub.ts#L76-L80), [:140](../src/hub.ts#L140), [:145](../src/hub.ts#L145), [:149](../src/hub.ts#L149), [:316-319](../src/hub.ts#L316-L319)).
+- The approved mode is read from the custom data of `#G` when the session opens, `requests` without one; `session.json` holds no mode ([hub.ts:81](../src/hub.ts#L81), [:311-314](../src/hub.ts#L311-L314)).
 - A pending `mode` card does not keep the session open ([hub.ts:123-125](../src/hub.ts#L123-L125)).
 - The session process marks the action tools for Claude Code's confirmation from the option at its own start, before the owner decides ([session.ts:57](../src/session.ts#L57)).
 
-Source: [hub.ts:136-155](../src/hub.ts#L136-L155), [:317-331](../src/hub.ts#L317-L331), [:523](../src/hub.ts#L523), [tools.ts:570-571](../src/tools.ts#L570-L571).
+Source: [hub.ts:136-155](../src/hub.ts#L136-L155), [:311-325](../src/hub.ts#L311-L325), [:513](../src/hub.ts#L513), [tools.ts:570-571](../src/tools.ts#L570-L571).
 
 ---
 
@@ -1084,7 +1084,7 @@ sequenceDiagram
   K->>O: Gave bot X (@4) to session 2.
 ```
 
-Source: [control.ts:379-391](../src/control.ts#L379-L391), [tools.ts:575-578](../src/tools.ts#L575-L578), [hub.ts:427-429](../src/hub.ts#L427-L429).
+Source: [control.ts:379-391](../src/control.ts#L379-L391), [tools.ts:575-578](../src/tools.ts#L575-L578), [hub.ts:421-423](../src/hub.ts#L421-L423).
 
 ---
 
@@ -1107,7 +1107,7 @@ sequenceDiagram
     O->>M: /approve reset
     M->>O: card edited: ... Approved by Alice.
     M->>M: the group deleted for all members, a new Main group with a link
-    M->>N: removeOwners: apiRemoveMembers of the invited members of each session group
+    Note over M,N: the session groups and their invited lists stay as they are
     P->>D: npx -y @simplex-chat/mcp@VERSION link in a terminal
     D-->>P: Join "SimpleX MCP" in the SimpleX app. The link works once:, QR code, link
   else no owners, from Claude Code
@@ -1119,10 +1119,11 @@ Notes:
 
 - VERSION is the plugin's version, so that the command runs the daemon's version ([owner.ts:7-8](../src/owner.ts#L7-L8)).
 
-- Without owners, `reset-owners` in a terminal replaces the group at once and prints the new link with a QR code ([owner.ts:28-35](../src/owner.ts#L28-L35), [hub.ts:401-405](../src/hub.ts#L401-L405)).
-- One reset card is pending at a time; `/reject reset` leaves the group ([main-group.ts:104-108](../src/main-group.ts#L104-L108), [:131-141](../src/main-group.ts#L131-L141)).
+- Without owners, `reset-owners` in a terminal replaces the group at once and prints the new link with a QR code ([owner.ts:28-35](../src/owner.ts#L28-L35), [hub.ts:395-399](../src/hub.ts#L395-L399)).
+- One reset card is pending at a time; `/reject reset` leaves the group ([main-group.ts:103-107](../src/main-group.ts#L103-L107), [:129-139](../src/main-group.ts#L129-L139)).
+- The members who joined the session groups from the old Main group stay there and keep prompting and approving; `/!` reaches Claude from owners of the new Main group ([hub.ts:298-309](../src/hub.ts#L298-L309)).
 
-Source: [main-group.ts:110-122](../src/main-group.ts#L110-L122), [hub.ts:233-237](../src/hub.ts#L233-L237), [:455-457](../src/hub.ts#L455-L457).
+Source: [main-group.ts:109-120](../src/main-group.ts#L109-L120).
 
 ---
 
@@ -1150,7 +1151,7 @@ Notes:
 - A call or an attachment cancels the stop timer by creating an entry ([daemon.ts:360-370](../src/daemon.ts#L360-L370)).
 - A daemon of a higher version is kept; another protocol version makes clients fail with `Restart Claude Code to update the SimpleX plugin.` ([client.ts:35-47](../src/client.ts#L35-L47)).
 
-Source: [daemon.ts:178-201](../src/daemon.ts#L178-L201), [:317-325](../src/daemon.ts#L317-L325), [:407-425](../src/daemon.ts#L407-L425), [hub.ts:463-473](../src/hub.ts#L463-L473).
+Source: [daemon.ts:178-201](../src/daemon.ts#L178-L201), [:317-325](../src/daemon.ts#L317-L325), [:407-425](../src/daemon.ts#L407-L425), [hub.ts:453-463](../src/hub.ts#L453-L463).
 
 ---
 
@@ -1250,15 +1251,15 @@ sequenceDiagram
 
 Notes:
 
-- A member invited through the Main group, at the session's start or by `/join N`, is an approver of that session group whatever their role in the Main group then or later; changes in the Main group leave the session groups and their `invited` lists as they are ([hub.ts:217-221](../src/hub.ts#L217-L221), [:304-306](../src/hub.ts#L304-L306), [main-group.ts:143-158](../src/main-group.ts#L143-L158)).
-- The Main group's post names a human joiner found among the refreshed members, as `connectedToGroupMember` carries the member's status before the connection ([main-group.ts:153-154](../src/main-group.ts#L153-L154)).
-- `User` joining a session group gets no post ([hub.ts:226](../src/hub.ts#L226), [:308-310](../src/hub.ts#L308-L310)).
+- A member invited through the Main group, at the session's start or by `/join N`, is an approver of that session group whatever their role in the Main group then or later; changes in the Main group leave the session groups and their `invited` lists as they are ([hub.ts:217-221](../src/hub.ts#L217-L221), [:298-300](../src/hub.ts#L298-L300), [main-group.ts:141-156](../src/main-group.ts#L141-L156)).
+- The Main group's post names a human joiner found among the refreshed members, as `connectedToGroupMember` carries the member's status before the connection ([main-group.ts:151-152](../src/main-group.ts#L151-L152)).
+- `User` joining a session group gets no post ([hub.ts:226](../src/hub.ts#L226), [:302-304](../src/hub.ts#L302-L304)).
 - Each join gets one post: the core raises `joinedGroupMember` for a member who joined through the hub, by its invitation or link, and `connectedToGroupMember` for a member another member added, one of the two for each connection; the end-to-end test counts one post for each join in both groups ([test/e2e/daemon.test.ts](../test/e2e/daemon.test.ts)).
-- A guest prompts the session as a member from the Main group does; a guest does not approve its actions ([hub.ts:239-245](../src/hub.ts#L239-L245), [control.ts:247](../src/control.ts#L247)).
-- A `/join N` of a member of that group already gets `You are a member of "N · NAME".` ([hub.ts:439-444](../src/hub.ts#L439-L444)).
-- A reset of the owners removes the members invited through the Main group from all session groups ([flow 25](#25-reset-owners)).
+- A guest prompts the session as a member from the Main group does; a guest does not approve its actions ([hub.ts:233-239](../src/hub.ts#L233-L239), [control.ts:247](../src/control.ts#L247)).
+- A `/join N` of a member of that group already gets `You are a member of "N · NAME".` ([hub.ts:433-438](../src/hub.ts#L433-L438)).
+- A reset of the owners leaves the session groups and their members as they are ([flow 25](#25-reset-owners)).
 
-Source: [main-group.ts:124-129](../src/main-group.ts#L124-L129), [:143-158](../src/main-group.ts#L143-L158), [hub.ts:217-231](../src/hub.ts#L217-L231), [:436-447](../src/hub.ts#L436-L447), [:523](../src/hub.ts#L523).
+Source: [main-group.ts:122-127](../src/main-group.ts#L122-L127), [:141-156](../src/main-group.ts#L141-L156), [hub.ts:217-231](../src/hub.ts#L217-L231), [:430-441](../src/hub.ts#L430-L441), [:513](../src/hub.ts#L513).
 
 ---
 
@@ -1306,7 +1307,7 @@ sequenceDiagram
 
 Notes:
 
-- With the plugin option `approve_guest_files` off, the file is sent at once also while the group has a guest; the daemon applies the option of each `/session` and each `/title` without `unattended` to all sessions ([hub.ts:100](../src/hub.ts#L100), [:394-397](../src/hub.ts#L394-L397)).
+- With the plugin option `approve_guest_files` off, the file is sent at once also while the group has a guest; the daemon applies the option of each `/session` and each `/title` without `unattended` to all sessions ([hub.ts:100](../src/hub.ts#L100), [:388-391](../src/hub.ts#L388-L391)).
 - The card is posted in mode `requests` also for a session in mode `host`: `reply` is not an action tool, so Claude Code does not ask before it ([tools.ts:731](../src/tools.ts#L731), [:486](../src/tools.ts#L486)).
 - A call that ends without a result attaches to the same action when it is repeated with the same file and text ([tools.ts:723-725](../src/tools.ts#L723-L725)).
 - `/reject N` returns `{action, status: rejected}`, an expired card `{action, status: expired}`.
