@@ -10,7 +10,7 @@ import {version} from "./version"
 const minNodeMajor = 22
 const daemonStopped = "The SimpleX daemon stopped; it starts again with the next tool call."
 const unknownSession = 409
-const turnAttempts = 10
+const turnAttempts = 15
 const turnRetryMs = 1_000
 const maxText = 250_000
 

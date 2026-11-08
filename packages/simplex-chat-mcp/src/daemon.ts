@@ -71,8 +71,9 @@ export class Daemon {
   private readonly streams = new Set<ServerResponse>()
   private readonly stored: StoredSession[]
   private readonly aliases = new Map<string, string>()
-  private readonly titles = new Map<number, {id: string; at: number}>()
+  private readonly titles = new Map<number, {id: string; at: number; name?: string}>()
   private readonly titled = new EventEmitter()
+  private readonly registered = new EventEmitter()
   private nextNumber: number
   private stopTimer?: NodeJS.Timeout
   private logTimer?: NodeJS.Timeout
@@ -197,9 +198,11 @@ export class Daemon {
   private async onSession(request: SessionRequest): Promise<SessionReply> {
     validConfig(request.config)
     const id = await this.resolve(request.id, request.pid, true)
-    const entry = this.entry(id, {...request, id})
+    const title = request.pid === undefined ? undefined : this.titles.get(request.pid)
+    const entry = this.entry(id, {...request, id, name: request.name ?? (title?.id === id ? title.name : undefined)})
     entry.pid = request.pid
     entry.seen = Date.now()
+    if (request.pid !== undefined) this.registered.emit(String(request.pid))
     const agent = await entry.opening
     if (entry.attached === 0) this.scheduleIdle(id, entry)
     await this.hub.configure(request.config)
@@ -208,20 +211,31 @@ export class Daemon {
   }
 
   private async onTitle(request: TitleRequest): Promise<TitleReply> {
-    const {name, project, model, config} = request
-    validConfig(config)
-    const id = await this.resolve(request.id, request.pid)
+    validConfig(request.config)
+    const {id, pid} = request
+    if (pid !== undefined && !this.aliases.has(id) && readSessionFile(this.folder(id)) === undefined && this.processSession(pid) === undefined) {
+      this.titles.set(pid, {id, at: Date.now(), name: request.name?.trim() || undefined})
+      this.titled.emit(String(pid))
+      processEvent(this.registered, pid)
+        .then(() => this.applyTitle(request))
+        .catch(error => logError("title", error))
+      await this.hub.configure(request.config)
+    } else await this.applyTitle(request)
+    return {mainGroup: this.hub.mainGroup, owner: this.hub.owner(), version: this.deps.version, protocol: protocolVersion}
+  }
+
+  private async applyTitle({id: given, pid, name, project, model, config}: TitleRequest): Promise<void> {
+    const id = await this.resolve(given, pid)
     const title = name?.trim() || undefined
     const entry = this.entry(id, {id, project, name: title, config})
-    if (request.pid !== undefined) {
-      this.titles.set(request.pid, {id, at: Date.now()})
-      this.titled.emit(String(request.pid))
+    if (pid !== undefined) {
+      this.titles.set(pid, {id, at: Date.now()})
+      this.titled.emit(String(pid))
     }
     const agent = await entry.opening
     await this.hub.configure(config)
     if (title !== undefined) await this.rename(this.folder(id), agent, title)
     if (model !== undefined) await agent.turn({id, model})
-    return {mainGroup: this.hub.mainGroup, owner: this.hub.owner(), version: this.deps.version, protocol: protocolVersion}
   }
 
   private canonical(id: string): string {
@@ -233,17 +247,7 @@ export class Daemon {
     if (alias !== undefined) return alias
     if (readSessionFile(this.folder(id)) !== undefined) return (fromServer || pid === undefined ? undefined : this.attachedSession(pid)) ?? id
     if (pid === undefined) return id
-    if (fromServer && this.processSession(pid) === undefined) {
-      await new Promise<void>(resolve => {
-        const done = (): void => {
-          clearTimeout(timer)
-          this.titled.off(String(pid), done)
-          resolve()
-        }
-        const timer = setTimeout(done, processWait)
-        this.titled.on(String(pid), done)
-      })
-    }
+    if (fromServer && this.processSession(pid) === undefined) await processEvent(this.titled, pid)
     const target = this.processSession(pid) ?? id
     if (target !== id) this.alias(id, target)
     return target
@@ -368,7 +372,8 @@ export class Daemon {
     if (stored === undefined) {
       if (request === undefined) throw new SocketError("Unknown session; restart the Claude Code session.", 409)
       createDataFolder(folder)
-      stored = {number: this.nextNumber++, name: sessionName(request.name, request.project), project: request.project, created: new Date().toISOString()}
+      const aliases = [...this.aliases].flatMap(([alias, target]) => (target === id ? [alias] : []))
+      stored = {number: this.nextNumber++, name: sessionName(request.name, request.project), project: request.project, created: new Date().toISOString(), ...(aliases.length === 0 ? {} : {aliases})}
       writeSessionFile(folder, stored)
     }
     return this.hub.session(id, stored)
@@ -434,6 +439,18 @@ export function productionDeps(root: string): DaemonDeps {
     openHub: (config, stored) => Hub.open(root, config, stored),
     onStopped: code => process.exit(code),
   }
+}
+
+function processEvent(events: EventEmitter, pid: number): Promise<void> {
+  return new Promise(resolve => {
+    const done = (): void => {
+      clearTimeout(timer)
+      events.off(String(pid), done)
+      resolve()
+    }
+    const timer = setTimeout(done, processWait)
+    events.on(String(pid), done)
+  })
 }
 
 async function lockHolder(root: string, checks: number): Promise<"answers" | "released" | undefined> {

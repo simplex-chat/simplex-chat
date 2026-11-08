@@ -119,7 +119,7 @@ describe("turn hooks", () => {
     expect(whole.prompt).toBe("x".repeat(250_000))
   })
 
-  it("start the daemon and repeat a turn of a session the daemon does not know yet, 10 times at most", async () => {
+  it("start the daemon and repeat a turn of a session the daemon does not know yet, 15 times at most, past the 10 s a title waits for its session server", async () => {
     const errors = captureStderr()
     const late = turnClient(2)
     expect(await turn(JSON.stringify({session_id: id, prompt: "fix the build"}), {}, late.client, 0)).toEqual({})
@@ -128,7 +128,7 @@ describe("turn hooks", () => {
     expect(errors).toEqual([])
     const unknown = turnClient(Infinity)
     expect(await turn(JSON.stringify({session_id: id, prompt: "fix the build"}), {}, unknown.client, 0)).toEqual({})
-    expect(unknown.requests).toHaveLength(10)
+    expect(unknown.requests).toHaveLength(15)
     expect(errors).toEqual(["SimpleX MCP turn: Unknown session; restart the Claude Code session."])
   })
 })

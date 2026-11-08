@@ -713,23 +713,28 @@ describe("daemon", () => {
     expect(await post("/session", {id: id2, pid: 200, project: "/p/app", config: defaultConfig})).toMatchObject({number: 7})
   })
 
-  it("keeps the stored session of a session server whose process sent the title of a new session ID first, as after /clear during a re-attach", async () => {
+  it("joins a new session ID whose title came before its process registered to the stored session of that process, as after /clear during a re-attach", async () => {
     storeSession(id1, 1, "auth")
     const {d, agents} = deps(root)
     daemon = await Daemon.start(d, readDefaultConfig)
-    await post("/title", {id: id2, pid: 100, project: "/p/app", config: defaultConfig})
+    expect(await post("/title", {id: id2, pid: 100, name: "cleared", project: "/p/app", config: defaultConfig})).toEqual(titleReply)
     expect(await post("/session", {id: id1, pid: 100, project: "/p/app", config: defaultConfig})).toMatchObject({number: 1})
-    expect(readSessionFile(sessionFolder(root, id2))!.aliases).toBeUndefined()
+    await turnsUntil(() => readSessionFile(sessionFolder(root, id1))!.aliases !== undefined)
+    expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({name: "cleared", aliases: [id2]})
+    expect(existsSync(sessionFolder(root, id2))).toBe(false)
     const controller = new AbortController()
     const {attached, firstLine} = attach(id1, controller.signal)
     await firstLine
     await post("/turn", {id: id2, pid: 100, prompt: "Fix the build"})
-    expect(agents.find(({number}) => number === 1)!.turns).toEqual([{id: id2, pid: 100, prompt: "Fix the build"}])
+    expect(agents).toMatchObject([{number: 1, turns: [{id: id2, pid: 100, prompt: "Fix the build"}]}])
     controller.abort()
     await attached
+    await daemon.stop()
+    daemon = await Daemon.start(deps(root).d, readDefaultConfig)
+    expect(await post("/session", {id: id2, pid: 200, project: "/p/app", config: defaultConfig})).toMatchObject({number: 1})
   })
 
-  it("joins a forked session ID to the resumed session its server registered first, and keeps the resumed session when the fork's title arrives first, as with --fork-session", async () => {
+  it("joins a forked session ID to the resumed session of its process in either order of its title and the server's registration, as with --fork-session, also after a restart", async () => {
     const [id3, id4] = ["33333333-3333-4333-8333-333333333333", "44444444-4444-4444-8444-444444444444"]
     storeSession(id1, 1, "auth")
     storeSession(id3, 2, "docs")
@@ -741,11 +746,17 @@ describe("daemon", () => {
     expect(existsSync(sessionFolder(root, id2))).toBe(false)
     await post("/title", {id: id4, pid: 200, project: "/p/app", config: defaultConfig})
     expect(await post("/session", {id: id3, pid: 200, project: "/p/app", config: defaultConfig})).toMatchObject({number: 2})
-    expect(readSessionFile(sessionFolder(root, id3))!.aliases).toBeUndefined()
-    expect(readSessionFile(sessionFolder(root, id4))).toMatchObject({number: 3})
+    await turnsUntil(() => readSessionFile(sessionFolder(root, id3))!.aliases !== undefined)
+    expect(readSessionFile(sessionFolder(root, id3))).toMatchObject({aliases: [id4]})
+    expect(existsSync(sessionFolder(root, id4))).toBe(false)
+    await daemon.stop()
+    const restarted = deps(root)
+    daemon = await Daemon.start(restarted.d, readDefaultConfig)
+    await post("/turn", {id: id4, pid: 200, at: 1, prompt: "Fix the build"})
+    expect(restarted.agents).toMatchObject([{number: 2, turns: [{id: id4, pid: 200, at: 1, prompt: "Fix the build"}]}])
   })
 
-  it("starts its own session for a server whose process sends no title in 10 seconds, and for a title from a process whose session left over 10 seconds ago", async () => {
+  it("starts its own session for a server whose process sends no title in 10 seconds, and 10 seconds after a title from a process whose session left over 10 seconds ago", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, agents} = deps(root)
     daemon = await Daemon.start(d, readDefaultConfig)
@@ -765,6 +776,10 @@ describe("daemon", () => {
     await turnsUntil(() => agents[0].turns.includes("ended"))
     await jest.advanceTimersByTimeAsync(10_001)
     expect(await post("/title", {id: id2, pid: 300, name: "docs", project: "/p/app", config: defaultConfig})).toEqual(titleReply)
+    await jest.advanceTimersByTimeAsync(9_999)
+    expect(agents.map(({displayName}) => displayName)).toEqual(["1 · app"])
+    await jest.advanceTimersByTimeAsync(1)
+    await turnsUntil(() => agents.length === 2)
     expect(agents.map(({displayName}) => displayName)).toEqual(["1 · app", "2 · docs"])
     expect(readSessionFile(sessionFolder(root, id1))!.aliases).toBeUndefined()
   })
