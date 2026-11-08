@@ -1,9 +1,8 @@
 package chat.simplex.common.views.chat.item
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
@@ -17,25 +16,14 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.datetime.Clock
 
 @Composable
 fun MarkedDeletedItemView(chatsCtx: ChatModel.ChatsContext, ci: ChatItem, chatInfo: ChatInfo, timedMessagesTTL: Int?, revealed: State<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean) {
-  val sentColor = MaterialTheme.appColors.sentMessage
-  val receivedColor = MaterialTheme.appColors.receivedMessage
-  Surface(
-    shape = RoundedCornerShape(18.dp),
-    color = if (ci.chatDir.sent) sentColor else receivedColor,
-    contentColor = LocalContentColor.current
-  ) {
-    Row(
-      Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      Box(Modifier.weight(1f, false)) {
+  ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
+    ItemTextCard(ci, 12.sp, inlineMeta) {
+      Box(Modifier.weight(1f, false).alignBy(LastBaseline)) {
         MergedMarkedDeletedText(chatsCtx, ci, chatInfo, revealed)
       }
-      CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
     }
   }
 }
@@ -84,7 +72,7 @@ private fun MergedMarkedDeletedText(chatsCtx: ChatModel.ChatsContext, chatItem: 
     buildAnnotatedString {
       withStyle(SpanStyle(fontSize = 12.sp, fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(text) }
     },
-    style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
+    style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleLineHeight(22.sp)),
     modifier = Modifier.padding(end = 8.dp),
     maxLines = 1,
     overflow = TextOverflow.Ellipsis,
@@ -115,13 +103,16 @@ fun markedDeletedText(cItem: ChatItem, chatInfo: ChatInfo): String =
   name = "Dark Mode"
 )*/
 @Composable
-fun PreviewMarkedDeletedItemView() {
+fun PreviewMarkedDeletedItemView() = BubblePreview {
   SimpleXTheme {
-    DeletedItemView(
-      ChatItem.getSampleData(itemDeleted = CIDeleted.Deleted(Clock.System.now())),
-      null,
-      showViaProxy = false,
-      showTimestamp = true
-    )
+    val ci = ChatItem.getSampleData(ts = previewDate, itemDeleted = CIDeleted.Deleted(previewDate))
+    Box(Modifier.clipChatItem(ci)) {
+      DeletedItemView(
+        ci,
+        null,
+        showViaProxy = false,
+        showTimestamp = true
+      )
+    }
   }
 }

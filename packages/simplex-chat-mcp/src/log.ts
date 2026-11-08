@@ -1,6 +1,5 @@
 import {T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
-import {fullDomainName} from "./messages"
 
 const maxDetails = 500
 const causeKey = /(Err|Error|errorType)$/
@@ -8,11 +7,27 @@ const blockingReasons: {[reason in T.BlockingReason]: string} = {
   [T.BlockingReason.Spam]: "Spam",
   [T.BlockingReason.Content]: "Content violates conditions of use",
 }
+const badgeIssues: {[status in T.BadgeStatus]: string} = {
+  [T.BadgeStatus.Active]: "",
+  [T.BadgeStatus.Expired]: " Sender's badge expired.",
+  [T.BadgeStatus.ExpiredOld]: " Sender's badge expired.",
+  [T.BadgeStatus.Failed]: " Sender's badge verification failed.",
+  [T.BadgeStatus.UnknownKey]: " No key to verify sender's badge.",
+}
 
 export class ExitError extends Error {
   constructor(message: string, readonly code: number) {
     super(message)
   }
+}
+
+export function shellWord(word: string, plain: RegExp): string {
+  if (plain.test(word)) return word
+  return process.platform === "win32" ? `"${word}"` : `'${word.replace(/'/g, "'\\''")}'`
+}
+
+export function shellPath(path: string): string {
+  return shellWord(path, process.platform === "win32" ? /^[A-Za-z0-9_.:\\/-]+$/ : /^[A-Za-z0-9_./-]+$/)
 }
 
 export function oneLine(text: string): string {
@@ -60,6 +75,8 @@ function chatErrorTypeText(error: T.ChatErrorType): string | undefined {
         ? `No valid link: The SimpleX name ${name} is registered, but it has no valid link.`
         : `Unconfirmed name: The SimpleX name ${name} is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.`
     }
+    case "fileNotApproved":
+      return `Unknown servers! Without Tor or VPN, your IP address will be visible to these XFTP relays: ${[...new Set(error.unknownServers.map(serverHostname))].sort().join(", ")}.`
     default:
       return undefined
   }
@@ -177,7 +194,56 @@ function storeErrorText(error: T.StoreError): string | undefined {
   }
 }
 
-function serverHostname(server: string): string {
+export function fileError({fileStatus, fileProhibited}: T.CIFile): string | undefined {
+  if (fileProhibited === undefined) return fileStatusError(fileStatus)
+  const {maxSize, badgeStatus} = fileProhibited
+  return `Large file! The file is above the limit of ${maxSize} bytes for its sender.${badgeStatus === undefined ? "" : badgeIssues[badgeStatus]}`
+}
+
+function fileStatusError(status: T.CIFileStatus): string | undefined {
+  switch (status.type) {
+    case "rcvCancelled":
+      return "The file was cancelled."
+    case "rcvAborted":
+      return "The download was aborted."
+    case "rcvError":
+      return fileErrorText(status.rcvFileError)
+    case "sndError":
+      return fileErrorText(status.sndFileError)
+    case "invalid":
+      return oneLine(`Invalid file: ${status.text}`)
+    default:
+      return undefined
+  }
+}
+
+function fileErrorText(error: T.FileError): string {
+  switch (error.type) {
+    case "auth":
+      return "Wrong key or unknown file chunk address - most likely file is deleted."
+    case "blocked":
+      return `File is blocked by server operator: ${blockingReasons[error.blockInfo.reason]}.`
+    case "noFile":
+      return "File not found - most likely file was deleted or cancelled."
+    case "relay":
+      return oneLine(`File server error: ${srvErrorText(error.srvError)}`)
+    case "other":
+      return oneLine(`Error: ${error.fileError}`)
+  }
+}
+
+function srvErrorText(error: T.SrvError): string {
+  switch (error.type) {
+    case "host":
+      return "Server address is incompatible with network settings."
+    case "version":
+      return "Server version is incompatible with network settings."
+    case "other":
+      return error.srvError
+  }
+}
+
+export function serverHostname(server: string): string {
   return /^[a-z]+:\/\/[^@]*@([^,:/]+)/.exec(server)?.[1] ?? server
 }
 
@@ -201,4 +267,9 @@ function isTyped(value: unknown): boolean {
 
 export function chatErrorOf(error: unknown): T.ChatError | undefined {
   return error instanceof core.ChatAPIError ? error.chatError : undefined
+}
+
+export function fullDomainName({nameTLD, domain, subDomain}: T.SimplexDomain): string {
+  const tld = nameTLD === T.SimplexTLD.Simplex ? ".simplex" : nameTLD === T.SimplexTLD.Testing ? ".testing" : ""
+  return `${[...subDomain].reverse().concat(domain).join(".")}${tld}`
 }

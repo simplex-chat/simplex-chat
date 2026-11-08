@@ -1,19 +1,25 @@
 import {errorText, log, logError, oneLine} from "./log"
-import {Changes, Collected, ToolCall, maxTimer, nextChange, reportProgress, utcMinutes} from "./messages"
-import type {ConnectInput, LeaveInput, PlanSummary, SendInput} from "./tools"
+import {Changes, Collected, FileOffer, FileType, ToolCall, maxTimer, nextChange, reportProgress, utcMinutes} from "./messages"
+import type {ConnectInput, DownloadInput, LeaveInput, PlanSummary, SendInput} from "./tools"
 
 export type Mode = "requests" | "host"
 export type State = "pending" | "performing" | "done" | "failed" | "rejected" | "expired"
+export type Standing = "messages" | "files"
 
 const maxPending = 20
 const maxPerforming = 20
 
-export const lostMessage = "The Main group is lost. Run /simplex:reset-owners in Claude Code."
-export const stoppingMessage = "The SimpleX daemon is stopping."
+export const lostMessage = "The agent lost its control chat. The person who runs it has to restart it with --reset-owners."
+export const stoppingMessage = "The server is stopping."
 const pendingMessage = `${maxPending} actions are pending; wait for the owner's decisions.`
 const performingMessage = `${maxPerforming} actions are being performed; wait for their results.`
 
 export class ToolError extends Error {}
+
+export interface HostTexts {
+  lost: string
+  stopping: string
+}
 
 export interface Subject {
   kind: string
@@ -30,7 +36,7 @@ export interface ConnRef {
 
 interface ActionRecord {
   readonly n: number
-  readonly session: number
+  readonly session?: number
   readonly mode: Mode
   readonly key: string
   readonly created: number
@@ -44,6 +50,7 @@ interface ActionRecord {
   interrupted: boolean
   error?: string
   stopCollecting?: () => void
+  cardImage?: string
 }
 
 export interface ConnectAction extends ActionRecord {
@@ -62,11 +69,24 @@ export interface ConnectAction extends ActionRecord {
   linkTextBytes?: number
 }
 
+export interface Attachment {
+  readonly path: string
+  readonly name: string
+  readonly size: number
+  readonly inode: number
+  readonly changedAt: number
+  readonly type: FileType
+  readonly resize: boolean
+  readonly preview?: string
+  readonly duration?: number
+}
+
 export interface SendAction extends ActionRecord {
   readonly tool: "send"
   readonly input: SendInput
   readonly subject: Subject
   readonly chat: string
+  readonly file?: Attachment
   readonly replyTo?: {from: string; text: string}
   readonly mentions: {name: string; member: number}[]
   readonly responses: Collected
@@ -81,9 +101,22 @@ export interface LeaveAction extends ActionRecord {
   readonly chat: string
 }
 
-export type Action = ConnectAction | SendAction | LeaveAction
+export interface DownloadAction extends ActionRecord {
+  readonly tool: "download"
+  readonly input: DownloadInput
+  readonly subject: Subject
+  readonly chat: string
+  readonly item: number
+  readonly from?: string
+  readonly file: FileOffer
+  readonly unknownServers?: string[]
+  startedAt?: number
+  path?: string
+}
 
-export type NewAction = Omit<ConnectAction, keyof ActionRecord> | Omit<SendAction, keyof ActionRecord> | Omit<LeaveAction, keyof ActionRecord>
+export type Action = ConnectAction | SendAction | LeaveAction | DownloadAction
+
+export type NewAction = Omit<ConnectAction, keyof ActionRecord> | Omit<SendAction, keyof ActionRecord> | Omit<LeaveAction, keyof ActionRecord> | Omit<DownloadAction, keyof ActionRecord>
 
 export interface ActionHooks {
   refusal(action: Action): string | undefined
@@ -102,7 +135,13 @@ export class Actions {
   private readonly posting = new Map<number, Promise<boolean>>()
   private readonly outcomes = new Set<Promise<void>>()
 
-  constructor(public expireHours: number, public next: number, private readonly hooks: ActionHooks) {}
+  constructor(
+    readonly mode: Mode,
+    public expireHours: number,
+    public next: number,
+    private readonly hooks: ActionHooks,
+    private readonly texts: HostTexts = {lost: lostMessage, stopping: stoppingMessage},
+  ) {}
 
   get(n: number): Action | undefined {
     return this.actions.get(n)
@@ -120,7 +159,7 @@ export class Actions {
     return this.all().find(action => action.key === key)
   }
 
-  create(session: number, mode: Mode, key: string, fields: NewAction, approvedBy?: string): Action {
+  create(key: string, fields: NewAction, approvedBy?: string, session?: number, mode: Mode = this.mode): Action {
     const n = this.next
     const created = Date.now()
     const standing = approvedBy !== undefined
@@ -140,8 +179,8 @@ export class Actions {
     }
     const action = {...fields, ...record} as Action
     const ofSession = this.ofSession(session)
-    const refusal = this.stopping ? stoppingMessage
-      : this.lost ? lostMessage
+    const refusal = this.stopping ? this.texts.stopping
+      : this.lost ? this.texts.lost
       : ofSession.filter(({state}) => state === "pending").length >= maxPending ? pendingMessage
       : ofSession.filter(({state}) => state === "performing").length >= maxPerforming ? performingMessage
       : this.hooks.refusal(action)
@@ -150,14 +189,14 @@ export class Actions {
     this.actions.set(n, action)
     this.scheduleExpiry(action)
     const {what, detail} = summary(action, oneLine)
-    log(`Action ${n} of session ${session}: ${what}${detail}`)
+    log(`Action ${n}${session === undefined ? "" : ` of session ${session}`}: ${what}${detail}`)
     const posting = this.post(action)
     this.posting.set(n, posting)
     posting.then(posted => this.afterPosting(action, posted)).catch(error => logError(`action ${n}`, error))
     return action
   }
 
-  ofSession(session: number): Action[] {
+  ofSession(session?: number): Action[] {
     return this.all().filter(action => action.session === session)
   }
 
@@ -187,12 +226,13 @@ export class Actions {
     for (const action of this.all().filter(({expires}) => expires <= now)) this.expire(action)
   }
 
-  async decided(action: Action, call: ToolCall): Promise<boolean> {
+  async decided(action: Action, call: ToolCall, until: () => number = () => Infinity): Promise<boolean> {
     if (isDecided(action.state)) return true
     const stopProgress = reportProgress(call, () => progressText(action))
     try {
-      while (!isDecided(action.state)) {
-        if (!(await nextChange(action.changes, call.signal))) return false
+      while (!isDecided(action.state) && Date.now() < until()) {
+        const left = until() - Date.now()
+        if (!(await nextChange(action.changes, call.signal, left === Infinity ? undefined : left))) return false
       }
       return true
     } finally {
@@ -216,12 +256,12 @@ export class Actions {
   loseControl(): void {
     this.lost = true
     for (const action of this.pending()) {
-      action.error = lostMessage
+      action.error = this.texts.lost
       this.decide(action, "failed")
     }
   }
 
-  async stop(): Promise<number> {
+  async stop(): Promise<Action[]> {
     this.stopping = true
     for (const timer of this.expiries.values()) clearTimeout(timer)
     this.expiries.clear()
@@ -231,7 +271,7 @@ export class Actions {
     this.abortPerforms.abort()
     if (!this.lost) await Promise.all(stopped.map(action => this.hooks.outcome(action).catch(error => logError(`action ${action.n} card`, error))))
     await Promise.allSettled(this.outcomes)
-    return stopped.length
+    return stopped
   }
 
   private scheduleExpiry(action: Action): void {
@@ -305,6 +345,10 @@ export class Actions {
   }
 }
 
+export function hasUnknownServers({unknownServers}: Pick<DownloadAction, "unknownServers">): boolean {
+  return unknownServers !== undefined && unknownServers.length > 0
+}
+
 export function isDecided(state: State): boolean {
   return state === "done" || state === "failed" || state === "rejected" || state === "expired"
 }
@@ -323,10 +367,12 @@ export function summary(action: Action, showName: (name: string) => string): {wh
       return {what: `send to ${target}`, detail: ` (${action.chat})`}
     case "leave":
       return {what: `${leaveVerbs(action).present} ${target}`, detail: ` (${action.chat})`}
+    case "download":
+      return {what: `download ${showName(action.file.name)} from ${target}`, detail: ` (${action.chat})`}
   }
 }
 
-export function leaveVerbs({chat}: LeaveAction): {present: string; past: string} {
+export function leaveVerbs({chat}: Pick<LeaveAction, "chat">): {present: string; past: string} {
   return chat.startsWith("@") ? {present: "delete", past: "deleted"} : {present: "leave", past: "left"}
 }
 
@@ -336,6 +382,7 @@ function performedText(action: Action): string {
   if (failure !== "") return `failed: ${oneLine(action.error ?? "")}.`
   if (action.tool === "send") return "sent."
   if (action.tool === "leave") return `${leaveVerbs(action).past}.`
+  if (action.tool === "download") return "downloaded."
   return action.connected ? "connected." : "connection requested."
 }
 

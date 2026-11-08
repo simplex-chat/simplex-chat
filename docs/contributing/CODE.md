@@ -4,6 +4,12 @@ This file provides guidance on coding style and approaches and on building the c
 
 ## Code Security
 
+Zero trust: providers and server owners cannot access users' data - design every feature with this constraint. Every code and design decision considers two threat vectors:
+1. users attacking providers;
+2. providers or server owners attacking users.
+
+Default to end-to-end encryption, minimal metadata exposure, and cryptographic verification over trust assumptions. Review the documented threat models and monitor compliance.
+
 When designing code and planning implementations:
 - Apply adversarial thinking, and consider what may happen if one of the communicating parties is malicious.
 - Formulate an explicit threat model for each change - who can do which undesirable things and under which circumstances.
@@ -58,6 +64,7 @@ Some files that use CPP language extension cannot be formatted as a whole, so in
 - **Never move existing code or sections around** - add new content at appropriate locations without reorganizing existing structure.
 - When adding new sections to documents, continue the existing numbering scheme.
 - Minimize diff size - prefer small, targeted changes over reorganization.
+- When you change what users see or do in the apps, update the user guide (docs/guide) in the same pull request.
 
 **Code analysis and review:**
 - Trace data flows end-to-end: from origin, through storage/parameters, to consumption. Flag values that are discarded and reconstructed from partial data (e.g. extracted from a URI missing original fields) — this is usually a bug.

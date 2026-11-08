@@ -6,8 +6,19 @@ describe("QR codes", () => {
   const cells = (line: string): string[] => [...line.matchAll(/\x1b\[[0-9;]+m[^\x1b]+/g)].map(([cell]) => cell)
   const visible = (line: string): string => line.replace(/\x1b\[[0-9;]*m/g, "")
 
-  it("draws two module rows per line with lower half blocks in ansi", () => {
-    const lines = qrCodeText(link, "ansi").split("\n")
+  it("draws each module as two cells in large", () => {
+    const lines = qrCodeText(link, "large").split("\n")
+    expect(lines).toHaveLength(37)
+    for (const line of lines) {
+      expect(visible(line)).toHaveLength(74)
+      expect(line.endsWith("\x1b[0m")).toBe(true)
+    }
+    for (const line of [...lines.slice(0, 2), ...lines.slice(-2)]) expect(cells(line)).toEqual(Array(37).fill("\x1b[47m  "))
+    expect(cells(lines[2]).slice(0, 10)).toEqual([...Array(2).fill("\x1b[47m  "), ...Array(7).fill("\x1b[40m  "), "\x1b[47m  "])
+  })
+
+  it("draws two module rows per line with lower half blocks in small", () => {
+    const lines = qrCodeText(link, "small").split("\n")
     expect(lines).toHaveLength(19)
     for (const line of lines) {
       expect(visible(line)).toHaveLength(37)

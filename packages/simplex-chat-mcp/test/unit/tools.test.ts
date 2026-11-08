@@ -5,24 +5,26 @@ import {ToolCall} from "../../src/messages"
 import {ToolName, instructions, registerTools} from "../../src/tools"
 import {LineClient} from "./fixtures"
 
+const pluginInstructions = instructions("Claude", "SimpleX daemon")
+
 async function connectedServer(mode: "requests" | "host", handler: (name: ToolName, input: unknown, call: ToolCall) => Promise<any>): Promise<LineClient> {
   const input = new PassThrough()
   const output = new PassThrough()
-  const server = new McpServer({name: "simplex-mcp", version: "test"}, {instructions: instructions()})
+  const server = new McpServer({name: "simplex-mcp", version: "test"}, {instructions: pluginInstructions})
   registerTools(server, mode, handler)
   await server.connect(new StdioServerTransport(input, output))
   return new LineClient(input, output)
 }
 
 describe("tool registration", () => {
-  it("lists the five tools, marking actions for the host in mode host", async () => {
+  it("lists the six tools, marking actions for the host in mode host", async () => {
     for (const mode of ["requests", "host"] as const) {
       const client = await connectedServer(mode, async () => undefined)
-      expect((await client.initialize()).instructions).toBe(instructions())
+      expect((await client.initialize()).instructions).toBe(pluginInstructions)
       const {result} = await client.request("tools/list")
-      expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "list", "leave"])
+      expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave"])
       const marked = result.tools.filter((tool: any) => tool._meta?.["anthropic/requiresUserInteraction"] === true).map(({name}: {name: string}) => name)
-      expect(marked).toEqual(mode === "host" ? ["connect", "send", "leave"] : [])
+      expect(marked).toEqual(mode === "host" ? ["connect", "send", "download", "leave"] : [])
     }
   })
 
@@ -38,13 +40,9 @@ describe("tool registration", () => {
     expect(calls).toEqual([["list", {}], ["receive", {chat: "@1"}]])
   })
 
-  it("names no profile in the instructions", () => {
-    expect(instructions()).toContain("You act in SimpleX chats through these tools, as your agent profile.")
-    expect(instructions()).not.toMatch(/as the agent \S/)
-  })
-
-  it("says that a SimpleX daemon restart cancels actions", () => {
-    expect(instructions()).toContain("A SimpleX daemon restart cancels actions; a repeated call after it creates a new one.")
-    expect(instructions()).not.toMatch(/server/i)
+  it("names the profile and the process whose restart cancels actions", () => {
+    expect(pluginInstructions).toContain("You act in SimpleX chats through these tools, as the agent Claude.")
+    expect(pluginInstructions).toContain("A SimpleX daemon restart cancels actions; a repeated call after it creates a new one.")
+    expect(instructions("Scout")).toContain("A server restart cancels actions; a repeated call after it creates a new one.")
   })
 })

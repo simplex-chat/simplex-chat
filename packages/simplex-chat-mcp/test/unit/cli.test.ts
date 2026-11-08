@@ -1,19 +1,19 @@
 import {helpText, parseCommand} from "../../src/cli"
 import {ExitError} from "../../src/log"
 
-describe("commands", () => {
+describe("plugin commands", () => {
   it("parses each command", () => {
-    expect(parseCommand(["session"])).toBe("session")
-    expect(parseCommand(["daemon"])).toBe("daemon")
-    expect(parseCommand(["hook", "session-start"])).toBe("hook session-start")
-    expect(parseCommand(["link"])).toBe("link")
-    expect(parseCommand(["reset-owners"])).toBe("reset-owners")
-    expect(parseCommand(["--help"])).toBe("help")
+    expect(parseCommand(["session"])).toEqual({command: "session"})
+    expect(parseCommand(["daemon"])).toEqual({command: "daemon"})
+    expect(parseCommand(["hook", "session-start"])).toEqual({command: "hook session-start"})
+    expect(parseCommand(["link"])).toEqual({command: "link"})
+    expect(parseCommand(["reset-owners"])).toEqual({command: "reset-owners"})
+    expect(parseCommand(["--help"])).toEqual({command: "help"})
   })
 
   it("refuses other commands and extra arguments", () => {
-    const unknown = new ExitError("Unknown command. Run simplex-mcp --help.", 2)
-    for (const args of [[], ["serve", "agent"], ["register", "agent"], ["hook"], ["link", "x"], ["session", "--port", "1"], ["constructor"], ["__proto__"], ["toString"]]) expect(() => parseCommand(args)).toThrow(unknown)
+    const usage = new ExitError("Usage: simplex-mcp serve NAME [options] or simplex-mcp register NAME [options]. Run simplex-mcp --help.", 2)
+    for (const args of [[], ["hook"], ["link", "x"], ["session", "--port", "1"], ["constructor"], ["__proto__"], ["toString"]]) expect(() => parseCommand(args)).toThrow(usage)
   })
 
   it("documents the commands, the install and the data folder", () => {

@@ -181,7 +181,7 @@ test("stdio session spawns the daemon and recovers after the daemon is killed", 
 
   expect(await session.client.initialize()).toMatchObject({serverInfo: {name: "simplex-mcp"}})
   const {result} = await session.client.request("tools/list")
-  expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "list", "leave"])
+  expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave"])
   const listed = await session.call("list", {})
   expect(listed.isError).toBeUndefined()
   expect(listed.structuredContent.actions).toEqual([])

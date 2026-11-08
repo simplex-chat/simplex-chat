@@ -210,8 +210,6 @@
     "simplex-unique-overlay-card-2-p-1": "因为您在 SimpleX 网络上没有标识符，所以除非您以二维码或链接的形式分享一次性或临时用户地址，没有人可以联系您。",
     "simplex-unique-overlay-card-3-p-2": "端到端加密的消息在被收到前会暂时保存在 SimpleX 中继服务器上，传送完成后它们会被永久删除。",
     "simplex-unique-overlay-card-3-p-3": "与联合网络服务器（电子邮件、XMPP 或 Matrix）不同，SimpleX 服务器不存储用户帐户，它们仅中继消息，保护双方的隐私。",
-    "guide-dropdown-2": "发送消息",
-    "guide-dropdown-3": "秘密群组",
     "guide-dropdown-5": "管理数据",
     "guide-dropdown-7": "隐私和安全",
     "guide-dropdown-8": "应用设置",
@@ -228,7 +226,6 @@
     "docs-dropdown-5": "托管 XFTP 服务器",
     "newer-version-of-eng-msg": "本页面有较新的英语版本。",
     "guide-dropdown-4": "聊天档案",
-    "guide-dropdown-6": "语音和视频通话",
     "guide-dropdown-9": "建立连接",
     "back-to-top": "回到页首",
     "on-this-page": "在此页面上",
@@ -262,7 +259,7 @@
     "docs-dropdown-15": "验证并重现构建过程",
     "index-hero-h1": "变得<br>自由",
     "index-hero-h2": "在属于你的网络中",
-    "index-hero-p1": "首个无用户 ID 的网络。<br>您的联系人、群组和频道由您掌控。",
+    "index-hero-p1": "<span class=\"nowrap\">唯一一个</span> <span class=\"nowrap\">没有任何用户标识符的网络。</span><br>你拥有你的联系人、群和频道。",
     "index-hero-download-desktop-btn-title": "下载 SimpleX 桌面应用程序",
     "index-testflight-title": "SimpleX iOS 测试版已在 TestFlight 上发布",
     "index-f-droid-title": "SimpleX 安卓应用（通过 F-Droid）",
@@ -379,5 +376,10 @@
     "index-hero-own-part": "拥有它的一部分。",
     "index-hero-invest": "投资 SimpleX Chat。",
     "index-hero-downloads": "下载量",
-    "index-hero-monthly-users": "月活跃用户"
+    "index-hero-monthly-users": "月活跃用户",
+    "docs-dropdown-16": "",
+    "links-all-languages": "",
+    "index-hero-invest-cta": "",
+    "links-title": "",
+    "links": ""
 }

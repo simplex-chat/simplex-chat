@@ -124,7 +124,7 @@ describe("session server", () => {
     const {client} = await session({}, () => (spawned(), pending))
     await spawning
     const {result} = await client.request("tools/list")
-    expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "list", "leave"])
+    expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave"])
   })
 
   it("registers, attaches and forwards a call with progress", async () => {

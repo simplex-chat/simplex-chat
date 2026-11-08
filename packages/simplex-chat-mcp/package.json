@@ -1,7 +1,7 @@
 {
   "name": "@simplex-chat/mcp",
   "version": "0.2.0",
-  "description": "Claude Code plugin: each session chats on SimpleX with its own profile, approved in your app",
+  "description": "MCP server and Claude Code plugin that give AI agents a SimpleX profile, approved in your app",
   "bin": {
     "simplex-mcp": "dist/cli.js"
   },
@@ -27,10 +27,11 @@
     "test:e2e": "tsc && jest test/e2e"
   },
   "dependencies": {
+    "@modelcontextprotocol/node": "^2.1.1",
     "@modelcontextprotocol/server": "^2.3.1",
-    "@simplex-chat/types": "^7.1.0-beta.6.2",
+    "@simplex-chat/types": "^7.1.0-beta.9.1",
     "qrcode": "^1.5",
-    "simplex-chat": "^7.1.0-beta.6.6"
+    "simplex-chat": "^7.1.0-beta.10.2"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

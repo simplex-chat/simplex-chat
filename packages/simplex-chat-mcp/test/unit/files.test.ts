@@ -3,7 +3,7 @@ import * as fs from "fs"
 import {chmodSync, closeSync, existsSync, fstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
-import {LockedError, acquireLock, createDataFolder, dataRoot, hubFolder, logFile, openLog, readSessionFile, releaseLock, serverToken, sessionFolder, sessionNumbers, socketPath, writeSessionFile} from "../../src/files"
+import {LockedError, acquireLock, createDataFolder, dataRoot, hubFolder, logFile, openLog, readServerFile, readSessionFile, releaseLock, serverToken, sessionFolder, sessionNumbers, socketPath, writeHeadersFile, writeServerFile, writeSessionFile} from "../../src/files"
 import {ExitError} from "../../src/log"
 
 const id = "34B7AEBF-E707-4D6F-ADD0-ECDFB4FFE281"
@@ -45,9 +45,10 @@ describe("lock", () => {
   it("refuses a lock of a running process", () => {
     const runningPid = process.ppid
     writeFileSync(join(dir, "lock"), `${runningPid}\n`)
-    const locked = new LockedError(`Another daemon uses ${dir} (PID ${runningPid}). If none runs, remove ${join(dir, "lock")}.`, 1)
-    expect(() => acquireLock(dir)).toThrow(locked)
-    expect(() => acquireLock(dir)).toThrow(LockedError)
+    expect(() => acquireLock(dir)).toThrow(new ExitError(`Another server uses ${dir} (PID ${runningPid}). If no server runs, remove ${join(dir, "lock")}.`, 1))
+    const locked = new LockedError(`Another daemon uses ${dir} (PID ${runningPid}). If no daemon runs, remove ${join(dir, "lock")}.`, 1)
+    expect(() => acquireLock(dir, "daemon")).toThrow(locked)
+    expect(() => acquireLock(dir, "daemon")).toThrow(LockedError)
     expect(locked).toBeInstanceOf(ExitError)
   })
 
@@ -72,19 +73,46 @@ describe("data folder", () => {
     expect(statSync(dir).mode & 0o777).toBe(0o700)
   })
 
-  it("keeps the token", () => {
-    const token = serverToken(dir)
-    expect(token).toMatch(/^[A-Za-z0-9_-]{43}$/)
-    expect(statSync(join(dir, "token")).mode & 0o777).toBe(0o600)
-    expect(serverToken(dir)).toBe(token)
-  })
-
   it("makes the token private again when it exists", () => {
     const file = join(dir, "token")
     writeFileSync(file, "existing\n")
     chmodSync(file, 0o644)
     expect(serverToken(dir)).toBe("existing")
     expect(statSync(file).mode & 0o777).toBe(0o600)
+  })
+
+  it("writes the headers for the MCP host, readable only by the user, and rewrites them", () => {
+    writeHeadersFile(dir, "first")
+    expect(readFileSync(join(dir, "headers.json"), "utf8")).toBe('{"Authorization":"Bearer first"}\n')
+    expect(statSync(join(dir, "headers.json")).mode & 0o777).toBe(0o600)
+    writeHeadersFile(dir, "second")
+    expect(JSON.parse(readFileSync(join(dir, "headers.json"), "utf8"))).toEqual({Authorization: "Bearer second"})
+  })
+
+  it("keeps the token until renewed", () => {
+    const token = serverToken(dir, false)
+    expect(token).toMatch(/^[A-Za-z0-9_-]{43}$/)
+    expect(statSync(join(dir, "token")).mode & 0o777).toBe(0o600)
+    expect(serverToken(dir, false)).toBe(token)
+    expect(serverToken(dir, true)).not.toBe(token)
+  })
+
+  it("makes the token, the headers and the server record private again when they exist", () => {
+    const files = ["token", "headers.json", "server.json"].map(name => join(dir, name))
+    for (const file of files) {
+      writeFileSync(file, "{}\n")
+      chmodSync(file, 0o644)
+    }
+    serverToken(dir, true)
+    writeHeadersFile(dir, "token")
+    writeServerFile(dir, {name: "agent", port: 5226, expireHours: 23})
+    expect(files.map(file => statSync(file).mode & 0o777)).toEqual([0o600, 0o600, 0o600])
+  })
+
+  it("records the server", () => {
+    expect(readServerFile(dir)).toBeUndefined()
+    writeServerFile(dir, {name: "agent", port: 5226, expireHours: 23})
+    expect(readServerFile(dir)).toEqual({name: "agent", port: 5226, expireHours: 23})
   })
 })
 

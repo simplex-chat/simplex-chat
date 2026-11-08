@@ -1,6 +1,6 @@
 # Block Markdown: core
 
-Date: 2026-10-13. Revised: 2026-10-16, for master. Revised: 2026-10-17, two passes over the whole text. Revised: 2026-10-18, CommonMark syntax (S4, S6), soft breaks (S5), block lines then inline content.
+Date: 2026-10-13. Revised: 2026-10-16, for master. Revised: 2026-10-17, two passes over the whole text. Revised: 2026-10-18, CommonMark syntax (S4, S6), soft breaks (S5), block lines then inline content. Revised: 2026-10-29, line breaks and lines without a marker (`2026-10-29-markdown-links-and-line-breaks.md`).
 
 Each message text is parsed in two passes. In pass 1, the lines of the text are grouped into blocks. The content of the lines of a block is joined with "\n" and parsed by the inline parser of master; each "\n" is then replaced by the break token and the syntax tokens of the next line. Pass 2 divides the tokens at the breaks between blocks and builds the block structure. `formattedText` is the joined token list; the text of each token is its source. `markdownBlocks` is the block structure: index ranges into `formattedText`.
 

@@ -1,4 +1,4 @@
-Revision 1, 2026-09-18
+Revision 2, 2026-10-22
 
 # SimpleX Supporter Badges
 
@@ -53,6 +53,8 @@ Two other uses are planned and described under [Future work](#future-work):
 
 The badge service holds the purchase key, the number of months bought, and the payment record of the purchase. A card payment is linked to the purchase, as in any other service; a user who wants the payment itself to be private may pay with cryptocurrency. In either case the record is held by the service alone, and the service does not learn where the badge is later shown or used, because a zero-knowledge proof contains nothing that refers back to the credential or the purchase.
 
+An app store subscription's record is its store transaction, which renewals keep, and the charges the store reports for it. When Restore purchases, the app's command that hands the store's current subscriptions to the active profile, moves a subscription to another device or profile, the new purchase key presents the same store transaction as the old one, so the service links the two purchase keys, though not the profiles that hold them.
+
 A party that verifies a proof learns the badge type and the expiry date. Since all credentials expiring in the same week have the same expiry date, these two values place the holder among the supporters whose badges expire that week.
 
 ### Comparison with Signal badges
@@ -85,14 +87,14 @@ In SimpleX:
 | Presentations per credential | One | Unlimited |
 | Proof bound to the context of presentation | No | Yes |
 | Expiry rounded up to | The next day | The end of the following Monday |
-| Issuance and presentation on different days | No | Yes |
+| Renewal and presentation on different days | No | Yes |
 | Usable on independently operated servers | No | Yes |
 
 ### Non-goals
 
 - A badge does not restrict anything that is available today: the defaults are unchanged, and a badge only raises them.
 - A badge does not create an identity: it has no persistent identifier, it is not linked across conversations, and an incognito profile does not show it.
-- A badge cannot be transferred: a code can be redeemed once for each use it was issued with (usually one), and the credential obtained with it is usable only with the master key it was issued for.
+- A badge cannot be transferred: a code can be redeemed once for each use it was issued with (usually one), and the credential obtained with it is usable only with the master key it was issued for. The exception is an app store subscription, which Restore moves to a new purchase key of whichever profile presents its store receipt, and moves again only once the last credential of the key it last moved from has expired.
 - A badge does not exempt its holder from the limits a server applies: it lowers the cost of a resource without removing the limit on it.
 - A badge cannot be revoked; credentials are issued for one month at a time instead.
 
@@ -147,7 +149,7 @@ In both cases the app generates the master key and the purchase key pair before 
 
 ### Monthly issuance
 
-A credential is issued for one month at a time, however many months were bought. The service keeps a count of the months remaining for each purchase key, and issues the next credential when the app asks for it. Unused months, e.g. if the app was offline, lapse at the next badge issuance.
+A credential is issued for one month at a time, however many months were bought. The service keeps a count of the months remaining for each purchase key, and issues the next credential when the app asks for it. The months of an app store subscription are added as the store charges for them: the service asks the store before issuing each month, so a new charge funds the next month once the paid months have run out, and a refund or revocation the store reports while they run, as in an annual plan, ends the badge; it also asks at once when the app reports a higher tier, which it does for an App Store raise the device sees before the raised charge expires. The app asks about such a raise, or about a lapsed subscription its store charged again, a bounded number of times each time the device hands the charge over, and again after the next hand-over. Any other App Store change of tier is granted at the first check after the old plan's paid months run out, though Apple bills a raise at once. On Play another badge is a new purchase: the app starts no plan change, and Play's pages offered none for these products when tested; one made there would be a new purchase under a new token, credited only when Restore hands it over (see [Upgrades](./badges-rpc.md#upgrades)). Unused months, e.g. if the app was offline, lapse at the next badge issuance.
 
 Credentials are issued monthly to limit what the expiry date discloses. If credentials were issued for the whole term, a user who bought a year would hold a credential expiring on a day a year ahead, when few other credentials expire, and this date would be disclosed in every proof for a year. Instead, every credential is issued for one month, and its expiry is rounded to the end of the Monday following the end of the paid month (UTC). For example, if the paid month ends on Wednesday 14 October 2026, the credential expires at the end of Monday 19 October, and so does every credential whose month ends between Monday 12 and Sunday 18 October. All credentials whose paid month ends in the same week thus expire at the same instant.
 
@@ -202,8 +204,8 @@ Service requests are protected by the double ratchet of the [SimpleX agent](http
 
 1. A proof discloses no value that links it to another proof or to the purchase.
 2. A proof used in one context, whether a session, a conversation or a file, cannot be used in another context.
-3. The timing of presentations does not identify the holder: all credentials expiring in the same week share the same expiry, and the renewal request and the profile update are made on different days.
-4. Requests to the badge service cannot be linked to each other, to a profile or to a network address, other than the redemptions of one multi-use code and the codes issued in the service's managed group or redeemed by its members, and a request about a purchase can be made only by the holder of the purchase key.
+3. The timing of presentations does not identify the holder: all credentials expiring in the same week share the same expiry, and the renewal request and the profile update are made on different days. A new badge (after a purchase, a redemption, a Restore, or a store subscription resumed after it lapsed) is shown as soon as its credential is issued, so for these the request and the profile update are made together. A higher tier is shown as soon as it is issued too, whether the app reported it or a renewal check granted it, since the subscriber raised it in their store; a lower tier granted at a renewal check is shown when the current credential expires, as a renewal is.
+4. Requests to the badge service cannot be linked to each other, to a profile or to a network address, other than the redemptions of one multi-use code, the codes issued in the service's managed group or redeemed by its members, and a store subscription moved to a new key by Restore, which the service links to the key it moved from as the same store transaction funds both, and a request about a purchase can be made only by the holder of the purchase key.
 5. A credential cannot be forged: the issuer keys are fixed in apps and servers, and the app verifies a credential before storing it.
 6. A missing or failed proof leaves the default limit in place, and a server cannot be configured to grant a badge type less than the default.
 
@@ -219,6 +221,7 @@ This threat model assumes the [SimpleX network threat model](https://github.com/
 - Issue any credential, or refuse to issue one, as it holds the issuer key.
 - Link a code issued in its managed group to the member who asked for it and to that group, as the group's messages, codes included, are kept in the service's chat database.
 - Link a redemption to a member of its managed group whose profile shows a new badge soon after it.
+- Link the two purchase keys between which Restore moved a store subscription.
 
 *cannot:*
 
@@ -289,6 +292,10 @@ An attacker who obtains the credential and the purchase key can use the badge un
 
 A code is a bearer secret until its last use is taken; after that, it is refused to any other purchase key.
 
+**Interception of a store receipt**
+
+Restore moves a store subscription to any new purchase key that presents its store receipt, within the limit on moves, so whoever obtains the receipt can take the badge. The credential already issued on the device it left stays valid until it expires, and then Restore there can move it back. An App Store receipt stops moving the subscription once the store charges again, as only the subscription's latest transaction moves it. A Play purchase token stays the same across renewals, so it moves the subscription for as long as the subscription renews. Each move waits only for the last credential of the key the subscription moved from, so the receipt's holder and the user can take the badge from each other in turn.
+
 **A passive network observer**
 
 *can:*
@@ -304,4 +311,4 @@ A code is a bearer secret until its last use is taken; after that, it is refused
 
 - Backups will be stored on XFTP servers, and a badge will raise their size and their storage time, as described under [What a badge grants](#what-a-badge-grants).
 - SMP servers and notification servers will verify the proof. A server that verifies it can charge the holder of a badge less for creating queues, file chunks and notification tokens (under the planned proof-of-work scheme, the required effort is divided by a factor configured for each badge type), and can apply higher rate limits and larger quotas.
-- Subscriptions that renew automatically, the transfer of remaining months to a new device, and the pausing of a prepaid badge are planned.
+- The transfer of a badge bought by card or cryptocurrency to a new device, and the pausing of a prepaid badge, are planned.

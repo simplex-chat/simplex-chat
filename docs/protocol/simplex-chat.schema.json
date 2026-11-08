@@ -61,6 +61,7 @@
           "type": "string",
           "metadata": {"comment": "group purpose / short description (160 characters)"}
         },
+        "chatLayout": {"enum": ["classic", "terminal"]},
         "groupPreferences": {
           "optionalProperties": {
             "commands": {

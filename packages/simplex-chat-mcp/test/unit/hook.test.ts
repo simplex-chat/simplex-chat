@@ -72,7 +72,7 @@ describe("owner commands", () => {
   it("show the owners, or the link with a QR code in a terminal", () => {
     expect(linkText({...status, owner: {owners: ["Alice", "Bob"]}}, false)).toBe('Owners of "SimpleX MCP": Alice, Bob. To replace them, run /simplex:reset-owners.')
     expect(linkText({...status, owner: {owners: [], link}}, false)).toBe(`Join "SimpleX MCP" in the SimpleX app. The link works once:\n${link}`)
-    expect(linkText({...status, owner: {owners: [], link}}, true)).toBe(`Join "SimpleX MCP" in the SimpleX app. The link works once:\n${qrCodeText(link, "ansi")}\n${link}`)
+    expect(linkText({...status, owner: {owners: [], link}}, true)).toBe(`Join "SimpleX MCP" in the SimpleX app. The link works once:\n${qrCodeText(link, "small")}\n${link}`)
     expect(linkText({...status, owner: {owners: []}}, false)).toBe("The Main group has no link. Run /simplex:reset-owners.")
     expect(resetOwnersText(link, "SimpleX MCP", false)).toBe(`"SimpleX MCP" was replaced. Join the new one in the SimpleX app. The link works once:\n${link}`)
   })

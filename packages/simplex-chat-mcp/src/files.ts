@@ -16,6 +16,12 @@ export interface SessionFile {
   created: string
 }
 
+export interface ServerFile {
+  name: string
+  port: number
+  expireHours: number
+}
+
 export class LockedError extends ExitError {}
 
 export function dataRoot(env: NodeJS.ProcessEnv = process.env, home: string = homedir()): string {
@@ -78,13 +84,13 @@ export function createDataFolder(dir: string): void {
   if (process.platform !== "win32") chmodSync(dir, 0o700)
 }
 
-export function acquireLock(dir: string): void {
+export function acquireLock(dir: string, user = "server"): void {
   const file = join(dir, "lock")
   if (createLock(file)) return
   const pid = lockPid(file)
-  if (pid !== undefined && pid !== process.pid && isRunning(pid)) throw lockedError(dir, file, pid)
+  if (pid !== undefined && pid !== process.pid && isRunning(pid)) throw lockedError(dir, file, pid, user)
   unlinkSync(file)
-  if (!createLock(file)) throw lockedError(dir, file, lockPid(file))
+  if (!createLock(file)) throw lockedError(dir, file, lockPid(file), user)
 }
 
 export function releaseLock(dir: string): void {
@@ -95,9 +101,13 @@ export function releaseLock(dir: string): void {
   }
 }
 
-export function serverToken(dir: string): string {
+export function serverToken(dir: string, renew = false): string {
   const file = join(dir, "token")
   const token = randomBytes(32).toString("base64url")
+  if (renew) {
+    writePrivateFile(file, `${token}\n`)
+    return token
+  }
   const temp = join(dir, `token.${process.pid}.${randomBytes(6).toString("hex")}.tmp`)
   try {
     writePrivateFile(temp, `${token}\n`)
@@ -112,6 +122,23 @@ export function serverToken(dir: string): string {
   }
 }
 
+export function headersFile(dir: string): string {
+  return join(dir, "headers.json")
+}
+
+export function writeHeadersFile(dir: string, token: string): void {
+  writePrivateFile(headersFile(dir), `${JSON.stringify({Authorization: `Bearer ${token}`})}\n`)
+}
+
+export function writeServerFile(dir: string, server: ServerFile): void {
+  writePrivateFile(join(dir, "server.json"), `${JSON.stringify(server)}\n`)
+}
+
+export function readServerFile(dir: string): ServerFile | undefined {
+  const file = join(dir, "server.json")
+  return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : undefined
+}
+
 function sessionsFolder(root: string): string {
   return join(root, "_sessions")
 }
@@ -121,8 +148,8 @@ function writePrivateFile(file: string, text: string): void {
   if (process.platform !== "win32") chmodSync(file, 0o600)
 }
 
-function lockedError(dir: string, file: string, pid: number | undefined): ExitError {
-  return new LockedError(`Another daemon uses ${dir} (PID ${pid}). If none runs, remove ${file}.`, 1)
+function lockedError(dir: string, file: string, pid: number | undefined, user: string): ExitError {
+  return new LockedError(`Another ${user} uses ${dir} (PID ${pid}). If no ${user} runs, remove ${file}.`, 1)
 }
 
 function createLock(file: string): boolean {

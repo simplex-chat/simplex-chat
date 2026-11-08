@@ -2,219 +2,320 @@
 
 [README](README.md) has the short version.
 
-`@simplex-chat/mcp` is a Claude Code plugin that gives each Claude Code session its own presence on the SimpleX network. The agent connects to people, bots, groups, channels and directories, as itself or incognito, sends messages and receives all the responses. Bots tell it which commands they understand, so every bot on the network becomes a service the agent can use. You supervise all sessions from one SimpleX group, the Main group: each session asks there before it connects, sends or leaves, and you approve or reject from your phone with one tap, or approve all its messages to a chat you trust. Five tools cover it: `connect`, `send`, `receive`, `list`, `leave`. Setup is two commands in Claude Code and one scan of a QR code.
+`@simplex-chat/mcp` is a local server that gives an AI agent its own presence on the SimpleX network. The agent connects to people, bots, groups, channels and directories, as itself or incognito, sends messages and files, and receives all the responses, with the files people send it. Bots tell it which commands they understand, so every bot on the network becomes a service the agent can use. You supervise the agent from its control chat in SimpleX: it asks there before it connects, sends, downloads a file or leaves, and you approve or reject from your phone with one tap, or approve all its messages to a chat you trust, or all files from it. Six tools cover it: `connect`, `send`, `receive`, `download`, `list`, `leave`. Setup is one command to start the agent, a scan to join its control chat, and one command to add it to Claude Code.
 
 What it isn't:
 - **Not a directory or a search service.** The agent reaches chats through links, SimpleX names and the directories it connects to.
 - **Not a push channel into the agent.** An MCP server can't start a turn of the agent, so news reaches it only as results of calls it makes: waits inside `send` and `receive`, or polling.
 - **Not an always-on service.** The agent acts while its session runs; services that must always be up should be bots.
-- **Not hosted.** It runs on your machine: one daemon for all sessions, one SimpleX profile per session.
+- **Not hosted.** It runs on your machine, one process per agent.
 - **Not in v0.2:**
   - an address for the agent: nobody can contact it first;
   - your approval of incoming messages;
-  - files;
-  - a Claude Code channel;
-  - other MCP hosts.
+  - a Claude Code plugin or channel;
+  - registration in other hosts.
 
-Status: v0.2. [`TESTING.md`](TESTING.md) describes a local build and test. The design record is [`PLAN.md`](PLAN.md); the specification of the code is in [`spec/`](spec/README.md).
+Status: v0.2. [`TESTING.md`](TESTING.md) describes a local build and test. The design, the tools and the scenarios are in [`PLAN.md`](PLAN.md).
 
 - [Requirements](#requirements)
-- [Install](#install)
-- [Options](#options)
-- [Sessions and profiles](#sessions-and-profiles)
-- [The Main group and its owners](#the-main-group-and-its-owners)
-- [What the owner sees](#what-the-owner-sees)
+- [Quick start](#quick-start)
+- [Owner approval](#owner-approval)
+- [Add the agent to Claude Code](#add-the-agent-to-claude-code)
 - [Approval modes](#approval-modes)
 - [Expiry](#expiry)
+- [What the owner sees](#what-the-owner-sees)
 - [What the agent sees](#what-the-agent-sees)
 - [Waiting for approval in Claude Code](#waiting-for-approval-in-claude-code)
-- [Files](#files)
+- [Several agents](#several-agents)
+- [Other MCP hosts](#other-mcp-hosts)
 - [Recovery](#recovery)
 - [Command reference](#command-reference)
+- [Data folder](#data-folder)
 - [Security](#security)
 
 ## Requirements
 
-- Node.js 22 or later, with `npx` on `PATH`.
-- Claude Code with plugin support.
+- Node.js 22.
 - One of the platforms of the `simplex-chat` package: Linux x86-64 or arm64, macOS x86-64 or arm64, Windows x86-64.
 - On Linux x86-64: glibc 2.34 or later, and the system libraries `libcrypto.so.3`, `libgmp.so.10` and `libz.so.1`.
 - The SimpleX Chat app on a phone or computer, for the owner.
+- Claude Code; other MCP hosts with Streamable HTTP and custom headers can be configured by hand.
 
-At its first start the daemon downloads the SimpleX core library, 29 to 50 MB depending on the platform, into `~/.cache/simplex-chat` (macOS: `~/Library/Caches/simplex-chat`, Windows: `%LOCALAPPDATA%\simplex-chat`). Unpacked on Linux, it takes about 240 MB.
+At its first start the server downloads the SimpleX core library, 29 to 50 MB depending on the platform, into `~/.cache/simplex-chat` (macOS: `~/Library/Caches/simplex-chat`, Windows: `%LOCALAPPDATA%\simplex-chat`). Unpacked on Linux, it takes about 240 MB.
 
-## Install
+## Quick start
 
-In Claude Code:
+1. Start the agent's server in a terminal and keep it running. NAME, here `my-agent`, names the agent's data folder and its entry in Claude Code; `--display-name` is the name people see in SimpleX, NAME by default:
+
+   ```
+   npx -y @simplex-chat/mcp serve my-agent --display-name "My Agent"
+   ```
+
+   The first start prints, after two lines about downloading the SimpleX core library and the Node.js add-on:
+
+   ```
+   SimpleX MCP server 0.2.0, agent "my-agent"
+   Data folder: /home/alice/.simplex-mcp/my-agent
+   Approval mode: requests
+   Agent control chat "My Agent" created.
+   Join the agent control chat in the SimpleX app. The link works once:
+   <QR code>
+   https://smp4.simplex.im/g#...
+   If the QR code does not scan, restart with --qr-code large, or paste the link into the app.
+   Whoever joins by this link becomes an owner of "My Agent" and approves its actions. To approve owners yourself, start with --owners.
+   Listening on http://127.0.0.1:5226/mcp
+   ```
+
+   `-y` answers npm's prompt to install the package. The server asks no questions: every choice is an option. The QR code of such a link is 37 columns wide and 19 lines high; `--qr-code large` draws it twice as wide and twice as high.
+
+2. In the SimpleX app, scan the QR code or open the link, and tap Join. The chat "My Agent" appears in the chat list, and the agent writes: `I'm your agent. I ask here before I connect, send, download a file or leave a chat.` The terminal prints:
+
+   ```
+   Alice joined (member 3) and is now an owner. The link is deleted.
+   Add the agent to Claude Code:
+     npx -y @simplex-chat/mcp register my-agent
+   ```
+
+3. In another terminal, add the agent to Claude Code:
+
+   ```
+   $ npx -y @simplex-chat/mcp register my-agent
+   Added to Claude Code: scope user, server simplex-my-agent.
+   ```
+
+4. Add `"mcp__simplex-my-agent"` to `permissions.allow` in `~/.claude/settings.json`, so Claude Code does not prompt for each call; approval happens in the SimpleX app.
+
+5. Start Claude Code and ask it, for example: `Connect to the SimpleX Directory at https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok and search it for trail running shoes.` In the chat "My Agent", the agent writes:
+
+   ```
+   I want to connect to bot SimpleX Directory, as myself.
+   `Find groups, channels, businesses and bots.`
+   /approve 1 or /reject 1
+   ```
+
+   Tap `/approve 1`. The agent then asks to send its search, and you approve that too, or tap the card's `all` command to approve all its messages to the directory. Once the name `@directory.simplex` is registered, it works as the target too, and the card shows `(@directory.simplex)`.
+
+Without `--owners`:
+
+- whoever joins by the link becomes an owner of the agent control chat;
+- every owner approves actions, including owners added later in the app;
+- the link is deleted when the first person joins.
+
+## Owner approval
+
+With `--owners`, only the owners listed in it approve actions. An owner added later in the app approves actions only after the server is restarted with that owner in the list.
+
+1. Start the server with `--owners` and no list:
+
+   ```
+   npx -y @simplex-chat/mcp serve my-agent --owners
+   ```
+
+   The output is the same as in the quick start, with the line `The link adds an observer. Its ID and name are printed when it joins.` in place of `Whoever joins by this link ...`.
+
+2. Join the agent control chat in the SimpleX app with the link. The link is deleted. The terminal prints, and the agent posts in the chat:
+
+   ```
+   Alice joined (member 3). Restart the server with --owners 3:Alice
+   ```
+
+   Until the restart, the agent's `connect`, `send`, `download` and `leave` fail.
+
+3. Stop the server with Ctrl-C and start it with the list:
+
+   ```
+   $ npx -y @simplex-chat/mcp serve my-agent --owners 3:Alice
+   Owners: 3:Alice.
+   Add the agent to Claude Code:
+     npx -y @simplex-chat/mcp register my-agent
+   ```
+
+4. To add an owner, add the person to the agent control chat in the app and make them an owner there. The terminal prints, and the agent posts in the chat:
+
+   ```
+   Bob (member 7) is now an owner and can't approve actions yet. Restart the server with --owners 3:Alice,7:Bob
+   ```
+
+   When an owner leaves or is removed, the agent lists the human owners who remain:
+
+   ```
+   Alice (member 3) is no longer an owner. Restart the server with --owners 7:Bob
+   ```
+
+   When none remains: `No owners remain: restart the server with --reset-owners --owners`.
+
+In the chat, the `--owners ...` part of these lines is shown as code, so a member's name in it cannot form a tappable command.
+
+At every start with a list, the server removes the connected members of the agent control chat other than the listed owners.
+
+## Add the agent to Claude Code
 
 ```
-/plugin marketplace add https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/.claude-plugin/marketplace.json
-/plugin install simplex@simplex-chat
+npx -y @simplex-chat/mcp register my-agent                  # all Claude Code projects
+npx -y @simplex-chat/mcp register my-agent --scope local    # the current project only
 ```
 
-The marketplace `simplex-chat` lists one plugin, `simplex`, from the npm package `@simplex-chat/mcp`. The plugin adds:
-
-| Part | What it does |
-|---|---|
-| MCP server `simplex` | runs `npx -y @simplex-chat/mcp@0.2.0 session` for each session; its tools are `mcp__plugin_simplex_simplex__connect` and the rest |
-| SessionStart hook | runs `simplex-mcp hook session-start`: checks the Node.js version, starts the daemon, records the session title, and shows the Main group link while the group has no owner |
-| PreToolUse hook | allows the plugin's tool calls without a Claude Code prompt, because you approve in the SimpleX app |
-| `/simplex:link` | shows the Main group link, or its owners |
-| `/simplex:reset-owners` | replaces the Main group and its owners |
-
-The plugin's commands run the published package version through `npx`, so the first session start also fills the npx cache. Claude Code waits at most 600 seconds for the SessionStart hook.
-
-The server entry in the plugin's `.mcp.json` sets `timeout` to 169800000 ms, 47 hours 10 minutes: the longest expiry of 23 hours, 24 hours of waiting for responses, and a 10-minute margin. Claude Code ends a tool call of this server only after that time ([Claude Code MCP docs](https://code.claude.com/docs/en/mcp.md), "Time limits on MCP tool calls").
-
-At the first session start, Claude Code shows:
+`register NAME` reads the agent's port from its data folder, runs `claude mcp remove --scope SCOPE simplex-NAME` (SCOPE: `user`, or the `--scope` value), ignoring a missing entry, and then, for `register my-agent`:
 
 ```
-SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "SimpleX MCP":
-<QR code>
-https://smp4.simplex.im/g#...
+claude mcp add-json --scope user simplex-my-agent '{"type":"http","url":"http://127.0.0.1:5226/mcp","headersHelper":"cat /home/alice/.simplex-mcp/my-agent/headers.json","timeout":169800000}'
 ```
 
-Scan the QR code or paste the link into the app, and tap Join. The group "SimpleX MCP" appears, and its profile writes: `I'm your agents' Main group. Your Claude Code sessions ask here before they connect or send.` Claude also gets the link in its context, so it can repeat it to you.
+- NAME: 1 to 32 lowercase letters, digits and single hyphens, starting with a letter or digit.
+- The entry has no token. At every connection Claude Code runs the `headersHelper` command and sends the header it prints from `headers.json` in the data folder; on Windows the command is `type "<folder>\headers.json"`. With `--scope local`, Claude Code runs it only in a folder whose trust dialog was accepted.
+- The agent's tools in Claude Code are `mcp__simplex-my-agent__connect` and the rest.
+- `timeout` is the expiry plus 24 hours and 10 minutes, in milliseconds: the longest wait for a decision plus the longest wait for responses. After a change of `--expire` or `--port`, register the agent again; an agent on another port needs the same `--port` at every start.
+- The server must be running when Claude Code starts a session. If a session started before the server, run `/mcp reconnect all` in it (Claude Code 2.1.284 or later; earlier, reconnect `simplex-my-agent` in `/mcp`).
 
-To see the link again, run `/simplex:link`. Its output in Claude Code has no QR code; `npx -y @simplex-chat/mcp link` in a terminal prints the link with a QR code to scan.
-
-## Options
-
-Set in `/plugin` > Installed > simplex > Configure options, or in `/config`:
-
-| Option | Default | Values | Effect |
-|---|---|---|---|
-| `main_group` | `SimpleX MCP` | a valid SimpleX display name | name of the Main group and of its profile |
-| `approve` | `requests` | `requests`, `host` | what the owner approves, see [Approval modes](#approval-modes) |
-| `expire_hours` | `23` | whole hours from 1 to 23 | how long an action waits for a decision, see [Expiry](#expiry) |
-
-Claude Code passes the options to the plugin's hook and server as `CLAUDE_PLUGIN_OPTION_MAIN_GROUP`, `CLAUDE_PLUGIN_OPTION_APPROVE` and `CLAUDE_PLUGIN_OPTION_EXPIRE_HOURS`. A changed option applies from the next session start. `approve` applies to that session only: each session keeps the mode it started with, so sessions in both modes can share one Main group. `main_group` and `expire_hours` apply to all sessions: a new `main_group` renames the Main group and its profile.
-
-An invalid value is reported at session start, and every tool call of that session returns the same text:
+Errors:
 
 ```
-Plugin option expire_hours: hours from 1 to 23 expected, got 48. Change it in /plugin > Installed > simplex > Configure options.
+situation                  message
+never started              Agent "my-agent" was never started. Start it with: npx -y @simplex-chat/mcp serve my-agent
+claude not on PATH         Add this entry under "mcpServers" in ~/.claude.json: {"simplex-my-agent": {...}}
+                           (--scope local: under "projects" > "<project folder>" > "mcpServers")
 ```
 
-## Sessions and profiles
+The token is created at the agent's first start and saved in its data folder; every start writes it to `headers.json`. `serve my-agent --new-token` replaces it, and Claude Code sends the new token from its next connection, without a new `register`.
 
-Each Claude Code session ID has its own SimpleX profile, with its own chats, contacts and incognito profiles. A new profile starts with no chats: the daemon deletes the contact `Ask SimpleX Team` that the SimpleX core adds to every new profile. The profile name is `SimpleX MCP - <name>`: the session name from `claude -n NAME` or `/rename`, else the name of the project folder, else `Claude Code`. The name follows the display name rules: characters a display name can't hold are left out, and it keeps at most 50 characters. A session renamed with `/rename` gets the new profile name at its next start, for example with `claude --resume`.
+## Approval modes
 
-- Each session has a number, 1 for the first, kept across daemon restarts. Cards and owner commands use it: `Session 2`, `2:@3`.
-- The session's MCP server creates its profile when it first reaches the daemon; the SessionStart hook only records the title. After `/clear`, Claude Code keeps the MCP server and its session ID, so the session keeps its profile, and no profile is created for the new ID the hook sees.
-- `claude --resume` reopens the session's profile with its chats.
-- A session profile is not a member of the Main group. Peers of a chat see only the profile of that session, or the incognito profile of that chat.
-- One daemon runs all profiles. It opens a session's profile at the session's first request, closes it 10 minutes after the session ends when it has no action, and stops 10 minutes after the last profile closes. The next session start or tool call starts it again.
-- Profiles of ended sessions stay on disk; see [Recovery](#recovery) to remove one.
+`--approve MODE` sets what the owner approves. It is set only by this option.
 
-## The Main group and its owners
+| Mode | The agent's actions: connect, send, download, leave | Messages to the agent |
+|---|---|---|
+| `requests` (default) | Performed after `/approve N`, or `/receive N` for a download; a send to a chat approved for all messages at once, with a copy posted in the agent control chat; a download from a chat approved for all files at once, with no post, when the file is on the agent's XFTP servers. | Passed to the agent. |
+| `host` | Performed at once; a copy is posted in the agent control chat, except for downloads. A download of a file on other servers fails. | Passed to the agent. |
 
-The Main group is a SimpleX group created by the daemon's own profile, named after `main_group`. Every session posts its cards there.
+Claude Code's own permission check applies to every tool call too. In mode `requests`, add the agent's server, for example `"mcp__simplex-my-agent"`, to `permissions.allow` in `~/.claude/settings.json`; otherwise Claude Code prompts for each call, or in auto mode its classifier decides it.
 
-- Whoever joins by the link first becomes an owner, and the link is deleted. The link works once.
-- Every owner of the group approves actions, including owners added later in the app.
-- When no owner remains, the daemon creates a new link; `/simplex:link` shows it, and a refused tool call includes it.
-- `/simplex:link` with owners prints `Owners of "SimpleX MCP": Alice. To replace them, run /simplex:reset-owners.`
-- `/simplex:reset-owners` deletes the Main group for all its members, creates a new one with the same action counter, and prints `"SimpleX MCP" was replaced. Join the new one in the SimpleX app. The link works once:` with the new link. Member IDs change in the new group, so standing approvals given in the old one no longer apply.
+In `host` mode, approval is left to the MCP host. The server marks `connect`, `send`, `download` and `leave` with `_meta["anthropic/requiresUserInteraction"]: true`, so Claude Code shows its permission prompt on every call, in `acceptEdits`, `auto` and `bypassPermissions` modes as well, and allow rules do not skip it. In `dontAsk` mode and in `claude -p` runs Claude Code denies these calls.
 
-The skills that show and replace owners can't be invoked by the model, and no tool changes the options or the owners.
+## Expiry
+
+A pending action expires after `--expire HOURS`, 23 by default and at most: SimpleX allows edits of a message for 24 hours, and the outcome of a pending action is an edit of its card. Cards don't show the time; `/pending` does. The last line of its card is edited to `Expired.`, and the agent's call returns `{"action": N, "status": "expired"}`. For the same reason, a `connect` waits for the other side at most until 23 hours 50 minutes after the action was created.
+
+A result that no call has returned is dropped after the action's expiry time; a repeated call after that creates a new action. At most 20 actions are pending at once; a further `connect`, `send`, `download` or `leave` fails until the owner decides.
+
+Actions last only while the server runs. When the server stops, the last line of each pending card is edited to `Cancelled: the server stopped.`, and the server waits up to 10 seconds, `--stop-wait`, for these edits to be sent: it prints `Stopping: sending 2 cancelled cards, up to 10 s. Ctrl-C to stop now.`, and a second Ctrl-C ends the wait. After a restart, `/approve` of an earlier number replies `Action N is not pending.`, and the agent's repeated call posts a new card. Action numbers continue across restarts.
 
 ## What the owner sees
 
-All of it is in the Main group, posted by its profile. Each card starts with the session line. Names that are valid display names are shown plain. All other text written by the agent or by peers, other names included, is shown as code, line by line; names and errors take one line. Commands and SimpleX links inside it cannot be tapped: a valid display name cannot contain `/`, and the app parses each line of a message separately.
+All of it is in the agent control chat, posted by the agent's profile. The chat has the agent's display name; to see it under another name in your chat list, set an alias for the chat in the app. Names that are valid display names are shown plain. All other text written by the agent or by peers, other names included, is shown as code, line by line; names and errors take one line. Commands and SimpleX links inside it cannot be tapped: a valid display name cannot contain `/`, and the app parses each line of a message separately.
 
 ```
-SimpleX MCP: Session 1 · SimpleX MCP - website
-             I want to connect to bot SimpleX Directory (@directory.simplex), as myself.
-             `Find groups, channels, businesses and bots.`
-             /approve 1 or /reject 1
+My Agent: I want to connect to bot SimpleX Directory (@directory.simplex), as myself.
+          `Find groups, channels, businesses and bots.`
+          /approve 1 or /reject 1
 
-SimpleX MCP: Session 2 · SimpleX MCP - docs
-             I want to send a message to business Ridgeline, where I am incognito:
-             `Is the Talus Trail waterproof?`
-             /approve 2:#9 4, /approve 2:#9 all or /reject 2:#9 4
+My Agent: I want to send a message to business Ridgeline, where I am incognito:
+          `Is the Talus Trail waterproof?`
+          /approve #9 4, /approve #9 all or /reject #9 4
 
-SimpleX MCP: Session 2 · SimpleX MCP - docs
-             I want to leave business Ridgeline (#9).
-             /approve 2:#9 12 or /reject 2:#9 12
+My Agent: I want to leave business Ridgeline (#9).
+          /approve #9 12 or /reject #9 12
+
+My Agent: I want to download a file from Alice in group Builders (#3):
+          `report.pdf`, 2.4 MB
+          Servers: `xftp.example.com`, unknown: downloading shows it this computer's IP address.
+          /receive #3 7, /forward #3 7 or /reject #3 7
 ```
+
+The download card of an image or a video shows the sender's preview. Its servers line says `Servers: known.` when the file is on the agent's XFTP servers; otherwise it names the other servers, which see this computer's IP address during the download, and the card leaves out `/receive #3 7 all`. The agent waits until the sender finishes the upload before it asks, because the file's servers are known only then. A file without a file description is not downloaded: no card appears, and the agent's call ends with an error. A send with a file names the file's type, full path and size after the text, and shows an image's or video's preview:
+
+```
+My Agent: I want to send a message to group Builders:
+          `The trail map.`
+          attaching image `/home/alice/trail.jpg`, 3.1 MB
+          /approve #3 8, /approve #3 all or /reject #3 8
+```
+
+When the agent asks to send a private key or a file of the server's data folder, the server refuses it and posts ``Refused to send `/home/alice/.ssh/id_ed25519` to group Builders (#3): private keys and the server's own files are not sent.`` When the upload of a sent file fails, the agent posts, for example, ``The file `trail.jpg` was not sent to group Builders (#3): `File server error: Server address is incompatible with network settings.`.``; both lines are logged too.
 
 After the decision the card is edited, and its commands removed:
 
 ```
-SimpleX MCP: Session 2 · SimpleX MCP - docs
-             I sent a message to business Ridgeline, where I am incognito:
-             `Is the Talus Trail waterproof?`
-             Approved by Alice.
+My Agent: I sent a message to business Ridgeline, where I am incognito:
+          `Is the Talus Trail waterproof?`
+          Approved by Alice.
 ```
 
-Commands. `S:@N` and `S:#N` name chat `@N` or `#N` of session S:
+Commands:
 
 | Command | Effect |
 |---|---|
-| `/approve N`, `/approve S:#9 N` | Performs action N; the cards of sends and leaves name the chat. |
-| `/reject N`, `/reject S:#9 N` | Rejects action N. |
-| `/approve S:#9 all` | Approves all messages of session S to chat #9: the pending ones and later ones. |
-| `/revoke S:#9` | Ends that approval: each message to #9 needs approval again. |
-| `/pending` | Lists pending actions of all sessions: `N  session S: WHAT  expires YYYY-MM-DD HH:MM UTC`. |
-| `/list` | Lists the chats of each open session under `Session S · NAME`, at most 100 per session, one line each, with the chats approved for all messages; a last line counts the older chats. |
+| `/approve N`, `/approve #9 N` | Performs a connect, send or leave action N; the cards of sends and leaves name the chat. |
+| `/reject N`, `/reject #9 N` | Rejects action N. |
+| `/approve #9 all` | Approves all the agent's messages to chat #9: the pending ones and later ones. |
+| `/revoke #9` | Ends that approval: each message to #9 needs approval again. |
+| `/receive #3 7` | The agent receives the file of download 7: the server downloads it, and the agent's call returns its path. |
+| `/receive #3 7 all` | The same, and the agent receives its later downloads from chat #3 of files on its XFTP servers without asking. Other pending downloads of #3 stay pending. |
+| `/receive #3 off` | Ends that: each download from #3 needs approval again. |
+| `/forward #3 7` | Downloads the file of action 7 and sends it to you in the agent control chat, as a reply to the card when the file's preview and the card fit in one message. The card stays pending, and the agent gets nothing: its messages show the file as offered, without a path. The server keeps the file outside the chat's folder until `/receive #3 7`, which then uses it. |
+| `/leave #9`, `/leave @4` | Makes the agent leave group #9, or delete contact @4, at once, in both approval modes, and rejects the agent's pending actions for that chat. The reply, for example `Left business Ridgeline (#9), requested by Alice.`, is logged too. |
+| `/delete #9 files` | Cancels the running downloads from chat #9, which then fail, also those the core continues after a restart, and deletes the chat's files in the data folder, forwarded ones included, for a current or a left chat: `Deleted 3 files from #9, 2.1 MB.` or `No files from #9.` |
+| `/pending` | Lists pending actions. |
+| `/list` | Lists the agent's 100 most recent chats, one line each, and which of them are approved for all messages or all files: `, approved for this chat by NAME` and `, files approved by NAME`; a last line counts the older chats. |
 
-Action numbers are unique across sessions. `/pending` and `/list` are in the group's command menu; the cards carry the others. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Only owners' commands are accepted; others get `Only owners approve actions.` `/list`, `/approve S:#9 all` and `/revoke S:#9` need the session's profile to be open: otherwise the reply is `No open session S. /list shows the open sessions.`
+After `/leave #9`, or after the agent's `leave` of #9 is performed in either mode, when the chat's folder has files, the agent posts ``Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/group-9`: 3 files, 2.1 MB. /delete #9 files``. The files forwarded from #9 are deleted when the agent leaves it.
+
+`/pending`, `/list` and `/leave` are in the chat's command menu, and the cards carry the others. Tapping `/leave` in the menu puts `/leave <chat ID>` into the entry field: replace `<chat ID>` with the chat's ID from `/list`, such as `#9`, and send it. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](PLAN.md), section "What the owner sees: the agent control chat".
 
 ### Approval of all messages to a chat
 
-After `/approve 2:#9 all`, the session's messages to #9 are sent at once, and each one is posted in the Main group after it is sent:
+After `/approve #9 all`, the agent's messages to #9 are sent at once, and each one is posted in the agent control chat after it is sent:
 
 ```
-SimpleX MCP: Session 2 · SimpleX MCP - docs
-             I sent a message to business Ridgeline, where I am incognito:
-             `Thanks, I'll order.`
-             Approved for this chat by Alice. /revoke 2:#9
+My Agent: I sent a message to business Ridgeline, where I am incognito:
+          `Thanks, I'll order.`
+          Approved for this chat by Alice. /revoke #9
 ```
 
 - It covers messages only: connecting and leaving are approved one by one.
-- It lasts until `/revoke`, until the chat is deleted, or until the approving owner is no longer an owner. It survives restarts: it is kept in the session's database, as custom data of that chat.
+- It lasts until `/revoke`, until the chat is deleted, or until the approving owner is no longer an approver. It survives restarts: it is kept in the agent's database, as custom data of that chat.
 - With it, the agent can send anything it can read, without asking, to everyone in that chat.
-- It applies in mode `requests` only: for a session in mode `host`, `list` and `/list` show no approvals, and `/approve S:@N all` is refused.
+- It applies in mode `requests` only: in mode `host`, `list` and `/list` show no approvals.
 
-## Approval modes
+### Receiving all files from a chat
 
-The option `approve` sets what the owner approves, for each session separately: a session takes the value of its own start, and a card shows the mode its action was created under.
+After `/receive #3 7 all`, the agent's later downloads from #3 are performed at once, and nothing is posted in the agent control chat.
 
-| Mode | The agent's actions: connect, send, leave | Messages to the agent |
-|---|---|---|
-| `requests` (default) | Performed after `/approve N`; a send to a chat approved for all messages at once, with a copy posted in the Main group. | Passed to the agent. |
-| `host` | Performed at once; a copy is posted in the Main group. | Passed to the agent. |
-
-In mode `requests`, the plugin's PreToolUse hook allows its tool calls, so Claude Code does not prompt for them.
-
-In mode `host`, approval is left to Claude Code. The session's MCP server marks `connect`, `send` and `leave` with `_meta["anthropic/requiresUserInteraction"]: true` when it starts, so Claude Code shows its permission prompt on every call of these tools; the PreToolUse hook's `allow` does not skip it ([Claude Code hooks docs](https://code.claude.com/docs/en/hooks#tools-that-require-user-interaction): a hook can't skip the approval prompt of such a tool with "allow"). In `dontAsk` mode and in `claude -p` runs Claude Code denies these calls. In both modes a new action is refused while the Main group has no owner.
-
-## Expiry
-
-A pending action expires after `expire_hours`, 23 by default and at most: SimpleX allows edits of a message for 24 hours, and the outcome of a pending action is an edit of its card. Cards don't show the time; `/pending` does. The last line of its card is edited to `Expired.`, and the agent's call returns `{"action": N, "status": "expired"}`. For the same reason, a `connect` waits for the other side at most until 23 hours 50 minutes after the action was created.
-
-A result that no call has returned is dropped after the action's expiry time, and an action that expires while no call waits on it is dropped at once; a repeated call after that creates a new action. After the computer sleeps past an expiry time, the action expires at the first event of the SimpleX core or request of a session after it wakes. At most 20 actions of one session are pending at once, and at most 20 are being performed; a further `connect`, `send` or `leave` of that session fails until the owner decides.
-
-Actions last only while the daemon runs. The daemon keeps a session's profile open while it has actions. When the daemon stops, the last line of each pending card is edited to `Cancelled: the SimpleX daemon stopped.`; after a restart, `/approve` of an earlier number replies `Action N is not pending.`, and the agent's repeated call posts a new card. Action numbers continue across restarts.
+- It covers files on the agent's XFTP servers. A download of a file on other servers gets a card, as without it.
+- Cards already pending in #3, other than card 7, stay pending. A file you rejected, or whose card expired, gets a card again.
+- It covers downloads only, and the approval of messages covers no downloads: each is given and ended by its own command.
+- It lasts as the approval of messages does, until `/receive #3 off`, and is kept next to it in the chat's custom data.
+- `/list` shows it as `, files approved by Alice`.
 
 ## What the agent sees
 
-Five tools:
+Six tools:
 
 | Tool | What it does |
 |---|---|
-| `connect` | Joins a contact, bot, business, group or channel by a link or a SimpleX name, as the session's profile or incognito. Returns the chat, its profile, welcome message, the commands a bot advertises, and the messages so far. |
-| `send` | Sends a message and returns every message received in that chat after it, until none arrives for `idle` seconds (30 by default). A directory bot's search results arrive this way. |
+| `connect` | Joins a contact, bot, business, group or channel by a link or a SimpleX name, as the agent's profile or incognito. Returns the chat, its profile, welcome message, the commands a bot advertises, and the messages so far. |
+| `send` | Sends a message, with a file of this computer when asked, and returns every message received in that chat after it, until none arrives for `idle` seconds (30 by default). A directory bot's search results arrive this way. |
 | `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked. |
-| `list` | Lists the session's chats with unread counts and `approved: true` for chats approved for all messages, and the session's actions without a result. |
+| `download` | Downloads the file of a received message to the data folder and returns its full path. |
+| `list` | Lists the agent's chats with unread counts and `approved: true` for chats approved for all messages, and its actions without a result. |
 | `leave` | Deletes a contact, or leaves a group, business chat or channel, and deletes the chat; the contact or the members are notified. |
 
 A `send` to a chat that `list` shows with `connected: false` is refused before any card. A `send` is refused with `text: too long for its approval card; shorten it.` when its card, in its longest outcome form, would exceed 15000 bytes in the SimpleX message, which holds at most 15602; a text of many lines or multi-byte characters reaches it below 12000 characters.
 
-Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tool inputs, results and errors are in [`spec/api.md`](spec/api.md).
+A received message with a file has a `file` field: its name, size, type (image, video, voice or file) and status. Status `offered` means `download` can fetch it; `received` comes with the path of the file that `download` downloaded; a file `/forward` sent to you stays `offered`; `rejected` means you rejected its download, or it expired; `failed` comes with the error, also for a file above the size its sender may send, and for a received file that is not in the chat's folder, for example after `/delete #3 files`. A downloaded file is named by its file ID and the extension of its name, when the extension has only letters and digits: the name the sender gave stays in the `name` field. `download` first waits, up to `wait` seconds, for the sender to finish the upload; when it has not finished by then, the call returns an error that asks to call again later. A `download` that runs past its `wait` after the approval returns status `performing`, and the same call again picks it up. A download fails when the sender cancels the file, when the message or its chat is deleted, or when no part of the file arrives for 30 minutes; the server then cancels it.
 
-When a tool call is refused because the Main group has no owner, the text is `The agent has no owner. Open this link in the SimpleX app and join: <link>`, or `The agent has no owner. Run /simplex:link in Claude Code.` when the group has no link.
+A short voice message can arrive with its file already received. The server moves such a file into the chat's folder under the same naming when it is received in full, and its message shows it as `offered`; `download` returns its path there after the approval. A partial file of a download, or of a short voice message that arrives while the server runs, is deleted when its transfer fails or is cancelled.
+
+`send` with `file`, an absolute path, sends that file with `text` as its caption:
+- `.jpg`, `.jpeg` and `.png` as an image, resized by the SimpleX core to the size the apps send, with a preview the core makes;
+- `.gif` and `.webp` as an image, unchanged, with a gray preview;
+- `.mp4` and `.mov` as a video, unchanged, with the first frame as its preview and its duration when `ffmpeg` and `ffprobe` are installed, otherwise a gray preview;
+- other files as a file, unchanged; `as: "file"` sends an image or video this way too.
+
+An empty file is refused, and so is `as` without `file`. A message holds at most 15602 bytes with its text, the file's name and preview, the message `reply_to` quotes and the mentioned names. The quote is the quoted text when the message is an image or video; otherwise it is the quoted content, an image's preview included. A `send` over it is refused with `text: too long for a message with this image; shorten it.`, or without a file `text: too long for the message with its quote; shorten it.` An image's preview takes up to 14000 bytes, so its text has about 1 KB.
+
+The server checks the file by its real path, after symbolic links, and refuses files under `~/.ssh` and `~/.gnupg`, files named `id_*`, `*.pem`, `*.key`, `*.p12` and `*.pfx`, and the files under its data folder and under `~/.simplex-mcp`, except those under `files/` of its own data folder; each folder is taken by its real path too. The card shows the real path. A file whose real path, size, inode or change time differs at the send from the request is not sent: the action fails.
+
+Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in [`PLAN.md`](PLAN.md), section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
 
 ## Waiting for approval in Claude Code
 
@@ -223,46 +324,35 @@ An MCP server cannot start a turn of the agent: what the agent reads from the se
 - A tool call in the main conversation that runs past two minutes moves to a background task. Claude continues working, and the result arrives as a task notification. When it arrives while the session is idle, Claude responds to it without a prompt (checked with Claude Code 2.1.300).
 - To move calls to the background sooner, set `CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS`, for example to `10000`, in the `env` block of `~/.claude/settings.json`. This applies to every MCP server.
 - Calls from subagents, and calls in `claude -p` runs unless `CLAUDE_AUTO_BACKGROUND_TASKS=1`, stay in the foreground: the subagent or the run waits.
-- A background task ends with the session. The action stays in the daemon while it runs; `list` shows it, and the same call again picks it up.
+- A background task ends with the session. The action stays in the server while it runs; `list` shows it, and the same call again picks it up.
 
-## Files
+## Several agents
 
-The data folder is `~/.simplex-mcp`, or the folder in `SIMPLEX_MCP_HOME`:
+Each agent is its own process, with its own data folder, port, agent control chat and Claude Code server:
 
-| Path | Content |
-|---|---|
-| `token` | access token of the daemon socket, readable only by the user |
-| `lock` | PID of the running daemon |
-| `daemon.sock` | the daemon's Unix socket; Windows uses the named pipe `\\.\pipe\simplex-mcp-<hash>` |
-| `daemon.log` | the daemon's log; emptied at a daemon start when it is over 10 MB |
-| `_hub/` | databases of the Main group's profile: `simplex_chat.db`, `simplex_agent.db` |
-| `_sessions/<session ID>/` | databases of one session's profile, and `session.json` with its number, name, project folder and creation time |
+```
+npx -y @simplex-chat/mcp serve my-agent-2 --port 5227
+npx -y @simplex-chat/mcp register my-agent-2
+```
 
-The folders are readable only by the user (mode 0700), and so are the files the daemon writes itself (mode 0600), except on Windows. When the socket path is longer than 103 bytes, the socket is `simplex-mcp-<hash>.sock` in the system temporary folder, still protected by the token.
+## Other MCP hosts
 
-The daemon keeps the action counter as custom data of the Main group, the approvals of all messages to a chat as custom data of that chat in the session's database, and the actions in memory.
-
-One daemon runs per data folder: a second one finds the lock and exits, because two processes on one database break each other's connections (a SimpleX server delivers a queue's messages only to the last process that subscribed to it).
-
-Data folders of v0.1 (`~/.simplex-mcp/<name>/`) are not used by v0.2.
+Add an entry with the URL `http://127.0.0.1:5226/mcp` and the header `Authorization: Bearer <token>`, as in `headers.json` of the data folder; after `--new-token`, update the entry. A host that ends a tool call early returns a timeout to the agent; the agent repeats the call with the same arguments, which picks up the same action. Hosts with a fixed tool-call limit, between 60 and 300 seconds in several hosts, need `wait` below it.
 
 ## Recovery
 
-| Situation | What happens, what to do |
+| Situation | What to do |
 |---|---|
-| The session start shows an error | The text follows `SimpleX MCP:`; details are in `~/.simplex-mcp/daemon.log`. The session starts without the daemon, and the next tool call tries again. |
-| Node.js is older than 22 | The session start shows `SimpleX MCP needs Node.js 22 or later; found <version>.` |
-| The daemon stopped during a call | The call returns `The SimpleX daemon stopped; repeat the call.`, and the next call starts a new daemon. The actions of the stopped daemon are lost; a repeated call creates a new action. |
-| A newer plugin version started | It stops the older daemon and starts its own. When the two versions can't talk to each other, tool calls return `Restart Claude Code to update the SimpleX plugin.` |
-| Every owner left the Main group or was removed | `connect`, `send` and `leave` are refused with the new link. Join with it, or run `/simplex:link` to see it. |
-| The Main group was deleted, its profile was removed from it, or it lost its owner role | `connect`, `send` and `leave` fail with `The Main group is lost. Run /simplex:reset-owners in Claude Code.` Run `/simplex:reset-owners` and join the new group. |
-| The wrong person joined by the link | Run `/simplex:reset-owners`. |
-| The QR code does not scan | Run `npx -y @simplex-chat/mcp link` in a terminal, or paste the link into the app. |
-| An invalid option | The session start and every tool call show the option, the value and where to change it. |
-| Remove the profile of an ended session | Delete `~/.simplex-mcp/_sessions/<session ID>/` while the daemon is not running. Its chats are deleted with it, and its peers are not notified. |
-| The token leaked | End all Claude Code sessions, wait until the daemon stops, delete `~/.simplex-mcp/token`, and start a new session: it creates a new token. |
+| The server was not running when Claude Code started | Start the server, then run `/mcp reconnect all` in Claude Code (2.1.284 or later). |
+| The server restarted while Claude Code was running | Claude Code reconnects up to five times within about 30 seconds. After that, in an interactive session, run `/mcp reconnect all`; `claude -p` runs and Agent SDK sessions keep retrying for about half an hour. Open calls fail, and pending actions are cancelled; the agent's repeated call creates a new request. |
+| A second server was started on the same data folder | It exits with `Another server uses <folder> (PID N). If no server runs, remove <folder>/lock.` |
+| Every owner left the agent control chat or was removed | `connect`, `send`, `download` and `leave` fail. Without `--owners`, the server logs `No owners in the agent control chat.` and prints a new link; join with it. With an `--owners` list, the agent posts and the server logs `No owners remain: restart the server with --reset-owners --owners`. |
+| The agent was removed from the agent control chat, the chat was deleted, or the agent lost its owner role | `connect`, `send`, `download` and `leave` fail, and the server logs `The agent lost its control chat. Restart the server with --reset-owners.` |
+| The QR code does not scan | Start with `--qr-code large`, or paste the link into the app. |
+| The wrong person joined by the link | Start with `--reset-owners`. |
+| The token leaked | Start with `--new-token`; Claude Code reads the new token at its next connection. |
 
-The daemon stops 10 minutes after the last session profile closes, or at `SIGTERM` to the PID in `~/.simplex-mcp/lock`. It then cancels pending actions and edits their cards.
+`--reset-owners` deletes the agent control chat for all its members, creates a new one and prints a new link. Member IDs change in the new chat, so `--reset-owners` takes `--owners` without a list.
 
 ## Command reference
 
@@ -270,33 +360,72 @@ The daemon stops 10 minutes after the last session profile closes, or at `SIGTER
 
 ```
 Usage:
-  simplex-mcp session               MCP server of one Claude Code session (run by the plugin)
-  simplex-mcp daemon                the shared SimpleX daemon (started on demand)
-  simplex-mcp hook session-start    Claude Code SessionStart hook (run by the plugin)
-  simplex-mcp link                  show the Main group link, or its owners
-  simplex-mcp reset-owners          replace the Main group and its owners
+  simplex-mcp serve NAME [options]     run agent NAME
+  simplex-mcp register NAME [options]  add agent NAME to Claude Code
 
-Install in Claude Code:
-  /plugin marketplace add https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/.claude-plugin/marketplace.json
-  /plugin install simplex@simplex-chat
+serve options:
+  --data DIR             data folder (default: ~/.simplex-mcp/NAME)
+  --display-name TEXT    the agent's name in SimpleX (default at the first start: NAME)
+  --approve MODE         what the owner approves in the agent control chat:
+                           requests  the agent's connections, messages, downloads
+                                     and leaving chats (default)
+                           host      nothing; the MCP host asks
+  --owners [ID:NAME,...] only these owners approve; without a list, the link
+                         adds an observer and its ID is printed at the join.
+                         Without --owners, whoever joins becomes an owner and
+                         every owner approves.
+  --expire HOURS         pending actions expire after HOURS, 1 to 23 (default: 23)
+  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards to be sent,
+                         0 to 60 (default: 10)
+  --reset-owners         replace the owners: a new agent control chat and link
+  --new-token            replace the access token
+  --port N               HTTP port on 127.0.0.1 (default: 5226)
+  --qr-code SIZE         QR code of the link: small (default) or large
 
-Environment:
-  SIMPLEX_MCP_HOME   data folder (default: ~/.simplex-mcp)
+register options:
+  --scope SCOPE          user (default) or local
+  --data DIR             data folder (default: ~/.simplex-mcp/NAME)
+
+--reset-owners takes --owners without a list.
 ```
 
-- `link` and `reset-owners` start the daemon when it is not running. In a terminal they print a QR code with the link; `/simplex:link` and `/simplex:reset-owners` run them without one.
-- `session` exits with code 2 and `simplex-mcp session runs from the Claude Code plugin.` outside Claude Code.
-- An unknown command exits with code 2 and `Unknown command. Run simplex-mcp --help.`
+## Data folder
+
+```
+~/.simplex-mcp/my-agent/
+  simplex_chat.db    SimpleX chat database: the agent's profile and chats
+  simplex_agent.db   SimpleX agent database: connections and keys
+  token              access token, readable only by the user
+  headers.json       the token as the Authorization header for Claude Code, readable only by the user
+  server.json        name, port and expiry of the server, read by register
+  lock               PID of the running server
+  tmp/               the SimpleX core's work folder for files in transfer
+  files/group-3/     files downloaded from chat #3, and files received there without a download, each named by its file ID
+                     and the extension of its name, such as 12.pdf; files/contact-4/ for contact @4
+  files/sent/        resized copies of the images the agent sends, and copies of the files /forward sends you under their names;
+                     each is deleted when its upload completes or fails, and all at start
+  forwarded/group-3/ files /forward downloaded from chat #3, until /receive moves them into files/group-3/; deleted when the agent
+                     leaves the chat, and by /delete #3 files
+```
+
+The folder is readable only by the user: every start sets its mode to 0700, except on Windows.
+
+The server keeps its action counter in the chat database, as custom data of the agent control chat, the approvals of all messages to a chat and of all files from it as custom data of that chat, and its actions in memory.
+
+The server keeps no log file: it writes its log to the terminal where `serve` runs, events to stdout and errors to stderr.
+
+One server runs per data folder: a second one exits, because two processes on one database break each other's connections (a SimpleX server delivers a queue's messages only to the last process that subscribed to it).
 
 ## Security
 
-- The daemon listens only on its local socket, in a folder readable only by the user. Every request needs the token, compared in constant time; on Windows, where the named pipe has no folder permissions, the token is the only check.
-- Any process with the token can act as any session. The token is stored only in `~/.simplex-mcp/token`.
-- Only owners of the Main group approve actions. Session profiles are never members of the Main group, so a session can't approve its own actions.
-- The skills that change owners can't be invoked by the model, and no tool changes the options or the owners.
-- Whoever opens the link first becomes an owner. The link works once.
-- Names written by peers are folded to one line, with control and format characters replaced by spaces, in the log and in the Main group; there, a name that is not a valid display name is shown as code.
-- After `/approve S:#N all`, the session sends to that chat without asking; `/revoke S:#N` ends it.
-- Peers of a chat connected as the session's profile see that profile; peers of an incognito chat see a random profile made for that chat only.
+- The server listens only on 127.0.0.1. Every request needs the token. Requests from web pages on other hosts, and requests with another `Host`, are refused (the SDK's localhost Origin and Host checks).
+- Any process with the token can act as the agent. The token is stored only in the data folder, in `token` and `headers.json`; Claude Code's config and the `claude mcp add-json` command line contain the command that prints `headers.json`, not the token.
+- Names written by peers are folded to one line, with control and format characters replaced by spaces, in the terminal and in the agent control chat; there, a name that is not a valid display name is shown as code.
+- Without `--owners`, whoever opens the link first becomes an owner. The link works once.
+- With `--owners`, only the listed owners approve.
+- After `/approve #N all`, the agent sends to that chat without asking, files included; `/revoke #N` ends it.
+- The server refuses to send private keys, its own files and the files under `~/.simplex-mcp`, where agents keep their data, except the files under `files/` of its own data folder; other files the agent can read are sent after approval.
+- After `/receive #N 7 all`, the agent's later downloads from that chat, of files on its XFTP servers, run without asking; `/receive #N off` ends it. A file on other servers is downloaded only by `/receive` or `/forward` of the card that names them; any other download of it fails, unless the IP address is protected.
+- Peers of a chat connected as the agent see its profile; peers of an incognito chat see a random profile made for that chat only.
 - The agent has no address, so nobody can contact it first.
 - The agent uses private message routing: the SMP server that holds a contact's queue does not see the agent's IP address.

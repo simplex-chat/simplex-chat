@@ -21,16 +21,7 @@ Please discuss the problem you want to solve and your detailed implementation pl
 
 ./contributing/CODE.md has details about general requirements common for `simplexmq` and `simplex-chat` repositories.
 
-These files can be used with LLM prompts, e.g. if you use Claude Code you can create CLAUDE.md file in project root importing content from these files:
-
-```markdown
-@README.md
-@docs/CONTRIBUTING.md
-@docs/contributing/PROJECT.md
-@docs/contributing/CODE.md
-```
-
-For Android/Desktop and iOS apps you can additionally import `apps/multiplatform/README.md` and `apps/ios/README.md`.
+CLAUDE.md in the repository root imports these files, this guide and ../scripts/ci/README.md for Claude Code; apps/ios/CLAUDE.md and apps/multiplatform/CLAUDE.md import the README of each app.
 
 ## Compiling with SQLCipher encryption enabled
 
@@ -93,6 +84,15 @@ The PR names in simplex-chat repo are used in release notes, they should describ
 We squash PRs, do not rewrite branch history after the review.
 
 For some complex features we create feature branches that will be merged once ready - do not make commits directly to them, make PRs to feature branches.
+
+## Pull requests and CI
+
+1. Open a pull request to `master` as a draft. On a draft, CI runs the reduced build: one Linux job that builds and tests the changed scopes, and one macOS job only when iOS code changed (CI guide: scripts/ci/README.md).
+2. Select the core tests in a `ci-tests` block in the description, one hspec match pattern per line. `/` runs all tests; without a block, the reduced build runs no core tests.
+3. Push the changes for review comments to the same branch; each push runs the reduced build.
+4. Reviewers approve the draft. A draft cannot be merged.
+5. After the approval, mark the pull request ready for review. CI then runs the full matrix, and the pull request is merged by squash once it passes.
+6. A change to a scope without CI tests adds its build and tests to CI in the same pull request.
 
 ## Differences between GHC 8.10.7 and GHC 9.6.3
 

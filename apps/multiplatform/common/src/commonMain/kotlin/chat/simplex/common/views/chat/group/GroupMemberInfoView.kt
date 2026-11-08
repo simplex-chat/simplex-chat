@@ -594,6 +594,8 @@ fun GroupMemberInfoLayout(
       when (member.memberRole) {
         GroupMemberRole.Relay -> stringResource(MR.strings.member_info_section_title_relay)
         GroupMemberRole.Owner -> stringResource(MR.strings.member_info_section_title_owner)
+        GroupMemberRole.Moderator -> stringResource(MR.strings.member_info_section_title_moderator)
+        GroupMemberRole.Member -> stringResource(MR.strings.member_info_section_title_contributor)
         else -> stringResource(MR.strings.member_info_section_title_subscriber)
       }
     } else {

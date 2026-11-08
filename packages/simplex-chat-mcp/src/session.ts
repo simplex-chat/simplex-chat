@@ -44,7 +44,7 @@ export async function startSession(env: NodeJS.ProcessEnv = process.env, io: Ses
     configError = error.message
   }
   const link = new DaemonLink(DaemonClient.forRoot(dataRoot(env)), {id, project: env.CLAUDE_PROJECT_DIR || process.cwd(), config}, io)
-  const server = new McpServer({name: "simplex-mcp", version: io.version}, {instructions: instructions()})
+  const server = new McpServer({name: "simplex-mcp", version: io.version}, {instructions: instructions("Claude", "SimpleX daemon")})
   registerTools(server, config.approve, async (name, input, call) => (configError === undefined ? link.call(name, input, call) : toolError(configError)))
   const transport = new StdioServerTransport(io.stdin, io.stdout)
   transport.onclose = () => link.close()

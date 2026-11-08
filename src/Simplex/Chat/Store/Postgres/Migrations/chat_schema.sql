@@ -280,7 +280,10 @@ CREATE TABLE test_chat_schema.badge_purchases (
     issue_error_at timestamp with time zone,
     issue_error text,
     next_wake_at timestamp with time zone,
-    badge_store_receipt_id bigint
+    badge_store_receipt_id bigint,
+    subscription_status text,
+    unrenewed_since timestamp with time zone,
+    last_unrenewed_at timestamp with time zone
 );
 
 
@@ -310,7 +313,8 @@ CREATE TABLE test_chat_schema.badge_store_receipts (
     next_attempt_at timestamp with time zone,
     retry_delay bigint,
     retry_count bigint DEFAULT 0 NOT NULL,
-    credit_error text
+    credit_error text,
+    hold_kind text DEFAULT 'purchase'::text NOT NULL
 );
 
 
@@ -795,7 +799,8 @@ CREATE TABLE test_chat_schema.contacts (
     grp_direct_inv_from_group_id bigint,
     grp_direct_inv_from_group_member_id bigint,
     grp_direct_inv_from_member_conn_id bigint,
-    grp_direct_inv_started_connection smallint DEFAULT 0 NOT NULL
+    grp_direct_inv_started_connection smallint DEFAULT 0 NOT NULL,
+    chat_layout text
 );
 
 
@@ -1092,7 +1097,8 @@ CREATE TABLE test_chat_schema.group_profiles (
     domain_web_page bigint,
     allow_embedding bigint,
     group_domain_proof text,
-    preferences_json text
+    preferences_json text,
+    chat_layout text
 );
 
 
@@ -1727,7 +1733,8 @@ CREATE TABLE test_chat_schema.user_contact_links (
     short_link_contact bytea,
     short_link_data_set smallint DEFAULT 0 NOT NULL,
     short_link_large_data_set smallint DEFAULT 0 NOT NULL,
-    link_priv_sig_key bytea
+    link_priv_sig_key bytea,
+    chat_layout text
 );
 
 

@@ -32,7 +32,8 @@ data UIColorMode = UCMLight | UCMDark
 
 data UIThemeEntityOverrides = UIThemeEntityOverrides
   { light :: Maybe UIThemeEntityOverride,
-    dark :: Maybe UIThemeEntityOverride
+    dark :: Maybe UIThemeEntityOverride,
+    chatLayout :: Maybe ChatLayout
   }
   deriving (Eq, Show)
 
@@ -42,6 +43,30 @@ data UIThemeEntityOverride = UIThemeEntityOverride
     colors :: UIColors
   }
   deriving (Eq, Show)
+
+data ChatLayout = CLClassic | CLTerminal | CLUnknown Text
+  deriving (Eq, Show)
+
+instance FromJSON ChatLayout where
+  parseJSON = textParseJSON "ChatLayout"
+
+instance ToJSON ChatLayout where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
+
+instance FromField ChatLayout where fromField = fromTextField_ textDecode
+
+instance ToField ChatLayout where toField = toField . textEncode
+
+instance TextEncoding ChatLayout where
+  textDecode s = Just $ case s of
+    "classic" -> CLClassic
+    "terminal" -> CLTerminal
+    tag -> CLUnknown tag
+  textEncode = \case
+    CLClassic -> "classic"
+    CLTerminal -> "terminal"
+    CLUnknown tag -> tag
 
 data DarkColorScheme = DCSDark | DCSBlack | DCSSimplex
   deriving (Eq, Ord, Show)
@@ -172,4 +197,4 @@ instance ToField UIThemeEntityOverrides where
   toField = toField . encodeJSON
 
 instance FromField UIThemeEntityOverrides where
-  fromField = fromTextField_ $ Just . fromMaybe (UIThemeEntityOverrides Nothing Nothing) . decodeJSON
+  fromField = fromTextField_ $ Just . fromMaybe (UIThemeEntityOverrides Nothing Nothing Nothing) . decodeJSON

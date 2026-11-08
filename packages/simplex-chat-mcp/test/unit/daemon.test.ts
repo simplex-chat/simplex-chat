@@ -60,7 +60,7 @@ function deps(root: string) {
       hubStops.push(agents.filter(({closed}) => closed).length)
       hubStopping.resolve()
       await gates.hubStop
-      return 0
+      return []
     },
   }
   const d: DaemonDeps = {

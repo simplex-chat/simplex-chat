@@ -2,13 +2,13 @@ import {writeSync} from "fs"
 import {Server, ServerResponse} from "http"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {T} from "@simplex-chat/types"
-import {Action, Actions, Mode, stoppingMessage} from "./actions"
+import {Action, Actions, Mode} from "./actions"
 import {openSessionAgent, sessionName} from "./agent"
 import {Config, defaultConfig, readConfig} from "./config"
-import {SessionView, Sessions} from "./control"
 import {LockedError, acquireLock, createDataFolder, dataRoot, readSessionFile, releaseLock, serverToken, sessionFolder, sessionNumbers, socketPath, writeSessionFile} from "./files"
-import {Hub, Perform} from "./hub"
+import {Hub, Perform, hubTexts} from "./hub"
 import {ExitError, errorText, log, logError} from "./log"
+import {SessionView, Sessions} from "./main-group"
 import {ToolCall} from "./messages"
 import {AttachRequest, CallRequest, OwnerState, SessionReply, SessionRequest, StatusReply, TitleReply, TitleRequest, protocolVersion} from "./protocol"
 import {Handler, SocketError, listen, sendJson, startLines} from "./socket"
@@ -27,7 +27,7 @@ export interface HubLike {
   configure(config: Config): Promise<void>
   resetOwners(): Promise<string>
   standingApprover(chatInfo: T.ChatInfo, mode: Mode): string | undefined
-  stop(): Promise<number>
+  stop(): Promise<Action[]>
 }
 
 export interface AgentLike extends SessionView {
@@ -80,7 +80,7 @@ export class Daemon {
   }
 
   static async start(deps: DaemonDeps, config: () => Config): Promise<Daemon> {
-    acquireLock(deps.root)
+    acquireLock(deps.root, "daemon")
     try {
       const daemon = new Daemon(deps)
       // listen before the hub opens: a starter that lost the lock race sends /status right after "running"
@@ -151,9 +151,9 @@ export class Daemon {
     const closed = new Promise<void>(resolve => this.server.close(() => resolve()))
     for (const res of this.streams) res.destroy()
     this.server.closeIdleConnections()
-    const cancelled = await this.hub.stop().catch(error => {
+    const {length: cancelled} = await this.hub.stop().catch(error => {
       logError("stop", error)
-      return 0
+      return []
     })
     if (cancelled > 0) log(`Cancelled ${cancelled} action${cancelled === 1 ? "" : "s"}.`)
     const agents = await Promise.all([...this.entries.values()].map(({opening}) => opening.catch(() => undefined)))
@@ -175,7 +175,7 @@ export class Daemon {
     return [...this.entries.values()].flatMap(({agent}) => (agent === undefined ? [] : [agent]))
   }
 
-  private agent(number: number): AgentLike | undefined {
+  private agent(number?: number): AgentLike | undefined {
     return this.agents().find(agent => agent.number === number)
   }
 
@@ -302,7 +302,7 @@ export class Daemon {
   }
 
   private refuseWhenStopping(): void {
-    if (this.stopping !== undefined) throw new SocketError(stoppingMessage, 503)
+    if (this.stopping !== undefined) throw new SocketError(hubTexts.stopping, 503)
   }
 
   private folder(id: string): string {

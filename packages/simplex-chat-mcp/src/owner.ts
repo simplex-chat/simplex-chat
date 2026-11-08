@@ -26,5 +26,5 @@ export async function resetOwners(env: NodeJS.ProcessEnv = process.env, tty = pr
 }
 
 function qrLines(link: string, tty: boolean): string[] {
-  return tty ? [qrCodeText(link, "ansi")] : []
+  return tty ? [qrCodeText(link, "small")] : []
 }

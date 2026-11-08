@@ -1,14 +1,18 @@
 import {ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
-import {Action, Actions, Mode} from "./actions"
-import {Config} from "./config"
-import {Control, Sessions, controlDataOf, createControlChat, findControlGroup, isControlEvent} from "./control"
-import {deliveries, openCore, updatedUser} from "./core"
+import {Action, Actions, HostTexts, Mode} from "./actions"
+import {Config, defaultConfig} from "./config"
+import {openCore, updatedUser} from "./core"
 import {hubFolder} from "./files"
 import {logError} from "./log"
+import {MainGroup, Sessions, controlDataOf, createControlChat, findControlGroup, isControlEvent} from "./main-group"
 import {OwnerState} from "./protocol"
+import {waitForCancelledCards} from "./serve"
 
 const firstAction = 1
+const cardsWait = 10
+
+export const hubTexts: HostTexts = {lost: "The Main group is lost. Run /simplex:reset-owners in Claude Code.", stopping: "The SimpleX daemon is stopping."}
 
 export type Perform = (action: Action, signal: AbortSignal) => Promise<void>
 
@@ -20,7 +24,7 @@ export class Hub {
     private readonly chat: api.ChatApi,
     private user: T.User,
     readonly actions: Actions,
-    readonly control: Control,
+    readonly control: MainGroup,
   ) {}
 
   static async open(root: string, config: Config, sessions: Sessions, perform: Perform): Promise<Hub> {
@@ -28,14 +32,14 @@ export class Hub {
     try {
       const {chat, user} = core
       const group = (await findControlGroup(chat, user.userId)) ?? (await createControlChat(chat, user.userId, config.mainGroup, firstAction))
-      const actions: Actions = new Actions(config.expireHours, controlDataOf(group.customData)?.nextAction ?? firstAction, {
+      const actions: Actions = new Actions(defaultConfig.approve, config.expireHours, controlDataOf(group.customData)?.nextAction ?? firstAction, {
         refusal: action => control.refusal(action),
         saveCounter: next => control.saveCounter(next),
         postCard: action => control.postCard(action),
         outcome: action => control.outcome(action),
         perform,
-      })
-      const control: Control = new Control(chat, group, {displayName: config.mainGroup}, actions, sessions)
+      }, hubTexts)
+      const control: MainGroup = new MainGroup(chat, group, {displayName: config.mainGroup}, actions, sessions)
       await control.load()
       const hub = new Hub(chat, user, actions, control)
       await control.start()
@@ -73,11 +77,11 @@ export class Hub {
     return this.serialize("owner reset", () => this.control.reset(this.user.userId))
   }
 
-  async stop(): Promise<number> {
+  async stop(): Promise<Action[]> {
     this.stopped = true
     const cancelled = await this.actions.stop()
     await this.controlEvents
-    await deliveries(this.chat, this.control.groupId)
+    await waitForCancelledCards(this.actions.lost ? [] : cancelled, cardsWait, new AbortController().signal)
     await this.chat.close()
     return cancelled
   }

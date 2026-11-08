@@ -78,6 +78,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import Simplex.Chat.Types.UITheme (ChatLayout)
 import Simplex.Chat.Util (encryptFile, shuffle)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescription)
 import qualified Simplex.FileTransfer.Description as FD
@@ -217,11 +218,12 @@ prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc m
       fl_ <- liftIO $ ciffForwardLink db ciff
       pure (mcForward fl_ mc, Nothing)
     (Just quotedItemId, Nothing) -> do
-      CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, markdownBlocks, mentions = quoteMentions, file} <-
+      CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, mentions = quoteMentions, file} <-
         getGroupCIWithReactions db user g quotedItemId
       (origQmc, qd, sent, member_) <- quoteData qci membership
       let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = memberId' <$> member_}
           qmc = quoteContent mc origQmc file
+          ParsedMarkdown formattedText markdownBlocks = parsedMsgContent qmc
           (qmc', ft', _) = updatedMentionNames qmc formattedText quoteMentions
           quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc', formattedText = ft', markdownBlocks}
       pure (mcQuote QuotedMsg {msgRef, content = qmc'} mc, Just quotedItem)
@@ -363,10 +365,10 @@ getMessageMentions db user gId msg = case parseMaybeMarkdownList msg of
         <$> runExceptT (getGroupMemberIdByName db user gId name)
 
 msgContentTexts :: MsgContent -> (Text, ParsedMarkdown)
-msgContentTexts mc = let t = msgContentText mc in (t, parsedMarkdown t)
+msgContentTexts mc = (msgContentText mc, parsedMsgContent mc)
 
 ciContentTexts :: CIContent d -> (Text, ParsedMarkdown)
-ciContentTexts content = let t = ciContentToText content in (t, parsedMarkdown t)
+ciContentTexts content = let t = ciContentToText content in (t, parsedCIContent content t)
 
 quoteContent :: forall d. MsgContent -> MsgContent -> Maybe (CIFile d) -> MsgContent
 quoteContent mc qmc ciFile_
@@ -1125,10 +1127,11 @@ acceptGroupJoinSendRejectAsync
     agentAcceptContactAsync cmdId acId False cReqInvId msg PQSupportOff subMode
     pure m
 
-acceptBusinessJoinRequestAsync :: User -> Int64 -> GroupInfoKeys -> GroupMember -> UserContactRequest -> CM (GroupInfo, GroupMember)
+acceptBusinessJoinRequestAsync :: User -> Int64 -> Maybe ChatLayout -> GroupInfoKeys -> GroupMember -> UserContactRequest -> CM (GroupInfo, GroupMember)
 acceptBusinessJoinRequestAsync
   user
   uclId
+  chatLayout
   (GIK gInfo@GroupInfo {membership = GroupMember {memberRole = userRole, memberId = userMemberId}} gks)
   clientMember@GroupMember {groupMemberId, memberId}
   UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange, xContactId} = do
@@ -1143,7 +1146,7 @@ acceptBusinessJoinRequestAsync
                 fromMemberName = displayName,
                 fromMemberKey = Just $ groupMemberKey gks,
                 invitedMember = MemberIdRole memberId GRMember,
-                groupProfile = businessGroupProfile userProfile groupPreferences,
+                groupProfile = businessGroupProfile userProfile groupPreferences chatLayout,
                 accepted = Just GAAccepted,
                 -- This refers to the "title member" that defines the group name and profile.
                 -- This coincides with fromMember to be current user when accepting the connecting user,
@@ -1213,9 +1216,9 @@ rejectRelayInvitationAsync user uclId cxt groupRelayInv presHeader_ invId reqCha
     createJoiningMemberConnection db user uclId (cmdId, acId) chatV reqChatVRange groupMemberId subMode
   agentAcceptContactAsync cmdId acId False invId msg PQSupportOff subMode
 
-businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
-businessGroupProfile Profile {displayName, fullName, shortDescr, description, image} groupPreferences =
-  GroupProfile {displayName, fullName, description, shortDescr, image, publicGroup = Nothing, groupPreferences = Just groupPreferences, memberAdmission = Nothing}
+businessGroupProfile :: Profile -> GroupPreferences -> Maybe ChatLayout -> GroupProfile
+businessGroupProfile Profile {displayName, fullName, shortDescr, description, image} groupPreferences chatLayout =
+  GroupProfile {displayName, fullName, description, shortDescr, image, publicGroup = Nothing, groupPreferences = Just groupPreferences, memberAdmission = Nothing, chatLayout}
 
 introduceToModerators :: StoreCxt -> User -> GroupInfoKeys -> GroupMember -> CM ()
 introduceToModerators cxt user gInfo@(GIK g@GroupInfo {groupId} _) m@GroupMember {memberRole, memberId} = do
@@ -1891,7 +1894,8 @@ getChatItemFileServers user dir ci = case ci of
           Just sfdText -> fileDescrServers <$> (parseFileDescription sfdText :: CM (ValidFileDescription 'FSender))
           Nothing -> pure []
       SMDRcv -> do
-        RcvFileDescr {fileDescrText} <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
+        RcvFileDescr {fileDescrText, fileDescrComplete} <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
+        unless fileDescrComplete $ throwChatError $ CEInvalidFileDescription "incomplete file description"
         fileDescrServers <$> (parseFileDescription fileDescrText :: CM (ValidFileDescription 'FRecipient))
 
 sendDirectFileInline :: User -> Contact -> FileTransferMeta -> SharedMsgId -> CM ()
