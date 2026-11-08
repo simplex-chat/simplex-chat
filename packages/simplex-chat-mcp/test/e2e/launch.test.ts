@@ -14,7 +14,7 @@ let root: string
 
 beforeAll(async () => {
   dir = mkdtempSync(join(tmpdir(), "simplex-mcp-launch-"))
-  await run("npm", ["pack", "--ignore-scripts", "--pack-destination", dir], {cwd: packageDir})
+  await run("npm", ["pack", "--pack-destination", dir], {cwd: packageDir})
   root = join(dir, "cache", "simplex-chat", "simplex", version)
   mkdirSync(root, {recursive: true})
   await run("tar", ["-xzf", join(dir, `simplex-chat-mcp-${version}.tgz`), "--strip-components=1", "-C", root])
@@ -28,6 +28,18 @@ afterAll(() => {
 function command(template: string): string {
   return template.replaceAll("${CLAUDE_PLUGIN_ROOT}", root)
 }
+
+test("the packed package declares production dependencies only, its shrinkwrap lists only them and agrees with package.json, and the checkout is restored", () => {
+  const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8"))
+  const lock = JSON.parse(readFileSync(join(root, "npm-shrinkwrap.json"), "utf8"))
+  expect(manifest.devDependencies).toBeUndefined()
+  expect(Object.keys(lock.packages).filter(path => lock.packages[path].dev)).toEqual([])
+  expect(lock.packages[""]).toMatchObject({name: manifest.name, version: manifest.version})
+  expect(lock.packages[""].dependencies).toEqual(manifest.dependencies)
+  expect(lock.packages[""].devDependencies).toBeUndefined()
+  expect(JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8")).devDependencies).toBeDefined()
+  expect(readdirSync(packageDir).filter(name => name.endsWith(".orig"))).toEqual([])
+})
 
 test("the installed plugin runs its hooks and its session server from its own folder, with dependencies from its shrinkwrap", async () => {
   expect(readdirSync(root)).toEqual(expect.arrayContaining(["npm-shrinkwrap.json", "dist", "node_modules", ".mcp.json", "hooks"]))

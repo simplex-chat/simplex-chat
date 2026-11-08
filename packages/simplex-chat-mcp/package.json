@@ -23,7 +23,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "prepack": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
+    "prepack": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc && node scripts/strip-dev.js",
+    "postpack": "node scripts/strip-dev.js --restore",
     "test": "jest test/unit",
     "test:e2e": "tsc && jest test/e2e"
   },

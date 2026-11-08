@@ -1,5 +1,6 @@
-import {spawn} from "child_process"
-import {readFileSync} from "fs"
+import {execFileSync, spawn} from "child_process"
+import {mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync} from "fs"
+import {tmpdir} from "os"
 import {join} from "path"
 import {configVariables, defaultConfig} from "../../src/config"
 
@@ -58,6 +59,30 @@ describe("plugin", () => {
       `allowed-tools: Bash(${cli(command)})`,
     ])
     expect(skill).toContain(`!\`${cli(command)}\``)
+  })
+
+  it("packs production dependencies only, restores the files after the pack, and heals a pack that failed after the strip", () => {
+    expect(packageJson.scripts.prepack).toMatch(/ && node scripts\/strip-dev\.js$/)
+    expect(packageJson.scripts.postpack).toBe("node scripts/strip-dev.js --restore")
+    const dir = mkdtempSync(join(tmpdir(), "simplex-mcp-strip-"))
+    try {
+      const manifest = {name: "p", version: "1.0.0", dependencies: {a: "^1"}, devDependencies: {b: "^1"}}
+      const lock = {name: "p", lockfileVersion: 3, packages: {"": {name: "p", dependencies: {a: "^1"}, devDependencies: {b: "^1"}}, "node_modules/a": {version: "1.0.0"}, "node_modules/b": {version: "1.0.0", dev: true}}}
+      writeFileSync(join(dir, "package.json"), JSON.stringify(manifest))
+      writeFileSync(join(dir, "npm-shrinkwrap.json"), JSON.stringify(lock))
+      const strip = (...args: string[]) => execFileSync(process.execPath, [join(__dirname, "../../scripts/strip-dev.js"), ...args], {cwd: dir})
+      const files = () => ({manifest: JSON.parse(readFileSync(join(dir, "package.json"), "utf8")), lock: JSON.parse(readFileSync(join(dir, "npm-shrinkwrap.json"), "utf8"))})
+      const stripped = {manifest: {name: "p", version: "1.0.0", dependencies: {a: "^1"}}, lock: {name: "p", lockfileVersion: 3, packages: {"": {name: "p", dependencies: {a: "^1"}}, "node_modules/a": {version: "1.0.0"}}}}
+      strip()
+      expect(files()).toEqual(stripped)
+      strip()
+      expect(files()).toEqual(stripped)
+      strip("--restore")
+      expect(files()).toEqual({manifest, lock})
+      expect(readdirSync(dir).sort()).toEqual(["npm-shrinkwrap.json", "package.json"])
+    } finally {
+      rmSync(dir, {recursive: true, force: true})
+    }
   })
 
   it("allows a tool call", async () => {

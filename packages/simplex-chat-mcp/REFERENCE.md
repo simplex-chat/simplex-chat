@@ -477,7 +477,7 @@ The plugin adds:
 | `/simplex:link` | Shows the Main group's owners, or where to see its link. |
 | `/simplex:reset-owners` | Replaces the Main group and its owners. |
 
-The plugin's server, hooks and commands run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`. Claude Code installs the plugin's modules into the plugin's folder from its `npm-shrinkwrap.json`, and Node.js loads them from there, so the `node_modules` of a project can't replace the plugin. The first session start downloads the SimpleX core library; Claude Code waits at most 600 seconds for the SessionStart hook.
+The plugin's server, hooks and commands run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`. Claude Code installs the plugin's modules into the plugin's folder from its `npm-shrinkwrap.json`, which lists the production dependencies only, and Node.js loads them from there, so the `node_modules` of a project can't replace the plugin. The first session start downloads the SimpleX core library; Claude Code waits at most 600 seconds for the SessionStart hook.
 
 ### The Main group
 
