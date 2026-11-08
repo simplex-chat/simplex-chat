@@ -331,7 +331,6 @@ describe("session server", () => {
     const closed = once(res, "close")
     res.destroy()
     await closed
-    // the end of /attach reaches the session before the reply to a later request
     await DaemonClient.forRoot(root).request("GET", "/status")
     expect((await listCall(client)).result).toEqual(listResult)
     expect(seen).toEqual([registered, "attach", "call list", registered, "attach", "call list"])

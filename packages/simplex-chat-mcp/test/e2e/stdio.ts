@@ -34,7 +34,6 @@ export function daemonPid(root: string): number {
   return Number(readFileSync(join(root, "lock"), "utf8").trim())
 }
 
-// SIGTERM runs the daemon's stop sequence, which removes the lock file
 export async function killDaemon(root: string): Promise<void> {
   const lock = join(root, "lock")
   if (!existsSync(lock)) return

@@ -94,7 +94,6 @@ export class Daemon {
     acquireLock(deps.root, "daemon")
     try {
       const daemon = new Daemon(deps)
-      // listen before the hub opens: a starter that lost the lock race sends /status right after "running"
       daemon.server = await listen(socketPath(deps.root), deps.token, daemon.routes())
       daemon.hubReady = daemon.openHub(config)
       try {
@@ -195,7 +194,6 @@ export class Daemon {
       this.server.closeAllConnections()
       closed.then(() => this.deps.onStopped(0))
     }
-    // the /stop reply is sent after this promise resolves; "close" also fires when the client leaves before it is written
     if (reply === undefined || reply.destroyed) stopped()
     else reply.once("close", stopped)
   }
@@ -356,7 +354,6 @@ export class Daemon {
     return true
   }
 
-  // the stop timer runs only while no entries exist, so a new entry cancels it
   private entry(id: string, request?: SessionRequest): Entry {
     this.refuseWhenStopping()
     const folder = this.folder(id)

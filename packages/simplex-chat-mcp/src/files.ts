@@ -5,7 +5,6 @@ import {join, resolve} from "path"
 import {ExitError, logError} from "./log"
 
 const sessionIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-// sockaddr_un.sun_path holds 104 bytes on macOS (108 on Linux), including the terminating NUL
 const maxSocketPath = 103
 const maxLogBytes = 10 * 1_048_576
 

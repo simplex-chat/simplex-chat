@@ -6,7 +6,6 @@ import {createDataFolder} from "./files"
 import {logError} from "./log"
 
 const newProfileChats = 100
-// Display name of the contact the core adds to every new user (createPresetContactCards in Commands.hs).
 const presetContactName = "Ask SimpleX Team"
 
 export type EventHandler = (event: ChatEvent) => Promise<void>

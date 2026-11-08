@@ -123,7 +123,6 @@ class DaemonLink {
         return await this.forward(name, input, call)
       } catch (error) {
         if (call.signal.aborted) return undefined
-        // the daemon refuses an unknown session before it runs the call, so repeating it is safe
         if (attempt < callAttempts && error instanceof SocketError && error.status === unknownSessionStatus) continue
         return toolError(this.refused ? unattendedRun : failureText(error))
       }
@@ -151,7 +150,6 @@ class DaemonLink {
     return result ?? undefined
   }
 
-  // a failed call must not drop a newer connection that another call already opened
   private disconnect(connection: Promise<void>): void {
     if (this.connecting !== connection) return
     this.connecting = undefined

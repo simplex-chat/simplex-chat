@@ -300,7 +300,6 @@ export class Actions {
   private expire(action: Action): void {
     clearTimeout(this.expiries.get(action.n))
     this.expiries.delete(action.n)
-    // Timers follow the monotonic clock and expires is wall-clock time, so a timer can fire before it.
     if (action.expires > Date.now()) return this.scheduleExpiry(action)
     if (action.state !== "pending") return this.forgetExpired(action)
     this.decide(action, "expired")
