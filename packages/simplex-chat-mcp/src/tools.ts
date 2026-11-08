@@ -126,7 +126,8 @@ export interface Agent {
   dataRoot?: string
   owner?: string
   replyChat?: string
-  ownersOnly?: () => Promise<boolean>
+  withoutGuests?: () => Promise<boolean>
+  repliesApprover?: () => string | undefined
   setMode?: (mode: Mode) => void
   pending?: (connId: number) => void
 }
@@ -463,7 +464,7 @@ export interface ToolDefinition {
 export const replyTool: ToolDefinition = {
   name: "reply",
   description: `Sends a file to your owners in the SimpleX group of this session, with text as its caption. Your final answer of each turn reaches them without this tool.
-When the group has members who are not owners, an owner approves the file in the group first, and the call waits for the decision: result status done (item), rejected, expired or failed (error). If the call ends without a result, repeat it with the same arguments: it attaches to the same action.`,
+While the group has a guest, a member added without the Main group, a member from the Main group approves the file there first, and the call waits for the decision: result status done (item), rejected, expired or failed (error). If the call ends without a result, repeat it with the same arguments: it attaches to the same action.`,
   inputSchema: {
     type: "object",
     properties: {
@@ -477,7 +478,7 @@ When the group has members who are not owners, an owner approves the file in the
     type: "object",
     properties: {
       action: actionField,
-      status: {type: "string", enum: ["done", "failed", "rejected", "expired"], description: "With action: done: the file was sent; rejected or expired: an owner rejected it or did not decide in time; failed: see error."},
+      status: {type: "string", enum: ["done", "failed", "rejected", "expired"], description: "With action: done: the file was sent; rejected or expired: a member rejected it or did not decide in time; failed: see error."},
       item: {type: "integer", description: "Item ID of the sent message."},
       error: errorField,
     },
@@ -724,9 +725,9 @@ export class AgentTools {
     if (attached !== undefined) return this.replyResult(attached as ReplyAction, call)
     const {chatInfo} = await getChat(this.agent.chat, chat, 0)
     const file = await this.attachment(input.file, undefined, chatInfo, chat)
-    if ((await this.agent.ownersOnly?.()) === true) return {item: await this.sendFile(chat, file, input.text)}
+    if ((await this.agent.withoutGuests?.()) === true) return {item: await this.sendFile(chat, file, input.text)}
     if (call.signal.aborted) return undefined
-    return this.replyResult(this.agent.actions.create(key, {tool: "reply", input, subject: chatSubject(chatInfo), chat, file}, undefined, this.session, "requests") as ReplyAction, call)
+    return this.replyResult(this.agent.actions.create(key, {tool: "reply", input, subject: chatSubject(chatInfo), chat, file}, this.agent.repliesApprover?.(), this.session, "requests") as ReplyAction, call)
   }
 
   private replyResult(action: ReplyAction, call: ToolCall): Promise<object | undefined> {

@@ -752,7 +752,7 @@ describe("session channel", () => {
     expect(textOf(await session.call("reply", {file: join(root, "token")}, signal().call))).toMatch(/ is refused: private keys and the server's own files are not sent\.$/)
   })
 
-  it("sends a file by reply at once when only owners, Claude, User and members who left are in the group, and otherwise after an owner approves its card", async () => {
+  it("sends a file by reply at once when only members from the Main group, Claude, User and members who left are in the group, and otherwise after a member from the Main group approves its card", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
     const received = join(sessionFolder(root, id1), "files", "group", "8.txt")
@@ -766,7 +766,8 @@ describe("session channel", () => {
     const first = signal()
     const unanswered = session.call("reply", {file: received, text: "The log"}, first.call)
     await until(() => sentTo(chat, 20).length === 2)
-    expect(sentTo(chat, 20)[1]).toBe("I want to send a file to group 1 · auth, where members who are not owners see it:\n`8.txt`, 3 bytes\n/'approve 1' or /'reject 1'")
+    expect(sentTo(chat, 20)[1]).toBe(`I want to send a file to group 1 · auth, where guests see it:\n\`The log\`\nfile \`${received}\`, 3 bytes\n/'approve 1', /'approve 1 all' or /'reject 1'`)
+    expect(await session.control.ownerCommand(mallory, {keyword: "approve", params: "1"})).toBe("Only members who joined from the Main group approve actions here.")
     first.controller.abort()
     expect(await unanswered).toBeUndefined()
     const replied = session.call("reply", {file: received, text: "The log"}, signal().call)
@@ -780,7 +781,7 @@ describe("session channel", () => {
     expect(sentTo(chat, 20)).toHaveLength(4)
   })
 
-  it("shows on the card of a reply only the name and size of its file, and sends its caption and preview with the file after the approval", async () => {
+  it("shows on the card of a reply its caption, the path and size of its file and its preview, as a card of send does", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
     const map = join(sessionFolder(root, id1), "files", "group", "map.gif")
@@ -789,13 +790,48 @@ describe("session channel", () => {
     chat.members.set(20, [self, invitedAlice, mallory])
     const replied = session.call("reply", {file: map, text: "The trail map"}, signal().call)
     await until(() => sentTo(chat, 20).length === 1)
-    const request = "I want to send a file to group 1 · auth, where members who are not owners see it:\n`map.gif`, 6 bytes"
-    expect(chat.sent).toEqual([{chat: [T.ChatType.Group, 20], messages: [{msgContent: {type: "text", text: `${request}\n/'approve 1' or /'reject 1'`}, mentions: {}}]}])
+    const request = `I want to send a file to group 1 · auth, where guests see it:\n\`The trail map\`\nimage \`${map}\`, 6 bytes`
+    const preview = expect.stringMatching(/^data:image\/png;base64,/)
+    expect(chat.sent).toEqual([{chat: [T.ChatType.Group, 20], messages: [{msgContent: {type: "image", text: `${request}\n/'approve 1', /'approve 1 all' or /'reject 1'`, image: preview}, mentions: {}}]}])
     expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1"})).toBeUndefined()
     expect((await replied)!.structuredContent).toEqual({action: 1, status: "done", item: 501})
-    expect(chat.sent.at(-1)).toEqual({chat: [T.ChatType.Group, 20], messages: [{fileSource: {filePath: map}, msgContent: {type: "image", text: "The trail map", image: expect.stringMatching(/^data:image\/png;base64,/)}, mentions: {}}]})
+    expect(chat.sent.at(-1)).toEqual({chat: [T.ChatType.Group, 20], messages: [{fileSource: {filePath: map}, msgContent: {type: "image", text: "The trail map", image: preview}, mentions: {}}]})
     await until(() => chat.updates.length === 1)
     expect(chat.updates[0].text).toBe(`${request.replace("I want to send", "I sent")}\nApproved by Alice.`)
+  })
+
+  it("sends the file of a reply card and every later file by reply at once after /approve N all, also after a restart, until /revoke", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const folder = join(sessionFolder(root, id1), "files", "group")
+    const [first, later] = [join(folder, "8.txt"), join(folder, "9.txt")]
+    mkdirSync(folder, {recursive: true})
+    writeFileSync(first, "log")
+    writeFileSync(later, "out")
+    chat.members.set(20, [self, invitedAlice, mallory])
+    session.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+    const replied = session.call("reply", {file: first}, signal().call)
+    await until(() => session.actions.get(2)?.card !== undefined)
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1 all"})).toBe("Action 1 is not a file to this group.")
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "3 all"})).toBe("Action 3 is not pending.")
+    expect(await session.control.ownerCommand(mallory, {keyword: "approve", params: "2 all"})).toBe("Only members who joined from the Main group approve actions here.")
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "2 all"})).toBe("Files approved for this group by Alice. /'revoke'")
+    expect((await replied)!.structuredContent).toEqual({action: 2, status: "done", item: 502})
+    expect(chat.customData.filter(({chat: ref}) => ref === "#20").at(-1)!.customData).toMatchObject({simplexMcpReplies: {approvedBy: "Alice", approvedById: 1003}})
+    expect((await session.call("reply", {file: later, text: "The output"}, signal().call))!.structuredContent).toEqual({action: 3, status: "done", item: 503})
+    await until(() => sentTo(chat, 20).length === 5)
+    expect(chat.sent[3]).toEqual({chat: [T.ChatType.Group, 20], messages: [{fileSource: {filePath: later}, msgContent: {type: "file", text: "The output"}, mentions: {}}]})
+    expect(sentTo(chat, 20)[4]).toBe(`I sent a file to group 1 · auth, where guests see it:\n\`The output\`\nfile \`${later}\`, 3 bytes\nApproved for this chat by Alice. /'revoke'`)
+    const reopened = await (await hubWith(chat)).session(id1, readSessionFile(sessionFolder(root, id1))!)
+    expect((await reopened.call("reply", {file: later}, signal().call))!.structuredContent).toEqual({action: 4, status: "done", item: 505})
+    const revoke = {keyword: "revoke", params: ""}
+    expect(await reopened.control.ownerCommand(mallory, revoke)).toBe("Only members who joined from the Main group approve actions here.")
+    expect(await reopened.control.ownerCommand(invitedAlice, revoke)).toBe("Files to this group need approval again.")
+    expect(await reopened.control.ownerCommand(invitedAlice, revoke)).toBe("Files to this group have no standing approval.")
+    const again = reopened.call("reply", {file: later}, signal().call)
+    await until(() => reopened.actions.get(5)?.card !== undefined)
+    expect(await reopened.control.ownerCommand(invitedAlice, {keyword: "reject", params: "5"})).toBeUndefined()
+    expect((await again)!.structuredContent).toEqual({action: 5, status: "rejected"})
   })
 })
 
