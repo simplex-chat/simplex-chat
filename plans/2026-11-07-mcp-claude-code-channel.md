@@ -161,6 +161,12 @@ Proposed on 2026-11-08 with the role model, until the user decides:
 90. Claude's profile updates of the Main group and of session groups read the group's current profile from the chat database and change only Claude's own fields: the name, the short description, the Main group's description and the commands. The preferences owners set, "Files and media" included, stay (C1 on the UX page).
 91. The group's `/` commands come from admins and owners only, like approvals. A one-line `/` text, a `//` text or a `/!` text from a moderator, member or author gets one reply, `Only admins and owners of this group can send / commands.`, and reaches neither the commands nor Claude. One check, `Session.refusesCommand`, holds it; without it, the replies of decisions 71 and 84 apply.
 
+Decided on 2026-11-08, review round 7:
+93. `/observer` reads the group's members again after the role change, so the standing approvals the new observer gave end at once, as after a role change in the app.
+94. `/observer` of a member invited who has not joined yet answers `No member ID in this group.` and changes nothing; the member joins with the role of the invitation (the user: "you can't /observer member who is not in the group yet").
+95. Claude's profile updates of a session group run one at a time, so a rename and a change of the model or effort that overlap both stay.
+96. The code has no comments.
+
 The user's rule on reviews, 2026-11-08: "reviewers should have no discretion to drive product changes - the UX was approved, and it must not be changing simply because security reviewers said so."
 
 Pack of the package (decision 44):
@@ -376,7 +382,8 @@ RIGHTS of a role:               admin, owner:               can send prompts and
                                 observer:                   can't send messages
 on /observer #G ID by member s: #G not this group, no current member ID, ID Claude, s, a relay or pending: a reply
                                 rank(s) < max(rank(admin), rank(member ID)): a reply
-                                else: role of ID = observer; reply RIGHTS of the observer (decisions 81, 86)
+                                else: role of ID = observer; members read again; reply RIGHTS of the observer (decisions 81, 86, 93)
+current member:                 status current or pending; an invited member who has not joined is none (decision 94)
 rank:                           relay < observer < author < member < moderator < admin < owner, as the core orders them
 a role change by Claude:        no memberRole event; the reply of /observer is the post
 Claude's profile update of a group:  the group's current profile read from the chat database; only Claude's fields changed (decision 90)
