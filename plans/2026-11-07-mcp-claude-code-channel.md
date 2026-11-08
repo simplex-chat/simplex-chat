@@ -138,6 +138,9 @@ Decided on 2026-11-08, review round 6:
 76. `reply` refuses a caption too long for a message with the file's preview, as `send` does, before its post and its card: `text: too long for a message with this TYPE; shorten it.`
 77. Each new unattended mark removes the marks of 10 s ago and older.
 
+Decided by the user on 2026-11-08, by rule 4 of the [trust model](#trust-model):
+78. A reset of the owners leaves every session group as it is: the members invited through the old Main group stay, with their records, and keep prompting and approving.
+
 The user's rule on reviews, 2026-11-08: "reviewers should have no discretion to drive product changes - the UX was approved, and it must not be changing simply because security reviewers said so."
 
 Pack of the package (decision 44):
@@ -308,7 +311,7 @@ Rules:
    - receives Claude's files without a card.
 2. The hub states the boundary, in its description, its welcome message, and a message on every join: everyone in this group is trusted with all Claude Code sessions here; they can join each session's group, prompt Claude and approve its actions; invite only people you trust with them.
 3. A session group states each joiner's standing, once per join: a member who came through the hub, or a guest added directly. The guest's post keeps its text until the user decides it (decision 72).
-4. Changes of membership or role in the Main group do not change session groups.
+4. Changes of membership or role in the Main group do not change session groups; nor does a reset of the owners (decision 78).
 5. While a session group has a guest and the option `approve_guest_files` is on, Claude's files (`reply`) go there after a hub member approves the card; `/approve N all` approves this file and every later file of that session group, until `/revoke`. With the option off, they go at once (decision 73).
 6. Unchanged: the owner link reaches the person only; mode `host` needs a card; an owner reset while owners exist needs an approval in the Main group; the approved mode lives in the session group; `/status` carries no link.
 7. Every member of a session group but `User` prompts the session, guests included; `!` commands reach Claude only as `/!` from a member whose member in the Main group is an owner (decisions 70, 72).
@@ -423,7 +426,16 @@ on connect to a known chat without an owner:     claim the chat
 Membership of the Main group in the session groups (rule 4 of the [trust model](#trust-model)):
 ```
 on a membership or role change in the Main group:   the session groups and their invited lists stay as they are
-on the replacement of the Main group (decision 20): the invited members removed from every session group; invited = []
+on the replacement of the Main group (decision 20): the session groups and their invited lists stay as they are (decision 78);
+                                                    "/!" follows the owners of the new Main group
+```
+
+```mermaid
+flowchart LR
+  R[reset of the owners approved] --> M[old Main group deleted, new Main group and link]
+  R --> K[session groups and invited lists kept]
+  K --> P[members from the old Main group prompt and approve]
+  M --> B["/!" from owners of the new Main group]
 ```
 
 ```mermaid
