@@ -23,6 +23,7 @@ const bob = member(7, "Bob", T.GroupMemberRole.Member)
 const invitedAlice = member(1003, "Alice", T.GroupMemberRole.Owner)
 const noApprover = `The group of this session has no member who joined from the Main group. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@${version} link in a terminal.`
 const modeCard = "I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here."
+const aliceJoined = "Alice joined from the Main group: their messages are prompts of this session, and they can approve its actions."
 const trusted = "Everyone in this group is trusted with all Claude Code sessions here: they can join each session's group by /join N, prompt Claude and approve its actions. Invite only people you trust with them."
 
 type HubConstructor = new (chat: unknown, user: T.User, root: string, expireHours: number, mainGroup: T.GroupInfo, mainName: string) => Hub
@@ -99,7 +100,7 @@ describe("session groups", () => {
         groupProfile: {
           displayName: "1 · auth",
           fullName: "",
-          description: "The Claude Code session 1: owners of the Main group approve its actions here.",
+          description: "The Claude Code session 1: members who join from the Main group prompt it and approve its actions here.",
           groupPreferences: {history: {enable: "on"}, directMessages: {enable: "off"}, commands: controlCommands},
         },
       },
@@ -190,13 +191,29 @@ describe("session groups", () => {
     expect(session.actions.all()).toEqual([])
     chat.members.set(20, [self, invitedAlice])
     await hub["onEvent"]({type: "joinedGroupMember", groupInfo: group(20, "1 · auth"), member: invitedAlice} as unknown as ChatEvent)
-    await until(() => sentTo(chat, 20).length === 1)
-    expect(sentTo(chat, 20)).toEqual([`${modeCard}\n/'approve 1' or /'reject 1'`])
+    await until(() => sentTo(chat, 20).length === 2)
+    expect(sentTo(chat, 20)).toEqual([aliceJoined, `${modeCard}\n/'approve 1' or /'reject 1'`])
     expect(await session.control.ownerCommand(invitedAlice, {keyword: "reject", params: "1"})).toBeUndefined()
     await hub["onEvent"]({type: "connectedToGroupMember", groupInfo: group(20, "1 · auth"), member: invitedAlice} as unknown as ChatEvent)
     await hub["controlEvents"]
-    expect(sentTo(chat, 20)).toHaveLength(1)
+    expect(sentTo(chat, 20)).toEqual([aliceJoined, `${modeCard}\n/'approve 1' or /'reject 1'`, aliceJoined])
     expect(session.actions.mode).toBe("requests")
+  })
+
+  it("state the standing of each member who joins: from the Main group, or as a guest, and nothing for User", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    await openSession(hub, id1, stored(1, "auth"))
+    chat.chats.set("@6", {chatInfo: direct({...contact(6, "User"), customData: {simplexMcpUser: true}} as T.Contact), items: []})
+    const sessionUser = {...member(1006, "User"), memberContactId: 6}
+    const mallory = member(9, "Mallory", T.GroupMemberRole.Owner)
+    chat.members.set(20, [self, sessionUser, invitedAlice, mallory])
+    const joined = (type: string, joiner: T.GroupMember): Promise<void> => hub["onEvent"]({type, groupInfo: group(20, "1 · auth"), member: joiner} as unknown as ChatEvent)
+    await joined("joinedGroupMember", sessionUser)
+    await joined("joinedGroupMember", invitedAlice)
+    await joined("connectedToGroupMember", {...mallory, memberStatus: T.GroupMemberStatus.Intro_inv})
+    await hub["controlEvents"]
+    expect(sentTo(chat, 20)).toEqual([aliceJoined, "Mallory joined as a guest, not from the Main group: their messages are not prompts, and Claude's files reach this group only after a member from the Main group approves them."])
   })
 
   it("end a pending mode card when the option returns to requests", async () => {

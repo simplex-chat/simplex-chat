@@ -4,7 +4,7 @@ import {ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {Action, Actions, HostTexts, Mode, isDecided} from "./actions"
 import {Config} from "./config"
-import {Control, controlCommands, controlDataOf, createGroup, isControlEvent, isGroupMessage, isOwnerCommand, parseCommand} from "./control"
+import {Control, controlCommands, controlDataOf, createGroup, isControlEvent, isGroupMessage, isOwnerCommand, parseCommand, safeName} from "./control"
 import {openCore} from "./core"
 import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile} from "./files"
 import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
@@ -217,6 +217,16 @@ export class Session {
     const {groupMemberId} = await this.hub.chat.apiAddMemberViaGroup(this.control.groupId, this.hub.main.groupId, member.groupMemberId, role)
     const invited = [...this.data.invited.filter(entry => entry.groupMemberId !== groupMemberId), {groupMemberId, mainMemberId: member.groupMemberId}]
     await this.saveData({...this.data, invited})
+  }
+
+  async announceJoin(event: ChatEvent): Promise<void> {
+    if (this.actions.lost || (event.type !== "joinedGroupMember" && event.type !== "connectedToGroupMember")) return
+    const {member} = event
+    if (member.memberContactId !== undefined && member.memberContactId === (await userContact(this.hub.chat, this.hub.profile.userId))?.contactId) return
+    const name = safeName(member.memberProfile.displayName)
+    await this.post([this.approves(member)
+      ? `${name} joined from the Main group: their messages are prompts of this session, and they can approve its actions.`
+      : `${name} joined as a guest, not from the Main group: their messages are not prompts, and Claude's files reach this group only after a member from the Main group approves them.`])
   }
 
   async removeOwners(): Promise<void> {
@@ -453,7 +463,7 @@ export class Hub implements SessionGroups {
     const group = await createGroup(this.chat, this.profile.userId, {
       displayName,
       fullName: "",
-      description: `The Claude Code session ${number}: owners of the Main group approve its actions here.`,
+      description: `The Claude Code session ${number}: members who join from the Main group prompt it and approve its actions here.`,
       groupPreferences: {history: {enable: T.GroupFeatureEnabled.On}, directMessages: {enable: T.GroupFeatureEnabled.Off}, commands: controlCommands},
     }, {[sessionKey]: {session: number, invited: []}})
     const user = await userContact(this.chat, this.profile.userId)
@@ -489,7 +499,7 @@ export class Hub implements SessionGroups {
     }
     const session = sessions.find(({control}) => isControlEvent(event, control.groupId))
     if (session !== undefined) {
-      this.controlEvents = this.controlEvents.then(() => session.control.onEvent(event)).then(() => session.askMode()).catch(error => logError(`${event.type} in the group of session ${session.number}`, error))
+      this.controlEvents = this.controlEvents.then(() => session.control.onEvent(event)).then(() => session.announceJoin(event)).then(() => session.askMode()).catch(error => logError(`${event.type} in the group of session ${session.number}`, error))
     }
   }
 }
