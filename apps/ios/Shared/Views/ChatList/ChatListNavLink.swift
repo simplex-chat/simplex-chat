@@ -629,10 +629,10 @@ struct ChatListActions {
         let delete: [ChatListAction] = groupInfo.canDelete ? [.deleteGroup(groupInfo)] : []
         let leave: [ChatListAction] = groupInfo.membership.memberCurrentOrPending && !(groupInfo.useRelays && groupInfo.isOwner) ? [.leave(groupInfo)] : []
         let clear: [ChatListAction] = chat.chatItems.isEmpty ? [] : [.clear]
+        let archiveReports: [ChatListAction] = chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= .moderator ? [.archiveReports] : []
         if groupInfo.isCustomerChatOwner {
-            return ChatListActions(delete + [.banCustomer(groupInfo)], more: clear + leave)
+            return ChatListActions(delete + [.banCustomer(groupInfo)], more: clear + archiveReports + leave)
         } else {
-            let archiveReports: [ChatListAction] = chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= .moderator ? [.archiveReports] : []
             return ChatListActions(delete + leave, more: clear + archiveReports)
         }
     }
@@ -808,7 +808,11 @@ struct ChatListMoreDialog_Contact_Previews: PreviewProvider {
 struct ChatListMoreDialog_BusinessChat_Previews: PreviewProvider {
     static var previews: some View {
         let groupInfo = previewCustomerChat()
-        let chat = Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil), chatItems: [ChatItem.getSample(1, .groupSnd, previewDate, "hello")])
+        let chat = Chat(
+            chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil),
+            chatItems: [ChatItem.getSample(1, .groupSnd, previewDate, "hello")],
+            chatStats: ChatStats(reportsCount: 1)
+        )
         return Color.clear.modifier(ChatListMoreDialog(actions: .constant(ChatListActions.group(chat, groupInfo).more), perform: { _ in }))
     }
 }

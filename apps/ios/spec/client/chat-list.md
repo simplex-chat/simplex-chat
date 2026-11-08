@@ -251,7 +251,7 @@ Search is available via pull-down gesture or search button in the navigation bar
 
 ```
 contact                       ChatListActions.contact   Delete, Ban, More (Clear, Archive)
-business chat, owner          ChatListActions.group     Delete, Ban, More (Clear, Leave)
+business chat, owner          ChatListActions.group     Delete, Ban, More (Clear, Archive reports, Leave)
 group, channel, other         ChatListActions.group     Delete, Leave, More (Clear, Archive reports)
 ```
 
@@ -262,7 +262,7 @@ group, channel, other         ChatListActions.group     Delete, Leave, More (Cle
 | Leave | `memberCurrentOrPending`, not a channel owner | `leaveGroupAlert` | yellow |
 | Clear | the chat has items | `clearChatAlert` | orange |
 | Archive | contacts | `archiveContact` | none |
-| Archive reports | `reportsCount > 0`, role moderator or above; not for business chat owners | `archiveAllReportsAlert` | none |
+| Archive reports | `reportsCount > 0`, role moderator or above | `archiveAllReportsAlert` | none |
 
 `deleteAndBanCustomerIfAvailable()` loads the members with `apiListMembers`; it opens `deleteAndBanCustomerDialog` when `GroupInfo.canDeleteAndBanCustomer` holds, otherwise the "Can't ban" alert ([`deleteAndBanUnavailableAlert()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L660-L665)).
 
