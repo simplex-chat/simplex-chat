@@ -106,7 +106,7 @@ describe("session groups", () => {
         groupProfile: {
           displayName: "1 · auth",
           fullName: "",
-          description: "The Claude Code session 1: members who join from the Main group prompt it and approve its actions here.",
+          description: "The Claude Code session 1. Members send it prompts; admins and owners also send / commands and approve tool use.",
           groupPreferences: {history: {enable: "on"}, directMessages: {enable: "off"}, commands: controlCommands},
         },
       },

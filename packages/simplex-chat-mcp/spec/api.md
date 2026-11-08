@@ -812,7 +812,7 @@ Group profile ([`createSessionGroup`](../src/hub.ts#L470-L482), [`Control.load`]
 | Field | Value |
 |---|---|
 | display name | `N · NAME`, folded to a valid display name, renamed at a new title |
-| description | `The Claude Code session N: members who join from the Main group prompt it and approve its actions here.` |
+| description | `The Claude Code session N. Members send it prompts; admins and owners also send / commands and approve tool use.`, at the group's creation only |
 | short description | `MODEL · effort LEVEL`, the parts known so far |
 | history | on |
 | direct messages | off |

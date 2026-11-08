@@ -472,7 +472,7 @@ export class Hub implements SessionGroups {
     const group = await createGroup(this.chat, this.profile.userId, {
       displayName,
       fullName: "",
-      description: `The Claude Code session ${number}: members who join from the Main group prompt it and approve its actions here.`,
+      description: `The Claude Code session ${number}. Members send it prompts; admins and owners also send / commands and approve tool use.`,
       groupPreferences: {history: {enable: T.GroupFeatureEnabled.On}, directMessages: {enable: T.GroupFeatureEnabled.Off}, commands: controlCommands},
     }, {[sessionKey]: {session: number}})
     const user = await userContact(this.chat, this.profile.userId)
