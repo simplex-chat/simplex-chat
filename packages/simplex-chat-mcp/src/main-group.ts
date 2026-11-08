@@ -64,8 +64,8 @@ export class MainGroup {
     if (isLost(this.group)) return this.lose()
     const displayName = this.name
     this.group = await updateGroupProfile(this.chat, this.group, profile =>
-      profile.displayName !== displayName || profile.shortDescr !== shortDescr || profile.description !== welcome || JSON.stringify(profile.groupPreferences?.commands) !== JSON.stringify(mainCommands)
-        ? {...profile, displayName, shortDescr, description: welcome, groupPreferences: {...profile.groupPreferences, commands: mainCommands}}
+      profile.displayName !== displayName || JSON.stringify(profile.groupPreferences?.commands) !== JSON.stringify(mainCommands)
+        ? {...profile, displayName, groupPreferences: {...profile.groupPreferences, commands: mainCommands}}
         : undefined,
     )
     await this.refreshMembers()

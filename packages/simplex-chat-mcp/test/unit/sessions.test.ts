@@ -1053,15 +1053,20 @@ describe("Main group", () => {
     expect(hub.owner()).toEqual({owners: ["Carol"]})
   })
 
-  it("states in its description, its welcome message and a message at each join that everyone in it is trusted with all sessions", async () => {
+  it("sets its short description and welcome message at its creation only, keeps an owner's edits of them at a load and a rename, and posts at each join what members can do", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     const texts = {shortDescr: "Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does.", description: "Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that."}
-    expect(chat.profiles).toEqual([{groupId: 10, groupProfile: expect.objectContaining(texts)}])
-    await hub.main.load()
-    expect(chat.profiles).toHaveLength(1)
     await createMainGroup(chat.api(), 1, "SimpleX MCP")
     expect(chat.newGroups.at(-1)!.groupProfile).toMatchObject(texts)
+    const {groupInfo} = chat.chats.get("#10")!.chatInfo as T.ChatInfo.Group
+    const edited = {shortDescr: "Sessions of the team", description: "Ask Alice before you approve."}
+    groupInfo.groupProfile = {...groupInfo.groupProfile, ...edited}
+    expect(chat.profiles).toHaveLength(1)
+    await hub.main.load()
+    expect(chat.profiles).toHaveLength(1)
+    await hub.main.rename("Team")
+    expect(chat.profiles.at(-1)).toEqual({groupId: 10, groupProfile: expect.objectContaining({displayName: "Team", ...edited})})
     const dave = member(8, "Dave", T.GroupMemberRole.Member)
     chat.members.set(10, [self, alice, bob, dave])
     await hub.main.onEvent({type: "connectedToGroupMember", groupInfo: group(10, "SimpleX MCP", self), member: {...dave, memberStatus: T.GroupMemberStatus.Intro_inv}} as unknown as ChatEvent)

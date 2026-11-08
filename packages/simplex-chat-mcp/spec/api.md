@@ -704,14 +704,14 @@ Group profile ([`createMainGroup`](../src/main-group.ts#L222-L232), [`load`](../
 | Field | Value |
 |---|---|
 | display name | option `main_group`, updated when it differs |
-| short description | `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does.`, updated when it differs |
-| description | `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.`, updated when it differs |
+| short description | `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does.`, set when the group is created |
+| description | `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.`, set when the group is created |
 | history | on |
 | direct messages | on for the role `owner` |
 | command menu | `/sessions` "Claude Code sessions"<br>`/join` "Join the group of a session", params `<session number>` |
 | custom data | `{simplexMcpMain: true}` |
 
-Each update starts from the group's current profile in the chat database and changes only the display name, the short description, the description and the command menu, so the preferences owners set stay ([main-group.ts:63-72](../src/main-group.ts#L63-L72), [control.ts:603-608](../src/control.ts#L603-L608)).
+Each update starts from the group's current profile in the chat database and changes only the display name and the command menu, so the short description, the description and the preferences owners set stay ([main-group.ts:63-72](../src/main-group.ts#L63-L72), [control.ts:603-608](../src/control.ts#L603-L608)).
 
 The hub's profile `Claude` posts in the group, with peer type `agent` ([hub.ts:18](../src/hub.ts#L18), [core.ts:24](../src/core.ts#L24)).
 

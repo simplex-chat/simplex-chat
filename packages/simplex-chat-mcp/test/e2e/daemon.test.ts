@@ -91,7 +91,7 @@ async function joinSessionGroups(owner: Person, names: string[]): Promise<Map<st
   return groups
 }
 
-test("an owner joins the Main group and each session's group, and approves its connect, send, download and leave there; chats belong to their sessions", async () => {
+test("an owner joins the Main group and each session's group, and approves its connect, send, download and leave there; chats belong to their sessions; the owner's short description and welcome message of the Main group stay after a daemon restart", async () => {
   const root = join(dir, "sessions", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("sessions", "Alice")
@@ -106,7 +106,7 @@ test("an owner joins the Main group and each session's group, and approves its c
   const owner = await client.request<OwnerState>("GET", "/link")
   const greeting = received(alice.chat, textStarts("I'm Claude. Each Claude Code session has its own group"))
   const invitations = joinSessionGroups(alice, ["1 · one", "2 · two"])
-  await joinByLink(alice, owner.link!)
+  const mainGroupId = await joinByLink(alice, owner.link!)
   await greeting
   const groups = await invitations
   const [groupOne, groupTwo] = [groups.get("1 · one")!, groups.get("2 · two")!]
@@ -163,6 +163,12 @@ test("an owner joins the Main group and each session's group, and approves its c
   expect(await chatsOf(one)).toEqual([])
   expect((await chatsOf(two)).sort()).toEqual([directoryChat, shopChat].sort())
 
+  const mainProfile = async () => (await alice.chat.apiListGroups(alice.user.userId)).find(({groupId}) => groupId === mainGroupId)!.groupProfile
+  const edited = {shortDescr: "Sessions of the team", description: "Ask Alice before you approve."}
+  await alice.chat.apiUpdateGroupProfile(mainGroupId, {...(await mainProfile()), ...edited})
+  const sessionsListed = received(alice.chat, inGroup(mainGroupId, textStarts("1 · one")))
+  await ownerSends(mainGroupId, "/sessions")
+  await sessionsListed
   await daemon.stop()
   daemon = await startDaemon(root)
   const listedOne = received(alice.chat, inGroup(groupOne, textStarts("No chats.")))
@@ -170,6 +176,10 @@ test("an owner joins the Main group and each session's group, and approves its c
   await listedOne
   expect(await openSession(client, two, "two")).toMatchObject({number: 2, displayName: "2 · two", owner: {owners: ["Alice"]}})
   expect((await chatsOf(two)).sort()).toEqual([directoryChat, shopChat].sort())
+  const sessionsListedAgain = received(alice.chat, inGroup(mainGroupId, textStarts("1 · one")))
+  await ownerSends(mainGroupId, "/sessions")
+  await sessionsListedAgain
+  expect(await mainProfile()).toMatchObject(edited)
 }, 600_000)
 
 test("the hooks post a terminal prompt as User and the answer as Claude in the session's group; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
