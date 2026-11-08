@@ -6,7 +6,7 @@ import {chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "
 import {linkCommand} from "./owner"
 import {qrCodeText} from "./qr"
 import type {OwnerEntry, QrCodeSize} from "./serve"
-import {AgentTools, chatSubject, customDataOf, fitsMessage, isActive, isConnected, memberCurrent, refusedFileReason, setChatData} from "./tools"
+import {AgentTools, chatSubject, customDataOf, fitsMessage, isActive, isConnected, isGone, memberCurrent, refusedFileReason, setChatData} from "./tools"
 
 export const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "pending", label: "Pending actions"},
@@ -39,6 +39,7 @@ const sessionApproversOnly = "Only members who joined from the Main group approv
 const filesOwnersOnly = "Only owners of the Main group approve files here."
 const noFilesApprover = `The group of this session has no owner of the Main group to approve files. Members of the Main group join it by /join N there; without members, run ${linkCommand} in a terminal.`
 const repliesKey = "simplexMcpReplies"
+const roleOrder: T.GroupMemberRole[] = [T.GroupMemberRole.Relay, T.GroupMemberRole.Observer, T.GroupMemberRole.Author, T.GroupMemberRole.Member, T.GroupMemberRole.Moderator, T.GroupMemberRole.Admin, T.GroupMemberRole.Owner]
 
 export interface ControlData {
   control: true
@@ -78,6 +79,7 @@ type OwnerRequest =
   | {type: "leave" | "deleteFiles"; chat: string}
   | {type: "give"; chat: string; session: number}
   | {type: "approveReplies"; action: number}
+  | {type: "observer"; group: string; member: number}
   | {type: "pending" | "list" | "revokeReplies"}
 
 interface Shown {
@@ -271,6 +273,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
       case "revokeReplies":
         if (!this.approvesFiles(sender)) return filesOwnersOnly
         return this.revokeReplies()
+      case "observer":
+        return this.setObserver(sender, request.group, request.member)
       case "approve":
       case "reject":
       case "receive":
@@ -389,6 +393,19 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
       if (action.chat === chat && action.card !== undefined) this.actions.reject(action, approver)
     }
     return `Gave ${chatName(chatSubject(chatInfo))} (${chat}) to session ${session}.`
+  }
+
+  private async setObserver(sender: T.GroupMember, group: string, groupMemberId: number): Promise<string> {
+    if (group !== this.chatRef) return `${group} is not this group.`
+    await this.refreshMembers()
+    const target = this.members.find(member => member.groupMemberId === groupMemberId)
+    if (target === undefined || isGone(target)) return `No member ${groupMemberId} in this group.`
+    const name = safeName(target.memberProfile.displayName)
+    const pending = target.memberStatus === T.GroupMemberStatus.Pending_approval || target.memberStatus === T.GroupMemberStatus.Pending_review
+    if (groupMemberId === this.group.membership.groupMemberId || groupMemberId === sender.groupMemberId || target.memberRole === T.GroupMemberRole.Relay || pending) return `${name}'s role can't be changed.`
+    if (roleRank(sender.memberRole) < Math.max(roleRank(T.GroupMemberRole.Admin), roleRank(target.memberRole))) return `Your role does not let you change the role of ${name}.`
+    await this.chat.apiSetMembersRole(this.groupId, [groupMemberId], T.GroupMemberRole.Observer)
+    return `${name} is now an observer.`
   }
 
   private queueAfterReplies(post: () => Promise<unknown>): void {
@@ -831,6 +848,7 @@ function ownerRequest({keyword, params}: Command, session: boolean): OwnerReques
   if (keyword === "give" && chat !== undefined && value !== undefined && /^\d+$/.test(value)) return {type: keyword, chat, session: Number(value)}
   if (session && keyword === "approve" && words.length === 2 && /^\d+$/.test(words[0]) && words[1] === "all") return {type: "approveReplies", action: Number(words[0])}
   if (session && keyword === "revoke" && words.length === 0) return {type: "revokeReplies"}
+  if (session && keyword === "observer" && chat?.startsWith("#") && value !== undefined && /^\d+$/.test(value)) return {type: "observer", group: chat, member: Number(value)}
   if ((keyword === "pending" || keyword === "list") && words.length === 0) return {type: keyword}
   return undefined
 }
@@ -850,6 +868,10 @@ export function losesControl(event: ChatEvent): boolean {
 export function isLost({membership}: T.GroupInfo): boolean {
   const statuses: T.GroupMemberStatus[] = [T.GroupMemberStatus.Creator, T.GroupMemberStatus.Connected, T.GroupMemberStatus.Complete]
   return membership.memberRole !== T.GroupMemberRole.Owner || !statuses.includes(membership.memberStatus)
+}
+
+function roleRank(role: T.GroupMemberRole): number {
+  return roleOrder.indexOf(role)
 }
 
 function listsMember({memberId, name}: OwnerEntry, member: T.GroupMember): boolean {

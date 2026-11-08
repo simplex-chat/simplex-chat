@@ -346,7 +346,7 @@ test("a member of the Main group joins a session's group by /join, prompts and a
 
   const carolInOne = received(alice.chat, inGroup(groupOne, textStarts("Carol can send prompts to Claude and approve tool use.")))
   const carolGroupOne = await joinByLink(carol, await alice.chat.apiCreateGroupLink(groupOne, T.GroupMemberRole.Member))
-  await carolInOne
+  const [, makeCarolObserver] = /\/'(observer #\d+ \d+)'$/.exec((await carolInOne).chatItem.meta.itemText)!
   const carolPending = received(carol.chat, inGroup(carolGroupOne, textStarts("No pending actions.")))
   await carol.chat.apiSendTextMessage([T.ChatType.Group, carolGroupOne], "Write the docs")
   await carol.chat.apiSendTextMessage([T.ChatType.Group, carolGroupOne], "/pending")
@@ -392,6 +392,11 @@ test("a member of the Main group joins a session's group by /join, prompts and a
   const posted = async (groupId: number, start: string) => (await alice.chat.apiGetChat(T.ChatType.Group, groupId, 200)).chatItems.filter(({meta}) => meta.itemText.startsWith(start)).length
   expect(await Promise.all([posted(mainGroupId, "Alice joined. "), posted(mainGroupId, "Bob joined. ")])).toEqual([1, 1])
   expect(await Promise.all(["Alice", "Bob", "Carol"].map(name => posted(groupOne, `${name} can send prompts to Claude and approve tool use.`)))).toEqual([1, 1, 1])
+  const carolObserver = aliceSees("Carol is now an observer.")
+  await aliceSends(`/${makeCarolObserver}`)
+  await carolObserver
+  await until(async () => (await carol.chat.apiListGroups(carol.user.userId)).find(({groupId}) => groupId === carolGroupOne)?.membership.memberRole === T.GroupMemberRole.Observer)
+  await expect(carol.chat.apiSendTextMessage([T.ChatType.Group, carolGroupOne], "Delete the docs")).rejects.toThrow()
   expect((await alice.chat.apiListMembers(groupOne)).find(({memberProfile}) => memberProfile.displayName === "Bob")).toMatchObject({memberStatus: expect.stringMatching(/^(connected|complete)$/)})
 
   const resetCard = received(alice.chat, inGroup(mainGroupId, textStarts("A terminal asks to replace the owners")))
