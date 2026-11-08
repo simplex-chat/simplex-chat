@@ -139,6 +139,8 @@ The plugin's server, hooks and commands run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli
   - an owner joins the Main group and the groups of two sessions, and approves `connect`, `send`, `download` and `leave` there; chats belong to their sessions, `/give` moves one, and `/list` works after a daemon restart; an owner who leaves the Main group is removed from the sessions' groups;
   - the hooks post a terminal prompt as `User` and the answer as Claude; an owner's message to a session without Claude Code gets `Session 1 is not running.`; with the session attached, it reaches the session's channel stream, it is not posted again by `User`, raw or in the channel tag, and the answer quotes it;
   - hooks with a new session ID from the process of an attached session post in its group; a tool-use card approved by the owner reaches the session's stream as `allow`; a contact and a group that accept after `connect` returned `connected: false` are in the session's `list`; mode `host` applies after the owner approves its card, and session.json holds no mode; after a daemon restart, a prompt sent before the session attached again reaches it, without `Session 1 is not running.`;
+  - the group of a session closed for 7 days is deleted at the daemon's start; the resume of the session opens a new group, where `User` posts the terminal prompts and Claude the answers;
+  - a member of the Main group who is not an owner joins a session's group by `/join`; a file of `reply` reaches the group only after the owner approves its card, which shows the file's name and size and not its caption; an owner made a member in the Main group gets the role member in a session's group and in a pending invitation;
   - a new session has no chats;
   - a stdio session starts the daemon, recovers after the daemon is killed during a call, and starts it again and attaches without a call.
 
@@ -159,4 +161,12 @@ In a session started as in step 2 above:
 11. Start Claude Code again as in step 2, with `--continue`: the session start opens no new group, and a prompt from "1 · <folder>" reaches the session.
 12. In a second terminal, start Claude Code as in step 2 in another folder, and exit it: the group "2 · <other folder>" appears. In the first session, `/resume` that session, and send `Reply with the word resumed.` in "1 · <folder>": the answer comes there. Exit, and start Claude Code with `--resume` of that session: a prompt from "2 · <other folder>" reaches it.
 13. In another folder, run `SIMPLEX_MCP_HOME=/tmp/simplex-mcp-test claude -p "Call the list tool of the simplex server." --plugin-dir /tmp/simplex-plugin`: no new group appears, and the answer quotes `This Claude Code run is not interactive, so it has no SimpleX group`.
-14. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/lock)`.
+14. Record which values of `CLAUDE_CODE_SESSION_ATTENDED` the hooks and the MCP servers of a run get. Write the MCP config and the hook settings:
+
+    ```
+    echo '{"mcpServers": {"dump": {"command": "node", "args": ["-e", "require(\"fs\").writeFileSync(\"/tmp/env-mcp.json\", JSON.stringify(process.env))"]}}}' > /tmp/env-mcp-config.json
+    echo '{"hooks": {"SessionStart": [{"hooks": [{"type": "command", "command": "node -e \"require(\\\"fs\\\").writeFileSync(\\\"/tmp/env-hook.json\\\", JSON.stringify(process.env))\""}]}]}}' > /tmp/env-settings.json
+    ```
+
+    Run `claude -p "Reply with ok." --strict-mcp-config --mcp-config /tmp/env-mcp-config.json --settings /tmp/env-settings.json` once in a terminal, and once from the Bash tool of the session of step 2 with `CLAUDE_CODE_ENTRYPOINT=claude-vscode` before it. After each run, `grep -o '"CLAUDE_CODE_SESSION_ATTENDED":"[01]"' /tmp/env-hook.json /tmp/env-mcp.json` shows the values. With Claude Code 2.1.319, 2026-11-08: in a terminal, the hook got `0` and the MCP server none; from the Bash tool, the hook got `0` and the MCP server `1`, the value of the session whose Bash tool ran it. For the second run, the plugin's hooks post nothing, and its session server, with `1` and `claude-vscode`, opens a session and a group.
+15. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/lock)`.
