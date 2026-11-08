@@ -1288,6 +1288,7 @@ func previewCustomerChat() -> GroupInfo {
     groupInfo.businessChat = .sampleData
     groupInfo.membership.memberRole = .owner
     groupInfo.membership.memberProfile = LocalProfile(profileId: 99, displayName: "SimpleX", fullName: "", localAlias: "")
+    groupInfo.membership.memberContactProfileId = 99
     return groupInfo
 }
 
