@@ -131,6 +131,10 @@ jsonLimitTests = describe "Chat message JSON limits" $ do
   it "reads stored unknown content without properties above the limits" $
     storedContent ("{\"rcvMsgContent\":{\"msgContent\":" <> unknownContent (aboveLimits <> ",\"ok\":1") <> "}}")
       `shouldBe` Right (Just $ MCUnknown "future" "hello" $ jsonObject $ unknownContent ",\"ok\":1")
+  it "parses bot command menus nested up to the depth limit" $
+    J.eitherDecode (J.encode $ nestedMenus maxMenuDepth helpCommand) `shouldBe` Right (nestedMenus maxMenuDepth helpCommand)
+  it "parses bot command menus nested deeper than the limit without their commands" $
+    J.eitherDecode (J.encode $ nestedMenus (maxMenuDepth + 1) helpCommand) `shouldBe` Right (nestedMenus maxMenuDepth $ CBCMenu "menu" [])
   where
     msgNew mc = "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":" <> mc <> "}}"
     unknownContent ps = "{\"type\":\"future\",\"text\":\"hello\"" <> ps <> "}"
@@ -142,6 +146,9 @@ jsonLimitTests = describe "Chat message JSON limits" $ do
     jsonObject s = fromMaybe (error $ "not JSON: " <> B.unpack s) $ J.decodeStrict' s
     storedContent :: ByteString -> Either String (Maybe MsgContent)
     storedContent = fmap (\(ACIContent _ ci) -> ciMsgContent ci) . dbParseACIContent . safeDecodeUtf8
+    nestedMenus :: Int -> ChatBotCommand -> ChatBotCommand
+    nestedMenus n cmd = iterate (\c -> CBCMenu "menu" [c]) cmd !! n
+    helpCommand = CBCCommand "help" "help" Nothing
 
 srv :: SMPServer
 srv = SMPServer "smp.simplex.im" "5223" (C.KeyHash "\215m\248\251")

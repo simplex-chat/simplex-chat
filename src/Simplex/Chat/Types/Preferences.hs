@@ -449,6 +449,16 @@ data ChatBotCommand
       }
   deriving (Eq, Show)
 
+limitMenuDepth :: Int -> ChatBotCommand -> ChatBotCommand
+limitMenuDepth depth = \case
+  CBCMenu {label, commands}
+    | depth > 0 -> CBCMenu {label, commands = map (limitMenuDepth $ depth - 1) commands}
+    | otherwise -> CBCMenu {label, commands = []}
+  cmd -> cmd
+
+maxMenuDepth :: Int
+maxMenuDepth = 8
+
 setGroupPreference :: forall f. GroupFeatureNoRoleI f => SGroupFeature f -> GroupFeatureEnabled -> Maybe GroupPreferences -> GroupPreferences
 setGroupPreference f enable prefs_ = setGroupPreference_ f pref prefs
   where
@@ -1253,7 +1263,10 @@ instance FromJSON SessionsPreference where
   parseJSON v = $(J.mkParseJSON defaultJSON ''SessionsPreference) v
   omittedField = Just SessionsPreference {allow = FANo}
 
-$(J.deriveJSON (taggedObjectJSON $ dropPrefix "CBC") ''ChatBotCommand)
+$(J.deriveToJSON (taggedObjectJSON $ dropPrefix "CBC") ''ChatBotCommand)
+
+instance FromJSON ChatBotCommand where
+  parseJSON v = limitMenuDepth maxMenuDepth <$> $(J.mkParseJSON (taggedObjectJSON $ dropPrefix "CBC") ''ChatBotCommand) v
 
 $(J.deriveToJSON defaultJSON ''Preferences)
 
