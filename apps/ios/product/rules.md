@@ -157,6 +157,6 @@
 **Spec:** [spec/client/chat-view.md](../spec/client/chat-view.md)
 
 ### RULE-25: Delete and ban only for peers that apply the ban
-**Rule:** "Delete and ban" MUST be offered only for a ready, active contact connected via the user's address whose app supports `LINK_NOTICE_VERSION`, and for the customer of a business chat owned by the user who is a current member with that version.
+**Rule:** "Delete and ban" MUST be offered only for a ready, active contact connected via the user's address whose app supports `LINK_NOTICE_VERSION`, and for the customer of a business chat whose active owner is the user, when the customer passes `GroupMember.canBanAndRemove`: a current or pending member with a role below moderator whose app supports that version.
 **Enforced by:** `ChatTypes.swift` (`Contact.canDeleteAndBan`, `GroupInfo.canDeleteAndBanCustomer`); `Commands.hs` (`APIDeleteChat` and `APIRemoveMembers` refuse a notice otherwise).
 **Spec:** [spec/client/chat-view.md](../spec/client/chat-view.md) | [spec/client/chat-list.md](../spec/client/chat-list.md)

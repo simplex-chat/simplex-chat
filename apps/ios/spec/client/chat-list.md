@@ -264,7 +264,7 @@ group, channel, other         ChatListActions.group     Delete, Leave, More (Cle
 | Archive | contacts | `archiveContact` | none |
 | Archive reports | `reportsCount > 0`, role moderator or above | `archiveAllReportsAlert` | none |
 
-`deleteAndBanCustomerIfAvailable()` loads the members with `apiListMembers`; it opens `deleteAndBanCustomerDialog` when `GroupInfo.canDeleteAndBanCustomer` holds, otherwise the "Can't ban" alert ([`deleteAndBanUnavailableAlert()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L660-L665)).
+`deleteAndBanCustomerIfAvailable()` loads the members with `apiListMembers`; it opens `deleteAndBanCustomerDialog` when `GroupInfo.canDeleteAndBanCustomer` holds (the customer passes `GroupMember.canBanAndRemove`: current or pending, role below moderator, `LINK_NOTICE_VERSION` supported), otherwise the "Can't ban" alert, also for a customer with the moderator role or above ([`deleteAndBanUnavailableAlert()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L660-L665)).
 
 Archived contacts (`ContactListNavLink.deletedChatNavLink`): Delete, and Ban when `Contact.canDeleteAndBan`.
 
