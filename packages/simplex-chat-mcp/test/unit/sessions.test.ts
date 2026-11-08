@@ -452,6 +452,30 @@ describe("session channel", () => {
     expect(chat.replies).toEqual(["The file of this message was not received: not received in 10 minutes"])
   })
 
+  it("holds an owner's prompt after the daemon start until the session attaches, and replies that it is not running after 30 s without an attachment", async () => {
+    jest.useFakeTimers({doNotFake: ["nextTick", "setImmediate", "queueMicrotask"]})
+    const chat = new FakeChat()
+    const {hub, session, lines} = await channel(chat)
+    session.onLine = undefined
+    hub.promptsHeldUntil = Date.now() + 30_000
+    session.onMessage(event(sessionGroup, item(42, "Fix the build", from(invitedAlice))))
+    await jest.advanceTimersByTimeAsync(10_000)
+    expect(chat.replies).toEqual([])
+    session.onLine = line => lines.push(line)
+    await jest.advanceTimersByTimeAsync(0)
+    expect(lines).toEqual([{prompt: {text: "Fix the build", from: "Alice", item: 42}}])
+    session.onLine = undefined
+    session.onMessage(event(sessionGroup, item(43, "Run the tests", from(invitedAlice))))
+    await jest.advanceTimersByTimeAsync(19_999)
+    expect(chat.replies).toEqual([])
+    await jest.advanceTimersByTimeAsync(1)
+    expect(chat.replies).toEqual(["Session 1 is not running."])
+    session.onMessage(event(sessionGroup, item(44, "Status?", from(invitedAlice))))
+    await jest.advanceTimersByTimeAsync(0)
+    expect(chat.replies).toEqual(["Session 1 is not running.", "Session 1 is not running."])
+    expect(lines).toHaveLength(1)
+  })
+
   it("passes an owner's one-line message that is not a command of the group to the session as a prompt", async () => {
     const chat = new FakeChat()
     const {session, lines} = await channel(chat)

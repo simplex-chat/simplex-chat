@@ -9,7 +9,7 @@ import {openCore} from "./core"
 import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile} from "./files"
 import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
 import {MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-group"
-import {ChatItemsWatch, ToolCall, getChat, storedName, validName} from "./messages"
+import {Changes, ChatItemsWatch, ToolCall, getChat, nextChange, storedName, validName} from "./messages"
 import {AttachLine, OwnerState, PermissionRequest, ResetReply, TurnRequest} from "./protocol"
 import {waitForCancelledCards} from "./serve"
 import {AgentTools, ToolName, fitsMessage, ownerOf} from "./tools"
@@ -24,6 +24,7 @@ const maxPart = 12_000
 const maxPushed = 20
 const fileWait = 10 * 60_000
 const pendingDays = 1
+const attachWait = 30_000
 const channelPrompt = /<channel source="plugin:simplex:simplex"[^\n]* item="(\d+)"[^\n]*>\n([\s\S]*?)\n<\/channel>/g
 
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX daemon is stopping."}
@@ -46,7 +47,6 @@ interface InvitedMember {
 
 export class Session {
   open = false
-  onLine?: (line: AttachLine) => void
   readonly actions: Actions
   readonly tools: AgentTools
   readonly control: Control
@@ -57,6 +57,8 @@ export class Session {
   private description: {model?: string; effort?: string}
   private turnItem?: T.ChatItem | null
   private requested?: Mode
+  private writer?: (line: AttachLine) => void
+  private readonly attaching = new Changes()
 
   constructor(
     private readonly hub: Hub,
@@ -101,6 +103,15 @@ export class Session {
     return groupName(this.number, this.name)
   }
 
+  get onLine(): ((line: AttachLine) => void) | undefined {
+    return this.writer
+  }
+
+  set onLine(writer: ((line: AttachLine) => void) | undefined) {
+    this.writer = writer
+    this.attaching.notify()
+  }
+
   busy(): boolean {
     return this.actions.all().some(({tool}) => tool !== "mode")
   }
@@ -138,8 +149,15 @@ export class Session {
     const {chatItem} = ci
     const {chatDir, content} = chatItem
     if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent" || isOwnerCommand(content.msgContent.text) || !this.approves(chatDir.groupMember)) return
-    const prompted = this.onLine === undefined ? this.hub.chat.apiSendTextReply(ci, `Session ${this.number} is not running.`) : this.prompt(ci, content.msgContent.text, chatDir.groupMember)
+    const prompted = this.onLine === undefined ? this.whenAttached(ci, content.msgContent.text, chatDir.groupMember) : this.prompt(ci, content.msgContent.text, chatDir.groupMember)
     prompted.catch(error => logError(`prompt of session ${this.number}`, error))
+  }
+
+  private async whenAttached(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
+    const left = this.hub.promptsHeldUntil - Date.now()
+    if (left > 0) await nextChange(this.attaching, new AbortController().signal, left)
+    if (this.onLine === undefined) await this.hub.chat.apiSendTextReply(ci, `Session ${this.number} is not running.`)
+    else await this.prompt(ci, text, member)
   }
 
   claimPending(connId: number, chat: string): void {
@@ -268,6 +286,7 @@ export class Session {
 export class Hub implements SessionGroups {
   readonly main: MainGroup
   user?: User
+  promptsHeldUntil = 0
   private readonly sessions = new Map<number, Session>()
   private stopped = false
   private controlEvents: Promise<void> = Promise.resolve()
@@ -293,6 +312,7 @@ export class Hub implements SessionGroups {
       await hub.main.start()
       hub.user = await User.open(root, chat, user).catch(error => (logError("User", error), undefined))
       for (const {id, session} of stored) await hub.session(id, session)
+      hub.promptsHeldUntil = Date.now() + attachWait
       await core.events(event => hub.onEvent(event))
       return hub
     } catch (error) {

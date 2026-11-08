@@ -220,12 +220,12 @@ test("the hooks post a terminal prompt as User and the answer as Claude in the s
   expect(fromUser.map(({meta}) => meta.itemText)).toEqual(["Fix the build"])
 }, 600_000)
 
-test("a session keeps its group for hooks with a new ID from its process, relays tool use to its owners, owns a contact that accepts after connect returned, and asks for mode host", async () => {
+test("a session keeps its group for hooks with a new ID from its process, relays tool use to its owners, owns a contact that accepts after connect returned, asks for mode host, and gets a prompt sent before it attached again after a daemon start", async () => {
   const root = join(dir, "channel", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("channel", "Alice")
   const bob = await personIn("channel", "Bob")
-  await startDaemon(root)
+  const daemon = await startDaemon(root)
   const client = DaemonClient.forRoot(root)
   const pid = 4242
   const env = {CLAUDE_PID: String(pid), SIMPLEX_MCP_HOME: root}
@@ -268,6 +268,19 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   await client.request("POST", "/session", {id: one, pid, project: "/p", config: {...defaultConfig, approve: "host"}})
   await ownerSends(`/approve ${cardNumber(await modeCard)}`)
   await until(() => readSessionFile(sessionFolder(root, one))?.mode === "host")
+
+  controller.abort()
+  await daemon.stop()
+  await startDaemon(root)
+  await ownerSends("Still there?")
+  await new Promise(resolve => setTimeout(resolve, 5_000))
+  const reattached: AttachLine[] = []
+  const reattach = new AbortController()
+  closing.push(async () => reattach.abort())
+  client.stream("/attach", {id: one}, line => reattached.push(line as AttachLine), reattach.signal).catch(() => undefined)
+  await until(() => reattached.some(({prompt}) => prompt?.text === "Still there?"))
+  const {chatItems} = await alice.chat.apiGetChat(T.ChatType.Group, groupId, 20)
+  expect(chatItems.map(({meta}) => meta.itemText)).not.toContain("Session 1 is not running.")
 }, 600_000)
 
 test("a new session has no chats", async () => {
