@@ -74,13 +74,13 @@ Decided on 2026-11-08:
 32. The three mirroring hooks run with `"async": true`.
 33. Answers and terminal prompts are posted in parts of at most 12,000 encoded bytes; an answer quotes the owner's prompt only when its first part fits with the quote.
 34. A prompt in the group of a session without an attached Claude Code gets the reply `Session N is not running.`
-35. A UserPromptSubmit prompt is not posted by `User` when a channel tag of this server in it holds a pushed prompt with its item ID, when it equals a prompt pushed in the last 60 s, or when it is a one-line `/` command.
+35. A UserPromptSubmit prompt is not posted by `User` when a channel tag of this server in it holds a pushed prompt with its item ID, when it equals a prompt pushed in the last 60 s, when it is made only of this server's channel tags, or when it is a one-line `/` command.
 
 Decided on 2026-11-08, review round 1:
-36. The hooks and the session server of one Claude Code process share one session: the hooks send `CLAUDE_PID`, the session server its parent PID. The daemon maps a session ID without `session.json` to the session of that process and records the alias in `session.json`. A hook of an ID with `session.json` goes to the session attached from its process, without an alias. A title of a new ID from a process without a known session waits for the session server of that process to register, up to 10 s; the turn hooks repeat a refused turn up to 15 times, 1 s apart.
+36. The hooks and the session server of one Claude Code process share one session: the hooks send `CLAUDE_PID`, the session server its parent PID. The daemon maps a session ID without `session.json` to the session of that process and records the alias in `session.json`. A hook of an ID with `session.json` goes to the session attached from its process, without an alias. A title of a new ID from a process without a known session, or with a held title, waits for the session server of that process to register, up to 10 s; the turn hooks repeat a refused turn up to 15 times, 1 s apart. A daemon stop keeps the held titles for the next start.
 37. When `/attach` ends or a start fails, the session server starts the daemon if needed and attaches again: after 1 s, twice as late after each failure, at most 30 s apart, until its stdin closes or the daemon speaks another protocol.
 38. A pending connection of `connect` is recorded in the session group's data for one day; its chat becomes the session's when it connects within that day. A `connect` to a known chat without an owner gives it to the session.
-39. Owners' prompts are kept until a turn's prompt matches them, at most 20. Each prompt hook records its start time with the oldest prompt it matched, or none. An answer, also an empty one, quotes the newest record whose hook started before its own; without one, it quotes the oldest kept prompt not quoted yet, and that prompt stays kept for its prompt hook.
+39. Owners' prompts are kept until a turn's prompt matches them, at most 20. Each prompt hook records its start time with the oldest prompt it matched, or none, unless it started before an answer already handled. An answer, also an empty one, quotes the newest record whose hook started before its own; without one, it quotes the oldest kept prompt not quoted yet, and that prompt stays kept for its prompt hook.
 40. A session in mode `host` posts its mode card when its group has an approver: at the session start or after a membership event. A rejected card is recorded in `session.json`; the card is posted again only after a session start with `requests`. A change to `requests` ends a pending mode card.
 41. An owner's one-line `/` message is a prompt when its keyword is not a command of the session group.
 42. The daemon is spawned with an allowlist of environment variables, `NODE_OPTIONS` among them.
@@ -101,6 +101,12 @@ Decided on 2026-11-08, review round 3:
 53. The commands reply of a session group lists `/give`.
 54. A Stop request posts the answer before it updates the group's short description.
 55. An existing token file is made private only when the user owns it.
+
+Decided on 2026-11-08, review round 4:
+56. The lock and the token are created by linking a complete private temporary file into place; where links fail, by an exclusive write.
+57. The lock of a stopped process is taken over through a claim: a link of the lock to `lock.PID.claim`, which only one starter creates; the claimer replaces the lock when the claim holds that PID.
+58. A Stop request updates the short description also when its posts fail.
+59. A title's rename writes `session.json` as read after the group's rename.
 
 Pack of the package (decision 44):
 ```
@@ -141,6 +147,31 @@ flowchart LR
   A -- yes --> R[running]
   A -- no, 150 checks done --> E[error with the lock path, exit 1]
   A -- no --> G
+```
+
+Lock creation and takeover (decisions 56, 57):
+```
+create(lock, text):   write text to lock.PID.HEX.tmp, 0600; link it to lock; remove the temporary file
+                      link refused other than EEXIST: exclusive write of lock
+acquire:              create; else read the PID P of lock
+                      P alive and not this process: locked
+                      claim: link lock to lock.P.claim; EEXIST or ENOENT: locked
+                      the claim holds P: remove lock; create; remove the claim
+                      the claim holds another PID: locked; remove the claim
+```
+
+```mermaid
+sequenceDiagram
+  participant A as starter A
+  participant B as starter B
+  participant F as ROOT
+  Note over F: lock holds the stopped PID P
+  A->>F: read lock: P, stopped
+  B->>F: read lock: P, stopped
+  B->>F: link lock to lock.P.claim: created
+  B->>F: remove lock; link B's lock; remove the claim
+  A->>F: link lock to lock.P.claim: it holds B's PID
+  A->>A: locked; remove the claim
 ```
 
 Chat ownership, D8 (a):
@@ -313,9 +344,10 @@ on /title or /turn (id, pid), /session (id, pid):
   target = entry with that pid, attached or seen in the last 10 s
         ?? title of pid in the last 10 s
   target ?? id; target ≠ id: alias id → target, in aliases of the target's session.json
-on /title (id, pid), no alias, no session.json for id, no entry or title for pid:
-                                             title of pid = id, now, its name; the waits of pid end; the reply at once;
-                                             the title resolves as above after a /session of pid, or after 10 s
+on /title (id, pid), no alias, no session.json for id, no entry or title for pid, or a held title of pid:
+                                             held; title of pid = id, now, its name; the waits of pid end; the reply at once;
+                                             the title resolves as above after a /session of pid, or after 10 s, while the daemon runs
+on a daemon stop:                            the held titles into ROOT/titles.json; the next start takes each as a new /title
 on /title (id, pid):                         after the entry exists: title of pid = id, now; the waits of pid end
 on /session (id, pid) that creates a session: the name of the held title of id
 on a new session.json:                       the aliases that already point to its ID
@@ -444,12 +476,15 @@ on POST /turn, before any await:
   answer a, also empty, at:        earlier = turn records with at below at; turns -= earlier
                                    quoted = item of the newest earlier
                                          ?? the oldest pushed not quoted, marked quoted; it stays in pushed
+                                   answeredAt = max(answeredAt, at)
   prompt p, at:                    matched = pushed (T, I) with a channel tag of T, I in p, or T = p pushed in the last 60 s
-                                   turns += (at, oldest matched ?? null); pushed -= matched
+                                   at not below answeredAt: turns += (at, oldest matched ?? null) (decision 39)
+                                   pushed -= matched
 on POST /turn model or effort:     a changed value: description in memory and session.json
-on POST /turn prompt p, not blank: nothing matched and p not a one-line "/" command: User posts parts(p)
+on POST /turn prompt p:            nothing matched; p not blank, not only channel tags of this server, not a one-line "/" command:
+                                   User posts parts(p) (decision 35)
 on POST /turn answer a, not blank: Claude posts parts(a), the first part quoting quoted when it fits with the quote
-then, a changed value:             the group short description (decision 54)
+then, also after a failed post, a changed value: the group short description (decisions 54, 58)
 Claude's post with a quote:        the core refuses the quote: the same post without it (decision 50)
 parts(t):                          consecutive pieces of t, each at most 12000 encoded bytes
 channel tag of T, I:               <channel source="plugin:simplex:simplex" ... item="I" ...>\nT\n</channel>
