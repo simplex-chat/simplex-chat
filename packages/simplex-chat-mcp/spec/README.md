@@ -1,10 +1,8 @@
 # SimpleX MCP server: specification
 
-> Technical specification of `@simplex-chat/mcp` 0.2.0 in `packages/simplex-chat-mcp`. Statements are checked against the source at commit `937a975a6`, and each section links to the code.
+> Technical specification of `@simplex-chat/mcp` 0.3.0 in `packages/simplex-chat-mcp`: `simplex-mcp serve` and the Claude Code plugin. Statements are checked against the source at commit `03751e155`, and each section links to the code.
 >
-> Related: [README](../README.md) (user manual) | [PLAN](../PLAN.md) (design record) | [TESTING](../TESTING.md) (local build and test)
->
-> It specifies `serve`. The Claude Code plugin of 0.3.0 is described in [REFERENCE](../REFERENCE.md#claude-code-plugin), section "Claude Code plugin".
+> Related: [README](../README.md) (user manual) | [REFERENCE](../REFERENCE.md) (options, commands, files, recovery) | [PLAN](../PLAN.md) (design record of `serve`) | [TESTING](../TESTING.md) (local build and test)
 
 ## Table of contents
 
@@ -27,29 +25,95 @@ A tool call is held open by the server until the owner decides and, for `connect
 
 The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
 
+The package is also a Claude Code plugin. Each Claude Code session runs `simplex-mcp session`, a stdio MCP server, which forwards tool calls over a local socket to one daemon per data root, `simplex-mcp daemon`. The socket carries HTTP/1.1 with a bearer token. The daemon runs two cores: `Claude`, the profile peers see, which holds the Main group, one group per session and the chats with peers; and `User`, a member of every session group, which posts the prompts typed in the terminal.
+
+Each session has the six tools and `reply`, its own `Actions` and `Control` in its group, and its own chats: a chat belongs to the session that connected it, and owners move it with `/give`. Owners of the Main group are invited to each session group through the Main group, and only they approve there. The session server is also a Claude Code channel: an owner's message in the session group reaches the running session as a prompt, and Claude Code's permission prompts are posted there as cards. The plugin's hooks post the terminal prompts and the final answer of each turn in the group, and keep the model and effort level in its short description.
+
 ---
 
 ## Dependency graph
 
-Solid edges are runtime imports. Dotted edges are type-only imports, removed by the compiler.
+Solid edges are runtime imports. Dotted edges are type-only imports, removed by the compiler. Node.js built-in modules are left out.
 
 ```mermaid
 graph TD
   cli["cli.ts"] --> serve["serve.ts"]
   cli --> register["register.ts"]
+  cli --> session["session.ts"]
+  cli --> daemon["daemon.ts"]
+  cli --> hook["hook.ts"]
+  cli --> owner["owner.ts"]
   cli --> messages["messages.ts"]
   cli --> log["log.ts"]
   cli -.-> actions["actions.ts"]
   serve --> control["control.ts"]
   serve --> tools["tools.ts"]
   serve --> actions
+  serve --> core["core.ts"]
   serve --> http["http.ts"]
   serve --> files["files.ts"]
   serve --> messages
   serve --> log
+  serve --> version["version.ts"]
+  session --> client["client.ts"]
+  session --> config["config.ts"]
+  session --> tools
+  session --> socket["socket.ts"]
+  session --> files
+  session --> log
+  session --> version
+  session -.-> protocol["protocol.ts"]
+  session -.-> messages
+  daemon --> hub["hub.ts"]
+  daemon --> config
+  daemon --> socket
+  daemon --> files
+  daemon --> protocol
+  daemon --> log
+  daemon --> version
+  daemon -.-> actions
+  daemon -.-> tools
+  daemon -.-> messages
+  hub --> mainGroup["main-group.ts"]
+  hub --> user["user.ts"]
+  hub --> control
+  hub --> tools
+  hub --> actions
+  hub --> core
+  hub --> serve
+  hub --> files
+  hub --> messages
+  hub --> log
+  hub -.-> config
+  hub -.-> protocol
+  mainGroup --> control
+  mainGroup --> tools
+  mainGroup --> log
+  user --> core
+  user --> log
+  hook --> client
+  hook --> config
+  hook --> qr["qr.ts"]
+  hook --> socket
+  hook --> files
+  hook --> log
+  hook --> version
+  hook -.-> protocol
+  owner --> client
+  owner --> qr
+  owner --> files
+  owner --> version
+  owner -.-> protocol
+  client --> socket
+  client --> files
+  client --> protocol
+  client --> log
+  core --> files
+  core --> log
   control --> tools
   control --> actions
   control --> messages
+  control --> qr
   control --> log
   control -.-> serve
   tools --> actions
@@ -58,40 +122,63 @@ graph TD
   actions --> messages
   actions --> log
   actions -.-> tools
+  config --> messages
+  config -.-> actions
+  protocol -.-> config
+  protocol -.-> tools
   register --> files
   register --> log
   files --> log
+  files -.-> actions
   http --> log
+  socket --> log
   messages --> log
   serve --> sc["simplex-chat"]
   tools --> sc
   control --> sc
+  core --> sc
+  hub --> sc
+  mainGroup --> sc
+  user --> sc
   messages -.-> sc
   log --> sc
-  serve --> types["@simplex-chat/types"]
-  tools --> types
-  control --> types
-  messages --> types
-  log --> types
-  serve --> mcps["@modelcontextprotocol/server"]
-  tools --> mcps
+  tools --> mcps["@modelcontextprotocol/server"]
+  serve --> mcps
+  session --> mcps
   http --> mcps
   http --> mcpn["@modelcontextprotocol/node"]
-  control --> qr["qrcode"]
+  qr --> qrcode["qrcode"]
+  version --> pkg["package.json"]
 ```
 
 | Module | Role |
 |---|---|
 | [`cli.ts`](../src/cli.ts) | `simplex-mcp` entry point: commands, options, exit codes |
-| [`serve.ts`](../src/serve.ts) | start sequence, event dispatch, stop sequence |
-| [`http.ts`](../src/http.ts) | HTTP listener, token check, `/mcp` route, SDK handler |
-| [`tools.ts`](../src/tools.ts) | tool schemas, descriptions, handlers, connect plans, perform steps, downloads, files to send |
-| [`actions.ts`](../src/actions.ts) | action records, state machine, expiry, stop |
-| [`control.ts`](../src/control.ts) | agent control chat: link, owners, owner commands, cards, counter |
+| [`serve.ts`](../src/serve.ts) | `serve`: start sequence, event dispatch, stop sequence |
+| [`http.ts`](../src/http.ts) | `serve`: HTTP listener, token check, `/mcp` route, SDK handler |
+| [`register.ts`](../src/register.ts) | `register` command: Claude Code entry of a `serve` agent |
+| [`tools.ts`](../src/tools.ts) | tool schemas, descriptions, handlers, connect plans, perform steps, downloads, files to send, chat owners |
+| [`actions.ts`](../src/actions.ts) | action records, state machine, expiry timers, per-session limits, stop |
+| [`control.ts`](../src/control.ts) | agent control chat and session groups: link, owners, owner commands, cards, counter |
 | [`messages.ts`](../src/messages.ts) | message items and their files, item watch, waits, unread paging, display names |
-| [`files.ts`](../src/files.ts) | data folder, lock, token, `headers.json`, `server.json` |
-| [`register.ts`](../src/register.ts) | `register` command: Claude Code entry |
-| [`log.ts`](../src/log.ts) | terminal lines, error texts, shell quoting |
+| [`core.ts`](../src/core.ts) | one SimpleX core: init, user, network config, temp folder, event buffer, profile update |
+| [`files.ts`](../src/files.ts) | data folders, lock, token, `headers.json`, `server.json`, session folders, socket path, daemon log |
+| [`log.ts`](../src/log.ts) | log lines, error texts, shell quoting |
+| [`qr.ts`](../src/qr.ts) | QR code text: `small` and `large` for terminals, `plain` for the hook message |
+| [`version.ts`](../src/version.ts) | package version from `package.json` |
+| [`session.ts`](../src/session.ts) | plugin: stdio MCP server of one Claude Code session, its channel, the forward of calls to the daemon |
+| [`client.ts`](../src/client.ts) | plugin: daemon client, version check, spawn |
+| [`socket.ts`](../src/socket.ts) | plugin: HTTP over the local socket, token check, JSON and NDJSON |
+| [`protocol.ts`](../src/protocol.ts) | plugin: request and reply types of the socket routes, protocol version |
+| [`daemon.ts`](../src/daemon.ts) | plugin: routes, session registry, attachments, idle close and stop, ready line |
+| [`hub.ts`](../src/hub.ts) | plugin: the profile `Claude`, the sessions, their groups, prompts, answers and tool-use cards |
+| [`main-group.ts`](../src/main-group.ts) | plugin: the Main group, its owners, `/sessions`, `/join`, owner reset |
+| [`user.ts`](../src/user.ts) | plugin: the profile `User` |
+| [`hook.ts`](../src/hook.ts) | plugin: `hook session-start` and `hook turn` |
+| [`owner.ts`](../src/owner.ts) | plugin: `link` and `reset-owners` |
+| [`config.ts`](../src/config.ts) | plugin: option variables to `Config`, validation |
+
+Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plugin/plugin.json), [`.mcp.json`](../.mcp.json), [`hooks/hooks.json`](../hooks/hooks.json), [`plugin/launch.js`](../plugin/launch.js), [`plugin/allow.js`](../plugin/allow.js), [`skills/`](../skills), and the marketplace [`/.claude-plugin/marketplace.json`](../../../.claude-plugin/marketplace.json); see [API 4.8](api.md#48-plugin-options-files-and-hook-output).
 
 ---
 
@@ -99,9 +186,9 @@ graph TD
 
 | Document | Contents |
 |---|---|
-| [Architecture](architecture.md) | system diagram, modules and types, state, process lifecycle, approval model, security boundaries, limits |
-| [Flows](flows.md) | sequence diagrams of the main flows with source locations |
-| [API](api.md) | the six tools, the control chat commands, replies and cards, the CLI |
+| [Architecture](architecture.md) | system diagram, modules and types, state, process lifecycle, approval model, security boundaries, limits; the plugin in section 8 |
+| [Flows](flows.md) | sequence diagrams of the main flows with source locations; the plugin in flows 17-26 |
+| [API](api.md) | the six tools, the control chat commands, replies and cards, the CLI; the plugin's tools, groups, channel, socket protocol, commands and files in section 4 |
 
 ---
 
@@ -109,17 +196,29 @@ graph TD
 
 | Component | File | Key symbol | Line |
 |---|---|---|---|
-| Binary `simplex-mcp` | [`src/cli.ts`](../src/cli.ts#L198) | `main` | [198](../src/cli.ts#L198) |
-| Argument parser | [`src/cli.ts`](../src/cli.ts#L45) | `parseCommand` | [45](../src/cli.ts#L45) |
-| Server start | [`src/serve.ts`](../src/serve.ts#L65) | `startServer` | [65](../src/serve.ts#L65) |
-| Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L88) | `startAgent` | [88](../src/serve.ts#L88) |
+| Binary `simplex-mcp` | [`src/cli.ts`](../src/cli.ts#L218) | `main` | [218](../src/cli.ts#L218) |
+| Argument parser | [`src/cli.ts`](../src/cli.ts#L63) | `parseCommand` | [63](../src/cli.ts#L63) |
+| Server start | [`src/serve.ts`](../src/serve.ts#L64) | `startServer` | [64](../src/serve.ts#L64) |
+| Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L87) | `startAgent` | [87](../src/serve.ts#L87) |
 | HTTP listener | [`src/http.ts`](../src/http.ts#L14) | `startHttp` | [14](../src/http.ts#L14) |
-| Tool registration | [`src/tools.ts`](../src/tools.ts#L488) | `AgentTools.register` | [488](../src/tools.ts#L488) |
-| Downloads | [`src/tools.ts`](../src/tools.ts#L522) | `AgentTools.downloadFile` | [522](../src/tools.ts#L522) |
-| Action store | [`src/actions.ts`](../src/actions.ts#L124) | `Actions` | [124](../src/actions.ts#L124) |
-| Agent control chat | [`src/control.ts`](../src/control.ts#L81) | `Control` | [81](../src/control.ts#L81) |
-| Card text | [`src/control.ts`](../src/control.ts#L552) | `cardText` | [552](../src/control.ts#L552) |
+| Tool registration | [`src/tools.ts`](../src/tools.ts#L490) | `registerTools` | [490](../src/tools.ts#L490) |
+| Downloads | [`src/tools.ts`](../src/tools.ts#L579) | `AgentTools.downloadFile` | [579](../src/tools.ts#L579) |
+| Action store | [`src/actions.ts`](../src/actions.ts#L143) | `Actions` | [143](../src/actions.ts#L143) |
+| Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L81) | `Control` | [81](../src/control.ts#L81) |
+| Card text | [`src/control.ts`](../src/control.ts#L600) | `cardText` | [600](../src/control.ts#L600) |
 | Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
-| Claude Code entry | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
-| Data folder files | [`src/files.ts`](../src/files.ts#L12) | `createDataFolder`, `acquireLock` | [12](../src/files.ts#L12) |
+| Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
+| Data folder files | [`src/files.ts`](../src/files.ts#L85) | `createDataFolder`, `acquireLock` | [85](../src/files.ts#L85), [90](../src/files.ts#L90) |
+| Session server | [`src/session.ts`](../src/session.ts#L37) | `startSession` | [37](../src/session.ts#L37) |
+| Session to daemon link | [`src/session.ts`](../src/session.ts#L65) | `DaemonLink` | [65](../src/session.ts#L65) |
+| Daemon start by a client | [`src/client.ts`](../src/client.ts#L32) | `DaemonClient.ensureDaemon` | [32](../src/client.ts#L32) |
+| Daemon process | [`src/daemon.ts`](../src/daemon.ts#L324) | `runDaemon` | [324](../src/daemon.ts#L324) |
+| Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L115) | `Daemon.routes` | [115](../src/daemon.ts#L115) |
+| Hub | [`src/hub.ts`](../src/hub.ts#L244) | `Hub.open` | [244](../src/hub.ts#L244) |
+| Session and its group | [`src/hub.ts`](../src/hub.ts#L43) | `Session` | [43](../src/hub.ts#L43) |
+| Main group | [`src/main-group.ts`](../src/main-group.ts#L24) | `MainGroup` | [24](../src/main-group.ts#L24) |
+| Profile `User` | [`src/user.ts`](../src/user.ts#L13) | `User` | [13](../src/user.ts#L13) |
+| Hooks | [`src/hook.ts`](../src/hook.ts#L37) | `sessionStart`, `turn` | [37](../src/hook.ts#L37), [54](../src/hook.ts#L54) |
+| `link`, `reset-owners` | [`src/owner.ts`](../src/owner.ts#L22) | `showLink`, `resetOwners` | [22](../src/owner.ts#L22), [26](../src/owner.ts#L26) |
+| SimpleX core | [`src/core.ts`](../src/core.ts#L20) | `openCore` | [20](../src/core.ts#L20) |
 | Package manifest | [`package.json`](../package.json) | `bin.simplex-mcp` | [6](../package.json#L6) |
