@@ -1,14 +1,15 @@
-import {mkdtempSync, rmSync} from "fs"
+import {mkdtempSync, readFileSync, rmSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
-import {join} from "path"
+import {dirname, join} from "path"
 import {T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {DaemonClient} from "../../src/client"
 import {defaultConfig} from "../../src/config"
 import {Daemon, productionDeps} from "../../src/daemon"
+import {hubFolder, sessionFolder} from "../../src/files"
 import {SessionReply, StatusReply, TitleReply} from "../../src/protocol"
-import {Bot, ItemCheck, callTool, captureLog, cardNumber, joinByLink, lines, person, prepareRoot, received, startBot, textStarts, until, updated} from "./helpers"
-import {SmpServer, startSmpServer} from "./smpServer"
+import {Bot, ItemCheck, callTool, captureLog, cardNumber, joinByLink, lines, person, prepareRoot, received, startBot, textStarts, until} from "./helpers"
+import {SmpServer, startSmpServer, startXftpServer} from "./smpServer"
 import {daemonPid, killDaemon, spawnSession} from "./stdio"
 
 const one = "11111111-1111-4111-8111-111111111111"
@@ -18,19 +19,21 @@ const four = "44444444-4444-4444-8444-444444444444"
 const daemonStopped = "The SimpleX daemon stopped; repeat the call."
 
 let smpServer: SmpServer
+let xftpServer: SmpServer
 let dir: string
-let logLines: string[]
 let closing: (() => Promise<void>)[]
 
 beforeAll(async () => {
   smpServer = await startSmpServer()
+  xftpServer = await startXftpServer()
   dir = mkdtempSync(join(tmpdir(), "simplex-mcp-daemon-"))
-  logLines = captureLog()
+  captureLog()
 }, 120_000)
 
 afterAll(async () => {
   jest.restoreAllMocks()
   await smpServer?.stop()
+  await xftpServer?.stop()
   rmSync(dir, {recursive: true, force: true})
 })
 
@@ -45,7 +48,7 @@ afterEach(async () => {
 type Person = {chat: api.ChatApi; user: T.User}
 
 async function personIn(scenario: string, name: string): Promise<Person> {
-  const p = await person(smpServer.address, join(dir, scenario, name), name)
+  const p = await person(smpServer.address, join(dir, scenario, name), name, xftpServer.address)
   closing.push(() => p.chat.close())
   return p
 }
@@ -67,114 +70,128 @@ async function openSession(client: DaemonClient, id: string, name: string): Prom
   return client.request<SessionReply>("POST", "/session", {id, project: "/p", config: defaultConfig})
 }
 
-const cardFrom = (session: number, name: string, request: string): ItemCheck => textStarts(`Session ${session} · SimpleX MCP - ${name}\n${request}`)
+const inGroup = (groupId: number, check: ItemCheck): ItemCheck => ci => ci.chatInfo.type === "group" && ci.chatInfo.groupInfo.groupId === groupId && check(ci)
 
-test("two sessions in one Main group, then resume after a restart", async () => {
+async function joinSessionGroups(owner: Person, names: string[]): Promise<Map<string, number>> {
+  const groups = new Map<string, number>()
+  await new Promise<void>(resolve => {
+    owner.chat.on("receivedGroupInvitationViaGroup", ({groupInfo}) => {
+      groups.set(groupInfo.groupProfile.displayName, groupInfo.groupId)
+      if (names.every(name => groups.has(name))) resolve()
+    })
+  })
+  for (const groupId of groups.values()) {
+    const joined = owner.chat.wait("userJoinedGroup", ({groupInfo}) => groupInfo.groupId === groupId, 60_000)
+    await owner.chat.apiJoinGroup(groupId)
+    await joined
+  }
+  return groups
+}
+
+test("an owner joins the Main group and each session's group, and approves its connect, send, download and leave there; chats belong to their sessions", async () => {
   const root = join(dir, "sessions", "root")
-  await prepareRoot(smpServer.address, root, [
-    {id: one, name: "one"},
-    {id: two, name: "two"},
-  ])
+  await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("sessions", "Alice")
   const directory = await botIn("sessions", "Directory")
+  const shop = await botIn("sessions", "Shop")
   let daemon = await startDaemon(root)
   const client = DaemonClient.forRoot(root)
 
-  expect(await openSession(client, one, "one")).toMatchObject({number: 1, displayName: "SimpleX MCP - one", owner: {owners: []}})
-  expect(await openSession(client, two, "two")).toMatchObject({number: 2, displayName: "SimpleX MCP - two"})
+  expect(await openSession(client, one, "one")).toMatchObject({number: 1, displayName: "1 · one", owner: {owners: []}})
+  expect(await openSession(client, two, "two")).toMatchObject({number: 2, displayName: "2 · two"})
   const {owner} = await client.request<StatusReply>("GET", "/status")
-  expect(owner.link).toBeDefined()
-
-  const greeting = received(alice.chat, textStarts("I'm your agents' Main group."))
+  const greeting = received(alice.chat, textStarts("I'm Claude. Each Claude Code session has its own group"))
+  const invitations = joinSessionGroups(alice, ["1 · one", "2 · two"])
   await joinByLink(alice, owner.link!)
-  const mainId = ((await greeting).chatInfo as T.ChatInfo.Group).groupInfo.groupId
-  await until(() => logLines.some(line => /^Alice joined \(member \d+\) and is now an owner\. The link is deleted\.$/.test(line)))
+  await greeting
+  const groups = await invitations
+  const [groupOne, groupTwo] = [groups.get("1 · one")!, groups.get("2 · two")!]
   expect((await client.request<StatusReply>("GET", "/status")).owner).toEqual({owners: ["Alice"]})
-  const ownerSends = (text: string) => alice.chat.apiSendTextMessage([T.ChatType.Group, mainId], text)
-
-  const connectDirectory = async (id: string, session: number, name: string): Promise<{n: number; chat: string}> => {
-    const card = received(alice.chat, cardFrom(session, name, "I want to connect to bot Directory, as myself."))
-    const connecting = callTool(client, id, "connect", {target: directory.link, idle: 2})
-    const n = cardNumber(await card)
-    await ownerSends(`/approve ${n}`)
-    const {result} = await connecting
-    expect(result).toMatchObject({action: n, status: "done", connected: true, type: "contact", name: "Directory"})
-    return {n, chat: result.chat}
+  const ownerSends = (groupId: number, text: string) => alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], text)
+  const card = (groupId: number, text: string): Promise<T.AChatItem> => received(alice.chat, inGroup(groupId, textStarts(text)))
+  const approved = async (groupId: number, cardText: string, start: () => Promise<{result: any}>, command = "approve"): Promise<{result: any}> => {
+    const shown = card(groupId, cardText)
+    const call = start()
+    const ci = await shown
+    const chat = /\/'\w+ ([@#]\d+) \d+'/.exec(ci.chatItem.meta.itemText)?.[1]
+    await ownerSends(groupId, `/${command} ${chat === undefined ? "" : `${chat} `}${cardNumber(ci)}`)
+    return call
   }
-  const first = await connectDirectory(one, 1, "one")
-  const second = await connectDirectory(two, 2, "two")
-  expect(second.n).not.toBe(first.n)
-  const target1 = `1:${first.chat}`
-  const target2 = `2:${second.chat}`
 
-  const sendCard = (session: number, name: string, text: string): Promise<T.AChatItem> => {
-    const isCard = cardFrom(session, name, "I want to send a message to bot Directory:")
-    return received(alice.chat, ci => isCard(ci) && lines(ci)[2] === `\`${text}\``)
-  }
-  const responseTexts = ({result}: {result: any}): string[] => result.responses.map(({text}: {text: string}) => text)
+  const connected = await approved(groupOne, "I want to connect to bot Directory, as myself.", () => callTool(client, one, "connect", {target: directory.link, idle: 2}))
+  expect(connected.result).toMatchObject({action: 1, status: "done", connected: true, type: "contact", name: "Directory"})
+  const directoryChat = connected.result.chat as string
+  expect(await callTool(client, two, "connect", {target: directory.link})).toMatchObject({isError: true, text: `The chat of ${directory.link} belongs to another session; an owner can give it to this session with /give.`})
+  const shopped = await approved(groupTwo, "I want to connect to bot Shop, as myself.", () => callTool(client, two, "connect", {target: shop.link, idle: 2}))
+  expect(shopped.result).toMatchObject({action: 1, status: "done", connected: true, name: "Shop"})
+  const shopChat = shopped.result.chat as string
+  const chatsOf = async (id: string): Promise<string[]> => (await callTool(client, id, "list", {})).result.chats.map(({chat}: {chat: string}) => chat)
+  expect(await chatsOf(one)).toEqual([directoryChat])
+  expect(await chatsOf(two)).toEqual([shopChat])
 
-  const card1 = sendCard(1, "one", "from one")
-  const sending1 = callTool(client, one, "send", {chat: first.chat, text: "from one", idle: 2})
-  const n1 = cardNumber(await card1)
-  const card2 = sendCard(2, "two", "from two")
-  const sending2 = callTool(client, two, "send", {chat: second.chat, text: "from two", idle: 2})
-  const n2 = cardNumber(await card2)
-  const outcome = (card: T.AChatItem): Promise<T.AChatItem> => updated(alice.chat, ci => ci.chatItem.meta.itemId === card.chatItem.meta.itemId)
-  const notFor = received(alice.chat, textStarts(`Action ${n2} is not for ${target1}.`))
-  await ownerSends(`/approve ${target1} ${n2}`)
-  await notFor
-  const approved2 = outcome(await card2)
-  await ownerSends(`/approve ${target2} ${n2}`)
-  const sent2 = await sending2
-  expect(sent2.result).toMatchObject({action: n2, status: "done", chat: second.chat, more: 0})
-  expect(responseTexts(sent2)).toEqual(["result 1: from two", "result 2: from two"])
-  expect(lines(await approved2).at(-1)).toBe("Approved by Alice.")
-  expect((await callTool(client, one, "list", {})).result.actions).toEqual([expect.objectContaining({action: n1, tool: "send", state: "pending"})])
-  const rejected1 = outcome(await card1)
-  await ownerSends(`/reject ${target1} ${n1}`)
-  expect((await sending1).result).toEqual({action: n1, status: "rejected"})
-  expect(lines(await rejected1).at(-1)).toBe("Rejected by Alice.")
+  const shownSend = card(groupOne, "I want to send a message to bot Directory:")
+  const pending = callTool(client, one, "send", {chat: directoryChat, text: "trail shoes", idle: 2})
+  const sendCard = await shownSend
+  const notPending = received(alice.chat, inGroup(groupTwo, textStarts(`Action ${cardNumber(sendCard)} is not pending.`)))
+  await ownerSends(groupTwo, `/approve ${directoryChat} ${cardNumber(sendCard)}`)
+  await notPending
+  await ownerSends(groupOne, `/approve ${directoryChat} ${cardNumber(sendCard)}`)
+  expect((await pending).result.responses.map(({text}: {text: string}) => text)).toEqual(["result 1: trail shoes", "result 2: trail shoes"])
 
-  const approvedAll = received(alice.chat, textStarts("Approved for bot Directory"))
-  await ownerSends(`/approve ${target2} all`)
-  expect((await approvedAll).chatItem.meta.itemText).toBe(`Approved for bot Directory (${target2}) by Alice. /'revoke ${target2}'`)
-  const standingOutcome = received(alice.chat, cardFrom(2, "two", "I sent a message to bot Directory:\n`standing`"))
-  const standing = await callTool(client, two, "send", {chat: second.chat, text: "standing", idle: 2})
-  expect(standing.result).toMatchObject({status: "done", chat: second.chat})
-  expect(responseTexts(standing)).toEqual(["result 1: standing", "result 2: standing"])
-  expect(lines(await standingOutcome).at(-1)).toBe(`Approved for this chat by Alice. /'revoke ${target2}'`)
+  const trail = await alice.chat.apiNewGroup(alice.user.userId, {displayName: "Trail", fullName: ""})
+  const trailLink = await alice.chat.apiCreateGroupLink(trail.groupId, T.GroupMemberRole.Member)
+  const joinedTrail = await approved(groupOne, "I want to connect to group Trail, as myself.", () => callTool(client, one, "connect", {target: trailLink, idle: 2}))
+  const trailChat = joinedTrail.result.chat as string
+  const notes = join(dir, "sessions", "notes.txt")
+  writeFileSync(notes, "trail notes")
+  await alice.chat.apiSendMessages([T.ChatType.Group, trail.groupId], [{fileSource: {filePath: notes}, msgContent: {type: "file", text: ""}, mentions: {}}])
+  const [offered] = (await callTool(client, one, "receive", {chat: trailChat, wait: 30})).result.messages
+  expect(offered.file).toMatchObject({name: "notes.txt", status: "offered"})
+  const downloaded = await approved(groupOne, "I want to download a file from Alice in group Trail", () => callTool(client, one, "download", {chat: trailChat, item: offered.item, wait: 60}), "receive")
+  expect(dirname(downloaded.result.path)).toBe(join(sessionFolder(root, one), "files", `group-${trailChat.slice(1)}`))
+  expect(readFileSync(downloaded.result.path, "utf8")).toBe("trail notes")
+  const left = await approved(groupOne, "I want to leave group Trail", () => callTool(client, one, "leave", {chat: trailChat}))
+  expect(left.result).toMatchObject({status: "done", chat: trailChat})
 
-  const revoked = received(alice.chat, textStarts(`Messages to bot Directory (${target2}) need approval again.`))
-  await ownerSends(`/revoke ${target2}`)
-  await revoked
-  const card3 = sendCard(2, "two", "after revoke")
-  const sending3 = callTool(client, two, "send", {chat: second.chat, text: "after revoke", idle: 2})
-  const n3 = cardNumber(await card3)
-  await ownerSends(`/approve ${target2} ${n3}`)
-  expect((await sending3).result).toMatchObject({action: n3, status: "done"})
+  const gave = received(alice.chat, inGroup(groupOne, textStarts("Gave bot Directory")))
+  await ownerSends(groupOne, `/give ${directoryChat} 2`)
+  expect(lines(await gave)).toEqual([`Gave bot Directory (${directoryChat}) to session 2.`])
+  expect(await chatsOf(one)).toEqual([])
+  expect((await chatsOf(two)).sort()).toEqual([directoryChat, shopChat].sort())
 
   await daemon.stop()
   daemon = await startDaemon(root)
-  expect(await openSession(client, two, "two")).toMatchObject({number: 2, displayName: "SimpleX MCP - two", owner: {owners: ["Alice"]}})
-  const listed = await callTool(client, two, "list", {})
-  expect(listed.result.chats).toContainEqual(expect.objectContaining({chat: second.chat, type: "contact", name: "Directory", connected: true}))
-  expect(listed.result.actions).toEqual([])
+  const listedOne = received(alice.chat, inGroup(groupOne, textStarts("No chats.")))
+  await ownerSends(groupOne, "/list")
+  await listedOne
+  expect(await openSession(client, two, "two")).toMatchObject({number: 2, displayName: "2 · two", owner: {owners: ["Alice"]}})
+  expect((await chatsOf(two)).sort()).toEqual([directoryChat, shopChat].sort())
 }, 600_000)
 
-test("a profile the daemon creates has no chats", async () => {
+test("a new session has no chats", async () => {
   const root = join(dir, "fresh", "root")
-  await prepareRoot(smpServer.address, root, [])
+  await prepareRoot(smpServer.address, root)
   await startDaemon(root)
   const client = DaemonClient.forRoot(root)
 
-  expect(await openSession(client, four, "four")).toMatchObject({number: 1, displayName: "SimpleX MCP - four"})
+  expect(await openSession(client, four, "four")).toMatchObject({number: 1, displayName: "1 · four"})
   const listed = await callTool(client, four, "list", {})
   expect(listed.result.chats).toEqual([])
 }, 600_000)
 
 test("stdio session spawns the daemon and recovers after the daemon is killed", async () => {
   const root = join(dir, "stdio", "root")
-  await prepareRoot(smpServer.address, root, [{id: three, name: "three"}])
+  await prepareRoot(smpServer.address, root)
+  const directory = await botIn("stdio", "Directory")
+  const hub = await api.ChatApi.init({type: "sqlite", filePrefix: join(hubFolder(root), "simplex")})
+  const user = (await hub.apiGetActiveUser())!
+  await hub.startChat()
+  const contactConnected = hub.wait("contactConnected", 60_000)
+  const [, connLink] = await hub.apiConnectPlan(user.userId, directory.link)
+  await hub.apiConnect(user.userId, false, connLink)
+  const {contact} = (await contactConnected)!
+  await hub.apiSetContactCustomData(contact.contactId, {simplexMcpOwner: {session: three}})
+  await hub.close()
   closing.push(() => killDaemon(root))
   const session = spawnSession({...process.env, CLAUDE_CODE_SESSION_ID: three, SIMPLEX_MCP_HOME: root, CLAUDE_PROJECT_DIR: "/p/three"})
   closing.push(() => session.stop())
@@ -186,19 +203,19 @@ test("stdio session spawns the daemon and recovers after the daemon is killed", 
   expect(listed.isError).toBeUndefined()
   expect(listed.structuredContent.actions).toEqual([])
   const status = await DaemonClient.forRoot(root).request<StatusReply>("GET", "/status")
-  expect(status.sessions).toEqual([{number: 1, name: "SimpleX MCP - three", attached: 1}])
-  const [chat] = listed.structuredContent.chats as {chat: string}[]
-  expect(chat).toBeDefined()
+  expect(status.sessions).toEqual([{number: 1, name: "1 · three", attached: 1}])
+  expect(listed.structuredContent.chats).toEqual([expect.objectContaining({chat: `@${contact.contactId}`, name: "Directory"})])
 
+  await session.call("receive", {chat: `@${contact.contactId}`})
   const firstDaemon = daemonPid(root)
   const progressToken = "receive"
-  const receiving = session.call("receive", {chat: chat.chat, wait: 60}, {progressToken})
+  const receiving = session.call("receive", {chat: `@${contact.contactId}`, wait: 60}, {progressToken})
   await until(() => session.client.notifications.some(({method, params}) => method === "notifications/progress" && params.progressToken === progressToken))
   await killDaemon(root)
   expect(await receiving).toMatchObject({isError: true, content: [{type: "text", text: daemonStopped}]})
 
   const relisted = await session.call("list", {})
   expect(relisted.isError).toBeUndefined()
-  expect(relisted.structuredContent.chats).toEqual(listed.structuredContent.chats)
+  expect(relisted.structuredContent.chats).toEqual(listed.structuredContent.chats.map((chat: object) => ({...chat, unread: 0})))
   expect(daemonPid(root)).not.toBe(firstDaemon)
 }, 600_000)

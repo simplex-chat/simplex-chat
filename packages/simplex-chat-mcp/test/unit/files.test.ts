@@ -3,7 +3,7 @@ import * as fs from "fs"
 import {chmodSync, closeSync, existsSync, fstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
-import {LockedError, acquireLock, createDataFolder, dataRoot, hubFolder, logFile, openLog, readServerFile, readSessionFile, releaseLock, serverToken, sessionFolder, sessionNumbers, socketPath, writeHeadersFile, writeServerFile, writeSessionFile} from "../../src/files"
+import {LockedError, acquireLock, createDataFolder, dataRoot, hubFolder, logFile, openLog, readServerFile, readSessionFile, releaseLock, serverToken, sessionFolder, socketPath, storedSessions, writeHeadersFile, writeServerFile, writeSessionFile} from "../../src/files"
 import {ExitError} from "../../src/log"
 
 const id = "34B7AEBF-E707-4D6F-ADD0-ECDFB4FFE281"
@@ -136,18 +136,18 @@ describe("data root", () => {
 })
 
 describe("session files", () => {
-  it("round-trip privately and list their numbers", () => {
+  it("round-trip privately and list the stored sessions", () => {
     const root = tempRoot("simplex-mcp-files-")
     const folder = sessionFolder(root, id)
     mkdirSync(folder, {recursive: true})
     expect(readSessionFile(folder)).toBeUndefined()
-    const file = {number: 3, name: "simplex-chat-6", project: "/p/simplex-chat-6", created: "2026-10-24T10:00:00.000Z"}
+    const file = {number: 3, name: "simplex-chat-6", project: "/p/simplex-chat-6", created: "2026-10-24T10:00:00.000Z", group: 12, mode: "host" as const}
     writeSessionFile(folder, file)
     expect(readSessionFile(folder)).toEqual(file)
     expect(statSync(join(folder, "session.json")).mode & 0o777).toBe(0o600)
     mkdirSync(join(root, "_sessions", "00000000-0000-0000-0000-000000000000"))
-    expect(sessionNumbers(root)).toEqual([3])
-    expect(sessionNumbers(join(root, "missing"))).toEqual([])
+    expect(storedSessions(root)).toEqual([{id: id.toLowerCase(), session: file}])
+    expect(storedSessions(join(root, "missing"))).toEqual([])
   })
 })
 

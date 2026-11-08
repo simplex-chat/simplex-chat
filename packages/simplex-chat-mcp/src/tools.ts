@@ -4,7 +4,7 @@ import {access, copyFile, readFile, realpath, stat} from "fs/promises"
 import {homedir} from "os"
 import {basename, dirname, extname, isAbsolute, join, sep} from "path"
 import {CallToolResult, JsonSchemaType, McpServer, ServerContext, fromJsonSchema} from "@modelcontextprotocol/server"
-import {CEvt, CR, T} from "@simplex-chat/types"
+import {CEvt, CR, ChatEvent, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
 import {Action, Actions, Attachment, ConnRef, ConnectAction, DownloadAction, LeaveAction, Mode, NewAction, SendAction, Standing, Subject, ToolError, hasUnknownServers, isDecided} from "./actions"
 import {chatErrorOf, chatErrorText, errorText, fileError, fullDomainName, logError, oneLine} from "./log"
@@ -118,6 +118,9 @@ export interface Agent {
   standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined
   refusedFile: (path: string, chatInfo: T.ChatInfo, chat: string) => void
   data: string
+  dataRoot?: string
+  owner?: string
+  setMode?: (mode: Mode) => void
 }
 
 type JoinMethod =
@@ -158,6 +161,7 @@ const fixedPreview = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAJCAAA
 const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 const refusedName = /^id_|\.(pem|key|p12|pfx)$/i
 export const refusedFileReason = "private keys and the server's own files are not sent"
+const ownerKey = "simplexMcpOwner"
 const deletedItem = "The message or its chat was deleted."
 const deletedFiles = "Your owner deleted the files of this chat."
 const unapprovedServers = "The file is on unknown servers that were not approved."
@@ -526,7 +530,28 @@ export class AgentTools {
         return this.leaveChat(action.chat)
       case "download":
         return this.performDownload(action)
+      case "mode":
+        return this.agent.setMode?.(action.input.mode)
     }
+  }
+
+  async giveChat(chat: string, owner: string): Promise<void> {
+    const {chatInfo} = await this.knownChat(chat)
+    await setChatData(this.agent.chat, chat, {...customDataOf(chatInfo), [ownerKey]: {session: owner}})
+  }
+
+  close(): void {
+    for (const {check} of this.downloads.values()) clearInterval(check)
+  }
+
+  private owns(chatInfo: T.ChatInfo): boolean {
+    return this.agent.owner === undefined || ownerOf(chatInfo) === this.agent.owner
+  }
+
+  private async claim(chat: string): Promise<void> {
+    if (this.agent.owner === undefined) return
+    const {chatInfo} = await getChat(this.agent.chat, chat, 0)
+    if (ownerOf(chatInfo) === undefined) await setChatData(this.agent.chat, chat, {...customDataOf(chatInfo), [ownerKey]: {session: this.agent.owner}})
   }
 
   private async downloadFile(action: DownloadRequest): Promise<string> {
@@ -562,7 +587,7 @@ export class AgentTools {
     for (const {chatInfo, chatItem} of items) {
       const chat = anyScopeChatRef(chatInfo)
       const {content, file, meta} = chatItem
-      if (chat !== undefined && content.type === "rcvMsgContent" && file?.fileStatus.type === "rcvAccepted") {
+      if (chat !== undefined && this.owns(chatInfo) && content.type === "rcvMsgContent" && file?.fileStatus.type === "rcvAccepted") {
         this.downloadFile({chat, item: meta.itemId, file: fileOffer(content.msgContent, file)}).catch(error => logError(`file ${file.fileId}`, error))
       }
     }
@@ -570,12 +595,12 @@ export class AgentTools {
 
   onFile({chatInfo, chatItem: {content, file}}: T.AChatItem): void {
     const chat = chatRef(chatInfo)
-    if (chat !== undefined && content.type === "rcvMsgContent" && file !== undefined) this.settleFile(chat, file)
+    if (chat !== undefined && this.owns(chatInfo) && content.type === "rcvMsgContent" && file !== undefined) this.settleFile(chat, file)
   }
 
   onFileComplete({chatInfo, chatItem: {content, file}}: T.AChatItem): void {
     const chat = anyScopeChatRef(chatInfo)
-    if (chat === undefined || content.type !== "rcvMsgContent" || file === undefined) return
+    if (chat === undefined || !this.owns(chatInfo) || content.type !== "rcvMsgContent" || file === undefined) return
     this.moveReceived(chat, file)
     this.settleFile(chat, file)
   }
@@ -607,6 +632,35 @@ export class AgentTools {
     this.completeConnect(conn => conn.group === groupInfo.groupId || (conn.pcc !== undefined && conn.pcc === connId), `#${groupInfo.groupId}`)
   }
 
+  onEvent(event: ChatEvent): void {
+    const {watch} = this.agent
+    switch (event.type) {
+      case "newChatItems":
+        this.onNewItems(event.chatItems)
+        return watch.deliver(event.chatItems)
+      case "chatItemUpdated":
+        this.onFile(event.chatItem)
+        return watch.update(event.chatItem)
+      case "chatItemsDeleted":
+        return watch.remove(event.chatItemDeletions.map(({deletedChatItem}) => deletedChatItem))
+      case "contactConnected":
+        return this.onContactConnected(event)
+      case "userJoinedGroup":
+        return this.onUserJoinedGroup(event)
+      case "rcvFileComplete":
+        return this.onFileComplete(event.chatItem)
+      case "rcvFileSndCancelled":
+        return this.onFileCancelled(event)
+      case "rcvFileError":
+        return this.onFileError(event)
+      case "rcvFileDescrReady":
+        return this.onFileDescription()
+      case "sndFileCompleteXFTP":
+      case "sndFileError":
+        return this.onSentFile(event.fileTransferMeta)
+    }
+  }
+
   private run(name: ToolName, input: object, call: ToolCall): Promise<object | undefined> {
     switch (name) {
       case "connect":
@@ -629,7 +683,7 @@ export class AgentTools {
     const attached = this.agent.actions.find(key)
     if (attached !== undefined) return this.connectResult(attached as ConnectAction, input, call)
     const plan = await this.plan(input)
-    if ("known" in plan) return {status: "known", ...(await this.chatFields(plan.known, plan.summary))}
+    if ("known" in plan) return {status: "known", ...(await this.chatFields(this.ownChat(plan.known, input.target), plan.summary))}
     const summary = plan.join
     if (input.message !== undefined && !summary.takesMessage) throw new ToolError(`message: ${input.target} is not a contact or business address with short link data, or its contact exists without a connection.`)
     const subject: Subject = {kind: summary.cardKind, name: summary.name, simplexName: summary.simplexName, incognito: input.incognito ?? false}
@@ -640,6 +694,11 @@ export class AgentTools {
 
   private action(key: string, fields: NewAction, approvedBy?: string): Action {
     return this.agent.actions.find(key) ?? this.agent.actions.create(key, fields, approvedBy, this.session, this.mode)
+  }
+
+  private ownChat(chatInfo: T.ChatInfo, target: string): T.ChatInfo {
+    if (!this.owns(chatInfo)) throw new ToolError(`The chat of ${target} belongs to another session; an owner can give it to this session with /give.`)
+    return chatInfo
   }
 
   private connectResult(action: ConnectAction, input: ConnectInput, call: ToolCall): Promise<object | undefined> {
@@ -702,7 +761,7 @@ export class AgentTools {
     action.connectUntil = Math.min(action.startedAt + (input.wait ?? connectWait) * 1000, action.created + editWindow)
     const plan = await this.plan(input)
     if ("known" in plan) {
-      const fields = await this.chatFields(plan.known, plan.summary)
+      const fields = await this.chatFields(this.ownChat(plan.known, input.target), plan.summary)
       action.knownAs = fields.known_as
       action.chat = fields.chat
       if (fields.connected) this.markConnected(action, fields.chat!)
@@ -715,10 +774,11 @@ export class AgentTools {
     const {contact, group} = action.conn
     action.chat ??= contact !== undefined ? `@${contact}` : group !== undefined ? `#${group}` : undefined
     if (response.type === "contactAlreadyExists") {
-      action.knownAs = (await this.chatFields({type: "direct", contact: response.contact})).known_as
+      action.knownAs = (await this.chatFields(this.ownChat({type: "direct", contact: response.contact}, input.target))).known_as
       this.markConnected(action, `@${response.contact.contactId}`)
       return
     }
+    if (action.chat !== undefined) await this.claim(action.chat)
     if (!action.connected && action.chat !== undefined && isConnected((await getChat(this.agent.chat, action.chat, 0)).chatInfo)) {
       this.markConnected(action, action.chat)
       return
@@ -776,6 +836,7 @@ export class AgentTools {
   }
 
   private markConnected(action: ConnectAction, chat: string): void {
+    if (action.chat !== chat) this.claim(chat).catch(error => logError(`owner of ${chat}`, error))
     action.chat = chat
     action.connected = true
     action.connectedAt ??= Date.now()
@@ -884,7 +945,7 @@ export class AgentTools {
     const home = homedir()
     const data = this.agent.data
     const within = (folder: string): boolean => path.startsWith(`${realFolder(folder)}${sep}`)
-    return refusedName.test(basename(path)) || within(join(home, ".ssh")) || within(join(home, ".gnupg")) || ((within(data) || within(join(home, ".simplex-mcp"))) && !within(join(data, "files")))
+    return refusedName.test(basename(path)) || within(join(home, ".ssh")) || within(join(home, ".gnupg")) || ((within(this.agent.dataRoot ?? data) || within(join(home, ".simplex-mcp"))) && !within(join(data, "files")))
   }
 
   private async fileToSend(file: Attachment): Promise<string> {
@@ -1130,6 +1191,7 @@ export class AgentTools {
       const initial = await getChat(this.agent.chat, chat, {type: "initial", count: 1}).catch(error => {
         throw chatErrorOf(error)?.type === "errorStore" ? unknownChat(chat) : error
       })
+      if (!this.owns(initial.chatInfo)) throw unknownChat(chat)
       const {chatInfo, items, unreadRest} = await unreadItems(this.agent.chat, chat, initial, limit + 1)
       const unread = items.filter(({content}) => content.type === "rcvMsgContent").map(chatItem => arrived.items.find(copy => copy.chatItem.meta.itemId === chatItem.meta.itemId) ?? {chatInfo, chatItem})
       const skipped = items.filter(({content}) => content.type !== "rcvMsgContent").map(({meta}) => meta.itemId)
@@ -1173,14 +1235,16 @@ export class AgentTools {
     const chats = await this.agent.chat.apiGetChats(userId, {type: "last", count: maxChats})
     return chats.filter(({chatInfo}) => {
       const ref = chatRef(chatInfo)
-      return ref !== undefined && ref !== control
+      return ref !== undefined && ref !== control && this.owns(chatInfo)
     })
   }
 
   async knownChat(chat: string): Promise<T.AChat> {
     if (!isChatRef(chat) || chat === this.agent.controlChat()) throw unknownChat(chat)
     try {
-      return await getChat(this.agent.chat, chat, 0)
+      const known = await getChat(this.agent.chat, chat, 0)
+      if (!this.owns(known.chatInfo)) throw unknownChat(chat)
+      return known
     } catch (error) {
       throw chatErrorOf(error)?.type === "errorStore" ? unknownChat(chat) : error
     }
@@ -1394,6 +1458,18 @@ function isIncognito(chatInfo: T.ChatInfo): boolean {
   if (chatInfo.type !== "group") return false
   const {membership} = chatInfo.groupInfo
   return membership.memberProfile.profileId !== membership.memberContactProfileId
+}
+
+export function customDataOf(chatInfo: T.ChatInfo): object | undefined {
+  return chatInfo.type === "direct" ? chatInfo.contact.customData : (chatInfo as T.ChatInfo.Group).groupInfo.customData
+}
+
+export function setChatData(chat: api.ChatApi, ref: string, customData: object): Promise<void> {
+  return chatType(ref) === T.ChatType.Direct ? chat.apiSetContactCustomData(chatNumber(ref), customData) : chat.apiSetGroupCustomData(chatNumber(ref), customData)
+}
+
+export function ownerOf(chatInfo: T.ChatInfo): string | undefined {
+  return (customDataOf(chatInfo) as {[ownerKey]?: {session?: string}} | undefined)?.[ownerKey]?.session
 }
 
 export function isConnected(chatInfo: T.ChatInfo): boolean {

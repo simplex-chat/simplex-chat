@@ -4,9 +4,9 @@ import {Server, request} from "http"
 import {Socket} from "net"
 import {tmpdir} from "os"
 import {join} from "path"
-import {Actions, Mode} from "../../src/actions"
+import {Mode} from "../../src/actions"
 import {defaultConfig} from "../../src/config"
-import {Daemon, DaemonDeps, HubLike, runDaemon} from "../../src/daemon"
+import {Daemon, DaemonDeps, HubLike, SessionLike, runDaemon} from "../../src/daemon"
 import {LockedError, createDataFolder, readSessionFile, sessionFolder, socketPath, writeSessionFile} from "../../src/files"
 import {protocolVersion} from "../../src/protocol"
 import * as socket from "../../src/socket"
@@ -19,11 +19,9 @@ const minutes = 60_000
 const readDefaultConfig = () => defaultConfig
 const fakeTimers: Parameters<typeof jest.useFakeTimers>[0] = {doNotFake: ["nextTick", "setImmediate", "queueMicrotask"]}
 
-interface FakeAgent {
-  number: number
+interface FakeSession extends SessionLike {
   displayName: string
-  mode: () => Mode
-  closed: boolean
+  modes: Mode[]
   calls: string[]
 }
 
@@ -34,13 +32,13 @@ function deferred<T = void>() {
 }
 
 function deps(root: string) {
-  const agents: FakeAgent[] = []
+  const agents: FakeSession[] = []
   const configs: unknown[] = []
-  const actions: {session: number}[] = []
+  const busy = new Set<number>()
+  const stored: unknown[] = []
   let expiryChecks = 0
   const hubStops: number[] = []
-  const events: string[] = []
-  const gates: {open?: Promise<void>; close?: Promise<void>; call?: Promise<void>; hubStop?: Promise<void>} = {}
+  const gates: {open?: Promise<void>; call?: Promise<void>; hubStop?: Promise<void>} = {}
   const opening = deferred()
   const calling = deferred()
   const aborted = deferred()
@@ -49,50 +47,27 @@ function deps(root: string) {
   const onStopped = jest.fn(stopped.resolve)
   const hub: HubLike = {
     mainGroup: "SimpleX MCP",
-    actions: {ofSession: (n: number) => actions.filter(({session}) => session === n), expireDue: () => expiryChecks++} as unknown as Actions,
     owner: () => ({owners: [], link: "https://simplex.chat/g#link"}),
     configure: async config => {
       configs.push(config)
     },
-    resetOwners: async () => "https://simplex.chat/g#new",
-    standingApprover: () => undefined,
-    stop: async () => {
-      hubStops.push(agents.filter(({closed}) => closed).length)
-      hubStopping.resolve()
-      await gates.hubStop
-      return []
-    },
-  }
-  const d: DaemonDeps = {
-    root,
-    token,
-    version: "0.2.0",
-    openHub: async () => hub,
-    openSession: async ({number, name, mode}) => {
+    resetOwners: async () => ({link: "https://simplex.chat/g#new"}),
+    session: async (_id, {number, name}) => {
       opening.resolve()
       await gates.open
-      const agent: FakeAgent = {number, displayName: `SimpleX MCP - ${name}`, mode, closed: false, calls: []}
-      agents.push(agent)
-      events.push(`open ${number}`)
-      return {
+      const known = agents.find(agent => agent.number === number)
+      if (known !== undefined) return known
+      const agent: FakeSession = {
         number,
-        chat: undefined as never,
-        tools: {agentChats: async () => [], knownChat: async () => Promise.reject(new Error("no chats"))} as never,
-        perform: async () => undefined,
-        get displayName() {
-          return agent.displayName
-        },
-        get mode() {
-          return mode()
-        },
+        displayName: `${number} · ${name}`,
+        open: false,
+        modes: [],
+        calls: [],
+        busy: () => busy.has(number),
         rename: async (newName: string) => {
-          agent.displayName = `SimpleX MCP - ${newName}`
+          agent.displayName = `${number} · ${newName}`
         },
-        close: async () => {
-          await gates.close
-          agent.closed = true
-          events.push(`closed ${number}`)
-        },
+        requestMode: mode => agent.modes.push(mode),
         call: async (tool: string, _input: unknown, call: {signal: AbortSignal; progress: (m: string) => void}) => {
           agent.calls.push(tool)
           calling.resolve()
@@ -104,6 +79,24 @@ function deps(root: string) {
           return call.signal.aborted ? undefined : {content: [{type: "text", text: "{}"}], structuredContent: {}}
         },
       }
+      agents.push(agent)
+      return agent
+    },
+    expireDue: () => expiryChecks++,
+    stop: async () => {
+      hubStops.push(agents.filter(({open}) => open).length)
+      hubStopping.resolve()
+      await gates.hubStop
+      return []
+    },
+  }
+  const d: DaemonDeps = {
+    root,
+    token,
+    version: "0.2.0",
+    openHub: async (_config, sessions) => {
+      stored.push(...sessions)
+      return hub
     },
     onStopped,
   }
@@ -112,7 +105,7 @@ function deps(root: string) {
     gates[name] = promise
     return resolve
   }
-  return {d, agents, configs, actions, expiryChecks: () => expiryChecks, hubStops, events, onStopped, stoppedCode: stopped.promise, opening: opening.promise, calling: calling.promise, aborted: aborted.promise, hubStopping: hubStopping.promise, gate}
+  return {d, agents, configs, busy, stored, expiryChecks: () => expiryChecks, hubStops, onStopped, stoppedCode: stopped.promise, opening: opening.promise, calling: calling.promise, aborted: aborted.promise, hubStopping: hubStopping.promise, gate}
 }
 
 let root: string
@@ -179,31 +172,28 @@ describe("daemon", () => {
     const {d, agents, configs} = deps(root)
     daemon = await Daemon.start(d, readDefaultConfig)
     const first = await register(id1)
-    expect(first).toEqual({number: 1, displayName: "SimpleX MCP - app", version: "0.2.0", protocol: protocolVersion, owner: {owners: [], link: "https://simplex.chat/g#link"}})
+    expect(first).toEqual({number: 1, displayName: "1 · app", version: "0.2.0", protocol: protocolVersion, owner: {owners: [], link: "https://simplex.chat/g#link"}})
     await title(id2, "docs")
-    expect(await post("/session", {id: id2, project: "/p/app", config: {...defaultConfig, mainGroup: "Agents"}})).toMatchObject({number: 2, displayName: "SimpleX MCP - docs"})
+    expect(await post("/session", {id: id2, project: "/p/app", config: {...defaultConfig, mainGroup: "Agents"}})).toMatchObject({number: 2, displayName: "2 · docs"})
     expect(configs.at(-1)).toEqual({...defaultConfig, mainGroup: "Agents"})
-    expect(await post("/session", {id: id1, project: "/p/other", config: defaultConfig})).toMatchObject({number: 1, displayName: "SimpleX MCP - app"})
+    expect(await post("/session", {id: id1, project: "/p/other", config: defaultConfig})).toMatchObject({number: 1, displayName: "1 · app"})
     expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({number: 1, name: "app", project: "/p/app"})
     expect(agents).toHaveLength(2)
   })
 
-  it("keeps the approval mode of each session from its own registration", async () => {
+  it("passes the stored sessions to the hub, and the approval mode of each registration to its session", async () => {
     storeSession(id1, 1, "app")
-    const {d, agents, configs} = deps(root)
+    const {d, agents, stored} = deps(root)
     daemon = await Daemon.start(d, readDefaultConfig)
+    expect(stored).toEqual([{id: id1, session: {number: 1, name: "app", project: "/p/app", created: "2026-10-24T00:00:00.000Z"}}])
     const host = {...defaultConfig, approve: "host" as const}
     await streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined)
-    expect(agents[0].mode()).toBe("requests")
+    expect(agents[0].modes).toEqual([])
     await post("/session", {id: id1, project: "/p/app", config: host})
     await register(id2)
-    expect(agents.map(({mode}) => mode())).toEqual(["host", "requests"])
-    await post("/session", {id: id1, project: "/p/app", config: host})
     await title(id2, "docs", host)
-    expect(configs.at(-1)).toEqual(host)
-    expect(agents.map(({mode}) => mode())).toEqual(["host", "requests"])
     await register(id1)
-    expect(agents.map(({mode}) => mode())).toEqual(["requests", "requests"])
+    expect(agents.map(({modes}) => modes)).toEqual([["host", "requests"], ["requests"]])
   })
 
   it("expires due actions at each request that touches sessions", async () => {
@@ -346,24 +336,24 @@ describe("daemon", () => {
     await attached
   })
 
-  it("closes an idle agent without actions, and then stops", async () => {
+  it("closes an idle session without actions, and then stops", async () => {
     jest.useFakeTimers(fakeTimers)
-    const {d, agents, actions, onStopped, stoppedCode} = deps(root)
+    const {d, agents, busy, onStopped, stoppedCode} = deps(root)
     daemon = await Daemon.start(d, readDefaultConfig)
     await register(id1)
     const controller = new AbortController()
     const {attached, firstLine} = attach(id1, controller.signal)
     await firstLine
     await jest.advanceTimersByTimeAsync(20 * minutes)
-    expect(agents[0].closed).toBe(false)
-    actions.push({session: 1})
+    expect(agents[0].open).toBe(true)
+    busy.add(1)
     controller.abort()
     await attached
     await jest.advanceTimersByTimeAsync(10 * minutes)
-    expect(agents[0].closed).toBe(false)
-    actions.length = 0
+    expect(agents[0].open).toBe(true)
+    busy.clear()
     await jest.advanceTimersByTimeAsync(10 * minutes)
-    expect(agents[0].closed).toBe(true)
+    expect(agents[0].open).toBe(false)
     expect(onStopped).not.toHaveBeenCalled()
     await jest.advanceTimersByTimeAsync(10 * minutes)
     expect(await stoppedCode).toBe(0)
@@ -371,15 +361,15 @@ describe("daemon", () => {
     daemon = undefined
   })
 
-  it("closes a registered agent that never attaches", async () => {
+  it("closes a registered session that never attaches", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, agents} = deps(root)
     daemon = await Daemon.start(d, readDefaultConfig)
     await register(id1)
     await jest.advanceTimersByTimeAsync(10 * minutes - 1)
-    expect(agents[0].closed).toBe(false)
+    expect(agents[0].open).toBe(true)
     await jest.advanceTimersByTimeAsync(1)
-    expect(agents[0].closed).toBe(true)
+    expect(agents[0].open).toBe(false)
   })
 
   it("stops 10 minutes after start when no session registers", async () => {
@@ -399,7 +389,7 @@ describe("daemon", () => {
     await register(id1)
     await jest.advanceTimersByTimeAsync(9 * minutes)
     expect(onStopped).not.toHaveBeenCalled()
-    expect(agents[0].closed).toBe(false)
+    expect(agents[0].open).toBe(true)
   })
 
   it("keeps running after a refused call of an unknown session, and stops when idle", async () => {
@@ -418,29 +408,15 @@ describe("daemon", () => {
     const {d, agents} = deps(root)
     daemon = await Daemon.start(d, readDefaultConfig)
     await streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined)
-    expect(agents).toMatchObject([{number: 1, displayName: "SimpleX MCP - app", calls: ["list"]}])
+    expect(agents).toMatchObject([{number: 1, displayName: "1 · app", calls: ["list"]}])
     expect(await register(id2)).toMatchObject({number: 2})
     await jest.advanceTimersByTimeAsync(10 * minutes)
-    expect(agents.map(({closed}) => closed)).toEqual([true, true])
-  })
-
-  it("opens a session again only after its idle close completes", async () => {
-    jest.useFakeTimers(fakeTimers)
-    const {d, events, gate} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
-    await register(id1)
-    const openClose = gate("close")
-    await jest.advanceTimersByTimeAsync(10 * minutes)
-    const registered = register(id1)
-    await jest.advanceTimersByTimeAsync(0)
-    openClose()
-    expect(await registered).toMatchObject({number: 1})
-    expect(events).toEqual(["open 1", "closed 1", "open 1"])
+    expect(agents.map(({open}) => open)).toEqual([false, false])
   })
 
   it("refuses an attachment that opens while the daemon stops", async () => {
     storeSession(id1, 1, "app")
-    const {d, agents, opening, hubStopping, gate, stoppedCode} = deps(root)
+    const {d, opening, hubStopping, gate, stoppedCode} = deps(root)
     const finishOpen = gate("open")
     daemon = await Daemon.start(d, readDefaultConfig)
     const attached = streamLines(socketPath(root), token, "/attach", {id: id1}, () => undefined)
@@ -450,7 +426,6 @@ describe("daemon", () => {
     finishOpen()
     await expect(attached).rejects.toThrow()
     await stopping
-    expect(agents[0].closed).toBe(true)
     expect(await stoppedCode).toBe(0)
   })
 
@@ -470,7 +445,7 @@ describe("daemon", () => {
     await attached
     expect(await requestJson(socketPath(root), token, "GET", "/status")).toMatchObject({sessions: [{number: 1, attached: 0}]})
     await jest.advanceTimersByTimeAsync(10 * minutes)
-    expect(agents[0].closed).toBe(true)
+    expect(agents[0].open).toBe(false)
   })
 
   it("does not run a call whose client left while the session opened", async () => {
@@ -500,14 +475,14 @@ describe("daemon", () => {
     const called = streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined)
     await calling
     await jest.advanceTimersByTimeAsync(25 * minutes)
-    expect(agents[0].closed).toBe(false)
+    expect(agents[0].open).toBe(true)
     expect(await requestJson(socketPath(root), token, "GET", "/status")).toMatchObject({sessions: [{number: 1, attached: 0}]})
     finishCall()
     await called
     await jest.advanceTimersByTimeAsync(10 * minutes - 1)
-    expect(agents[0].closed).toBe(false)
+    expect(agents[0].open).toBe(true)
     await jest.advanceTimersByTimeAsync(1)
-    expect(agents[0].closed).toBe(true)
+    expect(agents[0].open).toBe(false)
   })
 
   it.each(["/session", "/title"])("refuses %s when it arrives while the daemon stops", async route => {
@@ -544,10 +519,10 @@ describe("daemon", () => {
     await register(id1)
     expect(await title(id1, " auth ", {...defaultConfig, mainGroup: "Agents"})).toEqual(titleReply)
     expect(configs.at(-1)).toEqual({...defaultConfig, mainGroup: "Agents"})
-    expect(agents).toMatchObject([{number: 1, displayName: "SimpleX MCP - auth"}])
+    expect(agents).toMatchObject([{number: 1, displayName: "1 · auth"}])
     expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({number: 1, name: "auth"})
     await title(id1)
-    expect(agents).toMatchObject([{displayName: "SimpleX MCP - auth"}])
+    expect(agents).toMatchObject([{displayName: "1 · auth"}])
     expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({name: "auth"})
   })
 
@@ -562,7 +537,7 @@ describe("daemon", () => {
     finishOpen()
     expect(await titled).toEqual(titleReply)
     await called
-    expect(agents).toMatchObject([{number: 1, displayName: "SimpleX MCP - auth"}])
+    expect(agents).toMatchObject([{number: 1, displayName: "1 · auth"}])
     expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({number: 1, name: "auth"})
   })
 
@@ -575,7 +550,7 @@ describe("daemon", () => {
     expect(agents).toHaveLength(0)
     expect(readSessionFile(sessionFolder(root, id1))).toEqual({number: 1, name: "auth", project: "/p/app", created: "2026-10-24T00:00:00.000Z"})
     expect(await requestJson(socketPath(root), token, "GET", "/status")).toMatchObject({sessions: []})
-    expect(await register(id1)).toMatchObject({number: 1, displayName: "SimpleX MCP - auth"})
+    expect(await register(id1)).toMatchObject({number: 1, displayName: "1 · auth"})
   })
 
   it("remembers the title of an unknown session without a folder or a number, and uses it once", async () => {
@@ -585,8 +560,8 @@ describe("daemon", () => {
     expect(agents).toHaveLength(0)
     expect(existsSync(sessionsFolder())).toBe(false)
     expect(await requestJson(socketPath(root), token, "GET", "/status")).toMatchObject({sessions: []})
-    expect(await register(id2)).toMatchObject({number: 1, displayName: "SimpleX MCP - app"})
-    expect(await register(id1)).toMatchObject({number: 2, displayName: "SimpleX MCP - auth"})
+    expect(await register(id2)).toMatchObject({number: 1, displayName: "1 · app"})
+    expect(await register(id1)).toMatchObject({number: 2, displayName: "2 · auth"})
     expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({number: 2, name: "auth", project: "/p/app"})
     expect(daemon["titles"].size).toBe(0)
   })
@@ -597,9 +572,9 @@ describe("daemon", () => {
     const ids = Array.from({length: 101}, (_, n) => `${n.toString(16).padStart(8, "0")}-0000-4000-8000-000000000000`)
     for (const [n, id] of ids.entries()) await title(id, `title ${n}`)
     expect(daemon["titles"].size).toBe(100)
-    expect(await register(ids[0])).toMatchObject({displayName: "SimpleX MCP - app"})
-    expect(await register(ids[1])).toMatchObject({displayName: "SimpleX MCP - title 1"})
-    expect(await register(ids[100])).toMatchObject({displayName: "SimpleX MCP - title 100"})
+    expect(await register(ids[0])).toMatchObject({displayName: "1 · app"})
+    expect(await register(ids[1])).toMatchObject({displayName: "2 · title 1"})
+    expect(await register(ids[100])).toMatchObject({displayName: "3 · title 100"})
   })
 
   it("keeps a re-titled ID as the newest and drops the next oldest", async () => {
@@ -610,9 +585,9 @@ describe("daemon", () => {
     await title(ids[0], "renamed 0")
     await title(ids[100], "title 100")
     expect(daemon["titles"].size).toBe(100)
-    expect(await register(ids[1])).toMatchObject({displayName: "SimpleX MCP - app"})
-    expect(await register(ids[0])).toMatchObject({displayName: "SimpleX MCP - renamed 0"})
-    expect(await register(ids[2])).toMatchObject({displayName: "SimpleX MCP - title 2"})
+    expect(await register(ids[1])).toMatchObject({displayName: "1 · app"})
+    expect(await register(ids[0])).toMatchObject({displayName: "2 · renamed 0"})
+    expect(await register(ids[2])).toMatchObject({displayName: "3 · title 2"})
   })
 
   it("does not delay the idle close of an open session with a title", async () => {
@@ -622,9 +597,9 @@ describe("daemon", () => {
     await register(id1)
     await jest.advanceTimersByTimeAsync(9 * minutes)
     await title(id1, "auth")
-    expect(agents).toMatchObject([{displayName: "SimpleX MCP - auth", closed: false}])
+    expect(agents).toMatchObject([{displayName: "1 · auth", open: true}])
     await jest.advanceTimersByTimeAsync(1 * minutes)
-    expect(agents[0].closed).toBe(true)
+    expect(agents[0].open).toBe(false)
   })
 
   it("does not delay the idle stop with a title", async () => {
@@ -672,7 +647,7 @@ describe("daemon", () => {
   })
 
   it("reports status, resets owners and stops on request", async () => {
-    const {d, agents, hubStops, stoppedCode} = deps(root)
+    const {d, hubStops, stoppedCode} = deps(root)
     daemon = await Daemon.start(d, readDefaultConfig)
     await register(id1)
     expect(await requestJson(socketPath(root), token, "GET", "/status")).toEqual({
@@ -680,12 +655,11 @@ describe("daemon", () => {
       protocol: protocolVersion,
       mainGroup: "SimpleX MCP",
       owner: {owners: [], link: "https://simplex.chat/g#link"},
-      sessions: [{number: 1, name: "SimpleX MCP - app", attached: 0}],
+      sessions: [{number: 1, name: "1 · app", attached: 0}],
     })
     expect(await post("/reset-owners")).toEqual({link: "https://simplex.chat/g#new"})
     expect(await post("/stop")).toEqual({})
-    expect(hubStops).toEqual([0])
-    expect(agents[0].closed).toBe(true)
+    expect(hubStops).toEqual([1])
     expect(existsSync(lockFile())).toBe(false)
     expect(await stoppedCode).toBe(0)
     daemon = undefined

@@ -56,5 +56,5 @@ export interface StatusReply extends DaemonInfo {
 }
 
 export interface ResetReply {
-  link: string
+  link?: string
 }

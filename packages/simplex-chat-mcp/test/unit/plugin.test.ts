@@ -1,5 +1,5 @@
 import {spawn} from "child_process"
-import {chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "fs"
+import {chmodSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {delimiter, join} from "path"
 import {configVariables, defaultConfig} from "../../src/config"
@@ -68,10 +68,13 @@ describe("plugin", () => {
     expect(JSON.parse(output.stdout)).toEqual({hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "allow"}})
   })
 
-  it("launches the pinned package through npx with the arguments and passes the exit code", async () => {
-    const bin = fakeNpx(`echo "$@"\nexit 7`)
-    const output = await run(process.execPath, [join(__dirname, "../../plugin/launch.js"), "hook", "session-start"], {...process.env, PATH: `${bin}${delimiter}${process.env.PATH}`})
-    expect(output.stdout.trim()).toBe(`-y @simplex-chat/mcp@${packageJson.version} hook session-start`)
+  it("launches the pinned package through npx in the plugin folder, with the arguments and the project folder, and passes the exit code", async () => {
+    const bin = fakeNpx(`echo "$@"\npwd\necho "$CLAUDE_PROJECT_DIR"\nexit 7`)
+    const project = realpathSync(mkdtempSync(join(tmpdir(), "project-")))
+    bins.push(project)
+    const env = {...process.env, PATH: `${bin}${delimiter}${process.env.PATH}`, CLAUDE_PROJECT_DIR: ""}
+    const output = await run(process.execPath, [join(__dirname, "../../plugin/launch.js"), "hook", "session-start"], env, project)
+    expect(output.stdout.trim().split("\n")).toEqual([`-y @simplex-chat/mcp@${packageJson.version} hook session-start`, realpathSync(join(__dirname, "../..")), project])
     expect(output.code).toBe(7)
   })
 
@@ -112,9 +115,9 @@ function fakeNpx(body: string): string {
   return bin
 }
 
-function run(command: string, args: string[], env: NodeJS.ProcessEnv): Promise<{stdout: string; code: number | null}> {
+function run(command: string, args: string[], env: NodeJS.ProcessEnv, cwd?: string): Promise<{stdout: string; code: number | null}> {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {env, stdio: ["ignore", "pipe", "inherit"]})
+    const child = spawn(command, args, {env, cwd, stdio: ["ignore", "pipe", "inherit"]})
     let stdout = ""
     child.stdout.on("data", chunk => (stdout += chunk))
     child.on("error", reject)

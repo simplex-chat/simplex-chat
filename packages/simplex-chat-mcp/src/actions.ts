@@ -114,9 +114,16 @@ export interface DownloadAction extends ActionRecord {
   path?: string
 }
 
-export type Action = ConnectAction | SendAction | LeaveAction | DownloadAction
+export interface ModeAction extends ActionRecord {
+  readonly tool: "mode"
+  readonly input: {mode: Mode}
+  readonly subject?: undefined
+  readonly chat?: undefined
+}
 
-export type NewAction = Omit<ConnectAction, keyof ActionRecord> | Omit<SendAction, keyof ActionRecord> | Omit<LeaveAction, keyof ActionRecord> | Omit<DownloadAction, keyof ActionRecord>
+export type Action = ConnectAction | SendAction | LeaveAction | DownloadAction | ModeAction
+
+export type NewAction = Omit<ConnectAction, keyof ActionRecord> | Omit<SendAction, keyof ActionRecord> | Omit<LeaveAction, keyof ActionRecord> | Omit<DownloadAction, keyof ActionRecord> | Omit<ModeAction, keyof ActionRecord>
 
 export interface ActionHooks {
   refusal(action: Action): string | undefined
@@ -136,7 +143,7 @@ export class Actions {
   private readonly outcomes = new Set<Promise<void>>()
 
   constructor(
-    readonly mode: Mode,
+    public mode: Mode,
     public expireHours: number,
     public next: number,
     private readonly hooks: ActionHooks,
@@ -198,10 +205,6 @@ export class Actions {
 
   ofSession(session?: number): Action[] {
     return this.all().filter(action => action.session === session)
-  }
-
-  regainControl(): void {
-    this.lost = false
   }
 
   remove(action: Action): void {
@@ -359,6 +362,7 @@ export function subjectText({kind, name, simplexName}: Subject, showName: (name:
 }
 
 export function summary(action: Action, showName: (name: string) => string): {what: string; detail: string} {
+  if (action.tool === "mode") return {what: `run in mode ${action.input.mode}`, detail: ""}
   const target = subjectText({...action.subject, simplexName: undefined}, showName)
   switch (action.tool) {
     case "connect":
@@ -383,6 +387,7 @@ function performedText(action: Action): string {
   if (action.tool === "send") return "sent."
   if (action.tool === "leave") return `${leaveVerbs(action).past}.`
   if (action.tool === "download") return "downloaded."
+  if (action.tool === "mode") return `mode ${action.input.mode}.`
   return action.connected ? "connected." : "connection requested."
 }
 

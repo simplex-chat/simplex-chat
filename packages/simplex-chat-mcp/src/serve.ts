@@ -4,7 +4,7 @@ import {McpServer, McpServerFactory} from "@modelcontextprotocol/server"
 import {T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {Action, Actions, Mode} from "./actions"
-import {Control, controlDataOf, createControlChat, findControlGroup, hasOutcomeCard, isControlEvent, resetControlChat} from "./control"
+import {Control, controlDataOf, createControlChat, findControlGroup, hasOutcomeCard, isControlEvent, isGroupMessage, resetControlChat} from "./control"
 import {bufferEvents, prepareCore, updatedUser} from "./core"
 import {acquireLock, createDataFolder, releaseLock, serverToken, writeHeadersFile, writeServerFile} from "./files"
 import {startHttp, stopHttp} from "./http"
@@ -124,37 +124,13 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
   let stopped = false
   await events(async event => {
     if (stopped) return
-    switch (event.type) {
-      case "newChatItems":
-        for (const ci of event.chatItems) {
-          if (ci.chatInfo.type === "group" && ci.chatInfo.groupInfo.groupId === control.groupId && ci.chatInfo.groupChatScope === undefined) control.onMessage(ci)
-        }
-        tools.onNewItems(event.chatItems)
-        watch.deliver(event.chatItems)
-        return
-      case "chatItemUpdated":
-        tools.onFile(event.chatItem)
-        return watch.update(event.chatItem)
-      case "chatItemsDeleted":
-        return watch.remove(event.chatItemDeletions.map(({deletedChatItem}) => deletedChatItem))
-      case "contactConnected":
-        return tools.onContactConnected(event)
-      case "userJoinedGroup":
-        return tools.onUserJoinedGroup(event)
-      case "rcvFileComplete":
-        return tools.onFileComplete(event.chatItem)
-      case "rcvFileSndCancelled":
-        return tools.onFileCancelled(event)
-      case "rcvFileError":
-        return tools.onFileError(event)
-      case "rcvFileDescrReady":
-        return tools.onFileDescription()
-      case "sndFileCompleteXFTP":
-        return tools.onSentFile(event.fileTransferMeta)
-      case "sndFileError":
-        tools.onSentFile(event.fileTransferMeta)
-        return control.fileNotSent(event)
+    if (event.type === "newChatItems") {
+      for (const ci of event.chatItems) {
+        if (isGroupMessage(ci, control.groupId)) control.onMessage(ci)
+      }
     }
+    tools.onEvent(event)
+    if (event.type === "sndFileError") control.fileNotSent(event)
     if (isControlEvent(event, control.groupId)) {
       controlEvents = controlEvents.then(() => control.onEvent(event)).catch(error => logError(`${event.type} in the agent control chat`, error))
     }

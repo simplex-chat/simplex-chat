@@ -1,5 +1,6 @@
+import {DaemonClient} from "../../src/client"
 import {HookDeps, sessionStart} from "../../src/hook"
-import {linkText, resetOwnersText} from "../../src/owner"
+import {linkText, resetOwners, resetOwnersText} from "../../src/owner"
 import {qrCodeText} from "../../src/qr"
 
 const status = {version: "0.2.0", protocol: 1, mainGroup: "SimpleX MCP", sessions: []}
@@ -29,14 +30,11 @@ describe("SessionStart hook", () => {
     ])
   })
 
-  it("shows the link of the daemon's Main group with a QR code while it has no owner", async () => {
+  it("shows the link of the daemon's Main group with a QR code to the person only, while it has no owner", async () => {
     const link = "https://simplex.chat/g#link"
     const {client} = fakeClient({owners: [], link}, undefined, "Agents")
     const output = await sessionStart(input, {}, {client, nodeVersion: "22.1.0"})
-    expect(output).toEqual({
-      systemMessage: `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "Agents":\n${qrCodeText(link, "plain")}\n${link}`,
-      hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: `The SimpleX Main group "Agents" has no owner yet. Tell your user to open this link in the SimpleX app and join: ${link}`},
-    })
+    expect(output).toEqual({systemMessage: `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "Agents":\n${qrCodeText(link, "plain")}\n${link}`})
   })
 
   it("needs Node.js 22", async () => {
@@ -69,11 +67,29 @@ describe("SessionStart hook", () => {
 
 describe("owner commands", () => {
   const link = "https://simplex.chat/g#link"
-  it("show the owners, or the link with a QR code in a terminal", () => {
+  it("show the owners, or the link with a QR code in a terminal only", () => {
     expect(linkText({...status, owner: {owners: ["Alice", "Bob"]}}, false)).toBe('Owners of "SimpleX MCP": Alice, Bob. To replace them, run /simplex:reset-owners.')
-    expect(linkText({...status, owner: {owners: [], link}}, false)).toBe(`Join "SimpleX MCP" in the SimpleX app. The link works once:\n${link}`)
+    expect(linkText({...status, owner: {owners: [], link}}, false)).toBe('Run npx -y @simplex-chat/mcp link in a terminal to see the link to "SimpleX MCP".')
     expect(linkText({...status, owner: {owners: [], link}}, true)).toBe(`Join "SimpleX MCP" in the SimpleX app. The link works once:\n${qrCodeText(link, "small")}\n${link}`)
-    expect(linkText({...status, owner: {owners: []}}, false)).toBe("The Main group has no link. Run /simplex:reset-owners.")
-    expect(resetOwnersText(link, "SimpleX MCP", false)).toBe(`"SimpleX MCP" was replaced. Join the new one in the SimpleX app. The link works once:\n${link}`)
+    expect(linkText({...status, owner: {owners: []}}, false)).toBe("The Main group has no link. Run npx -y @simplex-chat/mcp reset-owners in a terminal.")
+    expect(resetOwnersText(link, "SimpleX MCP", false)).toBe('"SimpleX MCP" was replaced. Run npx -y @simplex-chat/mcp link in a terminal to see the link to the new one.')
+    expect(resetOwnersText(link, "SimpleX MCP", true)).toBe(`"SimpleX MCP" was replaced. Join the new one in the SimpleX app. The link works once:\n${qrCodeText(link, "small")}\n${link}`)
+  })
+
+  it("reset the owners from a terminal only without owners, and otherwise ask an owner in the Main group", async () => {
+    const requests: string[] = []
+    const client = (owners: string[], reply: object) => ({
+      ensureDaemon: async () => ({...status, owner: {owners}}),
+      request: async (_method: string, route: string) => (requests.push(route), reply),
+    })
+    const spy = jest.spyOn(DaemonClient, "forRoot")
+    spy.mockReturnValue(client([], {link}) as unknown as DaemonClient)
+    expect(await resetOwners({SIMPLEX_MCP_HOME: "/r"}, false)).toBe("Run npx -y @simplex-chat/mcp reset-owners in a terminal.")
+    expect(requests).toEqual([])
+    expect(await resetOwners({SIMPLEX_MCP_HOME: "/r"}, true)).toBe(resetOwnersText(link, "SimpleX MCP", true))
+    spy.mockReturnValue(client(["Alice"], {}) as unknown as DaemonClient)
+    expect(await resetOwners({SIMPLEX_MCP_HOME: "/r"}, false)).toBe('An owner approves the reset in "SimpleX MCP". Then run npx -y @simplex-chat/mcp link in a terminal to see the link to the new group.')
+    expect(requests).toEqual(["/reset-owners", "/reset-owners"])
+    spy.mockRestore()
   })
 })

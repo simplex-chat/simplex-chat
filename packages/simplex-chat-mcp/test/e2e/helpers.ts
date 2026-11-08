@@ -2,7 +2,7 @@ import {join} from "path"
 import {T} from "@simplex-chat/types"
 import {api, bot} from "simplex-chat"
 import {DaemonClient} from "../../src/client"
-import {createDataFolder, hubFolder, sessionFolder} from "../../src/files"
+import {createDataFolder, hubFolder} from "../../src/files"
 import {CallLine} from "../../src/protocol"
 import {ServeOptions} from "../../src/serve"
 
@@ -27,12 +27,10 @@ export async function profileWithServer(smpAddress: string, filePrefix: string, 
   await chat.close()
 }
 
-export async function prepareRoot(smpAddress: string, root: string, sessions: {id: string; name: string}[]): Promise<void> {
-  const folders = [{folder: hubFolder(root), displayName: "SimpleX MCP"}, ...sessions.map(({id, name}) => ({folder: sessionFolder(root, id), displayName: `SimpleX MCP - ${name}`}))]
-  for (const {folder, displayName} of folders) {
-    createDataFolder(folder)
-    await profileWithServer(smpAddress, join(folder, "simplex"), {displayName, fullName: "", peerType: T.ChatPeerType.Agent})
-  }
+export async function prepareRoot(smpAddress: string, root: string, xftpAddress?: string): Promise<void> {
+  const folder = hubFolder(root)
+  createDataFolder(folder)
+  await profileWithServer(smpAddress, join(folder, "simplex"), {displayName: "Claude", fullName: "", peerType: T.ChatPeerType.Agent}, xftpAddress)
 }
 
 export async function callTool(client: DaemonClient, id: string, tool: string, input: object): Promise<{isError?: boolean; text: string; result: any}> {

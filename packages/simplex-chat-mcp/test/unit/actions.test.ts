@@ -639,13 +639,12 @@ describe("actions of several sessions", () => {
     await settled()
   })
 
-  it("regains control after a reset, and refuses with the texts of its host", async () => {
-    const actions = new Actions("requests", 23, 1, fakeHooks().hooks, hubTexts)
-    actions.loseControl()
-    expect(() => createIn(actions, 1, "requests", "k", sendFields())).toThrow(new ToolError("The Main group is lost. Run /simplex:reset-owners in Claude Code."))
-    actions.regainControl()
-    expect(createIn(actions, 1, "requests", "k", sendFields()).n).toBe(1)
-    await actions.stop()
-    expect(() => createIn(actions, 1, "requests", "k", sendFields())).toThrow(new ToolError("The SimpleX daemon is stopping."))
+  it("refuses with the texts of its host", async () => {
+    const lost = new Actions("requests", 23, 1, fakeHooks().hooks, hubTexts)
+    lost.loseControl()
+    expect(() => createIn(lost, 1, "requests", "k", sendFields())).toThrow(new ToolError("The group of this session is lost. Start a new Claude Code session."))
+    const stopped = new Actions("requests", 23, 1, fakeHooks().hooks, hubTexts)
+    await stopped.stop()
+    expect(() => createIn(stopped, 1, "requests", "k", sendFields())).toThrow(new ToolError("The SimpleX daemon is stopping."))
   })
 })

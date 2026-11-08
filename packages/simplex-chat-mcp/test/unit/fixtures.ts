@@ -159,6 +159,8 @@ export class FakeChat {
   roles: {groupId: number; members: number[]; role: T.GroupMemberRole}[] = []
   links: {groupId: number; role: T.GroupMemberRole}[] = []
   newGroups: {userId: number; groupProfile: T.GroupProfile}[] = []
+  invitations: {groupId: number; viaGroupId: number; groupMemberId: number; memberRole: T.GroupMemberRole}[] = []
+  removed: {groupId: number; memberIds: number[]}[] = []
   members = new Map<number, T.GroupMember[]>()
   chats = new Map<string, FakeChatData>()
   responses = new Map<string, object>()
@@ -245,9 +247,20 @@ export class FakeChat {
 
   async apiNewGroup(userId: number, groupProfile: T.GroupProfile): Promise<T.GroupInfo> {
     this.newGroups.push({userId, groupProfile})
-    const created = group(20, groupProfile.displayName)
-    this.chats.set("#20", {chatInfo: groupChat(created), items: []})
+    const groupId = 19 + this.newGroups.length
+    const created = {...group(groupId, groupProfile.displayName), groupProfile}
+    this.chats.set(`#${groupId}`, {chatInfo: groupChat(created), items: []})
     return created
+  }
+
+  async apiAddMemberViaGroup(groupId: number, viaGroupId: number, groupMemberId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
+    this.invitations.push({groupId, viaGroupId, groupMemberId, memberRole})
+    return member(1000 + groupMemberId, `invited ${groupMemberId}`, memberRole, T.GroupMemberStatus.Invited)
+  }
+
+  async apiRemoveMembers(groupId: number, memberIds: number[]): Promise<T.GroupMember[]> {
+    this.removed.push({groupId, memberIds})
+    return []
   }
 
   async apiUpdateGroupProfile(groupId: number, groupProfile: T.GroupProfile): Promise<T.GroupInfo> {

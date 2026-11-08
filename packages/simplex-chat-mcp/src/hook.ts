@@ -17,7 +17,6 @@ interface SessionStartInput {
 
 export interface HookOutput {
   systemMessage?: string
-  hookSpecificOutput?: {hookEventName: "SessionStart"; additionalContext: string}
 }
 
 export interface HookDeps {
@@ -36,10 +35,7 @@ export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = proce
     const {mainGroup, owner} = await client.request<TitleReply>("POST", "/title", {id: input.session_id, name: input.session_title, config})
     const {link, owners} = owner
     if (owners.length > 0 || link === undefined) return {}
-    return {
-      systemMessage: `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "${mainGroup}":\n${qrCodeText(link, "plain")}\n${link}`,
-      hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: `The SimpleX Main group "${mainGroup}" has no owner yet. Tell your user to open this link in the SimpleX app and join: ${link}`},
-    }
+    return {systemMessage: `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "${mainGroup}":\n${qrCodeText(link, "plain")}\n${link}`}
   } catch (error) {
     return {systemMessage: `SimpleX MCP: ${isNotRunning(error) ? daemonStopped : errorText(error)}`}
   }

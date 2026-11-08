@@ -2,6 +2,7 @@ import {createHash, randomBytes} from "crypto"
 import {chmodSync, existsSync, fchmodSync, mkdirSync, linkSync, openSync, readFileSync, readdirSync, rmSync, statSync, truncateSync, unlinkSync, writeFileSync} from "fs"
 import {homedir, tmpdir} from "os"
 import {join, resolve} from "path"
+import type {Mode} from "./actions"
 import {ExitError} from "./log"
 
 const sessionIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -14,6 +15,8 @@ export interface SessionFile {
   name: string
   project: string
   created: string
+  group?: number
+  mode?: Mode
 }
 
 export interface ServerFile {
@@ -51,12 +54,12 @@ export function writeSessionFile(folder: string, session: SessionFile): void {
   writePrivateFile(join(folder, "session.json"), `${JSON.stringify(session)}\n`)
 }
 
-export function sessionNumbers(root: string): number[] {
+export function storedSessions(root: string): {id: string; session: SessionFile}[] {
   const folder = sessionsFolder(root)
   if (!existsSync(folder)) return []
-  return readdirSync(folder).flatMap(name => {
-    const session = isSessionId(name) ? readSessionFile(join(folder, name)) : undefined
-    return session === undefined ? [] : [session.number]
+  return readdirSync(folder).flatMap(id => {
+    const session = isSessionId(id) ? readSessionFile(join(folder, id)) : undefined
+    return session === undefined ? [] : [{id, session}]
   })
 }
 
