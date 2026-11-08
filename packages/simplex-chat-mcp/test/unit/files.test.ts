@@ -60,6 +60,75 @@ describe("lock", () => {
     acquireLock(dir)
     expect(readFileSync(join(dir, "lock"), "utf8")).toBe(`${process.pid}\n`)
   })
+
+  it("is not taken by a second starter that reads it before the first has written its PID", () => {
+    const file = join(dir, "lock")
+    const realWrite = fs.writeFileSync
+    const realLink = fs.linkSync
+    let racing = false
+    let second: unknown
+    const secondStart = (): void => {
+      racing = true
+      try {
+        acquireLock(dir, "daemon")
+        second = "acquired"
+      } catch (error) {
+        second = error
+      }
+    }
+    const write = jest.spyOn(fs, "writeFileSync").mockImplementation(((path: fs.PathOrFileDescriptor, text: string, options?: fs.WriteFileOptions) => {
+      if (path !== file || racing || (options as {flag?: string} | undefined)?.flag !== "wx") return realWrite(path, text, options)
+      const fd = fs.openSync(file, "wx", 0o600)
+      secondStart()
+      fs.writeSync(fd, `${process.ppid}\n`)
+      fs.closeSync(fd)
+    }) as typeof fs.writeFileSync)
+    const link = jest.spyOn(fs, "linkSync").mockImplementation((existing: fs.PathLike, path: fs.PathLike) => {
+      if (path !== file || racing) return realLink(existing, path)
+      realWrite(existing, `${process.ppid}\n`)
+      realLink(existing, path)
+      secondStart()
+    })
+    try {
+      acquireLock(dir, "daemon")
+    } finally {
+      write.mockRestore()
+      link.mockRestore()
+    }
+    expect(second).toBeInstanceOf(LockedError)
+  })
+
+  it("lets only one of two starters take over the lock of a stopped process", () => {
+    const exited = spawnSync(process.execPath, ["-e", "process.stdout.write(String(process.pid))"], {encoding: "utf8"})
+    const file = join(dir, "lock")
+    writeFileSync(file, `${exited.stdout}\n`)
+    const realRead = fs.readFileSync
+    let second: unknown
+    const read = jest.spyOn(fs, "readFileSync").mockImplementation(((path: fs.PathOrFileDescriptor, options?: unknown) => {
+      const text = realRead(path, options as {encoding: BufferEncoding})
+      if (path === file && second === undefined) {
+        second = "racing"
+        try {
+          acquireLock(dir)
+          second = "acquired"
+        } catch (error) {
+          second = error
+        }
+      }
+      return text
+    }) as typeof fs.readFileSync)
+    let first: unknown = "acquired"
+    try {
+      acquireLock(dir)
+    } catch (error) {
+      first = error
+    } finally {
+      read.mockRestore()
+    }
+    expect([first, second].filter(result => result === "acquired")).toHaveLength(1)
+    expect([first, second].find(result => result !== "acquired")).toBeInstanceOf(LockedError)
+    expect(readdirSync(dir).filter(name => name.startsWith("lock"))).toEqual(["lock"])
+  })
 })
 
 describe("data folder", () => {

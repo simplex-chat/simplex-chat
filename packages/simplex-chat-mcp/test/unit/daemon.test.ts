@@ -756,6 +756,49 @@ describe("daemon", () => {
     expect(restarted.agents).toMatchObject([{number: 2, turns: [{id: id4, pid: 200, at: 1, prompt: "Fix the build"}]}])
   })
 
+  it("holds a second title of a process while the first waits, and joins both new IDs to the session its server registers, as after two /clear during a re-attach", async () => {
+    const id3 = "33333333-3333-4333-8333-333333333333"
+    storeSession(id1, 1, "auth")
+    const {d, agents} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    await post("/title", {id: id2, pid: 100, name: "first", project: "/p/app", config: defaultConfig})
+    await post("/title", {id: id3, pid: 100, name: "second", project: "/p/app", config: defaultConfig})
+    expect([sessionFolder(root, id2), sessionFolder(root, id3)].map(existsSync)).toEqual([false, false])
+    expect(await post("/session", {id: id1, pid: 100, project: "/p/app", config: defaultConfig})).toMatchObject({number: 1})
+    await turnsUntil(() => readSessionFile(sessionFolder(root, id1))!.aliases?.length === 2)
+    expect(readSessionFile(sessionFolder(root, id1))!.aliases).toEqual([id2, id3])
+    expect([sessionFolder(root, id2), sessionFolder(root, id3)].map(existsSync)).toEqual([false, false])
+    expect(agents).toHaveLength(1)
+  })
+
+  it("keeps a title that waits for its session server across a daemon stop", async () => {
+    daemon = await Daemon.start(deps(root).d, readDefaultConfig)
+    expect(await post("/title", {id: id1, pid: 300, name: "docs", model: "claude-opus-5", project: "/p/app", config: defaultConfig})).toEqual(titleReply)
+    await daemon.stop()
+    const restarted = deps(root)
+    daemon = await Daemon.start(restarted.d, readDefaultConfig)
+    expect(existsSync(join(root, "titles.json"))).toBe(false)
+    expect(await post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig})).toMatchObject({number: 1, displayName: "1 · docs"})
+    await turnsUntil(() => restarted.agents[0].turns.length === 1)
+    expect(restarted.agents[0].turns).toEqual([{id: id1, model: "claude-opus-5"}])
+  })
+
+  it("keeps the fields written to session.json while a title renames the session", async () => {
+    const {d, agents} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    await register(id1)
+    const renaming = deferred()
+    const rename = jest.fn(() => renaming.promise)
+    agents[0].rename = rename
+    const titled = title(id1, "auth")
+    await turnsUntil(() => rename.mock.calls.length === 1)
+    const folder = sessionFolder(root, id1)
+    writeSessionFile(folder, {...readSessionFile(folder)!, mode: "host"})
+    renaming.resolve()
+    await titled
+    expect(readSessionFile(folder)).toMatchObject({name: "auth", mode: "host"})
+  })
+
   it("starts its own session for a server whose process sends no title in 10 seconds, and 10 seconds after a title from a process whose session left over 10 seconds ago", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, agents} = deps(root)

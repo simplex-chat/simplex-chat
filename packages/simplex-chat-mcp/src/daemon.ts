@@ -5,7 +5,7 @@ import {basename, join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {Action, Mode} from "./actions"
 import {Config, readConfig} from "./config"
-import {LockedError, SessionFile, acquireLock, createDataFolder, dataRoot, logFile, readSessionFile, releaseLock, serverToken, sessionFolder, socketPath, storedSessions, trimLog, writeSessionFile} from "./files"
+import {LockedError, SessionFile, acquireLock, createDataFolder, dataRoot, logFile, readSessionFile, releaseLock, saveHeldTitles, serverToken, sessionFolder, socketPath, storedSessions, takeHeldTitles, trimLog, writeSessionFile} from "./files"
 import {Hub, StoredSession, hubTexts} from "./hub"
 import {ExitError, errorText, log, logError} from "./log"
 import {ToolCall, validName} from "./messages"
@@ -74,6 +74,7 @@ export class Daemon {
   private readonly titles = new Map<number, {id: string; at: number; name?: string}>()
   private readonly titled = new EventEmitter()
   private readonly registered = new EventEmitter()
+  private readonly held = new Map<number, TitleRequest>()
   private nextNumber: number
   private stopTimer?: NodeJS.Timeout
   private logTimer?: NodeJS.Timeout
@@ -102,6 +103,7 @@ export class Daemon {
         throw error
       }
       daemon.scheduleStop()
+      for (const request of takeHeldTitles(deps.root)) daemon.onTitle(request as TitleRequest).catch(error => logError("title", error))
       daemon.logTimer = setInterval(() => {
         try {
           trimLog(deps.root)
@@ -174,6 +176,7 @@ export class Daemon {
   private async shutdown(reply: ServerResponse | undefined): Promise<void> {
     clearTimeout(this.stopTimer)
     clearInterval(this.logTimer)
+    if (this.held.size > 0) saveHeldTitles(this.deps.root, [...this.held.values()])
     for (const entry of this.entries.values()) clearTimeout(entry.idle)
     const closed = new Promise<void>(resolve => this.server.close(() => resolve()))
     for (const res of this.streams) res.destroy()
@@ -213,11 +216,15 @@ export class Daemon {
   private async onTitle(request: TitleRequest): Promise<TitleReply> {
     validConfig(request.config)
     const {id, pid} = request
-    if (pid !== undefined && !this.aliases.has(id) && readSessionFile(this.folder(id)) === undefined && this.processSession(pid) === undefined) {
+    if (pid !== undefined && !this.aliases.has(id) && readSessionFile(this.folder(id)) === undefined && (this.held.has(pid) || this.processSession(pid) === undefined)) {
+      this.held.set(pid, request)
       this.titles.set(pid, {id, at: Date.now(), name: request.name?.trim() || undefined})
       this.titled.emit(String(pid))
       processEvent(this.registered, pid)
-        .then(() => this.applyTitle(request))
+        .then(() => {
+          if (this.held.get(pid) === request) this.held.delete(pid)
+          return this.stopping === undefined ? this.applyTitle(request) : undefined
+        })
         .catch(error => logError("title", error))
       await this.hub.configure(request.config)
     } else await this.applyTitle(request)
@@ -275,7 +282,7 @@ export class Daemon {
     const stored = readSessionFile(folder)!
     if (name === stored.name) return
     await agent.rename(name)
-    writeSessionFile(folder, {...stored, name})
+    writeSessionFile(folder, {...readSessionFile(folder)!, name})
   }
 
   private async onAttach(request: AttachRequest, res: ServerResponse): Promise<void> {
@@ -448,7 +455,7 @@ function processEvent(events: EventEmitter, pid: number): Promise<void> {
       events.off(String(pid), done)
       resolve()
     }
-    const timer = setTimeout(done, processWait)
+    const timer = setTimeout(done, processWait).unref()
     events.on(String(pid), done)
   })
 }

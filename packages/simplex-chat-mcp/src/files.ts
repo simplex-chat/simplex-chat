@@ -107,8 +107,7 @@ export function acquireLock(dir: string, user = "server"): void {
   if (createLock(file)) return
   const pid = lockPid(file)
   if (pid !== undefined && pid !== process.pid && isRunning(pid)) throw lockedError(dir, file, pid, user)
-  unlinkSync(file)
-  if (!createLock(file)) throw lockedError(dir, file, lockPid(file), user)
+  if (!takeOver(file, pid)) throw lockedError(dir, file, pid, user)
 }
 
 export function releaseLock(dir: string): void {
@@ -126,18 +125,9 @@ export function serverToken(dir: string, renew = false): string {
     writePrivateFile(file, `${token}\n`)
     return token
   }
-  const temp = join(dir, `token.${process.pid}.${randomBytes(6).toString("hex")}.tmp`)
-  try {
-    writePrivateFile(temp, `${token}\n`)
-    linkSync(temp, file)
-    return token
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "EEXIST" && createLock(file, `${token}\n`)) return token
-    if (process.platform !== "win32" && statSync(file).uid === process.getuid?.()) chmodSync(file, 0o600)
-    return readFileSync(file, "utf8").trim()
-  } finally {
-    rmSync(temp, {force: true})
-  }
+  if (createLock(file, `${token}\n`)) return token
+  if (process.platform !== "win32" && statSync(file).uid === process.getuid?.()) chmodSync(file, 0o600)
+  return readFileSync(file, "utf8").trim()
 }
 
 export function headersFile(dir: string): string {
@@ -157,6 +147,22 @@ export function readServerFile(dir: string): ServerFile | undefined {
   return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : undefined
 }
 
+export function saveHeldTitles(root: string, titles: object[]): void {
+  writePrivateFile(join(root, "titles.json"), `${JSON.stringify(titles)}\n`)
+}
+
+export function takeHeldTitles(root: string): unknown[] {
+  const file = join(root, "titles.json")
+  try {
+    return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : []
+  } catch (error) {
+    logError(file, error)
+    return []
+  } finally {
+    rmSync(file, {force: true})
+  }
+}
+
 function sessionsFolder(root: string): string {
   return join(root, "_sessions")
 }
@@ -171,12 +177,43 @@ function lockedError(dir: string, file: string, pid: number | undefined, user: s
 }
 
 function createLock(file: string, text = `${process.pid}\n`): boolean {
+  const temp = `${file}.${process.pid}.${randomBytes(6).toString("hex")}.tmp`
+  try {
+    writePrivateFile(temp, text)
+    linkSync(temp, file)
+    return true
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "EEXIST") return false
+    return createExclusive(file, text)
+  } finally {
+    rmSync(temp, {force: true})
+  }
+}
+
+function createExclusive(file: string, text: string): boolean {
   try {
     writeFileSync(file, text, {flag: "wx", mode: 0o600})
     return true
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "EEXIST") return false
     throw error
+  }
+}
+
+function takeOver(file: string, pid: number | undefined): boolean {
+  const claim = `${file}.${pid}.claim`
+  try {
+    linkSync(file, claim)
+  } catch (error) {
+    const {code} = error as NodeJS.ErrnoException
+    if (code === "EEXIST" || code === "ENOENT") return false
+  }
+  try {
+    if (existsSync(claim) && lockPid(claim) !== pid) return false
+    unlinkSync(file)
+    return createLock(file)
+  } finally {
+    rmSync(claim, {force: true})
   }
 }
 
