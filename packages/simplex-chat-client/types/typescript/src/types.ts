@@ -1935,9 +1935,10 @@ export type ChatPagination =
   | ChatPagination.Before
   | ChatPagination.Around
   | ChatPagination.Initial
+  | ChatPagination.From
 
 export namespace ChatPagination {
-  export type Tag = "last" | "after" | "before" | "around" | "initial"
+  export type Tag = "last" | "after" | "before" | "around" | "initial" | "from"
 
   interface Interface {
     type: Tag
@@ -1971,8 +1972,14 @@ export namespace ChatPagination {
     count: number // int
   }
 
+  export interface From extends Interface {
+    type: "from"
+    fromTs: string // ISO-8601 timestamp
+    count: number // int
+  }
+
   export function cmdString(self: ChatPagination): string {
-    return self.type == 'last' ? 'count=' + self.count : self.type == 'after' ? 'after=' + self.chatItemId + ' count=' + self.count : self.type == 'before' ? 'before=' + self.chatItemId + ' count=' + self.count : self.type == 'around' ? 'around=' + self.chatItemId + ' count=' + self.count : 'initial=' + self.count
+    return self.type == 'last' ? 'count=' + self.count : self.type == 'after' ? 'after=' + self.chatItemId + ' count=' + self.count : self.type == 'before' ? 'before=' + self.chatItemId + ' count=' + self.count : self.type == 'around' ? 'around=' + self.chatItemId + ' count=' + self.count : self.type == 'from' ? 'from=' + self.fromTs + ' count=' + self.count : 'initial=' + self.count
   }
 }
 

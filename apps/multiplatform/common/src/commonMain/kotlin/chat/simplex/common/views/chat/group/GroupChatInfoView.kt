@@ -750,6 +750,9 @@ fun ModalData.GroupChatInfoLayout(
             }
           }
         }
+        if (appPlatform.isDesktop) {
+          ExportChatButton(chat)
+        }
         ChatTTLOption(chatItemTTL, setChatItemTTL, deletingItems)
       }
       SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))

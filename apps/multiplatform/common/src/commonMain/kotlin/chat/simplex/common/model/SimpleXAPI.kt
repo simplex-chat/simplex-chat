@@ -1218,8 +1218,8 @@ object ChatController {
     return null
   }
 
-  suspend fun apiGetChat(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?, contentTag: MsgContentTag? = null, pagination: ChatPagination, search: String = ""): Pair<Chat, NavigationInfo>? {
-    val r = sendCmd(rh, CC.ApiGetChat(type, id, scope, contentTag, pagination, search))
+  suspend fun apiGetChat(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?, contentTag: MsgContentTag? = null, pagination: ChatPagination, search: String = "", log: Boolean = true): Pair<Chat, NavigationInfo>? {
+    val r = sendCmd(rh, CC.ApiGetChat(type, id, scope, contentTag, pagination, search), log = log)
     if (r is API.Result && r.res is CR.ApiChat) return if (rh == null) r.res.chat to r.res.navInfo else r.res.chat.copy(remoteHostId = rh) to r.res.navInfo
     Log.e(TAG, "apiGetChat bad response: ${r.responseType} ${r.details}")
     val e = (r as? API.Error)?.err
@@ -4718,6 +4718,7 @@ sealed class ChatPagination {
   class Before(val chatItemId: Long, val count: Int): ChatPagination()
   class Around(val chatItemId: Long, val count: Int): ChatPagination()
   class Initial(val count: Int): ChatPagination()
+  class From(val from: Instant, val count: Int): ChatPagination()
 
   val cmdString: String get() = when (this) {
     is Last -> "count=${this.count}"
@@ -4725,6 +4726,7 @@ sealed class ChatPagination {
     is Before -> "before=${this.chatItemId} count=${this.count}"
     is Around -> "around=${this.chatItemId} count=${this.count}"
     is Initial -> "initial=${this.count}"
+    is From -> "from=${this.from} count=${this.count}"
   }
 
   companion object {

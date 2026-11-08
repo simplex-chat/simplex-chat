@@ -1351,6 +1351,15 @@ fun BoxScope.ChatInfoToolbar(
     }
     else -> {}
   }
+  if (appPlatform.isDesktop && (chatInfo is ChatInfo.Direct || chatInfo is ChatInfo.Group)) {
+    menuItems.add {
+      ItemAction(stringResource(MR.strings.export_chat), painterResource(MR.images.ic_ios_share), onClick = {
+        showMenu.value = false
+        val rhId = chatModel.getChat(chatInfo.id)?.remoteHostId
+        ModalManager.end.showModal(cardScreen = true) { ExportChatView(rhId, chatInfo) }
+      })
+    }
+  }
 
   // Content filter button: always in bar on desktop and for groups; on Android for direct chats it
   // goes into the three-dots menu UNLESS calls are unavailable, in which case it appears in the bar.
@@ -1814,7 +1823,7 @@ fun BoxScope.ChatItemsList(
     val loadingSide = when (pagination) {
       is ChatPagination.Before -> loadingTopItems
       is ChatPagination.Last -> loadingBottomItems
-      is ChatPagination.After, is ChatPagination.Around, is ChatPagination.Initial -> null
+      is ChatPagination.After, is ChatPagination.Around, is ChatPagination.Initial, is ChatPagination.From -> null
     }
     loadingSide?.value = true
     try {

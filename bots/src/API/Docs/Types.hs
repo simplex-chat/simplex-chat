@@ -444,7 +444,7 @@ chatTypesDocsData =
     (sti @ChatItemVersion, STRecord, "", [], "", ""),
     (sti @ChatListQuery, STUnion, "CLQ", [], "", ""),
     -- (sti @ChatName, STRecord, "", [], "", ""),
-    (sti @ChatPagination, STUnion, "CP", [], Choice "self" [("last", "count=" <> Param "count"), ("after", "after=" <> Param "chatItemId" <> " count=" <> Param "count"), ("before", "before=" <> Param "chatItemId" <> " count=" <> Param "count"), ("around", "around=" <> Param "chatItemId" <> " count=" <> Param "count")] ("initial=" <> Param "count"), ""),
+    (sti @ChatPagination, STUnion, "CP", [], Choice "self" [("last", "count=" <> Param "count"), ("after", "after=" <> Param "chatItemId" <> " count=" <> Param "count"), ("before", "before=" <> Param "chatItemId" <> " count=" <> Param "count"), ("around", "around=" <> Param "chatItemId" <> " count=" <> Param "count"), ("from", "from=" <> Param "fromTs" <> " count=" <> Param "count")] ("initial=" <> Param "count"), ""),
     (sti @ConnectionStats, STRecord, "", [], "", ""),
     (sti @GroupSndStatus, STUnion, "GSS", [], "", ""),
     (sti @MemberDeliveryStatus, STRecord, "", [], "", ""),
