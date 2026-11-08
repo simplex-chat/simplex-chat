@@ -500,7 +500,7 @@ The link reaches only you: Claude's context and tool results never contain it. S
 
 To replace the owners, run `/simplex:reset-owners` in Claude Code, or `npx -y @simplex-chat/mcp@VERSION reset-owners` in a terminal:
 
-- While owners exist, Claude posts in the Main group `A terminal asks to replace the owners: this group is deleted, and a new Main group with a new link replaces it.`, with `/approve reset or /reject reset`. After an owner approves it, the Main group is deleted for all its members, a new one replaces it, and the members who joined the sessions' groups from it are removed from them. `npx -y @simplex-chat/mcp@VERSION link` in a terminal then prints the new link.
+- While owners exist, Claude posts in the Main group `A terminal asks to replace the owners: this group is deleted, and a new Main group with a new link replaces it.`, with `/approve reset or /reject reset`. After an owner approves it, the Main group is deleted for all its members, and a new one replaces it. The sessions' groups stay as they are: the members who joined them from the old Main group keep prompting and approving there; `/!` reaches Claude only from owners of the new Main group. `npx -y @simplex-chat/mcp@VERSION link` in a terminal then prints the new link.
 - Without owners, the command in a terminal replaces the Main group at once and prints the new link; in Claude Code it asks you to run it in a terminal.
 
 VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`; the plugin's messages print these commands with it. A newer version from npm would replace the plugin's daemon.
@@ -560,7 +560,7 @@ Set in `/plugin` > Installed > simplex > Configure options:
 | `expire_hours` | `23` | 1 to 23 | How long an action waits for a decision, see [Expiry](#expiry). |
 | `approve_guest_files` | on | on, off | On: while a session's group has a guest, a file of `reply` waits for a member from the Main group to approve its card. Off: such a file is sent at once. |
 
-A changed option applies from the next session start. An invalid value is shown at the session start, and every tool call of that session returns the same text, for example `Plugin option expire_hours: hours from 1 to 23 expected, got 48. Change it in /plugin > Installed > simplex > Configure options.`
+A changed option applies from the next session start. An invalid value is shown at the session start, and every tool call of that session returns the same text, for example `Plugin option expire_hours: hours from 1 to 23 expected, got 48. Change it in /plugin > Installed > simplex > Configure options.` A value of `approve` other than `requests` and `host`, which only a hand edit of the settings saves, is shown at the session start only: Claude Code gives the session's tools `requests` in its place, and they run in mode `requests`.
 
 In mode `host`, a session posts in its group `I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here.`, with `/approve N or /reject N`, at its start or when the first member from the Main group joins the group. It runs in mode `host` after a member from the Main group approves it, and keeps the mode across restarts: the approved mode is kept in the custom data of the session's group, in the chat database. After a member rejects the card, the session asks again only after a session start with `requests`. A change back to `requests` applies at the next session start, without a card, and a pending card then ends with `Ended.`
 
