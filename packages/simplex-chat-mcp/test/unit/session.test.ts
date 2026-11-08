@@ -185,6 +185,20 @@ describe("session server", () => {
     expect(errors).toEqual([])
   })
 
+  it("answers server/discover with Method not found and negotiates the revision 2025-11-25, as Claude Code 2.1.319 registers a channel only outside the modern MCP era", async () => {
+    await fakeDaemon(async res => endWithResult(res, listResult))
+    const stdin = new PassThrough()
+    const stdout = new PassThrough()
+    stdins.push(stdin)
+    await startSession({CLAUDE_CODE_SESSION_ID: id, CLAUDE_PROJECT_DIR: "/p/app", SIMPLEX_MCP_HOME: root}, {stdin, stdout, spawnDaemon: noSpawn, version: "0.2.0"})
+    const client = new LineClient(stdin, stdout)
+    const clientInfo = {name: "claude-code", title: "Claude Code", version: "2.1.319"}
+    const discovered = await client.request("server/discover", {_meta: {"io.modelcontextprotocol/protocolVersion": "2026-07-28", "io.modelcontextprotocol/clientInfo": clientInfo, "io.modelcontextprotocol/clientCapabilities": {roots: {listChanged: true}, elicitation: {form: {}, url: {}}, extensions: {"io.modelcontextprotocol/tasks": {}}}}})
+    expect(discovered.error).toMatchObject({code: -32601, message: "Method not found"})
+    const initialized = await client.request("initialize", {protocolVersion: "2025-11-25", capabilities: {roots: {listChanged: true}, elicitation: {form: {}, url: {}}}, clientInfo})
+    expect(initialized.result).toMatchObject({protocolVersion: "2025-11-25", capabilities: {experimental: {"claude/channel": {}, "claude/channel/permission": {}}}})
+  })
+
   it("lists tools while the daemon is still starting", async () => {
     let spawned!: () => void
     const spawning = new Promise<void>(resolve => (spawned = resolve))
