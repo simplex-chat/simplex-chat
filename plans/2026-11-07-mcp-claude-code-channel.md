@@ -108,6 +108,9 @@ Decided on 2026-11-08, review round 4:
 58. A Stop request updates the short description also when its posts fail.
 59. A title's rename writes `session.json` as read after the group's rename.
 
+Proposed on 2026-11-08, each in its own commit, until the user decides:
+60. The group of a session closed for 7 days is deleted for all its members, with the standing approvals of the session's chats; the daemon checks at its start and every hour. A run whose `CLAUDE_CODE_ENTRYPOINT` is `sdk-cli` (`claude -p`), `sdk-ts` or `sdk-py` (the Agent SDK) gets no session and no group.
+
 Pack of the package (decision 44):
 ```
 prepack:   build; strip-dev.js
@@ -381,6 +384,37 @@ sequenceDiagram
   S->>D: POST /session {id: A, pid: P}: session A
   D->>D: the held title resolves: entry A has pid P: alias F → A
 ```
+
+### Closed sessions and runs that are not interactive
+
+Decision 60:
+```
+SessionFile, added
+  closed           time the session closed, optional
+
+on the idle close of a session:     closed = now
+on the daemon's start:              closed = now for each stored session without it
+on the open of a session:           closed removed
+at the start and every hour:        each stored session with a group, closed 7 days ago or earlier, not open:
+                                      standing approvals of its chats removed; its group deleted for all members
+                                      group and closed removed from session.json
+on the hub's open:                  the stored sessions with a group only
+on CLAUDE_CODE_ENTRYPOINT sdk-cli, sdk-ts or sdk-py:
+  hooks:                            {} without a request
+  session server:                   no daemon connection; every call: "This Claude Code run is not interactive,
+                                    so it has no SimpleX group; the SimpleX tools work in interactive sessions."
+```
+
+```mermaid
+stateDiagram-v2
+  [*] --> open: session start
+  open --> closed: idle close, closed = now
+  closed --> open: resume, closed removed
+  closed --> without_group: 7 days, group deleted
+  without_group --> open: resume, a new group
+```
+
+Claude Code sets `CLAUDE_CODE_ENTRYPOINT` for its hooks and its MCP servers: `sdk-cli` for `claude -p`, `cli` for an interactive session.
 
 ## Channel
 
