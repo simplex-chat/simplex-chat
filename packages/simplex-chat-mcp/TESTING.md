@@ -109,33 +109,37 @@ Stop and restart:
 
 ### Install the plugin before it is published
 
-The plugin's commands run `npx -y @simplex-chat/mcp@0.3.0` in the plugin's folder. Installed from a packed build into a folder, the plugin runs that build: npx takes the version from the `node_modules` around the plugin's folder (checked with npm 10.9.9). From the checkout itself, the same npx command fails with `simplex-mcp: not found`.
+The plugin's server, hooks and commands run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`, with the modules that Claude Code installs into the plugin's folder from `npm-shrinkwrap.json`. Step 1 lays out a packed build the same way; `test/e2e/launch.test.ts` checks that layout.
 
-1. In `packages/simplex-chat-mcp`, pack the build, and install it into a new folder:
+1. In `packages/simplex-chat-mcp`, pack the build, unpack it into a new folder, and install its modules from the shrinkwrap without scripts, as Claude Code does:
 
    ```
    npm pack --pack-destination /tmp
-   npm install --prefix /tmp/simplex-plugin --no-save /tmp/simplex-chat-mcp-0.3.0.tgz
+   mkdir /tmp/simplex-plugin
+   tar -xzf /tmp/simplex-chat-mcp-0.3.0.tgz -C /tmp/simplex-plugin --strip-components 1
+   npm ci --prefix /tmp/simplex-plugin --ignore-scripts
    ```
 
-2. Start Claude Code in any project folder, with the installed plugin and its channel, and with its own data folder:
+2. Start Claude Code in any project folder, with the plugin and its channel, and with its own data folder:
 
    ```
-   SIMPLEX_MCP_HOME=/tmp/simplex-mcp-test claude --plugin-dir /tmp/simplex-plugin/node_modules/@simplex-chat/mcp --dangerously-load-development-channels plugin:simplex@inline
+   SIMPLEX_MCP_HOME=/tmp/simplex-mcp-test claude --plugin-dir /tmp/simplex-plugin --dangerously-load-development-channels plugin:simplex@inline
    ```
 
    `--plugin-dir` loads the plugin for that session only, as `simplex@inline`.
 
-3. After a change in `src/`, repeat step 1 and stop the daemon, which a daemon of the same version doesn't replace: `kill $(cat /tmp/simplex-mcp-test/lock)`.
+3. After a change in `src/`, delete `/tmp/simplex-plugin`, repeat step 1, and stop the daemon, which a daemon of the same version doesn't replace: `kill $(cat /tmp/simplex-mcp-test/lock)`.
 
 ### Automated tests
 
 - `npm test`: unit tests of the plugin's parts: the session server and its channel, the daemon, the hub with its Main group, sessions' groups and tool-use cards, the hooks and the plugin files.
+- `npm run test:e2e`, file `test/e2e/launch.test.ts`: the packed build, laid out as Claude Code installs a plugin, runs a hook and the session server with the commands of `hooks/hooks.json` and `.mcp.json`; installed into a project, `simplex-mcp` runs.
 - `npm run test:e2e`, file `test/e2e/daemon.test.ts`, with a local smp-server and xftp-server:
   - an owner joins the Main group and the groups of two sessions, and approves `connect`, `send`, `download` and `leave` there; chats belong to their sessions, `/give` moves one, and `/list` works after a daemon restart;
   - the hooks post a terminal prompt as `User` and the answer as Claude; an owner's message to a session without Claude Code gets `Session 1 is not running.`; with the session attached, it reaches the session's channel stream, it is not posted again by `User`, raw or in the channel tag, and the answer quotes it;
+  - hooks with a new session ID from the process of an attached session post in its group; a tool-use card approved by the owner reaches the session's stream as `allow`; a contact that accepts after `connect` returned `connected: false` is in the session's `list`; mode `host` applies after the owner approves its card;
   - a new session has no chats;
-  - a stdio session starts the daemon, and recovers after the daemon is killed.
+  - a stdio session starts the daemon, recovers after the daemon is killed during a call, and starts it again and attaches without a call.
 
 ### Checks in a real session
 
@@ -145,7 +149,10 @@ In a session started as in step 2 above:
 2. Scan the QR code in the SimpleX app and tap Join. In "SimpleX MCP", tap the invitation to "1 · <folder>" and join it.
 3. Send `Reply with the word ready.` in "1 · <folder>". The answer comes from Claude, as a reply to your message.
 4. Type a prompt in the terminal. It appears in the group from `User`, and the answer from Claude. Record whether a prompt from the group also appears from `User`: the UserPromptSubmit hook of a channel prompt is not documented.
-5. Send `Run ls with Bash.` in the group. The terminal shows the permission dialog, and the group gets the card ``I want to use `Bash`: ...`` with `/approve N or /reject N`. Tap `/approve N`: `ls` runs. Ask again and tap `/reject N`: Claude reports the refusal. Answer a third request in the terminal: its card ends with `Expired.` when the turn ends.
+5. Send `Run ls with Bash.` in the group. The terminal shows the permission dialog, and the group gets the card ``I want to use `Bash`: ...`` with `/approve N or /reject N`. Tap `/approve N`: `ls` runs. Ask again and tap `/reject N`: Claude reports the refusal. Answer a third request in the terminal: its card ends with `Ended.` when the turn ends.
 6. The short description of the group shows `MODEL · effort LEVEL` after the first answer. `/model` in the terminal changes it; a change of the effort level shows after the next answer.
-7. Exit Claude Code, and send a message in the group within 10 minutes, while the daemon runs: Claude replies `Session 1 is not running.`
-8. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/lock)`.
+7. Run `/clear`, then send `Reply with the word cleared.` in the group: the answer comes in the same group, and no group "2 · <folder>" appears.
+8. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/lock)`. Without a tool call, send `Reply with the word back.` in the group after 30 seconds: the answer comes in the group.
+9. Exit Claude Code, and send a message in the group within 10 minutes, while the daemon runs: Claude replies `Session 1 is not running.`
+10. Start Claude Code again as in step 2, with `--continue`: the session start opens no new group, and a prompt from "1 · <folder>" reaches the session.
+11. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/lock)`.

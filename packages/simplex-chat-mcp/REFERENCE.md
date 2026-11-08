@@ -449,7 +449,7 @@ The plugin gives every Claude Code session its own SimpleX group. There you send
 
 ### Install
 
-In Claude Code:
+The plugin needs Claude Code 2.1.214 or later and Node.js 22 or later. In Claude Code:
 
 ```
 /plugin marketplace add https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/.claude-plugin/marketplace.json
@@ -477,7 +477,7 @@ The plugin adds:
 | `/simplex:link` | Shows the Main group's owners, or where to see its link. |
 | `/simplex:reset-owners` | Replaces the Main group and its owners. |
 
-The plugin's commands run `npx -y @simplex-chat/mcp@0.3.0` in the plugin's folder, so the `node_modules` of a project can't replace the plugin. The first session start also fills the npx cache and downloads the SimpleX core library; Claude Code waits at most 600 seconds for the SessionStart hook.
+The plugin's server, hooks and commands run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`. Claude Code installs the plugin's modules into the plugin's folder from its `npm-shrinkwrap.json`, and Node.js loads them from there, so the `node_modules` of a project can't replace the plugin. The first session start downloads the SimpleX core library; Claude Code waits at most 600 seconds for the SessionStart hook.
 
 ### The Main group
 
@@ -491,7 +491,7 @@ https://smp4.simplex.im/g#...
 
 The link reaches only you: Claude's context and tool results never contain it. Scan the QR code or paste the link into the SimpleX app, 7.1.0 or later, and tap Join. The group "SimpleX MCP" appears, and Claude writes: `I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N.`
 
-- Whoever joins by the link first becomes an owner, and the link is deleted. The link works once.
+- Whoever joins by the link first becomes an owner, and the link is deleted. The link works once, and stays the same across daemon restarts until someone joins.
 - Owners of the Main group get an invitation to the group of each session, in the Main group, for them only.
 - `/sessions` lists the sessions, with `, closed` after the closed ones. `/join N` sends you an invitation to the group of session N. A member who is not an owner of the Main group reads a session's group, and can't prompt or approve there.
 - When no owner remains, the daemon creates a new link. `npx -y @simplex-chat/mcp link` in a terminal prints it with a QR code; `/simplex:link` in Claude Code shows the owners, or asks you to run that command.
@@ -508,19 +508,19 @@ To replace the owners, run `/simplex:reset-owners` in Claude Code, or `npx -y @s
 - Members of the group: Claude, the owners and the members invited by `/join`, and `User`, a second profile of the daemon, which posts your terminal prompts.
 - The group's description is `The Claude Code session N: owners of the Main group approve its actions here.` Its short description shows the model and the effort level, see [Model and effort](#model-and-effort).
 - The group's commands are those of the agent control chat of `serve`, see [What the owner sees](#what-the-owner-sees), without a session prefix: `/approve 7`, `/receive @3 9`, `/leave #2`, and `/give CHAT N`.
-- A chat belongs to the session that connected it: the tools of other sessions don't show it, and their `connect` to its address returns `The chat of LINK belongs to another session; an owner can give it to this session with /give.` `/give @3 2` in the group of the session that has chat @3 gives it to session 2.
-- `/list` and `/revoke` work in the group of a closed session too.
-- `claude --resume` reopens the session with its group and chats.
+- A chat belongs to the session that connected it, also when the other side accepts after the `connect` call returned: the tools of other sessions don't show it, and their `connect` to its address returns `The chat of LINK belongs to another session; an owner can give it to this session with /give.` `/give @3 2` in the group of the session that has chat @3 gives it to session 2.
+- `/list` and `/revoke` work in the group of a closed session too. A `/revoke` sent while the daemon is stopped applies when the daemon receives it after its next start.
+- `claude --resume` and `claude --continue` reopen the session with its group and chats. `/clear` and `/resume` in a running session keep its group: the daemon joins the new session IDs of a Claude Code process to the session of that process.
 - A session closes 10 minutes after its Claude Code session ends, once the expiry times of its actions have passed. The daemon stops 10 minutes after the last session closes; the next session start or tool call starts it again.
 
 ### Prompts and answers
 
 With the channel, a message of an owner in a session's group is a prompt of the running session, as one typed in the terminal.
 
-- A file in the message is received without a card into `_sessions/<session ID>/files/group/` of the data folder, and Claude gets its path.
-- One-line messages that start with `/` are commands, not prompts. Messages of members who are not owners of the Main group are not prompts.
+- A file in the message is received without a card into `_sessions/<session ID>/files/group/` of the data folder, and Claude gets its path. When the file fails or does not arrive in 10 minutes, Claude replies `The file of this message was not received: ERROR`, and the session gets the text.
+- One-line messages with a command of the group, such as `/approve 5` or `/list`, are commands, not prompts; other messages are prompts, also one-line messages that start with `/`. Messages of members who are not owners of the Main group are not prompts.
 - When the session's Claude Code is not running, Claude replies `Session N is not running.` while the daemon runs.
-- Claude posts its final answer of each turn in the group, as a reply to the prompt when the prompt came from the group. `User` posts the prompts typed in the terminal. A text over 12000 bytes is posted as several messages.
+- Claude posts its final answer of each turn in the group, as a reply to the prompt of that turn when the prompt came from the group. `User` posts the prompts typed in the terminal, except commands such as `/simplex:link`. A text over 12000 bytes is posted as several messages.
 - The `reply` tool sends a file to the group, with its text as the caption, under the file rules of `send`.
 
 ### Tool use
@@ -533,7 +533,7 @@ Claude: I want to use `Bash`: `List files`
         /approve 5 or /reject 5
 ```
 
-`/approve 5` allows the tool use, and `/reject 5` denies it. The dialog in the terminal stays open: the first answer, in the terminal or in the group, applies. A card that is still pending when the turn ends, or when the session ends, ends with `Expired.`
+`/approve 5` allows the tool use, and `/reject 5` denies it. The dialog in the terminal stays open: the first answer, in the terminal or in the group, applies. A card that is still pending when its turn ends, when the next prompt arrives, or when the session ends, ends with `Ended.` The preview of the tool's input is cut to fit the card.
 
 ### Model and effort
 
@@ -551,7 +551,7 @@ Set in `/plugin` > Installed > simplex > Configure options:
 
 A changed option applies from the next session start. An invalid value is shown at the session start, and every tool call of that session returns the same text, for example `Plugin option expire_hours: hours from 1 to 23 expected, got 48. Change it in /plugin > Installed > simplex > Configure options.`
 
-In mode `host`, a session first posts in its group `I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here.`, with `/approve N or /reject N`. It runs in mode `host` after an owner approves it, and keeps the mode across restarts. A change back to `requests` applies at the next session start, without a card.
+In mode `host`, a session posts in its group `I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here.`, with `/approve N or /reject N`, at its start or when the first owner joins the group. It runs in mode `host` after an owner approves it, and keeps the mode across restarts. A change back to `requests` applies at the next session start, without a card, and a pending card then ends with `Ended.`
 
 ### Plugin data folder
 
@@ -562,10 +562,10 @@ In mode `host`, a session first posts in its group `I want to run in mode host: 
 | `token` | The access token of the daemon's socket, readable only by the user. |
 | `lock` | The PID of the running daemon. |
 | `daemon.sock` | The daemon's Unix socket. On Windows it is the named pipe `\\.\pipe\simplex-mcp-<hash>`; for a path over 103 bytes, `simplex-mcp-<hash>.sock` in the system temporary folder. |
-| `daemon.log` | The daemon's log, emptied at a daemon start when it is over 10 MB. |
+| `daemon.log` | The daemon's log, emptied when it is over 10 MB, at a daemon start and every hour. |
 | `_hub/` | The databases of the profile `Claude`: the Main group, the sessions' groups and the chats with peers. |
 | `_user/` | The databases of the profile `User`. |
-| `_sessions/<session ID>/` | `session.json` with the session's number, name, project folder, group and mode, and `files/` with the files of its chats and of its group. |
+| `_sessions/<session ID>/` | `session.json` with the session's number, name, project folder, group, mode, model, effort level and its other session IDs, and `files/` with the files of its chats and of its group. |
 
 The folders are readable only by the user, and so are the files the daemon writes, except on Windows. One daemon runs per data folder.
 
@@ -576,6 +576,7 @@ The folders are readable only by the user, and so are the files the daemon write
 | The session start shows an error | The text follows `SimpleX MCP:`, and details are in `daemon.log`. The session starts without the daemon, and the next tool call tries again. |
 | Node.js is older than 22 | The session start shows `SimpleX MCP needs Node.js 22 or later; found <version>.` |
 | The daemon stopped during a call | The call returns `The SimpleX daemon stopped; repeat the call.`, and the next call starts the daemon again. The actions of the stopped daemon are lost; a repeated call creates a new action. |
+| The daemon stopped between calls | The session starts it again and attaches to it after 1 second, and while that fails, at intervals that double up to 30 seconds. |
 | A newer plugin version starts | It stops the older daemon and starts its own. When the two versions can't talk to each other, tool calls return `Restart Claude Code to update the SimpleX plugin.` |
 | A session's group has no owner | Its actions are refused with `The group of this session has no owner. An owner of the Main group joins it by its invitation there; without owners, run npx -y @simplex-chat/mcp link in a terminal.` |
 | A session's group was deleted, or Claude lost its owner role there | The session's actions fail with `The group of this session is lost. Start a new Claude Code session.` |
@@ -586,6 +587,7 @@ The folders are readable only by the user, and so are the files the daemon write
 ### Plugin security
 
 - The daemon listens only on its local socket, in a folder readable only by the user, and every request needs the token. On Windows, where the named pipe has no folder permissions, the token is the only check.
+- The daemon gets only the environment variables it uses: the paths of the home, temporary and cache folders, the locale, the proxy settings, the `SIMPLEX_` variables and the plugin options.
 - Prompts, approvals and tool-use decisions count only from members of a session's group whose member in the Main group is an owner. `User` and Claude never count as owners.
 - The Main group link reaches only you: the session start shows it, and `link` prints it in a terminal.
 - A session runs in mode `host` only after an owner approves it in the session's group.

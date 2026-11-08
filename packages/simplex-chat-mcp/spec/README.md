@@ -170,7 +170,7 @@ graph TD
 | [`client.ts`](../src/client.ts) | plugin: daemon client, version check, spawn |
 | [`socket.ts`](../src/socket.ts) | plugin: HTTP over the local socket, token check, JSON and NDJSON |
 | [`protocol.ts`](../src/protocol.ts) | plugin: request and reply types of the socket routes, protocol version |
-| [`daemon.ts`](../src/daemon.ts) | plugin: routes, session registry, attachments, idle close and stop, ready line |
+| [`daemon.ts`](../src/daemon.ts) | plugin: routes, session registry, session IDs of one Claude Code process, attachments, idle close and stop, ready line |
 | [`hub.ts`](../src/hub.ts) | plugin: the profile `Claude`, the sessions, their groups, prompts, answers and tool-use cards |
 | [`main-group.ts`](../src/main-group.ts) | plugin: the Main group, its owners, `/sessions`, `/join`, owner reset |
 | [`user.ts`](../src/user.ts) | plugin: the profile `User` |
@@ -178,7 +178,7 @@ graph TD
 | [`owner.ts`](../src/owner.ts) | plugin: `link` and `reset-owners` |
 | [`config.ts`](../src/config.ts) | plugin: option variables to `Config`, validation |
 
-Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plugin/plugin.json), [`.mcp.json`](../.mcp.json), [`hooks/hooks.json`](../hooks/hooks.json), [`plugin/launch.js`](../plugin/launch.js), [`plugin/allow.js`](../plugin/allow.js), [`skills/`](../skills), and the marketplace [`/.claude-plugin/marketplace.json`](../../../.claude-plugin/marketplace.json); see [API 4.8](api.md#48-plugin-options-files-and-hook-output).
+Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plugin/plugin.json), [`.mcp.json`](../.mcp.json), [`hooks/hooks.json`](../hooks/hooks.json), [`plugin/allow.js`](../plugin/allow.js), [`npm-shrinkwrap.json`](../npm-shrinkwrap.json), [`skills/`](../skills), and the marketplace [`/.claude-plugin/marketplace.json`](../../../.claude-plugin/marketplace.json); see [API 4.8](api.md#48-plugin-options-files-and-hook-output).
 
 ---
 
@@ -187,7 +187,7 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | Document | Contents |
 |---|---|
 | [Architecture](architecture.md) | system diagram, modules and types, state, process lifecycle, approval model, security boundaries, limits; the plugin in section 8 |
-| [Flows](flows.md) | sequence diagrams of the main flows with source locations; the plugin in flows 17-26 |
+| [Flows](flows.md) | sequence diagrams of the main flows with source locations; the plugin in flows 17-27 |
 | [API](api.md) | the six tools, the control chat commands, replies and cards, the CLI; the plugin's tools, groups, channel, socket protocol, commands and files in section 4 |
 
 ---
@@ -201,24 +201,24 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | Server start | [`src/serve.ts`](../src/serve.ts#L64) | `startServer` | [64](../src/serve.ts#L64) |
 | Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L87) | `startAgent` | [87](../src/serve.ts#L87) |
 | HTTP listener | [`src/http.ts`](../src/http.ts#L14) | `startHttp` | [14](../src/http.ts#L14) |
-| Tool registration | [`src/tools.ts`](../src/tools.ts#L490) | `registerTools` | [490](../src/tools.ts#L490) |
-| Downloads | [`src/tools.ts`](../src/tools.ts#L579) | `AgentTools.downloadFile` | [579](../src/tools.ts#L579) |
-| Action store | [`src/actions.ts`](../src/actions.ts#L143) | `Actions` | [143](../src/actions.ts#L143) |
-| Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L81) | `Control` | [81](../src/control.ts#L81) |
-| Card text | [`src/control.ts`](../src/control.ts#L600) | `cardText` | [600](../src/control.ts#L600) |
+| Tool registration | [`src/tools.ts`](../src/tools.ts#L491) | `registerTools` | [491](../src/tools.ts#L491) |
+| Downloads | [`src/tools.ts`](../src/tools.ts#L580) | `AgentTools.downloadFile` | [580](../src/tools.ts#L580) |
+| Action store | [`src/actions.ts`](../src/actions.ts#L145) | `Actions` | [145](../src/actions.ts#L145) |
+| Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L82) | `Control` | [82](../src/control.ts#L82) |
+| Card text | [`src/control.ts`](../src/control.ts#L612) | `cardText` | [612](../src/control.ts#L612) |
 | Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
 | Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
-| Data folder files | [`src/files.ts`](../src/files.ts#L85) | `createDataFolder`, `acquireLock` | [85](../src/files.ts#L85), [90](../src/files.ts#L90) |
-| Session server | [`src/session.ts`](../src/session.ts#L37) | `startSession` | [37](../src/session.ts#L37) |
-| Session to daemon link | [`src/session.ts`](../src/session.ts#L65) | `DaemonLink` | [65](../src/session.ts#L65) |
-| Daemon start by a client | [`src/client.ts`](../src/client.ts#L32) | `DaemonClient.ensureDaemon` | [32](../src/client.ts#L32) |
-| Daemon process | [`src/daemon.ts`](../src/daemon.ts#L324) | `runDaemon` | [324](../src/daemon.ts#L324) |
-| Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L115) | `Daemon.routes` | [115](../src/daemon.ts#L115) |
-| Hub | [`src/hub.ts`](../src/hub.ts#L244) | `Hub.open` | [244](../src/hub.ts#L244) |
-| Session and its group | [`src/hub.ts`](../src/hub.ts#L43) | `Session` | [43](../src/hub.ts#L43) |
+| Data folder files | [`src/files.ts`](../src/files.ts#L99) | `createDataFolder`, `acquireLock` | [99](../src/files.ts#L99), [104](../src/files.ts#L104) |
+| Session server | [`src/session.ts`](../src/session.ts#L39) | `startSession` | [39](../src/session.ts#L39) |
+| Session to daemon link | [`src/session.ts`](../src/session.ts#L67) | `DaemonLink` | [67](../src/session.ts#L67) |
+| Daemon start by a client | [`src/client.ts`](../src/client.ts#L33) | `DaemonClient.ensureDaemon` | [33](../src/client.ts#L33) |
+| Daemon process | [`src/daemon.ts`](../src/daemon.ts#L394) | `runDaemon` | [394](../src/daemon.ts#L394) |
+| Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L132) | `Daemon.routes` | [132](../src/daemon.ts#L132) |
+| Hub | [`src/hub.ts`](../src/hub.ts#L286) | `Hub.open` | [286](../src/hub.ts#L286) |
+| Session and its group | [`src/hub.ts`](../src/hub.ts#L47) | `Session` | [47](../src/hub.ts#L47) |
 | Main group | [`src/main-group.ts`](../src/main-group.ts#L24) | `MainGroup` | [24](../src/main-group.ts#L24) |
 | Profile `User` | [`src/user.ts`](../src/user.ts#L13) | `User` | [13](../src/user.ts#L13) |
-| Hooks | [`src/hook.ts`](../src/hook.ts#L37) | `sessionStart`, `turn` | [37](../src/hook.ts#L37), [54](../src/hook.ts#L54) |
+| Hooks | [`src/hook.ts`](../src/hook.ts#L40) | `sessionStart`, `turn` | [40](../src/hook.ts#L40), [57](../src/hook.ts#L57) |
 | `link`, `reset-owners` | [`src/owner.ts`](../src/owner.ts#L22) | `showLink`, `resetOwners` | [22](../src/owner.ts#L22), [26](../src/owner.ts#L26) |
 | SimpleX core | [`src/core.ts`](../src/core.ts#L20) | `openCore` | [20](../src/core.ts#L20) |
 | Package manifest | [`package.json`](../package.json) | `bin.simplex-mcp` | [6](../package.json#L6) |
