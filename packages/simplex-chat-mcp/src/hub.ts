@@ -97,6 +97,7 @@ export class Session {
       dataRoot: root,
       owner: id,
       replyChat: `#${group.groupId}`,
+      ownersOnly: async () => this.control.onlyApprovers((await userContact(chat, user.userId))?.contactId),
       setMode: (next: Mode) => this.setMode(next),
       pending: (connId: number) => this.savePending(connId),
     }

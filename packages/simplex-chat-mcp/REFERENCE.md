@@ -527,7 +527,7 @@ With the channel, a message of an owner in a session's group is a prompt of the 
 - One-line messages with a command of the group, such as `/approve 5` or `/list`, are commands, not prompts; other messages are prompts, also one-line messages that start with `/`. Messages of members who are not owners of the Main group are not prompts.
 - When the session's Claude Code is not running, also when it ends while the file of a prompt arrives, Claude replies `Session N is not running.` while the daemon runs. In the first 30 seconds after a daemon start, a prompt waits for its session to attach again, so a prompt sent while the daemon was stopped reaches the session.
 - Claude posts its final answer of each turn in the group, as a reply to the prompt of that turn when the prompt came from the group, also when the next prompt arrives while Claude answers. When the prompt was deleted, the answer and Claude's replies are posted without the quote. `User` posts the prompts typed in the terminal, except commands such as `/simplex:link`, empty prompts, such as one with images only, and prompts made only of the plugin's `<channel source="plugin:simplex:simplex" ...>` tags. A text over 12000 bytes is posted as several messages; a prompt or an answer over 250,000 characters is posted up to there, ending with `…`.
-- The `reply` tool sends a file to the group, with its text as the caption, under the file rules of `send`.
+- The `reply` tool sends a file to the group, with its text as the caption, under the file rules of `send`. When every member of the group, other than Claude, `User` and members who left or were removed, is an owner of the Main group, the file is sent at once. Otherwise Claude posts `I want to send a file to group N · NAME, where members who are not owners see it:` with the caption, the file's path and size, and `/approve N or /reject N`, also in mode `host`; the file is sent after an owner approves it, and the call returns `status` as `send` does. A member invited and not yet joined counts as a member.
 
 ### Tool use
 
@@ -600,6 +600,7 @@ The folders are readable only by the user, and so are the files the daemon write
 - Prompts, approvals and tool-use decisions count only from members of a session's group whose member in the Main group is an owner. `User` and Claude never count as owners.
 - The Main group link reaches only you: the session start shows it, and `link` prints it in a terminal.
 - A session runs in mode `host` only after an owner approves it in the session's group.
+- A file of `reply` reaches members who are not owners only after an owner approves it.
 - While owners exist, the owners are replaced only after an owner approves it in the Main group.
 - The plugin refuses to send private keys and the files of its data folder, except the files under `files/` of the session's own folder.
 - Peers of a chat see the profile `Claude`, or a random profile in a chat connected incognito.

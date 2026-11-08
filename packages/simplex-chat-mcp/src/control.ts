@@ -6,7 +6,7 @@ import {chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "
 import {linkCommand} from "./owner"
 import {qrCodeText} from "./qr"
 import type {OwnerEntry, QrCodeSize} from "./serve"
-import {AgentTools, chatSubject, customDataOf, fitsMessage, isActive, isConnected, memberCurrent, refusedFileReason, setChatData} from "./tools"
+import {AgentTools, chatSubject, customDataOf, fitsMessage, isActive, isConnected, isGone, memberCurrent, refusedFileReason, setChatData} from "./tools"
 
 export const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "pending", label: "Pending actions"},
@@ -19,6 +19,7 @@ const sessionCommandsReply = "Commands: /approve, /reject, /receive, /forward, /
 const ownerKeywords = ["approve", "reject", "receive", "forward", "revoke", "leave", "delete", "give", "pending", "list"]
 const cardTooLong = {
   send: "text: too long for its approval card; shorten it.",
+  reply: "text: too long for its approval card; shorten it.",
   connect: "message: too long for its approval card; shorten it.",
   download: "item: the names of its file and chat are too long for its approval card.",
 }
@@ -144,6 +145,12 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
 
   hasApprover(): boolean {
     return this.approvers().length > 0
+  }
+
+  async onlyApprovers(userContactId?: number): Promise<boolean> {
+    await this.refreshMembers()
+    const own = (member: T.GroupMember): boolean => member.groupMemberId === this.group.membership.groupMemberId || (userContactId !== undefined && member.memberContactId === userContactId)
+    return this.members.every(member => own(member) || isGone(member) || this.isApprover(member))
   }
 
   standingApprover(chatInfo: T.ChatInfo, standing: Standing): string | undefined {
@@ -498,7 +505,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
 
   private async cardContent(action: Action): Promise<T.MsgContent> {
     const text = cardText(action, action.mode)
-    const file = action.tool === "download" || action.tool === "send" ? action.file : undefined
+    const file = action.tool === "download" || action.tool === "send" || action.tool === "reply" ? action.file : undefined
     const content = file === undefined ? undefined : fileContent(file, text)
     if (content?.type !== "image" && content?.type !== "video") return {type: "text", text}
     action.cardImage ??= await this.fittedImage(action, content)
@@ -667,6 +674,10 @@ function requestLines(action: Action): string[] {
       const mentioning = mentions.length === 0 ? [] : [`mentioning ${mentions.map(({name}) => mentionText(name)).join(", ")}`]
       return [`${done ? "I sent" : "I want to send"} a message to ${subject}${action.subject.incognito ? ", where I am incognito" : ""}:`, ...codeLines(action.input.text), ...attaching, ...reply, ...mentioning]
     }
+    case "reply": {
+      const {file} = action
+      return [`${done ? "I sent" : "I want to send"} a file to ${subject}, where members who are not owners see it:`, ...codeLines(action.input.text), `${file.type} ${codeSpan(oneLine(file.path))}, ${sizeText(file.size)}`]
+    }
     case "leave": {
       const {present, past} = leaveVerbs(action)
       return [`${done ? `I ${past}` : `I want to ${present}`} ${chatName(action.subject)} (${action.chat}).`]
@@ -685,6 +696,7 @@ function commandsLine(action: Action): string {
     case "connect":
     case "mode":
     case "permission":
+    case "reply":
       return `/'approve ${action.n}' or /'reject ${action.n}'`
     case "send":
       return `/'approve ${action.chat} ${action.n}', /'approve ${action.chat} all' or /'reject ${action.chat} ${action.n}'`

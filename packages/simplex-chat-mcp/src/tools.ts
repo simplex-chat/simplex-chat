@@ -6,7 +6,7 @@ import {basename, dirname, extname, isAbsolute, join, sep} from "path"
 import {CallToolResult, JsonSchemaType, McpServer, ServerContext, fromJsonSchema} from "@modelcontextprotocol/server"
 import {CEvt, CR, ChatEvent, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
-import {Action, Actions, Attachment, ConnRef, ConnectAction, DownloadAction, LeaveAction, Mode, NewAction, SendAction, Standing, Subject, ToolError, hasUnknownServers, isDecided} from "./actions"
+import {Action, Actions, Attachment, ConnRef, ConnectAction, DownloadAction, LeaveAction, Mode, NewAction, ReplyAction, SendAction, Standing, Subject, ToolError, hasUnknownServers, isDecided} from "./actions"
 import {chatErrorOf, chatErrorText, errorText, fileError, fullDomainName, logError, oneLine} from "./log"
 import {
   Changes,
@@ -126,6 +126,7 @@ export interface Agent {
   dataRoot?: string
   owner?: string
   replyChat?: string
+  ownersOnly?: () => Promise<boolean>
   setMode?: (mode: Mode) => void
   pending?: (connId: number) => void
 }
@@ -372,7 +373,7 @@ const listOutput: Schema = {
         type: "object",
         properties: {
           action: actionField,
-          tool: {type: "string", description: "connect, send, download or leave."},
+          tool: {type: "string", description: "connect, send, download, leave, or reply in a Claude Code session."},
           input: {type: "object", description: "The input of the call; the same call again attaches to the action."},
           state: {type: "string", description: "pending: waits for the owner; performing; done, failed, rejected, expired: call the tool with the input to get the result."},
           open: {type: "boolean", description: "true when a call waits on it now."},
@@ -461,7 +462,8 @@ export interface ToolDefinition {
 
 export const replyTool: ToolDefinition = {
   name: "reply",
-  description: "Sends a file to your owners in the SimpleX group of this session, with text as its caption. Your final answer of each turn reaches them without this tool.",
+  description: `Sends a file to your owners in the SimpleX group of this session, with text as its caption. Your final answer of each turn reaches them without this tool.
+When the group has members who are not owners, an owner approves the file in the group first, and the call waits for the decision: result status done (item), rejected, expired or failed (error). If the call ends without a result, repeat it with the same arguments: it attaches to the same action.`,
   inputSchema: {
     type: "object",
     properties: {
@@ -471,7 +473,15 @@ export const replyTool: ToolDefinition = {
     required: ["file"],
     additionalProperties: false,
   },
-  outputSchema: {type: "object", properties: {item: {type: "integer", description: "Item ID of the sent message."}}, required: ["item"]},
+  outputSchema: {
+    type: "object",
+    properties: {
+      action: actionField,
+      status: {type: "string", enum: ["done", "failed", "rejected", "expired"], description: "With action: done: the file was sent; rejected or expired: an owner rejected it or did not decide in time; failed: see error."},
+      item: {type: "integer", description: "Item ID of the sent message."},
+      error: errorField,
+    },
+  },
   action: false,
 }
 
@@ -549,6 +559,9 @@ export class AgentTools {
         return this.performConnect(action, signal)
       case "send":
         return this.performSend(action)
+      case "reply":
+        action.item = await this.sendFile(action.chat, action.file, action.input.text)
+        return
       case "leave":
         return this.leaveChat(action.chat)
       case "download":
@@ -699,18 +712,31 @@ export class AgentTools {
       case "list":
         return this.listChats()
       case "reply":
-        return this.reply(input as ReplyInput)
+        return this.reply(input as ReplyInput, call)
     }
   }
 
-  private async reply({file, text}: ReplyInput): Promise<object> {
+  private async reply(input: ReplyInput, call: ToolCall): Promise<object | undefined> {
     const chat = this.agent.replyChat
     if (chat === undefined) throw new ToolError("reply: this server has no group to reply to.")
+    const key = actionKey(this.session, "reply", {file: input.file, text: input.text ?? null})
+    const attached = this.agent.actions.find(key)
+    if (attached !== undefined) return this.replyResult(attached as ReplyAction, call)
     const {chatInfo} = await getChat(this.agent.chat, chat, 0)
-    const attachment = await this.attachment(file, undefined, chatInfo, chat)
-    const filePath = await this.fileToSend(attachment)
-    const [sent] = await this.agent.chat.apiSendMessages([chatType(chat), chatNumber(chat)], [{fileSource: {filePath}, msgContent: sentContent(attachment, text ?? ""), mentions: {}}])
-    return {item: sent.chatItem.meta.itemId}
+    const file = await this.attachment(input.file, undefined, chatInfo, chat)
+    if ((await this.agent.ownersOnly?.()) === true) return {item: await this.sendFile(chat, file, input.text)}
+    if (call.signal.aborted) return undefined
+    return this.replyResult(this.agent.actions.create(key, {tool: "reply", input, subject: chatSubject(chatInfo), chat, file}, undefined, this.session, "requests") as ReplyAction, call)
+  }
+
+  private replyResult(action: ReplyAction, call: ToolCall): Promise<object | undefined> {
+    return this.actionResult(action, call, async () => ({item: action.item}))
+  }
+
+  private async sendFile(chat: string, file: Attachment, text = ""): Promise<number> {
+    const filePath = await this.fileToSend(file)
+    const [sent] = await this.agent.chat.apiSendMessages([chatType(chat), chatNumber(chat)], [{fileSource: {filePath}, msgContent: sentContent(file, text), mentions: {}}])
+    return sent.chatItem.meta.itemId
   }
 
   private async connect(input: ConnectInput, call: ToolCall): Promise<object | undefined> {
