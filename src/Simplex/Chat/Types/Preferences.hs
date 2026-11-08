@@ -26,11 +26,13 @@ module Simplex.Chat.Types.Preferences where
 import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON (..), Object, ToJSON (..), Value (..), decodeStrictText)
 import qualified Data.Aeson.Encoding as JE
+import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.TH as J
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import Data.Maybe (fromMaybe, isJust)
+import Data.Scientific (base10Exponent)
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Records.Compat
@@ -167,8 +169,26 @@ type PrefsJSON = NoJSON Object
 
 keepPrefsJSON :: (ToJSON p, HasField "_json" p PrefsJSON) => Value -> p -> p
 keepPrefsJSON v ps = setField @"_json" ps . NoJSON $ case v of
-  Object o | v /= toJSON ps -> Just o
+  Object o | v /= toJSON ps && all boundedJSON o -> Just o
   _ -> Nothing
+
+boundedProperties :: Object -> Object
+boundedProperties = JM.filter boundedJSON
+
+boundedJSON :: Value -> Bool
+boundedJSON = bounded maxJSONDepth
+  where
+    bounded depth = \case
+      Object o -> depth > 0 && all (bounded $ depth - 1) o
+      Array a -> depth > 0 && all (bounded $ depth - 1) a
+      Number n -> base10Exponent n <= maxJSONExponent
+      _ -> True
+
+maxJSONDepth :: Int
+maxJSONDepth = 32
+
+maxJSONExponent :: Int
+maxJSONExponent = 18
 
 decodePrefs :: (Value -> JT.Parser p) -> Text -> Maybe p
 decodePrefs prefsP t = JT.parseMaybe prefsP =<< decodeStrictText t

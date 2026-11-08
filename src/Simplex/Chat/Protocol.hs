@@ -265,7 +265,7 @@ $(pure [])
 instance FromJSON LinkContent where
   parseJSON v@(J.Object j) =
     $(JQ.mkParseJSON (taggedObjectJSON $ dropPrefix "LC") ''LinkContent) v
-      <|> LCUnknown <$> j .: "type" <*> pure j
+      <|> LCUnknown <$> j .: "type" <*> pure (boundedProperties j)
   parseJSON invalid =
     JT.prependFailure "bad LinkContent, " (JT.typeMismatch "Object" invalid)
 
@@ -566,8 +566,8 @@ instance FromJSON MsgReaction where
   parseJSON (J.Object v) = do
     tag <- v .: "type"
     if tag == emojiTag
-      then (MREmoji <$> v .: emojiTag) <|> pure (MRUnknown tag v)
-      else pure $ MRUnknown tag v
+      then (MREmoji <$> v .: emojiTag) <|> pure (MRUnknown tag $ boundedProperties v)
+      else pure $ MRUnknown tag $ boundedProperties v
   parseJSON invalid =
     JT.prependFailure "bad MsgContent, " (JT.typeMismatch "Object" invalid)
 
@@ -889,7 +889,7 @@ instance FromJSON MsgContent where
         pure MCChat {text, chatLink, ownerSig}
       MCUnknown_ tag -> do
         text <- fromMaybe unknownMsgType <$> v .:? "text"
-        pure MCUnknown {tag, text, json = v}
+        pure MCUnknown {tag, text, json = boundedProperties v}
   parseJSON invalid =
     JT.prependFailure "bad MsgContent, " (JT.typeMismatch "Object" invalid)
 
@@ -1501,7 +1501,7 @@ appJsonToCM fwdDepth AppMessageJson {v, msgId, event, params} = do
       XCallExtra_ -> XCallExtra <$> p "callId" <*> p "extra"
       XCallEnd_ -> XCallEnd <$> p "callId"
       XOk_ -> pure XOk
-      XUnknown_ t -> pure $ XUnknown t params
+      XUnknown_ t -> pure $ XUnknown t $ boundedProperties params
 
 chatToAppMessage :: forall e. MsgEncodingI e => ChatMessage e -> AppMessage e
 chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @e of

@@ -17,6 +17,7 @@ import Data.Maybe (fromMaybe)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Simplex.Chat.Call
 import Simplex.Chat.Library.Internal (decodeLinkUserData, encodeShortLinkData)
+import Simplex.Chat.Messages.CIContent (ACIContent (..), ciMsgContent, dbParseACIContent)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -29,6 +30,7 @@ import Simplex.Messaging.Crypto.Ratchet
 import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Protocol (EntityId (..), supportedSMPClientVRange)
 import Simplex.Messaging.ServiceScheme
+import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
 import Test.Hspec
 
@@ -38,6 +40,7 @@ protocolTests = do
   shortLinkDataTests
   batchLimitTests
   forwardDepthTests
+  jsonLimitTests
   preferencesJSONTests
 
 preferencesJSONTests :: Spec
@@ -57,6 +60,9 @@ preferencesJSONTests = describe "preferences JSON" $ do
     let s = "{\"voice\":{\"enable\":\"on\",\"exceptRole\":\"observer\"}}"
     ps <- groupPrefs s
     storedJSON ps `shouldBe` Just (object s)
+  it "stores no JSON with numbers above the exponent limit" $ do
+    ps <- groupPrefs $ "{\"voice\":{\"enable\":\"on\"},\"polls\":{\"enable\":\"on\",\"limit\":1e" <> B.pack (show $ maxJSONExponent + 1) <> "}}"
+    storedJSON ps `shouldBe` Nothing
   it "reads the received preferences from the stored JSON" $
     groupPrefsFromRow (Just "{\"voice\":{\"enable\":\"on\"}}") (Just "{\"voice\":{\"enable\":\"off\"}}")
       `shouldBe` groupPrefs_ "{\"voice\":{\"enable\":\"off\"}}"
@@ -101,6 +107,41 @@ forwardDepthTests = describe "Chat message forward depth limit" $ do
     nestedFwd :: Int -> ChatMessage 'Json
     nestedFwd 0 = ChatMessage chatInitialVRange Nothing $ XMsgNew $ mcSimple $ MCText "hello"
     nestedFwd n = ChatMessage chatInitialVRange Nothing $ XGrpMsgForward (GrpMsgForward FwdChannel $ systemToUTCTime $ MkSystemTime 1 1) (nestedFwd $ n - 1)
+
+jsonLimitTests :: Spec
+jsonLimitTests = describe "Chat message JSON limits" $ do
+  it "keeps unknown content properties within the limits" $
+    let mc = unknownContent $ ",\"data\":" <> nestedArrays maxJSONDepth <> ",\"number\":" <> powerOf10 maxJSONExponent
+     in msgNew mc ==# XMsgNew (mcSimple $ MCUnknown "future" "hello" $ jsonObject mc)
+  it "drops unknown content properties nested deeper than the limit" $
+    msgNew (unknownContent $ ",\"data\":" <> nestedArrays (maxJSONDepth + 1) <> ",\"ok\":1")
+      ==# XMsgNew (mcSimple $ MCUnknown "future" "hello" $ jsonObject $ unknownContent ",\"ok\":1")
+  it "drops unknown content properties with numbers above the exponent limit" $
+    msgNew (unknownContent $ ",\"numbers\":[1," <> powerOf10 (maxJSONExponent + 1) <> "],\"large\":1e1024,\"ok\":1")
+      ==# XMsgNew (mcSimple $ MCUnknown "future" "hello" $ jsonObject $ unknownContent ",\"ok\":1")
+  it "drops unknown link content properties above the limits" $
+    J.eitherDecodeStrict' ("{\"type\":\"future\"" <> aboveLimits <> ",\"ok\":1}")
+      `shouldBe` Right (LCUnknown "future" $ jsonObject "{\"type\":\"future\",\"ok\":1}")
+  it "drops unknown reaction properties above the limits" $
+    ("{\"v\":\"9\",\"event\":\"x.msg.react\",\"params\":{\"msgId\":\"AQIDBA==\",\"reaction\":{\"type\":\"future\"" <> aboveLimits <> ",\"ok\":1},\"add\":true}}")
+      ==# XMsgReact (SharedMsgId "\1\2\3\4") Nothing Nothing (MRUnknown "future" $ jsonObject "{\"type\":\"future\",\"ok\":1}") True
+  it "drops unknown event params above the limits" $
+    ("{\"v\":\"9\",\"event\":\"x.future\",\"params\":{\"ok\":1" <> aboveLimits <> "}}")
+      ==# XUnknown "x.future" (jsonObject "{\"ok\":1}")
+  it "reads stored unknown content without properties above the limits" $
+    storedContent ("{\"rcvMsgContent\":{\"msgContent\":" <> unknownContent (aboveLimits <> ",\"ok\":1") <> "}}")
+      `shouldBe` Right (Just $ MCUnknown "future" "hello" $ jsonObject $ unknownContent ",\"ok\":1")
+  where
+    msgNew mc = "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":" <> mc <> "}}"
+    unknownContent ps = "{\"type\":\"future\",\"text\":\"hello\"" <> ps <> "}"
+    aboveLimits = ",\"data\":" <> nestedArrays (maxJSONDepth + 1) <> ",\"number\":" <> powerOf10 (maxJSONExponent + 1)
+    nestedArrays n = B.replicate n '[' <> B.replicate n ']'
+    powerOf10 :: Int -> ByteString
+    powerOf10 n = "1e" <> B.pack (show n)
+    jsonObject :: ByteString -> J.Object
+    jsonObject s = fromMaybe (error $ "not JSON: " <> B.unpack s) $ J.decodeStrict' s
+    storedContent :: ByteString -> Either String (Maybe MsgContent)
+    storedContent = fmap (\(ACIContent _ ci) -> ciMsgContent ci) . dbParseACIContent . safeDecodeUtf8
 
 srv :: SMPServer
 srv = SMPServer "smp.simplex.im" "5223" (C.KeyHash "\215m\248\251")
