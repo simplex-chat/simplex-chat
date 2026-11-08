@@ -171,7 +171,7 @@ test("an owner joins the Main group and each session's group, and approves its c
   expect((await chatsOf(two)).sort()).toEqual([directoryChat, shopChat].sort())
 }, 600_000)
 
-test("the hooks post a terminal prompt as User and the answer as Claude in the session's group; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
+test("the hooks post a terminal prompt as User and the answer as Claude in the session's group; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
   const root = join(dir, "mirror", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("mirror", "Alice")
@@ -197,6 +197,12 @@ test("the hooks post a terminal prompt as User and the answer as Claude in the s
   const notRunning = received(alice.chat, inGroup(groupId, textStarts("Session 1 is not running.")))
   const [early] = await alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], "Are you there?")
   expect((await notRunning).chatItem.quotedItem?.itemId).toBe(early.chatItem.meta.itemId)
+  const notRunningLong = received(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText === "Session 1 is not running." && chatItem.quotedItem === undefined))
+  let longest: T.AChatItem | undefined
+  for (let length = 15_600; longest === undefined; length -= 10) {
+    longest = await alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], "a".repeat(length)).then(([sent]) => sent, () => undefined)
+  }
+  await notRunningLong
 
   const attached: unknown[] = []
   const controller = new AbortController()
