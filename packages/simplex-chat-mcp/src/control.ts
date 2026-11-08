@@ -6,7 +6,7 @@ import {chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "
 import {linkCommand} from "./owner"
 import {qrCodeText} from "./qr"
 import type {OwnerEntry, QrCodeSize} from "./serve"
-import {AgentTools, chatSubject, customDataOf, fitsMessage, isActive, isConnected, isGone, memberCurrent, newestGroup, refusedFileReason, setChatData} from "./tools"
+import {AgentTools, chatSubject, customDataOf, fitsMessage, isActive, isConnected, isGone, memberCurrent, refusedFileReason, setChatData} from "./tools"
 
 export const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "pending", label: "Pending actions"},
@@ -299,19 +299,6 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return `${scope} ${chatName(chatSubject(chatInfo))} (${chat}) need approval again.`
   }
 
-  async revokeAll(): Promise<void> {
-    const keys = Object.values(standings).map(({key}) => key)
-    for (const {chatInfo} of await this.tools.agentChats()) {
-      const data = (customDataOf(chatInfo) ?? {}) as {[key: string]: unknown}
-      const chat = chatRef(chatInfo)
-      if (chat !== undefined && keys.some(key => key in data)) await this.setCustomData(chat, Object.fromEntries(Object.entries(data).filter(([key]) => !keys.includes(key))))
-    }
-  }
-
-  deleteGroup(): Promise<void> {
-    return deleteGroup(this.chat, this.group)
-  }
-
   private forward(action: DownloadAction): void {
     this.tools
       .forwardFile(action)
@@ -562,7 +549,8 @@ export function hasOutcomeCard(action: Action): boolean {
 }
 
 export async function findControlGroup(chat: api.ChatApi, userId: number): Promise<T.GroupInfo | undefined> {
-  return newestGroup((await chat.apiListGroups(userId)).filter(({customData}) => controlDataOf(customData) !== undefined))
+  const groups = (await chat.apiListGroups(userId)).filter(({customData}) => controlDataOf(customData) !== undefined)
+  return groups.reduce<T.GroupInfo | undefined>((latest, group) => (latest === undefined || group.groupId > latest.groupId ? group : latest), undefined)
 }
 
 export function controlDataOf(customData: object | undefined): ControlData | undefined {

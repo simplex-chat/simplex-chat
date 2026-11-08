@@ -19,13 +19,8 @@ export const configVariables: {[key in Key]: string} = {
 
 const optionNames: {[key in Key]: string} = {mainGroup: "main_group", approve: "approve", expireHours: "expire_hours"}
 const configurePath = "/plugin > Installed > simplex > Configure options"
-const unattendedEntrypoints = ["sdk-cli", "sdk-ts", "sdk-py"]
 
 export class ConfigError extends Error {}
-
-export function interactive(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env.CLAUDE_CODE_SESSION_ATTENDED !== "0" && !unattendedEntrypoints.includes(env.CLAUDE_CODE_ENTRYPOINT ?? "")
-}
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const value = (key: Key): string | undefined => {

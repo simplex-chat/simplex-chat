@@ -1,5 +1,5 @@
 import {DaemonClient} from "./client"
-import {interactive, readConfig} from "./config"
+import {readConfig} from "./config"
 import {dataRoot} from "./files"
 import {errorText, logError} from "./log"
 import {TitleReply} from "./protocol"
@@ -39,7 +39,6 @@ export interface HookDeps {
 }
 
 export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = process.env, deps?: HookDeps): Promise<HookOutput> {
-  if (!interactive(env)) return {}
   const nodeVersion = deps?.nodeVersion ?? process.versions.node
   if (Number(nodeVersion.split(".")[0]) < minNodeMajor) return {systemMessage: `SimpleX MCP needs Node.js ${minNodeMajor} or later; found ${nodeVersion}.`}
   try {
@@ -57,7 +56,6 @@ export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = proce
 }
 
 export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, client: HookDeps["client"] = DaemonClient.forRoot(dataRoot(env)), retryMs = turnRetryMs, at = performance.timeOrigin): Promise<HookOutput> {
-  if (!interactive(env)) return {}
   try {
     const input = JSON.parse(stdin) as TurnInput
     const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), answer: cut(input.last_assistant_message), model: input.to_model, effort: input.effort?.level}

@@ -7,7 +7,7 @@ import {join} from "path"
 import {Mode} from "../../src/actions"
 import {defaultConfig} from "../../src/config"
 import {Daemon, DaemonDeps, HubLike, SessionLike, runDaemon} from "../../src/daemon"
-import {LockedError, SessionFile, createDataFolder, readSessionFile, serverToken, sessionFolder, socketPath, writeSessionFile} from "../../src/files"
+import {LockedError, createDataFolder, readSessionFile, serverToken, sessionFolder, socketPath, writeSessionFile} from "../../src/files"
 import {protocolVersion} from "../../src/protocol"
 import * as socket from "../../src/socket"
 import {requestJson, streamLines} from "../../src/socket"
@@ -39,7 +39,6 @@ function deps(root: string) {
   const configs: unknown[] = []
   const busy = new Set<number>()
   const stored: unknown[] = []
-  const deletedGroups: number[] = []
   let expiryChecks = 0
   const hubStops: number[] = []
   const gates: {open?: Promise<void>; call?: Promise<void>; hubStop?: Promise<void>} = {}
@@ -96,7 +95,6 @@ function deps(root: string) {
       agents.push(agent)
       return agent
     },
-    deleteGroup: async number => void deletedGroups.push(number),
     expireDue: () => expiryChecks++,
     stop: async () => {
       hubStops.push(agents.filter(({open}) => open).length)
@@ -120,7 +118,7 @@ function deps(root: string) {
     gates[name] = promise
     return resolve
   }
-  return {d, hub, agents, configs, busy, stored, deletedGroups, expiryChecks: () => expiryChecks, hubStops, onStopped, stoppedCode: stopped.promise, opening: opening.promise, calling: calling.promise, aborted: aborted.promise, hubStopping: hubStopping.promise, gate}
+  return {d, agents, configs, busy, stored, expiryChecks: () => expiryChecks, hubStops, onStopped, stoppedCode: stopped.promise, opening: opening.promise, calling: calling.promise, aborted: aborted.promise, hubStopping: hubStopping.promise, gate}
 }
 
 let root: string
@@ -181,10 +179,10 @@ async function turnsUntil(condition: () => boolean): Promise<void> {
   expect(condition()).toBe(true)
 }
 
-function storeSession(id: string, number: number, name: string, extra: Partial<SessionFile> = {}) {
+function storeSession(id: string, number: number, name: string) {
   const folder = sessionFolder(root, id)
   createDataFolder(folder)
-  writeSessionFile(folder, {number, name, project: "/p/app", created: "2026-10-24T00:00:00.000Z", ...extra})
+  writeSessionFile(folder, {number, name, project: "/p/app", created: "2026-10-24T00:00:00.000Z"})
 }
 
 describe("daemon", () => {
@@ -201,12 +199,11 @@ describe("daemon", () => {
     expect(agents).toHaveLength(2)
   })
 
-  it("passes the stored sessions with a group to the hub, and the approval mode of each registration to its session", async () => {
-    storeSession(id1, 1, "app", {group: 20})
-    storeSession(id3, 3, "old")
+  it("passes the stored sessions to the hub, and the approval mode of each registration to its session", async () => {
+    storeSession(id1, 1, "app")
     const {d, agents, stored} = deps(root)
     daemon = await Daemon.start(d, readDefaultConfig)
-    expect(stored).toEqual([{id: id1, session: {number: 1, name: "app", project: "/p/app", created: "2026-10-24T00:00:00.000Z", group: 20}}])
+    expect(stored).toEqual([{id: id1, session: {number: 1, name: "app", project: "/p/app", created: "2026-10-24T00:00:00.000Z"}}])
     const host = {...defaultConfig, approve: "host" as const}
     await streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined)
     expect(agents[0].modes).toEqual([])
@@ -837,85 +834,6 @@ describe("daemon", () => {
       await expect(post(route, {id: id1, project: "/p/app", config})).rejects.toMatchObject({message: "Invalid config.", status: 400})
     }
     expect(agents).toHaveLength(0)
-  })
-
-  it("deletes the group of a session closed for 7 days, at its start and every hour, and keeps the session's file without the group", async () => {
-    jest.useFakeTimers(fakeTimers)
-    const day = 24 * 60 * minutes
-    storeSession(id1, 1, "old", {group: 20, closed: new Date(Date.now() - 8 * day).toISOString()})
-    storeSession(id2, 2, "recent", {group: 21, closed: new Date(Date.now() - 7 * day + 30 * minutes).toISOString()})
-    const {d, deletedGroups, busy} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
-    await turnsUntil(() => deletedGroups.length === 1)
-    expect(deletedGroups).toEqual([1])
-    expect(readSessionFile(sessionFolder(root, id1))).toEqual({number: 1, name: "old", project: "/p/app", created: "2026-10-24T00:00:00.000Z"})
-    expect(readSessionFile(sessionFolder(root, id2))).toMatchObject({group: 21})
-    await register(id1)
-    busy.add(1)
-    await jest.advanceTimersByTimeAsync(60 * minutes)
-    await turnsUntil(() => deletedGroups.length === 2)
-    expect(deletedGroups).toEqual([1, 2])
-  })
-
-  it("opens a session resumed while the daemon deletes its group once the deletion ends, without the deleted group", async () => {
-    const day = 24 * 60 * minutes
-    storeSession(id1, 1, "old", {group: 20, closed: new Date(Date.now() - 8 * day).toISOString()})
-    const {d, hub, deletedGroups} = deps(root)
-    const deleting = deferred()
-    const deleteGroup = hub.deleteGroup
-    hub.deleteGroup = async number => {
-      await deleting.promise
-      return deleteGroup(number)
-    }
-    const opened: SessionFile[] = []
-    const session = hub.session
-    hub.session = async (id, stored) => {
-      opened.push(stored)
-      return session(id, stored)
-    }
-    daemon = await Daemon.start(d, readDefaultConfig)
-    const resumed = register(id1)
-    await new Promise(resolve => setTimeout(resolve, 50))
-    expect(opened).toEqual([])
-    deleting.resolve()
-    expect(await resumed).toMatchObject({number: 1})
-    expect(deletedGroups).toEqual([1])
-    expect(opened).toEqual([{number: 1, name: "old", project: "/p/app", created: "2026-10-24T00:00:00.000Z"}])
-  })
-
-  it("deletes the groups of the other sessions closed for 7 days when the deletion of one fails, and logs the failure", async () => {
-    const day = 24 * 60 * minutes
-    const closed = new Date(Date.now() - 8 * day).toISOString()
-    storeSession(id1, 1, "first", {group: 20, closed})
-    storeSession(id2, 2, "second", {group: 21, closed})
-    const errors: string[] = []
-    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text)), true))
-    const {d, hub, deletedGroups} = deps(root)
-    const deleteGroup = hub.deleteGroup
-    let calls = 0
-    hub.deleteGroup = async number => {
-      if (calls++ === 0) throw new Error("no network")
-      return deleteGroup(number)
-    }
-    daemon = await Daemon.start(d, readDefaultConfig)
-    await turnsUntil(() => deletedGroups.length === 1)
-    const failed = deletedGroups[0] === 1 ? 2 : 1
-    expect(errors).toEqual([`group of session ${failed}: no network\n`])
-    expect(readSessionFile(sessionFolder(root, failed === 1 ? id1 : id2))).toMatchObject({group: 19 + failed, closed})
-  })
-
-  it("records when a session closes, also for a stored session at a daemon start, and removes the record when it opens", async () => {
-    jest.useFakeTimers(fakeTimers)
-    storeSession(id2, 2, "stored", {group: 21})
-    daemon = await Daemon.start(deps(root).d, readDefaultConfig)
-    expect(readSessionFile(sessionFolder(root, id2))!.closed).toBe(new Date().toISOString())
-    await register(id1)
-    expect(readSessionFile(sessionFolder(root, id1))!.closed).toBeUndefined()
-    await jest.advanceTimersByTimeAsync(10 * minutes)
-    expect(readSessionFile(sessionFolder(root, id1))!.closed).toBe(new Date().toISOString())
-    await register(id1)
-    await register(id2)
-    expect([id1, id2].map(id => readSessionFile(sessionFolder(root, id))!.closed)).toEqual([undefined, undefined])
   })
 
   it("trims its log every hour while it runs", async () => {

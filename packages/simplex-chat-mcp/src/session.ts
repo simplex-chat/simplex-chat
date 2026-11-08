@@ -2,7 +2,7 @@ import {Readable, Writable} from "stream"
 import {CallToolResult, JsonSchemaType, McpServer, fromJsonSchema} from "@modelcontextprotocol/server"
 import {StdioServerTransport} from "@modelcontextprotocol/server/stdio"
 import {DaemonClient, ProtocolError, SpawnDaemon, spawnDaemon} from "./client"
-import {Config, ConfigError, defaultConfig, interactive, readConfig} from "./config"
+import {Config, ConfigError, defaultConfig, readConfig} from "./config"
 import {dataRoot, isSessionId} from "./files"
 import {ExitError, errorText, logError} from "./log"
 import {ToolCall} from "./messages"
@@ -12,7 +12,6 @@ import {ToolName, instructions, registerTools, replyTool} from "./tools"
 import {version} from "./version"
 
 const daemonStopped = "The SimpleX daemon stopped; repeat the call."
-const unattendedRun = "This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions."
 const unknownSessionStatus = 409
 const stoppingStatus = 503
 const callAttempts = 2
@@ -42,12 +41,12 @@ export async function startSession(env: NodeJS.ProcessEnv = process.env, io: Ses
   if (!id) throw new ExitError("simplex-mcp session runs from the Claude Code plugin.", 2)
   if (!isSessionId(id)) throw new ExitError(`Not a Claude Code session ID: ${id}`, 2)
   let config: Config = defaultConfig
-  let configError = interactive(env) ? undefined : unattendedRun
+  let configError: string | undefined
   try {
     config = readConfig(env)
   } catch (error) {
     if (!(error instanceof ConfigError)) throw error
-    configError ??= error.message
+    configError = error.message
   }
   const server = new McpServer({name: "simplex-mcp", version: io.version}, {instructions: `${instructions("Claude", "SimpleX daemon")}\n${channelInstructions}`, capabilities: {experimental: {"claude/channel": {}, "claude/channel/permission": {}}}})
   const link = new DaemonLink(DaemonClient.forRoot(dataRoot(env)), {id, pid: process.ppid, project: env.CLAUDE_PROJECT_DIR || process.cwd(), config}, io, line => {

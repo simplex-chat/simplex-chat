@@ -6,7 +6,7 @@ import {api} from "simplex-chat"
 import {DaemonClient} from "../../src/client"
 import {defaultConfig} from "../../src/config"
 import {Daemon, productionDeps} from "../../src/daemon"
-import {hubFolder, readSessionFile, sessionFolder, writeSessionFile} from "../../src/files"
+import {hubFolder, readSessionFile, sessionFolder} from "../../src/files"
 import {sessionStart, turn} from "../../src/hook"
 import {AttachLine, OwnerState, SessionReply, StatusReply, TitleReply} from "../../src/protocol"
 import {Bot, ItemCheck, callTool, captureLog, cardNumber, isActive, joinByLink, lines, person, prepareRoot, received, startBot, textStarts, until, updated} from "./helpers"
@@ -296,41 +296,6 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   await until(() => reattached.some(({prompt}) => prompt?.text === "Still there?"))
   const {chatItems} = await alice.chat.apiGetChat(T.ChatType.Group, groupId, 20)
   expect(chatItems.map(({meta}) => meta.itemText)).not.toContain("Session 1 is not running.")
-}, 600_000)
-
-test("the group of a session closed for 7 days is deleted at the daemon start, and its resume opens a new group, where User posts the terminal prompts and Claude the answers", async () => {
-  const root = join(dir, "closed", "root")
-  await prepareRoot(smpServer.address, root)
-  const alice = await personIn("closed", "Alice")
-  const daemon = await startDaemon(root)
-  const client = DaemonClient.forRoot(root)
-  await openSession(client, one, "one")
-  const owner = await client.request<OwnerState>("GET", "/link")
-  const invitations = joinSessionGroups(alice, ["1 · one"])
-  await joinByLink(alice, owner.link!)
-  const deletedGroup = (await invitations).get("1 · one")!
-  const userIn = (groupId: number) => until(async () => (await alice.chat.apiListMembers(groupId)).some(member => member.memberProfile.displayName === "User" && isActive(member)))
-  await userIn(deletedGroup)
-  await daemon.stop()
-  const folder = sessionFolder(root, one)
-  writeSessionFile(folder, {...readSessionFile(folder)!, closed: new Date(Date.now() - 8 * 86_400_000).toISOString()})
-  const deleted = alice.chat.wait("groupDeleted", ({groupInfo}) => groupInfo.groupId === deletedGroup, 60_000)
-  await startDaemon(root)
-  expect(await deleted).toBeDefined()
-  await until(() => readSessionFile(folder)!.group === undefined)
-  const reinvited = joinSessionGroups(alice, ["1 · one"])
-  expect(await openSession(client, one, "one")).toMatchObject({number: 1, displayName: "1 · one"})
-  const groupId = (await reinvited).get("1 · one")!
-  expect(groupId).not.toBe(deletedGroup)
-  await userIn(groupId)
-  const posted = (text: string, sender: string): Promise<T.AChatItem> =>
-    received(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText === text && chatItem.chatDir.type === "groupRcv" && chatItem.chatDir.groupMember.memberProfile.displayName === sender))
-  const typed = posted("Run the tests", "User")
-  await turn(JSON.stringify({session_id: one, hook_event_name: "UserPromptSubmit", prompt: "Run the tests"}), {}, client, undefined, 1)
-  await typed
-  const answered = posted("Tests pass.", "Claude")
-  await turn(JSON.stringify({session_id: one, hook_event_name: "Stop", last_assistant_message: "Tests pass."}), {}, client, undefined, 2)
-  await answered
 }, 600_000)
 
 test("a member of the Main group who is not an owner joins a session's group by /join and gets a file of reply only after an owner approves its card, which names the file without its caption; a demoted owner gets the role member in the sessions' groups, also in a pending invitation", async () => {

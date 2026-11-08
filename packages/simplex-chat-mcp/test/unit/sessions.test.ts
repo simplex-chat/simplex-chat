@@ -301,21 +301,6 @@ describe("session groups", () => {
     expect(await one.control.ownerCommand(invitedAlice, {keyword: "give", params: "@4 1"})).toBe("No chat @4. /list shows the agent's chats.")
   })
 
-  it("delete the group of a session for all members, with the standing approvals of its chats", async () => {
-    const chat = new FakeChat()
-    const hub = await hubWith(chat)
-    await openSession(hub, id1, stored(1, "auth"))
-    await openSession(hub, id2, stored(2, "docs"))
-    const approval = {simplexMcp: {approvedBy: "Alice", approvedById: 1003, approvedAt: "2026-11-08T10:00:00.000Z"}, simplexMcpFiles: {approvedBy: "Alice", approvedById: 1003, approvedAt: "2026-11-08T10:00:00.000Z"}}
-    chat.chats.set("@4", {chatInfo: ownedContact(4, "SimpleX Directory", id1, approval), items: []})
-    chat.chats.set("@5", {chatInfo: ownedContact(5, "Shop", id2, approval), items: []})
-    await hub.deleteGroup(1)
-    expect(chat.customData.filter(({chat: ref}) => ref === "@4").at(-1)!.customData).toEqual({simplexMcpOwner: {session: id1}})
-    expect(chat.customData.some(({chat: ref}) => ref === "@5")).toBe(false)
-    expect(chat.deleted).toEqual([{chatType: T.ChatType.Group, chatId: 20, mode: {type: "full", notify: true}}])
-    expect(hub.sessionsText()).toBe("2 · docs, closed")
-  })
-
   it("list and revoke the standing approvals of a closed session in its group", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
@@ -963,21 +948,5 @@ describe("User", () => {
     deliver!({type: "contactConnected", user, contact: {...contact(6, "User"), activeConn: {connId: 77, connStatus: {type: "ready"}}} as unknown as T.Contact})
     await connecting
     expect(hub.apiSetContactCustomData.mock.calls).toEqual([[6, {simplexMcpUser: true}]])
-  })
-
-  it("posts a terminal prompt in the newest group of its session where it is a current member, not in a group of that session that Claude deleted", async () => {
-    const sent: number[] = []
-    const sessionGroup = (groupId: number, status: T.GroupMemberStatus): T.GroupInfo => group(groupId, "1 · auth", member(2, "User", T.GroupMemberRole.Member, status), {customData: {simplexMcpSession: 1}})
-    const profile = {
-      apiListGroups: async () => [sessionGroup(30, T.GroupMemberStatus.Deleted), sessionGroup(32, T.GroupMemberStatus.Connected), sessionGroup(31, T.GroupMemberStatus.Connected), group(33, "2 · docs", member(2, "User"), {customData: {simplexMcpSession: 2}})],
-      apiSendMessages: async ([, groupId]: [T.ChatType, number]) => {
-        if (groupId === 30) throw new core.ChatAPIError("Chat command error", {type: "error", errorType: {type: "groupMemberUserRemoved"}} as unknown as T.ChatError)
-        sent.push(groupId)
-        return []
-      },
-    }
-    const mirror = new (User as unknown as new (chat: unknown, user: T.User) => User)(profile, {...user, userId: 2})
-    await mirror.post(1, ["Fix the build"])
-    expect(sent).toEqual([32])
   })
 })
