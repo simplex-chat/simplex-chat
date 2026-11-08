@@ -702,7 +702,7 @@ Group profile ([`createMainGroup`](../src/main-group.ts#L222-L232), [`load`](../
 | Field | Value |
 |---|---|
 | display name | option `main_group`, updated when it differs |
-| short description | `Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions.`, updated when it differs |
+| short description | `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does.`, updated when it differs |
 | description | `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.`, updated when it differs |
 | history | on |
 | direct messages | on for the role `owner` |

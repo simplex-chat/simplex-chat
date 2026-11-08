@@ -326,7 +326,7 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   expect(await bobConnected).toBeDefined()
   await bobInMain
   const bobMainInfo = (await bob.chat.apiListGroups(bob.user.userId)).find(({groupId}) => groupId === bobMain)!
-  expect(bobMainInfo.groupProfile).toMatchObject({shortDescr: "Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions.", description: "Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that."})
+  expect(bobMainInfo.groupProfile).toMatchObject({shortDescr: "Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does.", description: "Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that."})
   const bobInvited = joinSessionGroups(bob, ["1 · one"])
   const adminRights = "can send prompts and / commands to Claude, and approve tool use."
   const bobInOne = received(alice.chat, inGroup(groupOne, textStarts(`Bob is an admin and ${adminRights} You can change role to observer to stop it: /'observer #`)))

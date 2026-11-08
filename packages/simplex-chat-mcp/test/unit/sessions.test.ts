@@ -1053,7 +1053,7 @@ describe("Main group", () => {
   it("states in its description, its welcome message and a message at each join that everyone in it is trusted with all sessions", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
-    const texts = {shortDescr: "Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions.", description: "Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that."}
+    const texts = {shortDescr: "Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does.", description: "Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that."}
     expect(chat.profiles).toEqual([{groupId: 10, groupProfile: expect.objectContaining(texts)}])
     await hub.main.load()
     expect(chat.profiles).toHaveLength(1)

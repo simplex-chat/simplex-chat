@@ -16,7 +16,7 @@ const resetRequest = "A terminal asks to replace the owners: this group is delet
 const noOwners = "No owners in the Main group."
 const welcome = "Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that."
 const joinRights = "They can join the group of any Claude Code session here, prompt Claude and approve its actions."
-const shortDescr = "Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions."
+const shortDescr = "Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does."
 
 export interface SessionGroups {
   sessionsText(): string
