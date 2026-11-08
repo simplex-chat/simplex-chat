@@ -20,7 +20,6 @@ const sessionKey = "simplexMcpSession"
 const firstAction = 1
 const cardsWait = 10
 const promptEcho = 60_000
-const maxPart = 12_000
 const maxPushed = 20
 const fileWait = 10 * 60_000
 const pendingDays = 1
@@ -283,9 +282,9 @@ export class Session {
   }
 
   private async answer(text: string, quoted: T.ChatItem | undefined): Promise<void> {
-    const parts = textParts(text)
-    const quotedItemId = quoted?.content.type === "rcvMsgContent" && fitsMessage({type: "text", text: parts[0]}, undefined, {content: quoted.content.msgContent, fileName: quoted.file?.fileName}) ? quoted.meta.itemId : undefined
-    await this.post(parts, quotedItemId)
+    const quote = quoted?.content.type === "rcvMsgContent" ? {content: quoted.content.msgContent, fileName: quoted.file?.fileName} : undefined
+    const quotes = quote !== undefined && fitsMessage({type: "text", text: ""}, undefined, quote)
+    await this.post(textParts(text, quotes ? quote : undefined), quotes ? quoted?.meta.itemId : undefined)
   }
 
   private async post(parts: string[], quotedItemId?: number): Promise<void> {
@@ -527,21 +526,23 @@ function groupName(number: number, name: string): string {
   return validName(`${number} · ${name}`)
 }
 
-function textParts(text: string): string[] {
+function textParts(text: string, quote?: Parameters<typeof fitsMessage>[2]): string[] {
+  const chars = [...text]
   const parts: string[] = []
-  let part = ""
-  let bytes = 0
-  for (const c of text) {
-    const size = Buffer.byteLength(JSON.stringify(c)) - 2
-    if (bytes + size > maxPart) {
-      parts.push(part)
-      part = ""
-      bytes = 0
+  let start = 0
+  do {
+    const fits = (end: number): boolean => fitsMessage({type: "text", text: chars.slice(start, end).join("")}, undefined, parts.length === 0 ? quote : undefined)
+    let low = start + 1
+    let high = chars.length
+    while (low < high) {
+      const middle = Math.ceil((low + high) / 2)
+      if (fits(middle)) low = middle
+      else high = middle - 1
     }
-    part += c
-    bytes += size
-  }
-  return [...parts, part]
+    parts.push(chars.slice(start, low).join(""))
+    start = low
+  } while (start < chars.length)
+  return parts
 }
 
 function isRefusedQuote(error: unknown): boolean {

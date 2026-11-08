@@ -492,9 +492,24 @@ describe("session channel", () => {
     await session.turn({id: id1, prompt: '<channel source="plugin:other:other" from="Alice" item="42">\nFix the build\n</channel>'})
     await session.turn({id: id1, prompt: "/simplex:link"})
     await session.turn({id: id1, prompt: "Run the tests"})
-    await session.turn({id: id1, answer: `${"é".repeat(6000)}ok`})
+    await session.turn({id: id1, answer: `${"é".repeat(7481)}ok`})
     expect(posts.map(([, text]) => text)).toEqual(['<channel source="plugin:other:other" from="Alice" item="42">\nFix the build\n</channel>', "Run the tests"])
-    expect(answers(chat)).toEqual([[{text: "Fixed.", quotedItemId: 42}], [{text: "Tests pass.", quotedItemId: 43}], [{text: "é".repeat(6000), quotedItemId: undefined}, {text: "ok", quotedItemId: undefined}]])
+    expect(answers(chat)).toEqual([[{text: "Fixed.", quotedItemId: 42}], [{text: "Tests pass.", quotedItemId: 43}], [{text: "é".repeat(7481), quotedItemId: undefined}, {text: "ok", quotedItemId: undefined}]])
+  })
+
+  it("splits an answer and a terminal prompt where a message reaches the size the core accepts, with the quote in the first part of an answer, for Latin, Cyrillic and CJK texts", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    const posts: string[][] = []
+    hub.user = {post: async (_n: number, parts: string[]) => void posts.push(parts)} as unknown as User
+    await ownerPrompt(session, 42, "Fix the build")
+    await session.turn({id: id1, at: 1, prompt: tag(42, "Fix the build")})
+    await session.turn({id: id1, at: 2, answer: "a".repeat(20000)})
+    await session.turn({id: id1, at: 3, answer: "字".repeat(6000)})
+    await session.turn({id: id1, at: 4, prompt: "Ж".repeat(8000)})
+    const sizes = answers(chat).map(parts => parts.map(({text, quotedItemId}) => [[...text].length, quotedItemId]))
+    expect(sizes).toEqual([[[14928, 42], [5072, undefined]], [[4987, undefined], [1013, undefined]]])
+    expect(posts.map(parts => parts.map(part => part.length))).toEqual([[7481, 519]])
   })
 
   it("quotes in each answer the prompt of its turn when an owner sends prompts during a turn, and the oldest prompt without a prompt hook", async () => {
