@@ -24,7 +24,7 @@ const bob = member(7, "Bob", T.GroupMemberRole.Member)
 const invitedAlice = member(1003, "Alice", T.GroupMemberRole.Owner)
 const noApprover = `The group of this session has no admin or owner to approve actions. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@${version} link in a terminal.`
 const approversOnly = "Only admins and owners of this group approve actions here."
-const commandsAdminsOnly = "Only admins and owners of this group can send // and /! commands to Claude."
+const commandsApproversOnly = "Only admins and owners of this group can send / commands."
 const bangText = "Messages starting with ! reach Claude only from admins and owners, as /!command."
 const modeCard = "I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here."
 const approverRights = "can send prompts and // and /! commands to Claude, and approve tool use."
@@ -890,7 +890,7 @@ describe("session channel", () => {
     expect(lines).toHaveLength(1)
   })
 
-  it("answers every one-line / message as a command of the group, passes // and /! of admins and owners to the session without their first /, refuses those of members and moderators, and refuses ! messages", async () => {
+  it("answers the one-line / messages of admins and owners as commands of the group, passes their // and /! to the session without the first /, refuses every / command of members and moderators with one reply, passes their other messages as prompts, and refuses ! messages", async () => {
     const chat = new FakeChat()
     const {session, lines} = await channel(chat)
     const dan = member(12, "Dan", T.GroupMemberRole.Admin)
@@ -905,10 +905,14 @@ describe("session channel", () => {
     session.onMessage(event(sessionGroup, item(44, "//compact", from(max))))
     session.onMessage(event(sessionGroup, item(45, "!git status", from(invitedAlice))))
     session.onMessage(event(sessionGroup, item(46, "/approve x", from(dan))))
-    await until(() => lines.length === 2 && chat.replies.length === 2 && answers(chat).length === 3)
-    expect(lines).toEqual([{prompt: {text: "/model sonnet", from: "Alice", item: 41}}, {prompt: {text: "!git status", from: "Dan", item: 42}}])
+    session.onMessage(event(sessionGroup, item(47, "/pending", from(mia))))
+    session.onMessage(event(sessionGroup, item(48, "/approve 1", from(max))))
+    session.onMessage(event(sessionGroup, item(49, "/model sonnet", from(mia))))
+    session.onMessage(event(sessionGroup, item(50, "/tmp/build.log fails\nfix it", from(mia))))
+    await until(() => lines.length === 3 && chat.replies.length === 2 && answers(chat).length === 6)
+    expect(lines).toEqual([{prompt: {text: "/model sonnet", from: "Alice", item: 41}}, {prompt: {text: "!git status", from: "Dan", item: 42}}, {prompt: {text: "/tmp/build.log fails\nfix it", from: "Mia", item: 50}}])
     expect(chat.replies).toEqual([unknownCommand, unknownCommand])
-    expect(answers(chat)).toEqual([[{text: commandsAdminsOnly, quotedItemId: 43}], [{text: commandsAdminsOnly, quotedItemId: 44}], [{text: bangText, quotedItemId: 45}]])
+    expect(answers(chat)).toEqual([43, 44].map(quotedItemId => [{text: commandsApproversOnly, quotedItemId}]).concat([[{text: bangText, quotedItemId: 45}]], [47, 48, 49].map(quotedItemId => [{text: commandsApproversOnly, quotedItemId}])))
   })
 
   it("answers nothing to a part of a terminal prompt that User posts as one line starting with /, and answers the next command", async () => {

@@ -27,6 +27,7 @@ const attachWait = 30_000
 const channelPrompt = /<channel source="plugin:simplex:simplex"[^\n]* item="(\d+)"[^\n]*>\n([\s\S]*?)\n<\/channel>/g
 const bangText = "Messages starting with ! reach Claude only from admins and owners, as /!command."
 const commandsAdminsOnly = "Only admins and owners of this group can send // and /! commands to Claude."
+const commandsApproversOnly = "Only admins and owners of this group can send / commands."
 
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX daemon is stopping."}
 
@@ -154,8 +155,9 @@ export class Session {
     const {chatDir, content} = ci.chatItem
     if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent") return
     const {text} = content.msgContent
+    if (this.refusesCommand(text, chatDir.groupMember)) return this.queue(() => this.post([commandsApproversOnly], ci.chatItem.meta.itemId))
     if (!text.startsWith("//") && !text.startsWith("/!") && parseCommand(text) !== undefined) return this.control.onMessage(ci)
-    this.delivery = this.delivery.then(() => this.prompt(ci, text, chatDir.groupMember)).catch(error => logError(`prompt of session ${this.number}`, error))
+    this.queue(() => this.prompt(ci, text, chatDir.groupMember))
   }
 
   claimPending(connId: number, chat: string): void {
@@ -287,6 +289,14 @@ export class Session {
     const recent = Date.now() - promptEcho
     const tags = [...prompt.matchAll(channelPrompt)].map(([, item, content]) => ({item: Number(item), content: content.trim()}))
     return this.pushed.filter(entry => (entry.text === prompt && entry.at > recent) || tags.some(({item, content}) => item === entry.item.meta.itemId && content === entry.text.trim()))
+  }
+
+  private queue(work: () => Promise<void>): void {
+    this.delivery = this.delivery.then(work).catch(error => logError(`prompt of session ${this.number}`, error))
+  }
+
+  private refusesCommand(text: string, member: T.GroupMember): boolean {
+    return (text.startsWith("//") || text.startsWith("/!") || parseCommand(text) !== undefined) && !this.approves(member) && !this.isUser(member)
   }
 
   private approves(member: T.GroupMember): boolean {

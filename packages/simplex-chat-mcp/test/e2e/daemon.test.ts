@@ -300,7 +300,7 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   expect(chatItems.map(({meta}) => meta.itemText)).not.toContain("Session 1 is not running.")
 }, 600_000)
 
-test("a member of the Main group joins a session's group by /join as admin, prompts, sends // commands and approves there, also after removal from the Main group; a member added to the group by link as member prompts, and the plugin refuses its approvals and its // and /! commands; Claude posts each member's rights at the join and at a role change, after which the member approves; files of reply reach the group at once, the group's preference for files makes the core refuse them, and a change of the model keeps that preference; after a reset of the owners the members still prompt and approve there", async () => {
+test("a member of the Main group joins a session's group by /join as admin, prompts, sends // commands and approves there, also after removal from the Main group; a member added to the group by link as member prompts, and the plugin refuses its / commands, /pending and /!ls, with one reply; Claude posts each member's rights at the join and at a role change, after which the member approves; files of reply reach the group at once, the group's preference for files makes the core refuse them, and a change of the model keeps that preference; after a reset of the owners the members still prompt and approve there", async () => {
   const root = join(dir, "trust", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("trust", "Alice")
@@ -351,13 +351,12 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   const carolInOne = received(alice.chat, inGroup(groupOne, textStarts("Carol is a member and can send prompts to Claude; // and /! commands and approvals of tool use need the role admin or owner. You can change role to observer to stop it: /'observer #")))
   const carolGroupOne = await joinByLink(carol, await alice.chat.apiCreateGroupLink(groupOne, T.GroupMemberRole.Member))
   const [, makeCarolObserver] = /\/'(observer #\d+ \d+)'$/.exec((await carolInOne).chatItem.meta.itemText)!
-  const carolPending = received(carol.chat, inGroup(carolGroupOne, textStarts("Only admins and owners of this group approve actions here.")))
-  const carolCommand = received(carol.chat, inGroup(carolGroupOne, textStarts("Only admins and owners of this group can send // and /! commands to Claude.")))
   await carol.chat.apiSendTextMessage([T.ChatType.Group, carolGroupOne], "Write the docs")
-  await carol.chat.apiSendTextMessage([T.ChatType.Group, carolGroupOne], "/pending")
-  await carol.chat.apiSendTextMessage([T.ChatType.Group, carolGroupOne], "/!ls")
-  await carolPending
-  await carolCommand
+  for (const command of ["/pending", "/!ls"]) {
+    const refused = received(carol.chat, inGroup(carolGroupOne, ({chatItem}) => chatItem.meta.itemText === "Only admins and owners of this group can send / commands." && chatItem.quotedItem?.content.text === command))
+    await carol.chat.apiSendTextMessage([T.ChatType.Group, carolGroupOne], command)
+    await refused
+  }
   await until(() => attached.some(({prompt}) => prompt?.text === "Write the docs" && prompt.from === "Carol"))
   expect(attached.some(({prompt}) => prompt?.from === "Carol" && prompt.text !== "Write the docs")).toBe(false)
   const notes = join(dir, "trust", "notes.txt")
