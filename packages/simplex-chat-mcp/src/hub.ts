@@ -97,13 +97,18 @@ export class Session {
       dataRoot: root,
       owner: id,
       replyChat: `#${group.groupId}`,
-      replyAtOnce: async () => !hub.approveGuestFiles || this.control.onlyApprovers((await userContact(chat, user.userId))?.contactId),
+      replyAtOnce: async () => !hub.approveGuestFiles,
       repliesApprover: () => this.control.repliesApprover(),
       setMode: (next: Mode) => this.setMode(next),
       pending: (connId: number) => this.savePending(connId),
     }
     this.tools = new AgentTools(agent, () => this.actions.mode, number)
-    const session = {approves: (member: T.GroupMember) => this.approves(member), ownerOf: (n: number) => hub.sessionId(n), isUser: (member: T.GroupMember) => this.isUser(member)}
+    const session = {
+      approves: (member: T.GroupMember) => this.approves(member),
+      approvesFiles: (groupMemberId: number) => this.mainOwner(groupMemberId),
+      ownerOf: (n: number) => hub.sessionId(n),
+      isUser: (member: T.GroupMember) => this.isUser(member),
+    }
     this.control = new Control(chat, group, {displayName: group.groupProfile.displayName, session, registerHint: "", qrCode: "small"}, this.actions, this.tools)
   }
 
@@ -223,17 +228,15 @@ export class Session {
   async announceJoin(event: ChatEvent): Promise<void> {
     if (this.actions.lost || (event.type !== "joinedGroupMember" && event.type !== "connectedToGroupMember")) return
     const {member} = event
-    if (await this.isUser(member)) return
+    if (this.isUser(member)) return
     const name = safeName(member.memberProfile.displayName)
-    await this.post([this.approves(member)
-      ? `${name} joined from the Main group: their messages are prompts of this session, and they can approve its actions.`
-      : `${name} joined as a guest, not from the Main group: their messages are not prompts, and Claude's files reach this group only after a member from the Main group approves them.`])
+    await this.post([`${name} can send prompts to Claude and approve tool use. You can change role to observer to stop it: /'observer #${this.control.groupId} ${member.groupMemberId}'`])
   }
 
   private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
-    if (await this.isUser(member)) return
+    if (this.isUser(member)) return
     const item = ci.chatItem.meta.itemId
-    if (text.startsWith("/!") && !this.mainOwner(member)) return this.post([bangOwnersOnly], item)
+    if (text.startsWith("/!") && !this.mainOwner(member.groupMemberId)) return this.post([bangOwnersOnly], item)
     if (text.startsWith("!")) return this.post([bangFromOwners], item)
     await this.deliver(ci, text.startsWith("//") || text.startsWith("/!") ? text.slice(1) : text, member)
   }
@@ -296,15 +299,15 @@ export class Session {
   }
 
   private approves(member: T.GroupMember): boolean {
-    return this.data.invited.some(({groupMemberId}) => groupMemberId === member.groupMemberId)
+    return member.memberRole !== T.GroupMemberRole.Observer && member.memberRole !== T.GroupMemberRole.Relay && !this.isUser(member)
   }
 
-  private async isUser(member: T.GroupMember): Promise<boolean> {
-    return member.memberContactId !== undefined && member.memberContactId === (await userContact(this.hub.chat, this.hub.profile.userId))?.contactId
+  private isUser(member: T.GroupMember): boolean {
+    return member.memberContactId !== undefined && member.memberContactId === this.hub.userContactId
   }
 
-  private mainOwner(member: T.GroupMember): boolean {
-    const invited = this.data.invited.find(({groupMemberId}) => groupMemberId === member.groupMemberId)
+  private mainOwner(groupMemberId: number): boolean {
+    const invited = this.data.invited.find(entry => entry.groupMemberId === groupMemberId)
     return invited !== undefined && this.hub.main.isOwner(invited.mainMemberId)
   }
 
@@ -339,6 +342,7 @@ export class Session {
 export class Hub implements SessionGroups {
   readonly main: MainGroup
   user?: User
+  userContactId?: number
   promptsHeldUntil = 0
   approveGuestFiles = defaultConfig.approveGuestFiles
   private readonly sessions = new Map<number, Session>()
@@ -366,6 +370,7 @@ export class Hub implements SessionGroups {
       await hub.main.load()
       await hub.main.start()
       hub.user = await User.open(root, chat, user).catch(error => (logError("User", error), undefined))
+      hub.userContactId = (await userContact(chat, user.userId))?.contactId
       for (const {id, session} of stored) await hub.session(id, session)
       hub.promptsHeldUntil = Date.now() + attachWait
       await core.events(event => hub.onEvent(event))

@@ -25,7 +25,7 @@ const bob = member(7, "Bob", T.GroupMemberRole.Member)
 const invitedAlice = member(1003, "Alice", T.GroupMemberRole.Owner)
 const noApprover = `The group of this session has no member who joined from the Main group. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@${version} link in a terminal.`
 const modeCard = "I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here."
-const aliceJoined = "Alice joined from the Main group: their messages are prompts of this session, and they can approve its actions."
+const aliceJoined = "Alice can send prompts to Claude and approve tool use. You can change role to observer to stop it: /'observer #20 1003'"
 const trusted = "Everyone in this group is trusted with all Claude Code sessions here: they can join each session's group by /join N, prompt Claude and approve its actions. Invite only people you trust with them."
 
 type HubConstructor = new (chat: unknown, user: T.User, root: string, expireHours: number, mainGroup: T.GroupInfo, mainName: string) => Hub
@@ -123,18 +123,21 @@ describe("session groups", () => {
     expect(readSessionFile(folder)).toEqual({...stored(1, "auth"), aliases: [id2], group: 20})
   })
 
-  it("count approvals from every member who joined from the Main group, whatever their role there then or later, and not from a member added to the group directly, and prompts from every member but User", async () => {
+  it("count approvals and prompts from every member, whatever way they joined and whatever their role in the Main group, and not from observers and User", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     const session = await openSession(hub, id1, stored(1, "auth"))
     expect(await hub.join(bob, 1)).toBe(`Sent you an invitation to "1 · auth".`)
     const invitedBob = member(1007, "Bob", T.GroupMemberRole.Member)
-    const mallory = member(9, "Mallory", T.GroupMemberRole.Owner)
-    chat.members.set(20, [self, invitedAlice, invitedBob, mallory])
+    const mallory = member(9, "Mallory", T.GroupMemberRole.Member)
+    const oscar = member(11, "Oscar", T.GroupMemberRole.Observer)
+    hub.userContactId = 6
+    const sessionUser = {...member(1006, "User"), memberContactId: 6}
+    chat.members.set(20, [self, invitedAlice, invitedBob, mallory, oscar, sessionUser])
     await session.control.load()
     const pending = {keyword: "pending", params: ""}
-    expect(await session.control.ownerCommand(invitedBob, pending)).toBe("No pending actions.")
-    expect(await session.control.ownerCommand(mallory, pending)).toBe("Only members who joined from the Main group approve actions here.")
+    for (const sender of [invitedAlice, invitedBob, mallory]) expect(await session.control.ownerCommand(sender, pending)).toBe("No pending actions.")
+    for (const sender of [oscar, sessionUser]) expect(await session.control.ownerCommand(sender, pending)).toBe("Only members who joined from the Main group approve actions here.")
     chat.members.set(10, [self, {...alice, memberRole: T.GroupMemberRole.Member}, {...bob, memberStatus: T.GroupMemberStatus.Left}])
     await hub.main.onEvent({type: "memberRole", groupInfo: group(10, "SimpleX MCP", self), byMember: bob, member: alice, fromRole: T.GroupMemberRole.Owner, toRole: T.GroupMemberRole.Member} as unknown as ChatEvent)
     expect(await session.control.ownerCommand(invitedAlice, pending)).toBe("No pending actions.")
@@ -142,17 +145,22 @@ describe("session groups", () => {
     const lines: AttachLine[] = []
     session.onLine = line => lines.push(line)
     const sessionGroup = groupChat(group(20, "1 · auth"))
-    chat.chats.set("@6", {chatInfo: direct({...contact(6, "User"), customData: {simplexMcpUser: true}} as T.Contact), items: []})
-    const sessionUser = {...member(1006, "User"), memberContactId: 6}
     session.onMessage(event(sessionGroup, item(41, "Run the tests", {type: "groupRcv", groupMember: sessionUser})))
     session.onMessage(event(sessionGroup, item(42, "Write the docs", {type: "groupRcv", groupMember: mallory})))
     session.onMessage(event(sessionGroup, item(43, "Fix the build", {type: "groupRcv", groupMember: invitedBob})))
     await until(() => lines.length === 2)
     expect(lines).toEqual([{prompt: {text: "Write the docs", from: "Mallory", item: 42}}, {prompt: {text: "Fix the build", from: "Bob", item: 43}}])
+    chat.chats.set("@4", {chatInfo: ownedContact(4, "SimpleX Directory", id1), items: []})
+    chat.members.set(20, [self, oscar, sessionUser])
+    await session.control.load()
+    expect(textOf(await session.call("send", {chat: "@4", text: "hi"}, signal().call))).toBe(noApprover)
     chat.members.set(20, [self, mallory])
     await session.control.load()
-    chat.chats.set("@4", {chatInfo: ownedContact(4, "SimpleX Directory", id1), items: []})
-    expect(textOf(await session.call("send", {chat: "@4", text: "hi"}, signal().call))).toBe(noApprover)
+    const {controller, call} = signal()
+    const sending = session.call("send", {chat: "@4", text: "hi"}, call)
+    await until(() => session.actions.pending().some(({tool}) => tool === "send"))
+    controller.abort()
+    expect(await sending).toBeUndefined()
   })
 
   it("switch a session to mode host only after an owner approves its card in the session's group", async () => {
@@ -205,11 +213,11 @@ describe("session groups", () => {
     expect(session.actions.mode).toBe("requests")
   })
 
-  it("state the standing of each member who joins: from the Main group, or as a guest, and nothing for User", async () => {
+  it("post for each member who joins, whatever way they joined, that they prompt Claude and approve tool use, with the command that makes them an observer, and nothing for User", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     await openSession(hub, id1, stored(1, "auth"))
-    chat.chats.set("@6", {chatInfo: direct({...contact(6, "User"), customData: {simplexMcpUser: true}} as T.Contact), items: []})
+    hub.userContactId = 6
     const sessionUser = {...member(1006, "User"), memberContactId: 6}
     const mallory = member(9, "Mallory", T.GroupMemberRole.Owner)
     chat.members.set(20, [self, sessionUser, invitedAlice, mallory])
@@ -218,7 +226,7 @@ describe("session groups", () => {
     await joined("joinedGroupMember", invitedAlice)
     await joined("connectedToGroupMember", {...mallory, memberStatus: T.GroupMemberStatus.Intro_inv})
     await hub["controlEvents"]
-    expect(sentTo(chat, 20)).toEqual([aliceJoined, "Mallory joined as a guest, not from the Main group: their messages are not prompts, and Claude's files reach this group only after a member from the Main group approves them."])
+    expect(sentTo(chat, 20)).toEqual([aliceJoined, "Mallory can send prompts to Claude and approve tool use. You can change role to observer to stop it: /'observer #20 9'"])
   })
 
   it("end a pending mode card when the option returns to requests", async () => {
@@ -405,22 +413,21 @@ describe("session channel", () => {
     return {hub, session, lines}
   }
 
-  it("posts a card for each tool use, passes the owners' verdicts to the session, and ends the open cards with the turn", async () => {
+  it("posts a card for each tool use, passes the members' verdicts to the session, whatever way they joined, and ends the open cards with the turn", async () => {
     const chat = new FakeChat()
     const {session, lines} = await channel(chat)
     for (const requestId of ["abcde", "fghij", "kmnop"]) session.permission({id: id1, requestId, toolName: "Bash", description: "Run shell command", inputPreview: "rm -rf build"})
     await until(() => sentTo(chat, 20).length === 3)
     const card = "I want to use `Bash`: `Run shell command`\n`rm -rf build`"
     expect(sentTo(chat, 20)).toEqual([1, 2, 3].map(n => `${card}\n/'approve ${n}' or /'reject ${n}'`))
-    expect(await session.control.ownerCommand(mallory, {keyword: "approve", params: "1"})).toBe("Only members who joined from the Main group approve actions here.")
-    expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1"})).toBeUndefined()
+    expect(await session.control.ownerCommand(mallory, {keyword: "approve", params: "1"})).toBeUndefined()
     expect(await session.control.ownerCommand(invitedAlice, {keyword: "reject", params: "2"})).toBeUndefined()
     await until(() => chat.updates.length === 2)
     expect(lines).toEqual([{permission: {requestId: "abcde", behavior: "allow"}}, {permission: {requestId: "fghij", behavior: "deny"}}])
     expect(session.busy()).toBe(true)
     await session.turn({id: id1, answer: ""})
     await until(() => chat.updates.length === 3)
-    expect(chat.updates.map(({text}) => text)).toEqual([`${card}\nApproved by Alice.`, `${card}\nRejected by Alice.`, `${card}\nEnded.`])
+    expect(chat.updates.map(({text}) => text)).toEqual([`${card}\nApproved by Mallory.`, `${card}\nRejected by Alice.`, `${card}\nEnded.`])
     expect(lines).toHaveLength(2)
     expect(session.busy()).toBe(false)
     expect(sentTo(chat, 20)).toHaveLength(3)
@@ -824,8 +831,8 @@ describe("session channel", () => {
 
   it("answers nothing to a part of a terminal prompt that User posts as one line starting with /, and answers the next command", async () => {
     const chat = new FakeChat()
-    const {session, lines} = await channel(chat)
-    chat.chats.set("@6", {chatInfo: direct({...contact(6, "User"), customData: {simplexMcpUser: true}} as T.Contact), items: []})
+    const {hub, session, lines} = await channel(chat)
+    hub.userContactId = 6
     session.onMessage(event(sessionGroup, item(43, "/9j/4AAQSkZJRgABAQ", from({...member(1006, "User"), memberContactId: 6}))))
     session.onMessage(event(sessionGroup, item(44, "/pending", from(invitedAlice))))
     await until(() => chat.replies.includes("No pending actions."))
@@ -835,7 +842,8 @@ describe("session channel", () => {
 
   it("sends files to the session group with reply, under the refused-path rules", async () => {
     const chat = new FakeChat()
-    const {session} = await channel(chat)
+    const {hub, session} = await channel(chat)
+    await hub.configure({...defaultConfig, approveGuestFiles: false})
     const received = join(sessionFolder(root, id1), "files", "group", "8.txt")
     mkdirSync(join(sessionFolder(root, id1), "files", "group"), {recursive: true})
     writeFileSync(received, "log")
@@ -845,36 +853,37 @@ describe("session channel", () => {
     expect(textOf(await session.call("reply", {file: join(root, "token")}, signal().call))).toMatch(/ is refused: private keys and the server's own files are not sent\.$/)
   })
 
-  it("sends a file by reply at once when only members from the Main group, Claude, User and members who left are in the group, and otherwise after a member from the Main group approves its card", async () => {
+  it("sends a file by reply after an owner of the Main group approves its card, also when only such owners are in the group, refuses the approvals of other members, and refuses a reply without such an owner", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
     const received = join(sessionFolder(root, id1), "files", "group", "8.txt")
     mkdirSync(join(sessionFolder(root, id1), "files", "group"), {recursive: true})
     writeFileSync(received, "log")
-    chat.chats.set("@6", {chatInfo: direct({...contact(6, "User"), customData: {simplexMcpUser: true}} as T.Contact), items: []})
-    const members = (status: T.GroupMemberStatus): T.GroupMember[] => [self, invitedAlice, {...member(1006, "User"), memberContactId: 6}, {...mallory, memberStatus: status}]
-    chat.members.set(20, members(T.GroupMemberStatus.Left))
-    expect((await session.call("reply", {file: received}, signal().call))!.structuredContent).toEqual({item: 500})
-    chat.members.set(20, members(T.GroupMemberStatus.Invited))
     const first = signal()
     const unanswered = session.call("reply", {file: received, text: "The log"}, first.call)
-    await until(() => sentTo(chat, 20).length === 2)
-    expect(sentTo(chat, 20)[1]).toBe(`I want to send a file to group 1 · auth, where guests see it:\n\`The log\`\nfile \`${received}\`, 3 bytes\n/'approve 1', /'approve 1 all' or /'reject 1'`)
-    expect(await session.control.ownerCommand(mallory, {keyword: "approve", params: "1"})).toBe("Only members who joined from the Main group approve actions here.")
+    await until(() => sentTo(chat, 20).length === 1)
+    expect(sentTo(chat, 20)[0]).toBe(`I want to send a file to group 1 · auth:\n\`The log\`\nfile \`${received}\`, 3 bytes\n/'approve 1', /'approve 1 all' or /'reject 1'`)
+    chat.members.set(20, [self, invitedAlice, mallory])
+    await session.control.load()
+    expect(await session.control.ownerCommand(mallory, {keyword: "approve", params: "1"})).toBe("Only owners of the Main group approve files here.")
+    expect(await session.control.ownerCommand(mallory, {keyword: "reject", params: "1"})).toBe("Only owners of the Main group approve files here.")
     first.controller.abort()
     expect(await unanswered).toBeUndefined()
     const replied = session.call("reply", {file: received, text: "The log"}, signal().call)
     expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1"})).toBeUndefined()
-    expect((await replied)!.structuredContent).toEqual({action: 1, status: "done", item: 502})
+    expect((await replied)!.structuredContent).toEqual({action: 1, status: "done", item: 501})
     expect(chat.sent.at(-1)).toEqual({chat: [T.ChatType.Group, 20], messages: [{fileSource: {filePath: received}, msgContent: {type: "file", text: "The log"}, mentions: {}}]})
     const rejected = session.call("reply", {file: received}, signal().call)
-    await until(() => sentTo(chat, 20).length === 4)
+    await until(() => sentTo(chat, 20).length === 3)
     expect(await session.control.ownerCommand(invitedAlice, {keyword: "reject", params: "2"})).toBeUndefined()
     expect((await rejected)!.structuredContent).toEqual({action: 2, status: "rejected"})
-    expect(sentTo(chat, 20)).toHaveLength(4)
+    expect(sentTo(chat, 20)).toHaveLength(3)
+    chat.members.set(20, [self, mallory])
+    await session.control.load()
+    expect(textOf(await session.call("reply", {file: received}, signal().call))).toBe(`The group of this session has no owner of the Main group to approve files. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@${version} link in a terminal.`)
   })
 
-  it("sends a file by reply at once also while a guest is in the group when the plugin option approve_guest_files is off", async () => {
+  it("sends a file by reply at once when the plugin option approve_guest_files is off", async () => {
     const chat = new FakeChat()
     const {hub, session} = await channel(chat)
     const received = join(sessionFolder(root, id1), "files", "group", "8.txt")
@@ -887,7 +896,7 @@ describe("session channel", () => {
     const pending = signal()
     const carded = session.call("reply", {file: received}, pending.call)
     await until(() => sentTo(chat, 20).length === 2)
-    expect(sentTo(chat, 20)[1]).toMatch(/^I want to send a file to group 1 · auth, where guests see it:/)
+    expect(sentTo(chat, 20)[1]).toMatch(/^I want to send a file to group 1 · auth:/)
     pending.controller.abort()
     expect(await carded).toBeUndefined()
   })
@@ -901,7 +910,7 @@ describe("session channel", () => {
     chat.members.set(20, [self, invitedAlice, mallory])
     const replied = session.call("reply", {file: map, text: "The trail map"}, signal().call)
     await until(() => sentTo(chat, 20).length === 1)
-    const request = `I want to send a file to group 1 · auth, where guests see it:\n\`The trail map\`\nimage \`${map}\`, 6 bytes`
+    const request = `I want to send a file to group 1 · auth:\n\`The trail map\`\nimage \`${map}\`, 6 bytes`
     const preview = expect.stringMatching(/^data:image\/png;base64,/)
     expect(chat.sent).toEqual([{chat: [T.ChatType.Group, 20], messages: [{msgContent: {type: "image", text: `${request}\n/'approve 1', /'approve 1 all' or /'reject 1'`, image: preview}, mentions: {}}]}])
     expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1"})).toBeUndefined()
@@ -940,18 +949,18 @@ describe("session channel", () => {
     await until(() => session.actions.get(2)?.card !== undefined)
     expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1 all"})).toBe("Action 1 is not a file to this group.")
     expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "3 all"})).toBe("Action 3 is not pending.")
-    expect(await session.control.ownerCommand(mallory, {keyword: "approve", params: "2 all"})).toBe("Only members who joined from the Main group approve actions here.")
+    expect(await session.control.ownerCommand(mallory, {keyword: "approve", params: "2 all"})).toBe("Only owners of the Main group approve files here.")
     expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "2 all"})).toBe("Files approved for this group by Alice. /'revoke'")
     expect((await replied)!.structuredContent).toEqual({action: 2, status: "done", item: 502})
     expect(chat.customData.filter(({chat: ref}) => ref === "#20").at(-1)!.customData).toMatchObject({simplexMcpReplies: {approvedBy: "Alice", approvedById: 1003}})
     expect((await session.call("reply", {file: later, text: "The output"}, signal().call))!.structuredContent).toEqual({action: 3, status: "done", item: 503})
     await until(() => sentTo(chat, 20).length === 5)
     expect(chat.sent[3]).toEqual({chat: [T.ChatType.Group, 20], messages: [{fileSource: {filePath: later}, msgContent: {type: "file", text: "The output"}, mentions: {}}]})
-    expect(sentTo(chat, 20)[4]).toBe(`I sent a file to group 1 · auth, where guests see it:\n\`The output\`\nfile \`${later}\`, 3 bytes\nApproved for this chat by Alice. /'revoke'`)
+    expect(sentTo(chat, 20)[4]).toBe(`I sent a file to group 1 · auth:\n\`The output\`\nfile \`${later}\`, 3 bytes\nApproved for this chat by Alice. /'revoke'`)
     const reopened = await (await hubWith(chat)).session(id1, readSessionFile(sessionFolder(root, id1))!)
     expect((await reopened.call("reply", {file: later}, signal().call))!.structuredContent).toEqual({action: 4, status: "done", item: 505})
     const revoke = {keyword: "revoke", params: ""}
-    expect(await reopened.control.ownerCommand(mallory, revoke)).toBe("Only members who joined from the Main group approve actions here.")
+    expect(await reopened.control.ownerCommand(mallory, revoke)).toBe("Only owners of the Main group approve files here.")
     expect(await reopened.control.ownerCommand(invitedAlice, revoke)).toBe("Files to this group need approval again.")
     expect(await reopened.control.ownerCommand(invitedAlice, revoke)).toBe("Files to this group have no standing approval.")
     const again = reopened.call("reply", {file: later}, signal().call)

@@ -300,7 +300,7 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   expect(chatItems.map(({meta}) => meta.itemText)).not.toContain("Session 1 is not running.")
 }, 600_000)
 
-test("a member of the Main group joins a session's group by /join, prompts and approves there, also after removal from the Main group; a guest added to the group directly prompts, gets files of reply after an approval, and /approve N all sends later files at once until /revoke; after a reset of the owners both members from the Main group still prompt and approve there", async () => {
+test("a member of the Main group joins a session's group by /join, prompts and approves there, also after removal from the Main group; a member added to the group directly prompts and approves too; files of reply wait for an owner of the Main group, and /approve N all sends later files at once until /revoke; after a reset of the owners the members still prompt and approve there", async () => {
   const root = join(dir, "trust", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("trust", "Alice")
@@ -329,45 +329,49 @@ test("a member of the Main group joins a session's group by /join, prompts and a
   const bobMainInfo = (await bob.chat.apiListGroups(bob.user.userId)).find(({groupId}) => groupId === bobMain)!
   expect(bobMainInfo.groupProfile).toMatchObject({shortDescr: "Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions.", description: `Supervise your Claude Code sessions: each one has its own group, and you get its invitation here. ${trusted}`})
   const bobInvited = joinSessionGroups(bob, ["1 · one"])
-  const bobInOne = received(alice.chat, inGroup(groupOne, textStarts("Bob joined from the Main group: their messages are prompts of this session")))
+  const bobInOne = received(alice.chat, inGroup(groupOne, textStarts("Bob can send prompts to Claude and approve tool use. You can change role to observer to stop it: /'observer #")))
   await bob.chat.apiSendTextMessage([T.ChatType.Group, bobMain], "/join 1")
   const bobGroupOne = (await bobInvited).get("1 · one")!
   await bobInOne
   const bobSends = (text: string) => bob.chat.apiSendTextMessage([T.ChatType.Group, bobGroupOne], text)
   const bobSees = (text: string): Promise<T.AChatItem> => received(bob.chat, inGroup(bobGroupOne, textStarts(text)))
+  const aliceSends = (text: string) => alice.chat.apiSendTextMessage([T.ChatType.Group, groupOne], text)
+  const aliceSees = (text: string): Promise<T.AChatItem> => received(alice.chat, inGroup(groupOne, textStarts(text)))
   await bobSends("Fix the build")
   await until(() => attached.some(({prompt}) => prompt?.text === "Fix the build" && prompt.from === "Bob"))
   const toolUse = bobSees("I want to use `Bash`")
   await client.request("POST", "/permission", {id: one, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
   await bobSends(`/approve ${cardNumber(await toolUse)}`)
   await until(() => attached.some(({permission}) => permission?.behavior === "allow"))
-  const notes = join(dir, "trust", "notes.txt")
-  writeFileSync(notes, "trail notes")
-  expect((await callTool(client, one, "reply", {file: notes})).result).toEqual({item: expect.any(Number)})
 
-  const carolInOne = received(alice.chat, inGroup(groupOne, textStarts("Carol joined as a guest, not from the Main group: their messages are not prompts")))
+  const carolInOne = received(alice.chat, inGroup(groupOne, textStarts("Carol can send prompts to Claude and approve tool use.")))
   const carolGroupOne = await joinByLink(carol, await alice.chat.apiCreateGroupLink(groupOne, T.GroupMemberRole.Member))
   await carolInOne
-  const refused = received(carol.chat, inGroup(carolGroupOne, textStarts("Only members who joined from the Main group approve actions here.")))
+  const carolPending = received(carol.chat, inGroup(carolGroupOne, textStarts("No pending actions.")))
   await carol.chat.apiSendTextMessage([T.ChatType.Group, carolGroupOne], "Write the docs")
   await carol.chat.apiSendTextMessage([T.ChatType.Group, carolGroupOne], "/pending")
-  await refused
+  await carolPending
   await until(() => attached.some(({prompt}) => prompt?.text === "Write the docs" && prompt.from === "Carol"))
-  const request = "I want to send a file to group 1 · one, where guests see it:"
-  const card = bobSees(request)
+  const notes = join(dir, "trust", "notes.txt")
+  writeFileSync(notes, "trail notes")
+  const request = "I want to send a file to group 1 · one:"
+  const card = aliceSees(request)
   const replying = callTool(client, one, "reply", {file: notes, text: "Trail notes"})
   const shown = await card
   const n = cardNumber(shown)
   expect(lines(shown)).toEqual([request, "`Trail notes`", `file \`${notes}\`, 11 bytes`, `/'approve ${n}', /'approve ${n} all' or /'reject ${n}'`])
+  const bobRefused = bobSees("Only owners of the Main group approve files here.")
+  await bobSends(`/approve ${n}`)
+  await bobRefused
   const delivered = received(carol.chat, inGroup(carolGroupOne, ({chatItem}) => chatItem.file?.fileName === "notes.txt"))
-  const approvedAll = bobSees("Files approved for this group by Bob.")
-  await bobSends(`/approve ${n} all`)
-  expect(lines(await approvedAll)).toEqual(["Files approved for this group by Bob. /'revoke'"])
+  const approvedAll = aliceSees("Files approved for this group by Alice.")
+  await aliceSends(`/approve ${n} all`)
+  expect(lines(await approvedAll)).toEqual(["Files approved for this group by Alice. /'revoke'"])
   expect((await replying).result).toMatchObject({action: n, status: "done"})
   await delivered
-  const later = bobSees("I sent a file to group 1 · one, where guests see it:")
+  const later = aliceSees("I sent a file to group 1 · one:")
   expect((await callTool(client, one, "reply", {file: notes, text: "Again"})).result).toMatchObject({action: n + 1, status: "done"})
-  expect(lines(await later).at(-1)).toBe("Approved for this chat by Bob. /'revoke'")
+  expect(lines(await later).at(-1)).toBe("Approved for this chat by Alice. /'revoke'")
 
   const bobInAlice = (await alice.chat.apiListMembers(mainGroupId)).find(({memberProfile}) => memberProfile.displayName === "Bob")!
   const bobRemoved = bob.chat.wait("deletedMemberUser", ({groupInfo}) => groupInfo.groupId === bobMain, 60_000)
@@ -378,16 +382,16 @@ test("a member of the Main group joins a session's group by /join, prompts and a
   await sessionsListed
   await bobSends("Run the tests")
   await until(() => attached.some(({prompt}) => prompt?.text === "Run the tests" && prompt.from === "Bob"))
-  const revoked = bobSees("Files to this group need approval again.")
-  await bobSends("/revoke")
+  const revoked = aliceSees("Files to this group need approval again.")
+  await aliceSends("/revoke")
   await revoked
-  const again = bobSees(request)
+  const again = aliceSees(request)
   const rejecting = callTool(client, one, "reply", {file: notes})
-  await bobSends(`/reject ${cardNumber(await again)}`)
+  await aliceSends(`/reject ${cardNumber(await again)}`)
   expect((await rejecting).result).toMatchObject({status: "rejected"})
   const posted = async (groupId: number, start: string) => (await alice.chat.apiGetChat(T.ChatType.Group, groupId, 200)).chatItems.filter(({meta}) => meta.itemText.startsWith(start)).length
   expect(await Promise.all([posted(mainGroupId, "Alice joined. "), posted(mainGroupId, "Bob joined. ")])).toEqual([1, 1])
-  expect(await Promise.all(["Alice joined from the Main group", "Bob joined from the Main group", "Carol joined as a guest"].map(start => posted(groupOne, start)))).toEqual([1, 1, 1])
+  expect(await Promise.all(["Alice", "Bob", "Carol"].map(name => posted(groupOne, `${name} can send prompts to Claude and approve tool use.`)))).toEqual([1, 1, 1])
   expect((await alice.chat.apiListMembers(groupOne)).find(({memberProfile}) => memberProfile.displayName === "Bob")).toMatchObject({memberStatus: expect.stringMatching(/^(connected|complete)$/)})
 
   const resetCard = received(alice.chat, inGroup(mainGroupId, textStarts("A terminal asks to replace the owners")))

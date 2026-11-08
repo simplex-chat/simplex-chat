@@ -6,7 +6,7 @@ import {chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "
 import {linkCommand} from "./owner"
 import {qrCodeText} from "./qr"
 import type {OwnerEntry, QrCodeSize} from "./serve"
-import {AgentTools, chatSubject, customDataOf, fitsMessage, isActive, isConnected, isGone, memberCurrent, refusedFileReason, setChatData} from "./tools"
+import {AgentTools, chatSubject, customDataOf, fitsMessage, isActive, isConnected, memberCurrent, refusedFileReason, setChatData} from "./tools"
 
 export const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "pending", label: "Pending actions"},
@@ -36,6 +36,8 @@ const noOwners = "No owners in the agent control chat."
 const qrCodeHint = "If the QR code does not scan, restart with --qr-code large, or paste the link into the app."
 const noSessionApprover = `The group of this session has no member who joined from the Main group. Members of the Main group join it by /join N there; without members, run ${linkCommand} in a terminal.`
 const sessionApproversOnly = "Only members who joined from the Main group approve actions here."
+const filesOwnersOnly = "Only owners of the Main group approve files here."
+const noFilesApprover = `The group of this session has no owner of the Main group to approve files. Members of the Main group join it by /join N there; without members, run ${linkCommand} in a terminal.`
 const repliesKey = "simplexMcpReplies"
 
 export interface ControlData {
@@ -53,8 +55,9 @@ export interface ControlOptions {
 
 export interface SessionOptions {
   approves: (member: T.GroupMember) => boolean
+  approvesFiles: (groupMemberId: number) => boolean
   ownerOf: (session: number) => string | undefined
-  isUser: (member: T.GroupMember) => Promise<boolean>
+  isUser: (member: T.GroupMember) => boolean
 }
 
 export interface Command {
@@ -139,6 +142,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (action.tool === "connect") action.linkTextBytes = maxCardLength - largestCard({...action, linkTextBytes: 0}, mode, approver)
     if (action.tool === "permission") action.previewBytes = maxCardLength - largestCard({...action, previewBytes: 0}, mode, approver)
     if (action.tool !== "leave" && action.tool !== "mode" && action.tool !== "permission" && largestCard(action, mode, approver) > maxCardLength) return cardTooLong[action.tool]
+    if (action.tool === "reply" && !this.humans().some(member => this.approvesFiles(member))) return noFilesApprover
     if (this.approvers().length > 0) return undefined
     if (this.options.session !== undefined) return noSessionApprover
     return this.options.owners === undefined
@@ -150,12 +154,6 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return this.approvers().length > 0
   }
 
-  async onlyApprovers(userContactId?: number): Promise<boolean> {
-    await this.refreshMembers()
-    const own = (member: T.GroupMember): boolean => member.groupMemberId === this.group.membership.groupMemberId || (userContactId !== undefined && member.memberContactId === userContactId)
-    return this.members.every(member => own(member) || isGone(member) || this.isApprover(member))
-  }
-
   standingApprover(chatInfo: T.ChatInfo, standing: Standing): string | undefined {
     const approval = approvalOf(customDataOf(chatInfo), standings[standing].key)
     return this.actions.mode === "requests" && approval !== undefined && this.approvers().some(({groupMemberId}) => groupMemberId === approval.approvedById) ? safeName(approval.approvedBy) : undefined
@@ -163,7 +161,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
 
   repliesApprover(): string | undefined {
     const approval = approvalOf(this.group.customData, repliesKey)
-    return approval !== undefined && this.approvers().some(({groupMemberId}) => groupMemberId === approval.approvedById) ? safeName(approval.approvedBy) : undefined
+    return approval !== undefined && this.humans().some(member => member.groupMemberId === approval.approvedById && this.approvesFiles(member)) ? safeName(approval.approvedBy) : undefined
   }
 
   saveCounter(nextAction: number): Promise<void> {
@@ -214,10 +212,10 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const {chatItem} = ci
     if (this.actions.lost || chatItem.chatDir.type !== "groupRcv" || chatItem.content.type !== "rcvMsgContent") return
     const command = parseCommand(chatItem.content.msgContent.text)
-    if (command === undefined) return
     const sender = chatItem.chatDir.groupMember
+    if (command === undefined || this.options.session?.isUser(sender)) return
     this.ownerCommands = this.ownerCommands
-      .then(async () => ((await this.options.session?.isUser(sender)) ? undefined : this.ownerCommand(sender, command)))
+      .then(() => this.ownerCommand(sender, command))
       .then(reply => (reply === undefined ? undefined : this.chat.apiSendTextReply(ci, reply)))
       .catch(error => logError("control chat command", error))
   }
@@ -267,9 +265,11 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         const action = this.actions.get(request.action)
         if (action === undefined || action.state !== "pending" || action.card === undefined) return `Action ${request.action} is not pending.`
         if (action.tool !== "reply") return `Action ${request.action} is not a file to this group.`
+        if (!this.approvesFiles(sender)) return filesOwnersOnly
         return this.approveReplies(sender)
       }
       case "revokeReplies":
+        if (!this.approvesFiles(sender)) return filesOwnersOnly
         return this.revokeReplies()
       case "approve":
       case "reject":
@@ -279,6 +279,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         const action = this.actions.get(request.action)
         if (action === undefined || action.state !== "pending" || action.card === undefined) return `Action ${request.action} is not pending.`
         if (request.chat !== undefined && (action.tool === "connect" || action.chat !== request.chat)) return `Action ${request.action} is not for ${request.chat}.`
+        if (action.tool === "reply" && !this.approvesFiles(sender)) return filesOwnersOnly
         const approver = safeName(sender.memberProfile.displayName)
         if (request.type === "reject") this.actions.reject(action, approver)
         else if (action.tool !== "download") {
@@ -575,6 +576,10 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const owner = member.memberRole === T.GroupMemberRole.Owner
     return owners === undefined ? owner : owner && owners.some(entry => listsMember(entry, member))
   }
+
+  private approvesFiles(member: T.GroupMember): boolean {
+    return this.options.session?.approvesFiles(member.groupMemberId) ?? false
+  }
 }
 
 export function hasOutcomeCard(action: Action): boolean {
@@ -690,7 +695,7 @@ function requestLines(action: Action): string[] {
     }
     case "reply": {
       const {file} = action
-      return [`${done ? "I sent" : "I want to send"} a file to ${subject}, where guests see it:`, ...codeLines(action.input.text), `${file.type} ${codeSpan(oneLine(file.path))}, ${sizeText(file.size)}`]
+      return [`${done ? "I sent" : "I want to send"} a file to ${subject}:`, ...codeLines(action.input.text), `${file.type} ${codeSpan(oneLine(file.path))}, ${sizeText(file.size)}`]
     }
     case "leave": {
       const {present, past} = leaveVerbs(action)
