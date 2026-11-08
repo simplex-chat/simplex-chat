@@ -13,16 +13,21 @@ The core keeps the content and the file of a message marked deleted, and sets `i
 
 ## Fix
 
-Both filters also require `itemDeleted` to be absent. On Android:
+- Android: `providerForGallery` collects the ids of the items marked deleted when the viewer opens, except the opened item, and `canShowMedia` excludes them.
+- iOS: `chatItemImage` requires `itemDeleted` to be absent.
 
-- the opened item is exempt;
-- `item()` counts the item it starts from without the filter.
-
-On iOS, `nextChatItemData` already starts from the current item and does not filter it.
+```mermaid
+flowchart LR
+  Open[viewer opens on item X] --> Hidden[hiddenItemIds = items marked deleted, except X]
+  Swipe[swipe] --> Item["item(): walk from the anchor"]
+  Hidden --> Filter[canShowMedia: id not in hiddenItemIds, image or video, file loaded]
+  Item --> Filter
+  Filter --> Page[page shows the item]
+```
 
 ## Scope
 
 - Android and iOS: the platforms where the viewer changes media by swiping.
 - Desktop: the same Kotlin filter; its viewer shows only the opened image or video.
 - A revealed message opens in the viewer. On Android it stays reachable by swiping until the viewer closes; on iOS swiping back to it skips it.
-- Media marked deleted while the viewer is open: on Android it stays reachable while `providerForGallery` is anchored on it (the page on screen, a neighbour shown during a cancelled drag, or, after a swipe back to the opened position, the page settled on before it), and other pages skip it.
+- Media marked deleted while the viewer is open: on Android it stays reachable until the viewer closes, as before; on iOS swiping skips it.

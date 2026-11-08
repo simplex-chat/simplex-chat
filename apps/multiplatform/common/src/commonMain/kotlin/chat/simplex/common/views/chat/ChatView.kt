@@ -3630,8 +3630,9 @@ fun providerForGallery(
   cItemId: Long,
   scrollTo: (Int) -> Unit
 ): ImageGalleryProvider {
+  val hiddenItemIds = chatItems.filter { it.meta.itemDeleted != null && it.id != cItemId }.map { it.id }.toSet()
   fun canShowMedia(item: ChatItem): Boolean =
-    (item.meta.itemDeleted == null || item.id == cItemId) && (item.content.msgContent is MsgContent.MCImage || item.content.msgContent is MsgContent.MCVideo) && (item.file?.loaded == true && (getLoadedFilePath(item.file) != null || chatModel.connectedToRemote()))
+    item.id !in hiddenItemIds && (item.content.msgContent is MsgContent.MCImage || item.content.msgContent is MsgContent.MCVideo) && (item.file?.loaded == true && (getLoadedFilePath(item.file) != null || chatModel.connectedToRemote()))
 
   fun item(skipInternalIndex: Int, initialChatId: Long): Pair<Int, ChatItem>? {
     var processedInternalIndex = -skipInternalIndex.sign
@@ -3640,7 +3641,7 @@ fun providerForGallery(
     if (indexOfFirst == -1) return null
     for (chatItemsIndex in if (skipInternalIndex >= 0) indexOfFirst downTo 0 else indexOfFirst..chatItems.lastIndex) {
       val item = chatItems[chatItemsIndex]
-      if (chatItemsIndex == indexOfFirst || canShowMedia(item)) {
+      if (canShowMedia(item)) {
         processedInternalIndex += skipInternalIndex.sign
       }
       if (processedInternalIndex == skipInternalIndex) {
