@@ -77,15 +77,22 @@ Decided on 2026-11-08:
 35. A UserPromptSubmit prompt is not posted by `User` when a channel tag of this server in it holds a pushed prompt with its item ID, when it equals a prompt pushed in the last 60 s, or when it is a one-line `/` command.
 
 Decided on 2026-11-08, review round 1:
-36. The hooks and the session server of one Claude Code process share one session: the hooks send `CLAUDE_PID`, the session server its parent PID, and the daemon maps a new session ID to the session of that process and records the alias in `session.json`.
-37. When `/attach` ends, the session server starts the daemon if needed and attaches again: after 1 s, twice as late after each failure, at most 30 s apart, until its stdin closes or the daemon speaks another protocol.
-38. A pending connection of `connect` is recorded in the session group's data for one day; its chat becomes the session's when it connects. A `connect` to a known chat without an owner gives it to the session.
-39. Owners' prompts are kept until a turn's prompt matches them or an answer quotes them, at most 20. An answer quotes the oldest prompt its turn's prompt matched, or the oldest kept prompt when the turn had no prompt hook.
-40. A session in mode `host` posts its mode card when its group has an approver: at the session start or after a membership event. A change to `requests` ends a pending mode card.
+36. The hooks and the session server of one Claude Code process share one session: the hooks send `CLAUDE_PID`, the session server its parent PID. The daemon maps a session ID without `session.json` to the session of that process and records the alias in `session.json`. A hook of an ID with `session.json` goes to the session attached from its process, without an alias.
+37. When `/attach` ends or a start fails, the session server starts the daemon if needed and attaches again: after 1 s, twice as late after each failure, at most 30 s apart, until its stdin closes or the daemon speaks another protocol.
+38. A pending connection of `connect` is recorded in the session group's data for one day; its chat becomes the session's when it connects within that day. A `connect` to a known chat without an owner gives it to the session.
+39. Owners' prompts are kept until a turn's prompt matches them or an answer takes them, at most 20. Each prompt hook records its start time with the oldest prompt it matched, or none. An answer, also an empty one, quotes the newest record whose hook started before its own, or the oldest kept prompt without one.
+40. A session in mode `host` posts its mode card when its group has an approver: at the session start or after a membership event. A rejected card is recorded in `session.json`; the card is posted again only after a session start with `requests`. A change to `requests` ends a pending mode card.
 41. An owner's one-line `/` message is a prompt when its keyword is not a command of the session group.
-42. The daemon is spawned with an allowlist of environment variables.
+42. The daemon is spawned with an allowlist of environment variables, `NODE_OPTIONS` among them.
 43. For 30 s after a daemon start, an owner's prompt to a session without an attachment waits for the session to attach; the reply `Session N is not running.` follows only when it does not.
 44. The published `package.json` and `npm-shrinkwrap.json` hold the production dependencies only: 41 packages and 9 MB to download in place of 317 and 25 MB. The repository keeps the development dependencies; the pack strips them, restores the files after it, and heals a failed pack first; the launch test checks the packed files.
+
+Decided on 2026-11-08, review round 2:
+45. An owner's prompts reach the session in arrival order. A prompt waits for the file of an earlier one, and gets `Session N is not running.` when the session detached meanwhile.
+46. Texts that name an npx command name the plugin's version: `npx -y @simplex-chat/mcp@VERSION link`.
+47. A spawned daemon reports `running` for a held lock only when the socket answers within 1 s; otherwise it reports the lock's error and exits with 1.
+48. A group profile update keeps the custom data of the group in memory.
+49. The launch test installs the packed plugin with the command of Claude Code 2.1.319, `npm ci --ignore-scripts --workspaces=false --no-audit --no-fund`, within 60 s.
 
 Pack of the package (decision 44):
 ```
@@ -97,7 +104,8 @@ prepack:   build; strip-dev.js
 pack:      the tarball, from the stripped files
 postpack:  strip-dev.js --restore: both files from their .orig copies
 check:     launch test: the packed package.json has no devDependencies; the shrinkwrap has no dev entry,
-           its root lists the dependencies of package.json; npm ci of the tarball succeeds; the checkout is restored
+           its root lists the dependencies of package.json; the command of Claude Code (decision 49) installs
+           the tarball within 60 s; the checkout is restored
 ```
 
 ```mermaid
@@ -107,6 +115,21 @@ flowchart LR
   T --> C[launch test: no dev entries, root agrees, npm ci]
   P --> Q[postpack: restore from .orig]
   Q --> R
+```
+
+Daemon start with a held lock (decision 47):
+```
+lock of ROOT held by another live process:
+  GET / on the socket, up to 10 times 100 ms apart
+  any reply but ENOENT or ECONNREFUSED:   ready line "running"
+  none:                                   ready line "error: Another daemon uses ROOT (PID N). If no daemon runs, remove ROOT/lock."; exit 1
+```
+
+```mermaid
+flowchart LR
+  L[lock held by a live PID] --> A{socket answers within 1 s}
+  A -- yes --> R[running]
+  A -- no --> E[error with the lock path, exit 1]
 ```
 
 Chat ownership, D8 (a):
@@ -228,7 +251,7 @@ on "/join N" by member m:    if session N exists: apiAddMemberViaGroup(group N, 
 on message in group N:       m = InvitedMember of sender; if m and Main group member m.mainMemberId is an owner: handle; else ignore
 on session resume:           reuse the group recorded in session.json
 on connect with a pending connection c:          pending += (c, now); entries older than one day dropped
-on contactConnected or userJoinedGroup of c:     the session whose pending has c: drop it; claim the chat
+on contactConnected or userJoinedGroup of c:     the session whose pending has c, recorded in the last day: drop it; claim the chat
 on connect to a known chat without an owner:     claim the chat
 ```
 
@@ -272,10 +295,12 @@ Entry of a session      pid of its session server, time it was last seen
 Title of a process      pid to session ID, time
 
 on /title or /turn (id, pid), /session (id, pid):
-  target = alias of id
-        ?? entry with that pid, attached or seen in the last 10 s
+  alias of id                                          -> that session
+  session.json for id:  /title or /turn, an entry with that pid attached   -> that session, no alias
+                        otherwise                                          -> id
+  /session only: no entry or title for pid: wait up to 10 s for a /title of pid
+  target = entry with that pid, attached or seen in the last 10 s
         ?? title of pid in the last 10 s
-  /session only: target unknown, no session.json for id: wait up to 10 s for a /title of pid, then again
   target ?? id; target ≠ id: alias id → target, in aliases of the target's session.json
 on /title (id, pid):                         after the entry exists: title of pid = id, now; the waits of pid end
 on /attach, /call, /permission (id):        alias of id ?? id
@@ -296,6 +321,12 @@ sequenceDiagram
   HK->>D: POST /title {id: R, pid: P}
   D->>D: title of P = R; the wait ends: alias X → R
   D-->>S: session R
+  Note over HK,D: /resume R2 in session A; R2 has session.json
+  HK->>D: POST /title {id: R2, pid: P}
+  D->>D: entry A has pid P and is attached: session A, no alias
+  HK->>D: POST /turn {id: R2}: session A
+  Note over HK,D: later, claude --resume R2 in process Q
+  S->>D: POST /session {id: R2, pid: Q}: session R2, its own group
 ```
 
 ## Channel
@@ -370,27 +401,45 @@ Stop               last_assistant_message            POST /turn {id, pid, at, an
 PostModelSwitch    to_model                          POST /turn {id, pid, at, model}
 ```
 
-`pid` is `CLAUDE_PID`; `at` is the time the hook started. The hook starts the daemon when none runs and repeats a turn refused with 409 up to 10 times, 1 s apart.
+`pid` is `CLAUDE_PID`; `at` is `performance.timeOrigin`, the start time of the hook process. The hook starts the daemon when none runs and repeats a turn refused with 409 up to 10 times, 1 s apart.
 
 ```
+Turn record
+  at               start time of a UserPromptSubmit hook
+  item             the pushed prompt it matched, or null
+
 on owner's message m in group N:   one-line "/" with a keyword of the group's commands: a command (decision 41)
-                                   N has no attachment: wait for one until 30 s after the daemon start (decision 43);
-                                                        still none: reply to m "Session N is not running."
-                                   else: receive its file in 10 min, or reply that it was not received;
-                                         pushed += (m.text, m.item, now), at most 20; push {prompt}
-on POST /turn prompt p, at:        end open tool-use cards created before at
-                                   matched = pushed (T, I) with a channel tag of T, I in p, or T = p pushed in the last 60 s
-                                   turn prompt = oldest matched ?? none; pushed -= matched
-                                   nothing matched and p not a one-line "/" command: User posts parts(p)
-on POST /turn answer a, at:        end open tool-use cards created before at
-                                   quoted = turn prompt, or the oldest pushed when the turn had no prompt
-                                   Claude posts parts(a), the first part quoting quoted when it fits with the quote; turn prompt unset
+                                   else: delivery = delivery then deliver(m) (decision 45)
+deliver(m):                        N has no attachment: wait for one until 30 s after the daemon start (decision 43)
+                                   attached: receive its file in 10 min, or reply that it was not received
+                                   N has no attachment now: reply to m "Session N is not running."
+                                   else: pushed += (m.text, m.item, now), at most 20; push {prompt}
+on POST /turn, before any await:
+  prompt p or answer a, at:        end open tool-use cards created before at
+  answer a, also empty, at:        earlier = turn records with at below at; turns -= earlier
+                                   quoted = item of the newest earlier ?? the oldest pushed, which leaves pushed
+  prompt p, at:                    matched = pushed (T, I) with a channel tag of T, I in p, or T = p pushed in the last 60 s
+                                   turns += (at, oldest matched ?? null); pushed -= matched
 on POST /turn model or effort:     a changed value: session.json and the group short description
+on POST /turn prompt p:            nothing matched and p not a one-line "/" command: User posts parts(p)
+on POST /turn answer a, not blank: Claude posts parts(a), the first part quoting quoted when it fits with the quote
 parts(t):                          consecutive pieces of t, each at most 12000 encoded bytes
 channel tag of T, I:               <channel source="plugin:simplex:simplex" ... item="I" ...>\nT\n</channel>
 ```
 
 A UserPromptSubmit prompt holds the channel tags of the prompts of its turn; one turn can hold several.
+
+Quotes by hook start time (decision 39):
+```mermaid
+sequenceDiagram
+  participant S as Stop hook of turn 1, at 2
+  participant U as UserPromptSubmit hook of turn 2, at 3
+  participant D as daemon
+  Note over D: turns: (1, prompt 1)
+  U->>D: POST /turn {at: 3, prompt 2}: turns += (3, prompt 2)
+  S->>D: POST /turn {at: 2, answer 1}: quotes prompt 1; turns: (3, prompt 2)
+  Note over D: the Stop of turn 2, at 4, quotes prompt 2
+```
 
 ```
 UserProfile
@@ -418,8 +467,12 @@ sequenceDiagram
   participant C as Claude Code
   O->>H: message in session N's group
   H->>H: sender's Main group member an owner?
+  H->>H: after the earlier prompts of session N
   opt no attachment, within 30 s of the daemon start
     H->>H: wait for session N to attach
+  end
+  opt attached, a file in the message
+    H->>H: receive the file, up to 10 min
   end
   alt session N has no attachment
     H->>O: reply "Session N is not running."
@@ -432,8 +485,8 @@ sequenceDiagram
     D->>H: turn prompt = the matched pushed prompt; not posted by User
     C->>C: turn ends
     C->>D: Stop hook: POST /turn {answer, at}
-    D->>H: end tool-use cards created before at; post the answer in parts
-    H->>O: answer, quoting the turn prompt
+    D->>H: end tool-use cards created before at; quote the newest turn record before at; post the answer in parts
+    H->>O: answer, quoting the prompt of its turn
   end
 ```
 
@@ -504,13 +557,25 @@ The first answer, at the terminal or in the group, applies; Claude Code closes t
 
 ```
 on /session with approve a:                 requested = a
-                                            a = requests: pending mode cards end ("Ended."); mode = requests
+                                            a = requests: pending mode cards end ("Ended."); hostDeclined = false; mode = requests
                                             a = host: ask
 on a membership event of the session group: ask
-ask:                                        requested = host, mode = requests, an approver in the group, no pending mode card:
-                                              post the mode card
-on the mode card rejected or expired:       requested = none
+ask:                                        requested = host, not hostDeclined, mode = requests, an approver in the group,
+                                            no pending mode card: post the mode card
+on the mode card rejected:                  requested = none; hostDeclined = true, in session.json
+on the mode card expired:                   requested = none
 on the mode card approved:                  mode = host, in session.json
+```
+
+```mermaid
+stateDiagram-v2
+  [*] --> asking: /session host, an approver
+  asking --> host: approved
+  asking --> declined: rejected, hostDeclined in session.json
+  declined --> declined: /session host, also after a restart: no card
+  declined --> requests: /session requests: hostDeclined cleared
+  requests --> asking: /session host
+  host --> requests: /session requests
 ```
 
 ```mermaid
