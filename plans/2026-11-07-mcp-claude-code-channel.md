@@ -95,7 +95,7 @@ Decided on 2026-11-08, review round 2:
 49. The launch test installs the packed plugin with the command of Claude Code 2.1.319, `npm ci --ignore-scripts --workspaces=false --no-audit --no-fund`, within 60 s.
 
 Decided on 2026-11-08, review round 3:
-50. Claude posts an answer or a reply without its quote when the core refuses the quote, as for a deleted prompt.
+50. Claude posts an answer or a reply without its quote when the core refuses the quote, as for a deleted prompt, or refuses the post with the quote as too large, `largeMsg` (amended on 2026-11-08, review round 6).
 51. The turn hook cuts a prompt or an answer over 250,000 characters there, ending with `…`.
 52. `User` posts no empty terminal prompt.
 53. Replaced on 2026-11-08 by decision 71. It was: the commands reply of a session group lists `/give`.
@@ -131,6 +131,12 @@ Decided by the user on 2026-11-08:
 71. A one-line `/` text that is not a command of the session group gets `Unknown command.` in place of the list of commands; the text is a placeholder until the user decides it.
 72. Guests' messages are prompts. Approvals stay with the members who came through the hub until the user decides whether guests approve. The guest's join post keeps its text until the user decides it.
 73. The plugin option `approve_guest_files`, a boolean, on by default: on, a file of `reply` to a group with a guest waits for an approval; off, it is sent at once. `/approve N all` stays. Its title `Approve Claude's files for guests` and its description are proposals.
+
+Decided on 2026-11-08, review round 6:
+74. The control of a session group drops the commands of `User`, in the order of the other commands.
+75. Each part of a post is searched among the next 15602 characters, the most one message holds.
+76. `reply` refuses a caption too long for a message with the file's preview, as `send` does, before its post and its card: `text: too long for a message with this TYPE; shorten it.`
+77. Each new unattended mark removes the marks of 10 s ago and older.
 
 The user's rule on reviews, 2026-11-08: "reviewers should have no discretion to drive product changes - the UX was approved, and it must not be changing simply because security reviewers said so."
 
@@ -515,7 +521,8 @@ on CLAUDE_CODE_ENTRYPOINT sdk-cli, sdk-ts or sdk-py, or CLAUDE_CODE_SESSION_ATTE
                                   so it has no SimpleX group; the SimpleX tools work in interactive sessions."
 on SessionStart with CLAUDE_CODE_SESSION_ATTENDED 0, another entrypoint and CLAUDE_PID P:
   hook:                           ensureDaemon; POST /title {id, pid: P, project, config, unattended: true}; {}
-  daemon:                         unattended[P] = now; a /session of P waiting for its title ends its wait
+  daemon:                         unattended -= marks of 10 s ago and older (decision 77); unattended[P] = now;
+                                  a /session of P waiting for its title ends its wait
 on /session of P, before and after the wait for its title:
   unattended[P] in the last 10 s: 403
 on 403 of /session:               the session server answers every call with the text above,
@@ -545,7 +552,7 @@ sequenceDiagram
   participant S as session server, ATTENDED 1 of the parent session
   participant D as daemon
   HK->>D: POST /title {pid: P, unattended: true}
-  D->>D: P marked
+  D->>D: the marks of 10 s ago and older removed; P marked
   S->>D: POST /session {pid: P}, before or after the mark
   D-->>S: 403
   S->>S: every call: the text of a run that is not interactive
@@ -596,6 +603,7 @@ reply   file, text?                 sends the file to the session group, text as
 ```
 on reply {file, text}:   an action of the same session, file and text: attach to it
                          the file checked as for send
+                         its message with the caption and the preview does not fit: tool error (decision 76)
                          approve_guest_files off: send                                         -> {item}
                          every member of the group is Claude, User, gone or an approver: send   -> {item}
                          else, with a guest: action reply, mode requests
@@ -617,6 +625,7 @@ a standing reply:        its outcome card "I sent a file ...", last line "Approv
 ```mermaid
 stateDiagram-v2
   [*] --> sent: reply, no guest in the group
+  [*] --> refused: reply, the caption too long for a message with the file
   [*] --> sent: reply, approve_guest_files off
   [*] --> card: reply, a guest, no approval of all files
   [*] --> sent: reply, a guest, approval of all files
@@ -692,7 +701,8 @@ Pushed prompt
   text, item, at
   quoted           an answer without an earlier turn record quoted it
 
-on a message m in group N:         one-line "/" text not starting with "//" or "/!": a command of the group,
+on a message m in group N:         one-line "/" text not starting with "//" or "/!": a command of the group, queued;
+                                   from User: dropped (decision 74);
                                    a text outside its requests: reply "Unknown command." (decision 71)
                                    else: delivery = delivery then prompt(m) (decision 45)
 prompt(m):                         from User: nothing (decision 72)
@@ -717,8 +727,9 @@ on POST /turn prompt p:            nothing matched; p not blank, not only channe
                                    User posts parts(p) (decision 35)
 on POST /turn answer a, not blank: Claude posts parts(a, quoted), quoting quoted when fits(first character of a, quoted)
 then, also after a failed post, a changed value: the group short description (decisions 54, 58)
-Claude's post with a quote:        the core refuses the quote: the same post without it (decision 50)
-parts(t, q):                       the longest runs of whole characters of t, each with fits(run, q for the first run)
+Claude's post with a quote:        the core refuses the quote, or the post as largeMsg: the same post without it (decision 50)
+parts(t, q):                       the longest runs of whole characters of t, each with fits(run, q for the first run),
+                                   each searched among the next 15602 characters (decision 75)
 fits(text, q):                     600 + bytes of JSON [content, fileName, quote of q, mentions] <= 15602, as for send (decision 33)
 channel tag of T, I:               <channel source="plugin:simplex:simplex" ... item="I" ...>\nT\n</channel>
 ```
@@ -784,7 +795,7 @@ sequenceDiagram
   participant C as Claude Code
   O->>H: message in session N's group
   alt one-line "/" text, not "//" or "/!"
-    H->>O: the command's reply, or "Unknown command."
+    H->>O: the command's reply, or "Unknown command."; nothing for User
   else another message
     H->>H: after the earlier messages of session N
     alt from User
