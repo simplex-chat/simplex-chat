@@ -159,7 +159,7 @@ export class Session {
     if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent") return
     const {text} = content.msgContent
     if (!text.startsWith("//") && !text.startsWith("/!") && parseCommand(text) !== undefined) return this.control.onMessage(ci)
-    this.delivery =this.delivery.then(() => this.prompt(ci, text, chatDir.groupMember)).catch(error => logError(`prompt of session ${this.number}`, error))
+    this.delivery = this.delivery.then(() => this.prompt(ci, text, chatDir.groupMember)).catch(error => logError(`prompt of session ${this.number}`, error))
   }
 
   claimPending(connId: number, chat: string): void {
