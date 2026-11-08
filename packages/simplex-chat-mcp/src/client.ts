@@ -10,6 +10,7 @@ import {isNotRunning, requestJson, streamLines} from "./socket"
 const daemonStartTimeout = 5 * 60_000
 const readyFd = 3
 const errorPrefix = "error: "
+const daemonVariables = /^(PATH|PATHEXT|HOME|USERPROFILE|HOMEDRIVE|HOMEPATH|TMPDIR|TMP|TEMP|XDG_CACHE_HOME|LOCALAPPDATA|APPDATA|SYSTEMROOT|SYSTEMDRIVE|WINDIR|COMSPEC|LANG|LC_\w+|LD_LIBRARY_PATH|DYLD_LIBRARY_PATH|HTTPS?_PROXY|NO_PROXY|NODE_USE_ENV_PROXY|NODE_EXTRA_CA_CERTS|SSL_CERT_(FILE|DIR)|SIMPLEX_\w+|CLAUDE_PLUGIN_OPTION_\w+)$/i
 
 export type SpawnDaemon = (root: string) => Promise<void>
 
@@ -72,7 +73,7 @@ export async function spawnDaemon(root: string, [command, args]: [string, string
       detached: true,
       windowsHide: true,
       stdio: ["ignore", log, log, "pipe"],
-      env: {...process.env, SIMPLEX_MCP_HOME: root, SIMPLEX_MCP_READY_FD: String(readyFd)},
+      env: {...Object.fromEntries(Object.entries(process.env).filter(([name]) => daemonVariables.test(name))), SIMPLEX_MCP_HOME: root, SIMPLEX_MCP_READY_FD: String(readyFd)},
     })
     const channel = child.stdio[readyFd] as Readable
     try {
