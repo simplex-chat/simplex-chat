@@ -104,15 +104,24 @@ Decided on 2026-11-08, review round 3:
 
 Decided on 2026-11-08, review round 4:
 56. The lock and the token are created by linking a complete private temporary file into place; where links fail, by an exclusive write.
-57. The lock of a stopped process is taken over through a claim: a link of the lock to `lock.PID.claim`, which only one starter creates; the claimer replaces the lock when the claim holds that PID.
+57. The lock of a stopped process is taken over through a claim, `lock.PID.claim`, which only one starter creates: a link of the lock, or where links fail an exclusive write; the claimer replaces the lock when the lock still holds that PID.
 58. A Stop request updates the short description also when its posts fail.
 59. A title's rename writes `session.json` as read after the group's rename.
 
 Proposed on 2026-11-08, each in its own commit, until the user decides:
-60. The group of a session closed for 7 days is deleted for all its members, with the standing approvals of the session's chats; the daemon checks at its start and every hour. A run whose `CLAUDE_CODE_ENTRYPOINT` is `sdk-cli` (`claude -p`), `sdk-ts` or `sdk-py` (the Agent SDK) gets no session and no group.
+60. The group of a session closed for 7 days is deleted for all its members, with the standing approvals of the session's chats; the daemon checks at its start and every hour. A run whose `CLAUDE_CODE_ENTRYPOINT` is `sdk-cli` (`claude -p`), `sdk-ts` or `sdk-py` (the Agent SDK), or whose `CLAUDE_CODE_SESSION_ATTENDED` is `0`, gets no session and no group.
 61. The approved mode is kept in the session group's custom data, not in `session.json`. `GET /status` returns the owners without the Main group link; `GET /link` returns the link. These protections hold against Claude's tools, not against a shell running as the same user.
 62. Leaving, removal or demotion in the Main group is applied at once to every session group: a member who left or was removed is removed, and a lowered role is set there, also in a pending invitation. Changes made while the daemon was stopped apply when the session group opens.
-63. `reply` posts a file without a card only when every member of the session group is Claude, `User`, gone or an owner; otherwise an owner approves its card first, in mode `requests`.
+63. `reply` posts a file without a card only when every member of the session group is Claude, `User`, gone or an owner; otherwise an owner approves its card first, in mode `requests`. The card shows the file's name and size only; the caption and the preview reach the group with the file after the approval.
+
+Decided on 2026-11-08, review round 5:
+64. A resume of a session whose group the daemon deletes waits for the deletion and opens a new group. A failed deletion is logged, and the deletions of the other sessions go on.
+65. `User` posts in the newest group of the session where its membership is current.
+66. Claude Code sets `CLAUDE_CODE_SESSION_ATTENDED` for the hooks of a run; its MCP servers get only the value of the session whose command started the run. `0` makes a run non-interactive; otherwise the entrypoint decides. A real-session check in TESTING records the values.
+67. `serve` lists its tools with the metadata of 0.2.
+
+Proposed on 2026-11-08 with the round 5 fixes, until the user decides:
+68. `list` returns the session's actions without its tool-use and mode cards.
 
 Pack of the package (decision 44):
 ```
@@ -162,8 +171,9 @@ create(lock, text):   write text to lock.PID.HEX.tmp, 0600; link it to lock; rem
 acquire:              create; else read the PID P of lock
                       P alive and not this process: locked
                       claim: link lock to lock.P.claim; EEXIST or ENOENT: locked
-                      the claim holds P: remove lock; create; remove the claim
-                      the claim holds another PID: locked; remove the claim
+                             link refused otherwise: exclusive write of lock.P.claim; EEXIST: locked
+                      lock still holds P: remove lock; create; remove the claim
+                      lock gone or holds another PID: locked; remove the claim
 ```
 
 ```mermaid
@@ -174,9 +184,10 @@ sequenceDiagram
   Note over F: lock holds the stopped PID P
   A->>F: read lock: P, stopped
   B->>F: read lock: P, stopped
-  B->>F: link lock to lock.P.claim: created
-  B->>F: remove lock; link B's lock; remove the claim
-  A->>F: link lock to lock.P.claim: it holds B's PID
+  B->>F: link lock to lock.P.claim, or without links write it exclusively: created
+  B->>F: lock holds P: remove lock; create B's lock; remove the claim
+  A->>F: link lock to lock.P.claim, or without links write it exclusively: created
+  A->>F: lock holds B's PID
   A->>A: locked; remove the claim
 ```
 
@@ -417,19 +428,24 @@ sequenceDiagram
 
 ### Closed sessions and runs that are not interactive
 
-Decision 60:
+Decisions 60, 64 and 66:
 ```
 SessionFile, added
   closed           time the session closed, optional
+Daemon, added
+  deleting         session ID to the running deletion of its group
 
 on the idle close of a session:     closed = now
 on the daemon's start:              closed = now for each stored session without it
-on the open of a session:           closed removed
-at the start and every hour:        each stored session with a group, closed 7 days ago or earlier, not open:
+on the open of a session:           the running deletion of its group awaited; closed removed
+at the start and every hour:        each stored session with a group, closed 7 days ago or earlier, not open, not in deleting:
+                                      deleting += the deletion
                                       standing approvals of its chats removed; its group deleted for all members
                                       group and closed removed from session.json
+                                      a failure: logged; the next session
+                                      deleting -= the deletion
 on the hub's open:                  the stored sessions with a group only
-on CLAUDE_CODE_ENTRYPOINT sdk-cli, sdk-ts or sdk-py:
+on CLAUDE_CODE_SESSION_ATTENDED 0, or CLAUDE_CODE_ENTRYPOINT sdk-cli, sdk-ts or sdk-py:
   hooks:                            {} without a request
   session server:                   no daemon connection; every call: "This Claude Code run is not interactive,
                                     so it has no SimpleX group; the SimpleX tools work in interactive sessions."
@@ -440,11 +456,40 @@ stateDiagram-v2
   [*] --> open: session start
   open --> closed: idle close, closed = now
   closed --> open: resume, closed removed
-  closed --> without_group: 7 days, group deleted
-  without_group --> open: resume, a new group
+  closed --> deleting: 7 days, the deletion of its group starts
+  deleting --> closed: the deletion failed, logged
+  deleting --> without_group: group deleted, group and closed removed
+  without_group --> open: resume, a new group; a resume during deleting waits for its end
 ```
 
-Claude Code sets `CLAUDE_CODE_ENTRYPOINT` for its hooks and its MCP servers: `sdk-cli` for `claude -p`, `cli` for an interactive session.
+```mermaid
+sequenceDiagram
+  participant S as session server
+  participant D as daemon
+  participant H as hub
+  D->>H: delete the group of session N, closed 7 days
+  S->>D: POST /session N
+  D->>D: openAgent awaits the deletion of N
+  H-->>D: deleted; session.json without group
+  D->>H: Hub.session N: a new group, the owners invited
+```
+
+```
+variable                       set by Claude Code for                    values
+CLAUDE_CODE_ENTRYPOINT         hooks and MCP servers                     sdk-cli for claude -p, cli for an interactive session;
+                                                                         one set before the start is kept, except cli
+CLAUDE_CODE_SESSION_ATTENDED   hooks; an MCP server gets the value of    1, or 0 for a run nobody attends
+                               the session whose command started the run
+```
+
+```mermaid
+flowchart LR
+  E[hook or session server] --> A{CLAUDE_CODE_SESSION_ATTENDED 0}
+  A -- yes --> N[not interactive]
+  A -- no --> P{entrypoint sdk-cli, sdk-ts or sdk-py}
+  P -- yes --> N
+  P -- no --> I[interactive]
+```
 
 ## Channel
 
@@ -491,9 +536,9 @@ reply   file, text?                 sends the file to the session group, text as
 on reply {file, text}:   an action of the same session, file and text: attach to it
                          the file checked as for send
                          every member of the group is Claude, User, gone or an approver: send   -> {item}
-                         else: action reply, mode requests; card "I want to send a file to group N · NAME,
-                               where members who are not owners see it:", the caption, the file; /approve K /reject K
-                         approved: send                                                        -> {action, status: done, item}
+                         else: action reply, mode requests; text card "I want to send a file to group N · NAME,
+                               where members who are not owners see it:", `NAME`, SIZE of the file; /approve K /reject K
+                         approved: send, with the caption and the preview                      -> {action, status: done, item}
                          rejected, expired, failed                                             -> {action, status, error?}
 a member invited and not yet joined counts as a member
 ```
@@ -501,8 +546,8 @@ a member invited and not yet joined counts as a member
 ```mermaid
 flowchart LR
   R[reply] --> C{only Claude, User, gone members and approvers}
-  C -- yes --> S[file sent]
-  C -- no --> K[card in the session group, mode requests]
+  C -- yes --> S[file sent with its caption and preview]
+  C -- no --> K[card with the file's name and size, mode requests]
   K -- /approve K --> S
   K -- /reject K, expiry --> E[no file]
 ```
@@ -567,7 +612,7 @@ on POST /turn, before any await:
                                    pushed -= matched
 on POST /turn model or effort:     a changed value: description in memory and session.json
 on POST /turn prompt p:            nothing matched; p not blank, not only channel tags of this server, not a one-line "/" command:
-                                   User posts parts(p) (decision 35)
+                                   User posts parts(p) (decision 35), in the newest group of N where it is a current member (decision 65)
 on POST /turn answer a, not blank: Claude posts parts(a), the first part quoting quoted when it fits with the quote
 then, also after a failed post, a changed value: the group short description (decisions 54, 58)
 Claude's post with a quote:        the core refuses the quote: the same post without it (decision 50)
@@ -605,8 +650,18 @@ UserProfile
   folder           ROOT/_user
   name             User
   contact          Claude, connected once at the first start: the contact of the connection of Claude's invitation
-  groups           every session group, added by Claude through the contact, joins automatically
+  groups           every session group, added by Claude through the contact, joins automatically,
+                   marked with the session number; a group that Claude deleted stays with membership deleted
+  posts in         the newest group marked with the session number where its membership is current
   visible to       session group members only
+```
+
+```mermaid
+flowchart LR
+  P[terminal prompt of session N] --> G[User's groups marked N]
+  G --> C{membership current}
+  C -- no: deleted by Claude --> X[skipped]
+  C -- yes --> L[posted in the newest of them]
 ```
 
 Claude ignores User's messages as prompts: User was not invited through a Main group owner (decision 17).
@@ -696,6 +751,7 @@ on /reject K by owner:             if action K pending: state = rejected; push {
 on a prompt or Stop with hook time at:   for each pending permission created before at: state = expired; edit card "Ended."
 on session detached:                     for each pending permission of the session: the same
 on state done, rejected, expired:  remove the action from the session's actions
+on list by the session:            its actions without those of tools permission and mode (decision 68)
 ```
 
 ```mermaid
