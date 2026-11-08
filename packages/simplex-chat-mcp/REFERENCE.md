@@ -496,6 +496,7 @@ The link reaches only you: Claude's context and tool results never contain it. S
 - Owners of the Main group get an invitation to the group of each session, in the Main group, for them only, as owners.
 - `/sessions` lists the sessions, with `, closed` after the closed ones. `/join N` sends you an invitation to the group of session N, as an admin, or as an owner when you are an owner of the Main group.
 - A member who leaves the Main group, is removed from it or gets another role there stays in the sessions' groups they joined, with the same role.
+- Claude changes only the name, the short description, the welcome message and the commands of the group's profile, starting from the profile as it stands in the chat database, so the preferences the owners set stay.
 - When no owner remains, the daemon creates a new link. `npx -y @simplex-chat/mcp@VERSION link` in a terminal prints it with a QR code; `/simplex:link` in Claude Code shows the owners, or asks you to run that command.
 
 To replace the owners, run `/simplex:reset-owners` in Claude Code, or `npx -y @simplex-chat/mcp@VERSION reset-owners` in a terminal:
@@ -514,8 +515,8 @@ VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`; th
 
   | Role | Rights |
   |---|---|
-  | owner, admin | prompts, `//` and `/!` commands, approvals of actions and tool use |
-  | moderator, member, author | prompts; their `//` and `/!` commands and approvals get a refusal |
+  | owner, admin | prompts, the group's `/` commands, `//` and `/!` commands, approvals of actions and tool use |
+  | moderator, member, author | prompts; each of their `/` commands, `//` and `/!` included, gets `Only admins and owners of this group can send / commands.` |
   | observer | none: the app can't send their messages |
 
   `User`'s messages are never prompts, commands or approvals.
@@ -535,11 +536,14 @@ With the channel, a message of a member of a session's group, other than `User`,
 
 - A file in the message is received without a card into `_sessions/<session ID>/files/group/` of the data folder, and Claude gets its path. When the file fails or does not arrive in 10 minutes, Claude replies `The file of this message was not received: ERROR`, and the session gets the text.
 - The session gets the prompts in the order they were sent: a later prompt waits for the file of an earlier one.
-- A one-line message that starts with `/` is a command of the group, such as `/approve 5` or `/list`, not a prompt; one that is not a command of the group gets `Unknown command. To send a command to Claude, start it with //.`
-- A message that starts with `//` or `/!` from an admin or an owner of the group reaches Claude without its first `/`: `//model sonnet` arrives as `/model sonnet`, and `/!git status` as `!git status`. From another member it gets `Only admins and owners of this group can send // and /! commands to Claude.` A message that starts with `!` is not passed to Claude, and gets `Messages starting with ! reach Claude only from admins and owners, as /!command.`
+- Every message of a member whose role can send is a prompt, except the one-line messages that start with `/` and the messages that start with `//`, `/!` or `!`, below.
+- A one-line message that starts with `/` is a command of the group, such as `/approve 5` or `/list`, not a prompt; from an admin or owner, one that is not a command of the group gets `Unknown command. To send a command to Claude, start it with //.`
+- A message that starts with `//` or `/!` from an admin or an owner of the group reaches Claude without its first `/`: `//model sonnet` arrives as `/model sonnet`, and `/!git status` as `!git status`.
+- From a moderator, member or author, every one-line message that starts with `/` and every message that starts with `//` or `/!` gets `Only admins and owners of this group can send / commands.`, and reaches neither the commands nor Claude.
+- A message that starts with `!` is not passed to Claude, and gets `Messages starting with ! reach Claude only from admins and owners, as /!command.`
 - When the session's Claude Code is not running, also when it ends while the file of a prompt arrives, Claude replies `Session N is not running.` while the daemon runs. In the first 30 seconds after a daemon start, a prompt waits for its session to attach again, so a prompt sent while the daemon was stopped reaches the session.
 - Claude posts its final answer of each turn in the group, as a reply to the prompt of that turn when the prompt came from the group, also when the next prompt arrives while Claude answers. When the quote leaves no room in the message for the answer's first character, the answer is posted without it. When the prompt was deleted, or a reply is too large for a message with its quote, the answer and Claude's replies are posted without the quote. `User` posts the prompts typed in the terminal, except commands such as `/simplex:link`, empty prompts, such as one with images only, and prompts made only of the plugin's `<channel source="plugin:simplex:simplex" ...>` tags; `User`'s posts are never commands of the group, also a part that starts with `/`. A text that does not fit one message is posted as several messages, each as long as a message can be, measured as for `send`, with the quote in the first part of an answer: a part without a quote holds up to 14,962 Latin, 7,481 Cyrillic or 4,987 CJK characters. A prompt or an answer over 250,000 characters is posted up to there, ending with `…`.
-- The `reply` tool sends a file to the group at once, without a card, with its text as the caption, under the file rules of `send`, and returns the file's message as `item`; a caption too long for a message with the file's preview is refused with `text: too long for a message with this TYPE; shorten it.` The group's preference "Files and media", which owners set in the app, controls Claude's files there: when it does not allow them, the core refuses the file, and the call returns the core's error, which includes `feature not allowed Files and media`. Updates of the group's name and short description keep the preferences the owners set.
+- The `reply` tool sends a file to the group at once, without a card, with its text as the caption, under the file rules of `send`, and returns the file's message as `item`; a caption too long for a message with the file's preview is refused with `text: too long for a message with this TYPE; shorten it.` The group's preference "Files and media", which owners set in the app, controls Claude's files there: when it does not allow them, the core refuses the file, and the call returns the core's error, which includes `feature not allowed Files and media`. Claude changes only the name, the short description and the commands of the group's profile, starting from the profile as it stands in the chat database, so the preferences the owners set stay.
 
 ### Tool use
 
@@ -609,7 +613,7 @@ The folders are readable only by the user, and so are the files the daemon write
 
 - The daemon listens only on its local socket, in a folder readable only by the user, and every request needs the token. On Windows, where the named pipe has no folder permissions, the token is the only check.
 - The daemon gets only the environment variables it uses: the paths of the home, temporary and cache folders, the locale, the proxy and certificate settings, `NODE_OPTIONS`, the `SIMPLEX_` variables and the plugin options.
-- Everyone in the Main group is trusted with all sessions. In a session's group, rights follow the member's role there: admins and owners prompt the session, send `//` and `/!` commands and approve its actions and tool use; moderators, members and authors prompt it; observers can't send messages. `!` commands reach Claude only from admins and owners, as `/!`.
+- Everyone in the Main group is trusted with all sessions. In a session's group, rights follow the member's role there: admins and owners prompt the session, send the group's `/` commands and `//` and `/!` commands, and approve its actions and tool use; moderators, members and authors prompt it, and their `/` commands get a refusal; observers can't send messages. `!` commands reach Claude only from admins and owners, as `/!`.
 - The Main group link reaches only you: the session start shows it, and `link` prints it in a terminal.
 - A session runs in mode `host` only after an admin or owner approves it in the session's group.
 - Claude's files of `reply` reach the group while its preference "Files and media" allows them; owners set it, and the core enforces it.
