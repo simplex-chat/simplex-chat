@@ -283,7 +283,7 @@ export class Session {
 
   private async answer(text: string, quoted: T.ChatItem | undefined): Promise<void> {
     const quote = quoted?.content.type === "rcvMsgContent" ? {content: quoted.content.msgContent, fileName: quoted.file?.fileName} : undefined
-    const quotes = quote !== undefined && fitsMessage({type: "text", text: ""}, undefined, quote)
+    const quotes = quote !== undefined && fitsMessage({type: "text", text: [...text].slice(0, 1).join("")}, undefined, quote)
     await this.post(textParts(text, quotes ? quote : undefined), quotes ? quoted?.meta.itemId : undefined)
   }
 

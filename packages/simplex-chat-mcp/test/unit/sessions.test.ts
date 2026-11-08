@@ -513,6 +513,18 @@ describe("session channel", () => {
     expect(posts.map(parts => parts.map(part => part.length))).toEqual([[7481, 519]])
   })
 
+  it("answers without the quote when the quote leaves no room for the first character of the answer", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    await ownerPrompt(session, 42, "a".repeat(14941))
+    await session.turn({id: id1, at: 1, prompt: tag(42, "a".repeat(14941))})
+    await session.turn({id: id1, at: 2, answer: "Done."})
+    await ownerPrompt(session, 43, "a".repeat(14940))
+    await session.turn({id: id1, at: 3, prompt: tag(43, "a".repeat(14940))})
+    await session.turn({id: id1, at: 4, answer: "Done."})
+    expect(answers(chat)).toEqual([[{text: "Done.", quotedItemId: undefined}], [{text: "D", quotedItemId: 43}, {text: "one.", quotedItemId: undefined}]])
+  })
+
   it("quotes in each answer the prompt of its turn when an owner sends prompts during a turn, and the oldest prompt without a prompt hook", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
