@@ -340,6 +340,9 @@ chatGroupTests = do
       it "should not add relay when the invitation owner key differs from link data" testChannelAddRelayOwnerKeyMismatch
       it "should not add relay when the invitation group id differs from link data" testChannelAddRelayGroupIdMismatch
       it "should ignore relay invitation without the owner's signature" testChannelRelayInvUnsigned
+      it "should ignore relay invitation sent to non-relay user" testChannelRelayInvNonRelayUser
+      it "should not process relay requests of non-relay user on start" testChannelRelayRequestNonRelayUser
+      it "should not process relay requests of non-relay user on relay" testChannelRelayRequestOtherUser
       it "should remove relay from channel" testChannelRemoveRelay
       it "should remove left relay from channel" testChannelRemoveLeftRelay
       describe "relay rejection" $ do
@@ -12189,6 +12192,42 @@ sendUnsignedRelayInv cc relayAddress =
           dm <- encodeConnInfo $ XGrpRelayInv inv
           withAgent $ \a -> joinConnection a NRMInteractive (aUserId user) connId True cReq dm PQSupportOff SMSubscribe
     runExceptT joinRelay `runReaderT` chatController cc >>= either (fail . show) (\_ -> pure ())
+
+testChannelRelayInvNonRelayUser :: HasCallStack => TestParams -> IO ()
+testChannelRelayInvNonRelayUser ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      _ <- setupRelay alice bob
+      alice ##> "/public group relays=1 #team"
+      alice <## "group #team is created"
+      alice <## "wait for selected relay(s) to join, then you can invite members via group link"
+      bob <## "error: x.grp.relay.inv: invitation sent to non-relay link"
+      bob ##> "/gs"
+      bob <## "you have no groups!"
+      bob <## "to create: /g <name>"
+
+testChannelRelayRequestNonRelayUser :: HasCallStack => TestParams -> IO ()
+testChannelRelayRequestNonRelayUser ps = do
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
+    bob ##> "/g team"
+    bob <## "group #team is created"
+    bob <## "to add members use /a team <name> or /create link #team"
+    withCCTransaction bob $ \db -> DB.execute_ db "UPDATE groups SET relay_own_status = 'invited'"
+  withTestChat ps "bob" $ \bob -> (bob </)
+
+testChannelRelayRequestOtherUser :: HasCallStack => TestParams -> IO ()
+testChannelRelayRequestOtherUser ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+      bob ##> "/create user robert"
+      showActiveUser bob "robert"
+      bob ##> "/g team"
+      bob <## "group #team is created"
+      bob <## "to add members use /a team <name> or /create link #team"
+      withCCTransaction bob $ \db -> DB.execute_ db "UPDATE groups SET relay_own_status = 'invited'"
+      bob ##> "/user bob"
+      showActiveUser bob "bob (Bob)"
+      void $ prepareChannel1Relay "news" alice bob
 
 testChannelAddRelayWithRoster :: HasCallStack => TestParams -> IO ()
 testChannelAddRelayWithRoster ps =

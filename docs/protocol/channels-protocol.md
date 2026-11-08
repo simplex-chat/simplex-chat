@@ -46,7 +46,7 @@ When a relay receives an invitation to serve a channel, it validates the channel
 
 1. Owner sends `x.grp.relay.inv` to the relay's contact address. This message includes the relay's member ID and role, the owner's profile, the channel's short link, the channel's public group ID, and the owner's member key. The message is signed with the owner's member key over the public group ID and the owner's member ID.
 
-2. Relay receives the invitation and creates a relay request record. From chat protocol version 22 of the owner, an invitation without a valid signature is ignored. The owner's badge is verified under the public group ID, the owner's member ID and the owner's member key from a signed invitation. A relay request worker processes it asynchronously.
+2. Relay receives the invitation and creates a relay request record. An invitation received by a user that is not a chat relay, or at an address other than the relay's contact address, is ignored. From chat protocol version 22 of the owner, an invitation without a valid signature is ignored. The owner's badge is verified under the public group ID, the owner's member ID and the owner's member key from a signed invitation. A relay request worker processes it asynchronously.
 
 3. The worker retrieves the channel's link data from the SMP server, extracts and validates the channel profile and owner authorization. The request fails when the link's entity ID differs from the public group ID in the invitation, or when the owner's key in the link data differs from the owner's member key in the invitation.
 
