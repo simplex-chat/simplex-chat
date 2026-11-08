@@ -10,6 +10,7 @@ import {SessionFile, createDataFolder, readSessionFile, sessionFolder, writeSess
 import {Hub, Session} from "../../src/hub"
 import {createMainGroup} from "../../src/main-group"
 import {AttachLine} from "../../src/protocol"
+import * as tools from "../../src/tools"
 import {User} from "../../src/user"
 import {version} from "../../src/version"
 import {FakeChat, contact, direct, event, fileItem, group, groupChat, item, member, signal, until, user} from "./fixtures"
@@ -511,6 +512,15 @@ describe("session channel", () => {
     const sizes = answers(chat).map(parts => parts.map(({text, quotedItemId}) => [[...text].length, quotedItemId]))
     expect(sizes).toEqual([[[14928, 42], [5072, undefined]], [[4987, undefined], [1013, undefined]]])
     expect(posts.map(parts => parts.map(part => part.length))).toEqual([[7481, 519]])
+  })
+
+  it("measures each part of a long answer within one message size from the start of the part", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const measure = jest.spyOn(tools, "fitsMessage")
+    await session.turn({id: id1, answer: "a".repeat(100_000)})
+    expect(Math.max(...measure.mock.calls.map(([content]) => content.text.length))).toBeLessThanOrEqual(15_602)
+    expect(answers(chat)[0].map(({text}) => text.length)).toEqual([14_962, 14_962, 14_962, 14_962, 14_962, 14_962, 10_228])
   })
 
   it("answers without the quote when the quote leaves no room for the first character of the answer", async () => {

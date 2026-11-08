@@ -12,7 +12,7 @@ import {MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-g
 import {Changes, ChatItemsWatch, ToolCall, getChat, nextChange, storedName, validName} from "./messages"
 import {AttachLine, OwnerState, PermissionRequest, ResetReply, TurnRequest} from "./protocol"
 import {waitForCancelledCards} from "./serve"
-import {AgentTools, ToolName, fitsMessage, ownerOf} from "./tools"
+import {AgentTools, ToolName, fitsMessage, maxMessageLength, ownerOf} from "./tools"
 import {User, userContact} from "./user"
 
 const profileName = "Claude"
@@ -536,7 +536,7 @@ function textParts(text: string, quote?: Parameters<typeof fitsMessage>[2]): str
   do {
     const fits = (end: number): boolean => fitsMessage({type: "text", text: chars.slice(start, end).join("")}, undefined, parts.length === 0 ? quote : undefined)
     let low = start + 1
-    let high = chars.length
+    let high = Math.min(chars.length, start + maxMessageLength)
     while (low < high) {
       const middle = Math.ceil((low + high) / 2)
       if (fits(middle)) low = middle
