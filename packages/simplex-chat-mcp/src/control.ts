@@ -34,7 +34,8 @@ const longestError = "€".repeat(600)
 const greeting = "I'm your agent. I ask here before I connect, send, download a file or leave a chat."
 const noOwners = "No owners in the agent control chat."
 const qrCodeHint = "If the QR code does not scan, restart with --qr-code large, or paste the link into the app."
-const noSessionOwner = `The group of this session has no owner. An owner of the Main group joins it by its invitation there; without owners, run ${linkCommand} in a terminal.`
+const noSessionApprover = `The group of this session has no member who joined from the Main group. Members of the Main group join it by /join N there; without members, run ${linkCommand} in a terminal.`
+const sessionApproversOnly = "Only members who joined from the Main group approve actions here."
 
 export interface ControlData {
   control: true
@@ -136,7 +137,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (action.tool === "permission") action.previewBytes = maxCardLength - largestCard({...action, previewBytes: 0}, mode, approver)
     if (action.tool !== "leave" && action.tool !== "mode" && action.tool !== "permission" && action.tool !== "reply" && largestCard(action, mode, approver) > maxCardLength) return cardTooLong[action.tool]
     if (this.approvers().length > 0) return undefined
-    if (this.options.session !== undefined) return noSessionOwner
+    if (this.options.session !== undefined) return noSessionApprover
     return this.options.owners === undefined
       ? "The agent has no owner. The person who runs it has to join its control chat with the link the server printed."
       : "The agent has no approving owner. The person who runs it has to restart it with the --owners options it printed."
@@ -236,7 +237,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     this.actions.expireDue()
     const request = ownerRequest(command)
     if (request === undefined) return this.options.session === undefined ? commandsReply : sessionCommandsReply
-    if (!this.isApprover(sender)) return this.options.owners === undefined ? "Only owners approve actions." : "Only the owners listed in --owners approve actions."
+    if (!this.isApprover(sender)) return this.options.session !== undefined ? sessionApproversOnly : this.options.owners === undefined ? "Only owners approve actions." : "Only the owners listed in --owners approve actions."
     switch (request.type) {
       case "pending": {
         const lines = this.actions.pending().filter(({card}) => card !== undefined).map(pendingLine)

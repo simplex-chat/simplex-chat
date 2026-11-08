@@ -282,8 +282,7 @@ export class Session {
   }
 
   private approves(member: T.GroupMember): boolean {
-    const invited = this.data.invited.find(({groupMemberId}) => groupMemberId === member.groupMemberId)
-    return invited !== undefined && this.hub.main.isOwner(invited.mainMemberId)
+    return this.data.invited.some(({groupMemberId}) => groupMemberId === member.groupMemberId)
   }
 
   private setMode(mode: Mode): void {
