@@ -4,6 +4,7 @@ import {join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {CEvt, ChatEvent, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
+import {defaultConfig} from "../../src/config"
 import {controlCommands} from "../../src/control"
 import {SessionFile, createDataFolder, readSessionFile, sessionFolder, writeSessionFile} from "../../src/files"
 import {Hub, Session} from "../../src/hub"
@@ -823,6 +824,24 @@ describe("session channel", () => {
     expect(await session.control.ownerCommand(invitedAlice, {keyword: "reject", params: "2"})).toBeUndefined()
     expect((await rejected)!.structuredContent).toEqual({action: 2, status: "rejected"})
     expect(sentTo(chat, 20)).toHaveLength(4)
+  })
+
+  it("sends a file by reply at once also while a guest is in the group when the plugin option approve_guest_files is off", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    const received = join(sessionFolder(root, id1), "files", "group", "8.txt")
+    mkdirSync(join(sessionFolder(root, id1), "files", "group"), {recursive: true})
+    writeFileSync(received, "log")
+    chat.members.set(20, [self, invitedAlice, mallory])
+    await hub.configure({...defaultConfig, approveGuestFiles: false})
+    expect((await session.call("reply", {file: received}, signal().call))!.structuredContent).toEqual({item: 500})
+    await hub.configure(defaultConfig)
+    const pending = signal()
+    const carded = session.call("reply", {file: received}, pending.call)
+    await until(() => sentTo(chat, 20).length === 2)
+    expect(sentTo(chat, 20)[1]).toMatch(/^I want to send a file to group 1 · auth, where guests see it:/)
+    pending.controller.abort()
+    expect(await carded).toBeUndefined()
   })
 
   it("shows on the card of a reply its caption, the path and size of its file and its preview, as a card of send does", async () => {

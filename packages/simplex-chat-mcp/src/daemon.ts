@@ -486,8 +486,8 @@ async function lockHolder(root: string, checks: number): Promise<"answers" | "re
 }
 
 function validConfig(config: Config | undefined): void {
-  const {mainGroup, approve, expireHours} = config ?? {}
-  const valid = typeof mainGroup === "string" && validName(mainGroup) === mainGroup && (approve === "requests" || approve === "host") && Number.isInteger(expireHours) && expireHours! >= 1 && expireHours! <= 23
+  const {mainGroup, approve, expireHours, approveGuestFiles} = config ?? {}
+  const valid = typeof mainGroup === "string" && validName(mainGroup) === mainGroup && (approve === "requests" || approve === "host") && Number.isInteger(expireHours) && expireHours! >= 1 && expireHours! <= 23 && typeof approveGuestFiles === "boolean"
   if (!valid) throw new SocketError("Invalid config.", 400)
 }
 
