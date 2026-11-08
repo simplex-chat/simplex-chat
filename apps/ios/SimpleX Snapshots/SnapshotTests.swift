@@ -389,12 +389,7 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
     window.overrideUserInterfaceStyle = dark ? .dark : .light
     window.rootViewController = host
     window.frame = CGRect(x: 0, y: 0, width: width, height: scene.height ?? screen.bounds.height)
-    let keyWindow = windowScene.keyWindow
-    if scene.alert {
-        window.makeKeyAndVisible()
-    } else {
-        window.isHidden = false
-    }
+    window.isHidden = false
     settle()
     if scene.height == nil && !scene.device {
         for _ in 0..<2 {
@@ -405,13 +400,10 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
         }
     }
     window.endEditing(true)
-    if scene.alert, let alertView = host.presentedViewController?.view {
-        print("snapshot alert \(scene.name): key \(window.isKeyWindow)")
-        printViewTree(alertView.superview ?? alertView, depth: 0)
+    if scene.alert {
+        host.presentedViewController?.view.superview?.subviews.forEach { $0.isHidden = false }
     }
-    if !scene.alert {
-        removeAnimations(window.layer)
-    }
+    removeAnimations(window.layer)
     let format = UIGraphicsImageRendererFormat.default()
     format.scale = 1
     format.preferredRange = .standard
@@ -422,29 +414,9 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
             drawStatusBar(dark: dark)
         }
     }
-    if scene.alert, let dir = ProcessInfo.processInfo.environment["SNAPSHOT_DIR"] {
-        let layerImage = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { context in
-            window.layer.render(in: context.cgContext)
-        }
-        try? layerImage.pngData()?.write(to: URL(fileURLWithPath: dir).appendingPathComponent("debug-\(scene.name)-\(dark ? "dark" : "light")-layer.png"))
-        if let alertView = host.presentedViewController?.view {
-            let alertImage = UIGraphicsImageRenderer(bounds: alertView.bounds, format: format).image { _ in
-                _ = alertView.drawHierarchy(in: alertView.bounds, afterScreenUpdates: true)
-            }
-            try? alertImage.pngData()?.write(to: URL(fileURLWithPath: dir).appendingPathComponent("debug-\(scene.name)-\(dark ? "dark" : "light")-alert.png"))
-        }
-    }
     window.isHidden = true
     window.rootViewController = nil
-    keyWindow?.makeKey()
     return image
-}
-
-private func printViewTree(_ view: UIView, depth: Int) {
-    print("snapshot view \(String(repeating: "  ", count: depth))\(type(of: view)) layer \(type(of: view.layer)) alpha \(view.alpha) hidden \(view.isHidden) frame \(view.frame) sublayers \(view.layer.sublayers?.count ?? 0) contents \(view.layer.contents != nil)")
-    if depth < 8 {
-        view.subviews.forEach { printViewTree($0, depth: depth + 1) }
-    }
 }
 
 private func drawStatusBar(dark: Bool) {
