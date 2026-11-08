@@ -175,6 +175,7 @@ import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.NoteFolders
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences (boundedTimedTTL)
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, MsgMeta (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirstRow)
@@ -2087,7 +2088,7 @@ setDirectChatItemRead_ db User {userId} contactId itemId currentTs =
     (CISRcvRead, currentTs, userId, contactId, CISRcvNew, itemId)
 
 setDirectChatItemsDeleteAt :: DB.Connection -> User -> ContactId -> [(ChatItemId, Int)] -> UTCTime -> IO [(ChatItemId, UTCTime)]
-setDirectChatItemsDeleteAt db User {userId} contactId itemIds currentTs = forM itemIds $ \(chatItemId, ttl) -> do
+setDirectChatItemsDeleteAt db User {userId} contactId itemIds currentTs = forM (mapMaybe (traverse boundedTimedTTL) itemIds) $ \(chatItemId, ttl) -> do
   let deleteAt = addUTCTime (realToFrac ttl) currentTs
   DB.execute
     db
@@ -2264,7 +2265,7 @@ updateGroupScopeUnreadStats db cxt user g@GroupInfo {membership} scopeInfo (unre
       pure $ either (const m) id m_ -- Left shouldn't happen, but types require it
 
 setGroupChatItemsDeleteAt :: DB.Connection -> User -> GroupId -> [(ChatItemId, Int)] -> UTCTime -> IO [(ChatItemId, UTCTime)]
-setGroupChatItemsDeleteAt db User {userId} groupId itemIds currentTs = forM itemIds $ \(chatItemId, ttl) -> do
+setGroupChatItemsDeleteAt db User {userId} groupId itemIds currentTs = forM (mapMaybe (traverse boundedTimedTTL) itemIds) $ \(chatItemId, ttl) -> do
   let deleteAt = addUTCTime (realToFrac ttl) currentTs
   DB.execute
     db
@@ -2349,7 +2350,7 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
           itemForwarded = toCIForwardedFrom forwardedFromRow
        in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention hasLink currentTs itemTs Nothing False msgSigned createdAt updatedAt
     ciTimed :: Maybe CITimed
-    ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
+    ciTimed = timedTTL >>= boundedTimedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
 toCIForwardedFrom :: ChatItemForwardedFromRow -> Maybe CIForwardedFrom
 toCIForwardedFrom (fwdFromRow :. (groupType_, groupLink_, publicGroupId_, memberId_, sharedMsgId_)) =
@@ -2445,7 +2446,7 @@ toGroupChatItem
             itemForwarded = toCIForwardedFrom forwardedFromRow
          in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention hasLink currentTs itemTs forwardedByMember showGroupAsSender msgSigned createdAt updatedAt
       ciTimed :: Maybe CITimed
-      ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
+      ciTimed = timedTTL >>= boundedTimedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
 getAllChatItems :: DB.Connection -> StoreCxt -> User -> ChatPagination -> Maybe Text -> ExceptT StoreError IO [AChatItem]
 getAllChatItems db cxt user@User {userId} pagination search_ = do

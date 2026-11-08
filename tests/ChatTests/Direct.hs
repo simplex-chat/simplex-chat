@@ -17,6 +17,7 @@ import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_, poll, wait)
 import Control.Monad (forM_, void, (>=>))
+import Control.Monad.Reader (runReaderT)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
@@ -29,8 +30,9 @@ import GHC.Conc (ThreadStatus (..), threadStatus)
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), PresetServers (..))
-import Simplex.Chat.Messages (ChatItemId)
+import Simplex.Chat.Controller (ChatCommand (APIGetChat), ChatConfig (..), ChatController (..), ChatPagination (CPLast), ChatResponse (CRApiChat), PresetServers (..))
+import Simplex.Chat.Library.Commands (execChatCommand')
+import Simplex.Chat.Messages (AChat (..), CChatItem (..), CIMeta (CIMeta, itemTimed), Chat (Chat, chatItems), ChatItem (ChatItem, meta), ChatItemId, ChatRef (ChatRef), ChatType (..), ttl')
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
@@ -75,6 +77,8 @@ chatDirectTests = do
     it "direct message delete multiple (many chat batches)" testDirectMessageDeleteMultipleManyBatches
     it "direct live message" testDirectLiveMessage
     it "direct timed message" testDirectTimedMessage
+    it "stored TTL below 0 loads as no timer and sets no deletion time when the chat is read, above 2147483647 seconds loads as 2147483647 seconds" testTimedMessageStoredTTLOutOfRange
+    it "stored group preference TTL above 2147483647 seconds sends messages with 2147483647 seconds" testTimedMessageStoredPrefTTLAboveRange
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
@@ -971,6 +975,53 @@ testDirectTimedMessage =
       alice ##> "/_send @2 live=off text hi"
       alice <# "@bob hi"
       bob <# "alice> hi"
+
+      alice ##> "/_send @2 ttl=2147483648 text hi"
+      alice <##. "bad chat command: "
+      alice ##> "/set disappear @bob yes 2147483648"
+      alice <##. "bad chat command: "
+
+testTimedMessageStoredTTLOutOfRange :: HasCallStack => TestParams -> IO ()
+testTimedMessageStoredTTLOutOfRange =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      alice #> "@bob hello"
+      bob <# "alice> hello"
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+      withCCTransaction bob $ \db -> do
+        DB.execute_ db "UPDATE chat_items SET item_status = 'rcv_new', timed_ttl = -100000000000 WHERE item_text = 'hello'"
+        DB.execute_ db "UPDATE chat_items SET timed_ttl = 2147483648 WHERE item_text = 'hi'"
+      bob #$> ("/_read chat @2", id, "ok")
+      bob #$> ("/_get chat @2 count=1", chat, [(0, "hello")])
+      lastItemTTL bob (ChatRef CTDirect 2 Nothing) `shouldReturn` Nothing
+      lastItemTTL bob (ChatRef CTGroup 1 Nothing) `shouldReturn` Just 2147483647
+
+testTimedMessageStoredPrefTTLAboveRange :: HasCallStack => TestParams -> IO ()
+testTimedMessageStoredPrefTTLAboveRange =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      alice ##> "/set disappear #team on week"
+      alice <## "updated group preferences:"
+      alice <## "Disappearing messages: on (1 week)"
+      bob <## "alice updated group #team: (signed)"
+      bob <## "updated group preferences:"
+      bob <## "Disappearing messages: on (1 week)"
+      withCCTransaction alice $ \db ->
+        DB.execute_ db "UPDATE group_profiles SET preferences = replace(preferences, '\"ttl\":604800', '\"ttl\":3000000000')"
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+      lastItemTTL alice (ChatRef CTGroup 1 Nothing) `shouldReturn` Just 2147483647
+      lastItemTTL bob (ChatRef CTGroup 1 Nothing) `shouldReturn` Just 2147483647
+
+lastItemTTL :: TestCC -> ChatRef -> IO (Maybe Int)
+lastItemTTL TestCC {chatController = cc} chatRef = do
+  r <- execChatCommand' (APIGetChat chatRef Nothing (CPLast 1) Nothing) 0 `runReaderT` cc
+  case r of
+    Right (CRApiChat _ (AChat _ Chat {chatItems = [CChatItem _ ChatItem {meta = CIMeta {itemTimed}}]}) _) -> pure $ ttl' <$> itemTimed
+    _ -> fail $ "no item: " <> show r
 
 testRepeatAuthErrorsDisableContact :: HasCallStack => TestParams -> IO ()
 testRepeatAuthErrorsDisableContact =

@@ -30,6 +30,7 @@ import qualified Data.Aeson.TH as J
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
+import Data.Int (Int32)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -1211,7 +1212,20 @@ $(J.deriveJSON (enumJSON $ dropPrefix "CF") ''ChatFeature)
 
 $(J.deriveJSON (enumJSON $ dropPrefix "GF") ''GroupFeature)
 
-$(J.deriveJSON defaultJSON ''TimedMessagesPreference)
+$(J.deriveToJSON defaultJSON ''TimedMessagesPreference)
+
+instance FromJSON TimedMessagesPreference where
+  parseJSON v =
+    (\TimedMessagesPreference {allow, ttl} -> TimedMessagesPreference {allow, ttl = ttl >>= boundedTimedTTL})
+      <$> $(J.mkParseJSON defaultJSON ''TimedMessagesPreference) v
+
+validTimedTTL :: Int -> Bool
+validTimedTTL ttl = ttl >= 0 && ttl <= fromIntegral (maxBound :: Int32)
+
+boundedTimedTTL :: Int -> Maybe Int
+boundedTimedTTL ttl
+  | ttl < 0 = Nothing
+  | otherwise = Just $ min ttl $ fromIntegral (maxBound :: Int32)
 
 $(J.deriveJSON defaultJSON ''FullDeletePreference)
 
@@ -1254,7 +1268,12 @@ instance FromField Preferences where
 
 $(J.deriveJSON defaultJSON ''GroupPreference)
 
-$(J.deriveJSON defaultJSON ''TimedMessagesGroupPreference)
+$(J.deriveToJSON defaultJSON ''TimedMessagesGroupPreference)
+
+instance FromJSON TimedMessagesGroupPreference where
+  parseJSON v =
+    (\TimedMessagesGroupPreference {enable, ttl} -> TimedMessagesGroupPreference {enable, ttl = ttl >>= boundedTimedTTL})
+      <$> $(J.mkParseJSON defaultJSON ''TimedMessagesGroupPreference) v
 
 $(J.deriveJSON defaultJSON ''DirectMessagesGroupPreference)
 

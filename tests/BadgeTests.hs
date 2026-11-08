@@ -63,6 +63,8 @@ badgeTests = do
   it "should compute badge status correctly" testExpiryCheck
   it "should accept unknown badge types" testUnknownBadgeType
   it "credential serializes to a paste-able token and back" testCredentialSerialization
+  it "should accept a badge expiry only in years 1 to 9999, without leap seconds, to nanoseconds" testExpiryRange
+  it "should decode a display badge with any expiry" testShownBadgeExpiry
   it "presentation headers encode and decode" testPresHeaderEncoding
   it "presentation headers with binary bytes round-trip through JSON" testPresHeaderJSON
   it "should reject a proof presented under another chat binding" testOtherChatBinding
@@ -225,6 +227,21 @@ testCredentialSerialization = do
   case J.eitherDecode (J.encode dated) of
     Right cred -> verifyCredential pk cred >>= (`shouldBe` True)
     Left e -> expectationFailure e
+
+testExpiryRange :: IO ()
+testExpiryRange = do
+  map parsed ["0001-01-01T00:00:00Z", "9999-12-31T23:59:59Z", "2030-01-01T00:00:00.123456789Z"] `shouldBe` [True, True, True]
+  map parsed ["0000-12-31T23:59:59Z", "-0001-01-01T00:00:00Z", "10000-01-01T00:00:00Z", "0001-01-01T00:30:00+01:00", "2030-12-31T23:59:60Z", "2030-01-01T00:00:00.1234567891Z"] `shouldBe` [False, False, False, False, False, False]
+  where
+    parsed :: ByteString -> Bool
+    parsed expiry = isJust (J.decodeStrict' ("{\"badgeType\":\"supporter\",\"badgeExpiry\":\"" <> expiry <> "\",\"badgeExtra\":\"\"}") :: Maybe BadgeInfo)
+
+testShownBadgeExpiry :: IO ()
+testShownBadgeExpiry =
+  map shown ["2030-01-01T00:00:00Z", "0000-12-31T23:59:59Z", "-0001-01-01T00:00:00Z", "10000-01-01T00:00:00Z", "2030-12-31T23:59:60Z", "2030-01-01T00:00:00.1234567891Z"] `shouldBe` [True, True, True, True, True, True]
+  where
+    shown :: ByteString -> Bool
+    shown expiry = isJust (J.decodeStrict' ("{\"badge\":{\"badgeType\":\"supporter\",\"badgeExpiry\":\"" <> expiry <> "\",\"badgeExtra\":\"\"},\"status\":\"active\"}") :: Maybe LocalBadge)
 
 -- Helpers
 

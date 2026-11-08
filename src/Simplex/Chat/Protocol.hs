@@ -65,6 +65,7 @@ import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (MsgBody)
+import Simplex.Messaging.SystemTime (checkTimeRange)
 import Simplex.Messaging.Util (decodeJSON, eitherToMaybe, encodeJSON, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
 
@@ -241,7 +242,10 @@ data MsgRef = MsgRef
   }
   deriving (Eq, Show)
 
-$(JQ.deriveJSON defaultJSON ''MsgRef)
+$(JQ.deriveToJSON defaultJSON ''MsgRef)
+
+instance FromJSON MsgRef where
+  parseJSON v = (\ref@MsgRef {sentAt} -> ref <$ checkTimeRange sentAt) <$?> $(JQ.mkParseJSON defaultJSON ''MsgRef) v
 
 data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text, image :: ImageData, content :: Maybe LinkContent}
   deriving (Eq, Show)
@@ -403,7 +407,7 @@ instance Encoding GrpMsgForward where
     smpEncode (fwdSender, utcToSystemTime fwdBrokerTs)
   smpP = do
     fwdSender <- smpP
-    fwdBrokerTs <- systemToUTCTime <$> smpP
+    fwdBrokerTs <- checkTimeRange . systemToUTCTime <$?> smpP
     pure GrpMsgForward {fwdSender, fwdBrokerTs}
 
 instance Encoding KeyRef where
@@ -1071,7 +1075,13 @@ instance ToField MsgContent where
   toField = toField . encodeJSON
 
 instance FromField MsgContent where
-  fromField = fromTextField_ decodeJSON
+  fromField = fromTextField_ $ JT.parseMaybe storedContent <=< decodeJSON
+    where
+      storedContent v = parseJSON v <|> J.withObject "MsgContent" unknownContent v
+      unknownContent o = do
+        tag <- o .: "type"
+        text <- fromMaybe unknownMsgType <$> o .:? "text"
+        pure MCUnknown {tag, text, json = o}
 
 data ACMEventTag = forall e. MsgEncodingI e => ACMEventTag (SMsgEncoding e) (CMEventTag e)
 
@@ -1423,7 +1433,7 @@ appJsonToCM fwdDepth AppMessageJson {v, msgId, event, params} = do
     msg :: CMEventTag 'Json -> Either String (ChatMsgEvent 'Json)
     msg = \case
       XMsgNew_ -> XMsgNew <$> JT.parseEither parseJSON (J.Object params)
-      XMsgFileDescr_ -> XMsgFileDescr <$> p "msgId" <*> p "fileDescr" <*> opt "fileExpires" <*> opt "fileBadge"
+      XMsgFileDescr_ -> XMsgFileDescr <$> p "msgId" <*> p "fileDescr" <*> (mapM checkTimeRange =<< opt "fileExpires") <*> opt "fileBadge"
       XMsgUpdate_ -> do
         msgId' <- p "msgId"
         content <- p "content"
@@ -1490,7 +1500,7 @@ appJsonToCM fwdDepth AppMessageJson {v, msgId, event, params} = do
         fwdSender <- opt "memberId" >>= \case
           Just memberId -> FwdMember memberId . fromMaybe "" <$> opt "memberName"
           Nothing -> pure FwdChannel
-        fwdBrokerTs <- p "msgTs"
+        fwdBrokerTs <- checkTimeRange =<< p "msgTs"
         XGrpMsgForward (GrpMsgForward {fwdSender, fwdBrokerTs}) <$> (appJsonToCM (fwdDepth + 1) =<< p "msg")
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"

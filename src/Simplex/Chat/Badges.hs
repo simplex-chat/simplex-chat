@@ -67,8 +67,9 @@ module Simplex.Chat.Badges
 
 import Control.Concurrent.STM
 import Crypto.Random (ChaChaDRG)
-import Data.Aeson (FromJSON (..), ToJSON (..))
+import Data.Aeson (FromJSON (..), ToJSON (..), (.:))
 import qualified Data.Aeson.TH as JQ
+import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -89,6 +90,8 @@ import Simplex.Messaging.Crypto.Entitlement (Entitlement (Entitlement), Entitlem
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
+import Simplex.Messaging.SystemTime (checkTimeRange)
+import Simplex.Messaging.Util ((<$?>))
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple.FromField (FromField (..))
 import Database.PostgreSQL.Simple.ToField (ToField (..))
@@ -539,7 +542,10 @@ rowToBadge now (p_, ph_, expiry_, type_, verified_, extra_, mk_, sg_, idx_) = do
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "BS") ''BadgeStatus)
 
-$(JQ.deriveJSON defaultJSON ''BadgeInfo)
+$(JQ.deriveToJSON defaultJSON ''BadgeInfo)
+
+instance FromJSON BadgeInfo where
+  parseJSON v = (\info@BadgeInfo {badgeExpiry} -> info <$ checkTimeRange badgeExpiry) <$?> $(JQ.mkParseJSON defaultJSON ''BadgeInfo) v
 
 $(JQ.deriveJSON defaultJSON ''BadgeRequest)
 
@@ -555,16 +561,15 @@ $(JQ.deriveJSON defaultJSON ''BadgeProof)
 -- (remote host, UI echoes); the authoritative badge is loaded from the DB (rowToBadge), never from this JSON.
 data JSONBadge = JSONBadge {badge :: BadgeInfo, status :: BadgeStatus}
 
-$(JQ.deriveJSON defaultJSON ''JSONBadge)
+$(JQ.deriveToJSON defaultJSON ''JSONBadge)
 
 instance ToJSON LocalBadge where
   toJSON lb = toJSON $ JSONBadge (localBadgeInfo lb) (localBadgeStatus lb)
   toEncoding lb = toEncoding $ JSONBadge (localBadgeInfo lb) (localBadgeStatus lb)
 
 instance FromJSON LocalBadge where
-  parseJSON v = do
-    JSONBadge info st <- parseJSON v
-    pure $ ShownBadge info st
+  parseJSON = JT.withObject "LocalBadge" $ \o ->
+    ShownBadge <$> JT.explicitParseField $(JQ.mkParseJSON defaultJSON ''BadgeInfo) o "badge" <*> o .: "status"
 
 newtype BBSPublicKeyStr = BBSPublicKeyStr {toBBSPublicKey :: BBSPublicKey}
 

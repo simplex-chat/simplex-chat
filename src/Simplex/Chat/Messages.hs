@@ -604,7 +604,7 @@ rcvGroupCITimed :: GroupInfo -> Maybe Int -> Maybe CITimed
 rcvGroupCITimed = rcvCITimed_ . groupTimedTTL
 
 rcvCITimed_ :: Maybe (Maybe Int) -> Maybe Int -> Maybe CITimed
-rcvCITimed_ chatTTL itemTTL = (`CITimed` Nothing) <$> (chatTTL >> itemTTL)
+rcvCITimed_ chatTTL itemTTL = (`CITimed` Nothing) <$> (chatTTL >> itemTTL >>= boundedTimedTTL)
 
 data CIQuote (c :: ChatType) = CIQuote
   { chatDir :: CIQDirection c,

@@ -17,6 +17,7 @@ import Data.Maybe (fromMaybe)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Simplex.Chat.Call
 import Simplex.Chat.Library.Internal (decodeLinkUserData, encodeShortLinkData)
+import Simplex.Chat.Messages (rcvCITimed_, ttl')
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -38,10 +39,40 @@ protocolTests = do
   shortLinkDataTests
   batchLimitTests
   forwardDepthTests
+  timeRangeTests
   preferencesJSONTests
+
+timeRangeTests :: Spec
+timeRangeTests = describe "Chat message time range" $ do
+  it "rejects x.msg.new with quote sent before year 1" $
+    parseError "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"-0001-01-01T00:00:00Z\"}}}}"
+      `shouldSatisfy` isInfixOf "time out of range"
+  it "rejects x.msg.file.descr with file expiry after year 9999" $
+    parseError "{\"v\":\"9\",\"event\":\"x.msg.file.descr\",\"params\":{\"msgId\":\"AQIDBA==\",\"fileDescr\":{\"fileDescrText\":\"abc\",\"fileDescrPartNo\":0,\"fileDescrComplete\":true},\"fileExpires\":\"10000-01-01T00:00:00Z\"}}"
+      `shouldSatisfy` isInfixOf "time out of range"
+  it "rejects x.grp.msg.forward with message time in year 0" $
+    parseError "{\"v\":\"9\",\"event\":\"x.grp.msg.forward\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberName\":\"alice\",\"msg\":{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}},\"msgTs\":\"0000-12-31T23:59:59Z\"}}"
+      `shouldSatisfy` isInfixOf "time out of range"
+  it "rejects binary forward element with message time in year 0" $
+    parseError (">" <> smpEncode (GrpMsgForward FwdChannel $ systemToUTCTime $ MkSystemTime (-62135596801) 0) <> "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}")
+      `shouldSatisfy` isInfixOf "time out of range"
+  it "sets no timer for a negative received TTL and limits it to 2147483647 seconds" $
+    map (fmap ttl' . rcvCITimed_ (Just Nothing) . Just) [-100000000000, -1, 0, 86400, 2147483647, 2147483648]
+      `shouldBe` [Nothing, Nothing, Just 0, Just 86400, Just 2147483647, Just 2147483647]
+  where
+    parseError s = case parseChatMessages s of
+      [Left e] -> e
+      rs -> "expected a single error, got " <> show (length rs) <> " results"
 
 preferencesJSONTests :: Spec
 preferencesJSONTests = describe "preferences JSON" $ do
+  it "drops a negative disappearing messages TTL and limits it to 2147483647 seconds" $ do
+    timedTTL <$> prefs "{\"timedMessages\":{\"allow\":\"yes\",\"ttl\":-100000000000}}" `shouldReturn` Nothing
+    timedTTL <$> prefs "{\"timedMessages\":{\"allow\":\"yes\",\"ttl\":2147483648}}" `shouldReturn` Just 2147483647
+    timedTTL <$> prefs "{\"timedMessages\":{\"allow\":\"yes\",\"ttl\":2147483647}}" `shouldReturn` Just 2147483647
+    groupTTL <$> groupPrefs "{\"timedMessages\":{\"enable\":\"on\",\"ttl\":-100000000000}}" `shouldReturn` Nothing
+    groupTTL <$> groupPrefs "{\"timedMessages\":{\"enable\":\"on\",\"ttl\":3000000000}}" `shouldReturn` Just 2147483647
+    groupTTL <$> groupPrefs "{\"timedMessages\":{\"enable\":\"on\",\"ttl\":86400}}" `shouldReturn` Just 86400
   it "stores no JSON when preferences encode to what was received" $ do
     ps <- prefs "{\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"no\"}}"
     storedJSON ps `shouldBe` Nothing
@@ -73,6 +104,8 @@ preferencesJSONTests = describe "preferences JSON" $ do
     storedJSON ps = J.decodeStrictText =<< snd (prefsToRow $ Just ps) :: Maybe J.Value
     object :: ByteString -> J.Value
     object s = fromMaybe (error $ "not JSON: " <> B.unpack s) $ J.decodeStrict' s
+    timedTTL ps = chatPrefSel SCFTimedMessages ps >>= prefParam
+    groupTTL ps = groupPrefSel SGFTimedMessages ps >>= groupPrefParam
 
 batchLimitTests :: Spec
 batchLimitTests = describe "Chat message batch limits" $ do
