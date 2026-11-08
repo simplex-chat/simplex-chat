@@ -173,6 +173,7 @@ Recommended on the UX page (https://claude.ai/artifact/YCN4kj2ZRujUnUhNSxwMea), 
 100. T3: the Main group's short description is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does.`
 101. G6: the Main group replies `Unknown command.` to a one-line `/` text other than `/sessions`, `/join N`, `/approve reset` and `/reject reset`.
 102. `reply` answers the core's refusal `feature not allowed Files and media` of decision 87 with FILES OFF: `Files and media are off in the group of this session; its owners can turn them on in the group's preferences.` Other refusals of the core are returned as the core's text.
+103. UX-F3 a: the Main group's short description and welcome message are set when the group is created, a reset of the owners included; Claude's later profile updates of the Main group change only its name and commands, so an owner's edits of both stay. Of decision 90, the Main group's short description and description leave Claude's fields.
 
 Approved by the user on the PR page on 2026-11-08 (B1, B2):
 99. The Main group's welcome message is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.`, and its post at each join `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.`
@@ -376,7 +377,8 @@ Mechanics:
 ```
 approver of group N:            an active member other than Claude and User, role admin or owner (decision 84)
 prompter of group N:            a member other than User whose role sends; the prompt rules in Session mirroring
-Main group, at its creation and load: shortDescr = SHORT, description = WELCOME, updated when they differ
+Main group, at its creation:    shortDescr = SHORT, description = WELCOME (decision 103)
+Main group, at its load:        the name and the commands, updated when they differ; shortDescr and description kept
 on joinedGroupMember or connectedToGroupMember in the Main group:
                                 the joiner among the members read again, a human: post "NAME joined. " + JOINED
 a join raises one of the two:   joinedGroupMember for a member who joined through the hub,
