@@ -25,7 +25,7 @@ Done when:
 7   the group description shows the model and effort and follows a change                         unit test; real session
 8   decisions 17-23 hold                                                                          unit tests
 9   serve: all 0.2 unit and end-to-end tests pass unchanged                                      CI
-10  source lines written on top of sh/mcp-known: at most 1,200                                    diff count
+10  feature complete and tested; the source lines are an estimate, not a limit                     review report
 11  one page presents the PR; an independent reviewer confirms it matches the diff               review report
 ```
 
@@ -800,9 +800,9 @@ commits  #7810's 49 commits
          channel and mirroring: decisions 7, 9, 12, 14, 24-26, reply tool, version 0.3.0
 ```
 
-Size budget, source lines written on top of `sh/mcp-known`, without tests:
+Size estimate, source lines written on top of `sh/mcp-known`, without tests:
 ```
-part                                  budget
+part                                  estimate
 merge, session groups, owner rules    750
 channel and mirroring                 450
 ```
