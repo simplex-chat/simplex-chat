@@ -70,7 +70,7 @@ command = '<label>':/'<keyword>[ <params>]'
 menu = '<label>':{<commands>}
 ```
 
-This syntax allows creating nested menus of commands with and without parameters. Menus can be nested up to 8 levels. Deeper menus are received without commands. You must enclose parameter names with the characters `<` and `>`. Currently, users have to edit command templates to set actual parameters, but in the future there will be UI support to fill in parameters based on this syntax. For example, some of SimpleX Directory service commands could be configured with this command:
+This syntax allows creating nested menus of commands with and without parameters. Menus can be nested up to 8 levels. Deeper menus are removed. You must enclose parameter names with the characters `<` and `>`. Currently, users have to edit command templates to set actual parameters, but in the future there will be UI support to fill in parameters based on this syntax. For example, some of SimpleX Directory service commands could be configured with this command:
 
 ```
 /set bot commands 'How to use bot':/help,'Show your groups':/list,'Your group settings':{'Set default role':/'role <ID>','Set anti-spam filter':/'filter <ID>'}

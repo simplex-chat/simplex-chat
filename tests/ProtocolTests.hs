@@ -136,8 +136,8 @@ jsonLimitTests = describe "Chat message JSON limits" $ do
       `shouldBe` Right (Just $ MCUnknown "future" "hello" $ jsonObject $ unknownContent ",\"ok\":1")
   it "parses bot command menus nested up to the depth limit" $
     J.eitherDecode (J.encode $ nestedMenus maxMenuDepth helpCommand) `shouldBe` Right (nestedMenus maxMenuDepth helpCommand)
-  it "parses bot command menus nested deeper than the limit without their commands" $
-    J.eitherDecode (J.encode $ nestedMenus (maxMenuDepth + 1) helpCommand) `shouldBe` Right (nestedMenus maxMenuDepth $ CBCMenu "menu" [])
+  it "parses bot command menus without the menus nested deeper than the limit" $
+    J.eitherDecode (J.encode $ nestedMenus (maxMenuDepth - 1) $ CBCMenu "menu" [helpCommand, nestedMenus maxMenuDepth helpCommand]) `shouldBe` Right (nestedMenus maxMenuDepth helpCommand)
   where
     msgNew mc = "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":" <> mc <> "}}"
     unknownContent ps = "{\"type\":\"future\",\"text\":\"hello\"" <> ps <> "}"

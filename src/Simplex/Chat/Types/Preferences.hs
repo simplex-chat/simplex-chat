@@ -452,8 +452,8 @@ data ChatBotCommand
 limitMenuDepth :: Int -> ChatBotCommand -> ChatBotCommand
 limitMenuDepth depth = \case
   CBCMenu {label, commands}
-    | depth > 0 -> CBCMenu {label, commands = map (limitMenuDepth $ depth - 1) commands}
-    | otherwise -> CBCMenu {label, commands = []}
+    | depth > 1 -> CBCMenu {label, commands = map (limitMenuDepth $ depth - 1) commands}
+    | otherwise -> CBCMenu {label, commands = [c | c@CBCCommand {} <- commands]}
   cmd -> cmd
 
 maxMenuDepth :: Int
