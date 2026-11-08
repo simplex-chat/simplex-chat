@@ -1289,7 +1289,7 @@ export class AgentTools {
       const fields = await this.chatFields(chatInfo)
       chats.push({chat: fields.chat, type: fields.type, name: fields.name, simplex_name: fields.simplex_name, peer_type: fields.peer_type, incognito: isIncognito(chatInfo), known_as: fields.known_as, connected: fields.connected, unread: chatStats.unreadCount, ...(this.agent.standingApprover(chatInfo, "messages") === undefined ? {} : {approved: true})})
     }
-    const actions = this.agent.actions.ofSession(this.session).map(({n, tool, input, state, open}) => ({action: n, tool, input, state, open: open > 0}))
+    const actions = this.agent.actions.ofSession(this.session).filter(({tool}) => tool !== "mode" && tool !== "permission").map(({n, tool, input, state, open}) => ({action: n, tool, input, state, open: open > 0}))
     return {chats, actions}
   }
 

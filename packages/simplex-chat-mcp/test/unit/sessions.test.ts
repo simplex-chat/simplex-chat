@@ -405,6 +405,16 @@ describe("session channel", () => {
     expect(sentTo(chat, 20)).toHaveLength(3)
   })
 
+  it("leaves the tool-use and mode cards out of the actions that list returns to the session", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    session.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+    session.requestMode("host")
+    await until(() => sentTo(chat, 20).length === 2)
+    expect(session.actions.pending().map(({tool}) => tool)).toEqual(["permission", "mode"])
+    expect((await session.call("list", {}, signal().call))!.structuredContent).toEqual({chats: [], actions: []})
+  })
+
   it("cuts the input preview of a tool-use card to the size of a card", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
