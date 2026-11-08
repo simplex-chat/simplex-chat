@@ -595,7 +595,7 @@ alert           title and message as before; deleteGroupAlertMessage adds "<name
                 for isCustomerChatOwner
 owner           (isOwner && membership.memberActive && businessChat == nil) || isCustomerChatOwner:
                 deleteGroupKeepDialog, Delete; footer "<name> can connect to you again via your business
-                address." for isCustomerChatOwner
+                address." for isCustomerChatOwner when userAddress.addressSettings.businessAddress
 others          deletion after the alert
 deletion        deleteGroup → deleteChat(chatDeleteMode, notice); afterDeletion on success
 ```

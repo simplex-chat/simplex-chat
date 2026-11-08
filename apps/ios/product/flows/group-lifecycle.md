@@ -147,7 +147,7 @@ Complete group management in SimpleX Chat iOS: creating groups, inviting members
    func apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true), notice: LinkNotice? = nil) async throws -> GroupInfo?
    ```
 4. Core notifies all members. With `.full` the chat is removed from `ChatModel.shared.chats`; with `.entity` core returns the group with membership status `memGroupDeleted`, and `ChatModel.updateGroup` keeps the chat in the list.
-5. Business chat of the owner: the alert adds "<customer> will be notified."; the sheet says "<customer> can connect to you again via your business address."
+5. Business chat of the owner: the alert adds "<customer> will be notified."; the sheet says "<customer> can connect to you again via your business address." when the user's address is a business address (`userAddress.addressSettings.businessAddress`).
 6. "Delete and ban" for the owner of a business chat (`deleteAndBanCustomerDialog`): the dialogs of [connection flow 8](connection.md#8-delete-archive-or-ban-a-contact) with the customer's name; `apiDeleteChat` with a `LinkNotice`, so the core removes the customer silently with the notice and then deletes the chat.
 
 ### 10. Group Link Management

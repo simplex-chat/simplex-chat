@@ -1072,8 +1072,9 @@ func deleteGroupAlert(_ chat: Chat, _ groupInfo: GroupInfo, afterDeletion: @esca
         message: Text(chat.chatInfo.displayName + "\n\n") + deleteGroupAlertMessage(groupInfo),
         primaryButton: .destructive(Text("Delete")) {
             if (groupInfo.isOwner && groupInfo.membership.memberActive && groupInfo.businessChat == nil) || groupInfo.isCustomerChatOwner {
+                let hasBusinessAddress = ChatModel.shared.userAddress?.addressSettings.businessAddress == true
                 showClosableAppSheet { close in
-                    deleteGroupKeepDialog(groupInfo, close: close) { keepConversation in
+                    deleteGroupKeepDialog(groupInfo, hasBusinessAddress: hasBusinessAddress, close: close) { keepConversation in
                         deleteGroup(chat, keepConversation: keepConversation, afterDeletion)
                     }
                 }
@@ -1106,10 +1107,10 @@ func deleteGroupAlertMessage(_ groupInfo: GroupInfo) -> Text {
     )
 }
 
-private func deleteGroupKeepDialog(_ groupInfo: GroupInfo, close: @escaping CloseSheet, delete: @escaping (_ keepConversation: Bool) -> Void) -> KeepConversationDialog {
+private func deleteGroupKeepDialog(_ groupInfo: GroupInfo, hasBusinessAddress: Bool, close: @escaping CloseSheet, delete: @escaping (_ keepConversation: Bool) -> Void) -> KeepConversationDialog {
     KeepConversationDialog(
         actionTitle: NSLocalizedString("Delete", comment: "delete group dialog"),
-        footer: groupInfo.isCustomerChatOwner
+        footer: groupInfo.isCustomerChatOwner && hasBusinessAddress
             ? String.localizedStringWithFormat(NSLocalizedString("%@ can connect to you again via your business address.", comment: "delete business chat dialog"), groupInfo.displayName)
             : nil,
         close: close,
@@ -1317,8 +1318,8 @@ struct GroupChatInfoView_DeleteAndBan_Previews: PreviewProvider {
 
 struct DeleteGroupKeepDialog_Previews: PreviewProvider {
     static var previews: some View {
-        deleteGroupKeepDialog(GroupInfo.sampleData, close: { _ in }) { _ in }
-        deleteGroupKeepDialog(previewCustomerChat(), close: { _ in }) { _ in }
+        deleteGroupKeepDialog(GroupInfo.sampleData, hasBusinessAddress: false, close: { _ in }) { _ in }
+        deleteGroupKeepDialog(previewCustomerChat(), hasBusinessAddress: true, close: { _ in }) { _ in }
     }
 }
 
