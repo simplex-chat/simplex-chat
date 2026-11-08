@@ -492,7 +492,6 @@ export class Hub implements SessionGroups {
       const sending = chatItem_ === undefined ? undefined : sessions.find(({id, control}) => ownerOf(chatItem_.chatInfo) === id || isGroupMessage(chatItem_, control.groupId))
       sending?.control.fileNotSent(event)
     }
-    if (event.type === "groupUpdated") sessions.find(({control}) => control.groupId === event.toGroup.groupId)?.control.profileUpdated(event.toGroup)
     if (isControlEvent(event, this.main.groupId)) {
       this.main.onEvent(event).catch(error => logError(`${event.type} in the Main group`, error))
       return

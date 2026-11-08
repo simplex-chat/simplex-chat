@@ -1,6 +1,6 @@
 import {ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
-import {Command, createGroup, deleteGroup, isLost, joinedText, losesControl, parseCommand, safeName} from "./control"
+import {Command, createGroup, deleteGroup, isLost, joinedText, losesControl, parseCommand, safeName, updateGroupProfile} from "./control"
 import {chatErrorOf, log, logError, oneLine} from "./log"
 import {resetCommand} from "./owner"
 import {isActive} from "./tools"
@@ -62,10 +62,12 @@ export class MainGroup {
 
   async load(): Promise<void> {
     if (isLost(this.group)) return this.lose()
-    const {groupProfile} = this.group
-    if (groupProfile.displayName !== this.name || groupProfile.shortDescr !== shortDescr || groupProfile.description !== welcome || JSON.stringify(groupProfile.groupPreferences?.commands) !== JSON.stringify(mainCommands)) {
-      this.group = await this.chat.apiUpdateGroupProfile(this.groupId, {...groupProfile, displayName: this.name, shortDescr, description: welcome, groupPreferences: {...groupProfile.groupPreferences, commands: mainCommands}})
-    }
+    const displayName = this.name
+    this.group = await updateGroupProfile(this.chat, this.group, profile =>
+      profile.displayName !== displayName || profile.shortDescr !== shortDescr || profile.description !== welcome || JSON.stringify(profile.groupPreferences?.commands) !== JSON.stringify(mainCommands)
+        ? {...profile, displayName, shortDescr, description: welcome, groupPreferences: {...profile.groupPreferences, commands: mainCommands}}
+        : undefined,
+    )
     await this.refreshMembers()
   }
 

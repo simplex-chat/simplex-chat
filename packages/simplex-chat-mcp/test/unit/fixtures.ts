@@ -297,7 +297,9 @@ export class FakeChat {
 
   async apiUpdateGroupProfile(groupId: number, groupProfile: T.GroupProfile): Promise<T.GroupInfo> {
     this.profiles.push({groupId, groupProfile})
-    const {customData} = (this.chats.get(`#${groupId}`)?.chatInfo as T.ChatInfo.Group | undefined)?.groupInfo ?? {}
+    const stored = (this.chats.get(`#${groupId}`)?.chatInfo as T.ChatInfo.Group | undefined)?.groupInfo
+    if (stored !== undefined) stored.groupProfile = groupProfile
+    const {customData} = stored ?? {}
     await new Promise(resolve => setImmediate(resolve))
     return {...group(groupId, groupProfile.displayName), groupProfile, ...(customData === undefined ? {} : {customData})}
   }

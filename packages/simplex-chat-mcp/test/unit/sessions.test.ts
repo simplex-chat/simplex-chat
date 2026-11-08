@@ -269,14 +269,13 @@ describe("session groups", () => {
     expect(await session.control.ownerCommand(dan, {keyword: "pending", params: ""})).toBe(approversOnly)
   })
 
-  it("keep the profile an owner changed, its preference for files and media included, at the next update of the model and at a rename", async () => {
+  it("keep the profile an owner changed, its preference for files and media included, at the next update of the model and at a rename, from the group's current profile", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     const session = await openSession(hub, id1, stored(1, "auth"))
     const {groupInfo} = chat.chats.get("#20")!.chatInfo as T.ChatInfo.Group
     const files = {enable: T.GroupFeatureEnabled.Off}
-    const toGroup = {...groupInfo, groupProfile: {...groupInfo.groupProfile, description: "Release work", groupPreferences: {...groupInfo.groupProfile.groupPreferences, files}}}
-    await hub["onEvent"]({type: "groupUpdated", fromGroup: groupInfo, toGroup, member_: invitedAlice} as unknown as ChatEvent)
+    groupInfo.groupProfile = {...groupInfo.groupProfile, description: "Release work", groupPreferences: {...groupInfo.groupProfile.groupPreferences, files}}
     await session.turn({id: id1, model: "claude-opus-5"})
     await session.rename("deploy")
     expect(chat.profiles.filter(({groupId}) => groupId === 20).map(({groupProfile}) => groupProfile)).toEqual([
@@ -1017,6 +1016,16 @@ describe("Main group", () => {
     await hub.main.onEvent({type: "connectedToGroupMember", groupInfo: group(10, "SimpleX MCP", self), member: {...dave, memberStatus: T.GroupMemberStatus.Intro_inv}} as unknown as ChatEvent)
     await hub.main.onEvent({type: "joinedGroupMember", groupInfo: group(10, "SimpleX MCP", self), member: bob} as unknown as ChatEvent)
     expect(sentTo(chat, 10)).toEqual([`Dave joined. ${trusted}`, `Bob joined. ${trusted}`])
+  })
+
+  it("keeps the profile its owners changed, its preference for files and media included, at a rename, from the group's current profile", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const {groupInfo} = chat.chats.get("#10")!.chatInfo as T.ChatInfo.Group
+    const files = {enable: T.GroupFeatureEnabled.Off}
+    groupInfo.groupProfile = {...groupInfo.groupProfile, image: "data:image/png;base64,AA", groupPreferences: {...groupInfo.groupProfile.groupPreferences, files}}
+    await hub.configure({mainGroup: "Team", approve: "requests", expireHours: 23})
+    expect(chat.profiles.at(-1)).toEqual({groupId: 10, groupProfile: expect.objectContaining({displayName: "Team", image: "data:image/png;base64,AA", groupPreferences: expect.objectContaining({files})})})
   })
 
   it("keeps its link across a restart while it has no owner", async () => {

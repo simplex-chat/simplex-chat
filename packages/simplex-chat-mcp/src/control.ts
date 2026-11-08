@@ -111,10 +111,11 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
 
   async load(): Promise<void> {
     if (isLost(this.group)) return this.lose()
-    const {groupProfile} = this.group
-    if (groupProfile.displayName !== this.options.displayName || JSON.stringify(groupProfile.groupPreferences?.commands) !== JSON.stringify(controlCommands)) {
-      this.group = {...(await this.chat.apiUpdateGroupProfile(this.groupId, {...groupProfile, displayName: this.options.displayName, groupPreferences: {...groupProfile.groupPreferences, commands: controlCommands}})), customData: this.group.customData}
-    }
+    const {displayName} = this.options
+    const group = await updateGroupProfile(this.chat, this.group, profile =>
+      profile.displayName !== displayName || JSON.stringify(profile.groupPreferences?.commands) !== JSON.stringify(controlCommands) ? {...profile, displayName, groupPreferences: {...profile.groupPreferences, commands: controlCommands}} : undefined,
+    )
+    this.group = {...group, customData: this.group.customData}
     await this.refreshMembers()
   }
 
@@ -124,11 +125,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   }
 
   async describe(shortDescr: string): Promise<void> {
-    if (this.group.groupProfile.shortDescr === shortDescr) return
-    this.group = {...(await this.chat.apiUpdateGroupProfile(this.groupId, {...this.group.groupProfile, shortDescr})), customData: this.group.customData}
-  }
-
-  profileUpdated(group: T.GroupInfo): void {
+    const group = await updateGroupProfile(this.chat, this.group, profile => (profile.shortDescr === shortDescr ? undefined : {...profile, shortDescr}))
     this.group = {...group, customData: this.group.customData}
   }
 
@@ -592,6 +589,13 @@ export async function createGroup(chat: api.ChatApi, userId: number, profile: T.
   const group = await chat.apiNewGroup(userId, profile)
   await chat.apiSetGroupCustomData(group.groupId, customData)
   return {...group, customData}
+}
+
+export async function updateGroupProfile(chat: api.ChatApi, group: T.GroupInfo, change: (profile: T.GroupProfile) => T.GroupProfile | undefined): Promise<T.GroupInfo> {
+  const {chatInfo} = await chat.apiGetChat(T.ChatType.Group, group.groupId, 0)
+  const current = chatInfo.type === "group" ? chatInfo.groupInfo : group
+  const profile = change(current.groupProfile)
+  return profile === undefined ? current : chat.apiUpdateGroupProfile(group.groupId, profile)
 }
 
 export async function resetControlChat(chat: api.ChatApi, userId: number, group: T.GroupInfo, displayName: string, nextAction: number): Promise<T.GroupInfo> {
