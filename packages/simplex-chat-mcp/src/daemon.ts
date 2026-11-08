@@ -20,6 +20,7 @@ const processWait = 10_000
 const logCheck = 3_600_000
 const lockChecks = 150
 const lockCheckWait = 100
+const closedDays = 7
 const firstFreeFd = 3
 const unnamedSession = "Claude Code"
 
@@ -29,6 +30,7 @@ export interface HubLike {
   configure(config: Config): Promise<void>
   resetOwners(): Promise<ResetReply>
   session(id: string, stored: SessionFile): Promise<SessionLike>
+  deleteGroup(number: number): Promise<void>
   expireDue(): void
   stop(): Promise<Action[]>
 }
@@ -86,7 +88,10 @@ export class Daemon {
   private constructor(private readonly deps: DaemonDeps) {
     this.stored = storedSessions(deps.root)
     this.nextNumber = Math.max(0, ...this.stored.map(({session}) => session.number)) + 1
-    for (const {id, session} of this.stored) for (const alias of session.aliases ?? []) this.aliases.set(alias, id)
+    for (const {id, session} of this.stored) {
+      for (const alias of session.aliases ?? []) this.aliases.set(alias, id)
+      if (session.closed === undefined) this.markClosed(id)
+    }
   }
 
   static async start(deps: DaemonDeps, config: () => Config): Promise<Daemon> {
@@ -104,12 +109,14 @@ export class Daemon {
       }
       daemon.scheduleStop()
       for (const request of takeHeldTitles(deps.root)) daemon.onTitle(request as TitleRequest).catch(error => logError("title", error))
+      daemon.deleteClosedGroups().catch(error => logError("closed sessions", error))
       daemon.logTimer = setInterval(() => {
         try {
           trimLog(deps.root)
         } catch (error) {
           logError(logFile(deps.root), error)
         }
+        daemon.deleteClosedGroups().catch(error => logError("closed sessions", error))
       }, logCheck).unref()
       return daemon
     } catch (error) {
@@ -124,8 +131,24 @@ export class Daemon {
   }
 
   private async openHub(config: () => Config): Promise<HubLike> {
-    this.hub = await this.deps.openHub(config(), this.stored)
+    this.hub = await this.deps.openHub(config(), this.stored.filter(({session}) => session.group !== undefined))
     return this.hub
+  }
+
+  private async deleteClosedGroups(): Promise<void> {
+    const before = Date.now() - closedDays * 86_400_000
+    for (const {id, session} of storedSessions(this.deps.root)) {
+      if (session.group === undefined || session.closed === undefined || Date.parse(session.closed) > before || this.entries.has(id) || this.stopping !== undefined) continue
+      await this.hub.deleteGroup(session.number)
+      const {group, closed, ...kept} = readSessionFile(this.folder(id)) ?? session
+      writeSessionFile(this.folder(id), kept)
+      log(`The group of session ${session.number} is deleted: the session was closed for ${closedDays} days.`)
+    }
+  }
+
+  private markClosed(id: string): void {
+    const stored = readSessionFile(this.folder(id))
+    if (stored !== undefined) writeSessionFile(this.folder(id), {...stored, closed: new Date().toISOString()})
   }
 
   private closeListener(): Promise<void> {
@@ -382,6 +405,10 @@ export class Daemon {
       const aliases = [...this.aliases].flatMap(([alias, target]) => (target === id ? [alias] : []))
       stored = {number: this.nextNumber++, name: sessionName(request.name, request.project), project: request.project, created: new Date().toISOString(), ...(aliases.length === 0 ? {} : {aliases})}
       writeSessionFile(folder, stored)
+    } else if (stored.closed !== undefined) {
+      const {closed, ...open} = stored
+      writeSessionFile(folder, open)
+      stored = open
     }
     return this.hub.session(id, stored)
   }
@@ -394,6 +421,7 @@ export class Daemon {
       if (agent === undefined || entry.calls > 0 || agent.busy()) return this.scheduleIdle(id, entry)
       this.entries.delete(id)
       agent.open = false
+      this.markClosed(id)
       if (this.entries.size === 0) this.scheduleStop()
     }, idleClose)
   }

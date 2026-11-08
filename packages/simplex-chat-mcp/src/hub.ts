@@ -222,6 +222,12 @@ export class Session {
     await this.saveData({...this.data, invited: []})
   }
 
+  async deleteGroup(): Promise<void> {
+    await this.control.revokeAll()
+    await this.control.deleteGroup()
+    this.tools.close()
+  }
+
   private async deliver(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
     const left = this.hub.promptsHeldUntil - Date.now()
     if (this.onLine === undefined && left > 0) await nextChange(this.attaching, new AbortController().signal, left)
@@ -421,6 +427,13 @@ export class Hub implements SessionGroups {
 
   async removeOwners(): Promise<void> {
     for (const session of this.sessions.values()) await session.removeOwners()
+  }
+
+  async deleteGroup(number: number): Promise<void> {
+    const session = this.sessions.get(number)
+    if (session === undefined) return
+    await session.deleteGroup()
+    this.sessions.delete(number)
   }
 
   expireDue(): void {

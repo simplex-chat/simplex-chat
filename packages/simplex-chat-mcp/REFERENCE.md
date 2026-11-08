@@ -514,6 +514,8 @@ VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`; th
 - `/list` and `/revoke` work in the group of a closed session too. A `/revoke` sent while the daemon is stopped applies when the daemon receives it after its next start.
 - `claude --resume` and `claude --continue` reopen the session with its group and chats. `/clear` in a running session keeps its group: the daemon joins the new session IDs of a Claude Code process to the session of that process. So does `claude --resume ID --fork-session`: the fork continues in the group of the resumed session. After `/resume` of another session in a running session, its prompts and answers are posted in the group of the running session, and a later `claude --resume` of that session reopens its own group and chats.
 - A session closes 10 minutes after its Claude Code session ends, once the expiry times of its actions have passed. The daemon stops 10 minutes after the last session closes; the next session start or tool call starts it again.
+- The group of a session closed for 7 days is deleted for all its members, with the standing approvals of the session's chats. The daemon checks at its start and every hour while it runs. The session keeps its number and its chats: a later `claude --resume` of it opens a new group, and its messages need approval again.
+- A non-interactive run, `claude -p` or the Agent SDK, gets no session and no group: its hooks post nothing, and its SimpleX tools return `This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions.` The plugin tells such a run by `CLAUDE_CODE_ENTRYPOINT`, which Claude Code sets to `sdk-cli` for `claude -p` and to `sdk-ts` or `sdk-py` for the Agent SDK, for its hooks and its MCP servers alike.
 
 ### Prompts and answers
 
@@ -569,7 +571,7 @@ In mode `host`, a session posts in its group `I want to run in mode host: Claude
 | `titles.json` | The titles of new sessions whose session server had not registered when the daemon stopped; the next start reads and removes it. |
 | `_hub/` | The databases of the profile `Claude`: the Main group, the sessions' groups and the chats with peers. |
 | `_user/` | The databases of the profile `User`. |
-| `_sessions/<session ID>/` | `session.json` with the session's number, name, project folder, group, mode, a rejected mode `host`, model, effort level and its other session IDs, and `files/` with the files of its chats and of its group. |
+| `_sessions/<session ID>/` | `session.json` with the session's number, name, project folder, group, mode, a rejected mode `host`, model, effort level, its other session IDs and the time it closed, and `files/` with the files of its chats and of its group. |
 
 The folders are readable only by the user, and so are the files the daemon writes, except on Windows. One daemon runs per data folder.
 

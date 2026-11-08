@@ -21,6 +21,7 @@ export interface SessionFile {
   model?: string
   effort?: string
   hostDeclined?: boolean
+  closed?: string
 }
 
 export interface ServerFile {

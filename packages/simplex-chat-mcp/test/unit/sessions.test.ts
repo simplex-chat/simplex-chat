@@ -289,6 +289,21 @@ describe("session groups", () => {
     expect(await one.control.ownerCommand(invitedAlice, {keyword: "give", params: "@4 1"})).toBe("No chat @4. /list shows the agent's chats.")
   })
 
+  it("delete the group of a session for all members, with the standing approvals of its chats", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    await openSession(hub, id1, stored(1, "auth"))
+    await openSession(hub, id2, stored(2, "docs"))
+    const approval = {simplexMcp: {approvedBy: "Alice", approvedById: 1003, approvedAt: "2026-11-08T10:00:00.000Z"}, simplexMcpFiles: {approvedBy: "Alice", approvedById: 1003, approvedAt: "2026-11-08T10:00:00.000Z"}}
+    chat.chats.set("@4", {chatInfo: ownedContact(4, "SimpleX Directory", id1, approval), items: []})
+    chat.chats.set("@5", {chatInfo: ownedContact(5, "Shop", id2, approval), items: []})
+    await hub.deleteGroup(1)
+    expect(chat.customData.filter(({chat: ref}) => ref === "@4").at(-1)!.customData).toEqual({simplexMcpOwner: {session: id1}})
+    expect(chat.customData.some(({chat: ref}) => ref === "@5")).toBe(false)
+    expect(chat.deleted).toEqual([{chatType: T.ChatType.Group, chatId: 20, mode: {type: "full", notify: true}}])
+    expect(hub.sessionsText()).toBe("2 · docs, closed")
+  })
+
   it("list and revoke the standing approvals of a closed session in its group", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)

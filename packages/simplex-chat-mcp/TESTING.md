@@ -158,4 +158,5 @@ In a session started as in step 2 above:
 10. Exit Claude Code, and send a message in the group within 10 minutes, while the daemon runs: Claude replies `Session 1 is not running.`
 11. Start Claude Code again as in step 2, with `--continue`: the session start opens no new group, and a prompt from "1 · <folder>" reaches the session.
 12. In a second terminal, start Claude Code as in step 2 in another folder, and exit it: the group "2 · <other folder>" appears. In the first session, `/resume` that session, and send `Reply with the word resumed.` in "1 · <folder>": the answer comes there. Exit, and start Claude Code with `--resume` of that session: a prompt from "2 · <other folder>" reaches it.
-13. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/lock)`.
+13. In another folder, run `SIMPLEX_MCP_HOME=/tmp/simplex-mcp-test claude -p "Call the list tool of the simplex server." --plugin-dir /tmp/simplex-plugin`: no new group appears, and the answer quotes `This Claude Code run is not interactive, so it has no SimpleX group`.
+14. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/lock)`.

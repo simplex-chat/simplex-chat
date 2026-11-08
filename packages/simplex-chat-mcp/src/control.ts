@@ -293,6 +293,19 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return `${scope} ${chatName(chatSubject(chatInfo))} (${chat}) need approval again.`
   }
 
+  async revokeAll(): Promise<void> {
+    const keys = Object.values(standings).map(({key}) => key)
+    for (const {chatInfo} of await this.tools.agentChats()) {
+      const data = (customDataOf(chatInfo) ?? {}) as {[key: string]: unknown}
+      const chat = chatRef(chatInfo)
+      if (chat !== undefined && keys.some(key => key in data)) await this.setCustomData(chat, Object.fromEntries(Object.entries(data).filter(([key]) => !keys.includes(key))))
+    }
+  }
+
+  deleteGroup(): Promise<void> {
+    return deleteGroup(this.chat, this.group)
+  }
+
   private forward(action: DownloadAction): void {
     this.tools
       .forwardFile(action)
