@@ -1348,6 +1348,7 @@ struct GroupChatInfoView_Members_Previews: PreviewProvider {
             m.memberId = name
             m.localDisplayName = name
             m.memberProfile = LocalProfile(profileId: id, displayName: name, fullName: "", localAlias: "")
+            m.memberContactProfileId = id
             return m
         }
         var banned = member(3, "carol")

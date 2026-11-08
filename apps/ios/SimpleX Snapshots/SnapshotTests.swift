@@ -218,9 +218,12 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(BadgesHowLongView_Previews.self),
         SnapshotScene(BadgesRedeemCodeView_Previews.self, device: true),
         SnapshotScene(BadgesSupportSimplexView_Previews.self, device: true),
-        SnapshotScene(BanMemberDialog_Previews.self),
-        SnapshotScene(BanMemberForeverDialog_Previews.self),
-        SnapshotScene(BanSubscriberDialog_Previews.self),
+        SnapshotScene(BanMemberDialog_Moderator_Previews.self),
+        SnapshotScene(BanMemberDialog_Owner_Previews.self),
+        SnapshotScene(BanMemberForeverDialog_Moderator_Previews.self),
+        SnapshotScene(BanMemberForeverDialog_Owner_Previews.self),
+        SnapshotScene(BanSubscriberDialog_Moderator_Previews.self),
+        SnapshotScene(BanSubscriberDialog_Owner_Previews.self),
         SnapshotScene(CallSettings_Previews.self, device: true),
         SnapshotScene(ChannelMembersView_Previews.self),
         SnapshotScene(ChannelRelaysView_Previews.self),
@@ -559,6 +562,7 @@ struct ChatListSwipeActions_Previews: PreviewProvider {
 private struct SwipeActionsRow: View {
     var title: String
     var actions: ChatListActions
+    var systemImage: (ChatListAction) -> String = { $0.label.systemImage }
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 4) {
@@ -571,7 +575,7 @@ private struct SwipeActionsRow: View {
                 }
                 ForEach(Array(actions.shown.reversed()), id: \.self) { action in
                     let label = action.label
-                    tile(label.title, label.systemImage, label.tint)
+                    tile(label.title, systemImage(action), label.tint)
                 }
             }
         }
@@ -1220,7 +1224,10 @@ private final class SnapshotFixtures {
             SwipeActionsRow(title: "Contact", actions: .contact(Chat(chatInfo: .direct(contact: contact), chatItems: items), contact))
             SwipeActionsRow(title: "Contact connected via your address", actions: .contact(Chat(chatInfo: .direct(contact: bannable), chatItems: items), bannable))
             SwipeActionsRow(title: "Contact connected via your address, no messages", actions: .contact(Chat(chatInfo: .direct(contact: bannable)), bannable))
-            SwipeActionsRow(title: "Archived contacts: contact connected via your address", actions: ChatListActions([ChatListAction.deleteContact(archived)] + (archived.canDeleteAndBan ? [ChatListAction.banContact(archived)] : []), more: []))
+            SwipeActionsRow(title: "Archived contacts: contact connected via your address", actions: ChatListActions([ChatListAction.deleteContact(archived)] + (archived.canDeleteAndBan ? [ChatListAction.banContact(archived)] : []), more: [])) { action in
+                if case .banContact = action { return "hand.raised" }
+                return "trash"
+            }
             SwipeActionsRow(title: "Business chat owner", actions: group(customerChat, items, ChatStats()))
             SwipeActionsRow(title: "Business chat owner, no messages", actions: group(customerChat, [], ChatStats()))
             SwipeActionsRow(title: "Group owner", actions: group(owner, items, ChatStats()))

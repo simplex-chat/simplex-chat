@@ -1105,23 +1105,38 @@ func previewBannableMember() -> GroupMember {
     return member
 }
 
-struct BanMemberDialog_Previews: PreviewProvider {
+struct BanMemberDialog_Owner_Previews: PreviewProvider {
     static var previews: some View {
         banMemberDialog(previewGroup(.owner), previewBannableMember(), dismiss: nil, close: { _ in })
+    }
+}
+
+struct BanMemberDialog_Moderator_Previews: PreviewProvider {
+    static var previews: some View {
         banMemberDialog(previewGroup(.moderator), previewBannableMember(), dismiss: nil, close: { _ in })
     }
 }
 
-struct BanMemberForeverDialog_Previews: PreviewProvider {
+struct BanMemberForeverDialog_Owner_Previews: PreviewProvider {
     static var previews: some View {
         banMemberDialog(previewGroup(.owner), previewBannableMember(), dismiss: nil, duration: .forever, close: { _ in })
+    }
+}
+
+struct BanMemberForeverDialog_Moderator_Previews: PreviewProvider {
+    static var previews: some View {
         banMemberDialog(previewGroup(.moderator), previewBannableMember(), dismiss: nil, duration: .forever, close: { _ in })
     }
 }
 
-struct BanSubscriberDialog_Previews: PreviewProvider {
+struct BanSubscriberDialog_Owner_Previews: PreviewProvider {
     static var previews: some View {
         banMemberDialog(previewGroup(.owner, channel: true), previewBannableMember(), dismiss: nil, close: { _ in })
+    }
+}
+
+struct BanSubscriberDialog_Moderator_Previews: PreviewProvider {
+    static var previews: some View {
         banMemberDialog(previewGroup(.moderator, channel: true), previewBannableMember(), dismiss: nil, close: { _ in })
     }
 }
