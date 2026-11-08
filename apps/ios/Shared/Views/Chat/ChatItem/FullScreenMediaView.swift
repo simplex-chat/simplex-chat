@@ -137,6 +137,7 @@ struct FullScreenMediaView: View {
 
     private func chatItemImage(_ ci: ChatItem) -> (ChatItem, UIImage?, URL?)? {
         if case .image = ci.content.msgContent,
+           ci.meta.itemDeleted == nil,
            let img = getLoadedImage(ci.file) {
             return (ci, img, nil)
         }
