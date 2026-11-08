@@ -725,7 +725,7 @@ export class AgentTools {
     if (attached !== undefined) return this.replyResult(attached as ReplyAction, call)
     const {chatInfo} = await getChat(this.agent.chat, chat, 0)
     const file = await this.attachment(input.file, undefined, chatInfo, chat)
-    if (!fitsMessage(sentContent(file, input.text ?? ""), file.name, undefined)) throw new ToolError(`text: too long for a message with this ${file.type}; shorten it.`)
+    if (!fitsMessage(sentContent(file, input.text ?? ""), file.name, undefined)) throw new ToolError(tooLongText(file))
     if ((await this.agent.replyAtOnce?.()) === true) return {item: await this.sendFile(chat, file, input.text)}
     if (call.signal.aborted) return undefined
     return this.replyResult(this.agent.actions.create(key, {tool: "reply", input, subject: chatSubject(chatInfo), chat, file}, this.agent.repliesApprover?.(), this.session, "requests") as ReplyAction, call)
@@ -927,9 +927,7 @@ export class AgentTools {
     const quoted = input.reply_to === undefined ? undefined : await this.quotedItem(chat, input.reply_to)
     const mentions = input.mention === undefined ? [] : await this.mentionedMembers(chatInfo, chat, input.mention)
     const file = input.file === undefined ? undefined : await this.attachment(input.file, input.as, chatInfo, chat)
-    if (!fitsMessage(sentContent(file, messageText(input.text, mentions)), file?.name, quoted, mentions)) {
-      throw new ToolError(file === undefined ? "text: too long for the message with its quote; shorten it." : `text: too long for a message with this ${file.type}; shorten it.`)
-    }
+    if (!fitsMessage(sentContent(file, messageText(input.text, mentions)), file?.name, quoted, mentions)) throw new ToolError(tooLongText(file))
     const replyTo = quoted === undefined ? undefined : {from: quoted.from, text: quoted.text}
     const subject = chatSubject(chatInfo)
     const responses = new Collected()
@@ -1585,6 +1583,10 @@ function messageText(text: string | undefined, mentions: {name: string}[]): stri
 
 function sentContent(file: Attachment | undefined, text: string): T.MsgContent {
   return file === undefined ? {type: "text", text} : fileContent(file, text)
+}
+
+function tooLongText(file: Attachment | undefined): string {
+  return file === undefined ? "text: too long for the message with its quote; shorten it." : `text: too long for a message with this ${file.type}; shorten it.`
 }
 
 export function fitsMessage(content: T.MsgContent, fileName: string | undefined, quoted: Pick<Quoted, "content" | "fileName"> | undefined, mentions: {name: string}[] = []): boolean {
