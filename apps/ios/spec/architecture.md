@@ -5,7 +5,7 @@
 > Related specs: [README](README.md) | [API Reference](api.md) | [State Management](state.md) | [Database](database.md)
 > Related product: [Product Overview](../product/README.md)
 
-**Source:** [`SimpleXApp.swift`](../Shared/SimpleXApp.swift#L1-L183) | [`AppDelegate.swift`](../Shared/AppDelegate.swift#L1-L209) | [`ContentView.swift`](../Shared/ContentView.swift#L1-L513) | [`ChatModel.swift`](../Shared/Model/ChatModel.swift#L1-L1373) | [`SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift#L1-L2915) | [`AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift#L1-L2357) | [`APITypes.swift`](../SimpleXChat/APITypes.swift#L1-L1071) | [`API.swift`](../SimpleXChat/API.swift#L1-L388)
+**Source:** [`SimpleXApp.swift`](../Shared/SimpleXApp.swift#L1-L183) | [`AppDelegate.swift`](../Shared/AppDelegate.swift#L1-L212) | [`ContentView.swift`](../Shared/ContentView.swift#L1-L513) | [`ChatModel.swift`](../Shared/Model/ChatModel.swift#L1-L1373) | [`SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift#L1-L2915) | [`AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift#L1-L2357) | [`APITypes.swift`](../SimpleXChat/APITypes.swift#L1-L1071) | [`API.swift`](../SimpleXChat/API.swift#L1-L388)
 
 ---
 
@@ -134,6 +134,8 @@ func sendSimpleXCmd<R: ChatAPIResult>(_ cmd: ChatCmdProtocol, _ ctrl: chat_ctrl?
 
 All FFI calls are wrapped in [`beginBGTask()`](../Shared/Model/SimpleXAPI.swift#L54) / `endBackgroundTask()` to prevent iOS from killing the app mid-operation. The `maxTaskDuration` is 15 seconds.
 
+While the chat is suspending, the agent continues the XFTP uploads started in foreground by this app process. The chat deletes the agent file of each upload after handling its completion or error, queueing the file descriptions of a completed upload first. The core sends `chatSuspended` after these deletions and the delivery of the queued messages, or at the suspend timeout. Uploads started while suspending or resumed from an earlier process are not awaited.
+
 ---
 
 ## [3. Event Streaming](../Shared/Model/SimpleXAPI.swift#L2220-L2916)
@@ -257,6 +259,8 @@ The NSE ([`SimpleX NSE/NotificationService.swift`](../SimpleX%20NSE/Notification
 ### Share Extension (SE)
 
 The Share Extension (`SimpleX SE/`) allows sharing content (text, images, files) from other apps into SimpleX conversations.
+
+At setup and before sending, the share extension sends `.sendingMessage` to the other processes ([`setup(with:)`](../SimpleX%20SE/ShareModel.swift#L94-L100), [`send()`](../SimpleX%20SE/ShareModel.swift#L146-L152)). When the app state read at setup is `.suspending`, the share extension waits until the stored app and NSE states both equal `.suspended`, at most 2 s ([`waitForOtherProcessesToSuspend`](../SimpleX%20SE/SEChatState.swift#L30-L39)), before it starts or activates its chat; before sending, it waits in the same way in any app state. The NSE does not act on `.sendingMessage` (its subscriber is never created). The wait therefore ends at the first check, every 100 ms, at which both stored states equal `.suspended`, or after 2 s; the stored NSE state is `.suspended` before the first NSE start ([`nseStateGroupDefault`](../SimpleXChat/AppGroup.swift#L190-L194)) and after the NSE suspends on its own. `.created` is stored at the first use of `NSEChatState.shared` in an NSE process ([`startChat`](../SimpleX%20NSE/NotificationService.swift#L849), [`endThread`](../SimpleX%20NSE/NotificationService.swift#L236)), at a start without a chat controller ([`startChat`](../SimpleX%20NSE/NotificationService.swift#L865)), and after a failed start ([`doStartChat`](../SimpleX%20NSE/NotificationService.swift#L878), [`doStartChat`](../SimpleX%20NSE/NotificationService.swift#L913)); in this state the wait lasts the full 2 s. The app's instant suspension can start the chat of an NSE instance waiting for the app, and that chat then runs concurrently with the share extension. On `.sendingMessage` in `.suspending`, the app suspends at once ([`seSubscriber`](../Shared/Model/SuspendChat.swift#L39-L53)): when `ChatModel.ok`, the core is suspended with timeout 0 ([`_suspendChatInstantly`](../Shared/Model/SuspendChat.swift#L87-L91)); the app state is set to `.suspended`; when `chatRunning == true`, the event receiver is stopped; the stores are closed ([`_chatSuspended`](../Shared/Model/SuspendChat.swift#L101-L108)). In other app states, the signal is ignored.
 
 ---
 

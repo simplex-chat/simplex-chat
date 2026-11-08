@@ -76,7 +76,7 @@ The container choice is stored in `dbContainerGroupDefault` (`GroupDefaults`).
 
 ### Backup Exclusion
 
-`isExcludedFromBackup` is set on both containers by [`excludeAppDataFromBackup()`](../SimpleXChat/FileUtils.swift#L69-L79), which is called from [`prepareForLaunch()`](../Shared/AppDelegate.swift#L124-L127) on each app launch. Files that the app, NSE and SE create or replace in these directories later are excluded as well.
+`isExcludedFromBackup` is set on both containers by [`excludeAppDataFromBackup()`](../SimpleXChat/FileUtils.swift#L69-L79), which is called from [`prepareForLaunch()`](../Shared/AppDelegate.swift#L125-L128) on each app launch. Files that the app, NSE and SE create or replace in these directories later are excluded as well.
 
 ---
 
