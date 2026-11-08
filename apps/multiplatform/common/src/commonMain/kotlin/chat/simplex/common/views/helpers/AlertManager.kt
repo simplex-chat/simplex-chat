@@ -549,3 +549,14 @@ private fun HostDeviceTitle(hostDevice: Pair<Long?, String>?, extraPadding: Bool
     Spacer(Modifier.height(if (extraPadding) DEFAULT_PADDING * 2 else 0.dp))
   }
 }
+
+@Composable
+fun AlertPreview(alertManager: AlertManager = AlertManager.shared, show: () -> Unit) {
+  remember { show() }
+  DisposableEffect(Unit) {
+    onDispose { alertManager.hideAllAlerts() }
+  }
+  Box(Modifier.fillMaxSize()) {
+    alertManager.showInView()
+  }
+}

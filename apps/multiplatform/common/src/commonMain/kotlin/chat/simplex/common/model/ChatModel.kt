@@ -357,7 +357,7 @@ object ChatModel {
     }
   }
 
-  private fun addPresetChatTags(chatInfo: ChatInfo, chatStats: Chat.ChatStats) {
+  fun addPresetChatTags(chatInfo: ChatInfo, chatStats: Chat.ChatStats) {
     for (tag in PresetTagKind.entries) {
       if (presetTagMatchesChat(tag, chatInfo, chatStats)) {
         presetTags[tag] = (presetTags[tag] ?: 0) + 1
@@ -1938,6 +1938,8 @@ data class Contact(
   override val nextConnect get() = sendMsgToConnect
   val nextSendGrpInv get() = contactGroupMemberId != null && !contactGrpInvSent
   val callReconnectSupported get() = (activeConn?.peerChatVRange?.maxVersion ?: 0) >= CALL_RECONNECT_VERSION
+  val canDeleteAndBan get() =
+    sndReady && active && activeConn?.viaUserContactLink != null && activeConn.peerChatVRange.maxVersion >= LINK_NOTICE_VERSION
   override val nextConnectPrepared get() = active && preparedContact != null && (activeConn == null || activeConn.connStatus == ConnStatus.Prepared)
   override val profileChangeProhibited get() = activeConn != null
   val nextAcceptContactRequest get() =
@@ -2085,6 +2087,7 @@ data class Connection(
   val connStatus: ConnStatus,
   val connLevel: Int,
   val viaGroupLink: Boolean,
+  val viaUserContactLink: Long? = null,
   val customUserProfileId: Long? = null,
   val connectionCode: SecurityCode? = null,
   val pqSupport: Boolean,
@@ -2689,6 +2692,9 @@ data class GroupInfo (
 
   val isOwner: Boolean
     get() = membership.memberRole == GroupMemberRole.Owner && membership.memberCurrent
+
+  val isCustomerChatOwner: Boolean
+    get() = isOwner && membership.memberActive && businessChat?.chatType == BusinessChatType.Customer
 
   val canDelete: Boolean
     get() = membership.memberRole == GroupMemberRole.Owner || !membership.memberCurrentOrPending

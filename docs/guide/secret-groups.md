@@ -56,7 +56,8 @@ You can also leave the group from the group page:
 
 After you leave, the group stays in the list of the conversations. To delete it
 from your device, tap "Delete group" on the group page. Owners can tap "Delete
-group" without leaving, to delete the group for all members.
+group" without leaving, to delete the group for all members, and turn on "Keep
+conversation" in the next dialog to keep its messages on their device.
 
 ## Member permissions
 

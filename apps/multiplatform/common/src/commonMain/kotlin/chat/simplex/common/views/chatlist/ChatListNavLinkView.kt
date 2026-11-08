@@ -291,10 +291,15 @@ fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMen
       } else {
         MarkUnreadChatAction(chat, chatModel, showMenu)
       }
-      ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
       ToggleNotificationsChatAction(chat, chatModel, contact.chatSettings.enableNtfs.nextMode(false), showMenu)
       TagListAction(chat, showMenu)
       ClearChatAction(chat, showMenu)
+    }
+    if (!contact.chatDeleted) {
+      ArchiveContactAction(chat, contact, chatModel, showMenu)
+    }
+    if (contact.canDeleteAndBan) {
+      DeleteAndBanContactAction(chat, contact, chatModel, showMenu)
     }
     DeleteContactAction(chat, chatModel, showMenu)
   }
@@ -332,7 +337,6 @@ fun GroupMenuItems(
       } else {
         MarkUnreadChatAction(chat, chatModel, showMenu)
       }
-      ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
       ToggleNotificationsChatAction(chat, chatModel, groupInfo.chatSettings.enableNtfs.nextMode(true), showMenu)
       TagListAction(chat, showMenu)
       if (chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
@@ -343,6 +347,9 @@ fun GroupMenuItems(
       ClearChatAction(chat, showMenu)
       if (groupInfo.membership.memberCurrentOrPending && !(groupInfo.useRelays && groupInfo.isOwner)) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
+      }
+      if (groupInfo.isCustomerChatOwner) {
+        DeleteAndBanCustomerAction(chat, groupInfo, showMenu)
       }
       if (groupInfo.canDelete) {
         DeleteGroupAction(chat, groupInfo, chatModel, showMenu)
@@ -391,30 +398,13 @@ fun TagListAction(
   chat: Chat,
   showMenu: MutableState<Boolean>
 ) {
-  val userTags = remember { chatModel.userTags }
   ItemAction(
     stringResource(if (chat.chatInfo.chatTags.isNullOrEmpty()) MR.strings.add_to_list else MR.strings.change_list),
     painterResource(MR.images.ic_label),
     onClick = {
       ModalManager.start.showModalCloseable { close ->
-        if (userTags.value.isEmpty()) {
-          TagListEditor(rhId = chat.remoteHostId, chat = chat, close = close)
-        } else {
-          TagListView(rhId = chat.remoteHostId, chat = chat, close = close, reorderMode = false)
-        }
+        TagListView(rhId = chat.remoteHostId, chat = chat, close = close, reorderMode = false)
       }
-      showMenu.value = false
-    }
-  )
-}
-
-@Composable
-fun ToggleFavoritesChatAction(chat: Chat, chatModel: ChatModel, favorite: Boolean, showMenu: MutableState<Boolean>) {
-  ItemAction(
-    if (favorite) stringResource(MR.strings.unfavorite_chat) else stringResource(MR.strings.favorite_chat),
-    if (favorite) painterResource(MR.images.ic_star_off) else painterResource(MR.images.ic_star),
-    onClick = {
-      toggleChatFavorite(chat.remoteHostId, chat.chatInfo, !favorite, chatModel)
       showMenu.value = false
     }
   )
@@ -459,12 +449,50 @@ fun ClearNoteFolderAction(chat: Chat, showMenu: MutableState<Boolean>) {
 }
 
 @Composable
+fun ArchiveContactAction(chat: Chat, contact: Contact, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+  ItemAction(
+    stringResource(MR.strings.archive_verb),
+    painterResource(MR.images.ic_inventory_2),
+    onClick = {
+      archiveContact(chat, contact, chatModel)
+      showMenu.value = false
+    }
+  )
+}
+
+@Composable
+fun DeleteAndBanContactAction(chat: Chat, contact: Contact, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+  ItemAction(
+    stringResource(MR.strings.delete_and_ban),
+    painterResource(MR.images.ic_back_hand),
+    onClick = {
+      deleteAndBanContactDialog(chat, contact, chatModel)
+      showMenu.value = false
+    },
+    color = Color.Red
+  )
+}
+
+@Composable
 fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.delete_contact_menu_action),
     painterResource(MR.images.ic_delete),
     onClick = {
       deleteContactDialog(chat, chatModel)
+      showMenu.value = false
+    },
+    color = Color.Red
+  )
+}
+
+@Composable
+fun DeleteAndBanCustomerAction(chat: Chat, groupInfo: GroupInfo, showMenu: MutableState<Boolean>) {
+  ItemAction(
+    stringResource(MR.strings.delete_and_ban),
+    painterResource(MR.images.ic_back_hand),
+    onClick = {
+      deleteAndBanCustomer(chat, groupInfo)
       showMenu.value = false
     },
     color = Color.Red
@@ -912,7 +940,7 @@ fun acceptGroupInvitationAlertDialog(rhId: Long?, groupInfo: GroupInfo, chatMode
       }
     },
     dismissText = generalGetString(MR.strings.delete_verb),
-    onDismiss = { deleteGroup(rhId, groupInfo, chatModel) },
+    onDismiss = { deleteGroupChat(rhId, groupInfo, ChatDeleteMode.Full(notify = true), notice = null, close = null) },
     hostDevice = hostDevice(rhId),
   )
 }
@@ -923,22 +951,6 @@ fun cantInviteIncognitoAlert() {
     text = generalGetString(MR.strings.alert_title_cant_invite_contacts_descr),
     confirmText = generalGetString(MR.strings.ok),
   )
-}
-
-fun deleteGroup(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
-  withBGApi {
-    val r = chatModel.controller.apiDeleteChat(rhId, ChatType.Group, groupInfo.apiId)
-    if (r) {
-      withContext(Dispatchers.Main) {
-        chatModel.chatsContext.removeChat(rhId, groupInfo.id)
-      }
-      if (chatModel.chatId.value == groupInfo.id) {
-        chatModel.chatId.value = null
-        ModalManager.end.closeModals()
-      }
-      ntfManager.cancelNotificationsForChat(groupInfo.id)
-    }
-  }
 }
 
 fun groupInvitationAcceptedAlert(rhId: Long?) {
@@ -1139,5 +1151,56 @@ fun PreviewChatListNavLinkContactRequest() {
       selectedChat = remember { mutableStateOf(false) },
       nextChatSelected = remember { mutableStateOf(false) },
     )
+  }
+}
+
+@Composable
+private fun ChatMenuPreview(chatInfo: ChatInfo, chatStats: Chat.ChatStats = Chat.ChatStats(), menuItems: @Composable (Chat, MutableState<Boolean>) -> Unit) {
+  val chat = Chat(
+    remoteHostId = null,
+    chatInfo = chatInfo,
+    chatItems = listOf(ChatItem.getSampleData(1, CIDirection.DirectSnd(), previewDate, "Hello")),
+    chatStats = chatStats
+  )
+  val showMenu = remember { mutableStateOf(true) }
+  SimpleXTheme {
+    Column(Modifier.fillMaxSize()) {
+      ChatListNavLinkLayout(
+        chatLinkPreview = {
+          ChatPreviewView(chat, true, null, null, null, disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
+        },
+        click = {},
+        dropdownMenuItems = { menuItems(chat, showMenu) },
+        showMenu = showMenu,
+        disabled = false,
+        selectedChat = remember { mutableStateOf(false) },
+        nextChatSelected = remember { mutableStateOf(false) },
+      )
+    }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewContactMenu() {
+  val contact = Contact.sampleData.copy(activeConn = Connection.sampleData.copy(viaUserContactLink = 1, peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)))
+  ChatMenuPreview(ChatInfo.Direct(contact)) { chat, showMenu ->
+    ContactMenuItems(chat, contact, ChatModel, showMenu, showMarkRead = false)
+  }
+}
+
+@Preview
+@Composable
+fun PreviewGroupMenu() {
+  ChatMenuPreview(ChatInfo.Group.sampleData) { chat, showMenu ->
+    GroupMenuItems(chat, GroupInfo.sampleData, ChatModel, showMenu, remember { mutableStateOf(false) }, showMarkRead = false)
+  }
+}
+
+@Preview
+@Composable
+fun PreviewBusinessChatMenu() {
+  ChatMenuPreview(ChatInfo.Group(previewBusinessChatInfo, groupChatScope = null), Chat.ChatStats(reportsCount = 1)) { chat, showMenu ->
+    GroupMenuItems(chat, previewBusinessChatInfo, ChatModel, showMenu, remember { mutableStateOf(false) }, showMarkRead = false)
   }
 }

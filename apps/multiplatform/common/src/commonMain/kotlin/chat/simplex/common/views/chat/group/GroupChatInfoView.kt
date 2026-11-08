@@ -176,6 +176,7 @@ fun ModalData.GroupChatInfoView(
         }
       },
       deleteGroup = { deleteGroupDialog(chat, groupInfo, chatModel, close) },
+      deleteAndBan = { deleteAndBanCustomerDialog(chat, groupInfo, close) },
       clearChat = { clearChatDialog(chat, close) },
       leaveGroup = { leaveGroupDialog(rhId, groupInfo, chatModel, close) },
       manageGroupLink = {
@@ -212,7 +213,6 @@ fun ModalData.GroupChatInfoView(
 }
 
 fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
-  val chatInfo = chat.chatInfo
   val titleId = if (groupInfo.useRelays) MR.strings.delete_channel_question
     else if (groupInfo.businessChat == null) MR.strings.delete_group_question
     else MR.strings.delete_chat_question
@@ -227,28 +227,114 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
       if (groupInfo.membership.memberCurrent) MR.strings.delete_chat_for_all_members_cannot_undo_warning
       else MR.strings.delete_chat_for_self_cannot_undo_warning
     }
-  AlertManager.shared.showAlertDialog(
-    title = generalGetString(titleId),
-    text = "${groupInfo.displayName}\n\n${generalGetString(messageId)}",
+  val title = generalGetString(titleId)
+  val text = "${groupInfo.displayName}\n\n${generalGetString(messageId)}"
+  when {
+    groupInfo.isOwner && groupInfo.membership.memberActive && groupInfo.businessChat == null ->
+      deleteOwnGroupDialog(chat.remoteHostId, groupInfo, title, text, keepConversationText = null, close)
+    groupInfo.isCustomerChatOwner ->
+      deleteOwnGroupDialog(
+        chat.remoteHostId,
+        groupInfo,
+        title,
+        text = text + "\n" + String.format(generalGetString(MR.strings.contact_will_be_notified), groupInfo.displayName),
+        keepConversationText = if (chatModel.userAddress.value?.addressSettings?.businessAddress == true) String.format(generalGetString(MR.strings.customer_can_connect_again_via_business_address), groupInfo.displayName) else null,
+        close
+      )
+    else ->
+      AlertManager.shared.showAlertDialog(
+        title = title,
+        text = text,
+        parseHtml = false,
+        confirmText = generalGetString(MR.strings.delete_verb),
+        onConfirm = { deleteGroupChat(chat.remoteHostId, groupInfo, ChatDeleteMode.Full(notify = true), notice = null, close) },
+        destructive = true,
+      )
+  }
+}
+
+private fun deleteOwnGroupDialog(rhId: Long?, groupInfo: GroupInfo, title: String, text: String, keepConversationText: String?, close: (() -> Unit)?) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = title,
+    text = text,
     parseHtml = false,
-    confirmText = generalGetString(MR.strings.delete_verb),
-    onConfirm = {
-      withBGApi {
-        val r = chatModel.controller.apiDeleteChat(chat.remoteHostId, chatInfo.chatType, chatInfo.apiId)
-        if (r) {
-          withContext(Dispatchers.Main) {
-            chatModel.chatsContext.removeChat(chat.remoteHostId, chatInfo.id)
-            if (chatModel.chatId.value == chatInfo.id) {
-              chatModel.chatId.value = null
-              ModalManager.end.closeModals()
-            }
-            ntfManager.cancelNotificationsForChat(chatInfo.id)
-            close?.invoke()
-          }
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          keepGroupConversationDialog(rhId, groupInfo, title, keepConversationText, close)
+        }) {
+          Text(generalGetString(MR.strings.delete_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(generalGetString(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
       }
-    },
-    destructive = true,
+    }
+  )
+}
+
+private fun keepGroupConversationDialog(rhId: Long?, groupInfo: GroupInfo, title: String, text: String?, close: (() -> Unit)?) {
+  showKeepConversationDialog(title, text, generalGetString(MR.strings.delete_verb), notify = true) { chatDeleteMode ->
+    deleteGroupChat(rhId, groupInfo, chatDeleteMode, notice = null, close)
+  }
+}
+
+fun deleteGroupChat(rhId: Long?, groupInfo: GroupInfo, chatDeleteMode: ChatDeleteMode, notice: LinkNotice?, close: (() -> Unit)?) {
+  withBGApi {
+    val deletedGroupInfo = chatModel.controller.apiDeleteGroup(rhId, groupInfo.apiId, chatDeleteMode, notice)
+    if (deletedGroupInfo != null) {
+      withContext(Dispatchers.Main) {
+        if (chatDeleteMode is ChatDeleteMode.Entity) {
+          chatModel.chatsContext.updateGroup(rhId, deletedGroupInfo)
+        } else {
+          chatModel.chatsContext.removeChat(rhId, groupInfo.id)
+        }
+        if (chatModel.chatId.value == groupInfo.id) {
+          chatModel.chatId.value = null
+          ModalManager.end.closeModals()
+        }
+        ntfManager.cancelNotificationsForChat(groupInfo.id)
+        close?.invoke()
+      }
+    }
+  }
+}
+
+fun canDeleteAndBanCustomer(groupInfo: GroupInfo, members: List<GroupMember>): Boolean =
+  groupInfo.isCustomerChatOwner && members.any { it.memberId == groupInfo.businessChat?.customerId && it.canBanAndRemove(groupInfo) }
+
+fun deleteAndBanCustomerDialog(chat: Chat, groupInfo: GroupInfo, close: (() -> Unit)? = null) {
+  deleteAndBanDialog(groupInfo.displayName, MR.strings.delete_chat_for_all_members_cannot_undo_warning, MR.strings.delete_and_ban_customer_forever_desc) { chatDeleteMode, notice ->
+    deleteGroupChat(chat.remoteHostId, groupInfo, chatDeleteMode, notice, close)
+  }
+}
+
+fun deleteAndBanCustomer(chat: Chat, groupInfo: GroupInfo) {
+  withBGApi {
+    val members = chatModel.controller.apiListMembers(chat.remoteHostId, groupInfo.groupId)
+    if (canDeleteAndBanCustomer(groupInfo, members)) {
+      deleteAndBanCustomerDialog(chat, groupInfo)
+    } else {
+      showCantBanCustomerAlert(groupInfo)
+    }
+  }
+}
+
+private fun showCantBanCustomerAlert(groupInfo: GroupInfo) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.cant_ban),
+    text = String.format(generalGetString(MR.strings.cant_ban_customer_desc), groupInfo.displayName),
+    parseHtml = false,
+    buttons = {
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+      }) {
+        Text(generalGetString(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+      }
+    }
   )
 }
 
@@ -365,7 +451,7 @@ fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMember) {
 
 private fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, members: List<GroupMember>, onSuccess: () -> Unit = {}) {
   if (members.any { it.blockedByAdmin } && members.all { it.canBanAndRemove(groupInfo) }) {
-    removeBannedMembersDialog(rhId, groupInfo, members, onSuccess)
+    removeBannedMembersDialog(rhId, groupInfo, members, onSuccess = onSuccess)
     return
   }
   val memberIds = members.map { it.groupMemberId }
@@ -541,6 +627,7 @@ fun ModalData.GroupChatInfoLayout(
   openMemberSupport: () -> Unit,
   openPreferences: () -> Unit,
   deleteGroup: () -> Unit,
+  deleteAndBan: () -> Unit,
   clearChat: () -> Unit,
   leaveGroup: () -> Unit,
   manageGroupLink: () -> Unit,
@@ -830,6 +917,9 @@ fun ModalData.GroupChatInfoLayout(
           ChannelRelaysButton(chat.remoteHostId, groupInfo, showMemberInfo)
         }
         ClearChatButton(clearChat)
+        if (canDeleteAndBanCustomer(groupInfo, activeSortedMembers)) {
+          DeleteAndBanButton(deleteAndBan)
+        }
         if (groupInfo.canDelete) {
           val titleId = if (groupInfo.useRelays) MR.strings.button_delete_channel
             else if (groupInfo.businessChat == null) MR.strings.button_delete_group
@@ -1460,40 +1550,174 @@ fun <T> toggleItemSelection(itemId: T, selectedItems: MutableState<Set<T>?>) {
 @Composable
 fun PreviewGroupChatInfoLayout() {
   SimpleXTheme {
-    ModalData().GroupChatInfoLayout(
+    ModalData().GroupChatInfoLayoutPreview(
       chat = Chat(
         remoteHostId = null,
         chatInfo = ChatInfo.Direct.sampleData,
         chatItems = arrayListOf()
       ),
       groupInfo = GroupInfo.sampleData,
-      User.sampleData,
-      sendReceipts = remember { mutableStateOf(SendReceipts.Yes) },
-      setSendReceipts = {},
-      chatItemTTL = remember { mutableStateOf(ChatItemTTL.fromSeconds(0)) },
-      setChatItemTTL = {},
-      activeSortedMembers = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
-      developerTools = false,
-      onLocalAliasChanged = {},
-      groupLink = null,
-      groupLinkLoaded = true,
-      selectedItems = remember { mutableStateOf(null) },
-      appBar = remember { mutableStateOf(null) },
-      scrollToItemId = remember { mutableStateOf(null) },
-      addMembers = {},
-      showMemberInfo = { _, _ -> },
-      editGroupProfile = {},
-      addOrEditWelcomeMessage = {},
-      openMemberSupport = {},
-      openPreferences = {},
-      deleteGroup = {},
-      clearChat = {},
-      leaveGroup = {},
-      manageGroupLink = {},
-      manageWebPage = {},
-      onSearchClicked = {},
-      setSimplexName = {},
-      deletingItems = remember { mutableStateOf(true) }
+      members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData)
     )
   }
+}
+
+@Preview
+@Composable
+fun PreviewBusinessChatInfoLayout() {
+  val customer = GroupMember.sampleData.copy(groupMemberId = 2, memberId = "customer", activeConn = Connection.sampleData.copy(peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)))
+  val modalData = remember { ModalData().apply { appBarHandler.listState = LazyListState(Int.MAX_VALUE) } }
+  SimpleXTheme {
+    modalData.GroupChatInfoLayoutPreview(previewGroupChat(previewBusinessChatInfo), previewBusinessChatInfo, listOf(customer))
+  }
+}
+
+@Composable
+private fun ModalData.GroupChatInfoLayoutPreview(chat: Chat, groupInfo: GroupInfo, members: List<GroupMember>) {
+  GroupChatInfoLayout(
+    chat = chat,
+    groupInfo = groupInfo,
+    User.sampleData,
+    sendReceipts = remember { mutableStateOf(SendReceipts.Yes) },
+    setSendReceipts = {},
+    chatItemTTL = remember { mutableStateOf(ChatItemTTL.fromSeconds(0)) },
+    setChatItemTTL = {},
+    activeSortedMembers = members,
+    developerTools = false,
+    onLocalAliasChanged = {},
+    groupLink = null,
+    groupLinkLoaded = true,
+    selectedItems = remember { mutableStateOf(null) },
+    appBar = remember { mutableStateOf(null) },
+    scrollToItemId = remember { mutableStateOf(null) },
+    addMembers = {},
+    showMemberInfo = { _, _ -> },
+    editGroupProfile = {},
+    addOrEditWelcomeMessage = {},
+    openMemberSupport = {},
+    openPreferences = {},
+    deleteGroup = {},
+    deleteAndBan = {},
+    clearChat = {},
+    leaveGroup = {},
+    manageGroupLink = {},
+    manageWebPage = {},
+    onSearchClicked = {},
+    setSimplexName = {},
+    deletingItems = remember { mutableStateOf(true) }
+  )
+}
+
+val previewOwnerGroupInfo = GroupInfo.sampleData.copy(
+  membership = GroupMember.sampleData.copy(memberRole = GroupMemberRole.Owner, memberProfile = LocalProfile.sampleData.copy(displayName = "bob", fullName = "Bob"))
+)
+
+val previewBusinessChatInfo = previewOwnerGroupInfo.copy(
+  groupProfile = GroupProfile.sampleData.copy(displayName = "alice", fullName = "Alice"),
+  businessChat = BusinessChatInfo(BusinessChatType.Customer, businessId = "business", customerId = "customer")
+)
+
+val previewChannelInfo = previewOwnerGroupInfo.copy(
+  useRelays = true,
+  groupProfile = GroupProfile.sampleData.copy(displayName = "news", fullName = "News", publicGroup = PublicGroupProfile(GroupType.Channel, groupLink = "", publicGroupId = "news"))
+)
+
+val previewBanMember = GroupMember.sampleData.copy(groupMemberId = 2, activeConn = Connection.sampleData.copy(peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)))
+
+private fun previewGroupChat(groupInfo: GroupInfo) = Chat(remoteHostId = null, chatInfo = ChatInfo.Group(groupInfo, groupChatScope = null), chatItems = listOf())
+
+@Preview
+@Composable
+fun PreviewDeleteGroupDialog() {
+  SimpleXTheme {
+    AlertPreview { deleteGroupDialog(previewGroupChat(previewOwnerGroupInfo), previewOwnerGroupInfo, ChatModel) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDeleteGroupKeepConversationDialog() {
+  SimpleXTheme {
+    AlertPreview { keepGroupConversationDialog(null, previewOwnerGroupInfo, generalGetString(MR.strings.delete_group_question), text = null, close = null) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDeleteChannelDialog() {
+  SimpleXTheme {
+    AlertPreview { deleteGroupDialog(previewGroupChat(previewChannelInfo), previewChannelInfo, ChatModel) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDeleteChannelKeepConversationDialog() {
+  SimpleXTheme {
+    AlertPreview { keepGroupConversationDialog(null, previewChannelInfo, generalGetString(MR.strings.delete_channel_question), text = null, close = null) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDeleteBusinessChatDialog() {
+  SimpleXTheme {
+    AlertPreview { deleteGroupDialog(previewGroupChat(previewBusinessChatInfo), previewBusinessChatInfo, ChatModel) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDeleteBusinessChatKeepConversationDialog() {
+  val canConnectAgain = String.format(generalGetString(MR.strings.customer_can_connect_again_via_business_address), previewBusinessChatInfo.displayName)
+  SimpleXTheme {
+    AlertPreview { keepGroupConversationDialog(null, previewBusinessChatInfo, generalGetString(MR.strings.delete_chat_question), canConnectAgain, close = null) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDeleteAndBanCustomerDialog() {
+  SimpleXTheme {
+    AlertPreview { deleteAndBanCustomerDialog(previewGroupChat(previewBusinessChatInfo), previewBusinessChatInfo) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewCantBanCustomerAlert() {
+  SimpleXTheme {
+    AlertPreview { showCantBanCustomerAlert(previewBusinessChatInfo) }
+  }
+}
+
+@Composable
+private fun MemberMenuPreview(groupInfo: GroupInfo, member: GroupMember) {
+  val showMenu = remember { mutableStateOf(true) }
+  SimpleXTheme {
+    Column(Modifier.fillMaxSize()) {
+      Box(Modifier.padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.CenterStart) {
+        DropDownMenuForMember(null, member, groupInfo, remember { mutableStateOf(null) }, showMenu)
+        MemberRow(member)
+      }
+    }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewMemberMenuOwner() {
+  MemberMenuPreview(previewOwnerGroupInfo, previewBanMember)
+}
+
+@Preview
+@Composable
+fun PreviewBannedMemberMenuOwner() {
+  MemberMenuPreview(previewOwnerGroupInfo, previewBanMember.copy(blockedByAdmin = true))
+}
+
+@Preview
+@Composable
+fun PreviewMemberMenuMember() {
+  MemberMenuPreview(GroupInfo.sampleData, previewBanMember)
 }

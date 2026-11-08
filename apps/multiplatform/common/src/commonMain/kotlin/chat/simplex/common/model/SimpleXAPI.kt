@@ -140,6 +140,7 @@ class AppPreferences {
   val privacyShowChatPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS, true)
   val privacyShowSignature = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_SIGNATURE, true)
   val privacyShowEncryption = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_FILE_ENCRYPTION, true)
+  val privacyContactDeletion: SharedPreference<ContactDeletion> = mkSafeEnumPreference(SHARED_PREFS_PRIVACY_CONTACT_DELETION, ContactDeletion.Ask)
   val privacySaveLastDraft = mkBoolPreference(SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT, true)
   val privacyDeliveryReceiptsSet = mkBoolPreference(SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET, false)
   val privacyEncryptLocalFiles = mkBoolPreference(SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES, true)
@@ -433,6 +434,7 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS = "PrivacyShowChatPreviews"
     private const val SHARED_PREFS_PRIVACY_SHOW_SIGNATURE = "PrivacyShowSignature"
     private const val SHARED_PREFS_PRIVACY_SHOW_FILE_ENCRYPTION = "PrivacyShowEncryption"
+    private const val SHARED_PREFS_PRIVACY_CONTACT_DELETION = "PrivacyContactDeletion"
     private const val SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT = "PrivacySaveLastDraft"
     private const val SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET = "PrivacyDeliveryReceiptsSet"
     private const val SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES = "PrivacyEncryptLocalFiles"
@@ -1932,7 +1934,7 @@ object ChatController {
 
   suspend fun apiDeleteChat(rh: Long?, type: ChatType, id: Long, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)): Boolean {
     chatModel.deletedChats.value += rh to type.type + id
-    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode))
+    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode, notice = null))
     val res = r.result
     val success = when {
       res is CR.ContactDeleted && type == ChatType.Direct -> true
@@ -1954,10 +1956,10 @@ object ChatController {
     return success
   }
 
-  suspend fun apiDeleteContact(rh: Long?, id: Long, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)): Contact? {
+  suspend fun apiDeleteContact(rh: Long?, id: Long, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true), notice: LinkNotice? = null): Contact? {
     val type = ChatType.Direct
     chatModel.deletedChats.value += rh to type.type + id
-    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode))
+    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode, notice))
     val contact = if (r is API.Result && r.res is CR.ContactDeleted) {
       r.res.contact
     } else {
@@ -1967,6 +1969,20 @@ object ChatController {
     }
     chatModel.deletedChats.value -= rh to type.type + id
     return contact
+  }
+
+  suspend fun apiDeleteGroup(rh: Long?, id: Long, chatDeleteMode: ChatDeleteMode, notice: LinkNotice?): GroupInfo? {
+    val type = ChatType.Group
+    chatModel.deletedChats.value += rh to type.type + id
+    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode, notice))
+    val groupInfo = if (r is API.Result && r.res is CR.GroupDeletedUser) {
+      r.res.groupInfo
+    } else {
+      apiErrorAlert("apiDeleteChat", generalGetString(MR.strings.error_deleting_group), r)
+      null
+    }
+    chatModel.deletedChats.value -= rh to type.type + id
+    return groupInfo
   }
 
   fun clearChat(chat: Chat, close: (() -> Unit)? = null) {
@@ -4143,7 +4159,7 @@ sealed class CC {
   class APIConnectPreparedGroup(val groupId: Long, val incognito: Boolean, val msg: MsgContent?): CC()
   class APIConnect(val userId: Long, val incognito: Boolean, val connLink: CreatedConnLink): CC()
   class ApiConnectContactViaAddress(val userId: Long, val incognito: Boolean, val contactId: Long): CC()
-  class ApiDeleteChat(val type: ChatType, val id: Long, val chatDeleteMode: ChatDeleteMode): CC()
+  class ApiDeleteChat(val type: ChatType, val id: Long, val chatDeleteMode: ChatDeleteMode, val notice: LinkNotice?): CC()
   class ApiClearChat(val type: ChatType, val id: Long): CC()
   class ApiListContacts(val userId: Long): CC()
   class ApiUpdateProfile(val userId: Long, val profile: Profile): CC()
@@ -4365,7 +4381,7 @@ sealed class CC {
     is APIConnectPreparedGroup -> "/_connect group #$groupId incognito=${onOff(incognito)}${maybeContent(msg)}"
     is APIConnect -> "/_connect $userId incognito=${onOff(incognito)} ${connLink.connFullLink} ${connLink.connShortLink ?: ""}"
     is ApiConnectContactViaAddress -> "/_connect contact $userId incognito=${onOff(incognito)} $contactId"
-    is ApiDeleteChat -> "/_delete ${chatRef(type, id, scope = null)} ${chatDeleteMode.cmdString}"
+    is ApiDeleteChat -> "/_delete ${chatRef(type, id, scope = null)} ${chatDeleteMode.cmdString}" + (if (notice != null) " notice=${json.encodeToString(notice)}" else "")
     is ApiClearChat -> "/_clear chat ${chatRef(type, id, scope = null)}"
     is ApiListContacts -> "/_contacts $userId"
     is ApiUpdateProfile -> "/_profile $userId ${json.encodeToString(profile)}"
@@ -7492,12 +7508,12 @@ enum class BanDuration(val ttl: Long?) {
 sealed class ChatDeleteMode {
   @Serializable @SerialName("full") class Full(val notify: Boolean): ChatDeleteMode()
   @Serializable @SerialName("entity") class Entity(val notify: Boolean): ChatDeleteMode()
-  @Serializable @SerialName("messages") class Messages: ChatDeleteMode()
+  @Serializable @SerialName("archive") class Archive: ChatDeleteMode()
 
   val cmdString: String get() = when (this) {
     is ChatDeleteMode.Full -> "full notify=${onOff(notify)}"
     is ChatDeleteMode.Entity -> "entity notify=${onOff(notify)}"
-    is ChatDeleteMode.Messages -> "messages"
+    is ChatDeleteMode.Archive -> "archive"
   }
 }
 
@@ -8791,6 +8807,17 @@ enum class PrivacyChatListOpenLinksMode {
 }
 
 @Serializable
+enum class ContactDeletion {
+  @SerialName("notify") Notify,
+  @SerialName("ask") Ask;
+
+  val text: String get() = when (this) {
+    Notify -> generalGetString(MR.strings.privacy_contact_deletion_notify)
+    Ask -> generalGetString(MR.strings.privacy_contact_deletion_ask)
+  }
+}
+
+@Serializable
 data class AppSettings(
   var networkConfig: NetCfg? = null,
   var networkProxy: NetworkProxy? = null,
@@ -8804,6 +8831,7 @@ data class AppSettings(
   var privacySaveLastDraft: Boolean? = null,
   var privacyProtectScreen: Boolean? = null,
   var privacyMediaBlurRadius: Int? = null,
+  var privacyContactDeletion: ContactDeletion? = null,
   var notificationMode: AppSettingsNotificationMode? = null,
   var notificationPreviewMode: AppSettingsNotificationPreviewMode? = null,
   var webrtcPolicyRelay: Boolean? = null,
@@ -8842,6 +8870,7 @@ data class AppSettings(
     if (privacySaveLastDraft != def.privacySaveLastDraft) { empty.privacySaveLastDraft = privacySaveLastDraft }
     if (privacyProtectScreen != def.privacyProtectScreen) { empty.privacyProtectScreen = privacyProtectScreen }
     if (privacyMediaBlurRadius != def.privacyMediaBlurRadius) { empty.privacyMediaBlurRadius = privacyMediaBlurRadius }
+    if (privacyContactDeletion != def.privacyContactDeletion) { empty.privacyContactDeletion = privacyContactDeletion }
     if (notificationMode != def.notificationMode) { empty.notificationMode = notificationMode }
     if (notificationPreviewMode != def.notificationPreviewMode) { empty.notificationPreviewMode = notificationPreviewMode }
     if (webrtcPolicyRelay != def.webrtcPolicyRelay) { empty.webrtcPolicyRelay = webrtcPolicyRelay }
@@ -8891,6 +8920,7 @@ data class AppSettings(
     privacySaveLastDraft?.let { def.privacySaveLastDraft.set(it) }
     privacyProtectScreen?.let { def.privacyProtectScreen.set(it) }
     privacyMediaBlurRadius?.let { def.privacyMediaBlurRadius.set(it) }
+    privacyContactDeletion?.let { def.privacyContactDeletion.set(it) }
     notificationMode?.let { def.notificationsMode.set(it.toNotificationsMode()) }
     notificationPreviewMode?.let { def.notificationPreviewMode.set(it.toNotificationPreviewMode().name) }
     webrtcPolicyRelay?.let { def.webrtcPolicyRelay.set(it) }
@@ -8930,6 +8960,7 @@ data class AppSettings(
         privacySaveLastDraft = true,
         privacyProtectScreen = false,
         privacyMediaBlurRadius = 0,
+        privacyContactDeletion = ContactDeletion.Ask,
         notificationMode = AppSettingsNotificationMode.INSTANT,
         notificationPreviewMode = AppSettingsNotificationPreviewMode.MESSAGE,
         webrtcPolicyRelay = true,
@@ -8970,6 +9001,7 @@ data class AppSettings(
           privacySaveLastDraft = def.privacySaveLastDraft.get(),
           privacyProtectScreen = def.privacyProtectScreen.get(),
           privacyMediaBlurRadius = def.privacyMediaBlurRadius.get(),
+          privacyContactDeletion = def.privacyContactDeletion.get(),
           notificationMode = AppSettingsNotificationMode.from(def.notificationsMode.get()),
           notificationPreviewMode = AppSettingsNotificationPreviewMode.from(NotificationPreviewMode.valueOf(def.notificationPreviewMode.get()!!)),
           webrtcPolicyRelay = def.webrtcPolicyRelay.get(),

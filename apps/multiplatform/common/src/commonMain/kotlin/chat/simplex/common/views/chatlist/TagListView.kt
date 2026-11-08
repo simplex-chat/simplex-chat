@@ -4,6 +4,7 @@ import SectionCustomFooter
 import SectionItemView
 import TextIconSpaced
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -92,6 +93,27 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, reorderMode:
       }
     }
 
+    if (chat != null) {
+      item {
+        val favorite = chat.chatInfo.chatSettings?.favorite == true
+        Row(
+          Modifier
+            .fillMaxWidth()
+            .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
+            .clickable {
+              toggleChatFavorite(rhId, chat.chatInfo, !favorite, chatModel)
+              close()
+            }
+            .padding(PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Text(stringResource(MR.strings.chat_list_favorites), color = MenuTextColor)
+          Spacer(Modifier.weight(1f))
+          Icon(painterResource(if (favorite) MR.images.ic_star_filled else MR.images.ic_star), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+        }
+        Divider()
+      }
+    }
     if (oneHandUI.value && !reorderMode) {
       item {
         CreateList()
@@ -503,4 +525,13 @@ private fun deleteTagDialog(rhId: Long?, tag: ChatTag, saving: MutableState<Bool
       }
     }
   )
+}
+
+@Preview
+@Composable
+fun PreviewTagListView() {
+  val contact = Contact.sampleData.copy(chatSettings = Contact.sampleData.chatSettings.copy(favorite = true))
+  SimpleXTheme {
+    TagListView(rhId = null, chat = Chat(remoteHostId = null, chatInfo = ChatInfo.Direct(contact), chatItems = listOf()), close = {}, reorderMode = false)
+  }
 }

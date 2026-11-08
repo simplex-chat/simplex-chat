@@ -382,6 +382,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 | `privacyAcceptImages` | `Boolean` | `true` | Auto-accept images |
 | `privacyLinkPreviews` | `Boolean` | `true` | Generate link previews |
 | `privacySanitizeLinks` | `Boolean` | `false` | Remove tracking params from links |
+| `privacyContactDeletion` | `ContactDeletion` | `Ask` | `Notify`: contact deletion notifies the contact; `Ask`: each deletion offers both; set to `Notify` when the first profile is created in onboarding |
 | `simplexLinkMode` | `SimplexLinkMode` | `DESCRIPTION` | DESCRIPTION / FULL / BROWSER |
 | `privacyShowChatPreviews` | `Boolean` | `true` | Show chat previews in list |
 | `privacySaveLastDraft` | `Boolean` | `true` | Save compose draft |

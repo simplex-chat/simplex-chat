@@ -133,7 +133,7 @@ suspend fun apiBlockMembersForAll(rh: Long?, groupId: Long, memberIds: List<Long
 ```
 
 1. Owner, Admin, or Moderator selects a member and taps "Ban member", or selects several members and taps the ban button.
-2. "Ban member?" (`banMemberDialog`, `banMembersDialog`) offers "Ban for" 1 day (default), 1 week or Forever; admins and owners also get "Ban and remove" and "Ban, remove and delete messages".
+2. "Ban member?" (`banMemberDialog`, `banMembersDialog`) offers "Ban for" 1 day (default), 1 week or Forever; admins and owners also get "Ban and remove" and "Ban, remove and delete messages". The `initialDuration` parameter of `showBanDialog`, `banMemberDialog` and `removeBannedMembersDialog` defaults to 1 day; only previews pass Forever.
 3. `CC.ApiBlockMembersForAll(groupId, memberIds, blocked, ttl)` is sent; `ttl` is absent for Forever.
 4. `CR.MembersBlockedForAllUser` returns the updated member list; `GroupMember.blockedUntil` is the end time.
 5. Banned members' messages are hidden for all members; only moderators and above see placeholders.
@@ -243,6 +243,27 @@ suspend fun apiLeaveGroup(rh: Long?, groupId: Long): GroupInfo?
 4. `CR.LeftMemberUser` returns the updated `GroupInfo`.
 5. The user's membership status changes and they can no longer send or receive messages.
 6. The group remains in the chat list in a "left" state, and can be deleted locally.
+
+### 7.1 Deleting a Group
+
+```kotlin
+suspend fun apiDeleteGroup(rh: Long?, id: Long, chatDeleteMode: ChatDeleteMode, notice: LinkNotice?): GroupInfo?
+```
+
+```mermaid
+flowchart TD
+  A["Delete (group info or chat list menu)"] --> B{"active owner, and not the customer side of a business chat?"}
+  B -- no --> C["today's alert: Delete"] --> F["ChatDeleteMode.Full: chat removed"]
+  B -- yes --> D["Delete group? / Delete channel? / Delete chat?<br>business chat: '&lt;customer&gt; will be notified.'"]
+  D -- Delete --> E["Keep conversation dialog<br>business chat with a business address: '&lt;customer&gt; can connect to you again via your business address.'"]
+  E -- off --> F
+  E -- on --> G["ChatDeleteMode.Entity: chat kept, membership 'group deleted'"]
+```
+
+1. `deleteGroupDialog` shows today's alert to members who left or were removed, to an owner whose membership is not active (`membership.memberActive` false, as in status `MemAccepted`), and to the customer side of a business chat; "Delete" deletes the chat with `ChatDeleteMode.Full`.
+2. An active owner (`GroupInfo.isOwner` and `membership.memberActive`) of a group or a channel, or of the business side of a business chat (`GroupInfo.isCustomerChatOwner`), gets the same text with "Delete" and "Cancel"; a business chat adds "<customer> will be notified.". The core keeps the conversation (`ChatDeleteMode.Entity`) only for an active owner.
+3. "Delete" opens `showKeepConversationDialog` with "Keep conversation": without text for groups and channels; for a business chat, "<customer> can connect to you again via your business address." when the user's address is a business address (`userAddress.addressSettings.businessAddress`).
+4. `deleteGroupChat` sends `CC.ApiDeleteChat(Group, groupId, mode, notice)`; `CR.GroupDeletedUser` returns the group. Keep conversation on (`ChatDeleteMode.Entity`) keeps the chat in the list with membership status "group deleted"; off (`ChatDeleteMode.Full`) removes it. In both cases the open chat is closed and its notifications are cancelled.
 
 ---
 

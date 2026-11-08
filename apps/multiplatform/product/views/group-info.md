@@ -128,7 +128,8 @@ Shown when `developerTools` preference is enabled:
 |---|---|---|
 | Clear chat | Any member | Deletes all messages locally (`clearChatDialog`) |
 | Leave group | Non-owner | Leave the group (`leaveGroupDialog`) |
-| Delete group | Owner or non-current member | Delete group for all (owner) or for self (`deleteGroupDialog`) |
+| Delete and ban | Active owner of the business side of a business chat (`GroupInfo.isCustomerChatOwner`), while the customer member can be removed with a ban (`canDeleteAndBanCustomer`: current or pending, below moderator, supports `LINK_NOTICE_VERSION`) | `deleteAndBanCustomerDialog`: the dialogs of "Delete and ban" for a contact ([contact-info.md](contact-info.md)) with "Chat will be deleted for all members - this cannot be undone!" and "via your business address"; the customer is removed with the `LinkNotice` of the duration and the chat is deleted (`ChatDeleteMode.Entity` with "Keep conversation", else `Full`) |
+| Delete group | Owner or non-current member | Delete group for all (owner) or for self (`deleteGroupDialog`); an owner with an active membership, also of the business side of a business chat, then chooses "Keep conversation" (see [flows/group-lifecycle.md](../flows/group-lifecycle.md) 7.1) |
 
 Business chats use alternative labels: "Delete chat" instead of "Delete group".
 
