@@ -154,10 +154,12 @@ Decided by the user on 2026-11-08, the role model of the [trust model](#trust-mo
 86. Claude posts the member's rights at each join and at each role change in the session group, `User` excepted: `NAME is a ROLE and RIGHTS.`, and for a role that sends ` You can change role to observer to stop it: /'observer #G ID'`. A role change by Claude raises no `memberRole` event; the reply to `/observer` is the observer's post.
 87. Claude's files of `reply` reach the session group at once, without a card, in both modes. The group's preference "Files and media", which owners change, is the control; the core enforces it, and the call returns the core's refusal. The option `approve_files`, the cards of `reply`, `/approve N all` and the bare `/revoke` are removed.
 88. Session groups keep no record of their invited members.
-89. All texts of decisions 84 and 86 are placeholders for the UX page; the user approves them there.
+89. All texts of decisions 84, 86 and 91 are placeholders for the UX page; the user approves them there.
+92. Everything sent in a session group is a prompt to the agent: every message of a member whose role sends is a prompt, except the one-line `/` commands of the group, `//` and `/!`.
 
 Proposed on 2026-11-08 with the role model, until the user decides:
-90. A session group's `Control` takes the group's profile from each `groupUpdated` event, so its updates of the name and the short description keep what owners changed, the preference "Files and media" included.
+90. Claude's profile updates of the Main group and of session groups read the group's current profile from the chat database and change only Claude's own fields: the name, the short description, the Main group's description and the commands. The preferences owners set, "Files and media" included, stay (C1 on the UX page).
+91. The group's `/` commands come from admins and owners only, like approvals. A one-line `/` text, a `//` text or a `/!` text from a moderator, member or author gets one reply, `Only admins and owners of this group can send / commands.`, and reaches neither the commands nor Claude. One check, `Session.refusesCommand`, holds it; without it, the replies of decisions 71 and 84 apply.
 
 The user's rule on reviews, 2026-11-08: "reviewers should have no discretion to drive product changes - the UX was approved, and it must not be changing simply because security reviewers said so."
 
@@ -347,8 +349,8 @@ flowchart LR
   M -- invitation at the session start: owners, as owners --> G[group of session N]
   M -- /join N: as admin, owners of M as owners --> G
   X[person invited inside group N, with the role the inviter sets] --> G
-  G --> A[admins and owners: prompts, // and /!, approvals, tool use]
-  G --> P[moderators, members, authors: prompts]
+  G --> A[admins and owners: prompts, the group's / commands, // and /!, approvals, tool use]
+  G --> P[moderators, members, authors: prompts, and one refusal for each / command]
   G --> Q[observers: cannot send]
   G --> F[files of reply: at once, under the group's preference Files and media]
   G -- each join and role change --> R[Claude posts the member's rights]
@@ -377,7 +379,10 @@ on /observer #G ID by member s: #G not this group, no current member ID, ID Clau
                                 else: role of ID = observer; reply RIGHTS of the observer (decisions 81, 86)
 rank:                           relay < observer < author < member < moderator < admin < owner, as the core orders them
 a role change by Claude:        no memberRole event; the reply of /observer is the post
-on groupUpdated of group N:     its profile kept for Claude's later profile updates of group N (decision 90)
+Claude's profile update of a group:  the group's current profile read from the chat database; only Claude's fields changed (decision 90)
+on a one-line "/" text, "//" or "/!" of a moderator, member or author in group N:
+                                one reply, before the commands and the prompt (decision 91)
+on another message of a member whose role sends:   a prompt (decision 92)
 group N, its description:       "The Claude Code session N: members who join from the Main group prompt it and approve its actions here."
                                 (pending, decision 83)
 reply:                          see Channel, reply
@@ -421,9 +426,11 @@ unknown "/" command        Unknown command. To send a command to Claude, start i
 
 Placeholders for the UX page, where the user approves them (decision 89):
 ```
+/, // or /! from another   Only admins and owners of this group can send / commands.   (decision 91; while it holds, the next two
+role                        are reached only by requests that reach the commands directly)
 // or /! from another role  Only admins and owners of this group can send // and /! commands to Claude.
-"!"                         Messages starting with ! reach Claude only from admins and owners, as /!command.
 approval from another role  Only admins and owners of this group approve actions here.
+"!"                         Messages starting with ! reach Claude only from admins and owners, as /!command.
 no approver                 The group of this session has no admin or owner to approve actions. Members of the Main group join it
                             by /join N there; without members, run npx -y @simplex-chat/mcp@VERSION link in a terminal.
 rights of admin, owner      NAME is an admin and can send prompts and // and /! commands to Claude, and approve tool use.
@@ -480,8 +487,8 @@ on session start (new id):   create the session group; for each Main group owner
 on owner joined Main group:  for each open session: invite the owner as above
 on "/join N" by member m:    if session N exists: apiAddMemberViaGroup(group N, main, m, owner when m is an owner of the Main group,
                              else admin) (decision 85)
-on message in group N:       a command of the group, or a prompt of a member other than User (decisions 71, 84);
-                             approvals, // and /! from admins and owners (decision 84)
+on message in group N:       a command of the group, or a prompt of a member other than User (decisions 71, 84, 92);
+                             approvals, the group's commands, // and /! from admins and owners (decisions 84, 91)
 on a join or role change in group N:   the post of the member's rights (decision 86)
 on session resume:           reuse the group recorded in session.json
 on connect with a pending connection c:          pending += (c, now); entries older than one day dropped
@@ -680,7 +687,7 @@ on reply {file, text}:   the file checked as for send
                          its message with the caption and the preview does not fit: tool error (decision 76)
                          send, with the caption and the preview, in both modes                 -> {item}
                          the core refuses it, as for the group's preference Files and media:   tool error, the core's text
-on groupUpdated of the session group:   the profile kept for Claude's later profile updates (decision 90)
+on Claude's profile update of the session group:   from the group's current profile, only Claude's fields changed (decision 90)
 ```
 
 ```mermaid
@@ -747,7 +754,9 @@ Pushed prompt
   text, item, at
   quoted           an answer without an earlier turn record quoted it
 
-on a message m in group N:         one-line "/" text not starting with "//" or "/!": a command of the group, queued;
+on a message m in group N:         one-line "/" text, "//" or "/!" from a member who is neither an admin, an owner nor User:
+                                   delivery = delivery then the reply of decision 91
+                                   one-line "/" text not starting with "//" or "/!": a command of the group, queued;
                                    from User: dropped (decision 74);
                                    a text outside its requests: reply "Unknown command. To send a command to Claude,
                                    start it with //." (decision 71)
@@ -842,13 +851,15 @@ sequenceDiagram
   participant S as session N
   participant C as Claude Code
   O->>H: message in session N's group
-  alt one-line "/" text, not "//" or "/!"
-    H->>O: the command's reply, or "Unknown command. To send a command to Claude, start it with //."; nothing for User
+  alt one-line "/" text, "//" or "/!" from a moderator, member or author
+    H->>O: after the earlier messages, the reply of decision 91
+  else one-line "/" text, not "//" or "/!"
+    H->>O: the command's reply, or "Unknown command. To send a command to Claude, start it with //.", nothing for User
   else another message
     H->>H: after the earlier messages of session N
     alt from User
       H->>H: nothing
-    else "//" or "/!" from a member who is not an admin or owner of the group, or "!"
+    else "!"
       H->>O: the reply of decision 84
     else a prompt, "//" and "/!" without their first "/"
       opt no attachment, within 30 s of the daemon start
