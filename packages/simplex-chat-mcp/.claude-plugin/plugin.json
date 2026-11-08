@@ -11,6 +11,6 @@
     "main_group": {"type": "string", "title": "Main group", "description": "Name of the SimpleX group where you join the groups of your sessions.", "default": "SimpleX MCP"},
     "approve": {"type": "string", "title": "Approval", "description": "requests: you approve connections and messages in the SimpleX app. host: Claude Code asks you instead, after an owner approves this in the session's group.", "default": "requests", "options": ["requests", "host"]},
     "expire_hours": {"type": "number", "title": "Expiry in hours", "description": "Actions you have not approved expire after this many hours.", "default": 23, "min": 1, "max": 23},
-    "approve_guest_files": {"type": "boolean", "title": "Approve Claude's files for guests", "description": "On: while a session's group has a guest, a member from the Main group approves each file Claude sends there. Off: Claude's files reach guests at once.", "default": true}
+    "approve_files": {"type": "boolean", "title": "Approve Claude's files", "description": "On: an owner of the Main group approves each file Claude sends to a session's group. Off: files are sent at once.", "default": true}
   }
 }

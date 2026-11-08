@@ -860,7 +860,7 @@ describe("daemon", () => {
   it.each(["/session", "/title"])("answers 400 to %s with an invalid config", async route => {
     const {d, agents} = deps(root)
     daemon = await Daemon.start(d, readDefaultConfig)
-    for (const config of [undefined, {...defaultConfig, mainGroup: undefined}, {...defaultConfig, approve: "always"}, {...defaultConfig, expireHours: "23"}, {...defaultConfig, expireHours: 24}, {...defaultConfig, approveGuestFiles: "true"}, {...defaultConfig, approveGuestFiles: undefined}]) {
+    for (const config of [undefined, {...defaultConfig, mainGroup: undefined}, {...defaultConfig, approve: "always"}, {...defaultConfig, expireHours: "23"}, {...defaultConfig, expireHours: 24}, {...defaultConfig, approveFiles: "true"}, {...defaultConfig, approveFiles: undefined}]) {
       await expect(post(route, {id: id1, project: "/p/app", config})).rejects.toMatchObject({message: "Invalid config.", status: 400})
     }
     expect(agents).toHaveLength(0)

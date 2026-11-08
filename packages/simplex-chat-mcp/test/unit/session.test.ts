@@ -95,7 +95,7 @@ function listCall(client: LineClient): Promise<any> {
 
 const listed = {chats: [], actions: []}
 const listResult = {content: [{type: "text", text: JSON.stringify(listed)}], structuredContent: listed}
-const registered = `session ${JSON.stringify({id, pid: process.ppid, project: "/p/app", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23, approveGuestFiles: true}})}`
+const registered = `session ${JSON.stringify({id, pid: process.ppid, project: "/p/app", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23, approveFiles: true}})}`
 const stdins: PassThrough[] = []
 
 beforeEach(() => {

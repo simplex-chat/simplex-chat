@@ -97,7 +97,7 @@ export class Session {
       dataRoot: root,
       owner: id,
       replyChat: `#${group.groupId}`,
-      replyAtOnce: async () => !hub.approveGuestFiles,
+      replyAtOnce: async () => !hub.approveFiles,
       repliesApprover: () => this.control.repliesApprover(),
       setMode: (next: Mode) => this.setMode(next),
       pending: (connId: number) => this.savePending(connId),
@@ -344,7 +344,7 @@ export class Hub implements SessionGroups {
   user?: User
   userContactId?: number
   promptsHeldUntil = 0
-  approveGuestFiles = defaultConfig.approveGuestFiles
+  approveFiles = defaultConfig.approveFiles
   private readonly sessions = new Map<number, Session>()
   private stopped = false
   private controlEvents: Promise<void> = Promise.resolve()
@@ -366,7 +366,7 @@ export class Hub implements SessionGroups {
       const {chat, user} = core
       const group = (await findMainGroup(chat, user.userId)) ?? (await createMainGroup(chat, user.userId, config.mainGroup))
       const hub = new Hub(chat, user, root, config.expireHours, group, config.mainGroup)
-      hub.approveGuestFiles = config.approveGuestFiles
+      hub.approveFiles = config.approveFiles
       await hub.main.load()
       await hub.main.start()
       hub.user = await User.open(root, chat, user).catch(error => (logError("User", error), undefined))
@@ -392,7 +392,7 @@ export class Hub implements SessionGroups {
 
   async configure(config: Config): Promise<void> {
     this.expireHours = config.expireHours
-    this.approveGuestFiles = config.approveGuestFiles
+    this.approveFiles = config.approveFiles
     for (const {actions} of this.sessions.values()) actions.expireHours = config.expireHours
     if (config.mainGroup !== this.main.displayName) await this.main.rename(config.mainGroup)
   }

@@ -843,7 +843,7 @@ describe("session channel", () => {
   it("sends files to the session group with reply, under the refused-path rules", async () => {
     const chat = new FakeChat()
     const {hub, session} = await channel(chat)
-    await hub.configure({...defaultConfig, approveGuestFiles: false})
+    await hub.configure({...defaultConfig, approveFiles: false})
     const received = join(sessionFolder(root, id1), "files", "group", "8.txt")
     mkdirSync(join(sessionFolder(root, id1), "files", "group"), {recursive: true})
     writeFileSync(received, "log")
@@ -883,14 +883,14 @@ describe("session channel", () => {
     expect(textOf(await session.call("reply", {file: received}, signal().call))).toBe(`The group of this session has no owner of the Main group to approve files. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@${version} link in a terminal.`)
   })
 
-  it("sends a file by reply at once when the plugin option approve_guest_files is off", async () => {
+  it("sends a file by reply at once when the plugin option approve_files is off", async () => {
     const chat = new FakeChat()
     const {hub, session} = await channel(chat)
     const received = join(sessionFolder(root, id1), "files", "group", "8.txt")
     mkdirSync(join(sessionFolder(root, id1), "files", "group"), {recursive: true})
     writeFileSync(received, "log")
     chat.members.set(20, [self, invitedAlice, mallory])
-    await hub.configure({...defaultConfig, approveGuestFiles: false})
+    await hub.configure({...defaultConfig, approveFiles: false})
     expect((await session.call("reply", {file: received}, signal().call))!.structuredContent).toEqual({item: 500})
     await hub.configure(defaultConfig)
     const pending = signal()

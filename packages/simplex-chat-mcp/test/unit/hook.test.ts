@@ -38,7 +38,7 @@ describe("SessionStart hook", () => {
     const started = JSON.stringify({...JSON.parse(input), model: "claude-opus-5"})
     expect(await sessionStart(started, {CLAUDE_PID: "4321"}, {client, nodeVersion: "22.1.0"})).toEqual({})
     expect(requests).toEqual([
-      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 4321, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23, approveGuestFiles: true}}},
+      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 4321, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23, approveFiles: true}}},
     ])
   })
 
@@ -71,7 +71,7 @@ describe("SessionStart hook", () => {
     const ensured = jest.spyOn(client, "ensureDaemon")
     expect(await sessionStart(input, env, {client, nodeVersion: "22.1.0"})).toEqual({})
     expect(ensured).toHaveBeenCalledTimes(1)
-    expect(requests).toEqual([{method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 1769596, project: "/p/app", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23, approveGuestFiles: true}, unattended: true}}])
+    expect(requests).toEqual([{method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 1769596, project: "/p/app", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23, approveFiles: true}, unattended: true}}])
     const {env: turnEnv} = recordedRun("claude-vscode", "UserPromptSubmit")
     expect(await turn(JSON.stringify({session_id: "11111111-1111-4111-8111-111111111111", prompt: "Fix the build"}), turnEnv, client)).toEqual({})
     expect(requests).toHaveLength(1)
