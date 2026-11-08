@@ -164,19 +164,19 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | file events | [623-660](../src/tools.ts#L623-L660) | `onNewItems`, `onFile`, `onFileComplete`, `onFileError`, `onFileCancelled`, `onFileDescription` |
 | `onContactConnected`, `onUserJoinedGroup` | [662-670](../src/tools.ts#L662-L670) | completion of connect actions by events |
 | `actionResult` | [773](../src/tools.ts#L773) | wait for the decision, result fields, removal |
-| `attachment`, `isRefused`, `fileToSend`, `resizedCopy` | [999-1035](../src/tools.ts#L999-L1035) | the file of a `send` |
-| `copyForSending`, `chatFiles`, `deleteChatFiles` | [1037-1066](../src/tools.ts#L1037-L1066) | `/forward` copies; the files of a chat, forwarded ones included; its downloads cancelled, also those the core continues after a restart |
-| `leaveChat` | [1088](../src/tools.ts#L1088) | perform step of `leave` and `/leave`; the chat's forwarded files deleted |
-| `download`, `fileServers`, `unknownServers` | [1098-1143](../src/tools.ts#L1098-L1143) | the `download` call before its action |
-| `startDownload`, `checkDownload`, `currentFile`, `settleFile`, `settleReceived`, `moveReceived` | [1161-1228](../src/tools.ts#L1161-L1228) | a download's steps |
-| `agentChats`, `knownChat` | [1298-1317](../src/tools.ts#L1298-L1317) | the agent's chats; a checked chat reference |
-| `classifyPlan` | [1400](../src/tools.ts#L1400) | `apiConnectPlan` response to a join plan or a known chat |
-| `chatSubject`, `isConnected`, `isActive`, `isGone`, `memberCurrent` | [1496-1566](../src/tools.ts#L1496-L1566) | chat and member predicates shared with `control.ts` and `hub.ts`; `isGone`: status `rejected`, `removed`, `left` or `deleted` |
-| `customDataOf`, `setChatData`, `ownerOf` | [1529-1544](../src/tools.ts#L1529-L1544) | a chat's custom data; the plugin's owner key `simplexMcpOwner` |
-| `fitsMessage`, `quoteContent` | [1590-1606](../src/tools.ts#L1590-L1606) | the message as the core sends it, within `maxMessageLength`, 15602 bytes ([165](../src/tools.ts#L165)); for `send`, `reply`, the post of `/forward`, and the parts and quotes of the plugin's posts |
-| `realFile` | [1622](../src/tools.ts#L1622) | real path, size, inode and change time of a file |
-| `attachmentMedia`, `videoFrame`, `videoDuration` | [1669-1703](../src/tools.ts#L1669-L1703) | previews and durations |
-| `toolCall` | [1719](../src/tools.ts#L1719) | `ServerContext` to `ToolCall`: abort signal and progress notifications |
+| `attachment`, `isRefused`, `fileToSend`, `resizedCopy` | [997-1033](../src/tools.ts#L997-L1033) | the file of a `send` |
+| `copyForSending`, `chatFiles`, `deleteChatFiles` | [1035-1064](../src/tools.ts#L1035-L1064) | `/forward` copies; the files of a chat, forwarded ones included; its downloads cancelled, also those the core continues after a restart |
+| `leaveChat` | [1086](../src/tools.ts#L1086) | perform step of `leave` and `/leave`; the chat's forwarded files deleted |
+| `download`, `fileServers`, `unknownServers` | [1096-1141](../src/tools.ts#L1096-L1141) | the `download` call before its action |
+| `startDownload`, `checkDownload`, `currentFile`, `settleFile`, `settleReceived`, `moveReceived` | [1159-1226](../src/tools.ts#L1159-L1226) | a download's steps |
+| `agentChats`, `knownChat` | [1296-1315](../src/tools.ts#L1296-L1315) | the agent's chats; a checked chat reference |
+| `classifyPlan` | [1398](../src/tools.ts#L1398) | `apiConnectPlan` response to a join plan or a known chat |
+| `chatSubject`, `isConnected`, `isActive`, `isGone`, `memberCurrent` | [1494-1564](../src/tools.ts#L1494-L1564) | chat and member predicates shared with `control.ts` and `hub.ts`; `isGone`: status `rejected`, `removed`, `left` or `deleted` |
+| `customDataOf`, `setChatData`, `ownerOf` | [1527-1542](../src/tools.ts#L1527-L1542) | a chat's custom data; the plugin's owner key `simplexMcpOwner` |
+| `tooLongText`, `fitsMessage`, `quoteContent` | [1588-1608](../src/tools.ts#L1588-L1608) | the refusal text of `send` and `reply` for a message too long; the message as the core sends it, within `maxMessageLength`, 15602 bytes ([165](../src/tools.ts#L165)); for `send`, `reply`, the post of `/forward`, and the parts and quotes of the plugin's posts |
+| `realFile` | [1624](../src/tools.ts#L1624) | real path, size, inode and change time of a file |
+| `attachmentMedia`, `videoFrame`, `videoDuration` | [1671-1705](../src/tools.ts#L1671-L1705) | previews and durations |
+| `toolCall` | [1721](../src/tools.ts#L1721) | `ServerContext` to `ToolCall`: abort signal and progress notifications |
 
 ### [2.5 `actions.ts`](../src/actions.ts)
 
@@ -318,7 +318,7 @@ Hooks are bound in [`serve.ts:96-102`](../src/serve.ts#L96-L102): `refusal`, `sa
 | Item listeners | `ChatItemsWatch.listeners` ([messages.ts:87](../src/messages.ts#L87)) | `collect` | event dispatch |
 | Downloads | `AgentTools.downloads`, one per file ID ([tools.ts:532](../src/tools.ts#L532)) | `downloadTo` | file events, checks, `/delete CHAT files` |
 | Forwards | `AgentTools.forwarding`, the copy for the post per file ID ([tools.ts:533](../src/tools.ts#L533)) | `forwardFile` | `downloadFile`, before it moves a forwarded file |
-| Rejected files | `AgentTools.rejectedFiles` ([tools.ts:534](../src/tools.ts#L534)) | `downloadResult` ([:1150-1151](../src/tools.ts#L1150-L1151)) | the file field; `download`, which then skips the files approval ([:1113](../src/tools.ts#L1113)) |
+| Rejected files | `AgentTools.rejectedFiles` ([tools.ts:534](../src/tools.ts#L534)) | `downloadResult` ([:1148-1149](../src/tools.ts#L1148-L1149)) | the file field; `download`, which then skips the files approval ([:1111](../src/tools.ts#L1111)) |
 | Count of file descriptions | `AgentTools.describedFiles` ([tools.ts:535-536](../src/tools.ts#L535-L536)) | `onFileDescription` | `fileServers` |
 | Members of the control chat | `Control.members` ([control.ts:89](../src/control.ts#L89)) | `refreshMembers` ([:547-549](../src/control.ts#L547-L549)) | approver checks |
 | Mode, expiry, owners list, stop wait | `ServeOptions` of the run; the mode also in `Actions.mode` and in each action ([actions.ts:40](../src/actions.ts#L40)) | CLI | all modules |
@@ -343,9 +343,9 @@ The profile, chats, items, members and file transfers are stored by the core in 
 | `DATA/server.json` | `{name, port, expireHours}` | 0600, set again at every write except on Windows | every start, after the HTTP listener is bound ([serve.ts:114](../src/serve.ts#L114)) | `register` |
 | `DATA/lock` | PID and a newline | 0600 | start ([files.ts:177-216](../src/files.ts#L177-L216)) | next start |
 | `DATA/tmp/` | the core's temp folder: files in transfer | 0700, set at every start | [core.ts:41](../src/core.ts#L41), [:78-82](../src/core.ts#L78-L82) | the core |
-| `DATA/files/group-N/`, `DATA/files/contact-N/` | downloaded files and files received without a download, named by file ID and extension | folder 0700 | the core at the download path ([tools.ts:1166-1167](../src/tools.ts#L1166-L1167)); moves ([:1657-1667](../src/tools.ts#L1657-L1667)) | `download` results, `/forward`, `/leave`, `/delete CHAT files` |
-| `DATA/forwarded/group-N/`, `DATA/forwarded/contact-N/` | files `/forward` downloaded, named as above, until a download moves them to `DATA/files/` | folder 0700 | the core at the forwarded path ([tools.ts:604-611](../src/tools.ts#L604-L611), [:1166-1167](../src/tools.ts#L1166-L1167)) | `/forward`; moved by `download` ([:594-602](../src/tools.ts#L594-L602)); deleted by `leave`, `/leave` and `/delete CHAT files` ([:1048-1066](../src/tools.ts#L1048-L1066), [:1088-1096](../src/tools.ts#L1088-L1096)) |
-| `DATA/files/sent/` | resized copies of sent images, and copies of the files `/forward` posts, one folder per copy | folder 0700; a resized copy 0600 | [tools.ts:1024-1041](../src/tools.ts#L1024-L1041), [:1068-1072](../src/tools.ts#L1068-L1072) | the core; deleted at `sndFileCompleteXFTP`, `sndFileError` and at start ([core.ts:42](../src/core.ts#L42), [tools.ts:695-697](../src/tools.ts#L695-L697), [:987](../src/tools.ts#L987)) |
+| `DATA/files/group-N/`, `DATA/files/contact-N/` | downloaded files and files received without a download, named by file ID and extension | folder 0700 | the core at the download path ([tools.ts:1164-1165](../src/tools.ts#L1164-L1165)); moves ([:1659-1669](../src/tools.ts#L1659-L1669)) | `download` results, `/forward`, `/leave`, `/delete CHAT files` |
+| `DATA/forwarded/group-N/`, `DATA/forwarded/contact-N/` | files `/forward` downloaded, named as above, until a download moves them to `DATA/files/` | folder 0700 | the core at the forwarded path ([tools.ts:604-611](../src/tools.ts#L604-L611), [:1164-1165](../src/tools.ts#L1164-L1165)) | `/forward`; moved by `download` ([:594-602](../src/tools.ts#L594-L602)); deleted by `leave`, `/leave` and `/delete CHAT files` ([:1046-1064](../src/tools.ts#L1046-L1064), [:1086-1094](../src/tools.ts#L1086-L1094)) |
+| `DATA/files/sent/` | resized copies of sent images, and copies of the files `/forward` posts, one folder per copy | folder 0700; a resized copy 0600 | [tools.ts:1022-1039](../src/tools.ts#L1022-L1039), [:1066-1070](../src/tools.ts#L1066-L1070) | the core; deleted at `sndFileCompleteXFTP`, `sndFileError` and at start ([core.ts:42](../src/core.ts#L42), [tools.ts:695-697](../src/tools.ts#L695-L697), [:985](../src/tools.ts#L985)) |
 
 The core library is downloaded once into `CACHE/core-7.1.0.20/sqlite`, and the Node.js add-on into `CACHE/nodejs-addon-cce06d8/`, each with a `Downloading ...` line on stderr. CACHE is `$XDG_CACHE_HOME/simplex-chat` or `~/.cache/simplex-chat`; on macOS `~/Library/Caches/simplex-chat`; on Windows `%LOCALAPPDATA%\simplex-chat` ([libs.ts:41-48](../../simplex-chat-nodejs/src/libs.ts#L41-L48), [:89](../../simplex-chat-nodejs/src/libs.ts#L89), [:109](../../simplex-chat-nodejs/src/libs.ts#L109), [:116](../../simplex-chat-nodejs/src/libs.ts#L116), [:129](../../simplex-chat-nodejs/src/libs.ts#L129)).
 
@@ -390,8 +390,8 @@ Each `onAny` receiver is awaited by the library before the next event is read ([
 | `rcvFileSndCancelled` | | [`AgentTools.onFileCancelled`](../src/tools.ts#L650) |
 | `rcvFileError` | | [`AgentTools.onFileError`](../src/tools.ts#L645) |
 | `rcvFileDescrReady` | | [`AgentTools.onFileDescription`](../src/tools.ts#L657) |
-| `sndFileCompleteXFTP` | | [`AgentTools.onSentFile`](../src/tools.ts#L987) |
-| `sndFileError` | | [`AgentTools.onSentFile`](../src/tools.ts#L987), then [`Control.fileNotSent`](../src/control.ts#L202) |
+| `sndFileCompleteXFTP` | | [`AgentTools.onSentFile`](../src/tools.ts#L985) |
+| `sndFileError` | | [`AgentTools.onSentFile`](../src/tools.ts#L985), then [`Control.fileNotSent`](../src/control.ts#L202) |
 | `joinedGroupMember`<br>`joinedGroupMemberConnecting`<br>`connectedToGroupMember`<br>`memberRole`<br>`leftMember`<br>`deletedMember`<br>`deletedMemberUser`<br>`groupDeleted` | event of the control group | [`Control.onEvent`](../src/control.ts#L225), queued one at a time |
 | any event | after `stop()` started | ignored |
 
@@ -448,7 +448,7 @@ Sources: [actions.ts:200](../src/actions.ts#L200), [tools.ts:508](../src/tools.t
 
 | Term | Rule | Code |
 |---|---|---|
-| human | member other than the agent's membership, status `connected` or `complete` | [control.ts:568-570](../src/control.ts#L568-L570), [tools.ts:1546-1548](../src/tools.ts#L1546-L1548) |
+| human | member other than the agent's membership, status `connected` or `complete` | [control.ts:568-570](../src/control.ts#L568-L570), [tools.ts:1544-1546](../src/tools.ts#L1544-L1546) |
 | human owner | human with role `owner` | [control.ts:555-557](../src/control.ts#L555-L557) |
 | approver, `--owners` absent | member with role `owner` | [control.ts:572-577](../src/control.ts#L572-L577) |
 | approver, `--owners` without a list | none | [control.ts:576](../src/control.ts#L576) |
@@ -547,9 +547,9 @@ Outcomes are posted after `done` and `failed` ([actions.ts:354](../src/actions.t
 | mode `host` | nothing stored; reply `Approvals apply in mode requests; this server runs in mode host.` | downloads get no card, so the command has none to act on | [control.ts:256](../src/control.ts#L256) |
 | removal | `/revoke CHAT`: the `simplexMcp` key is removed, other keys kept | `/receive CHAT off`: the `simplexMcpFiles` key is removed | [control.ts:309-316](../src/control.ts#L309-L316) |
 | use | mode `requests`, and `approvedById` equal to the `groupMemberId` of a current approver | the same | [control.ts:159-162](../src/control.ts#L159-L162) |
-| scope | `send` | `download` of a file whose servers are all known | [tools.ts:936](../src/tools.ts#L936), [:1113](../src/tools.ts#L1113) |
+| scope | `send` | `download` of a file whose servers are all known | [tools.ts:934](../src/tools.ts#L934), [:1111](../src/tools.ts#L1111) |
 | decider shown | `safeName(approvedBy)` | the same | [control.ts:161](../src/control.ts#L161) |
-| storage | the chat's custom data; removed with the chat by `leave` | the same | [tools.ts:1088-1096](../src/tools.ts#L1088-L1096) |
+| storage | the chat's custom data; removed with the chat by `leave` | the same | [tools.ts:1086-1094](../src/tools.ts#L1086-L1094) |
 
 The plugin's approval of all files of `reply` in a session group is described in [8.5](#85-approval-model).
 
@@ -628,9 +628,9 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 | Rule | Code |
 |---|---|
 | `^[@#][1-9]\d{0,14}$`: 1 to 15 digits; the core reads `#(2^64 + N)` as `#N` | [messages.ts:150-152](../src/messages.ts#L150-L152), [scenarios.test.ts:491-503](../test/e2e/scenarios.test.ts#L491-L503) |
-| the control chat is refused by `send`, `receive`, `download`, `leave` and the owner commands with CHAT, and left out of `list` and `/list` | [tools.ts:1253](../src/tools.ts#L1253), [:1298-1317](../src/tools.ts#L1298-L1317), [control.ts:412-419](../src/control.ts#L412-L419) |
-| a store error of the chat read is reported as `No chat CHAT.` | [tools.ts:1258](../src/tools.ts#L1258), [:1315](../src/tools.ts#L1315) |
-| the agent's own links are refused by `connect` (`ownLink` plans) | [tools.ts:1419](../src/tools.ts#L1419), [:1437](../src/tools.ts#L1437), [:1459](../src/tools.ts#L1459) |
+| the control chat is refused by `send`, `receive`, `download`, `leave` and the owner commands with CHAT, and left out of `list` and `/list` | [tools.ts:1251](../src/tools.ts#L1251), [:1296-1315](../src/tools.ts#L1296-L1315), [control.ts:412-419](../src/control.ts#L412-L419) |
+| a store error of the chat read is reported as `No chat CHAT.` | [tools.ts:1256](../src/tools.ts#L1256), [:1313](../src/tools.ts#L1313) |
+| the agent's own links are refused by `connect` (`ownLink` plans) | [tools.ts:1417](../src/tools.ts#L1417), [:1435](../src/tools.ts#L1435), [:1457](../src/tools.ts#L1457) |
 
 ### 6.5 Owner commands
 
@@ -646,15 +646,15 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 
 | Rule | Code |
 |---|---|
-| `send` refuses files named `id_*`, `*.pem`, `*.key`, `*.p12` or `*.pfx`, and files under `~/.ssh`, `~/.gnupg`, the data folder and `~/.simplex-mcp` except the agent's own `DATA/files/`, each by its real path; the refusal is posted to the control chat and logged | [tools.ts:1001-1015](../src/tools.ts#L1001-L1015), [:1622-1641](../src/tools.ts#L1622-L1641), [control.ts:196-200](../src/control.ts#L196-L200) |
-| the file of a `send` is sent only when its real path, size, inode and change time at the perform are those of the request | [tools.ts:1017-1022](../src/tools.ts#L1017-L1022) |
-| a sent JPEG or PNG is a resized copy made by the core | [tools.ts:1024-1035](../src/tools.ts#L1024-L1035) |
-| `ffmpeg` and `ffprobe` read a video as MP4 or QuickTime, local files only, without standard input, 30 s and 64 MiB of output each | [tools.ts:1691-1709](../src/tools.ts#L1691-L1709) |
+| `send` refuses files named `id_*`, `*.pem`, `*.key`, `*.p12` or `*.pfx`, and files under `~/.ssh`, `~/.gnupg`, the data folder and `~/.simplex-mcp` except the agent's own `DATA/files/`, each by its real path; the refusal is posted to the control chat and logged | [tools.ts:999-1013](../src/tools.ts#L999-L1013), [:1624-1643](../src/tools.ts#L1624-L1643), [control.ts:196-200](../src/control.ts#L196-L200) |
+| the file of a `send` is sent only when its real path, size, inode and change time at the perform are those of the request | [tools.ts:1015-1020](../src/tools.ts#L1015-L1020) |
+| a sent JPEG or PNG is a resized copy made by the core | [tools.ts:1022-1033](../src/tools.ts#L1022-L1033) |
+| `ffmpeg` and `ffprobe` read a video as MP4 or QuickTime, local files only, without standard input, 30 s and 64 MiB of output each | [tools.ts:1693-1711](../src/tools.ts#L1693-L1711) |
 | a download is saved only at `DATA/files/group-N/` or `DATA/files/contact-N/`, or for `/forward` at the same name under `DATA/forwarded/`, named by its file ID and an extension of 1 to 16 ASCII letters and digits | [messages.ts:215-227](../src/messages.ts#L215-L227) |
-| a forwarded file is outside `DATA/files/`, so `send` refuses it; a download moves it into `DATA/files/` after the copy for the post is made | [tools.ts:594-611](../src/tools.ts#L594-L611), [:1010-1015](../src/tools.ts#L1010-L1015) |
-| a file on unknown servers gets a card that names them, also under a files approval; relays are approved only for such a card, and for every other download, and in mode `host`, the core checks the complete description and downloads a file on unknown servers only when the IP address is protected | [tools.ts:1113](../src/tools.ts#L1113), [:617](../src/tools.ts#L617), [:1167](../src/tools.ts#L1167), [control.ts:720-723](../src/control.ts#L720-L723) |
-| an accepted file that the core returns to `rcvInvitation` fails its download at the next check | [tools.ts:1180](../src/tools.ts#L1180) |
-| a received file is moved into the chat's folder at its completion, unless it is at the forwarded path, also from a member chat of a group, which has a download in memory as the main conversation does; a file without a download in memory, such as one whose transfer started before a restart, only when it has its full size; a partial file is deleted only for a download in memory, when it is no larger than the file | [tools.ts:1219-1228](../src/tools.ts#L1219-L1228), [:1643-1649](../src/tools.ts#L1643-L1649) |
+| a forwarded file is outside `DATA/files/`, so `send` refuses it; a download moves it into `DATA/files/` after the copy for the post is made | [tools.ts:594-611](../src/tools.ts#L594-L611), [:1008-1013](../src/tools.ts#L1008-L1013) |
+| a file on unknown servers gets a card that names them, also under a files approval; relays are approved only for such a card, and for every other download, and in mode `host`, the core checks the complete description and downloads a file on unknown servers only when the IP address is protected | [tools.ts:1111](../src/tools.ts#L1111), [:617](../src/tools.ts#L617), [:1165](../src/tools.ts#L1165), [control.ts:720-723](../src/control.ts#L720-L723) |
+| an accepted file that the core returns to `rcvInvitation` fails its download at the next check | [tools.ts:1178](../src/tools.ts#L1178) |
+| a received file is moved into the chat's folder at its completion, unless it is at the forwarded path, also from a member chat of a group, which has a download in memory as the main conversation does; a file without a download in memory, such as one whose transfer started before a restart, only when it has its full size; a partial file is deleted only for a download in memory, when it is no larger than the file | [tools.ts:1217-1226](../src/tools.ts#L1217-L1226), [:1645-1651](../src/tools.ts#L1645-L1651) |
 
 ### 6.7 Link and network
 
@@ -674,7 +674,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 | connect wait for the other side | `created + 23 h 50 min` | [tools.ts:155](../src/tools.ts#L155) |
 | send, connect and download card | 15000 bytes JSON-escaped, in its largest form | [control.ts:29](../src/control.ts#L29), [:731-739](../src/control.ts#L731-L739) |
 | error assumed in the largest card | 600 × `€` | [control.ts:33](../src/control.ts#L33) |
-| message as the core sends it | 15602 bytes, counted with 600 bytes of envelope; `send` refuses a longer one, and the post of `/forward` leaves out its quote of the card | [tools.ts:165-166](../src/tools.ts#L165-L166), [:1590-1593](../src/tools.ts#L1590-L1593), [control.ts:335-351](../src/control.ts#L335-L351) |
+| message as the core sends it | 15602 bytes, counted with 600 bytes of envelope; `send` refuses a longer one, and the post of `/forward` leaves out its quote of the card | [tools.ts:165-166](../src/tools.ts#L165-L166), [:1592-1595](../src/tools.ts#L1592-L1595), [control.ts:335-351](../src/control.ts#L335-L351) |
 | `send.text` | 1 to 12000 characters | [tools.ts:269](../src/tools.ts#L269) |
 | `connect.message` | 1 to 2000 characters | [tools.ts:257](../src/tools.ts#L257) |
 | `send.mention` | 1 to 3 unique member IDs | [tools.ts:273](../src/tools.ts#L273) |
@@ -1153,9 +1153,9 @@ Sources: [hub.ts:157-208](../src/hub.ts#L157-L208), [:239-302](../src/hub.ts#L23
 | `reset-owners` without owners runs only on a terminal | [owner.ts:31](../src/owner.ts#L31) |
 | The plugin runs its own `dist/cli.js`, and Node.js loads its modules from the plugin's folder, so the `node_modules` of a project can't replace them | [.mcp.json:5](../.mcp.json#L5), [hooks.json:3-7](../hooks/hooks.json#L3-L7) |
 | The daemon gets only the environment variables of `daemonVariables` | [client.ts:13](../src/client.ts#L13), [:78](../src/client.ts#L78) |
-| `send` and `reply` refuse the files of ROOT except `files/` of the session's own folder | [tools.ts:1010-1015](../src/tools.ts#L1010-L1015), [hub.ts:96-97](../src/hub.ts#L96-L97) |
+| `send` and `reply` refuse the files of ROOT except `files/` of the session's own folder | [tools.ts:1008-1013](../src/tools.ts#L1008-L1013), [hub.ts:96-97](../src/hub.ts#L96-L97) |
 | `User`'s messages are neither prompts nor commands: `Session.prompt` and `Control.onMessage` drop the messages of the member of the hub's contact marked `simplexMcpUser`; `User` joins only groups its `Claude` contact invites it to | [hub.ts:240](../src/hub.ts#L240), [:308-310](../src/hub.ts#L308-L310), [control.ts:220](../src/control.ts#L220), [user.ts:50-57](../src/user.ts#L50-L57), [:60-62](../src/user.ts#L60-L62) |
-| The hub's own groups and the `User` contact have no owner key, so the tools of every session leave them out | [tools.ts:584-586](../src/tools.ts#L584-L586), [:1298-1306](../src/tools.ts#L1298-L1306) |
+| The hub's own groups and the `User` contact have no owner key, so the tools of every session leave them out | [tools.ts:584-586](../src/tools.ts#L584-L586), [:1296-1304](../src/tools.ts#L1296-L1304) |
 | The approved mode is kept in the chat database, not in a file of ROOT | [hub.ts:81](../src/hub.ts#L81), [:317-320](../src/hub.ts#L317-L320), [files.ts:12-22](../src/files.ts#L12-L22) |
 | These rules hold against Claude's tools, not against a shell running as the same user: such a shell reads ROOT, with the token and the chat databases, and sends requests to the daemon | |
 
@@ -1175,7 +1175,7 @@ Sources: [hub.ts:157-208](../src/hub.ts#L157-L208), [:239-302](../src/hub.ts#L23
 | wait of a session server for the title of its process; a detached session server's process kept; the mark of an unattended run's process, removed at a later mark | 10 s | [daemon.ts:19](../src/daemon.ts#L19), [:239-245](../src/daemon.ts#L239-L245) |
 | attempts of a turn the daemon refuses with status 409 | 15, 1 s apart | [hook.ts:12-14](../src/hook.ts#L12-L14) |
 | attachment retries of a session server | 1 s, doubled up to 30 s | [session.ts:19-20](../src/session.ts#L19-L20) |
-| part of an answer or a terminal prompt | one message by `fitsMessage`: 15602 bytes with the 600-byte envelope; 14962 bytes of text without a quote | [hub.ts:532-549](../src/hub.ts#L532-L549), [tools.ts:165-166](../src/tools.ts#L165-L166), [:1590-1593](../src/tools.ts#L1590-L1593) |
+| part of an answer or a terminal prompt | one message by `fitsMessage`: 15602 bytes with the 600-byte envelope; 14962 bytes of text without a quote | [hub.ts:532-549](../src/hub.ts#L532-L549), [tools.ts:165-166](../src/tools.ts#L165-L166), [:1592-1595](../src/tools.ts#L1592-L1595) |
 | cancelled cards wait at stop | 10 s | [hub.ts:21](../src/hub.ts#L21) |
 | `daemon.log` | emptied over 10 MB, at a spawn and every hour | [files.ts:10](../src/files.ts#L10), [:86-89](../src/files.ts#L86-L89), [daemon.ts:20](../src/daemon.ts#L20) |
 | socket path | 103 bytes | [files.ts:9](../src/files.ts#L9) |
