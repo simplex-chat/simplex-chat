@@ -133,7 +133,7 @@ The plugin's server, hooks and commands run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli
 
 ### Automated tests
 
-- `npm test`: unit tests of the plugin's parts: the session server and its channel, the daemon, the hub with its Main group, sessions' groups and tool-use cards, the hooks and the plugin files.
+- `npm test`: unit tests of the plugin's parts: the session server and its channel, the daemon, the hub with its Main group, sessions' groups and tool-use cards, the hooks and the plugin files. The hooks, the session server and the daemon are tested with the environments of a `claude -p` run with the entrypoint `claude-vscode` of a VS Code session and of a plain `claude -p` run, recorded with Claude Code 2.1.319 in `test/unit/claude-p-runs.jsonl`. The session server must answer `server/discover` with `Method not found` and negotiate the revision 2025-11-25: Claude Code 2.1.319 registers no channel for a server in the modern MCP era, 2026-07-28, so an SDK upgrade that turns that era on fails this test.
 - `npm run test:e2e`, file `test/e2e/launch.test.ts`: the packed `package.json` has no development dependencies, its shrinkwrap has no development entry and lists the dependencies of `package.json`, and the folder's files are restored after the pack; the packed build, installed with the command of Claude Code within 60 seconds, runs a hook and the session server with the commands of `hooks/hooks.json` and `.mcp.json`; installed into a project, `simplex-mcp` runs.
 - `npm run test:e2e`, file `test/e2e/daemon.test.ts`, with a local smp-server and xftp-server:
   - an owner joins the Main group and the groups of two sessions, and approves `connect`, `send`, `download` and `leave` there; chats belong to their sessions, `/give` moves one, and `/list` works after a daemon restart;
@@ -159,4 +159,14 @@ In a session started as in step 2 above:
 10. Exit Claude Code, and send a message in the group within 10 minutes, while the daemon runs: Claude replies `Session 1 is not running.`
 11. Start Claude Code again as in step 2, with `--continue`: the session start opens no new group, and a prompt from "1 · <folder>" reaches the session.
 12. In a second terminal, start Claude Code as in step 2 in another folder, and exit it: the group "2 · <other folder>" appears. In the first session, `/resume` that session, and send `Reply with the word resumed.` in "1 · <folder>": the answer comes there. Exit, and start Claude Code with `--resume` of that session: a prompt from "2 · <other folder>" reaches it.
-13. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/lock)`.
+13. In another folder, run `SIMPLEX_MCP_HOME=/tmp/simplex-mcp-test claude -p "Call the list tool of the simplex server." --plugin-dir /tmp/simplex-plugin`: no new group appears, and the answer quotes `This Claude Code run is not interactive, so it has no SimpleX group`.
+14. Record which values of `CLAUDE_CODE_SESSION_ATTENDED` the hooks and the MCP servers of a run get. Write the MCP config and the hook settings:
+
+    ```
+    echo '{"mcpServers": {"dump": {"command": "node", "args": ["-e", "require(\"fs\").writeFileSync(\"/tmp/env-mcp.json\", JSON.stringify(process.env))"]}}}' > /tmp/env-mcp-config.json
+    echo '{"hooks": {"SessionStart": [{"hooks": [{"type": "command", "command": "node -e \"require(\\\"fs\\\").writeFileSync(\\\"/tmp/env-hook.json\\\", JSON.stringify(process.env))\""}]}]}}' > /tmp/env-settings.json
+    ```
+
+    Run `claude -p "Reply with ok." --strict-mcp-config --mcp-config /tmp/env-mcp-config.json --settings /tmp/env-settings.json` once in a terminal, and once from the Bash tool of the session of step 2 with `CLAUDE_CODE_ENTRYPOINT=claude-vscode` before it. After each run, `grep -o '"CLAUDE_CODE_SESSION_ATTENDED":"[01]"' /tmp/env-hook.json /tmp/env-mcp.json` shows the values. With Claude Code 2.1.319, 2026-11-08: in a terminal, the hook got `0` and the MCP server none; from the Bash tool, the hook got `0` and the MCP server `1`, the value of the session whose Bash tool ran it, and the hook's `CLAUDE_PID` is the parent process of the MCP server. For the second run, the plugin's SessionStart hook marks that process in the daemon, and the daemon refuses its session server.
+15. From the Bash tool of the session of step 2, run `CLAUDE_CODE_ENTRYPOINT=claude-vscode SIMPLEX_MCP_HOME=/tmp/simplex-mcp-test claude -p "Call the list tool of the simplex server." --plugin-dir /tmp/simplex-plugin` in another folder: no new group appears, and the answer quotes `This Claude Code run is not interactive, so it has no SimpleX group`.
+16. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/lock)`.
