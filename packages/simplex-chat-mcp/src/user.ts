@@ -3,6 +3,7 @@ import {CC, ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {openCore} from "./core"
 import {logError} from "./log"
+import {memberCurrent, newestGroup} from "./tools"
 
 const userName = "User"
 const claudeKey = "simplexMcpClaude"
@@ -27,7 +28,7 @@ export class User {
   }
 
   async post(session: number, parts: string[]): Promise<void> {
-    const group = (await this.chat.apiListGroups(this.user.userId)).find(({customData}) => (customData as {[sessionKey]?: number} | undefined)?.[sessionKey] === session)
+    const group = newestGroup((await this.chat.apiListGroups(this.user.userId)).filter(({customData, membership}) => (customData as {[sessionKey]?: number} | undefined)?.[sessionKey] === session && memberCurrent(membership)))
     if (group !== undefined) await this.chat.apiSendMessages([T.ChatType.Group, group.groupId], parts.map(text => ({msgContent: {type: "text", text}, mentions: {}})))
   }
 

@@ -1563,6 +1563,10 @@ export function memberCurrent({memberStatus}: T.GroupMember): boolean {
   return current.includes(memberStatus)
 }
 
+export function newestGroup(groups: T.GroupInfo[]): T.GroupInfo | undefined {
+  return groups.reduce<T.GroupInfo | undefined>((latest, group) => (latest === undefined || group.groupId > latest.groupId ? group : latest), undefined)
+}
+
 function memberCurrentOrPending(member: T.GroupMember): boolean {
   return memberCurrent(member) || member.memberStatus === T.GroupMemberStatus.Pending_approval || member.memberStatus === T.GroupMemberStatus.Pending_review
 }

@@ -936,4 +936,20 @@ describe("User", () => {
     await connecting
     expect(hub.apiSetContactCustomData.mock.calls).toEqual([[6, {simplexMcpUser: true}]])
   })
+
+  it("posts a terminal prompt in the newest group of its session where it is a current member, not in a group of that session that Claude deleted", async () => {
+    const sent: number[] = []
+    const sessionGroup = (groupId: number, status: T.GroupMemberStatus): T.GroupInfo => group(groupId, "1 · auth", member(2, "User", T.GroupMemberRole.Member, status), {customData: {simplexMcpSession: 1}})
+    const profile = {
+      apiListGroups: async () => [sessionGroup(30, T.GroupMemberStatus.Deleted), sessionGroup(32, T.GroupMemberStatus.Connected), sessionGroup(31, T.GroupMemberStatus.Connected), group(33, "2 · docs", member(2, "User"), {customData: {simplexMcpSession: 2}})],
+      apiSendMessages: async ([, groupId]: [T.ChatType, number]) => {
+        if (groupId === 30) throw new core.ChatAPIError("Chat command error", {type: "error", errorType: {type: "groupMemberUserRemoved"}} as unknown as T.ChatError)
+        sent.push(groupId)
+        return []
+      },
+    }
+    const mirror = new (User as unknown as new (chat: unknown, user: T.User) => User)(profile, {...user, userId: 2})
+    await mirror.post(1, ["Fix the build"])
+    expect(sent).toEqual([32])
+  })
 })

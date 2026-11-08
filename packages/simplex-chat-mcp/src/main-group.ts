@@ -3,7 +3,7 @@ import {api} from "simplex-chat"
 import {Command, createGroup, deleteGroup, isLost, joinedText, losesControl, parseCommand, safeName} from "./control"
 import {chatErrorOf, log, logError, oneLine} from "./log"
 import {resetCommand} from "./owner"
-import {isActive} from "./tools"
+import {isActive, newestGroup} from "./tools"
 
 const mainCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "sessions", label: "Claude Code sessions"},
@@ -210,8 +210,7 @@ export class MainGroup {
 }
 
 export async function findMainGroup(chat: api.ChatApi, userId: number): Promise<T.GroupInfo | undefined> {
-  const groups = (await chat.apiListGroups(userId)).filter(({customData}) => (customData as {[mainKey]?: boolean} | undefined)?.[mainKey] === true)
-  return groups.reduce<T.GroupInfo | undefined>((latest, group) => (latest === undefined || group.groupId > latest.groupId ? group : latest), undefined)
+  return newestGroup((await chat.apiListGroups(userId)).filter(({customData}) => (customData as {[mainKey]?: boolean} | undefined)?.[mainKey] === true))
 }
 
 function isMissingLink(error: unknown): boolean {
