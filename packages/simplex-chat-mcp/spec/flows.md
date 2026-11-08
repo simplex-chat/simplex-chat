@@ -800,7 +800,7 @@ sequenceDiagram
   M->>N: inviteOwner: apiAddMemberViaGroup #35;G via #35;M, role owner
   O->>C: joins #35;G from the invitation in #35;M
   C->>N: joinedGroupMember
-  N->>O: Alice is an owner and can send prompts and // and /! commands to Claude, and approve tool use. You can change role to observer to stop it: /'observer #35;G ID'
+  N->>O: Alice is an owner and can send prompts and / commands to Claude, and approve tool use.
 ```
 
 Notes:
@@ -1238,7 +1238,7 @@ sequenceDiagram
   M->>B: Sent you an invitation to "N · NAME".
   B->>C: joins #35;G
   C->>N: joinedGroupMember: Control.onEvent, announceRights, askMode
-  N->>B: Bob is an admin and can send prompts and // and /! commands to Claude, and approve tool use. You can change role to observer to stop it: /'observer #35;G ID'
+  N->>B: Bob is an admin and can send prompts and / commands to Claude, and approve tool use. You can change role to observer to stop it: /'observer #35;G ID'
   A->>G: a group link of #35;G with role member, or an invitation of a contact with a role
   G->>C: joins #35;G
   C->>N: connectedToGroupMember: Control.onEvent, announceRights, askMode
@@ -1249,7 +1249,7 @@ sequenceDiagram
   N->>G: to /!ls: Only admins and owners of this group can send / commands.
   A->>C: Carol's role set to admin in the app
   C->>N: memberRole: Control.onEvent, announceRights, askMode
-  N->>A: Carol is an admin and can send prompts and // and /! commands to Claude, and approve tool use. You can change role to observer to stop it: /'observer #35;G ID'
+  N->>A: Carol is an admin and can send prompts and / commands to Claude, and approve tool use. You can change role to observer to stop it: /'observer #35;G ID'
   A->>N: /observer #35;G ID of Carol
   N->>C: apiSetMembersRole #35;G [ID] observer, apiListMembers #35;G
   N->>A: Carol is an observer and can't send messages.

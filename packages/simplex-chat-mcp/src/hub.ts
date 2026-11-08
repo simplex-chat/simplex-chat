@@ -221,7 +221,7 @@ export class Session {
     const {member} = event
     if (this.isUser(member)) return
     const name = safeName(member.memberProfile.displayName)
-    const observer = canSend(member.memberRole) ? ` You can change role to observer to stop it: /'observer #${this.control.groupId} ${member.groupMemberId}'` : ""
+    const observer = canSend(member.memberRole) && member.memberRole !== T.GroupMemberRole.Owner ? ` You can change role to observer to stop it: /'observer #${this.control.groupId} ${member.groupMemberId}'` : ""
     await this.post([`${rightsText(name, member.memberRole)}${observer}`])
   }
 

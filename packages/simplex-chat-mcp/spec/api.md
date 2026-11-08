@@ -781,8 +781,9 @@ Rights posts, by the member's role in the session group:
 
 | Role | Post |
 |---|---|
-| `owner`, `admin` | `NAME is an owner and can send prompts and // and /! commands to Claude, and approve tool use. You can change role to observer to stop it: /'observer #G ID'`, with `an admin` for an admin |
-| `moderator`, `member`, `author` | `NAME is a member and can send prompts to Claude; // and /! commands and approvals of tool use need the role admin or owner. You can change role to observer to stop it: /'observer #G ID'`, with `a moderator` or `an author` for those roles |
+| `owner` | `NAME is an owner and can send prompts and / commands to Claude, and approve tool use.` |
+| `admin` | `NAME is an admin and can send prompts and / commands to Claude, and approve tool use. You can change role to observer to stop it: /'observer #G ID'` |
+| `moderator`, `member`, `author` | `NAME is a member and can send prompts to Claude; / commands and approvals need the role admin or owner. You can change role to observer to stop it: /'observer #G ID'`, with `a moderator` or `an author` for those roles |
 | `observer` | `NAME is an observer and can't send messages.` |
 
 #G is the session group and ID the member. A role change made by Claude itself, by `/observer`, raises no `memberRole` event; its reply is the observer's post.

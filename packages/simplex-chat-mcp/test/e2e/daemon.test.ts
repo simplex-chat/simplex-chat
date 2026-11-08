@@ -330,7 +330,7 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   const bobMainInfo = (await bob.chat.apiListGroups(bob.user.userId)).find(({groupId}) => groupId === bobMain)!
   expect(bobMainInfo.groupProfile).toMatchObject({shortDescr: "Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions.", description: `Supervise your Claude Code sessions: each one has its own group, and you get its invitation here. ${trusted}`})
   const bobInvited = joinSessionGroups(bob, ["1 · one"])
-  const adminRights = "can send prompts and // and /! commands to Claude, and approve tool use."
+  const adminRights = "can send prompts and / commands to Claude, and approve tool use."
   const bobInOne = received(alice.chat, inGroup(groupOne, textStarts(`Bob is an admin and ${adminRights} You can change role to observer to stop it: /'observer #`)))
   await bob.chat.apiSendTextMessage([T.ChatType.Group, bobMain], "/join 1")
   const bobGroupOne = (await bobInvited).get("1 · one")!
@@ -349,7 +349,7 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   await bobSends("//compact")
   await until(() => attached.some(({prompt}) => prompt?.text === "/compact" && prompt.from === "Bob"))
 
-  const carolInOne = received(alice.chat, inGroup(groupOne, textStarts("Carol is a member and can send prompts to Claude; // and /! commands and approvals of tool use need the role admin or owner. You can change role to observer to stop it: /'observer #")))
+  const carolInOne = received(alice.chat, inGroup(groupOne, textStarts("Carol is a member and can send prompts to Claude; / commands and approvals need the role admin or owner. You can change role to observer to stop it: /'observer #")))
   const carolGroupOne = await joinByLink(carol, await alice.chat.apiCreateGroupLink(groupOne, T.GroupMemberRole.Member))
   const [, makeCarolObserver] = /\/'(observer #\d+ \d+)'$/.exec((await carolInOne).chatItem.meta.itemText)!
   await carol.chat.apiSendTextMessage([T.ChatType.Group, carolGroupOne], "Write the docs")

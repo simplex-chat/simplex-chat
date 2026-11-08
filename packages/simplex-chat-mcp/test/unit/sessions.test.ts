@@ -27,9 +27,9 @@ const approversOnly = "Only admins and owners of this group approve actions here
 const commandsApproversOnly = "Only admins and owners of this group can send / commands."
 const bangText = "Messages starting with ! reach Claude only from admins and owners, as /!command."
 const modeCard = "I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here."
-const approverRights = "can send prompts and // and /! commands to Claude, and approve tool use."
-const senderRights = "can send prompts to Claude; // and /! commands and approvals of tool use need the role admin or owner."
-const aliceJoined = `Alice is an owner and ${approverRights} You can change role to observer to stop it: /'observer #20 1003'`
+const approverRights = "can send prompts and / commands to Claude, and approve tool use."
+const senderRights = "can send prompts to Claude; / commands and approvals need the role admin or owner."
+const aliceJoined = `Alice is an owner and ${approverRights}`
 const trusted = "Everyone in this group is trusted with all Claude Code sessions here: they can join each session's group by /join N, prompt Claude and approve its actions. Invite only people you trust with them."
 
 type HubConstructor = new (chat: unknown, user: T.User, root: string, expireHours: number, mainGroup: T.GroupInfo, mainName: string) => Hub
