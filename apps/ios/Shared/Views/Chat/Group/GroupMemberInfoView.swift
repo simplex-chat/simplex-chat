@@ -23,7 +23,7 @@ struct GroupMemberInfoView: View {
     var groupRelay: GroupRelay? = nil
     @State private var connectionStats: ConnectionStats? = nil
     @State private var connectionCode: String? = nil
-    @State private var connectionLoaded: Bool = false
+    @State var connectionLoaded: Bool = false
     @State private var knownContactChat: Chat? = nil
     @State private var knownContact: Contact? = nil
     @State private var knownContactConnectionStats: ConnectionStats? = nil
@@ -1078,7 +1078,8 @@ struct GroupMemberInfoView_Previews: PreviewProvider {
             groupInfo: GroupInfo.sampleData,
             chat: Chat.sampleData,
             groupMember: GMember.sampleData,
-            scrollToItemId: Binding.constant(nil)
+            scrollToItemId: Binding.constant(nil),
+            connectionLoaded: true
         )
     }
 }
