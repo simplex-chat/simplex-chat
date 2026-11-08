@@ -303,6 +303,14 @@ describe("session server", () => {
     expect(seen).toEqual([registered, "attach"])
   })
 
+  it("waits twice as long before each new attempt when /attach fails before its first line", async () => {
+    captureStderr()
+    await fakeDaemon(async res => endWithResult(res, listResult), res => res.destroy())
+    await session()
+    await new Promise(resolve => setTimeout(resolve, 3_600))
+    expect(seen).toEqual([registered, "attach", registered, "attach", registered, "attach"])
+  })
+
   it("stops attaching when the daemon speaks another protocol", async () => {
     const errors = captureStderr()
     await fakeDaemon(async res => endWithResult(res, listResult), attachLine, protocolVersion + 1)

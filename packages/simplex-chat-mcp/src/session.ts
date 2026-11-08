@@ -101,8 +101,10 @@ class DaemonLink {
   private reconnect(): void {
     if (this.closed) return
     clearTimeout(this.retryTimer)
-    this.retryTimer = setTimeout(() => this.start(), this.retry).unref()
-    this.retry = Math.min(this.retry * 2, lastRetry)
+    this.retryTimer = setTimeout(() => {
+      this.retry = Math.min(this.retry * 2, lastRetry)
+      this.start()
+    }, this.retry).unref()
   }
 
   async permission(request: PermissionRequest): Promise<void> {
