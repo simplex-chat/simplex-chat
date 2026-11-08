@@ -911,6 +911,21 @@ describe("session channel", () => {
     expect(chat.updates[0].text).toBe(`${request.replace("I want to send", "I sent")}\nApproved by Alice.`)
   })
 
+  it("refuses a reply whose caption is too long for a message with its file's preview, as send does, before its post and before its card", async () => {
+    jest.spyOn(core, "resizeImage").mockResolvedValue(`data:image/jpg;base64,${"A".repeat(13_978)}`)
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const photo = join(sessionFolder(root, id1), "files", "group", "photo.jpg")
+    mkdirSync(join(sessionFolder(root, id1), "files", "group"), {recursive: true})
+    writeFileSync(photo, "photo")
+    const tooLong = "text: too long for a message with this image; shorten it."
+    expect(textOf(await session.call("reply", {file: photo, text: "x".repeat(1100)}, signal().call))).toBe(tooLong)
+    chat.members.set(20, [self, invitedAlice, mallory])
+    expect(textOf(await session.call("reply", {file: photo, text: "x".repeat(1100)}, signal().call))).toBe(tooLong)
+    expect(chat.sent).toEqual([])
+    expect(session.actions.all()).toEqual([])
+  })
+
   it("sends the file of a reply card and every later file by reply at once after /approve N all, also after a restart, until /revoke", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)

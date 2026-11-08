@@ -725,6 +725,7 @@ export class AgentTools {
     if (attached !== undefined) return this.replyResult(attached as ReplyAction, call)
     const {chatInfo} = await getChat(this.agent.chat, chat, 0)
     const file = await this.attachment(input.file, undefined, chatInfo, chat)
+    if (!fitsMessage(sentContent(file, input.text ?? ""), file.name, undefined)) throw new ToolError(`text: too long for a message with this ${file.type}; shorten it.`)
     if ((await this.agent.replyAtOnce?.()) === true) return {item: await this.sendFile(chat, file, input.text)}
     if (call.signal.aborted) return undefined
     return this.replyResult(this.agent.actions.create(key, {tool: "reply", input, subject: chatSubject(chatInfo), chat, file}, this.agent.repliesApprover?.(), this.session, "requests") as ReplyAction, call)
