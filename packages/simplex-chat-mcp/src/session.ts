@@ -56,6 +56,7 @@ export async function startSession(env: NodeJS.ProcessEnv = process.env, io: Ses
   })
   registerTools(server, config.approve, async (name, input, call) => (configError === undefined ? link.call(name, input, call) : toolError(configError)), [replyTool])
   server.server.setNotificationHandler("notifications/claude/channel/permission_request", {params: permissionRequest}, params => {
+    if (configError !== undefined) return
     const {request_id, tool_name, description, input_preview} = params as {[field in (typeof permissionFields)[number]]: string}
     link.permission({id, requestId: request_id, toolName: tool_name, description, inputPreview: input_preview}).catch(error => logError("permission relay", error))
   })

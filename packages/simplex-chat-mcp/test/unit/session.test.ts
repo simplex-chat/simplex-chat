@@ -142,6 +142,20 @@ describe("session server", () => {
     expect(spawn).not.toHaveBeenCalled()
   })
 
+  it("relays no permission request without the daemon in a non-interactive run or with an invalid plugin option", async () => {
+    await fakeDaemon(async res => endWithResult(res, listResult))
+    const spawn = jest.fn(noSpawn)
+    for (const env of [{CLAUDE_CODE_ENTRYPOINT: "sdk-cli"}, {CLAUDE_PLUGIN_OPTION_APPROVE: "x"}]) {
+      const {client} = await session(env, spawn)
+      client.notify("notifications/claude/channel/permission_request", {request_id: "abcde", tool_name: "Bash", description: "Run shell command", input_preview: "ls"})
+      expect((await listCall(client)).result.isError).toBe(true)
+    }
+    await new Promise(resolve => setTimeout(resolve, 100))
+    expect(seen).toEqual([])
+    expect(statuses).toBe(0)
+    expect(spawn).not.toHaveBeenCalled()
+  })
+
   it("answers every call without the daemon in a run whose environment marks it unattended, and in claude -p under the mark of the attended session that started it", async () => {
     await fakeDaemon(async res => endWithResult(res, listResult))
     const spawn = jest.fn(noSpawn)
