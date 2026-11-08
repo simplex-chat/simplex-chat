@@ -169,6 +169,7 @@ Decided on 2026-11-08, review round 7:
 
 Recommended on the UX page (https://claude.ai/artifact/YCN4kj2ZRujUnUhNSxwMea), implemented until the user answers, one commit each:
 97. K10, K11: the rights texts name `/` commands in place of `//` and `/!`; the post for an owner has no `/observer` command.
+98. A session group's description, set at its creation: `The Claude Code session N. Members send it prompts; admins and owners also send / commands and approve tool use.`
 
 The user's rule on reviews, 2026-11-08: "reviewers should have no discretion to drive product changes - the UX was approved, and it must not be changing simply because security reviewers said so."
 
@@ -393,8 +394,8 @@ Claude's profile update of a group:  the group's current profile read from the c
 on a one-line "/" text, "//" or "/!" of a moderator, member or author in group N:
                                 one reply, before the commands and the prompt (decision 91)
 on another message of a member whose role sends:   a prompt (decision 92)
-group N, its description:       "The Claude Code session N: members who join from the Main group prompt it and approve its actions here."
-                                (pending, decision 83)
+group N, its description:       "The Claude Code session N. Members send it prompts; admins and owners also send / commands and approve
+                                tool use.", at the group's creation (decision 98)
 reply:                          see Channel, reply
 ```
 
@@ -454,7 +455,6 @@ rights of observer          NAME is an observer and can't send messages.   (also
 Pending the user's decision, implemented as proposals:
 ```
 start notice               not implemented; its place and text wait (decision 83)
-group description          proposed: The Claude Code session N.   (the text above stays until decided, decision 83)
 /observer replies          #G is not this group. / No member ID in this group. / NAME's role can't be changed. /
                            Your role does not let you change the role of NAME.
 ```
