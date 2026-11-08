@@ -38,7 +38,27 @@ protocolTests = do
   shortLinkDataTests
   batchLimitTests
   forwardDepthTests
+  timeRangeTests
   preferencesJSONTests
+
+timeRangeTests :: Spec
+timeRangeTests = describe "Chat message time range" $ do
+  it "rejects x.msg.new with quote sent before year 1" $
+    parseError "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"-0001-01-01T00:00:00Z\"}}}}"
+      `shouldSatisfy` isInfixOf "time out of range"
+  it "rejects x.msg.file.descr with file expiry after year 9999" $
+    parseError "{\"v\":\"9\",\"event\":\"x.msg.file.descr\",\"params\":{\"msgId\":\"AQIDBA==\",\"fileDescr\":{\"fileDescrText\":\"abc\",\"fileDescrPartNo\":0,\"fileDescrComplete\":true},\"fileExpires\":\"10000-01-01T00:00:00Z\"}}"
+      `shouldSatisfy` isInfixOf "time out of range"
+  it "rejects x.grp.msg.forward with message time in year 0" $
+    parseError "{\"v\":\"9\",\"event\":\"x.grp.msg.forward\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberName\":\"alice\",\"msg\":{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}},\"msgTs\":\"0000-12-31T23:59:59Z\"}}"
+      `shouldSatisfy` isInfixOf "time out of range"
+  it "rejects binary forward element with message time in year 0" $
+    parseError (">" <> smpEncode (GrpMsgForward FwdChannel $ systemToUTCTime $ MkSystemTime (-62135596801) 0) <> "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}")
+      `shouldSatisfy` isInfixOf "time out of range"
+  where
+    parseError s = case parseChatMessages s of
+      [Left e] -> e
+      rs -> "expected a single error, got " <> show (length rs) <> " results"
 
 preferencesJSONTests :: Spec
 preferencesJSONTests = describe "preferences JSON" $ do

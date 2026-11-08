@@ -9,6 +9,8 @@ import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import Data.Text (Text)
+import Data.Time.Calendar (toGregorian)
+import Data.Time.Clock (UTCTime (..))
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import Simplex.Messaging.Encoding
@@ -170,3 +172,10 @@ toMsgVerified :: Bool -> Maybe MsgSigStatus -> Maybe MsgVerified
 toMsgVerified signRequired = \case
   Just s -> Just (MVSigned s)
   Nothing -> if signRequired then Just MVSigMissing else Nothing
+
+checkTimeRange :: UTCTime -> Either String UTCTime
+checkTimeRange t
+  | year >= 1 && year <= 9999 = Right t
+  | otherwise = Left "time out of range"
+  where
+    (year, _, _) = toGregorian $ utctDay t

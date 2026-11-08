@@ -22,11 +22,12 @@ import Control.Monad.Reader (runReaderT)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime, nominalDay)
+import Data.Time.Calendar (fromGregorian)
+import Data.Time.Clock (UTCTime (..), addUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Map.Strict as M
-import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgeProof, BadgePurchase (..), BadgeRequest (..), BadgeStatus (..), BadgeType (..), LocalBadge (..), ProofPresHeader (..), badgeProof, generateMasterKey, issueBadge, verifyPayment)
+import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgeProof (BadgeProof), BadgePurchase (..), BadgeRequest (..), BadgeStatus (..), BadgeType (..), LocalBadge (..), ProofPresHeader (..), badgeProof, generateMasterKey, issueBadge, verifyPayment)
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (ChatController, smpAgent), ChatHooks (..), defaultChatHooks, storeCxt)
 import Simplex.Chat.Library.Internal (encodeShortLinkData, groupMemberKey, redactedMemberProfile, sendDirectContactMessage, sendGroupMessage')
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
@@ -90,6 +91,7 @@ chatProfileTests = do
     it "supporter badge sent in a retried request to an address" testUserBadgeAddressConnectRetry
     it "supporter badge sent in a retried join of a one-time link" testUserBadgeInvitationConnectRetry
     it "supporter badge bound to another chat is ignored, stored badge is kept" testUserBadgeOtherBinding
+    it "supporter badge expiring before year 1 is rejected, contact stays readable" testUserBadgeExpiryOutOfRange
     it "supporter badge of member bound to another member is ignored, stored badge is kept" testUserBadgeMemberOtherBinding
     it "supporter badge of member joining via group link, at request and after handshake" testUserBadgeGroupLinkJoiner
     it "supporter badge of introduced member is taken from the introduction" testUserBadgeIntroduced
@@ -902,6 +904,27 @@ testUserBadgeOtherBinding ps = do
       bob <## "connection not verified, use /code command to see security code"
       bob <## "quantum resistant end-to-end encryption"
       bob <## currentChatVRangeInfo
+
+testUserBadgeExpiryOutOfRange :: HasCallStack => TestParams -> IO ()
+testUserBadgeExpiryOutOfRange ps = do
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test pk sk) ps
+  where
+    test pk sk alice bob = do
+      connectUsers alice bob
+      cred <- issueTestBadge sk futureDate
+      Right (BadgeProof keyIdx presHdr bbsProof info) <- badgeProof pk cred (PHTest "nonce")
+      let farBadge = BadgeProof keyIdx presHdr bbsProof info {badgeExpiry = UTCTime (fromGregorian (-1) 1 1) 0}
+      withCCUser alice $ \user -> do
+        ct <- getTestCCContact alice 2
+        let p = (userProfileDirect user Nothing (Just ct) True) {badge = Just farBadge}
+        runExceptT (sendDirectContactMessage user ct (XInfo p Nothing)) `runReaderT` chatController alice
+          >>= either (fail . show) (\_ -> pure ())
+      bob <#. "alice> message error: "
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob ##> "/contacts"
+      bob <## "alice (Alice)"
 
 testUserBadgeGroupLinkJoiner :: HasCallStack => TestParams -> IO ()
 testUserBadgeGroupLinkJoiner ps = do
