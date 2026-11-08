@@ -4,7 +4,7 @@ import {ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {Action, Actions, HostTexts, Mode, isDecided} from "./actions"
 import {Config} from "./config"
-import {Control, controlCommands, controlDataOf, createGroup, isControlEvent, isGroupMessage, parseCommand, safeName} from "./control"
+import {Control, canSend, controlCommands, controlDataOf, createGroup, isControlEvent, isGroupMessage, parseCommand, rightsText, safeName, sessionApproverRoles} from "./control"
 import {openCore} from "./core"
 import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile} from "./files"
 import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
@@ -27,7 +27,6 @@ const attachWait = 30_000
 const channelPrompt = /<channel source="plugin:simplex:simplex"[^\n]* item="(\d+)"[^\n]*>\n([\s\S]*?)\n<\/channel>/g
 const bangText = "Messages starting with ! reach Claude only from admins and owners, as /!command."
 const commandsAdminsOnly = "Only admins and owners of this group can send // and /! commands to Claude."
-const approverRoles: T.GroupMemberRole[] = [T.GroupMemberRole.Admin, T.GroupMemberRole.Owner]
 
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX daemon is stopping."}
 
@@ -223,12 +222,13 @@ export class Session {
     await this.saveData({...this.data, invited})
   }
 
-  async announceJoin(event: ChatEvent): Promise<void> {
-    if (this.actions.lost || (event.type !== "joinedGroupMember" && event.type !== "connectedToGroupMember")) return
+  async announceRights(event: ChatEvent): Promise<void> {
+    if (this.actions.lost || (event.type !== "joinedGroupMember" && event.type !== "connectedToGroupMember" && event.type !== "memberRole")) return
     const {member} = event
     if (this.isUser(member)) return
     const name = safeName(member.memberProfile.displayName)
-    await this.post([`${name} can send prompts to Claude and approve tool use. You can change role to observer to stop it: /'observer #${this.control.groupId} ${member.groupMemberId}'`])
+    const observer = canSend(member.memberRole) ? ` You can change role to observer to stop it: /'observer #${this.control.groupId} ${member.groupMemberId}'` : ""
+    await this.post([`${rightsText(name, member.memberRole)}${observer}`])
   }
 
   private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
@@ -298,7 +298,7 @@ export class Session {
   }
 
   private approves(member: T.GroupMember): boolean {
-    return approverRoles.includes(member.memberRole) && !this.isUser(member)
+    return sessionApproverRoles.includes(member.memberRole) && !this.isUser(member)
   }
 
   private isUser(member: T.GroupMember): boolean {
@@ -506,7 +506,7 @@ export class Hub implements SessionGroups {
     }
     const session = sessions.find(({control}) => isControlEvent(event, control.groupId))
     if (session !== undefined) {
-      this.controlEvents = this.controlEvents.then(() => session.control.onEvent(event)).then(() => session.announceJoin(event)).then(() => session.askMode()).catch(error => logError(`${event.type} in the group of session ${session.number}`, error))
+      this.controlEvents = this.controlEvents.then(() => session.control.onEvent(event)).then(() => session.announceRights(event)).then(() => session.askMode()).catch(error => logError(`${event.type} in the group of session ${session.number}`, error))
     }
   }
 }

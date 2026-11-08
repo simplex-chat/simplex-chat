@@ -27,7 +27,9 @@ const approversOnly = "Only admins and owners of this group approve actions here
 const commandsAdminsOnly = "Only admins and owners of this group can send // and /! commands to Claude."
 const bangText = "Messages starting with ! reach Claude only from admins and owners, as /!command."
 const modeCard = "I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here."
-const aliceJoined = "Alice can send prompts to Claude and approve tool use. You can change role to observer to stop it: /'observer #20 1003'"
+const approverRights = "can send prompts and // and /! commands to Claude, and approve tool use."
+const senderRights = "can send prompts to Claude; // and /! commands and approvals of tool use need the role admin or owner."
+const aliceJoined = `Alice is an owner and ${approverRights} You can change role to observer to stop it: /'observer #20 1003'`
 const trusted = "Everyone in this group is trusted with all Claude Code sessions here: they can join each session's group by /join N, prompt Claude and approve its actions. Invite only people you trust with them."
 
 type HubConstructor = new (chat: unknown, user: T.User, root: string, expireHours: number, mainGroup: T.GroupInfo, mainName: string) => Hub
@@ -219,23 +221,55 @@ describe("session groups", () => {
     expect(session.actions.mode).toBe("requests")
   })
 
-  it("post for each member who joins, whatever way they joined, that they prompt Claude and approve tool use, with the command that makes them an observer, and nothing for User", async () => {
+  it("post the rights of each member who joins by the member's role, whatever way they joined, with the command that makes a sending member an observer, and nothing for User", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     await openSession(hub, id1, stored(1, "auth"))
     hub.userContactId = 6
     const sessionUser = {...member(1006, "User"), memberContactId: 6}
-    const mallory = member(9, "Mallory", T.GroupMemberRole.Owner)
-    chat.members.set(20, [self, sessionUser, invitedAlice, mallory])
+    const mallory = member(9, "Mallory", T.GroupMemberRole.Admin)
+    const mia = member(12, "Mia", T.GroupMemberRole.Member)
+    const max = member(13, "Max", T.GroupMemberRole.Moderator)
+    const oscar = member(11, "Oscar", T.GroupMemberRole.Observer)
+    chat.members.set(20, [self, sessionUser, invitedAlice, mallory, mia, max, oscar])
     const joined = (type: string, joiner: T.GroupMember): Promise<void> => hub["onEvent"]({type, groupInfo: group(20, "1 · auth"), member: joiner} as unknown as ChatEvent)
     await joined("joinedGroupMember", sessionUser)
     await joined("joinedGroupMember", invitedAlice)
     await joined("connectedToGroupMember", {...mallory, memberStatus: T.GroupMemberStatus.Intro_inv})
+    await joined("joinedGroupMember", mia)
+    await joined("connectedToGroupMember", max)
+    await joined("joinedGroupMember", oscar)
     await hub["controlEvents"]
-    expect(sentTo(chat, 20)).toEqual([aliceJoined, "Mallory can send prompts to Claude and approve tool use. You can change role to observer to stop it: /'observer #20 9'"])
+    expect(sentTo(chat, 20)).toEqual([
+      aliceJoined,
+      `Mallory is an admin and ${approverRights} You can change role to observer to stop it: /'observer #20 9'`,
+      `Mia is a member and ${senderRights} You can change role to observer to stop it: /'observer #20 12'`,
+      `Max is a moderator and ${senderRights} You can change role to observer to stop it: /'observer #20 13'`,
+      "Oscar is an observer and can't send messages.",
+    ])
   })
 
-  it("make a member an observer by /observer #G ID, from a member whose role lets them change that member's role in SimpleX", async () => {
+  it("post the rights of a member at each change of the member's role in the group, and nothing for User", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const session = await openSession(hub, id1, stored(1, "auth"))
+    hub.userContactId = 6
+    const sessionUser = {...member(1006, "User"), memberContactId: 6}
+    const mia = member(12, "Mia", T.GroupMemberRole.Admin)
+    const dan = member(14, "Dan", T.GroupMemberRole.Observer)
+    chat.members.set(20, [self, sessionUser, invitedAlice, mia, dan])
+    await session.control.load()
+    const changed = (changedMember: T.GroupMember, fromRole: T.GroupMemberRole): Promise<void> => hub["onEvent"]({type: "memberRole", groupInfo: group(20, "1 · auth"), byMember: invitedAlice, member: changedMember, fromRole, toRole: changedMember.memberRole} as unknown as ChatEvent)
+    await changed(mia, T.GroupMemberRole.Member)
+    await changed(dan, T.GroupMemberRole.Admin)
+    await changed({...sessionUser, memberRole: T.GroupMemberRole.Observer}, T.GroupMemberRole.Member)
+    await hub["controlEvents"]
+    expect(sentTo(chat, 20)).toEqual([`Mia is an admin and ${approverRights} You can change role to observer to stop it: /'observer #20 12'`, "Dan is an observer and can't send messages."])
+    expect(await session.control.ownerCommand(mia, {keyword: "pending", params: ""})).toBe("No pending actions.")
+    expect(await session.control.ownerCommand(dan, {keyword: "pending", params: ""})).toBe(approversOnly)
+  })
+
+  it("make a member an observer by /observer #G ID, from a member whose role lets them change that member's role in SimpleX, and reply with the observer's rights", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     const session = await openSession(hub, id1, stored(1, "auth"))
@@ -254,8 +288,8 @@ describe("session groups", () => {
     expect(await observer(dan, "#20 1")).toBe("Claude's role can't be changed.")
     expect(await observer(dan, "20 9")).toBe(unknownCommand)
     expect(chat.roles).toEqual([])
-    expect(await observer(dan, "#20 9")).toBe("Mallory is now an observer.")
-    expect(await observer(invitedAlice, "#20 12")).toBe("Dan is now an observer.")
+    expect(await observer(dan, "#20 9")).toBe("Mallory is an observer and can't send messages.")
+    expect(await observer(invitedAlice, "#20 12")).toBe("Dan is an observer and can't send messages.")
     expect(chat.roles).toEqual([{groupId: 20, members: [9], role: T.GroupMemberRole.Observer}, {groupId: 20, members: [12], role: T.GroupMemberRole.Observer}])
     expect(await observer(member(9, "Mallory", T.GroupMemberRole.Observer), "#20 13")).toBe(approversOnly)
   })

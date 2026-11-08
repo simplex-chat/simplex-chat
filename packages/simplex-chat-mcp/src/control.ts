@@ -35,6 +35,10 @@ const noOwners = "No owners in the agent control chat."
 const qrCodeHint = "If the QR code does not scan, restart with --qr-code large, or paste the link into the app."
 const noSessionApprover = `The group of this session has no admin or owner to approve actions. Members of the Main group join it by /join N there; without members, run ${linkCommand} in a terminal.`
 const sessionApproversOnly = "Only admins and owners of this group approve actions here."
+const approverRights = "can send prompts and // and /! commands to Claude, and approve tool use"
+const senderRights = "can send prompts to Claude; // and /! commands and approvals of tool use need the role admin or owner"
+const observerRights = "can't send messages"
+export const sessionApproverRoles: T.GroupMemberRole[] = [T.GroupMemberRole.Admin, T.GroupMemberRole.Owner]
 const roleOrder: T.GroupMemberRole[] = [T.GroupMemberRole.Relay, T.GroupMemberRole.Observer, T.GroupMemberRole.Author, T.GroupMemberRole.Member, T.GroupMemberRole.Moderator, T.GroupMemberRole.Admin, T.GroupMemberRole.Owner]
 
 export interface ControlData {
@@ -365,7 +369,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (groupMemberId === this.group.membership.groupMemberId || groupMemberId === sender.groupMemberId || target.memberRole === T.GroupMemberRole.Relay || pending) return `${name}'s role can't be changed.`
     if (roleRank(sender.memberRole) < Math.max(roleRank(T.GroupMemberRole.Admin), roleRank(target.memberRole))) return `Your role does not let you change the role of ${name}.`
     await this.chat.apiSetMembersRole(this.groupId, [groupMemberId], T.GroupMemberRole.Observer)
-    return `${name} is now an observer.`
+    return rightsText(name, T.GroupMemberRole.Observer)
   }
 
   private queueAfterReplies(post: () => Promise<unknown>): void {
@@ -820,6 +824,15 @@ export function isLost({membership}: T.GroupInfo): boolean {
 
 function roleRank(role: T.GroupMemberRole): number {
   return roleOrder.indexOf(role)
+}
+
+export function canSend(role: T.GroupMemberRole): boolean {
+  return roleRank(role) > roleRank(T.GroupMemberRole.Observer)
+}
+
+export function rightsText(name: string, role: T.GroupMemberRole): string {
+  const rights = sessionApproverRoles.includes(role) ? approverRights : canSend(role) ? senderRights : observerRights
+  return `${name} is ${/^[aeiou]/.test(role) ? "an" : "a"} ${role} and ${rights}.`
 }
 
 function listsMember({memberId, name}: OwnerEntry, member: T.GroupMember): boolean {

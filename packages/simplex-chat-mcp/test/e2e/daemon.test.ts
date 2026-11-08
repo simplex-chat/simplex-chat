@@ -300,7 +300,7 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   expect(chatItems.map(({meta}) => meta.itemText)).not.toContain("Session 1 is not running.")
 }, 600_000)
 
-test("a member of the Main group joins a session's group by /join as admin, prompts, sends // commands and approves there, also after removal from the Main group; a member added to the group by link as member prompts, and the plugin refuses its approvals and its // and /! commands; files of reply reach the group at once, and the group's preference for files makes the core refuse them; after a reset of the owners the members still prompt and approve there", async () => {
+test("a member of the Main group joins a session's group by /join as admin, prompts, sends // commands and approves there, also after removal from the Main group; a member added to the group by link as member prompts, and the plugin refuses its approvals and its // and /! commands; Claude posts each member's rights at the join and at a role change, after which the member approves; files of reply reach the group at once, and the group's preference for files makes the core refuse them; after a reset of the owners the members still prompt and approve there", async () => {
   const root = join(dir, "trust", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("trust", "Alice")
@@ -329,7 +329,8 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   const bobMainInfo = (await bob.chat.apiListGroups(bob.user.userId)).find(({groupId}) => groupId === bobMain)!
   expect(bobMainInfo.groupProfile).toMatchObject({shortDescr: "Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions.", description: `Supervise your Claude Code sessions: each one has its own group, and you get its invitation here. ${trusted}`})
   const bobInvited = joinSessionGroups(bob, ["1 · one"])
-  const bobInOne = received(alice.chat, inGroup(groupOne, textStarts("Bob can send prompts to Claude and approve tool use. You can change role to observer to stop it: /'observer #")))
+  const adminRights = "can send prompts and // and /! commands to Claude, and approve tool use."
+  const bobInOne = received(alice.chat, inGroup(groupOne, textStarts(`Bob is an admin and ${adminRights} You can change role to observer to stop it: /'observer #`)))
   await bob.chat.apiSendTextMessage([T.ChatType.Group, bobMain], "/join 1")
   const bobGroupOne = (await bobInvited).get("1 · one")!
   await bobInOne
@@ -347,7 +348,7 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   await bobSends("//compact")
   await until(() => attached.some(({prompt}) => prompt?.text === "/compact" && prompt.from === "Bob"))
 
-  const carolInOne = received(alice.chat, inGroup(groupOne, textStarts("Carol can send prompts to Claude and approve tool use.")))
+  const carolInOne = received(alice.chat, inGroup(groupOne, textStarts("Carol is a member and can send prompts to Claude; // and /! commands and approvals of tool use need the role admin or owner. You can change role to observer to stop it: /'observer #")))
   const carolGroupOne = await joinByLink(carol, await alice.chat.apiCreateGroupLink(groupOne, T.GroupMemberRole.Member))
   const [, makeCarolObserver] = /\/'(observer #\d+ \d+)'$/.exec((await carolInOne).chatItem.meta.itemText)!
   const carolPending = received(carol.chat, inGroup(carolGroupOne, textStarts("Only admins and owners of this group approve actions here.")))
@@ -381,8 +382,15 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   await until(() => attached.some(({prompt}) => prompt?.text === "Run the tests" && prompt.from === "Bob"))
   const posted = async (groupId: number, start: string) => (await alice.chat.apiGetChat(T.ChatType.Group, groupId, 200)).chatItems.filter(({meta}) => meta.itemText.startsWith(start)).length
   expect(await Promise.all([posted(mainGroupId, "Alice joined. "), posted(mainGroupId, "Bob joined. ")])).toEqual([1, 1])
-  expect(await Promise.all(["Alice", "Bob", "Carol"].map(name => posted(groupOne, `${name} can send prompts to Claude and approve tool use.`)))).toEqual([1, 1, 1])
-  const carolObserver = aliceSees("Carol is now an observer.")
+  expect(await Promise.all(["Alice is an owner and ", "Bob is an admin and ", "Carol is a member and "].map(start => posted(groupOne, start)))).toEqual([1, 1, 1])
+  const carolAdmin = aliceSees(`Carol is an admin and ${adminRights} You can change role to observer to stop it: /'${makeCarolObserver}'`)
+  const carolInAlice = (await alice.chat.apiListMembers(groupOne)).find(({memberProfile}) => memberProfile.displayName === "Carol")!
+  await alice.chat.apiSetMembersRole(groupOne, [carolInAlice.groupMemberId], T.GroupMemberRole.Admin)
+  await carolAdmin
+  const carolApproves = received(carol.chat, inGroup(carolGroupOne, textStarts("No pending actions.")))
+  await carol.chat.apiSendTextMessage([T.ChatType.Group, carolGroupOne], "/pending")
+  await carolApproves
+  const carolObserver = aliceSees("Carol is an observer and can't send messages.")
   await aliceSends(`/${makeCarolObserver}`)
   await carolObserver
   await until(async () => (await carol.chat.apiListGroups(carol.user.userId)).find(({groupId}) => groupId === carolGroupOne)?.membership.memberRole === T.GroupMemberRole.Observer)
