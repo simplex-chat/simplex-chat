@@ -65,6 +65,17 @@ Design:
 25. The session and its group exist from the session's start.
 26. Claude's final answer of every turn is posted by `Claude` from the Stop hook's `last_assistant_message`; the `reply` tool sends files only.
 
+Decided on 2026-11-08:
+27. UserPromptSubmit, Stop and PostModelSwitch post to one daemon route, `POST /turn`.
+28. A tool-use card is an action of tool `permission`; allowed is `performing` then `done`, denied is `rejected`, ended is `expired`.
+29. Open tool-use cards of a session end at the end of each turn and when the session detaches.
+30. A decided tool-use action leaves the session's actions at once.
+31. The effort level is read from the Stop hook only.
+32. The three mirroring hooks run with `"async": true`.
+33. Answers and terminal prompts are posted in parts of at most 12,000 encoded bytes; an answer quotes the owner's prompt only when its first part fits with the quote.
+34. A prompt in the group of a session without an attached Claude Code gets the reply `Session N is not running.`
+35. A UserPromptSubmit prompt that is a prompt pushed in the last 60 s, raw or in a channel tag of this server with the pushed item ID, is not posted by `User`.
+
 Chat ownership, D8 (a):
 ```
 ChatOwner, in the chat's custom data
@@ -82,16 +93,25 @@ on resume of s:              its chats are shown again
 
 Sources (https://code.claude.com/docs/en/hooks, https://code.claude.com/docs/en/settings, https://code.claude.com/docs/en/remote-control):
 ```
-value    read from                                          updated on
-model    SessionStart model (optional)                       PostModelSwitch to_model
-effort   effort.level, common field of PreToolUse,           the next such event; no event for an effort change
-         PostToolUse and Stop
+value    read from                          updated on
+model    SessionStart model (optional)      PostModelSwitch to_model
+effort   Stop effort.level                  the next Stop; no event for an effort change
 ```
 
 ```
-on SessionStart(m):       group description = model m
-on PostModelSwitch(t):    group description = model t
-on Stop or tool event(e): if e.effort.level differs: group description = effort e.effort.level
+on SessionStart(m):       model = m
+on PostModelSwitch(t):    model = t
+on Stop(e):               effort = e.effort.level, when given
+on a change of either:    group short description = "MODEL · effort LEVEL"
+```
+
+```mermaid
+flowchart LR
+  SS[SessionStart: model] --> T[POST /title]
+  PM[PostModelSwitch: to_model] --> R[POST /turn]
+  ST[Stop: effort.level] --> R
+  T --> D[session group short description]
+  R --> D
 ```
 
 Changing them from SimpleX, per the docs:
@@ -233,19 +253,28 @@ Server instructions, added: messages in a `simplex` channel are the owners' prom
 
 ## Session mirroring
 
-Hooks of the plugin (https://code.claude.com/docs/en/hooks):
+Hooks of the plugin (https://code.claude.com/docs/en/hooks), all with `"async": true`:
 ```
-hook               input used                 action
-UserPromptSubmit   prompt                     User posts it in the session group
-Stop               last_assistant_message     Claude posts it in the session group, quoting the turn's prompt
-```
-
-```
-on UserPromptSubmit(p):  if p equals a prompt the daemon pushed to this session in the last 60 s: skip; else post p
-on Stop(m):              post m; if the turn's prompt came from the group: quote it
+hook               input used                        route
+UserPromptSubmit   prompt                            POST /turn {id, prompt}
+Stop               last_assistant_message            POST /turn {id, answer, effort}
+                   effort.level
+PostModelSwitch    to_model                          POST /turn {id, model}
 ```
 
-The docs do not state whether a channel prompt fires UserPromptSubmit; the skip covers both cases.
+```
+on owner's message m in group N:   if N has no attachment: reply to m "Session N is not running."
+                                   else: push {prompt}; pushed += (m.text, m.item, now)
+on POST /turn prompt p:            if pushed in the last 60 s has (p) or (T, I) with p = channel tag of T, I: skip
+                                   else: turn prompt = none; User posts parts(p)
+on POST /turn answer a:            end open tool-use cards; Claude posts parts(a);
+                                   first part quotes the turn's prompt from the group when it fits with the quote
+on POST /turn model or effort:     update the group short description
+parts(t):                          consecutive pieces of t, each at most 12000 encoded bytes
+channel tag of T, I:               <channel source="plugin:simplex:simplex" ... item="I" ...>\nT\n</channel>
+```
+
+The docs do not state whether a channel prompt fires UserPromptSubmit; the skip covers the raw form and the channel tag form.
 
 ```
 UserProfile
@@ -273,14 +302,17 @@ sequenceDiagram
   participant C as Claude Code
   O->>H: message in session N's group
   H->>H: sender's Main group member an owner?
-  H->>D: prompt for N
-  D->>S: {prompt} on /attach
-  S->>C: notifications/claude/channel
-  C->>C: turn ends
-  C->>S: Stop hook, last_assistant_message
-  S->>D: POST /answer
-  D->>H: post in session N's group
-  H->>O: answer, quoting the prompt
+  alt session N has no attachment
+    H->>O: reply "Session N is not running."
+  else
+    H->>D: prompt for N
+    D->>S: {prompt} on /attach
+    S->>C: notifications/claude/channel
+    C->>C: turn ends
+    C->>D: Stop hook: POST /turn {answer}
+    D->>H: end open tool-use cards; post the answer in parts
+    H->>O: answer, quoting the prompt
+  end
 ```
 
 ### Tool-use approval
@@ -310,26 +342,40 @@ PermissionAction
   toolName
   description
   inputPreview
-  state           pending | allowed | denied | ended
+  state           pending | performing | done | rejected | expired
   decidedBy       owner name
 ```
 
 ```
-state     next
-pending   allowed | denied | ended
-allowed   final
-denied    final
-ended     final
+state        meaning    next
+pending      asked      performing | rejected | expired
+performing   allowed    done
+done         allowed    final
+rejected     denied     final
+expired      ended      final
 ```
 
 ```
-on permission_request(r):    action = permission(session, r); post card in the session group
-on /approve K by owner:      if action K pending: state = allowed; push {permission: allow}
-on /reject K by owner:       if action K pending: state = denied; push {permission: deny}
-on session detached:         for each pending permission of the session: state = ended; edit card
+on permission_request(r):          action = permission(session, r), mode requests; post card in the session group
+on /approve K by owner:            if action K pending: state = performing; push {permission: allow}; state = done
+on /reject K by owner:             if action K pending: state = rejected; push {permission: deny}
+on Stop, or session detached:      for each pending permission of the session: state = expired; edit card "Expired."
+on state done, rejected, expired:  remove the action from the session's actions
 ```
 
-An answer at the terminal wins; Claude Code drops the later remote verdict.
+```mermaid
+stateDiagram-v2
+  [*] --> pending: permission_request
+  pending --> performing: /approve K, allow pushed
+  performing --> done
+  pending --> rejected: /reject K, deny pushed
+  pending --> expired: Stop, detach or expiry
+  done --> [*]: removed
+  rejected --> [*]: removed
+  expired --> [*]: removed
+```
+
+The first answer, at the terminal or in the group, applies; Claude Code closes the other.
 
 ## Launch
 
