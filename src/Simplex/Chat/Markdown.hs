@@ -364,13 +364,11 @@ markdownP = joinMarkdown <$> A.many' fragmentP
             | otherwise -> wordP
         Nothing -> fail ""
     formattedP :: Char -> Format -> Parser Markdown
-    formattedP c f = A.char c *> ((md c f . T.concat <$> A.many' pieceP <* A.char c) <|> openedP)
+    formattedP c f = A.char c *> (T.concat <$> A.many' pieceP >>= \s -> (A.char c $> md c f s) <|> openedP s)
       where
         pieceP = A.takeWhile1 (\x -> x /= c && x /= '`' && x /= '\n') <|> codeTextP <|> delimitersP
         delimitersP = A.takeWhile1 (== c) >>= \r -> r <$ (guard (T.length r > 1) <|> lookAhead (void $ A.satisfy $ notClosingBefore c))
-        openedP = do
-          s <- A.takeTill (\x -> x == c || x == '\n')
-          (markdown f <$> acrossLinesP s) <|> noFormat (c `T.cons` s)
+        openedP s = (markdown f <$> acrossLinesP s) <|> noFormat (c `T.cons` s)
         acrossLinesP s = do
           s' <- ((s <> "\n") <>) <$> (A.char '\n' *> A.takeTill (== c) <* A.char c)
           if T.null s || isSpace (T.head s) || isSpace (T.last s') then fail "not formatted" else pure s'

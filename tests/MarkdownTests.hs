@@ -1055,8 +1055,12 @@ formatsAcrossLines = describe "formats across line breaks" do
     "# h\n`\na`" ===> ([heading1, "h", lineBr, fmt Snippet "", hardBr, fmt Snippet "a"], [Heading 1 (rng 1 2), Paragraph (rng 3 6)])
     "# h\n``\n``" <===> ([heading1, "h", lineBr, fmt Snippet "", hardBr, fmt Snippet ""], [Heading 1 (rng 1 2), Paragraph (rng 3 6)])
     T.concat (map markdownText $ fromMaybe [] $ parseMaybeMarkdownList "# h\n`\na`") `shouldBe` "# h\n``\n`a`"
+  it "delimiter runs and underscores inside words before the line break, as within a line" do
+    "*a**b\nc*" ==>> [fmt boldF "a**b", "\n", fmt boldF "c"]
+    "_a_b\nc_" ==>> [fmt Italic "a_b", "\n", fmt Italic "c"]
   it "an unclosed delimiter is text to the line end" do
     "*a\n_b_" ==>> ["*a\n", fmt Italic "b"]
+    "*a **b** c\n_d_" ==>> ["*a **b** c\n", fmt Italic "d"]
     parseMaybeMarkdownList "*a\nb" `shouldBe` Nothing
   it "white space at the content ends: as on master, within the line" do
     parseMaybeMarkdownList "*a\n*" `shouldBe` Nothing
@@ -1121,7 +1125,7 @@ linearTimeParsing = describe "bounded scans for linear-time parsing" do
     parseMaybeMarkdownList (T.replicate 2001 "a\n\n") `shouldBe` Nothing
     length . filter (\(FormattedText f _) -> f == Just boldF) <$> parseMaybeMarkdownList (T.replicate 2001 "*a*\n\n") `shouldBe` Just 2001
   it "large adversarial texts parse in bounded time" do
-    forM_ (["1 ", "[ ", "[a]( ", "[a](b\\!", "< ", "a\n", ">\n", "- a\n", "|\n", "|-|\n", "*a\n", "@'a'", "@@a\\!"] :: [Text]) $ \p -> do
+    forM_ (["1 ", "[ ", "[a]( ", "[a](b\\!", "< ", "a\n", ">\n", "- a\n", "|\n", "|-|\n", "*a\n", "_a", "***a ", "@'a'", "@@a\\!"] :: [Text]) $ \p -> do
       parsed <- timeout 10000000 $ evaluate $ length $ show $ parseMaybeMarkdownList $ "|a|\n|-|\n" <> T.replicate 20000 p
       parsed `shouldSatisfy` isJust
 
