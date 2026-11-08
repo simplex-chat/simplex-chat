@@ -14,6 +14,9 @@ const greeting = "I'm Claude. Each Claude Code session has its own group, and yo
 const commandsReply = "Commands: /sessions, /join N. Owners decide a requested reset of the owners with /'approve reset' or /'reject reset'."
 const resetRequest = "A terminal asks to replace the owners: this group is deleted, and a new Main group with a new link replaces it."
 const noOwners = "No owners in the Main group."
+const trusted = "Everyone in this group is trusted with all Claude Code sessions here: they can join each session's group by /join N, prompt Claude and approve its actions. Invite only people you trust with them."
+const welcome = `Supervise your Claude Code sessions: each one has its own group, and you get its invitation here. ${trusted}`
+const shortDescr = "Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions."
 
 export interface SessionGroups {
   sessionsText(): string
@@ -61,8 +64,8 @@ export class MainGroup {
   async load(): Promise<void> {
     if (isLost(this.group)) return this.lose()
     const {groupProfile} = this.group
-    if (groupProfile.displayName !== this.name || JSON.stringify(groupProfile.groupPreferences?.commands) !== JSON.stringify(mainCommands)) {
-      this.group = await this.chat.apiUpdateGroupProfile(this.groupId, {...groupProfile, displayName: this.name, groupPreferences: {...groupProfile.groupPreferences, commands: mainCommands}})
+    if (groupProfile.displayName !== this.name || groupProfile.shortDescr !== shortDescr || groupProfile.description !== welcome || JSON.stringify(groupProfile.groupPreferences?.commands) !== JSON.stringify(mainCommands)) {
+      this.group = await this.chat.apiUpdateGroupProfile(this.groupId, {...groupProfile, displayName: this.name, shortDescr, description: welcome, groupPreferences: {...groupProfile.groupPreferences, commands: mainCommands}})
     }
     await this.refreshMembers()
   }
@@ -147,6 +150,8 @@ export class MainGroup {
       log(noOwners)
       return this.openLink()
     }
+    const joined = event.type === "joinedGroupMember" || event.type === "connectedToGroupMember" ? this.humans().find(({groupMemberId}) => groupMemberId === event.member.groupMemberId) : undefined
+    if (joined !== undefined) await this.post(`${safeName(joined.memberProfile.displayName)} joined. ${trusted}`)
     for (const owner of this.owners()) {
       if (!before.some(({groupMemberId}) => groupMemberId === owner.groupMemberId)) await this.sessions.inviteOwner(owner)
     }
@@ -218,7 +223,8 @@ export async function createMainGroup(chat: api.ChatApi, userId: number, display
   const group = await createGroup(chat, userId, {
     displayName,
     fullName: "",
-    description: "Supervise your Claude Code sessions: each one has its own group, and you get its invitation here.",
+    shortDescr,
+    description: welcome,
     groupPreferences: {history: {enable: T.GroupFeatureEnabled.On}, directMessages: {enable: T.GroupFeatureEnabled.On, role: T.GroupMemberRole.Owner}, commands: mainCommands},
   }, {[mainKey]: true})
   log(`Main group "${displayName}" created.`)

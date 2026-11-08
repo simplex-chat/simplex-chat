@@ -7,6 +7,7 @@ import {api, core} from "simplex-chat"
 import {controlCommands} from "../../src/control"
 import {SessionFile, createDataFolder, readSessionFile, sessionFolder, writeSessionFile} from "../../src/files"
 import {Hub, Session} from "../../src/hub"
+import {createMainGroup} from "../../src/main-group"
 import {AttachLine} from "../../src/protocol"
 import {User} from "../../src/user"
 import {version} from "../../src/version"
@@ -22,6 +23,7 @@ const bob = member(7, "Bob", T.GroupMemberRole.Member)
 const invitedAlice = member(1003, "Alice", T.GroupMemberRole.Owner)
 const noApprover = `The group of this session has no member who joined from the Main group. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@${version} link in a terminal.`
 const modeCard = "I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here."
+const trusted = "Everyone in this group is trusted with all Claude Code sessions here: they can join each session's group by /join N, prompt Claude and approve its actions. Invite only people you trust with them."
 
 type HubConstructor = new (chat: unknown, user: T.User, root: string, expireHours: number, mainGroup: T.GroupInfo, mainName: string) => Hub
 
@@ -848,8 +850,24 @@ describe("Main group", () => {
     await hub.main.onEvent({type: "joinedGroupMember", groupInfo: group(10, "SimpleX MCP", self), member: carol} as unknown as ChatEvent)
     expect(chat.roles).toEqual([{groupId: 10, members: [5], role: T.GroupMemberRole.Owner}])
     expect(chat.invitations).toEqual([{groupId: 20, viaGroupId: 10, groupMemberId: 5, memberRole: T.GroupMemberRole.Owner}])
-    expect(sentTo(chat, 10)).toEqual(["I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N."])
+    expect(sentTo(chat, 10)).toEqual(["I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N.", `Carol joined. ${trusted}`])
     expect(hub.owner()).toEqual({owners: ["Carol"]})
+  })
+
+  it("states in its description, its welcome message and a message at each join that everyone in it is trusted with all sessions", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const texts = {shortDescr: "Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions.", description: `Supervise your Claude Code sessions: each one has its own group, and you get its invitation here. ${trusted}`}
+    expect(chat.profiles).toEqual([{groupId: 10, groupProfile: expect.objectContaining(texts)}])
+    await hub.main.load()
+    expect(chat.profiles).toHaveLength(1)
+    await createMainGroup(chat.api(), 1, "SimpleX MCP")
+    expect(chat.newGroups.at(-1)!.groupProfile).toMatchObject(texts)
+    const dave = member(8, "Dave", T.GroupMemberRole.Member)
+    chat.members.set(10, [self, alice, bob, dave])
+    await hub.main.onEvent({type: "connectedToGroupMember", groupInfo: group(10, "SimpleX MCP", self), member: {...dave, memberStatus: T.GroupMemberStatus.Intro_inv}} as unknown as ChatEvent)
+    await hub.main.onEvent({type: "joinedGroupMember", groupInfo: group(10, "SimpleX MCP", self), member: bob} as unknown as ChatEvent)
+    expect(sentTo(chat, 10)).toEqual([`Dave joined. ${trusted}`, `Bob joined. ${trusted}`])
   })
 
   it("keeps its link across a restart while it has no owner", async () => {
