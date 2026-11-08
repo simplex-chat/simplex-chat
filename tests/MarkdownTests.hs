@@ -1107,6 +1107,10 @@ linearTimeParsing = describe "bounded scans for linear-time parsing" do
   it "a link target stops before an escape, as a word does" do
     "[a](https://simplex.chat\\!)" <==> "[a](" <> uri "https://simplex.chat" <> markdown Escape "\\" <> "!)"
     "[a](b\\!)" <==> "[a](b" <> markdown Escape "\\" <> "!)"
+    "[a](https://example.com/?q=a\\!)" <==> "[a](" <> uri "https://example.com/?q=a" <> markdown Escape "\\" <> "!)"
+  it "a SimpleX name stops before an escape, as a word does" do
+    "#privacy\\!" <==> sname NTPublicGroup TLDSimplex "privacy" [] "privacy" <> markdown Escape "\\" <> "!"
+    "@a.simplex\\!x" <==> sname NTContact TLDSimplex "a" [] "a.simplex" <> markdown Escape "\\" <> "!x"
   it "a text with more than 2000 markup tokens has no blocks" do
     let ParsedMarkdown _ blocks = parsedMarkdown $ T.replicate 1000 "- a\n"
     length <$> blocks `shouldBe` Just 1
@@ -1117,7 +1121,7 @@ linearTimeParsing = describe "bounded scans for linear-time parsing" do
     parseMaybeMarkdownList (T.replicate 2001 "a\n\n") `shouldBe` Nothing
     length . filter (\(FormattedText f _) -> f == Just boldF) <$> parseMaybeMarkdownList (T.replicate 2001 "*a*\n\n") `shouldBe` Just 2001
   it "large adversarial texts parse in bounded time" do
-    forM_ (["1 ", "[ ", "[a]( ", "[a](b\\!", "< ", "a\n", ">\n", "- a\n", "|\n", "|-|\n", "*a\n"] :: [Text]) $ \p -> do
+    forM_ (["1 ", "[ ", "[a]( ", "[a](b\\!", "< ", "a\n", ">\n", "- a\n", "|\n", "|-|\n", "*a\n", "@'a'", "@@a\\!"] :: [Text]) $ \p -> do
       parsed <- timeout 10000000 $ evaluate $ length $ show $ parseMaybeMarkdownList $ "|a|\n|-|\n" <> T.replicate 20000 p
       parsed `shouldSatisfy` isJust
 

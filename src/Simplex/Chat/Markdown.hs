@@ -418,7 +418,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
     secretFallback :: Parser Markdown
     secretFallback = unmarked . ('#' `T.cons`) <$> A.takeTill (\c -> c == ' ' || c == '\n')
     nameRefP :: Char -> Parser Markdown
-    nameRefP pfx = nameRef <$?> A.takeTill (\c -> c == ' ' || c == '\n')
+    nameRefP pfx = nameRef <$?> (notP (A.char '\'') *> takeTillEscape (\c -> c == ' ' || c == '\n'))
       where
         nameRef word
           | pfx == '@' && T.all (/= '.') name = Left "not a name"
@@ -449,7 +449,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
       pure $ if T.null punct then res else res :|: unmarked punct
     sowLinkP = do
       t <- enclosedP '[' ']' (\c -> c == '[' || c == '\n')
-      l <- linkTargetP
+      l <- A.char '(' *> takeTillEscape (\c -> c == ')' || isSpace c) <* A.char ')'
       let hasPunct = T.any (\c -> isPunctuation c && c /= '-' && c /= '_') t
       when (hasPunct && t /= l && ("https://" <> t) /= l) $ fail "punctuation in hyperlink text"
       f <- hyperLinkFormat t l
@@ -466,9 +466,6 @@ markdownP = joinMarkdown <$> A.many' fragmentP
         Right _ -> pure $ HyperLink (Just t) l
         Left e -> fail $ "not uri: " <> T.unpack e
     enclosedP open close stop = A.char open *> A.takeWhile1 (\c -> c /= close && not (stop c)) <* A.char close
-    linkTargetP = A.char '(' *> (T.concat <$> A.many1' targetPieceP) <* A.char ')'
-      where
-        targetPieceP = A.takeWhile1 (\c -> c /= ')' && not (isSpace c) && c /= '\\') <|> (notP escapeP *> A.string "\\")
     colorP =
       A.anyChar >>= \case
         'r' -> optional "ed" $> Red
@@ -496,7 +493,9 @@ markdownP = joinMarkdown <$> A.many' fragmentP
     conc4 s1 s2 s3 s4 = s1 <> s2 <> s3 <> s4
     phoneSep = " " <|> "-" <|> "." <|> ""
     wordP :: Parser Markdown
-    wordP = wordMD . T.concat <$> A.many' (A.takeWhile1 (\c -> c /= ' ' && c /= '\n' && c /= '\\') <|> (notP escapeP *> A.string "\\"))
+    wordP = wordMD <$> takeTillEscape (\c -> c == ' ' || c == '\n')
+    takeTillEscape :: (Char -> Bool) -> Parser Text
+    takeTillEscape stop = T.concat <$> A.many' (A.takeWhile1 (\c -> not (stop c) && c /= '\\') <|> (notP escapeP *> A.string "\\"))
     wordMD :: Text -> Markdown
     wordMD s = fromMaybe (unmarked s) $ linkMD s <|> linkAfterParen
       where
