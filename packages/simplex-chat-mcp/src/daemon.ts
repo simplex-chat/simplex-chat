@@ -174,6 +174,7 @@ export class Daemon {
         sendJson(res, 200, {})
       }),
       "GET /status": this.expiring(async (_body, res) => sendJson(res, 200, this.status())),
+      "GET /link": this.withHub(async (_body, res) => sendJson(res, 200, this.hub.owner())),
       "POST /reset-owners": this.withHub(async (_body, res) => sendJson(res, 200, await this.hub.resetOwners())),
       "POST /stop": this.withHub(async (_body, res) => {
         await this.stop(res)
@@ -233,7 +234,7 @@ export class Daemon {
     if (entry.attached === 0) this.scheduleIdle(id, entry)
     await this.hub.configure(request.config)
     agent.requestMode(request.config.approve)
-    return {number: agent.number, displayName: agent.displayName, version: this.deps.version, protocol: protocolVersion, owner: this.hub.owner()}
+    return {number: agent.number, displayName: agent.displayName, version: this.deps.version, protocol: protocolVersion, owner: {owners: this.hub.owner().owners}}
   }
 
   private async onTitle(request: TitleRequest): Promise<TitleReply> {
@@ -436,7 +437,7 @@ export class Daemon {
 
   private status(): StatusReply {
     const sessions = [...this.entries.values()].flatMap(({agent, attached}) => (agent === undefined ? [] : [{number: agent.number, name: agent.displayName, attached}]))
-    return {version: this.deps.version, protocol: protocolVersion, mainGroup: this.hub.mainGroup, owner: this.hub.owner(), sessions}
+    return {version: this.deps.version, protocol: protocolVersion, mainGroup: this.hub.mainGroup, owner: {owners: this.hub.owner().owners}, sessions}
   }
 }
 

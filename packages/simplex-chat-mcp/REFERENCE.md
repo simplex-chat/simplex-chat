@@ -556,7 +556,7 @@ Set in `/plugin` > Installed > simplex > Configure options:
 
 A changed option applies from the next session start. An invalid value is shown at the session start, and every tool call of that session returns the same text, for example `Plugin option expire_hours: hours from 1 to 23 expected, got 48. Change it in /plugin > Installed > simplex > Configure options.`
 
-In mode `host`, a session posts in its group `I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here.`, with `/approve N or /reject N`, at its start or when the first owner joins the group. It runs in mode `host` after an owner approves it, and keeps the mode across restarts. After an owner rejects the card, the session asks again only after a session start with `requests`. A change back to `requests` applies at the next session start, without a card, and a pending card then ends with `Ended.`
+In mode `host`, a session posts in its group `I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here.`, with `/approve N or /reject N`, at its start or when the first owner joins the group. It runs in mode `host` after an owner approves it, and keeps the mode across restarts: the approved mode is kept in the custom data of the session's group, in the chat database. After an owner rejects the card, the session asks again only after a session start with `requests`. A change back to `requests` applies at the next session start, without a card, and a pending card then ends with `Ended.`
 
 ### Plugin data folder
 
@@ -571,7 +571,7 @@ In mode `host`, a session posts in its group `I want to run in mode host: Claude
 | `titles.json` | The titles of new sessions whose session server had not registered when the daemon stopped; the next start reads and removes it. |
 | `_hub/` | The databases of the profile `Claude`: the Main group, the sessions' groups and the chats with peers. |
 | `_user/` | The databases of the profile `User`. |
-| `_sessions/<session ID>/` | `session.json` with the session's number, name, project folder, group, mode, a rejected mode `host`, model, effort level, its other session IDs and the time it closed, and `files/` with the files of its chats and of its group. |
+| `_sessions/<session ID>/` | `session.json` with the session's number, name, project folder, group, a rejected mode `host`, model, effort level, its other session IDs and the time it closed, and `files/` with the files of its chats and of its group. |
 
 The folders are readable only by the user, and so are the files the daemon writes, except on Windows. One daemon runs per data folder.
 
@@ -602,3 +602,4 @@ The folders are readable only by the user, and so are the files the daemon write
 - While owners exist, the owners are replaced only after an owner approves it in the Main group.
 - The plugin refuses to send private keys and the files of its data folder, except the files under `files/` of the session's own folder.
 - Peers of a chat see the profile `Claude`, or a random profile in a chat connected incognito.
+- These protections hold against Claude's tools, but not against a shell running as the same user: such a shell can read the data folder, with the token and the chat databases, and send requests to the daemon.

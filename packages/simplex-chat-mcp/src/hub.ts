@@ -38,6 +38,7 @@ interface SessionGroupData {
   session: number
   invited: InvitedMember[]
   pending?: {connId: number; at: number}[]
+  mode?: Mode
 }
 
 interface InvitedMember {
@@ -71,12 +72,12 @@ export class Session {
     private data: SessionGroupData,
   ) {
     const {chat, profile: user, root} = hub
-    const {number, name, mode = "requests", model, effort, hostDeclined = false} = stored
+    const {number, name, model, effort, hostDeclined = false} = stored
     this.number = number
     this.name = name
     this.description = {model, effort}
     this.hostDeclined = hostDeclined
-    this.actions = new Actions(mode, hub.expireHours, controlDataOf(group.customData)?.nextAction ?? firstAction, {
+    this.actions = new Actions(data.mode ?? "requests", hub.expireHours, controlDataOf(group.customData)?.nextAction ?? firstAction, {
       refusal: action => this.control.refusal(action),
       saveCounter: next => this.control.saveCounter(next),
       postCard: action => this.control.postCard(action),
@@ -292,7 +293,7 @@ export class Session {
 
   private setMode(mode: Mode): void {
     this.actions.mode = mode
-    this.store({mode})
+    this.saveData({...this.data, mode}).catch(error => logError(`session ${this.number}`, error))
   }
 
   private declineHost(declined: boolean): void {

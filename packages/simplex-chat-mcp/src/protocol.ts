@@ -9,8 +9,11 @@ export interface DaemonInfo {
   protocol: number
 }
 
-export interface OwnerState {
+export interface Owners {
   owners: string[]
+}
+
+export interface OwnerState extends Owners {
   link?: string
 }
 
@@ -62,7 +65,7 @@ export interface TitleReply extends DaemonInfo {
 export interface SessionReply extends DaemonInfo {
   number: number
   displayName: string
-  owner: OwnerState
+  owner: Owners
 }
 
 export interface AttachRequest {
@@ -79,7 +82,7 @@ export type CallLine = {progress: string} | {result: CallToolResult | null}
 
 export interface StatusReply extends DaemonInfo {
   mainGroup: string
-  owner: OwnerState
+  owner: Owners
   sessions: {number: number; name: string; attached: number}[]
 }
 

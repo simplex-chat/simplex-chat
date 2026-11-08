@@ -149,11 +149,23 @@ describe("session groups", () => {
     expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1"})).toBeUndefined()
     await until(() => chat.updates.length === 1)
     expect(session.actions.mode).toBe("host")
-    expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({group: 20, mode: "host"})
+    const savedMode = () => (chat.customData.filter(({chat: ref}) => ref === "#20").at(-1)!.customData as {simplexMcpSession: {mode?: string}}).simplexMcpSession.mode
+    await until(() => savedMode() === "host")
+    expect(readSessionFile(sessionFolder(root, id1))).not.toHaveProperty("mode")
     expect(chat.updates[0].text).toBe("I run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here.\nApproved by Alice.")
     session.requestMode("requests")
     expect(session.actions.mode).toBe("requests")
-    expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({mode: "requests"})
+    await until(() => savedMode() === "requests")
+  })
+
+  it("take the approved mode from the session group's data and not from the session's file", async () => {
+    const chat = new FakeChat()
+    const session = await openSession(await hubWith(chat), id1, {...stored(1, "auth"), mode: "host"} as SessionFile)
+    expect(session.actions.mode).toBe("requests")
+    const {groupInfo} = chat.chats.get("#20")!.chatInfo as T.ChatInfo.Group
+    groupInfo.customData = {...groupInfo.customData, simplexMcpSession: {session: 1, invited: [], mode: "host"}}
+    const reopened = await (await hubWith(chat)).session(id1, readSessionFile(sessionFolder(root, id1))!)
+    expect(reopened.actions.mode).toBe("host")
   })
 
   it("ask for mode host once an owner joins the group of a session that requested it before", async () => {

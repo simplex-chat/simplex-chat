@@ -2,7 +2,6 @@ import {createHash, randomBytes} from "crypto"
 import {chmodSync, existsSync, fchmodSync, mkdirSync, linkSync, openSync, readFileSync, readdirSync, renameSync, rmSync, statSync, truncateSync, unlinkSync, writeFileSync} from "fs"
 import {homedir, tmpdir} from "os"
 import {join, resolve} from "path"
-import type {Mode} from "./actions"
 import {ExitError, logError} from "./log"
 
 const sessionIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -16,7 +15,6 @@ export interface SessionFile {
   project: string
   created: string
   group?: number
-  mode?: Mode
   aliases?: string[]
   model?: string
   effort?: string

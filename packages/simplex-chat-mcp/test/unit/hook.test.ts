@@ -1,6 +1,6 @@
 import {DaemonClient} from "../../src/client"
 import {HookDeps, sessionStart, turn} from "../../src/hook"
-import {linkText, resetOwners, resetOwnersText} from "../../src/owner"
+import {linkText, resetOwners, resetOwnersText, showLink} from "../../src/owner"
 import {qrCodeText} from "../../src/qr"
 import {SocketError} from "../../src/socket"
 import {version} from "../../src/version"
@@ -151,6 +151,20 @@ describe("turn hooks", () => {
 
 describe("owner commands", () => {
   const link = "https://simplex.chat/g#link"
+  it("read the Main group link from its own route only while the group has no owner, as the status has no link", async () => {
+    const routes: string[] = []
+    const client = (owners: string[]) => ({
+      ensureDaemon: async () => ({...status, owner: {owners}}),
+      request: async (method: string, route: string) => (routes.push(`${method} ${route}`), {owners, link}),
+    })
+    const spy = jest.spyOn(DaemonClient, "forRoot")
+    spy.mockReturnValue(client([]) as unknown as DaemonClient)
+    expect(await showLink({SIMPLEX_MCP_HOME: "/r"}, true)).toBe(linkText({...status, owner: {owners: [], link}}, true))
+    spy.mockReturnValue(client(["Alice"]) as unknown as DaemonClient)
+    expect(await showLink({SIMPLEX_MCP_HOME: "/r"}, true)).toBe('Owners of "SimpleX MCP": Alice. To replace them, run /simplex:reset-owners.')
+    expect(routes).toEqual(["GET /link"])
+  })
+
   it("show the owners, or the link with a QR code in a terminal only", () => {
     expect(linkText({...status, owner: {owners: ["Alice", "Bob"]}}, false)).toBe('Owners of "SimpleX MCP": Alice, Bob. To replace them, run /simplex:reset-owners.')
     expect(linkText({...status, owner: {owners: [], link}}, false)).toBe(`Run npx -y @simplex-chat/mcp@${version} link in a terminal to see the link to "SimpleX MCP".`)

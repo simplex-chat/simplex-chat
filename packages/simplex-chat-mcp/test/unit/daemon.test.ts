@@ -192,7 +192,7 @@ describe("daemon", () => {
     const {d, agents, configs} = deps(root)
     daemon = await Daemon.start(d, readDefaultConfig)
     const first = await register(id1)
-    expect(first).toEqual({number: 1, displayName: "1 · app", version: "0.2.0", protocol: protocolVersion, owner: {owners: [], link: "https://simplex.chat/g#link"}})
+    expect(first).toEqual({number: 1, displayName: "1 · app", version: "0.2.0", protocol: protocolVersion, owner: {owners: []}})
     await title(id2, "docs")
     expect(await post("/session", {id: id2, project: "/p/app", config: {...defaultConfig, mainGroup: "Agents"}})).toMatchObject({number: 2, displayName: "2 · docs"})
     expect(configs.at(-1)).toEqual({...defaultConfig, mainGroup: "Agents"})
@@ -796,10 +796,10 @@ describe("daemon", () => {
     const titled = title(id1, "auth")
     await turnsUntil(() => rename.mock.calls.length === 1)
     const folder = sessionFolder(root, id1)
-    writeSessionFile(folder, {...readSessionFile(folder)!, mode: "host"})
+    writeSessionFile(folder, {...readSessionFile(folder)!, hostDeclined: true})
     renaming.resolve()
     await titled
-    expect(readSessionFile(folder)).toMatchObject({name: "auth", mode: "host"})
+    expect(readSessionFile(folder)).toMatchObject({name: "auth", hostDeclined: true})
   })
 
   it("starts its own session for a server whose process sends no title in 10 seconds, and 10 seconds after a title from a process whose session left over 10 seconds ago", async () => {
@@ -882,7 +882,7 @@ describe("daemon", () => {
     expect(readFileSync(join(root, "daemon.log"), "utf8")).toBe("")
   })
 
-  it("reports status, resets owners and stops on request", async () => {
+  it("reports status without the Main group link, the link on its own route, resets owners and stops on request", async () => {
     const {d, hubStops, stoppedCode} = deps(root)
     daemon = await Daemon.start(d, readDefaultConfig)
     await register(id1)
@@ -890,9 +890,10 @@ describe("daemon", () => {
       version: "0.2.0",
       protocol: protocolVersion,
       mainGroup: "SimpleX MCP",
-      owner: {owners: [], link: "https://simplex.chat/g#link"},
+      owner: {owners: []},
       sessions: [{number: 1, name: "1 · app", attached: 0}],
     })
+    expect(await requestJson(socketPath(root), token, "GET", "/link")).toEqual({owners: [], link: "https://simplex.chat/g#link"})
     expect(await post("/reset-owners")).toEqual({link: "https://simplex.chat/g#new"})
     expect(await post("/stop")).toEqual({})
     expect(hubStops).toEqual([1])

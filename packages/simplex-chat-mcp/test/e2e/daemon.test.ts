@@ -8,8 +8,8 @@ import {defaultConfig} from "../../src/config"
 import {Daemon, productionDeps} from "../../src/daemon"
 import {hubFolder, readSessionFile, sessionFolder} from "../../src/files"
 import {sessionStart, turn} from "../../src/hook"
-import {AttachLine, SessionReply, StatusReply, TitleReply} from "../../src/protocol"
-import {Bot, ItemCheck, callTool, captureLog, cardNumber, isActive, joinByLink, lines, person, prepareRoot, received, startBot, textStarts, until} from "./helpers"
+import {AttachLine, OwnerState, SessionReply, StatusReply, TitleReply} from "../../src/protocol"
+import {Bot, ItemCheck, callTool, captureLog, cardNumber, isActive, joinByLink, lines, person, prepareRoot, received, startBot, textStarts, until, updated} from "./helpers"
 import {SmpServer, startSmpServer, startXftpServer} from "./smpServer"
 import {daemonPid, killDaemon, spawnSession} from "./stdio"
 
@@ -101,7 +101,8 @@ test("an owner joins the Main group and each session's group, and approves its c
 
   expect(await openSession(client, one, "one")).toMatchObject({number: 1, displayName: "1 · one", owner: {owners: []}})
   expect(await openSession(client, two, "two")).toMatchObject({number: 2, displayName: "2 · two"})
-  const {owner} = await client.request<StatusReply>("GET", "/status")
+  expect((await client.request<StatusReply>("GET", "/status")).owner).toEqual({owners: []})
+  const owner = await client.request<OwnerState>("GET", "/link")
   const greeting = received(alice.chat, textStarts("I'm Claude. Each Claude Code session has its own group"))
   const invitations = joinSessionGroups(alice, ["1 · one", "2 · two"])
   await joinByLink(alice, owner.link!)
@@ -177,7 +178,7 @@ test("the hooks post a terminal prompt as User and the answer as Claude in the s
   await startDaemon(root)
   const client = DaemonClient.forRoot(root)
   await openSession(client, five, "five")
-  const {owner} = await client.request<StatusReply>("GET", "/status")
+  const owner = await client.request<OwnerState>("GET", "/link")
   const invitations = joinSessionGroups(alice, ["1 · five"])
   await joinByLink(alice, owner.link!)
   const groupId = (await invitations).get("1 · five")!
@@ -237,7 +238,7 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   closing.push(async () => controller.abort())
   client.stream("/attach", {id: one}, line => attached.push(line as AttachLine), controller.signal).catch(() => undefined)
   await until(() => attached.length === 1)
-  const {owner} = await client.request<StatusReply>("GET", "/status")
+  const owner = await client.request<OwnerState>("GET", "/link")
   const invitations = joinSessionGroups(alice, ["1 · one"])
   await joinByLink(alice, owner.link!)
   const groupId = (await invitations).get("1 · one")!
@@ -274,8 +275,10 @@ test("a session keeps its group for hooks with a new ID from its process, relays
 
   const modeCard = card("I want to run in mode host")
   await client.request("POST", "/session", {id: one, pid, project: "/p", config: {...defaultConfig, approve: "host"}})
+  const hostMode = updated(alice.chat, inGroup(groupId, textStarts("I run in mode host")))
   await ownerSends(`/approve ${cardNumber(await modeCard)}`)
-  await until(() => readSessionFile(sessionFolder(root, one))?.mode === "host")
+  await hostMode
+  expect(readSessionFile(sessionFolder(root, one))).not.toHaveProperty("mode")
 
   controller.abort()
   await daemon.stop()
