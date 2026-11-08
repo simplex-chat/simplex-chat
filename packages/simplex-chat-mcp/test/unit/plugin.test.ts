@@ -1,11 +1,11 @@
 import {spawn} from "child_process"
-import {chmodSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync} from "fs"
-import {tmpdir} from "os"
-import {delimiter, join} from "path"
+import {readFileSync} from "fs"
+import {join} from "path"
 import {configVariables, defaultConfig} from "../../src/config"
 
 const read = (file: string): any => JSON.parse(readFileSync(join(__dirname, "../..", file), "utf8"))
 const packageJson = read("package.json")
+const cli = (args: string): string => `node "\${CLAUDE_PLUGIN_ROOT}/dist/cli.js" ${args}`
 
 describe("plugin", () => {
   it("has the package version and the config defaults", () => {
@@ -17,10 +17,10 @@ describe("plugin", () => {
     expect(plugin.userConfig.expire_hours.default).toBe(defaultConfig.expireHours)
   })
 
-  it("starts the session server with the options as variables", () => {
+  it("starts the session server of the plugin's own build with the options as variables", () => {
     const {simplex} = read(".mcp.json").mcpServers
     expect(simplex.command).toBe("node")
-    expect(simplex.args).toEqual(["${CLAUDE_PLUGIN_ROOT}/plugin/launch.js", "session"])
+    expect(simplex.args).toEqual(["${CLAUDE_PLUGIN_ROOT}/dist/cli.js", "session"])
     expect(simplex.env).toEqual({
       [configVariables.mainGroup]: "${user_config.main_group}",
       [configVariables.approve]: "${user_config.approve}",
@@ -36,62 +36,39 @@ describe("plugin", () => {
     expect(read(".mcp.json").mcpServers.simplex.timeout).toBe((maxExpireHours + responseWaitHours) * 3_600_000 + marginMs)
   })
 
-  it("runs the hook and allows the plugin's tools", () => {
+  it("runs the hooks from the plugin's own build and allows the plugin's tools", () => {
     const {hooks} = read("hooks/hooks.json")
-    expect(hooks.SessionStart[0].hooks[0]).toEqual({type: "command", command: 'node "${CLAUDE_PLUGIN_ROOT}/plugin/launch.js" hook session-start', timeout: 600})
+    expect(hooks.SessionStart[0].hooks[0]).toEqual({type: "command", command: cli("hook session-start"), timeout: 600})
     expect(hooks.PreToolUse[0].matcher).toBe("mcp__plugin_simplex_simplex__.*")
     expect(hooks.PreToolUse[0].hooks[0]).toEqual({type: "command", command: 'node "${CLAUDE_PLUGIN_ROOT}/plugin/allow.js"'})
-    for (const event of ["UserPromptSubmit", "Stop", "PostModelSwitch"]) expect(hooks[event]).toEqual([{hooks: [{type: "command", command: 'node "${CLAUDE_PLUGIN_ROOT}/plugin/launch.js" hook turn', async: true}]}])
+    for (const event of ["UserPromptSubmit", "Stop", "PostModelSwitch"]) expect(hooks[event]).toEqual([{hooks: [{type: "command", command: cli("hook turn"), async: true}]}])
   })
 
-  it("ships the plugin files in the package", () => {
-    expect(packageJson.files).toEqual(expect.arrayContaining([".claude-plugin", ".mcp.json", "hooks", "plugin", "skills"]))
+  it("ships the build, the dependency lock and the plugin files in the package", () => {
+    expect(packageJson.files).toEqual(expect.arrayContaining(["dist", "npm-shrinkwrap.json", ".claude-plugin", ".mcp.json", "hooks", "plugin", "skills"]))
   })
 
-  it.each([
-    ["link", "link"],
-    ["reset-owners", "reset-owners"],
-  ])("offers the %s skill to the user only, and pre-approves its command", (folder, command) => {
-    const skill = readFileSync(join(__dirname, "../../skills", folder, "SKILL.md"), "utf8")
+  it.each(["link", "reset-owners"])("offers the %s skill to the user only, and pre-approves its command", command => {
+    const skill = readFileSync(join(__dirname, "../../skills", command, "SKILL.md"), "utf8")
     const [, frontmatter] = /^---\n([\s\S]*?)\n---\n/.exec(skill)!
-    const shellCommand = `node "\${CLAUDE_PLUGIN_ROOT}/plugin/launch.js" ${command}`
     expect(frontmatter.split("\n")).toEqual([
-      `name: ${folder}`,
+      `name: ${command}`,
       expect.stringMatching(/^description: \S/),
       "disable-model-invocation: true",
-      `allowed-tools: Bash(${shellCommand})`,
+      `allowed-tools: Bash(${cli(command)})`,
     ])
-    expect(skill).toContain(`!\`${shellCommand}\``)
+    expect(skill).toContain(`!\`${cli(command)}\``)
   })
 
   it("allows a tool call", async () => {
-    const output = await run(process.execPath, [join(__dirname, "../../plugin/allow.js")], process.env)
-    expect(JSON.parse(output.stdout)).toEqual({hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "allow"}})
-  })
-
-  it("launches the pinned package through npx in the plugin folder, with the arguments and the project folder, and passes the exit code", async () => {
-    const bin = fakeNpx(`echo "$@"\npwd\necho "$CLAUDE_PROJECT_DIR"\nexit 7`)
-    const project = realpathSync(mkdtempSync(join(tmpdir(), "project-")))
-    bins.push(project)
-    const env = {...process.env, PATH: `${bin}${delimiter}${process.env.PATH}`, CLAUDE_PROJECT_DIR: ""}
-    const output = await run(process.execPath, [join(__dirname, "../../plugin/launch.js"), "hook", "session-start"], env, project)
-    expect(output.stdout.trim().split("\n")).toEqual([`-y @simplex-chat/mcp@${packageJson.version} hook session-start`, realpathSync(join(__dirname, "../..")), project])
-    expect(output.code).toBe(7)
-  })
-
-  it.each(["SIGTERM", "SIGINT"] as const)("forwards %s to the launched process", async signal => {
-    const bin = fakeNpx(`trap 'echo got ${signal}; exit 3' ${signal.slice(3)}\necho ready\nwhile true; do sleep 0.1; done`)
-    const child = spawn(process.execPath, [join(__dirname, "../../plugin/launch.js"), "session"], {env: {...process.env, PATH: `${bin}${delimiter}${process.env.PATH}`}, stdio: ["ignore", "pipe", "inherit"]})
-    let stdout = ""
-    const ready = new Promise<void>(resolve => child.stdout.on("data", chunk => {
-      stdout += chunk
-      if (stdout.includes("ready")) resolve()
-    }))
-    const closed = new Promise<number | null>(resolve => child.on("close", resolve))
-    await ready
-    child.kill(signal)
-    expect(await closed).toBe(3)
-    expect(stdout).toContain(`got ${signal}`)
+    const stdout = await new Promise<string>((resolve, reject) => {
+      const child = spawn(process.execPath, [join(__dirname, "../../plugin/allow.js")], {stdio: ["ignore", "pipe", "inherit"]})
+      let text = ""
+      child.stdout.on("data", chunk => (text += chunk))
+      child.on("error", reject)
+      child.on("close", () => resolve(text))
+    })
+    expect(JSON.parse(stdout)).toEqual({hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "allow"}})
   })
 
   it("lists the plugin in the marketplace with an npm source", () => {
@@ -100,28 +77,3 @@ describe("plugin", () => {
     expect(marketplace.plugins).toEqual([expect.objectContaining({name: "simplex", source: {source: "npm", package: "@simplex-chat/mcp"}})])
   })
 })
-
-const bins: string[] = []
-
-afterAll(() => {
-  for (const bin of bins) rmSync(bin, {recursive: true, force: true})
-})
-
-function fakeNpx(body: string): string {
-  const bin = mkdtempSync(join(tmpdir(), "fake-npx-"))
-  bins.push(bin)
-  const npx = join(bin, "npx")
-  writeFileSync(npx, `#!/bin/sh\n${body}\n`)
-  chmodSync(npx, 0o755)
-  return bin
-}
-
-function run(command: string, args: string[], env: NodeJS.ProcessEnv, cwd?: string): Promise<{stdout: string; code: number | null}> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {env, cwd, stdio: ["ignore", "pipe", "inherit"]})
-    let stdout = ""
-    child.stdout.on("data", chunk => (stdout += chunk))
-    child.on("error", reject)
-    child.on("close", code => resolve({stdout, code}))
-  })
-}
