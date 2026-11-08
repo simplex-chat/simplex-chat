@@ -177,6 +177,7 @@ chatProfileTests = do
     it "should plan and connect via one-time invitation" testPlanShortLinkInvitation
     it "should connect via contact address" testShortLinkContactAddress
     it "should share contact address via chat" testShareAddressViaChat
+    it "should share contact address via member contact invitation" testShareAddressViaMemberContact
     it "should join group" testShortLinkJoinGroup
   describe "short links with attached data" shortLinkTests
   describe "client services" $ do
@@ -4076,7 +4077,7 @@ slSimplexScheme sl = T.unpack $ T.replace "https://localhost/" "simplex:/" (T.pa
 
 testShareAddressViaChat :: HasCallStack => TestParams -> IO ()
 testShareAddressViaChat =
-  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+  testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
     alice ##> "/ad"
     _ <- getContactLinks alice True
     connectUsers alice bob
@@ -4086,6 +4087,7 @@ testShareAddressViaChat =
     alice <# "@bob contact address of @alice (signed):"
     _ <- getTermLine alice -- link
     _ <- getTermLine alice -- owner signature (testView)
+    aItemId <- lastItemId alice
     bob <# "alice> contact address of @alice (signed):"
     bLink <- getTermLine bob
     bSig <- getTermLine bob
@@ -4099,12 +4101,98 @@ testShareAddressViaChat =
         cLink = either error id $ strDecode (B.pack bLink)
         mc = MCChat (T.pack bLink) (MCLContact cLink (profileFromName "alice") False) (Just sig)
         cm = "{\"msgContent\":" <> T.unpack (encodeJSON mc) <> "}"
+        um c = "{\"msgContent\":" <> T.unpack (encodeJSON c) <> ",\"mentions\":{}}"
     bob ##> ("/_send @3 json [" <> cm <> "]")
     bob <# "@cath contact address of @alice (signed):"
     _ <- getTermLine bob -- link
     _ <- getTermLine bob -- owner signature (bob's sent view)
     cath <# "bob> contact address of @alice:"
     void $ getTermLine cath -- link (signature stripped)
+    alice ##> ("/_update item @2 " <> aItemId <> " json " <> um (MCChat "my address" (MCLContact cLink (profileFromName "alice") False) (Just sig)))
+    alice <# "@bob [edited] contact address of @alice (signed):"
+    _ <- getTermLine alice
+    alice <## "my address"
+    bob <# "alice> [edited] contact address of @alice (signed):"
+    _ <- getTermLine bob
+    bob <## "my address"
+    bob #> "@cath hi"
+    cath <# "bob> hi"
+    bItemId <- lastItemId bob
+    bob ##> ("/_update item @3 " <> bItemId <> " json " <> um mc)
+    bob <# "@cath [edited] contact address of @alice (signed):"
+    _ <- getTermLine bob
+    cath <# "bob> [edited] contact address of @alice:"
+    _ <- getTermLine cath
+    bob ##> "/ad"
+    (bShortLink, bFullLink) <- getContactLinks bob True
+    bob ##> ("/_address_settings 1 {\"businessAddress\":false,\"autoReply\":" <> T.unpack (encodeJSON mc) <> "}")
+    bob <## "auto_accept off"
+    dan ##> ("/_connect plan 1 " <> bShortLink)
+    dan <## "contact address: ok to connect"
+    bSLinkData <- getTermLine dan
+    dan ##> ("/_prepare contact 1 " <> bFullLink <> " " <> bShortLink <> " " <> bSLinkData)
+    dan <## "bob: contact is prepared"
+    dan ##> "/tail @bob 1"
+    dan <# "bob> contact address of @alice:"
+    _ <- getTermLine dan
+    dan ##> "/ad"
+    (dShortLink, dFullLink) <- getContactLinks dan True
+    bob ##> ("/_connect plan 1 " <> dShortLink)
+    bob <## "contact address: ok to connect"
+    dSLinkData <- getTermLine bob
+    bob ##> ("/_prepare contact 1 " <> dFullLink <> " " <> dShortLink <> " " <> dSLinkData)
+    bob <## "dan: contact is prepared"
+    bob ##> ("/_connect contact @4 json " <> T.unpack (encodeJSON mc))
+    bob
+      <### [ "dan: connection started",
+             WithTime "@dan contact address of @alice (signed):",
+             ConsoleString bLink,
+             ConsoleString bSig
+           ]
+    dan
+      <### [ "bob_1 (Bob) wants to connect to you!",
+             WithTime "bob_1> contact address of @alice:",
+             ConsoleString bLink
+           ]
+    dan <## "to accept: /ac bob_1"
+    dan <## "to reject: /rc bob_1 (the sender will NOT be notified)"
+
+testShareAddressViaMemberContact :: HasCallStack => TestParams -> IO ()
+testShareAddressViaMemberContact =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    cath ##> "/set accept member contacts on"
+    cath <## "ok"
+    createGroup3 "team" alice bob cath
+    alice ##> "/ad"
+    _ <- getContactLinks alice True
+    alice ##> "/share address @bob"
+    alice <# "@bob contact address of @alice (signed):"
+    _ <- getTermLine alice
+    _ <- getTermLine alice
+    bob <# "alice> contact address of @alice (signed):"
+    bLink <- getTermLine bob
+    bSig <- getTermLine bob
+    let sig = maybe (error "bad sig") id (decodeJSON (T.pack bSig) :: Maybe LinkOwnerSig)
+        cLink = either error id $ strDecode (B.pack bLink)
+        mc = MCChat (T.pack bLink) (MCLContact cLink (profileFromName "alice") False) (Just sig)
+    bob ##> "/_create member contact #1 3"
+    bob <## "contact for member #team cath is created"
+    bob ##> ("/_invite member contact @3 json " <> T.unpack (encodeJSON mc))
+    bob
+      <### [ "sent invitation to connect directly to member #team cath",
+             WithTime "@cath contact address of @alice (signed):",
+             ConsoleString bLink,
+             ConsoleString bSig
+           ]
+    cath
+      <### [ "#team bob is creating direct contact bob with you",
+             WithTime "bob> contact address of @alice:",
+             ConsoleString bLink
+           ]
+    cath <## "bob (Bob): you can send messages to contact"
+    concurrently_
+      (bob <## "cath (Catherine): contact is connected")
+      (cath <## "bob (Bob): contact is connected")
 
 testShortLinkContactAddress :: HasCallStack => TestParams -> IO ()
 testShortLinkContactAddress =

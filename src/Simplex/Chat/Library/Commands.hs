@@ -1182,11 +1182,9 @@ processChatCommand cxt nm = \case
           prepareMsgReq :: CChatItem c -> CM (Maybe (MsgContent, Maybe CryptoFile))
           prepareMsgReq (CChatItem md ci) = forwardMsgContent ci $>>= forwardContent ci . dropOwnerSig
             where
-              dropOwnerSig = \case
-                mc@MCChat {text, chatLink}
-                  | SMDSnd <- md, fromChat == toChat -> mc
-                  | otherwise -> MCChat {text, chatLink, ownerSig = Nothing}
-                mc -> mc
+              dropOwnerSig mc
+                | SMDSnd <- md, fromChat == toChat = mc
+                | otherwise = dropLinkOwnerSig mc
           forwardCIFF :: ChatItem c d -> Maybe CIForwardedFrom -> Maybe CIForwardedFrom
           forwardCIFF ChatItem {meta = CIMeta {itemForwarded}} ciff = case itemForwarded of
             Nothing -> ciff
@@ -2228,7 +2226,7 @@ processChatCommand cxt nm = \case
                 createItem sharedMsgId content = createChatItem user cd True content sharedMsgId Nothing Nothing
                 cInfo = GroupChat gInfo Nothing
             void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
-            aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent) message
+            aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent . dropLinkOwnerSig) message
             let chat = case aci of
                   Just (AChatItem SCTGroup dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
                   _ -> Chat cInfo [] emptyChatStats
@@ -2242,7 +2240,7 @@ processChatCommand cxt nm = \case
             cInfo = DirectChat ct
         void $ createItem Nothing $ CIRcvDirectE2EEInfo $ e2eInfoEncrypted $ connRequestPQEncryption cReq
         void $ createFeatureEnabledItems_ user ct
-        aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent) message
+        aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent . dropLinkOwnerSig) message
         let chat = case aci of
               Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
               _ -> Chat cInfo [] emptyChatStats

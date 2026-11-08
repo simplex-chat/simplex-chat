@@ -586,7 +586,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               case event of
                 XMsgNew mc -> newContentMessage ct'' mc msg msgMeta
                 XMsgFileDescr sharedMsgId fileDescr fileExpires fileBadge -> messageFileDescription ct'' sharedMsgId fileDescr fileExpires fileBadge
-                XMsgUpdate sharedMsgId mContent _ ttl live _msgScope _ -> messageUpdate ct'' sharedMsgId mContent msg msgMeta ttl live
+                XMsgUpdate sharedMsgId mContent _ ttl live _msgScope _ -> do
+                  mContent' <- rcvDirectLinkOwnerSig ct'' mContent
+                  messageUpdate ct'' sharedMsgId mContent' msg msgMeta ttl live
                 XMsgDel sharedMsgId _ _ _ -> messageDelete ct'' sharedMsgId msg msgMeta
                 XMsgReact sharedMsgId _ _ reaction add -> directMsgReaction ct'' sharedMsgId reaction add msg msgMeta
                 -- TODO discontinue XFile
@@ -1121,7 +1123,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               XGrpRosterRequest reqVer -> Nothing <$ xGrpRosterRequest (GIK gInfo' gks) m'' reqVer
               XGrpInv gInv -> Nothing <$ xGrpInv gInfo' m'' conn' gInv msg brokerTs
               -- TODO [knocking] why don't we forward these messages?
-              XGrpDirectInv connReq mContent_ msgScope -> memberCanSend (Just m'') msgScope $ Nothing <$ xGrpDirectInv gInfo' m'' conn' connReq mContent_ msg brokerTs
+              XGrpDirectInv connReq mContent_ msgScope -> memberCanSend (Just m'') msgScope $ Nothing <$ xGrpDirectInv gInfo' m'' conn' connReq (dropLinkOwnerSig <$> mContent_) msg brokerTs
               XGrpMsgForward fwd msg' -> Nothing <$ xGrpMsgForward (GIK gInfo' gks) Nothing m'' fwd (ParsedMsg Nothing Nothing msg') brokerTs
               XInfoProbe probe -> Nothing <$ xInfoProbe (COMGroupMember m'') probe
               XInfoProbeCheck probeHash -> Nothing <$ xInfoProbeCheck (COMGroupMember m'') probeHash
@@ -1411,7 +1413,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         (signedMsg_, ChatMessage {chatVRange, chatMsgEvent}) <- parseChatMessage' conn connInfo
         let reqHeader = directPresHeader binding
         case chatMsgEvent of
-          XContact p memberKey_ xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange reqHeader p memberKey_ xContactId_ welcomeMsgId_ requestMsg_ pqSupport rejectionSupported
+          XContact p memberKey_ xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange reqHeader p memberKey_ xContactId_ welcomeMsgId_ (dropLinkOwnerSig <$$> requestMsg_) pqSupport rejectionSupported
           XMember p joiningMemberId joiningMemberKey viaRelay -> memberJoinRequestViaRelay invId chatVRange signedMsg_ p joiningMemberId joiningMemberKey viaRelay
           XInfo p _ -> profileContactRequest invId chatVRange reqHeader p Nothing Nothing Nothing Nothing pqSupport rejectionSupported
           XGrpRelayInv groupRelayInv -> xGrpRelayInv invId chatVRange signedMsg_ groupRelayInv
@@ -1927,18 +1929,28 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     messageError :: Text -> CM ()
     messageError = toView . CEvtMessageError user "error"
 
+    rcvDirectLinkOwnerSig :: Contact -> MsgContent -> CM MsgContent
+    rcvDirectLinkOwnerSig ct = \case
+      c@MCChat {ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}} -> do
+        keepSig <- (Just binding ==) <$> directChatBinding ct
+        pure $ if keepSig then c else dropLinkOwnerSig c
+      c -> pure c
+
+    rcvGroupLinkOwnerSig :: GroupInfo -> Maybe GroupMember -> ShowGroupAsSender -> MsgContent -> MsgContent
+    rcvGroupLinkOwnerSig GroupInfo {groupProfile = GroupProfile {publicGroup}} m_ sentAsGroup = \case
+      c@MCChat {ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}} -> case publicGroup of
+        Just pgp | maybe False (binding ==) (expectedBinding pgp) -> c
+        _ -> dropLinkOwnerSig c
+      c -> c
+      where
+        expectedBinding PublicGroupProfile {publicGroupId}
+          | sentAsGroup = Just $ encodeChatBinding CBChannel (smpEncode publicGroupId)
+          | otherwise = (\GroupMember {memberId} -> encodeChatBinding CBGroup (smpEncode (publicGroupId, memberId))) <$> m_
+
     newContentMessage :: Contact -> MsgContainer -> RcvMessage -> MsgMeta -> CM ()
     newContentMessage ct mc msg@RcvMessage {sharedMsgId_} msgMeta = do
       let MsgContainer {content = c, file = fInv_} = mc
-      content <- case c of
-        MCChat {text, chatLink, ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}} -> do
-          keepSig <- case contactConn ct of
-            Nothing -> pure False
-            Just conn -> do
-              adHash <- codeAD <$> withAgent (`getConnectionVerifyCodes` aConnId conn)
-              pure $ encodeChatBinding CBDirect adHash == binding
-          pure $ if keepSig then c else MCChat {text, chatLink, ownerSig = Nothing}
-        _ -> pure c
+      content <- rcvDirectLinkOwnerSig ct c
       -- Uncomment to test stuck delivery on errors - see test testDirectMessageDelete
       -- case content of
       --   MCText "hello 111" ->
@@ -2238,15 +2250,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         timed_ gInfo' = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo' itemTTL
         live' = fromMaybe False live_
         MsgContainer {content = c, mentions = MsgMentions mentions, file = fInv_, ttl = itemTTL, live = live_, scope = msgScope_, asGroup = asGroup_} = mc
-        content = case c of
-          MCChat {text, chatLink, ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}} -> case publicGroup of
-            Just pgp | maybe False (binding ==) (expectedBinding pgp) -> c
-            _ -> MCChat {text, chatLink, ownerSig = Nothing}
-          _ -> c
-        expectedBinding PublicGroupProfile {publicGroupId}
-          | sentAsGroup = Just $ encodeChatBinding CBChannel (smpEncode publicGroupId)
-          | otherwise = (\GroupMember {memberId} -> encodeChatBinding CBGroup (smpEncode (publicGroupId, memberId))) <$> m_
-        GroupInfo {groupProfile = GroupProfile {publicGroup}} = gInfo
+        content = rcvGroupLinkOwnerSig gInfo m_ sentAsGroup c
         sentAsGroup = asGroup_ == Just True
         ts@(_, ParsedMarkdown ft_ _) = msgContentTexts content
         -- m' is Maybe GroupMember
@@ -2297,7 +2301,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           groupMsgToView cInfo ci' {reactions}
 
     groupMessageUpdate :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> MsgContent -> Map MemberName MsgMention -> Maybe MsgScope -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> Maybe Bool -> CM (Maybe DeliveryTaskContext)
-    groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId, msgSigned, signedMsg_, signedByGMId_} brokerTs ttl_ live_ asGroup_
+    groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId c mentions msgScope_ msg@RcvMessage {msgId, msgSigned, signedMsg_, signedByGMId_} brokerTs ttl_ live_ asGroup_
       | Just m <- m_, prohibitedSimplexLinks gInfo m mc ft_ =
           messageWarning ("x.msg.update ignored: feature not allowed " <> groupFeatureNameText GFSimplexLinks) $> Nothing
       | otherwise = do
@@ -2336,6 +2340,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci'')
                     pure $ Just $ infoToDeliveryContext gInfo' scopeInfo showGroupAsSender
       where
+        mc = rcvGroupLinkOwnerSig gInfo m_ (asGroup_ == Just True) c
         content = CIRcvMsgContent mc
         ts@(_, ParsedMarkdown ft_ _) = msgContentTexts mc
         live = fromMaybe False live_

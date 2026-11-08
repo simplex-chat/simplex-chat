@@ -16,6 +16,7 @@ import Control.Concurrent.STM (atomically, peekTQueue, tryReadTMVar)
 import Control.Exception (finally)
 import Control.Monad (forM_, replicateM, when, void)
 import qualified Data.Aeson as J
+import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import Directory.Captcha
 import Directory.Listing
@@ -27,11 +28,13 @@ import Simplex.Chat.Controller (ChatConfig (..), ChatController (smpAgent))
 import qualified Simplex.Chat.Markdown as MD
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
-import Simplex.Chat.Protocol (memberSupportVoiceVersion)
-import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
+import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink (MCLGroup), MsgContent (MCChat), memberSupportVoiceVersion)
+import Simplex.Chat.Types (B64UrlByteString (..), ChatPeerType (..), GroupProfile (GroupProfile), GroupType (..), Profile (..), PublicGroupProfile (PublicGroupProfile))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent (disposeAgentClient)
+import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
+import Simplex.Messaging.Util (decodeJSON, encodeJSON)
 import Simplex.Messaging.Version
 import NameResolver
 import System.FilePath ((</>))
@@ -103,6 +106,7 @@ directoryServiceTests = do
     it "should register channel via shared link card" testRegisterChannelViaCard
     it "should suggest share via chat when link sent as text" testLinkAsTextSearch
     it "should reject card shared by non-owner" testNonOwnerSharesCard
+    it "should reject owner card sent by non-owner in contact request" testOwnerCardInContactRequest
     it "should delete channel registration and leave" testDeleteChannelRegistration
     it "should handle re-registration when already listed" testReregistrationAlreadyListed
     it "should update subscriber count periodically" testLinkCheckUpdatesCount
@@ -2329,6 +2333,50 @@ testNonOwnerSharesCard ps =
           cath <# "@'SimpleX Directory' link to join channel #news:"
           _ <- getTermLine cath -- short link
           cath <# "'SimpleX Directory'> To add a channel to directory you must be the owner."
+
+testOwnerCardInContactRequest :: HasCallStack => TestParams -> IO ()
+testOwnerCardInContactRequest ps =
+  withDirectoryServiceCfg ps testCfg $ \superUser dsLink ->
+    withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
+      withRelay ps $ \relay ->
+        withNewTestChatCfg ps testCfg "cath" cathProfile $ \cath -> do
+          bob `connectVia` dsLink
+          (shortLink, _fullLink) <- prepareChannel1Relay "news" bob relay
+          connectUsers bob cath
+          bob ##> "/share chat #news @cath"
+          bob <# "@cath link to join channel #news (signed):"
+          _ <- getTermLine bob
+          _ <- getTermLine bob
+          cath <# "bob> link to join channel #news (signed):"
+          _ <- getTermLine cath
+          cSig <- getTermLine cath
+          let sig = maybe (error "bad sig") id (decodeJSON (T.pack cSig) :: Maybe LinkOwnerSig)
+              cLink = either error id $ strDecode (B.pack shortLink)
+              gp = GroupProfile "news" "" Nothing Nothing Nothing (Just $ PublicGroupProfile GTChannel cLink (B64UrlByteString "news") Nothing) Nothing Nothing Nothing
+              mc = MCChat (T.pack shortLink) (MCLGroup cLink gp) (Just sig)
+          cath ##> ("/_prepare contact 1 " <> dsLink <> " {\"profile\":{\"displayName\":\"SimpleX Directory\",\"fullName\":\"\"},\"business\":false}")
+          cath <## "'SimpleX Directory': contact is prepared"
+          cath ##> ("/_connect contact @3 json " <> T.unpack (encodeJSON mc))
+          cath
+            <### [ "'SimpleX Directory': connection started",
+                   WithTime "@'SimpleX Directory' link to join channel #news (signed):",
+                   ConsoleString shortLink,
+                   ConsoleString cSig
+                 ]
+          cath .<## ": contact is connected"
+          bob ##> "/share chat #news @'SimpleX Directory'"
+          bob <# "@'SimpleX Directory' link to join channel #news (signed):"
+          _ <- getTermLine bob
+          _ <- getTermLine bob
+          channelJoinedByDirectory bob relay
+          superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
+          superUser <## "news"
+          superUser <##. "Link to join channel: "
+          superUser <## "You need SimpleX Chat app v6.5 to join."
+          superUser <## "1 subscribers"
+          superUser <## ""
+          superUser <## "To approve send:"
+          superUser <# "'SimpleX Directory'> /approve 1:news 1"
 
 testDeleteChannelRegistration :: HasCallStack => TestParams -> IO ()
 testDeleteChannelRegistration ps =
