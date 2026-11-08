@@ -225,10 +225,10 @@ sequenceDiagram
   A->>F: read lock: P, stopped
   B->>F: read lock: P, stopped
   B->>F: link lock to lock.P.claim, or without links write it exclusively: created
-  B->>F: lock holds P: remove lock; create B's lock; remove the claim
+  B->>F: lock holds P: remove lock#59; create B's lock#59; remove the claim
   A->>F: link lock to lock.P.claim, or without links write it exclusively: created
   A->>F: lock holds B's PID
-  A->>A: locked; remove the claim
+  A->>A: locked#59; remove the claim
 ```
 
 Chat ownership, D8 (a):
@@ -395,14 +395,14 @@ stateDiagram-v2
   [*] --> observer: invited inside the group as observer
   approver --> sender: role change in the app
   sender --> approver: role change in the app
-  approver --> observer: /observer #G ID, or a role change in the app
-  sender --> observer: /observer #G ID, or a role change in the app
+  approver --> observer: /observer #35;G ID, or a role change in the app
+  sender --> observer: /observer #35;G ID, or a role change in the app
   observer --> sender: role change in the app
   observer --> approver: role change in the app
   approver --> [*]: leaves or removed
   sender --> [*]: leaves or removed
   observer --> [*]: leaves or removed
-  note right of approver: admin or owner: prompts, // and /!, approvals, tool use
+  note right of approver: admin or owner#58; prompts, // and /!, approvals, tool use
   note right of sender: prompts
   note right of observer: cannot send
 ```
@@ -518,7 +518,7 @@ sequenceDiagram
   H->>H: pending += c in the session group's data
   T-->>T: connect returns connected: false
   P->>H: accepts later: contactConnected, connection c
-  H->>H: pending -= c; chat owner = the session
+  H->>H: pending -= c#59; chat owner = the session
 ```
 
 Commands in a session group take no session prefix: `/approve 7`, `/receive @3 9`, `/leave #2`.
@@ -580,9 +580,9 @@ sequenceDiagram
   Note over HK,D: --continue: server with startup ID X, resumed session R
   S->>D: POST /session {id: X, pid: P}: waits
   HK->>D: POST /title {id: R, pid: P}
-  D->>D: title of P = R; the wait ends: alias X → R
+  D->>D: title of P = R#59; the wait ends: alias X → R
   D-->>S: session R
-  Note over HK,D: /resume R2 in session A; R2 has session.json
+  Note over HK,D: /resume R2 in session A#59; R2 has session.json
   HK->>D: POST /title {id: R2, pid: P}
   D->>D: entry A has pid P and is attached: session A, no alias
   HK->>D: POST /turn {id: R2}: session A
@@ -635,7 +635,7 @@ sequenceDiagram
   participant S as session server, ATTENDED 1 of the parent session
   participant D as daemon
   HK->>D: POST /title {pid: P, unattended: true}
-  D->>D: the marks of 10 s ago and older removed; P marked
+  D->>D: the marks of 10 s ago and older removed#59; P marked
   S->>D: POST /session {pid: P}, before or after the mark
   D-->>S: 403
   S->>S: every call: the text of a run that is not interactive
@@ -811,7 +811,7 @@ sequenceDiagram
   participant D as daemon
   Note over D: turns: (1, prompt 1)
   U->>D: POST /turn {at: 3, prompt 2}: turns += (3, prompt 2)
-  S->>D: POST /turn {at: 2, answer 1}: quotes prompt 1; turns: (3, prompt 2)
+  S->>D: POST /turn {at: 2, answer 1}: quotes prompt 1#59; turns: (3, prompt 2)
   Note over D: the Stop of turn 2, at 4, quotes prompt 2
 ```
 
@@ -821,9 +821,9 @@ sequenceDiagram
   participant S as Stop hook, at 2
   participant U as UserPromptSubmit hook, at 1
   participant D as daemon
-  Note over D: pushed: prompt 42; turns: none
+  Note over D: pushed: prompt 42#59; turns: none
   S->>D: POST /turn {at: 2, answer}: quotes 42, marked quoted, kept in pushed
-  U->>D: POST /turn {at: 1, prompt with the tag of 42}: matches 42; User posts nothing
+  U->>D: POST /turn {at: 1, prompt with the tag of 42}: matches 42#59; User posts nothing
 ```
 
 ```
@@ -876,10 +876,10 @@ sequenceDiagram
         D->>S: {prompt} on /attach
         S->>C: notifications/claude/channel
         C->>D: UserPromptSubmit hook: POST /turn {prompt with the channel tag}
-        D->>H: turn prompt = the matched pushed prompt; not posted by User
+        D->>H: turn prompt = the matched pushed prompt#59; not posted by User
         C->>C: turn ends
         C->>D: Stop hook: POST /turn {answer, at}
-        D->>H: end tool-use cards created before at; quote the newest turn record before at; post the answer in parts
+        D->>H: end tool-use cards created before at#59; quote the newest turn record before at#59; post the answer in parts
         H->>O: answer, quoting the prompt of its turn
       end
     end
@@ -942,7 +942,7 @@ stateDiagram-v2
   pending --> performing: /approve K, allow pushed
   performing --> done
   pending --> rejected: /reject K, deny pushed
-  pending --> expired: later prompt or Stop, detach: Ended.; expiry: Expired.
+  pending --> expired: later prompt or Stop, detach: Ended.#59; expiry: Expired.
   done --> [*]: removed
   rejected --> [*]: removed
   expired --> [*]: removed
@@ -999,7 +999,7 @@ sequenceDiagram
   participant H as hub
   participant O as owner
   S->>H: POST /session {approve: host}
-  H->>H: requested = host; no approver yet
+  H->>H: requested = host#59; no approver yet
   O->>H: joins the session group
   H->>O: mode card
   O->>H: /approve N
