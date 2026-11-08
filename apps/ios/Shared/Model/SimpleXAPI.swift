@@ -1330,11 +1330,9 @@ func deleteContactChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(noti
             case .full:
                 ChatModel.shared.removeChat(cInfo.id)
             case .entity, .archive:
-                ChatModel.shared.removeChat(cInfo.id)
-                ChatModel.shared.addChat(Chat(
-                    chatInfo: .direct(contact: ct),
-                    chatItems: chat.chatItems
-                ))
+                ChatModel.shared.updateContact(ct)
+                ChatTagsModel.shared.addPresetChatTags(.direct(contact: ct), chat.chatStats)
+                ChatTagsModel.shared.removePresetChatTags(cInfo, chat.chatStats)
             }
         }
     } catch let error {
