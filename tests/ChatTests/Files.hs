@@ -37,6 +37,7 @@ import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), XFTPStoreConfig (
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, bbsKeyGen)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Server.Expiration (ExpirationConfig (..))
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, getFileSize)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
@@ -64,6 +65,7 @@ chatFileTests = do
     it "send and receive locally encrypted files" testXFTPFileTransferEncrypted
     it "send and receive file, accepting after upload" testXFTPAcceptAfterUpload
     it "send and receive file in group" testXFTPGroupFileTransfer
+    it "send and receive file when the router grants storage before year 1" testXFTPGrantedExpiryOutOfRange
     it "delete uploaded file" testXFTPDeleteUploadedFile
     it "delete uploaded file in group" testXFTPDeleteUploadedFileGroup
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
@@ -845,6 +847,27 @@ testXFTPGroupFileTransfer =
       dest2 <- B.readFile (tmpFile cath "test_1.pdf")
       dest1 `shouldBe` src
       dest2 `shouldBe` src
+
+testXFTPGrantedExpiryOutOfRange :: HasCallStack => TestParams -> IO ()
+testXFTPGrantedExpiryOutOfRange =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    withXFTPServer' (xftpServerConfig alice) {fileExpiration = ExpirationConfig {ttl = -100000000000, checkInterval = 7200}} $ do
+      connectUsers alice bob
+
+      alice #> "/f @bob ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice <## "completed uploading file 1 (test.pdf) for bob"
+
+      bob ##> ("/fr 1 " <> tmpDir bob)
+      bob
+        <### [ ConsoleString $ "saving file 1 from alice to " <> tmpFile bob "test.pdf",
+               "started receiving file 1 (test.pdf) from alice"
+             ]
+      bob <## "completed receiving file 1 (test.pdf) from alice"
+      alice ##> "/fs 1"
+      alice <## "sending file 1 (test.pdf) complete"
 
 badgeFileCfg :: BBSPublicKey -> ChatConfig
 badgeFileCfg pk = badgeFileCfgLimits pk FileSizeLimits {noBadge = 100000, supporter = 300000, legend = 400000}

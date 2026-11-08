@@ -247,7 +247,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
             lookupChatItemByFileId db cxt user fileId
           toView $ CEvtSndFileProgressXFTP user ci ft sndProgress sndTotal
         SFDONE sndDescr rfds granted -> do
-          let fileExpires = (\GSTExpires {epochSeconds} -> systemToUTCTime $ MkSystemTime epochSeconds 0) <$> granted
+          let fileExpires = eitherToMaybe . checkTimeRange . (\GSTExpires {epochSeconds} -> systemToUTCTime $ MkSystemTime epochSeconds 0) =<< granted
           withStore' $ \db -> setSndFTPrivateSndDescr db user fileId (fileDescrText sndDescr) fileExpires
           ci <- withStore $ \db -> lookupChatItemByFileId db cxt user fileId
           case ci of
