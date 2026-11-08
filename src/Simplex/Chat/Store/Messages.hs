@@ -2350,7 +2350,7 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
           itemForwarded = toCIForwardedFrom forwardedFromRow
        in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention hasLink currentTs itemTs Nothing False msgSigned createdAt updatedAt
     ciTimed :: Maybe CITimed
-    ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
+    ciTimed = mfilter validTimedTTL timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
 toCIForwardedFrom :: ChatItemForwardedFromRow -> Maybe CIForwardedFrom
 toCIForwardedFrom (fwdFromRow :. (groupType_, groupLink_, publicGroupId_, memberId_, sharedMsgId_)) =
@@ -2446,7 +2446,7 @@ toGroupChatItem
             itemForwarded = toCIForwardedFrom forwardedFromRow
          in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention hasLink currentTs itemTs forwardedByMember showGroupAsSender msgSigned createdAt updatedAt
       ciTimed :: Maybe CITimed
-      ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
+      ciTimed = mfilter validTimedTTL timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
 getAllChatItems :: DB.Connection -> StoreCxt -> User -> ChatPagination -> Maybe Text -> ExceptT StoreError IO [AChatItem]
 getAllChatItems db cxt user@User {userId} pagination search_ = do
@@ -2586,7 +2586,7 @@ updatedChatItem ci@ChatItem {meta = meta@CIMeta {itemStatus, itemEdited, itemTim
         Just timed -> Just timed
         Nothing -> case (itemStatus, itemTimed, itemLive, live) of
           (CISRcvNew, _, _, _) -> itemTimed
-          (_, Just CITimed {ttl, deleteAt = Nothing}, Just True, False) | validTimedTTL ttl ->
+          (_, Just CITimed {ttl, deleteAt = Nothing}, Just True, False) ->
             -- timed item, sent or read, not set for deletion, was live, now not live
             let deleteAt' = addUTCTime (realToFrac ttl) currentTs
              in Just CITimed {ttl, deleteAt = Just deleteAt'}
