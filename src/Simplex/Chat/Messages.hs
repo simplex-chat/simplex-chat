@@ -19,7 +19,7 @@
 module Simplex.Chat.Messages where
 
 import Control.Applicative ((<|>))
-import Control.Monad (mfilter, (>=>))
+import Control.Monad ((>=>))
 import Data.Aeson (FromJSON, ToJSON, (.:))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
@@ -604,7 +604,7 @@ rcvGroupCITimed :: GroupInfo -> Maybe Int -> Maybe CITimed
 rcvGroupCITimed = rcvCITimed_ . groupTimedTTL
 
 rcvCITimed_ :: Maybe (Maybe Int) -> Maybe Int -> Maybe CITimed
-rcvCITimed_ chatTTL itemTTL = (`CITimed` Nothing) <$> (chatTTL >> mfilter validTimedTTL itemTTL)
+rcvCITimed_ chatTTL itemTTL = (`CITimed` Nothing) <$> (chatTTL >> itemTTL >>= boundedTimedTTL)
 
 data CIQuote (c :: ChatType) = CIQuote
   { chatDir :: CIQDirection c,

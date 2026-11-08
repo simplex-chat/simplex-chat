@@ -56,9 +56,9 @@ timeRangeTests = describe "Chat message time range" $ do
   it "rejects binary forward element with message time in year 0" $
     parseError (">" <> smpEncode (GrpMsgForward FwdChannel $ systemToUTCTime $ MkSystemTime (-62135596801) 0) <> "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}")
       `shouldSatisfy` isInfixOf "time out of range"
-  it "sets no timer for a received TTL outside 0 to 2147483647 seconds" $
+  it "sets no timer for a negative received TTL and limits it to 2147483647 seconds" $
     map (fmap ttl' . rcvCITimed_ (Just Nothing) . Just) [-100000000000, -1, 0, 86400, 2147483647, 2147483648]
-      `shouldBe` [Nothing, Nothing, Just 0, Just 86400, Just 2147483647, Nothing]
+      `shouldBe` [Nothing, Nothing, Just 0, Just 86400, Just 2147483647, Just 2147483647]
   where
     parseError s = case parseChatMessages s of
       [Left e] -> e
@@ -66,11 +66,12 @@ timeRangeTests = describe "Chat message time range" $ do
 
 preferencesJSONTests :: Spec
 preferencesJSONTests = describe "preferences JSON" $ do
-  it "drops a disappearing messages TTL outside 0 to 2147483647 seconds" $ do
+  it "drops a negative disappearing messages TTL and limits it to 2147483647 seconds" $ do
     timedTTL <$> prefs "{\"timedMessages\":{\"allow\":\"yes\",\"ttl\":-100000000000}}" `shouldReturn` Nothing
-    timedTTL <$> prefs "{\"timedMessages\":{\"allow\":\"yes\",\"ttl\":2147483648}}" `shouldReturn` Nothing
+    timedTTL <$> prefs "{\"timedMessages\":{\"allow\":\"yes\",\"ttl\":2147483648}}" `shouldReturn` Just 2147483647
     timedTTL <$> prefs "{\"timedMessages\":{\"allow\":\"yes\",\"ttl\":2147483647}}" `shouldReturn` Just 2147483647
     groupTTL <$> groupPrefs "{\"timedMessages\":{\"enable\":\"on\",\"ttl\":-100000000000}}" `shouldReturn` Nothing
+    groupTTL <$> groupPrefs "{\"timedMessages\":{\"enable\":\"on\",\"ttl\":3000000000}}" `shouldReturn` Just 2147483647
     groupTTL <$> groupPrefs "{\"timedMessages\":{\"enable\":\"on\",\"ttl\":86400}}" `shouldReturn` Just 86400
   it "stores no JSON when preferences encode to what was received" $ do
     ps <- prefs "{\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"no\"}}"

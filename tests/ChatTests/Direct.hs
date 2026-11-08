@@ -77,7 +77,8 @@ chatDirectTests = do
     it "direct message delete multiple (many chat batches)" testDirectMessageDeleteMultipleManyBatches
     it "direct live message" testDirectLiveMessage
     it "direct timed message" testDirectTimedMessage
-    it "stored TTL outside 0 to 2147483647 seconds loads as no timer and sets no deletion time when the chat is read" testTimedMessageStoredTTLOutOfRange
+    it "stored TTL below 0 loads as no timer and sets no deletion time when the chat is read, above 2147483647 seconds loads as 2147483647 seconds" testTimedMessageStoredTTLOutOfRange
+    it "stored group preference TTL above 2147483647 seconds sends messages with 2147483647 seconds" testTimedMessageStoredPrefTTLAboveRange
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
@@ -995,8 +996,24 @@ testTimedMessageStoredTTLOutOfRange =
       bob #$> ("/_read chat @2", id, "ok")
       bob #$> ("/_get chat @2 count=1", chat, [(0, "hello")])
       lastItemTTL bob (ChatRef CTDirect 2 Nothing) `shouldReturn` Nothing
-      lastItemTTL bob (ChatRef CTGroup 1 Nothing) `shouldReturn` Nothing
-      withCCTransaction bob $ \db -> DB.execute_ db "UPDATE chat_items SET timed_ttl = 2147483647 WHERE item_text = 'hi'"
+      lastItemTTL bob (ChatRef CTGroup 1 Nothing) `shouldReturn` Just 2147483647
+
+testTimedMessageStoredPrefTTLAboveRange :: HasCallStack => TestParams -> IO ()
+testTimedMessageStoredPrefTTLAboveRange =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      alice ##> "/set disappear #team on week"
+      alice <## "updated group preferences:"
+      alice <## "Disappearing messages: on (1 week)"
+      bob <## "alice updated group #team: (signed)"
+      bob <## "updated group preferences:"
+      bob <## "Disappearing messages: on (1 week)"
+      withCCTransaction alice $ \db ->
+        DB.execute_ db "UPDATE group_profiles SET preferences = replace(preferences, '\"ttl\":604800', '\"ttl\":3000000000')"
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+      lastItemTTL alice (ChatRef CTGroup 1 Nothing) `shouldReturn` Just 2147483647
       lastItemTTL bob (ChatRef CTGroup 1 Nothing) `shouldReturn` Just 2147483647
 
 lastItemTTL :: TestCC -> ChatRef -> IO (Maybe Int)

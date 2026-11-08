@@ -24,7 +24,6 @@
 module Simplex.Chat.Types.Preferences where
 
 import Control.Applicative ((<|>))
-import Control.Monad (mfilter)
 import Data.Aeson (FromJSON (..), Object, ToJSON (..), Value (..), decodeStrictText)
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as J
@@ -1217,11 +1216,16 @@ $(J.deriveToJSON defaultJSON ''TimedMessagesPreference)
 
 instance FromJSON TimedMessagesPreference where
   parseJSON v =
-    (\TimedMessagesPreference {allow, ttl} -> TimedMessagesPreference {allow, ttl = mfilter validTimedTTL ttl})
+    (\TimedMessagesPreference {allow, ttl} -> TimedMessagesPreference {allow, ttl = ttl >>= boundedTimedTTL})
       <$> $(J.mkParseJSON defaultJSON ''TimedMessagesPreference) v
 
 validTimedTTL :: Int -> Bool
 validTimedTTL ttl = ttl >= 0 && ttl <= fromIntegral (maxBound :: Int32)
+
+boundedTimedTTL :: Int -> Maybe Int
+boundedTimedTTL ttl
+  | ttl < 0 = Nothing
+  | otherwise = Just $ min ttl $ fromIntegral (maxBound :: Int32)
 
 $(J.deriveJSON defaultJSON ''FullDeletePreference)
 
@@ -1268,7 +1272,7 @@ $(J.deriveToJSON defaultJSON ''TimedMessagesGroupPreference)
 
 instance FromJSON TimedMessagesGroupPreference where
   parseJSON v =
-    (\TimedMessagesGroupPreference {enable, ttl} -> TimedMessagesGroupPreference {enable, ttl = mfilter validTimedTTL ttl})
+    (\TimedMessagesGroupPreference {enable, ttl} -> TimedMessagesGroupPreference {enable, ttl = ttl >>= boundedTimedTTL})
       <$> $(J.mkParseJSON defaultJSON ''TimedMessagesGroupPreference) v
 
 $(J.deriveJSON defaultJSON ''DirectMessagesGroupPreference)
