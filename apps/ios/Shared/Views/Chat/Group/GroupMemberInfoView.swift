@@ -912,7 +912,7 @@ struct BanDialog: View {
     var actions: [BanDialogAction]
     var footer: (BanDuration) -> String
     var close: CloseSheet
-    @State private var duration: BanDuration = .day
+    @State var duration: BanDuration = .day
 
     var body: some View {
         NavigationView {
@@ -941,6 +941,12 @@ struct BanDialog: View {
 }
 
 func showBanMemberSheet(_ gInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction? = nil) {
+    showClosableAppSheet { close in
+        banMemberDialog(gInfo, mem, dismiss: dismiss, close: close)
+    }
+}
+
+private func banMemberDialog(_ gInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction?, duration: BanDuration = .day, close: @escaping CloseSheet) -> BanDialog {
     let canRemove = mem.canBanAndRemove(groupInfo: gInfo)
     var actions = [
         BanDialogAction(title: NSLocalizedString("Ban", comment: "ban dialog action")) { duration in
@@ -957,19 +963,15 @@ func showBanMemberSheet(_ gInfo: GroupInfo, _ mem: GroupMember, dismiss: Dismiss
             }
         ]
     }
-    showBanDialog(
+    return BanDialog(
         title: gInfo.useRelays
             ? NSLocalizedString("Ban subscriber?", comment: "ban dialog title")
             : NSLocalizedString("Ban member?", comment: "ban dialog title"),
         actions: actions,
-        footer: { duration in banMemberText(gInfo, mem, duration, canRemove: canRemove) }
+        footer: { duration in banMemberText(gInfo, mem, duration, canRemove: canRemove) },
+        close: close,
+        duration: duration
     )
-}
-
-private func showBanDialog(title: String, actions: [BanDialogAction], footer: @escaping (BanDuration) -> String) {
-    showClosableAppSheet { close in
-        BanDialog(title: title, actions: actions, footer: footer, close: close)
-    }
 }
 
 private func banMemberText(_ gInfo: GroupInfo, _ mem: GroupMember, _ duration: BanDuration, canRemove: Bool) -> String {
@@ -1010,7 +1012,13 @@ private func banMemberText(_ gInfo: GroupInfo, _ mem: GroupMember, _ duration: B
 }
 
 func showRemoveBannedMemberSheet(_ gInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction? = nil) {
-    showBanDialog(
+    showClosableAppSheet { close in
+        removeBannedMemberDialog(gInfo, mem, dismiss: dismiss, close: close)
+    }
+}
+
+private func removeBannedMemberDialog(_ gInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction?, duration: BanDuration = .day, close: @escaping CloseSheet) -> BanDialog {
+    BanDialog(
         title: gInfo.useRelays
             ? NSLocalizedString("Remove subscriber?", comment: "alert title")
             : NSLocalizedString("Remove member?", comment: "alert title"),
@@ -1032,7 +1040,9 @@ func showRemoveBannedMemberSheet(_ gInfo: GroupInfo, _ mem: GroupMember, dismiss
                    ? NSLocalizedString("%@ will be removed without notification and won't be able to rejoin via the group link.", comment: "remove dialog")
                    : NSLocalizedString("%@ will be removed without notification and won't be able to rejoin via the group link until the ban ends.", comment: "remove dialog"))
             return String.localizedStringWithFormat(format, mem.chatViewName)
-        }
+        },
+        close: close,
+        duration: duration
     )
 }
 
@@ -1081,5 +1091,79 @@ struct GroupMemberInfoView_Previews: PreviewProvider {
             scrollToItemId: Binding.constant(nil),
             connectionLoaded: true
         )
+    }
+}
+
+private func previewBannableMember() -> GroupMember {
+    var member = GroupMember.sampleData
+    member.memberRole = .member
+    member.activeConn?.peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)
+    return member
+}
+
+struct BanMemberDialog_Previews: PreviewProvider {
+    static var previews: some View {
+        banMemberDialog(previewGroup(.moderator), previewBannableMember(), dismiss: nil, close: { _ in })
+        banMemberDialog(previewGroup(.admin), previewBannableMember(), dismiss: nil, close: { _ in })
+    }
+}
+
+struct BanMemberForeverDialog_Previews: PreviewProvider {
+    static var previews: some View {
+        banMemberDialog(previewGroup(.moderator), previewBannableMember(), dismiss: nil, duration: .forever, close: { _ in })
+        banMemberDialog(previewGroup(.admin), previewBannableMember(), dismiss: nil, duration: .forever, close: { _ in })
+    }
+}
+
+struct BanSubscriberDialog_Previews: PreviewProvider {
+    static var previews: some View {
+        banMemberDialog(previewGroup(.owner, channel: true), previewBannableMember(), dismiss: nil, close: { _ in })
+        banMemberDialog(previewGroup(.owner, channel: true), previewBannableMember(), dismiss: nil, duration: .forever, close: { _ in })
+    }
+}
+
+struct RemoveBannedMemberDialog_Previews: PreviewProvider {
+    static var previews: some View {
+        removeBannedMemberDialog(previewGroup(.admin), previewBannableMember(), dismiss: nil, close: { _ in })
+        removeBannedMemberDialog(previewGroup(.admin), previewBannableMember(), dismiss: nil, duration: .forever, close: { _ in })
+    }
+}
+
+struct RemoveBannedSubscriberDialog_Previews: PreviewProvider {
+    static var previews: some View {
+        removeBannedMemberDialog(previewGroup(.owner, channel: true), previewBannableMember(), dismiss: nil, close: { _ in })
+        removeBannedMemberDialog(previewGroup(.owner, channel: true), previewBannableMember(), dismiss: nil, duration: .forever, close: { _ in })
+    }
+}
+
+struct LiftBanAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        Color.clear.alert(isPresented: .constant(true)) {
+            unblockForAllAlert(previewGroup(.moderator), previewBannableMember())
+        }
+    }
+}
+
+struct LiftBanSubscriberAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        Color.clear.alert(isPresented: .constant(true)) {
+            unblockForAllAlert(previewGroup(.owner, channel: true), previewBannableMember())
+        }
+    }
+}
+
+struct HideMessagesAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        Color.clear.alert(isPresented: .constant(true)) {
+            blockMemberAlert(previewGroup(.member), previewBannableMember())
+        }
+    }
+}
+
+struct ShowMessagesAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        Color.clear.alert(isPresented: .constant(true)) {
+            unblockMemberAlert(previewGroup(.member), previewBannableMember())
+        }
     }
 }
