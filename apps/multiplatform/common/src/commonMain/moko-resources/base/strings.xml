@@ -2051,6 +2051,7 @@
   <string name="button_remove_member_question">Remove member?</string>
   <string name="button_remove_subscriber_question">Remove subscriber?</string>
   <string name="button_remove_members_question">Remove members?</string>
+  <string name="button_remove_subscribers_question">Remove subscribers?</string>
   <string name="button_delete_member_messages_question">Delete member messages?</string>
   <string name="button_remove_member">Remove member</string>
   <string name="button_delete_member_messages">Delete member messages</string>
@@ -2106,6 +2107,7 @@
   <string name="ban_subscriber_desc_ban_and_remove">Ban and remove: %s is also removed and can\'t rejoin via the channel link until the ban ends.</string>
   <string name="ban_subscriber_forever_desc_ban_and_remove">Ban and remove: %s is also removed and can\'t rejoin via the channel link.</string>
   <string name="members_wont_be_notified">These members won\'t be notified.</string>
+  <string name="subscribers_wont_be_notified">These subscribers won\'t be notified.</string>
   <string name="ban_members_desc">Their messages will be hidden for all members until the ban ends.</string>
   <string name="ban_members_forever_desc">Their messages will be hidden for all members until the ban is lifted.</string>
   <string name="ban_members_desc_ban">Ban: their messages will be hidden for all members until the ban ends.</string>

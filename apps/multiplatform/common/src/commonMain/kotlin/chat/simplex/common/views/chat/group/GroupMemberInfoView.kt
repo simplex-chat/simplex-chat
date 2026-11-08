@@ -1189,7 +1189,7 @@ fun banMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember>, 
         }
       )
     }
-    (listOf(MR.strings.members_wont_be_notified) + lines).joinToString("\n") { generalGetString(it) }
+    (listOf(if (gInfo.useRelays) MR.strings.subscribers_wont_be_notified else MR.strings.members_wont_be_notified) + lines).joinToString("\n") { generalGetString(it) }
   }
 }
 
@@ -1198,7 +1198,7 @@ fun removeBannedMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<Group
     if (members.size == 1) {
       if (gInfo.useRelays) MR.strings.button_remove_subscriber_question else MR.strings.button_remove_member_question
     } else {
-      MR.strings.button_remove_members_question
+      if (gInfo.useRelays) MR.strings.button_remove_subscribers_question else MR.strings.button_remove_members_question
     }
   )
   showBanDialog(
