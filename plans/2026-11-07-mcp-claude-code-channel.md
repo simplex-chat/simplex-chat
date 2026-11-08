@@ -54,7 +54,7 @@ Decided on 2026-11-07:
 
 Design:
 16. One code base: `serve` and the plugin share `Control`, `Actions` and `AgentTools`.
-17. Prompts, approvals and tool-use verdicts count from the session group members who came through the hub, whatever their role: the members invited through the Main group at the session's start or by `/join N` (rewritten on 2026-11-08 by the [trust model](#trust-model)).
+17. Approvals and tool-use verdicts count from the session group members who came through the hub, whatever their role: the members invited through the Main group at the session's start or by `/join N`. Prompts count from every member but `User` (rewritten on 2026-11-08 by the [trust model](#trust-model) and decision 72).
 18. The owner link reaches the person only: the `systemMessage` of the SessionStart hook and `simplex-mcp link` in a terminal; hook context and tool results never contain it.
 19. A session's approval mode changes to `host` only after an owner approves a card in the session's group.
 20. While owners exist, an owner reset runs only after an owner approves a card in the Main group; without owners it runs from a terminal.
@@ -72,7 +72,7 @@ Decided on 2026-11-08:
 30. A decided tool-use action leaves the session's actions at once.
 31. The effort level is read from the Stop hook only.
 32. The three mirroring hooks run with `"async": true`.
-33. Answers and terminal prompts are posted in parts of at most 12,000 encoded bytes; an answer quotes the owner's prompt only when its first part fits with the quote.
+33. Answers and terminal prompts are posted in parts that each fit one message, measured as the core measures it: `fitsMessage` on the encoded message, with the quote. An answer quotes the prompt only when the quote fits with the answer's first character (rewritten on 2026-11-08).
 34. A prompt in the group of a session without an attached Claude Code gets the reply `Session N is not running.`
 35. A UserPromptSubmit prompt is not posted by `User` when a channel tag of this server in it holds a pushed prompt with its item ID, when it equals a prompt pushed in the last 60 s, when it is made only of this server's channel tags, or when it is a one-line `/` command.
 
@@ -82,7 +82,7 @@ Decided on 2026-11-08, review round 1:
 38. A pending connection of `connect` is recorded in the session group's data for one day; its chat becomes the session's when it connects within that day. A `connect` to a known chat without an owner gives it to the session.
 39. Owners' prompts are kept until a turn's prompt matches them, at most 20. Each prompt hook records its start time with the oldest prompt it matched, or none, unless it started before an answer already handled. An answer, also an empty one, quotes the newest record whose hook started before its own; without one, it quotes the oldest kept prompt not quoted yet, and that prompt stays kept for its prompt hook.
 40. A session in mode `host` posts its mode card when its group has an approver: at the session start or after a membership event. A rejected card is recorded in `session.json`; the card is posted again only after a session start with `requests`. A change to `requests` ends a pending mode card.
-41. An owner's one-line `/` message is a prompt when its keyword is not a command of the session group.
+41. Replaced on 2026-11-08 by decision 70. It was: an owner's one-line `/` message is a prompt when its keyword is not a command of the session group.
 42. The daemon is spawned with an allowlist of environment variables, `NODE_OPTIONS` among them.
 43. For 30 s after a daemon start, an owner's prompt to a session without an attachment waits for the session to attach; the reply `Session N is not running.` follows only when it does not.
 44. The published `package.json` and `npm-shrinkwrap.json` hold the production dependencies only: 41 packages and 9 MB to download in place of 317 and 25 MB. The repository keeps the development dependencies; the pack strips them, restores the files after it, and heals a failed pack first; the launch test checks the packed files.
@@ -98,7 +98,7 @@ Decided on 2026-11-08, review round 3:
 50. Claude posts an answer or a reply without its quote when the core refuses the quote, as for a deleted prompt.
 51. The turn hook cuts a prompt or an answer over 250,000 characters there, ending with `…`.
 52. `User` posts no empty terminal prompt.
-53. The commands reply of a session group lists `/give`.
+53. Replaced on 2026-11-08 by decision 71. It was: the commands reply of a session group lists `/give`.
 54. A Stop request posts the answer before it updates the group's short description.
 55. An existing token file is made private only when the user owns it.
 
@@ -125,6 +125,12 @@ Proposed on 2026-11-08 with the round 5 fixes, until the user decides:
 
 Decided on 2026-11-08, after round 5:
 69. A unit test holds the session server's answers to Claude Code 2.1.319: `server/discover` gets `Method not found`, and `initialize` negotiates the revision 2025-11-25. That Claude Code registers no channel for a server in the modern MCP era, 2026-07-28; `McpServer` of the SDK 2.3.1 stays out of it by default.
+
+Decided by the user on 2026-11-08:
+70. A message that starts with `//` reaches Claude without its first `/`. A message that starts with `/!` reaches Claude without its `/` from a member whose member in the Main group is an owner; from another member it gets `Only owners of the Main group can send ! commands to Claude.` A message that starts with `!` gets `Messages starting with ! reach Claude only from owners, as /!command.`
+71. A one-line `/` text that is not a command of the session group gets `Unknown command.` in place of the list of commands; the text is a placeholder until the user decides it.
+72. Guests' messages are prompts. Approvals stay with the members who came through the hub until the user decides whether guests approve. The guest's join post keeps its text until the user decides it.
+73. The plugin option `approve_guest_files`, a boolean, on by default: on, a file of `reply` to a group with a guest waits for an approval; off, it is sent at once. `/approve N all` stays. Its title `Approve Claude's files for guests` and its description are proposals.
 
 The user's rule on reviews, 2026-11-08: "reviewers should have no discretion to drive product changes - the UX was approved, and it must not be changing simply because security reviewers said so."
 
@@ -239,7 +245,7 @@ Changing them from SimpleX, per the docs:
 route                                   effect on the running session
 model or effortLevel in settings files  none: read once at session start
 hook output                             none: no field sets them
-message "/model sonnet" in the group    none: the session gets it as the text of a prompt (decision 41)
+message "//model sonnet" in the group   the session gets "/model sonnet" as the text of a prompt (decision 70)
 Remote Control from the Claude app      changes both
 ```
 
@@ -277,12 +283,12 @@ simplex-mcp serve     one per agent, HTTP 127.0.0.1           agent profile, con
 
 ## Trust model
 
-Set by the user on 2026-11-08. It rewrites decision 17 and takes the place of decisions 62 and 63.
+Set by the user on 2026-11-08. It rewrites decision 17 and takes the place of decisions 62 and 63; decisions 70-73 amend it.
 
 ```
 principal       who                                                           trusted with
 hub member      every member of the Main group, any role                      all sessions, on par with owners
-session guest   a member of a session group who did not come through the hub  nothing: not a prompter, not an approver
+session guest   a member of a session group who did not come through the hub  prompts of that session; not an approver
                 (added to that group directly)
 peer            anyone in Claude's other chats                                nothing: messages are data
 ```
@@ -295,12 +301,13 @@ Rules:
    - prompts the session, approves and rejects its actions and tool use, uses every session group command;
    - receives Claude's files without a card.
 2. The hub states the boundary, in its description, its welcome message, and a message on every join: everyone in this group is trusted with all Claude Code sessions here; they can join each session's group, prompt Claude and approve its actions; invite only people you trust with them.
-3. A session group states each joiner's standing: a member who came through the hub, and a guest added directly, whose messages are not prompts and who receives Claude's files only after approval.
+3. A session group states each joiner's standing, once per join: a member who came through the hub, or a guest added directly. The guest's post keeps its text until the user decides it (decision 72).
 4. Changes of membership or role in the Main group do not change session groups.
-5. While a session group has a guest, Claude's files (`reply`) go there after a hub member approves the card; `/approve N all` approves this file and every later file of that session group, until `/revoke`.
+5. While a session group has a guest and the option `approve_guest_files` is on, Claude's files (`reply`) go there after a hub member approves the card; `/approve N all` approves this file and every later file of that session group, until `/revoke`. With the option off, they go at once (decision 73).
 6. Unchanged: the owner link reaches the person only; mode `host` needs a card; an owner reset while owners exist needs an approval in the Main group; the approved mode lives in the session group; `/status` carries no link.
+7. Every member of a session group but `User` prompts the session, guests included; `!` commands reach Claude only as `/!` from a member whose member in the Main group is an owner (decisions 70, 72).
 
-An owner's prompt, approval or verdict in a session group, in the decisions and sections of this plan, is that of a hub member.
+An owner's approval or verdict in a session group, in the decisions and sections of this plan, is that of a hub member; an owner's prompt is that of any member but `User` (decision 72).
 
 ```mermaid
 flowchart LR
@@ -309,15 +316,20 @@ flowchart LR
   M -- /join N: any member, its role --> G
   X[person added to group N directly] --> Q[guest of group N]
   G --> A[prompts, approvals, files at once]
-  Q --> B[messages as data; Claude's files after an approval]
+  Q --> B[prompts; Claude's files after an approval while approve_guest_files is on]
 ```
 
 Mechanics:
 ```
 approver of group N:                 a member recorded in invited of N (decision 17)
+prompter of group N:                 a member other than User (decision 72); the prompt rules in Session mirroring
+owner of the Main group, for "/!":   a member recorded in invited of N whose member in the Main group has the role owner
+                                     and the status connected or complete, while the Main group is not lost
 Main group, at its creation and load: shortDescr = SHORT, description = WELCOME, updated when they differ
 on joinedGroupMember or connectedToGroupMember in the Main group:
                                      the joiner among the members read again, a human: post "NAME joined. " + TRUST
+a join raises one of the two:        joinedGroupMember for a member who joined through the hub,
+                                     connectedToGroupMember for a member another member added
 on joinedGroupMember or connectedToGroupMember in group N, the member not User:
   member in invited:                 post "NAME joined from the Main group: their messages are prompts of this session,
                                            and they can approve its actions."
@@ -335,7 +347,25 @@ WELCOME   Supervise your Claude Code sessions: each one has its own group, and y
 SHORT     Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions.
 ```
 
-The other new texts, also for the user's approval: the two joiner posts and the session group's description above; the reply card's first line `I want to send a file to group N · NAME, where guests see it:` and its commands `/'approve K', /'approve K all' or /'reject K'`; `Files approved for this group by NAME. /'revoke'`, `Files to this group need approval again.`, `Files to this group have no standing approval.`, `Action K is not a file to this group.`; `Only members who joined from the Main group approve actions here.`; `The group of this session has no member who joined from the Main group. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@VERSION link in a terminal.`. Texts for Claude, which follow the trust model: the channel instructions `Messages in the simplex channel are prompts of the members who joined the SimpleX group of this session from the Main group: from is the member's name, ...`, and in the `reply` tool's description `Sends a file to the SimpleX group of this session, for the members who joined it from the Main group, with text as its caption.` and `While the group has a guest, a member added without the Main group, a member who joined from the Main group approves the file there first`.
+The other new texts, also for the user's approval: the two joiner posts and the session group's description above; the reply card's first line `I want to send a file to group N · NAME, where guests see it:` and its commands `/'approve K', /'approve K all' or /'reject K'`; `Files approved for this group by NAME. /'revoke'`, `Files to this group need approval again.`, `Files to this group have no standing approval.`, `Action K is not a file to this group.`; `Only members who joined from the Main group approve actions here.`; `The group of this session has no member who joined from the Main group. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@VERSION link in a terminal.`. Texts for Claude, which follow the trust model: the channel instructions `Messages in the simplex channel are prompts of the members of the SimpleX group of this session: from is the member's name, ...`, and in the `reply` tool's description `Sends a file to the members of the SimpleX group of this session, with text as its caption.` and `While the group has a guest, a member added without the Main group, and the plugin option approve_guest_files is on, a member who joined from the Main group approves the file there first`.
+
+Approved by the user on 2026-11-08 (decision 70):
+```
+"/!" from another member   Only owners of the Main group can send ! commands to Claude.
+"!"                        Messages starting with ! reach Claude only from owners, as /!command.
+```
+
+Pending the user's decision:
+```
+unknown "/" command          Unknown command.   (placeholder, decision 71)
+guest's join post            the text above, kept (decision 72)
+guests' approvals            with members who came through the hub, kept (decision 72)
+option title                 Approve Claude's files for guests   (proposal, decision 73)
+option description           On: while a session's group has a guest, a member from the Main group approves each file Claude sends there.
+                             Off: Claude's files reach guests at once.   (proposal)
+option error                 Plugin option approve_guest_files: true or false expected, got VALUE.
+                             Change it in /plugin > Installed > simplex > Configure options.   (the template of the other options)
+```
 
 ## Groups
 
@@ -376,7 +406,8 @@ PendingConnection
 on session start (new id):   create the session group; for each Main group owner: apiAddMemberViaGroup(group, main, owner, owner); record InvitedMember
 on owner joined Main group:  for each open session: invite the owner as above
 on "/join N" by member m:    if session N exists: apiAddMemberViaGroup(group N, main, m, role of m in the Main group); record InvitedMember
-on message in group N:       m = InvitedMember of sender; if m: handle; else ignore (decision 17)
+on message in group N:       a command of the group, or a prompt of a member other than User (decisions 70-72);
+                             approvals from InvitedMember senders only (decision 17)
 on session resume:           reuse the group recorded in session.json
 on connect with a pending connection c:          pending += (c, now); entries older than one day dropped
 on contactConnected or userJoinedGroup of c:     the session whose pending has c, recorded in the last day: drop it; claim the chat
@@ -533,7 +564,7 @@ tools                                       {}
 Daemon to session, lines on `/attach`:
 ```
 line                                         sent when
-{prompt: {text, from, item, file?}}          an owner's message arrives in the session group
+{prompt: {text, from, item, file?}}          a member's prompt arrives in the session group
 {permission: {requestId, behavior}}          an owner decides a tool-use card
 ```
 
@@ -541,7 +572,7 @@ Session to Claude Code:
 ```
 notification                                 params
 notifications/claude/channel                 content: text
-                                             meta.from: owner name
+                                             meta.from: member name
                                              meta.item: session group item ID
                                              meta.file: path
 notifications/claude/channel/permission      request_id
@@ -558,12 +589,14 @@ New tool:
 ```
 tool    input                       action
 reply   file, text?                 sends the file to the session group, text as its caption; a card while a guest is in it
+                                    and approve_guest_files is on
 ```
 
 `reply` (rule 5 of the [trust model](#trust-model)):
 ```
 on reply {file, text}:   an action of the same session, file and text: attach to it
                          the file checked as for send
+                         approve_guest_files off: send                                         -> {item}
                          every member of the group is Claude, User, gone or an approver: send   -> {item}
                          else, with a guest: action reply, mode requests
                            simplexMcpReplies in the group's data, its approver an approver: performed at once, standing
@@ -584,6 +617,7 @@ a standing reply:        its outcome card "I sent a file ...", last line "Approv
 ```mermaid
 stateDiagram-v2
   [*] --> sent: reply, no guest in the group
+  [*] --> sent: reply, approve_guest_files off
   [*] --> card: reply, a guest, no approval of all files
   [*] --> sent: reply, a guest, approval of all files
   card --> sent: /approve K
@@ -593,7 +627,17 @@ stateDiagram-v2
   refused --> [*]
 ```
 
-Server instructions, added: messages in a `simplex` channel are the prompts of the members who joined the session's group from the Main group; the final answer of the turn reaches them; `reply` sends them files.
+Server instructions, added: messages in a `simplex` channel are the prompts of the members of the session's group; the final answer of the turn reaches them; `reply` sends them files.
+
+The option `approve_guest_files` (decision 73):
+```
+userConfig        approve_guest_files: boolean, default true
+variable          CLAUDE_PLUGIN_OPTION_APPROVE_GUEST_FILES, "true" or "false"; blank: the default
+Config            approveGuestFiles, in /session and /title; the daemon rejects a value that is not a boolean
+daemon            Hub.approveGuestFiles: read at the start, set by each /session and /title without unattended,
+                  for all sessions
+reply             at once when approveGuestFiles is false
+```
 
 Protocol revision (decision 69): `initialize` negotiates 2025-11-25; `server/discover` gets `Method not found`.
 ```mermaid
@@ -648,8 +692,13 @@ Pushed prompt
   text, item, at
   quoted           an answer without an earlier turn record quoted it
 
-on owner's message m in group N:   one-line "/" with a keyword of the group's commands: a command (decision 41)
-                                   else: delivery = delivery then deliver(m) (decision 45)
+on a message m in group N:         one-line "/" text not starting with "//" or "/!": a command of the group,
+                                   a text outside its requests: reply "Unknown command." (decision 71)
+                                   else: delivery = delivery then prompt(m) (decision 45)
+prompt(m):                         from User: nothing (decision 72)
+                                   "/!" from a member who is not an owner of the Main group: reply (decision 70)
+                                   "!": reply (decision 70)
+                                   else: deliver(m), "//" and "/!" without their first "/" (decision 70)
 deliver(m):                        N has no attachment: wait for one until 30 s after the daemon start (decision 43)
                                    attached: receive its file in 10 min, or reply that it was not received
                                    N has no attachment now: reply to m "Session N is not running."
@@ -666,14 +715,25 @@ on POST /turn, before any await:
 on POST /turn model or effort:     a changed value: description in memory and session.json
 on POST /turn prompt p:            nothing matched; p not blank, not only channel tags of this server, not a one-line "/" command:
                                    User posts parts(p) (decision 35)
-on POST /turn answer a, not blank: Claude posts parts(a), the first part quoting quoted when it fits with the quote
+on POST /turn answer a, not blank: Claude posts parts(a, quoted), quoting quoted when fits(first character of a, quoted)
 then, also after a failed post, a changed value: the group short description (decisions 54, 58)
 Claude's post with a quote:        the core refuses the quote: the same post without it (decision 50)
-parts(t):                          consecutive pieces of t, each at most 12000 encoded bytes
+parts(t, q):                       the longest runs of whole characters of t, each with fits(run, q for the first run)
+fits(text, q):                     600 + bytes of JSON [content, fileName, quote of q, mentions] <= 15602, as for send (decision 33)
 channel tag of T, I:               <channel source="plugin:simplex:simplex" ... item="I" ...>\nT\n</channel>
 ```
 
 A UserPromptSubmit prompt holds the channel tags of the prompts of its turn; one turn can hold several.
+
+Parts of a post (decision 33):
+```mermaid
+flowchart LR
+  T[answer or terminal prompt] --> Q{a quote, and it fits with the first character}
+  Q -- yes --> F[first part: the longest run that fits with the quote]
+  Q -- no --> N[first part: the longest run that fits without a quote]
+  F --> R[each next part: the longest run that fits without a quote]
+  N --> R
+```
 
 Quotes by hook start time (decision 39):
 ```mermaid
@@ -707,43 +767,52 @@ UserProfile
   visible to       session group members only
 ```
 
-Claude ignores User's messages as prompts: User was not invited through the Main group (decision 17).
+Claude ignores User's messages as prompts: the hub drops the messages of the member of its contact marked `simplexMcpUser` (decision 72).
 
 A prompt to a session started without the channel flag is dropped by Claude Code; the hub cannot detect it.
 
-Files: an owner's file in a prompt is received by the hub without a card into `ROOT/_sessions/<id>/files/group/<file ID><extension>`; `meta.file` is its path. `reply` with `file` sends it to the session group under the refused-path rules of `send`.
+Files: a member's file in a prompt is received by the hub without a card into `ROOT/_sessions/<id>/files/group/<file ID><extension>`; `meta.file` is its path. `reply` with `file` sends it to the session group under the refused-path rules of `send`.
 
 ### Prompt flow
 
 ```mermaid
 sequenceDiagram
-  participant O as owner
+  participant O as member
   participant H as hub
   participant D as daemon
   participant S as session N
   participant C as Claude Code
   O->>H: message in session N's group
-  H->>H: sender's Main group member an owner?
-  H->>H: after the earlier prompts of session N
-  opt no attachment, within 30 s of the daemon start
-    H->>H: wait for session N to attach
-  end
-  opt attached, a file in the message
-    H->>H: receive the file, up to 10 min
-  end
-  alt session N has no attachment
-    H->>O: reply "Session N is not running."
-  else
-    H->>H: pushed += the prompt
-    H->>D: prompt for N
-    D->>S: {prompt} on /attach
-    S->>C: notifications/claude/channel
-    C->>D: UserPromptSubmit hook: POST /turn {prompt with the channel tag}
-    D->>H: turn prompt = the matched pushed prompt; not posted by User
-    C->>C: turn ends
-    C->>D: Stop hook: POST /turn {answer, at}
-    D->>H: end tool-use cards created before at; quote the newest turn record before at; post the answer in parts
-    H->>O: answer, quoting the prompt of its turn
+  alt one-line "/" text, not "//" or "/!"
+    H->>O: the command's reply, or "Unknown command."
+  else another message
+    H->>H: after the earlier messages of session N
+    alt from User
+      H->>H: nothing
+    else "/!" from a member who is not an owner of the Main group, or "!"
+      H->>O: the reply of decision 70
+    else a prompt, "//" and "/!" without their first "/"
+      opt no attachment, within 30 s of the daemon start
+        H->>H: wait for session N to attach
+      end
+      opt attached, a file in the message
+        H->>H: receive the file, up to 10 min
+      end
+      alt session N has no attachment
+        H->>O: reply "Session N is not running."
+      else
+        H->>H: pushed += the prompt
+        H->>D: prompt for N
+        D->>S: {prompt} on /attach
+        S->>C: notifications/claude/channel
+        C->>D: UserPromptSubmit hook: POST /turn {prompt with the channel tag}
+        D->>H: turn prompt = the matched pushed prompt; not posted by User
+        C->>C: turn ends
+        C->>D: Stop hook: POST /turn {answer, at}
+        D->>H: end tool-use cards created before at; quote the newest turn record before at; post the answer in parts
+        H->>O: answer, quoting the prompt of its turn
+      end
+    end
   end
 ```
 
