@@ -13,7 +13,7 @@ The core keeps the content and the file of a message marked deleted, and sets `i
 
 ## Fix
 
-Both filters also require `itemDeleted` to be absent. The media the user opened is not filtered, so a revealed message still opens.
+Both filters also require `itemDeleted` to be absent. The media on screen counts as a page whatever its state, so a revealed message opens and its neighbours stay one swipe away; on Android, `item()` counts the item it starts from without the filter, as `nextChatItemData` on iOS does.
 
 ## Scope
 

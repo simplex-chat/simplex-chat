@@ -3640,7 +3640,7 @@ fun providerForGallery(
     if (indexOfFirst == -1) return null
     for (chatItemsIndex in if (skipInternalIndex >= 0) indexOfFirst downTo 0 else indexOfFirst..chatItems.lastIndex) {
       val item = chatItems[chatItemsIndex]
-      if (canShowMedia(item)) {
+      if (chatItemsIndex == indexOfFirst || canShowMedia(item)) {
         processedInternalIndex += skipInternalIndex.sign
       }
       if (processedInternalIndex == skipInternalIndex) {

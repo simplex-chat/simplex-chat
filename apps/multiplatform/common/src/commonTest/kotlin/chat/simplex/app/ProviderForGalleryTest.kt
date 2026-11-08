@@ -68,6 +68,18 @@ class ProviderForGalleryTest {
     assertEquals(2, scrolledTo)
   }
 
+  @Test
+  fun testSwipeFromRevealedDeletedItemReachesNeighbour() {
+    val items = listOf(imageItem(1L), imageItem(2L, CIDeleted.Deleted(Clock.System.now())), imageItem(3L))
+    var scrolledTo: Int? = null
+    val provider = providerForGallery(items, cItemId = 2L) { scrolledTo = it }
+
+    provider.currentPageChanged(provider.initialIndex - 1)
+    provider.onDismiss(provider.initialIndex - 1)
+
+    assertEquals(2, scrolledTo)
+  }
+
   private fun imageItem(id: Long, itemDeleted: CIDeleted? = null): ChatItem =
     ChatItem(
       chatDir = CIDirection.DirectRcv(),
