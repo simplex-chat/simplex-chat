@@ -1089,7 +1089,7 @@ stateDiagram-v2
   pending --> performing: /approve N, allow pushed
   performing --> done
   pending --> rejected: /reject N, deny pushed
-  pending --> expired: later prompt or answer, detach: Ended.; expiry: Expired.
+  pending --> expired: later prompt or answer, detach: Ended.#59; expiry: Expired.
   done --> [*]: removed
   rejected --> [*]: removed
   expired --> [*]: removed
@@ -1140,7 +1140,7 @@ sequenceDiagram
   participant S as Stop hook of turn N
   participant U as UserPromptSubmit hook of turn N+1
   participant D as daemon
-  Note over S,U: S starts before U; at = performance.timeOrigin of each
+  Note over S,U: S starts before U#59; at = performance.timeOrigin of each
   U->>D: /turn {at: 3, prompt}: turns += (3, prompt N+1)
   S->>D: /turn {at: 2, answer}: quotes the newest turn record before 2, prompt N
   Note over D: a later answer with at 4 quotes prompt N+1

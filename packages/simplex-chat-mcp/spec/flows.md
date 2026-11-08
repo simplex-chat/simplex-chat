@@ -81,23 +81,23 @@ sequenceDiagram
   S->>C: startChat, events buffered
   S->>C: apiListGroups USER (no control marker)
   S->>C: apiNewGroup USER {My Agent, history on, menu pending, list and leave}
-  S->>C: apiSetGroupCustomData #G {"simplexMcp":{"control":true,"nextAction":1}}
+  S->>C: apiSetGroupCustomData #35;G {"simplexMcp":{"control":true,"nextAction":1}}
   S->>P: Agent control chat "My Agent" created.
   S->>K: load
-  K->>C: apiListMembers #G
+  K->>C: apiListMembers #35;G
   S->>S: HTTP listens on 127.0.0.1:5226, /mcp answers 503 until the control chat is started
   S->>S: server.json
-  K->>C: apiDeleteGroupLink #G (groupLinkNotFound ignored)
-  K->>C: apiCreateGroupLink #G member
+  K->>C: apiDeleteGroupLink #35;G (groupLinkNotFound ignored)
+  K->>C: apiCreateGroupLink #35;G member
   K->>P: join line, QR code, link, QR hint, owner line
   S->>P: Listening on http://127.0.0.1:5226/mcp
   O->>C: joins by the link
   C->>S: joinedGroupMember
   S->>K: onEvent, queued
-  K->>C: apiListMembers #G
-  K->>C: apiDeleteGroupLink #G
-  K->>C: apiSetMembersRole #G [3] owner
-  K->>C: apiListMembers #G
+  K->>C: apiListMembers #35;G
+  K->>C: apiDeleteGroupLink #35;G
+  K->>C: apiSetMembersRole #35;G [3] owner
+  K->>C: apiListMembers #35;G
   K->>O: I'm your agent. I ask here before I connect, send, download a file or leave a chat.
   K->>P: Alice joined (member 3) and is now an owner. The link is deleted.
   K->>P: Add the agent to Claude Code: npx -y @simplex-chat/mcp register my-agent
@@ -172,7 +172,7 @@ sequenceDiagram
   T->>T: classifyPlan: prepareContact with domain
   T->>X: create(key, connect fields)
   X->>K: refusal: none
-  X->>K: saveCounter: apiSetGroupCustomData #G
+  X->>K: saveCounter: apiSetGroupCustomData #35;G
   X->>K: postCard
   K->>O: I want to connect to bot X (@directory.simplex), as myself. /'approve N' or /'reject N'
   T->>X: decided(action, call)
@@ -232,29 +232,29 @@ sequenceDiagram
   participant C as Core
   participant O as Owner
   participant D as Peer
-  A->>T: send {chat: #15, text, reply_to, mention: [44], wait, idle, limit}
-  T->>C: apiGetChat #15 count 0
-  T->>C: apiGetChat #15 around REPLY_TO count 0
-  T->>C: apiListMembers #15
-  T->>C: apiGetChat #15 count 0
+  A->>T: send {chat: #35;15, text, reply_to, mention: [44], wait, idle, limit}
+  T->>C: apiGetChat #35;15 count 0
+  T->>C: apiGetChat #35;15 around REPLY_TO count 0
+  T->>C: apiListMembers #35;15
+  T->>C: apiGetChat #35;15 count 0
   T->>K: standingApprover(chatInfo, messages): none
   T->>X: create(key, send fields)
   X->>K: card size check and approvers
-  K->>O: I want to send a message to group X: `text` replying to ... mentioning @Switchback /'approve #15 N', /'approve #15 all' or /'reject #15 N'
-  O->>C: /approve #15 N
+  K->>O: I want to send a message to group X: `text` replying to ... mentioning @Switchback /'approve #35;15 N', /'approve #35;15 all' or /'reject #35;15 N'
+  O->>C: /approve #35;15 N
   K->>X: approve(action, "Alice")
   X->>T: performSend
-  T->>T: collect #15 items with ID above the sent item
-  T->>C: apiSendMessages #15 [{msgContent, mentions, quotedItemId}]
+  T->>T: collect #35;15 items with ID above the sent item
+  T->>C: apiSendMessages #35;15 [{msgContent, mentions, quotedItemId}]
   C-->>T: sent item S
   D->>C: replies S+1, S+2
   C->>T: newChatItems: collected
   X->>K: outcome
   K->>O: card edited: I sent a message to group X: `text` ... Approved by Alice.
   T->>T: wait until idle seconds after the last reply, or sentAt + wait
-  T->>C: apiChatItemsRead #15 [S+1, S+2]
+  T->>C: apiChatItemsRead #35;15 [S+1, S+2]
   T->>X: remove(action)
-  T-->>A: {action: N, status: done, chat: #15, item: S, responses, more: 0}
+  T-->>A: {action: N, status: done, chat: #35;15, item: S, responses, more: 0}
 ```
 
 Notes:
@@ -278,16 +278,16 @@ sequenceDiagram
   participant W as ChatItemsWatch
   participant C as Core
   participant D as Peer
-  A->>T: receive {chat: #12, wait: 3600, limit: 50}
-  T->>W: collect #12 into arrived
-  T->>C: apiGetChat #12 initial 1
+  A->>T: receive {chat: #35;12, wait: 3600, limit: 50}
+  T->>W: collect #35;12 into arrived
+  T->>C: apiGetChat #35;12 initial 1
   C-->>T: chatStats.unreadCount 0
-  T-->>A: progress: No new messages in #12, waiting until TIME.
+  T-->>A: progress: No new messages in #35;12, waiting until TIME.
   D->>C: post, item 40
   C->>W: newChatItems: arrived
-  T->>C: apiChatItemsRead #12 [40]
+  T->>C: apiChatItemsRead #35;12 [40]
   T->>W: stop collecting
-  T-->>A: {chat: #12, messages: [40], more: 0}
+  T-->>A: {chat: #35;12, messages: [40], more: 0}
 ```
 
 Notes:
@@ -312,26 +312,26 @@ sequenceDiagram
   participant K as Control
   participant C as Core
   participant O as Owner
-  O->>C: /approve #9 all (on a pending send card)
+  O->>C: /approve #35;9 all (on a pending send card)
   C->>K: newChatItems
-  K->>C: apiGetChat #9 count 0
-  K->>C: apiSetGroupCustomData #9 {"simplexMcp":{"approvedBy":"Alice","approvedById":3,"approvedAt":"..."}}
-  K->>X: approve each pending send to #9 with a card
-  K->>O: Approved for business X (#9) by Alice. /'revoke #9'
-  A->>T: send {chat: #9, text}
-  T->>C: apiGetChat #9 count 0
+  K->>C: apiGetChat #35;9 count 0
+  K->>C: apiSetGroupCustomData #35;9 {"simplexMcp":{"approvedBy":"Alice","approvedById":3,"approvedAt":"..."}}
+  K->>X: approve each pending send to #35;9 with a card
+  K->>O: Approved for business X (#35;9) by Alice. /'revoke #35;9'
+  A->>T: send {chat: #35;9, text}
+  T->>C: apiGetChat #35;9 count 0
   T->>K: standingApprover: Alice
   T->>X: create(key, fields, "Alice"): performing, standing
   X->>K: saveCounter (no card)
   X->>T: performSend
-  T->>C: apiSendMessages #9 [...]
+  T->>C: apiSendMessages #35;9 [...]
   X->>K: outcome
-  K->>O: I sent a message to business X: `text` Approved for this chat by Alice. /'revoke #9'
-  T-->>A: {action, status: done, chat: #9, item, responses, more}
-  O->>C: /revoke #9
-  K->>C: apiGetChat #9 count 0
-  K->>C: apiSetGroupCustomData #9 {other keys}
-  K->>O: Messages to business X (#9) need approval again.
+  K->>O: I sent a message to business X: `text` Approved for this chat by Alice. /'revoke #35;9'
+  T-->>A: {action, status: done, chat: #35;9, item, responses, more}
+  O->>C: /revoke #35;9
+  K->>C: apiGetChat #35;9 count 0
+  K->>C: apiSetGroupCustomData #35;9 {other keys}
+  K->>O: Messages to business X (#35;9) need approval again.
 ```
 
 Notes:
@@ -355,22 +355,22 @@ sequenceDiagram
   participant K as Control
   participant C as Core
   participant O as Owner
-  A->>T: leave {chat: #9}
+  A->>T: leave {chat: #35;9}
   T->>X: find(key): none
-  T->>C: apiGetChat #9 count 0
+  T->>C: apiGetChat #35;9 count 0
   T->>X: create(key, leave fields)
-  K->>O: I want to leave business X (#9). /'approve #9 N' or /'reject #9 N'
-  O->>C: /approve #9 N
+  K->>O: I want to leave business X (#35;9). /'approve #35;9 N' or /'reject #35;9 N'
+  O->>C: /approve #35;9 N
   K->>X: approve(action, "Alice")
-  X->>T: leaveChat(#9)
-  T->>C: apiGetChat #9 count 0
-  T->>C: apiLeaveGroup #9 (membership current or pending)
-  T->>C: apiDeleteChat #9 full, notify
+  X->>T: leaveChat(#35;9)
+  T->>C: apiGetChat #35;9 count 0
+  T->>C: apiLeaveGroup #35;9 (membership current or pending)
+  T->>C: apiDeleteChat #35;9 full, notify
   T->>T: DATA/forwarded/group-9 deleted
   X->>K: outcome
-  K->>O: card edited: I left business X (#9). Approved by Alice.
-  K->>O: Files from business X (#9) are kept in `DATA/files/group-9`: K files, SIZE. /'delete #9 files' (when the folder has files)
-  T-->>A: {action: N, status: done, chat: #9}
+  K->>O: card edited: I left business X (#35;9). Approved by Alice.
+  K->>O: Files from business X (#35;9) are kept in `DATA/files/group-9`: K files, SIZE. /'delete #35;9 files' (when the folder has files)
+  T-->>A: {action: N, status: done, chat: #35;9}
 ```
 
 Notes:
@@ -543,17 +543,17 @@ sequenceDiagram
   participant O as Owner Alice
   participant B as Member Bob
   P->>K: serve my-agent --owners
-  K->>C: apiCreateGroupLink #G observer
+  K->>C: apiCreateGroupLink #35;G observer
   K->>P: The link adds an observer. Its ID and name are printed when it joins.
   O->>C: joins by the link
   C->>K: joinedGroupMember
-  K->>C: apiDeleteGroupLink #G
+  K->>C: apiDeleteGroupLink #35;G
   K->>P: Alice joined (member 3). Restart the server with --owners 3:Alice
   K->>O: Alice joined (member 3). Restart the server with `--owners 3:Alice`
   P->>K: Ctrl-C, then serve my-agent --owners 3:Alice
-  K->>C: apiSetMembersRole #G [3] owner
-  K->>C: apiRemoveMembers #G [ID], for each other human
-  K->>C: apiDeleteGroupLink #G
+  K->>C: apiSetMembersRole #35;G [3] owner
+  K->>C: apiRemoveMembers #35;G [ID], for each other human
+  K->>C: apiDeleteGroupLink #35;G
   K->>P: Owners: 3:Alice.
   K->>P: Add the agent to Claude Code: ...
   O->>C: adds Bob, makes Bob an owner
@@ -585,31 +585,31 @@ sequenceDiagram
   participant K as Control
   participant C as Core
   participant O as Owner
-  A->>T: download {chat: #15, item: 30}
+  A->>T: download {chat: #35;15, item: 30}
   T->>X: find(key): none
-  T->>C: apiGetChat #15 count 0
-  T->>C: apiGetChat #15 around 30 count 0
-  T->>C: apiGetChatItemInfo #15 30: fileXftpServers
+  T->>C: apiGetChat #35;15 count 0
+  T->>C: apiGetChat #35;15 around 30 count 0
+  T->>C: apiGetChatItemInfo #35;15 30: fileXftpServers
   opt no servers yet
-    T-->>A: progress: The sender is uploading the file of item 30 in #15, waiting until TIME.
+    T-->>A: progress: The sender is uploading the file of item 30 in #35;15, waiting until TIME.
     C->>T: rcvFileDescrReady
-    T->>C: apiGetChatItemInfo #15 30
+    T->>C: apiGetChatItemInfo #35;15 30
   end
   T->>C: apiGetUserServers USER: no unknown servers
-  T->>C: apiGetChat #15 count 0
+  T->>C: apiGetChat #35;15 count 0
   T->>K: standingApprover(chatInfo, files): none
   T->>X: create(key, download fields)
-  K->>O: I want to download a file from Switchback in group Trail (#15): `report.pdf`, 2.4 MB, Servers: known. /'receive #15 N', /'receive #15 N all', /'forward #15 N' or /'reject #15 N'
-  O->>C: /receive #15 N
+  K->>O: I want to download a file from Switchback in group Trail (#35;15): `report.pdf`, 2.4 MB, Servers: known. /'receive #35;15 N', /'receive #35;15 N all', /'forward #35;15 N' or /'reject #35;15 N'
+  O->>C: /receive #35;15 N
   K->>X: approve(action, "Alice")
   X->>T: performDownload: downloadFile
-  T->>C: apiGetChat #15 around 30 count 0
+  T->>C: apiGetChat #35;15 around 30 count 0
   T->>C: apiReceiveFile 7 DATA/files/group-15/7.pdf
   C->>T: rcvFileComplete
   T->>T: a file at the download path: resolved
   X->>K: outcome
   K->>O: card edited: I downloaded a file from ... Approved by Alice.
-  T-->>A: {action: N, status: done, chat: #15, item: 30, path}
+  T-->>A: {action: N, status: done, chat: #35;15, item: 30, path}
 ```
 
 Notes:
@@ -634,19 +634,19 @@ sequenceDiagram
   participant K as Control
   participant C as Core
   participant O as Owner
-  O->>C: /forward #15 N (on a pending download card)
+  O->>C: /forward #35;15 N (on a pending download card)
   C->>K: newChatItems
   K->>T: forwardFile(action N)
   T->>C: apiReceiveFile 7 DATA/forwarded/group-15/7.pdf
   C->>T: rcvFileComplete: resolved with the forwarded path
   T->>T: copy for the post: DATA/files/sent/send-XXXXXX/report.pdf
-  K->>C: apiSendMessages #G [{fileSource: the copy, msgContent: file, quotedItemId: card N when the message fits}]
+  K->>C: apiSendMessages #35;G [{fileSource: the copy, msgContent: file, quotedItemId: card N when the message fits}]
   C->>T: sndFileCompleteXFTP: the copy's folder deleted
-  Note over K,O: the card stays pending; the agent's message shows the file as offered
-  O->>C: /receive #15 N
+  Note over K,O: the card stays pending#59; the agent's message shows the file as offered
+  O->>C: /receive #35;15 N
   K->>T: performDownload: downloadFile
   T->>T: the forwarded file moved to DATA/files/group-15/7.pdf
-  T-->>A: {action: N, status: done, chat: #15, item: 30, path}
+  T-->>A: {action: N, status: done, chat: #35;15, item: 30, path}
 ```
 
 Notes:
@@ -671,19 +671,19 @@ sequenceDiagram
   participant K as Control
   participant C as Core
   participant O as Owner
-  A->>T: send {chat: #15, text: "trail map", file: "/home/alice/trail.jpg"}
-  T->>C: apiGetChat #15 count 0
+  A->>T: send {chat: #35;15, text: "trail map", file: "/home/alice/trail.jpg"}
+  T->>C: apiGetChat #35;15 count 0
   T->>T: real path, size, inode, change time
   T->>T: refused paths checked
   T->>T: preview: core.resizeImage(file, MessagePreview)
   T->>T: message length checked
   T->>X: create(key, send fields with the file)
-  K->>O: image card with the preview: I want to send a message to group Trail: `trail map`, attaching image `/home/alice/trail.jpg`, SIZE /'approve #15 N', ...
-  O->>C: /approve #15 N
+  K->>O: image card with the preview: I want to send a message to group Trail: `trail map`, attaching image `/home/alice/trail.jpg`, SIZE /'approve #35;15 N', ...
+  O->>C: /approve #35;15 N
   X->>T: performSend
   T->>T: the file again: same real path, size, inode, change time
   T->>T: core.resizeImage(file, Image): DATA/files/sent/send-XXXXXX/trail.jpg
-  T->>C: apiSendMessages #15 [{fileSource: the copy, msgContent: image with the preview}]
+  T->>C: apiSendMessages #35;15 [{fileSource: the copy, msgContent: image with the preview}]
   C->>T: sndFileCompleteXFTP: the copy's folder deleted
 ```
 
@@ -709,23 +709,23 @@ sequenceDiagram
   participant C as Core
   participant O as Owner
   participant D as Peer
-  O->>C: /leave #9
-  K->>T: knownChat #9
-  K->>T: leaveChat #9
-  T->>C: apiLeaveGroup #9, apiDeleteChat #9 full, notify
+  O->>C: /leave #35;9
+  K->>T: knownChat #35;9
+  K->>T: leaveChat #35;9
+  T->>C: apiLeaveGroup #35;9, apiDeleteChat #35;9 full, notify
   C->>D: the agent left the group
   T->>T: DATA/forwarded/group-9 deleted
-  K->>P: Left business Ridgeline (#9), requested by Alice.
-  K->>X: reject each pending action of #9 with a card
-  K->>O: Left business Ridgeline (#9), requested by Alice.
-  K->>O: Files from business Ridgeline (#9) are kept in `DATA/files/group-9`: 3 files, 2.1 MB. /'delete #9 files'
-  O->>C: /delete #9 files
-  K->>T: deleteChatFiles #9
-  T->>T: each download of #9: failed, apiCancelFile, its partial file deleted
-  T->>C: apiGetChat #9 count 100, then before the first item, while a page has 100
+  K->>P: Left business Ridgeline (#35;9), requested by Alice.
+  K->>X: reject each pending action of #35;9 with a card
+  K->>O: Left business Ridgeline (#35;9), requested by Alice.
+  K->>O: Files from business Ridgeline (#35;9) are kept in `DATA/files/group-9`: 3 files, 2.1 MB. /'delete #35;9 files'
+  O->>C: /delete #35;9 files
+  K->>T: deleteChatFiles #35;9
+  T->>T: each download of #35;9: failed, apiCancelFile, its partial file deleted
+  T->>C: apiGetChat #35;9 count 100, then before the first item, while a page has 100
   T->>C: apiCancelFile for each other file in rcvAccepted, rcvTransfer or rcvWarning
   T->>T: DATA/files/group-9 and DATA/forwarded/group-9 deleted
-  K->>O: Deleted 3 files from #9, 2.1 MB.
+  K->>O: Deleted 3 files from #35;9, 2.1 MB.
 ```
 
 Notes:
@@ -779,28 +779,28 @@ sequenceDiagram
   D->>D: lock, stored sessions, socket listens
   D->>C: openCore ROOT/_hub "Claude"
   D->>C: apiNewGroup "SimpleX MCP", short description and welcome of trust, {simplexMcpMain: true}
-  M->>C: apiGetGroupLinkStr #M: none, apiCreateGroupLink #M member
+  M->>C: apiGetGroupLinkStr #35;M: none, apiCreateGroupLink #35;M member
   D->>U: openCore ROOT/_user "User"
-  U->>C: joins the hub's one-time link; the contact of its connection marked simplexMcpUser
+  U->>C: joins the hub's one-time link#59; the contact of its connection marked simplexMcpUser
   D-->>HK: ready
   HK->>D: POST /title {id, pid, name, project, model, config}
   D->>D: ROOT/_sessions/ID/session.json {number: 1, name}
   D->>N: Hub.session
   N->>C: apiNewGroup "1 · NAME", {simplexMcpSession: {session: 1}}
-  N->>C: apiAddMember #G User
-  U->>C: apiJoinGroup #G, marked {simplexMcpSession: 1}
-  N->>C: apiUpdateGroupProfile #G shortDescr MODEL
+  N->>C: apiAddMember #35;G User
+  U->>C: apiJoinGroup #35;G, marked {simplexMcpSession: 1}
+  N->>C: apiUpdateGroupProfile #35;G shortDescr MODEL
   D-->>HK: {mainGroup, owner: {owners: [], link}}
   HK-->>CC: systemMessage: scan this QR code ..., QR code, link
-  O->>C: joins #M by the link
+  O->>C: joins #35;M by the link
   C->>M: joinedGroupMember
-  M->>C: apiDeleteGroupLink #M, apiSetMembersRole #M owner
+  M->>C: apiDeleteGroupLink #35;M, apiSetMembersRole #35;M owner
   M->>O: I'm Claude. Each Claude Code session has its own group ...
   M->>O: Alice joined. Everyone in this group is trusted with all Claude Code sessions here ...
-  M->>N: inviteOwner: apiAddMemberViaGroup #G via #M, role owner
-  O->>C: joins #G from the invitation in #M
+  M->>N: inviteOwner: apiAddMemberViaGroup #35;G via #35;M, role owner
+  O->>C: joins #35;G from the invitation in #35;M
   C->>N: joinedGroupMember
-  N->>O: Alice is an owner and can send prompts and // and /! commands to Claude, and approve tool use. You can change role to observer to stop it: /'observer #G ID'
+  N->>O: Alice is an owner and can send prompts and // and /! commands to Claude, and approve tool use. You can change role to observer to stop it: /'observer #35;G ID'
 ```
 
 Notes:
@@ -831,7 +831,7 @@ sequenceDiagram
   S-->>CC: tools, instructions, capabilities claude/channel and claude/channel/permission
   S->>D: GET /status, version and protocol
   S->>D: POST /session {id, pid: parent process, project, config}
-  D->>D: resolve id: alias; id with session.json; session of pid, or a wait of up to 10 s for the title of pid
+  D->>D: resolve id: alias#59; id with session.json#59; session of pid, or a wait of up to 10 s for the title of pid
   D->>N: configure, requestMode(approve)
   D-->>S: {number, displayName, owner}
   S->>D: POST /attach {id}
@@ -867,10 +867,10 @@ sequenceDiagram
   S->>D: POST /call {id, tool: connect, input}
   D->>T: call, signal of the request
   T->>N: Actions.create, mode of the session
-  N->>O: card in #G: I want to connect to bot X, as myself. /'approve N' or /'reject N'
+  N->>O: card in #35;G: I want to connect to bot X, as myself. /'approve N' or /'reject N'
   D-->>S: {progress: Action N waits for an approver until TIME.}
   S-->>CC: notifications/progress
-  O->>C: /approve N in #G
+  O->>C: /approve N in #35;G
   C->>N: newChatItems: Control.onMessage
   N->>T: perform: performConnect
   T->>C: apiSetContactCustomData @C {simplexMcpOwner: {session: ID}}
@@ -899,7 +899,7 @@ sequenceDiagram
   participant D as Daemon
   participant S as Session process
   participant CC as Claude Code
-  O->>C: message in #G, with a file
+  O->>C: message in #35;G, with a file
   C->>N: newChatItems: Session.onMessage
   alt one-line "/" text, "//" or "/!" from a moderator, member or author
     N->>N: delivery = delivery then the reply
@@ -966,20 +966,20 @@ sequenceDiagram
   N->>N: end pending permissions created before at
   N->>N: no pushed prompt matched: turns += (at, null)
   N->>U: post(N, parts), unless a "/" command
-  U->>O: the prompt in #G, from User
+  U->>O: the prompt in #35;G, from User
   CC->>CC: turn ends
   CC->>HK: Stop {session_id, last_assistant_message, effort}
   HK->>D: ensureDaemon, POST /turn {id, pid, at, answer, effort}
   D->>N: turn
   N->>N: end pending permissions created before at
-  N->>N: quote = the newest turn record before at; it and the older ones leave turns
+  N->>N: quote = the newest turn record before at#59; it and the older ones leave turns
   N->>N: a changed effort: description, session.json
-  N->>C: apiSendMessages #G parts, the first quoting the quote when it came from the group and fits with the first character
+  N->>C: apiSendMessages #35;G parts, the first quoting the quote when it came from the group and fits with the first character
   opt the core refuses the quote
-    N->>C: apiSendMessages #G parts without the quote
+    N->>C: apiSendMessages #35;G parts without the quote
   end
   C->>O: the answer, from Claude
-  N->>C: apiUpdateGroupProfile #G shortDescr MODEL · effort LEVEL, when it changed
+  N->>C: apiUpdateGroupProfile #35;G shortDescr MODEL · effort LEVEL, when it changed
 ```
 
 Notes:
@@ -1014,7 +1014,7 @@ sequenceDiagram
   CC->>CC: the terminal dialog stays open
   S->>D: POST /permission {id, requestId, toolName, description, inputPreview}
   D->>N: permission
-  N->>O: card in #G: I want to use `Bash`: `DESCRIPTION`, preview, /'approve N' or /'reject N'
+  N->>O: card in #35;G: I want to use `Bash`: `DESCRIPTION`, preview, /'approve N' or /'reject N'
   O->>N: /approve N
   N->>N: performing
   N->>D: onLine {permission: {requestId, behavior: allow}}
@@ -1046,14 +1046,14 @@ sequenceDiagram
   S->>D: POST /session {config: {approve: host}}
   D->>N: requestMode(host): requested = host
   alt the group has no approver
-    O->>N: joins #G as an admin or owner, or gets one of these roles: membership event, Control.onEvent, announceRights, askMode
+    O->>N: joins #35;G as an admin or owner, or gets one of these roles: membership event, Control.onEvent, announceRights, askMode
   end
-  N->>O: card in #G: I want to run in mode host ... /'approve N' or /'reject N'
+  N->>O: card in #35;G: I want to run in mode host ... /'approve N' or /'reject N'
   O->>N: /approve N
-  N->>N: perform: setMode(host), mode host in the custom data of #G
+  N->>N: perform: setMode(host), mode host in the custom data of #35;G
   N->>O: card edited: I run in mode host ... Approved by Alice.
   S->>D: POST /session {config: {approve: requests}}
-  D->>N: requestMode(requests): a pending mode card ends with Ended.; at once, mode requests in the custom data of #G
+  D->>N: requestMode(requests): a pending mode card ends with Ended.#59; at once, mode requests in the custom data of #35;G
 ```
 
 Notes:
@@ -1170,7 +1170,7 @@ sequenceDiagram
   Note over CC,N: /clear in session A, the server attached as A
   CC->>HK: SessionStart {session_id: B, source: clear}, CLAUDE_PID P
   HK->>D: POST /title {id: B, pid: P}
-  D->>D: B unknown; entry A has pid P and is attached: alias B to A, in A's session.json
+  D->>D: B unknown#59; entry A has pid P and is attached: alias B to A, in A's session.json
   D->>N: rename, model
   HK->>D: POST /turn {id: B, pid: P, answer}
   D->>N: turn, posted in A's group
@@ -1187,7 +1187,7 @@ sequenceDiagram
   Note over CC,N: /resume R2 in session A, R2 with its own session.json
   CC->>HK: SessionStart {session_id: R2, source: resume}, CLAUDE_PID P
   HK->>D: POST /title {id: R2, pid: P}
-  D->>D: R2 has session.json; entry A has pid P and is attached: A, without an alias
+  D->>D: R2 has session.json#59; entry A has pid P and is attached: A, without an alias
   HK->>D: POST /turn {id: R2, pid: P, answer}
   D->>N: turn, posted in A's group
   Note over CC,N: later, claude --resume R2 in process Q
@@ -1195,10 +1195,10 @@ sequenceDiagram
   D-->>S: {number of R2}: its own group and chats
   Note over CC,N: the title of a new ID F before the server of P registers, as with --fork-session or /clear during a re-attach
   HK->>D: POST /title {id: F, pid: P}
-  D->>D: F unknown, no session of P: title of P = F; the title is held
+  D->>D: F unknown, no session of P: title of P = F#59; the title is held
   D-->>HK: the reply
   S->>D: POST /session {id: A, pid: P}
-  D->>D: A has session.json: A; the held title resumes: entry A has pid P: alias F to A
+  D->>D: A has session.json: A#59; the held title resumes: entry A has pid P: alias F to A
   D->>N: rename, model
 ```
 
@@ -1227,36 +1227,36 @@ sequenceDiagram
   participant C as Core _hub
   participant M as MainGroup
   participant N as Session N
-  A->>B: a group link of #M, or an invitation of a contact
-  B->>C: joins #M
+  A->>B: a group link of #35;M, or an invitation of a contact
+  B->>C: joins #35;M
   C->>M: connectedToGroupMember, or joinedGroupMember by the hub's link
-  M->>C: apiListMembers #M: Bob a current member
+  M->>C: apiListMembers #35;M: Bob a current member
   M->>B: Bob joined. Everyone in this group is trusted with all Claude Code sessions here ...
-  B->>M: /join N in #M
-  M->>N: Hub.join: role admin, or owner for an owner of #M
-  N->>C: apiAddMemberViaGroup #G via #M, role admin
+  B->>M: /join N in #35;M
+  M->>N: Hub.join: role admin, or owner for an owner of #35;M
+  N->>C: apiAddMemberViaGroup #35;G via #35;M, role admin
   M->>B: Sent you an invitation to "N · NAME".
-  B->>C: joins #G
+  B->>C: joins #35;G
   C->>N: joinedGroupMember: Control.onEvent, announceRights, askMode
-  N->>B: Bob is an admin and can send prompts and // and /! commands to Claude, and approve tool use. You can change role to observer to stop it: /'observer #G ID'
-  A->>G: a group link of #G with role member, or an invitation of a contact with a role
-  G->>C: joins #G
+  N->>B: Bob is an admin and can send prompts and // and /! commands to Claude, and approve tool use. You can change role to observer to stop it: /'observer #35;G ID'
+  A->>G: a group link of #35;G with role member, or an invitation of a contact with a role
+  G->>C: joins #35;G
   C->>N: connectedToGroupMember: Control.onEvent, announceRights, askMode
-  N->>B: Carol is a member and can send prompts to Claude ... You can change role to observer to stop it: /'observer #G ID'
-  G->>C: a message in #G, /pending, /!ls
+  N->>B: Carol is a member and can send prompts to Claude ... You can change role to observer to stop it: /'observer #35;G ID'
+  G->>C: a message in #35;G, /pending, /!ls
   C->>N: newChatItems: Session.onMessage, a prompt of Carol
   N->>G: to /pending: Only admins and owners of this group can send / commands.
   N->>G: to /!ls: Only admins and owners of this group can send / commands.
   A->>C: Carol's role set to admin in the app
   C->>N: memberRole: Control.onEvent, announceRights, askMode
-  N->>A: Carol is an admin and can send prompts and // and /! commands to Claude, and approve tool use. You can change role to observer to stop it: /'observer #G ID'
-  A->>N: /observer #G ID of Carol
-  N->>C: apiSetMembersRole #G [ID] observer
+  N->>A: Carol is an admin and can send prompts and // and /! commands to Claude, and approve tool use. You can change role to observer to stop it: /'observer #35;G ID'
+  A->>N: /observer #35;G ID of Carol
+  N->>C: apiSetMembersRole #35;G [ID] observer
   N->>A: Carol is an observer and can't send messages.
   Note over G,C: Carol's app refuses to send as an observer
-  Note over A,N: Bob leaves #M, is removed from it, or gets another role there
-  C->>M: leftMember, deletedMember or memberRole in #M
-  M->>C: apiListMembers #M; the session groups stay as they are
+  Note over A,N: Bob leaves #35;M, is removed from it, or gets another role there
+  C->>M: leftMember, deletedMember or memberRole in #35;M
+  M->>C: apiListMembers #35;M#59; the session groups stay as they are
 ```
 
 Notes:
@@ -1287,8 +1287,8 @@ sequenceDiagram
   participant A as Owner Alice
   CC->>T: reply {file, text}
   T->>T: the file checked, and its message with the caption and the preview by fitsMessage
-  T-->>CC: too long: text: too long for a message with this TYPE; shorten it.
-  T->>C: apiSendMessages #G with the file, its caption and its preview
+  T-->>CC: too long: text: too long for a message with this TYPE#59; shorten it.
+  T->>C: apiSendMessages #35;G with the file, its caption and its preview
   alt the group's preference for files and media allows the files of Claude's role
     C-->>T: the sent item
     T-->>CC: {item}
@@ -1297,8 +1297,8 @@ sequenceDiagram
     T-->>CC: tool error with the core's text
   end
   A->>C: the group's preferences changed in the app
-  N->>C: a later profile update of #G, for the model or the name: apiGetChat #G count 0
-  N->>C: apiUpdateGroupProfile #G, the current profile with Claude's fields changed
+  N->>C: a later profile update of #35;G, for the model or the name: apiGetChat #35;G count 0
+  N->>C: apiUpdateGroupProfile #35;G, the current profile with Claude's fields changed
 ```
 
 Notes:
@@ -1324,10 +1324,10 @@ sequenceDiagram
   HK-->>CC: {}, without a request
   CC->>S: tools/call
   S-->>CC: This Claude Code run is not interactive, so it has no SimpleX group ...
-  Note over CC,D: claude -p from a command of a VS Code session: entrypoint claude-vscode; the hooks get ATTENDED 0 and CLAUDE_PID P, the server ATTENDED 1 and the parent process P
+  Note over CC,D: claude -p from a command of a VS Code session: entrypoint claude-vscode#59; the hooks get ATTENDED 0 and CLAUDE_PID P, the server ATTENDED 1 and the parent process P
   CC->>HK: SessionStart
   HK->>D: ensureDaemon, POST /title {id, pid: P, project, config, unattended: true}
-  D->>D: marks of 10 s ago and older removed; P marked; a /session of P waiting for its title ends its wait
+  D->>D: marks of 10 s ago and older removed#59; P marked#59; a /session of P waiting for its title ends its wait
   HK-->>CC: {}
   S->>D: POST /session {id, pid: P}, before or after the mark
   D-->>S: 403
