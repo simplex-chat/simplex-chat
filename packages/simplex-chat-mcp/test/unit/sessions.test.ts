@@ -221,6 +221,22 @@ describe("session groups", () => {
     expect(session.actions.mode).toBe("requests")
   })
 
+  it("ask for mode host once a member becomes the first admin of the group of a session that requested it before", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const session = await openSession(hub, id1, stored(1, "auth"))
+    const mia = member(12, "Mia", T.GroupMemberRole.Member)
+    chat.members.set(20, [self, mia])
+    await session.control.load()
+    session.requestMode("host")
+    expect(session.actions.all()).toEqual([])
+    const admin = {...mia, memberRole: T.GroupMemberRole.Admin}
+    chat.members.set(20, [self, admin])
+    await hub["onEvent"]({type: "memberRole", groupInfo: group(20, "1 · auth"), byMember: invitedAlice, member: admin, fromRole: T.GroupMemberRole.Member, toRole: T.GroupMemberRole.Admin} as unknown as ChatEvent)
+    await until(() => sentTo(chat, 20).length === 2)
+    expect(sentTo(chat, 20)).toEqual([`Mia is an admin and ${approverRights} You can change role to observer to stop it: /'observer #20 12'`, `${modeCard}\n/'approve 1' or /'reject 1'`])
+  })
+
   it("post the rights of each member who joins by the member's role, whatever way they joined, with the command that makes a sending member an observer, and nothing for User", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
