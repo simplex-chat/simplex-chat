@@ -54,7 +54,7 @@ Decided on 2026-11-07:
 
 Design:
 16. One code base: `serve` and the plugin share `Control`, `Actions` and `AgentTools`.
-17. Prompts, approvals and tool-use verdicts count from every member of the session group but `User` and observers, whatever way they joined; files of `reply` are approved by owners of the Main group (rewritten on 2026-11-08 by the [trust model](#trust-model) and decisions 79 and 82).
+17. Prompts count from every member of the session group but `User`; approvals, tool-use verdicts and `//` and `/!` count from its admins and owners, whatever way they joined (rewritten on 2026-11-08 by the [trust model](#trust-model) and decision 84).
 18. The owner link reaches the person only: the `systemMessage` of the SessionStart hook and `simplex-mcp link` in a terminal; hook context and tool results never contain it.
 19. A session's approval mode changes to `host` only after an owner approves a card in the session's group.
 20. While owners exist, an owner reset runs only after an owner approves a card in the Main group; without owners it runs from a terminal.
@@ -127,7 +127,7 @@ Decided on 2026-11-08, after round 5:
 69. A unit test holds the session server's answers to Claude Code 2.1.319: `server/discover` gets `Method not found`, and `initialize` negotiates the revision 2025-11-25. That Claude Code registers no channel for a server in the modern MCP era, 2026-07-28; `McpServer` of the SDK 2.3.1 stays out of it by default.
 
 Decided by the user on 2026-11-08:
-70. A message that starts with `//` reaches Claude without its first `/`. A message that starts with `/!` reaches Claude without its `/` from a member whose member in the Main group is an owner; from another member it gets `Only owners of the Main group can send ! commands to Claude.` A message that starts with `!` gets `Messages starting with ! reach Claude only from owners, as /!command.`
+70. Replaced on 2026-11-08 by decision 84. It was: `//` reaches Claude from every member; `/!` only from a member whose member in the Main group is an owner.
 71. A one-line `/` text that is not a command of the session group gets `Unknown command. To send a command to Claude, start it with //.` in place of the list of commands (the text set by the user's answer G1).
 72. Replaced by decision 79.
 73. Replaced by decision 82.
@@ -139,14 +139,25 @@ Decided on 2026-11-08, review round 6:
 77. Each new unattended mark removes the marks of 10 s ago and older.
 
 Decided by the user on 2026-11-08, by rule 4 of the [trust model](#trust-model):
-78. A reset of the owners leaves every session group as it is: the members invited through the old Main group stay, with their records, and keep prompting and approving.
+78. A reset of the owners leaves every session group as it is: the members invited through the old Main group stay with their roles.
 
 Decided by the user on 2026-11-08, the corrected [trust model](#trust-model):
-79. Every member of a session group but `User` prompts the session and approves its actions and tool use, whatever way they joined; members with the role observer cannot send, so they neither prompt nor approve. The hub reads its contact of `User` at its start.
-80. Claude posts at each join but `User`'s: `NAME can send prompts to Claude and approve tool use. You can change role to observer to stop it: /'observer #G ID'`, with the group's and the member's IDs.
-81. `/observer #G ID` sets that member's role to observer; Claude accepts it from a member whose role lets them change that member's role in SimpleX: admin or owner, and not below the member's role. Its replies are proposals.
-82. Claude's files of `reply` reach every session group after an owner of the Main group approves the card, while the plugin option `approve_files`, a boolean on by default, is on; off, they are sent at once. `/approve N all` stays until `/revoke`. Proposals: both come from owners of the Main group; the option's title and description, the card's first line and the refusals.
+79. Replaced on 2026-11-08 by decision 84. It was: every member of a session group but `User` prompts and approves. Kept: the hub reads its contact of `User` at its start.
+80. Replaced on 2026-11-08 by decision 86. It was: the join post `NAME can send prompts to Claude and approve tool use. ...` for every role.
+81. `/observer #G ID` sets that member's role to observer; Claude accepts it from a member whose role lets them change that member's role in SimpleX: admin or owner, and not below the member's role. Its replies are proposals; the reply of an accepted one is the observer's rights post of decision 86.
+82. Replaced on 2026-11-08 by decision 87. It was: files of `reply` wait for an owner of the Main group to approve their card while the option `approve_files` is on.
 83. The start notice of a session group and the group's description wait for the user's decision on their place and text.
+
+Decided by the user on 2026-11-08, the role model of the [trust model](#trust-model):
+84. Rights in a session group follow the member's role there, whatever way they joined. Admins and owners send prompts, approve actions and tool calls, and send `//` and `/!`, which reach Claude without their first `/`. Moderators, members and authors send prompts; their `//` and `/!` get `Only admins and owners of this group can send // and /! commands to Claude.`, and their approvals `Only admins and owners of this group approve actions here.` Observers cannot send. `!` gets `Messages starting with ! reach Claude only from admins and owners, as /!command.`
+85. `/join N` invites a member of the Main group as admin. Owners of the Main group stay invited as owners: at the session start, at their join, and by `/join N` (open question U1). Members invited inside the group get the role the inviter sets.
+86. Claude posts the member's rights at each join and at each role change in the session group, `User` excepted: `NAME is a ROLE and RIGHTS.`, and for a role that sends ` You can change role to observer to stop it: /'observer #G ID'`. A role change by Claude raises no `memberRole` event; the reply to `/observer` is the observer's post.
+87. Claude's files of `reply` reach the session group at once, without a card, in both modes. The group's preference "Files and media", which owners change, is the control; the core enforces it, and the call returns the core's refusal. The option `approve_files`, the cards of `reply`, `/approve N all` and the bare `/revoke` are removed.
+88. Session groups keep no record of their invited members.
+89. All texts of decisions 84 and 86 are placeholders for the UX page; the user approves them there.
+
+Proposed on 2026-11-08 with the role model, until the user decides:
+90. A session group's `Control` takes the group's profile from each `groupUpdated` event, so its updates of the name and the short description keep what owners changed, the preference "Files and media" included.
 
 The user's rule on reviews, 2026-11-08: "reviewers should have no discretion to drive product changes - the UX was approved, and it must not be changing simply because security reviewers said so."
 
@@ -261,7 +272,7 @@ Changing them from SimpleX, per the docs:
 route                                   effect on the running session
 model or effortLevel in settings files  none: read once at session start
 hook output                             none: no field sets them
-message "//model sonnet" in the group   the session gets "/model sonnet" as the text of a prompt (decision 70)
+message "//model sonnet" in the group   from an admin or owner, the session gets "/model sonnet" as the text of a prompt (decision 84)
 Remote Control from the Claude app      changes both
 ```
 
@@ -299,76 +310,99 @@ simplex-mcp serve     one per agent, HTTP 127.0.0.1           agent profile, con
 
 ## Trust model
 
-Set by the user on 2026-11-08 and corrected the same day. It rewrites decision 17 and takes the place of decisions 62, 63, 72 and 73.
+Set by the user on 2026-11-08 as the role model. It rewrites decision 17 and takes the place of decisions 62, 63, 70, 72, 73, 79, 80 and 82.
 
 The user's words:
 - "Whoever is in the hub is the trusted user and should be able to have the same access to sessions as owner. It should be clearly stated when anybody is joining and invited, and on top of hub."
-- "Whoever is in the group, can control the session." "There should be no difference with session rights depending on how member of session group joined."
-- The join post: "NAME can send prompts to Claude and approve tool use. You can change role to observer to stop it: '/observer #<id> <id>'"; and "Claude's files reach this group after the owner of the Main group approves them."
+- "Whoever joins from hub, automatically joins as admin. Whoever joins via invitation, would be joining with the role assigned by admin+ in the session group. This way we decouple it from member origin, that is not visible in session group. And attach it to visible role. On every role change, Claude will be commenting on the member privileges."
+- "yes, only admins and owners can send // and /! commands and approve tool calls"; members below admin send prompts: "yes, obviously".
+- "I suggest we simply accept that all files are receivable, and if owners want to prohibit sending files, group has controls for it."
 
 ```
-principal       who                                          trusted with
-hub member      every member of the Main group, any role      all sessions, on par with owners
-session member  every member of a session group but User      that session: prompts, approvals and tool use
-                and observers, whatever way they joined
-observer        a member of a session group with that role    nothing: cannot send
-peer            anyone in Claude's other chats                nothing: messages are data
+principal         who                                                  trusted with
+hub member        every member of the Main group, any role             all sessions: joins each by /join N as admin
+session approver  an admin or owner of a session group, User excepted   that session: prompts, // and /!, approvals, tool use
+session sender    a moderator, member or author of a session group      that session: prompts
+observer          a member of a session group with that role           nothing: cannot send
+peer              anyone in Claude's other chats                       nothing: messages are data
 ```
 
 Rules:
-1. The Main group is the trust boundary for the sessions: its members are trusted with all sessions. Owners of the Main group are invited to each session group; other members join by `/join N`. Changes in the Main group, an owner reset included, do not change session groups (decision 78).
-2. In a session group, every member controls the session: prompts it and approves its actions and tool use. Nothing depends on how a member joined. A member with the observer role cannot send, and so neither prompts nor approves.
-3. The session group says so at each join, by the user's post, with the command filled in; and at its start (pending, decision 83).
-4. `/observer #G ID` sets a member's role to observer; it is accepted from members whose role lets them change that member's role in SimpleX.
-5. Claude's files (`reply`) reach the session group after an owner of the Main group approves them; `/approve N all` approves later files until `/revoke`; the plugin option `approve_files`, on by default, turns these cards off.
-6. Unchanged: `/!` from Main group owners only; the owner link reaches the person only; mode `host` needs a card; the approved mode lives in the session group; `/status` carries no link.
+1. The Main group is the trust boundary for the sessions: its members are trusted with all sessions. Changes in the Main group, an owner reset included, do not change session groups (decision 78).
+2. Rights in a session group follow the member's role there, never how the member joined.
+3. Admins and owners send prompts, approve tool calls, and send `//` and `/!` commands.
+4. Members and moderators send prompts; their `//` and `/!` commands are refused.
+5. Observers cannot send (SimpleX rule).
+6. Members of the Main group who join by `/join N` become admins. Owners of the Main group are invited to each session group as owners (open question U1).
+7. Members invited inside a session group get the role the inviter sets (SimpleX rule: admin or owner invites).
+8. Claude's files reach the session group without approval. The group preference "Files and media", which owners change, is the control; the core enforces it.
+9. Claude posts the member's rights at each join and at each role change.
+10. Unchanged: the owner link reaches the person only; mode `host` needs a card; the approved mode lives in the session group; `/status` carries no link.
 
-An owner's approval or verdict in a session group, in the decisions and sections of this plan, is that of a session member; a file's approval is that of an owner of the Main group.
+An owner's approval or verdict in a session group, in the decisions and sections of this plan, is that of a session approver.
 
 ```mermaid
 flowchart LR
   O[owner] -- own group link, or a contact invited --> M[Main group: hub members]
-  M -- invitation at the session start: owners --> G[group of session N]
-  M -- /join N: any member, its role --> G
-  X[person added to group N directly] --> G
-  G --> A[every member but User and observers: prompts, approvals, tool use]
-  G --> F[files of reply: after an owner of the Main group approves]
-  G -- /observer #G ID, by admin or owner --> Q[observer: cannot send]
+  M -- invitation at the session start: owners, as owners --> G[group of session N]
+  M -- /join N: as admin, owners of M as owners --> G
+  X[person invited inside group N, with the role the inviter sets] --> G
+  G --> A[admins and owners: prompts, // and /!, approvals, tool use]
+  G --> P[moderators, members, authors: prompts]
+  G --> Q[observers: cannot send]
+  G --> F[files of reply: at once, under the group's preference Files and media]
+  G -- each join and role change --> R[Claude posts the member's rights]
 ```
 
 Mechanics:
 ```
-approver of group N:                 an active member other than Claude and User, role above observer (decision 79)
-prompter of group N:                 a member other than User; the prompt rules in Session mirroring
-owner of the Main group, for "/!" and files:
-                                     a member recorded in invited of N whose member in the Main group has the role owner
-                                     and the status connected or complete, while the Main group is not lost
+approver of group N:            an active member other than Claude and User, role admin or owner (decision 84)
+prompter of group N:            a member other than User whose role sends; the prompt rules in Session mirroring
 Main group, at its creation and load: shortDescr = SHORT, description = WELCOME, updated when they differ
 on joinedGroupMember or connectedToGroupMember in the Main group:
-                                     the joiner among the members read again, a human: post "NAME joined. " + TRUST
-a join raises one of the two:        joinedGroupMember for a member who joined through the hub,
-                                     connectedToGroupMember for a member another member added
-on joinedGroupMember or connectedToGroupMember in group N, the member not User:
-                                     post "NAME can send prompts to Claude and approve tool use. You can change role to observer
-                                           to stop it: /'observer #G ID'", #G the group, ID the member (decision 80)
-on /observer #G ID by member s:      #G not this group, no current member ID, ID Claude, s, a relay or pending: a reply
-                                     rank(s) < max(rank(admin), rank(member ID)): a reply
-                                     else: role of ID = observer (decision 81)
-rank:                                relay < observer < author < member < moderator < admin < owner, as the core orders them
-group N, its description:            "The Claude Code session N: members who join from the Main group prompt it and approve its actions here."
-                                     (pending, decision 83)
-reply:                               see Channel, reply
+                                the joiner among the members read again, a human: post "NAME joined. " + TRUST
+a join raises one of the two:   joinedGroupMember for a member who joined through the hub,
+                                connectedToGroupMember for a member another member added
+on "/join N" by member m:       invitation through the Main group, role owner when m is an owner there, else admin (decision 85)
+on joinedGroupMember, connectedToGroupMember or memberRole in group N, the member not User:
+                                post RIGHTS(member) (decision 86)
+RIGHTS(m):                      "NAME is a ROLE and " + RIGHTS of the role + "."
+                                + " You can change role to observer to stop it: /'observer #G ID'" when the role sends
+RIGHTS of a role:               admin, owner:               can send prompts and // and /! commands to Claude, and approve tool use
+                                moderator, member, author:  can send prompts to Claude; // and /! commands and approvals of tool use
+                                                            need the role admin or owner
+                                observer:                   can't send messages
+on /observer #G ID by member s: #G not this group, no current member ID, ID Claude, s, a relay or pending: a reply
+                                rank(s) < max(rank(admin), rank(member ID)): a reply
+                                else: role of ID = observer; reply RIGHTS of the observer (decisions 81, 86)
+rank:                           relay < observer < author < member < moderator < admin < owner, as the core orders them
+a role change by Claude:        no memberRole event; the reply of /observer is the post
+on groupUpdated of group N:     its profile kept for Claude's later profile updates of group N (decision 90)
+group N, its description:       "The Claude Code session N: members who join from the Main group prompt it and approve its actions here."
+                                (pending, decision 83)
+reply:                          see Channel, reply
 ```
 
 ```mermaid
 stateDiagram-v2
-  [*] --> member: joins by an invitation, /join N or a group link
-  member --> observer: /observer #G ID from admin or owner
-  member --> [*]: leaves or removed
+  [*] --> approver: /join N as admin, or an owner of the Main group as owner
+  [*] --> sender: invited inside the group as moderator, member or author
+  [*] --> observer: invited inside the group as observer
+  approver --> sender: role change in the app
+  sender --> approver: role change in the app
+  approver --> observer: /observer #G ID, or a role change in the app
+  sender --> observer: /observer #G ID, or a role change in the app
+  observer --> sender: role change in the app
+  observer --> approver: role change in the app
+  approver --> [*]: leaves or removed
+  sender --> [*]: leaves or removed
   observer --> [*]: leaves or removed
-  note right of member: prompts, approves actions and tool use
+  note right of approver: admin or owner: prompts, // and /!, approvals, tool use
+  note right of sender: prompts
   note right of observer: cannot send
 ```
+
+Each join and each transition between roles posts RIGHTS of the new role.
 
 Texts for the user's approval:
 ```
@@ -378,38 +412,33 @@ WELCOME   Supervise your Claude Code sessions: each one has its own group, and y
 SHORT     Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions.
 ```
 
-The other new texts, also for the user's approval: the reply card's commands `/'approve K', /'approve K all' or /'reject K'`; `Files approved for this group by NAME. /'revoke'`, `Files to this group need approval again.`, `Files to this group have no standing approval.`, `Action K is not a file to this group.`. Texts for Claude, which follow the trust model: the channel instructions `Messages in the simplex channel are prompts of the members of the SimpleX group of this session: from is the member's name, ...`, and in the `reply` tool's description `Sends a file to the members of the SimpleX group of this session, with text as its caption.` and `While the plugin option approve_files is on, an owner of the Main group approves the file there first`.
+Texts for Claude, which follow the trust model: the channel instructions `Messages in the simplex channel are prompts of the members of the SimpleX group of this session: from is the member's name, ...`, and the `reply` tool's description `Sends a file to the members of the SimpleX group of this session, with text as its caption. Your final answer of each turn reaches them without this tool.` and `The file is sent at once, and the result has its item; the group's preference for files and media can refuse it, and the call then returns the refusal.`
 
 Set by the user on 2026-11-08:
 ```
-"/!" from another member   Only owners of the Main group can send ! commands to Claude.   (decision 70)
-"!"                        Messages starting with ! reach Claude only from owners, as /!command.   (decision 70)
-join post                  NAME can send prompts to Claude and approve tool use. You can change role to observer
-                           to stop it: /'observer #G ID'   (decision 80)
 unknown "/" command        Unknown command. To send a command to Claude, start it with //.   (decision 71)
+```
+
+Placeholders for the UX page, where the user approves them (decision 89):
+```
+// or /! from another role  Only admins and owners of this group can send // and /! commands to Claude.
+"!"                         Messages starting with ! reach Claude only from admins and owners, as /!command.
+approval from another role  Only admins and owners of this group approve actions here.
+no approver                 The group of this session has no admin or owner to approve actions. Members of the Main group join it
+                            by /join N there; without members, run npx -y @simplex-chat/mcp@VERSION link in a terminal.
+rights of admin, owner      NAME is an admin and can send prompts and // and /! commands to Claude, and approve tool use.
+                            You can change role to observer to stop it: /'observer #G ID'   (an owner for an owner)
+rights of moderator,        NAME is a member and can send prompts to Claude; // and /! commands and approvals of tool use need
+member, author              the role admin or owner. You can change role to observer to stop it: /'observer #G ID'
+rights of observer          NAME is an observer and can't send messages.   (also the reply to an accepted /observer)
 ```
 
 Pending the user's decision, implemented as proposals:
 ```
-start notice               Members can send prompts to Claude and approve tool use. You can change a member's role to observer
-                           to stop it: /observer #G MEMBER_ID. Claude's files reach this group after the owner of the Main group
-                           approves them.   (where: a post at the group's creation, or the description; not implemented, decision 83)
+start notice               not implemented; its place and text wait (decision 83)
 group description          proposed: The Claude Code session N.   (the text above stays until decided, decision 83)
-/observer replies          NAME is now an observer. / #G is not this group. / No member ID in this group. /
-                           NAME's role can't be changed. / Your role does not let you change the role of NAME.
-reply card, first line     I want to send a file to group N · NAME:   (and I sent a file to group N · NAME:)
-files approvals            Only owners of the Main group approve files here.
-no owner for files         The group of this session has no owner of the Main group to approve files. Members of the Main group
-                           join it by /join N there; without members, run npx -y @simplex-chat/mcp@VERSION link in a terminal.
-no approver                The group of this session has no member who can approve actions. Members of the Main group join it
-                           by /join N there; without members, run npx -y @simplex-chat/mcp@VERSION link in a terminal.
-not an approver            Only members who joined from the Main group approve actions here.   (kept; reached only by an observer
-                           or User, whose messages do not arrive; removal proposed)
-option title               Approve Claude's files   (decision 82)
-option description         On: an owner of the Main group approves each file Claude sends to a session's group.
-                           Off: files are sent at once.   (decision 82)
-option error               Plugin option approve_files: true or false expected, got VALUE.
-                           Change it in /plugin > Installed > simplex > Configure options.   (the template of the other options)
+/observer replies          #G is not this group. / No member ID in this group. / NAME's role can't be changed. /
+                           Your role does not let you change the role of NAME.
 ```
 
 ## Groups
@@ -417,9 +446,12 @@ option error               Plugin option approve_files: true or false expected, 
 ```
 group            host  members                                     holds
 Main group       hub   owners and other members                    QR link, invitation cards, /join, /sessions, owner reset
-session N group  hub   Main group owners, invited by the hub       prompts, replies, action and tool-use cards of session N
-                       Main group members who sent /join N
-                       people its members add directly
+session N group  hub   Main group owners, invited by the hub,      prompts, replies, action and tool-use cards of session N
+                       as owners
+                       Main group members who sent /join N,
+                       as admins
+                       people its admins and owners add, with
+                       the role they set
 ```
 
 ```
@@ -436,43 +468,38 @@ Session group custom data:
 ```
 SessionGroupData
   session          session number
-  invited          list of InvitedMember
   pending          list of PendingConnection, optional
   mode             approved mode, optional: requests without it (decision 61)
-InvitedMember
-  groupMemberId    member in the session group
-  mainMemberId     member in the Main group it was invited through
 PendingConnection
   connId           pending connection of a connect
   at               time it was recorded
 ```
 
 ```
-on session start (new id):   create the session group; for each Main group owner: apiAddMemberViaGroup(group, main, owner, owner); record InvitedMember
+on session start (new id):   create the session group; for each Main group owner: apiAddMemberViaGroup(group, main, owner, owner)
 on owner joined Main group:  for each open session: invite the owner as above
-on "/join N" by member m:    if session N exists: apiAddMemberViaGroup(group N, main, m, role of m in the Main group); record InvitedMember
-on message in group N:       a command of the group, or a prompt of a member other than User (decisions 70, 71, 79);
-                             approvals from every member but User and observers (decision 79); files from owners of the Main group,
-                             found by InvitedMember (decision 82)
+on "/join N" by member m:    if session N exists: apiAddMemberViaGroup(group N, main, m, owner when m is an owner of the Main group,
+                             else admin) (decision 85)
+on message in group N:       a command of the group, or a prompt of a member other than User (decisions 71, 84);
+                             approvals, // and /! from admins and owners (decision 84)
+on a join or role change in group N:   the post of the member's rights (decision 86)
 on session resume:           reuse the group recorded in session.json
 on connect with a pending connection c:          pending += (c, now); entries older than one day dropped
 on contactConnected or userJoinedGroup of c:     the session whose pending has c, recorded in the last day: drop it; claim the chat
 on connect to a known chat without an owner:     claim the chat
 ```
 
-Membership of the Main group in the session groups (rule 4 of the [trust model](#trust-model)):
+Membership of the Main group in the session groups (rule 1 of the [trust model](#trust-model)):
 ```
-on a membership or role change in the Main group:   the session groups and their invited lists stay as they are
-on the replacement of the Main group (decision 20): the session groups and their invited lists stay as they are (decision 78);
-                                                    "/!" follows the owners of the new Main group
+on a membership or role change in the Main group:   the session groups stay as they are
+on the replacement of the Main group (decision 20): the session groups and the roles of their members stay as they are (decision 78)
 ```
 
 ```mermaid
 flowchart LR
   R[reset of the owners approved] --> M[old Main group deleted, new Main group and link]
-  R --> K[session groups and invited lists kept]
-  K --> P[members from the old Main group prompt and approve]
-  M --> B["/!" from owners of the new Main group]
+  R --> K[session groups kept, with their members' roles]
+  K --> P[members from the old Main group keep the rights of their roles]
 ```
 
 ```mermaid
@@ -644,58 +671,28 @@ notifications/claude/channel/permission_request    POST /permission {id, request
 New tool:
 ```
 tool    input                       action
-reply   file, text?                 sends the file to the session group, text as its caption; a card while approve_files is on
+reply   file, text?                 sends the file to the session group at once, text as its caption
 ```
 
-`reply` (rule 5 of the [trust model](#trust-model), decision 82):
+`reply` (rule 8 of the [trust model](#trust-model), decision 87):
 ```
-on reply {file, text}:   an action of the same session, file and text: attach to it
-                         the file checked as for send
+on reply {file, text}:   the file checked as for send
                          its message with the caption and the preview does not fit: tool error (decision 76)
-                         approve_files off: send                                               -> {item}
-                         else: action reply, mode requests
-                           no active owner of the Main group in the group: refused
-                           simplexMcpReplies in the group's data, its approver an active owner of the Main group:
-                             performed at once, standing
-                           else: card "I want to send a file to group N · NAME:", the caption,
-                                 TYPE `PATH`, SIZE, an image's or a video's preview; /approve K, /approve K all, /reject K
-                         approved by an owner of the Main group: send, with the caption and the preview  -> {action, status: done, item}
-                         rejected, expired, failed                                             -> {action, status, error?}
-on /approve K, /reject K of a reply, /approve K all or /revoke by a member who is not an owner of the Main group:
-                         reply "Only owners of the Main group approve files here."
-on /approve K all by an owner of the Main group, K a pending reply:
-                         simplexMcpReplies = {approvedBy, approvedById, approvedAt} in the group's data
-                         each pending reply with a card approved
-                         reply "Files approved for this group by NAME. /'revoke'"
-on /revoke by an owner of the Main group:
-                         simplexMcpReplies removed; reply "Files to this group need approval again."
-a standing reply:        its outcome card "I sent a file ...", last line "Approved for this chat by NAME. /'revoke'"
+                         send, with the caption and the preview, in both modes                 -> {item}
+                         the core refuses it, as for the group's preference Files and media:   tool error, the core's text
+on groupUpdated of the session group:   the profile kept for Claude's later profile updates (decision 90)
 ```
 
 ```mermaid
 stateDiagram-v2
-  [*] --> refused: reply, the caption too long for a message with the file, or no owner of the Main group in the group
-  [*] --> sent: reply, approve_files off
-  [*] --> card: reply, no approval of all files
-  [*] --> sent: reply, approval of all files
-  card --> sent: /approve K by an owner of the Main group
-  card --> sent: /approve K all by an owner of the Main group, the approval stored
-  card --> refused: /reject K by an owner of the Main group, expiry
+  [*] --> refused: reply, the caption too long for a message with the file
+  [*] --> sent: reply, the group's preference allows the files of Claude's role
+  [*] --> refused: reply, the core refuses the file
   sent --> [*]
   refused --> [*]
 ```
 
 Server instructions, added: messages in a `simplex` channel are the prompts of the members of the session's group; the final answer of the turn reaches them; `reply` sends them files.
-
-The option `approve_files` (decision 82):
-```
-userConfig        approve_files: boolean, default true
-variable          CLAUDE_PLUGIN_OPTION_APPROVE_FILES, "true" or "false"; blank: the default
-Config            approveFiles, in /session and /title; the daemon rejects a value that is not a boolean
-daemon            Hub.approveFiles: read at the start, set by each /session and /title without unattended,
-                  for all sessions
-reply             at once when approveFiles is false
-```
 
 Protocol revision (decision 69): `initialize` negotiates 2025-11-25; `server/discover` gets `Method not found`.
 ```mermaid
@@ -756,9 +753,10 @@ on a message m in group N:         one-line "/" text not starting with "//" or "
                                    start it with //." (decision 71)
                                    else: delivery = delivery then prompt(m) (decision 45)
 prompt(m):                         from User: nothing (decision 79)
-                                   "/!" from a member who is not an owner of the Main group: reply (decision 70)
-                                   "!": reply (decision 70)
-                                   else: deliver(m), "//" and "/!" without their first "/" (decision 70)
+                                   "//" or "/!" from a member who is not an admin or owner of group N: reply (decision 84)
+                                   "!": reply (decision 84)
+                                   else: deliver(m), "//" and "/!" without their first "/" (decision 84)
+the role of m's member:            its role in group N, from the message's member
 deliver(m):                        N has no attachment: wait for one until 30 s after the daemon start (decision 43)
                                    attached: receive its file in 10 min, or reply that it was not received
                                    N has no attachment now: reply to m "Session N is not running."
@@ -850,8 +848,8 @@ sequenceDiagram
     H->>H: after the earlier messages of session N
     alt from User
       H->>H: nothing
-    else "/!" from a member who is not an owner of the Main group, or "!"
-      H->>O: the reply of decision 70
+    else "//" or "/!" from a member who is not an admin or owner of the group, or "!"
+      H->>O: the reply of decision 84
     else a prompt, "//" and "/!" without their first "/"
       opt no attachment, within 30 s of the daemon start
         H->>H: wait for session N to attach
