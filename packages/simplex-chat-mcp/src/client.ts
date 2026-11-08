@@ -10,9 +10,11 @@ import {isNotRunning, requestJson, streamLines} from "./socket"
 const daemonStartTimeout = 5 * 60_000
 const readyFd = 3
 const errorPrefix = "error: "
-const daemonVariables = /^(PATH|PATHEXT|HOME|USERPROFILE|HOMEDRIVE|HOMEPATH|TMPDIR|TMP|TEMP|XDG_CACHE_HOME|LOCALAPPDATA|APPDATA|SYSTEMROOT|SYSTEMDRIVE|WINDIR|COMSPEC|LANG|LC_\w+|LD_LIBRARY_PATH|DYLD_LIBRARY_PATH|HTTPS?_PROXY|NO_PROXY|NODE_USE_ENV_PROXY|NODE_EXTRA_CA_CERTS|SSL_CERT_(FILE|DIR)|SIMPLEX_\w+|CLAUDE_PLUGIN_OPTION_\w+)$/i
+const daemonVariables = /^(PATH|PATHEXT|HOME|USERPROFILE|HOMEDRIVE|HOMEPATH|TMPDIR|TMP|TEMP|XDG_CACHE_HOME|LOCALAPPDATA|APPDATA|SYSTEMROOT|SYSTEMDRIVE|WINDIR|COMSPEC|LANG|LC_\w+|LD_LIBRARY_PATH|DYLD_LIBRARY_PATH|HTTPS?_PROXY|NO_PROXY|NODE_USE_ENV_PROXY|NODE_EXTRA_CA_CERTS|NODE_OPTIONS|SSL_CERT_(FILE|DIR)|SIMPLEX_\w+|CLAUDE_PLUGIN_OPTION_\w+)$/i
 
 export type SpawnDaemon = (root: string) => Promise<void>
+
+export class ProtocolError extends ExitError {}
 
 export class DaemonClient {
   private constructor(readonly root: string, private readonly token: string, private readonly path: string) {}
@@ -40,7 +42,7 @@ export class DaemonClient {
       await spawnIt(this.root)
       status = await this.request<StatusReply>("GET", "/status")
     }
-    if (status.protocol !== protocolVersion) throw new ExitError("Restart Claude Code to update the SimpleX plugin.", 1)
+    if (status.protocol !== protocolVersion) throw new ProtocolError("Restart Claude Code to update the SimpleX plugin.", 1)
     return status
   }
 

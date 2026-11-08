@@ -291,6 +291,18 @@ describe("session server", () => {
     expect(seen).toEqual([registered, "attach"])
   })
 
+  it("attaches once the daemon answers after a start that reported a failure, without a call", async () => {
+    const errors = captureStderr()
+    await session({}, async () => {
+      throw new ExitError("The SimpleX daemon did not start in 5 minutes.", 1)
+    })
+    await until(() => errors.length === 1)
+    const attached = next("attach")
+    await fakeDaemon(async res => endWithResult(res, listResult))
+    await attached
+    expect(seen).toEqual([registered, "attach"])
+  })
+
   it("stops attaching when the daemon speaks another protocol", async () => {
     const errors = captureStderr()
     await fakeDaemon(async res => endWithResult(res, listResult), attachLine, protocolVersion + 1)

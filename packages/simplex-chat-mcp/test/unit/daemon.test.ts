@@ -7,11 +7,11 @@ import {join} from "path"
 import {Mode} from "../../src/actions"
 import {defaultConfig} from "../../src/config"
 import {Daemon, DaemonDeps, HubLike, SessionLike, runDaemon} from "../../src/daemon"
-import {LockedError, createDataFolder, readSessionFile, sessionFolder, socketPath, writeSessionFile} from "../../src/files"
+import {LockedError, createDataFolder, readSessionFile, serverToken, sessionFolder, socketPath, writeSessionFile} from "../../src/files"
 import {protocolVersion} from "../../src/protocol"
 import * as socket from "../../src/socket"
 import {requestJson, streamLines} from "../../src/socket"
-import {until} from "./fixtures"
+import {closeServer, until} from "./fixtures"
 
 const id1 = "11111111-1111-4111-8111-111111111111"
 const id2 = "22222222-2222-4222-8222-222222222222"
@@ -693,6 +693,58 @@ describe("daemon", () => {
     expect(await post("/session", {id: id2, pid: 201, project: "/p/app", config: defaultConfig})).toMatchObject({number: 1})
   })
 
+  it("passes the hooks of a stored session ID to the session attached from their process without joining the IDs, as after an in-session /resume", async () => {
+    storeSession(id2, 7, "older")
+    const {d, agents} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    await post("/title", {id: id1, pid: 100, project: "/p/app", config: defaultConfig})
+    await post("/session", {id: id1, pid: 100, project: "/p/app", config: defaultConfig})
+    const controller = new AbortController()
+    const {attached, firstLine} = attach(id1, controller.signal)
+    await firstLine
+    await post("/title", {id: id2, pid: 100, project: "/p/app", config: defaultConfig})
+    await post("/turn", {id: id2, pid: 100, prompt: "Fix the build"})
+    expect(agents).toMatchObject([{number: 8, turns: [{id: id2, pid: 100, prompt: "Fix the build"}]}])
+    expect(readSessionFile(sessionFolder(root, id1))!.aliases).toBeUndefined()
+    controller.abort()
+    await attached
+    await daemon.stop()
+    daemon = await Daemon.start(deps(root).d, readDefaultConfig)
+    expect(await post("/session", {id: id2, pid: 200, project: "/p/app", config: defaultConfig})).toMatchObject({number: 7})
+  })
+
+  it("keeps the stored session of a session server whose process sent the title of a new session ID first, as after /clear during a re-attach", async () => {
+    storeSession(id1, 1, "auth")
+    const {d, agents} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    await post("/title", {id: id2, pid: 100, project: "/p/app", config: defaultConfig})
+    expect(await post("/session", {id: id1, pid: 100, project: "/p/app", config: defaultConfig})).toMatchObject({number: 1})
+    expect(readSessionFile(sessionFolder(root, id2))!.aliases).toBeUndefined()
+    const controller = new AbortController()
+    const {attached, firstLine} = attach(id1, controller.signal)
+    await firstLine
+    await post("/turn", {id: id2, pid: 100, prompt: "Fix the build"})
+    expect(agents.find(({number}) => number === 1)!.turns).toEqual([{id: id2, pid: 100, prompt: "Fix the build"}])
+    controller.abort()
+    await attached
+  })
+
+  it("joins a forked session ID to the resumed session its server registered first, and keeps the resumed session when the fork's title arrives first, as with --fork-session", async () => {
+    const [id3, id4] = ["33333333-3333-4333-8333-333333333333", "44444444-4444-4444-8444-444444444444"]
+    storeSession(id1, 1, "auth")
+    storeSession(id3, 2, "docs")
+    const {d} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    expect(await post("/session", {id: id1, pid: 100, project: "/p/app", config: defaultConfig})).toMatchObject({number: 1})
+    await post("/title", {id: id2, pid: 100, project: "/p/app", config: defaultConfig})
+    expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({aliases: [id2]})
+    expect(existsSync(sessionFolder(root, id2))).toBe(false)
+    await post("/title", {id: id4, pid: 200, project: "/p/app", config: defaultConfig})
+    expect(await post("/session", {id: id3, pid: 200, project: "/p/app", config: defaultConfig})).toMatchObject({number: 2})
+    expect(readSessionFile(sessionFolder(root, id3))!.aliases).toBeUndefined()
+    expect(readSessionFile(sessionFolder(root, id4))).toMatchObject({number: 3})
+  })
+
   it("starts its own session for a server whose process sends no title in 10 seconds, and for a title from a process whose session left over 10 seconds ago", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, agents} = deps(root)
@@ -758,7 +810,18 @@ describe("daemon", () => {
 })
 
 describe("runDaemon", () => {
+  let other: Server | undefined
+  const answering = async (): Promise<void> => {
+    other = await socket.listen(socketPath(root), serverToken(root), {})
+  }
+
+  afterEach(async () => {
+    if (other) await closeServer(other)
+    other = undefined
+  })
+
   it("reports running when another daemon holds the lock", async () => {
+    await answering()
     writeFileSync(lockFile(), `${process.ppid}\n`)
     const write = jest.spyOn(process.stdout, "write").mockImplementation(() => true)
     await runDaemon({SIMPLEX_MCP_HOME: root})
@@ -766,7 +829,21 @@ describe("runDaemon", () => {
     expect(readFileSync(lockFile(), "utf8")).toBe(`${process.ppid}\n`)
   })
 
+  it("reports another process that holds the lock and does not answer, and exits with 1", async () => {
+    writeFileSync(lockFile(), `${process.ppid}\n`)
+    const write = jest.spyOn(process.stdout, "write").mockImplementation(() => true)
+    const exited = new Error("exited")
+    const exit = jest.spyOn(process, "exit").mockImplementation(() => {
+      throw exited
+    })
+    await expect(runDaemon({SIMPLEX_MCP_HOME: root})).rejects.toBe(exited)
+    expect(exit).toHaveBeenCalledWith(1)
+    expect(write.mock.calls).toEqual([[`error: Another daemon uses ${root} (PID ${process.ppid}). If no daemon runs, remove ${lockFile()}.\n`]])
+    expect(readFileSync(lockFile(), "utf8")).toBe(`${process.ppid}\n`)
+  })
+
   it("reports running before it reads the config", async () => {
+    await answering()
     writeFileSync(lockFile(), `${process.ppid}\n`)
     const write = jest.spyOn(process.stdout, "write").mockImplementation(() => true)
     await runDaemon({SIMPLEX_MCP_HOME: root, CLAUDE_PLUGIN_OPTION_APPROVE: "always"})
@@ -774,6 +851,7 @@ describe("runDaemon", () => {
   })
 
   it("reports to the ready descriptor when given", async () => {
+    await answering()
     writeFileSync(lockFile(), `${process.ppid}\n`)
     const readyFile = join(root, "ready")
     const fd = openSync(readyFile, "w")

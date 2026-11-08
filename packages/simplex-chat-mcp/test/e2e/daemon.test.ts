@@ -184,7 +184,8 @@ test("the hooks post a terminal prompt as User and the answer as Claude in the s
   await until(async () => (await alice.chat.apiListMembers(groupId)).some(member => member.memberProfile.displayName === "User" && isActive(member)))
   const message = (text: string, sender: string, quoted?: number): ItemCheck =>
     inGroup(groupId, ({chatItem}) => chatItem.meta.itemText === text && chatItem.chatDir.type === "groupRcv" && chatItem.chatDir.groupMember.memberProfile.displayName === sender && chatItem.quotedItem?.itemId === quoted)
-  const hook = (input: object) => turn(JSON.stringify({session_id: five, ...input}), {}, client)
+  let hookStart = 0
+  const hook = (input: object) => turn(JSON.stringify({session_id: five, ...input}), {}, client, undefined, ++hookStart)
 
   const typed = received(alice.chat, message("Fix the build", "User"))
   expect(await hook({hook_event_name: "UserPromptSubmit", prompt: "Fix the build"})).toEqual({})
@@ -220,7 +221,7 @@ test("the hooks post a terminal prompt as User and the answer as Claude in the s
   expect(fromUser.map(({meta}) => meta.itemText)).toEqual(["Fix the build"])
 }, 600_000)
 
-test("a session keeps its group for hooks with a new ID from its process, relays tool use to its owners, owns a contact that accepts after connect returned, asks for mode host, and gets a prompt sent before it attached again after a daemon start", async () => {
+test("a session keeps its group for hooks with a new ID from its process, relays tool use to its owners, owns a contact and a group that accept after connect returned, asks for mode host, and gets a prompt sent before it attached again after a daemon start", async () => {
   const root = join(dir, "channel", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("channel", "Alice")
@@ -263,6 +264,13 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   expect((await connecting).result).toMatchObject({status: "done", connected: false})
   await bob.chat.apiAcceptContactRequest((await requested)!.contactRequest.contactRequestId)
   await until(async () => (await callTool(client, one, "list", {})).result.chats.some(({name, connected}: {name: string; connected: boolean}) => name === "Bob" && connected))
+  const team = await bob.chat.apiNewGroup(bob.user.userId, {displayName: "Team", fullName: ""})
+  const teamLink = await bob.chat.apiCreateGroupLink(team.groupId, T.GroupMemberRole.Member)
+  const groupCard = card("I want to connect to group Team")
+  const joining = callTool(client, one, "connect", {target: teamLink, wait: 0})
+  await ownerSends(`/approve ${cardNumber(await groupCard)}`)
+  expect((await joining).result).toMatchObject({status: "done", connected: false})
+  await until(async () => (await callTool(client, one, "list", {})).result.chats.some(({name, connected}: {name: string; connected: boolean}) => name === "Team" && connected))
 
   const modeCard = card("I want to run in mode host")
   await client.request("POST", "/session", {id: one, pid, project: "/p", config: {...defaultConfig, approve: "host"}})

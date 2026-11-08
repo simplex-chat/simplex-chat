@@ -55,10 +55,12 @@ export class Session {
   private readonly pushed: {text: string; item: T.ChatItem; at: number}[] = []
   private readonly receiving = new Map<number, {resolve: () => void; reject: (error: Error) => void}>()
   private description: {model?: string; effort?: string}
-  private turnItem?: T.ChatItem | null
+  private turns: {at: number; item: T.ChatItem | null}[] = []
   private requested?: Mode
+  private hostDeclined: boolean
   private writer?: (line: AttachLine) => void
   private readonly attaching = new Changes()
+  private delivery: Promise<void> = Promise.resolve()
 
   constructor(
     private readonly hub: Hub,
@@ -68,10 +70,11 @@ export class Session {
     private data: SessionGroupData,
   ) {
     const {chat, profile: user, root} = hub
-    const {number, name, mode = "requests", model, effort} = stored
+    const {number, name, mode = "requests", model, effort, hostDeclined = false} = stored
     this.number = number
     this.name = name
     this.description = {model, effort}
+    this.hostDeclined = hostDeclined
     this.actions = new Actions(mode, hub.expireHours, controlDataOf(group.customData)?.nextAction ?? firstAction, {
       refusal: action => this.control.refusal(action),
       saveCounter: next => this.control.saveCounter(next),
@@ -129,14 +132,16 @@ export class Session {
     this.requested = mode
     if (mode === "host") return this.askMode()
     for (const action of this.actions.pending()) if (action.tool === "mode") this.actions.end(action)
+    if (this.hostDeclined) this.declineHost(false)
     if (this.actions.mode !== mode) this.setMode(mode)
   }
 
   askMode(): void {
-    if (this.requested !== "host" || this.actions.mode === "host" || !this.control.hasApprover() || this.actions.pending().some(({tool}) => tool === "mode")) return
+    if (this.requested !== "host" || this.hostDeclined || this.actions.mode === "host" || !this.control.hasApprover() || this.actions.pending().some(({tool}) => tool === "mode")) return
     try {
       const action = this.actions.create("mode", {tool: "mode", input: {mode: "host"}}, undefined, this.number)
       action.changes.subscribe(() => {
+        if (action.state === "rejected") this.declineHost(true)
         if (action.state === "rejected" || action.state === "expired") this.requested = undefined
       })
     } catch (error) {
@@ -149,19 +154,12 @@ export class Session {
     const {chatItem} = ci
     const {chatDir, content} = chatItem
     if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent" || isOwnerCommand(content.msgContent.text) || !this.approves(chatDir.groupMember)) return
-    const prompted = this.onLine === undefined ? this.whenAttached(ci, content.msgContent.text, chatDir.groupMember) : this.prompt(ci, content.msgContent.text, chatDir.groupMember)
-    prompted.catch(error => logError(`prompt of session ${this.number}`, error))
-  }
-
-  private async whenAttached(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
-    const left = this.hub.promptsHeldUntil - Date.now()
-    if (left > 0) await nextChange(this.attaching, new AbortController().signal, left)
-    if (this.onLine === undefined) await this.hub.chat.apiSendTextReply(ci, `Session ${this.number} is not running.`)
-    else await this.prompt(ci, text, member)
+    this.delivery = this.delivery.then(() => this.deliver(ci, content.msgContent.text, chatDir.groupMember)).catch(error => logError(`prompt of session ${this.number}`, error))
   }
 
   claimPending(connId: number, chat: string): void {
-    if (!this.data.pending?.some(entry => entry.connId === connId)) return
+    const recent = Date.now() - pendingDays * 86_400_000
+    if (!this.data.pending?.some(entry => entry.connId === connId && entry.at > recent)) return
     this.saveData({...this.data, pending: this.data.pending.filter(entry => entry.connId !== connId)}).catch(error => logError(`session ${this.number}`, error))
     this.tools.claim(chat).catch(error => logError(`owner of ${chat}`, error))
   }
@@ -178,22 +176,19 @@ export class Session {
   }
 
   async turn({at, prompt, answer, model, effort}: TurnRequest): Promise<void> {
+    if (prompt !== undefined || answer !== undefined) this.endPermissions(at)
+    const quoted = answer === undefined ? undefined : this.turnQuote(at ?? Infinity)
+    const matched = prompt === undefined ? [] : this.pushedIn(prompt)
+    if (prompt !== undefined) this.turns.push({at: at ?? Date.now(), item: matched[0]?.item ?? null})
+    this.pushed.splice(0, this.pushed.length, ...this.pushed.filter(entry => !matched.includes(entry)))
     if ((model !== undefined && model !== this.description.model) || (effort !== undefined && effort !== this.description.effort)) {
       this.description = {model: model ?? this.description.model, effort: effort ?? this.description.effort}
       this.store(this.description)
       const {model: shown, effort: level} = this.description
       await this.control.describe([shown, level === undefined ? undefined : `effort ${level}`].filter(part => part !== undefined).join(" · "))
     }
-    if (prompt !== undefined) {
-      this.endPermissions(at)
-      const matched = this.pushedIn(prompt)
-      this.turnItem = matched[0]?.item ?? null
-      this.pushed.splice(0, this.pushed.length, ...this.pushed.filter(entry => !matched.includes(entry)))
-      if (matched.length === 0 && parseCommand(prompt) === undefined) await this.hub.user?.post(this.number, textParts(prompt))
-    }
-    if (answer === undefined) return
-    this.endPermissions(at)
-    if (answer.trim() !== "") await this.answer(answer)
+    if (prompt !== undefined && matched.length === 0 && parseCommand(prompt) === undefined) await this.hub.user?.post(this.number, textParts(prompt))
+    if (answer !== undefined && answer.trim() !== "") await this.answer(answer, quoted)
   }
 
   endPermissions(before = Infinity): void {
@@ -221,14 +216,20 @@ export class Session {
     await this.saveData({...this.data, invited: []})
   }
 
-  private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
+  private async deliver(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
+    const left = this.hub.promptsHeldUntil - Date.now()
+    if (this.onLine === undefined && left > 0) await nextChange(this.attaching, new AbortController().signal, left)
     const {chatItem} = ci
-    const file = chatItem.file === undefined ? undefined : await this.receive(chatItem.file).catch(async error => {
+    const file = this.onLine === undefined || chatItem.file === undefined ? undefined : await this.receive(chatItem.file).catch(async error => {
       await this.hub.chat.apiSendTextReply(ci, `The file of this message was not received: ${oneLine(errorText(error))}`)
       return undefined
     })
+    if (this.onLine === undefined) {
+      await this.hub.chat.apiSendTextReply(ci, `Session ${this.number} is not running.`)
+      return
+    }
     if (this.pushed.push({text, item: chatItem, at: Date.now()}) > maxPushed) this.pushed.shift()
-    this.onLine?.({prompt: {text, from: member.memberProfile.displayName, item: chatItem.meta.itemId, ...(file === undefined ? {} : {file})}})
+    this.onLine({prompt: {text, from: member.memberProfile.displayName, item: chatItem.meta.itemId, ...(file === undefined ? {} : {file})}})
   }
 
   private async receive({fileId, fileName}: T.CIFile): Promise<string> {
@@ -241,9 +242,14 @@ export class Session {
     return path
   }
 
-  private async answer(text: string): Promise<void> {
-    const quoted = this.turnItem === undefined ? this.pushed.shift()?.item : (this.turnItem ?? undefined)
-    this.turnItem = undefined
+  private turnQuote(at: number): T.ChatItem | undefined {
+    const earlier = this.turns.filter(turn => turn.at < at)
+    if (earlier.length === 0) return this.pushed.shift()?.item
+    this.turns = this.turns.filter(turn => turn.at >= at)
+    return earlier.reduce((newest, turn) => (turn.at > newest.at ? turn : newest)).item ?? undefined
+  }
+
+  private async answer(text: string, quoted: T.ChatItem | undefined): Promise<void> {
     const parts = textParts(text)
     const quotedItemId = quoted?.content.type === "rcvMsgContent" && fitsMessage({type: "text", text: parts[0]}, undefined, {content: quoted.content.msgContent, fileName: quoted.file?.fileName}) ? quoted.meta.itemId : undefined
     await this.hub.chat.apiSendMessages([T.ChatType.Group, this.control.groupId], parts.map((part, i) => ({msgContent: {type: "text", text: part}, quotedItemId: i === 0 ? quotedItemId : undefined, mentions: {}})))
@@ -263,6 +269,11 @@ export class Session {
   private setMode(mode: Mode): void {
     this.actions.mode = mode
     this.store({mode})
+  }
+
+  private declineHost(declined: boolean): void {
+    this.hostDeclined = declined
+    this.store({hostDeclined: declined || undefined})
   }
 
   private store(fields: Partial<SessionFile>): void {

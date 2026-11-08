@@ -10,7 +10,7 @@ import {Hub, StoredSession, hubTexts} from "./hub"
 import {ExitError, errorText, log, logError} from "./log"
 import {ToolCall, validName} from "./messages"
 import {AttachLine, AttachRequest, CallRequest, OwnerState, PermissionRequest, ResetReply, SessionReply, SessionRequest, StatusReply, TitleReply, TitleRequest, TurnRequest, protocolVersion} from "./protocol"
-import {Handler, SocketError, listen, sendJson, startLines} from "./socket"
+import {Handler, SocketError, isNotRunning, listen, requestJson, sendJson, startLines} from "./socket"
 import {ToolName} from "./tools"
 import {version} from "./version"
 
@@ -18,6 +18,8 @@ const idleClose = 10 * 60_000
 const idleStop = 10 * 60_000
 const processWait = 10_000
 const logCheck = 3_600_000
+const lockAnswerAttempts = 10
+const lockAnswerWait = 100
 const firstFreeFd = 3
 const unnamedSession = "Claude Code"
 
@@ -227,8 +229,11 @@ export class Daemon {
   }
 
   private async resolve(id: string, pid: number | undefined, fromServer = false): Promise<string> {
-    const known = (): string | undefined => this.aliases.get(id) ?? (pid === undefined ? undefined : this.processSession(pid))
-    if (fromServer && pid !== undefined && known() === undefined && readSessionFile(this.folder(id)) === undefined) {
+    const alias = this.aliases.get(id)
+    if (alias !== undefined) return alias
+    if (readSessionFile(this.folder(id)) !== undefined) return (fromServer || pid === undefined ? undefined : this.attachedSession(pid)) ?? id
+    if (pid === undefined) return id
+    if (fromServer && this.processSession(pid) === undefined) {
       await new Promise<void>(resolve => {
         const done = (): void => {
           clearTimeout(timer)
@@ -239,16 +244,20 @@ export class Daemon {
         this.titled.on(String(pid), done)
       })
     }
-    const target = known() ?? id
+    const target = this.processSession(pid) ?? id
     if (target !== id) this.alias(id, target)
     return target
   }
 
+  private attachedSession(pid: number): string | undefined {
+    return [...this.entries].find(([, entry]) => entry.pid === pid && entry.attached > 0)?.[0]
+  }
+
   private processSession(pid: number): string | undefined {
     const recent = Date.now() - processWait
-    for (const [id, entry] of this.entries) if (entry.pid === pid && (entry.attached > 0 || (entry.seen ?? 0) > recent)) return id
+    const detached = [...this.entries].find(([, entry]) => entry.pid === pid && (entry.seen ?? 0) > recent)?.[0]
     const title = this.titles.get(pid)
-    return title !== undefined && title.at > recent ? title.id : undefined
+    return this.attachedSession(pid) ?? detached ?? (title !== undefined && title.at > recent ? title.id : undefined)
   }
 
   private alias(id: string, target: string): void {
@@ -399,7 +408,7 @@ export async function runDaemon(env: NodeJS.ProcessEnv = process.env): Promise<v
     createDataFolder(root)
     daemon = await Daemon.start(productionDeps(root), () => readConfig(env))
   } catch (error) {
-    if (error instanceof LockedError) return ready("running")
+    if (error instanceof LockedError && (await answers(root))) return ready("running")
     ready(`error: ${errorText(error)}`)
     process.exit(1)
   }
@@ -423,6 +432,14 @@ export function productionDeps(root: string): DaemonDeps {
     openHub: (config, stored) => Hub.open(root, config, stored),
     onStopped: code => process.exit(code),
   }
+}
+
+async function answers(root: string): Promise<boolean> {
+  for (let attempt = 0; attempt < lockAnswerAttempts; attempt++) {
+    if (await requestJson(socketPath(root), serverToken(root), "GET", "/").then(() => true, error => !isNotRunning(error))) return true
+    await new Promise(resolve => setTimeout(resolve, lockAnswerWait))
+  }
+  return false
 }
 
 function validConfig(config: Config | undefined): void {

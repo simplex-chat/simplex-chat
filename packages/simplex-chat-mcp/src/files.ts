@@ -20,6 +20,7 @@ export interface SessionFile {
   aliases?: string[]
   model?: string
   effort?: string
+  hostDeclined?: boolean
 }
 
 export interface ServerFile {

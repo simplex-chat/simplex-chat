@@ -9,6 +9,7 @@ import {SessionFile, createDataFolder, readSessionFile, sessionFolder, writeSess
 import {Hub, Session} from "../../src/hub"
 import {AttachLine} from "../../src/protocol"
 import {User} from "../../src/user"
+import {version} from "../../src/version"
 import {FakeChat, contact, direct, event, fileItem, group, groupChat, item, member, signal, until, user} from "./fixtures"
 
 const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
@@ -19,7 +20,7 @@ const self = member(1, "Claude", T.GroupMemberRole.Owner, T.GroupMemberStatus.Cr
 const alice = member(3, "Alice", T.GroupMemberRole.Owner)
 const bob = member(7, "Bob", T.GroupMemberRole.Member)
 const invitedAlice = member(1003, "Alice", T.GroupMemberRole.Owner)
-const noOwner = "The group of this session has no owner. An owner of the Main group joins it by its invitation there; without owners, run npx -y @simplex-chat/mcp link in a terminal."
+const noOwner = `The group of this session has no owner. An owner of the Main group joins it by its invitation there; without owners, run npx -y @simplex-chat/mcp@${version} link in a terminal.`
 const modeCard = "I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here."
 
 type HubConstructor = new (chat: unknown, user: T.User, root: string, expireHours: number, mainGroup: T.GroupInfo, mainName: string) => Hub
@@ -224,6 +225,52 @@ describe("session groups", () => {
     expect((await listed(session)).sort()).toEqual(["@12", "@13"])
   })
 
+  it("claim a group joined after its connect call returned, and no chat of a connection pending for over a day", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const session = await openSession(hub, id1, stored(1, "auth"))
+    session["savePending"](301)
+    session["savePending"](302)
+    chat.chats.set("#30", {chatInfo: groupChat(group(30, "Team")), items: []})
+    await hub["onEvent"]({type: "userJoinedGroup", user, groupInfo: group(30, "Team"), hostMember: {...member(5, "Host", T.GroupMemberRole.Owner), activeConn: {connId: 301}}} as unknown as ChatEvent)
+    await until(() => chat.customData.some(({chat: ref}) => ref === "#30"))
+    expect(chat.customData.filter(({chat: ref}) => ref === "#30").at(-1)!.customData).toEqual({simplexMcpOwner: {session: id1}})
+    const accepted = {...contact(12, "Ridgeline"), activeConn: {connId: 302, connStatus: {type: "ready"}}} as unknown as T.Contact
+    chat.chats.set("@12", {chatInfo: direct(accepted), items: []})
+    const dayLater = jest.spyOn(Date, "now").mockReturnValue(Date.now() + 86_400_001)
+    await hub["onEvent"]({type: "contactConnected", user, contact: accepted} as unknown as ChatEvent)
+    dayLater.mockRestore()
+    await new Promise(resolve => setTimeout(resolve, 50))
+    expect(chat.customData.some(({chat: ref}) => ref === "@12")).toBe(false)
+  })
+
+  it("keep the data written to the group of a session while its profile changes", async () => {
+    const chat = new FakeChat()
+    const session = await openSession(await hubWith(chat), id1, stored(1, "auth"))
+    await Promise.all([session.control.describe("claude-opus-5"), session.control.saveData({marker: true})])
+    await session.control.saveCounter(5)
+    expect(chat.customData.filter(({chat: ref}) => ref === "#20").at(-1)!.customData).toMatchObject({marker: true, simplexMcp: {nextAction: 5}})
+  })
+
+  it("ask for mode host no more after an owner rejected it, also after a restart, until the option returns to requests", async () => {
+    const chat = new FakeChat()
+    const session = await openSession(await hubWith(chat), id1, stored(1, "auth"))
+    await withOwner(chat, session)
+    session.requestMode("host")
+    await until(() => sentTo(chat, 20).length === 1)
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "reject", params: "1"})).toBeUndefined()
+    session.requestMode("host")
+    expect(session.actions.pending()).toEqual([])
+    expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({hostDeclined: true})
+    const reopened = await (await hubWith(chat)).session(id1, readSessionFile(sessionFolder(root, id1))!)
+    reopened.requestMode("host")
+    expect(reopened.actions.pending()).toEqual([])
+    reopened.requestMode("requests")
+    expect(readSessionFile(sessionFolder(root, id1))!.hostDeclined).toBeUndefined()
+    reopened.requestMode("host")
+    await until(() => sentTo(chat, 20).length === 2)
+  })
+
   it("show each session only its own chats, and /give hands a chat to another session", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
@@ -295,6 +342,10 @@ describe("session channel", () => {
   const from = (sender: T.GroupMember): T.CIDirection => ({type: "groupRcv", groupMember: sender})
   const tag = (n: number, text: string): string => `<channel source="plugin:simplex:simplex" from="Alice" item="${n}">\n${text}\n</channel>`
   const answers = (chat: FakeChat) => chat.sent.filter(({chat: [, groupId]}) => groupId === 20).map(({messages}) => messages.map(({msgContent, quotedItemId}) => ({text: msgContent.text, quotedItemId})))
+  const ownerPrompt = async (session: Session, n: number, text: string): Promise<void> => {
+    session.onMessage(event(sessionGroup, item(n, text, from(invitedAlice))))
+    await until(() => session["pushed"].some(({item: pushed}) => pushed.meta.itemId === n))
+  }
 
   async function channel(chat: FakeChat): Promise<{hub: Hub; session: Session; lines: AttachLine[]}> {
     const hub = await hubWith(chat)
@@ -393,20 +444,72 @@ describe("session channel", () => {
   it("quotes in each answer the prompt of its turn when an owner sends prompts during a turn, and the oldest prompt without a prompt hook", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
-    const prompt = (n: number, text: string) => session.onMessage(event(sessionGroup, item(n, text, from(invitedAlice))))
-    prompt(42, "Fix the build")
-    await session.turn({id: id1, prompt: tag(42, "Fix the build")})
-    prompt(43, "Then run the tests")
-    await session.turn({id: id1, answer: "Fixed."})
-    await session.turn({id: id1, prompt: tag(43, "Then run the tests")})
-    await session.turn({id: id1, answer: "Tests pass."})
-    prompt(44, "Deploy")
-    prompt(45, "and tag it")
-    await session.turn({id: id1, prompt: `${tag(44, "Deploy")}\n${tag(45, "and tag it")}`})
-    await session.turn({id: id1, answer: "Deployed and tagged."})
-    prompt(46, "Status?")
-    await session.turn({id: id1, answer: "Green."})
+    await ownerPrompt(session, 42, "Fix the build")
+    await session.turn({id: id1, at: 1, prompt: tag(42, "Fix the build")})
+    await ownerPrompt(session, 43, "Then run the tests")
+    await session.turn({id: id1, at: 2, answer: "Fixed."})
+    await session.turn({id: id1, at: 3, prompt: tag(43, "Then run the tests")})
+    await session.turn({id: id1, at: 4, answer: "Tests pass."})
+    await ownerPrompt(session, 44, "Deploy")
+    await ownerPrompt(session, 45, "and tag it")
+    await session.turn({id: id1, at: 5, prompt: `${tag(44, "Deploy")}\n${tag(45, "and tag it")}`})
+    await session.turn({id: id1, at: 6, answer: "Deployed and tagged."})
+    await ownerPrompt(session, 46, "Status?")
+    await session.turn({id: id1, at: 7, answer: "Green."})
     expect(answers(chat)).toEqual([[{text: "Fixed.", quotedItemId: 42}], [{text: "Tests pass.", quotedItemId: 43}], [{text: "Deployed and tagged.", quotedItemId: 44}], [{text: "Green.", quotedItemId: 46}]])
+  })
+
+  it("quotes in each answer the prompt of its turn by the start of the hooks, when the Stop hook of a turn arrives after or during the prompt hook of the next turn", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    await ownerPrompt(session, 42, "Fix the build")
+    await session.turn({id: id1, at: 1, prompt: tag(42, "Fix the build")})
+    await ownerPrompt(session, 43, "Then run the tests")
+    await session.turn({id: id1, at: 3, prompt: tag(43, "Then run the tests")})
+    await session.turn({id: id1, at: 2, answer: "Fixed."})
+    await session.turn({id: id1, at: 4, answer: "Tests pass."})
+    await ownerPrompt(session, 44, "Deploy")
+    await session.turn({id: id1, at: 5, prompt: tag(44, "Deploy")})
+    await ownerPrompt(session, 45, "Tag it")
+    await Promise.all([session.turn({id: id1, at: 6, answer: "Deployed.", effort: "high"}), session.turn({id: id1, at: 7, prompt: tag(45, "Tag it")})])
+    await session.turn({id: id1, at: 8, answer: "Tagged."})
+    expect(answers(chat)).toEqual([[{text: "Fixed.", quotedItemId: 42}], [{text: "Tests pass.", quotedItemId: 43}], [{text: "Deployed.", quotedItemId: 44}], [{text: "Tagged.", quotedItemId: 45}]])
+  })
+
+  it("ends the turn of a prompt with an empty answer, so that a later answer without a prompt hook quotes its own prompt", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    await ownerPrompt(session, 42, "Fix the build")
+    await session.turn({id: id1, at: 1, prompt: tag(42, "Fix the build")})
+    await session.turn({id: id1, at: 2, answer: ""})
+    await ownerPrompt(session, 43, "Status?")
+    await session.turn({id: id1, at: 3, answer: "Green."})
+    expect(answers(chat)).toEqual([[{text: "Green.", quotedItemId: 43}]])
+  })
+
+  it("delivers an owner's prompts in their order after a prompt with a file, and replies that the session is not running when it detaches during the transfer", async () => {
+    const chat = new FakeChat()
+    const {hub, session, lines} = await channel(chat)
+    const offer = (n: number, fileId: number): T.ChatItem => {
+      const offered = fileItem(n, {type: "file", text: "See the log"}, {type: "rcvInvitation"}, {chatDir: from(invitedAlice), fileId})
+      chat.responses.set(`/freceive ${fileId} approved_relays=on ${join(sessionFolder(root, id1), "files", "group", `${fileId}.pdf`)}`, {type: "rcvFileAccepted", user, chatItem: event(sessionGroup, offered)})
+      session.onMessage(event(sessionGroup, offered))
+      return offered
+    }
+    const first = offer(43, 8)
+    session.onMessage(event(sessionGroup, item(44, "and fix it", from(invitedAlice))))
+    await until(() => chat.commands.some(command => command.startsWith("/freceive 8 ")))
+    expect(lines).toEqual([])
+    await hub["onEvent"]({type: "rcvFileComplete", user, chatItem: event(sessionGroup, first)} as unknown as ChatEvent)
+    await until(() => lines.length === 2)
+    expect(lines).toEqual([{prompt: {text: "See the log", from: "Alice", item: 43, file: join(sessionFolder(root, id1), "files", "group", "8.pdf")}}, {prompt: {text: "and fix it", from: "Alice", item: 44}}])
+    const second = offer(45, 9)
+    await until(() => chat.commands.some(command => command.startsWith("/freceive 9 ")))
+    session.onLine = undefined
+    await hub["onEvent"]({type: "rcvFileComplete", user, chatItem: event(sessionGroup, second)} as unknown as ChatEvent)
+    await until(() => chat.replies.length === 1)
+    expect(chat.replies).toEqual(["Session 1 is not running."])
+    expect(lines).toHaveLength(2)
   })
 
   it("ends at each prompt and answer only the tool-use cards created before its hook started", async () => {

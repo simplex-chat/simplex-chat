@@ -54,8 +54,7 @@ export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = proce
   }
 }
 
-export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, client: HookDeps["client"] = DaemonClient.forRoot(dataRoot(env)), retryMs = turnRetryMs): Promise<HookOutput> {
-  const at = Date.now()
+export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, client: HookDeps["client"] = DaemonClient.forRoot(dataRoot(env)), retryMs = turnRetryMs, at = performance.timeOrigin): Promise<HookOutput> {
   try {
     const input = JSON.parse(stdin) as TurnInput
     const request = {id: input.session_id, pid: claudePid(env), at, prompt: input.prompt, answer: input.last_assistant_message, model: input.to_model, effort: input.effort?.level}

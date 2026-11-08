@@ -4,8 +4,8 @@ import {ResetReply, StatusReply} from "./protocol"
 import {qrCodeText} from "./qr"
 import {version} from "./version"
 
-const linkCommand = "npx -y @simplex-chat/mcp link"
-const resetCommand = "npx -y @simplex-chat/mcp reset-owners"
+export const linkCommand = `npx -y @simplex-chat/mcp@${version} link`
+export const resetCommand = `npx -y @simplex-chat/mcp@${version} reset-owners`
 
 export function linkText({mainGroup, owner}: StatusReply, tty: boolean): string {
   if (owner.owners.length > 0) return `Owners of "${mainGroup}": ${owner.owners.join(", ")}. To replace them, run /simplex:reset-owners.`

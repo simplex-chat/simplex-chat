@@ -3,6 +3,7 @@ import {api, core} from "simplex-chat"
 import {Action, ActionHooks, Actions, DownloadAction, Standing, Subject, ToolError, hasUnknownServers, leaveVerbs, subjectText, summary} from "./actions"
 import {ExitError, chatErrorOf, errorText, fileError, log, logError, oneLine, serverHostname, shellWord} from "./log"
 import {chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "./messages"
+import {linkCommand} from "./owner"
 import {qrCodeText} from "./qr"
 import type {OwnerEntry, QrCodeSize} from "./serve"
 import {AgentTools, chatSubject, customDataOf, fitsMessage, isActive, isConnected, memberCurrent, refusedFileReason, setChatData} from "./tools"
@@ -32,7 +33,7 @@ const longestError = "€".repeat(600)
 const greeting = "I'm your agent. I ask here before I connect, send, download a file or leave a chat."
 const noOwners = "No owners in the agent control chat."
 const qrCodeHint = "If the QR code does not scan, restart with --qr-code large, or paste the link into the app."
-const noSessionOwner = "The group of this session has no owner. An owner of the Main group joins it by its invitation there; without owners, run npx -y @simplex-chat/mcp link in a terminal."
+const noSessionOwner = `The group of this session has no owner. An owner of the Main group joins it by its invitation there; without owners, run ${linkCommand} in a terminal.`
 
 export interface ControlData {
   control: true
@@ -104,7 +105,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (isLost(this.group)) return this.lose()
     const {groupProfile} = this.group
     if (groupProfile.displayName !== this.options.displayName || JSON.stringify(groupProfile.groupPreferences?.commands) !== JSON.stringify(controlCommands)) {
-      this.group = await this.chat.apiUpdateGroupProfile(this.groupId, {...groupProfile, displayName: this.options.displayName, groupPreferences: {...groupProfile.groupPreferences, commands: controlCommands}})
+      this.group = {...(await this.chat.apiUpdateGroupProfile(this.groupId, {...groupProfile, displayName: this.options.displayName, groupPreferences: {...groupProfile.groupPreferences, commands: controlCommands}})), customData: this.group.customData}
     }
     await this.refreshMembers()
   }
@@ -116,7 +117,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
 
   async describe(shortDescr: string): Promise<void> {
     if (this.group.groupProfile.shortDescr === shortDescr) return
-    this.group = await this.chat.apiUpdateGroupProfile(this.groupId, {...this.group.groupProfile, shortDescr})
+    this.group = {...(await this.chat.apiUpdateGroupProfile(this.groupId, {...this.group.groupProfile, shortDescr})), customData: this.group.customData}
   }
 
   async start(): Promise<void> {

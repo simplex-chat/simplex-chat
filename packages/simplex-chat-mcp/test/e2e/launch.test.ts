@@ -9,6 +9,7 @@ const run = promisify(execFile)
 const packageDir = join(__dirname, "../..")
 const {version} = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8"))
 const id = "77777777-7777-4777-8777-777777777777"
+const installLimit = 60_000
 let dir: string
 let root: string
 
@@ -18,7 +19,7 @@ beforeAll(async () => {
   root = join(dir, "cache", "simplex-chat", "simplex", version)
   mkdirSync(root, {recursive: true})
   await run("tar", ["-xzf", join(dir, `simplex-chat-mcp-${version}.tgz`), "--strip-components=1", "-C", root])
-  await run("npm", ["ci", "--ignore-scripts", "--no-audit", "--no-fund"], {cwd: root})
+  await run("npm", ["ci", "--ignore-scripts", "--workspaces=false", "--no-audit", "--no-fund"], {cwd: root, timeout: installLimit})
 }, 300_000)
 
 afterAll(() => {
@@ -41,7 +42,7 @@ test("the packed package declares production dependencies only, its shrinkwrap l
   expect(readdirSync(packageDir).filter(name => name.endsWith(".orig"))).toEqual([])
 })
 
-test("the installed plugin runs its hooks and its session server from its own folder, with dependencies from its shrinkwrap", async () => {
+test("the plugin, installed with the command of Claude Code within its 60 s limit, runs its hooks and its session server from its own folder, with dependencies from its shrinkwrap", async () => {
   expect(readdirSync(root)).toEqual(expect.arrayContaining(["npm-shrinkwrap.json", "dist", "node_modules", ".mcp.json", "hooks"]))
   const env = {...process.env, SIMPLEX_MCP_HOME: join(dir, "home"), CLAUDE_PLUGIN_ROOT: root}
   const {hooks} = JSON.parse(readFileSync(join(root, "hooks", "hooks.json"), "utf8"))

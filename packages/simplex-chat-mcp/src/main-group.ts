@@ -2,6 +2,7 @@ import {ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {Command, createGroup, deleteGroup, isLost, joinedText, losesControl, parseCommand, safeName} from "./control"
 import {chatErrorOf, log, logError, oneLine} from "./log"
+import {resetCommand} from "./owner"
 import {isActive} from "./tools"
 
 const mainCommands: T.ChatBotCommand[] = [
@@ -161,7 +162,7 @@ export class MainGroup {
 
   private lose(): void {
     this.lost = true
-    log("The Main group is lost. Run npx -y @simplex-chat/mcp reset-owners in a terminal.")
+    log(`The Main group is lost. Run ${resetCommand} in a terminal.`)
   }
 
   private async openLink(): Promise<void> {

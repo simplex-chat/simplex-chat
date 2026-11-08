@@ -1,7 +1,7 @@
 import {Readable, Writable} from "stream"
 import {CallToolResult, JsonSchemaType, McpServer, fromJsonSchema} from "@modelcontextprotocol/server"
 import {StdioServerTransport} from "@modelcontextprotocol/server/stdio"
-import {DaemonClient, SpawnDaemon, spawnDaemon} from "./client"
+import {DaemonClient, ProtocolError, SpawnDaemon, spawnDaemon} from "./client"
 import {Config, ConfigError, defaultConfig, readConfig} from "./config"
 import {dataRoot, isSessionId} from "./files"
 import {ExitError, errorText, logError} from "./log"
@@ -87,7 +87,7 @@ class DaemonLink {
       error => {
         if (this.closed) return
         logError("SimpleX daemon", error)
-        if (!(error instanceof ExitError)) this.reconnect()
+        if (!(error instanceof ProtocolError)) this.reconnect()
       },
     )
   }
