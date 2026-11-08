@@ -276,6 +276,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(DeleteAndBanCustomerForeverDialog_Previews.self),
         SnapshotScene(DeleteAndBanUnavailableAlert_Previews.self, alert: true),
         SnapshotScene(DeleteBusinessChatAlert_Previews.self, alert: true),
+        SnapshotScene(DeleteChannelAlert_Previews.self, alert: true),
         SnapshotScene(DeleteContactActionSheet_Previews.self),
         SnapshotScene(DeleteContactAlert_Previews.self, alert: true),
         SnapshotScene(DeleteContactKeepDialog_Previews.self),
@@ -1122,6 +1123,8 @@ private final class SnapshotFixtures {
         var bannable = contact
         bannable.activeConn?.viaUserContactLink = 1
         bannable.activeConn?.peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)
+        var archived = bannable
+        archived.chatDeleted = true
         var customerChat = team
         customerChat.businessChat = .sampleData
         customerChat.membership.memberRole = .owner
@@ -1138,6 +1141,7 @@ private final class SnapshotFixtures {
             SwipeActionsRow(title: "Contact", actions: .contact(Chat(chatInfo: .direct(contact: contact), chatItems: items), contact))
             SwipeActionsRow(title: "Contact connected via your address", actions: .contact(Chat(chatInfo: .direct(contact: bannable), chatItems: items), bannable))
             SwipeActionsRow(title: "Contact connected via your address, no messages", actions: .contact(Chat(chatInfo: .direct(contact: bannable)), bannable))
+            SwipeActionsRow(title: "Archived contacts: contact connected via your address", actions: ChatListActions([ChatListAction.deleteContact(archived)] + (archived.canDeleteAndBan ? [ChatListAction.banContact(archived)] : []), more: []))
             SwipeActionsRow(title: "Business chat owner", actions: group(customerChat, items, ChatStats()))
             SwipeActionsRow(title: "Business chat owner, no messages", actions: group(customerChat, [], ChatStats()))
             SwipeActionsRow(title: "Group owner", actions: group(owner, items, ChatStats()))

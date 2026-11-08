@@ -1293,6 +1293,13 @@ func previewCustomerChat() -> GroupInfo {
     return groupInfo
 }
 
+func previewGroup(_ role: GroupMemberRole, channel: Bool = false) -> GroupInfo {
+    var groupInfo = GroupInfo.sampleData
+    groupInfo.useRelays = channel
+    groupInfo.membership.memberRole = role
+    return groupInfo
+}
+
 struct GroupChatInfoView_DeleteAndBan_Previews: PreviewProvider {
     static var previews: some View {
         let groupInfo = previewCustomerChat()
@@ -1328,6 +1335,15 @@ struct DeleteBusinessChatAlert_Previews: PreviewProvider {
         let groupInfo = previewCustomerChat()
         return Color.clear.alert(isPresented: .constant(true)) {
             deleteGroupAlert(Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil)), groupInfo)
+        }
+    }
+}
+
+struct DeleteChannelAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        let channel = previewGroup(.owner, channel: true)
+        return Color.clear.alert(isPresented: .constant(true)) {
+            deleteGroupAlert(Chat(chatInfo: .group(groupInfo: channel, groupChatScope: nil)), channel)
         }
     }
 }
