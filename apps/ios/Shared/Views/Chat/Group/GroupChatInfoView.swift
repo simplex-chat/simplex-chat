@@ -1071,7 +1071,7 @@ func deleteGroupAlert(_ chat: Chat, _ groupInfo: GroupInfo, afterDeletion: @esca
         title: Text(label),
         message: Text(chat.chatInfo.displayName + "\n\n") + deleteGroupAlertMessage(groupInfo),
         primaryButton: .destructive(Text("Delete")) {
-            if (groupInfo.isOwner && groupInfo.businessChat == nil) || groupInfo.isCustomerChatOwner {
+            if (groupInfo.isOwner && groupInfo.membership.memberActive && groupInfo.businessChat == nil) || groupInfo.isCustomerChatOwner {
                 showClosableAppSheet { close in
                     deleteGroupKeepDialog(groupInfo, close: close) { keepConversation in
                         deleteGroup(chat, keepConversation: keepConversation, afterDeletion)

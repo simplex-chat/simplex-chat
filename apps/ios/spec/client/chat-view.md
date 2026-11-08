@@ -586,15 +586,16 @@ result          delete(keepConversation, duration.notice)
 ```
 
 - contact: `deleteAndBanContactDialog`, shown when `Contact.canDeleteAndBan` (`sndReady`, `active`, `activeConn.viaUserContactLink` set, `peerChatVRange.maxVersion >= LINK_NOTICE_VERSION`): `deleteContactMaybeErrorAlert` with `notify: false` and the notice; entries: `ChatInfoView.deleteAndBanButton`, the chat list "Ban", the Archived contacts "Ban" (`ContactListNavLink.deletedChatNavLink`)
-- customer: `deleteAndBanCustomerDialog` (`GroupChatInfoView.swift`): `deleteChat` with the notice; `GroupChatInfoView.deleteAndBanButton` is shown when `GroupInfo.canDeleteAndBanCustomer(members)`: `isCustomerChatOwner` and the member with `businessChat.customerId` passes `canBanAndRemove`
+- customer: `deleteAndBanCustomerDialog` (`GroupChatInfoView.swift`): `deleteChat` with the notice; `GroupChatInfoView.deleteAndBanButton` is shown when `GroupInfo.canDeleteAndBanCustomer(members)`: `isCustomerChatOwner` (`isOwner`, `membership.memberActive`, `businessChat.chatType == .customer`) and the member with `businessChat.customerId` passes `canBanAndRemove`
 
 Group deletion (`deleteGroupAlert`, `GroupChatInfoView.swift`, also used by the chat list):
 
 ```
 alert           title and message as before; deleteGroupAlertMessage adds "<name> will be notified."
                 for isCustomerChatOwner
-owner           (isOwner && businessChat == nil) || isCustomerChatOwner: deleteGroupKeepDialog, Delete;
-                footer "<name> can connect to you again via your business address." for isCustomerChatOwner
+owner           (isOwner && membership.memberActive && businessChat == nil) || isCustomerChatOwner:
+                deleteGroupKeepDialog, Delete; footer "<name> can connect to you again via your business
+                address." for isCustomerChatOwner
 others          deletion after the alert
 deletion        deleteGroup → deleteChat(chatDeleteMode, notice); afterDeletion on success
 ```

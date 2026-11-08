@@ -141,7 +141,7 @@ Complete group management in SimpleX Chat iOS: creating groups, inviting members
 ### 9. Delete Group
 
 1. Owner navigates to `GroupChatInfoView` -> taps "Delete group", or uses "Delete" in the chat list swipe; both show `deleteGroupAlert` (`GroupChatInfoView.swift`).
-2. For an owner of a group or channel, and for the owner of a business chat with a customer, a sheet with "Keep conversation", Delete and Cancel follows (`KeepConversationDialog`); a member who left or was removed deletes after the alert only.
+2. For an active owner (`isOwner` and `membership.memberActive`) of a group or channel, and for the active owner of a business chat with a customer, a sheet with "Keep conversation", Delete and Cancel follows (`KeepConversationDialog`); a member who left or was removed, and an owner whose membership is not active (for example `memAccepted`), delete after the alert only, as the core keeps the conversation only for an active owner.
 3. Calls `apiDeleteChat(type: .group, id: groupId, chatDeleteMode:)` through `deleteChat`; "Keep conversation" off sends `.full`, on sends `.entity`:
    ```swift
    func apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true), notice: LinkNotice? = nil) async throws -> GroupInfo?

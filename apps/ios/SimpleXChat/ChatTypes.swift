@@ -3083,7 +3083,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     }
 
     public var isCustomerChatOwner: Bool {
-        isOwner && businessChat?.chatType == .customer
+        isOwner && membership.memberActive && businessChat?.chatType == .customer
     }
 
     public func canDeleteAndBanCustomer(_ members: [GroupMember]) -> Bool {
