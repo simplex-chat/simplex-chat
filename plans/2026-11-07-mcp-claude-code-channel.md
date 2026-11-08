@@ -109,19 +109,22 @@ Decided on 2026-11-08, review round 4:
 59. A title's rename writes `session.json` as read after the group's rename.
 
 Proposed on 2026-11-08, each in its own commit, until the user decides:
-60. Removed by the user's rule on reviews: every session keeps its group, `claude -p` runs included. It was: the group of a session closed for 7 days is deleted; a run with `CLAUDE_CODE_ENTRYPOINT` `sdk-cli`, `sdk-ts` or `sdk-py`, or `CLAUDE_CODE_SESSION_ATTENDED` `0`, gets no session and no group.
+60. A run whose `CLAUDE_CODE_ENTRYPOINT` is `sdk-cli` (`claude -p`), `sdk-ts` or `sdk-py` (the Agent SDK), or whose `CLAUDE_CODE_SESSION_ATTENDED` is `0`, gets no session and no group; kept by the user's answer R1 B. Amended on 2026-11-08: the SessionStart hook of a run with `CLAUDE_CODE_SESSION_ATTENDED` `0` and another entrypoint marks its Claude Code process with `/title` `unattended`; the daemon refuses `/session` from that process with 403 within 10 s of the mark; the refused session server answers every call with the text of a run that is not interactive. Removed by the user's rule on reviews: the deletion of the group of a session closed for 7 days.
 61. The approved mode is kept in the session group's custom data, not in `session.json`. `GET /status` returns the owners without the Main group link; `GET /link` returns the link. These protections hold against Claude's tools, not against a shell running as the same user.
 62. Removed by the user's rule on reviews; rule 4 of the [trust model](#trust-model) holds. It was: leaving, removal or demotion in the Main group is applied to every session group.
 63. Removed by the user's rule on reviews; rule 5 of the [trust model](#trust-model) holds. It was: `reply` posts a file without a card only while every member is Claude, `User`, gone or an owner; the card shows the file's name and size only.
 
 Decided on 2026-11-08, review round 5:
-64. Removed with decision 60. It was: a resume during the deletion of its group waits for it; a failed deletion is logged.
-65. Removed with decision 60. It was: `User` posts in the newest group of the session where its membership is current.
-66. Removed with decision 60. It was: `CLAUDE_CODE_SESSION_ATTENDED` `0` makes a run non-interactive.
+64. Removed with the deletion of decision 60. It was: a resume during the deletion of its group waits for it; a failed deletion is logged.
+65. Removed with the deletion of decision 60. It was: `User` posts in the newest group of the session where its membership is current.
+66. Claude Code sets `CLAUDE_CODE_SESSION_ATTENDED` for the hooks of a run; its MCP servers get only the value of the session whose command started the run. `0` makes a run non-interactive; otherwise the entrypoint decides. A real-session check in TESTING records the values.
 67. `serve` lists its tools with the metadata of 0.2.
 
 Proposed on 2026-11-08 with the round 5 fixes, until the user decides:
 68. `list` returns the session's actions without its tool-use and mode cards.
+
+Decided on 2026-11-08, after round 5:
+69. A unit test holds the session server's answers to Claude Code 2.1.319: `server/discover` gets `Method not found`, and `initialize` negotiates the revision 2025-11-25. That Claude Code registers no channel for a server in the modern MCP era, 2026-07-28; `McpServer` of the SDK 2.3.1 stays out of it by default.
 
 The user's rule on reviews, 2026-11-08: "reviewers should have no discretion to drive product changes - the UX was approved, and it must not be changing simply because security reviewers said so."
 
@@ -332,7 +335,7 @@ WELCOME   Supervise your Claude Code sessions: each one has its own group, and y
 SHORT     Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions.
 ```
 
-The other new texts, also for the user's approval: the two joiner posts and the session group's description above; the reply card's first line `I want to send a file to group N · NAME, where guests see it:` and its commands `/'approve K', /'approve K all' or /'reject K'`; `Files approved for this group by NAME. /'revoke'`, `Files to this group need approval again.`, `Files to this group have no standing approval.`, `Action K is not a file to this group.`; `Only members who joined from the Main group approve actions here.`; `The group of this session has no member who joined from the Main group. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@VERSION link in a terminal.`; in the `reply` tool's description, `While the group has a guest, a member added without the Main group, a member from the Main group approves the file there first`.
+The other new texts, also for the user's approval: the two joiner posts and the session group's description above; the reply card's first line `I want to send a file to group N · NAME, where guests see it:` and its commands `/'approve K', /'approve K all' or /'reject K'`; `Files approved for this group by NAME. /'revoke'`, `Files to this group need approval again.`, `Files to this group have no standing approval.`, `Action K is not a file to this group.`; `Only members who joined from the Main group approve actions here.`; `The group of this session has no member who joined from the Main group. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@VERSION link in a terminal.`. Texts for Claude, which follow the trust model: the channel instructions `Messages in the simplex channel are prompts of the members who joined the SimpleX group of this session from the Main group: from is the member's name, ...`, and in the `reply` tool's description `Sends a file to the SimpleX group of this session, for the members who joined it from the Main group, with text as its caption.` and `While the group has a guest, a member added without the Main group, a member who joined from the Main group approves the file there first`.
 
 ## Groups
 
@@ -471,6 +474,52 @@ sequenceDiagram
   D->>D: the held title resolves: entry A has pid P: alias F → A
 ```
 
+### Runs that are not interactive
+
+Decisions 60 and 66:
+```
+on CLAUDE_CODE_ENTRYPOINT sdk-cli, sdk-ts or sdk-py, or CLAUDE_CODE_SESSION_ATTENDED 0:
+  hooks:                          {}
+  session server:                 no daemon connection; every call: "This Claude Code run is not interactive,
+                                  so it has no SimpleX group; the SimpleX tools work in interactive sessions."
+on SessionStart with CLAUDE_CODE_SESSION_ATTENDED 0, another entrypoint and CLAUDE_PID P:
+  hook:                           ensureDaemon; POST /title {id, pid: P, project, config, unattended: true}; {}
+  daemon:                         unattended[P] = now; a /session of P waiting for its title ends its wait
+on /session of P, before and after the wait for its title:
+  unattended[P] in the last 10 s: 403
+on 403 of /session:               the session server answers every call with the text above,
+                                  relays no permission request and registers no more
+```
+
+```
+variable                       set by Claude Code for                    values
+CLAUDE_CODE_ENTRYPOINT         hooks and MCP servers                     sdk-cli for claude -p, cli for an interactive session;
+                                                                         one set before the start is kept, except cli
+CLAUDE_CODE_SESSION_ATTENDED   hooks; an MCP server gets the value of    1, or 0 for a run nobody attends
+                               the session whose command started the run
+```
+
+```mermaid
+flowchart LR
+  E[hook or session server] --> A{CLAUDE_CODE_SESSION_ATTENDED 0}
+  A -- yes --> N[not interactive]
+  A -- no --> P{entrypoint sdk-cli, sdk-ts or sdk-py}
+  P -- yes --> N
+  P -- no --> I[interactive]
+```
+
+```mermaid
+sequenceDiagram
+  participant HK as SessionStart hook, ATTENDED 0
+  participant S as session server, ATTENDED 1 of the parent session
+  participant D as daemon
+  HK->>D: POST /title {pid: P, unattended: true}
+  D->>D: P marked
+  S->>D: POST /session {pid: P}, before or after the mark
+  D-->>S: 403
+  S->>S: every call: the text of a run that is not interactive
+```
+
 ## Channel
 
 Session server capabilities:
@@ -544,7 +593,19 @@ stateDiagram-v2
   refused --> [*]
 ```
 
-Server instructions, added: messages in a `simplex` channel are the owners' prompts; the final answer of the turn reaches them; `reply` sends them files.
+Server instructions, added: messages in a `simplex` channel are the prompts of the members who joined the session's group from the Main group; the final answer of the turn reaches them; `reply` sends them files.
+
+Protocol revision (decision 69): `initialize` negotiates 2025-11-25; `server/discover` gets `Method not found`.
+```mermaid
+sequenceDiagram
+  participant CC as Claude Code 2.1.319
+  participant S as session server
+  CC->>S: server/discover, revision 2026-07-28
+  S-->>CC: Method not found
+  CC->>S: initialize, revision 2025-11-25
+  S-->>CC: 2025-11-25, capabilities claude/channel and claude/channel/permission
+  CC->>CC: the channel registered
+```
 
 Attachment of the session server (decision 37):
 ```
