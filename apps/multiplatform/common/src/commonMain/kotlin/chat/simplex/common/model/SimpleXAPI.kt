@@ -7508,13 +7508,11 @@ enum class BanDuration(val ttl: Long?) {
 sealed class ChatDeleteMode {
   @Serializable @SerialName("full") class Full(val notify: Boolean): ChatDeleteMode()
   @Serializable @SerialName("entity") class Entity(val notify: Boolean): ChatDeleteMode()
-  @Serializable @SerialName("messages") class Messages: ChatDeleteMode()
   @Serializable @SerialName("archive") class Archive: ChatDeleteMode()
 
   val cmdString: String get() = when (this) {
     is ChatDeleteMode.Full -> "full notify=${onOff(notify)}"
     is ChatDeleteMode.Entity -> "entity notify=${onOff(notify)}"
-    is ChatDeleteMode.Messages -> "messages"
     is ChatDeleteMode.Archive -> "archive"
   }
 }
