@@ -300,7 +300,7 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   expect(chatItems.map(({meta}) => meta.itemText)).not.toContain("Session 1 is not running.")
 }, 600_000)
 
-test("a member of the Main group joins a session's group by /join, prompts and approves there, also after removal from the Main group; a guest added to the group directly prompts, gets files of reply after an approval, and /approve N all sends later files at once until /revoke", async () => {
+test("a member of the Main group joins a session's group by /join, prompts and approves there, also after removal from the Main group; a guest added to the group directly prompts, gets files of reply after an approval, and /approve N all sends later files at once until /revoke; after a reset of the owners both members from the Main group still prompt and approve there", async () => {
   const root = join(dir, "trust", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("trust", "Alice")
@@ -389,6 +389,21 @@ test("a member of the Main group joins a session's group by /join, prompts and a
   expect(await Promise.all([posted(mainGroupId, "Alice joined. "), posted(mainGroupId, "Bob joined. ")])).toEqual([1, 1])
   expect(await Promise.all(["Alice joined from the Main group", "Bob joined from the Main group", "Carol joined as a guest"].map(start => posted(groupOne, start)))).toEqual([1, 1, 1])
   expect((await alice.chat.apiListMembers(groupOne)).find(({memberProfile}) => memberProfile.displayName === "Bob")).toMatchObject({memberStatus: expect.stringMatching(/^(connected|complete)$/)})
+
+  const resetCard = received(alice.chat, inGroup(mainGroupId, textStarts("A terminal asks to replace the owners")))
+  expect(await client.request("POST", "/reset-owners")).toEqual({})
+  await resetCard
+  await alice.chat.apiSendTextMessage([T.ChatType.Group, mainGroupId], "/approve reset")
+  await until(async () => (await client.request<OwnerState>("GET", "/link")).link !== undefined)
+  await alice.chat.apiSendTextMessage([T.ChatType.Group, groupOne], "Deploy")
+  await bobSends("Tag the release")
+  await until(() => attached.some(({prompt}) => prompt?.text === "Deploy" && prompt.from === "Alice") && attached.some(({prompt}) => prompt?.text === "Tag the release" && prompt.from === "Bob"))
+  for (const [p, groupId] of [[alice, groupOne], [bob, bobGroupOne]] as const) {
+    const pending = received(p.chat, inGroup(groupId, textStarts("No pending actions.")))
+    await p.chat.apiSendTextMessage([T.ChatType.Group, groupId], "/pending")
+    await pending
+  }
+  expect((await alice.chat.apiListMembers(groupOne)).filter(({memberProfile}) => memberProfile.displayName === "Bob").map(({memberStatus}) => memberStatus)).toEqual([expect.stringMatching(/^(connected|complete)$/)])
 }, 600_000)
 
 test("a new session has no chats", async () => {
