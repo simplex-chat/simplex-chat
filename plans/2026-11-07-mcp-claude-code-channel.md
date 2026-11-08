@@ -85,6 +85,29 @@ Decided on 2026-11-08, review round 1:
 41. An owner's one-line `/` message is a prompt when its keyword is not a command of the session group.
 42. The daemon is spawned with an allowlist of environment variables.
 43. For 30 s after a daemon start, an owner's prompt to a session without an attachment waits for the session to attach; the reply `Session N is not running.` follows only when it does not.
+44. The published `package.json` and `npm-shrinkwrap.json` hold the production dependencies only: 41 packages and 9 MB to download in place of 317 and 25 MB. The repository keeps the development dependencies; the pack strips them, restores the files after it, and heals a failed pack first; the launch test checks the packed files.
+
+Pack of the package (decision 44):
+```
+prepack:   build; strip-dev.js
+             .orig copies present: restore both files from them
+             save package.json and npm-shrinkwrap.json as .orig
+             package.json: delete devDependencies
+             npm-shrinkwrap.json: drop the entries marked dev and the root's devDependencies
+pack:      the tarball, from the stripped files
+postpack:  strip-dev.js --restore: both files from their .orig copies
+check:     launch test: the packed package.json has no devDependencies; the shrinkwrap has no dev entry,
+           its root lists the dependencies of package.json; npm ci of the tarball succeeds; the checkout is restored
+```
+
+```mermaid
+flowchart LR
+  R[repository files, with devDependencies] --> P[prepack: heal, save .orig, strip]
+  P --> T[tarball: production dependencies only]
+  T --> C[launch test: no dev entries, root agrees, npm ci]
+  P --> Q[postpack: restore from .orig]
+  Q --> R
+```
 
 Chat ownership, D8 (a):
 ```
