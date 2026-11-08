@@ -207,6 +207,7 @@ chatGroupTests = do
     it "forward message reaction (x.msg.react)" testGroupMsgForwardReaction
     it "forward message deletion (x.msg.del)" testGroupMsgForwardDeletion
     it "forward file (x.msg.file.descr)" testGroupMsgForwardFile
+    it "send file description to member connected before upload completes" testGroupMsgForwardFileConnectedBeforeUpload
     it "forward role change (x.grp.mem.role)" testGroupMsgForwardChangeRole
     it "forward new member announcement (x.grp.mem.new)" testGroupMsgForwardNewMember
     it "forward member leaving (x.grp.leave)" testGroupMsgForwardLeave
@@ -6210,6 +6211,58 @@ testGroupMsgForwardFile =
       src <- B.readFile "./tests/fixtures/test.jpg"
       dest <- B.readFile (tmpFile cath "test.jpg")
       dest `shouldBe` src
+
+testGroupMsgForwardFileConnectedBeforeUpload :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardFileConnectedBeforeUpload =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      threadDelay 1000000
+      setMemberConnStatus bob "cath" "joined"
+      setMemberConnStatus cath "bob" "joined"
+      setupGroupForwardingVectors alice bob cath
+
+      bob #> "/f #team ./tests/fixtures/test.jpg"
+      bob <## "use /fc 1 to cancel sending"
+      concurrentlyN_
+        [ do
+            alice <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            alice <## "use /fr 1 [<dir>/ | <path>] to receive it",
+          do
+            cath <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+            cath <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
+        ]
+
+      setMemberConnStatus bob "cath" "ready"
+      setMemberConnStatus cath "bob" "ready"
+      updateGroupForwardingVectors alice "bob" "cath" MRConnected
+
+      withXFTPServer alice $ do
+        bob `skipUploadWarnings` "completed uploading file 1 (test.jpg) for #team"
+        cath ##> ("/fr 1 " <> tmpDir cath)
+        cath
+          <### [ ConsoleString $ "saving file 1 from bob to " <> tmpFile cath "test.jpg",
+                 "started receiving file 1 (test.jpg) from bob"
+               ]
+        cath <## "completed receiving file 1 (test.jpg) from bob"
+        src <- B.readFile "./tests/fixtures/test.jpg"
+        dest <- B.readFile (tmpFile cath "test.jpg")
+        dest `shouldBe` src
+  where
+    setMemberConnStatus cc memberName status =
+      void $ withCCTransaction cc $ \db ->
+        DB.execute
+          db
+          [sql|
+            UPDATE connections SET conn_status = ?
+            WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
+          |]
+          (status :: String, memberName :: String)
+    skipUploadWarnings cc line = do
+      l <- getTermLine cc
+      if l == "warning:  uploading file 1 (test.jpg) for #team"
+        then getTermLine cc >> skipUploadWarnings cc line
+        else l `shouldBe` line
 
 testGroupMsgForwardChangeRole :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardChangeRole =
