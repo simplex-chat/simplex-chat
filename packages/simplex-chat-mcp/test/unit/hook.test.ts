@@ -48,6 +48,36 @@ describe("SessionStart hook", () => {
     expect(output).toEqual({systemMessage: `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "Agents":\n${qrCodeText(link, "plain")}\n${link}`})
   })
 
+  it("starts no daemon and opens no session in a non-interactive run, as with claude -p or the Agent SDK, and the turn hooks post nothing", async () => {
+    const ensured = jest.fn()
+    const requests: unknown[] = []
+    const client = {ensureDaemon: ensured, request: async (...args: unknown[]) => void requests.push(args)} as unknown as HookDeps["client"]
+    for (const entrypoint of ["sdk-cli", "sdk-ts", "sdk-py"]) {
+      const env = {CLAUDE_CODE_ENTRYPOINT: entrypoint, CLAUDE_PID: "4321"}
+      expect(await sessionStart(input, env, {client, nodeVersion: "22.1.0"})).toEqual({})
+      expect(await turn(JSON.stringify({session_id: "11111111-1111-4111-8111-111111111111", prompt: "Fix the build"}), env, client)).toEqual({})
+    }
+    expect(ensured).not.toHaveBeenCalled()
+    expect(requests).toEqual([])
+    const {client: interactive, requests: sent} = fakeClient({owners: ["Alice"]})
+    await sessionStart(input, {CLAUDE_CODE_ENTRYPOINT: "cli"}, {client: interactive, nodeVersion: "22.1.0"})
+    expect(sent).toHaveLength(1)
+  })
+
+  it("starts no daemon and posts nothing in a run that Claude Code marks unattended, as a claude -p run started by a command of a VS Code session, which keeps its entrypoint", async () => {
+    const ensured = jest.fn()
+    const requests: unknown[] = []
+    const client = {ensureDaemon: ensured, request: async (...args: unknown[]) => void requests.push(args)} as unknown as HookDeps["client"]
+    const env = {CLAUDE_CODE_ENTRYPOINT: "claude-vscode", CLAUDE_CODE_SESSION_ATTENDED: "0", CLAUDE_PID: "4321"}
+    expect(await sessionStart(input, env, {client, nodeVersion: "22.1.0"})).toEqual({})
+    expect(await turn(JSON.stringify({session_id: "11111111-1111-4111-8111-111111111111", prompt: "Fix the build"}), env, client)).toEqual({})
+    expect(ensured).not.toHaveBeenCalled()
+    expect(requests).toEqual([])
+    const {client: attended, requests: sent} = fakeClient({owners: ["Alice"]})
+    await sessionStart(input, {...env, CLAUDE_CODE_SESSION_ATTENDED: "1"}, {client: attended, nodeVersion: "22.1.0"})
+    expect(sent).toHaveLength(1)
+  })
+
   it("needs Node.js 22", async () => {
     const {client, requests} = fakeClient({owners: []})
     expect(await sessionStart(input, {}, {client, nodeVersion: "20.11.0"})).toEqual({systemMessage: "SimpleX MCP needs Node.js 22 or later; found 20.11.0."})

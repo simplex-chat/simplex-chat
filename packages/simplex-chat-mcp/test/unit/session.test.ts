@@ -130,15 +130,42 @@ describe("session server", () => {
     expect(seen).toEqual([])
   })
 
-  it("relays no permission request with an invalid plugin option, without the daemon", async () => {
+  it("answers every call of a non-interactive run, as with claude -p, without the daemon", async () => {
     await fakeDaemon(async res => endWithResult(res, listResult))
     const spawn = jest.fn(noSpawn)
-    const {client} = await session({CLAUDE_PLUGIN_OPTION_APPROVE: "x"}, spawn)
-    client.notify("notifications/claude/channel/permission_request", {request_id: "abcde", tool_name: "Bash", description: "Run shell command", input_preview: "ls"})
-    expect((await listCall(client)).result.isError).toBe(true)
+    const {client} = await session({CLAUDE_CODE_ENTRYPOINT: "sdk-cli"}, spawn)
+    const refused = {content: [{type: "text", text: "This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions."}], isError: true}
+    expect((await listCall(client)).result).toEqual(refused)
     await new Promise(resolve => setTimeout(resolve, 100))
     expect(seen).toEqual([])
     expect(statuses).toBe(0)
+    expect(spawn).not.toHaveBeenCalled()
+  })
+
+  it("relays no permission request without the daemon in a non-interactive run or with an invalid plugin option", async () => {
+    await fakeDaemon(async res => endWithResult(res, listResult))
+    const spawn = jest.fn(noSpawn)
+    for (const env of [{CLAUDE_CODE_ENTRYPOINT: "sdk-cli"}, {CLAUDE_PLUGIN_OPTION_APPROVE: "x"}]) {
+      const {client} = await session(env, spawn)
+      client.notify("notifications/claude/channel/permission_request", {request_id: "abcde", tool_name: "Bash", description: "Run shell command", input_preview: "ls"})
+      expect((await listCall(client)).result.isError).toBe(true)
+    }
+    await new Promise(resolve => setTimeout(resolve, 100))
+    expect(seen).toEqual([])
+    expect(statuses).toBe(0)
+    expect(spawn).not.toHaveBeenCalled()
+  })
+
+  it("answers every call without the daemon in a run whose environment marks it unattended, and in claude -p under the mark of the attended session that started it", async () => {
+    await fakeDaemon(async res => endWithResult(res, listResult))
+    const spawn = jest.fn(noSpawn)
+    const refused = {content: [{type: "text", text: "This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions."}], isError: true}
+    for (const env of [{CLAUDE_CODE_ENTRYPOINT: "claude-vscode", CLAUDE_CODE_SESSION_ATTENDED: "0"}, {CLAUDE_CODE_ENTRYPOINT: "sdk-cli", CLAUDE_CODE_SESSION_ATTENDED: "1"}]) {
+      const {client} = await session(env, spawn)
+      expect((await listCall(client)).result).toEqual(refused)
+    }
+    await new Promise(resolve => setTimeout(resolve, 100))
+    expect(seen).toEqual([])
     expect(spawn).not.toHaveBeenCalled()
   })
 
