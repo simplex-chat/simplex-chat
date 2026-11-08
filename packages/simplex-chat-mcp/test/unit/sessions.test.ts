@@ -812,6 +812,17 @@ describe("session channel", () => {
     expect(answers(chat)).toEqual([[{text: "Only owners of the Main group can send ! commands to Claude.", quotedItemId: 43}], [{text: "Messages starting with ! reach Claude only from owners, as /!command.", quotedItemId: 44}]])
   })
 
+  it("answers nothing to a part of a terminal prompt that User posts as one line starting with /, and answers the next command", async () => {
+    const chat = new FakeChat()
+    const {session, lines} = await channel(chat)
+    chat.chats.set("@6", {chatInfo: direct({...contact(6, "User"), customData: {simplexMcpUser: true}} as T.Contact), items: []})
+    session.onMessage(event(sessionGroup, item(43, "/9j/4AAQSkZJRgABAQ", from({...member(1006, "User"), memberContactId: 6}))))
+    session.onMessage(event(sessionGroup, item(44, "/pending", from(invitedAlice))))
+    await until(() => chat.replies.includes("No pending actions."))
+    expect(chat.replies).toEqual(["No pending actions."])
+    expect(lines).toEqual([])
+  })
+
   it("sends files to the session group with reply, under the refused-path rules", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)

@@ -54,6 +54,7 @@ export interface ControlOptions {
 export interface SessionOptions {
   approves: (member: T.GroupMember) => boolean
   ownerOf: (session: number) => string | undefined
+  isUser: (member: T.GroupMember) => Promise<boolean>
 }
 
 export interface Command {
@@ -216,7 +217,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (command === undefined) return
     const sender = chatItem.chatDir.groupMember
     this.ownerCommands = this.ownerCommands
-      .then(() => this.ownerCommand(sender, command))
+      .then(async () => ((await this.options.session?.isUser(sender)) ? undefined : this.ownerCommand(sender, command)))
       .then(reply => (reply === undefined ? undefined : this.chat.apiSendTextReply(ci, reply)))
       .catch(error => logError("control chat command", error))
   }

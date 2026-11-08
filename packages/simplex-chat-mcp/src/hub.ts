@@ -103,7 +103,7 @@ export class Session {
       pending: (connId: number) => this.savePending(connId),
     }
     this.tools = new AgentTools(agent, () => this.actions.mode, number)
-    const session = {approves: (member: T.GroupMember) => this.approves(member), ownerOf: (n: number) => hub.sessionId(n)}
+    const session = {approves: (member: T.GroupMember) => this.approves(member), ownerOf: (n: number) => hub.sessionId(n), isUser: (member: T.GroupMember) => this.isUser(member)}
     this.control = new Control(chat, group, {displayName: group.groupProfile.displayName, session, registerHint: "", qrCode: "small"}, this.actions, this.tools)
   }
 
