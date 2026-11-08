@@ -80,7 +80,7 @@ Decided on 2026-11-08, review round 1:
 36. The hooks and the session server of one Claude Code process share one session: the hooks send `CLAUDE_PID`, the session server its parent PID. The daemon maps a session ID without `session.json` to the session of that process and records the alias in `session.json`. A hook of an ID with `session.json` goes to the session attached from its process, without an alias.
 37. When `/attach` ends or a start fails, the session server starts the daemon if needed and attaches again: after 1 s, twice as late after each failure, at most 30 s apart, until its stdin closes or the daemon speaks another protocol.
 38. A pending connection of `connect` is recorded in the session group's data for one day; its chat becomes the session's when it connects within that day. A `connect` to a known chat without an owner gives it to the session.
-39. Owners' prompts are kept until a turn's prompt matches them or an answer takes them, at most 20. Each prompt hook records its start time with the oldest prompt it matched, or none. An answer, also an empty one, quotes the newest record whose hook started before its own, or the oldest kept prompt without one.
+39. Owners' prompts are kept until a turn's prompt matches them, at most 20. Each prompt hook records its start time with the oldest prompt it matched, or none. An answer, also an empty one, quotes the newest record whose hook started before its own; without one, it quotes the oldest kept prompt not quoted yet, and that prompt stays kept for its prompt hook.
 40. A session in mode `host` posts its mode card when its group has an approver: at the session start or after a membership event. A rejected card is recorded in `session.json`; the card is posted again only after a session start with `requests`. A change to `requests` ends a pending mode card.
 41. An owner's one-line `/` message is a prompt when its keyword is not a command of the session group.
 42. The daemon is spawned with an allowlist of environment variables, `NODE_OPTIONS` among them.
@@ -90,9 +90,17 @@ Decided on 2026-11-08, review round 1:
 Decided on 2026-11-08, review round 2:
 45. An owner's prompts reach the session in arrival order. A prompt waits for the file of an earlier one, and gets `Session N is not running.` when the session detached meanwhile.
 46. Texts that name an npx command name the plugin's version: `npx -y @simplex-chat/mcp@VERSION link`.
-47. A spawned daemon reports `running` for a held lock only when the socket answers within 1 s; otherwise it reports the lock's error and exits with 1.
+47. A spawned daemon with a held lock checks it for up to 15 s: a released lock starts it; an answering socket reports `running`; otherwise it reports the lock's error and exits with 1.
 48. A group profile update keeps the custom data of the group in memory.
 49. The launch test installs the packed plugin with the command of Claude Code 2.1.319, `npm ci --ignore-scripts --workspaces=false --no-audit --no-fund`, within 60 s.
+
+Decided on 2026-11-08, review round 3:
+50. Claude posts an answer or a reply without its quote when the core refuses the quote, as for a deleted prompt.
+51. The turn hook cuts a prompt or an answer over 250,000 characters there, ending with `…`.
+52. `User` posts no empty terminal prompt.
+53. The commands reply of a session group lists `/give`.
+54. A Stop request posts the answer before it updates the group's short description.
+55. An existing token file is made private only when the user owns it.
 
 Pack of the package (decision 44):
 ```
@@ -119,17 +127,20 @@ flowchart LR
 
 Daemon start with a held lock (decision 47):
 ```
-lock of ROOT held by another live process:
-  GET / on the socket, up to 10 times 100 ms apart
-  any reply but ENOENT or ECONNREFUSED:   ready line "running"
-  none:                                   ready line "error: Another daemon uses ROOT (PID N). If no daemon runs, remove ROOT/lock."; exit 1
+lock of ROOT held by another live process: up to 150 checks, 100 ms apart
+  ROOT/lock gone:                                              start again
+  GET / on the socket, any reply but ENOENT or ECONNREFUSED:   ready line "running"
+after the checks:   ready line "error: Another daemon uses ROOT (PID N). If no daemon runs, remove ROOT/lock."; exit 1
 ```
 
 ```mermaid
 flowchart LR
-  L[lock held by a live PID] --> A{socket answers within 1 s}
+  L[lock held by a live PID] --> G{lock gone}
+  G -- yes --> S[start again]
+  G -- no --> A{socket answers}
   A -- yes --> R[running]
-  A -- no --> E[error with the lock path, exit 1]
+  A -- no, 150 checks done --> E[error with the lock path, exit 1]
+  A -- no --> G
 ```
 
 Chat ownership, D8 (a):
@@ -373,7 +384,8 @@ Server instructions, added: messages in a `simplex` channel are the owners' prom
 
 Attachment of the session server (decision 37):
 ```
-on the end of /attach, or a failed start:   not closed and not another protocol: start again after delay; delay = min(2 × delay, 30 s)
+on the end of /attach, or a failed start:   not closed and not another protocol: one timer, start again after delay
+on the timer:                               delay = min(2 × delay, 30 s); start
 on a successful start:                      delay = 1 s
 on stdin closed:                            closed; the retry timer cleared
 ```
@@ -401,12 +413,15 @@ Stop               last_assistant_message            POST /turn {id, pid, at, an
 PostModelSwitch    to_model                          POST /turn {id, pid, at, model}
 ```
 
-`pid` is `CLAUDE_PID`; `at` is `performance.timeOrigin`, the start time of the hook process. The hook starts the daemon when none runs and repeats a turn refused with 409 up to 10 times, 1 s apart.
+`pid` is `CLAUDE_PID`; `at` is `performance.timeOrigin`, the start time of the hook process. The hook cuts a prompt or an answer over 250,000 characters there, ending with `…` (decision 51), starts the daemon when none runs, and repeats a turn refused with 409 up to 10 times, 1 s apart.
 
 ```
 Turn record
   at               start time of a UserPromptSubmit hook
   item             the pushed prompt it matched, or null
+Pushed prompt
+  text, item, at
+  quoted           an answer without an earlier turn record quoted it
 
 on owner's message m in group N:   one-line "/" with a keyword of the group's commands: a command (decision 41)
                                    else: delivery = delivery then deliver(m) (decision 45)
@@ -417,12 +432,15 @@ deliver(m):                        N has no attachment: wait for one until 30 s 
 on POST /turn, before any await:
   prompt p or answer a, at:        end open tool-use cards created before at
   answer a, also empty, at:        earlier = turn records with at below at; turns -= earlier
-                                   quoted = item of the newest earlier ?? the oldest pushed, which leaves pushed
+                                   quoted = item of the newest earlier
+                                         ?? the oldest pushed not quoted, marked quoted; it stays in pushed
   prompt p, at:                    matched = pushed (T, I) with a channel tag of T, I in p, or T = p pushed in the last 60 s
                                    turns += (at, oldest matched ?? null); pushed -= matched
-on POST /turn model or effort:     a changed value: session.json and the group short description
-on POST /turn prompt p:            nothing matched and p not a one-line "/" command: User posts parts(p)
+on POST /turn model or effort:     a changed value: description in memory and session.json
+on POST /turn prompt p, not blank: nothing matched and p not a one-line "/" command: User posts parts(p)
 on POST /turn answer a, not blank: Claude posts parts(a), the first part quoting quoted when it fits with the quote
+then, a changed value:             the group short description (decision 54)
+Claude's post with a quote:        the core refuses the quote: the same post without it (decision 50)
 parts(t):                          consecutive pieces of t, each at most 12000 encoded bytes
 channel tag of T, I:               <channel source="plugin:simplex:simplex" ... item="I" ...>\nT\n</channel>
 ```
@@ -439,6 +457,17 @@ sequenceDiagram
   U->>D: POST /turn {at: 3, prompt 2}: turns += (3, prompt 2)
   S->>D: POST /turn {at: 2, answer 1}: quotes prompt 1; turns: (3, prompt 2)
   Note over D: the Stop of turn 2, at 4, quotes prompt 2
+```
+
+Stop request before the prompt request of its turn (decision 39):
+```mermaid
+sequenceDiagram
+  participant S as Stop hook, at 2
+  participant U as UserPromptSubmit hook, at 1
+  participant D as daemon
+  Note over D: pushed: prompt 42; turns: none
+  S->>D: POST /turn {at: 2, answer}: quotes 42, marked quoted, kept in pushed
+  U->>D: POST /turn {at: 1, prompt with the tag of 42}: matches 42; User posts nothing
 ```
 
 ```
