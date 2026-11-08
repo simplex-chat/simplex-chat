@@ -37,14 +37,8 @@ export interface StoredSession {
 
 interface SessionGroupData {
   session: number
-  invited: InvitedMember[]
   pending?: {connId: number; at: number}[]
   mode?: Mode
-}
-
-interface InvitedMember {
-  groupMemberId: number
-  mainMemberId: number
 }
 
 export class Session {
@@ -217,9 +211,7 @@ export class Session {
   }
 
   async invite(member: T.GroupMember, role: T.GroupMemberRole): Promise<void> {
-    const {groupMemberId} = await this.hub.chat.apiAddMemberViaGroup(this.control.groupId, this.hub.main.groupId, member.groupMemberId, role)
-    const invited = [...this.data.invited.filter(entry => entry.groupMemberId !== groupMemberId), {groupMemberId, mainMemberId: member.groupMemberId}]
-    await this.saveData({...this.data, invited})
+    await this.hub.chat.apiAddMemberViaGroup(this.control.groupId, this.hub.main.groupId, member.groupMemberId, role)
   }
 
   async announceRights(event: ChatEvent): Promise<void> {
@@ -405,7 +397,7 @@ export class Hub implements SessionGroups {
     const known = await this.storedGroup(stored)
     const group = known ?? (await this.createSessionGroup(stored))
     if (known === undefined) writeSessionFile(folder, {...(readSessionFile(folder) ?? stored), group: group.groupId})
-    const session = new Session(this, id, stored, group, sessionDataOf(group.customData) ?? {session: stored.number, invited: []})
+    const session = new Session(this, id, stored, group, sessionDataOf(group.customData) ?? {session: stored.number})
     this.sessions.set(stored.number, session)
     await session.control.load()
     if (known === undefined) {
@@ -472,7 +464,7 @@ export class Hub implements SessionGroups {
       fullName: "",
       description: `The Claude Code session ${number}: members who join from the Main group prompt it and approve its actions here.`,
       groupPreferences: {history: {enable: T.GroupFeatureEnabled.On}, directMessages: {enable: T.GroupFeatureEnabled.Off}, commands: controlCommands},
-    }, {[sessionKey]: {session: number, invited: []}})
+    }, {[sessionKey]: {session: number}})
     const user = await userContact(this.chat, this.profile.userId)
     if (user !== undefined) await this.chat.apiAddMember(group.groupId, user.contactId, T.GroupMemberRole.Member).catch(error => logError(`User in session ${number}`, error))
     log(`Group "${displayName}" of session ${number} created.`)

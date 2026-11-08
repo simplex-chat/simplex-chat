@@ -95,7 +95,7 @@ async function listed(session: Session): Promise<string[]> {
 }
 
 describe("session groups", () => {
-  it("are created at the session start, named by number and title, and the Main group's owners are invited through the Main group", async () => {
+  it("are created at the session start, named by number and title, and the Main group's owners are invited through the Main group, without a record of the invitation", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     const session = await openSession(hub, id1, stored(1, "auth"))
@@ -112,7 +112,7 @@ describe("session groups", () => {
       },
     ])
     expect(chat.invitations).toEqual([{groupId: 20, viaGroupId: 10, groupMemberId: 3, memberRole: T.GroupMemberRole.Owner}])
-    expect(chat.customData.filter(({chat: ref}) => ref === "#20").at(-1)!.customData).toEqual({simplexMcpSession: {session: 1, invited: [{groupMemberId: 1003, mainMemberId: 3}]}})
+    expect(chat.customData.filter(({chat: ref}) => ref === "#20").map(({customData}) => customData)).toEqual([{simplexMcpSession: {session: 1}}])
     expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({number: 1, group: 20})
     expect(await hub.session(id1, {...stored(1, "auth"), group: 20})).toBe(session)
   })
@@ -199,7 +199,7 @@ describe("session groups", () => {
     const session = await openSession(await hubWith(chat), id1, {...stored(1, "auth"), mode: "host"} as SessionFile)
     expect(session.actions.mode).toBe("requests")
     const {groupInfo} = chat.chats.get("#20")!.chatInfo as T.ChatInfo.Group
-    groupInfo.customData = {...groupInfo.customData, simplexMcpSession: {session: 1, invited: [], mode: "host"}}
+    groupInfo.customData = {...groupInfo.customData, simplexMcpSession: {session: 1, mode: "host"}}
     const reopened = await (await hubWith(chat)).session(id1, readSessionFile(sessionFolder(root, id1))!)
     expect(reopened.actions.mode).toBe("host")
   })
