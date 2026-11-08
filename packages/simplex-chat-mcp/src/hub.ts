@@ -4,7 +4,7 @@ import {ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {Action, Actions, HostTexts, Mode, isDecided} from "./actions"
 import {Config} from "./config"
-import {Control, controlCommands, controlDataOf, createGroup, isControlEvent, isGroupMessage, isOwnerCommand, parseCommand, safeName} from "./control"
+import {Control, controlCommands, controlDataOf, createGroup, isControlEvent, isGroupMessage, parseCommand, safeName} from "./control"
 import {openCore} from "./core"
 import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile} from "./files"
 import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
@@ -26,6 +26,8 @@ const fileWait = 10 * 60_000
 const pendingDays = 1
 const attachWait = 30_000
 const channelPrompt = /<channel source="plugin:simplex:simplex"[^\n]* item="(\d+)"[^\n]*>\n([\s\S]*?)\n<\/channel>/g
+const bangFromOwners = "Messages starting with ! reach Claude only from owners, as /!command."
+const bangOwnersOnly = "Only owners of the Main group can send ! commands to Claude."
 
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX daemon is stopping."}
 
@@ -154,11 +156,12 @@ export class Session {
   }
 
   onMessage(ci: T.AChatItem): void {
-    this.control.onMessage(ci)
-    const {chatItem} = ci
-    const {chatDir, content} = chatItem
-    if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent" || isOwnerCommand(content.msgContent.text) || !this.approves(chatDir.groupMember)) return
-    this.delivery = this.delivery.then(() => this.deliver(ci, content.msgContent.text, chatDir.groupMember)).catch(error => logError(`prompt of session ${this.number}`, error))
+    const {chatDir, content} = ci.chatItem
+    if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent") return
+    const {text} = content.msgContent
+    if (!text.startsWith("//") && !text.startsWith("/!") && parseCommand(text) !== undefined) return this.control.onMessage(ci)
+    if (!this.approves(chatDir.groupMember)) return
+    this.delivery = this.delivery.then(() => this.prompt(ci, text, chatDir.groupMember)).catch(error => logError(`prompt of session ${this.number}`, error))
   }
 
   claimPending(connId: number, chat: string): void {
@@ -235,6 +238,13 @@ export class Session {
     await this.saveData({...this.data, invited: []})
   }
 
+  private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
+    const item = ci.chatItem.meta.itemId
+    if (text.startsWith("/!") && !this.mainOwner(member)) return this.post([bangOwnersOnly], item)
+    if (text.startsWith("!")) return this.post([bangFromOwners], item)
+    await this.deliver(ci, text.startsWith("//") || text.startsWith("/!") ? text.slice(1) : text, member)
+  }
+
   private async deliver(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
     const left = this.hub.promptsHeldUntil - Date.now()
     if (this.onLine === undefined && left > 0) await nextChange(this.attaching, new AbortController().signal, left)
@@ -294,6 +304,11 @@ export class Session {
 
   private approves(member: T.GroupMember): boolean {
     return this.data.invited.some(({groupMemberId}) => groupMemberId === member.groupMemberId)
+  }
+
+  private mainOwner(member: T.GroupMember): boolean {
+    const invited = this.data.invited.find(({groupMemberId}) => groupMemberId === member.groupMemberId)
+    return invited !== undefined && this.hub.main.isOwner(invited.mainMemberId)
   }
 
   private setMode(mode: Mode): void {

@@ -16,7 +16,6 @@ export const controlCommands: T.ChatBotCommand[] = [
 
 const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
 const sessionCommandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /give, /pending, /list. Each card shows its commands."
-const ownerKeywords = ["approve", "reject", "receive", "forward", "revoke", "leave", "delete", "give", "pending", "list"]
 const cardTooLong = {
   send: "text: too long for its approval card; shorten it.",
   reply: "text: too long for its approval card; shorten it.",
@@ -216,7 +215,6 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const command = parseCommand(chatItem.content.msgContent.text)
     if (command === undefined) return
     const sender = chatItem.chatDir.groupMember
-    if (this.options.session !== undefined && !ownerKeywords.includes(command.keyword) && this.isApprover(sender)) return
     this.ownerCommands = this.ownerCommands
       .then(() => this.ownerCommand(sender, command))
       .then(reply => (reply === undefined ? undefined : this.chat.apiSendTextReply(ci, reply)))
@@ -644,11 +642,6 @@ export function parseCommand(text: string): Command | undefined {
   if (lines.at(-1) === "") lines.pop()
   const match = lines.length === 1 ? /^ *\/(\S+)([\s\S]*)$/.exec(lines[0]) : null
   return match ? {keyword: match[1], params: match[2].trim()} : undefined
-}
-
-export function isOwnerCommand(text: string): boolean {
-  const command = parseCommand(text)
-  return command !== undefined && ownerKeywords.includes(command.keyword)
 }
 
 export function cardText(action: Action, mode: Actions["mode"]): string {

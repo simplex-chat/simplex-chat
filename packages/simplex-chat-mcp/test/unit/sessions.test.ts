@@ -748,15 +748,23 @@ describe("session channel", () => {
     expect(lines).toHaveLength(1)
   })
 
-  it("passes an owner's one-line message that is not a command of the group to the session as a prompt", async () => {
+  it("answers every one-line / message as a command of the group, passes // to the session without its first /, /! from an owner of the Main group as !, and refuses other ! messages", async () => {
     const chat = new FakeChat()
-    const {session, lines} = await channel(chat)
+    const {hub, session, lines} = await channel(chat)
+    await hub.join(bob, 1)
+    const invitedBob = member(1007, "Bob", T.GroupMemberRole.Member)
+    chat.members.set(20, [self, invitedAlice, invitedBob])
+    await session.control.load()
     session.onMessage(event(sessionGroup, item(40, "/model sonnet", from(invitedAlice))))
-    session.onMessage(event(sessionGroup, item(41, "/model sonnet", from(mallory))))
-    session.onMessage(event(sessionGroup, item(42, "/approve x", from(invitedAlice))))
-    await until(() => lines.length === 1 && chat.replies.length === 2)
-    expect(lines).toEqual([{prompt: {text: "/model sonnet", from: "Alice", item: 40}}])
+    session.onMessage(event(sessionGroup, item(41, "//model sonnet", from(invitedAlice))))
+    session.onMessage(event(sessionGroup, item(42, "/!git status", from(invitedAlice))))
+    session.onMessage(event(sessionGroup, item(43, "/!git status", from(invitedBob))))
+    session.onMessage(event(sessionGroup, item(44, "!git status", from(invitedAlice))))
+    session.onMessage(event(sessionGroup, item(45, "/approve x", from(invitedBob))))
+    await until(() => lines.length === 2 && chat.replies.length === 2 && answers(chat).length === 2)
+    expect(lines).toEqual([{prompt: {text: "/model sonnet", from: "Alice", item: 41}}, {prompt: {text: "!git status", from: "Alice", item: 42}}])
     expect(chat.replies).toEqual([commandsReply, commandsReply])
+    expect(answers(chat)).toEqual([[{text: "Only owners of the Main group can send ! commands to Claude.", quotedItemId: 43}], [{text: "Messages starting with ! reach Claude only from owners, as /!command.", quotedItemId: 44}]])
   })
 
   it("sends files to the session group with reply, under the refused-path rules", async () => {
