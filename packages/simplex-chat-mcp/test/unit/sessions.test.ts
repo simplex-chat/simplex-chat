@@ -414,7 +414,7 @@ describe("session channel", () => {
     expect(lines).toHaveLength(2)
   })
 
-  it("shows the model and effort in the group description, posts terminal prompts as User except pushed ones, raw or in this channel's tag, and answers as Claude, quoting the owner's prompt", async () => {
+  it("shows the model and effort in the group description, posts terminal prompts as User except pushed ones, raw or in this channel's tag, and prompts made only of this channel's tags, and answers as Claude, quoting the owner's prompt", async () => {
     const chat = new FakeChat()
     const {hub, session} = await channel(chat)
     const posts: string[][] = []
@@ -438,7 +438,7 @@ describe("session channel", () => {
     await session.turn({id: id1, prompt: "/simplex:link"})
     await session.turn({id: id1, prompt: "Run the tests"})
     await session.turn({id: id1, answer: `${"é".repeat(6000)}ok`})
-    expect(posts.map(([, text]) => text)).toEqual([tag(41, "Fix the build"), '<channel source="plugin:other:other" from="Alice" item="42">\nFix the build\n</channel>', "Run the tests"])
+    expect(posts.map(([, text]) => text)).toEqual(['<channel source="plugin:other:other" from="Alice" item="42">\nFix the build\n</channel>', "Run the tests"])
     expect(answers(chat)).toEqual([[{text: "Fixed.", quotedItemId: 42}], [{text: "Tests pass.", quotedItemId: 43}], [{text: "é".repeat(6000), quotedItemId: undefined}, {text: "ok", quotedItemId: undefined}]])
   })
 
@@ -501,6 +501,59 @@ describe("session channel", () => {
     await session.turn({id: id1, at: 4, answer: "Tests pass."})
     expect(answers(chat)).toEqual([[{text: "Fixed.", quotedItemId: 42}], [{text: "Tests pass.", quotedItemId: 43}]])
     expect(posts).toEqual([])
+  })
+
+  it("quotes the prompt of each turn when two turns in a row have their Stop request handled before their prompt request", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    const posts: string[] = []
+    hub.user = {post: async (_n: number, parts: string[]) => void posts.push(...parts)} as unknown as User
+    await ownerPrompt(session, 42, "Fix the build")
+    await session.turn({id: id1, at: 2, answer: "Fixed."})
+    await session.turn({id: id1, at: 1, prompt: tag(42, "Fix the build")})
+    await ownerPrompt(session, 43, "Then run the tests")
+    await session.turn({id: id1, at: 4, answer: "Tests pass."})
+    await session.turn({id: id1, at: 3, prompt: tag(43, "Then run the tests")})
+    await session.turn({id: id1, at: 6, answer: "Renamed."})
+    await session.turn({id: id1, at: 5, prompt: "Rename it"})
+    expect(answers(chat)).toEqual([[{text: "Fixed.", quotedItemId: 42}], [{text: "Tests pass.", quotedItemId: 43}], [{text: "Renamed.", quotedItemId: undefined}]])
+    expect(posts).toEqual(["Rename it"])
+  })
+
+  it("posts no prompt made only of this channel's tags as User, as after a daemon restart lost the pushed prompt, and posts one with other text", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    const posts: string[] = []
+    hub.user = {post: async (_n: number, parts: string[]) => void posts.push(...parts)} as unknown as User
+    await session.turn({id: id1, at: 1, prompt: `${tag(42, "Fix the build")}\n${tag(43, "and test it")}\n`})
+    await session.turn({id: id1, at: 2, prompt: `Also see:\n${tag(44, "the log")}`})
+    expect(posts).toEqual([`Also see:\n${tag(44, "the log")}`])
+  })
+
+  it("updates the description of a new effort level also when its answer is not posted", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    chat.apiSendMessages = async () => {
+      throw new Error("send failed")
+    }
+    await expect(session.turn({id: id1, at: 1, answer: "Fixed.", effort: "high"})).rejects.toThrow("send failed")
+    expect(chat.profiles.at(-1)!.groupProfile.shortDescr).toBe("effort high")
+  })
+
+  it("replies that the file of a prompt was not received without the quote when the core refuses to quote the prompt", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const send = chat.apiSendMessages.bind(chat)
+    chat.apiSendMessages = async (ref, messages) => {
+      if (messages.some(({quotedItemId}) => quotedItemId !== undefined)) throw new core.ChatAPIError("Chat command error", {type: "errorStore", storeError: {type: "chatItemNotFound"}} as unknown as T.ChatError)
+      return send(ref, messages)
+    }
+    chat.apiSendTextReply = async () => {
+      throw new core.ChatAPIError("Chat command error", {type: "errorStore", storeError: {type: "chatItemNotFound"}} as unknown as T.ChatError)
+    }
+    session.onMessage(event(sessionGroup, fileItem(43, {type: "file", text: "See the log"}, {type: "rcvInvitation"}, {chatDir: from(invitedAlice), fileId: 8})))
+    await until(() => answers(chat).length === 1)
+    expect(answers(chat)).toEqual([[{text: "The file of this message was not received: SimpleX error: unexpected response cmdOk", quotedItemId: undefined}]])
   })
 
   it("posts the answer and the replies without the quote when the core refuses to quote the prompt, as after the owner deleted it", async () => {

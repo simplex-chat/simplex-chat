@@ -56,6 +56,7 @@ export class Session {
   private readonly receiving = new Map<number, {resolve: () => void; reject: (error: Error) => void}>()
   private description: {model?: string; effort?: string}
   private turns: {at: number; item: T.ChatItem | null}[] = []
+  private answeredAt = -Infinity
   private requested?: Mode
   private hostDeclined: boolean
   private writer?: (line: AttachLine) => void
@@ -178,19 +179,22 @@ export class Session {
   async turn({at, prompt, answer, model, effort}: TurnRequest): Promise<void> {
     if (prompt !== undefined || answer !== undefined) this.endPermissions(at)
     const quoted = answer === undefined ? undefined : this.turnQuote(at ?? Infinity)
+    if (answer !== undefined) this.answeredAt = Math.max(this.answeredAt, at ?? Date.now())
     const matched = prompt === undefined ? [] : this.pushedIn(prompt)
-    if (prompt !== undefined) this.turns.push({at: at ?? Date.now(), item: matched[0]?.item ?? null})
+    if (prompt !== undefined && (at ?? Date.now()) >= this.answeredAt) this.turns.push({at: at ?? Date.now(), item: matched[0]?.item ?? null})
     this.pushed.splice(0, this.pushed.length, ...this.pushed.filter(entry => !matched.includes(entry)))
     const described = (model !== undefined && model !== this.description.model) || (effort !== undefined && effort !== this.description.effort)
     if (described) {
       this.description = {model: model ?? this.description.model, effort: effort ?? this.description.effort}
       this.store(this.description)
     }
-    if (prompt !== undefined && prompt.trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined) await this.hub.user?.post(this.number, textParts(prompt))
-    if (answer !== undefined && answer.trim() !== "") await this.answer(answer, quoted)
-    if (!described) return
-    const {model: shown, effort: level} = this.description
-    await this.control.describe([shown, level === undefined ? undefined : `effort ${level}`].filter(part => part !== undefined).join(" · "))
+    try {
+      if (prompt !== undefined && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined) await this.hub.user?.post(this.number, textParts(prompt))
+      if (answer !== undefined && answer.trim() !== "") await this.answer(answer, quoted)
+    } finally {
+      const {model: shown, effort: level} = this.description
+      if (described) await this.control.describe([shown, level === undefined ? undefined : `effort ${level}`].filter(part => part !== undefined).join(" · "))
+    }
   }
 
   endPermissions(before = Infinity): void {
