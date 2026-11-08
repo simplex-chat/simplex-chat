@@ -25,8 +25,9 @@ const fileWait = 10 * 60_000
 const pendingDays = 1
 const attachWait = 30_000
 const channelPrompt = /<channel source="plugin:simplex:simplex"[^\n]* item="(\d+)"[^\n]*>\n([\s\S]*?)\n<\/channel>/g
-const bangFromOwners = "Messages starting with ! reach Claude only from owners, as /!command."
-const bangOwnersOnly = "Only owners of the Main group can send ! commands to Claude."
+const bangText = "Messages starting with ! reach Claude only from admins and owners, as /!command."
+const commandsAdminsOnly = "Only admins and owners of this group can send // and /! commands to Claude."
+const approverRoles: T.GroupMemberRole[] = [T.GroupMemberRole.Admin, T.GroupMemberRole.Owner]
 
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX daemon is stopping."}
 
@@ -233,9 +234,10 @@ export class Session {
   private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
     if (this.isUser(member)) return
     const item = ci.chatItem.meta.itemId
-    if (text.startsWith("/!") && !this.mainOwner(member.groupMemberId)) return this.post([bangOwnersOnly], item)
-    if (text.startsWith("!")) return this.post([bangFromOwners], item)
-    await this.deliver(ci, text.startsWith("//") || text.startsWith("/!") ? text.slice(1) : text, member)
+    const command = text.startsWith("//") || text.startsWith("/!")
+    if (command && !this.approves(member)) return this.post([commandsAdminsOnly], item)
+    if (text.startsWith("!")) return this.post([bangText], item)
+    await this.deliver(ci, command ? text.slice(1) : text, member)
   }
 
   private async deliver(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
@@ -296,16 +298,11 @@ export class Session {
   }
 
   private approves(member: T.GroupMember): boolean {
-    return member.memberRole !== T.GroupMemberRole.Observer && member.memberRole !== T.GroupMemberRole.Relay && !this.isUser(member)
+    return approverRoles.includes(member.memberRole) && !this.isUser(member)
   }
 
   private isUser(member: T.GroupMember): boolean {
     return member.memberContactId !== undefined && member.memberContactId === this.hub.userContactId
-  }
-
-  private mainOwner(groupMemberId: number): boolean {
-    const invited = this.data.invited.find(entry => entry.groupMemberId === groupMemberId)
-    return invited !== undefined && this.hub.main.isOwner(invited.mainMemberId)
   }
 
   private setMode(mode: Mode): void {
@@ -430,7 +427,7 @@ export class Hub implements SessionGroups {
     const session = this.sessions.get(number)
     if (session === undefined) return `No session ${number}. /sessions lists the sessions.`
     try {
-      await session.invite(member, member.memberRole)
+      await session.invite(member, member.memberRole === T.GroupMemberRole.Owner ? T.GroupMemberRole.Owner : T.GroupMemberRole.Admin)
     } catch (error) {
       const chatError = chatErrorOf(error)
       if (chatError?.type === "error" && chatError.errorType.type === "groupDuplicateMember") return `You are a member of "${session.displayName}".`

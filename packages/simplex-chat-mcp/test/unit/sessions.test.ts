@@ -22,7 +22,10 @@ const self = member(1, "Claude", T.GroupMemberRole.Owner, T.GroupMemberStatus.Cr
 const alice = member(3, "Alice", T.GroupMemberRole.Owner)
 const bob = member(7, "Bob", T.GroupMemberRole.Member)
 const invitedAlice = member(1003, "Alice", T.GroupMemberRole.Owner)
-const noApprover = `The group of this session has no member who can approve actions. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@${version} link in a terminal.`
+const noApprover = `The group of this session has no admin or owner to approve actions. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@${version} link in a terminal.`
+const approversOnly = "Only admins and owners of this group approve actions here."
+const commandsAdminsOnly = "Only admins and owners of this group can send // and /! commands to Claude."
+const bangText = "Messages starting with ! reach Claude only from admins and owners, as /!command."
 const modeCard = "I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here."
 const aliceJoined = "Alice can send prompts to Claude and approve tool use. You can change role to observer to stop it: /'observer #20 1003'"
 const trusted = "Everyone in this group is trusted with all Claude Code sessions here: they can join each session's group by /join N, prompt Claude and approve its actions. Invite only people you trust with them."
@@ -122,21 +125,23 @@ describe("session groups", () => {
     expect(readSessionFile(folder)).toEqual({...stored(1, "auth"), aliases: [id2], group: 20})
   })
 
-  it("count approvals and prompts from every member, whatever way they joined and whatever their role in the Main group, and not from observers and User", async () => {
+  it("count approvals from admins and owners of the group and prompts from every member but User, whatever way they joined and whatever their role in the Main group", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     const session = await openSession(hub, id1, stored(1, "auth"))
     expect(await hub.join(bob, 1)).toBe(`Sent you an invitation to "1 · auth".`)
-    const invitedBob = member(1007, "Bob", T.GroupMemberRole.Member)
-    const mallory = member(9, "Mallory", T.GroupMemberRole.Member)
+    const invitedBob = member(1007, "Bob", T.GroupMemberRole.Admin)
+    const mallory = member(9, "Mallory", T.GroupMemberRole.Admin)
+    const mia = member(12, "Mia", T.GroupMemberRole.Member)
+    const max = member(13, "Max", T.GroupMemberRole.Moderator)
     const oscar = member(11, "Oscar", T.GroupMemberRole.Observer)
     hub.userContactId = 6
     const sessionUser = {...member(1006, "User"), memberContactId: 6}
-    chat.members.set(20, [self, invitedAlice, invitedBob, mallory, oscar, sessionUser])
+    chat.members.set(20, [self, invitedAlice, invitedBob, mallory, mia, max, oscar, sessionUser])
     await session.control.load()
     const pending = {keyword: "pending", params: ""}
     for (const sender of [invitedAlice, invitedBob, mallory]) expect(await session.control.ownerCommand(sender, pending)).toBe("No pending actions.")
-    for (const sender of [oscar, sessionUser]) expect(await session.control.ownerCommand(sender, pending)).toBe("Only members who joined from the Main group approve actions here.")
+    for (const sender of [mia, max, oscar, sessionUser]) expect(await session.control.ownerCommand(sender, pending)).toBe(approversOnly)
     chat.members.set(10, [self, {...alice, memberRole: T.GroupMemberRole.Member}, {...bob, memberStatus: T.GroupMemberStatus.Left}])
     await hub.main.onEvent({type: "memberRole", groupInfo: group(10, "SimpleX MCP", self), byMember: bob, member: alice, fromRole: T.GroupMemberRole.Owner, toRole: T.GroupMemberRole.Member} as unknown as ChatEvent)
     expect(await session.control.ownerCommand(invitedAlice, pending)).toBe("No pending actions.")
@@ -147,10 +152,12 @@ describe("session groups", () => {
     session.onMessage(event(sessionGroup, item(41, "Run the tests", {type: "groupRcv", groupMember: sessionUser})))
     session.onMessage(event(sessionGroup, item(42, "Write the docs", {type: "groupRcv", groupMember: mallory})))
     session.onMessage(event(sessionGroup, item(43, "Fix the build", {type: "groupRcv", groupMember: invitedBob})))
-    await until(() => lines.length === 2)
-    expect(lines).toEqual([{prompt: {text: "Write the docs", from: "Mallory", item: 42}}, {prompt: {text: "Fix the build", from: "Bob", item: 43}}])
+    session.onMessage(event(sessionGroup, item(44, "Tag the release", {type: "groupRcv", groupMember: mia})))
+    session.onMessage(event(sessionGroup, item(45, "Deploy", {type: "groupRcv", groupMember: max})))
+    await until(() => lines.length === 4)
+    expect(lines.map(line => line.prompt?.from)).toEqual(["Mallory", "Bob", "Mia", "Max"])
     chat.chats.set("@4", {chatInfo: ownedContact(4, "SimpleX Directory", id1), items: []})
-    chat.members.set(20, [self, oscar, sessionUser])
+    chat.members.set(20, [self, mia, max, oscar, sessionUser])
     await session.control.load()
     expect(textOf(await session.call("send", {chat: "@4", text: "hi"}, signal().call))).toBe(noApprover)
     chat.members.set(20, [self, mallory])
@@ -238,7 +245,7 @@ describe("session groups", () => {
     chat.members.set(20, [self, invitedAlice, dan, eve, mallory, {...member(14, "Fay"), memberStatus: T.GroupMemberStatus.Left}])
     await session.control.load()
     const observer = (sender: T.GroupMember, params: string) => session.control.ownerCommand(sender, {keyword: "observer", params})
-    expect(await observer(mallory, "#20 12")).toBe("Your role does not let you change the role of Dan.")
+    expect(await observer(mallory, "#20 12")).toBe(approversOnly)
     expect(await observer(dan, "#20 13")).toBe("Your role does not let you change the role of Eve.")
     expect(await observer(dan, "#21 9")).toBe("#21 is not this group.")
     expect(await observer(dan, "#20 99")).toBe("No member 99 in this group.")
@@ -250,7 +257,7 @@ describe("session groups", () => {
     expect(await observer(dan, "#20 9")).toBe("Mallory is now an observer.")
     expect(await observer(invitedAlice, "#20 12")).toBe("Dan is now an observer.")
     expect(chat.roles).toEqual([{groupId: 20, members: [9], role: T.GroupMemberRole.Observer}, {groupId: 20, members: [12], role: T.GroupMemberRole.Observer}])
-    expect(await observer(member(9, "Mallory", T.GroupMemberRole.Observer), "#20 13")).toBe("Only members who joined from the Main group approve actions here.")
+    expect(await observer(member(9, "Mallory", T.GroupMemberRole.Observer), "#20 13")).toBe(approversOnly)
   })
 
   it("end a pending mode card when the option returns to requests", async () => {
@@ -713,7 +720,7 @@ describe("session channel", () => {
     session.onMessage(event(sessionGroup, item(43, "a".repeat(15_400), from(invitedAlice))))
     session.onMessage(event(sessionGroup, item(44, "!ls", from(invitedAlice))))
     await until(() => answers(chat).length === 2)
-    expect(answers(chat)).toEqual([[{text: "Session 1 is not running.", quotedItemId: undefined}], [{text: "Messages starting with ! reach Claude only from owners, as /!command.", quotedItemId: undefined}]])
+    expect(answers(chat)).toEqual([[{text: "Session 1 is not running.", quotedItemId: undefined}], [{text: bangText, quotedItemId: undefined}]])
   })
 
   it("posts an answer with a new effort level before the prompt of the next turn, and then the description", async () => {
@@ -834,23 +841,25 @@ describe("session channel", () => {
     expect(lines).toHaveLength(1)
   })
 
-  it("answers every one-line / message as a command of the group, passes // to the session without its first /, /! from an owner of the Main group as !, and refuses other ! messages", async () => {
+  it("answers every one-line / message as a command of the group, passes // and /! of admins and owners to the session without their first /, refuses those of members and moderators, and refuses ! messages", async () => {
     const chat = new FakeChat()
-    const {hub, session, lines} = await channel(chat)
-    await hub.join(bob, 1)
-    const invitedBob = member(1007, "Bob", T.GroupMemberRole.Member)
-    chat.members.set(20, [self, invitedAlice, invitedBob])
+    const {session, lines} = await channel(chat)
+    const dan = member(12, "Dan", T.GroupMemberRole.Admin)
+    const mia = member(13, "Mia", T.GroupMemberRole.Member)
+    const max = member(14, "Max", T.GroupMemberRole.Moderator)
+    chat.members.set(20, [self, invitedAlice, dan, mia, max])
     await session.control.load()
     session.onMessage(event(sessionGroup, item(40, "/model sonnet", from(invitedAlice))))
     session.onMessage(event(sessionGroup, item(41, "//model sonnet", from(invitedAlice))))
-    session.onMessage(event(sessionGroup, item(42, "/!git status", from(invitedAlice))))
-    session.onMessage(event(sessionGroup, item(43, "/!git status", from(invitedBob))))
-    session.onMessage(event(sessionGroup, item(44, "!git status", from(invitedAlice))))
-    session.onMessage(event(sessionGroup, item(45, "/approve x", from(invitedBob))))
-    await until(() => lines.length === 2 && chat.replies.length === 2 && answers(chat).length === 2)
-    expect(lines).toEqual([{prompt: {text: "/model sonnet", from: "Alice", item: 41}}, {prompt: {text: "!git status", from: "Alice", item: 42}}])
+    session.onMessage(event(sessionGroup, item(42, "/!git status", from(dan))))
+    session.onMessage(event(sessionGroup, item(43, "/!git status", from(mia))))
+    session.onMessage(event(sessionGroup, item(44, "//compact", from(max))))
+    session.onMessage(event(sessionGroup, item(45, "!git status", from(invitedAlice))))
+    session.onMessage(event(sessionGroup, item(46, "/approve x", from(dan))))
+    await until(() => lines.length === 2 && chat.replies.length === 2 && answers(chat).length === 3)
+    expect(lines).toEqual([{prompt: {text: "/model sonnet", from: "Alice", item: 41}}, {prompt: {text: "!git status", from: "Dan", item: 42}}])
     expect(chat.replies).toEqual([unknownCommand, unknownCommand])
-    expect(answers(chat)).toEqual([[{text: "Only owners of the Main group can send ! commands to Claude.", quotedItemId: 43}], [{text: "Messages starting with ! reach Claude only from owners, as /!command.", quotedItemId: 44}]])
+    expect(answers(chat)).toEqual([[{text: commandsAdminsOnly, quotedItemId: 43}], [{text: commandsAdminsOnly, quotedItemId: 44}], [{text: bangText, quotedItemId: 45}]])
   })
 
   it("answers nothing to a part of a terminal prompt that User posts as one line starting with /, and answers the next command", async () => {
@@ -981,7 +990,7 @@ describe("Main group", () => {
     await until(() => chat.roles.length === 1)
   })
 
-  it("lists the sessions and invites a member to the group of a session by /join", async () => {
+  it("lists the sessions and invites a member to the group of a session as admin by /join", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     const one = await openSession(hub, id1, stored(1, "one"))
@@ -998,7 +1007,10 @@ describe("Main group", () => {
       "No session 5. /sessions lists the sessions.",
       "Commands: /sessions, /join N. Owners decide a requested reset of the owners with /'approve reset' or /'reject reset'.",
     ])
-    expect(chat.invitations.at(-1)).toEqual({groupId: 21, viaGroupId: 10, groupMemberId: 7, memberRole: T.GroupMemberRole.Member})
+    expect(chat.invitations.at(-1)).toEqual({groupId: 21, viaGroupId: 10, groupMemberId: 7, memberRole: T.GroupMemberRole.Admin})
+    hub.main.onMessage(mainMessage("/join 2", alice))
+    await until(() => chat.replies.length === 5)
+    expect(chat.invitations.at(-1)).toEqual({groupId: 21, viaGroupId: 10, groupMemberId: 3, memberRole: T.GroupMemberRole.Owner})
   })
 
   it("resets the owners at once without owners, and only after an owner approves its card while owners exist", async () => {
@@ -1032,7 +1044,7 @@ describe("Main group", () => {
     const hub = await hubWith(chat)
     const session = await openSession(hub, id1, stored(1, "auth"))
     await hub.join(bob, 1)
-    const invitedBob = member(1007, "Bob", T.GroupMemberRole.Member)
+    const invitedBob = member(1007, "Bob", T.GroupMemberRole.Admin)
     chat.members.set(session.control.groupId, [self, invitedAlice, invitedBob])
     await session.control.load()
     await hub.resetOwners()

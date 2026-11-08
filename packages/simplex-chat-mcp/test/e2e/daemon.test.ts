@@ -300,7 +300,7 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   expect(chatItems.map(({meta}) => meta.itemText)).not.toContain("Session 1 is not running.")
 }, 600_000)
 
-test("a member of the Main group joins a session's group by /join, prompts and approves there, also after removal from the Main group; a member added to the group directly prompts and approves too; files of reply reach the group at once, and the group's preference for files makes the core refuse them; after a reset of the owners the members still prompt and approve there", async () => {
+test("a member of the Main group joins a session's group by /join as admin, prompts, sends // commands and approves there, also after removal from the Main group; a member added to the group by link as member prompts, and the plugin refuses its approvals and its // and /! commands; files of reply reach the group at once, and the group's preference for files makes the core refuse them; after a reset of the owners the members still prompt and approve there", async () => {
   const root = join(dir, "trust", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("trust", "Alice")
@@ -333,6 +333,7 @@ test("a member of the Main group joins a session's group by /join, prompts and a
   await bob.chat.apiSendTextMessage([T.ChatType.Group, bobMain], "/join 1")
   const bobGroupOne = (await bobInvited).get("1 · one")!
   await bobInOne
+  expect((await alice.chat.apiListMembers(groupOne)).find(({memberProfile}) => memberProfile.displayName === "Bob")?.memberRole).toBe(T.GroupMemberRole.Admin)
   const bobSends = (text: string) => bob.chat.apiSendTextMessage([T.ChatType.Group, bobGroupOne], text)
   const bobSees = (text: string): Promise<T.AChatItem> => received(bob.chat, inGroup(bobGroupOne, textStarts(text)))
   const aliceSends = (text: string) => alice.chat.apiSendTextMessage([T.ChatType.Group, groupOne], text)
@@ -343,15 +344,21 @@ test("a member of the Main group joins a session's group by /join, prompts and a
   await client.request("POST", "/permission", {id: one, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
   await bobSends(`/approve ${cardNumber(await toolUse)}`)
   await until(() => attached.some(({permission}) => permission?.behavior === "allow"))
+  await bobSends("//compact")
+  await until(() => attached.some(({prompt}) => prompt?.text === "/compact" && prompt.from === "Bob"))
 
   const carolInOne = received(alice.chat, inGroup(groupOne, textStarts("Carol can send prompts to Claude and approve tool use.")))
   const carolGroupOne = await joinByLink(carol, await alice.chat.apiCreateGroupLink(groupOne, T.GroupMemberRole.Member))
   const [, makeCarolObserver] = /\/'(observer #\d+ \d+)'$/.exec((await carolInOne).chatItem.meta.itemText)!
-  const carolPending = received(carol.chat, inGroup(carolGroupOne, textStarts("No pending actions.")))
+  const carolPending = received(carol.chat, inGroup(carolGroupOne, textStarts("Only admins and owners of this group approve actions here.")))
+  const carolCommand = received(carol.chat, inGroup(carolGroupOne, textStarts("Only admins and owners of this group can send // and /! commands to Claude.")))
   await carol.chat.apiSendTextMessage([T.ChatType.Group, carolGroupOne], "Write the docs")
   await carol.chat.apiSendTextMessage([T.ChatType.Group, carolGroupOne], "/pending")
+  await carol.chat.apiSendTextMessage([T.ChatType.Group, carolGroupOne], "/!ls")
   await carolPending
+  await carolCommand
   await until(() => attached.some(({prompt}) => prompt?.text === "Write the docs" && prompt.from === "Carol"))
+  expect(attached.some(({prompt}) => prompt?.from === "Carol" && prompt.text !== "Write the docs")).toBe(false)
   const notes = join(dir, "trust", "notes.txt")
   writeFileSync(notes, "trail notes")
   const delivered = received(carol.chat, inGroup(carolGroupOne, ({chatItem}) => chatItem.file?.fileName === "notes.txt"))

@@ -33,8 +33,8 @@ const longestError = "€".repeat(600)
 const greeting = "I'm your agent. I ask here before I connect, send, download a file or leave a chat."
 const noOwners = "No owners in the agent control chat."
 const qrCodeHint = "If the QR code does not scan, restart with --qr-code large, or paste the link into the app."
-const noSessionApprover = `The group of this session has no member who can approve actions. Members of the Main group join it by /join N there; without members, run ${linkCommand} in a terminal.`
-const sessionApproversOnly = "Only members who joined from the Main group approve actions here."
+const noSessionApprover = `The group of this session has no admin or owner to approve actions. Members of the Main group join it by /join N there; without members, run ${linkCommand} in a terminal.`
+const sessionApproversOnly = "Only admins and owners of this group approve actions here."
 const roleOrder: T.GroupMemberRole[] = [T.GroupMemberRole.Relay, T.GroupMemberRole.Observer, T.GroupMemberRole.Author, T.GroupMemberRole.Member, T.GroupMemberRole.Moderator, T.GroupMemberRole.Admin, T.GroupMemberRole.Owner]
 
 export interface ControlData {
