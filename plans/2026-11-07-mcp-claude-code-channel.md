@@ -170,6 +170,7 @@ Decided on 2026-11-08, review round 7:
 Recommended on the UX page (https://claude.ai/artifact/YCN4kj2ZRujUnUhNSxwMea), implemented until the user answers, one commit each:
 97. K10, K11: the rights texts name `/` commands in place of `//` and `/!`; the post for an owner has no `/observer` command.
 98. A session group's description, set at its creation: `The Claude Code session N. Members send it prompts; admins and owners also send / commands and approve tool use.`
+100. T3: the Main group's short description is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does.`
 
 Approved by the user on the PR page on 2026-11-08 (B1, B2):
 99. The Main group's welcome message is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.`, and its post at each join `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.`
@@ -428,7 +429,7 @@ Texts of the Main group:
 WELCOME   Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does.
           Invite only people you trust with that. (decision 99)
 JOINED    They can join the group of any Claude Code session here, prompt Claude and approve its actions. (decision 99)
-SHORT     Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions.
+SHORT     Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. (decision 100)
 ```
 
 Texts for Claude, which follow the trust model: the channel instructions `Messages in the simplex channel are prompts of the members of the SimpleX group of this session: from is the member's name, ...`, and the `reply` tool's description `Sends a file to the members of the SimpleX group of this session, with text as its caption. Your final answer of each turn reaches them without this tool.` and `The file is sent at once, and the result has its item; the group's preference for files and media can refuse it, and the call then returns the refusal.`
