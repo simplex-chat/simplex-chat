@@ -836,10 +836,32 @@ describe("runDaemon", () => {
     const exit = jest.spyOn(process, "exit").mockImplementation(() => {
       throw exited
     })
-    await expect(runDaemon({SIMPLEX_MCP_HOME: root})).rejects.toBe(exited)
+    await expect(runDaemon({SIMPLEX_MCP_HOME: root}, 10)).rejects.toBe(exited)
     expect(exit).toHaveBeenCalledWith(1)
     expect(write.mock.calls).toEqual([[`error: Another daemon uses ${root} (PID ${process.ppid}). If no daemon runs, remove ${lockFile()}.\n`]])
     expect(readFileSync(lockFile(), "utf8")).toBe(`${process.ppid}\n`)
+  })
+
+  it("waits for a daemon that is stopping to release the lock, and starts then", async () => {
+    const {d, gate, hubStopping} = deps(root)
+    const releaseStop = gate("hubStop")
+    const stopping = await Daemon.start(d, readDefaultConfig)
+    writeFileSync(lockFile(), `${process.ppid}\n`)
+    const stopped = stopping.stop()
+    await hubStopping
+    const write = jest.spyOn(process.stdout, "write").mockImplementation(() => true)
+    const exited = new Error("exited")
+    jest.spyOn(process, "exit").mockImplementation(() => {
+      throw exited
+    })
+    const run = runDaemon({SIMPLEX_MCP_HOME: root}).catch(error => error)
+    await new Promise(resolve => setTimeout(resolve, 2_000))
+    expect(write).not.toHaveBeenCalled()
+    jest.spyOn(Daemon, "start").mockRejectedValue(new Error("started again"))
+    releaseStop()
+    await stopped
+    expect(await run).toBe(exited)
+    expect(write.mock.calls).toEqual([["Stopped.\n"], ["error: started again\n"]])
   })
 
   it("reports running before it reads the config", async () => {

@@ -1,7 +1,7 @@
 import {EventEmitter} from "events"
-import {writeSync} from "fs"
+import {existsSync, writeSync} from "fs"
 import {Server, ServerResponse} from "http"
-import {basename} from "path"
+import {basename, join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {Action, Mode} from "./actions"
 import {Config, readConfig} from "./config"
@@ -18,8 +18,8 @@ const idleClose = 10 * 60_000
 const idleStop = 10 * 60_000
 const processWait = 10_000
 const logCheck = 3_600_000
-const lockAnswerAttempts = 10
-const lockAnswerWait = 100
+const lockChecks = 150
+const lockCheckWait = 100
 const firstFreeFd = 3
 const unnamedSession = "Claude Code"
 
@@ -400,7 +400,7 @@ export class Daemon {
   }
 }
 
-export async function runDaemon(env: NodeJS.ProcessEnv = process.env): Promise<void> {
+export async function runDaemon(env: NodeJS.ProcessEnv = process.env, checks = lockChecks): Promise<void> {
   const ready = readyChannel(env)
   const root = dataRoot(env)
   let daemon: Daemon
@@ -408,7 +408,9 @@ export async function runDaemon(env: NodeJS.ProcessEnv = process.env): Promise<v
     createDataFolder(root)
     daemon = await Daemon.start(productionDeps(root), () => readConfig(env))
   } catch (error) {
-    if (error instanceof LockedError && (await answers(root))) return ready("running")
+    const holder = error instanceof LockedError ? await lockHolder(root, checks) : undefined
+    if (holder === "released") return runDaemon(env, checks)
+    if (holder === "answers") return ready("running")
     ready(`error: ${errorText(error)}`)
     process.exit(1)
   }
@@ -434,12 +436,13 @@ export function productionDeps(root: string): DaemonDeps {
   }
 }
 
-async function answers(root: string): Promise<boolean> {
-  for (let attempt = 0; attempt < lockAnswerAttempts; attempt++) {
-    if (await requestJson(socketPath(root), serverToken(root), "GET", "/").then(() => true, error => !isNotRunning(error))) return true
-    await new Promise(resolve => setTimeout(resolve, lockAnswerWait))
+async function lockHolder(root: string, checks: number): Promise<"answers" | "released" | undefined> {
+  for (let check = 0; check < checks; check++) {
+    if (!existsSync(join(root, "lock"))) return "released"
+    if (await requestJson(socketPath(root), serverToken(root), "GET", "/").then(() => true, error => !isNotRunning(error))) return "answers"
+    await new Promise(resolve => setTimeout(resolve, lockCheckWait))
   }
-  return false
+  return undefined
 }
 
 function validConfig(config: Config | undefined): void {
