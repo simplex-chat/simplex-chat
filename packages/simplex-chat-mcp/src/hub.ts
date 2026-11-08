@@ -21,6 +21,7 @@ const firstAction = 1
 const cardsWait = 10
 const promptEcho = 60_000
 const maxPart = 12_000
+const channelPrompt = /^<channel source="plugin:simplex:simplex"[^\n]* item="(\d+)"[^\n]*>\n([\s\S]*)\n<\/channel>$/
 
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX daemon is stopping."}
 
@@ -45,7 +46,7 @@ export class Session {
   readonly actions: Actions
   readonly tools: AgentTools
   readonly control: Control
-  private readonly prompts: {text: string; at: number}[] = []
+  private readonly prompts: {text: string; item: number; at: number}[] = []
   private readonly receiving = new Map<number, {resolve: () => void; reject: (error: Error) => void}>()
   private description: {model?: string; effort?: string} = {}
   private turnItem?: T.ChatItem
@@ -119,7 +120,8 @@ export class Session {
     const {chatItem} = ci
     const {chatDir, content} = chatItem
     if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent" || parseCommand(content.msgContent.text) !== undefined || !this.approves(chatDir.groupMember)) return
-    this.prompt(chatItem, content.msgContent.text, chatDir.groupMember).catch(error => logError(`prompt of session ${this.number}`, error))
+    const prompted = this.onLine === undefined ? this.hub.chat.apiSendTextReply(ci, `Session ${this.number} is not running.`) : this.prompt(chatItem, content.msgContent.text, chatDir.groupMember)
+    prompted.catch(error => logError(`prompt of session ${this.number}`, error))
   }
 
   permission({requestId, toolName, description, inputPreview}: PermissionRequest): void {
@@ -139,8 +141,7 @@ export class Session {
       const {model: shown, effort: level} = this.description
       await this.control.describe([shown, level === undefined ? undefined : `effort ${level}`].filter(part => part !== undefined).join(" · "))
     }
-    const recent = Date.now() - promptEcho
-    if (prompt !== undefined && !this.prompts.some(({text, at}) => text === prompt && at > recent)) {
+    if (prompt !== undefined && !this.pushed(prompt)) {
       this.turnItem = undefined
       await this.hub.user?.post(this.number, textParts(prompt))
     }
@@ -177,7 +178,7 @@ export class Session {
   private async prompt(chatItem: T.ChatItem, text: string, member: T.GroupMember): Promise<void> {
     const file = chatItem.file === undefined ? undefined : await this.receive(chatItem.file)
     const now = Date.now()
-    this.prompts.splice(0, this.prompts.length, ...this.prompts.filter(({at}) => at > now - promptEcho), {text, at: now})
+    this.prompts.splice(0, this.prompts.length, ...this.prompts.filter(({at}) => at > now - promptEcho), {text, item: chatItem.meta.itemId, at: now})
     this.turnItem = chatItem
     this.onLine?.({prompt: {text, from: member.memberProfile.displayName, item: chatItem.meta.itemId, ...(file === undefined ? {} : {file})}})
   }
@@ -197,6 +198,12 @@ export class Session {
     const parts = textParts(text)
     const quotedItemId = quoted?.content.type === "rcvMsgContent" && fitsMessage({type: "text", text: parts[0]}, undefined, {content: quoted.content.msgContent, fileName: quoted.file?.fileName}) ? quoted.meta.itemId : undefined
     await this.hub.chat.apiSendMessages([T.ChatType.Group, this.control.groupId], parts.map((part, i) => ({msgContent: {type: "text", text: part}, quotedItemId: i === 0 ? quotedItemId : undefined, mentions: {}})))
+  }
+
+  private pushed(prompt: string): boolean {
+    const recent = Date.now() - promptEcho
+    const [, item, content] = channelPrompt.exec(prompt) ?? []
+    return this.prompts.some(pushed => pushed.at > recent && (pushed.text === prompt || (String(pushed.item) === item && pushed.text.trim() === content.trim())))
   }
 
   private approves(member: T.GroupMember): boolean {

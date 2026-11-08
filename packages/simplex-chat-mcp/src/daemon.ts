@@ -208,10 +208,12 @@ export class Daemon {
     const write = startLines(res)
     write({version: this.deps.version, protocol: protocolVersion})
     entry.writers.add(write)
+    agent.onLine = line => entry.writers.forEach(writer => writer(line))
     res.once("close", () => {
       entry.attached--
       entry.writers.delete(write)
       if (entry.attached > 0) return
+      agent.onLine = undefined
       agent.endPermissions()
       this.scheduleIdle(id, entry)
     })
@@ -260,7 +262,6 @@ export class Daemon {
       agent => {
         entry.agent = agent
         agent.open = true
-        agent.onLine = line => entry.writers.forEach(write => write(line))
       },
       () => {
         clearTimeout(entry.idle)

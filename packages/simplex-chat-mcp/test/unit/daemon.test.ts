@@ -573,13 +573,14 @@ describe("daemon", () => {
     expect(await register(id1)).toMatchObject({number: 1, displayName: "1 · auth"})
   })
 
-  it("passes permission requests, turns and the end of the attachments to the session", async () => {
+  it("passes permission requests and turns to the session, and its lines to the attachments while they exist", async () => {
     const {d, agents} = deps(root)
     daemon = await Daemon.start(d, readDefaultConfig)
     await register(id1)
     const permission = {id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"}
     expect(await post("/permission", permission)).toEqual({})
     expect(await post("/turn", {id: id1, answer: "Done."})).toEqual({})
+    expect(agents[0].onLine).toBeUndefined()
     const controller = new AbortController()
     const {attached, firstLine, lines} = attach(id1, controller.signal)
     await firstLine
@@ -590,6 +591,7 @@ describe("daemon", () => {
     await attached
     await until(() => agents[0].turns.length === 3)
     expect(agents[0].turns).toEqual([permission, {id: id1, answer: "Done."}, "ended"])
+    expect(agents[0].onLine).toBeUndefined()
     await expect(post("/turn", {id: id2, answer: "x"})).rejects.toMatchObject({status: 409})
   })
 

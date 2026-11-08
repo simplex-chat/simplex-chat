@@ -170,7 +170,7 @@ test("an owner joins the Main group and each session's group, and approves its c
   expect((await chatsOf(two)).sort()).toEqual([directoryChat, shopChat].sort())
 }, 600_000)
 
-test("the hooks post a terminal prompt as User and the answer as Claude in the session's group; an owner's prompt reaches the session and the answer quotes it", async () => {
+test("the hooks post a terminal prompt as User and the answer as Claude in the session's group; an owner's prompt reaches an attached session, raw or in the channel tag it is not posted again, and the answer quotes it", async () => {
   const root = join(dir, "mirror", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("mirror", "Alice")
@@ -192,6 +192,9 @@ test("the hooks post a terminal prompt as User and the answer as Claude in the s
   const fixed = received(alice.chat, message("Fixed.", "Claude"))
   await hook({hook_event_name: "Stop", last_assistant_message: "Fixed."})
   await fixed
+  const notRunning = received(alice.chat, inGroup(groupId, textStarts("Session 1 is not running.")))
+  const [early] = await alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], "Are you there?")
+  expect((await notRunning).chatItem.quotedItem?.itemId).toBe(early.chatItem.meta.itemId)
 
   const attached: unknown[] = []
   const controller = new AbortController()
@@ -200,13 +203,16 @@ test("the hooks post a terminal prompt as User and the answer as Claude in the s
   await until(() => attached.length === 1)
   const [sent] = await alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], "Run the tests")
   await until(() => attached.length === 2)
-  expect(attached[1]).toEqual({prompt: {text: "Run the tests", from: "Alice", item: expect.any(Number)}})
+  const {item} = (attached[1] as {prompt: {item: number}}).prompt
+  expect(attached[1]).toEqual({prompt: {text: "Run the tests", from: "Alice", item}})
   const passed = received(alice.chat, message("Tests pass.", "Claude", sent.chatItem.meta.itemId))
   await hook({hook_event_name: "UserPromptSubmit", prompt: "Run the tests"})
+  await hook({hook_event_name: "UserPromptSubmit", prompt: `<channel source="plugin:simplex:simplex" from="Alice" item="${item}">\nRun the tests\n</channel>`})
   await hook({hook_event_name: "Stop", last_assistant_message: "Tests pass."})
   await passed
   const {chatItems} = await alice.chat.apiGetChat(T.ChatType.Group, groupId, 50)
-  expect(chatItems.filter(({meta}) => meta.itemText === "Run the tests").map(({chatDir}) => chatDir.type)).toEqual(["groupSnd"])
+  const fromUser = chatItems.filter(({chatDir, content}) => chatDir.type === "groupRcv" && chatDir.groupMember.memberProfile.displayName === "User" && content.type === "rcvMsgContent")
+  expect(fromUser.map(({meta}) => meta.itemText)).toEqual(["Fix the build"])
 }, 600_000)
 
 test("a new session has no chats", async () => {

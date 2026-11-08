@@ -259,9 +259,14 @@ describe("session channel", () => {
     await hub["onEvent"]({type: "rcvFileComplete", user, chatItem: event(sessionGroup, offered)} as unknown as ChatEvent)
     await until(() => lines.length === 2)
     expect(lines[1]).toEqual({prompt: {text: "See the log", from: "Alice", item: 43, file: path}})
+    session.onLine = undefined
+    session.onMessage(event(sessionGroup, item(44, "Run the tests", from(invitedAlice))))
+    await until(() => chat.replies.length === 2)
+    expect(chat.replies[1]).toBe("Session 1 is not running.")
+    expect(lines).toHaveLength(2)
   })
 
-  it("shows the model and effort in the group description, posts terminal prompts as User, and answers as Claude, quoting the owner's prompt", async () => {
+  it("shows the model and effort in the group description, posts terminal prompts as User except pushed ones, raw or in this channel's tag, and answers as Claude, quoting the owner's prompt", async () => {
     const chat = new FakeChat()
     const {hub, session} = await channel(chat)
     const posts: string[][] = []
@@ -275,10 +280,17 @@ describe("session channel", () => {
     session.onMessage(event(sessionGroup, item(42, "Fix the build", from(invitedAlice))))
     await until(() => session["turnItem"] !== undefined)
     await session.turn({id: id1, prompt: "Fix the build"})
+    await session.turn({id: id1, prompt: '<channel source="plugin:simplex:simplex" from="Alice" item="42">\nFix the build\n</channel>'})
     await session.turn({id: id1, answer: "Fixed."})
+    await session.turn({id: id1, prompt: '<channel source="plugin:simplex:simplex" from="Alice" item="41">\nFix the build\n</channel>'})
+    await session.turn({id: id1, prompt: '<channel source="plugin:other:other" from="Alice" item="42">\nFix the build\n</channel>'})
     await session.turn({id: id1, prompt: "Run the tests"})
     await session.turn({id: id1, answer: `${"é".repeat(6000)}ok`})
-    expect(posts).toEqual([["1", "Run the tests"]])
+    expect(posts.map(([, text]) => text)).toEqual([
+      '<channel source="plugin:simplex:simplex" from="Alice" item="41">\nFix the build\n</channel>',
+      '<channel source="plugin:other:other" from="Alice" item="42">\nFix the build\n</channel>',
+      "Run the tests",
+    ])
     const answers = chat.sent.filter(({chat: [, groupId]}) => groupId === 20).map(({messages}) => messages.map(({msgContent, quotedItemId}) => ({text: msgContent.text, quotedItemId})))
     expect(answers).toEqual([[{text: "Fixed.", quotedItemId: 42}], [{text: "é".repeat(6000), quotedItemId: undefined}, {text: "ok", quotedItemId: undefined}]])
   })
