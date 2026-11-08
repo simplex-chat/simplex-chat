@@ -3631,7 +3631,7 @@ fun providerForGallery(
   scrollTo: (Int) -> Unit
 ): ImageGalleryProvider {
   fun canShowMedia(item: ChatItem): Boolean =
-    item.meta.itemDeleted == null && (item.content.msgContent is MsgContent.MCImage || item.content.msgContent is MsgContent.MCVideo) && (item.file?.loaded == true && (getLoadedFilePath(item.file) != null || chatModel.connectedToRemote()))
+    (item.meta.itemDeleted == null || item.id == cItemId) && (item.content.msgContent is MsgContent.MCImage || item.content.msgContent is MsgContent.MCVideo) && (item.file?.loaded == true && (getLoadedFilePath(item.file) != null || chatModel.connectedToRemote()))
 
   fun item(skipInternalIndex: Int, initialChatId: Long): Pair<Int, ChatItem>? {
     var processedInternalIndex = -skipInternalIndex.sign

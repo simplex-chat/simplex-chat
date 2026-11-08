@@ -2,7 +2,7 @@
 
 ## Problem
 
-In the fullscreen media viewer, swiping to the next or previous media shows images and videos of messages that the chat shows as deleted: deleted by the sender for everyone (full deletion off), moderated, or from a blocked member.
+In the fullscreen media viewer, swiping to the next or previous media shows images and videos of messages that the chat shows as "marked deleted", "moderated by X", "blocked" or "blocked by admin" (messages deleted by the sender for everyone, deleted by a moderator, or sent by a blocked member, when full deletion is off).
 
 ## Cause
 
@@ -13,10 +13,16 @@ The core keeps the content and the file of a message marked deleted, and sets `i
 
 ## Fix
 
-Both filters also require `itemDeleted` to be absent. The media on screen counts as a page whatever its state, so a revealed message opens and its neighbours stay one swipe away; on Android, `item()` counts the item it starts from without the filter, as `nextChatItemData` on iOS does.
+Both filters also require `itemDeleted` to be absent. On Android:
+
+- the opened item is exempt;
+- `item()` counts the item it starts from without the filter.
+
+On iOS, `nextChatItemData` already starts from the current item and does not filter it.
 
 ## Scope
 
 - Android and iOS: the platforms where the viewer changes media by swiping.
-- Desktop: the same Kotlin filter; its viewer shows one media and does not change it.
-- Media marked deleted while it is the page on screen stays shown until the user swipes away.
+- Desktop: the same Kotlin filter; its viewer shows only the opened image or video.
+- A revealed message opens in the viewer. On Android it stays reachable by swiping until the viewer closes; on iOS swiping back to it skips it.
+- Media marked deleted while the viewer is open stays shown while it is the item the viewer counts from: the page on screen, or, on Android after a swipe back to the opened position, the page settled on before it. On Android the opened media stays reachable until the viewer closes.
