@@ -41,6 +41,8 @@
 | PC29 | User Address |
 | PC30 | Member Support Chat |
 | PC31 | Channels (Relays) |
+| PC32 | Terminal Chat Layout |
+| PC33 | Bans and Link Notices |
 | PC34 | Chat Deletion, Archive and Delete and Ban |
 | PC35 | Chat List Actions |
 
