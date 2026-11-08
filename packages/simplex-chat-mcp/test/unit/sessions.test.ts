@@ -849,7 +849,6 @@ describe("Main group", () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     const session = await openSession(hub, id1, stored(1, "auth"))
-    chat.members.set(session.control.groupId, [self, invitedAlice])
     const card = "A terminal asks to replace the owners: this group is deleted, and a new Main group with a new link replaces it."
     expect(await hub.resetOwners()).toEqual({})
     expect(await hub.resetOwners()).toEqual({})
@@ -873,63 +872,25 @@ describe("Main group", () => {
     expect(await hub.resetOwners()).toEqual({link: "https://simplex.chat/g#link"})
   })
 
-  describe("changes of its members", () => {
+  it("leaves the groups of the sessions unchanged when a member leaves it, is removed from it or gets a lower role in it, also at the daemon's start", async () => {
+    const chat = new FakeChat()
     const carol = member(5, "Carol", T.GroupMemberRole.Owner)
-    const invited = (main: T.GroupMember, status = T.GroupMemberStatus.Connected): T.GroupMember => member(1000 + main.groupMemberId, main.memberProfile.displayName, main.memberRole, status)
-    const mainEvent = (hub: Hub, type: string, fields: object): Promise<void> => hub.main.onEvent({type, groupInfo: group(10, "SimpleX MCP", self), ...fields} as unknown as ChatEvent)
-    const invitedIn = (chat: FakeChat, groupId: number): object[] => (chat.customData.filter(({chat: ref}) => ref === `#${groupId}`).at(-1)!.customData as {simplexMcpSession: {invited: object[]}}).simplexMcpSession.invited
-
-    it("remove a member who leaves the Main group or is removed from it from the groups of all sessions at once", async () => {
-      const chat = new FakeChat()
-      const hub = await hubWith(chat, [self, alice, bob, carol])
-      const one = await openSession(hub, id1, stored(1, "one"))
-      await openSession(hub, id2, stored(2, "two"))
-      one.open = true
-      expect(await hub.join(bob, 1)).toBe(`Sent you an invitation to "1 · one".`)
-      chat.members.set(20, [self, invited(alice), invited(carol), invited(bob)])
-      chat.members.set(21, [self, invited(alice), invited(carol)])
-      chat.members.set(10, [self, alice, {...bob, memberStatus: T.GroupMemberStatus.Left}, carol])
-      await mainEvent(hub, "leftMember", {member: bob})
-      chat.members.set(10, [self, {...alice, memberStatus: T.GroupMemberStatus.Removed}, carol])
-      await mainEvent(hub, "deletedMember", {byMember: carol, deletedMember: alice})
-      expect(chat.removed).toEqual([{groupId: 20, memberIds: [1007]}, {groupId: 20, memberIds: [1003]}, {groupId: 21, memberIds: [1003]}])
-      expect(invitedIn(chat, 20)).toEqual([{groupMemberId: 1005, mainMemberId: 5}])
-      expect(invitedIn(chat, 21)).toEqual([{groupMemberId: 1005, mainMemberId: 5}])
-    })
-
-    it("give a demoted owner of the Main group its new role in the groups of all sessions at once, also in a pending invitation", async () => {
-      const chat = new FakeChat()
-      const hub = await hubWith(chat, [self, alice, bob, carol])
-      await openSession(hub, id1, stored(1, "one"))
-      await openSession(hub, id2, stored(2, "two"))
-      await hub.join(bob, 1)
-      chat.members.set(20, [self, invited(alice), invited(carol), invited(bob)])
-      chat.members.set(21, [self, invited(alice, T.GroupMemberStatus.Invited), invited(carol)])
-      chat.members.set(10, [self, {...alice, memberRole: T.GroupMemberRole.Member}, bob, carol])
-      await mainEvent(hub, "memberRole", {byMember: carol, member: alice, fromRole: T.GroupMemberRole.Owner, toRole: T.GroupMemberRole.Member})
-      expect(chat.roles).toEqual([{groupId: 20, members: [1003], role: T.GroupMemberRole.Member}])
-      expect(chat.invitations.at(-1)).toEqual({groupId: 21, viaGroupId: 10, groupMemberId: 3, memberRole: T.GroupMemberRole.Member})
-      expect(chat.removed).toEqual([])
-    })
-
-    it("are applied to the group of a stored session when the daemon opens it, as for changes made while it was stopped", async () => {
-      const chat = new FakeChat()
-      await openSession(await hubWith(chat), id1, stored(1, "one"))
-      chat.members.set(20, [self, invited(alice)])
-      const restarted = await hubWith(chat, [self, {...alice, memberStatus: T.GroupMemberStatus.Left}, bob])
-      await restarted.session(id1, readSessionFile(sessionFolder(root, id1))!)
-      expect(chat.removed).toEqual([{groupId: 20, memberIds: [1003]}])
-      expect(invitedIn(chat, 20)).toEqual([])
-    })
-
-    it("remove each invited member from the groups of the sessions in a request of its own when the Main group is replaced", async () => {
-      const chat = new FakeChat()
-      const hub = await hubWith(chat, [self, alice, carol])
-      await openSession(hub, id1, stored(1, "one"))
-      chat.members.set(20, [self, invited(alice), invited(carol)])
-      await hub.main.replace()
-      expect(chat.removed).toEqual([{groupId: 20, memberIds: [1003]}, {groupId: 20, memberIds: [1005]}])
-    })
+    const hub = await hubWith(chat, [self, alice, bob, carol])
+    const one = await openSession(hub, id1, stored(1, "one"))
+    one.open = true
+    await hub.join(bob, 1)
+    const invited = (main: T.GroupMember): T.GroupMember => member(1000 + main.groupMemberId, main.memberProfile.displayName, main.memberRole)
+    chat.members.set(20, [self, invited(alice), invited(bob), invited(carol)])
+    const mainEvent = (type: string, fields: object): Promise<void> => hub.main.onEvent({type, groupInfo: group(10, "SimpleX MCP", self), ...fields} as unknown as ChatEvent)
+    chat.members.set(10, [self, alice, {...bob, memberStatus: T.GroupMemberStatus.Left}, carol])
+    await mainEvent("leftMember", {member: bob})
+    chat.members.set(10, [self, {...alice, memberStatus: T.GroupMemberStatus.Removed}, {...carol, memberRole: T.GroupMemberRole.Member}])
+    await mainEvent("deletedMember", {byMember: carol, deletedMember: alice})
+    await mainEvent("memberRole", {byMember: alice, member: carol, fromRole: T.GroupMemberRole.Owner, toRole: T.GroupMemberRole.Member})
+    await (await hubWith(chat, [self])).session(id1, readSessionFile(sessionFolder(root, id1))!)
+    expect(chat.removed).toEqual([])
+    expect(chat.roles).toEqual([])
+    expect(chat.invitations.filter(({groupId}) => groupId === 20)).toHaveLength(3)
   })
 })
 

@@ -12,7 +12,7 @@ import {MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-g
 import {Changes, ChatItemsWatch, ToolCall, getChat, nextChange, storedName, validName} from "./messages"
 import {AttachLine, OwnerState, PermissionRequest, ResetReply, TurnRequest} from "./protocol"
 import {waitForCancelledCards} from "./serve"
-import {AgentTools, ToolName, fitsMessage, isGone, ownerOf} from "./tools"
+import {AgentTools, ToolName, fitsMessage, ownerOf} from "./tools"
 import {User, userContact} from "./user"
 
 const profileName = "Claude"
@@ -26,7 +26,6 @@ const fileWait = 10 * 60_000
 const pendingDays = 1
 const attachWait = 30_000
 const channelPrompt = /<channel source="plugin:simplex:simplex"[^\n]* item="(\d+)"[^\n]*>\n([\s\S]*?)\n<\/channel>/g
-const roles = [T.GroupMemberRole.Observer, T.GroupMemberRole.Author, T.GroupMemberRole.Member, T.GroupMemberRole.Moderator, T.GroupMemberRole.Admin, T.GroupMemberRole.Owner]
 
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX daemon is stopping."}
 
@@ -219,30 +218,10 @@ export class Session {
     await this.saveData({...this.data, invited})
   }
 
-  async applyMembers(): Promise<void> {
-    const {chat, main} = this.hub
-    if (main.lost || this.data.invited.length === 0) return
-    const groupId = this.control.groupId
-    const members = await chat.apiListMembers(groupId)
-    const dropped: InvitedMember[] = []
-    for (const entry of this.data.invited) {
-      const member = members.find(({groupMemberId}) => groupMemberId === entry.groupMemberId)
-      const mainMember = main.member(entry.mainMemberId)
-      const role = mainMember === undefined || isGone(mainMember) ? undefined : mainMember.memberRole
-      const present = member !== undefined && !isGone(member)
-      try {
-        if (role === undefined) {
-          if (present) await chat.apiRemoveMembers(groupId, [entry.groupMemberId])
-          dropped.push(entry)
-        } else if (present && roles.indexOf(member.memberRole) > roles.indexOf(role)) {
-          if (member.memberStatus === T.GroupMemberStatus.Invited) await chat.apiAddMemberViaGroup(groupId, main.groupId, entry.mainMemberId, role)
-          else await chat.apiSetMembersRole(groupId, [entry.groupMemberId], role)
-        }
-      } catch (error) {
-        logError(`members of session ${this.number}`, error)
-      }
-    }
-    if (dropped.length > 0) await this.saveData({...this.data, invited: this.data.invited.filter(entry => !dropped.includes(entry))})
+  async removeOwners(): Promise<void> {
+    const members = this.data.invited.map(({groupMemberId}) => groupMemberId)
+    if (members.length > 0) await this.hub.chat.apiRemoveMembers(this.control.groupId, members).catch(error => logError(`members of session ${this.number}`, error))
+    await this.saveData({...this.data, invited: []})
   }
 
   private async deliver(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
@@ -410,7 +389,7 @@ export class Hub implements SessionGroups {
     await session.control.load()
     if (known === undefined) {
       for (const owner of this.main.owners()) await session.invite(owner, T.GroupMemberRole.Owner).catch(error => logError(`invitation to session ${stored.number}`, error))
-    } else await session.applyMembers().catch(error => logError(`members of session ${stored.number}`, error))
+    }
     return session
   }
 
@@ -442,8 +421,8 @@ export class Hub implements SessionGroups {
     }
   }
 
-  async applyMembers(): Promise<void> {
-    for (const session of this.sessions.values()) await session.applyMembers().catch(error => logError(`members of session ${session.number}`, error))
+  async removeOwners(): Promise<void> {
+    for (const session of this.sessions.values()) await session.removeOwners()
   }
 
   expireDue(): void {

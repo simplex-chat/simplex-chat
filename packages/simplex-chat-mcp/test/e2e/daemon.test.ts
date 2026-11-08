@@ -90,7 +90,7 @@ async function joinSessionGroups(owner: Person, names: string[]): Promise<Map<st
   return groups
 }
 
-test("an owner joins the Main group and each session's group, and approves its connect, send, download and leave there; chats belong to their sessions; an owner who leaves the Main group is removed from the sessions' groups", async () => {
+test("an owner joins the Main group and each session's group, and approves its connect, send, download and leave there; chats belong to their sessions", async () => {
   const root = join(dir, "sessions", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("sessions", "Alice")
@@ -106,7 +106,7 @@ test("an owner joins the Main group and each session's group, and approves its c
   const greeting = received(alice.chat, textStarts("I'm Claude. Each Claude Code session has its own group"))
   const invitations = joinSessionGroups(alice, ["1 · one", "2 · two"])
   await joinByLink(alice, owner.link!)
-  const mainGroupId = ((await greeting).chatInfo as T.ChatInfo.Group).groupInfo.groupId
+  await greeting
   const groups = await invitations
   const [groupOne, groupTwo] = [groups.get("1 · one")!, groups.get("2 · two")!]
   expect((await client.request<StatusReply>("GET", "/status")).owner).toEqual({owners: ["Alice"]})
@@ -169,10 +169,6 @@ test("an owner joins the Main group and each session's group, and approves its c
   await listedOne
   expect(await openSession(client, two, "two")).toMatchObject({number: 2, displayName: "2 · two", owner: {owners: ["Alice"]}})
   expect((await chatsOf(two)).sort()).toEqual([directoryChat, shopChat].sort())
-
-  const removed = Promise.all([groupOne, groupTwo].map(groupId => alice.chat.wait("deletedMemberUser", ({groupInfo}) => groupInfo.groupId === groupId, 60_000)))
-  await alice.chat.apiLeaveGroup(mainGroupId)
-  await removed
 }, 600_000)
 
 test("the hooks post a terminal prompt as User and the answer as Claude in the session's group; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
@@ -296,61 +292,6 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   await until(() => reattached.some(({prompt}) => prompt?.text === "Still there?"))
   const {chatItems} = await alice.chat.apiGetChat(T.ChatType.Group, groupId, 20)
   expect(chatItems.map(({meta}) => meta.itemText)).not.toContain("Session 1 is not running.")
-}, 600_000)
-
-test("a member of the Main group who is not an owner joins a session's group by /join and gets a file of reply only after an owner approves its card, which names the file without its caption; a demoted owner gets the role member in the sessions' groups, also in a pending invitation", async () => {
-  const root = join(dir, "members", "root")
-  await prepareRoot(smpServer.address, root, xftpServer.address)
-  const alice = await personIn("members", "Alice")
-  const bob = await personIn("members", "Bob")
-  await startDaemon(root)
-  const client = DaemonClient.forRoot(root)
-  for (const [id, name] of [[one, "one"], [two, "two"], [three, "three"]]) await openSession(client, id, name)
-  const owner = await client.request<OwnerState>("GET", "/link")
-  const invitations = joinSessionGroups(alice, ["1 · one"])
-  const mainGroupId = await joinByLink(alice, owner.link!)
-  const groupOne = (await invitations).get("1 · one")!
-  const bobConnected = bob.chat.wait("connectedToGroupMember", ({member}) => member.memberProfile.displayName === "Claude", 60_000)
-  const bobMain = await joinByLink(bob, await alice.chat.apiCreateGroupLink(mainGroupId, T.GroupMemberRole.Member))
-  expect(await bobConnected).toBeDefined()
-  const bobInvited = joinSessionGroups(bob, ["1 · one"])
-  await bob.chat.apiSendTextMessage([T.ChatType.Group, bobMain], "/join 1")
-  const bobGroupOne = (await bobInvited).get("1 · one")!
-
-  const notes = join(dir, "members", "notes.txt")
-  writeFileSync(notes, "trail notes")
-  const request = ["I want to send a file to group 1 · one, where members who are not owners see it:", "`notes.txt`, 11 bytes"]
-  const card = received(alice.chat, inGroup(groupOne, textStarts(request[0])))
-  const seenByBob = received(bob.chat, inGroup(bobGroupOne, textStarts(request[0])))
-  const replying = callTool(client, one, "reply", {file: notes, text: "Trail notes"})
-  const shown = await card
-  expect(lines(shown)).toEqual([...request, `/'approve ${cardNumber(shown)}' or /'reject ${cardNumber(shown)}'`])
-  expect(lines(await seenByBob)).toEqual(lines(shown))
-  const delivered = received(bob.chat, inGroup(bobGroupOne, ({chatItem}) => chatItem.file?.fileName === "notes.txt"))
-  await alice.chat.apiSendTextMessage([T.ChatType.Group, groupOne], `/approve ${cardNumber(shown)}`)
-  expect((await replying).result).toMatchObject({action: cardNumber(shown), status: "done"})
-  const {content} = (await delivered).chatItem
-  expect(content.type === "rcvMsgContent" ? content.msgContent.text : undefined).toBe("Trail notes")
-
-  const bobInAlice = (await alice.chat.apiListMembers(mainGroupId)).find(({memberProfile}) => memberProfile.displayName === "Bob")!
-  const ownerInvitations = new Map<string, number>()
-  const invitedAsOwner = new Promise<void>(resolve => {
-    bob.chat.on("receivedGroupInvitationViaGroup", ({groupInfo}) => {
-      ownerInvitations.set(groupInfo.groupProfile.displayName, groupInfo.groupId)
-      if (ownerInvitations.has("2 · two") && ownerInvitations.has("3 · three")) resolve()
-    })
-  })
-  await alice.chat.apiSetMembersRole(mainGroupId, [bobInAlice.groupMemberId], T.GroupMemberRole.Owner)
-  await invitedAsOwner
-  const [bobGroupTwo, bobGroupThree] = [ownerInvitations.get("2 · two")!, ownerInvitations.get("3 · three")!]
-  const joinedTwo = bob.chat.wait("userJoinedGroup", ({groupInfo}) => groupInfo.groupId === bobGroupTwo, 60_000)
-  await bob.chat.apiJoinGroup(bobGroupTwo)
-  expect(await joinedTwo).toBeDefined()
-  const demoted = bob.chat.wait("memberRole", ({groupInfo, member, toRole}) => groupInfo.groupId === bobGroupTwo && member.groupMemberId === groupInfo.membership.groupMemberId && toRole === T.GroupMemberRole.Member, 60_000)
-  const invitedAgain = bob.chat.wait("receivedGroupInvitationViaGroup", ({groupInfo, memberRole}) => groupInfo.groupId === bobGroupThree && memberRole === T.GroupMemberRole.Member, 60_000)
-  await alice.chat.apiSetMembersRole(mainGroupId, [bobInAlice.groupMemberId], T.GroupMemberRole.Member)
-  expect(await demoted).toMatchObject({toRole: T.GroupMemberRole.Member})
-  expect(await invitedAgain).toMatchObject({memberRole: T.GroupMemberRole.Member})
 }, 600_000)
 
 test("a new session has no chats", async () => {
