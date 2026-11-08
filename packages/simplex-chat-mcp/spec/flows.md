@@ -208,7 +208,7 @@ Notes:
 | other links | `apiConnectPreparedLink(USER, incognito, LINK)` |
 
 - After a failed prepared connect, the server deletes the prepared chat without notifying ([tools.ts:860-867](../src/tools.ts#L860-L867)).
-- The connection is matched by `contactConnected` or `userJoinedGroup`: by contact or group ID, or by the pending connection ID ([tools.ts:648-656](../src/tools.ts#L648-L656), [:869-874](../src/tools.ts#L869-L874)). In the plugin, a pending connection is also recorded in the session group's data, and its chat becomes the session's when it connects after the call returned ([tools.ts:810](../src/tools.ts#L810), [hub.ts:145-149](../src/hub.ts#L145-L149), [:427-428](../src/hub.ts#L427-L428)).
+- The connection is matched by `contactConnected` or `userJoinedGroup`: by contact or group ID, or by the pending connection ID ([tools.ts:648-656](../src/tools.ts#L648-L656), [:869-874](../src/tools.ts#L869-L874)). In the plugin, a pending connection is also recorded in the session group's data, and its chat becomes the session's when it connects after the call returned ([tools.ts:810](../src/tools.ts#L810), [hub.ts:163-167](../src/hub.ts#L163-L167), [:447-448](../src/hub.ts#L447-L448)).
 - In the perform step the server waits for the other side until `startedAt + wait`, at most until `created + 23 h 50 min`, and then reports `connected: false` ([tools.ts:153](../src/tools.ts#L153), [:798](../src/tools.ts#L798), [:824-827](../src/tools.ts#L824-L827)).
 - Without `message`, the idle time is counted from the connection; with `message`, from the first reply ([tools.ts:881](../src/tools.ts#L881), [messages.ts:327-335](../src/messages.ts#L327-L335)).
 - For a target the agent is connected to, the result is `status: known` with its chat fields, and no action is created; in the plugin, the chat becomes the session's when it has no owner ([tools.ts:721](../src/tools.ts#L721), [:734-739](../src/tools.ts#L734-L739)).
@@ -802,11 +802,11 @@ Notes:
 
 - The link reaches the person only: the hook's `systemMessage` carries it, and no hook context or tool result does ([hook.ts:49-51](../src/hook.ts#L49-L51)).
 - The core deletes the preset contact of a new profile, both in `_hub` and in `_user` ([core.ts:29](../src/core.ts#L29), [:45-53](../src/core.ts#L45-L53)).
-- `User` connects at the first start only: later starts find the hub's contact marked `simplexMcpUser`. The contact is the one whose connection is that of the invitation the hub created; when `User` does not connect in 60 s, the daemon runs without it, and terminal prompts are not posted ([user.ts:21](../src/user.ts#L21), [:38-48](../src/user.ts#L38-L48), [:60-62](../src/user.ts#L60-L62), [hub.ts:294](../src/hub.ts#L294)).
+- `User` connects at the first start only: later starts find the hub's contact marked `simplexMcpUser`. The contact is the one whose connection is that of the invitation the hub created; when `User` does not connect in 60 s, the daemon runs without it, and terminal prompts are not posted ([user.ts:21](../src/user.ts#L21), [:38-48](../src/user.ts#L38-L48), [:60-62](../src/user.ts#L60-L62), [hub.ts:313](../src/hub.ts#L313)).
 - A later daemon start without owners keeps the Main group's link ([main-group.ts:69-77](../src/main-group.ts#L69-L77)).
-- Owners are invited to the groups of open sessions when they join; the groups of closed sessions are joined by `/join N` ([hub.ts:367-371](../src/hub.ts#L367-L371), [:354-365](../src/hub.ts#L354-L365)).
+- Owners are invited to the groups of open sessions when they join; the groups of closed sessions are joined by `/join N` ([hub.ts:387-391](../src/hub.ts#L387-L391), [:374-385](../src/hub.ts#L374-L385)).
 
-Source: [hook.ts:40-55](../src/hook.ts#L40-L55), [client.ts:33-90](../src/client.ts#L33-L90), [daemon.ts:88-114](../src/daemon.ts#L88-L114), [:208-223](../src/daemon.ts#L208-L223), [hub.ts:286-302](../src/hub.ts#L286-L302), [:325-343](../src/hub.ts#L325-L343), [:400-412](../src/hub.ts#L400-L412), [main-group.ts:139-160](../src/main-group.ts#L139-L160), [user.ts:16-57](../src/user.ts#L16-L57).
+Source: [hook.ts:40-55](../src/hook.ts#L40-L55), [client.ts:33-90](../src/client.ts#L33-L90), [daemon.ts:88-114](../src/daemon.ts#L88-L114), [:208-223](../src/daemon.ts#L208-L223), [hub.ts:305-322](../src/hub.ts#L305-L322), [:345-363](../src/hub.ts#L345-L363), [:420-432](../src/hub.ts#L420-L432), [main-group.ts:139-160](../src/main-group.ts#L139-L160), [user.ts:16-57](../src/user.ts#L16-L57).
 
 ---
 
@@ -873,11 +873,11 @@ sequenceDiagram
 
 Notes:
 
-- The approver check of the session group counts only invited members whose member in the Main group is an owner ([hub.ts:240-243](../src/hub.ts#L240-L243)).
+- The approver check of the session group counts only invited members whose member in the Main group is an owner ([hub.ts:258-261](../src/hub.ts#L258-L261)).
 - Without an approver in `#G`, the action is refused with the text of [API 4.4](api.md#44-tool-results-in-the-plugin).
 - The connected chat gets the session's ID as its owner ([tools.ts:574-578](../src/tools.ts#L574-L578), [:819](../src/tools.ts#L819)).
 
-Source: [daemon.ts:290-309](../src/daemon.ts#L290-L309), [hub.ts:68-97](../src/hub.ts#L68-L97), [tools.ts:716-739](../src/tools.ts#L716-L739).
+Source: [daemon.ts:290-309](../src/daemon.ts#L290-L309), [hub.ts:70-99](../src/hub.ts#L70-L99), [tools.ts:716-739](../src/tools.ts#L716-L739).
 
 ---
 
@@ -894,6 +894,9 @@ sequenceDiagram
   O->>C: message in #G, with a file
   C->>N: newChatItems: Session.onMessage
   N->>N: not a command of the group, sender an approver
+  opt no attachment, in the first 30 s after the hub opened
+    N->>N: wait for an attachment until then
+  end
   alt no attachment
     N->>O: reply: Session N is not running.
   else attached
@@ -912,10 +915,11 @@ sequenceDiagram
 
 Notes:
 
-- Messages of members who are not approvers, and one-line `/` commands with a keyword of the group's commands, are not prompts; an approver's other one-line `/` text, such as `/model sonnet`, is a prompt ([hub.ts:140](../src/hub.ts#L140), [control.ts:17](../src/control.ts#L17), [:202](../src/control.ts#L202), [:607-610](../src/control.ts#L607-L610)).
+- Messages of members who are not approvers, and one-line `/` commands with a keyword of the group's commands, are not prompts; an approver's other one-line `/` text, such as `/model sonnet`, is a prompt ([hub.ts:151](../src/hub.ts#L151), [control.ts:17](../src/control.ts#L17), [:202](../src/control.ts#L202), [:607-610](../src/control.ts#L607-L610)).
+- After a daemon start, a prompt that arrives before its session attaches again waits up to 30 s from the hub's open, so a prompt sent while the daemon was stopped reaches the session ([hub.ts:152-161](../src/hub.ts#L152-L161), [:315](../src/hub.ts#L315)).
 - A session started without the channel flag gets the notification and drops it.
 
-Source: [hub.ts:136-143](../src/hub.ts#L136-L143), [:206-224](../src/hub.ts#L206-L224), [daemon.ts:278](../src/daemon.ts#L278), [session.ts:52-55](../src/session.ts#L52-L55), [:189-193](../src/session.ts#L189-L193).
+Source: [hub.ts:147-161](../src/hub.ts#L147-L161), [:224-242](../src/hub.ts#L224-L242), [daemon.ts:278](../src/daemon.ts#L278), [session.ts:52-55](../src/session.ts#L52-L55), [:189-193](../src/session.ts#L189-L193).
 
 ---
 
@@ -951,13 +955,13 @@ sequenceDiagram
 
 Notes:
 
-- A prompt from the group is not posted again: the pushed prompts in `<channel source="plugin:simplex:simplex" ... item="I" ...>` tags of the prompt with their item, or equal to the raw prompt and pushed in the last 60 s, leave the pushed prompts, and the oldest of them is the turn prompt. Without a UserPromptSubmit in the turn, the answer quotes the oldest pushed prompt ([hub.ts:24-27](../src/hub.ts#L24-L27), [:169-174](../src/hub.ts#L169-L174), [:227](../src/hub.ts#L227), [:234-238](../src/hub.ts#L234-L238)).
-- A prompt that is a one-line `/` command, such as `/simplex:link`, is not posted ([hub.ts:174](../src/hub.ts#L174)).
-- A card of a tool use that started after the hook is kept: the hook's start time `at` is earlier than its creation ([hook.ts:58](../src/hook.ts#L58), [hub.ts:181-185](../src/hub.ts#L181-L185)).
-- PostModelSwitch sends `{id, model}`; only the short description changes ([hook.ts:61](../src/hook.ts#L61), [hub.ts:163-168](../src/hub.ts#L163-L168)).
+- A prompt from the group is not posted again: the pushed prompts in `<channel source="plugin:simplex:simplex" ... item="I" ...>` tags of the prompt with their item, or equal to the raw prompt and pushed in the last 60 s, leave the pushed prompts, and the oldest of them is the turn prompt. Without a UserPromptSubmit in the turn, the answer quotes the oldest pushed prompt ([hub.ts:24-28](../src/hub.ts#L24-L28), [:187-192](../src/hub.ts#L187-L192), [:245](../src/hub.ts#L245), [:252-256](../src/hub.ts#L252-L256)).
+- A prompt that is a one-line `/` command, such as `/simplex:link`, is not posted ([hub.ts:192](../src/hub.ts#L192)).
+- A card of a tool use that started after the hook is kept: the hook's start time `at` is earlier than its creation ([hook.ts:58](../src/hook.ts#L58), [hub.ts:199-203](../src/hub.ts#L199-L203)).
+- PostModelSwitch sends `{id, model}`; only the short description changes ([hook.ts:61](../src/hook.ts#L61), [hub.ts:181-186](../src/hub.ts#L181-L186)).
 - A turn hook starts the daemon when none runs, repeats a turn refused with 409 up to 10 times 1 s apart, prints `{}`, and logs errors on its stderr ([hook.ts:57-76](../src/hook.ts#L57-L76)).
 
-Source: [hooks.json:5-7](../hooks/hooks.json#L5-L7), [hub.ts:162-179](../src/hub.ts#L162-L179), [:226-232](../src/hub.ts#L226-L232), [:450-465](../src/hub.ts#L450-L465), [user.ts:29-32](../src/user.ts#L29-L32).
+Source: [hooks.json:5-7](../hooks/hooks.json#L5-L7), [hub.ts:180-197](../src/hub.ts#L180-L197), [:244-250](../src/hub.ts#L244-L250), [:470-485](../src/hub.ts#L470-L485), [user.ts:29-32](../src/user.ts#L29-L32).
 
 ---
 
@@ -986,12 +990,12 @@ sequenceDiagram
 
 Notes:
 
-- `/reject N` pushes `deny`; the card ends with `Rejected by NAME.` ([hub.ts:154-155](../src/hub.ts#L154-L155)).
-- The first answer applies, in the terminal or in the group. A card still pending at a prompt or an answer whose hook started after the card, or when the last attachment ends, ends with `Ended.` ([hub.ts:170](../src/hub.ts#L170), [:177](../src/hub.ts#L177), [:181-185](../src/hub.ts#L181-L185), [daemon.ts:285](../src/daemon.ts#L285), [control.ts:628-629](../src/control.ts#L628-L629)).
+- `/reject N` pushes `deny`; the card ends with `Rejected by NAME.` ([hub.ts:172-173](../src/hub.ts#L172-L173)).
+- The first answer applies, in the terminal or in the group. A card still pending at a prompt or an answer whose hook started after the card, or when the last attachment ends, ends with `Ended.` ([hub.ts:188](../src/hub.ts#L188), [:195](../src/hub.ts#L195), [:199-203](../src/hub.ts#L199-L203), [daemon.ts:285](../src/daemon.ts#L285), [control.ts:628-629](../src/control.ts#L628-L629)).
 - The input preview is cut to fit the card ([control.ts:134](../src/control.ts#L134), [:711-725](../src/control.ts#L711-L725)).
-- The card is posted in mode `requests` also for a session in mode `host` ([hub.ts:152](../src/hub.ts#L152)).
+- The card is posted in mode `requests` also for a session in mode `host` ([hub.ts:170](../src/hub.ts#L170)).
 
-Source: [session.ts:57-60](../src/session.ts#L57-L60), [:108-111](../src/session.ts#L108-L111), [daemon.ts:138-142](../src/daemon.ts#L138-L142), [hub.ts:151-159](../src/hub.ts#L151-L159), [control.ts:636-639](../src/control.ts#L636-L639).
+Source: [session.ts:57-60](../src/session.ts#L57-L60), [:108-111](../src/session.ts#L108-L111), [daemon.ts:138-142](../src/daemon.ts#L138-L142), [hub.ts:169-177](../src/hub.ts#L169-L177), [control.ts:636-639](../src/control.ts#L636-L639).
 
 ---
 
@@ -1018,11 +1022,11 @@ sequenceDiagram
 
 Notes:
 
-- One `mode` card is pending at a time; a rejected or expired card forgets the request until the next `/session` ([hub.ts:124-134](../src/hub.ts#L124-L134)).
-- A pending `mode` card does not keep the session open ([hub.ts:104-106](../src/hub.ts#L104-L106)).
+- One `mode` card is pending at a time; a rejected or expired card forgets the request until the next `/session` ([hub.ts:135-145](../src/hub.ts#L135-L145)).
+- A pending `mode` card does not keep the session open ([hub.ts:115-117](../src/hub.ts#L115-L117)).
 - The session process marks the action tools for Claude Code's confirmation from the option at its own start, before the owner decides ([session.ts:56](../src/session.ts#L56)).
 
-Source: [hub.ts:117-134](../src/hub.ts#L117-L134), [:245-254](../src/hub.ts#L245-L254), [:441](../src/hub.ts#L441), [tools.ts:556-557](../src/tools.ts#L556-L557).
+Source: [hub.ts:128-145](../src/hub.ts#L128-L145), [:263-272](../src/hub.ts#L263-L272), [:461](../src/hub.ts#L461), [tools.ts:556-557](../src/tools.ts#L556-L557).
 
 ---
 
@@ -1043,7 +1047,7 @@ sequenceDiagram
   K->>O: Gave bot X (@4) to session 2.
 ```
 
-Source: [control.ts:338-350](../src/control.ts#L338-L350), [tools.ts:561-564](../src/tools.ts#L561-L564), [hub.ts:345-347](../src/hub.ts#L345-L347).
+Source: [control.ts:338-350](../src/control.ts#L338-L350), [tools.ts:561-564](../src/tools.ts#L561-L564), [hub.ts:365-367](../src/hub.ts#L365-L367).
 
 ---
 
@@ -1076,10 +1080,10 @@ sequenceDiagram
 
 Notes:
 
-- Without owners, `reset-owners` in a terminal replaces the group at once and prints the new link with a QR code ([owner.ts:26-33](../src/owner.ts#L26-L33), [hub.ts:319-323](../src/hub.ts#L319-L323)).
+- Without owners, `reset-owners` in a terminal replaces the group at once and prints the new link with a QR code ([owner.ts:26-33](../src/owner.ts#L26-L33), [hub.ts:339-343](../src/hub.ts#L339-L343)).
 - One reset card is pending at a time; `/reject reset` leaves the group ([main-group.ts:100-104](../src/main-group.ts#L100-L104), [:127-137](../src/main-group.ts#L127-L137)).
 
-Source: [main-group.ts:106-118](../src/main-group.ts#L106-L118), [hub.ts:200-204](../src/hub.ts#L200-L204), [:373-375](../src/hub.ts#L373-L375).
+Source: [main-group.ts:106-118](../src/main-group.ts#L106-L118), [hub.ts:218-222](../src/hub.ts#L218-L222), [:393-395](../src/hub.ts#L393-L395).
 
 ---
 
@@ -1107,7 +1111,7 @@ Notes:
 - A call or an attachment cancels the stop timer by creating an entry ([daemon.ts:322-332](../src/daemon.ts#L322-L332)).
 - A daemon of a higher version is kept; another protocol version makes clients fail with `Restart Claude Code to update the SimpleX plugin.` ([client.ts:33-45](../src/client.ts#L33-L45)).
 
-Source: [daemon.ts:171-193](../src/daemon.ts#L171-L193), [:279-287](../src/daemon.ts#L279-L287), [:368-386](../src/daemon.ts#L368-L386), [hub.ts:381-391](../src/hub.ts#L381-L391).
+Source: [daemon.ts:171-193](../src/daemon.ts#L171-L193), [:279-287](../src/daemon.ts#L279-L287), [:368-386](../src/daemon.ts#L368-L386), [hub.ts:401-411](../src/hub.ts#L401-L411).
 
 ---
 

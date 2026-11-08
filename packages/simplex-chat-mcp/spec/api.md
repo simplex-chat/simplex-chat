@@ -643,8 +643,8 @@ stderr: `CONTEXT: ERROR` from `logError` ([log.ts:41-43](../src/log.ts#L41-L43))
 | Instructions: those of [1.1](#11-common-rules) for the display name `Claude` and the host `SimpleX daemon`, followed by the channel's | [session.ts:20](../src/session.ts#L20), [:51](../src/session.ts#L51), [tools.ts:441-452](../src/tools.ts#L441-L452) |
 | `send`, `receive`, `download`, `leave` and `list` see the session's own chats only; another session's chat is `No chat CHAT. list shows the agent's chats.` | [tools.ts:570-572](../src/tools.ts#L570-L572), [:1280-1289](../src/tools.ts#L1280-L1289) |
 | `connect` to a chat of another session: `The chat of TARGET belongs to another session; an owner can give it to this session with /give.` | [tools.ts:734-739](../src/tools.ts#L734-L739) |
-| Actions are numbered per session group, from 1, and the action key holds the session number | [hub.ts:73](../src/hub.ts#L73), [tools.ts:1678-1680](../src/tools.ts#L1678-L1680) |
-| Downloads are saved under `ROOT/_sessions/ID/files/` | [hub.ts:88](../src/hub.ts#L88), [messages.ts:225-227](../src/messages.ts#L225-L227) |
+| Actions are numbered per session group, from 1, and the action key holds the session number | [hub.ts:75](../src/hub.ts#L75), [tools.ts:1678-1680](../src/tools.ts#L1678-L1680) |
+| Downloads are saved under `ROOT/_sessions/ID/files/` | [hub.ts:90](../src/hub.ts#L90), [messages.ts:225-227](../src/messages.ts#L225-L227) |
 
 `reply` ([`replyTool`](../src/tools.ts#L462-L476), [`AgentTools.reply`](../src/tools.ts#L706-L714)):
 
@@ -661,11 +661,11 @@ Commands ([`MainGroup.command`](../src/main-group.ts#L120-L125)), one line `/KEY
 
 | Request | Condition | Reply | Code |
 |---|---|---|---|
-| `/sessions` | no session | `No sessions.` | [hub.ts:349-352](../src/hub.ts#L349-L352) |
-| `/sessions` | otherwise | one line per session of the hub: `N · NAME`, with `, closed` when it has no entry | [hub.ts:349-352](../src/hub.ts#L349-L352) |
-| `/join N` | no session N | `No session N. /sessions lists the sessions.` | [hub.ts:356](../src/hub.ts#L356) |
-| `/join N` | the sender is a member of its group | `You are a member of "N · NAME".` | [hub.ts:357-362](../src/hub.ts#L357-L362) |
-| `/join N` | otherwise: an invitation through the Main group, with the sender's role there, recorded in `invited` | `Sent you an invitation to "N · NAME".` | [hub.ts:364](../src/hub.ts#L364), [:194-198](../src/hub.ts#L194-L198) |
+| `/sessions` | no session | `No sessions.` | [hub.ts:369-372](../src/hub.ts#L369-L372) |
+| `/sessions` | otherwise | one line per session of the hub: `N · NAME`, with `, closed` when it has no entry | [hub.ts:369-372](../src/hub.ts#L369-L372) |
+| `/join N` | no session N | `No session N. /sessions lists the sessions.` | [hub.ts:376](../src/hub.ts#L376) |
+| `/join N` | the sender is a member of its group | `You are a member of "N · NAME".` | [hub.ts:377-382](../src/hub.ts#L377-L382) |
+| `/join N` | otherwise: an invitation through the Main group, with the sender's role there, recorded in `invited` | `Sent you an invitation to "N · NAME".` | [hub.ts:384](../src/hub.ts#L384), [:212-216](../src/hub.ts#L212-L216) |
 | `/approve reset`, `/reject reset` | sender not an owner | `Only owners decide a reset of the owners.` | [main-group.ts:128](../src/main-group.ts#L128) |
 | `/approve reset`, `/reject reset` | no reset card | `No reset of the owners is requested.` | [main-group.ts:130](../src/main-group.ts#L130) |
 | `/approve reset`, `/reject reset` | accepted | none; the card is edited to `Approved by NAME.` or `Rejected by NAME.`; after an approval the group is replaced | [main-group.ts:131-136](../src/main-group.ts#L131-L136) |
@@ -703,7 +703,7 @@ Commands and replies are those of [2.1](#21-commands-and-replies), from approver
 | `/give CHAT N` | accepted: CHAT's owner set to session N; the pending actions of CHAT with a card are rejected by the sender | `Gave KIND NAME (CHAT) to session N.` | [control.ts:344-349](../src/control.ts#L344-L349) |
 | `/list`, `/revoke`, `/leave` | | the chats of this session, also while it is closed | [tools.ts:1270-1289](../src/tools.ts#L1270-L1289) |
 | `/give CHAT N` in the control chat of `serve` | | the help reply | [control.ts:339](../src/control.ts#L339) |
-| one-line `/` text whose KEYWORD is none of `approve`, `reject`, `receive`, `forward`, `revoke`, `leave`, `delete`, `give`, `pending`, `list` | the sender is an approver | none: the message is a prompt of the session | [control.ts:17](../src/control.ts#L17), [:202](../src/control.ts#L202), [hub.ts:140](../src/hub.ts#L140) |
+| one-line `/` text whose KEYWORD is none of `approve`, `reject`, `receive`, `forward`, `revoke`, `leave`, `delete`, `give`, `pending`, `list` | the sender is an approver | none: the message is a prompt of the session | [control.ts:17](../src/control.ts#L17), [:202](../src/control.ts#L202), [hub.ts:151](../src/hub.ts#L151) |
 
 Cards of [2.2](#22-cards), and two more:
 
@@ -718,13 +718,13 @@ Posts:
 
 | Poster | Text | Code |
 |---|---|---|
-| Claude | the final answer of each turn, in parts of 12000 bytes, the first quoting the turn's prompt from the group when it fits: the oldest pushed prompt that the turn's `prompt` contains in one of this server's channel tags, or that equals the `prompt` and was pushed in the last 60 s; without a `prompt` in the turn, the oldest pushed prompt not answered yet | [hub.ts:169-174](../src/hub.ts#L169-L174), [:226-238](../src/hub.ts#L226-L238) |
-| Claude | `Session N is not running.`, as a reply to an approver's message while the session has no attachment | [hub.ts:141](../src/hub.ts#L141) |
-| Claude | `The file of this message was not received: ERROR`, as a reply to an approver's message whose file failed or did not arrive in 10 minutes; the prompt is pushed without the file | [hub.ts:206-224](../src/hub.ts#L206-L224) |
-| `User` | each prompt typed in the terminal, in parts of 12000 bytes, except the prompts pushed from the group and one-line `/` commands | [hub.ts:169-175](../src/hub.ts#L169-L175), [user.ts:29-32](../src/user.ts#L29-L32) |
+| Claude | the final answer of each turn, in parts of 12000 bytes, the first quoting the turn's prompt from the group when it fits: the oldest pushed prompt that the turn's `prompt` contains in one of this server's channel tags, or that equals the `prompt` and was pushed in the last 60 s; without a `prompt` in the turn, the oldest pushed prompt not answered yet | [hub.ts:187-192](../src/hub.ts#L187-L192), [:244-256](../src/hub.ts#L244-L256) |
+| Claude | `Session N is not running.`, as a reply to an approver's message while the session has no attachment; in the first 30 s after the daemon's start, only when the session does not attach by their end | [hub.ts:152-161](../src/hub.ts#L152-L161), [:315](../src/hub.ts#L315) |
+| Claude | `The file of this message was not received: ERROR`, as a reply to an approver's message whose file failed or did not arrive in 10 minutes; the prompt is pushed without the file | [hub.ts:224-242](../src/hub.ts#L224-L242) |
+| `User` | each prompt typed in the terminal, in parts of 12000 bytes, except the prompts pushed from the group and one-line `/` commands | [hub.ts:187-193](../src/hub.ts#L187-L193), [user.ts:29-32](../src/user.ts#L29-L32) |
 | Claude | files sent by `reply` | [tools.ts:706-714](../src/tools.ts#L706-L714) |
 
-Group profile ([`createSessionGroup`](../src/hub.ts#L400-L412), [`Control.load`](../src/control.ts#L103-L110), [`describe`](../src/control.ts#L117-L120)):
+Group profile ([`createSessionGroup`](../src/hub.ts#L420-L432), [`Control.load`](../src/control.ts#L103-L110), [`describe`](../src/control.ts#L117-L120)):
 
 | Field | Value |
 |---|---|
@@ -742,8 +742,8 @@ Refusals of a new action, first match, in place of those of [1.9](#19-action-ref
 
 | Text | Condition | Code |
 |---|---|---|
-| `The SimpleX daemon is stopping.` | the daemon stops | [hub.ts:29](../src/hub.ts#L29) |
-| `The group of this session is lost. Start a new Claude Code session.` | the session group was deleted, Claude was removed from it or lost its owner role | [hub.ts:29](../src/hub.ts#L29), [control.ts:789-804](../src/control.ts#L789-L804) |
+| `The SimpleX daemon is stopping.` | the daemon stops | [hub.ts:30](../src/hub.ts#L30) |
+| `The group of this session is lost. Start a new Claude Code session.` | the session group was deleted, Claude was removed from it or lost its owner role | [hub.ts:30](../src/hub.ts#L30), [control.ts:789-804](../src/control.ts#L789-L804) |
 | the 20-action limits and the card size texts of [1.9](#19-action-refusals) | per session | [actions.ts:197-202](../src/actions.ts#L197-L202) |
 | `The group of this session has no owner. An owner of the Main group joins it by its invitation there; without owners, run npx -y @simplex-chat/mcp link in a terminal.` | the session group has no approver | [control.ts:35](../src/control.ts#L35), [:137](../src/control.ts#L137) |
 
@@ -772,7 +772,7 @@ Capabilities of the session server: `experimental: {"claude/channel": {}, "claud
 
 Channel instructions: `Messages in the simplex channel are prompts of your owners in the SimpleX group of this session: from is the owner's name, item the message ID, and file the path of a file they sent. Your final answer of each turn reaches them in that group; reply sends them a file.` ([session.ts:20](../src/session.ts#L20)).
 
-A prompt's file is received without a card, with relays approved, into `ROOT/_sessions/ID/files/group/<file ID><extension>`; the prompt is pushed after `rcvFileComplete`, and without `file` after `rcvFileError`, a failed receive or 10 minutes ([hub.ts:206-224](../src/hub.ts#L206-L224), [:187-192](../src/hub.ts#L187-L192)). Pushed prompts are kept until a turn's `prompt` matches them or an answer quotes them, at most 20 ([hub.ts:24](../src/hub.ts#L24), [:173](../src/hub.ts#L173), [:212](../src/hub.ts#L212), [:227](../src/hub.ts#L227)).
+A prompt's file is received without a card, with relays approved, into `ROOT/_sessions/ID/files/group/<file ID><extension>`; the prompt is pushed after `rcvFileComplete`, and without `file` after `rcvFileError`, a failed receive or 10 minutes ([hub.ts:224-242](../src/hub.ts#L224-L242), [:205-210](../src/hub.ts#L205-L210)). Pushed prompts are kept until a turn's `prompt` matches them or an answer quotes them, at most 20 ([hub.ts:24](../src/hub.ts#L24), [:191](../src/hub.ts#L191), [:230](../src/hub.ts#L230), [:245](../src/hub.ts#L245)).
 
 ### 4.6 Socket protocol
 
@@ -787,7 +787,7 @@ HTTP/1.1 over `ROOT/daemon.sock`, the fallback path or the Windows pipe, protoco
 | `POST /permission` | `{id, requestId, toolName, description, inputPreview}` | `{}` after the card's action is created | [daemon.ts:138-142](../src/daemon.ts#L138-L142) |
 | `POST /turn` | `{id, pid?, at?, prompt?, answer?, model?, effort?}`, `at` the time the hook started | `{}` after the posts | [daemon.ts:143-147](../src/daemon.ts#L143-L147) |
 | `GET /status` | none | `{version, protocol, mainGroup, owner, sessions: [{number, name, attached}]}`, the open sessions | [daemon.ts:388-391](../src/daemon.ts#L388-L391) |
-| `POST /reset-owners` | none | `{link}` after a reset without owners; `{}` after the card | [daemon.ts:149](../src/daemon.ts#L149), [hub.ts:319-323](../src/hub.ts#L319-L323) |
+| `POST /reset-owners` | none | `{link}` after a reset without owners; `{}` after the card | [daemon.ts:149](../src/daemon.ts#L149), [hub.ts:339-343](../src/hub.ts#L339-L343) |
 | `POST /stop` | none | `{}` after the stop sequence; the process exits after the reply | [daemon.ts:150-153](../src/daemon.ts#L150-L153) |
 
 | Status | Error | Condition |
@@ -814,7 +814,7 @@ on /session, /title or /turn with id, pid:
 on /attach, /call or /permission with id:   alias of id ?? id
 ```
 
-`/session` and `/title` apply `config` to the hub: the expiry of all sessions, and a rename of the Main group when `mainGroup` differs ([hub.ts:313-317](../src/hub.ts#L313-L317)). `/session` also requests its session's mode: `requests` applies at once and ends a pending mode card; `host` posts the mode card when the group has an approver, at once or after the next membership event of the group ([hub.ts:117-134](../src/hub.ts#L117-L134), [:441](../src/hub.ts#L441)). `/title` opens or creates the session, renames it for a non-blank name, and passes `model` to `turn`.
+`/session` and `/title` apply `config` to the hub: the expiry of all sessions, and a rename of the Main group when `mainGroup` differs ([hub.ts:333-337](../src/hub.ts#L333-L337)). `/session` also requests its session's mode: `requests` applies at once and ends a pending mode card; `host` posts the mode card when the group has an approver, at once or after the next membership event of the group ([hub.ts:128-145](../src/hub.ts#L128-L145), [:461](../src/hub.ts#L461)). `/title` opens or creates the session, renames it for a non-blank name, and passes `model` to `turn`.
 
 ### 4.7 Plugin commands
 
@@ -849,7 +849,7 @@ Environment: `SIMPLEX_MCP_HOME`, ROOT; `CLAUDE_CODE_SESSION_ID` and `CLAUDE_PROJ
 | owner joined | `NAME joined (member ID) and is now an owner. The link is deleted.` | [main-group.ts:159](../src/main-group.ts#L159) |
 | Main group lost | `The Main group is lost. Run npx -y @simplex-chat/mcp reset-owners in a terminal.` | [main-group.ts:164](../src/main-group.ts#L164) |
 | reset card, decision | `The reset of the owners waits for an owner's approval in the Main group.`, `Reset of the owners: Approved by NAME.` | [main-group.ts:103](../src/main-group.ts#L103), [:134](../src/main-group.ts#L134) |
-| session group created | `Group "N · NAME" of session N created.` | [hub.ts:410](../src/hub.ts#L410) |
+| session group created | `Group "N · NAME" of session N created.` | [hub.ts:430](../src/hub.ts#L430) |
 | session group lost | `The group "N · NAME" is lost.` | [control.ts:446](../src/control.ts#L446) |
 | actions | as in [3.4](#34-terminal-lines), with ` of session N` after `Action N`; `allowed.` for a tool use | [actions.ts:208](../src/actions.ts#L208), [:407](../src/actions.ts#L407) |
 | stop | `Cancelled K action(s).`, `Stopping: sending K cancelled card(s), up to 10 s. Ctrl-C to stop now.`, `Stopped.` | [daemon.ts:182](../src/daemon.ts#L182), [serve.ts:164](../src/serve.ts#L164), [daemon.ts:185](../src/daemon.ts#L185) |

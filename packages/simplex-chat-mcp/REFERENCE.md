@@ -519,7 +519,7 @@ With the channel, a message of an owner in a session's group is a prompt of the 
 
 - A file in the message is received without a card into `_sessions/<session ID>/files/group/` of the data folder, and Claude gets its path. When the file fails or does not arrive in 10 minutes, Claude replies `The file of this message was not received: ERROR`, and the session gets the text.
 - One-line messages with a command of the group, such as `/approve 5` or `/list`, are commands, not prompts; other messages are prompts, also one-line messages that start with `/`. Messages of members who are not owners of the Main group are not prompts.
-- When the session's Claude Code is not running, Claude replies `Session N is not running.` while the daemon runs.
+- When the session's Claude Code is not running, Claude replies `Session N is not running.` while the daemon runs. In the first 30 seconds after a daemon start, a prompt waits for its session to attach again, so a prompt sent while the daemon was stopped reaches the session.
 - Claude posts its final answer of each turn in the group, as a reply to the prompt of that turn when the prompt came from the group. `User` posts the prompts typed in the terminal, except commands such as `/simplex:link`. A text over 12000 bytes is posted as several messages.
 - The `reply` tool sends a file to the group, with its text as the caption, under the file rules of `send`.
 
