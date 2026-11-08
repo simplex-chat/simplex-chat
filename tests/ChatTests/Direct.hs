@@ -34,6 +34,7 @@ import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
+import Simplex.Chat.Types.Preferences (maxJSONDepth)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -131,6 +132,7 @@ chatDirectTests = do
     it "service request and response over a DR address" testServiceRequestResponse
     it "signed service request delivers the verified key" testSignedServiceRequest
     it "service request dropped when service processing is off" testServiceRequestDroppedWhenOff
+    it "service request dropped when its JSON is above the limits" testServiceRequestDroppedAboveLimits
     it "service request to a non-DR address fails fast" testServiceRequestNonDRAddress
     it "create user with same servers" testCreateUserSameServers
     it "delete user" testDeleteUser
@@ -2109,6 +2111,24 @@ testServiceRequestDroppedWhenOff =
     (sLink, _) <- getContactLinks alice True
     bob ##> ("/_service_request 1 " <> sLink <> " timeout=2 {\"ping\":1}")
     bob <## "smp agent error: AGENT {agentErr = A_SERVICE {serviceError = ASETimeout}}"
+
+testServiceRequestDroppedAboveLimits :: HasCallStack => TestParams -> IO ()
+testServiceRequestDroppedAboveLimits =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad pq_ratchet=on"
+    (sLink, _) <- getContactLinks alice True
+    alice ##> "/_stop"
+    alice <## "chat stopped"
+    alice ##> "/_start main=on snd_files=on service_requests=on"
+    alice <### ["chat started", "subscribed 1 connections on server localhost"]
+    bob ##> ("/_service_request 1 " <> sLink <> " timeout=2 " <> nestedRequest (maxJSONDepth + 1))
+    bob <## "smp agent error: AGENT {agentErr = A_SERVICE {serviceError = ASETimeout}}"
+    bob ##> ("/_service_request 1 " <> sLink <> " timeout=2 " <> nestedRequest maxJSONDepth)
+    bob <## "smp agent error: AGENT {agentErr = A_SERVICE {serviceError = ASETimeout}}"
+    alice <##. "service request "
+    alice <## ("request: " <> nestedRequest maxJSONDepth)
+  where
+    nestedRequest n = "{\"data\":" <> replicate n '[' <> replicate n ']' <> "}"
 
 testServiceRequestNonDRAddress :: HasCallStack => TestParams -> IO ()
 testServiceRequestNonDRAddress =
